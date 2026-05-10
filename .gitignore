@@ -1,0 +1,42 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.idea/
+.vscode/
+*.swp
+*~
+
+# Local-only Claude Code overrides (keep settings.json checked in,
+# settings.local.json out — that is where personal hook overrides live)
+.claude/settings.local.json
+
+# Local Codex auth (keys stay outside the repo)
+.codex/auth.json
+.codex/credentials.json
+
+# Local TDD ledger backups (keep tasks/tdd.json checked in)
+tasks/tdd.json.bak
+tasks/tdd.json.tmp
+
+# Hook output / logs
+.harness/logs/
+*.log
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+
+# Node
+node_modules/
+
+# Rust
+target/
+
+# Compiled outputs
+dist/
+build/
+out/

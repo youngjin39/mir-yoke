@@ -1,0 +1,66 @@
+# Patterns the pre-tool-use hook screens. severity: block | warn.
+# Each rule needs an `id`, a `pattern` (regex), a `severity`, and a `reason`.
+#
+# `subject` is either the bash command (when tool_name == Bash) or the
+# tool_input.file_path (when tool_name in Edit/Write/apply_patch). One file
+# blocks one shape — keep entries narrow and well-named.
+
+- id: rm-rf-root
+  pattern: 'rm\s+(-[rRfF]+\s+)+/(\s|$)'
+  severity: block
+  reason: "rm -rf / is almost never intentional"
+
+- id: rm-rf-home
+  pattern: 'rm\s+(-[rRfF]+\s+)+\$HOME(\s|/|$)'
+  severity: block
+  reason: "rm -rf $HOME wipes user data"
+
+- id: git-push-force-main
+  pattern: 'git\s+push\s+(--force|-f)\s+.*\b(main|master)\b'
+  severity: block
+  reason: "force push to main/master overwrites shared history"
+
+- id: git-reset-hard-origin
+  pattern: 'git\s+reset\s+--hard\s+(origin|upstream)/(main|master)'
+  severity: warn
+  reason: "discards all local commits silently — confirm intent"
+
+- id: chmod-777-recursive
+  pattern: 'chmod\s+-R\s+777'
+  severity: warn
+  reason: "recursive 777 is rarely intentional"
+
+- id: curl-pipe-shell
+  pattern: 'curl\s+[^|]*\|\s*(bash|sh|zsh)'
+  severity: warn
+  reason: "downloading and executing remote shell scripts is high-risk"
+
+- id: dd-of-device
+  pattern: 'dd\s+.*of=/dev/(sd[a-z]|nvme[0-9]n[0-9]|disk[0-9])'
+  severity: block
+  reason: "dd to a block device can destroy the disk"
+
+- id: protected-env
+  pattern: '^\.env(\.[a-zA-Z0-9_-]+)?$'
+  severity: block
+  reason: ".env should never be edited via the agent — load from secrets manager instead"
+
+- id: protected-credentials-dir
+  pattern: '(^|/)credentials(/|\.json|\.yml|\.yaml)?$'
+  severity: block
+  reason: "credentials directory edits must go through human review"
+
+- id: protected-secrets-dir
+  pattern: '(^|/)secrets/'
+  severity: block
+  reason: "secrets directory is treated as read-only by the harness"
+
+- id: protected-aws-folder
+  pattern: '(^|/)\.aws/'
+  severity: block
+  reason: "AWS credentials live here — out of scope for agent edits"
+
+- id: skip-pre-commit-hooks
+  pattern: 'git\s+commit.*--no-verify'
+  severity: block
+  reason: "--no-verify defeats the entire harness; resolve hook failures instead"
