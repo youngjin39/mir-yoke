@@ -1,7 +1,7 @@
 #!/bin/bash
 # mir-stop.sh
 # Claude Stop hook: write audit log entry to tasks/sessions/stop-<ISO8601>-<pid>-<rand>.log.
-# ADR: docs/decisions/p0j2-claude-stop-hook-2026-05-09.md (Alternative C, MVP audit-only).
+# Optional Stop hook — implement per your harness. Alternative C: MVP audit-only mode.
 # NEVER exits non-zero — Stop hook must never block session termination.
 
 set -u

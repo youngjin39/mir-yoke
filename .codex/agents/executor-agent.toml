@@ -21,10 +21,10 @@ Role: Coordinate the default Codex execution lane for approved implementation pl
 8. On completion: report changed files + execution results.
 
 
-## Codex CLI invocation (ADR-09 round 4 — lessons from Phase 9A phantom "stdin issue")
+## Codex CLI invocation (ADR-09 — lessons from the phantom "stdin issue")
 
-For all Codex dispatches, use the following Bash invocation pattern. This bypasses the Mir
-enforcement hook (`.claude/hooks/pre-tool-use.sh`) which blocks Claude direct Edit/Write
+For all Codex dispatches, use the following Bash invocation pattern. This bypasses the
+harness enforcement hook (`.claude/hooks/pre-tool-use.sh`) which blocks Claude direct Edit/Write
 under `tools/`/`src/` paths — Codex CLI subprocess writes are outside Claude's tool surface
 and never trigger the hook.
 
@@ -36,7 +36,7 @@ perl -e 'alarm 120; exec @ARGV' codex exec \
   "<prompt>"
 ```
 
-Rules (Phase 9A retro):
+Rules:
 - **Use a positional prompt argument**, not stdin piping. Both work, but positional starts
   Codex immediately while stdin shows "Reading additional input from stdin..." latency.
 - **Timeout = 120s for write tasks**, not 60s. Codex reads CLAUDE.md / plan.md / context
@@ -44,13 +44,13 @@ Rules (Phase 9A retro):
   a stdin issue. Use `alarm 30` only for pure-read or trivial echo prompts.
 - **Prepend "Write only. Do not read other files." to write prompts** when the task is
   small enough that context loading is overhead. Reduces token usage and avoids timeouts.
-- **For Mir-enforced paths** (`tools/`, `src/`), always go through `codex exec` — never
-  Claude Edit/Write directly. The hook will reject the latter with `[mir BLOCKED]` and
-  the dispatch fails.
+- **For harness-enforced paths** (`tools/`, `src/`), always go through `codex exec` — never
+  Claude Edit/Write directly. The hook will reject the latter with `[<family-slug> BLOCKED]`
+  and the dispatch fails.
 - **Verify Codex actually ran** by checking stdout for the `tokens used N,NNN` marker.
   Absence means the subprocess exited before the model engaged.
 - **Auth**: `CODEX_HOME` env must point to the auth.json directory (usually
-  `/Users/ai_agent/.codex`). If `codex --version` works in the shell, auth is set.
+  `${CODEX_HOME:-$HOME/.codex}`). If `codex --version` works in the shell, auth is set.
 
 
 ## State Checkpoint (externalize, don't trust memory)

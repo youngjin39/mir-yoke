@@ -6,7 +6,7 @@ license: Apache-2.0
 created: 2026-05-20
 adoption_targets:
   archetypes: [learning_low_code, template_transitional]
-  management_modes: [mir-managed, bounded-managed]
+  management_modes: [upstream-managed, bounded-managed]
 notes: Codex narrowed to review/docs-structure; harness migration skipped.
 ---
 

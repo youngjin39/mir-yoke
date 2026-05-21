@@ -165,7 +165,7 @@ if [ "$TOOL_NAME" = "Write" ] || [ "$TOOL_NAME" = "Edit" ]; then
   apply_deny_list "$TOOL_NAME $FP" "path"
 fi
 
-# mir:profile:enforcement:begin
+# harness:profile:enforcement:begin
 # --- Harness profile-driven enforcement (V2.1) ---
 _get_family_slug() {
     local cfg="$PROJECT_DIR/.mir/harness-config.json"
@@ -173,26 +173,26 @@ _get_family_slug() {
         python3 -c "import json,sys; print(json.load(open('$cfg')).get('family_slug', ''))" 2>/dev/null || true
     fi
 }
-if [ "${MIR_FAMILY_CODE_PATHS_INITIALIZED:-no}" != "yes" ]; then
+if [ "${HARNESS_FAMILY_CODE_PATHS_INITIALIZED:-no}" != "yes" ]; then
     _slug="$(_get_family_slug)"
-    MIR_FAMILY_SLUG="${_slug:-$(basename "$PROJECT_DIR")}"
-    MIR_FAMILY_CODE_PATHS=( "tools/" "src/" )
-    MIR_CODEX_DEFAULT_ENABLED="true"
-    MIR_FAMILY_CODE_PATHS_INITIALIZED=yes
+    HARNESS_FAMILY_SLUG="${_slug:-$(basename "$PROJECT_DIR")}"
+    HARNESS_FAMILY_CODE_PATHS=( "tools/" "src/" )
+    HARNESS_CODEX_DEFAULT_ENABLED="true"
+    HARNESS_FAMILY_CODE_PATHS_INITIALIZED=yes
 fi
 
 if [ -n "${INPUT:-}" ]; then
-    _mir_payload="$INPUT"
+    _harness_payload="$INPUT"
 else
-    _mir_payload="$(cat)"
-    INPUT="$_mir_payload"
+    _harness_payload="$(cat)"
+    INPUT="$_harness_payload"
 fi
 
-_mir_tool_name="$(printf '%s' "$_mir_payload" | python3 -c 'import sys,json; print(json.loads(sys.stdin.read()).get("tool_name",""))' 2>/dev/null || echo "")"
-if [ "$_mir_tool_name" = "Edit" ] || [ "$_mir_tool_name" = "Write" ]; then
-    _mir_file_path="$(printf '%s' "$_mir_payload" | python3 -c 'import sys,json; d=json.loads(sys.stdin.read()); print(d.get("tool_input",{}).get("file_path") or d.get("tool_input",{}).get("path") or "")' 2>/dev/null || echo "")"
-    if [ -n "$_mir_file_path" ] && [ "${#MIR_FAMILY_CODE_PATHS[@]}" -gt 0 ]; then
-        _mir_match="$(python3 - "$_mir_file_path" "${MIR_FAMILY_CODE_PATHS[@]}" <<'PY'
+_harness_tool_name="$(printf '%s' "$_harness_payload" | python3 -c 'import sys,json; print(json.loads(sys.stdin.read()).get("tool_name",""))' 2>/dev/null || echo "")"
+if [ "$_harness_tool_name" = "Edit" ] || [ "$_harness_tool_name" = "Write" ]; then
+    _harness_file_path="$(printf '%s' "$_harness_payload" | python3 -c 'import sys,json; d=json.loads(sys.stdin.read()); print(d.get("tool_input",{}).get("file_path") or d.get("tool_input",{}).get("path") or "")' 2>/dev/null || echo "")"
+    if [ -n "$_harness_file_path" ] && [ "${#HARNESS_FAMILY_CODE_PATHS[@]}" -gt 0 ]; then
+        _harness_match="$(python3 - "$_harness_file_path" "${HARNESS_FAMILY_CODE_PATHS[@]}" <<'PY'
 import sys, os, fnmatch
 path, *patterns = sys.argv[1:]
 pwd = os.environ.get("PWD", "")
@@ -206,14 +206,14 @@ def _match(candidate, pat):
 print("yes" if any(_match(c, p) for c in candidates for p in patterns) else "no")
 PY
 )"
-        if [ "$_mir_match" = "yes" ] && [ -z "${MIR_CODEX_SESSION_ID:-}" ]; then
-            echo "[$MIR_FAMILY_SLUG BLOCKED] code-path edit on $_mir_file_path requires an active Codex session. Run scripts/spawn_codex_session.sh first." >&2
+        if [ "$_harness_match" = "yes" ] && [ -z "${HARNESS_CODEX_SESSION_ID:-}" ]; then
+            echo "[$HARNESS_FAMILY_SLUG BLOCKED] code-path edit on $_harness_file_path requires an active Codex session. Run scripts/spawn_codex_session.sh first." >&2
             exit 2
         fi
     fi
 fi
 # --- end harness profile-driven enforcement (V2.1) ---
 
-# mir:profile:enforcement:end
+# harness:profile:enforcement:end
 
 exit 0

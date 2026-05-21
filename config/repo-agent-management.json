@@ -843,7 +843,7 @@
         "agent_management": [
           ".claude/settings.json",
           ".claude/settings.local.json",
-          "plugins/mir-harness/**"
+          "plugins/**"
         ]
       },
       "default_verification": [
@@ -913,7 +913,7 @@
         "agent_management": [
           ".claude/settings.json",
           ".claude/settings.local.json",
-          "plugins/mir-harness/**"
+          "plugins/**"
         ]
       },
       "default_verification": [

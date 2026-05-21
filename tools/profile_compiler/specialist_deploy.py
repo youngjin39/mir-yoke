@@ -273,13 +273,12 @@ def write_harness_config(family_root: Path, family_slug: str, mir_root: Path) ->
     catalog_version = catalog.get("version", 2)
 
     payload = {
-        "$schema": "https://schemas.example.local/harness-config-v1.json",
         "version": 1,
         "family_slug": family_slug,
-        "mir_catalog_version": catalog_version,
-        "mir_catalog_revision": catalog_revision,
-        "last_synced_from_mir_at": now_utc,
-        "last_synced_mir_commit": mir_head,
+        "catalog_version": catalog_version,
+        "catalog_revision": catalog_revision,
+        "last_synced_from_upstream_at": now_utc,
+        "last_synced_upstream_commit": mir_head,
         "repository_type": entry.get("repository_type"),
         "overlay_archetype": entry.get("overlay_archetype"),
         "orchestration_profile": entry.get("orchestration_profile"),
@@ -290,15 +289,15 @@ def write_harness_config(family_root: Path, family_slug: str, mir_root: Path) ->
         "rationale": entry.get("rationale", ""),
         "last_reviewed_at": entry.get("last_reviewed_at", ""),
         "notes": [
-            "Local sync copy of central catalog config/repos/<family_slug>.json.",
+            "Local sync copy of upstream config/repos/<family_slug>.json.",
             (
-                "Source of truth: host repo config/repos/<family_slug>.json. "
-                "This file MAY be locally edited; Mir refresh treats one-way push "
-                "(Mir -> family) per ADR-16 S6 WN-5."
+                "Source of truth: this repo's config/repos/<family_slug>.json. "
+                "This file MAY be locally edited; harness refresh treats one-way push "
+                "(upstream -> family) per the deployment ADR."
             ),
             (
                 "Auto-synced by tools/profile_compiler/specialist_deploy.py::"
-                "refresh_specialists(apply=True) -- Phase C."
+                "refresh_specialists(apply=True)."
             ),
         ],
     }

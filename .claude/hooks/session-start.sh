@@ -44,7 +44,7 @@ fi
 
 echo "=== END SESSION CONTEXT ==="
 
-# mir:profile:enforcement:begin
+# harness:profile:enforcement:begin
 # Generated harness session-start banner. See README for customization.
 # To update this block, edit .mir/harness-config.json (optional) and
 # re-run scripts/generate_codex_derivatives.sh if present.
@@ -56,12 +56,12 @@ _get_session_family_slug() {
 }
 _session_slug="$(_get_session_family_slug)"
 HARNESS_FAMILY_SLUG="${_session_slug:-$(basename "${CLAUDE_PROJECT_DIR:-.}")}"
-MIR_CODEX_DEFAULT_ENABLED="true"
-echo "[$HARNESS_FAMILY_SLUG] role policy active: claude=control_plane codex=code_tdd_review_plane codex_default=$MIR_CODEX_DEFAULT_ENABLED family=$HARNESS_FAMILY_SLUG" >&2
-if [ -n "${MIR_CODEX_SESSION_ID:-}" ]; then
-    echo "[$HARNESS_FAMILY_SLUG] active codex session: $MIR_CODEX_SESSION_ID modes=$MIR_CODEX_ALLOWED_MODES" >&2
-elif [ "$MIR_CODEX_DEFAULT_ENABLED" = "true" ]; then
+HARNESS_CODEX_DEFAULT_ENABLED="true"
+echo "[$HARNESS_FAMILY_SLUG] role policy active: claude=control_plane codex=code_tdd_review_plane codex_default=$HARNESS_CODEX_DEFAULT_ENABLED family=$HARNESS_FAMILY_SLUG" >&2
+if [ -n "${HARNESS_CODEX_SESSION_ID:-}" ]; then
+    echo "[$HARNESS_FAMILY_SLUG] active codex session: $HARNESS_CODEX_SESSION_ID modes=$HARNESS_CODEX_ALLOWED_MODES" >&2
+elif [ "$HARNESS_CODEX_DEFAULT_ENABLED" = "true" ]; then
     echo "[$HARNESS_FAMILY_SLUG] no active codex session — code edits in code_paths will be blocked by pre-tool-use hook" >&2
 fi
 
-# mir:profile:enforcement:end
+# harness:profile:enforcement:end

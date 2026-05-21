@@ -10,7 +10,7 @@ Role: Project-wide Claude control plane.
 ## Startup Protocol
 1. Read tasks/plan.md + lessons.md (auto-injected by hook). Read checklist.md manually if needed.
 2. Scan memory-map.md keywords (Read matching files only).
-3. **(ADR-17 P17-B + ADR-18 P18-C)** Read `config/repo-agent-management.json` once at session start via Read tool. Cache the parsed `catalog.agents` and `repositories[]` in this session's context for the duration of the session. The file is small (<10KB JSON) — single read at session start is cheap. Refresh the cache only if `config/repo-agent-management.json` is edited mid-session (rare).
+3. **(the catalog routing ADR)** Read `config/repo-agent-management.json` once at session start via Read tool. Cache the parsed `catalog.agents` and `repositories[]` in this session's context for the duration of the session. The file is small (<10KB JSON) — single read at session start is cheap. Refresh the cache only if `config/repo-agent-management.json` is edited mid-session (rare).
 
 ## Ambiguity Gate
 Check for specificity signals: file path, function name, numbered steps, error message.
@@ -62,7 +62,7 @@ mkdir -p tasks/log && echo '{"ts":"<ISO-8601 UTC>","agent_slug":"<slug>","routed
 
 This is prompt-level guidance. Verifier R11 audits post-hoc.
 
-## Specialist Scope-Pattern Routing (ADR-17 §S2 P17-B)
+## Specialist Scope-Pattern Routing (catalog routing ADR)
 
 When dispatching a `role: specialist` agent (cwe-auditor, dep-auditor, ui-reviewer, pipeline-validator, ontology-validator, runtime-contract-reviewer, template-sync-validator):
 
@@ -79,11 +79,11 @@ When dispatching a `role: specialist` agent (cwe-auditor, dep-auditor, ui-review
    ```
 6. Universal-tier (`role: control_plane`, `role: execution`, `role: review`, `role: governance`) agents are **NOT filtered** — they always see the full changed-file set.
 
-This routing applies only to specialists. The scope-pattern filter is the dispatch-time mechanism ADR-17 P15-E identified as the missing piece for token efficiency.
+This routing applies only to specialists. The scope-pattern filter is the dispatch-time mechanism identified as the missing piece for token efficiency.
 
 ## Sub-agent dispatch policy
 
-See CLAUDE.md "Role Policy (Mir Profile)" and AGENTS.md `mir:profile:role-policy` block for the binding policy contract. This section covers the per-agent declarative surface introduced by ADR-09.
+See CLAUDE.md "Role Policy (Template Profile)" and AGENTS.md `template:profile:role-policy` block for the binding policy contract. This section covers the per-agent declarative surface introduced by ADR-09.
 
 - Code work is always delegated to a sub-agent. The orchestrator does not Edit/Write production code directly.
 - Default sub-agent for code/TDD/review: `executor-agent` (frontmatter `execution_backend: codex`). Codex CLI is the code/TDD/review lane.
@@ -92,7 +92,7 @@ See CLAUDE.md "Role Policy (Mir Profile)" and AGENTS.md `mir:profile:role-policy
 - Sub-agent for fleet-wide instruction-doc governance review (read-only, no code edits): `fleet-doc-steward` (frontmatter `execution_backend: claude`). Not part of the code/TDD/review lane.
 - Sub-agent for fleet observation advisory analysis (bucket 3 hook-risk + bucket 4 soft-advisory, read-only): `fleet-governance-advisory` skill (invoked via Task spawn). Handoff doc `tasks/handoffs/fleet-advisory-<date>.md` mandatory before spawn.
 - Frontmatter `execution_backend` is the single declarative surface for a sub-agent's execution lane. Validate with `uv run python -m tools.agent_loader --mode=strict .claude/agents/<name>.md`.
-- A runtime backend override (per-turn deviation) must be recorded in `tasks/plan.md` or the active handoff note before dispatch, per `role-policy.md`.
+- A runtime backend override (per-turn deviation) must be recorded in `tasks/plan.md` or the active handoff note before dispatch, per `docs/decisions/role-policy.md`.
 - Deterministic enforcement (orchestrator-guard hook + MCP per-subagent whitelist) is out of ADR-09 scope. ADR-08 cancelled 2026-05-12; the enforcement layer is a separate future ADR. ADR-09 covers declarative surface only.
 
 ## Post-completion
@@ -109,9 +109,9 @@ See CLAUDE.md "Role Policy (Mir Profile)" and AGENTS.md `mir:profile:role-policy
 [Found] / [Fixed] / [Rationale] / [Next Action].
 
 ## Language
-- User-facing output (reports, task logs) → match the project's language setting.
+- User-facing output (reports, task logs) → Korean.
 - Internal (agent comms, handoffs, docs/, skills, code, commits) → English.
-- Subagent prompts in English.
+- Subagent prompts in English. Translate sub-agent English results to Korean for user delivery.
 
 <Failure_Modes_To_Avoid>
 - Starting code on ambiguous requests. Ask clarifying questions first.

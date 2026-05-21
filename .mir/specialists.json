@@ -1,0 +1,104 @@
+{
+  "version": 1,
+  "specialists": {
+    "main-orchestrator": {
+      "source_path": ".claude/agents/main-orchestrator.md",
+      "source_sha256": "ad37d0dba63f82fc607e1f5e12eb7b7cbbfc8e871137f01abb6f8be43d2e1b46",
+      "source_commit": "ae98d957359d3c0f7ec05fa9eb170cb26686856d",
+      "deployed_path": ".claude/agents/main-orchestrator.md",
+      "deployed_sha256": "ad37d0dba63f82fc607e1f5e12eb7b7cbbfc8e871137f01abb6f8be43d2e1b46",
+      "deployed_at": "2026-05-21T16:02:36Z",
+      "drift_status": "in_sync"
+    },
+    "executor-agent": {
+      "source_path": ".claude/agents/executor-agent.md",
+      "source_sha256": "1832f2d1d1a3944b70876d151dfe8cde035c8c40d46ea4bc8dc08f0ba09767a5",
+      "source_commit": "ae98d957359d3c0f7ec05fa9eb170cb26686856d",
+      "deployed_path": ".claude/agents/executor-agent.md",
+      "deployed_sha256": "1832f2d1d1a3944b70876d151dfe8cde035c8c40d46ea4bc8dc08f0ba09767a5",
+      "deployed_at": "2026-05-21T16:02:36Z",
+      "drift_status": "in_sync"
+    },
+    "codex-final-reviewer": {
+      "source_path": ".claude/agents/codex-final-reviewer.md",
+      "source_sha256": "4b9f9f9dcfe6d869c4184b96fb5e90a30e84fd0c104631ab3b38bd35cef79814",
+      "source_commit": "ae98d957359d3c0f7ec05fa9eb170cb26686856d",
+      "deployed_path": ".claude/agents/codex-final-reviewer.md",
+      "deployed_sha256": "4b9f9f9dcfe6d869c4184b96fb5e90a30e84fd0c104631ab3b38bd35cef79814",
+      "deployed_at": "2026-05-21T16:02:36Z",
+      "drift_status": "in_sync"
+    },
+    "quality-agent": {
+      "source_path": ".claude/agents/quality-agent.md",
+      "source_sha256": "579fc339b4b3f7bc10170325925b22a333ac1a394da8320b57b370e9d98bc82a",
+      "source_commit": "ae98d957359d3c0f7ec05fa9eb170cb26686856d",
+      "deployed_path": ".claude/agents/quality-agent.md",
+      "deployed_sha256": "579fc339b4b3f7bc10170325925b22a333ac1a394da8320b57b370e9d98bc82a",
+      "deployed_at": "2026-05-21T16:02:36Z",
+      "drift_status": "in_sync"
+    },
+    "cwe-auditor": {
+      "source_path": ".claude/agents/cwe-auditor.md",
+      "source_sha256": "b76afb67fd1766f996c67a1b480be7e4deb2c36b472502bc27d270966b2b5838",
+      "source_commit": "ae98d957359d3c0f7ec05fa9eb170cb26686856d",
+      "deployed_path": ".claude/agents/cwe-auditor.md",
+      "deployed_sha256": "b76afb67fd1766f996c67a1b480be7e4deb2c36b472502bc27d270966b2b5838",
+      "deployed_at": "2026-05-21T16:02:36Z",
+      "drift_status": "in_sync"
+    },
+    "dep-auditor": {
+      "source_path": ".claude/agents/dep-auditor.md",
+      "source_sha256": "448a5843ca7cc6274d614adcb854abeee530f174005ac00433388ba2564dbce0",
+      "source_commit": "ae98d957359d3c0f7ec05fa9eb170cb26686856d",
+      "deployed_path": ".claude/agents/dep-auditor.md",
+      "deployed_sha256": "448a5843ca7cc6274d614adcb854abeee530f174005ac00433388ba2564dbce0",
+      "deployed_at": "2026-05-21T16:02:36Z",
+      "drift_status": "in_sync"
+    },
+    "ui-reviewer": {
+      "source_path": ".claude/agents/ui-reviewer.md",
+      "source_sha256": "f9663406ce8e6fda5504f1c7d0552a1c4723983baf846a8824d32d7743c70efe",
+      "source_commit": "ae98d957359d3c0f7ec05fa9eb170cb26686856d",
+      "deployed_path": ".claude/agents/ui-reviewer.md",
+      "deployed_sha256": "f9663406ce8e6fda5504f1c7d0552a1c4723983baf846a8824d32d7743c70efe",
+      "deployed_at": "2026-05-21T16:02:36Z",
+      "drift_status": "in_sync"
+    },
+    "pipeline-validator": {
+      "source_path": ".claude/agents/pipeline-validator.md",
+      "source_sha256": "0eb004f4a613e3de2fe3af4ca74a5566a2bc827612bb54eb98cb78f2661425ff",
+      "source_commit": "ae98d957359d3c0f7ec05fa9eb170cb26686856d",
+      "deployed_path": ".claude/agents/pipeline-validator.md",
+      "deployed_sha256": "0eb004f4a613e3de2fe3af4ca74a5566a2bc827612bb54eb98cb78f2661425ff",
+      "deployed_at": "2026-05-21T16:02:36Z",
+      "drift_status": "in_sync"
+    },
+    "ontology-validator": {
+      "source_path": ".claude/agents/ontology-validator.md",
+      "source_sha256": "bdadf432c5f478f8e11b82c08c974bff0194a9351ceab84cf48427c4b92e0f2d",
+      "source_commit": "ae98d957359d3c0f7ec05fa9eb170cb26686856d",
+      "deployed_path": ".claude/agents/ontology-validator.md",
+      "deployed_sha256": "bdadf432c5f478f8e11b82c08c974bff0194a9351ceab84cf48427c4b92e0f2d",
+      "deployed_at": "2026-05-21T16:02:36Z",
+      "drift_status": "in_sync"
+    },
+    "runtime-contract-reviewer": {
+      "source_path": ".claude/agents/runtime-contract-reviewer.md",
+      "source_sha256": "056960c98f48dca25f110d68e785a8240a2c7d4a7ae99cba623349661d14398f",
+      "source_commit": "ae98d957359d3c0f7ec05fa9eb170cb26686856d",
+      "deployed_path": ".claude/agents/runtime-contract-reviewer.md",
+      "deployed_sha256": "056960c98f48dca25f110d68e785a8240a2c7d4a7ae99cba623349661d14398f",
+      "deployed_at": "2026-05-21T16:02:36Z",
+      "drift_status": "in_sync"
+    },
+    "template-sync-validator": {
+      "source_path": ".claude/agents/template-sync-validator.md",
+      "source_sha256": "d10d9653956a4480d4c916137ed05768eaeb20a9a8d79f2e273cbdd5a9aaf273",
+      "source_commit": "ae98d957359d3c0f7ec05fa9eb170cb26686856d",
+      "deployed_path": ".claude/agents/template-sync-validator.md",
+      "deployed_sha256": "d10d9653956a4480d4c916137ed05768eaeb20a9a8d79f2e273cbdd5a9aaf273",
+      "deployed_at": "2026-05-21T16:02:36Z",
+      "drift_status": "in_sync"
+    }
+  }
+}

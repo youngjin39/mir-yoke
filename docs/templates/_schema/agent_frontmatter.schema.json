@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Mir Harness agent frontmatter schema (ADR-09 C2)",
-  "description": "Frontmatter contract for .claude/agents/*.md. Phase 9B atomic: execution_backend is required. lenient mode in loader.py drops execution_backend from required for migration scripts.",
+  "title": "Agent frontmatter schema (ADR-09 C2)",
+  "description": "Frontmatter contract for .claude/agents/*.md. execution_backend is required in strict mode. lenient mode in loader.py drops execution_backend from required for migration scripts.",
   "type": "object",
   "additionalProperties": false,
   "required": ["name", "description", "model", "execution_backend"],

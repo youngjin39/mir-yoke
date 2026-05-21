@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "family_slug": "claude-codex-harness",
+  "catalog_version": 2,
+  "catalog_revision": "v3.6",
+  "last_synced_from_upstream_at": "2026-05-21T16:02:36Z",
+  "last_synced_upstream_commit": "ae98d957359d3c0f7ec05fa9eb170cb26686856d",
+  "repository_type": "template_transitional",
+  "overlay_archetype": "template_transitional",
+  "orchestration_profile": "minimal",
+  "active_agents": [
+    "main-orchestrator",
+    "executor-agent",
+    "codex-final-reviewer",
+    "quality-agent"
+  ],
+  "active_skills": [
+    "design",
+    "verify"
+  ],
+  "agent_overrides": {
+    "add_specialists": [],
+    "remove_specialists": []
+  },
+  "skill_overrides": {
+    "add": [],
+    "remove": []
+  },
+  "rationale": "template_transitional public template; template-sync-validator recommended pending sync friction evidence.",
+  "last_reviewed_at": "2026-05-21",
+  "notes": [
+    "Local sync copy of upstream config/repos/<family_slug>.json.",
+    "Source of truth: this repo's config/repos/<family_slug>.json. This file MAY be locally edited; harness refresh treats one-way push (upstream -> family) per the deployment ADR.",
+    "Auto-synced by tools/profile_compiler/specialist_deploy.py::refresh_specialists(apply=True)."
+  ]
+}

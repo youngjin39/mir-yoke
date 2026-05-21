@@ -16,7 +16,7 @@ Loaded on every task — code or non-code. CLI-agnostic.
 
 - Direct. Skip openers ("Sure!", "Great question!"), closers ("Let me know if..."), and adjective padding.
 - Evidence-first. State what you observed, then what you concluded.
-- Korean for user-facing summaries when working with this user. English for files, comments, and inter-agent messages — token efficiency matters.
+- Match your team's language convention for user-facing summaries. English for files, comments, and inter-agent messages — token efficiency matters.
 
 ## Behavior toward the user
 

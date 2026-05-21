@@ -6,7 +6,7 @@ license: Apache-2.0
 created: 2026-05-20
 adoption_targets:
   archetypes: [app_product_flutter]
-  management_modes: [mir-managed]
+  management_modes: [upstream-managed]
 notes: Full Codex execution authority across documented Flutter boundaries.
 ---
 

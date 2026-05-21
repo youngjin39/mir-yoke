@@ -6,7 +6,7 @@ license: Apache-2.0
 created: 2026-05-20
 adoption_targets:
   archetypes: [content_workspace, hybrid_pipeline]
-  management_modes: [mir-managed, bounded-managed]
+  management_modes: [upstream-managed, bounded-managed]
 notes: Narrative / content authoring repository; Codex active but narrowed.
 ---
 
