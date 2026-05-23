@@ -1,7 +1,10 @@
 """Test that all JSON Schema files in docs/templates/_schema/ self-validate (Draft 2020-12)."""
 import json
-import jsonschema
 from pathlib import Path
+
+import pytest
+
+jsonschema = pytest.importorskip("jsonschema")
 
 
 def test_all_schemas_self_validate():
