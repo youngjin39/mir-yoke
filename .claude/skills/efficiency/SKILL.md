@@ -8,6 +8,7 @@ description: "Token/context efficiency analysis + AI readiness cartography.\n\nT
 ## Use When
 - When analyzing token and context efficiency across Claude Code and Codex activity.
 - When auditing a repository against the AI-ready rubric for a scorecard and ROI-ranked follow-up actions.
+- When applying or evaluating the terse-output baseline on allowed local instruction surfaces.
 
 ## Absorbed legacy skills
 - improve-token-efficiency — Analyze repository-level token and context efficiency across Claude Code and Codex local activity, estimate cost drivers, and produce a dashboard-ready report with concrete savings opportunities.
@@ -16,7 +17,9 @@ description: "Token/context efficiency analysis + AI readiness cartography.\n\nT
 ## Workflow
 1. Identify which absorbed legacy intent applies (design vs. plan vs. interview etc.).
 2. Refer to the archived legacy SKILL.md under `archive/skills/<legacy>/` for original workflow.
-3. Output per absorbed legacy's protocol.
+3. For terse-output work, keep concise-by-default as the baseline, preserve exact technical strings unchanged, and auto-expand when clarity is safety-critical or ambiguity remains.
+4. Do not treat terse-output work as license to weaken review, verification, or warning contracts.
+5. Output per absorbed legacy's protocol.
 
 ## Status
 This skill is the canonical entry point. Legacy slugs remain dispatchable until P15-I archive completes.

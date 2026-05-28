@@ -6,6 +6,33 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are kept for historical reference. All future entries use the `## [vN.M.X] — YYYY-MM-DD — title` format.
 
+## [0.4.0] — 2026-05-25 — Applied-state baseline completion
+
+Raised the public template working tree to an applied-state baseline that
+satisfies the template verifier.
+
+### Added
+
+- `docs/harness-engineering/phase-0-baseline.md` through
+  `phase-12-baseline.md`
+- `docs/templates/_schema/design_doc.schema.json`
+- `docs/templates/_schema/fleet_harness_state.schema.json`
+- `docs/templates/_schema/family_config.schema.json`
+- `docs/templates/_schema/report_contract.schema.json`
+- `docs/templates/_schema/tdd.schema.json`
+- `docs/templates/_schema/mir_agent_self_health.schema.json`
+- concise ADR parity stubs for missing baseline decision numbers required by
+  the applied-state verifier
+
+### Changed
+
+- Sanitized schema descriptions to keep the public template English-only.
+- `verify_template_applied_state.py` now passes against the working tree.
+
+### Notes
+
+- This release is recorded in the workspace before a follow-up commit/tag.
+
 ## [0.3.0] — 2026-05-24 — Phase-4 state machine modules
 
 Synced upstream Mir R18+R20+R21 phase-4 state machine implementation.

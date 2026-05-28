@@ -35,6 +35,13 @@ Loaded on top of common-ai-rules.md when the task includes code.
 - A test that needs >5 lines of setup is a sign of bad seams. Refactor the production code first.
 - Tests that depend on test execution order are bugs.
 
+## Development output policy
+
+- Default to concise output for routine status, summaries, and explanations.
+- Keep exact technical terms, commands, paths, identifiers, code blocks, diffs, schemas, and exact error strings unchanged.
+- Expand for clarity when the task involves safety-critical steps, destructive actions, ambiguous procedures, confused users, architecture hazards, or disputed review reasoning.
+- Do not compress away review severity, evidence, citations, validation results, blocking conditions, or TDD state.
+
 ## TDD ledger (12 categories)
 
 Every `change` entry in `tasks/tdd.json` declares status for all twelve categories: `unit`, `integration`, `e2e`, `browser`, `edge`, `architecture`, `availability`, `load`, `soak`, `security`, `compatibility`, `transaction_locking`. Each is one of:
@@ -45,6 +52,8 @@ Every `change` entry in `tasks/tdd.json` declares status for all twelve categori
 - `planned` (only valid before commit; pre-commit hook rejects this)
 
 Empty categories or unbacked `not_applicable` entries are the failure mode. The matrix exists because most reviewers, given a free-form review, skip half of these dimensions.
+
+Terse output is subordinate to these safeguards and must not weaken warning quality, review depth, or verification clarity.
 
 ## When you are stuck
 

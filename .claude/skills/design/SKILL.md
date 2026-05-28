@@ -11,6 +11,8 @@ description: "Pre-coding design enforcement (brainstorming, planning, design ana
 - When a plan or implementation steps are needed.
 - When a design or architecture needs audit or analysis.
 - When a multi-role pipeline review is required.
+- When the request touches harness docs, phases, ADRs, skills, agents, template sync, fleet rollout/share, repo-wide policy, or generated surfaces.
+- By default for development-changing requests, unless the task is truly docs-only or a trivial non-development action.
 
 ## Absorbed legacy skills
 - brainstorming — Design enforcement. Hard gate before coding.
@@ -23,8 +25,15 @@ description: "Pre-coding design enforcement (brainstorming, planning, design ana
 
 ## Workflow
 1. Identify which absorbed legacy intent applies (design vs. plan vs. interview etc.).
-2. Refer to the archived legacy SKILL.md under `archive/skills/<legacy>/` for original workflow.
-3. Output per absorbed legacy's protocol.
+2. Keep the harness structure by default: first-pass design, parallel analysis, integration, independent review, and revision.
+3. For harness-structured design outputs, explicitly include:
+   - phase ownership / rollout binding
+   - source-of-truth edit surfaces
+   - generated-surface regeneration and verifier path
+   - verification gate
+   - evidence sink
+   - template/fleet claim boundary when public or cross-repo wording is involved
+4. If the request is a bounded development task, a short design pass is still required; shorten the output, not the structure.
 
 ## Status
-This skill is the canonical entry point. Legacy slugs remain dispatchable until P15-I archive completes.
+This skill is the canonical entry point. Legacy slugs remain dispatchable until P15-I archive completes. Harness-structured design is the default for development-changing requests.

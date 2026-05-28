@@ -21,7 +21,10 @@ Each section follows the pattern:
 
 ## Current Status
 
-No MAJOR releases yet. Current version: `0.1.0` (initial public release). Next MAJOR (`1.0.0`) will introduce the first breaking change and gain the first section in this file.
+No MAJOR releases yet. Current version: `0.4.0`. The `0.4.0` baseline raises
+the template to a verifier-clean applied-state reference without introducing a
+breaking migration step. Next MAJOR (`1.0.0`) will introduce the first
+breaking change and gain the first section in this file.
 
 ## See Also
 

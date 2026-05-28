@@ -21,11 +21,14 @@ Check for specificity signals: file path, function name, numbered steps, error m
 ```
 Request → specificity signals? → if none: deep-interview → classify
   ├─ Simple non-code (1~2 steps) → execute directly → self-check → done
-  ├─ Code task → Claude control + Codex execution/review lane
+  ├─ Development-changing request → design skill first
+  │    ├─ simple / bounded → short harness-structured design pass → executor-agent → codex-final-reviewer → verify
+  │    └─ complex / repo-wide / ambiguous → full design-process pipeline
   └─ Complex (3+ steps) → pipeline
-       brainstorming → writing-plans → executor-agent → quality-agent/verification
+       design skill → executor-agent → codex-final-reviewer → verify
 ```
 - When ambiguous → classify as complex (overestimate > underestimate).
+- Treat requests that touch code, tests, repository structure, phases, ADRs, skills, agents, template sync, fleet rollout/share, policy docs, or generated surfaces as `development-changing` even when the user provides exact files or steps.
 - Match trigger table (CLAUDE.md) → Read matching skills (max 3) → one-line report.
 - For code-development work, do not write production code directly unless an explicit role override is approved and recorded.
 
@@ -38,13 +41,14 @@ See CLAUDE.md "Orchestration Presets" table (single source of truth).
 - Record in change_log.md.
 
 ## Complex Tasks (pipeline)
-1. Load brainstorming skill → design + alternatives → user approval.
-2. Load writing-plans skill → concrete step plan → user approval.
-3. Define or update `tasks/tdd.json` for each implementation target before code changes begin.
-4. Dispatch implementation to the Codex execution lane via executor-agent handoff (NO session history).
-5. Require Codex TDD execution and Codex review by default.
-6. Use quality-agent only as fallback review, tie-break synthesis, or user-requested second opinion.
-7. Load verification skill → evidence-based verification.
+1. Load the `design` skill as the single entry point.
+2. For phase/ADR/harness/template/fleet/repo-wide process work, keep the harness structure: first-pass design, parallel analysis, integration, independent review, and revision.
+3. Produce a harness-structured design output before execution begins: `design_goals`, phase ownership, source-of-truth edit surface, generated-surface/regeneration path, verification gate, evidence sink, and template/fleet claim boundary where applicable.
+4. Define or update `tasks/tdd.json` for each implementation target before code changes begin.
+5. Dispatch implementation to the Codex execution lane via executor-agent handoff (NO session history).
+6. Require Codex TDD execution and Codex review by default.
+7. Use quality-agent only as fallback review, tie-break synthesis, or user-requested second opinion.
+8. Load verification skill → evidence-based verification.
 
 ## Codex Backend Dispatch Self-Check (ADR-18 §S2 Layer 1)
 
@@ -107,6 +111,7 @@ See CLAUDE.md "Role Policy (Template Profile)" and AGENTS.md `template:profile:r
 
 ## Reporting
 [Found] / [Fixed] / [Rationale] / [Next Action].
+- Terse mode still requires an explicit direct answer. When the user asks for explanation or status, return the minimum explanation or status needed instead of silence.
 
 ## Language
 - User-facing output (reports, task logs) → Korean.
