@@ -1,16 +1,23 @@
 name: daily_health
+# Manual-dispatch only. The scheduled cron was removed: a public template should
+# not run a daily job that notifies a maintainer-private Discord webhook, and the
+# health script / webhook secret are not part of the public template by default.
 on:
-  schedule:
-    - cron: '0 4 * * *'
   workflow_dispatch:
 jobs:
   health:
     runs-on: ubuntu-latest
+    env:
+      DISCORD_WEBHOOK: ${{ secrets.MIR_FLEET_DISCORD }}
     steps:
       - uses: actions/checkout@v4
-      - run: python tools/template_health.py --report /tmp/health.json
+      - name: Template health check (skipped if script absent)
+        run: |
+          if [ -f tools/template_health.py ]; then
+            python tools/template_health.py --report /tmp/health.json
+          else
+            echo "tools/template_health.py not present in this template — health check skipped"
+          fi
       - name: Notify Mir if degraded
-        if: failure()
-        env:
-          DISCORD_WEBHOOK: ${{ secrets.MIR_FLEET_DISCORD }}
+        if: failure() && env.DISCORD_WEBHOOK != ''
         run: python scripts/notify_discord.py /tmp/health.json --priority
