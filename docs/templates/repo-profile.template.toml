@@ -1,0 +1,53 @@
+# Public template repository overlay profile baseline
+
+[repo]
+slug = ""
+display_name = ""
+path = ""
+repository_type = ""
+rollout_class = ""
+overlay_archetype = ""
+status = ""
+
+[ownership]
+claude_role = "control_plane"
+main_agent_contract = "shared_parity"
+codex_role = "code_tdd_review_plane"
+codex_default_enabled = true
+allow_role_override = true
+override_requires_record = true
+
+[paths]
+code_paths = []
+non_code_paths = []
+protected_paths = []
+generated_paths = []
+
+[preserve]
+skills = []
+claude_sections = []
+agent_memory_paths = []
+commands = []
+extra_docs = []
+
+[boundaries]
+live_runtime = []
+secrets = []
+data_sensitivity = ""
+release_window = ""
+external_services = []
+
+[execution]
+delegated_execution_contract = "subagents_codex_first"
+codex_allowed_modes = []
+codex_blocked_modes = []
+review_scope = []
+tdd_scope = []
+non_code_profile = ""
+
+[gates]
+requires_phase_gate = false
+requires_secrets_vault = false
+requires_dynamic_egress = false
+requires_release_window = false
+requires_external_store = false

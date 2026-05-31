@@ -38,7 +38,7 @@
 - Sub-agent contracts must stay pinned by regression tests.
 
 ## Subagent Resource Management
-- Default live subagent cap = 2. Raise it only when Claude/Codex lanes are clearly independent and the current lane is healthy.
+- Default live subagent cap = 4. Raise it only when Claude/Codex lanes are clearly independent and the current lane is healthy.
 - Design-process work may raise the live cap to 4 without separate user approval when Step 2 parallel analysis and Step 4 independent verification both need coverage; record the temporary cap in `tasks/plan.md` or the active handoff note.
 - Prefer `fork_context: false` for bounded harness docs, config, or verifier work. Use `fork_context: true` only for broad role-policy review, runtime-contract review, or independent final verification.
 - Close completed, timed-out, or errored subagents before the next wave so experiments do not leave stale lanes open.
@@ -55,9 +55,10 @@
 - **Principle**: Core design (catalog / skill / agent / orchestration) must not depend on hooks for correctness. Hooks add (a) TDD enforcement on code surfaces, (b) Codex execution lane routing, and (c) verification automation. Hook enforcement must not leak into core design execution.
 
 ## Runtime Role Policy
-- Claude default: requirements clarification, architecture, design approval, orchestration, planning, dispatch, exception handling, final merge judgment.
-- Codex default: code writing, code modification, composite TDD execution, deterministic verification, and code review.
-- Runtime role swap is conditional, not symmetric by default.
+- Main agent parity: Claude main and Codex main share the same defaults for requirements clarification, architecture, design approval, orchestration, planning, dispatch, exception handling, verification synthesis, and final merge judgment.
+- Delegated sub-agents are the default execution plane for code writing, code modification, composite TDD execution, deterministic verification, code review, and bounded implementation research.
+- Codex-first backend default: use Codex for delegated backend-capable execution work unless an explicit override or capability constraint is recorded.
+- Runtime role override is conditional; main-agent parity remains the default contract.
 - Record every runtime override in `tasks/plan.md` or the active handoff note.
 - Project-level policy revision is a separate path.
 - Long-term policy changes must update `docs/decisions/role-policy.md`, this file, and its regressions together.
@@ -104,16 +105,18 @@
 | Repository type | template_transitional |
 | Rollout class | bootstrap_only |
 | Claude role | control_plane |
-| Codex role | execution_plane |
+| Codex role | code_tdd_review_plane |
 | Codex default enabled | true |
-| Codex allowed modes | implementation, review, verification |
-| Codex blocked modes | repo_rewrite |
-| Review scope | .claude/**, .ai-harness/**, docs/**, tasks/**, scripts/** |
+| Codex allowed modes | code, review, tdd |
+| Codex blocked modes | none |
+| Review scope | tools/, tests/ |
 | TDD scope | scripts/** |
 
-**Claude** is the control plane: conversation, architecture, planning, dispatch, exception handling, and final merge judgment.
+**Claude main** and **Codex main** share the same default main-agent contract: requirements clarification, architecture, design approval, orchestration, planning, dispatch, exception handling, verification synthesis, and final merge judgment.
 
-**Codex** is the default execution lane for code writing, TDD, deterministic verification, and code review.
+**Delegated sub-agents** are the default execution plane for the repository modes listed under `codex_allowed_modes`. That delegated work may include implementation, code modification, composite TDD execution, deterministic verification, and code review within the profile's review and TDD scope.
+
+**Codex** is the default backend for delegated backend-capable execution work. The repository-level `claude_role=control_plane` / `codex_role=code_tdd_review_plane` fields describe the default backend ownership model, not a different main-agent contract by runtime.
 
 A runtime role swap requires an explicit recorded override in the active plan or handoff note.
 

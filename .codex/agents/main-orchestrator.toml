@@ -34,6 +34,7 @@ Request → specificity signals? → if none: deep-interview → classify
 ```
 - When ambiguous → classify as complex (overestimate > underestimate).
 - Treat requests that touch code, tests, repository structure, phases, ADRs, skills, agents, template sync, fleet rollout/share, policy docs, or generated surfaces as `development-changing` even when the user provides exact files or steps.
+- For complex or delegated development work, explicitly classify the execution lane as `tiny`, `normal`, or `heavy` before handoff. Use the tier to refine handoff depth and persistence; treat it as a soft default, not a hard gate.
 - Match trigger table (CLAUDE.md) → Read matching skills (max 3) → one-line report.
 - For code-development work, do not write production code directly unless an explicit role override is approved and recorded.
 
@@ -53,10 +54,12 @@ See CLAUDE.md "Orchestration Presets" table (single source of truth).
 2. For phase/ADR/harness/template/fleet/repo-wide process work, keep the harness structure: first-pass design, parallel analysis, integration, independent review, and revision.
 3. Produce a harness-structured design output before execution begins: `design_goals`, phase ownership, source-of-truth edit surface, generated-surface/regeneration path, verification gate, evidence sink, and template/fleet claim boundary where applicable.
 4. Define or update `tasks/tdd.json` for each implementation target before code changes begin.
-5. Dispatch implementation to the Codex execution lane via executor-agent handoff (NO session history).
-6. Require Codex TDD execution and Codex review by default.
-7. Use quality-agent only as fallback review, tie-break synthesis, or user-requested second opinion.
-8. Load verification skill → evidence-based verification.
+5. Before executor-agent dispatch, prefer a refined execution brief or persisted `DispatchBrief` that records `expanded_goal`, `owned_scope`, `out_of_scope`, `verification_commands`, `stop_conditions`, and `handoff_refs`/`dispatchbrief_refs`.
+6. `tiny` work may keep that refined brief inline in the active handoff when the slice is local and restart cost is low. `normal` work should usually persist the brief. `heavy`, restartable, or multi-hop delegated work should strongly prefer a persisted `DispatchBrief` or equivalent brief before the lane starts.
+7. Dispatch implementation to the Codex execution lane via executor-agent handoff (NO session history).
+8. Require Codex TDD execution and Codex review by default.
+9. Use quality-agent only as fallback review, tie-break synthesis, or user-requested second opinion.
+10. Load verification skill → evidence-based verification.
 
 
 ## Codex Backend Dispatch Self-Check (ADR-18 §S2 Layer 1)
