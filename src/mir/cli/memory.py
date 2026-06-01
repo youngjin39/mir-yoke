@@ -202,7 +202,7 @@ def main(argv: list[str]) -> int:
             )
             if result.no_op:
                 reason = result.no_op_reason or "unspecified"
-                print(f"no_op[{reason}]: hash={result.file_hash[:12] or n/a}…")
+                print(f"no_op[{reason}]: hash={result.file_hash[:12] or 'n/a'}…")
             else:
                 print(
                     f"ingested: facts+={result.facts_inserted} "
