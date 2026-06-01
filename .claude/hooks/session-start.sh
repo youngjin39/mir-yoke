@@ -8,7 +8,7 @@ echo "=== SESSION CONTEXT ==="
 
 if [ -f "$PROJECT_DIR/tasks/plan.md" ]; then
   echo "--- plan.md ---"
-  head -50 "$PROJECT_DIR/tasks/plan.md"
+  head -50 "$PROJECT_DIR/tasks/plan.md" | head -c 4000
 fi
 
 echo ""
@@ -22,7 +22,7 @@ echo ""
 
 if [ -f "$PROJECT_DIR/docs/memory-map.md" ]; then
   echo "--- memory-map.md ---"
-  head -80 "$PROJECT_DIR/docs/memory-map.md"
+  sed -n '/mir:generated:start/,$p' "$PROJECT_DIR/docs/memory-map.md" | head -30
 fi
 
 echo ""
@@ -39,7 +39,7 @@ echo ""
 LATEST_RUNNER=$(find "$PROJECT_DIR/tasks/runner" -name "*.md" -type f 2>/dev/null | sort -r | head -1)
 if [ -n "$LATEST_RUNNER" ] && [ -f "$LATEST_RUNNER" ]; then
   echo "--- latest runner ---"
-  head -80 "$LATEST_RUNNER"
+  awk '/artifacts:/{exit} {print}' "$LATEST_RUNNER" | head -20
 fi
 
 echo "=== END SESSION CONTEXT ==="
