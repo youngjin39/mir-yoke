@@ -6,7 +6,7 @@ Drop additional agent personas here as `<agent-name>.md`. Each file should decla
 - when the dispatcher should call it
 - the output contract (what shape the result must take)
 
-The starter ships with no personas — the five built-in skills cover most workflows. Add personas only when a workflow needs a persistent role across multiple skills (e.g., a "security reviewer" that always runs after `code-review`).
+The starter ships with 12 agent personas and 11 built-in skills. Add personas only when a workflow needs a persistent role across multiple skills (e.g., a "security reviewer" that always runs after `code-review`).
 
 ## Example skeleton
 

@@ -179,6 +179,7 @@ python3 scripts/verify_repo_agent_management.py
 .
 ├── CLAUDE.md                   # Claude Code workspace rules (orchestration, role policy, gates)
 ├── AGENTS.md                   # Codex CLI mirror — same rules, Codex-flavored
+├── ARCHITECTURE.md             # component map — Conductor / Engine / Worker layers
 ├── setup.sh                    # one-command bootstrap
 ├── README.md                   # (this file)
 ├── LICENSE                     # MIT
