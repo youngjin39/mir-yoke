@@ -1,18 +1,71 @@
 {
   "$id": "mir/template/adr",
   "$comment": "Mir P0-E.2 ADR template schema. Required HARD sections: 3 Considered Alternatives, 5 Rejected Alternatives, 7 Negative Consequences, 8 Out-of-Scope.",
-  "frontmatter_required": ["title", "type", "created", "status"],
+  "frontmatter_required": [
+    "title",
+    "type",
+    "created",
+    "status"
+  ],
   "frontmatter_type_value": "template-adr",
   "required_sections": [
-    {"heading": "1. Context",                          "min_chars": 1, "hard": false},
-    {"heading": "2. Decision Drivers",                 "min_chars": 1, "hard": false},
-    {"heading": "3. Considered Alternatives — HARD",   "min_chars": 1, "hard": true},
-    {"heading": "4. Decision",                         "min_chars": 1, "hard": false},
-    {"heading": "5. Rejected Alternatives — HARD",     "min_chars": 1, "hard": true},
-    {"heading": "6. Positive Consequences",            "min_chars": 1, "hard": false},
-    {"heading": "7. Negative Consequences — HARD",     "min_chars": 1, "hard": true},
-    {"heading": "8. Out-of-Scope — HARD",              "min_chars": 1, "hard": true},
-    {"heading": "9. Verification",                     "min_chars": 1, "hard": false},
-    {"heading": "10. References",                      "min_chars": 0, "hard": false}
+    {
+      "heading": "1. Context",
+      "min_chars": 1,
+      "hard": false
+    },
+    {
+      "heading": "2. Decision Drivers",
+      "min_chars": 1,
+      "hard": false
+    },
+    {
+      "heading": "3. Considered Alternatives — HARD",
+      "min_chars": 1,
+      "hard": true
+    },
+    {
+      "heading": "4. Decision",
+      "min_chars": 1,
+      "hard": false
+    },
+    {
+      "heading": "5. Rejected Alternatives — HARD",
+      "min_chars": 1,
+      "hard": true
+    },
+    {
+      "heading": "6. Positive Consequences",
+      "min_chars": 1,
+      "hard": false
+    },
+    {
+      "heading": "7. Negative Consequences — HARD",
+      "min_chars": 1,
+      "hard": true
+    },
+    {
+      "heading": "8. Out-of-Scope — HARD",
+      "min_chars": 1,
+      "hard": true
+    },
+    {
+      "heading": "9. Verification",
+      "min_chars": 1,
+      "hard": false
+    },
+    {
+      "heading": "10. References",
+      "min_chars": 0,
+      "hard": false
+    }
+  ],
+  "frontmatter_status_enum": [
+    "proposed",
+    "accepted",
+    "deferred",
+    "superseded",
+    "rejected",
+    "draft"
   ]
 }

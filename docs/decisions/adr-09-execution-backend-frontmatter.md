@@ -1,3 +1,7 @@
+---
+status: accepted
+---
+
 # ADR-09 — execution_backend frontmatter (sanitized summary)
 
 Status: accepted (upstream)

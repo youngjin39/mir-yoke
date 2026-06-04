@@ -1,3 +1,7 @@
+---
+status: accepted
+---
+
 # ADR-15 — Catalog (multi-agent + skill) (sanitized summary)
 
 Status: accepted (upstream)

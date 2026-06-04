@@ -1,3 +1,7 @@
+---
+status: accepted
+---
+
 # ADR-47 — Orchestration DispatchBrief and Tiered Gates
 
 ## Decision

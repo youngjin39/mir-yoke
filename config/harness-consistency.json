@@ -12,11 +12,6 @@
         "error_findings": 3
       },
       {
-        "rule_id": "R5",
-        "rule_name": "adr_status_enum",
-        "error_findings": 1
-      },
-      {
         "rule_id": "R8",
         "rule_name": "hook_file_reachability",
         "error_findings": 1
@@ -43,7 +38,7 @@
       "id": "R5",
       "name": "adr_status_enum",
       "severity": "ERROR",
-      "enabled": false,
+      "enabled": true,
       "drift_class": 3
     },
     {

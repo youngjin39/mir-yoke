@@ -1,3 +1,7 @@
+---
+status: accepted
+---
+
 # ADR-49 — Opus 4.8 Alignment, Task-Weight Model-Tier Routing, and Runtime Orchestration Prompt Codification
 
 ## Decision

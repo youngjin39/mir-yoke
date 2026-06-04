@@ -1,3 +1,7 @@
+---
+status: accepted
+---
+
 # ADR-48 — Central Fleet Management and Direct Apply
 
 ## Decision
