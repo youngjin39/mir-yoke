@@ -118,7 +118,26 @@ def _introspect_archived_hook_names(repo_root: Path) -> list[str]:
     return sorted(hook_names)
 
 
-def _build_rule_inputs(repo_root: Path, source_inputs: dict) -> dict:
+def _localize_generated_marker_rerender(
+    rule_inputs: dict,
+    *,
+    source_slug: str,
+    target_slug: str,
+) -> None:
+    for surface in rule_inputs["generated_marker_rerender"]["surfaces"]:
+        render_args = surface["render_args"]
+        for index, arg in enumerate(render_args[:-1]):
+            if arg == "--family" and render_args[index + 1] == source_slug:
+                render_args[index + 1] = target_slug
+
+
+def _build_rule_inputs(
+    repo_root: Path,
+    source_inputs: dict,
+    *,
+    source_slug: str,
+    target_slug: str,
+) -> dict:
     rule_inputs = {
         name: copy.deepcopy(source_inputs[name]) for name in _DIRECT_STATIC_INPUTS
     }
@@ -154,13 +173,18 @@ def _build_rule_inputs(repo_root: Path, source_inputs: dict) -> dict:
     rule_inputs["hook_tier_declaration"][
         "expected_tiers"
     ] = _introspect_expected_tiers(repo_root)
+    _localize_generated_marker_rerender(
+        rule_inputs,
+        source_slug=source_slug,
+        target_slug=target_slug,
+    )
     return rule_inputs
 
 
-def _generated_note(repo_root: Path) -> dict:
+def _generated_note(repo_slug: str) -> dict:
     return {
         "by": "tools.harness_consistency generate",
-        "repo_root": repo_root.as_posix(),
+        "repo_slug": repo_slug,
         "note": (
             "Irreducible rule_inputs (retired_symbols, gate_liveness, code_schema "
             "pairs, artifact_map, manual_trigger_allowlist) are empty and must be "
@@ -225,15 +249,18 @@ def build_manifest(
 ) -> dict:
     source_manifest = _load_source_manifest()
     profile = _load_profile(profile_path)
+    repo = _build_repo_section(repo_root, profile)
     manifest = {
         "$schema": "./harness-consistency.schema.json",
         "version": 1,
-        "_generated": _generated_note(repo_root),
-        "repo": _build_repo_section(repo_root, profile),
+        "_generated": _generated_note(repo["slug"]),
+        "repo": repo,
         "rules": copy.deepcopy(source_manifest["rules"]),
         "rule_inputs": _build_rule_inputs(
             repo_root,
             source_manifest["rule_inputs"],
+            source_slug=str(source_manifest["repo"]["slug"]),
+            target_slug=str(repo["slug"]),
         ),
     }
     if green:
