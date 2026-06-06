@@ -341,8 +341,16 @@ def gc_scan(
 
 
 # Public API for sliding_window_n consumer (R25-T04)
-def recall_recent(conn: sqlite3.Connection, n: int) -> list[dict]:
+def recall_recent(
+    conn: sqlite3.Connection,
+    n: int,
+    *,
+    include_history: bool = False,
+) -> list[dict]:
     """Return the n most-recent facts from the facts table, ordered by id DESC.
+
+    By default only returns facts with status='active'.
+    Pass include_history=True to include expired and superseded facts.
 
     Sliding window consumer for sliding_window_n schema field
     (docs/templates/_schema/task_state.schema.json §sliding_window_n).
@@ -360,19 +368,25 @@ def recall_recent(conn: sqlite3.Connection, n: int) -> list[dict]:
     """
     if n < 1:
         raise ValueError(f"recall_recent: n must be >= 1, got {n}")
-    effective_n = min(n, 100)  # clamp to schema maximum (sliding_window_n max=100)
+    effective_n = min(n, 100)
+    where_clause = "" if include_history else "WHERE status = 'active'"
     cur = conn.execute(
-        "SELECT id, subject_entity_id, predicate, object_entity_id, object_literal, "
-        "polarity, valid_from, valid_to, status, confidence, created_from, scope, "
-        "project_path, vec_indexed_at "
-        "FROM facts ORDER BY id DESC LIMIT ?",
+        f"SELECT id, subject_entity_id, predicate, object_entity_id, object_literal, "
+        f"polarity, valid_from, valid_to, status, confidence, created_from, scope, "
+        f"project_path, vec_indexed_at "
+        f"FROM facts {where_clause} ORDER BY id DESC LIMIT ?",
         (effective_n,),
     )
     cols = [d[0] for d in cur.description]
     return [dict(zip(cols, row, strict=True)) for row in cur.fetchall()]
 
 
-def recall_for_task_state(conn: sqlite3.Connection, task_state: dict) -> list[dict]:
+def recall_for_task_state(
+    conn: sqlite3.Connection,
+    task_state: dict,
+    *,
+    include_history: bool = False,
+) -> list[dict]:
     """Wire-up point: read sliding_window_n from a task_state dict and call recall_recent.
 
     If sliding_window_n is absent or None, defaults to 20.
@@ -380,13 +394,13 @@ def recall_for_task_state(conn: sqlite3.Connection, task_state: dict) -> list[di
     """
     raw = task_state.get("sliding_window_n")
     if raw is None:
-        return recall_recent(conn, 20)
+        return recall_recent(conn, 20, include_history=include_history)
     try:
         n = int(raw)
     except (TypeError, ValueError):
         log.warning("recall_for_task_state: invalid sliding_window_n=%r, defaulting to 20", raw)
-        return recall_recent(conn, 20)
+        return recall_recent(conn, 20, include_history=include_history)
     if n < 1:
         log.warning("recall_for_task_state: sliding_window_n=%d < 1, defaulting to 20", n)
-        return recall_recent(conn, 20)
-    return recall_recent(conn, n)
+        return recall_recent(conn, 20, include_history=include_history)
+    return recall_recent(conn, n, include_history=include_history)

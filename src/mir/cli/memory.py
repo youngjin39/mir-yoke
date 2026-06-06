@@ -22,7 +22,6 @@ from mir.core.engine.memory import distill, store
 
 from ._common import default_db_path
 
-
 # ---------------------------------------------------------------------------
 # Marker constants
 # ---------------------------------------------------------------------------
@@ -108,6 +107,12 @@ def _parse(argv: list[str]) -> argparse.Namespace:
     q = sub.add_parser("query", help="FTS5 keyword search")
     q.add_argument("keyword")
     q.add_argument("--limit", type=int, default=10)
+    q.add_argument(
+        "--history",
+        action="store_true",
+        default=False,
+        help="include expired and superseded facts",
+    )
     q.add_argument("--db", type=Path, default=None)
 
     ig = sub.add_parser(
@@ -149,6 +154,16 @@ def _parse(argv: list[str]) -> argparse.Namespace:
     )
     rn.add_argument("--db", type=Path, default=None)
 
+    rc = sub.add_parser(
+        "reconcile-missing",
+        help="B2-FOLLOWUP: expire active facts whose source doc no longer exists",
+    )
+    rc.add_argument("--project-root", type=Path, default=None, dest="project_root",
+                    help="project root for relative path resolution (default: cwd)")
+    rc.add_argument("--dry-run", action="store_true", default=False, dest="dry_run",
+                    help="report count without writing any rows")
+    rc.add_argument("--db", type=Path, default=None)
+
     return p.parse_args(argv)
 
 
@@ -181,12 +196,30 @@ def main(argv: list[str]) -> int:
             return 0
 
         if ns.action == "query":
-            rows = distill.fts_search(conn.conn, ns.keyword, limit=ns.limit)
+            rows = distill.fts_search(
+                conn.conn,
+                ns.keyword,
+                limit=ns.limit,
+                include_history=ns.history,
+            )
             if not rows:
                 print(f"no matches for {ns.keyword!r}")
                 return 0
-            for fid, predicate, body in rows:
-                print(f"  #{fid}  {predicate}  {body}")
+            if ns.history:
+                placeholders = ",".join("?" * len(rows))
+                status_map = {
+                    int(fid): status
+                    for fid, status in conn.conn.execute(
+                        f"SELECT id, status FROM facts WHERE id IN ({placeholders})",
+                        [fid for fid, _, _ in rows],
+                    ).fetchall()
+                }
+                for fid, predicate, body in rows:
+                    status = status_map.get(fid) or "unknown"
+                    print(f"  #{fid}  [{status}]  {predicate}  {body}")
+            else:
+                for fid, predicate, body in rows:
+                    print(f"  #{fid}  {predicate}  {body}")
             return 0
 
         if ns.action == "ingest-md":
@@ -214,6 +247,18 @@ def main(argv: list[str]) -> int:
 
         if ns.action == "render":
             return _do_render(ns, conn.conn)
+        if ns.action == "reconcile-missing":
+            from mir.core.engine.memory.distill import reconcile_missing_source
+            count = reconcile_missing_source(
+                conn.conn,
+                project_root=ns.project_root,
+                dry_run=ns.dry_run,
+            )
+            if ns.dry_run:
+                print(f"dry_run: would_expire={count}")
+            else:
+                print(f"expired={count}")
+            return 0
 
     finally:
         conn.conn.close()

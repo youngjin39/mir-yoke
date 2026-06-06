@@ -1,0 +1,37 @@
+# harness_a.toml.example — Engine + Worker configuration scaffold.
+# Copy to harness_a.toml and fill in your values before running `mir migrate up`.
+# ADR-53 D9: template sync wave.
+
+[memory]
+enabled = true
+plugin_mode = "disabled"
+recall_policy = "progressive"
+
+[memory.embedding]
+# Configure your embedding backend.
+# backend = "omlx_http"
+# base_url = "http://127.0.0.1:8001/v1"
+# model = "bge-m3-mlx-fp16"
+# dim = 1024
+# timeout_sec = 10
+
+# External archives are indexed doc trees that `mir context sync` will scan and
+# make available to `mir context pull`. Add one block per archive.
+
+# [[memory.external_archives]]
+# slug = "your-harness-docs"
+# root = "docs"
+# mode = "indexed"
+# glob_include = ["**/*.md"]
+
+# [[memory.external_archives]]
+# slug = "your-harness-tasks"
+# root = "tasks"
+# mode = "indexed"
+# glob_include = ["**/*.md"]
+
+# [[memory.external_archives]]
+# slug = "your-harness-rules"
+# root = ".ai-harness"
+# mode = "indexed"
+# glob_include = ["**/*.md"]

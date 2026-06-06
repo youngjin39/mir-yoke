@@ -21,13 +21,14 @@ from __future__ import annotations
 
 import fnmatch
 import hashlib
+import json
 import re
 from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
-from mir.core.engine.memory.distill import sanitize_fts_query
+from mir.core.engine.memory.distill import _parse_frontmatter, sanitize_fts_query
 from mir.core.engine.memory.store import Connection
 from mir.core.engine.memory.vector_index import (
     _pack_vector,
@@ -37,6 +38,7 @@ from mir.core.engine.memory.vector_index import (
 DEFAULT_CHUNK_SIZE = 800
 DEFAULT_CHUNK_OVERLAP = 100
 DEFAULT_EMBED_DIM = 1024
+CURRENT_METADATA_VERSION = '3'  # v3: archive-path status derivation backfill (ADR-53 D5)
 
 
 # --- Errors ------------------------------------------------------------
@@ -80,6 +82,7 @@ class ExternalHit:
     byte_start: int
     byte_end: int
     score: float
+    status: str = 'active'
 
 
 # --- vec0 runtime helper (Third Review TB1) ----------------------------
@@ -186,6 +189,40 @@ def _matches_any(rel: str, patterns: Iterable[str]) -> bool:
     return False
 
 
+
+def _derive_doc_category(rel: str) -> str | None:
+    # archive check precedes decisions: archive paths may contain /decisions/
+    if '/_archive/' in rel or rel.startswith('docs/_archive/') or rel.startswith('_archive/'):
+        return 'archive'
+    if rel.startswith('docs/decisions/'):
+        return 'decision'
+    if rel.startswith('.ai-harness/'):
+        return 'harness-rule'
+    if rel.startswith('tasks/'):
+        return 'task'
+    if rel.startswith('docs/'):
+        return 'doc'
+    return None
+
+
+def _derive_layer(rel: str) -> str | None:
+    if (
+        '/_archive/' in rel
+        or rel.startswith('docs/_archive/')
+        or rel.startswith('_archive/')
+        or rel.startswith('tasks/handoffs/')
+        or rel.startswith('tasks/sessions/')
+    ):
+        return 'episodic'
+    if rel.startswith('docs/'):
+        return 'semantic'
+    if rel.startswith('.ai-harness/'):
+        return 'procedural'
+    if rel.startswith('tasks/'):
+        return 'working'
+    return None
+
+
 def _glob_to_regex(pattern: str) -> re.Pattern:
     """Translate a ``**``-aware glob to a regex (fnmatch lacks ``**``)."""
     # Normalise and split segments.
@@ -263,6 +300,61 @@ class _ArchiveRow:
     chunk_overlap: int
 
 
+def _int_ver(v: str) -> int:
+    try:
+        return int(v)
+    except (ValueError, TypeError):
+        return -1
+
+
+_FIRST_HEADING_RE = re.compile(r'^\#\s+(.+)', re.MULTILINE)
+
+
+def _extract_title_and_frontmatter(text: str) -> tuple[str | None, str | None]:
+    try:
+        fm = _parse_frontmatter(text)
+    except Exception:
+        return None, None
+    frontmatter_json: str | None = None
+    if fm:
+        try:
+            frontmatter_json = json.dumps(fm, ensure_ascii=False)
+        except Exception:
+            frontmatter_json = None
+    title: str | None = None
+    fm_title = fm.get('title') if fm else None
+    if isinstance(fm_title, str) and fm_title.strip():
+        title = fm_title.strip()
+    else:
+        m = _FIRST_HEADING_RE.search(text)
+        if m:
+            title = m.group(1).strip() or None
+    return title, frontmatter_json
+
+
+def _doc_created_ordinal(frontmatter_json_str: str | None) -> int:
+    """Parse frontmatter_json 'created' field to ordinal for recency sort.
+
+    Advisory fold (a): parse str(created)[:10] so datetime strings like
+    '2026-06-06T12:00:00' rank by date rather than falling back to ordinal 0.
+
+    Returns 0 for missing/unparseable values (ADR-53 D6 — ranking-only nondeterminism boundary).
+    """
+    if not frontmatter_json_str:
+        return 0
+    try:
+        fm = json.loads(frontmatter_json_str)
+        created = fm.get('created')
+        if not created:
+            return 0
+        from datetime import date
+        # Take first 10 chars to handle both date strings and datetime strings
+        date_str = str(created)[:10]
+        return date.fromisoformat(date_str).toordinal()
+    except Exception:
+        return 0
+
+
 class ExternalStore:
     """Indexer for external file archives.
 
@@ -275,6 +367,8 @@ class ExternalStore:
 
     def __init__(self, conn: Connection):
         self._conn = conn
+        if conn.vec_available:
+            ensure_external_vec_table(conn.conn)
 
     # ---- registration ----
 
@@ -363,6 +457,16 @@ class ExternalStore:
         ).fetchall()
         db_set = {r[0] for r in db_rows}
 
+        forced_rescan = False
+        _stored_ver = self._conn.conn.execute(
+            "SELECT value FROM external_store_meta WHERE key='schema_metadata_version'"
+        ).fetchone()
+        if (
+            _stored_ver is not None
+            and _int_ver(_stored_ver[0]) < _int_ver(CURRENT_METADATA_VERSION)
+        ):
+            forced_rescan = True
+
         to_delete = db_set - current_fs
         to_insert = current_fs - db_set
         to_check  = current_fs & db_set
@@ -392,6 +496,7 @@ class ExternalStore:
                 changed = self._reindex_if_changed(
                     archive, rel,
                     embed_fn=embed_fn, embed_batch_size=embed_batch_size,
+                    forced=forced_rescan,
                 )
                 if changed:
                     reindexed += 1
@@ -399,6 +504,19 @@ class ExternalStore:
                     unchanged += 1
             except Exception as e:
                 failed.append((rel, f"reindex: {e}"))
+
+        if forced_rescan and not failed:
+            self._conn.conn.execute(
+                "INSERT OR REPLACE INTO external_store_meta(key, value) "
+                "VALUES ('schema_metadata_version', ?)",
+                (CURRENT_METADATA_VERSION,),
+            )
+        elif _stored_ver is None:
+            self._conn.conn.execute(
+                "INSERT OR IGNORE INTO external_store_meta(key, value) "
+                "VALUES ('schema_metadata_version', ?)",
+                (CURRENT_METADATA_VERSION,),
+            )
 
         self._conn.conn.execute(
             "UPDATE external_archives SET last_scanned_at = ? WHERE id = ?",
@@ -468,12 +586,21 @@ class ExternalStore:
 
         conn = self._conn.conn
         with conn:
+            source_slug = 'your-harness'
+            doc_category = _derive_doc_category(rel)
+            layer = _derive_layer(rel)
+            title, frontmatter_json = _extract_title_and_frontmatter(text)
+            # ADR-53 D4: path-derived status — archive paths are 'expired' so default
+            # retrieval excludes them; include_history=True still reaches them.
+            doc_status = 'expired' if doc_category == 'archive' else 'active'
             cur = conn.execute(
                 "INSERT INTO external_documents "
-                "(archive_id, relative_path, file_hash, byte_len, vec_indexed_at) "
-                "VALUES (?, ?, ?, ?, ?)",
+                "(archive_id, relative_path, file_hash, byte_len, vec_indexed_at, "
+                "source_slug, doc_category, layer, status, title, frontmatter_json) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (archive.id, rel, file_hash, byte_len,
-                 datetime.now(UTC).isoformat() if embed_fn and self._conn.vec_available else None),
+                 datetime.now(UTC).isoformat() if embed_fn and self._conn.vec_available else None,
+                 source_slug, doc_category, layer, doc_status, title, frontmatter_json),
             )
             doc_id = cur.lastrowid
             assert doc_id is not None, "INSERT must return a rowid"
@@ -490,6 +617,7 @@ class ExternalStore:
         *,
         embed_fn,
         embed_batch_size: int | None = None,
+        forced: bool = False,
     ) -> bool:
         text, file_hash, byte_len = self._read_file(archive, rel)
         conn = self._conn.conn
@@ -503,7 +631,7 @@ class ExternalStore:
             self._index_file(archive, rel, embed_fn=embed_fn)
             return True
         doc_id, old_hash = row
-        if old_hash == file_hash:
+        if old_hash == file_hash and not forced:
             return False
 
         chunks = _chunk_text(
@@ -520,13 +648,21 @@ class ExternalStore:
             for cid in old_ids:
                 self._delete_chunk_rowid(cid)
             conn.execute("DELETE FROM external_chunks WHERE document_id = ?", (doc_id,))
+            source_slug = 'your-harness'
+            doc_category = _derive_doc_category(rel)
+            layer = _derive_layer(rel)
+            title, frontmatter_json = _extract_title_and_frontmatter(text)
+            # ADR-53 D4: path-derived status — archive paths are 'expired'.
+            doc_status = 'expired' if doc_category == 'archive' else 'active'
             conn.execute(
                 "UPDATE external_documents "
-                "SET file_hash = ?, byte_len = ?, vec_indexed_at = ? "
+                "SET file_hash = ?, byte_len = ?, vec_indexed_at = ?, "
+                "source_slug = ?, doc_category = ?, layer = ?, status = ?, "
+                "title = ?, frontmatter_json = ? "
                 "WHERE id = ?",
                 (file_hash, byte_len,
                  datetime.now(UTC).isoformat() if embed_fn and self._conn.vec_available else None,
-                 doc_id),
+                 source_slug, doc_category, layer, doc_status, title, frontmatter_json, doc_id),
             )
             self._insert_chunks(
                 doc_id, chunks,
@@ -593,6 +729,7 @@ class ExternalStore:
         k: int = 10,
         archive_slugs: tuple[str, ...] | None = None,
         embed_fn=None,
+        include_history: bool = False,
     ) -> list[ExternalHit]:
         """Hybrid search across registered archives.
 
@@ -623,6 +760,22 @@ class ExternalStore:
             if not allowed_chunk_ids:
                 return []
 
+        # ADR-53 D4: default current-only filter (status='active'). include_history=True skips.
+        if not include_history:
+            status_chunk_ids: set[int] = {
+                row[0] for row in self._conn.conn.execute(
+                    'SELECT c.id FROM external_chunks c '
+                    'JOIN external_documents d ON d.id = c.document_id '
+                    "WHERE d.status = 'active'",
+                ).fetchall()
+            }
+            if allowed_chunk_ids is not None:
+                allowed_chunk_ids = allowed_chunk_ids & status_chunk_ids
+            else:
+                allowed_chunk_ids = status_chunk_ids
+            if not allowed_chunk_ids:
+                return []
+
         vec_hits: list[tuple[int, float]] = []
         if embed_fn is not None and self._conn.vec_available:
             try:
@@ -644,7 +797,7 @@ class ExternalStore:
         safe_query = sanitize_fts_query(query)
         fts_rows = list(self._conn.conn.execute(
             "SELECT rowid, rank FROM external_chunks_fts "
-            "WHERE external_chunks_fts MATCH ? ORDER BY rank LIMIT ?",
+            "WHERE external_chunks_fts MATCH ? ORDER BY rank, rowid ASC LIMIT ?",
             (safe_query, k * 3),
         ).fetchall())
         if allowed_chunk_ids is not None:
@@ -653,19 +806,58 @@ class ExternalStore:
         # RRF fusion (k_rrf = 60 as in the literature standard).
         k_rrf = 60.0
         scores: dict[int, float] = {}
-        for rank, (rowid, _) in enumerate(vec_hits):
-            scores[rowid] = scores.get(rowid, 0.0) + 1.0 / (k_rrf + rank)
-        for rank, (rowid, _) in enumerate(fts_rows):
-            scores[rowid] = scores.get(rowid, 0.0) + 1.0 / (k_rrf + rank)
+        # Tied-rank RRF for vec: docs with identical distance receive the same RRF
+        # contribution, preventing arbitrary row-order-dependent score differences.
+        _vec_pos = 0
+        _prev_vec_dist: float | None = None
+        _vec_tie_start: int = 0
+        for rowid, vec_dist in sorted(vec_hits, key=lambda h: (h[1], h[0])):
+            if vec_dist != _prev_vec_dist:
+                _vec_tie_start = _vec_pos
+                _prev_vec_dist = vec_dist
+            scores[rowid] = scores.get(rowid, 0.0) + 1.0 / (k_rrf + _vec_tie_start)
+            _vec_pos += 1
+        # Tied-rank RRF for FTS: docs with identical BM25 rank receive the same
+        # RRF contribution (position of the first doc in that tie group), so that
+        # equal-relevance docs are not artificially separated by rowid order.
+        _fts_pos = 0
+        _prev_fts_rank: float | None = None
+        _tie_start_pos: int = 0
+        for rowid, fts_rank in fts_rows:
+            if fts_rank != _prev_fts_rank:
+                _tie_start_pos = _fts_pos
+                _prev_fts_rank = fts_rank
+            scores[rowid] = scores.get(rowid, 0.0) + 1.0 / (k_rrf + _tie_start_pos)
+            _fts_pos += 1
 
         if not scores:
             return []
 
-        rowids = sorted(scores, key=scores.get, reverse=True)[:k]   # type: ignore[arg-type]
+        # ADR-53 D6: recency tie-break (-rrf_score, -created_ts).
+        # Final key: (-rrf_score, -created_ordinal, chunk_id ASC) — chunk_id is
+        # the ultimate stable tiebreaker making FTS-only results fully deterministic.
+        candidate_ids = sorted(scores.keys())
+        if candidate_ids:
+            ph = ','.join('?' * len(candidate_ids))
+            chunk_doc_rows = self._conn.conn.execute(
+                f'SELECT c.id, c.document_id, d.frontmatter_json '
+                f'FROM external_chunks c JOIN external_documents d ON d.id = c.document_id '
+                f'WHERE c.id IN ({ph})',
+                candidate_ids,
+            ).fetchall()
+            chunk_to_created: dict[int, int] = {
+                r[0]: _doc_created_ordinal(r[2]) for r in chunk_doc_rows
+            }
+            rowids = sorted(
+                candidate_ids,
+                key=lambda rid: (-scores[rid], -chunk_to_created.get(rid, 0), rid),
+            )[:k]
+        else:
+            rowids = []
         placeholders = ",".join("?" * len(rowids))
         rows = self._conn.conn.execute(
             f"""
-            SELECT c.id, a.slug, d.relative_path, c.byte_start, c.byte_end
+            SELECT c.id, a.slug, d.relative_path, c.byte_start, c.byte_end, d.status
             FROM external_chunks c
             JOIN external_documents d ON d.id = c.document_id
             JOIN external_archives  a ON a.id = d.archive_id
@@ -680,16 +872,18 @@ class ExternalStore:
             row = row_by_id.get(rid)
             if row is None:
                 continue
-            _, slug, relpath, bs, be = row
+            _, slug, relpath, bs, be, doc_status = row
             hits.append(ExternalHit(
                 archive_slug=slug, relative_path=relpath,
                 byte_start=bs, byte_end=be, score=scores[rid],
+                status=doc_status if doc_status else 'active',
             ))
         return hits
 
 
 __all__ = (
     "Chunk",
+    "CURRENT_METADATA_VERSION",
     "DEFAULT_CHUNK_OVERLAP",
     "DEFAULT_CHUNK_SIZE",
     "DEFAULT_EMBED_DIM",

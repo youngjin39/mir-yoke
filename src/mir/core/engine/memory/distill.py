@@ -73,14 +73,18 @@ def _now_iso() -> str:
     return datetime.now(tz=UTC).isoformat(timespec="microseconds")
 
 
-def _upsert_entity(conn, slug: str) -> int:
+def _upsert_entity(conn, slug: str, *, entity_type: str | None = None) -> int:
     cur = conn.execute("SELECT id FROM entities WHERE slug = ?", (slug,))
     row = cur.fetchone()
     if row:
+        if entity_type is not None:
+            conn.execute(
+                "UPDATE entities SET type = ? WHERE slug = ? AND type IS NULL", (entity_type, slug)
+            )
         return row[0]
     conn.execute(
         "INSERT INTO entities(type, canonical_name, slug) VALUES (?, ?, ?)",
-        (None, slug, slug),
+        (entity_type, slug, slug),
     )
     return conn.execute(
         "SELECT id FROM entities WHERE slug = ?", (slug,)
@@ -151,15 +155,27 @@ def sanitize_fts_query(query: str) -> str:
 _sanitize_fts_query = sanitize_fts_query
 
 
-def fts_search(conn, query: str, *, limit: int = 10) -> list[tuple[int, str, str]]:
-    """FTS5 keyword search. Returns (facts.id, predicate, object_literal)."""
+def fts_search(
+    conn,
+    query: str,
+    *,
+    limit: int = 10,
+    include_history: bool = False,
+) -> list[tuple[int, str, str]]:
+    """FTS5 keyword search. Returns (facts.id, predicate, object_literal).
+
+    By default only returns facts with status='active'.
+    Pass include_history=True to include expired and superseded facts.
+    """
     safe_query = sanitize_fts_query(query)
+    status_clause = "" if include_history else "AND f.status = 'active'"
     cur = conn.execute(
-        """
+        f"""
         SELECT f.id, f.predicate, f.object_literal
           FROM facts_fts s
           JOIN facts f ON f.id = s.rowid
          WHERE facts_fts MATCH ?
+           {status_clause}
          ORDER BY bm25(facts_fts)
          LIMIT ?
         """,
@@ -497,7 +513,8 @@ def ingest_markdown_file(
         content_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
 
         slug = _adr_slug(path)
-        subject_id = _upsert_entity(conn, slug)
+        entity_type = fm.get('type') if isinstance(fm.get('type'), str) else None
+        subject_id = _upsert_entity(conn, slug, entity_type=entity_type)
         facts_inserted = 0
         facts_superseded = 0
         for triple in _frontmatter_to_triples(slug, fm):
@@ -553,6 +570,24 @@ def ingest_markdown_file(
                     facts_inserted -= 1
 
         fact_links_added = _link_cross_refs(conn, raw, subject_id)
+
+        # Link facts to external_documents by relative path match (ADR-53 Phase 2)
+        ext_doc_row = conn.execute(
+            "SELECT id FROM external_documents WHERE relative_path = ?",
+            (rel,),
+        ).fetchone()
+        if ext_doc_row is not None:
+            ext_doc_id = ext_doc_row[0]
+            fact_rows = conn.execute(
+                "SELECT id FROM facts WHERE created_from = ?",
+                (content_id,),
+            ).fetchall()
+            for (fact_id,) in fact_rows:
+                conn.execute(
+                    "INSERT OR IGNORE INTO fact_documents(fact_id, document_id) VALUES (?, ?)",
+                    (fact_id, ext_doc_id),
+                )
+
         conn.commit()
     except Exception:
         try:
@@ -646,6 +681,81 @@ def recall_ingested_index(conn) -> list[dict]:
 
     result.sort(key=lambda r: r["slug"])
     return result
+
+
+# ----------------------------------------------------------------------------
+# B2-FOLLOWUP — reconcile_missing_source
+# Expire active facts whose source content_item path no longer exists on disk.
+# ----------------------------------------------------------------------------
+
+
+def reconcile_missing_source(
+    conn,
+    *,
+    project_root: Path | None = None,
+    dry_run: bool = False,
+) -> int:
+    """Expire active facts sourced from content_items whose file path is missing.
+
+    Rules:
+    - Only processes content_items with source='self_ingest_md' (ingest-md facts).
+    - Only touches facts with status='active'.
+    - Path resolution: metadata_json['path'] is tested as an absolute path first;
+      if relative, it is resolved against project_root (default: Path.cwd()).
+    - Facts whose source path STILL EXISTS are not touched.
+    - Facts with no created_from (manual inserts) are not touched.
+    - Operation is idempotent: already-expired facts are skipped.
+    - dry_run=True reports the count without writing any rows.
+
+    Returns the number of facts newly set to 'expired'.
+    """
+    root = project_root or Path.cwd()
+    today = _now_iso()
+
+    # Collect content_item ids whose path is missing
+    rows = conn.execute(
+        "SELECT id, metadata_json FROM content_items WHERE source = 'self_ingest_md'"
+    ).fetchall()
+
+    missing_content_ids: list[int] = []
+    for ci_id, meta_json in rows:
+        try:
+            meta = json.loads(meta_json or "{}")
+        except Exception:
+            continue
+        path_str = meta.get("path", "")
+        if not path_str:
+            continue
+        p = Path(path_str)
+        if not p.is_absolute():
+            p = root / p
+        if not p.exists():
+            missing_content_ids.append(ci_id)
+
+    if not missing_content_ids:
+        return 0
+
+    # Find active facts sourced from those content_items
+    placeholders = ",".join("?" * len(missing_content_ids))
+    fact_rows = conn.execute(
+        f"SELECT id FROM facts WHERE status = 'active' AND created_from IN ({placeholders})",
+        missing_content_ids,
+    ).fetchall()
+
+    if not fact_rows:
+        return 0
+
+    if dry_run:
+        return len(fact_rows)
+
+    fact_ids = [r[0] for r in fact_rows]
+    for fid in fact_ids:
+        conn.execute(
+            "UPDATE facts SET status = 'expired', valid_to = ? WHERE id = ?",
+            (today, fid),
+        )
+    conn.commit()
+    return len(fact_ids)
 
 
 def recall_lessons(conn) -> list[dict]:
