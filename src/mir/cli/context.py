@@ -358,11 +358,33 @@ def main(argv: list[str]) -> int:
         from mir.core.config.loader import load_config
         cfg = load_config(db_path.parent.parent if db_path.name == "memory.db" else Path.cwd())
     except Exception:
-        # Provide a minimal stub config so the rest of main can proceed
+        # Fallback: minimal TOML parse for [[memory.external_archives]] without pydantic.
+        import tomllib as _tomllib
+
+        class _ArchiveStub:
+            def __init__(self, d: dict) -> None:
+                self.slug = d["slug"]
+                self.root = d["root"]
+                self.mode = d.get("mode", "indexed")
+                self.glob_include = d.get("glob_include", ["**/*.md"])
+
         class _StubMemory:
             embedding = None
+            external_archives: list = []
+
         class _StubCfg:
             memory = _StubMemory()
+
+        _project_root = db_path.parent.parent if db_path.name == "memory.db" else Path.cwd()
+        _toml_path = _project_root / "harness_a.toml"
+        if _toml_path.is_file():
+            try:
+                with _toml_path.open("rb") as _f:
+                    _raw = _tomllib.load(_f)
+                _archives = _raw.get("memory", {}).get("external_archives", [])
+                _StubMemory.external_archives = [_ArchiveStub(a) for a in _archives]
+            except Exception:
+                pass
         cfg = _StubCfg()
 
     conn = store.connect(db_path)

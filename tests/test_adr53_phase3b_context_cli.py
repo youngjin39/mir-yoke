@@ -483,3 +483,92 @@ def test_pull_json_history_chunk_has_status_field(tmp_path, capsys):
     assert len(expired_chunks) >= 1, (
         f"Expected at least one chunk with status='expired', got: {chunks}"
     )
+
+
+# ---------------------------------------------------------------------------
+# ADR-53 stage-3 regression: tomllib fallback in stub-config branch
+# ---------------------------------------------------------------------------
+
+
+def test_sync_reads_archives_from_toml_without_pydantic(tmp_path):
+    """Regression: sync registers archives from harness_a.toml when pydantic config
+    loader is unavailable (the live path on a fresh template clone).
+
+    On the CURRENT template code (stub-config branch has no TOML parsing),
+    sync skips archive registration and exits with 0 archives. This test MUST
+    FAIL before the fix and PASS after.
+    """
+    import builtins
+    import sys
+
+    # Create a project structure with memory.db + harness_a.toml
+    mir_dir = tmp_path / ".mir"
+    mir_dir.mkdir()
+    db_path = mir_dir / "memory.db"
+
+    # Create a docs dir with at least one markdown file
+    docs_dir = tmp_path / "docs"
+    docs_dir.mkdir()
+    (docs_dir / "guide.md").write_text(
+        "tomllib fallback regression test document content", encoding="utf-8"
+    )
+
+    # Write harness_a.toml with one [[memory.external_archives]] block
+    toml_content = f"""\
+[[memory.external_archives]]
+slug = "template-docs"
+root = "{docs_dir}"
+mode = "indexed"
+glob_include = ["**/*.md"]
+"""
+    (tmp_path / "harness_a.toml").write_text(toml_content, encoding="utf-8")
+
+    # Init the DB with migrations
+    c = store.connect(db_path)
+    try:
+        store.apply_migrations(c.conn)
+    finally:
+        c.conn.close()
+
+    # Evict any cached loader module so our import patch fires inside main()
+    for key in list(sys.modules.keys()):
+        if "mir.core.config" in key:
+            sys.modules.pop(key, None)
+
+    import mir.cli.context as ctx_mod
+
+    # Intercept the inline `from mir.core.config.loader import load_config` call
+    # that lives inside main() — simulates pydantic/loader being unavailable.
+    _original_import = builtins.__import__
+
+    def _block_loader(name, *args, **kwargs):
+        if name == "mir.core.config.loader":
+            raise ImportError("pydantic not available — simulated fresh template clone")
+        return _original_import(name, *args, **kwargs)
+
+    builtins.__import__ = _block_loader
+    try:
+        ret = ctx_mod.main(["sync", "--db", str(db_path)])
+    finally:
+        builtins.__import__ = _original_import
+
+    # After sync, the archive must be registered and at least 1 document indexed
+    c = store.connect(db_path)
+    try:
+        archive_rows = c.conn.execute(
+            "SELECT id, slug FROM external_archives"
+        ).fetchall()
+        doc_count = c.conn.execute(
+            "SELECT COUNT(*) FROM external_documents"
+        ).fetchone()[0]
+    finally:
+        c.conn.close()
+
+    assert len(archive_rows) >= 1, (
+        f"Expected >= 1 archive registered from harness_a.toml (tomllib fallback), "
+        f"got {len(archive_rows)}. This gap was introduced by the stub-config branch "
+        f"not parsing TOML archives (ADR-53 stage-3 fix required)."
+    )
+    assert doc_count >= 1, (
+        f"Expected >= 1 document ingested after sync, got {doc_count}."
+    )
