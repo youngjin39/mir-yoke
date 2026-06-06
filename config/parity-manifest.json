@@ -1,0 +1,151 @@
+{
+  "template_version": "0.4.0",
+  "template_commit": "14e0f46113d30035605a629b652c8e369f85f450",
+  "generated_at": "2026-06-06T15:56:09.198365+00:00",
+  "normalization": {
+    "verbatim": "sha256 of LF-normalized raw bytes",
+    "parameterized": "sha256 after slug normalization (your-harness / repo.slug \u2192 {{SLUG}})",
+    "marker-block": "sha256 of content between mir:adr53:context-core markers, rstripped+edge-stripped",
+    "family-owned": "excluded from hashing",
+    "slug_placeholder": "{{SLUG}}",
+    "template_slug": "your-harness"
+  },
+  "files": [
+    {
+      "path": "src/mir/cli/__init__.py",
+      "ownership_class": "verbatim",
+      "hash": "0df30e4ecbdbe40f818e717f540801956ebab247d05c506fa0085cadc4b5b9ff",
+      "previous_hashes": [
+        "e841cf28ff4c732911e7ce7f15896d6048c73d81627dc557c38d75275eae3919"
+      ]
+    },
+    {
+      "path": "src/mir/cli/memory.py",
+      "ownership_class": "verbatim",
+      "hash": "daf063500c73902afbbfcd7eb1252642a7c39b5e6cf61aa15b6c0334b5bbd72d",
+      "previous_hashes": [
+        "26852b630278725544805f4aeb4e531387e0be4223b373be745d85993a395990",
+        "0d5bd33dbbaddd3eb6520f908d9a29d7cdec18bd8e93333b4d55b17d129dc7b5"
+      ]
+    },
+    {
+      "path": "src/mir/cli/context.py",
+      "ownership_class": "parameterized",
+      "hash": "5df5adc4136c899baeeadb86e67db3e4baf5f83dcd1795708c7d8b20bd581e20",
+      "previous_hashes": [
+        "1ead397804337049b5e56fee5f235760cebfdcb9073b353561280f85dc2cf070"
+      ],
+      "params": {
+        "slug_site_count": 1,
+        "note": "template L285 owner='family:your-harness'"
+      }
+    },
+    {
+      "path": "src/mir/core/engine/memory/distill.py",
+      "ownership_class": "verbatim",
+      "hash": "b5081e712396d69ae21bf6c06e444ba969ff47a9eaac87136ca572f6c7751c18",
+      "previous_hashes": [
+        "95edf03f46ff7389f5d00cf45855336f68f8706182c6e8468c088be4e11d29b0"
+      ]
+    },
+    {
+      "path": "src/mir/core/engine/memory/external_store.py",
+      "ownership_class": "parameterized",
+      "hash": "3622f36325cf48a451f5e4a4c15ec2216d570709fb24ffa18dfd5e1e6cf5522c",
+      "previous_hashes": [
+        "84c4823b83a98f8ebe8fb2c11164fe61447a072320f6079b5f93f2bd608ce063"
+      ],
+      "params": {
+        "slug_site_count": 2,
+        "note": "template L589+L651 source_slug='your-harness'"
+      }
+    },
+    {
+      "path": "src/mir/core/engine/memory/store.py",
+      "ownership_class": "verbatim",
+      "hash": "d9a43247a35f80acb8ae002f8a60782841330018dbe8afce4e1680043f42bbd0",
+      "previous_hashes": [
+        "525c8be6e4c3d14e309d3f0fa4a36f53ecfa58b20a27850bd28f0e64228e58e2"
+      ]
+    },
+    {
+      "path": "src/mir/core/engine/memory/migrations/017_adr53_context_metadata.sql",
+      "ownership_class": "verbatim",
+      "hash": "898733fe9e9ac23d91924cfee501aa8d0a1dec94ded9863eb8765c96cd63215a",
+      "previous_hashes": []
+    },
+    {
+      "path": ".claude/hooks/user-prompt-submit.sh",
+      "ownership_class": "verbatim",
+      "hash": "37eb5ec55b1244852f90dac9154c868712aa67ea8a5c61edbd5a4bc4a95f1b79",
+      "previous_hashes": [
+        "610f3f47386726aee67b511d5d25edb1b6e48ede67edd8ce6b0ee29386f72630"
+      ]
+    },
+    {
+      "path": ".claude/hooks/session-start.sh",
+      "ownership_class": "marker-block",
+      "hash": "38dd4a355cfc3f539c083404afeb52df883fcb3218f740ffef483c54fdcd10a1",
+      "previous_hashes": [],
+      "params": {
+        "marker_name": "mir:adr53:context-core",
+        "marker_begin": "# mir:adr53:context-core:begin",
+        "marker_end": "# mir:adr53:context-core:end"
+      }
+    },
+    {
+      "path": ".claude/settings.json",
+      "ownership_class": "family-owned",
+      "hash": null,
+      "previous_hashes": [],
+      "params": {
+        "note": "UserPromptSubmit insert-only; structure varies per family"
+      }
+    },
+    {
+      "path": "harness_a.toml",
+      "ownership_class": "family-owned",
+      "hash": null,
+      "previous_hashes": [],
+      "params": {
+        "note": "per-family archive slugs/roots"
+      }
+    },
+    {
+      "path": "harness_a.toml.example",
+      "ownership_class": "verbatim",
+      "hash": "a39fddf7084319b788aaf4ce46c96fd95589ab954cc641b3a80d75c922edbe0e",
+      "previous_hashes": []
+    },
+    {
+      "path": "tests/test_adr53_phase1_schema.py",
+      "ownership_class": "verbatim",
+      "hash": "d54c9c9d17a76ae421e2208fd4fbd8fa04291a94c6f952319110e45f82ab735f",
+      "previous_hashes": []
+    },
+    {
+      "path": "tests/test_adr53_phase2_population.py",
+      "ownership_class": "parameterized",
+      "hash": "168f67c0dfcff71d04ad9e0f8d02a4a39a8a66276b77b3ee20d52326bcc97411",
+      "previous_hashes": [],
+      "params": {
+        "slug_site_count": 10,
+        "note": "L52, L80-85, L89, L133, L311-312"
+      }
+    },
+    {
+      "path": "tests/test_adr53_phase3a_search.py",
+      "ownership_class": "verbatim",
+      "hash": "abff0cac5c4bf8c0f2b9cdbd66a31de90e2c6a904387b3e72cd7eaf440908d8d",
+      "previous_hashes": []
+    },
+    {
+      "path": "tests/test_adr53_phase3b_context_cli.py",
+      "ownership_class": "verbatim",
+      "hash": "8b87a5e7e9443aa3537609628f2ee170b9ce5ba022820031ab55e4bd1af16f5f",
+      "previous_hashes": [
+        "e3efc96c2c1cc76ce776f25543ffcf91138fb1f8d5719c42c2c9e8c7aa3cf4fe"
+      ]
+    }
+  ]
+}
