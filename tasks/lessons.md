@@ -14,3 +14,9 @@ Patterns promoted to rules. A pattern needs to fire twice — once is a fluke, t
 ## Seed entries
 
 (The template ships empty. Add entries as your project teaches you things.)
+
+<!-- mir:generated:start -->
+## Active Lessons (DB projection)
+
+_None recorded yet. Lessons inserted via `uv run mir memory insert --predicate lesson ...` are rendered here by `uv run mir memory render --target lessons --apply --output-path tasks/lessons.md`._
+<!-- mir:generated:end -->

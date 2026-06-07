@@ -1,3 +1,10 @@
+---
+title: Fleet Observation Design
+keywords: [fleet, observation, facts, checks, scorecards, autonomous-fix, advisory, import]
+created: 2026-05-20
+last_used: 2026-06-07
+---
+
 # Fleet Observation Design
 
 How a meta-harness inspects the repositories it manages without

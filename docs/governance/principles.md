@@ -1,3 +1,10 @@
+---
+title: Fleet Governance Principles
+keywords: [governance, principles, autonomy, context-efficiency, cross-pollination, archive, fleet]
+created: 2026-05-20
+last_used: 2026-06-07
+---
+
 # Fleet Governance Principles
 
 Six operating principles for managing a fleet of repositories with this harness.
