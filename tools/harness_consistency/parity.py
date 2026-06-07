@@ -27,6 +27,7 @@ import json  # noqa: E402
 import re  # noqa: E402
 import sqlite3  # noqa: E402
 import subprocess  # noqa: E402
+from collections.abc import Callable  # noqa: E402
 from pathlib import Path  # noqa: E402
 
 from tools.harness_consistency.models import Finding  # noqa: E402
@@ -44,10 +45,43 @@ _TEMPLATE_SLUG = "your-harness"
 # Minimum DB migration head for migration_head probe
 _MIN_MIGRATION_HEAD = "017"
 
+_KNOWN_OWNERSHIP_CLASSES = {
+    "verbatim",
+    "parameterized",
+    "marker-block",
+    "family-owned",
+    "managed-keys",
+}
+
 
 # ---------------------------------------------------------------------------
 # Normalization helpers
 # ---------------------------------------------------------------------------
+
+
+def _project_rule_catalog_v1(parsed: dict) -> dict:
+    return {
+        "version": int(parsed["version"]),
+        "rules": sorted(
+            [
+                {
+                    "id": rule["id"],
+                    "name": rule["name"],
+                    "severity": rule["severity"],
+                    "drift_class": rule["drift_class"],
+                }
+                for rule in parsed["rules"]
+            ],
+            key=lambda item: item["name"],
+        ),
+    }
+
+
+_MANAGED_KEY_PROJECTIONS: dict[str, Callable[[dict], dict]] = {
+    "rule-catalog-v1": _project_rule_catalog_v1,
+}
+
+_MANAGED_KEY_EXCEPTIONS = (json.JSONDecodeError, KeyError, TypeError, ValueError)
 
 
 def _lf_normalize(text: str) -> str:
@@ -95,6 +129,7 @@ def _normalize_content(
     - verbatim: LF-normalized raw content.
     - parameterized: LF-normalized, then slug → {{SLUG}} replacement.
     - marker-block: extract the marker block content, normalize it.
+    - managed-keys: hash an in-code named projection of structured JSON.
     - family-owned: not hashed; returns empty string.
     """
     normalized = _lf_normalize(raw)
@@ -107,6 +142,19 @@ def _normalize_content(
         marker_end = params.get("marker_end", _MARKER_END)
         block = _marked_block(normalized, marker_begin, marker_end)
         return _normalized_block(block)
+    if ownership_class == "managed-keys":
+        projection_name = params["projection"]
+        try:
+            projector = _MANAGED_KEY_PROJECTIONS[projection_name]
+        except KeyError as exc:
+            raise ValueError(f"unknown projection {projection_name}") from exc
+        projected = projector(json.loads(normalized))
+        return json.dumps(
+            projected,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=True,
+        )
     # family-owned: excluded
     return ""
 
@@ -265,7 +313,14 @@ def _git_history_hashes(
             h = _sha256(normalized)
             if h not in hashes:
                 hashes.append(h)
-        except (subprocess.TimeoutExpired, OSError):
+        except (
+            subprocess.TimeoutExpired,
+            OSError,
+            json.JSONDecodeError,
+            KeyError,
+            TypeError,
+            ValueError,
+        ):
             continue
 
     return hashes
@@ -328,7 +383,21 @@ def generate_parity_manifest(
         if ownership_class != "family-owned":
             fpath = template_repo / path_str
             raw = fpath.read_text(encoding="utf-8")
-            normalized = _normalize_content(raw, ownership_class, params, slug=_TEMPLATE_SLUG)
+            try:
+                normalized = _normalize_content(
+                    raw,
+                    ownership_class,
+                    params,
+                    slug=_TEMPLATE_SLUG,
+                )
+            except _MANAGED_KEY_EXCEPTIONS as exc:
+                import sys
+                print(
+                    f"[generate-parity] managed-keys projection failed: "
+                    f"{path_str} ({exc})",
+                    file=sys.stderr,
+                )
+                sys.exit(1)
             if not normalized:
                 import sys
                 print(
@@ -338,8 +407,9 @@ def generate_parity_manifest(
                 )
                 sys.exit(1)
             current_hash = _sha256(normalized)
+            entry_history_depth = int(params.get("history_depth", history_depth))
             previous_hashes = _git_history_hashes(
-                template_repo, path_str, ownership_class, params, history_depth
+                template_repo, path_str, ownership_class, params, entry_history_depth
             )
             file_entry["hash"] = current_hash
             file_entry["previous_hashes"] = previous_hashes
@@ -366,6 +436,7 @@ def generate_parity_manifest(
                 "sha256 of content between mir:adr53:context-core "
                 "markers, rstripped+edge-stripped"
             ),
+            "managed-keys": "sha256 of named structured JSON projection",
             "family-owned": "excluded from hashing",
             "slug_placeholder": _SLUG_PLACEHOLDER,
             "template_slug": _TEMPLATE_SLUG,
@@ -626,7 +697,10 @@ def _check_file_verdict(
     except OSError as exc:
         return "LOCAL_DIVERGED", f"read error: {exc}"
 
-    normalized = _normalize_content(raw, ownership_class, params, slug=repo_slug)
+    try:
+        normalized = _normalize_content(raw, ownership_class, params, slug=repo_slug)
+    except _MANAGED_KEY_EXCEPTIONS as exc:
+        return "LOCAL_DIVERGED", f"managed-keys projection failed: {path_str} ({exc})"
     if not normalized and ownership_class == "marker-block":
         return "LOCAL_DIVERGED", f"marker block missing: {path_str}"
     live_hash = _sha256(normalized)
@@ -758,6 +832,38 @@ def template_parity(project_root: Path, rule_inputs: dict) -> list[Finding]:
     diverged_files: list[str] = []
 
     for file_entry in manifest.get("files", []):
+        path_str = file_entry.get("path", "<unknown>")
+        ownership_class = file_entry.get("ownership_class")
+        if ownership_class not in _KNOWN_OWNERSHIP_CLASSES:
+            findings.append(Finding(
+                rule_id="R16",
+                rule_name="template_parity",
+                severity="WARN",
+                message=(
+                    f"unknown ownership_class {ownership_class} in manifest — "
+                    f"engine older than manifest; skipping {path_str}"
+                ),
+                location=manifest_rel,
+                drift_class=8,
+            ))
+            continue
+        params = file_entry.get("params", {})
+        if (
+            ownership_class == "managed-keys"
+            and params.get("projection") not in _MANAGED_KEY_PROJECTIONS
+        ):
+            findings.append(Finding(
+                rule_id="R16",
+                rule_name="template_parity",
+                severity="WARN",
+                message=(
+                    f"unknown projection {params.get('projection')} in manifest — "
+                    f"engine older than manifest; skipping {path_str}"
+                ),
+                location=manifest_rel,
+                drift_class=8,
+            ))
+            continue
         verdict, detail = _check_file_verdict(project_root, file_entry, repo_slug, exclude_paths)
         if verdict == "BEHIND":
             behind_files.append(file_entry["path"])

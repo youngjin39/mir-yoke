@@ -75,6 +75,15 @@
     {
       "path": "tests/test_adr53_phase3b_context_cli.py",
       "ownership_class": "verbatim"
+    },
+    {
+      "path": "config/harness-consistency.json",
+      "ownership_class": "managed-keys",
+      "params": {
+        "projection": "rule-catalog-v1",
+        "history_depth": 40,
+        "note": "rule catalog only; enabled/repo/rule_inputs/_generated excluded (A1-D2)"
+      }
     }
   ]
 }

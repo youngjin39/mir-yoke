@@ -44,6 +44,9 @@
         "marker-block": {
           "type": "string"
         },
+        "managed-keys": {
+          "type": "string"
+        },
         "family-owned": {
           "type": "string"
         },
@@ -83,6 +86,13 @@
         },
         "marker_end": {
           "type": "string"
+        },
+        "projection": {
+          "type": "string"
+        },
+        "history_depth": {
+          "type": "integer",
+          "minimum": 1
         },
         "note": {
           "type": "string"
@@ -134,6 +144,7 @@
             "verbatim",
             "parameterized",
             "marker-block",
+            "managed-keys",
             "family-owned"
           ]
         },
@@ -228,6 +239,37 @@
             "properties": {
               "params": {
                 "$ref": "#/definitions/marker_block_params"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "ownership_class": {
+                "const": "managed-keys"
+              }
+            },
+            "required": [
+              "ownership_class"
+            ]
+          },
+          "then": {
+            "required": [
+              "params"
+            ],
+            "properties": {
+              "params": {
+                "allOf": [
+                  {
+                    "$ref": "#/definitions/params"
+                  },
+                  {
+                    "required": [
+                      "projection"
+                    ]
+                  }
+                ]
               }
             }
           }
