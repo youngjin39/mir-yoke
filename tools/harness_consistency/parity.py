@@ -535,6 +535,68 @@ def _probe_venv_mir_resolution(project_root: Path) -> Finding | None:
     return None
 
 
+def _probe_slug_integrity(
+    project_root: Path, repo_slug: str
+) -> Finding | None:
+    """Check .mir/memory.db for rows stamped with a foreign family identity (mode=ro).
+
+    Q1: external_archives.owner != 'family:<slug>' -> WARN listing foreign owners+counts.
+    Q2: external_documents.source_slug NOT NULL AND != slug -> WARN listing foreign slugs+counts.
+    DB absent -> skip (no finding). sqlite3.OperationalError (pre-015/017 schema) -> skip.
+    Never writes. Mode=ro only. No subprocess.
+    """
+    db_path = project_root / ".mir" / "memory.db"
+    if not db_path.exists():
+        return None
+    uri = f"file:{db_path}?mode=ro"
+    try:
+        conn = sqlite3.connect(uri, uri=True)
+        try:
+            # Q1: foreign owners in external_archives
+            cur = conn.execute(
+                "SELECT owner, COUNT(*) FROM external_archives "
+                "WHERE owner != ? GROUP BY owner",
+                (f"family:{repo_slug}",),
+            )
+            foreign_owners = cur.fetchall()
+
+            # Q2: foreign source_slugs in external_documents
+            cur = conn.execute(
+                "SELECT source_slug, COUNT(*) FROM external_documents "
+                "WHERE source_slug IS NOT NULL AND source_slug != ? GROUP BY source_slug",
+                (repo_slug,),
+            )
+            foreign_slugs = cur.fetchall()
+        finally:
+            conn.close()
+    except sqlite3.OperationalError:
+        return None  # Pre-015/017 schema: skip silently
+
+    findings_parts: list[str] = []
+    if foreign_owners:
+        owner_summary = ", ".join(
+            f"{owner}({count})" for owner, count in foreign_owners
+        )
+        findings_parts.append(f"foreign owners: {owner_summary}")
+    if foreign_slugs:
+        slug_summary = ", ".join(
+            f"{slug}({count})" for slug, count in foreign_slugs
+        )
+        findings_parts.append(f"foreign source_slugs: {slug_summary}")
+
+    if not findings_parts:
+        return None
+
+    return Finding(
+        rule_id="R16",
+        rule_name="template_parity",
+        severity="WARN",
+        message="probe: slug_integrity — " + "; ".join(findings_parts),
+        location=".mir/memory.db",
+        drift_class=8,
+    )
+
+
 def _check_file_verdict(
     project_root: Path,
     file_entry: dict,
@@ -732,13 +794,13 @@ def template_parity(project_root: Path, rule_inputs: dict) -> list[Finding]:
 
     # Probes
     if probes_enabled:
-        _run_probes(project_root, findings)
+        _run_probes(project_root, findings, repo_slug)
 
     return findings
 
 
-def _run_probes(project_root: Path, findings: list[Finding]) -> None:
-    """Run v1 probes and append findings in place."""
+def _run_probes(project_root: Path, findings: list[Finding], repo_slug: str = '') -> None:
+    """Run probes and append findings in place."""
     probe_migration = _probe_migration_head(project_root)
     if probe_migration:
         findings.append(probe_migration)
@@ -746,3 +808,8 @@ def _run_probes(project_root: Path, findings: list[Finding]) -> None:
     probe_venv = _probe_venv_mir_resolution(project_root)
     if probe_venv:
         findings.append(probe_venv)
+
+    if repo_slug:
+        probe_slug = _probe_slug_integrity(project_root, repo_slug)
+        if probe_slug:
+            findings.append(probe_slug)
