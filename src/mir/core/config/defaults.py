@@ -29,7 +29,7 @@ DEFAULT_DENIED_ENV_PREFIXES: tuple[str, ...] = (
     "MIR_SIGNING", "MIR_USER_PUBKEY",
 )
 
-# v0.5.3 R8 + v0.5.4-6: blocked by name (HOME must be injected as replaced with `user_home`).
+# v0.5.3 R8 + v0.5.4-6: blocked by name (HOME must be replaced with `user_home` before injection).
 DEFAULT_DENIED_ENV_KEYS: frozenset[str] = frozenset({
     "PATH",                     # inject only the sanitized minimal PATH
     "HOME",                     # v0.5.4-6: forcibly replace with user_home
