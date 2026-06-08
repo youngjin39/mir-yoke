@@ -1,4 +1,4 @@
-"""ProviderRegistry — `mir.providers` entry_points (MirProviderAdapter 서브클래스).
+"""ProviderRegistry — `mir.providers` entry_points (MirProviderAdapter subclasses).
 
 design §8.4 · V3 · v0.5.3 R7 allowlist gate.
 """
@@ -17,11 +17,11 @@ class ProviderRegistry(EntryPointRegistry):
     def create(
         self,
         name: str,
-        cfg: Any,                          # ResolvedConfig (순환 import 방지로 Any)
+        cfg: Any,                          # ResolvedConfig (Any to avoid circular imports)
         **kwargs: Any,
     ) -> Any:
-        """allowlist 게이트 + sync 계약 검증 후 인스턴스 생성.
-        Phase 1 Step 1 skeleton: allowlist 가 비어 있으면 모든 provider 거부.
+        """Create an instance after the allowlist gate and sync contract verification.
+        Phase 1 Step 1 skeleton: reject all providers when the allowlist is empty.
         """
         cls = self.get(name)
 
@@ -43,7 +43,7 @@ class ProviderRegistry(EntryPointRegistry):
                 "subclass (V3 contract)"
             )
 
-        # sync 계약 검증 (O1).
+        # Sync contract verification (O1).
         import inspect
         for method in ("dispatch", "initialize", "cleanup"):
             m = getattr(cls, method, None)

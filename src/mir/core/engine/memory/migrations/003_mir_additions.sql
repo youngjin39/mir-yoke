@@ -1,5 +1,5 @@
 -- Migration 003 — Mir-specific tables + schema_meta + audit.
--- design §5.3 (Mir 추가 테이블) + §9.8 (schema versioning).
+-- design §5.3 (Mir additional tables) + §9.8 (schema versioning).
 
 CREATE TABLE schema_meta (
   key   TEXT PRIMARY KEY,

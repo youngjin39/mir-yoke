@@ -53,10 +53,11 @@ CREATE INDEX idx_external_chunks_document ON external_chunks (document_id);
 
 -- FTS5 contentless + contentless_delete=1 (SQLite 3.43+): stores rowid +
 -- tokenized content only, no body, but supports ``DELETE FROM`` by rowid
--- **and by ``MATCH`` queries** (wave 2 TM2). 표준 contentless 는 DELETE 가
--- 금지되지만 contentless_delete=1 옵션 아래선 ``DELETE FROM external_chunks_fts
--- WHERE rowid = ?`` 와 ``DELETE FROM ... WHERE external_chunks_fts MATCH '...'``
--- 둘 다 통상 DELETE 처럼 동작. scan() 의 재색인 경로가 rowid 기반으로 쓴다.
+-- **and by ``MATCH`` queries** (wave 2 TM2). Standard contentless forbids
+-- DELETE, but under the contentless_delete=1 option, both ``DELETE FROM
+-- external_chunks_fts WHERE rowid = ?`` and ``DELETE FROM ... WHERE
+-- external_chunks_fts MATCH '...'`` behave like ordinary DELETE. The scan()
+-- reindexing path uses rowid-based deletes.
 --
 -- Rationale (Third Review TH1):
 --   external_chunks holds path+offset, never body. A shadowed (content=)

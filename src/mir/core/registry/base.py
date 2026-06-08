@@ -1,6 +1,6 @@
-"""EntryPointRegistry — 공통 베이스 · Python `importlib.metadata.entry_points` 기반.
+"""EntryPointRegistry — common base · based on Python `importlib.metadata.entry_points`.
 
-design §8.4. 서브클래스는 `GROUP` 클래스 변수만 지정.
+design §8.4. Subclasses specify only the `GROUP` class variable.
 """
 from __future__ import annotations
 
@@ -9,9 +9,9 @@ from typing import Any
 
 
 class EntryPointRegistry:
-    """entry_points 로드 후 name→class 매핑만 제공. 하드코딩 dict 금지."""
+    """Provide only name→class mappings after loading entry_points. No hardcoded dicts."""
 
-    GROUP: str = ""  # 서브클래스가 지정
+    GROUP: str = ""  # set by subclasses
 
     def __init__(self) -> None:
         if not self.GROUP:
@@ -38,5 +38,5 @@ class EntryPointRegistry:
         return name in self._discover()
 
     def reset(self) -> None:
-        """테스트 용도: 캐시 초기화 (monkeypatch 후 재discover)."""
+        """Testing helper: clear the cache (rediscover after monkeypatch)."""
         self._cache = None

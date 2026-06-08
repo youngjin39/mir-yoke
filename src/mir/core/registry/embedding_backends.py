@@ -1,6 +1,6 @@
 """EmbeddingBackendRegistry — `mir.embedding_backends` entry_points.
 
-design §5.2 · §8.4 (V9). Phase 1 기본 구현 = OmlxHttpBackend (Step 2 실장).
+design §5.2 · §8.4 (V9). Phase 1 default implementation = OmlxHttpBackend (Step 2 implementation).
 """
 from __future__ import annotations
 

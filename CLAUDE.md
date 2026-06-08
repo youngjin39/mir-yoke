@@ -92,13 +92,13 @@
 - Terse by default for routine prose, but never at the cost of safety, exact technical strings, review contracts, user clarity, or directly answering the user.
 - If the user asks for explanation or status, provide the minimum explanation or status needed to answer directly. Never answer with silence.
 
-## Mir Central Management
-- This repository is part of Mir's active managed fleet.
-- Mir must inspect the current harness structure before rollout changes, apply the minimum viable harness/agent patch directly, verify the repository, and maintain the latest rollout report.
+## Central Fleet Management (optional)
+- This template can be enrolled in a central managed-fleet workflow, but public clones are standalone unless an operator opts in.
+- A fleet manager should inspect the current harness structure before rollout changes, apply the minimum viable harness/agent patch directly, verify the repository, and maintain a rollout report.
 - Keep source-of-truth edits in `CLAUDE.md`; do not hand-edit generated `AGENTS.md`.
-- The deeper rollout default is `DispatchBrief` plus tiny, normal, and heavy triage. See `docs/harness-engineering/applications/dispatchbrief-defaults-2026-05-28.md`.
-- Record the latest rollout state in `tasks/reports/claude-codex-harness_harness_rollout_2026-05-28.md`.
-- If this repository needs a narrower rollout than the fleet default, document the exception in the rollout report before deviating.
+- A deeper rollout can use `DispatchBrief` plus tiny, normal, and heavy triage. See `docs/harness-engineering/applications/dispatchbrief-defaults-2026-05-28.md`.
+- Record rollout state in `tasks/reports/<repo-slug>_harness_rollout_<date>.md`.
+- If a repository needs a narrower rollout than the fleet default, document the exception in the rollout report before deviating.
 
 ## Role Policy (Template Profile)
 

@@ -1,13 +1,13 @@
-"""Default values — **single source**. 타 모듈은 이 상수를 직접 참조하거나 `ResolvedConfig` 경유.
+"""Default values — **single source**. Other modules either reference these constants directly or access them through `ResolvedConfig`.
 
 design §9.6 · §9.6.3 · §9.6.4 · §9.6.5 · §7.5.
-원칙:
-- 이 파일 바깥에서 기본값 literal 정의 금지.
-- 신규 기본값 추가 시 이 파일 + `ResolvedConfig` 필드 동시 갱신.
+Principles:
+- Do not define default-value literals outside this file.
+- When adding a new default, update this file and the corresponding `ResolvedConfig` field together.
 """
 from __future__ import annotations
 
-# v0.5.3 R1: 자가-변조 차단 경로 (PolicyStore.denied_paths 기본값)
+# v0.5.3 R1: self-modification blocked paths (PolicyStore.denied_paths default).
 DEFAULT_DENIED_PATHS: tuple[str, ...] = (
     "core/**",
     ".claude/hooks/**",
@@ -18,7 +18,7 @@ DEFAULT_DENIED_PATHS: tuple[str, ...] = (
     "core/registry/**",
 )
 
-# v0.5.3 R8: Worker CLI 에 상속 금지할 env var prefix. v0.5.4-6 에서 HOME 이동.
+# v0.5.3 R8: env var prefixes not inherited by Worker CLI. HOME moved in v0.5.4-6.
 DEFAULT_DENIED_ENV_PREFIXES: tuple[str, ...] = (
     "AWS_", "GOOGLE_", "GCP_", "AZURE_",
     "OPENAI_", "ANTHROPIC_", "GEMINI_", "COHERE_", "HUGGINGFACE_",
@@ -29,18 +29,18 @@ DEFAULT_DENIED_ENV_PREFIXES: tuple[str, ...] = (
     "MIR_SIGNING", "MIR_USER_PUBKEY",
 )
 
-# v0.5.3 R8 + v0.5.4-6: 이름으로 차단 (HOME 은 반드시 `user_home` 으로 치환 주입).
+# v0.5.3 R8 + v0.5.4-6: blocked by name (HOME must be injected as replaced with `user_home`).
 DEFAULT_DENIED_ENV_KEYS: frozenset[str] = frozenset({
-    "PATH",                     # sanitize 된 최소 PATH 만 주입
-    "HOME",                     # v0.5.4-6: user_home 으로 강제 치환
+    "PATH",                     # inject only the sanitized minimal PATH
+    "HOME",                     # v0.5.4-6: forcibly replace with user_home
     "LD_PRELOAD", "DYLD_INSERT_LIBRARIES", "DYLD_FORCE_FLAT_NAMESPACE",
     "PYTHONPATH", "PYTHONSTARTUP",
     "BASH_ENV", "ENV",
     "HISTFILE", "HISTFILESIZE",
 })
 
-# Meta approval sensitive TOML keys (v0.5.3 R8 확장).
-# 이 키들이 포함된 diff 는 `allows_sensitive=true` 플래그 + 별도 승인 필요.
+# Meta approval sensitive TOML keys (v0.5.3 R8 extension).
+# Diffs containing these keys require the `allows_sensitive=true` flag plus separate approval.
 SENSITIVE_KEYS: frozenset[tuple[str, ...]] = frozenset({
     ("conductor", "model"),
     ("harness_b", "hooks"),
@@ -48,12 +48,12 @@ SENSITIVE_KEYS: frozenset[tuple[str, ...]] = frozenset({
     ("audit", "signer_mode"),
     ("audit", "anchor"),                # v0.5.3 R6
     ("providers", "allowlist"),         # v0.5.3 R7
-    ("memory", "embedding"),            # D1 교체
-    ("roles",),                         # 모든 role mapping
+    ("memory", "embedding"),            # D1 replacement
+    ("roles",),                         # all role mappings
     ("mir", "signing_key_path"),
 })
 
-# --- Default config values (load_config 가 TOML 오버라이드 전 베이스) ---
+# --- Default config values (base before load_config applies TOML overrides) ---
 
 DEFAULT_EMBEDDING_BASE_URL = "http://127.0.0.1:8001/v1"
 DEFAULT_EMBEDDING_MODEL = "bge-m3-mlx-fp16"           # HF: mlx-community/bge-m3-mlx-fp16 (v0.5.4-1)
@@ -74,7 +74,7 @@ DEFAULT_BREAKER_WINDOW_FAILURE_RATE = 0.5
 DEFAULT_BREAKER_RECOVERY_TIMEOUT = 30
 DEFAULT_BREAKER_HALF_OPEN_REQUIRED_SUCCESSES = 3      # v0.5.3 R12
 
-# Hook #3 mode (v0.5.3 R1 분리)
+# Hook #3 mode (v0.5.3 R1 split)
 DEFAULT_HOOK3_SHELL_MODE = "enforce"
 DEFAULT_HOOK3_AST_MODE = "advisory"
 

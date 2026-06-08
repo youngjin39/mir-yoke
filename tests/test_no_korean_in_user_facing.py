@@ -14,10 +14,11 @@ _RANGE = (
 HANGUL = re.compile("[" + _RANGE + "]")
 
 # File extensions to check
-CHECK_EXTENSIONS = {".md", ".py", ".sh", ".yaml", ".yml", ".json", ".toml", ".txt"}
+CHECK_EXTENSIONS = {".md", ".py", ".sh", ".yaml", ".yml", ".json", ".toml", ".txt", ".sql"}
 
-# Top-level directories and prefixes to skip
+# Top-level directories and virtualenv path parts to skip
 SKIP_PARTS = {"archive", ".git"}
+VIRTUALENV_PARTS = {".venv", "venv", "virtualenv", ".tox", ".nox", "site-packages"}
 
 
 def test_no_korean_in_template():
@@ -29,6 +30,8 @@ def test_no_korean_in_template():
             continue
         # Skip excluded top-level dirs
         if path.parts and path.parts[0] in SKIP_PARTS:
+            continue
+        if any(part in VIRTUALENV_PARTS for part in path.parts):
             continue
         if path.suffix not in CHECK_EXTENSIONS:
             continue

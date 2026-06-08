@@ -1,5 +1,5 @@
 #!/bin/bash
-# BORROWED-FROM: /Volumes/T7 Shield/Project/02.prompt_DEV @ 2026-05-09 scripts/generate_codex_derivatives.sh
+# BORROWED-FROM: upstream claude-starter reference @ 2026-05-09 scripts/generate_codex_derivatives.sh
 # Attribution: claude-starter (yojini/claude-starter, Apache-2.0)
 # Modifications:
 #   - Mir-specific manifest path (.codex-sync/manifest.json — same)

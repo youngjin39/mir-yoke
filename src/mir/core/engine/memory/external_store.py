@@ -740,11 +740,11 @@ class ExternalStore:
         Only chunk metadata (path + byte range + score) is returned —
         the caller re-reads the file to get body text (ADR 1 §2.2).
         """
-        # wave 2 SM6 — archive_slugs 필터를 RRF 입력 단계로 전진. 이전에는
-        # vec_hits + fts_rows 전부 수집 · RRF · SELECT 이후 후행 슬러그 필터
-        # 였는데, 이러면 제외될 rowid 가 RRF topk 자리를 차지해 실제 반환
-        # 결과가 k 보다 적어질 수 있음. chunk_id → slug 매핑을 미리 한 번만
-        # 조회해 RRF 전 가림.
+        # wave 2 SM6 — move the archive_slugs filter forward to the RRF input stage.
+        # Previously this collected all vec_hits + fts_rows, ran RRF, and applied a
+        # trailing slug filter after SELECT; rowids that should be excluded could
+        # occupy RRF topk slots, so actual returned results could be fewer than k.
+        # Query the chunk_id → slug mapping once up front and mask before RRF.
         allowed_chunk_ids: set[int] | None = None
         if archive_slugs:
             slug_filter_set = set(archive_slugs)
@@ -783,9 +783,10 @@ class ExternalStore:
             except ValueError:
                 raise
             validate_embedding(query_vec, expected_dim=DEFAULT_EMBED_DIM)
-            # wave 3 TN3 — sqlite-vec vec0 의 `distance` 는 기본 **L2 (유클리드)**.
-                # bge-m3 embedding 은 정규화돼 cosine 대체로 동작. 다른 metric 으로 바
-                # 꾸려면 vec0 CREATE 시 distance_metric 명시. 현재는 default L2 유지.
+            # wave 3 TN3 — sqlite-vec vec0 `distance` defaults to **L2 (Euclidean)**.
+            # bge-m3 embeddings are normalized, so this works as a cosine substitute.
+            # To switch to another metric, specify distance_metric at vec0 CREATE.
+            # For now, keep the default L2.
             vec_hits = list(self._conn.conn.execute(
                 "SELECT rowid, distance FROM external_chunks_vec "
                 "WHERE embedding MATCH ? ORDER BY distance LIMIT ?",

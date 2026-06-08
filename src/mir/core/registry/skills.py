@@ -1,7 +1,7 @@
 """SkillRegistry — `mir.skills` entry_points.
 
-design §8.4. Phase 1 은 빈 Registry (Mir 내장 skill 은 .claude/skills/ 유지).
-family 고유 skill 을 entry_point 로 등록 가능한 구조.
+design §8.4. Phase 1 uses an empty Registry (Mir built-in skills stay in .claude/skills/).
+Structure that lets family-specific skills be registered as entry_points.
 """
 from __future__ import annotations
 
