@@ -482,6 +482,7 @@ write_agent_toml() {
   local src="$1"
   local name description developer_instructions out sandbox_mode disallowed_tools
   name="$(extract_frontmatter_field "$src" "name")"
+  [ -n "$name" ] || return 0  # skip non-agent sources (e.g. README.md: no name frontmatter)
   description="$(extract_frontmatter_field "$src" "description")"
   developer_instructions="$(emit_agent_sections_for_codex "$src" "$name" | escape_toml_multiline)"
   disallowed_tools="$(extract_frontmatter_field "$src" "disallowedTools")"
