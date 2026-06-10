@@ -156,3 +156,9 @@ elif [ "$MIR_CODEX_DEFAULT_ENABLED" = "true" ]; then
 fi
 
 # mir:profile:enforcement:end
+
+# doc-size advisory guard (budgets in config/doc-size-guard.json; warns when a tracked doc exceeds its line budget)
+if command -v uv >/dev/null 2>&1 && [ -f "$CLAUDE_PROJECT_DIR/config/doc-size-guard.json" ]; then
+  _DG=$(cd "$CLAUDE_PROJECT_DIR" && uv run mir doc-guard --config config/doc-size-guard.json --project-dir "$CLAUDE_PROJECT_DIR" 2>/dev/null) || true
+  [ -n "$_DG" ] && echo "$_DG"
+fi
