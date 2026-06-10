@@ -1,0 +1,10 @@
+{
+  "src/mir/core/conductor/": "conductor",
+  "src/mir/cli/conductor_dispatch.py": "conductor",
+  "src/mir/core/engine/": "engine",
+  "src/mir/core/worker/": "worker",
+  ".claude/hooks/": "harness-runtime",
+  ".claude/skills/": "harness-runtime",
+  ".ai-harness/": "harness-runtime",
+  "scripts/generate_codex_derivatives.sh": "harness-runtime"
+}

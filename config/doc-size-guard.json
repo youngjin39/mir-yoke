@@ -1,0 +1,7 @@
+[
+  {"path": "CLAUDE.md", "max_lines": 300, "label": "CLAUDE.md"},
+  {"path": "AGENTS.md", "max_lines": 300, "label": "AGENTS.md"},
+  {"path": "tasks/plan.md", "max_lines": 800, "label": "tasks/plan.md"},
+  {"path": "tasks/tdd.json", "max_lines": 20000, "label": "tasks/tdd.json (TDD ledger — run archiver when exceeded)"},
+  {"path": "tasks/lessons.md", "max_lines": 600, "label": "tasks/lessons.md (generated projection)"}
+]

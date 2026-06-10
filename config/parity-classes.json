@@ -1,5 +1,5 @@
 {
-  "$comment": "ADR-54 §3 verified inventory — 16 files, stage-3 field evidence. Hand-kept input (irreducible). Maps template paths → ownership class + params.",
+  "$comment": "ADR-54 \u00a73 verified inventory \u2014 16 files, stage-3 field evidence. Hand-kept input (irreducible). Maps template paths \u2192 ownership class + params.",
   "version": 1,
   "files": [
     {
@@ -13,7 +13,10 @@
     {
       "path": "src/mir/cli/context.py",
       "ownership_class": "parameterized",
-      "params": {"slug_site_count": 1, "note": "template L285 owner='family:your-harness'"}
+      "params": {
+        "slug_site_count": 1,
+        "note": "template L285 owner='family:your-harness'"
+      }
     },
     {
       "path": "src/mir/core/engine/memory/distill.py",
@@ -22,7 +25,10 @@
     {
       "path": "src/mir/core/engine/memory/external_store.py",
       "ownership_class": "parameterized",
-      "params": {"slug_site_count": 2, "note": "template L589+L651 source_slug='your-harness'"}
+      "params": {
+        "slug_site_count": 2,
+        "note": "template L589+L651 source_slug='your-harness'"
+      }
     },
     {
       "path": "src/mir/core/engine/memory/store.py",
@@ -48,12 +54,16 @@
     {
       "path": ".claude/settings.json",
       "ownership_class": "family-owned",
-      "params": {"note": "UserPromptSubmit insert-only; structure varies per family"}
+      "params": {
+        "note": "UserPromptSubmit insert-only; structure varies per family"
+      }
     },
     {
       "path": "harness_a.toml",
       "ownership_class": "family-owned",
-      "params": {"note": "per-family archive slugs/roots"}
+      "params": {
+        "note": "per-family archive slugs/roots"
+      }
     },
     {
       "path": "harness_a.toml.example",
@@ -66,7 +76,10 @@
     {
       "path": "tests/test_adr53_phase2_population.py",
       "ownership_class": "parameterized",
-      "params": {"slug_site_count": 10, "note": "L52, L80-85, L89, L133, L311-312"}
+      "params": {
+        "slug_site_count": 10,
+        "note": "L52, L80-85, L89, L133, L311-312"
+      }
     },
     {
       "path": "tests/test_adr53_phase3a_search.py",
@@ -84,6 +97,38 @@
         "history_depth": 40,
         "note": "rule catalog only; enabled/repo/rule_inputs/_generated excluded (A1-D2)"
       }
+    },
+    {
+      "path": "tools/plan_archive/__init__.py",
+      "ownership_class": "verbatim"
+    },
+    {
+      "path": "tools/plan_archive/__main__.py",
+      "ownership_class": "verbatim"
+    },
+    {
+      "path": "tools/plan_archive/archiver.py",
+      "ownership_class": "verbatim"
+    },
+    {
+      "path": "tools/plan_archive/cli.py",
+      "ownership_class": "verbatim"
+    },
+    {
+      "path": "tools/tdd_archive/__init__.py",
+      "ownership_class": "verbatim"
+    },
+    {
+      "path": "tools/tdd_archive/__main__.py",
+      "ownership_class": "verbatim"
+    },
+    {
+      "path": "tools/tdd_archive/compactor.py",
+      "ownership_class": "verbatim"
+    },
+    {
+      "path": "tools/tdd_archive/cli.py",
+      "ownership_class": "verbatim"
     }
   ]
 }

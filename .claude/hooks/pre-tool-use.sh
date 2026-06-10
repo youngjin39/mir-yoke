@@ -133,6 +133,10 @@ if [ "$TOOL_NAME" = "Bash" ]; then
       fi
     fi
   fi
+  # F6-hook. Codex exec stdin guard (advisory — open stdin hangs on EOF)
+  if echo "$CMD" | grep -qE 'codex[[:space:]]+exec' && ! echo "$CMD" | grep -qE '(<[[:space:]]*/dev/null|--stdin)'; then
+    warn "append < /dev/null (open stdin hangs on EOF)"
+  fi
   apply_deny_list "$CMD" "bash"
 fi
 
@@ -235,5 +239,35 @@ fi
 # --- end Mir profile-driven enforcement (V2.2) ---
 
 # mir:profile:enforcement:end
+
+# mir:bluebrick-advisory:begin
+# Advisory: emit one stderr line when a Write/Edit/Bash-write targets a bluebrick-owned path.
+# Never blocks (exit 0 always). Config lives in config/bluebrick-paths.json.
+_MIR_BB_CONFIG="$PROJECT_DIR/config/bluebrick-paths.json"
+if [ -f "$_MIR_BB_CONFIG" ] && ([ "$TOOL_NAME" = "Edit" ] || [ "$TOOL_NAME" = "Write" ]); then
+  _bb_fp="$(extract_json '.tool_input.file_path // .tool_input.path' 2>/dev/null || echo "")"
+  if [ -n "$_bb_fp" ]; then
+    _bb_match="$(python3 - "$_bb_fp" "$_MIR_BB_CONFIG" <<'BBPY'
+import sys, json, os
+fp, cfg_path = sys.argv[1], sys.argv[2]
+try:
+    mapping = json.load(open(cfg_path))
+except Exception:
+    sys.exit(0)
+pwd = os.environ.get("PWD", "")
+candidates = [fp]
+if pwd and fp.startswith(pwd + "/"):
+    candidates.append(fp[len(pwd)+1:])
+for prefix, brick in mapping.items():
+    for c in candidates:
+        if c == prefix or c.startswith(prefix):
+            print(f"{brick}")
+            sys.exit(0)
+BBPY
+)"
+    [ -n "$_bb_match" ] && warn "[bluebrick] read docs/bluebricks/$_bb_match.md before changing $_bb_fp"
+  fi
+fi
+# mir:bluebrick-advisory:end
 
 exit 0

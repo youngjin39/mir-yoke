@@ -1,7 +1,7 @@
 {
   "template_version": "0.4.0",
-  "template_commit": "e98673aa15cd1f9a4f48985bdc0ca747d741d610",
-  "generated_at": "2026-06-08T16:35:11.352749+00:00",
+  "template_commit": "2c7ddbd03117bebc2fd1dce972a3c025390e59c1",
+  "generated_at": "2026-06-10T15:34:47.759600+00:00",
   "normalization": {
     "verbatim": "sha256 of LF-normalized raw bytes",
     "parameterized": "sha256 after slug normalization (your-harness / repo.slug \u2192 {{SLUG}})",
@@ -162,6 +162,54 @@
         "history_depth": 40,
         "note": "rule catalog only; enabled/repo/rule_inputs/_generated excluded (A1-D2)"
       }
+    },
+    {
+      "path": "tools/plan_archive/__init__.py",
+      "ownership_class": "verbatim",
+      "hash": "2f4d7d3386caa9eab3bf9b2d01166317ee8a81b9facbbdb0e478d3f1e17f500c",
+      "previous_hashes": []
+    },
+    {
+      "path": "tools/plan_archive/__main__.py",
+      "ownership_class": "verbatim",
+      "hash": "b454e2d29fbb9fb25e1d3972e97db8c5739c4454ef5be1c3cca100dba981cfee",
+      "previous_hashes": []
+    },
+    {
+      "path": "tools/plan_archive/archiver.py",
+      "ownership_class": "verbatim",
+      "hash": "d72d3cb1e67595cddc1725efb4f5363d398f931993473c6ac8622a89ac4f6cc8",
+      "previous_hashes": []
+    },
+    {
+      "path": "tools/plan_archive/cli.py",
+      "ownership_class": "verbatim",
+      "hash": "426e8c0a3afd39a435bc43beee0b43e09b61464c1ed3ecfd3000156f0a849baf",
+      "previous_hashes": []
+    },
+    {
+      "path": "tools/tdd_archive/__init__.py",
+      "ownership_class": "verbatim",
+      "hash": "c96a44d541f7c0a4d832bfe38c6683e0b5844a9a3c042d6a9dcd49c11c233753",
+      "previous_hashes": []
+    },
+    {
+      "path": "tools/tdd_archive/__main__.py",
+      "ownership_class": "verbatim",
+      "hash": "d8564c32110a387b8c17de3d4f8e824eab3fcfe72124be2b8524ad8ce7714db8",
+      "previous_hashes": []
+    },
+    {
+      "path": "tools/tdd_archive/compactor.py",
+      "ownership_class": "verbatim",
+      "hash": "1f9a53014499c261e2703c31161c49387ff6399a1af3083048fe8136f4699240",
+      "previous_hashes": []
+    },
+    {
+      "path": "tools/tdd_archive/cli.py",
+      "ownership_class": "verbatim",
+      "hash": "a74a28711c663e3e33656112631ca13632b0726f6820a7a8d8783640c0995362",
+      "previous_hashes": []
     }
   ],
   "removed_paths": []
