@@ -9,6 +9,50 @@ _MIR_HOOK_TIER="warn"
 
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
 
+# Auto-archive DONE/CLOSED plan.md sections before loading (silent)
+python3 - "$PROJECT_DIR" 2>/dev/null <<'PYEOF' || true
+import re, sys, datetime
+from pathlib import Path
+pd = Path(sys.argv[1]) if len(sys.argv) > 1 else Path(".")
+plan_p = pd / "tasks" / "plan.md"
+if not plan_p.exists():
+    sys.exit(0)
+text = plan_p.read_text("utf-8")
+DONE = re.compile(r"\(.*\bDONE\b.*\)")
+CLOSED = re.compile(r"\(.*\bCLOSED\b.*\)")
+preamble, sections, cur_h, cur_b = [], [], None, []
+for line in text.splitlines(keepends=True):
+    if line.startswith("## "):
+        if cur_h is not None:
+            sections.append((cur_h, cur_b))
+        cur_h, cur_b = line[3:].rstrip(), []
+    elif cur_h is None:
+        preamble.append(line)
+    else:
+        cur_b.append(line)
+if cur_h is not None:
+    sections.append((cur_h, cur_b))
+month = datetime.date.today().strftime("%Y-%m")
+arch, keep = [], []
+for h, b in sections:
+    if (DONE.search(h) or CLOSED.search(h)) and "Pinned Tracker Policies" not in h:
+        arch.append((h, b))
+    else:
+        keep.append((h, b))
+if not arch:
+    sys.exit(0)
+arch_p = pd / "tasks" / "archive" / f"plan-archive-{month}.md"
+arch_p.parent.mkdir(parents=True, exist_ok=True)
+if not arch_p.exists():
+    arch_p.write_text(f"# Plan Archive {month}\n\n", "utf-8")
+with arch_p.open("a", encoding="utf-8") as f:
+    for h, b in arch:
+        f.write(f"## {h}\n{''.join(b)}\n")
+plan_text = "".join(preamble) + "".join(f"## {h}\n{''.join(b)}" for h, b in keep)
+plan_p.write_text(plan_text, "utf-8")
+print(f"[plan-archive] archived {len(arch)} section(s)")
+PYEOF
+
 # Accumulate output in a variable; truncate to 10240 bytes before writing.
 _OUT=""
 
