@@ -133,11 +133,20 @@ except Exception:
     sys.exit(1)
 PYEOF
 )
-  if [ -n "$_MIR_LESSONS" ]; then
+  _DB_EXIT=$?
+  if [ "$_DB_EXIT" -eq 0 ] && [ -n "$_MIR_LESSONS" ]; then
     echo ""
     echo "--- lessons (DB-live, active only) ---"
     echo "$_MIR_LESSONS"
+  elif [ "$_DB_EXIT" -ne 0 ] && [ -f "$_MIR_PD/tasks/lessons.md" ]; then
+    echo ""
+    echo "--- lessons.md (fallback: memory.db unavailable) ---"
+    head -30 "$_MIR_PD/tasks/lessons.md"
   fi
+elif [ -f "$_MIR_PD/tasks/lessons.md" ]; then
+  echo ""
+  echo "--- lessons.md (fallback: memory.db absent) ---"
+  head -30 "$_MIR_PD/tasks/lessons.md"
 fi
 echo ""
 echo "Context depth on demand: uv run mir context pull \"<query>\" (--history for archived/expired)"
