@@ -10,7 +10,7 @@ status: applied-baseline
 
 ## 0.5 Design Goals
 
-- Keep the public template aligned with the mir-harness baseline for phase 11.
+- Keep the public template aligned with the your-harness baseline for phase 11.
 - Provide a reusable reference artifact for new and existing family repositories.
 - Preserve an English-only, public-safe baseline that can be verified automatically.
 
