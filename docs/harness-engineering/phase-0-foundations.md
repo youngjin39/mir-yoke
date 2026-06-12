@@ -6,132 +6,132 @@ status: consolidated-v1
 
 # Phase 0 — Foundations
 
-> **Purpose**: Fix the philosophy, principles, and terminology shared by all subsequent phases. No code or hooks yet. Only agreement.
+> **Purpose**: Fix the philosophy, principles, and terminology that subsequent phases will share. No code, no hooks yet — only consensus.
 
 ## 0.5 Design Goals (R9 anchor)
 
-> This phase's connection to the [3-axis fleet goals](applications/fleet-catalog.md). When adding a new phase or cherry-picking for a family, the `design` skill (R9-T11) requires `design_goals` as a mandatory input.
+> Connection of this phase to the [3-axis fleet goals](applications/fleet-catalog.md). When adding new phases or cherry-picking for a family, the `design` skill (R9-T11) mandates `design_goals` as required input.
 
 **3-axis contribution**:
-- **Axis I (your-harness hardening)**: 4 pillars · 5 layers · HOW NOT · 9 terminology entries as a sticky baseline for all phases in your harness
-- **Axis II (public template sync)**: template adopters must pass the same agreement procedure (§11 Exit Criterion) — prevents terminology drift
-- **Axis III (fleet central governance / back-propagation)**: fleet families may not enter phase-1+ without a phase-0 agreement (SE-meta self-stop entry point)
+- **Axis I (your-harness strengthening)**: Fix 4 pillars, 5 layers, HOW NOT, 9 terminology as sticky baseline for all phases in your-harness
+- **Axis II (Public template sync)**: Template adopters are obligated to pass the same consensus procedure (§11 Exit Criterion) — blocks terminology drift
+- **Axis III (Fleet central management / back-propagation)**: N families are blocked from entering phase-1+ without phase-0 consensus (SE-meta self-stop entry point)
 
 **Inter-phase contract**:
-- **Input** (consumes): user request + external OSS inspiration + MEMORY (`project_*` / `feedback_*`)
-- **Output** (provides): 4 pillars + 5 layers + 9 terms + HOW NOT list + decisions-vs-archived table → foundation for phase-1 entry
+- **Input** (consumed): User request + external OSS inspiration + MEMORY (`project_*` / `feedback_*`)
+- **Output** (provided): 4 pillars + 5 layers + 9 terminology + HOW NOT list + Decisions vs Sunset table → phase-1 entry foundation
 
 ## 1. Governing Variables
 
-The variables that determine harness quality are not prompts — they are these 4 axes:
+The variables that determine harness quality are not prompts — they are the following 4 axes:
 
-1. **Context hygiene** — what is read and what is not
-2. **Execution path separation** — code work and non-code work are not routed through the same flow
-3. **Enforcement mechanism** — critical rules are expressed in code, not prose
-4. **State single source of truth** — each fact lives in exactly one place
+1. **Context Hygiene** — What is read and what is not read
+2. **Execution Path Separation** — Whether code tasks and non-code tasks are run in the same flow
+3. **Enforcement Mechanism** — Whether important rules are code rather than prose
+4. **State Source of Truth** — Whether a single fact lives in exactly one place
 
-If any of these four axes breaks, no prompt can recover the situation.
+If these four axes break, no prompt can recover them.
 
-## 2. 4 Pillars (Pachaar reference + refined study notes)
+## 2. 4 Pillars (Pachaar citation + learning notes refinement)
 
-| Pillar | Definition | Phase mapping |
+| Pillar | Definition | Phase flow mapping |
 |---|---|---|
-| Machine-Readable Context | Documents, structures, and conventions that AI can read | Phase 3 |
-| Systematic Enforcement | Embedding rules as code | Phase 2 |
-| Tool Boundaries | Restricting the areas tools can reach | Phase 2, Phase 4 |
-| Automated Garbage Collection | Auto-cleaning unused, duplicate, or dead code | Phase 8 |
+| Machine-Readable Context | Documents, structures, and conventions that AI reads | Phase 3 |
+| Systematic Enforcement | Embedding rules as code-level enforcement | Phase 2 |
+| Tool Boundaries | Limiting the domain that tools can reach | Phase 2, Phase 4 |
+| Automated Garbage Collection | Automatic cleanup of unused, duplicate, and dead code | Phase 8 |
 
 ## 3. 5-Layer Responsibility Separation
 
-| Layer | Responsibility | Must NOT contain |
+| Layer | Responsibility | What must not be here |
 |---|---|---|
-| Harness | Classification · routing · verification checkpoints | Domain knowledge verbatim |
-| Docs | Explanation · rationale · decision records | Enforcement rules themselves |
-| Skills | Encapsulation of repeated procedures | Global policy source of truth |
-| Hooks/Scripts | Enforcement · automated verification · blocking | Verbose explanations |
-| Memory | State · facts · preferences | Duplicate guidance documents |
+| Harness | Classification, routing, validation checkpoints | Domain knowledge source text |
+| Docs | Explanation, rationale, decision records | Enforcement rules themselves |
+| Skills | Encapsulation of repeatable procedures | Single source of truth for global policy |
+| Hooks/Scripts | Enforcement, automated validation, blocking | Verbose explanations |
+| Memory | State, facts, preferences | Duplicate guidance documents |
 
-Sub-agents and MCP are auxiliary executors within these 5 layers, not layers themselves.
+Sub-agents and MCP are auxiliary executors of these 5 layers, not layers themselves.
 
 ## 4. HOW NOT Priority
 
-When describing a module, there are 5 questions to answer — **HOW NOT is highest priority**:
+When describing a module, the 5 questions to answer — **HOW NOT is highest priority**:
 
-1. **WHAT** — what does it do
-2. **HOW** — how does it do it
-3. **HOW NOT** — how does it break ← most important
-4. **WHERE** — where is it called from
-5. **WHY** — why is it designed this way
+1. **WHAT** — What does it do
+2. **HOW** — How does it do it
+3. **HOW NOT** — How can it break ← most important
+4. **WHERE** — Where is it called from
+5. **WHY** — Why is it designed this way
 
-Reason: AI causes incidents not when it doesn't know "ways it can do something" but when it doesn't know "ways it must never do something."
+Reason: AI causes incidents not when it doesn't know "ways it can work" but when it doesn't know "ways it must never work".
 
 ## 5. Compass not Encyclopedia
 
-AI-ready documentation is a compass, not an encyclopedia.
+AI-Ready documentation is a compass, not an encyclopedia.
 
-- Do not write down all knowledge.
-- Tell the reader where to find what.
-- State decisions and prohibited lines clearly.
-- Write only what does not change (changing things belong in code and tests).
+- Does not document all knowledge.
+- Shows where things can be found.
+- Makes decisions and prohibition lines clear.
+- Only records what doesn't change (what changes goes into code and tests).
 
 ## 6. 4 Task Classifications
 
-Every request is classified into one of the following. Starting without classification is failure.
+Every request falls into one of the following. Starting without classification means failure.
 
 | task_type | Definition |
 |---|---|
-| code_execution | Involves actual file modification, creation, or deletion |
-| research_planning | Investigation, comparison, design, planning (no code or code is secondary) |
-| review | Examining existing artifacts for defects, gaps, or risks |
-| ops | Environment inspection, logs, status diagnosis, runtime operations |
+| code_execution | Includes actual file modification, creation, or deletion |
+| research_planning | Investigation, comparison, design, planning (code absent or secondary) |
+| review | Examination of defects, omissions, risks in existing artifacts |
+| ops | Environment checks, logs, state diagnosis, runtime |
 
-## 7. Core Prohibitions
+## 7. Core Prohibition Lines
 
-Patterns that are **prohibited** throughout this entire document set:
+Patterns **prohibited** across this entire consolidated document:
 
 - Reporting completion without verification
-- Dumping all memory verbatim into the prompt
-- Replicating the same fact in multiple places
-- Routing code work and research work through the same flow
-- Placing only a "do not do this" statement without a technical block
-- Ending work based on self-assessment alone (violates Worker Isolation)
+- Dumping all memory source text into the prompt
+- Duplicating the same fact across multiple locations
+- Running code tasks and investigation tasks in the same flow
+- Having "don't do this" text without a technical block
+- Finishing work with only self-assessment (Worker Isolation violation)
 
-## 8. Decisions vs Archived
+## 8. Decisions vs Sunset
 
-The following are decision values that all phases in this document set assume. Comparison with archived alternatives: see [Appendix A §2](appendix-a-sources.md).
+The following are decision values assumed by all phases in this consolidated document. For comparison with sunset options, see [Appendix A §2](appendix-a-sources.md).
 
-| Item | Decision value | Archived alternative |
+| Item | Decision value | Sunset option |
 |---|---|---|
 | Implementation language | Python | Rust migration |
-| Memory infrastructure | sqlite-vec + oMLX bge-m3 | No embeddings / Langfuse outsourced |
-| Execution agent | Claude+Codex dual | Single agent |
-| Directory root | `.claude/` + `.ai-harness/` distributed | Single `.harness/` root |
-| MVP strategy | Full rollout + per-family evolution | Gradual incremental introduction / MVP split |
-| Discord | Claude Code plugin delegation | Direct custom adapter implementation |
+| Memory infrastructure | sqlite-vec + oMLX bge-m3 | No embeddings / Langfuse external |
+| Execution agent | Claude + Codex dual | Single agent |
+| Directory root | `.claude/` + `.ai-harness/` distributed | `.harness/` single root |
+| MVP strategy | Full deployment + per-family evolution | Gradual 12-family introduction / MVP split |
+| Discord | Claude Code plugin delegation | Custom adapter direct implementation |
 
-## 9. Terminology
+## 9. Terminology Fixed
 
-- **family** — one repository unit managed by the harness (your-harness self + all fleet families)
-- **harness** — the bundle of control plane code + rules + hooks. Not a tool belt AI carries; an exoskeleton that constrains AI
-- **executor lane / review lane** — separated execution paths for code writing/testing vs. verification/review
-- **phase** (concept) — the N stages in this document set (§2 table above)
-- **phase** (implementation) — the P0-F ~ P14 ledger in `tasks/phase.json`. The two meanings are different ([Appendix A §3](appendix-a-sources.md))
+- **family** — One repository unit managed by the harness (your-harness itself + N external = total N+1)
+- **harness** — Bundle of control plane code + rules + hooks. Not a tool belt the AI carries, but an exoskeleton that constrains the AI
+- **executor lane / review lane** — Separate execution paths for code writing/testing vs verification/review
+- **phase** (conceptual) — The phases in this consolidated document (§2 table)
+- **phase** (implementation) — The P0-F ~ P14 ledger in `tasks/phase.json`. The two meanings are different ([Appendix A §3](appendix-a-sources.md))
 
-## 10. Application State
+## 10. Application Status
 
 | Item | Status |
 |---|---|
-| 4 pillars | land (distributed across Phase 2/3/8) |
-| 5-layer separation | land (CLAUDE.md Hook Policy Boundary) |
-| 4 task classifications | land (orchestration preset mapping) |
+| 4 pillars | landed (distributed implementation across Phase 2/3/8) |
+| 5-layer separation | landed (CLAUDE.md Hook Policy Boundary) |
+| 4 task classifications | landed (orchestration preset mapping) |
 | HOW NOT priority | partial land (failure-patterns.md absorbs some) |
 | Compass not Encyclopedia | partial land (memory-map.md absorbs some) |
-| Decisions vs archived table | land (this document + Appendix A) |
+| Decisions vs Sunset table | landed (this document + Appendix A) |
 
 ## 11. Exit Criterion
 
-Terminology in §9 and decisions table in §8 agreed with user. New family profile JSON (`config/repos/<name>.json`) can be written.
+Terminology from §9 and decision table from §8 agreed with user. Ready to create family profile JSON (`config/repos/<name>.json`) for new families.
 
-## 12. Next Steps
+## 12. Next Step
 
 Proceed to [Phase 1 — Start Harness](phase-1-start-harness.md).

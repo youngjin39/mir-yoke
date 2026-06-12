@@ -5,41 +5,39 @@ status: consolidated-v1
 depends_on: phase-7-fleet-expansion
 ---
 
-# Phase 8 — Automated Garbage Collection
+# Phase 8 -- Automated Garbage Collection
 
-> **Purpose**: Automatically detect and archive unused, duplicate, dead code, stale memory, and deprecated catalog entries. Systemically solves the problem of the harness growing heavier over time.
+> **Purpose**: Automatically detect and archive unused/duplicate/dead code, stale memory, and deprecated catalog entries. Systemically solve the problem of harnesses growing heavier over time.
 
 ## 0.5 Design Goals (R9 anchor)
 
-> This phase's connection to the [3-axis fleet goals](applications/fleet-catalog.md). When adding a new phase or cherry-picking for a family, the `design` skill (R9-T11) requires `design_goals` as a mandatory input.
-
 **3-axis contribution**:
-- **Axis I (your-harness hardening)**: your-harness GC cadence (monthly diet + memory lifetime cleanup + archive lifecycle)
+- **Axis I (self-harness hardening)**: GC cadence (monthly diet + memory lifetime cleanup + archive lifecycle)
 - **Axis II (public template sync)**: template GC procedure (per-family archive standard lifecycle + deletion rules)
-- **Axis III (fleet central governance / back-propagation)**: fleet GC orchestration (your-harness manages archive timing for all fleet families + prevents cross-family GC schedule conflicts)
+- **Axis III (fleet central management)**: fleet GC orchestration (your-harness manages N-family archive timing + prevents cross-family GC scheduling conflicts)
 
 **Inter-phase contract**:
 - **Input** (consumes): phase-3 (memory entry status/valid_until) + phase-6 (usage metrics) + phase-7 (per-family adoption)
-- **Output** (provides): archive artifacts + deletion log + CLAUDE.md diet → phase cycle reset + phase-11 drift detection basis
+- **Output** (provides): archive artifact + deletion log + CLAUDE.md diet -> phase cycle reset + phase-11 drift detection basis
 
 ## 1. Last of the 4 Pillars
 
-The last of the 4 pillars from [[phase-0-foundations]] §2 to be applied, but the most core.
+Phase 0 section 2 listed 4 pillars. This is the last to be applied, but the most essential.
 
-> Automated Garbage Collection — automatically clean up duplicate code, dead code, architectural violations, unused catalog items
+> Automated Garbage Collection -- automatically clean duplicate code, dead code, architecture violations, and unused catalog entries.
 
-Relying on manual cleanup means it ultimately won't happen. Systematize with 3 steps: cadence + detect + archive.
+Relying on manual cleanup means it will not get done. Systematize with 3 stages: cadence + detect + archive.
 
 ## 2. Detection Targets
 
-| Area | Target |
+| Domain | Targets |
 |---|---|
 | Code | dead function / duplicate block / unused import |
-| Catalog | agent / skill with 0 calls |
-| Memory | entry past `valid_until` / superseded not reflected |
-| Docs | conflicting decision values / stale external citations |
-| Hooks | 0-fire hooks (false negative verification required) |
-| Family | rollout-abandoned family |
+| Catalog | agents / skills with 0 usage |
+| Memory | entries past `valid_until` / superseded entries not reflected |
+| Documentation | conflicting decision values / stale external references |
+| Hook | 0-fire hooks (requires false negative verification) |
+| Family | families where rollout is stalled |
 
 ## 3. Cadence
 
@@ -55,91 +53,89 @@ Relying on manual cleanup means it ultimately won't happen. Systematize with 3 s
 
 ## 4. Archive Lifecycle
 
-Unused detected → do NOT delete immediately. Route through archive.
+Unused detection -> do not delete immediately. Route through archive.
 
 ```text
-active → unused (N days) → archive candidate → archived → (if needed) revived | purged
+active -> unused (N days) -> archive candidate -> archived -> (if needed) revived | purged
 ```
 
-| Stage | Action | Threshold (R7-C-W6 confirmed) |
+| Stage | Action | Threshold |
 |---|---|---|
-| unused mark | fleet_observe advisory WARN | **N = 30 days** — based on last call/reference timestamp (code: import grep, catalog: active_agents reference, memory: last inject) |
-| archive candidate | tag assigned, grace period | **7 days** — user can dispute unused determination |
-| archived | moved to `archive/` directory, removed from registry | (immediate — right after 7-day grace period ends) |
-| revived | return to active when use resumes | (no limit — possible from any stage) |
-| purged | permanently deleted from archive after 6 months | **180 days** — from archived entry timestamp |
+| Mark unused | fleet_observe advisory WARN | **N = 30 days** -- based on last call/reference timestamp (code: import grep, catalog: active_agents reference, memory: last inject) |
+| Archive candidate | tag applied, grace period | **7 days** -- operator can contest the unused decision |
+| Archived | moved to `archive/` directory, removed from registry | (immediate -- right after 7-day grace period ends) |
+| Revived | return to active when use resumes | (unlimited -- possible from any stage) |
+| Purged | permanent deletion from archive after 6 months | **180 days** -- from archived entry time |
 
-**Threshold rationale (R7-C-W6)**: Prior table only noted "(N days)" without specific values → operators couldn't determine when to transition to archive candidate. This R7 confirms N=30, grace=7, purge=180. Change requires an ADR.
+**Threshold rationale**: Concrete values (N=30, grace=7, purge=180) defined to prevent operators from being unable to determine archive candidate transition timing. Changes require an ADR.
 
-**Consistency with §3 cadence table**: §4 thresholds are in days. §3 cadence ("weekly unused stats / monthly memory lifetime") is the detection trigger for these thresholds.
+**Cadence section 3 alignment**: This section thresholds are in days. Section 3 cadence ("weekly unused stats / monthly memory lifetime") is the trigger for threshold detection.
 
 ## 5. CLAUDE.md Diet
 
 Monthly cadence.
 
-### Automated Tools
-- `/revise-claude-md` (official plugin)
+### Automated tools
+- `/revise-claude-md` (official Anthropic plugin)
 - `/claude-md-improver`
 
-### Checklist Items
-- Keep under 100–200 lines
-- Decision values only (remove items under discussion)
-- Only what doesn't change (move changing items to code/tests)
-- Remove duplicates (detect same fact at multiple locations across 8-layer model)
+### Checklist
+- Keep to 100-200 lines
+- Only decision values (remove items still under discussion)
+- Only things that do not change (move changing items to code and tests)
+- Remove duplicates (detect same fact in multiple 8-layer locations)
 - Remove external citation body text (move to Appendix)
 
 ## 6. Memory Lifetime Cleanup
 
-Uses lifetime fields from [[phase-3-memory-context]] §4.
+Uses the lifetime fields from [Phase 3 section 4](phase-3-memory-context.md).
 
-**R4 dependency note**: This section only works after Phase 3's lifetime field schema ([`memory_entry.schema.json`](../templates/_schema/memory_entry.schema.json)) + code store implementation is landed. If Phase 3 is not landed, this entire section is inoperative. Therefore Phase 8 entry prerequisite = Phase 3 done.
+**Dependency note**: This section functions only after Phase 3 lifetime field schema (`memory_entry.schema.json`) + code store implementation is landed. If Phase 3 is not landed, this section is entirely inactive. Therefore Phase 8 entry prerequisite = Phase 3 done.
 
-1. `status: deprecated` entry → exclude from injection immediately
-2. `status: superseded` entry → verify `superseded_by` is reachable
-3. Entry past `valid_until` → archive candidate
-4. Multiple locations for same fact → archive all but the SoT
-5. `status: critical` entry → GC exempt (uses Phase 3 §4 critical field)
-6. Memory not directly edited by user → automatically updated by LLM/hook responsibility
+1. `status: deprecated` entries -> exclude from injection immediately
+2. `status: superseded` entries -> verify `superseded_by` is reachable
+3. Entries past `valid_until` -> archive candidates
+4. Same fact in multiple locations -> archive all except SoT
+5. `status: critical` entries -> GC exempt (Phase 3 section 4 critical field)
+6. Memory not directly edited by the operator is updated automatically by LLM/hook responsibility
 
 ## 7. Catalog Consistency
 
 Advisory from `fleet_observe` and `scripts/verify_repo_agent_management.py`.
 
-Check items:
-- Agent definition exists but not referenced in family's `active_agents` → 0 uses
-- Skill definition exists but no agent calls it → 0 uses
-- Multiple agents / skills with same functionality → duplicate candidates
-- Dangling references in external catalog → patch immediately
+Checks:
+- Agent definition exists but not referenced in any family `active_agents` -> 0 usage
+- Skill definition exists but no agent calls it -> 0 usage
+- Multiple agents / skills with the same function -> duplicate candidate
+- Dangling references in external catalog -> patch immediately
 
 ## 8. Hook False Negative Verification
 
 A 0-fire hook has two possibilities:
 
-1. Genuinely no violations → working correctly
-2. Fire condition is wrong and actual violations are not detected → false negative
+1. There really are no violations -> working correctly
+2. Fire condition is wrong and actual violations are not detected -> false negative
 
-Quarterly verification with false-negative-tester subagent. Inject intentional violation cases → confirm hook fires.
+Verify quarterly with false-negative-tester subagent. Inject intentional violation cases -> confirm hook fires.
 
 ## 9. ADR Active vs Superseded
 
 ADRs in `docs/decisions/` also have a lifecycle.
 
-- New ADR changes a decision in an existing ADR → existing ADR frontmatter `status: superseded` + `superseded_by`
-- Unexecuted ADR → `status: deferred` (specify review date)
-- Abandoned ADR → move to archive directory
+- New ADR changes decision of existing ADR -> existing ADR frontmatter `status: superseded` + `superseded_by`
+- Unexecuted ADR -> `status: deferred` (specify re-review date)
+- Discarded ADR -> move to archive directory
 
-For ADR-01 through ADR-20 lifecycle status as of this consolidated document's writing (2026-05-22), refer to frontmatter in each file in `docs/decisions/`.
-
-## 10. Automated Tool Catalog
+## 10. Automation Tool Catalog
 
 | Tool | Role |
 |---|---|
-| `fleet_observe/archive/detector.py` | Unused component detection |
+| `fleet_observe/archive/detector.py` | Detect unused components |
 | `scripts/verify_repo_agent_management.py` | Catalog consistency advisory |
 | `scripts/verify_codex_sync.py` | Public template sanitize verification |
 | `/revise-claude-md` | CLAUDE.md diet |
 | `/claude-md-improver` | Same |
-| false-negative-tester subagent | Hook fire verification (scripted — R29-T09 land, `.claude/agents/false-negative-tester.md`) |
+| false-negative-tester subagent | Hook fire verification (scripted, `.claude/agents/false-negative-tester.md`) |
 | enforcement-validator subagent | Rule self-verification |
 | cross-project-impact-audit | Cross-family change impact |
 
@@ -148,31 +144,31 @@ For ADR-01 through ADR-20 lifecycle status as of this consolidated document's wr
 - Immediate deletion (skipping archive lifecycle)
 - Relying only on manual cleanup
 - Trusting hooks without false negative verification
-- Simply assuming unused = unnecessary (may require user intent verification)
-- Leaving CLAUDE.md diet to human cadence (cadence reminder only is automatic; execution is LLM)
+- Assuming unused = unnecessary (sometimes operator intent check required)
+- Leaving CLAUDE.md diet on human cadence only (cadence reminder is automatic, execution is LLM)
 
-## 12. Application State
+## 12. Application Status
 
 | Item | Status | Location |
 |---|---|---|
-| 4-pillar GC | land | ADR-11 fleet-inventory-catalog-axis-extension |
-| 6 detection areas | partial land | code/catalog land; 1 canary stale hook archive evidence exists; cadence repeat closeout / doc stale / ADR lifecycle standardization is follow-up |
-| Cadence | partial land | some automatic cadence, some manual reminders |
-| Archive lifecycle | land | `archive/` catalog + detector.py |
-| CLAUDE.md diet | partial land | manual cadence only |
-| Memory lifetime cleanup | partial land | [[phase-3-memory-context]] lifetime field schema/store/GC path landed; phase-level cadence/evidence cleanup is remaining |
-| Catalog consistency advisory | land | verify_repo_agent_management.py |
-| Hook FN verification | partial land | false-negative-tester agent land, deny-list sweep evidence (`10/10 FN-OK`) obtained; repeat cadence accumulation is follow-up |
-| ADR active/superseded | partial land | frontmatter consistency absent |
+| 4-pillar GC | landed | fleet-inventory-catalog-axis-extension ADR |
+| 6-area detection targets | partial | code/catalog landed; actual canary stale hook archive evidence exists; cadence repeat closeout / doc stale / ADR lifecycle standardization pending |
+| Cadence | partial | some automatic cadence; some manual reminder |
+| Archive Lifecycle | landed | `archive/` catalog + detector.py |
+| CLAUDE.md diet | partial | manual cadence only |
+| Memory lifetime cleanup | partial | phase-3 lifetime field schema/store/GC path landed; phase-level cadence/evidence organization remaining |
+| Catalog consistency advisory | landed | verify_repo_agent_management.py |
+| Hook false negative verification | partial | false-negative-tester agent landed; deny-list sweep evidence acquired; repeat cadence accumulation pending |
+| ADR active/superseded | partial | frontmatter consistency incomplete |
 
-**Gap**: Repeat hook FN cadence closeout + ADR lifecycle standardization + memory GC cadence evidence cleanup.
+**Gaps**: Repeat hook false-negative cadence closeout + ADR lifecycle standardization + memory GC cadence evidence organization.
 
 ## 13. Exit Criterion
 
-Automatic items from §3 cadence (per-commit linter / per-phase catalog consistency) are working, and monthly cadence reminder fires and is executed at least 1 cycle. Archive lifecycle's active → unused → archived flow is measured on at least 1 unused component.
+Automatic items in section 3 cadence (per-commit linter / per-phase catalog consistency) are operating, and monthly cadence reminder fires and executes for 1+ cycles. The active -> unused -> archived flow in the archive lifecycle is verified on 1+ unused components.
 
 ## 14. Conclusion
 
-When this phase is complete, all 4 pillars from [[phase-0-foundations]] are operational. When adopting a new family, start from Phase 0 again.
+When this phase completes, all 4 pillars from [Phase 0](phase-0-foundations.md) are operational. When a new family is introduced, restart from Phase 0.
 
-Appendix: [Appendix A — Source Mapping, Deprecated Options, Contradiction Resolution](appendix-a-sources.md)
+Appendix: [Appendix A -- Source Mapping, Deprecated Items, Contradiction Resolution](appendix-a-sources.md)

@@ -1,219 +1,264 @@
 ---
 phase: 11
-title: Back-Propagation
-status: consolidated-v1
+title: Back-Propagation (Innovation Share-Back)
+status: design-v1
 depends_on: [phase-9, phase-10]
+date: 2026-05-23
 ---
 
-# Phase 11 — Back-Propagation (Innovation Share-Back)
+# Phase 11 -- Back-Propagation (Innovation Share-Back)
 
-> **Purpose**: When a fleet family independently improves its harness, detect that innovation and propagate it back to your-harness and/or the public template. Reverse flow: family → your-harness / template.
+> **Purpose**: When a family produces an innovation, the central harness detects it, catalogs it, and converts it into a directly applicable patch for managed families. Maintain 5-direction flow of the **3-node sync hub** (family-A <-> central harness <-> family-B), and for active managed repos, go beyond recommendation to direct apply.
 
 ## 0.5 Design Goals (R9 anchor)
 
-> This phase's connection to the [3-axis fleet goals](applications/fleet-catalog.md). When adding a new phase or cherry-picking for a family, the `design` skill (R9-T11) requires `design_goals` as a mandatory input.
+> This phase connects to the [3-axis fleet goals](applications/fleet-catalog.md). When adding a new phase or cherry-picking from a family, the `design` skill (R9-T11) requires the `design_goals` field as mandatory input.
 
 **3-axis contribution**:
-- **Axis I (your-harness hardening)**: absorb innovations from fleet families into your-harness (your-harness learns from fleet)
-- **Axis II (public template sync)**: promote innovations worthy of generalization directly to template baseline
-- **Axis III (fleet central governance / back-propagation)**: detect + triage + route innovations from all fleet families → your-harness catalog + share decisions
+- **Axis I (self-harness hardening)**: family innovation absorbed into self-harness becomes input for self-harness strengthening
+- **Axis II (public template sync)**: generalizable patterns from family innovations are promoted to the template baseline (via self-harness absorption then phase-10 stage 2)
+- **Axis III (fleet central management)**: **core of this phase**. 3-way share-back catalog + drift detector across family <-> central harness <-> other family
 
 **Inter-phase contract**:
-- **Input** (consumes): phase-9 (fleet-harness-state.json family-ahead drift entries) + phase-6 (7-axis observability rollup per family)
-- **Output** (provides): `innovations[]` entries in fleet-harness-state.json + triage decisions + your-harness absorb commits + template promotion PRs
+- **Input** (consumes): phase-9 (fleet-harness-state.json + drift_log family-ahead drift) + phase-6 (per-family observability rollup) + phase-7 (per-family adoption history)
+- **Output** (provides): innovation share/apply event -> phase-10 stage 3 (managed fleet direct apply) trigger + phase-9 catalog update
 
 ## 1. 3-Way Share-Back Flow
 
 ```text
-family-A  ←────────────────────────────────── your-harness ──────────────────────────────────→  family-B
-    │       Forward-1 (your-harness → family)                Forward-2 (your-harness → family)      │
-    │                                                                                                │
-    └──── Backward-1 (family-A → your-harness) ────→ your-harness ←──── Backward-2 (family-B → your-harness)
-                                                          │
-                                               Lateral (your-harness mediates
-                                               family-A innovation → family-B)
+[family-A]                                    [family-B]
+     | (innovation emerges)                        ^ (direct apply / exception review)
+     |                                             |
+     +-> [central harness drift_detector]          |
+              |                                    |
+              +- catalog registration              |
+              +- compatibility check (family_type) |
+              +- self-harness absorption eval      |
+              +- template promote eval             |
+              |                                    |
+              +-> [central harness share_dispatcher] ------+
+                       |
+                       +- Discord notification (operator review)
+                       +- recommendations_received array updated
 ```
 
-**5 Sync Directions**:
-1. **Forward-1**: your-harness → specific family (Phase 10 Stage 3)
-2. **Forward-2**: your-harness → all families (fleet rollout)
-3. **Backward-1**: family-A → your-harness (this phase, direct absorb)
-4. **Backward-2**: family-B → your-harness (this phase, via catalog)
-5. **Lateral**: family-A innovation → your-harness mediates → family-B (your-harness decides routing)
+**Key principles**:
+- Innovations from family-A are not automatically absorbed by the central harness (operator review required).
+- For active managed repos, the central harness applies directly after inspection.
+- Absorption stages (self-harness / template promote / family share) are each independent decisions.
 
-## 2. Innovation Detection
+## 2. Innovation Detection -- `harness_drift.py`
 
-`harness_drift.py` detects family-ahead drift and registers it as an innovation candidate. (Code not yet landed as of this document's writing — spec below.)
+[`tools/fleet_observe/harness_drift.py`](../../tools/fleet_observe/harness_drift.py). This section is the spec; code is a separate round.
 
-### Innovation Data Model
+### 2-1. Detection Targets
+| Kind | Detection Method | Example |
+|---|---|---|
+| **new skill** | Compare family `.claude/skills/` SKILL.md vs template | example-pipeline `scene-render` skill |
+| **new hook** | Compare family `.claude/hooks/` hook files vs template | example-notes `note-conflict-resolver.sh` |
+| **new agent** | Family `.claude/agents/` agent frontmatter | example-infra `signal-analyst` agent |
+| **new phase pattern** | New section in family `docs/harness-engineering/` phase-N-application | (operator review required) |
+| **config evolution** | New field usage in family `config/repos/<self>.json` | `local_phase_override` field |
+
+### 2-2. Innovation dataclass
+
+`fleet_harness_state.schema.json` innovation schema 1:1 mapping. Python type signature:
 
 ```python
-from dataclasses import dataclass
-from typing import Optional
+from dataclasses import dataclass, field
+from datetime import datetime
+from typing import Literal, Optional
 
-@dataclass
+@dataclass(frozen=True)
 class Innovation:
-    id: str                   # unique identifier
-    kind: str                 # "skill" | "hook" | "agent" | "config" | "doc"
-    source: str               # source family name
-    detected_at: str          # ISO 8601 timestamp
-    share_status: str         # "candidate" | "recommended" | "promoted" | "absorbed" | "archived" | "declined"
-    phase: str                # related phase (e.g., "phase-5")
-    path: str                 # file path relative to family root
-    diff_summary: str         # brief description of what changed
-    user_decision_at: Optional[str]  # ISO 8601 timestamp, None if not yet decided
+    """Runtime representation of a family-ahead innovation. Matches fleet_harness_state.schema.json $defs/innovation."""
+    id: str                                          # kebab-slug, e.g. "scene-render-pipeline-2026-05-20"
+    kind: Literal["skill", "hook", "agent", "phase_pattern", "config_field"]
+    source: str                                      # family slug (catalog families.<key>)
+    detected_at: datetime                            # ISO-8601 UTC
+    share_status: Literal[
+        "candidate", "recommended", "absorbed_to_self",
+        "promoted_to_template", "archived", "rejected"
+    ]
+    phase: Optional[str] = None                      # "phase-N" or design-process etc.
+    path: Optional[str] = None                       # relative path in family repo
+    diff_summary: Optional[str] = None
+    user_decision_at: Optional[datetime] = None
+
+    @classmethod
+    def make_id(cls, kind: str, source: str, slug: str, date: datetime) -> str:
+        """ID generation rule: <slug>-<YYYY-MM-DD>. Example: scene-render-pipeline-2026-05-20."""
+        return f"{slug}-{date.strftime('%Y-%m-%d')}"
 ```
 
-### Detection Algorithm (pseudocode)
+**Field naming**: both schema and code use `source` (family slug).
 
+### 2-3. Detection Algorithm (pseudocode)
 ```python
-def detect_innovations(family_path, template_baseline_path):
-    candidates = []
+def detect_family_innovations(family_path: Path, template_path: Path) -> list[Innovation]:
+    innovations = []
+    today = datetime.now(UTC)
 
-    # Location 1: .claude/skills — new or modified skill definitions
-    for skill_file in family_path / ".claude/skills":
-        if not exists_in_template(skill_file, template_baseline_path):
-            if not in_skip_list(skill_file):
-                candidates.append(Innovation(kind="skill", path=skill_file, ...))
+    # 1. file existence diff (3 locations)
+    for loc in [".claude/skills", ".claude/hooks", ".claude/agents"]:
+        family_files = set((family_path / loc).glob("*/SKILL.md" if "skills" in loc else "*"))
+        template_files = set((template_path / loc).glob("*/SKILL.md" if "skills" in loc else "*"))
+        new_files = family_files - template_files
+        for f in new_files:
+            kind = {"skills": "skill", "hooks": "hook", "agents": "agent"}[loc.split("/")[-1]]
+            slug = f.parent.name if "skills" in loc else f.stem
+            innovations.append(Innovation(
+                id=Innovation.make_id(kind, family_path.name, slug, today),
+                kind=kind,
+                source=family_path.name,
+                path=str(f.relative_to(family_path)),
+                detected_at=today,
+                share_status="candidate",
+            ))
 
-    # Location 2: .claude/hooks — new hook implementations
-    for hook_file in family_path / ".claude/hooks":
-        if is_novel_hook_pattern(hook_file, template_baseline_path):
-            if not in_skip_list(hook_file):
-                candidates.append(Innovation(kind="hook", path=hook_file, ...))
+    # 2. content drift (meaningful diff in existing files)
+    # algorithm: line-count diff > 30% OR header structure diff
+    # implementation deferred -- false-positive concern, manual review queue only
 
-    # Location 3: .claude/agents — new agent definitions
-    for agent_file in family_path / ".claude/agents":
-        if not exists_in_template(agent_file, template_baseline_path):
-            if not in_skip_list(agent_file):
-                candidates.append(Innovation(kind="agent", path=agent_file, ...))
+    # 3. config evolution (new key in config/repos/<self>.json)
+    # algorithm: schema diff vs family_config.schema.json -- new top-level key
+    # implementation deferred
 
-    return candidates
+    return innovations
 ```
 
-### False-Positive Suppression
-
-Controlled vocabulary for items to skip:
-
+### 2-4. False-Positive Suppression Controlled Vocab
 ```python
 FAMILY_SPECIFIC_SKIP_GLOBS = [
-    "*.local.*",          # family-local configs
-    "*-private.*",        # explicitly private files
-    "*secrets*",          # credential files
+    "**/family_local_*.sh",
+    "**/private/*",
+    "**/_test_fixtures/*",
+    "**/*-experimental.md",
+    "**/SCRATCH.md",
+    "**/.local-config.json",
 ]
 
-SKIP_FILES = [
-    "CLAUDE.md",          # family-specific instruction files
-    "AGENTS.md",
-    ".mcp.json",
-]
-
-SKIP_DIRS = [
-    ".git",
-    "__pycache__",
-    "node_modules",
-    ".env",
-]
+SKIP_FILES = {"LICENSE", "README.md", "AGENTS.md", "CLAUDE.md"}
+SKIP_DIRS = {"archive", ".git", "node_modules", "venv", "__pycache__"}
 ```
 
-## 3. Triage — 4 Decisions
+Updates to this vocab require a patch to this doc (PR + operator review).
 
-When an innovation candidate is detected, your-harness (or the user) makes one of 4 triage decisions:
+**False positive suppression rules**:
+- Skip clearly family-specific files (e.g., `family_local_hook.sh`)
+- Skip LICENSE / README / user-facing string changes
+- Family-private notes (e.g., local README) are not share candidates
 
-### 3-1. Triage Decision Table
+## 3. Innovation Triage (Operator Review)
 
-| Decision | Meaning | Action |
-|---|---|---|
-| **share to fleet** | Innovation is generalizable — recommend to all fleet families | Add to `recommendations_received` for all compatible families via compatibility matrix |
-| **absorb to your-harness** | Innovation improves your-harness directly | Open absorb task; apply to your-harness via Phase 10 Stage 1 flow |
-| **promote to template** | Innovation is generic enough for the public template baseline | Open template PR; apply sanitization; promote via Phase 10 Stage 2 |
-| **archive** | Innovation is family-specific and not generalizable | Mark `share_status: archived` in fleet-harness-state.json; no further action |
+### 3-1. 4 Triage Decisions
+| Decision | Action |
+|---|---|
+| **share to fleet** | Register in compatible family rollout/apply queue (enter Stage 3 direct apply) |
+| **absorb to self-harness** | Integrate into central harness (code commit + this phase docs updated). Then template promote via phase-10 stage 2 |
+| **promote to template directly** | Add directly to template (skip self-harness absorption -- for small fixes) |
+| **archive (no share)** | Record in catalog only, no share (when family-specific) |
 
-**Manual override**: User can explicitly state any triage decision regardless of the compatibility matrix. User decision always takes precedence. Example: even if the compatibility matrix marks a hybrid_pipeline → SE-meta share as ✗ (incompatible for auto-recommend), a user explicit "absorb to your-harness" overrides this.
+### 3-2. Triage UI / Procedure
+- Discord weekly digest: list of new innovations (central harness fetches).
+- Operator selects decision 1-4 for each innovation.
+- After decision, auto-dispatch:
+  - share to fleet -> phase-10 stage 3 trigger
+  - absorb to self-harness -> TODO created (operator runs as separate round)
+  - promote to template directly -> phase-10 stage 2 PR draft
+  - archive -> catalog updated only
 
-## 4. Share Lifecycle
+### 3-3. Triage SLA
+- New innovation detected -> operator notified (weekly digest).
+- Operator review is for confirming triage criteria; it does not block direct apply for active managed repos. Only sealed/suspended/exception repos get separate hold.
 
-```text
-candidate → (triage) → recommended | promoted | absorbed | archived
-                              │
-                    recommended → (family accepts/declines)
-                              → accepted → applied → verified
-                              → declined → archived (reason recorded)
-                    promoted → template PR → merged → template-baseline updated
-                    absorbed → your-harness task → land → Phase 10 Stage 1 flow
+## 4. 5 Sync Directions
+
+| Direction | Source | Destination | Trigger |
+|---|---|---|---|
+| **Forward 1: self-harness -> template** | self-harness land | template baseline update | phase-10 stage 2 |
+| **Forward 2: template -> fleet** | template baseline | managed family apply | phase-10 stage 3 (direct apply) |
+| **Backward 1: family -> self-harness** | family innovation | self-harness catalog | this phase §2 detector + §3 triage |
+| **Backward 2: family -> template** | family innovation | template (via self-harness) | this phase §3 decision -> phase-10 stage 2 |
+| **Lateral: family -> family** | family-A | family-B | self-harness catalog + direct apply queue |
+
+All 5 directions hub through the central harness. For active managed repos, the central harness has direct apply authority.
+
+## 5. Template Sync Runbook §8a (R9 Hardened)
+
+This section supplements phase-10 §3-3 sync procedure. Perspective of an external user (new family owner who cloned the template).
+
+### 5-1. Template User Perspective (greenfield owner)
+```bash
+# 1. clone
+git clone https://github.com/<org>/claude-codex-harness new-family
+
+# 2. family initialization (see phase-10 section 5-1)
+python scripts/bootstrap.py --family-name new-family --family-type SE-product
+
+# 3. After first cycle, optional: set up communication with central harness
+# Add central harness hub endpoint to .claude/settings.json (optional)
+# Family can operate standalone without communication, but repos in a managed workspace become direct-apply targets.
 ```
 
-**Pending expiry**: If a family leaves an innovation recommendation `pending` for 30 days with no response, automatically transitions to `declined`. your-harness records reason and does not repeat the same recommendation.
+### 5-2. Existing Family Perspective (receiving template updates)
+```bash
+# 1. Receive new template version notification from central harness or Discord
+# 2. Review template changes
+git -C /path/to/claude-codex-harness log v1.0.0..v1.1.0
 
-## 5. Template Sync Runbook (§8a)
+# 3. Decide on cherry-pick for your family
+# - adopt: apply changes to family .claude/
+# - decline: notify central harness of declined status (CLI or manual)
+```
 
-Three perspectives for template sync operations.
+### 5-3. Share-Back Perspective (family -> central harness)
+```bash
+# 1. Family produces innovation
+# 2. Central harness detects via daily scan (auto) OR
+#    family owner manually notifies
+python -m tools.fleet_observe.harness_drift --notify <innovation_id>
 
-### Perspective 1: Template User (New Project)
-1. Clone template-harness repository
-2. Run `bootstrap.py` with your project configuration
-3. Apply Phase 0 baseline
-4. Customize family-specific sections
-5. Register in your-harness fleet catalog (optional but recommended)
-
-### Perspective 2: Existing Family (Receiving Update)
-1. your-harness notifies via Discord (share recommendation)
-2. Review proposed patch (minimum patch plan)
-3. Accept → your-harness applies via Stage 3; Decline → record reason
-4. Verify post-apply (family's own test suite)
-5. Report result to your-harness (fleet-harness-state.json updated)
-
-### Perspective 3: Sync-Back (Contributing Innovation)
-1. family-ahead drift detected by `harness_drift.py`
-2. your-harness catalogs as innovation candidate
-3. User triage decision (share/absorb/promote/archive)
-4. If promote: your-harness opens template PR with sanitization applied
-5. Template PR merged → all families can receive via Forward-2
+# 3. Added to central harness triage queue -> operator review -> section 3 decision
+```
 
 ## 6. Conflict Resolution
 
-Three types of conflicts when an innovation from a family conflicts with existing your-harness / template patterns:
+When an innovation conflicts with existing template patterns.
 
-| Conflict Type | Detection | Resolution |
+### 6-1. Conflict Types
+| Type | Example | Decision Procedure |
 |---|---|---|
-| **Incompatible** | Innovation uses a pattern that directly contradicts an existing rule | User decision required; escalate as ADR candidate if architectural |
-| **Abstractable** | Innovation and existing pattern serve the same purpose with different implementations | Abstract the shared interface; keep family-specific variants as overrides |
-| **Individual specialization** | Innovation is valid within its family_type but not generalizable | Triage as "archive"; record in family's local notes; do not promote |
+| **Incompatible** | family-A hook occupies same trigger as family-B hook | Operator review -- pick one or merge |
+| **Abstractable** | Similar patterns in both family-A and family-B -> abstract and promote to template | Absorb to self-harness then template promote |
+| **Individual specialization** | Only applicable to specific family | Archive (no share) |
 
-## 7. Application State
+### 6-2. Decision Owner
+- Code conflicts (hook trigger overlap etc.) -> explicit operator review.
+- Semantic conflicts (e.g., design philosophy differences between SE-product and SE-meta) -> automatic compatibility check via family_type matrix (phase-9 §5-2).
+
+## 7. Application Status
 
 | Item | Status | Location |
 |---|---|---|
-| harness_drift.py | **landed** (551 LOC) | `tools/fleet_observe/harness_drift.py` |
-| Innovation data model | **landed** | fleet-harness-state.json `innovations[]` field |
-| 5 sync directions | **landed** (conceptual SoT) | This document |
-| Triage 4 decisions | **partial land** | Manual triage via Discord notification; automated routing is follow-up |
-| Template sync runbook | **landed** | This §5 + Phase 10 Stage 2 |
-| Conflict resolution | **landed** (policy) | This §6 |
-| False-positive suppression | **landed** | `harness_drift.py` FAMILY_SPECIFIC_SKIP_GLOBS |
-| Pending expiry (30-day auto-decline) | **not implemented** | Cadence automation follow-up |
+| `harness_drift.py` | landed | `tools/fleet_observe/harness_drift.py` |
+| Triage UI (Discord digest) | partial (manual Discord notification) | Discord notification (auto cron not running) |
+| `share_dispatcher` | landed | `tools/fleet_observe/share_dispatcher.py` |
+| This phase doc | this round | this file |
+| Sync runbook 3 perspectives | this section | (operator-reviewable and expandable) |
 
-**Gap**: Automated triage routing, 30-day pending expiry enforcement, lateral sync (family-A → family-B mediation) formalization.
+## 8. ADR Candidate
 
-## 8. ADR Candidates
+ADR-27 -- Back-Propagation Pipeline (3-way share-back, conflict resolution).
 
-ADR-27 — Back-Propagation and Innovation Share-Back Policy.
+## 9. Exit Criterion
 
-## 9. Prohibitions
+This phase is done when:
+1. `harness_drift.py` spec (this §2) published -- code land in a later round.
+2. 4 triage decisions (this §3-1) documented in operator-reviewable form.
+3. All 5 sync directions (this §4) have explicit triggers.
+4. Operator review passed.
 
-- Pushing innovations to families without triage decision
-- Skipping sanitization when promoting to template
-- Allowing same innovation to be recommended repeatedly after `declined`
-- Lateral sync without your-harness as mediator (direct family-to-family prohibited)
-- Absorbing family-specific private patterns into your-harness or template without generalization
+## 10. Next Step
 
-## 10. Exit Criterion
-
-1. At least 1 complete back-propagation cycle: family-ahead drift detected → triage decision made → action taken (absorb OR promote OR archive)
-2. fleet-harness-state.json `innovations[]` field populated for at least 1 family
-3. Template sync runbook validated against at least 1 real sync operation
-4. ADR-27 published
-
-## 11. Next Steps
-
-Proceed to [Phase 12 — Template Lifecycle](phase-12-template-lifecycle.md). Phase 11 handles the detection and routing of innovations. Phase 12 handles the lifecycle of the template repository itself — versioning, deprecation, and upgrade paths.
+Next round -- implement phase-9/10/11 doc code (drift detector + share dispatcher + sanitize_for_template). No new phase needed -- this is a separate implementation round.

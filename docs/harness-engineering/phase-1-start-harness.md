@@ -5,33 +5,33 @@ status: consolidated-v1
 depends_on: phase-0-foundations
 ---
 
-# Phase 1 — Start Harness
+# Phase 1 -- Start Harness
 
-> **Purpose**: Ensure all requests follow the same startup procedure. Task classification + 5 mandatory declarations + routing decision.
+> **Purpose**: Ensure all requests follow the same start procedure. Task classification + 5 required declarations + routing decision.
 
 ## 0.5 Design Goals (R9 anchor)
 
-> This phase's connection to the [3-axis fleet goals](applications/fleet-catalog.md). When adding a new phase or cherry-picking for a family, the `design` skill (R9-T11) requires `design_goals` as a mandatory input.
+> Connection of this phase to the [3-axis fleet goals](applications/fleet-catalog.md). When adding new phases or cherry-picking for a family, the `design` skill (R9-T11) mandates `design_goals` as required input.
 
 **3-axis contribution**:
-- **Axis I (your-harness hardening)**: main-orchestrator auto-estimates 5 elements + risk_level auto-determination hook
-- **Axis II (public template sync)**: template default 5-element declaration + risk_level determination table (family cherry-pick base)
-- **Axis III (fleet central governance / back-propagation)**: family JSON 5-element fields + family_type-specific risk_level threshold overrides
+- **Axis I (your-harness strengthening)**: Automatic 5-element estimation + risk_level automatic determination hook in main-orchestrator
+- **Axis II (Public template sync)**: Default 5-element declaration + risk_level determination table in template (family cherry-pick base)
+- **Axis III (Fleet central management / back-propagation)**: 5-element fields in family JSON + family_type-specific risk_level threshold overrides
 
 **Inter-phase contract**:
-- **Input** (consumes): phase-0 (4 task classifications + terminology SoT) + user request + family profile
-- **Output** (provides): 5-element declaration (task_type / risk_level / required_reads / required_tools / required_checks) → phase-2 enforcement routing
+- **Input** (consumed): phase-0 (4 task classifications + terminology SoT) + user request + family profile
+- **Output** (provided): 5-element declaration (task_type / risk_level / required_reads / required_tools / required_checks) → phase-2 enforcement routing
 
-## 1. Start Harness Role
+## 1. Role of Start Harness
 
-Start-harness is not a general-purpose worker. It is a router + guardrail.
+start-harness is not an omnipotent worker. It is a router + guardrail.
 
 1. Task classification
-2. Context selection
-3. Execution path decision
-4. Assigning verification and reporting criteria
+2. Select necessary context
+3. Determine execution path
+4. Assign verification and reporting criteria
 
-It does not write code directly. It decides who works on what flow.
+It does not write code directly. It decides who works in what flow.
 
 ## 2. Input
 
@@ -39,11 +39,11 @@ It does not write code directly. It decides who works on what flow.
 - Project metadata (CLAUDE.md / AGENTS.md / family profile)
 - Current task state (`tasks/phase.json`, last-run, etc.)
 - Available tools, skills, and sub-agent catalog
-- Prohibited lines and danger zones (deny-list, hook policy)
+- Prohibition lines and danger zones (deny-list, hook policy)
 
-## 3. Required Output — 5-Element Declaration
+## 3. Required Output -- 5-Element Declaration
 
-Start-harness must declare the following 5 items on every task entry. Missing any one is treated as a start failure.
+start-harness must declare the following 5 items when entering any task. If any one is missing, it is treated as a start failure.
 
 ```yaml
 task_type: code_execution | research_planning | review | ops
@@ -61,121 +61,119 @@ route_to:
 report_contract: concise_report_v1
 ```
 
-`required_reads` follows the selective injection rules in [[phase-3-memory-context]]. `required_checks` is verified by hook results from [[phase-2-enforcement]]. `route_to` is used for the Worker Isolation decision in [[phase-5-subagents]].
+`required_reads` follows the selective injection rules of [[phase-3-memory-context]]. `required_checks` is validated by hook results in [[phase-2-enforcement]]. `route_to` is used for Worker Isolation decisions in [[phase-5-subagents]].
 
-### 3-1. risk_level Determination Rules (R8 — Slice B BLOCKER resolution)
+### 3-1. risk_level Determination Rules (R8 added -- Slice B BLOCKER resolution)
 
-Previously only `low | medium | high` enum was defined without a determination subject or rules. This §3-1 is the source of truth.
+Previously, only the `low | medium | high` enum was defined without a determining authority or rules. This §3-1 is the source of truth.
 
-| risk_level | Determination criteria (any one condition met triggers this level) | Example |
+| risk_level | Determination criteria (meeting any one criterion qualifies) | Example |
 |---|---|---|
-| **low** | (1) read-only tools only (2) `dry_run: true` or user sandbox only (3) idempotent local file work (test add / docs edit / log output) (4) user explicitly stated reversible (single git revert to recover) | docs edit, lint fix, test addition |
-| **medium** | (1) single file modify (partial code surface) (2) internal state change (memory entry update, task_state update) (3) single-family config change (4) worker dispatch with no external effects | function rename, schema migration (single family), memory addition |
-| **high** | (1) external side effects (publish / push / migrate / API write) (2) **permanent user data change/delete** (D operation in CRUD, schema DROP, file delete) (3) simultaneous multi-family changes (4) external git repo access for sealed families (5) your-harness code surface changes (violates Codex execution lane) (6) not reversible if revert window > 1 week | publish (API/service), git push, external apply to sealed families, schema rename across all families |
+| **low** | (1) Only read-only tools used (2) `dry_run: true` or user sandbox limited (3) Idempotent local file operations (test add / docs modification / log output) (4) User explicitly reversible (recoverable with a single git revert) | docs modification, lint fix, test addition |
+| **medium** | (1) Single file modify (partial code surface) (2) Internal state change (memory entry update, task_state update) (3) Config change for a single family (4) Worker dispatch without external effects | function rename, schema migration (single family), memory addition |
+| **high** | (1) External side effects (publish / push / migrate / API write) (2) **Permanent user data modification/deletion** (D operation in CRUD, destructive schema operations, file delete) (3) Simultaneous changes to multiple families (4) Access to external git repositories of sealed families (5) Code surface changes in your-harness itself (Codex execution lane violation) (6) Reversibility window exceeds 1 week | publish, git push, applying to sealed families, schema rename across all families |
 
-**Determination subject**: `main-orchestrator` auto-determines at task entry (Claude lane). When determination is ambiguous, request user confirm (default escalate to medium).
+**Determining authority**: `main-orchestrator` automatically determines at task entry (Claude lane). If determination is ambiguous, request user confirmation (default escalate to medium).
 
-**Determination timing**: Once at task start + auto-escalate when tool calls during ACT match high criteria (medium → high transition).
+**Determination timing**: Once at task start + automatic escalate when tool calls during ACT match the above high criteria (medium → high transition).
 
 ## 4. Classification Decision Rules
 
 ### code_execution
 
-- Includes file modification, creation, or deletion
-- Requires test and build verification
+- Includes file modification, creation, deletion
+- Test and build verification required
 - Code surface (`src/`, `tools/`, `scripts/`) is the target of change
 
 ### research_planning
 
-- Core is fact investigation, comparison, design, or planning
+- Fact investigation, comparison, design, planning is the core
 - Code modification is secondary or absent
-- Output is `docs/`, `tasks/plan.md`
+- Artifacts are in `docs/`, `tasks/plan.md`
 
 ### review
 
-- Examining defects, gaps, and risks in existing artifacts
-- Purpose is verification and feedback, not direct implementation
-- Output is a review report
+- Examining defects, omissions, risks in existing artifacts
+- Purpose is verification and feedback rather than direct implementation
+- Artifacts are review reports
 
 ### ops
 
-- Environment inspection, logs, status diagnosis, runtime operations
-- Changes, if any, are to state and config rather than code
+- Environment checks, logs, state diagnosis, runtime operations
+- Changes are to state and configuration, not code
 
-## 5. Default Routing Order
+## 5. Default Routing Sequence
 
 1. Read user request carefully
-2. Determine whether code modification is needed
-3. No modification → classify as research / review / ops
+2. Determine if code modification is needed
+3. No modification → classify as one of research / review / ops
 4. Read only documents and skills matching the classification ([[phase-3-memory-context]])
-5. Declare verification procedure in advance ([[phase-2-enforcement]])
-6. Determine execution path ([[phase-5-subagents]])
+5. Pre-declare verification procedure ([[phase-2-enforcement]])
+6. Decide execution path ([[phase-5-subagents]])
 
 ## 6. Default Flow by Classification
 
 ### code_execution flow
-Goal → danger zone check → read relevant files → change plan → modify → verify → report remaining tasks. Detailed SM in [[phase-4-state-machine]].
+Goal → check prohibition zones → read related files → change plan → modify → verify → report remaining tasks. Detailed SM in [[phase-4-state-machine]].
 
 ### research_planning flow
-Refine question → gather evidence → separate facts/interpretation → recommend → state uncertainty.
+Refine question → gather evidence → separate facts/interpretations → recommendations → explicitly state uncertainty.
 
 ### review flow
-Confirm scope → confirm evaluation criteria → separate defects/risks/gaps → severity → propose fixes.
+Confirm scope → confirm evaluation criteria → separate defects/risks/omissions → severity → suggest fixes.
 
 ### ops flow
 Check state → separate changes → report state.
 
 ## 7. Routing Failure Conditions
 
-Any of the following is a routing failure. Immediately reclassify or ask the user.
+Any of the following means routing failure. Immediately reclassify or ask the user.
 
-- Code modification but not routed through executor lane
-- Verification needed but `required_checks` is empty
-- Investigation but facts/opinions not separated
-- Review but evaluation criteria absent
+- Code modification but not going through executor lane
+- Verification required but `required_checks` is empty
+- Investigation but no fact/opinion separation
+- Review but no evaluation criteria
 
 ## 8. Absolute Responsibilities
 
-The 5 things start-harness must always do — the 5-element declaration in §3 is the absolute responsibility.
+5 things start-harness must perform -- the 5-element declaration in §3 is itself the absolute responsibility.
 
-## 9. Things to Avoid
+## 9. Things Not to Do
 
 - Accumulating all domain knowledge inside itself
-- Injecting memory verbatim without limit
+- Injecting memory source text without limits
 - Allowing execution paths without verification
 - Overusing sub-agents (violates [[phase-5-subagents]] §3 usage conditions)
-- Trusting only document rules while omitting code enforcement ([[phase-2-enforcement]] violation)
+- Trusting document rules alone and omitting code enforcement ([[phase-2-enforcement]] violation)
 
-## 10. Application State
+## 10. Application Status
 
 | Item | Status | Location |
 |---|---|---|
-| 4 task classifications | land | `CLAUDE.md` §Orchestration Presets |
+| 4 task classifications | landed | `CLAUDE.md` §Orchestration Presets |
 | 5-element declaration | partial land | main-orchestrator (`risk_level` / `report_contract` not standardized) |
 | Routing failure detection | partial land | verifier scripts, advisory level |
-| executor / review lane separation | land | Codex execution lane + codex-final-reviewer |
-| start-harness single entry point | land | main-orchestrator |
+| executor / review lane separation | landed | Codex execution lane + codex-final-reviewer |
+| start-harness single entry point | landed | main-orchestrator |
 
-**Gap**: `risk_level` standard definition + 5-element declaration enforcement hook absent → linkage with Phase 2 enforcement needed.
+**Gap**: Missing `risk_level` standard definition + 5-element declaration enforcement hook → needs linking with Phase 2 enforcement.
 
-### 10-1. Prompt Cache Impact (R7-A-W4)
+### 10-1. Prompt Cache Impact (R7-A-W4 added)
 
-The 5-element declaration + required_reads order in this phase determines the cache hit rate of [Phase 3 §6 Cache Stability](phase-3-memory-context.md). Therefore, start-harness stage has these obligations:
+The 5-element declaration and `required_reads` order in this phase determines the cache hit rate for [Phase 3 §6 Cache Stability](phase-3-memory-context.md). Therefore the following obligations at the start-harness stage:
 
-- **required_reads order fixed** — same task_type reads in same order. Order change → entire prompt prefix change → cache miss.
-- **5-element declaration stable** — risk_level / route_to / report_contract value changes must not be exposed in the prefix; place at the tail of task_state.
-- **Per-task_type prefix template** — same classification uses the same system prompt template (no boilerplate variations).
-
-Violations of this §10-1 are detected as an acute drop in Phase 6 §2 metric 8 (cache hit estimate). On detection, re-examine routing code in this phase (`main-orchestrator`).
+- **required_reads order fixed** -- Same task_type reads in the same order. Changing order → entire prompt prefix changes → cache miss.
+- **5-element declaration stable** -- Position risk_level / route_to / report_contract value changes at the tail of task_state so they do not appear in the prefix.
+- **task_type-specific prefix template** -- Same classification uses same system prompt template (boilerplate variation prohibited).
 
 ## 11. Exit Criterion
 
-For 3 sample requests (code / research / review), the 5-element declaration is output without gaps, and each classification routes to the correct flow with actual verification.
+For 3 sample requests (code / research / review), verify that the 5-element declaration is output without omissions, and confirm actual routing to the flow matching each classification.
 
-**R7-A-W3 supplement (machine verification path)**:
-- `pytest tests/test_start_harness_5_elements.py` — validates completeness of 5-element declaration for 3 sample fixtures
-- `scripts/verify_routing.py` — validates task_type classification → expected route mapping consistency
+Machine verification hook definition:
+- `pytest tests/test_start_harness_5_elements.py` -- 5-element declaration completeness verification for 3 sample fixtures
+- `scripts/verify_routing.py` -- task_type classification → expected route mapping consistency verification
 
-## 12. Next Steps
+## 12. Next Step
 
-Proceed to [Phase 2 — Enforcement](phase-2-enforcement.md).
+Proceed to [Phase 2 -- Enforcement](phase-2-enforcement.md).

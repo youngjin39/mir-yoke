@@ -5,80 +5,78 @@ status: consolidated-v1
 depends_on: phase-2-enforcement
 ---
 
-# Phase 4 — State Machine & Run Orchestration
+# Phase 4 -- State Machine & Run Orchestration
 
-> **Purpose**: Track task progress via JSON schema + state machine, not the model's natural-language response. Handle interrupts, failures, and resumption deterministically.
+> **Purpose**: Track task progress through a JSON schema + state machine, not through the model's natural-language responses. Handle interrupts, failures, and restarts deterministically.
 
 ## 0.5 Design Goals (R9 anchor)
 
-> This phase's connection to the [3-axis fleet goals](applications/fleet-catalog.md). When adding a new phase or cherry-picking for a family, the `design` skill (R9-T11) requires `design_goals` as a mandatory input.
-
 **3-axis contribution**:
-- **Axis I (your-harness hardening)**: 13-state SM running (`run_orchestrator.py` new, P1 priority)
-- **Axis II (public template sync)**: template's 5 schemas + 13-state SM identical definition + family schema compliance obligation
-- **Axis III (fleet central governance / back-propagation)**: central catalog of family run_states (your-harness aggregates run_states from all fleet families → fleet-harness-state.json)
+- **Axis I (self-harness hardening)**: 13-state SM code running (`run_orchestrator.py`, P1 priority)
+- **Axis II (public template sync)**: template 5 schemas + identical 13-state SM definition + families must satisfy schema
+- **Axis III (fleet central management)**: family run_state central catalog (your-harness aggregates family run_states -> fleet-harness-state.json)
 
 **Inter-phase contract**:
-- **Input** (consumes): phase-2 (hook firing results) + phase-3 (memory_refs + context)
-- **Output** (provides): run_state.json transitions + tool_event log → phase-5 subagent entry + phase-6 measurement trigger
+- **Input** (consumes): phase-2 (hook firing result) + phase-3 (memory_refs + context)
+- **Output** (provides): run_state.json transitions + tool_event log -> phase-5 subagent entry + phase-6 measurement trigger
 
 ## 1. 13-State Machine
 
-**R7-B-W1 correction**: The state count was inconsistently described as "9-State" (title) / "12-state" (§12 gap) / "13 enum" (schema) across 3 documents. Confirmed the actual 13 enums as truth — title + application state + run_state.schema.json all unified to 13.
+The actual enum has 13 values -- this is the canonical count. All references in this document use 13.
 
 ```text
-IDLE → DISCOVER → PLAN → NEED_APPROVAL → ACT → VERIFY → REPORT → DONE
-                                           ↓
-                  REPLAN ← BLOCKED ← CANCELLING ← ROLLBACK ← INTERRUPTED
+IDLE -> DISCOVER -> PLAN -> NEED_APPROVAL -> ACT -> VERIFY -> REPORT -> DONE
+                                             |
+              REPLAN <- BLOCKED <- CANCELLING <- ROLLBACK <- INTERRUPTED
 ```
 
 | State | Meaning | Valid next states |
 |---|---|---|
 | IDLE | No active task | DISCOVER |
 | DISCOVER | Collecting context and requirements | PLAN, BLOCKED |
-| PLAN | Creating a plan | NEED_APPROVAL, ACT, REPLAN |
-| NEED_APPROVAL | Awaiting user approval | ACT, CANCELLING |
-| ACT | Executing | VERIFY, INTERRUPTED, **CANCELLING** (R7-B-W2: immediate interrupt transition path — aligned with §7 step 1) |
+| PLAN | Building plan | NEED_APPROVAL, ACT, REPLAN |
+| NEED_APPROVAL | Waiting for user approval | ACT, CANCELLING |
+| ACT | Executing | VERIFY, INTERRUPTED, CANCELLING |
 | VERIFY | Verifying | REPORT, REPLAN, BLOCKED |
 | REPORT | Writing report | DONE |
-| DONE | Finished | (terminal) |
-| REPLAN | Plan revision needed | PLAN |
-| BLOCKED | Waiting on external dependency | DISCOVER, CANCELLING, **REPLAN** (R7-B-W3: aligned with ASCII diagram — plan change path after dependency resolved) |
+| DONE | Completed | (terminal) |
+| REPLAN | Plan rebuild required | PLAN |
+| BLOCKED | Waiting on external dependency | DISCOVER, CANCELLING, REPLAN |
 | CANCELLING | Cancellation in progress | ROLLBACK, DONE |
-| ROLLBACK | Reverting partial changes | INTERRUPTED, DONE |
-| INTERRUPTED | Forced stop | IDLE, DONE |
+| ROLLBACK | Recovering partial changes | INTERRUPTED, DONE |
+| INTERRUPTED | Force stopped | IDLE, DONE |
 
-## 2. Source of Truth Principle
+## 2. Source-of-Truth Principle
 
-- Do not use the model's natural-language response as the state SoT.
-- File change facts are confirmed only via **tool results or git diff**.
-- State transitions are committed only via JSON file updates.
-- Update owner is the **orchestration script** (LLM direct JSON editing prohibited — schema breakage risk).
+- Do not use the model's natural-language responses as state SoT.
+- File change facts are confirmed **only via tool results or git diff**.
+- State transitions commit **only via JSON file updates**.
+- The update owner is **the orchestration script** (LLM must not directly edit JSON -- risk of schema corruption).
 
-### 2-1. Illegal Transition Prevention Hook (R7-B-I1)
+### 2-1. Abnormal transition guard hook
 
-Transition attempts not listed in the §1 transition table are blocked by hook.
+Transitions not listed in the table above are blocked by hook.
 
-| Illegal transition | Detection hook | Action |
+| Abnormal transition | Detection hook | Action |
 |---|---|---|
-| DONE → DISCOVER (terminal escape) | `.claude/hooks/sm-transition-guard.sh` (new, not implemented) | exit 1, "DONE is terminal, create new run_state instead" |
-| ACT entry with unresolved NEED_APPROVAL | same | exit 1, block ACT entry without approval_id (approval.status != APPROVED) |
-| REPORT entry without VERIFY results | same | exit 1, "Cannot enter REPORT without VERIFY pass" |
-| Multiple ACT transitions on same run_id (lane conflict) | same | exit 1, block undeclared current_lane (linked with R7-B-I3 schema allOf) |
-| Direct update of terminal states (DONE/INTERRUPTED) | same | exit 1, append-only ledger obligation |
+| DONE -> DISCOVER (escaping terminal) | `.claude/hooks/sm-transition-guard.sh` | exit 1, "DONE is terminal, create new run_state instead" |
+| ACT entry without NEED_APPROVAL resolved | same | exit 1, block ACT entry without approval_id (approval.status != APPROVED) |
+| REPORT entry without VERIFY result | same | exit 1, "Cannot enter REPORT without VERIFY pass" |
+| Multiple ACT transitions for same run_id (lane collision) | same | exit 1, block without current_lane declared |
+| Direct mutation of terminal state (DONE/INTERRUPTED) | same | exit 1, append-only ledger required |
 
-**Current implementation status**: All 5 detections above are hook **not implemented**. "LLM must not directly edit JSON state files" from §11 is enforced manually by user. This hook lands simultaneously with Phase 1 stage (run_orchestrator.py new).
+**Current implementation**: All 5 detections above are **not yet implemented**. The prohibition on LLM directly editing JSON state files is enforced manually. To be landed with run_orchestrator.py (P1 stage).
 
-## 3. 5 JSON Schemas (+ R7 additions)
+## 3. JSON Schemas (5 types)
 
-**R4 update (2026-05-23)**: All 5 schemas formally defined in JSON Schema Draft 2020-12 format in `docs/templates/_schema/`. The blocks below are summaries only — for full field definitions, constraints, and required fields, refer directly to the schema files.
+All 5 schemas are defined in `docs/templates/_schema/` as JSON Schema Draft 2020-12. The YAML blocks below are summaries only -- see schema files for full field definitions, constraints, and required fields.
 
-**R7 additions (2026-05-23)**: 2 design schemas added beyond the original 5.
-- [`docs/templates/_schema/report_contract.schema.json`](../../docs/templates/_schema/report_contract.schema.json) — report contract from phase-6 §9 (R7-C-I1)
-- [`docs/templates/_schema/family_config.schema.json`](../../docs/templates/_schema/family_config.schema.json) — opt-in fields from applications/exceptions.md §5 (R7-D-W5)
+**Additional schemas** (from R7):
+- `docs/templates/_schema/report_contract.schema.json` -- report contract (phase-6 §9)
+- `docs/templates/_schema/family_config.schema.json` -- family opt-in fields
 
 ### 3-1. `run_state.schema.json`
-A single execution unit. Full definition: [`docs/templates/_schema/run_state.schema.json`](../../docs/templates/_schema/run_state.schema.json)
+Single execution unit. Full definition: `docs/templates/_schema/run_state.schema.json`
 
 ```yaml
 run_id: <ulid>                # required, ULID 26-char
@@ -87,7 +85,7 @@ status: <13-state enum>       # required
 started_at: <iso-datetime>    # required
 last_transition: <iso>        # required
 current_step: <step_id>       # optional
-current_lane: claude|codex|shared  # optional, required during ACT/VERIFY
+current_lane: claude|codex|shared  # optional; required during ACT/VERIFY
 retry_count: {total, verify_failures, patch_conflicts, tool_failures_same_type}
 artifacts: [<path>]
 tool_events: [<ulid>]
@@ -97,19 +95,19 @@ rollback_target: <git ref>     # required if status in [ROLLBACK, INTERRUPTED]
 ```
 
 ### 3-2. `task_state.schema.json`
-The task itself (multiple runs possible). Full definition: [`docs/templates/_schema/task_state.schema.json`](../../docs/templates/_schema/task_state.schema.json)
+Task itself (multiple runs possible). Full definition: `docs/templates/_schema/task_state.schema.json`
 
 ```yaml
 task_id: <ulid>               # required
 title: <string 1-200>         # required
-task_type: <4-way enum>       # required, phase-1 §4
+task_type: <4-way enum>       # required (phase-1 section 4)
 risk_level: low|medium|high   # required
-status: ACTIVE | NEEDS_FIX | BLOCKED | COMPLETED | ARCHIVED   # required
+status: ACTIVE|NEEDS_FIX|BLOCKED|COMPLETED|ARCHIVED  # required
 required_reads: [<path>]      # 5-element declaration
 required_tools: [<name>]      # 5-element declaration
 required_checks: [<check>]    # 5-element declaration
 route_to: executor_lane|review_lane|planning_flow|ops_flow
-report_contract: <name>       # phase-6 §9
+report_contract: <name>       # phase-6 section 9
 runs: [<ulid>]
 created: <iso>                # required
 updated: <iso>
@@ -117,31 +115,31 @@ completed_at: <iso>           # required if status == COMPLETED
 ```
 
 ### 3-3. `tool_event.schema.json`
-Tool call event. Full definition: [`docs/templates/_schema/tool_event.schema.json`](../../docs/templates/_schema/tool_event.schema.json)
+Tool call event. Full definition: `docs/templates/_schema/tool_event.schema.json`
 
 ```yaml
 event_id: <ulid>              # required
 run_id: <ulid ref>            # required
 tool: <name>                  # required
-idempotency_key: <hex hash>   # required, 16-64 char
+idempotency_key: <hex hash>   # required, 16-64 chars
 precondition: <expr>
 dry_run: bool
 side_effect_summary: <string 0-500>
 ts: <iso>                     # required
 duration_ms: <int>
-result: ok|already_applied|error|denied|timeout   # required
+result: ok|already_applied|error|denied|timeout  # required
 error: {type, recoverable, summary, details_ref}  # required if result in [error,denied,timeout]
 ```
 
 ### 3-4. `approval.schema.json`
-Approval object. Full definition: [`docs/templates/_schema/approval.schema.json`](../../docs/templates/_schema/approval.schema.json)
+Approval object. Full definition: `docs/templates/_schema/approval.schema.json`
 
 ```yaml
 approval_id: <ulid>           # required
 run_id: <ulid ref>            # required
-status: PENDING|APPROVED|REJECTED|EXPIRED   # required
+status: PENDING|APPROVED|REJECTED|EXPIRED  # required
 risk_level: low|medium|high   # required
-auto_policy: auto|conditional|required      # required
+auto_policy: auto|conditional|required     # required
 requested_at: <iso>           # required
 decided_at: <iso>             # required if status != PENDING
 decided_by: <user>            # required if APPROVED/REJECTED
@@ -151,13 +149,13 @@ details_ref: <path|id>
 ```
 
 ### 3-5. `memory_entry.schema.json`
-Memory entry (see [[phase-3-memory-context]] §4). Full definition: [`docs/templates/_schema/memory_entry.schema.json`](../../docs/templates/_schema/memory_entry.schema.json)
+Memory entry (see [Phase 3 section 4](phase-3-memory-context.md)). Full definition: `docs/templates/_schema/memory_entry.schema.json`
 
 ```yaml
 id: <slug>                    # required, kebab/snake-case
-type: user|feedback|project|reference|incident  # required (incident added in R4)
+type: user|feedback|project|reference|incident  # required
 body: <markdown>              # required
-status: active|deprecated|superseded|critical|expired   # required, default=active
+status: active|deprecated|superseded|critical|expired  # required, default=active
 superseded_by: <id ref>       # required if status == superseded
 valid_until: <date>           # optional; permanent if absent
 tags: [<string>]
@@ -168,83 +166,79 @@ updated: <iso>
 linked: [<id ref>]
 ```
 
-**R4 reason**: Prior R1 review noted "examples only, type/constraint/required unspecified → not implementable." This update adds formal JSON Schema Draft 2020-12 definitions + 5 new files in `docs/templates/_schema/`.
-
 ## 4. Tool Contract Mandatory Fields
 
-All side-effect tools require the following 5 fields.
+All side-effect tools must provide these 5 fields.
 
 | Field | Meaning |
 |---|---|
-| `idempotency_key` | Same input → same result. Safe to re-run. |
+| `idempotency_key` | Same input -> same result. Safe to re-run. |
 | `precondition` | Pre-execution validation condition |
 | `dry_run` | Preview mode |
 | `side_effect_summary` | One-line description of what changes |
-| return `already_applied: bool` | Idempotency result indicator |
+| Return `already_applied: bool` | Idempotency result indicator |
 
 Without this contract, retries, rollbacks, and interrupts are non-deterministic.
 
 ## 5. Structured Errors
 
-All tool errors have the following 4 fields.
+All tool errors carry these 4 fields.
 
 ```yaml
 error:
-  type: validation | precondition | runtime | timeout | denied | injection   # R4: injection added (when Phase 2 §3-4 prompt injection is blocked)
+  type: validation|precondition|runtime|timeout|denied|injection
   recoverable: bool
   summary: <one-line>
   details_ref: <path or id>
 ```
 
-Full definition: `error` field in [`docs/templates/_schema/tool_event.schema.json`](../../docs/templates/_schema/tool_event.schema.json).
+Full definition: `docs/templates/_schema/tool_event.schema.json` `error` field.
 
-`recoverable: true` → retry possible; `false` → Circuit Breaker or INTERRUPTED entry.
+`recoverable: true` -> retry eligible. `recoverable: false` -> Circuit Breaker or INTERRUPTED entry.
 
 ## 6. Retry Budget
 
-Same as [[phase-2-enforcement]] §5 Circuit Breaker. Counter increments in the SM's ACT → VERIFY loop. Quantitative values use phase-2 §5 yaml block as the single source of truth.
+Same as [Phase 2 section 5](phase-2-enforcement.md) Circuit Breaker. Counter increments during SM ACT -> VERIFY loop. Quantitative values use phase-2 section 5 YAML block as single source of truth.
 
-Exceeded → BLOCKED → user intervention or ROLLBACK.
+Budget exceeded -> BLOCKED -> user intervention or ROLLBACK.
 
 ## 7. Interrupt Atomicity
 
 On user interrupt (Ctrl-C, kill) during ACT:
 
-1. Immediately transition ACT → CANCELLING
+1. Immediately transition ACT -> CANCELLING
 2. If incomplete tool calls are idempotent: safe; otherwise enter ROLLBACK
-3. ROLLBACK → recover via diff snapshot or git worktree
-4. Recovery complete → INTERRUPTED → IDLE
+3. ROLLBACK -> recover via diff snapshot or git worktree
+4. Recovery complete -> INTERRUPTED -> IDLE
 
 4 atomicity mechanisms:
 - diff snapshot (captured at task start)
-- patch backup (automatically generated by tool)
+- patch backup (auto-generated by tool)
 - git worktree (for large changes)
 - file checksum (for verification)
 
-## 8. 5 Execution Layers
+## 8. 5-Layer Execution Units
 
 ```
-Turn ⊂ Step ⊂ Run ⊂ Task ⊂ Session
+Turn < Step < Run < Task < Session
 ```
 
-| Layer | Definition | User terminology mapping (R6) |
+| Layer | Definition | User terminology |
 |---|---|---|
-| Turn | One LLM response | (N/A) |
-| Step | One SM state | (N/A) |
-| Run | One DISCOVER → DONE cycle | "slide unit" / "small phase unit" — user's "slide" term maps to this Run layer |
-| Task | One user-assigned work item (multiple runs) | "Phase" (concept) / "Phase ledger" (implementation — `tasks/phase.json`) |
-| Session | One conversation (multiple tasks possible) | (N/A) |
+| Turn | One LLM response | (none) |
+| Step | One SM state | (none) |
+| Run | One DISCOVER->DONE cycle | "slide unit" / "small unit phase" |
+| Task | One user-assigned task (multiple runs) | "Phase" (concept) / "Phase ledger" (implementation: `tasks/phase.json`) |
+| Session | One conversation (multiple tasks possible) | (none) |
 
-Each layer has a separate ID + JSON file.
-
-**R6 terminology alignment**: When user specified "divide design and development into small slide units, Phase," "slide" maps to the Run unit (one cycle work division) and "Phase" maps to the Task unit (large work grouping) in this §8. This is a different axis from this document's conceptual "Phase 0–8," distinct from the two meanings of phase in [`../README.md` §2a](../README.md) and [Appendix A §3](appendix-a-sources.md).
+Each layer has its own ID and JSON file.
 
 ## 9. `execute.py` Pattern
 
-Main session is maintained; execute per phase as subprocess — achieves both main context protection and worker isolation.
+Main session is preserved; each phase runs as subprocess -- protects main context while achieving worker isolation simultaneously.
 
 ```python
-# pseudo
+# pseudo-code
 for phase in phases:
     result = subprocess.run(
         ["claude", "-p", phase.prompt],
@@ -254,56 +248,54 @@ for phase in phases:
     if result.failed: break
 ```
 
-Borrowed from `harness_framework`. your-harness's `mir_executor` implements this pattern.
+`mir_executor` implements this pattern.
 
-## 10. Phase JSON Hard-Fixed
+## 10. Phase JSON Hard-pinning
 
-Record state in JSON when splitting into phases — natural-language decisions prohibited.
+Record state in JSON when splitting phases -- natural language decisions are prohibited.
 
 ```yaml
 phase:
   id: P0-F
   goal: <one-line>
-  status: pending | active | done | blocked
+  status: pending|active|done|blocked
   artifacts: [<path>]
   verification: [<check>]
   tdd_links: [<test_path>]
 ```
 
-your-harness's `tasks/phase.json` is the embodiment of this concept.
+`tasks/phase.json` is the concrete implementation of this design.
 
 ## 11. Prohibitions
 
 - LLM directly editing JSON state files
-- Accepting model's natural-language "complete" as a reason for SM transition
+- Treating model natural language "complete" as a reason for SM transition
 - State transition without verifying tool results
-- Skipping temporary states (CANCELLING/ROLLBACK) on interrupt and returning directly to IDLE
+- Skipping CANCELLING/ROLLBACK transient states and jumping directly to IDLE on interrupt
 - Using tools without `idempotency_key` in the ACT stage
 
-## 12. Application State
+## 12. Application Status
 
 | Item | Status | Location |
 |---|---|---|
-| 13-State SM | **land** (R24-T05 correction 2026-05-24) | `tools/run_orchestrator/state_machine.py` 13-state SM + `tasks/phase.json` ledger. R18 land. |
-| `run_state` schema | partial land | `docs/templates/_schema/run_state.schema.json` + `run_orchestrator.py` state writer/transition path landed; full SoT closeout remaining |
-| `task_state` schema | partial land | `docs/templates/_schema/task_state.schema.json` + `tasks/phase.json`/orchestrator partially absorbed |
-| `tool_event` schema | partial land | `docs/templates/_schema/tool_event.schema.json` + hook/orchestrator event path landed; full trace closeout remaining |
-| `approval` schema | partial land | `docs/templates/_schema/approval.schema.json` + `approval_gate.py` record/apply path landed |
-| `memory_entry` schema | partial land | `docs/templates/_schema/memory_entry.schema.json` + store lifetime fields landed; phase-level done evidence remaining |
-| Tool contract mandatory fields | **land** (R24-T05 correction 2026-05-24) | `src/mir/core/engine/tool_contract.py` (R18 land, advisory log `MIR_TOOL_CONTRACT_LOG=1` R22 enabled) |
-| Structured errors | **land** (R24-T05 correction 2026-05-24) | `src/mir/core/engine/structured_error.py` (R18 land) |
-| Retry budget | partial land | `retry_count` schema exists; phase-level end-to-end evidence insufficient |
-| Interrupt atomicity | partial land | git diff/restore manual |
-| 5 execution layers | partial land | Task ⊂ Session only |
-| `execute.py` pattern | land | `mir_executor` |
-| Phase JSON | land | `tasks/phase.json` (P0-F and after) |
-
-**Gap**: 13-state SM code + tool_contract + structured_error all landed in R18 (R24-T05 correction 2026-05-24). Remaining: actual SoT file activation for 5 schemas (run_state/task_state/approval etc. additional code paths needed).
+| 13-State SM | landed | `tools/run_orchestrator/state_machine.py` 13-state SM + `tasks/phase.json` ledger |
+| `run_state` schema | partial | `docs/templates/_schema/run_state.schema.json` + run_orchestrator.py state writer/transition paths landed; full SoT closeout pending |
+| `task_state` schema | partial | `docs/templates/_schema/task_state.schema.json` + `tasks/phase.json`/orchestrator partial absorption |
+| `tool_event` schema | partial | `docs/templates/_schema/tool_event.schema.json` + hook/orchestrator event path landed; full trace closeout pending |
+| `approval` schema | partial | `docs/templates/_schema/approval.schema.json` + `approval_gate.py` record/apply paths landed |
+| `memory_entry` schema | partial | `docs/templates/_schema/memory_entry.schema.json` + store lifetime fields landed |
+| Tool contract mandatory fields | landed | `src/<harness>/core/engine/tool_contract.py` |
+| Structured errors | landed | `src/<harness>/core/engine/structured_error.py` |
+| Retry budget | partial | `retry_count` schema exists; end-to-end phase-level evidence lacking |
+| Interrupt atomicity | partial | git diff/restore manual |
+| 5-layer execution units | partial | Task + Session layers only |
+| `execute.py` pattern | landed | executor script |
+| Phase JSON | landed | `tasks/phase.json` |
 
 ## 13. Exit Criterion
 
-1 sample task trackable from DISCOVER → DONE via SM 13-state transitions in JSON file (R8 correction: previous "9-state" → unified to 13-state). For 1 intentional interrupt (Ctrl-C): recovery confirmed via CANCELLING → ROLLBACK → INTERRUPTED path. Tool call events recorded in `tool_event` log; tools without `idempotency_key` blocked in ACT stage.
+One sample task can be traced from DISCOVER -> DONE through JSON file SM 13-state transitions. One intentional interrupt (Ctrl-C) takes the CANCELLING -> ROLLBACK -> INTERRUPTED recovery path. Tool call events are logged in `tool_event`, and tools without `idempotency_key` are blocked in the ACT stage.
 
-## 14. Next Steps
+## 14. Next Step
 
-Proceed to [Phase 5 — Subagents](phase-5-subagents.md).
+[Phase 5 -- Subagents](phase-5-subagents.md)

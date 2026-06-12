@@ -6,70 +6,65 @@ depends_on: [phase-0, phase-7]
 date: 2026-05-23
 ---
 
-# Phase 9 — Fleet Catalog (Central Management)
+# Phase 9 -- Fleet Catalog (Central Management)
 
-> **Purpose**: your-harness centrally tracks the harness engineering adoption state of all fleet families in a single catalog. For managed repositories, it applies harness and agent patches directly. The public template is the starting point for new projects. your-harness is the state cache + drift tracking + direct-apply management + reporting hub.
+> **Purpose**: Track the harness engineering adoption state of N families in a central catalog managed by your harness. The public template is the starting point for new projects; your harness is the state cache + drift tracker + direct-apply manager + reporting hub.
 
 ## 0.5 Design Goals (R9 anchor)
 
-> This phase's connection to the [3-axis fleet goals](applications/fleet-catalog.md). When adding a new phase or cherry-picking for a family, the `design` skill (R9-T11) requires `design_goals` as a mandatory input.
-
 **3-axis contribution**:
-- **Axis I (your-harness hardening)**: your-harness manages its own + all fleet family adoption states in a single catalog (resolves the current distributed tracking SoT gap)
-- **Axis II (public template sync)**: template repository is the SoT for each family's blueprint (recommended phases / hooks / agents), 1:1 cross-referenced with your-harness state cache
-- **Axis III (fleet central governance / back-propagation)**: **core of this phase**. Fleet family state matrix + drift detection + direct apply management + verification/reporting
+- **Axis I (self-harness hardening)**: manage adoption state of your harness + N families in a single catalog (resolve SoT absence in distributed tracking)
+- **Axis II (public template sync)**: template repository is the SoT for each family's blueprint (recommended phases / hooks / agents / family_type strictness); 1:1 cross-reference with central state cache
+- **Axis III (fleet central management)**: **core of this phase**. N-family state matrix + drift detection + direct apply management + verification/reporting
 
 **Inter-phase contract**:
-- **Input** (consumes): phase-7 (family adoption decisions + family_type labels) + phase-6 (per-family 7-axis observability rollup)
-- **Output** (provides): `config/fleet-harness-state.json` (state cache) + `config/fleet-drift-log/<family>-<ts>.json` (history) → phase-10 rollout share pipeline + phase-11 back-propagation input
+- **Input** (consumes): phase-7 (family adoption decision + family_type label) + phase-6 (per-family 7-axis observability rollup)
+- **Output** (provides): `config/fleet-harness-state.json` (state cache) + `config/fleet-drift-log/<family>-<ts>.json` (history) -> phase-10 rollout share pipeline + phase-11 back-propagation input
 
-## 1. Two Storage Responsibilities
+## 1. Two-Storage Responsibility Separation
 
-> **User refinement (2026-05-23)**: "Harness engineering information for other repositories is in the public template repository, and your-harness centrally manages it with improvement tracking and back-propagation [via json / folders / files]"
-
-| Storage | Location | Contents | Owner | Refresh |
+| Storage | Location | Content | Owner | Refresh |
 |---|---|---|---|---|
-| **Public Template** | `github.com/<your-org>/claude-codex-harness/families/<family>/` | blueprint (recommended_phases / recommended_hooks / recommended_agents / family_type strictness) — starting point for new projects | your-harness (sync via `scripts/verify_codex_sync.py`) | When your-harness lands + share decision is made |
-| **your-harness State Cache** | `config/fleet-harness-state.json` | Each family's actual adoption state, last_sync, drift, innovations | your-harness auto-updated | Daily (fleet_observe scan) |
-| **your-harness Drift Log** | `config/fleet-drift-log/<family>-<ts>.json` | Time series of differences between template baseline and family state | your-harness auto | Weekly snapshot |
-| **Per-family local** | `<family-repo>/.claude/` | Family's own hooks / skills / agents | your-harness central manager | your-harness direct apply + verify |
+| **Public Template** | `github.com/<org>/claude-codex-harness/families/<family>/` | blueprint (recommended_phases / recommended_hooks / recommended_agents / family_type strictness) -- starting point for new projects | central harness (sync via `scripts/verify_codex_sync.py`) | After central harness lands and share decision made |
+| **Central State Cache** | `config/fleet-harness-state.json` | actual adoption state per family, last_sync, drift, innovations | central harness auto-update | Daily (fleet_observe scan) |
+| **Drift Log** | `config/fleet-drift-log/<family>-<ts>.json` | time-series of differences between template baseline and family state | central harness auto | Weekly snapshot |
+| **Per-family local** | `<family-repo>/.claude/` | family's own hook / skill / agent files | central manager | direct apply + verify |
 
 **Principles**:
-- Template = reference for "start here" (blueprint).
-- your-harness state cache = tracking for "who has adopted what now" (state).
-- your-harness must know the current harness structure of each managed family, apply minimum patches directly, and verify them.
-- Families are centrally managed by your-harness's inspection/apply/verify/report loop, independently of the template/reference.
+- Template = reference for "how to start" (blueprint).
+- Central state cache = tracking "who adopted what right now" (state).
+- Central harness must know the current harness structure of managed families, apply minimal patches directly, and verify.
+- Families are centrally managed by the inspection/apply/verify/report loop, separate from template/reference.
 
-## 2. `fleet-harness-state.json` Schema (Overview)
+## 2. `fleet-harness-state.json` Schema (overview)
 
-This §2 is a schema overview. The formal definition is in [`docs/templates/_schema/fleet_harness_state.schema.json`](../templates/_schema/fleet_harness_state.schema.json) (R9-T06 new).
+This section is a schema overview. Formal definition: `docs/templates/_schema/fleet_harness_state.schema.json`.
 
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "version": "1.0",
-  "last_updated": "2026-05-23T03:00:00Z",
+  "last_updated": "<timestamp>",
   "families": {
     "your-harness": {
       "family_type": "SE-meta",
       "adoption": {
-        "phase-0": { "status": "adopted", "last_sync": "2026-05-23", "drift": "none" },
-        "phase-1": { "status": "adopted", "last_sync": "2026-05-23", "drift": "minor:risk_level_hook_missing" },
-        "...": "..."
+        "phase-0": { "status": "adopted", "last_sync": "<date>", "drift": "none" },
+        "phase-1": { "status": "adopted", "last_sync": "<date>", "drift": "minor:risk_level_hook_missing" }
       },
       "innovations": [
-        { "id": "design-goals-capture-2026-05-23", "phase": "design-process", "share_status": "recommended", "source": "your-harness" }
+        { "id": "design-goals-capture-<date>", "phase": "design-process", "share_status": "recommended", "source": "your-harness" }
       ],
       "recommendations_received": []
     },
-    "example-video": {
+    "example-pipeline": {
       "family_type": "hybrid_pipeline",
-      "adoption": { "...": "..." },
+      "adoption": {},
       "innovations": [
-        { "id": "scene-render-pipeline-2026-05-20", "phase": "phase-5", "share_status": "candidate", "source": "example-video" }
+        { "id": "scene-render-pipeline-<date>", "phase": "phase-5", "share_status": "candidate", "source": "example-pipeline" }
       ],
       "recommendations_received": [
-        { "id": "design-goals-capture-2026-05-23", "decision": "pending", "due": "2026-06-05" }
+        { "id": "design-goals-capture-<date>", "decision": "pending", "due": "<date>" }
       ]
     }
   }
@@ -78,38 +73,32 @@ This §2 is a schema overview. The formal definition is in [`docs/templates/_sch
 
 **Field meanings**:
 - `adoption.status` enum: `not_adopted | in_review | patch_planned | patch_applied | verified | exception | n_a`.
-- `adoption.drift`: free text for difference from template baseline. `none / minor:<reason> / major:<reason>`.
-- `innovations`: new patterns originating in this family. your-harness catalogs as share candidates.
-- `recommendations_received`: innovation share history surface. Even after the direct-apply policy, this can be maintained as a reference history — but the actual rollout SoT for active managed repos is the inspection/apply/verify/report cycle.
+- `adoption.drift`: free text of difference from template baseline. `none / minor:<reason> / major:<reason>`.
+- `innovations`: new patterns that emerged in this family. Central harness catalogs as share candidates.
+- `recommendations_received`: innovation share history surface.
 
-## 3. Fleet Family × 13 Rollout-Phase Adoption Matrix (+ phase-13 closure lane)
+## 3. N-family x Phase Adoption Matrix
 
-[`applications/fleet-catalog.md`](applications/fleet-catalog.md) is the visualization view (R9-T03 companion new). This §3 is the schema-side SoT.
+`applications/fleet-catalog.md` is the visualization view. This section is the schema-side SoT.
 
-| Family | Type | P0 | P1 | P2 | P3 | P4 | P5 | P6 | P7 | P8 | P9 | P10 | P11 | P12 |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| your-harness | SE-meta | ⬜ | ⬜ | 🟡 | ⬜ | ⬜ | 🟡 | 🟡 | 🟡 | 🟡 | 🟡 | 🟡 | 🟡 | 🟡 |
-| template-harness | template | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
-| (remaining fleet rows) | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... |
+Populate the matrix for your own fleet. Legend: `adopted` / `opt_in_pending` or partial / `not_adopted` / `n_a` (not applicable for this family_type).
 
-**Legend**: ✅ adopted / 🟡 opt_in_pending or partial / ⬜ not adopted / ⬛ n_a (not applicable for this family_type).
+`phase-13` is not included in the rollout matrix. It exists as a separate closure lane in the catalog.
 
-`phase-13` is not included in the rollout matrix. In the catalog it exists as a separate closure lane — currently only `your-harness` / `template-harness` have meaningful verdicts.
+## 4. Drift Detection (phase-11 link)
 
-## 4. Drift Detection (phase-11 integration)
+Central harness compares template baseline with family state to detect drift. Input for Phase 11 (back-propagation).
 
-your-harness compares template baseline with family state to detect drift. Input for Phase 11 (back-propagation).
+### 4-1. Detection types
+- **Template-ahead drift**: new phase / hook landed in template but not applied in family -> share recommendation candidate.
+- **Family-ahead drift**: family uses new pattern not in template -> innovation candidate (share-back).
+- **Conflict drift**: same phase implementation incompatible between template and family -> decision required (escalate to operator).
 
-### 4-1. Detection Types
-- **Template-ahead drift**: new phases / hooks landed in template are not applied in a family → share recommendation candidates.
-- **Family-ahead drift**: family uses new patterns not in template → innovation candidates (share-back).
-- **Conflict drift**: implementation of the same phase is incompatible between template and family → decision required (user escalate).
-
-### 4-2. drift_log Entry Example
+### 4-2. drift_log entry example
 ```json
 {
-  "family": "example-video",
-  "detected_at": "2026-05-23T04:00:00Z",
+  "family": "example-pipeline",
+  "detected_at": "<timestamp>",
   "drift_type": "family-ahead",
   "phase": "phase-5",
   "diff": { "added_skills": ["scene-render", "media-pipeline-build"] },
@@ -119,94 +108,87 @@ your-harness compares template baseline with family state to detect drift. Input
 
 ## 5. Fleet Management Flow
 
-> **User directive (2026-05-23)**: "For example, if a video-related skill is improved in a video director family, it gets shared to other agents via your-harness. That kind of flow. Not forced."
-
 ### 5-1. Operating Procedure
-1. Drift detector and inspection update each family's current state.
-2. your-harness determines repository type and exception status.
-3. your-harness writes a minimum patch plan.
-4. your-harness applies patches directly to the target repository.
-5. your-harness runs verification commands and records results.
-6. Catalog and per-repo report are updated.
+1. Drift detector and inspection update family current state.
+2. Central harness determines repository type and exception status.
+3. Central harness writes minimum patch plan.
+4. Central harness directly applies patch to target repository.
+5. Central harness runs verification commands and records results.
+6. Update catalog and per-repo report.
 
-### 5-2. Compatibility Determination (automated by your-harness)
-- Compatibility matrix between innovation source family_type and target family_type:
+### 5-2. Compatibility Determination
 
-| Source → Target | SE-meta | code_app | SE-product | hybrid_pipeline | content_app |
+Innovation source family_type vs target family_type compatibility matrix:
+
+| Source -> Target | SE-meta | code_app | SE-product | hybrid_pipeline | content_app |
 |---|---|---|---|---|---|
-| SE-meta | ✓ | ✓ | ✓ | ✓ | △ |
-| code_app | ✓ | ✓ | ✓ | △ | ✗ |
-| SE-product | △ | △ | ✓ | △ | ✗ |
-| hybrid_pipeline | ✗ | ✗ | △ | ✓ | △ |
-| content_app | ✗ | ✗ | ✗ | △ | ✓ |
+| SE-meta | yes | yes | yes | yes | conditional |
+| code_app | yes | yes | yes | conditional | no |
+| SE-product | conditional | conditional | yes | conditional | no |
+| hybrid_pipeline | no | no | conditional | yes | conditional |
+| content_app | no | no | no | conditional | yes |
 
-✓ compatible (auto recommend) / △ conditional (user review) / ✗ incompatible (skip).
+`yes` = auto recommend / `conditional` = operator review required / `no` = skip.
 
-**Footnote (R10-T13 — Slice D Scenario 4 contradiction resolution)**: This matrix is for **auto recommendation compatibility determination only**. Triage decisions ([phase-11 §3-1](phase-11-back-propagation.md)) with manual override (user explicitly states "absorb to your-harness" / "promote to template directly") are outside this matrix — user decision takes precedence. Example: `scene-render` skill from example-video (hybrid_pipeline) would not be auto-recommended under hybrid_pipeline→SE-meta ✗, but if the user explicitly states "absorb to your-harness" via a Triage decision, it is possible. See [share-back-runbook §5](applications/share-back-runbook.md).
+**Note**: This matrix governs auto recommendation compatibility only. Manual operator override (e.g., operator explicitly directs "absorb to self-harness") takes precedence over this matrix. See share-back-runbook section 5.
 
-### 5-3. Declined / Ignored Handling
-- When a family makes a `declined` decision, record the reason in the catalog (your-harness does not repeat the same recommendation).
-- After 30 days with status `pending`, automatically `declined`.
-- After decline, if the source changes significantly, your-harness re-advises (1 time).
+### 5-3. Decline / Ignore Handling
+- When a family `declined`, record reason in catalog (central harness does not repeat same recommendation).
+- `pending` decisions auto-expire to `declined` after 30 days.
+- After decline, if source has a major change, central harness re-advises once.
 
 ## 6. Update Cadence
 
 | Job | Frequency | Output | Trigger |
 |---|---|---|---|
 | `mir_manage.py --check-family` bundle | user-triggered / manual cadence | family health + verifier bundle | CLI |
-| `fleet_observe scan` | available, operational cadence selectable | `fleet-harness-state.json` update | managed runner / CLI |
-| `drift_detector run` | available, operational cadence selectable | `fleet-drift-log/<family>-<ts>.json` append | managed runner / CLI |
-| `share_dispatcher` | available, operational cadence selectable | new share candidate user notification (Discord) | managed runner / CLI |
-| `full_audit` | available, operational cadence selectable | catalog consistency check + cleanup | managed runner / CLI |
+| `fleet_observe scan` | available, cadence operator choice | `fleet-harness-state.json` update | managed runner / CLI |
+| `drift_detector run` | available, cadence operator choice | `fleet-drift-log/<family>-<ts>.json` append | managed runner / CLI |
+| `share_dispatcher` | available, cadence operator choice | new share candidate user notification | managed runner / CLI |
+| `full_audit` | available, cadence operator choice | catalog consistency check + cleanup | managed runner / CLI |
 
-Automated schedule assets can live under `scripts/cron/`, but the current default operational path is a user-triggered bundle based on `mir_manage.py`.
+Default operating path is user-triggered bundle via `mir_manage.py`. Automatic schedules can be placed under `scripts/cron/`.
 
-## 7. Application State (as of 2026-05-23)
+## 7. Application Status
 
 | Item | Status | Location |
 |---|---|---|
-| fleet-harness-state.json | **landed** (R24-T05 corrected 2026-05-24) | `config/fleet-harness-state.json` (all fleet family rows) |
-| fleet_harness_state.schema.json | **landed** (R24-T05 corrected 2026-05-24) | `docs/templates/_schema/fleet_harness_state.schema.json` |
-| drift detector | **landed** (R24-T05 corrected 2026-05-24) | `tools/fleet_observe/harness_drift.py` (551 LOC) |
-| share catalog UI | **partially landed** (Discord notification partial) | Discord notification (manual) + your-harness catalog doc |
-| applications/fleet-catalog.md | **landed** (R24-T05 corrected 2026-05-24) | generated from json (R9-T03 companion) |
-| family_type compatibility matrix | This §5-2 SoT | `docs/templates/_schema/family_compatibility.schema.json` (deferred) |
+| fleet-harness-state.json | landed | `config/fleet-harness-state.json` |
+| fleet_harness_state.schema.json | landed | `docs/templates/_schema/fleet_harness_state.schema.json` |
+| drift detector | landed | `tools/fleet_observe/harness_drift.py` |
+| share catalog UI | partial (Discord notification partial) | Discord notification (manual) + catalog doc |
+| applications/fleet-catalog.md | landed | generated from json |
+| family_type compatibility matrix | this section SoT | `docs/templates/_schema/family_compatibility.schema.json` (deferred) |
 
-**Gap**: The major SoTs of this phase (fleet-harness-state.json + schema + drift detector + applications/fleet-catalog.md) are all landed. The remaining work is share notification automation and cadence operational standardization.
+**Gaps**: Main SoTs (fleet-harness-state.json + schema + drift detector + applications/fleet-catalog.md) all landed. Remaining: share notification automation and cadence operations standardization.
 
 ## 8. family_type Application Exceptions
 
-| family_type | In fleet-harness-state.json | Drift tracking | Share candidates | Reason |
+| family_type | In fleet-harness-state.json | Drift tracking | Share candidate | Reason |
 |---|---|---|---|---|
-| SE-meta (your-harness) | ✓ | ✓ | ✓ (many sources) | Reference for dogfooding |
-| code_app | ✓ | ✓ | ✓ | High value for extracting shared infra patterns |
-| SE-product | ✓ | ✓ | ✓ | App pattern sharing |
-| hybrid_pipeline | ✓ | ✓ | ✓ (content pipeline patterns) | User example (video director) |
-| content_app | ✓ | △ | △ | Personal/content domain, careful sharing |
-| **sealed** | ✓ (state read only) | △ | ✗ | Sealed policy, share-out blocked |
+| SE-meta (your harness) | yes | yes | yes (many sources) | dogfooding reference |
+| code_app | yes | yes | yes | high value for common infra pattern extraction |
+| SE-product | yes | yes | yes | app pattern sharing |
+| hybrid_pipeline | yes | yes | yes (content pipeline patterns) | example: pipeline directors |
+| content_app | yes | conditional | conditional | personal/content area, share carefully |
+| **sealed** families | yes (state read only) | conditional | no | seal policy, share-out blocked |
 
 ## 9. SE-meta Self-Stop Verification
 
-your-harness itself (your-harness) is also one row in fleet-harness-state.json. For this phase to land, your-harness's own adoption state must be recorded honestly. As of the 2026-05-25 snapshot, your-harness self rollout phases have 11 `adopted` and 2 `opt_in_pending` (`phase-7`, `phase-8`), and the closure lane `phase-13` is also `adopted`.
+The central harness itself is also one row in fleet-harness-state.json. For this phase to land, the adoption state of the central harness itself must be recorded honestly. Adoption status by phase is tracked in the catalog.
 
-**Potential violation**: your-harness pushing bulk patches without inspection, or recording applied/verified without verification. Prevention: enforce the §5-1 order of inspection → minimum patch plan → verify → report.
+**Potential violation**: Central harness pushing bulk patches without inspection, or recording applied/verified without verification. Prevention: enforce the inspection -> minimum patch plan -> verify -> report order in section 5-1.
 
-## 10. ADR Candidates
+## 10. Exit Criterion
 
-ADR-25 — Fleet Catalog introduction. ADR-48 — Central Fleet Management and Direct Apply Policy.
+This phase is judged done when:
+1. `config/fleet-harness-state.json` exists with 1+ row for all managed families.
+2. `docs/templates/_schema/fleet_harness_state.schema.json` exists + JSON is schema-valid.
+3. `applications/fleet-catalog.md` visualization doc generated with matrix fully populated.
+4. drift detector script dry-run verified once.
+5. ADR for fleet catalog published.
+6. Operator review passed (central direct-apply policy confirmed).
 
-## 11. Exit Criterion
+## 11. Next Step
 
-Conditions for this phase to be judged done:
-1. `config/fleet-harness-state.json` exists, all fleet families have at least 1 row.
-2. `docs/templates/_schema/fleet_harness_state.schema.json` exists + json is schema-valid.
-3. `applications/fleet-catalog.md` visualization doc generated, §3 matrix 100% filled.
-4. Drift detector script run once as measured dry-run (before fleet_observe integration).
-5. ADR-25 published.
-6. User review passed (central direct-apply policy confirmed).
-
-As of the current implementation, the drift detector code is in landed state. The remaining work is cadence automation and user-triggered bundle operational protocol stabilization.
-
-## 12. Next Steps
-
-Proceed to [Phase 10 — Rollout Pipeline](phase-10-rollout-pipeline.md). Phase 9 (catalog) handles state tracking; Phase 10 defines the pipeline for state transitions (your-harness → template → fleet).
+[Phase 10 -- Rollout Pipeline](phase-10-rollout-pipeline.md). Phase 9 (catalog) handles state tracking; Phase 10 defines the pipeline for state transitions (self-harness -> template -> fleet).

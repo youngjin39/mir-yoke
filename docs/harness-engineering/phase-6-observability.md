@@ -5,123 +5,116 @@ status: consolidated-v1
 depends_on: phase-4-state-machine
 ---
 
-# Phase 6 — Observability & Auto-correction
+# Phase 6 -- Observability & Auto-correction
 
-> **Purpose**: No measurement means no evaluation; no evaluation means no improvement. 12 metrics + autonomous feedback loop for the harness to improve itself.
+> **Purpose**: No measurement, no evaluation; no evaluation, no improvement. The harness improves itself with 12 metrics + an autonomous reply loop.
 
 ## 0.5 Design Goals (R9 anchor)
 
-> This phase's connection to the [3-axis fleet goals](applications/fleet-catalog.md). When adding a new phase or cherry-picking for a family, the `design` skill (R9-T11) requires `design_goals` as a mandatory input.
-
 **3-axis contribution**:
-- **Axis I (your-harness hardening)**: 12 metric measurement (R7-C reinforcement) + fleet_observe 7-axis + autonomous feedback loop
-- **Axis II (public template sync)**: identical template measurement schema + families must submit identical axis reports
-- **Axis III (fleet central governance / back-propagation)**: fleet observability rollup (your-harness aggregates 7-axis results from all fleet families, compares drift visibility → phase-11 back-propagation input)
+- **Axis I (self-harness hardening)**: 12-metric measurement + fleet_observe 7-axis + autonomous reply loop
+- **Axis II (public template sync)**: identical template measurement schema + families must report using same axes
+- **Axis III (fleet central management)**: fleet observability rollup (aggregate N-family 7-axis data, visualize drift comparisons -> phase-11 back-propagation input)
 
 **Inter-phase contract**:
 - **Input** (consumes): phase-4 (tool_event log + run_state transitions) + phase-5 (subagent dispatch log)
-- **Output** (provides): report_contract output + autonomous feedback trigger + 12-metric dashboard → phase-7 fleet-wide comparison + phase-11 drift detection
+- **Output** (provides): report_contract output + autonomous reply trigger + 12-metric dashboard -> phase-7 fleet-wide comparison + phase-11 drift detection
 
 ## 1. Principle
 
-> Without measurement, no evaluation; without evaluation, no improvement.
+> Measure to evaluate; evaluate to improve.
 
 Also:
 
-> When AI violates a rule, do not just edit the prompt — **fix the system so that particular failure is structurally unrepeatable**.
+> When AI breaks a rule, do not just fix the prompt -- **fix the system so that failure is structurally impossible to repeat**.
 
-## 2. 12 Measurement Metrics (R7-C-W4 reinforcement: 8 → 12)
+## 2. 12 Measurement Metrics
 
-This §2 table is the single source of truth for this phase. The 4 standard LLM harness metrics (Cost / Latency / Approval rate / Error rate) — previously mentioned only in §3 prose — are explicitly added to the table.
+This table is the single source of truth for this phase. The 4 standard LLM harness metrics (Cost / Latency / Approval rate / Error rate) are explicitly included.
 
 | # | Metric | Meaning | Category |
 |---|---|---|---|
 | 1 | Context size trend | Token usage per turn | context |
-| 2 | Tool call count | Average / distribution of calls per turn | tool |
+| 2 | Tool call count | Average calls per turn / distribution | tool |
 | 3 | Repeated read pattern | Same file read N times | pattern |
 | 4 | Giant output occurrence | Single tool result > threshold | tool |
-| 5 | Subagent call count | Spawn count per task | pattern |
-| 6 | `/compact` timing | Turn count until trigger | context |
-| 7 | Retry pattern after failure | Same error repeated N times | pattern |
-| 8 | Cache hit estimate | Cache breakpoint recovery rate | context |
-| 9 | **Cost** (R7 new) | Cumulative LLM cost per task (USD) — provider × model × token | resource |
-| 10 | **Latency** (R7 new) | Tool call wall-clock distribution (P50 / P95 / P99) | resource |
-| 11 | **Approval rate** (R7 new) | NEED_APPROVAL → APPROVED ratio (auto_policy=required user consent consistency) | governance |
-| 12 | **Error rate** (R7 new) | `tool_event.result in [error, denied, timeout]` ratio | governance |
+| 5 | Subagent spawn count | Spawns per task | pattern |
+| 6 | `/compact` timing | Turns until trigger | context |
+| 7 | Post-failure retry pattern | Same error repeating N times | pattern |
+| 8 | Cache hit estimate | Cache breakpoint hit rate | context |
+| 9 | **Cost** | Cumulative LLM cost per task (USD) -- provider x model x token | resource |
+| 10 | **Latency** | Tool call wall-clock distribution (P50 / P95 / P99) | resource |
+| 11 | **Approval rate** | NEED_APPROVAL -> APPROVED ratio (user consent alignment for auto_policy=required) | governance |
+| 12 | **Error rate** | `tool_event.result in [error, denied, timeout]` ratio | governance |
 
-**Mapping to fleet_observe 7-axis**: The 7 axes of `tools/fleet_observe/measure/*` (agent / context / harness / skill / token / archive / advisory) measure a portion of these 12 metrics. Metrics not covered by any axis (Cost/Latency quantification, etc.) require new `fleet_observe/measure/cost.py` + `latency.py` (R7-P3 follow-up).
+**fleet_observe 7-axis mapping**: The 7 axes in `tools/fleet_observe/measure/*` (agent / context / harness / skill / token / archive / advisory) cover a subset of these 12 metrics. Metrics not covered by axes (Cost, Latency quantification, etc.) require new `fleet_observe/measure/cost.py` + `latency.py` (future work).
 
-**OTel compatibility**: Metrics 9–12 (resource + governance) directly map to OpenTelemetry GenAI Semantic Conventions' `gen_ai.usage.input_tokens` / `gen_ai.usage.output_tokens` / `gen_ai.client.operation.duration`. The R7-C-W5 fields (`provider`/`model`/`operation`) in `tool_event.schema.json` provide the basis for this mapping.
+**OTel compatibility**: Metrics 9-12 (resource + governance) map directly to OpenTelemetry GenAI Semantic Conventions (`gen_ai.usage.input_tokens` / `gen_ai.usage.output_tokens` / `gen_ai.client.operation.duration`). The `provider`/`model`/`operation` fields in `tool_event.schema.json` provide this mapping foundation.
 
-## 3. Measure → Correct → Automate Cadence
+## 3. Measure -> Fix -> Automate Cadence
 
-A 3-stage evolution model.
+3-stage evolution model.
 
-### Measurement Stage
-- Session log analysis (12 metrics above)
+### Measurement stage
+- Session log analysis (above 12 metrics)
 - Cost / latency / tool chain tracking
-- Sources: self-built metrics, fleet_observe
+- Sources: self-hosted metrics, fleet_observe
 
-### Correction Stage (manual)
-- Prefix pinning (cache stability)
-- CLAUDE.md diet (trim)
+### Fix stage (manual)
+- Prefix stabilization (cache stability)
+- CLAUDE.md diet
 - Deny-list additions
 - Output cap introduction
-- Session/subagent threshold tightening
+- Session / subagent criteria tightening
 
-### Automation Stage (hook transition)
-- PreToolUse — route to subagent before large file reads
-- PostToolUse — suggest `/compact` after context size check
-- SessionStart — clean up stale memory
-- PreWrite (TDD) — block when tests are absent
-- PreCommit — lint / build / test
-- Before PR creation — AI review
+### Automation stage (Hook transitions)
+- PreToolUse -- subagent routing before large file reads
+- PostToolUse -- `/compact` suggestion after context size check
+- SessionStart -- stale memory cleanup
+- PreWrite (TDD) -- block writes without tests
+- PreCommit -- lint / build / test
+- Before PR creation -- AI review
 
-Rules moved from manual to automated are no longer left to human hands.
+Once a rule transitions from manual to automated, it is no longer left to human action.
 
-## 4. Autonomous Feedback Loop
+## 4. Autonomous Reply Loop
 
-Failure occurs → system autonomously sends error back to AI → fix → re-run. Auto-correction Loop.
+Failure occurs -> system autonomously replies with error to AI worker -> fix -> re-execute. Auto-correction Loop.
 
 ```text
-ACT → tool error → structured error ([phase-4-state-machine] §5)
-  → orchestrator catches → constructs feedback message
-  → sends to AI worker → AI proposes fix
-  → loop until retry_budget exceeded ([phase-2-enforcement] §5)
+ACT -> tool error -> structured error (phase-4 section 5)
+  -> orchestrator catches -> constructs feedback message
+  -> sends to AI worker -> AI proposes fix
+  -> loop until retry_budget exceeded (phase-2 section 5)
 ```
 
 Loop exit conditions:
-- Success → VERIFY → REPORT
-- retry_budget exceeded → BLOCKED → user intervention
-- Same error repeated (Circuit Breaker) → INTERRUPTED
+- Success -> VERIFY -> REPORT
+- retry_budget exceeded -> BLOCKED -> user intervention
+- Same error repeating (Circuit Breaker) -> INTERRUPTED
 
-## 5. 5 Cost Waste Patterns (Diagnosis & Fix)
+## 5. 5 Cost-Waste Patterns (diagnosis and remediation)
 
-| Pattern | Diagnosis | Fix |
+| Pattern | Diagnosis | Remedy |
 |---|---|---|
-| Context Bloat | Layers 3–6 of the 8-layer model are oversized | CLAUDE.md diet, `@import` split |
-| Giant Tool Outputs | Single tool result > 10k tokens | head/tail/grep cap, page split |
-| Poor Cache Utilization | Cache miss on same reads | Prohibit mid-session CLAUDE.md modification |
+| Context Bloat | 8-layer layers 3-6 are overloaded | CLAUDE.md diet, `@import` splitting |
+| Giant Tool Outputs | Single tool result > 10k tokens | head/tail/grep cap, page splitting |
+| Poor Cache Utilization | Cache miss on same reads | Do not modify CLAUDE.md mid-session |
 | Duplicate Tools | Multiple registrations of same-function tools | Tool catalog cleanup |
-| Subagent Overuse | Spawn count per task > N | Re-examine [[phase-5-subagents]] §2 usage conditions |
+| Subagent Overuse | Spawns per task > N | Review [Phase 5](phase-5-subagents.md) section 2 usage conditions |
 
 ## 6. Observability Tool Candidates
 
 | Tool | Role | Adoption |
 |---|---|---|
-| Langfuse | Token/cost/latency/tool chain + LLM-as-judge | Not adopted (self-built) |
-| fleet_observe (your-harness) | 7-axis measurement + family advisory | land |
-| Self-built metrics (`tools/fleet_observe/measure/*`) | per-axis measurement | land |
-| **OpenTelemetry GenAI Semantic Conventions** | provider/model/operation/token/error standard schema + distributed tracing | **schema adoption only under review** (R4 new) |
+| Langfuse | Token / cost / latency / tool chain + LLM-as-judge | Not adopted (self-built) |
+| fleet_observe | 7-axis measurement + family advisory | landed |
+| Self-hosted metric (`tools/fleet_observe/measure/*`) | Per-axis measurement | landed |
+| OpenTelemetry GenAI Semantic Conventions | Standard schema for provider/model/operation/token/error + distributed tracing | Schema-only adoption under review |
 
-External SaaS dependency avoided → self-built measurement infrastructure. The principles of this phase apply regardless.
+External SaaS dependency avoided; self-built measurement infrastructure adopted. However the design principles of this phase apply universally.
 
-**OTel schema adoption rationale (R4)**: Maintain self-built fleet_observe infrastructure but make **schema** OTel GenAI conventions compatible. Avoids schema mismatch when external families integrate with their own observability tools (Langfuse, Datadog, Honeycomb, etc.). Integration targets:
-- Map `tool_event.schema.json` field names to OTel `gen_ai.*` namespace
-- Express parent-child relationships for distributed tracing spans (Claude → Codex → subagent fan-out)
-- Add `provider`/`model`/`operation` fields (currently absent in fleet_observe)
-
-**Application strength**: schema compatibility only is mandatory; actual OTel collector/exporter adoption is optional. ADR candidate 37 (R9 renumbered: previously candidate 29 → 37, ADR-29 = tool contract mandatory fields conflict).
+**OTel schema adoption rationale**: Maintain self-hosted fleet_observe infrastructure but make schema OTel GenAI conventions compatible. Prevents schema mismatch when external families integrate their own observability tools (Langfuse, Datadog, Honeycomb, etc.).
 
 ## 7. Measurable Catalog
 
@@ -135,16 +128,16 @@ Axes measured by `fleet_observe`:
 6. archive
 7. advisory log
 
-Each axis absorbs a portion of the 12 metrics in §2.
+Each axis absorbs a subset of the 12 metrics from section 2.
 
 ## 8. Meta-feedback
 
-Patterns discovered during the correction stage feed back into:
+Patterns discovered in the fix stage feed back into:
 
-- Recurring failures → add to `failure-patterns.md` → memory SoT
-- Repeated hook avoidance → enforcement strengthening ([[phase-2-enforcement]])
-- Context bloat → CLAUDE.md diet cadence ([[phase-3-memory-context]] §11)
-- Unused component detection → [[phase-8-garbage-collection]]
+- Recurring failures -> add to `failure-patterns.md` -> memory SoT
+- Repeated hook evasion -> strengthen enforcement ([Phase 2](phase-2-enforcement.md))
+- Context bloat -> CLAUDE.md diet cadence ([Phase 3 section 11](phase-3-memory-context.md))
+- Unused component detection -> [Phase 8 Garbage Collection](phase-8-garbage-collection.md)
 
 ## 9. Report Contract
 
@@ -160,11 +153,11 @@ fields:
   - artifacts: [<path>]
 ```
 
-In addition to `concise_report_v1`, task-type-specific contracts like `audit_report_v1` and `research_report_v1` are possible.
+Beyond `concise_report_v1`, task_type-specific contracts are possible: `audit_report_v1`, `research_report_v1`, etc.
 
-## 9a. Evaluation Harness (R4 new)
+## 9a. Evaluation Harness
 
-If the 12 metrics (§2) measure only system metrics, **artifact quality evaluation** is handled by a separate evaluation harness.
+Where the 12 metrics measure system metrics, **output quality assessment** is handled by a separate evaluation harness.
 
 ### Components
 
@@ -172,84 +165,52 @@ If the 12 metrics (§2) measure only system metrics, **artifact quality evaluati
 |---|---|
 | **Golden Dataset** | Version-controlled set of standard input + expected output pairs |
 | **Scoring Rubric** | Evaluation axes: accuracy, fidelity, safety, format compliance, etc. |
-| **CI Gate** | Automatic evaluation run before PR merge; blocks on regression |
-| **Regression Test Pool** | Production failures automatically feed back as new test cases |
+| **CI Gate** | Automatic evaluation before PR merge; blocks on regression |
+| **Regression Test Pool** | Production failures automatically flow back as new test cases |
 
-### Absorbing the 6-slice audit pattern
-
-The 6-slice cold-context audit + R1~R5 reinforcement pattern (see MEMORY `feedback_six_slice_audit_pattern`) is already the conceptual prototype of an evaluation harness. This §9a formalizes that pattern.
-
-- PARTIAL/PASS judgment from audit results → scoring rubric quantification
-- R1~R5 recommendation application → regression test pool feedback
-- Audit cadence (immediately after large land) → CI gate trigger
-
-### Directory Structure
-
-```
-docs/harness-engineering/evaluation/        # R4 new candidate, next step after this ledger
-  ├ README.md
-  ├ golden-datasets/
-  │   ├ phase-design.jsonl           # golden examples for phase design work
-  │   ├ enforcement-policy.jsonl     # golden examples for enforcement decisions
-  │   └ ...
-  ├ rubrics/
-  │   ├ design-quality.yaml          # design evaluation rubric
-  │   └ code-quality.yaml
-  └ runs/                            # accumulated evaluation run results
-```
-
-### Evaluation Axes (rubric example)
+### Evaluation axes (rubric example)
 
 | Axis | low (0) | medium (1) | high (2) |
 |---|---|---|---|
-| Accuracy | many factual errors | some errors | no errors |
-| Fidelity | user requirements unmet | partially met | fully met |
-| Safety | many dangerous patterns | some risks | no risks |
-| Format compliance | contract violation | partial compliance | full compliance |
+| Accuracy | Many factual errors | Some errors | No errors |
+| Fidelity | User requirements unmet | Partially met | Fully met |
+| Safety | Many risky patterns | Some risk | No risk |
+| Format compliance | Contract violated | Partially compliant | Fully compliant |
 
-Each axis 0–2 points × 4 axes = 0–8 points. 6 or above = PASS.
+Each axis 0-2 points x 4 axes = 0-8 points. 6+ = PASS.
 
-### Application State
+### Application Status
 
-- 6-slice audit pattern: land (in active operation)
-- Golden dataset formalization: **not implemented** (R4 follow-up)
-- Scoring rubric codification: **not implemented**
-- CI gate automatic evaluation: **not implemented**
-- Regression test pool feedback: partial land (`failure-patterns.md` absorbs some)
-
-### External References
-
-- Braintrust / LangSmith / OpenAI Evals — your-harness uses self-built (same stance as Langfuse deprecation)
-- Towards Data Science 12-metric framework — reference for rubric design
+- Golden dataset formal definition: **not yet implemented**
+- Scoring rubric codification: **not yet implemented**
+- CI gate automatic evaluation: **not yet implemented**
+- Regression test pool feedback: partial (absorbed by `failure-patterns.md`)
 
 ## 10. Prohibitions
 
 - Claiming "performance improved" without measurement
-- Fixing only the prompt without fixing the system
-- Autonomous feedback loop without Circuit Breaker
-- Free-form reports (no contract)
-- Uncritical reliance on external SaaS
+- Only fixing prompts without fixing the system
+- Autonomous reply loop without Circuit Breaker
+- Report free-form (no contract)
+- Uncritical dependence on external SaaS observability tools
 
-## 11. Application State
+## 11. Application Status
 
 | Item | Status | Location |
 |---|---|---|
-| 12 metric measurement | partial land | fleet_observe 7-axis + usage telemetry pattern facts land; cache hit quantitative facts and OTel/resource metrics are follow-up |
-| Measure → correct → automate cadence | land | ADR-10 fleet-governance-advisory |
-| Autonomous feedback loop | partial land | `run_state.retry_count`-based retry_budget detection + VERIFY→BLOCKED seam landed; broader loop hardening is follow-up |
-| 5 cost waste pattern diagnosis | partial land | fleet_observe advisory |
-| Langfuse | deprecated | self-built adopted |
-| Meta-feedback | land | failure-patterns + ADR cycle |
-| report_contract | partial land | active_task declaration + validator + CLI report closeout path land |
-| **Evaluation Harness (§9a)** | partial land | 6-slice audit pattern land; golden dataset/rubric/CI gate not implemented |
-| **OTel GenAI schema compatibility** (§6) | **not implemented** | fleet_observe schema itself has no OTel mapping |
-
-**Gap**: report_contract enforcement across the full closeout lane, cache hit/resource metric expansion, autonomous feedback loop retry_budget quantification (linked with [[phase-2-enforcement]] §5), Evaluation Harness formalization, OTel schema compatibility.
+| 12-metric measurement | partial | fleet_observe 7-axis + usage telemetry pattern facts landed; cache hit quantification and OTel/resource metrics pending |
+| Measure -> fix -> automate cadence | landed | fleet-governance-advisory architecture decision record |
+| Autonomous reply loop | partial | `run_state.retry_count`-based retry_budget detection + VERIFY->BLOCKED seam landed; broader loop hardening pending |
+| 5 cost-waste pattern diagnosis | partial | fleet_observe advisory |
+| Meta-feedback | landed | failure-patterns + ADR cycle |
+| report_contract | partial | active_task declaration + validator + CLI report closeout path landed |
+| Evaluation Harness | partial | 6-slice audit pattern landed; golden dataset/rubric/CI gate not yet implemented |
+| OTel GenAI schema compatibility | not yet implemented | fleet_observe schema lacks OTel mapping |
 
 ## 12. Exit Criterion
 
-At least 5 of the 12 metrics (context / tool call / repeated read / giant output / retry pattern) are automatically measured and at least 1 advisory report is generated. Autonomous feedback loop observed reaching retry_budget limit on an intentional verification failure case, then entering BLOCKED state.
+At least 5 of the 12 metrics (context / tool call / repeated read / giant output / retry pattern) are automatically measured and at least 1 advisory report generated. The autonomous reply loop operates up to retry_budget limit on an intentional verification failure case, then enters BLOCKED.
 
-## 13. Next Steps
+## 13. Next Step
 
-Proceed to [Phase 7 — Fleet Expansion](phase-7-fleet-expansion.md).
+[Phase 7 -- Fleet Expansion](phase-7-fleet-expansion.md)
