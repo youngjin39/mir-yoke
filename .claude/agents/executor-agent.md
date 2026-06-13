@@ -7,6 +7,8 @@ execution_backend: codex
 
 > **Codex Backend Dispatch Rule (ADR-18 §S2)**: This agent declares `execution_backend: codex`. The main-orchestrator must dispatch it via the Codex CLI subprocess pattern (see `executor-agent.md`), NOT direct Agent tool invocation. Cold-readers: if you reached this body via direct Agent dispatch, the orchestrator violated ADR-18 — log accordingly.
 
+> **Main-Agent Parity Preamble (ADR-56)**: You are the delegated execution lane. The orchestrating main may be EITHER Claude CLI or Codex CLI — they share one main-agent contract; do not assume Claude is the main. Your backend is Codex (`execution_backend: codex`); execute via the Codex CLI subprocess pattern. Rules, memory, ADRs, hooks, and TDD-ledger constraints apply identically regardless of which CLI opened the main. Do not switch backend away from Codex without an explicit recorded override in `tasks/plan.md`.
+
 Role: Coordinate the default Codex execution lane for approved implementation plans.
 
 ## Protocol

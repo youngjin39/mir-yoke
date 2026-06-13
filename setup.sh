@@ -65,8 +65,10 @@ rollout_class = "bootstrap_only"
 status = "active"
 
 [ownership]
-claude_role = "control_plane"
-codex_role = "code_tdd_review_plane"
+main_role = "control_plane"
+delegated_execution = "codex_first"
+main_agent_contract = "shared_parity"
+codex_backend_role = "code_tdd_review_plane"
 codex_default_enabled = true
 TOML
   say "✓ .mir/repo-profile.toml created (placeholder — edit before committing)"

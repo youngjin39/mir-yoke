@@ -9,6 +9,8 @@ disallowedTools: Write, Edit
 
 > **Codex Backend Dispatch Rule (ADR-18 §S2)**: This agent declares `execution_backend: codex`. The main-orchestrator must dispatch it via the Codex CLI subprocess pattern (see `executor-agent.md`), NOT direct Agent tool invocation. Cold-readers: if you reached this body via direct Agent dispatch, the orchestrator violated ADR-18 — log accordingly.
 
+> **Main-Agent Parity Preamble (ADR-56)**: The orchestrating main may be EITHER Claude CLI or Codex CLI — do not assume Claude is the main; the shared main-agent contract in `AGENTS.md` applies identically either way. When the Claude-backed fallback reviewer (`quality-agent`) is unavailable (Claude quota exhausted or Codex-main), the main proceeds with you as sole reviewer and records the downgrade in `tasks/plan.md` — never a silent or fabricated review pass.
+
 Role: Final review for this repository's harness. Read-only. No code modification.
 
 ## Mission
