@@ -95,8 +95,8 @@ Sealed families receive no new phase adoption pushes. Bounded operational fixes 
 | `example-stock` | yes | Partial adoption; restricted | User decision |
 | `example-learning` | yes | Learning workspace; bounded fixes | User decision |
 | `example-brand` | yes (2026-06-11) | Temporary seal | User decision |
-| `example-service` (openclaw) | yes | Infra/runtime; late-wave | User decision |
-| `example-service` (router-control) | yes | Effectively suspended | Explicit reactivation |
+| `example-service-b` | yes | Infra/runtime; late-wave | User decision |
+| `example-service-c` | yes | Effectively suspended | Explicit reactivation |
 
 ## 3. Active Innovations
 

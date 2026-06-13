@@ -1,5 +1,5 @@
 ---
-description: 작성한 코드를 독립 서브에이전트로 다층 리뷰 (편향 제거, 완료까지 반복)
+description: Multi-pass review of authored code via independent subagents (bias-free, loop until complete)
 ---
 
 # /review-code
@@ -57,7 +57,7 @@ When repairs touch import paths, config paths, script invocation paths, or relat
 
 ## Output to user
 
-Final report, in Korean, contains:
+Final report, in the user's working language, contains:
 - Scope reviewed (resolved value).
 - Findings table: severity, file:line, summary, status (fixed / acknowledged / deferred).
 - Files changed by the repair loop.

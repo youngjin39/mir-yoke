@@ -24,9 +24,9 @@ Included targets:
 9. `example-stock`
 10. `example-learning`
 11. `example-infra`
-12. `example-service` (hermes)
-13. `example-service` (openclaw)
-14. `example-service` (router-control)
+12. `example-service-a`
+13. `example-service-b`
+14. `example-service-c`
 
 Excluded from this phase:
 
@@ -76,14 +76,14 @@ Run after Phase A because they either have known partial adoption or a narrower 
 Run later because verifier drift or fixes are more likely to touch runtime, infra, or shared control surfaces.
 
 11. `example-infra`
-12. `example-service` (hermes)
-13. `example-service` (openclaw)
+12. `example-service-a`
+13. `example-service-b`
 
 ### Phase D — sealed or effectively suspended tail
 
 Run only after the earlier phases are clean or when explicitly reactivated.
 
-14. `example-service` (router-control)
+14. `example-service-c`
 
 ## 4. Standard Pre-Check
 
@@ -144,9 +144,9 @@ Each repository review note should capture:
 | 9 | `example-stock` | B | `hybrid_pipeline` | yes | 56 | `verify_context_paths`, `verify_codex_sync` | sealed; only bounded operational fixes allowed |
 | 10 | `example-learning` | B | `SE-product` | yes | 50 | `verify_context_paths`, `verify_codex_sync` | learning workspace; local score scripts exist, but keep scope repo-local |
 | 11 | `example-infra` | C | `code_app` | no | 61 | `verify_context_paths`, `verify_codex_sync` | infra-adjacent runtime; avoid operational fixes that widen into deploy wiring |
-| 12 | `example-service` (hermes) | C | `code_app` | no | 58 | `verify_context_paths`, `verify_codex_sync` | infra/runtime repo; expect env-specific verification constraints |
-| 13 | `example-service` (openclaw) | C | `code_app` | yes | 58 | `verify_context_paths`, `verify_codex_sync` | sealed and infra/runtime flavored; late-wave only |
-| 14 | `example-service` (router-control) | D | `code_app` | yes | 61 | `verify_context_paths`, `verify_codex_sync`, `package.json` | sealed and effectively suspended; verify only if explicitly reactivated |
+| 12 | `example-service-a` | C | `code_app` | no | 58 | `verify_context_paths`, `verify_codex_sync` | infra/runtime repo; expect env-specific verification constraints |
+| 13 | `example-service-b` | C | `code_app` | yes | 58 | `verify_context_paths`, `verify_codex_sync` | sealed and infra/runtime flavored; late-wave only |
+| 14 | `example-service-c` | D | `code_app` | yes | 61 | `verify_context_paths`, `verify_codex_sync`, `package.json` | sealed and effectively suspended; verify only if explicitly reactivated |
 
 ## 8. Score Handling Rule
 

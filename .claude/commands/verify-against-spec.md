@@ -1,5 +1,5 @@
 ---
-description: 구현이 설계·요구사항·목적과 일치하는지 다축 서브에이전트 독립 검증 (완료까지)
+description: Multi-axis independent verification that the implementation matches the design, requirements, and purpose (loop until complete)
 ---
 
 # /verify-against-spec
@@ -68,7 +68,7 @@ Per repair group:
 
 ## Output to user
 
-Final report, in Korean, contains:
+Final report, in the user's working language, contains:
 - Authoritative references used.
 - Per-axis top findings.
 - Conflicts surfaced between axes.

@@ -155,11 +155,11 @@ Same as SE-product, but phases 11–14 are explicitly user-gated.
 - All AI score improvements are presented as options, not auto-applied.
 - Incident response follows the SE-product personal row in the severity table: best-effort + user decision required.
 
-## 6. Memory-keeper
+## 6. Example-memory
 
-`memory-keeper` is a specialist agent, not a family_type. It does not follow these runbooks.
+`example-memory` is a specialist agent, not a family_type. It does not follow these runbooks.
 
-For memory-keeper adoption, see the federated second-brain documentation in `docs/memory-map.md` and the `memory-keeper` agent profile.
+For example-memory adoption, see the federated second-brain documentation in `docs/memory-map.md` and the `example-memory` agent profile.
 
 ## 7. SE-meta (your-harness reference)
 
@@ -227,7 +227,7 @@ Known families requiring parity verification (in order of last scan):
 | Per-family-type auto-recommendation | partial — `fleet_observe/share_dispatcher.py` dispatches by type |
 | Sealed family exception gates | live — `config/fleet-harness-state.json` `sealed` field |
 | Personal domain auto-escalation block | live — incident runbook `§3-1` |
-| Memory-keeper specialist separation | done — tracked separately from family catalog |
+| Example-memory specialist separation | done — tracked separately from family catalog |
 
 ## 11. Exit Criterion
 

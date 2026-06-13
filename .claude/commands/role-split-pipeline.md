@@ -1,5 +1,5 @@
 ---
-description: 메인에이전트 설계/오케스트레이션→cold 검토→delegated 실행→cold 평가 4단계 파이프라인 (단계마다 신규 서브에이전트, 편향 0)
+description: Four-stage pipeline: main-agent design/orchestration -> cold review -> delegated execution -> cold evaluation (a fresh subagent per stage, zero bias)
 ---
 
 # /role-split-pipeline
@@ -87,7 +87,7 @@ Dispatch `codex-final-reviewer` instance D (cold, distinct from A, B, C). Brief:
 
 ## Output to user
 
-Final report, in Korean, contains:
+Final report, in the user's working language, contains:
 - Resolved task and purpose source.
 - Phase-by-phase log: reviewer instance id, verdict, repair count.
 - Final evaluation verdict.

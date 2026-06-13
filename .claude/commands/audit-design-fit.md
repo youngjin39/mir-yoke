@@ -1,5 +1,5 @@
 ---
-description: 설계가 본래 목적에 부합하는지 독립 서브에이전트로 감사 (코드는 건드리지 않음)
+description: Audit whether a design serves its original purpose via independent subagents (does not touch code)
 ---
 
 # /audit-design-fit
@@ -63,7 +63,7 @@ After edits land, dispatch a newly spawned `codex-final-reviewer` (not used in P
 
 ## Output to user
 
-Final report, in Korean, contains:
+Final report, in the user's working language, contains:
 - Purpose source(s) used.
 - Pass 1 derived requirements (short list).
 - Pass 2 misalignment findings.

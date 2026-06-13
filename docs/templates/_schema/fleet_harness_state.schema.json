@@ -30,7 +30,7 @@
     },
     "families": {
       "type": "object",
-      "description": "key = family name (e.g. mir-harness, shortmoviedirector)",
+      "description": "key = family name (e.g. mir-harness, example-video)",
       "patternProperties": {
         "^[a-z0-9][a-z0-9-]*[a-z0-9]$": { "$ref": "#/$defs/family_state" }
       },

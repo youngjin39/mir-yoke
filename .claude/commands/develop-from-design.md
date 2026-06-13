@@ -1,5 +1,5 @@
 ---
-description: 설계 기반 하네스식 개발 — 작은 단위로 개발→독립 검토→수정 반복 (완료까지)
+description: Harness-style development from a design — small slices: implement -> independent review -> fix, looped until complete
 ---
 
 # /develop-from-design
@@ -65,7 +65,7 @@ When a slice renames, moves, or introduces a new path:
 
 ## Output to user
 
-Final report, in Korean, contains:
+Final report, in the user's working language, contains:
 - Design path and slice plan.
 - Per-slice status table: implementation outcome, review verdict, repair count, final independent verdict.
 - Aggregate diff scope (files touched).

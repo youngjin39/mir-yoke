@@ -94,17 +94,17 @@ audience: your-harness operators + external adopters
 | Baseline AI score | 61 |
 | Description | Infrastructure/home-hub application. Phase C — higher blast radius; infra-adjacent runtime. |
 
-### example-service (hermes)
+### example-service-a
 
 | Field | Value |
 |---|---|
-| Slug | `example-service` |
+| Slug | `example-service-a` |
 | Family type | code_app |
 | Sealed | no |
-| Path | `<family-repo-path>/example-service-hermes` |
+| Path | `<family-repo-path>/example-service-a` |
 | Active phases | 0–9 |
 | Baseline AI score | 58 |
-| Description | Service layer application (hermes variant). Phase C — infra/runtime repo. |
+| Description | Service layer application. Phase C — infra/runtime repo. |
 
 ## 3. SE-product
 
@@ -201,14 +201,14 @@ audience: your-harness operators + external adopters
 | `example-stock` | 2026-05 | Partial adoption; active but restricted to bounded fixes |
 | `example-learning` | 2026-05 | Learning workspace; bounded fixes only |
 | `example-brand` | 2026-06-11 | Temporarily sealed |
-| `example-service` (openclaw) | 2026-05 | Infra/runtime; late-wave only |
-| `example-service` (router-control) | 2026-05 | Effectively suspended |
+| `example-service-b` | 2026-05 | Infra/runtime; late-wave only |
+| `example-service-c` | 2026-05 | Effectively suspended |
 
 ## 6. Special Cases
 
-### memory-keeper
+### example-memory
 
-`memory-keeper` is a standalone specialist agent (not a fleet family in the same sense). It operates as a federated second-brain component and is tracked separately from the family catalog.
+`example-memory` is a standalone specialist agent (not a fleet family in the same sense). It operates as a federated second-brain component and is tracked separately from the family catalog.
 
 ### example-harness
 

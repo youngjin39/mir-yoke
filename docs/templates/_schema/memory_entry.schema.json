@@ -3,7 +3,7 @@
   "$id": "mir/template/memory_entry",
   "title": "Mir Memory Entry Schema",
   "description": "Single memory record in the SoT (global/personal/project). Supports lifetime tracking, deprecation, and supersession.",
-  "$comment": "R8  — CP family  (  /   /   /  )  : `type: project` + `tags: [cp-character, cp-style, cp-continuity, cp-worldbuild]` . `type: reference`   (Phase 8 GC default 30  — CP    ). storydirector  per-agent memory  ADR-13 per-agent namespace   (`owner: <agent_slug>` ). Slice C WARN .",
+  "$comment": "R8  — CP family  (  /   /   /  )  : `type: project` + `tags: [cp-character, cp-style, cp-continuity, cp-worldbuild]` . `type: reference`   (Phase 8 GC default 30  — CP    ). example-story  per-agent memory  ADR-13 per-agent namespace   (`owner: <agent_slug>` ). Slice C WARN .",
   "type": "object",
   "required": ["id", "type", "body", "status", "created"],
   "additionalProperties": false,

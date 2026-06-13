@@ -1,5 +1,5 @@
 ---
-description: 설계를 분야별 서브에이전트로 세분화 분석·수정·재검토 (완료까지 반복)
+description: Subdivide a design into per-domain subagent analysis, revise, and re-review (loop until complete)
 ---
 
 # /analyze-design
@@ -70,7 +70,7 @@ Dispatch `codex-final-reviewer` (cold context, no participation in earlier passe
 
 ## Output to user
 
-Final report, in Korean, contains:
+Final report, in the user's working language, contains:
 - Design path and slice partition.
 - Per-slice top findings (1–3 each).
 - Conflict matrix and resolutions.
