@@ -226,11 +226,11 @@ def _match(candidate, pat):
 print("yes" if any(_match(c, p) for c in candidates for p in patterns) else "no")
 PY
 )"
-        if [ "$_mir_match" = "yes" ] && [ -z "${MIR_CODEX_SESSION_ID:-}" ]; then
+        if [ "$_mir_match" = "yes" ] && [ -z "${MIR_CODEX_SESSION_ID:-}" ] && [ "${MIR_CODEX_MAIN:-0}" != "1" ]; then
             if [ "${MIR_DOGFOODING_EXEMPT:-no}" = "yes" ]; then
                 echo "[mir ADVISORY] code-path edit on $_mir_file_path; family $MIR_FAMILY_SLUG is ADR-23 dogfooding exempt (no BLOCK)" >&2
             else
-                echo "[mir BLOCKED] code-path edit on $_mir_file_path requires an active Codex session. Run scripts/spawn_codex_session.sh first." >&2
+                echo "[mir BLOCKED] code-path edit on $_mir_file_path requires the Codex execution lane. If Claude is main, delegate via scripts/spawn_codex_session.sh; if Codex is main or the loop driver is running, export MIR_CODEX_MAIN=1." >&2
                 exit 2
             fi
         fi
