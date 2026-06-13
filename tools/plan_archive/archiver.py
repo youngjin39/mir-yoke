@@ -12,7 +12,11 @@ _TOMBSTONE_RE = re.compile(
 _HEADING_DONE_RE = re.compile(r"\(.*\bDONE\b.*\)")
 _HEADING_CLOSED_RE = re.compile(r"\(.*\bCLOSED\b.*\)")
 _BODY_ELEVATION_CLOSED_RE = re.compile(r"elevation:\s*CLOSED")
-_BODY_STEP_DONE_RE = re.compile(r"^Step .+: DONE")
+STEP_STATUS_VOCAB = ("TODO", "IN_PROGRESS", "DONE", "FAILED", "BLOCKED")
+_BODY_STEP_STATUS_RE = re.compile(
+    rf"^Step (?P<step_id>\d+): (?P<status>{'|'.join(STEP_STATUS_VOCAB)}|CLOSED)\b"
+)
+
 
 def _is_hard_keep(heading: str, body_lines: list[str]) -> bool:
     if "Pinned Tracker Policies" in heading:
@@ -38,7 +42,8 @@ def _is_archivable(section: Section) -> bool:
         if _BODY_ELEVATION_CLOSED_RE.search(line):
             return True
     for line in body_lines[:6]:
-        if _BODY_STEP_DONE_RE.match(line):
+        match = _BODY_STEP_STATUS_RE.match(line)
+        if match and match.group("status") in {"DONE", "CLOSED"}:
             return True
     return False
 

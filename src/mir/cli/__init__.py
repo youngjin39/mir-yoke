@@ -1,6 +1,6 @@
 """CLI entry points — `python -m mir …` dispatcher.
 
-Trimmed for the public template: only `memory`, `migrate`, and `context`
+Trimmed for the public template: only `memory`, `migrate`, `context`, and `loop`
 subcommands are wired here. The full subcommand set lives in the Mir private
 harness.
 
@@ -12,6 +12,7 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from . import context as _context
+from . import loop as _loop
 from . import memory as _memory
 from . import migrate as _migrate
 
@@ -21,4 +22,5 @@ SUBCOMMANDS: dict[str, Callable[[list[str]], int]] = {
     'migrate': _migrate.main,
     'memory': _memory.main,
     'context': _context.main,
+    'loop': _loop.main,
 }

@@ -1,0 +1,43 @@
+---
+# External side-effect tools requiring NEED_APPROVAL (per autonomous-execution.md section 6)
+# Source: docs/harness-engineering/applications/autonomous-execution.md section 6
+always_require_approval:
+  # MCP tools (verified external side effect)
+  - mcp.discord.reply
+  - mcp.gmail.send
+  - mcp.calendar.create_event
+  - mcp.calendar.update_event
+  - mcp.calendar.delete_event
+  - mcp.gcal.create_event
+  - mcp.gcal.update_event
+
+  # Git operations (publish to remote)
+  - git.push
+  - git.push_force
+
+  # Webhook class
+  - webhook.post
+  - webhook.trigger
+
+  # Generic verbs (extend as needed per section 6 detection rules)
+  - publish
+  - upload
+  - deploy
+  - send_email
+  - post_message
+  - migrate_production
+
+  # Discord-specific MCP tool (plugin:discord)
+  - mcp__plugin_discord_discord__reply
+
+  # Gmail MCP tools
+  - mcp__claude_ai_Gmail__create_draft
+
+  # Calendar MCP tools
+  - mcp__claude_ai_Google_Calendar__create_event
+  - mcp__claude_ai_Google_Calendar__update_event
+  - mcp__claude_ai_Google_Calendar__delete_event
+
+# Discord SEND/EDIT are intentionally allowed (user channel, security-baseline section 2):
+exempt_user_channels:
+  - discord.user_inbound_message

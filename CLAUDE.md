@@ -54,6 +54,23 @@
 - Delegated, restartable, or 3+ step work should emit a persisted `DispatchBrief` or equivalent handoff artifact before the execution lane starts.
 - Sub-agent contracts must stay pinned by regression tests.
 
+## Continuation Loop Protocol
+- Applies to BOTH mains: whichever CLI is opened, Claude or Codex, follows the same file-backed continuation loop.
+- Cursor of record: `tasks/plan.md` formal `Step N:` lines; do not create a second cursor in `run_state.json`.
+- Each runnable step carries bounded machine refs: `brief=<path>` and `tdd=<change_id>#<category>`.
+- Move 1: read the cursor with `uv run mir loop next --json`.
+- Move 2: select exactly one non-DONE/non-CLOSED step from the first active task section.
+- Move 3: execute ONE bounded step through the delegated Codex lane or `scripts/loop_driver.sh`.
+- Move 4: update `tasks/tdd.json` evidence for that step's declared category.
+- Move 5: rewrite only that cursor line to `DONE`, `FAILED | attempts=K`, or `BLOCKED | reason=...`.
+- Move 6: stop after the one bounded step; the next pass must re-read the file cursor.
+- `FAILED` retries are finite; after the configured attempt cap, mark `BLOCKED` and return control.
+- `BLOCKED` means no fabricated continuation: a main agent or user must revise the plan or brief.
+- `COMPLETE` means all machine steps in the active section are `DONE` or `CLOSED`.
+- Non-LLM automation may drive the loop, but it must not bypass hooks, TDD gates, or verification.
+- `tools/run_orchestrator` remains observer-only; it is not the continuation executor.
+
+
 ## Subagent Resource Management
 - Default live subagent cap = 4. Raise it only when Claude/Codex lanes are clearly independent and the current lane is healthy.
 - Design-process work may raise the live cap to 4 without separate user approval when Step 2 parallel analysis and Step 4 independent verification both need coverage; record the temporary cap in `tasks/plan.md` or the active handoff note.
