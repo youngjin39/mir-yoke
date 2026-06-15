@@ -1,7 +1,7 @@
 {
-  "template_version": "0.4.0",
-  "template_commit": "6ab11dd06e3efbc798ceb7f9bdbc97e83a38b192",
-  "generated_at": "2026-06-10T15:37:16.663954+00:00",
+  "template_version": "0.5.0",
+  "template_commit": "6eae151a42834477a683ddec2ad2bbaf87c62c93",
+  "generated_at": "2026-06-15T13:04:43.199192+00:00",
   "normalization": {
     "verbatim": "sha256 of LF-normalized raw bytes",
     "parameterized": "sha256 after slug normalization (your-harness / repo.slug \u2192 {{SLUG}})",
@@ -15,8 +15,9 @@
     {
       "path": "src/mir/cli/__init__.py",
       "ownership_class": "verbatim",
-      "hash": "0df30e4ecbdbe40f818e717f540801956ebab247d05c506fa0085cadc4b5b9ff",
+      "hash": "77b7f03732df65d3b134214bbecbddc49f11d6fefadbbf50c87bc384326e7682",
       "previous_hashes": [
+        "0df30e4ecbdbe40f818e717f540801956ebab247d05c506fa0085cadc4b5b9ff",
         "e841cf28ff4c732911e7ce7f15896d6048c73d81627dc557c38d75275eae3919"
       ]
     },
@@ -87,8 +88,11 @@
     {
       "path": ".claude/hooks/session-start.sh",
       "ownership_class": "marker-block",
-      "hash": "38dd4a355cfc3f539c083404afeb52df883fcb3218f740ffef483c54fdcd10a1",
-      "previous_hashes": [],
+      "hash": "dafef0bf6dbaa8196ff8396d59b1665a6d81443618dc433ee36a09c23dda88aa",
+      "previous_hashes": [
+        "dafef0bf6dbaa8196ff8396d59b1665a6d81443618dc433ee36a09c23dda88aa",
+        "38dd4a355cfc3f539c083404afeb52df883fcb3218f740ffef483c54fdcd10a1"
+      ],
       "params": {
         "marker_name": "mir:adr53:context-core",
         "marker_begin": "# mir:adr53:context-core:begin",
@@ -178,8 +182,10 @@
     {
       "path": "tools/plan_archive/archiver.py",
       "ownership_class": "verbatim",
-      "hash": "d72d3cb1e67595cddc1725efb4f5363d398f931993473c6ac8622a89ac4f6cc8",
-      "previous_hashes": []
+      "hash": "51a3b65b2d8337a9be6e8cc580087612ceddca5f737b2e75f38003de64c6ede8",
+      "previous_hashes": [
+        "d72d3cb1e67595cddc1725efb4f5363d398f931993473c6ac8622a89ac4f6cc8"
+      ]
     },
     {
       "path": "tools/plan_archive/cli.py",
