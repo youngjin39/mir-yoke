@@ -1,6 +1,6 @@
 ---
 adr: 60
-status: proposed
+status: accepted
 source: mirrored-summary
 ---
 
