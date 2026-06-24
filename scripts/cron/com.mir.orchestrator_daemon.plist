@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.mir.orchestrator_daemon</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string><your-harness-path>/.venv/bin/python</string>
+		<string>-m</string>
+		<string>tools.run_orchestrator</string>
+		<string>daemon</string>
+		<string>--interval</string>
+		<string>5</string>
+		<string>--discord-notify</string>
+	</array>
+	<key>WorkingDirectory</key>
+	<string><your-harness-path></string>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>KeepAlive</key>
+	<dict>
+		<key>SuccessfulExit</key>
+		<false/>
+	</dict>
+	<key>StandardOutPath</key>
+	<string>/tmp/mir-orchestrator-daemon.log</string>
+	<key>StandardErrorPath</key>
+	<string>/tmp/mir-orchestrator-daemon.err</string>
+</dict>
+</plist>

@@ -1,0 +1,5 @@
+{
+  "_comment_": "Modes: force_codex preserves Codex-first behavior; select enables future explicit runtime selection; per_project enables future project-specific overrides.",
+  "mode": "force_codex",
+  "per_project": {}
+}

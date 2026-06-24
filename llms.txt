@@ -1,0 +1,28 @@
+# your-harness Harness — opinionated Claude Code + Codex starter / meta-harness
+
+## What this repo is
+A governance harness for Claude Code + Codex CLI workflows. Deterministic-gate enforcement,
+single-cursor continuation loop, TDD ledger, fleet management tooling. Human-in-the-loop;
+no autonomous self-continuation.
+
+## Key docs
+- CLAUDE.md — primary instruction surface (coding rules, hook policy, role policy, language)
+- AGENTS.md — Codex-side counterpart (generated from CLAUDE.md)
+- ARCHITECTURE.md — runtime surfaces map
+- docs/decisions/ — ADRs (governance decisions, e.g. ADR-50 memory-DB, ADR-51 harness-consistency)
+- docs/harness-engineering/applications/design-process.md — design workflow (5-step gate)
+- docs/INDEX.md — doc navigation index
+
+## Memory
+Canonical store: .mir/memory.db (SQLite + FTS5 + sqlite-vec)
+Query: uv run mir memory query <keyword>
+Projections (do not hand-edit): docs/memory-map.md, tasks/lessons.md
+
+## Build / test
+uv run pytest          — full test suite (tools/ + tests/)
+uv run ruff check      — lint
+uv run mir --help      — CLI entrypoint
+
+## Session start
+Read tasks/plan.md cursor first. Run: uv run mir loop next --json
+One bounded step per pass through the Codex delegated lane.

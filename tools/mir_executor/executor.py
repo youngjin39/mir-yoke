@@ -3,7 +3,7 @@ executor.py
 -----------
 MirExecutor: Codex CLI subprocess wrapper + tdd.json ledger update.
 
-Design inspiration: an internal harness executor pattern — no code copied.
+Design inspiration: harness_framework (Hermes pattern) — no code copied.
 P0-J MVP: blocking subprocess only. Async / Stop hook wiring deferred to P0-J.1.
 """
 
@@ -17,6 +17,7 @@ import shlex
 import subprocess
 import tempfile
 import time
+from collections.abc import Mapping
 from dataclasses import dataclass
 
 from mir.core.conductor.dispatch_brief import (
@@ -24,6 +25,53 @@ from mir.core.conductor.dispatch_brief import (
     load_dispatch_brief,
 )
 from mir.core.contracts.dispatch_brief import DispatchBrief
+
+
+def _is_linked_worktree(cwd: os.PathLike[str] | str) -> bool:
+    """Return True when cwd is a git linked worktree."""
+    cwd_path = pathlib.Path(cwd).resolve()
+    try:
+        completed = subprocess.run(
+            ["git", "-C", str(cwd_path), "rev-parse", "--git-common-dir"],
+            capture_output=True,
+            text=True,
+            check=True,
+            shell=False,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return False
+
+    common_dir_text = completed.stdout.strip()
+    if not common_dir_text:
+        return False
+
+    common_dir = pathlib.Path(common_dir_text)
+    if not common_dir.is_absolute():
+        common_dir = cwd_path / common_dir
+    common_dir = common_dir.resolve()
+
+    try:
+        common_dir.relative_to(cwd_path)
+    except ValueError:
+        return True
+    return False
+
+
+def _guard_codex_main_worktree(
+    cwd: os.PathLike[str] | str,
+    env: Mapping[str, str],
+) -> None:
+    """Refuse delegated Codex in the main worktree unless explicitly marked main."""
+    if env.get("MIR_CODEX_MAIN") == "1":
+        return
+    if _is_linked_worktree(cwd):
+        return
+    raise RuntimeError(
+        "Delegated Codex refused in the main worktree per ADR-60 section 16 D3. "
+        "Delegated execution must go through `mir_executor execute --background --dispatch`, "
+        "which uses an R4 worktree, or set MIR_CODEX_MAIN=1 for the main process "
+        "itself, such as loop_driver."
+    )
 
 
 @dataclass
@@ -80,6 +128,8 @@ class MirExecutor:
         self,
         codex_args: list[str],
         timeout_seconds: int = 600,
+        *,
+        cwd: os.PathLike[str] | str | None = None,
     ) -> SubprocessResult:
         """Run ``${CODEX_BIN:-codex} *codex_args`` via subprocess.run (blocking).
 
@@ -87,6 +137,9 @@ class MirExecutor:
         Raises FileNotFoundError with clear message if binary missing.
         Raises subprocess.TimeoutExpired on timeout (not swallowed).
         """
+        resolved_cwd = pathlib.Path.cwd() if cwd is None else pathlib.Path(cwd)
+        resolved_cwd = resolved_cwd.resolve()
+        _guard_codex_main_worktree(resolved_cwd, os.environ)
         codex_bin = os.environ.get("CODEX_BIN", "codex")
         command = [codex_bin, *self.resolve_codex_args(codex_args)]
 
@@ -98,6 +151,7 @@ class MirExecutor:
                 text=True,
                 timeout=timeout_seconds,
                 shell=False,
+                cwd=str(resolved_cwd),
             )
         except FileNotFoundError as exc:
             raise FileNotFoundError(
@@ -247,6 +301,8 @@ class MirExecutor:
         self,
         codex_args: list[str],
         timeout_seconds: int = 600,
+        *,
+        cwd: os.PathLike[str] | str | None = None,
     ) -> SubprocessResult:
         """Async variant of run_codex using asyncio.create_subprocess_exec.
 
@@ -255,6 +311,9 @@ class MirExecutor:
         when mixing sync and async paths).
         Raises FileNotFoundError with clear message if binary missing.
         """
+        resolved_cwd = pathlib.Path.cwd() if cwd is None else pathlib.Path(cwd)
+        resolved_cwd = resolved_cwd.resolve()
+        _guard_codex_main_worktree(resolved_cwd, os.environ)
         codex_bin = os.environ.get("CODEX_BIN", "codex")
         resolved_args = self.resolve_codex_args(codex_args)
         command = [codex_bin, *resolved_args]
@@ -266,6 +325,7 @@ class MirExecutor:
                 *resolved_args,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
+                cwd=str(resolved_cwd),
             )
         except FileNotFoundError as exc:
             raise FileNotFoundError(

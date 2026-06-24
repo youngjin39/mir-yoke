@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- DEPRECATED (R28-T02): Direct harness_drift invocation replaced by com.mir.role_a.plist.
+     role_a_runner.py wraps harness_drift with lock + error handling.
+     Do not load this plist. Retained for reference only. -->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.mir.harness_drift</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string><your-harness-path>/.venv/bin/python</string>
+    <string>-m</string>
+    <string>tools.fleet_observe.harness_drift</string>
+    <string>--families-from</string>
+    <string><your-harness-path>/config/fleet-harness-state.json</string>
+    <string>--template</string>
+    <string><your-harness-path><example-family></string>
+    <string>--output</string>
+    <string>json</string>
+    <string>--report</string>
+    <string>/tmp/your-harness-drift-daily.json</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string><your-harness-path></string>
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key>
+    <integer>13</integer>
+    <key>Minute</key>
+    <integer>30</integer>
+  </dict>
+  <key>StandardOutPath</key>
+  <string>/tmp/your-harness-drift.log</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/your-harness-drift.err</string>
+  <key>RunAtLoad</key>
+  <false/>
+</dict>
+</plist>

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.mir.render_families_overview</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string><your-harness-path>/.venv/bin/python</string>
+    <string>-m</string>
+    <string>tools.fleet_observe.render_families_overview</string>
+    <string>--repos</string>
+    <string><your-harness-path>/config/repos</string>
+    <string>--output</string>
+    <string>/tmp/mir-families-overview-daily.md</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string><your-harness-path></string>
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key>
+    <integer>14</integer>
+    <key>Minute</key>
+    <integer>0</integer>
+  </dict>
+  <key>StandardOutPath</key>
+  <string>/tmp/mir-render-families-overview.log</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/mir-render-families-overview.err</string>
+  <key>RunAtLoad</key>
+  <false/>
+</dict>
+</plist>

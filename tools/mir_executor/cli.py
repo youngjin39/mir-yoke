@@ -9,7 +9,7 @@ Usage:
         --category <name> \\
         --codex-args "<quoted string>" \\
         [--timeout <seconds>] \\
-        --repo-root <path>
+        (--family <slug> | --repo-root <path>)
         [--background | -b]
         [--jobs-db <path>]
 
@@ -38,6 +38,7 @@ import pathlib
 import shlex
 import subprocess
 import sys
+import tomllib
 import uuid
 
 from tools.mir_executor.executor import MirExecutor
@@ -58,6 +59,8 @@ _STANDARD_CATEGORIES = [
 ]
 
 _DEFAULT_JOBS_DB_RELPATH = pathlib.Path("tasks") / "jobs.db"
+_MERGED_FINALIZE_ACTIONS = {"merged", "merged-but-cleanup-failed"}
+_DISPATCH_BACKENDS = frozenset({"codex", "claude"})
 
 
 def _utc_now() -> str:
@@ -127,9 +130,23 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Subprocess timeout in seconds (default: 600).",
     )
     exec_p.add_argument(
+        "--jobs-db",
+        metavar="PATH",
+        default=argparse.SUPPRESS,
+        help="Override path to jobs.db (default: <repo_root>/tasks/jobs.db).",
+    )
+    root_group = exec_p.add_mutually_exclusive_group(required=True)
+    root_group.add_argument(
+        "--family",
+        metavar="SLUG",
+        help=(
+            "Family slug to look up in the profile_compiler registry "
+            "(e.g. '<example-family>'). Resolves to the registered absolute repo root."
+        ),
+    )
+    root_group.add_argument(
         "--repo-root",
         type=pathlib.Path,
-        required=True,
         metavar="PATH",
         help="Repository root path. Used to locate tasks/tdd.json.",
     )
@@ -151,6 +168,53 @@ def _build_parser() -> argparse.ArgumentParser:
             "Background mode: print job_id immediately, then run Codex and update "
             "job status on completion. MVP: runs in same process (true daemon is OOS)."
         ),
+    )
+    exec_p.add_argument(
+        "--dispatch",
+        action="store_true",
+        default=False,
+        dest="dispatch",
+        help=(
+            "ADR-60 R2/R3: run the codex-exec dispatch helper (worktree + finite "
+            "fallback + outage guard) instead of the legacy background runner."
+        ),
+    )
+    exec_p.add_argument(
+        "--execution-backend",
+        choices=sorted(_DISPATCH_BACKENDS),
+        default=None,
+        dest="execution_backend",
+        metavar="BACKEND",
+        help=(
+            "ADR-61 dispatch-only backend request. Used only when the sub-agent "
+            "policy mode is select; force_codex and unknown values fail closed to codex."
+        ),
+    )
+    exec_p.add_argument(
+        "--expect-changes",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        dest="expect_changes",
+        help=(
+            "Require a dispatch to produce a git diff before merge (default: true). "
+            "Use --no-expect-changes for legitimate no-op or verify-only dispatches."
+        ),
+    )
+    exec_p.add_argument(
+        "--allow-path",
+        action="append",
+        dest="allow_paths",
+        default=argparse.SUPPRESS,
+        metavar="PATH",
+        help="Repeatable ADR-60 dispatch merge allowlist path.",
+    )
+    exec_p.add_argument(
+        "--verify-cmd",
+        action="append",
+        dest="verify_cmds",
+        default=argparse.SUPPRESS,
+        metavar="COMMAND",
+        help="Repeatable ADR-60 dispatch verification command to re-run before merge.",
     )
 
     # ------------------------------------------------------------------
@@ -336,6 +400,169 @@ async def _run_background(
         registry.close()
 
 
+def _resolve_dispatch_backend(
+    sub_agent_policy: object,
+    *,
+    requested_backend: str | None,
+    repo_slug: str | None,
+) -> str:
+    """Resolve the effective dispatch runner backend, fail-closed to codex."""
+    mode = getattr(sub_agent_policy, "mode", "force_codex")
+    per_project = getattr(sub_agent_policy, "per_project", {})
+    if mode == "force_codex":
+        return "codex"
+    if mode == "force_claude":
+        return "claude"
+    if mode == "select":
+        return requested_backend if requested_backend in _DISPATCH_BACKENDS else "codex"
+    if mode == "per_project" and isinstance(per_project, dict):
+        if not repo_slug:
+            return "codex"
+        backend = per_project.get(repo_slug)
+        return backend if backend in _DISPATCH_BACKENDS else "codex"
+    return "codex"
+
+
+def _resolve_repo_policy_slug(repo_root: pathlib.Path) -> str | None:
+    """Resolve the slug used for per-project policy lookup."""
+    profile_path = repo_root / ".mir" / "repo-profile.toml"
+    try:
+        with profile_path.open("rb") as fh:
+            profile = tomllib.load(fh)
+    except (OSError, tomllib.TOMLDecodeError):
+        return None
+
+    repo_section = profile.get("repo")
+    if not isinstance(repo_section, dict):
+        return None
+    slug = repo_section.get("slug")
+    if isinstance(slug, str) and slug.strip():
+        return slug.strip()
+    return None
+
+
+def _build_dispatch_runner(
+    dispatch_module: object,
+    *,
+    backend: str,
+    repo_root: pathlib.Path,
+    codex_args: list[str],
+    timeout_seconds: int,
+) -> object:
+    """Build the runner for the resolved backend."""
+    if backend == "claude":
+        return dispatch_module.build_claude_runner(
+            repo_root,
+            timeout_seconds=timeout_seconds,
+        )
+    return dispatch_module.build_codex_runner(
+        repo_root,
+        codex_args,
+        timeout_seconds=timeout_seconds,
+    )
+
+
+def _handle_dispatch(args: argparse.Namespace, repo_root: pathlib.Path) -> int:
+    """Route execute --background --dispatch through the ADR-60 helper."""
+    from tools.mir_executor import dispatch  # noqa: PLC0415
+    from tools.mir_executor.jobs import JobRecord, JobRegistry  # noqa: PLC0415
+    from tools.mir_executor.policy import load_sub_agent_policy  # noqa: PLC0415
+
+    codex_args = shlex.split(args.codex_args)
+    jobs_db_path = _resolve_jobs_db(args.jobs_db, repo_root)
+    prior = dispatch.count_consecutive_codex_failures(
+        jobs_db_path,
+        change_id_prefix=args.change_id,
+    )
+    job_id = uuid.uuid4().hex
+    registry = JobRegistry(jobs_db_path)
+    registry.insert(
+        JobRecord(
+            job_id=job_id,
+            change_id=args.change_id,
+            category=args.category,
+            family=args.family,
+            repo_root=str(repo_root),
+            codex_args=codex_args,
+            timeout_seconds=args.timeout,
+            status="running",
+            started_at=_utc_now(),
+        )
+    )
+    sub_agent_policy = load_sub_agent_policy(repo_root)
+    repo_slug = args.family or _resolve_repo_policy_slug(repo_root)
+    backend = _resolve_dispatch_backend(
+        sub_agent_policy,
+        requested_backend=getattr(args, "execution_backend", None),
+        repo_slug=repo_slug,
+    )
+    runner = _build_dispatch_runner(
+        dispatch,
+        backend=backend,
+        repo_root=repo_root,
+        codex_args=codex_args,
+        timeout_seconds=args.timeout,
+    )
+    try:
+        outcome = dispatch.run_dispatch(
+            repo_root,
+            dispatch_id=job_id,
+            brief_text=" ".join(codex_args),
+            codex_runner=runner,
+            claude_fallback=None,
+            prior_consecutive_codex_failures=prior,
+        )
+
+        final = None
+        if outcome.worktree is not None:
+            final = dispatch.finalize_dispatch(
+                outcome.worktree,
+                repo_root,
+                outcome,
+                allowlist=getattr(args, "allow_paths", None) or [],
+                verification_commands=getattr(args, "verify_cmds", None) or [],
+                expect_changes=args.expect_changes,
+            )
+
+        # status is the codex-lane outcome for the outage guard; task success requires merge.
+        job_status = "completed" if outcome.status == "completed" else "failed"
+        task_exit = (
+            0
+            if final is not None and final.action in _MERGED_FINALIZE_ACTIONS
+            else 1
+        )
+        if outcome.status == "blocked":
+            print(
+                "[DISPATCH] blocked with no fallback under sub-agent policy; "
+                "see docs/harness-engineering/codex-dispatch-failure-diagnostic.md",
+                file=sys.stderr,
+            )
+        registry.update_status(
+            job_id,
+            job_status,
+            exit_code=task_exit,
+            stdout=f"artifacts=tasks/dispatch/{job_id}",
+            completed_at=_utc_now(),
+        )
+    finally:
+        registry.close()
+
+    print(
+        f"[DISPATCH] status={outcome.status} attempts={outcome.attempts} "
+        f"fell_back={outcome.fell_back} reason={outcome.blocked_reason!r}"
+    )
+    if final is not None:
+        print(
+            f"[FINALIZE] action={final.action} reason={final.reason!r} "
+            f"merged={final.merged_files}"
+        )
+    return (
+        0
+        if final is not None and final.action in _MERGED_FINALIZE_ACTIONS
+        else 1
+    )
+
+
 # ---------------------------------------------------------------------------
 # Subcommand handlers
 # ---------------------------------------------------------------------------
@@ -348,11 +575,22 @@ def _handle_execute(args: argparse.Namespace) -> int:
         print(f"[mir_executor] argument parse error: {exc}", file=sys.stderr)
         return 1
 
-    repo_root = args.repo_root.resolve()
+    if args.family is not None:
+        # Lazy import avoids circular dependency
+        from tools.profile_compiler.cli import resolve_family_path  # noqa: PLC0415
+        try:
+            repo_root = resolve_family_path(args.family).resolve()
+        except KeyError as exc:
+            print(f"[mir_executor] Unknown family slug: {args.family!r}. {exc}", file=sys.stderr)
+            return 1
+    else:
+        repo_root = args.repo_root.resolve()
 
     executor = MirExecutor(repo_root=repo_root)
 
     if args.background:
+        if args.dispatch:
+            return _handle_dispatch(args, repo_root)
         # Background mode: insert job record, print job_id, then run async and update.
         # MVP: runs in same CLI process (true daemon detachment is ADR §8 O1 future work).
         from tools.mir_executor.jobs import JobRecord, JobRegistry  # noqa: PLC0415
@@ -365,7 +603,7 @@ def _handle_execute(args: argparse.Namespace) -> int:
             job_id=job_id,
             change_id=args.change_id,
             category=args.category,
-            family=None,
+            family=args.family,
             repo_root=str(repo_root),
             codex_args=codex_args,
             timeout_seconds=args.timeout,

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  ADR-06 Stall Watchdog launchd template.
+
+  Install:
+    1. Replace placeholders below with your absolute paths and per-family
+       webhook URLs (never commit URLs back to this repo).
+    2. cp this file to <your-home>/Library/LaunchAgents/com.mir.stall_watchdog.plist
+    3. launchctl load -w <your-home>/Library/LaunchAgents/com.mir.stall_watchdog.plist
+
+  Logs:
+    stdout:  ~/Library/Logs/com.mir.stall_watchdog.out.log
+    stderr:  ~/Library/Logs/com.mir.stall_watchdog.err.log
+
+  Why HOME=<your-home> and not the your-harness sandbox HOME?
+    The watcher reads ~/.claude/projects which is rooted at the user's real
+    HOME, not the your-harness sandbox HOME. plist HOME must point at the real user
+    HOME (see project_sandbox_home_trap auto-memory).
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.mir.stall_watchdog</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/opt/homebrew/bin/uv</string>
+        <string>run</string>
+        <string>--project</string>
+        <string><your-harness-path></string>
+        <string>python</string>
+        <string>-m</string>
+        <string>tools.stall_watchdog.cli</string>
+        <string>daemon</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string><your-home></string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>HOME</key>
+        <string><your-home></string>
+        <key>LANG</key>
+        <string>en_US.UTF-8</string>
+        <key>MIR_STALL_WATCHDOG_THRESHOLD_SECONDS</key>
+        <string>180</string>
+        <key>MIR_STALL_WATCHDOG_RECENT_K_MINUTES</key>
+        <string>60</string>
+        <key>MIR_STALL_WATCHDOG_POLL_SECONDS</key>
+        <string>60</string>
+        <!-- Webhook URLs: replace REPLACE-ME with real Discord webhook secret. -->
+        <!-- Never commit a real URL into this repo. Use launchctl setenv per-host. -->
+        <key>MIR_STALL_WATCHDOG_WEBHOOK_DEFAULT</key>
+        <string>REPLACE-ME-OR-DELETE-LINE</string>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string><your-home>/Library/Logs/com.mir.stall_watchdog.out.log</string>
+
+    <key>StandardErrorPath</key>
+    <string><your-home>/Library/Logs/com.mir.stall_watchdog.err.log</string>
+</dict>
+</plist>
