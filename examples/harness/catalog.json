@@ -66,6 +66,35 @@
         "<example-family>"
       ],
       "opt_in": true
+    },
+    {
+      "name": "ops-self-evolution",
+      "suited_repo_type": "ops_platform",
+      "summary": "Platform-ops harness: two execution-governance skills. execution-governance enforces tier-based write gates, a 4-step promotion flow, a circuit breaker, and evidence-only completion; self-evolution gates the agent's own self-improvement (research scan, memory reflect, risk-classified change review, 3-tier claim validation).",
+      "harness_dir": "ops-self-evolution/harness/",
+      "provides": [
+        "skills:execution-governance",
+        "skills:self-evolution"
+      ],
+      "source_families": [
+        "<example-family>"
+      ],
+      "opt_in": true
+    },
+    {
+      "name": "video-gen",
+      "suited_repo_type": "video_pipeline",
+      "summary": "Short-form video-generation config harness: a ComfyUI WAN image-to-video workflow template plus ComfyUI image/video generation defaults (server endpoint, model/checkpoint slots, sampler, steps, cfg, quality gates) and the JSON Schema that validates them. Self-hosted ComfyUI, no provider API keys.",
+      "harness_dir": "video-gen/harness/",
+      "provides": [
+        "config:comfyui-gen.json",
+        "config:comfyui-wan-i2v.workflow.json",
+        "schemas:comfyui-gen.schema.json"
+      ],
+      "source_families": [
+        "<example-family>"
+      ],
+      "opt_in": true
     }
   ]
 }

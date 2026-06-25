@@ -1,0 +1,18 @@
+# Example-harness module manifest — ops-self-evolution
+name = "ops-self-evolution"
+suited_repo_type = "ops_platform"
+opt_in = true
+summary = "Platform-ops harness: two execution-governance skills. execution-governance enforces tier-based write gates, a 4-step promotion flow, a circuit breaker, and evidence-only completion; self-evolution gates the agent's own self-improvement (research scan, memory reflect, risk-classified change review, 3-tier claim validation)."
+
+# Skills overlaid onto the common base under .claude/skills/
+provides = [
+  "skills:execution-governance",
+  "skills:self-evolution",
+]
+
+# No dependencies beyond the common base. Both skills read a governance / self-evolution
+# rules doc that you supply in your own repo (described in the skills, not bundled here).
+requires = []
+
+# Sanitized origin placeholder — real family names are never published.
+source_families = ["<example-family>"]

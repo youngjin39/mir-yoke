@@ -1,0 +1,18 @@
+# Example-harness module manifest — video-gen
+name = "video-gen"
+suited_repo_type = "video_pipeline"
+opt_in = true
+summary = "Short-form video-generation config harness: a ComfyUI WAN image-to-video workflow template plus ComfyUI image/video generation defaults (server endpoint, model/checkpoint slots, sampler, steps, cfg, quality gates) and the JSON Schema that validates them. Self-hosted ComfyUI, no provider API keys."
+
+# Config + schema overlaid onto the common base. Config-only (no skills).
+provides = [
+  "config:comfyui-gen.json",
+  "config:comfyui-wan-i2v.workflow.json",
+  "schemas:comfyui-gen.schema.json",
+]
+
+# No dependencies beyond the common base.
+requires = []
+
+# Sanitized origin placeholder — real family names are never published.
+source_families = ["<example-family>"]

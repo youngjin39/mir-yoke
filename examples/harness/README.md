@@ -31,10 +31,10 @@ entries appear there as each module is extracted and sanitized.
 | module | suited repo-type | summary | status |
 |---|---|---|---|
 | flutter-app-pack | flutter_se_product | Flutter build / perf / security / test + Hive local-storage skills | **listed** |
-| ops-self-evolution | ops_platform | Self-evolution + execution-governance ops harness | planned |
+| ops-self-evolution | ops_platform | Self-evolution + execution-governance ops skills | **listed** |
 | market-strategy | product_market | Product/market discovery: target, positioning, GTM, risk + perspective library | **listed** |
 | publishing-pipeline | content_pipeline | Compile → publish → social-draft content pipeline | planned |
-| video-gen | video_pipeline | Short-form video generation pipeline config | planned |
+| video-gen | video_pipeline | ComfyUI image/video generation config + schema | **listed** |
 | graph-knowledge | personal_knowledge | Knowledge-graph + note/think skills | **listed** |
 | ffmpeg-media | media_product | ffmpeg render defaults config + schema | **listed** |
 

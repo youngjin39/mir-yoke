@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/schemas/comfyui-gen.schema.json",
+  "title": "ComfyUI Generation Config",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_name": { "const": "comfyui_gen_config" },
+    "schema_version": { "type": "string", "const": "1.0.0" },
+    "image_gen": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "backend": { "type": "string", "minLength": 1 },
+        "comfyui": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["server"],
+          "properties": {
+            "server": { "type": "string", "minLength": 1 },
+            "checkpoint": { "type": "string", "minLength": 1 },
+            "width": { "type": "integer", "minimum": 1 },
+            "height": { "type": "integer", "minimum": 1 },
+            "steps": { "type": "integer", "minimum": 1 },
+            "cfg": { "type": "number", "exclusiveMinimum": 0 },
+            "sampler": { "type": "string", "minLength": 1 },
+            "scheduler": { "type": "string", "minLength": 1 },
+            "negative": { "type": "string" },
+            "timeout_sec": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "retry": { "type": "integer", "minimum": 0 },
+        "skip_existing": { "type": "boolean" },
+        "quality_check": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "enabled": { "type": "boolean" }
+          }
+        }
+      }
+    },
+    "video_gen": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "backend": { "type": "string", "minLength": 1 },
+        "resolution": { "type": "string", "minLength": 1 },
+        "generate_audio": { "type": "boolean" },
+        "use_end_frame": { "type": "boolean" },
+        "min_duration_sec": { "type": "number", "exclusiveMinimum": 0 },
+        "max_duration_sec": { "type": "number", "exclusiveMinimum": 0 },
+        "skip_existing": { "type": "boolean" },
+        "comfyui": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["server"],
+          "properties": {
+            "server": { "type": "string", "minLength": 1 },
+            "resolution": { "type": "string", "minLength": 1 },
+            "timeout_sec": { "type": "integer", "minimum": 1 },
+            "fps": { "type": "integer", "minimum": 1 },
+            "unet_name": { "type": "string", "minLength": 1 },
+            "clip_name": { "type": "string", "minLength": 1 },
+            "vae_name": { "type": "string", "minLength": 1 },
+            "steps": { "type": "integer", "minimum": 1 },
+            "cfg": { "type": "number", "exclusiveMinimum": 0 },
+            "sampler_name": { "type": "string", "minLength": 1 },
+            "scheduler": { "type": "string", "minLength": 1 },
+            "sampling_shift": { "type": "number" },
+            "format": { "type": "string", "minLength": 1 },
+            "codec": { "type": "string", "minLength": 1 },
+            "filename_prefix": { "type": "string", "minLength": 1 },
+            "negative_prompt": { "type": "string" },
+            "workflow_template": { "type": "string" },
+            "upload_end_frame": { "type": "boolean" }
+          }
+        }
+      }
+    }
+  }
+}

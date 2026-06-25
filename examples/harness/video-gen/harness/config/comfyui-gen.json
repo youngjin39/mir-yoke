@@ -1,0 +1,64 @@
+{
+  "schema_name": "comfyui_gen_config",
+  "schema_version": "1.0.0",
+  "image_gen": {
+    "backend": "comfyui",
+    "comfyui": {
+      "server": "__COMFYUI_SERVER__",
+      "checkpoint": "__CHECKPOINT_NAME__",
+      "width": 1024,
+      "height": 1536,
+      "steps": 30,
+      "cfg": 7.5,
+      "sampler": "dpmpp_2m_sde",
+      "scheduler": "karras",
+      "negative": "text, logo, watermark, deformed anatomy, blurry",
+      "timeout_sec": 120
+    },
+    "retry": 1,
+    "skip_existing": true,
+    "quality_check": {
+      "enabled": true,
+      "min_std": 25.0,
+      "min_entropy": 4.0,
+      "max_white_frac": 0.7,
+      "retries": 2,
+      "max_black_frac": 0.95,
+      "max_dominant_frac": 0.95,
+      "min_color_std": 8.0,
+      "min_edge_mean": 2.0,
+      "min_bytes": 2048,
+      "min_dim": 256
+    }
+  },
+  "video_gen": {
+    "enabled": false,
+    "backend": "comfyui",
+    "resolution": "720p",
+    "generate_audio": false,
+    "use_end_frame": true,
+    "min_duration_sec": 4,
+    "max_duration_sec": 15,
+    "skip_existing": true,
+    "comfyui": {
+      "server": "__COMFYUI_SERVER__",
+      "resolution": "480P",
+      "timeout_sec": 900,
+      "fps": 24,
+      "unet_name": "__UNET_NAME__",
+      "clip_name": "__CLIP_NAME__",
+      "vae_name": "__VAE_NAME__",
+      "steps": 20,
+      "cfg": 5.0,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "sampling_shift": 5.0,
+      "format": "auto",
+      "codec": "auto",
+      "filename_prefix": "video/shorts_i2v",
+      "negative_prompt": "blurry, low quality, jitter, malformed anatomy, text, watermark, logo",
+      "workflow_template": "comfyui-wan-i2v.workflow.json",
+      "upload_end_frame": false
+    }
+  }
+}
