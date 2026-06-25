@@ -35,8 +35,8 @@ entries appear there as each module is extracted and sanitized.
 | market-strategy | product_market | Product/market discovery: target, positioning, GTM, risk + perspective library | **listed** |
 | publishing-pipeline | content_pipeline | Compile → publish → social-draft content pipeline | planned |
 | video-gen | video_pipeline | Short-form video generation pipeline config | planned |
-| graph-knowledge | personal_knowledge | Knowledge-graph + note-integration skills | planned |
-| ffmpeg-media | media_product | ffmpeg media-processing defaults | planned |
+| graph-knowledge | personal_knowledge | Knowledge-graph + note/think skills | **listed** |
+| ffmpeg-media | media_product | ffmpeg render defaults config + schema | **listed** |
 
 `status: planned` means the module is catalogued but its `harness/` snippet has
 not been published yet. A module flips to listed in `catalog.json` once its

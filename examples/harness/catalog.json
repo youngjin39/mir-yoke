@@ -38,6 +38,34 @@
         "<example-family>"
       ],
       "opt_in": true
+    },
+    {
+      "name": "ffmpeg-media",
+      "suited_repo_type": "media_product",
+      "summary": "FFmpeg/media-rendering config harness: vertical-video render defaults (resolution, fps, Ken Burns motion, caption burn-in, safe-area, BGM, timeout) plus the JSON Schema that validates them.",
+      "harness_dir": "ffmpeg-media/harness/",
+      "provides": [
+        "config:ffmpeg-defaults.json",
+        "schemas:render-config.schema.json"
+      ],
+      "source_families": [
+        "<example-family>"
+      ],
+      "opt_in": true
+    },
+    {
+      "name": "graph-knowledge",
+      "suited_repo_type": "personal_knowledge",
+      "summary": "Knowledge-navigation harness for large codebases and personal-knowledge repos: an automated knowledge-graph skill (graphify) for ~70x cheaper graph-first queries over big corpora, plus a Think-Tank sparring-partner skill (think) that stress-tests decisions instead of agreeing.",
+      "harness_dir": "graph-knowledge/harness/",
+      "provides": [
+        "skills:graphify",
+        "skills:think"
+      ],
+      "source_families": [
+        "<example-family>"
+      ],
+      "opt_in": true
     }
   ]
 }

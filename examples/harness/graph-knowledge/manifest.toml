@@ -1,0 +1,19 @@
+# Example-harness module manifest -- graph-knowledge
+name = "graph-knowledge"
+suited_repo_type = "personal_knowledge"
+opt_in = true
+summary = "Knowledge-navigation harness for large codebases and personal-knowledge repos: an automated knowledge-graph skill (graphify) for ~70x cheaper graph-first queries over big corpora, plus a Think-Tank sparring-partner skill (think) that stress-tests decisions instead of agreeing."
+
+# Skills overlaid onto the common base under .claude/skills/
+provides = [
+  "skills:graphify",
+  "skills:think",
+]
+
+# No dependencies beyond the common base. The graphify skill relies on the
+# external `graphifyy` pip package + /graphify command, installed in the user's
+# own terminal (documented in the skill, not bundled here).
+requires = []
+
+# Sanitized origin placeholder -- real family names are never published.
+source_families = ["<example-family>"]

@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/schemas/render-config.schema.json",
+  "title": "Render Config",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["resolution", "fps"],
+  "properties": {
+    "schema_name": { "const": "render_config" },
+    "schema_version": { "type": "string", "const": "1.0.0" },
+    "enabled": { "type": "boolean", "default": false },
+    "resolution": { "type": "string", "pattern": "^[1-9][0-9]*x[1-9][0-9]*$" },
+    "fps": { "type": "integer", "minimum": 1 },
+    "ken_burns": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "zoom_factor": { "type": "number", "exclusiveMinimum": 0 },
+        "motion": { "type": "string", "enum": ["zoom-in", "zoom-out"] }
+      }
+    },
+    "transition": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": { "type": "string", "enum": ["cut"] },
+        "duration_ms": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "caption": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "burn_in": { "type": "boolean" },
+        "font": { "type": "string", "minLength": 1 },
+        "font_size": { "type": "integer", "minimum": 1 },
+        "outline": { "type": "number", "minimum": 0 }
+      }
+    },
+    "bgm": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" }
+      }
+    },
+    "safe_area": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "scale_pct": { "type": "number", "exclusiveMinimum": 0, "maximum": 100 },
+        "margin_color": { "type": "string", "minLength": 1 }
+      }
+    },
+    "first_scene": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "impact_enabled": { "type": "boolean" },
+        "duration_sec": { "type": "number", "exclusiveMinimum": 0 },
+        "zoom_start": { "type": "number", "exclusiveMinimum": 0 },
+        "zoom_end": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
+    "timeout_sec": { "type": "integer", "minimum": 1 }
+  }
+}
