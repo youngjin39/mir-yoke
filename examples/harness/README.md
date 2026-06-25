@@ -32,7 +32,7 @@ entries appear there as each module is extracted and sanitized.
 |---|---|---|---|
 | flutter-app-pack | flutter_se_product | Flutter build / perf / security / test + Hive local-storage skills | **listed** |
 | ops-self-evolution | ops_platform | Self-evolution + execution-governance ops harness | planned |
-| market-strategy | product_market | Market-research / positioning / GTM strategy skills | planned |
+| market-strategy | product_market | Product/market discovery: target, positioning, GTM, risk + perspective library | **listed** |
 | publishing-pipeline | content_pipeline | Compile → publish → social-draft content pipeline | planned |
 | video-gen | video_pipeline | Short-form video generation pipeline config | planned |
 | graph-knowledge | personal_knowledge | Knowledge-graph + note-integration skills | planned |

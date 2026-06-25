@@ -18,6 +18,26 @@
         "<example-family>"
       ],
       "opt_in": true
+    },
+    {
+      "name": "market-strategy",
+      "suited_repo_type": "product_market",
+      "summary": "Product/market discovery harness: 8 strategy-role skills (target, market, positioning, GTM, risk) orchestrated into a Discovery Package, plus a reusable market-economic perspective library.",
+      "harness_dir": "market-strategy/harness/",
+      "provides": [
+        "skills:discovery-package",
+        "skills:c-level",
+        "skills:market-intel",
+        "skills:market-research",
+        "skills:target-definition",
+        "skills:positioning",
+        "skills:gtm-plan",
+        "skills:assumption-challenge"
+      ],
+      "source_families": [
+        "<example-family>"
+      ],
+      "opt_in": true
     }
   ]
 }

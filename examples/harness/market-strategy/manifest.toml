@@ -1,0 +1,24 @@
+# Example-harness module manifest — market-strategy
+name = "market-strategy"
+suited_repo_type = "product_market"
+opt_in = true
+summary = "Product/market discovery harness: 8 strategy-role skills (target, market, positioning, GTM, risk) orchestrated into a Discovery Package, plus a reusable market-economic perspective library."
+
+# Skills overlaid onto the common base under .claude/skills/
+provides = [
+  "skills:discovery-package",
+  "skills:c-level",
+  "skills:market-intel",
+  "skills:market-research",
+  "skills:target-definition",
+  "skills:positioning",
+  "skills:gtm-plan",
+  "skills:assumption-challenge",
+]
+
+# Ships a supporting doc the skills read: docs/perspectives.md (the perspective library).
+# No dependencies beyond the common base.
+requires = []
+
+# Sanitized origin placeholder — real family names are never published.
+source_families = ["<example-family>"]
