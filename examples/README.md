@@ -15,6 +15,7 @@ isolation.
 - [`fix-bug/`](fix-bug/) — bug-fix workflow with regression test, including a "not a bug" triage path.
 - [`refactor/`](refactor/) — refactor workflow that keeps behavior identical, with the `compatibility` ledger row as the gate.
 - [`multi-round-review/`](multi-round-review/) — adversarial review pattern for non-trivial changes: N parallel reviewers, prioritized fixes, separate verifier.
+- [`harness/`](harness/) — opt-in signature harness modules (a catalog) to overlay on the common base, organized by suited repo-type. Reusable bundles, not a workflow walk-through.
 
 ## Add your own
 

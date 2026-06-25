@@ -1,0 +1,65 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "mir/examples/harness/catalog",
+  "$comment": "Opt-in example-harness catalog. Lists signature harness modules a clone can overlay on the common base. Each entry points to examples/harness/<name>/. Version policy: integer, bumped on breaking field changes. Forward-compat — readers reject unknown TOP-LEVEL keys (additionalProperties false) but tolerate unknown MODULE fields (additionalProperties true), so a v1 reader can load a v2 catalog's modules and skip fields it does not understand.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "modules"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Optional pointer to this schema file (./catalog.schema.json)."
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Catalog format version. Bump only on breaking field changes."
+    },
+    "modules": {
+      "type": "array",
+      "description": "Registered example-harness modules. Empty until modules are extracted and sanitized.",
+      "items": { "$ref": "#/$defs/module" }
+    }
+  },
+  "$defs": {
+    "module": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["name", "suited_repo_type", "summary", "harness_dir"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z0-9-]+$",
+          "description": "Module slug, also its directory name under examples/harness/."
+        },
+        "suited_repo_type": {
+          "type": "string",
+          "description": "Archetype this module best fits, e.g. flutter_se_product, ops_platform, content_pipeline."
+        },
+        "summary": {
+          "type": "string",
+          "description": "One-line English description. Must not contain family identifiers or non-English text."
+        },
+        "harness_dir": {
+          "type": "string",
+          "description": "Relative path to the module's harness snippet directory, e.g. flutter-app-pack/harness/."
+        },
+        "provides": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Skill / agent / config slugs the module overlays onto the common base."
+        },
+        "source_families": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Sanitized origin placeholders. In the public template these are always <example-family> — real family names are never published."
+        },
+        "opt_in": {
+          "type": "boolean",
+          "default": true,
+          "description": "Always true; modules are never applied automatically — a clone copies them in deliberately."
+        }
+      }
+    }
+  }
+}
