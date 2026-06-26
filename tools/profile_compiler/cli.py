@@ -39,6 +39,18 @@ import sys
 _FAMILY_PATHS: dict[str, pathlib.Path] = {}
 
 
+def _normalize_slug(slug: str) -> str:
+    return slug.lower().replace("_", "-")
+
+
+def resolve_family_path(slug: str) -> pathlib.Path:
+    normalized = _normalize_slug(slug)
+    if normalized not in _FAMILY_PATHS:
+        known = ", ".join(sorted(_FAMILY_PATHS)) or "(none registered)"
+        raise KeyError(f"Unknown family slug: {slug!r} (normalized: {normalized!r}).\nKnown slugs: {known}")
+    return _FAMILY_PATHS[normalized]
+
+
 def main() -> None:
     """Entry point placeholder. Extend when adding full profile compiler support."""
     print(
