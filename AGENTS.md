@@ -51,14 +51,14 @@
 - `.mir/repo-profile.toml` + `.mir-preserve.toml` + `.mir/boundary.md` — family profile files required by all active repos.
 - `CLAUDE.md` + `AGENTS.md` — replace placeholder family/slug values and update profile block after clone.
 
-**After clone**: (1) set `family=` in `.mir/repo-profile.toml` (setup.sh warns if placeholder remains), (2) replace `your-harness` slug in repo-profile.toml, (3) run `./setup.sh` to register hooks and create task files, (4) run `uv run mir parity check` to verify baseline compliance.
+**After clone**: (1) set `family=` in `.mir/repo-profile.toml` (setup.sh warns if placeholder remains), (2) replace `your-harness` slug in repo-profile.toml, (3) run `./setup.sh` to register hooks and create task files, (4) run `uv run mir migrate up` to initialize the memory store, (5) run `uv run python scripts/verify_context_paths.py` to verify harness path wiring.
 
 
 ## Required Reads
 - `tasks/plan.md`
-- `tasks/lessons.md`
-- `docs/memory-map.md`
 - `docs/decisions/role-policy.md`
+
+**On-demand (do NOT full-read — already covered, token diet):** `tasks/lessons.md` is injected live every session start; `docs/memory-map.md` is a generated keyword index — reach it via `uv run mir memory query <keyword>`, not a full read.
 
 ## Memory (DB-canonical)
 - Canonical store: `.mir/memory.db` (SQLite + FTS5 + sqlite-vec). `docs/memory-map.md` and `tasks/lessons.md` are **generated projections** — never hand-edit inside `mir:generated` markers.
@@ -113,6 +113,7 @@
 
 
 ## Subagent Resource Management
+- **Subagent-first**: investigation / extraction / verification / multi-file work → delegate to sub-agents and orchestrate (no broad inline read / extract / audit / survey). The main agent fans out and synthesizes; it does not read everything itself. Detail in `main-orchestrator`.
 - Default live subagent cap = 4. Raise it only when Claude/Codex lanes are clearly independent and the current lane is healthy.
 - Design-process work may raise the live cap to 4 without separate user approval when Step 2 parallel analysis and Step 4 independent verification both need coverage; record the temporary cap in `tasks/plan.md` or the active handoff note.
 - Prefer `fork_context: false` for bounded harness docs, config, or verifier work. Use `fork_context: true` only for broad role-policy review, runtime-contract review, or independent final verification.
@@ -190,5 +191,12 @@
 **Codex** is the default backend for delegated backend-capable execution work. The repository-level `main_role=control_plane` / `delegated_execution=codex_first` / `codex_backend_role=code_tdd_review_plane` fields describe the default backend ownership model, not a different main-agent contract by runtime.
 
 A runtime role swap requires an explicit recorded override in the active plan or handoff note.
+
+### Orchestration-Only Main (ADR-63, 2026-06-28)
+
+The control_plane main (whichever CLI is opened) does ORCHESTRATION ONLY: read, analyze, design/decide, dispatch, plan.md cursor rewrites (ADR-60 R5 Move 5), verification synthesis, and user communication.
+ALL editing, authoring, code changes, config, and cross-repo writes route to the Codex delegated lane — regardless of domain (advisory or code-path). This extends codex_first beyond the tools/src/scripts hard gate to the full advisory domain.
+Enforcement: policy/discipline (advisory tier, per ADR-51/52) — no new runtime hook.
+Exception: the plan.md Step N cursor line and the active handoff note may be written by the main (orchestration-state bookkeeping it must own).
 
 <!-- template:profile:role-policy:end -->
