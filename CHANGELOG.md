@@ -6,6 +6,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are kept for historical reference. All future entries use the `## [vN.M.X] — YYYY-MM-DD — title` format.
 
+## [0.6.0] — 2026-06-28 — Sub-agent execution policy (force_codex) + delegated-execution gate
+
+Added the `force_codex` sub-agent execution policy to the template:
+
+- `config/sub-agent-policy.json` global switch (`force_codex` / `select` / `per_project` /
+  `unrestricted`) with a `MIR_SUB_AGENT_POLICY` home-server overlay, fail-closed to `force_codex`.
+- `.claude/hooks/sub-agent-policy-gate.sh` — a slug-free, family-invariant PreToolUse hook that
+  hard-blocks Claude `Agent`/`Task` sub-agent spawns under `force_codex` (`exit 2`), with a
+  `MIR_R3_FALLBACK=1` escape, wired via a new `^(Agent|Task)$` settings entry.
+- README: new "Sub-agent execution policy & delegated execution" section + a "Using the harness —
+  the loop" usage guide.
+
 ## [0.5.0] — 2026-06-13 — Template completeness release
 
 Closed the template completeness gap: a fresh `git clone` now yields an

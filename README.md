@@ -41,6 +41,15 @@ What you get out of the box:
   at session end, auto-handoff at compact.
 - **Dual CLI parity** — the same hooks fire from both Claude Code (`.claude/settings.json`) and
   Codex CLI (`.codex/hooks.json`). The wire format is shared, so you author once.
+- **Sub-agent execution policy (force_codex)** — a global `config/sub-agent-policy.json` switch
+  governs which backend the delegated sub-agents use. Under `force_codex` (the default), a Claude
+  `Agent`/`Task` sub-agent spawn is **hard-blocked at the PreToolUse hook**, so delegated work is
+  forced to the Codex lane; flip to `unrestricted` / `select` / `per_project` when you want a
+  different backend. A deterministic (no-LLM) monitor surfaces any Claude-sub usage.
+- **Git-diff merge gate for delegated execution** — `mir_executor … --dispatch` runs the Codex
+  sub-agent in a throwaway git worktree and merges its edits back **only after a deterministic
+  gate**: a real `git diff` (an empty diff is a failure) plus a re-run of the change's verification
+  commands. The sub-agent's self-reported success is never trusted — the filesystem is.
 
 What this is **not**: a runtime, a framework, or a service. There is no daemon. There is no SaaS.
 The harness is just files in your repo. If you delete the directory, your project goes back to
@@ -82,10 +91,36 @@ codex
 
 The setup script:
 - Makes the hook scripts executable
-- Creates an empty `tasks/tdd.json` if one is not present
-- Prints a one-line summary of what just got installed
+- Creates starter `tasks/plan.md` and an empty `tasks/tdd.json` if absent
+- Initializes `.mir/repo-profile.toml` and runs the placeholder guard
+- Prints a post-clone checklist of next steps
 
 Both CLIs will pick up the hooks on next launch. No daemon, no background process.
+
+---
+
+## Using the harness — the loop
+
+For any non-trivial change the harness expects this loop (the gates enforce most of it):
+
+1. **Design first.** Trigger the `design` skill (or just describe the change). For harness / ADR /
+   architecture work this is a hard gate before code; capture `user_intent` + design goals up front.
+2. **Plan the TDD.** Add a `change` entry to `tasks/tdd.json` for the files you'll touch, with the
+   verification command(s). Implementation edits stay blocked until this entry exists.
+3. **Delegate the code.** Under `force_codex` the main orchestrates but does **not** edit production
+   code inline — it routes edits to the Codex lane (`mir_executor … --dispatch`), and the worktree
+   + merge gate verify the result by `git diff`.
+4. **Verify.** The pre-commit hook re-runs the ledger's verification commands; a commit whose `pass`
+   entry does not actually pass is blocked. Run the full suite yourself before pushing.
+5. **Close out.** `session-closeout` records intent + a handoff so the next session — or the *other*
+   CLI — resumes with full context. Intent survives compaction and context resets.
+
+Recall memory on demand instead of re-reading everything:
+
+```bash
+uv run mir memory query <keyword>     # full-text recall over .mir/memory.db
+uv run mir context pull "<query>"     # on-demand context (top-k snippets)
+```
 
 ---
 
@@ -267,6 +302,79 @@ blocked.
 The ledger has 12 categories — `unit`, `integration`, `e2e`, `browser`, `edge`, `architecture`,
 `availability`, `load`, `soak`, `security`, `compatibility`, `transaction_locking`. Each is either
 `pass` (with a runnable command), `covered_existing`, or `not_applicable` (with a written reason).
+
+---
+
+## Sub-agent execution policy & delegated execution
+
+The harness runs on one split: **the opened CLI is the control-plane main (orchestration only);
+the sub-agents that do the heavy, context-hungry work — code edits, TDD, review, verification —
+run as delegated executors.** A single global setting decides which backend those sub-agents use,
+and a hook makes the choice enforceable rather than advisory.
+
+### The policy switch — `config/sub-agent-policy.json`
+
+```json
+{ "mode": "force_codex", "per_project": {} }
+```
+
+| mode | behavior |
+|---|---|
+| `force_codex` *(default)* | Claude `Agent`/`Task` sub-agent spawns are **hard-blocked**; all delegated work routes to the Codex lane. |
+| `select` | honors an explicit per-call backend request (`--execution-backend`). |
+| `per_project` | per-repo override keyed by slug. |
+| `unrestricted` | no sub-agent constraint. |
+
+A home-server overlay env (`MIR_SUB_AGENT_POLICY=/path/to.json`) changes the mode without editing
+the repo file; the resolver fails closed to `force_codex` on any error.
+
+### The gate — `.claude/hooks/sub-agent-policy-gate.sh`
+
+Wired as a PreToolUse hook matching `^(Agent|Task)$`. When the mode is `force_codex` and a Claude
+`Agent`/`Task` spawn is attempted, the hook prints a route-to-Codex message and **exits 2**
+(blocked). It is slug-free and family-invariant, so the same file deploys to every repo.
+
+```bash
+# under force_codex, allow a one-off Claude sub-agent (e.g. an independent cross-model review):
+MIR_R3_FALLBACK=1 <your command>
+# or relax the policy entirely:
+$EDITOR config/sub-agent-policy.json   # set "mode": "unrestricted"
+```
+
+### Delegated execution is a verified Codex worktree — `mir_executor --dispatch`
+
+Delegated code work never edits your main tree directly:
+
+```bash
+uv run python -m tools.mir_executor execute --background --dispatch \
+  --change-id <ledger-id> --category <tdd-category> --repo-root . \
+  --codex-args 'exec --sandbox workspace-write "<task or DispatchBrief ref>"' \
+  --allow-path tools/ --allow-path tests/ \
+  --verify-cmd "uv run pytest tests/ -q"
+```
+
+1. a fresh git **worktree** is cut from HEAD;
+2. the Codex sub-agent edits there;
+3. the **deterministic merge gate** runs — `git diff` (empty diff → fail), an allowlist check, and
+   a re-run of the `--verify-cmd` commands;
+4. only an approved gate merges the edits back. The sub-agent's stdout / `result.json` is **never**
+   the approval input.
+
+This is "trust the filesystem, not the self-report" made executable, and it is the same path the
+`executor-agent` (Codex) uses.
+
+### Self-recognition — the monitor
+
+A deterministic, LLM-free scanner (`stall_watchdog`) reads the session transcript and reports, via
+`agent-check`, whether any Claude `Agent`/`Task` sub-agent ran while the policy was `force_codex`
+— so the operating main can notice and self-correct:
+
+```bash
+uv run python -m tools.stall_watchdog.cli agent-check   # look for the CLAUDE_SUB_DISPATCH row
+```
+
+The active policy mode is also injected into the session-start context, so the main always knows
+which backend it must use.
 
 ---
 

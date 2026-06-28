@@ -23,6 +23,16 @@
             "statusMessage": "Harness pre-merge gate"
           }
         ]
+      },
+      {
+        "matcher": "^(Agent|Task)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/sub-agent-policy-gate.sh",
+            "statusMessage": "Mir sub-agent-policy gate (force_codex)"
+          }
+        ]
       }
     ],
     "PostToolUse": [
