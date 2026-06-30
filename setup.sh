@@ -108,7 +108,7 @@ say "  [2] Update family profile block in .claude/hooks/session-start.sh"
 say "  [3] Update CLAUDE.md + AGENTS.md role-policy table with real family name and scope"
 say "  [4] Run: ./setup.sh          (verify placeholder guard passes — 0 warnings)"
 say "  [5] Run: uv run mir migrate up   (initialize memory store)"
-say "  [6] Run: uv run mir parity check (verify baseline harness compliance)"
+say "  [6] Run: uv run python scripts/verify_context_paths.py (verify harness path wiring)"
 say "  [7] Open in Claude Code:     claude ."
 say "  [8] Or in Codex CLI:         codex"
 say

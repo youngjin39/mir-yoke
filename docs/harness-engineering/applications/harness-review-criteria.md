@@ -98,6 +98,7 @@ Three parts: **A. Structure-review criteria** (how to audit one repo), **B. Impr
 6. Close: lessons → DB, projections re-rendered, criteria doc updated if the method itself changed, backups refreshed (`python -m tools.backup_collector collect-fleet`) when the wave touched family repos.
 
 ### C4. Deterministic verifier command set (run per review; zero-LLM-token)
+> Note: several entries below (`tools.harness_consistency`, `tools.fleet_skill_sync`, `mir doc-guard`, `verify_template_applied_state.py`) belong to the full Mir harness and are NOT wired into this template's minimal CLI subset — run them from the full harness, or skip on a fresh clone.
 ```
 uv run python -m tools.harness_consistency run            # mir-self self-check R1–R17
 uv run python scripts/verify_repo_agent_management.py     # catalog ↔ profiles ↔ disk
