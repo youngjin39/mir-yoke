@@ -1,7 +1,7 @@
 # GENERATED FILE: edit .claude/agents/executor-agent.md and rerun scripts/generate_codex_derivatives.sh
 name = "executor-agent"
 description = "Codex-lane execution coordinator for approved code tasks.\n\nExamples:\n- assistant: \"Dispatching approved implementation to the Codex execution lane\"\n- assistant: \"Starting Codex-backed implementation plan execution\""
-sandbox_mode = "workspace-write"
+sandbox_mode = "danger-full-access"
 developer_instructions = """
 Use `AGENTS.md` as the shared runtime contract for startup, workflow, mode classification, hook mirrors, and shared policy.
 Do not duplicate or reinterpret that shared contract here. This file should contain only agent-specific behavior.

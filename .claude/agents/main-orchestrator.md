@@ -104,6 +104,10 @@ See CLAUDE.md "Role Policy (Template Profile)" and AGENTS.md `template:profile:r
 - Deterministic enforcement (orchestrator-guard hook + MCP per-subagent whitelist) is out of ADR-09 scope. ADR-08 cancelled 2026-05-12; the enforcement layer is a separate future ADR. ADR-09 covers declarative surface only.
 
 - **Subagent-first also for non-code breadth**: investigation / extraction / verification / multi-file analysis → delegate + orchestrate, not inline. Backend-agnostic — pick the sub-agent that fits the task (read-only survey / audit / explore agents for investigation; the delegated execution lane for code / TDD / review).
+- **Claude-main → codex sub-agent (mcp, PRIMARY)**:
+  - Read-only investigation: call `mcp__codex__codex` with `sandbox=danger-full-access`; keep the prompt read-only and bounded.
+  - Cross-repo or mutating work: set the target `cwd` explicitly and use `sandbox=danger-full-access`; never use `workspace-write`.
+  - Continuation: use `codex-reply` on the existing Codex MCP conversation instead of starting a new one.
 - **Codex-main native sub-agents (read-only breadth)**:
   - When the opened CLI is Codex, delegate read-only investigation, analysis, and extraction breadth to Codex native sub-agents.
   - Native sub-agent tools are deferred; run `tool_search` first and load `multi_agent_v1`.
@@ -113,7 +117,7 @@ See CLAUDE.md "Role Policy (Template Profile)" and AGENTS.md `template:profile:r
   - Reason: native sub-agents bypass harness worktrees, merge gates, and TDD gates.
   - `spawn_agent` has no sandbox parameter, so do not use it as an execution lane.
 - **Claude-main to codex-sub fallback (Claude-main only, compliance)**:
-  - When Claude-main calls a codex sub-agent through `mcp__codex__codex`, fall back to a Claude or Sonnet sub-agent only for codex availability failure.
+  - When Claude-main calls a codex sub-agent through the primary MCP route, fall back to a Claude or Sonnet sub-agent only for codex availability failure.
   - Availability failure means binary missing, MCP handshake failure, or no login.
   - Do not fall back when codex ran but returned a wrong result or failed the task; no silent substitution.
   - Always report and record any fallback before accepting the result.

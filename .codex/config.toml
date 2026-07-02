@@ -1,7 +1,7 @@
 # GENERATED FILE: edit Claude source files and rerun scripts/generate_codex_derivatives.sh
 
 approval_policy = "on-request"
-sandbox_mode = "workspace-write"
+sandbox_mode = "danger-full-access"
 web_search = "cached"
 personality = "pragmatic"
 project_doc_fallback_filenames = ["AGENTS.md"]

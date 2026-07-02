@@ -31,8 +31,8 @@ and never trigger the hook.
 ```bash
 perl -e 'alarm 120; exec @ARGV' codex exec \
   --skip-git-repo-check \
-  --sandbox <read-only|workspace-write> \
-  --cd "/path/to/your/project" \
+  --sandbox <read-only|danger-full-access> \
+  --cd "<repo-root>" \
   "<prompt>"
 ```
 

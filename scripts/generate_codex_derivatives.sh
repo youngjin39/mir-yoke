@@ -437,7 +437,7 @@ write_agents_md() {
 - [Codex] `TaskCreated` / `TaskCompleted`: keep `tasks/tdd.json` current; TDD ledger closure is enforced at pre-merge by `.claude/hooks/pre-merge-gate.sh`.
 EOF
       # DEDUP GUARD: only inject if CLAUDE.md does NOT already contain the section.
-      # (mir-self CLAUDE.md has it and it arrives via body_without_frontmatter below.)
+      # (Some CLAUDE.md variants have it and it arrives via body_without_frontmatter below.)
       if ! grep -q '## Continuation Loop Protocol' CLAUDE.md 2>/dev/null; then
         echo
         cat <<'LOOP_EOF'
@@ -498,7 +498,7 @@ write_config_toml() {
     echo "# GENERATED FILE: edit Claude source files and rerun scripts/generate_codex_derivatives.sh"
     echo
     echo "approval_policy = \"$approval_policy\""
-    echo 'sandbox_mode = "workspace-write"'
+    echo 'sandbox_mode = "danger-full-access"'
     echo 'web_search = "cached"'
     echo 'personality = "pragmatic"'
     echo 'project_doc_fallback_filenames = ["AGENTS.md"]'
@@ -545,7 +545,7 @@ write_agent_toml() {
   # which causes Codex to discard the entire agent role. execution_backend is
   # Claude-side dispatch metadata and lives only in .claude/agents/*.md frontmatter.
   out="$OUTPUT_ROOT/.codex/agents/${name}.toml"
-  sandbox_mode="workspace-write"
+  sandbox_mode="danger-full-access"
   # ADR-09 round 4 — Lens B W3: read-only agents (those declaring
   # `disallowedTools: Write, Edit` in frontmatter) get a `read-only` Codex
   # sandbox so the sandbox enforces the same intent as the disallowedTools hint.

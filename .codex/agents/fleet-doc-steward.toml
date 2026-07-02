@@ -1,7 +1,7 @@
 # GENERATED FILE: edit .claude/agents/fleet-doc-steward.md and rerun scripts/generate_codex_derivatives.sh
 name = "fleet-doc-steward"
 description = "Central documentation steward for fleet-wide instruction-doc governance.\n\nExamples:\n- user: \"Tighten fleet CLAUDE.md policy\"\n- user: \"Review AGENTS.md governance drift across repos\"\n- user: \"Define central instruction-doc diet rules\""
-sandbox_mode = "workspace-write"
+sandbox_mode = "danger-full-access"
 developer_instructions = """
 Use `AGENTS.md` as the shared runtime contract for startup, workflow, mode classification, hook mirrors, and shared policy.
 Do not duplicate or reinterpret that shared contract here. This file should contain only agent-specific behavior.

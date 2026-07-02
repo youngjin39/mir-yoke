@@ -79,6 +79,12 @@
 - Close completed, timed-out, or errored subagents before the next wave so experiments do not leave stale lanes open.
 - If `spawn_agent` returns capacity or thread-limit errors, stop parallel expansion, reduce ownership to one harness surface per subagent, retry one subagent at a time, and record degraded mode in the active plan or handoff.
 
+### Sub-agent Routing
+- Claude-main → Codex sub-agent: use Codex MCP (`mcp__codex__codex`; continue with `codex-reply`) with `sandbox=danger-full-access`; `workspace-write` is forbidden for this lane.
+- Codex-main → Codex sub-agent: use native `multi_agent_v1` (`tool_search` → `spawn_agent` → `wait_agent` → `close_agent`).
+- In-repo code, TDD, and review work: route through `mir_executor --dispatch` so worktree isolation, merge gates, and TDD evidence stay active.
+- Raw `codex exec`: guarded exception only; record why the primary route could not be used and keep verification explicit.
+
 ## Hook Policy Boundary
 - **Enforcement domain** — Hook-strict:
   - `tools/`, `src/`, `lib/` code paths: Claude direct Edit/Write is blocked by `.claude/hooks/pre-tool-use.sh`. Changes must go through the Codex execution lane.
