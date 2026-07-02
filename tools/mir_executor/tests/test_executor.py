@@ -8,6 +8,12 @@ import subprocess
 
 import pytest
 
+from tools.mir_executor.codex_mcp_client import (
+    CodexMcpError,
+    CodexMcpResult,
+    CodexMcpTimeoutError,
+)
+from tools.mir_executor.dispatch import _MCP_DISPATCH_BASE_INSTRUCTIONS
 from tools.mir_executor.executor import LedgerUpdate, MirExecutor, SubprocessResult
 
 _REPO_ROOT = pathlib.Path(__file__).resolve().parents[3]
@@ -37,25 +43,42 @@ def _make_ledger(tmp_path: pathlib.Path, categories: dict) -> pathlib.Path:
     return ledger_path
 
 
-def _fake_run_factory(
-    returncode: int = 0,
-    stdout: str = "",
-    stderr: str = "",
+def _install_fake_codex_mcp_client(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    result: CodexMcpResult | None = None,
     side_effect: BaseException | None = None,
-):
-    """Return a fake subprocess.run callable."""
+) -> tuple[list[dict[str, object]], list[dict[str, object]]]:
+    """Monkeypatch executor.CodexMcpClient and return (calls, init_kwargs)."""
+    calls: list[dict[str, object]] = []
+    init_kwargs: list[dict[str, object]] = []
+    mcp_result = result or CodexMcpResult(
+        content_text="",
+        thread_id="thread-test",
+        raw_result={},
+    )
 
-    def fake_run(cmd, **kwargs):
-        if side_effect is not None:
-            raise side_effect
-        return subprocess.CompletedProcess(
-            args=cmd,
-            returncode=returncode,
-            stdout=stdout,
-            stderr=stderr,
-        )
+    class FakeCodexMcpClient:
+        def __init__(self, **kwargs: object) -> None:
+            init_kwargs.append(kwargs)
 
-    return fake_run
+        def __enter__(self) -> FakeCodexMcpClient:
+            return self
+
+        def __exit__(self, *_exc_info: object) -> None:
+            return None
+
+        def call_codex(self, **kwargs: object) -> CodexMcpResult:
+            calls.append(kwargs)
+            if side_effect is not None:
+                raise side_effect
+            return mcp_result
+
+    monkeypatch.setattr(
+        "tools.mir_executor.executor.CodexMcpClient",
+        FakeCodexMcpClient,
+    )
+    return calls, init_kwargs
 
 
 def _write_dispatch_brief(tmp_path: pathlib.Path) -> pathlib.Path:
@@ -73,7 +96,9 @@ def _write_dispatch_brief(tmp_path: pathlib.Path) -> pathlib.Path:
                 "expanded_goal": "Fix src/foo.py [role=executor, stack=python]",
                 "owned_scope": ["src/foo.py"],
                 "out_of_scope": ["docs/**"],
-                "verification_commands": ["uv run pytest -q tools/mir_executor/tests/test_executor.py"],
+                "verification_commands": [
+                    "uv run pytest -q tools/mir_executor/tests/test_executor.py"
+                ],
                 "stop_conditions": ["Stop if the change requires files outside owned_scope."],
                 "handoff_refs": [],
                 "tdd_change_refs": ["tasks/tdd.json#test-change-id"],
@@ -97,26 +122,29 @@ def _write_dispatch_brief(tmp_path: pathlib.Path) -> pathlib.Path:
 # ---------------------------------------------------------------------------
 
 def test_subprocess_result_exit_code_pass(tmp_path, monkeypatch):
-    monkeypatch.setattr(subprocess, "run", _fake_run_factory(returncode=0))
+    _install_fake_codex_mcp_client(monkeypatch)
     executor = MirExecutor(repo_root=tmp_path)
     result = executor.run_codex(["--help"])
     assert result.exit_code == 0
 
 
 # ---------------------------------------------------------------------------
-# 2. SubprocessResult captures stdout and stderr
+# 2. CodexMcpResult content maps to stdout and stderr stays empty
 # ---------------------------------------------------------------------------
 
-def test_subprocess_result_captures_stdout_stderr(tmp_path, monkeypatch):
-    monkeypatch.setattr(
-        subprocess,
-        "run",
-        _fake_run_factory(returncode=0, stdout="out text", stderr="err text"),
+def test_subprocess_result_maps_mcp_content_to_stdout(tmp_path, monkeypatch):
+    _install_fake_codex_mcp_client(
+        monkeypatch,
+        result=CodexMcpResult(
+            content_text="out text",
+            thread_id="thread-test",
+            raw_result={},
+        ),
     )
     executor = MirExecutor(repo_root=tmp_path)
     result = executor.run_codex(["--help"])
     assert result.stdout == "out text"
-    assert result.stderr == "err text"
+    assert result.stderr == ""
 
 
 # ---------------------------------------------------------------------------
@@ -124,17 +152,12 @@ def test_subprocess_result_captures_stdout_stderr(tmp_path, monkeypatch):
 # ---------------------------------------------------------------------------
 
 def test_run_codex_uses_codex_bin_env_var(tmp_path, monkeypatch):
-    captured = []
-
-    def fake_run(cmd, **kwargs):
-        captured.append(cmd)
-        return subprocess.CompletedProcess(args=cmd, returncode=0, stdout="", stderr="")
-
+    _calls, init_kwargs = _install_fake_codex_mcp_client(monkeypatch)
     monkeypatch.setenv("CODEX_BIN", "/usr/bin/true")
-    monkeypatch.setattr(subprocess, "run", fake_run)
     executor = MirExecutor(repo_root=tmp_path)
-    executor.run_codex(["arg1"])
-    assert captured[0][0] == "/usr/bin/true"
+    result = executor.run_codex(["arg1"])
+    assert init_kwargs[0]["codex_bin"] == "/usr/bin/true"
+    assert result.command[0] == "/usr/bin/true"
 
 
 # ---------------------------------------------------------------------------
@@ -142,49 +165,83 @@ def test_run_codex_uses_codex_bin_env_var(tmp_path, monkeypatch):
 # ---------------------------------------------------------------------------
 
 def test_run_codex_default_codex_bin_when_env_unset(tmp_path, monkeypatch):
-    captured = []
-
-    def fake_run(cmd, **kwargs):
-        captured.append(cmd)
-        return subprocess.CompletedProcess(args=cmd, returncode=0, stdout="", stderr="")
-
+    _calls, init_kwargs = _install_fake_codex_mcp_client(monkeypatch)
     monkeypatch.delenv("CODEX_BIN", raising=False)
-    monkeypatch.setattr(subprocess, "run", fake_run)
     executor = MirExecutor(repo_root=tmp_path)
-    executor.run_codex(["--help"])
-    assert captured[0][0] == "codex"
+    result = executor.run_codex(["--help"])
+    assert init_kwargs[0]["codex_bin"] == "codex"
+    assert result.command[0] == "codex"
 
 
 def test_run_codex_uses_dispatch_brief_goal_when_direct_args_empty(tmp_path, monkeypatch):
-    captured = []
-
-    def fake_run(cmd, **kwargs):
-        captured.append(cmd)
-        return subprocess.CompletedProcess(args=cmd, returncode=0, stdout="", stderr="")
-
+    calls, _init_kwargs = _install_fake_codex_mcp_client(monkeypatch)
     brief_path = _write_dispatch_brief(tmp_path)
-    monkeypatch.setattr(subprocess, "run", fake_run)
     executor = MirExecutor(repo_root=tmp_path, dispatch_brief_path=brief_path)
 
     executor.run_codex([])
 
-    assert captured[0][1:] == ["exec", "Fix src/foo.py [role=executor, stack=python]"]
+    assert calls[0]["prompt"] == "Fix src/foo.py [role=executor, stack=python]"
 
 
 def test_run_codex_uses_explicit_codex_args_when_dispatch_brief_is_present(tmp_path, monkeypatch):
-    captured = []
-
-    def fake_run(cmd, **kwargs):
-        captured.append(cmd)
-        return subprocess.CompletedProcess(args=cmd, returncode=0, stdout="", stderr="")
-
+    calls, _init_kwargs = _install_fake_codex_mcp_client(monkeypatch)
     brief_path = _write_dispatch_brief(tmp_path)
-    monkeypatch.setattr(subprocess, "run", fake_run)
     executor = MirExecutor(repo_root=tmp_path, dispatch_brief_path=brief_path)
 
     executor.run_codex(["status"])
 
-    assert captured[0][1:] == ["status"]
+    assert calls[0]["prompt"] == "status"
+
+
+def test_run_codex_passes_lightweight_mcp_options(tmp_path, monkeypatch):
+    calls, _init_kwargs = _install_fake_codex_mcp_client(monkeypatch)
+    executor = MirExecutor(repo_root=tmp_path)
+
+    result = executor.run_codex(
+        ["exec", "--sandbox", "workspace-write", "--skip-git-repo-check", "hello"],
+    )
+
+    assert result.exit_code == 0
+    assert calls[0]["prompt"] == "hello"
+    assert calls[0]["cwd"] == pathlib.Path.cwd().resolve()
+    assert calls[0]["sandbox"] == "danger-full-access"
+    assert calls[0]["approval_policy"] == "never"
+    assert calls[0]["base_instructions"] == _MCP_DISPATCH_BASE_INSTRUCTIONS
+    assert calls[0]["config"] == {"project_doc_max_bytes": 0}
+    assert calls[0]["timeout"] == 600.0
+
+
+def test_run_codex_passes_model_and_reasoning_effort(tmp_path, monkeypatch):
+    calls, _init_kwargs = _install_fake_codex_mcp_client(monkeypatch)
+    executor = MirExecutor(repo_root=tmp_path)
+
+    result = executor.run_codex(
+        ["exec", "hello"],
+        model="low",
+        reasoning_effort="xhigh",
+    )
+
+    assert result.exit_code == 0
+    assert calls[0]["model"] == "low"
+    assert calls[0]["config"] == {
+        "project_doc_max_bytes": 0,
+        "model_reasoning_effort": "xhigh",
+    }
+    assert calls[0]["base_instructions"] == _MCP_DISPATCH_BASE_INSTRUCTIONS
+
+
+def test_run_codex_maps_mcp_error_to_subprocess_result(tmp_path, monkeypatch):
+    _install_fake_codex_mcp_client(
+        monkeypatch,
+        side_effect=CodexMcpError("mcp unavailable"),
+    )
+    executor = MirExecutor(repo_root=tmp_path)
+
+    result = executor.run_codex(["exec", "hello"])
+
+    assert result.exit_code == 1
+    assert result.stdout == ""
+    assert result.stderr == "mcp unavailable"
 
 
 # ---------------------------------------------------------------------------
@@ -193,10 +250,9 @@ def test_run_codex_uses_explicit_codex_args_when_dispatch_brief_is_present(tmp_p
 
 def test_run_codex_raises_file_not_found_when_codex_missing(tmp_path, monkeypatch):
     monkeypatch.setenv("CODEX_BIN", "/nonexistent/codex")
-    monkeypatch.setattr(
-        subprocess,
-        "run",
-        _fake_run_factory(side_effect=FileNotFoundError("no such file")),
+    _install_fake_codex_mcp_client(
+        monkeypatch,
+        side_effect=FileNotFoundError("no such file"),
     )
     executor = MirExecutor(repo_root=tmp_path)
     with pytest.raises(FileNotFoundError, match="Codex binary not found"):
@@ -208,12 +264,9 @@ def test_run_codex_raises_file_not_found_when_codex_missing(tmp_path, monkeypatc
 # ---------------------------------------------------------------------------
 
 def test_run_codex_propagates_timeout(tmp_path, monkeypatch):
-    monkeypatch.setattr(
-        subprocess,
-        "run",
-        _fake_run_factory(
-            side_effect=subprocess.TimeoutExpired(cmd=["codex"], timeout=1)
-        ),
+    _install_fake_codex_mcp_client(
+        monkeypatch,
+        side_effect=CodexMcpTimeoutError("mcp timed out"),
     )
     executor = MirExecutor(repo_root=tmp_path)
     with pytest.raises(subprocess.TimeoutExpired):
@@ -378,11 +431,13 @@ def test_update_ledger_atomic_write(tmp_path):
 # ---------------------------------------------------------------------------
 
 def test_execute_combines_run_and_update(tmp_path, monkeypatch):
-    monkeypatch.setenv("CODEX_BIN", "/usr/bin/true")
-    monkeypatch.setattr(
-        subprocess,
-        "run",
-        _fake_run_factory(returncode=0, stdout="ok", stderr=""),
+    _install_fake_codex_mcp_client(
+        monkeypatch,
+        result=CodexMcpResult(
+            content_text="ok",
+            thread_id="thread-test",
+            raw_result={},
+        ),
     )
     ledger_path = _make_ledger(tmp_path, {"unit": {"status": "planned"}})
     executor = MirExecutor(repo_root=tmp_path, ledger_path=ledger_path)
@@ -404,11 +459,13 @@ def test_execute_combines_run_and_update(tmp_path, monkeypatch):
 # ---------------------------------------------------------------------------
 
 def test_cli_execute_subcommand_invokes_executor(tmp_path, monkeypatch):
-    monkeypatch.setenv("CODEX_BIN", "/usr/bin/true")
-    monkeypatch.setattr(
-        subprocess,
-        "run",
-        _fake_run_factory(returncode=0, stdout="cli-ok", stderr=""),
+    calls, _init_kwargs = _install_fake_codex_mcp_client(
+        monkeypatch,
+        result=CodexMcpResult(
+            content_text="cli-ok",
+            thread_id="thread-test",
+            raw_result={},
+        ),
     )
     ledger_path = _make_ledger(tmp_path, {"unit": {"status": "planned"}})
 
@@ -420,12 +477,19 @@ def test_cli_execute_subcommand_invokes_executor(tmp_path, monkeypatch):
         "--category", "unit",
         "--codex-args", "exec --help",
         "--repo-root", str(tmp_path),
+        "--model", "medium",
+        "--reasoning-effort", "high",
     ]
     # Inject the ledger_path by pointing repo_root to tmp_path — ledger is at tasks/tdd.json
     main(argv)
 
     reloaded = json.loads(ledger_path.read_text(encoding="utf-8"))
     assert reloaded["changes"][0]["categories"]["unit"]["status"] == "pass"
+    assert calls[0]["model"] == "medium"
+    assert calls[0]["config"] == {
+        "project_doc_max_bytes": 0,
+        "model_reasoning_effort": "high",
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -434,19 +498,13 @@ def test_cli_execute_subcommand_invokes_executor(tmp_path, monkeypatch):
 
 def test_execute_fails_fast_on_unknown_change_id_BEFORE_running_codex(tmp_path, monkeypatch):
     ledger_path = _make_ledger(tmp_path, {"unit": {"status": "planned"}})
-    call_count = []
-
-    def counting_run(cmd, **kwargs):
-        call_count.append(cmd)
-        return subprocess.CompletedProcess(args=cmd, returncode=0, stdout="", stderr="")
-
-    monkeypatch.setattr(subprocess, "run", counting_run)
+    calls, _init_kwargs = _install_fake_codex_mcp_client(monkeypatch)
     executor = MirExecutor(repo_root=tmp_path, ledger_path=ledger_path)
 
     with pytest.raises(KeyError, match="unknown change_id"):
         executor.execute("WRONG-ID", "unit", ["--help"])
 
-    assert len(call_count) == 0, "Codex subprocess must NOT be called when change_id is invalid."
+    assert calls == [], "Codex MCP must NOT be called when change_id is invalid."
 
 
 # ---------------------------------------------------------------------------
@@ -455,19 +513,13 @@ def test_execute_fails_fast_on_unknown_change_id_BEFORE_running_codex(tmp_path, 
 
 def test_execute_fails_fast_on_unknown_category_BEFORE_running_codex(tmp_path, monkeypatch):
     ledger_path = _make_ledger(tmp_path, {"unit": {"status": "planned"}})
-    call_count = []
-
-    def counting_run(cmd, **kwargs):
-        call_count.append(cmd)
-        return subprocess.CompletedProcess(args=cmd, returncode=0, stdout="", stderr="")
-
-    monkeypatch.setattr(subprocess, "run", counting_run)
+    calls, _init_kwargs = _install_fake_codex_mcp_client(monkeypatch)
     executor = MirExecutor(repo_root=tmp_path, ledger_path=ledger_path)
 
     with pytest.raises(KeyError, match="not in entry"):
         executor.execute("test-change-id", "e2e", ["--help"])
 
-    assert len(call_count) == 0, "Codex subprocess must NOT be called when category is invalid."
+    assert calls == [], "Codex MCP must NOT be called when category is invalid."
 
 
 # ---------------------------------------------------------------------------
@@ -476,11 +528,9 @@ def test_execute_fails_fast_on_unknown_category_BEFORE_running_codex(tmp_path, m
 
 def test_cli_handles_timeout_expired_gracefully(tmp_path, monkeypatch, capsys):
     _make_ledger(tmp_path, {"unit": {"status": "planned"}})
-    monkeypatch.setenv("CODEX_BIN", "/usr/bin/true")
-    monkeypatch.setattr(
-        subprocess,
-        "run",
-        _fake_run_factory(side_effect=subprocess.TimeoutExpired(cmd=["codex"], timeout=600)),
+    _install_fake_codex_mcp_client(
+        monkeypatch,
+        side_effect=CodexMcpTimeoutError("mcp timed out"),
     )
 
     from tools.mir_executor.cli import main

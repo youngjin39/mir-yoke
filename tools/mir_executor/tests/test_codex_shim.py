@@ -70,7 +70,8 @@ class TestCodexShimPrimaryPath:
         executor = MirExecutor(tmp_path, ledger_path=ledger_path)
         result = executor.run_codex(['exec', '--help'])
 
-        assert result.exit_code == 7
+        assert result.exit_code == 1
+        assert 'Codex MCP server exited with code 7' in result.stderr
         assert events_file.exists()
         lines = [ln for ln in events_file.read_text(encoding='utf-8').splitlines() if ln.strip()]
         assert len(lines) == 1

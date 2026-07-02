@@ -61,16 +61,10 @@ _STANDARD_CATEGORIES = [
 _DEFAULT_JOBS_DB_RELPATH = pathlib.Path("tasks") / "jobs.db"
 _MERGED_FINALIZE_ACTIONS = {"merged", "merged-but-cleanup-failed"}
 _DISPATCH_BACKENDS = frozenset({"codex", "claude"})
+_PERFORMANCE_CHOICES = ("low", "medium", "high", "xhigh")
 _DEFAULT_DISPATCH_PROMPT = (
     "Read the task brief at .mir-dispatch/brief.md and implement it fully "
     "in this worktree. Do not edit tasks/plan.md."
-)
-_MCP_AVAILABILITY_FAILURE_MARKERS = (
-    "Codex binary not found",
-    "Codex MCP client already started",
-    "Codex MCP server exited",
-    "Codex MCP server stdin",
-    "No such file or directory",
 )
 _CODEX_EXEC_FLAGS_WITH_VALUE = frozenset(
     {
@@ -138,8 +132,7 @@ def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="python -m tools.mir_executor",
         description=(
-            "your-harness Executor — Codex CLI subprocess wrapper "
-            "+ tdd.json ledger update."
+            "your-harness Executor — Codex CLI subprocess wrapper + tdd.json ledger update."
         ),
     )
     # Global --jobs-db option available for all subcommands
@@ -191,6 +184,30 @@ def _build_parser() -> argparse.ArgumentParser:
         default=600,
         metavar="SECONDS",
         help="Subprocess timeout in seconds (default: 600).",
+    )
+    exec_p.add_argument(
+        "--model",
+        choices=_PERFORMANCE_CHOICES,
+        default=None,
+        metavar="MODEL",
+        help="Optional Codex performance model route; omit to inherit Codex defaults.",
+    )
+    exec_p.add_argument(
+        "--reasoning-effort",
+        choices=_PERFORMANCE_CHOICES,
+        default=None,
+        metavar="EFFORT",
+        help="Optional Codex model_reasoning_effort; omit to inherit Codex defaults.",
+    )
+    exec_p.add_argument(
+        "--stall-timeout",
+        type=float,
+        default=None,
+        metavar="SECONDS",
+        help=(
+            "Optional no-progress MCP stall timeout in seconds; omit to inherit "
+            "policy monitoring defaults."
+        ),
     )
     exec_p.add_argument(
         "--jobs-db",
@@ -427,6 +444,9 @@ async def _run_background(
     codex_args: list[str],
     timeout_seconds: int,
     jobs_db_path: pathlib.Path,
+    model: str | None = None,
+    reasoning_effort: str | None = None,
+    stall_timeout: float | None = None,
 ) -> None:
     """Async background runner: invoke run_codex_async + update JobRegistry.
 
@@ -448,7 +468,14 @@ async def _run_background(
             )
             return
 
-        result = await executor.run_codex_async(codex_args, timeout_seconds=timeout_seconds)
+        run_kwargs: dict[str, object] = {"timeout_seconds": timeout_seconds}
+        if model is not None:
+            run_kwargs["model"] = model
+        if reasoning_effort is not None:
+            run_kwargs["reasoning_effort"] = reasoning_effort
+        if stall_timeout is not None:
+            run_kwargs["stall_timeout"] = stall_timeout
+        result = await executor.run_codex_async(codex_args, **run_kwargs)
 
         # Update ledger
         executor.update_ledger(change_id, category, result)
@@ -489,6 +516,10 @@ def _resolve_dispatch_backend(
         return "claude"
     if mode == "select":
         return requested_backend if requested_backend in _DISPATCH_BACKENDS else "codex"
+    if mode == "obey_user":
+        return requested_backend if requested_backend in _DISPATCH_BACKENDS else "codex"
+    if mode == "unrestricted":
+        return requested_backend if requested_backend in _DISPATCH_BACKENDS else "codex"
     if mode == "per_project" and isinstance(per_project, dict):
         if not repo_slug:
             return "codex"
@@ -515,55 +546,85 @@ def _resolve_repo_policy_slug(repo_root: pathlib.Path) -> str | None:
     return None
 
 
+def _string_route_value(value: object) -> str | None:
+    if not isinstance(value, str):
+        return None
+    value = value.strip()
+    return value or None
+
+
+def _resolve_policy_runtime_options(
+    sub_agent_policy: object,
+    *,
+    category: str,
+    model: str | None,
+    reasoning_effort: str | None,
+    stall_timeout: float | None,
+) -> tuple[str | None, str | None, float | None]:
+    """Resolve policy routing/monitoring defaults without overriding CLI flags."""
+    category_route: dict[str, object] = {}
+    routing_for_category = getattr(sub_agent_policy, "routing_for_category", None)
+    if callable(routing_for_category):
+        route = routing_for_category(category)
+        if isinstance(route, dict):
+            category_route = route
+
+    policy_model = _string_route_value(category_route.get("model"))
+    policy_reasoning_effort = _string_route_value(category_route.get("reasoning_effort"))
+
+    routing_default_model = getattr(sub_agent_policy, "routing_default_model", None)
+    if policy_model is None and callable(routing_default_model):
+        policy_model = routing_default_model()
+
+    routing_default_reasoning_effort = getattr(
+        sub_agent_policy,
+        "routing_default_reasoning_effort",
+        None,
+    )
+    if policy_reasoning_effort is None and callable(routing_default_reasoning_effort):
+        policy_reasoning_effort = routing_default_reasoning_effort()
+
+    monitoring_stall_timeout_seconds = getattr(
+        sub_agent_policy,
+        "monitoring_stall_timeout_seconds",
+        None,
+    )
+    policy_stall_timeout: float | None = None
+    if callable(monitoring_stall_timeout_seconds):
+        policy_stall_timeout = monitoring_stall_timeout_seconds()
+
+    return (
+        model if model is not None else policy_model,
+        reasoning_effort if reasoning_effort is not None else policy_reasoning_effort,
+        stall_timeout if stall_timeout is not None else policy_stall_timeout,
+    )
+
+
 def _build_dispatch_runner(
     dispatch_module: object,
     *,
     backend: str,
     repo_root: pathlib.Path,
-    codex_args: list[str],
     prompt: str,
     timeout_seconds: int,
+    model: str | None = None,
+    reasoning_effort: str | None = None,
+    stall_timeout: float | None = None,
 ) -> object:
-    """Build the runner for the resolved backend.
-
-    Codex dispatch defaults to the ADR-66 MCP backend. The raw ``codex exec``
-    runner is retained only as a lazy availability fallback when the MCP server
-    cannot spawn or the transport is unavailable.
-    """
+    """Build the runner for the resolved backend."""
     if backend == "claude":
         return dispatch_module.build_claude_runner(
             repo_root,
             timeout_seconds=timeout_seconds,
         )
-    mcp_runner = dispatch_module.build_codex_mcp_runner(
-        repo_root,
-        prompt,
-        timeout_seconds=timeout_seconds,
-    )
-    exec_runner = None
-
-    def _runner(wt: object, attempt: int) -> object:
-        nonlocal exec_runner
-        result = mcp_runner(wt, attempt)
-        if not _is_mcp_availability_failure(result):
-            return result
-        if exec_runner is None:
-            exec_runner = dispatch_module.build_codex_runner(
-                repo_root,
-                codex_args,
-                timeout_seconds=timeout_seconds,
-            )
-        return exec_runner(wt, attempt)
-
-    return _runner
-
-
-def _is_mcp_availability_failure(result: object) -> bool:
-    """Return True only for MCP spawn/transport failures eligible for exec fallback."""
-    if getattr(result, "exit_code", 0) == 0:
-        return False
-    stderr = str(getattr(result, "stderr", ""))
-    return any(marker in stderr for marker in _MCP_AVAILABILITY_FAILURE_MARKERS)
+    runner_kwargs: dict[str, object] = {"timeout_seconds": timeout_seconds}
+    if model is not None:
+        runner_kwargs["model"] = model
+    if reasoning_effort is not None:
+        runner_kwargs["reasoning_effort"] = reasoning_effort
+    if stall_timeout is not None:
+        runner_kwargs["stall_timeout"] = stall_timeout
+    return dispatch_module.build_codex_mcp_runner(repo_root, prompt, **runner_kwargs)
 
 
 def _prompt_from_codex_args(codex_args: list[str]) -> str:
@@ -654,6 +715,13 @@ def _handle_dispatch(args: argparse.Namespace, repo_root: pathlib.Path) -> int:
         )
     )
     sub_agent_policy = load_sub_agent_policy(repo_root)
+    model, reasoning_effort, stall_timeout = _resolve_policy_runtime_options(
+        sub_agent_policy,
+        category=args.category,
+        model=args.model,
+        reasoning_effort=args.reasoning_effort,
+        stall_timeout=getattr(args, "stall_timeout", None),
+    )
     repo_slug = args.family or _resolve_repo_policy_slug(repo_root)
     backend = _resolve_dispatch_backend(
         sub_agent_policy,
@@ -664,9 +732,11 @@ def _handle_dispatch(args: argparse.Namespace, repo_root: pathlib.Path) -> int:
         dispatch,
         backend=backend,
         repo_root=repo_root,
-        codex_args=codex_args,
         prompt=prompt,
         timeout_seconds=args.timeout,
+        model=model,
+        reasoning_effort=reasoning_effort,
+        stall_timeout=stall_timeout,
     )
     try:
         outcome = dispatch.run_dispatch(
@@ -752,6 +822,16 @@ def _handle_execute(args: argparse.Namespace) -> int:
         repo_root = args.repo_root.resolve()
 
     executor = MirExecutor(repo_root=repo_root)
+    from tools.mir_executor.policy import load_sub_agent_policy  # noqa: PLC0415
+
+    sub_agent_policy = load_sub_agent_policy(repo_root)
+    model, reasoning_effort, stall_timeout = _resolve_policy_runtime_options(
+        sub_agent_policy,
+        category=args.category,
+        model=args.model,
+        reasoning_effort=args.reasoning_effort,
+        stall_timeout=getattr(args, "stall_timeout", None),
+    )
 
     if args.background:
         if args.dispatch:
@@ -798,6 +878,9 @@ def _handle_execute(args: argparse.Namespace) -> int:
                 codex_args=codex_args,
                 timeout_seconds=args.timeout,
                 jobs_db_path=jobs_db_path,
+                model=model,
+                reasoning_effort=reasoning_effort,
+                stall_timeout=stall_timeout,
             )
         )
         registry.close()
@@ -806,20 +889,34 @@ def _handle_execute(args: argparse.Namespace) -> int:
     # Non-background (sync or async) path — BC unchanged.
     try:
         if args.use_async:
+            execute_kwargs: dict[str, object] = {"timeout_seconds": args.timeout}
+            if model is not None:
+                execute_kwargs["model"] = model
+            if reasoning_effort is not None:
+                execute_kwargs["reasoning_effort"] = reasoning_effort
+            if stall_timeout is not None:
+                execute_kwargs["stall_timeout"] = stall_timeout
             result, update = asyncio.run(
                 executor.execute_async(
                     change_id=args.change_id,
                     category=args.category,
                     codex_args=codex_args,
-                    timeout_seconds=args.timeout,
+                    **execute_kwargs,
                 )
             )
         else:
+            execute_kwargs = {"timeout_seconds": args.timeout}
+            if model is not None:
+                execute_kwargs["model"] = model
+            if reasoning_effort is not None:
+                execute_kwargs["reasoning_effort"] = reasoning_effort
+            if stall_timeout is not None:
+                execute_kwargs["stall_timeout"] = stall_timeout
             result, update = executor.execute(
                 change_id=args.change_id,
                 category=args.category,
                 codex_args=codex_args,
-                timeout_seconds=args.timeout,
+                **execute_kwargs,
             )
     except (FileNotFoundError, KeyError, PermissionError) as exc:
         print(f"[mir_executor] {type(exc).__name__}: {exc}", file=sys.stderr)

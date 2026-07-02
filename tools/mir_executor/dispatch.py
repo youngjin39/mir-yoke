@@ -31,44 +31,11 @@ from tools.mir_executor.worktree import (
     create_dispatch_worktree,
     dispatch_env,
     merge_result,
-    read_result,
     write_status,
 )
 
 MAX_CODEX_ATTEMPTS = 3
 OUTAGE_THRESHOLD = 3
-
-
-def reap_node_repl() -> int:
-    """Clear stale node_repl IPC the next codex attempt would otherwise hang connecting to.
-
-    node_repl hang mitigation 2026-06-25; root cause is closed-source Codex.app.
-    """
-    try:
-        completed = subprocess.run(
-            ["pkill", "-9", "-f", "Codex.app/Contents/Resources/node_repl"],
-            capture_output=True,
-            timeout=10,
-        )
-    except Exception:  # noqa: BLE001
-        return -1
-    return completed.returncode
-
-
-def force_full_access_sandbox(codex_args: list[str]) -> list[str]:
-    """Force dispatch writes out of the macOS workspace-write Seatbelt sandbox.
-
-    codex apply_patch file writes hang under the workspace-write Seatbelt sandbox
-    on this macOS. Dispatch safety relies on the R4 worktree plus the merge gate,
-    and danger-full-access is the user global codex default
-    (codex-dispatch-danger-sandbox 2026-06-25).
-    """
-    forced_args = list(codex_args)
-    sandbox_flags = {"--sandbox", "-s"}
-    for index, token in enumerate(forced_args[1:], start=1):
-        if token == "workspace-write" and forced_args[index - 1] in sandbox_flags:
-            forced_args[index] = "danger-full-access"
-    return forced_args
 
 
 @dataclass(frozen=True)
@@ -90,7 +57,6 @@ class DispatchOutcome:
     fell_back: bool
     blocked_reason: str | None
     worktree: DispatchWorktree | None
-    result: dict | None = None
 
 
 @dataclass(frozen=True)
@@ -150,12 +116,11 @@ def run_dispatch(
         attempts = attempt
         if result.exit_code == 0:
             write_status(wt, "codex_completed", attempt=attempt)
-            structured_result = read_result(wt)
             _append_event(
                 events_path,
                 {"kind": "codex_success", "dispatch_id": dispatch_id, "attempt": attempt},
             )
-            return DispatchOutcome("completed", attempt, False, None, wt, structured_result)
+            return DispatchOutcome("completed", attempt, False, None, wt)
 
         error_sigs.append(result.error_sig)
         _append_event(
@@ -243,7 +208,7 @@ def _last_json_line(path: pathlib.Path) -> dict[str, object]:
 
 
 def _error_sig_from_text(text: str) -> str:
-    """Return the 12-character error signature shape used by the Codex shim."""
+    """Return the 12-char error signature shape used by the codex shim."""
     if not text:
         return ""
     tail = "\n".join(text.splitlines()[-20:])
@@ -289,62 +254,20 @@ def _run_guarded(
     )
 
 
-def build_codex_runner(
-    main_repo_root: pathlib.Path,
-    codex_args: list[str],
-    *,
-    timeout_seconds: int = 600,
-) -> Callable[[DispatchWorktree, int], CodexAttempt]:
-    """Build the legacy raw-exec Codex runner.
-
-    ADR-66 keeps this runner only for MCP availability fallback. The normal
-    dispatch path uses ``build_codex_mcp_runner``.
-    """
-
-    def _runner(wt: DispatchWorktree, attempt: int) -> CodexAttempt:
-        env = dispatch_env(main_repo_root, session_id=wt.dispatch_id)
-        events_file = wt.path / ".mir-dispatch" / "events.jsonl"
-        events_file.parent.mkdir(parents=True, exist_ok=True)
-        env["CODEX_EVENTS_FILE"] = str(events_file)
-        codex_bin = env.get("CODEX_BIN", os.environ.get("CODEX_BIN", "codex"))
-        command = [codex_bin, *force_full_access_sandbox(codex_args)]
-        try:
-            if attempt > 1:
-                reap_node_repl()
-            completed = subprocess.run(
-                command,
-                cwd=str(wt.path),
-                env=env,
-                capture_output=True,
-                text=True,
-                timeout=timeout_seconds,
-                stdin=subprocess.DEVNULL,
-            )
-        except subprocess.TimeoutExpired as exc:
-            stdout = exc.stdout if isinstance(exc.stdout, str) else ""
-            stderr = exc.stderr if isinstance(exc.stderr, str) else str(exc)
-            return CodexAttempt(exit_code=124, stdout=stdout, stderr=stderr)
-
-        event = _last_json_line(events_file)
-        error_sig = event.get("error_sig")
-        return CodexAttempt(
-            exit_code=completed.returncode,
-            error_sig=error_sig if isinstance(error_sig, str) else "",
-            stdout=completed.stdout,
-            stderr=completed.stderr,
-        )
-
-    return _runner
-
-
 def build_codex_mcp_runner(
     main_repo_root: pathlib.Path,
     prompt: str,
     *,
     timeout_seconds: int = 600,
+    model: str | None = None,
+    reasoning_effort: str | None = None,
+    stall_timeout: float | None = None,
     client_factory: Callable[..., CodexMcpClient] = CodexMcpClient,
 ) -> Callable[[DispatchWorktree, int], CodexAttempt]:
     """Build an ADR-66 MCP-backed Codex runner without ``codex exec`` argv."""
+    config: dict[str, object] = {"project_doc_max_bytes": 0}
+    if reasoning_effort is not None:
+        config["model_reasoning_effort"] = reasoning_effort
 
     def _runner(wt: DispatchWorktree, attempt: int) -> CodexAttempt:
         _ = attempt
@@ -355,15 +278,34 @@ def build_codex_mcp_runner(
         started_at = time.monotonic()
         thread_id: str | None = None
 
+        def append_progress(method: str, _params: object) -> None:
+            _append_event(
+                events_file,
+                {
+                    "transport": "mcp",
+                    "event": "progress",
+                    "duration_s": time.monotonic() - started_at,
+                    "method": method,
+                },
+            )
+
         try:
             with client_factory(env=env, call_timeout=float(timeout_seconds)) as client:
-                result = client.call_codex(
-                    prompt=prompt,
-                    cwd=str(wt.path),
-                    sandbox="danger-full-access",
-                    approval_policy="never",
-                    timeout=float(timeout_seconds),
-                )
+                call_kwargs: dict[str, object] = {
+                    "prompt": prompt,
+                    "cwd": str(wt.path),
+                    "sandbox": "danger-full-access",
+                    "approval_policy": "never",
+                    "base_instructions": _MCP_DISPATCH_BASE_INSTRUCTIONS,
+                    "config": config,
+                    "timeout": float(timeout_seconds),
+                    "progress_callback": append_progress,
+                }
+                if model is not None:
+                    call_kwargs["model"] = model
+                if stall_timeout is not None:
+                    call_kwargs["stall_timeout"] = stall_timeout
+                result = client.call_codex(**call_kwargs)
             thread_id = result.thread_id
             duration_s = time.monotonic() - started_at
             _append_event(
@@ -404,6 +346,14 @@ def build_codex_mcp_runner(
 _CLAUDE_DISPATCH_PROMPT = (
     "Read the task brief at .mir-dispatch/brief.md and implement it fully "
     "in this worktree. Do not edit tasks/plan.md."
+)
+
+_MCP_DISPATCH_BASE_INSTRUCTIONS = (
+    "You are a code-implementation sub-agent in an isolated git worktree for the your-harness "
+    "harness. Read .mir-dispatch/brief.md and implement the task fully. Rules: modify "
+    "only files inside this worktree, never edit tasks/plan.md, follow existing code "
+    "style and structure, keep changes minimal and scoped to the brief, when tests are "
+    "specified make them pass. Report a concise summary of what you changed."
 )
 
 

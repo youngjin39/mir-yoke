@@ -15,6 +15,7 @@ from tools.mir_executor.codex_mcp_client import (
     CodexMcpTimeoutError,
 )
 from tools.mir_executor.dispatch import (
+    _MCP_DISPATCH_BASE_INSTRUCTIONS,
     OUTAGE_THRESHOLD,
     CodexAttempt,
     DispatchOutcome,
@@ -26,21 +27,18 @@ from tools.mir_executor.dispatch import (
     build_claude_fallback,
     build_claude_runner,
     build_codex_mcp_runner,
-    build_codex_runner,
     count_consecutive_codex_failures,
     evaluate_merge_gate,
     finalize_dispatch,
-    force_full_access_sandbox,
-    reap_node_repl,
     run_dispatch,
 )
+from tools.mir_executor.executor import MirExecutor
 from tools.mir_executor.jobs import JobRecord, JobRegistry
 from tools.mir_executor.worktree import (
     DispatchWorktree,
     MergeOutcome,
     cleanup_worktree,
     create_dispatch_worktree,
-    write_result,
 )
 
 
@@ -136,30 +134,6 @@ def _write_sub_agent_policy(
     )
 
 
-def _write_fake_codex_bin(tmp_path: pathlib.Path) -> pathlib.Path:
-    """Write a fake codex executable that records argv and dispatch session env."""
-    fake_bin = tmp_path / "codex"
-    fake_bin.write_text(
-        "\n".join(
-            [
-                "#!/bin/sh",
-                "{",
-                "  printf 'argv:'",
-                "  for arg in \"$@\"; do printf '<%s>' \"$arg\"; done",
-                "  printf '\\n'",
-                "  printf 'session:%s\\n' \"$MIR_CODEX_SESSION_ID\"",
-                "  printf 'events:%s\\n' \"$CODEX_EVENTS_FILE\"",
-                "} >> \"$FAKE_CODEX_RECORD\"",
-                "exit \"$FAKE_CODEX_EXIT\"",
-                "",
-            ]
-        ),
-        encoding="utf-8",
-    )
-    fake_bin.chmod(0o755)
-    return fake_bin
-
-
 def _write_fake_claude_edit_bin(tmp_path: pathlib.Path) -> pathlib.Path:
     """Write a fake claude executable that records cwd and edits a worktree file."""
     fake_bin = tmp_path / "claude-edit"
@@ -219,7 +193,7 @@ def _read_fake_record(record_path: pathlib.Path) -> dict[str, str]:
     return dict(line.split(":", 1) for line in lines)
 
 
-def _patch_mcp_runner(monkeypatch: pytest.MonkeyPatch, attempt_result: CodexAttempt):
+def _patch_mcp_runner(monkeypatch, attempt_result):
     """Patch the default dispatch Codex backend and record builder calls."""
     calls: list[dict[str, object]] = []
 
@@ -237,7 +211,9 @@ def _patch_mcp_runner(monkeypatch: pytest.MonkeyPatch, attempt_result: CodexAtte
             }
         )
 
-        def runner(_wt: DispatchWorktree, _attempt: int) -> CodexAttempt:
+        def runner(wt: DispatchWorktree, attempt: int) -> CodexAttempt:
+            if callable(attempt_result):
+                return attempt_result(wt, attempt)
             return attempt_result
 
         return runner
@@ -490,133 +466,72 @@ def test_last_json_line_best_effort(tmp_path: pathlib.Path) -> None:
     assert _last_json_line(malformed_path) == {}
 
 
-def test_build_codex_runner_no_double_exec_and_marks_session(
+def test_run_codex_rewrites_short_workspace_write(
     tmp_path: pathlib.Path,
     monkeypatch,
 ) -> None:
-    repo = _make_repo(tmp_path)
-    record_path = tmp_path / "fake-codex-record.txt"
-    fake_codex = _write_fake_codex_bin(tmp_path)
-    monkeypatch.setenv("CODEX_BIN", str(fake_codex))
-    monkeypatch.setenv("FAKE_CODEX_RECORD", str(record_path))
-    monkeypatch.setenv("FAKE_CODEX_EXIT", "7")
-    (repo / "tasks" / "codex-exec-events.jsonl").write_text(
-        json.dumps({"exit_code": 0, "error_sig": "stale"}) + "\n",
-        encoding="utf-8",
+    calls: list[dict[str, object]] = []
+
+    class FakeCodexMcpClient:
+        def __init__(self, **_kwargs: object) -> None:
+            pass
+
+        def __enter__(self) -> FakeCodexMcpClient:
+            return self
+
+        def __exit__(self, *_exc_info: object) -> None:
+            return None
+
+        def call_codex(self, **kwargs: object) -> CodexMcpResult:
+            calls.append(kwargs)
+            return CodexMcpResult(content_text="ok", thread_id="thread-test", raw_result={})
+
+    monkeypatch.setenv("CODEX_BIN", "/usr/bin/true")
+    monkeypatch.setenv("MIR_CODEX_MAIN", "1")
+    monkeypatch.setattr("tools.mir_executor.executor.CodexMcpClient", FakeCodexMcpClient)
+
+    executor = MirExecutor(tmp_path)
+    result = executor.run_codex(
+        ["exec", "-s", "workspace-write", "--skip-git-repo-check", "hello"],
+        cwd=tmp_path,
     )
 
-    wt = create_dispatch_worktree(repo, "real-runner")
-    try:
-        per_dispatch_events = wt.path / ".mir-dispatch" / "events.jsonl"
-        per_dispatch_events.write_text(
-            json.dumps({"exit_code": 7, "error_sig": "local"}) + "\n",
-            encoding="utf-8",
-        )
-        runner = build_codex_runner(repo, ["exec", "hi"], timeout_seconds=5)
-        attempt = runner(wt, 1)
-
-        assert attempt.exit_code == 7
-        assert attempt.error_sig == "local"
-        assert record_path.read_text(encoding="utf-8").splitlines() == [
-            "argv:<exec><hi>",
-            f"session:{wt.dispatch_id}",
-            f"events:{per_dispatch_events}",
-        ]
-    finally:
-        cleanup_worktree(wt)
+    assert calls[0]["prompt"] == "hello"
+    assert calls[0]["sandbox"] == "danger-full-access"
+    assert result.command == ["/usr/bin/true", "mcp-server", "codex", "hello"]
 
 
-def test_force_full_access_sandbox_rewrites_long_workspace_write() -> None:
-    assert force_full_access_sandbox(["exec", "--sandbox", "workspace-write"]) == [
-        "exec",
-        "--sandbox",
-        "danger-full-access",
-    ]
-
-
-def test_force_full_access_sandbox_rewrites_short_workspace_write() -> None:
-    assert force_full_access_sandbox(["exec", "-s", "workspace-write"]) == [
-        "exec",
-        "-s",
-        "danger-full-access",
-    ]
-
-
-def test_force_full_access_sandbox_leaves_read_only() -> None:
-    assert force_full_access_sandbox(["exec", "--sandbox", "read-only"]) == [
-        "exec",
-        "--sandbox",
-        "read-only",
-    ]
-
-
-def test_force_full_access_sandbox_returns_shallow_copy_without_flag() -> None:
-    codex_args = ["exec", "hi"]
-
-    result = force_full_access_sandbox(codex_args)
-
-    assert result == codex_args
-    assert result is not codex_args
-
-
-def test_force_full_access_sandbox_is_idempotent_for_danger_full_access() -> None:
-    assert force_full_access_sandbox(["exec", "--sandbox", "danger-full-access"]) == [
-        "exec",
-        "--sandbox",
-        "danger-full-access",
-    ]
-
-
-def test_reap_node_repl_is_best_effort(monkeypatch) -> None:
-    def raise_run(*_args: object, **_kwargs: object) -> subprocess.CompletedProcess[str]:
-        raise OSError("pkill unavailable")
-
-    monkeypatch.setattr("tools.mir_executor.dispatch.subprocess.run", raise_run)
-
-    result = reap_node_repl()
-
-    assert isinstance(result, int)
-    assert result == -1
-
-
-def test_build_codex_runner_reaps_node_repl_before_retry(
+def test_run_codex_leaves_args_without_sandbox_flag(
     tmp_path: pathlib.Path,
     monkeypatch,
 ) -> None:
-    repo = _make_repo(tmp_path)
-    reap_calls = 0
-    run_calls: list[list[str]] = []
+    calls: list[dict[str, object]] = []
 
-    def fake_reap() -> int:
-        nonlocal reap_calls
-        reap_calls += 1
-        return 0
+    class FakeCodexMcpClient:
+        def __init__(self, **_kwargs: object) -> None:
+            pass
 
-    def fake_run(
-        command: list[str],
-        **_kwargs: object,
-    ) -> subprocess.CompletedProcess[str]:
-        run_calls.append(command)
-        return subprocess.CompletedProcess(command, 0, stdout="", stderr="")
+        def __enter__(self) -> FakeCodexMcpClient:
+            return self
 
-    wt = create_dispatch_worktree(repo, "reap-retry")
-    try:
-        with monkeypatch.context() as patch:
-            patch.setenv("CODEX_BIN", "codex")
-            patch.setattr("tools.mir_executor.dispatch.reap_node_repl", fake_reap)
-            patch.setattr("tools.mir_executor.dispatch.subprocess.run", fake_run)
-            runner = build_codex_runner(repo, ["exec", "hi"], timeout_seconds=5)
+        def __exit__(self, *_exc_info: object) -> None:
+            return None
 
-            first = runner(wt, 1)
-            assert first.exit_code == 0
-            assert reap_calls == 0
+        def call_codex(self, **kwargs: object) -> CodexMcpResult:
+            calls.append(kwargs)
+            return CodexMcpResult(content_text="ok", thread_id="thread-test", raw_result={})
 
-            second = runner(wt, 2)
-            assert second.exit_code == 0
-            assert reap_calls == 1
-            assert run_calls == [["codex", "exec", "hi"], ["codex", "exec", "hi"]]
-    finally:
-        cleanup_worktree(wt)
+    monkeypatch.setenv("CODEX_BIN", "/usr/bin/true")
+    monkeypatch.setenv("MIR_CODEX_MAIN", "1")
+    monkeypatch.setattr("tools.mir_executor.executor.CodexMcpClient", FakeCodexMcpClient)
+
+    codex_args = ["exec", "--skip-git-repo-check", "hello"]
+    executor = MirExecutor(tmp_path)
+    result = executor.run_codex(codex_args, cwd=tmp_path)
+
+    assert calls[0]["prompt"] == "hello"
+    assert calls[0]["sandbox"] == "danger-full-access"
+    assert result.command == ["/usr/bin/true", "mcp-server", "codex", "hello"]
 
 
 def test_build_codex_mcp_runner_success_writes_stdout_and_event(
@@ -638,6 +553,9 @@ def test_build_codex_mcp_runner_success_writes_stdout_and_event(
 
         def call_codex(self, **kwargs: object) -> CodexMcpResult:
             calls.append(kwargs)
+            progress_callback = kwargs.get("progress_callback")
+            if callable(progress_callback):
+                progress_callback("notifications/progress", {"message": "working"})
             return CodexMcpResult(
                 content_text="mcp completed",
                 thread_id="thread-abc",
@@ -653,24 +571,121 @@ def test_build_codex_mcp_runner_success_writes_stdout_and_event(
             client_factory=FakeClient,
         )
         attempt = runner(wt, 1)
-        event = _last_json_line(wt.path / ".mir-dispatch" / "events.jsonl")
+        events = _read_events(wt.path / ".mir-dispatch" / "events.jsonl")
+        event = events[-1]
 
         assert attempt == CodexAttempt(exit_code=0, stdout="mcp completed")
         assert init_kwargs[0]["call_timeout"] == 5.0
-        assert calls == [
+        call = calls[0].copy()
+        assert callable(call.pop("progress_callback"))
+        assert [call] == [
             {
                 "prompt": "structured prompt",
                 "cwd": str(wt.path),
                 "sandbox": "danger-full-access",
                 "approval_policy": "never",
+                "base_instructions": _MCP_DISPATCH_BASE_INSTRUCTIONS,
+                "config": {"project_doc_max_bytes": 0},
                 "timeout": 5.0,
             }
         ]
+        assert events[0]["transport"] == "mcp"
+        assert events[0]["event"] == "progress"
+        assert events[0]["method"] == "notifications/progress"
+        assert isinstance(events[0]["duration_s"], float)
         assert event["exit_code"] == 0
         assert event["transport"] == "mcp"
         assert event["threadId"] == "thread-abc"
         assert event["error_sig"] == ""
         assert isinstance(event["duration_s"], float)
+    finally:
+        cleanup_worktree(wt)
+
+
+def test_build_codex_mcp_runner_passes_lightweight_context_options(
+    tmp_path: pathlib.Path,
+) -> None:
+    repo = _make_repo(tmp_path)
+    calls: list[dict[str, object]] = []
+
+    class FakeClient:
+        def __init__(self, **_kwargs: object) -> None:
+            pass
+
+        def __enter__(self) -> FakeClient:
+            return self
+
+        def __exit__(self, *_exc_info: object) -> None:
+            return None
+
+        def call_codex(self, **kwargs: object) -> CodexMcpResult:
+            calls.append(kwargs)
+            return CodexMcpResult(
+                content_text="mcp completed",
+                thread_id="thread-abc",
+                raw_result={},
+            )
+
+    wt = create_dispatch_worktree(repo, "mcp-lightweight-context")
+    try:
+        runner = build_codex_mcp_runner(
+            repo,
+            "structured prompt",
+            timeout_seconds=5,
+            client_factory=FakeClient,
+        )
+        attempt = runner(wt, 1)
+
+        assert attempt.exit_code == 0
+        assert calls[0]["base_instructions"] == _MCP_DISPATCH_BASE_INSTRUCTIONS
+        assert calls[0]["config"] == {"project_doc_max_bytes": 0}
+    finally:
+        cleanup_worktree(wt)
+
+
+def test_build_codex_mcp_runner_passes_model_and_reasoning_effort(
+    tmp_path: pathlib.Path,
+) -> None:
+    repo = _make_repo(tmp_path)
+    calls: list[dict[str, object]] = []
+
+    class FakeClient:
+        def __init__(self, **_kwargs: object) -> None:
+            pass
+
+        def __enter__(self) -> FakeClient:
+            return self
+
+        def __exit__(self, *_exc_info: object) -> None:
+            return None
+
+        def call_codex(self, **kwargs: object) -> CodexMcpResult:
+            calls.append(kwargs)
+            return CodexMcpResult(
+                content_text="mcp completed",
+                thread_id="thread-abc",
+                raw_result={},
+            )
+
+    wt = create_dispatch_worktree(repo, "mcp-performance-route")
+    try:
+        runner = build_codex_mcp_runner(
+            repo,
+            "structured prompt",
+            timeout_seconds=5,
+            model="high",
+            reasoning_effort="xhigh",
+            client_factory=FakeClient,
+        )
+        attempt = runner(wt, 1)
+
+        assert attempt.exit_code == 0
+        assert calls[0]["model"] == "high"
+        assert calls[0]["config"] == {
+            "project_doc_max_bytes": 0,
+            "model_reasoning_effort": "xhigh",
+        }
+        assert calls[0]["base_instructions"] == _MCP_DISPATCH_BASE_INSTRUCTIONS
     finally:
         cleanup_worktree(wt)
 
@@ -752,6 +767,172 @@ def test_build_codex_mcp_runner_transport_error_maps_to_nonzero(
         assert event["error_sig"] == attempt.error_sig
     finally:
         cleanup_worktree(wt)
+
+
+@pytest.mark.parametrize(
+    ("codex_args", "expected_prompt"),
+    [
+        (
+            [
+                "exec",
+                "--sandbox",
+                "workspace-write",
+                "--skip-git-repo-check",
+                "Implement ADR-66 S4",
+            ],
+            "Implement ADR-66 S4",
+        ),
+        (
+            [
+                "exec",
+                "--sandbox=danger-full-access",
+                "--approval-policy",
+                "never",
+                "--enable",
+                "feature_x",
+                "--image",
+                "screenshot.png",
+                "Run full tests",
+            ],
+            "Run full tests",
+        ),
+        (["exec", "--", "--literal prompt"], "--literal prompt"),
+        (["Implement without exec token"], "Implement without exec token"),
+    ],
+)
+def test_dispatch_prompt_from_codex_args_drops_exec_shape(
+    codex_args: list[str],
+    expected_prompt: str,
+) -> None:
+    assert cli._resolve_dispatch_prompt(codex_args, None) == expected_prompt
+
+
+def test_dispatch_prompt_uses_dispatch_brief_when_codex_args_have_no_prompt(
+    tmp_path: pathlib.Path,
+) -> None:
+    brief_path = _write_dispatch_brief_json(tmp_path, "Brief expanded goal")
+
+    assert (
+        cli._resolve_dispatch_prompt(
+            ["exec", "--sandbox", "danger-full-access", "--skip-git-repo-check"],
+            brief_path,
+        )
+        == "Brief expanded goal"
+    )
+
+
+def test_dispatch_prompt_falls_back_to_brief_pointer_when_no_prompt_source() -> None:
+    assert ".mir-dispatch/brief.md" in cli._resolve_dispatch_prompt(["exec", "--help"], None)
+
+
+def test_build_dispatch_runner_defaults_codex_backend_to_mcp(monkeypatch) -> None:
+    selected: list[str] = []
+
+    def mcp_runner(_wt: object, _attempt: int) -> CodexAttempt:
+        return CodexAttempt(0)
+
+    def fake_mcp_runner(
+        _repo_root: pathlib.Path,
+        prompt: str,
+        *,
+        timeout_seconds: int = 600,
+    ):
+        _ = timeout_seconds
+        selected.append(f"mcp:{prompt}")
+        return mcp_runner
+
+    monkeypatch.setattr(
+        "tools.mir_executor.dispatch.build_codex_mcp_runner",
+        fake_mcp_runner,
+    )
+
+    runner = cli._build_dispatch_runner(
+        __import__("tools.mir_executor.dispatch", fromlist=["dispatch"]),
+        backend="codex",
+        repo_root=pathlib.Path("/repo"),
+        prompt="structured prompt",
+        timeout_seconds=5,
+    )
+
+    assert selected == ["mcp:structured prompt"]
+    assert runner is mcp_runner
+
+
+def test_build_dispatch_runner_passes_performance_options_to_codex_mcp(
+    monkeypatch,
+) -> None:
+    selected: list[dict[str, object]] = []
+
+    def mcp_runner(_wt: object, _attempt: int) -> CodexAttempt:
+        return CodexAttempt(0)
+
+    def fake_mcp_runner(
+        _repo_root: pathlib.Path,
+        prompt: str,
+        *,
+        timeout_seconds: int = 600,
+        model: str | None = None,
+        reasoning_effort: str | None = None,
+    ):
+        selected.append(
+            {
+                "prompt": prompt,
+                "timeout_seconds": timeout_seconds,
+                "model": model,
+                "reasoning_effort": reasoning_effort,
+            }
+        )
+        return mcp_runner
+
+    monkeypatch.setattr(
+        "tools.mir_executor.dispatch.build_codex_mcp_runner",
+        fake_mcp_runner,
+    )
+
+    runner = cli._build_dispatch_runner(
+        __import__("tools.mir_executor.dispatch", fromlist=["dispatch"]),
+        backend="codex",
+        repo_root=pathlib.Path("/repo"),
+        prompt="structured prompt",
+        timeout_seconds=5,
+        model="medium",
+        reasoning_effort="high",
+    )
+
+    assert selected == [
+        {
+            "prompt": "structured prompt",
+            "timeout_seconds": 5,
+            "model": "medium",
+            "reasoning_effort": "high",
+        }
+    ]
+    assert runner is mcp_runner
+
+
+def test_execute_parser_accepts_performance_options(tmp_path: pathlib.Path) -> None:
+    parser = cli._build_parser()
+
+    args = parser.parse_args(
+        [
+            "execute",
+            "--change-id",
+            "X",
+            "--category",
+            "unit",
+            "--codex-args",
+            "exec hi",
+            "--repo-root",
+            str(tmp_path),
+            "--model",
+            "low",
+            "--reasoning-effort",
+            "xhigh",
+        ]
+    )
+
+    assert args.model == "low"
+    assert args.reasoning_effort == "xhigh"
 
 
 def test_run_guarded_uses_timeout_stdin_and_env(
@@ -930,14 +1111,7 @@ def test_dispatch_records_jobregistry_and_outage_accumulates(
     repo = _make_repo(tmp_path)
     _make_ledger(repo, change_id="C")
     db_path = tmp_path / "jobs.db"
-    fake_codex = _write_fake_codex_bin(tmp_path)
-    fake_claude = _write_fake_claude_bin(tmp_path)
-    monkeypatch.setenv("CODEX_BIN", str(fake_codex))
-    monkeypatch.setenv("FAKE_CODEX_RECORD", str(tmp_path / "fake-codex-record.txt"))
-    monkeypatch.setenv("FAKE_CODEX_EXIT", "9")
-    monkeypatch.setenv("CLAUDE_BIN", str(fake_claude))
-    monkeypatch.setenv("FAKE_CLAUDE_RECORD", str(tmp_path / "fake-claude-record.txt"))
-    monkeypatch.setenv("FAKE_CLAUDE_EXIT", "2")
+    mcp_calls = _patch_mcp_runner(monkeypatch, CodexAttempt(9, error_sig="mcp-dead"))
 
     argv = [
         "execute",
@@ -969,6 +1143,8 @@ def test_dispatch_records_jobregistry_and_outage_accumulates(
             cli.main(argv)
         assert excinfo.value.code == 1
         assert "reason='codex-outage'" in capsys.readouterr().out
+        assert mcp_calls
+        assert {call["prompt"] for call in mcp_calls} == {"x"}
 
         registry = JobRegistry(db_path)
         try:
@@ -988,10 +1164,7 @@ def test_dispatch_records_exit_code_and_artifact(
     repo = _make_repo(tmp_path)
     _make_ledger(repo, change_id="C")
     db_path = tmp_path / "jobs.db"
-    fake_codex = _write_fake_codex_bin(tmp_path)
-    monkeypatch.setenv("CODEX_BIN", str(fake_codex))
-    monkeypatch.setenv("FAKE_CODEX_RECORD", str(tmp_path / "fake-codex-record.txt"))
-    monkeypatch.setenv("FAKE_CODEX_EXIT", "0")
+    mcp_calls = _patch_mcp_runner(monkeypatch, CodexAttempt(0))
 
     try:
         rc = cli.main(
@@ -1020,6 +1193,7 @@ def test_dispatch_records_exit_code_and_artifact(
         )
 
         assert rc == 0
+        assert mcp_calls[0]["prompt"] == "x"
         registry = JobRegistry(db_path)
         try:
             jobs = registry.list_jobs()
@@ -1043,10 +1217,7 @@ def test_dispatch_exit_code_reflects_finalize_block(
     repo = _make_repo(tmp_path)
     _make_ledger(repo, change_id="C")
     db_path = tmp_path / "jobs.db"
-    fake_codex = _write_fake_codex_bin(tmp_path)
-    monkeypatch.setenv("CODEX_BIN", str(fake_codex))
-    monkeypatch.setenv("FAKE_CODEX_RECORD", str(tmp_path / "fake-codex-record.txt"))
-    monkeypatch.setenv("FAKE_CODEX_EXIT", "0")
+    mcp_calls = _patch_mcp_runner(monkeypatch, CodexAttempt(0))
 
     try:
         with pytest.raises(SystemExit) as excinfo:
@@ -1071,6 +1242,7 @@ def test_dispatch_exit_code_reflects_finalize_block(
             )
 
         assert excinfo.value.code == 1
+        assert mcp_calls[0]["prompt"] == "x"
         registry = JobRegistry(db_path)
         try:
             jobs = registry.list_jobs()
@@ -1085,21 +1257,14 @@ def test_dispatch_exit_code_reflects_finalize_block(
         _cleanup_repo_dispatch_worktrees(repo)
 
 
-def test_fallback_success_still_counts_as_codex_failure(
+def test_mcp_failure_still_counts_as_codex_failure(
     tmp_path: pathlib.Path,
     monkeypatch,
 ) -> None:
     repo = _make_repo(tmp_path)
     _make_ledger(repo, change_id="C")
     db_path = tmp_path / "jobs.db"
-    fake_codex = _write_fake_codex_bin(tmp_path)
-    fake_claude = _write_fake_claude_bin(tmp_path)
-    monkeypatch.setenv("CODEX_BIN", str(fake_codex))
-    monkeypatch.setenv("FAKE_CODEX_RECORD", str(tmp_path / "fake-codex-record.txt"))
-    monkeypatch.setenv("FAKE_CODEX_EXIT", "9")
-    monkeypatch.setenv("CLAUDE_BIN", str(fake_claude))
-    monkeypatch.setenv("FAKE_CLAUDE_RECORD", str(tmp_path / "fake-claude-record.txt"))
-    monkeypatch.setenv("FAKE_CLAUDE_EXIT", "0")
+    mcp_calls = _patch_mcp_runner(monkeypatch, CodexAttempt(9, error_sig="mcp-dead"))
 
     try:
         with pytest.raises(SystemExit) as excinfo:
@@ -1124,6 +1289,7 @@ def test_fallback_success_still_counts_as_codex_failure(
             )
 
         assert excinfo.value.code == 1
+        assert mcp_calls[0]["prompt"] == "x"
         registry = JobRegistry(db_path)
         try:
             jobs = registry.list_jobs()
@@ -1136,25 +1302,6 @@ def test_fallback_success_still_counts_as_codex_failure(
             registry.close()
     finally:
         _cleanup_repo_dispatch_worktrees(repo)
-
-
-def test_result_json_surfaced_on_success(tmp_path: pathlib.Path) -> None:
-    repo = _make_repo(tmp_path)
-
-    def codex_runner(wt: DispatchWorktree, _attempt: int) -> CodexAttempt:
-        write_result(wt, {"ok": 1})
-        return CodexAttempt(0)
-
-    outcome = run_dispatch(
-        repo,
-        "result-surfaced",
-        codex_runner=codex_runner,
-    )
-    try:
-        assert outcome.status == "completed"
-        assert outcome.result == {"ok": 1}
-    finally:
-        _cleanup(outcome)
 
 
 def test_spinning_emits_event(tmp_path: pathlib.Path) -> None:
@@ -1317,7 +1464,7 @@ def test_finalize_persists_artifacts_before_cleanup(tmp_path: pathlib.Path) -> N
     wt = create_dispatch_worktree(repo, "persist-clean")
     try:
         (wt.path / "pkg" / "mod.py").write_text("x = 8\n", encoding="utf-8")
-        write_result(wt, {"ok": True})
+        wt.result_path.write_text(json.dumps({"ok": True}) + "\n", encoding="utf-8")
 
         final = finalize_dispatch(
             wt,
@@ -1831,188 +1978,6 @@ def test_finalize_dispatch_meta_harness_merges_claude_e2e(tmp_path: pathlib.Path
         assert not (content_repo / ".claude" / "agents" / "example.md").exists()
     finally:
         cleanup_worktree(wt)
-
-
-@pytest.mark.parametrize(
-    ("codex_args", "expected_prompt"),
-    [
-        (
-            [
-                "exec",
-                "--sandbox",
-                "workspace-write",
-                "--skip-git-repo-check",
-                "Implement task",
-            ],
-            "Implement task",
-        ),
-        (
-            [
-                "exec",
-                "--sandbox=danger-full-access",
-                "--approval-policy",
-                "never",
-                "--enable",
-                "feature_x",
-                "--image",
-                "screenshot.png",
-                "Run full tests",
-            ],
-            "Run full tests",
-        ),
-        (["exec", "--", "--literal prompt"], "--literal prompt"),
-        (["Implement without exec token"], "Implement without exec token"),
-    ],
-)
-def test_dispatch_prompt_from_codex_args_drops_exec_shape(
-    codex_args: list[str],
-    expected_prompt: str,
-) -> None:
-    assert cli._resolve_dispatch_prompt(codex_args, None) == expected_prompt
-
-
-def test_dispatch_prompt_uses_dispatch_brief_when_codex_args_have_no_prompt(
-    tmp_path: pathlib.Path,
-) -> None:
-    brief_path = _write_dispatch_brief_json(tmp_path, "Brief expanded goal")
-
-    assert (
-        cli._resolve_dispatch_prompt(
-            ["exec", "--sandbox", "danger-full-access", "--skip-git-repo-check"],
-            brief_path,
-        )
-        == "Brief expanded goal"
-    )
-
-
-def test_dispatch_prompt_falls_back_to_brief_pointer_when_no_prompt_source() -> None:
-    assert ".mir-dispatch/brief.md" in cli._resolve_dispatch_prompt(["exec", "--help"], None)
-
-
-def test_build_dispatch_runner_defaults_codex_backend_to_mcp(monkeypatch) -> None:
-    selected: list[str] = []
-
-    def fake_mcp_runner(
-        _repo_root: pathlib.Path,
-        prompt: str,
-        *,
-        timeout_seconds: int = 600,
-    ):
-        _ = timeout_seconds
-        selected.append(f"mcp:{prompt}")
-        return lambda _wt, _attempt: CodexAttempt(0)
-
-    def fake_exec_runner(*_args: object, **_kwargs: object):
-        raise AssertionError("raw exec runner must not be the default")
-
-    monkeypatch.setattr(
-        "tools.mir_executor.dispatch.build_codex_mcp_runner",
-        fake_mcp_runner,
-    )
-    monkeypatch.setattr(
-        "tools.mir_executor.dispatch.build_codex_runner",
-        fake_exec_runner,
-    )
-
-    runner = cli._build_dispatch_runner(
-        __import__("tools.mir_executor.dispatch", fromlist=["dispatch"]),
-        backend="codex",
-        repo_root=pathlib.Path("repo"),
-        codex_args=["exec", "ignored"],
-        prompt="structured prompt",
-        timeout_seconds=5,
-    )
-
-    assert selected == ["mcp:structured prompt"]
-    assert runner(None, 1) == CodexAttempt(0)
-
-
-def test_build_dispatch_runner_uses_exec_only_for_mcp_availability_failure(
-    monkeypatch,
-) -> None:
-    selected: list[str] = []
-
-    def fake_mcp_runner(
-        _repo_root: pathlib.Path,
-        _prompt: str,
-        *,
-        timeout_seconds: int = 600,
-    ):
-        _ = timeout_seconds
-        return lambda _wt, _attempt: CodexAttempt(
-            1,
-            stderr="Codex MCP server exited with code 1",
-        )
-
-    def fake_exec_runner(
-        _repo_root: pathlib.Path,
-        codex_args: list[str],
-        *,
-        timeout_seconds: int = 600,
-    ):
-        _ = timeout_seconds
-        selected.append("exec:" + " ".join(codex_args))
-        return lambda _wt, _attempt: CodexAttempt(0)
-
-    monkeypatch.setattr(
-        "tools.mir_executor.dispatch.build_codex_mcp_runner",
-        fake_mcp_runner,
-    )
-    monkeypatch.setattr(
-        "tools.mir_executor.dispatch.build_codex_runner",
-        fake_exec_runner,
-    )
-
-    runner = cli._build_dispatch_runner(
-        __import__("tools.mir_executor.dispatch", fromlist=["dispatch"]),
-        backend="codex",
-        repo_root=pathlib.Path("repo"),
-        codex_args=["exec", "fallback prompt"],
-        prompt="structured prompt",
-        timeout_seconds=5,
-    )
-
-    assert runner(None, 1) == CodexAttempt(0)
-    assert selected == ["exec:exec fallback prompt"]
-
-
-def test_build_dispatch_runner_does_not_exec_fallback_for_mcp_task_failure(
-    monkeypatch,
-) -> None:
-    def fake_mcp_runner(
-        _repo_root: pathlib.Path,
-        _prompt: str,
-        *,
-        timeout_seconds: int = 600,
-    ):
-        _ = timeout_seconds
-        return lambda _wt, _attempt: CodexAttempt(
-            1,
-            stderr="model returned a task failure",
-        )
-
-    def fake_exec_runner(*_args: object, **_kwargs: object):
-        raise AssertionError("task failures must not fall back to raw exec")
-
-    monkeypatch.setattr(
-        "tools.mir_executor.dispatch.build_codex_mcp_runner",
-        fake_mcp_runner,
-    )
-    monkeypatch.setattr(
-        "tools.mir_executor.dispatch.build_codex_runner",
-        fake_exec_runner,
-    )
-
-    runner = cli._build_dispatch_runner(
-        __import__("tools.mir_executor.dispatch", fromlist=["dispatch"]),
-        backend="codex",
-        repo_root=pathlib.Path("repo"),
-        codex_args=["exec", "fallback prompt"],
-        prompt="structured prompt",
-        timeout_seconds=5,
-    )
-
-    assert runner(None, 1).stderr == "model returned a task failure"
 
 
 def test_cli_dispatch_flag_routes_to_run_dispatch(tmp_path: pathlib.Path, monkeypatch) -> None:

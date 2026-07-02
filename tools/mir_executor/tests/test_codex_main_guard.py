@@ -7,6 +7,7 @@ import subprocess
 
 import pytest
 
+from tools.mir_executor.codex_mcp_client import CodexMcpResult
 from tools.mir_executor.executor import MirExecutor
 
 _REPO_ROOT = pathlib.Path(__file__).resolve().parents[3]
@@ -17,6 +18,30 @@ def _write_codex_shim(tmp_path: pathlib.Path) -> pathlib.Path:
     shim.write_text('#!/bin/sh\nprintf "%s\\n" "$@"\n', encoding="utf-8")
     shim.chmod(0o755)
     return shim
+
+
+def _install_fake_codex_mcp_client(monkeypatch: pytest.MonkeyPatch) -> list[dict[str, object]]:
+    calls: list[dict[str, object]] = []
+
+    class FakeCodexMcpClient:
+        def __init__(self, **_kwargs: object) -> None:
+            pass
+
+        def __enter__(self) -> FakeCodexMcpClient:
+            return self
+
+        def __exit__(self, *_exc_info: object) -> None:
+            return None
+
+        def call_codex(self, **kwargs: object) -> CodexMcpResult:
+            calls.append(kwargs)
+            return CodexMcpResult(content_text="ok", thread_id="thread-test", raw_result={})
+
+    monkeypatch.setattr(
+        "tools.mir_executor.executor.CodexMcpClient",
+        FakeCodexMcpClient,
+    )
+    return calls
 
 
 def _main_worktree_root() -> pathlib.Path:
@@ -91,6 +116,7 @@ def _remove_worktree(repo_root: pathlib.Path, worktree_path: pathlib.Path) -> No
 
 def test_run_codex_allows_linked_worktree_cwd(tmp_path, monkeypatch):
     shim = _write_codex_shim(tmp_path)
+    calls = _install_fake_codex_mcp_client(monkeypatch)
     monkeypatch.setenv("CODEX_BIN", str(shim))
     monkeypatch.delenv("MIR_CODEX_MAIN", raising=False)
 
@@ -120,7 +146,8 @@ def test_run_codex_allows_linked_worktree_cwd(tmp_path, monkeypatch):
         )
 
         assert result.exit_code == 0
-        assert result.command[1:] == codex_args
+        assert result.command == [str(shim), "mcp-server", "codex", "echo ok"]
+        assert calls[0]["cwd"] == worktree_path.resolve()
     finally:
         _remove_worktree(repo_clone, worktree_path)
 
@@ -128,6 +155,7 @@ def test_run_codex_allows_linked_worktree_cwd(tmp_path, monkeypatch):
 def test_run_codex_allows_main_worktree_with_main_marker(tmp_path, monkeypatch):
     shim = _write_codex_shim(tmp_path)
     main_root = _main_worktree_root()
+    _install_fake_codex_mcp_client(monkeypatch)
     monkeypatch.setenv("CODEX_BIN", str(shim))
     monkeypatch.setenv("MIR_CODEX_MAIN", "1")
 

@@ -8,6 +8,8 @@ import pathlib
 
 import pytest
 
+from tools.mir_executor.codex_mcp_client import CodexMcpResult, CodexMcpTimeoutError
+from tools.mir_executor.dispatch import _MCP_DISPATCH_BASE_INSTRUCTIONS
 from tools.mir_executor.executor import LedgerUpdate, MirExecutor, SubprocessResult
 
 # ---------------------------------------------------------------------------
@@ -34,21 +36,57 @@ def _make_ledger(tmp_path: pathlib.Path, categories: dict) -> pathlib.Path:
     return ledger_path
 
 
+def _install_fake_codex_mcp_client(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    result: CodexMcpResult | None = None,
+    side_effect: BaseException | None = None,
+) -> tuple[list[dict[str, object]], list[dict[str, object]]]:
+    """Monkeypatch executor.CodexMcpClient and return (calls, init_kwargs)."""
+    calls: list[dict[str, object]] = []
+    init_kwargs: list[dict[str, object]] = []
+    mcp_result = result or CodexMcpResult(
+        content_text="",
+        thread_id="thread-test",
+        raw_result={},
+    )
+
+    class FakeCodexMcpClient:
+        def __init__(self, **kwargs: object) -> None:
+            init_kwargs.append(kwargs)
+
+        def __enter__(self) -> FakeCodexMcpClient:
+            return self
+
+        def __exit__(self, *_exc_info: object) -> None:
+            return None
+
+        def call_codex(self, **kwargs: object) -> CodexMcpResult:
+            calls.append(kwargs)
+            if side_effect is not None:
+                raise side_effect
+            return mcp_result
+
+    monkeypatch.setattr(
+        "tools.mir_executor.executor.CodexMcpClient",
+        FakeCodexMcpClient,
+    )
+    return calls, init_kwargs
+
+
 # ---------------------------------------------------------------------------
 # 1. run_codex_async returns SubprocessResult on success
 # ---------------------------------------------------------------------------
 
 def test_run_codex_async_returns_subprocess_result(tmp_path, monkeypatch):
-    async def fake_create_subprocess_exec(*args, **kwargs):
-        class Proc:
-            returncode = 0
-
-            async def communicate(self):
-                return (b"ok", b"")
-
-        return Proc()
-
-    monkeypatch.setattr(asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
+    _install_fake_codex_mcp_client(
+        monkeypatch,
+        result=CodexMcpResult(
+            content_text="ok",
+            thread_id="thread-test",
+            raw_result={},
+        ),
+    )
     executor = MirExecutor(repo_root=tmp_path, ledger_path=tmp_path / "tasks" / "tdd.json")
     result = asyncio.run(executor.run_codex_async(["exec", "--help"]))
     assert isinstance(result, SubprocessResult)
@@ -57,24 +95,22 @@ def test_run_codex_async_returns_subprocess_result(tmp_path, monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# 2. run_codex_async captures both stdout and stderr
+# 2. run_codex_async maps content to stdout and keeps stderr empty
 # ---------------------------------------------------------------------------
 
-def test_run_codex_async_captures_stdout_stderr(tmp_path, monkeypatch):
-    async def fake_create_subprocess_exec(*args, **kwargs):
-        class Proc:
-            returncode = 0
-
-            async def communicate(self):
-                return (b"stdout text", b"stderr text")
-
-        return Proc()
-
-    monkeypatch.setattr(asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
+def test_run_codex_async_maps_content_to_stdout(tmp_path, monkeypatch):
+    _install_fake_codex_mcp_client(
+        monkeypatch,
+        result=CodexMcpResult(
+            content_text="stdout text",
+            thread_id="thread-test",
+            raw_result={},
+        ),
+    )
     executor = MirExecutor(repo_root=tmp_path, ledger_path=tmp_path / "tasks" / "tdd.json")
     result = asyncio.run(executor.run_codex_async(["arg"]))
     assert result.stdout == "stdout text"
-    assert result.stderr == "stderr text"
+    assert result.stderr == ""
 
 
 # ---------------------------------------------------------------------------
@@ -82,24 +118,12 @@ def test_run_codex_async_captures_stdout_stderr(tmp_path, monkeypatch):
 # ---------------------------------------------------------------------------
 
 def test_run_codex_async_uses_codex_bin_env(tmp_path, monkeypatch):
-    captured_args = []
-
-    async def fake_create_subprocess_exec(*args, **kwargs):
-        captured_args.extend(args)
-
-        class Proc:
-            returncode = 0
-
-            async def communicate(self):
-                return (b"", b"")
-
-        return Proc()
-
+    _calls, init_kwargs = _install_fake_codex_mcp_client(monkeypatch)
     monkeypatch.setenv("CODEX_BIN", "/usr/bin/true")
-    monkeypatch.setattr(asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
     executor = MirExecutor(repo_root=tmp_path, ledger_path=tmp_path / "tasks" / "tdd.json")
-    asyncio.run(executor.run_codex_async(["myarg"]))
-    assert captured_args[0] == "/usr/bin/true"
+    result = asyncio.run(executor.run_codex_async(["myarg"]))
+    assert init_kwargs[0]["codex_bin"] == "/usr/bin/true"
+    assert result.command[0] == "/usr/bin/true"
 
 
 # ---------------------------------------------------------------------------
@@ -107,21 +131,10 @@ def test_run_codex_async_uses_codex_bin_env(tmp_path, monkeypatch):
 # ---------------------------------------------------------------------------
 
 def test_run_codex_async_propagates_timeout(tmp_path, monkeypatch):
-    async def fake_create_subprocess_exec(*args, **kwargs):
-        class Proc:
-            returncode = None
-
-            async def communicate(self):
-                # Simulate a long-running process.
-                await asyncio.sleep(9999)
-                return (b"", b"")  # pragma: no cover
-
-            def kill(self):
-                pass
-
-        return Proc()
-
-    monkeypatch.setattr(asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
+    _install_fake_codex_mcp_client(
+        monkeypatch,
+        side_effect=CodexMcpTimeoutError("mcp timed out"),
+    )
     executor = MirExecutor(repo_root=tmp_path, ledger_path=tmp_path / "tasks" / "tdd.json")
 
     with pytest.raises(asyncio.TimeoutError):
@@ -133,11 +146,11 @@ def test_run_codex_async_propagates_timeout(tmp_path, monkeypatch):
 # ---------------------------------------------------------------------------
 
 def test_run_codex_async_raises_file_not_found_when_codex_missing(tmp_path, monkeypatch):
-    async def fake_create_subprocess_exec(*args, **kwargs):
-        raise FileNotFoundError("no such file")
-
     monkeypatch.setenv("CODEX_BIN", "/nonexistent/codex")
-    monkeypatch.setattr(asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
+    _install_fake_codex_mcp_client(
+        monkeypatch,
+        side_effect=FileNotFoundError("no such file"),
+    )
     executor = MirExecutor(repo_root=tmp_path, ledger_path=tmp_path / "tasks" / "tdd.json")
 
     with pytest.raises(FileNotFoundError, match="Codex binary not found"):
@@ -149,16 +162,14 @@ def test_run_codex_async_raises_file_not_found_when_codex_missing(tmp_path, monk
 # ---------------------------------------------------------------------------
 
 def test_execute_async_combines_run_and_update(tmp_path, monkeypatch):
-    async def fake_create_subprocess_exec(*args, **kwargs):
-        class Proc:
-            returncode = 0
-
-            async def communicate(self):
-                return (b"async-ok", b"")
-
-        return Proc()
-
-    monkeypatch.setattr(asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
+    _install_fake_codex_mcp_client(
+        monkeypatch,
+        result=CodexMcpResult(
+            content_text="async-ok",
+            thread_id="thread-test",
+            raw_result={},
+        ),
+    )
     ledger_path = _make_ledger(tmp_path, {"unit": {"status": "planned"}})
     executor = MirExecutor(repo_root=tmp_path, ledger_path=ledger_path)
 
@@ -176,35 +187,20 @@ def test_execute_async_combines_run_and_update(tmp_path, monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# 7. execute_async fails fast on unknown change_id — create_subprocess_exec NOT called
+# 7. execute_async fails fast on unknown change_id — Codex MCP not called
 # ---------------------------------------------------------------------------
 
 def test_execute_async_fast_fails_on_unknown_change_id_BEFORE_running_codex(
     tmp_path, monkeypatch
 ):
-    call_count = []
-
-    async def fake_create_subprocess_exec(*args, **kwargs):
-        call_count.append(args)
-
-        class Proc:
-            returncode = 0
-
-            async def communicate(self):
-                return (b"", b"")
-
-        return Proc()
-
-    monkeypatch.setattr(asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
+    calls, _init_kwargs = _install_fake_codex_mcp_client(monkeypatch)
     ledger_path = _make_ledger(tmp_path, {"unit": {"status": "planned"}})
     executor = MirExecutor(repo_root=tmp_path, ledger_path=ledger_path)
 
     with pytest.raises(KeyError, match="unknown change_id"):
         asyncio.run(executor.execute_async("WRONG-ID", "unit", ["--help"]))
 
-    assert len(call_count) == 0, (
-        "create_subprocess_exec must NOT be called when change_id is invalid."
-    )
+    assert calls == [], "Codex MCP must NOT be called when change_id is invalid."
 
 
 # ---------------------------------------------------------------------------
@@ -212,16 +208,14 @@ def test_execute_async_fast_fails_on_unknown_change_id_BEFORE_running_codex(
 # ---------------------------------------------------------------------------
 
 def test_cli_with_async_flag_dispatches_to_async_path(tmp_path, monkeypatch):
-    async def fake_create_subprocess_exec(*args, **kwargs):
-        class Proc:
-            returncode = 0
-
-            async def communicate(self):
-                return (b"cli-async-ok", b"")
-
-        return Proc()
-
-    monkeypatch.setattr(asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
+    _install_fake_codex_mcp_client(
+        monkeypatch,
+        result=CodexMcpResult(
+            content_text="cli-async-ok",
+            thread_id="thread-test",
+            raw_result={},
+        ),
+    )
     ledger_path = _make_ledger(tmp_path, {"unit": {"status": "planned"}})
 
     from tools.mir_executor.cli import main
@@ -245,20 +239,10 @@ def test_cli_with_async_flag_dispatches_to_async_path(tmp_path, monkeypatch):
 # ---------------------------------------------------------------------------
 
 def test_cli_handles_asyncio_timeout_error_gracefully(tmp_path, monkeypatch, capsys):
-    async def fake_create_subprocess_exec(*args, **kwargs):
-        class Proc:
-            returncode = None
-
-            async def communicate(self):
-                await asyncio.sleep(9999)
-                return (b"", b"")  # pragma: no cover
-
-            def kill(self):
-                pass
-
-        return Proc()
-
-    monkeypatch.setattr(asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
+    _install_fake_codex_mcp_client(
+        monkeypatch,
+        side_effect=CodexMcpTimeoutError("mcp timed out"),
+    )
     _make_ledger(tmp_path, {"unit": {"status": "planned"}})
 
     from tools.mir_executor.cli import main
@@ -281,64 +265,57 @@ def test_cli_handles_asyncio_timeout_error_gracefully(tmp_path, monkeypatch, cap
 
 
 # ---------------------------------------------------------------------------
-# 10. run_codex_async calls proc.wait() after proc.kill() on timeout
+# 10. run_codex_async passes lightweight MCP options
 # ---------------------------------------------------------------------------
 
-def test_run_codex_async_calls_wait_after_kill_on_timeout(tmp_path, monkeypatch):
-    wait_called = []
-
-    async def fake_create_subprocess_exec(*args, **kwargs):
-        class Proc:
-            returncode = None
-
-            async def communicate(self):
-                await asyncio.sleep(9999)
-                return (b"", b"")  # pragma: no cover
-
-            def kill(self):
-                pass
-
-            async def wait(self):
-                wait_called.append(True)
-
-        return Proc()
-
-    monkeypatch.setattr(asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
+def test_run_codex_async_passes_lightweight_mcp_options(tmp_path, monkeypatch):
+    calls, _init_kwargs = _install_fake_codex_mcp_client(monkeypatch)
     executor = MirExecutor(repo_root=tmp_path, ledger_path=tmp_path / "tasks" / "tdd.json")
 
-    with pytest.raises((asyncio.TimeoutError, TimeoutError)):
-        asyncio.run(executor.run_codex_async(["arg"], timeout_seconds=0.01))
-
-    assert len(wait_called) >= 1, "proc.wait() must be called after proc.kill() on timeout"
-
-
-def test_run_codex_async_drains_communicate_after_kill_on_timeout(tmp_path, monkeypatch):
-    communicate_calls = []
-
-    async def fake_create_subprocess_exec(*args, **kwargs):
-        class Proc:
-            returncode = None
-
-            async def communicate(self):
-                communicate_calls.append(True)
-                if len(communicate_calls) == 1:
-                    await asyncio.sleep(9999)
-                return (b"", b"")
-
-            def kill(self):
-                pass
-
-            async def wait(self):
-                return None
-
-        return Proc()
-
-    monkeypatch.setattr(asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
-    executor = MirExecutor(repo_root=tmp_path, ledger_path=tmp_path / "tasks" / "tdd.json")
-
-    with pytest.raises((asyncio.TimeoutError, TimeoutError)):
-        asyncio.run(executor.run_codex_async(["arg"], timeout_seconds=0.01))
-
-    assert len(communicate_calls) >= 2, (
-        "timeout cleanup must re-await communicate() after kill() to drain subprocess pipes"
+    result = asyncio.run(
+        executor.run_codex_async(
+            ["exec", "--sandbox", "workspace-write", "--skip-git-repo-check", "hello"],
+            timeout_seconds=3,
+        )
     )
+
+    assert result.exit_code == 0
+    assert calls[0]["prompt"] == "hello"
+    assert calls[0]["cwd"] == pathlib.Path.cwd().resolve()
+    assert calls[0]["sandbox"] == "danger-full-access"
+    assert calls[0]["approval_policy"] == "never"
+    assert calls[0]["base_instructions"] == _MCP_DISPATCH_BASE_INSTRUCTIONS
+    assert calls[0]["config"] == {"project_doc_max_bytes": 0}
+    assert calls[0]["timeout"] == 3.0
+
+
+def test_run_codex_async_passes_model_and_reasoning_effort(tmp_path, monkeypatch):
+    calls, _init_kwargs = _install_fake_codex_mcp_client(monkeypatch)
+    executor = MirExecutor(repo_root=tmp_path, ledger_path=tmp_path / "tasks" / "tdd.json")
+
+    result = asyncio.run(
+        executor.run_codex_async(
+            ["exec", "hello"],
+            model="medium",
+            reasoning_effort="high",
+        )
+    )
+
+    assert result.exit_code == 0
+    assert calls[0]["model"] == "medium"
+    assert calls[0]["config"] == {
+        "project_doc_max_bytes": 0,
+        "model_reasoning_effort": "high",
+    }
+    assert calls[0]["base_instructions"] == _MCP_DISPATCH_BASE_INSTRUCTIONS
+
+
+def test_run_codex_async_maps_mcp_timeout_to_timeout_error(tmp_path, monkeypatch):
+    _install_fake_codex_mcp_client(
+        monkeypatch,
+        side_effect=CodexMcpTimeoutError("mcp timed out"),
+    )
+    executor = MirExecutor(repo_root=tmp_path, ledger_path=tmp_path / "tasks" / "tdd.json")
+
+    with pytest.raises((asyncio.TimeoutError, TimeoutError)):
+        asyncio.run(executor.run_codex_async(["arg"], timeout_seconds=0.01))

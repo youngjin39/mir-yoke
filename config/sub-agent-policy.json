@@ -1,5 +1,15 @@
 {
-  "_comment_": "Modes: force_codex preserves Codex-first behavior; select enables future explicit runtime selection; per_project enables future project-specific overrides.",
+  "_comment_": "Home-server editable global sub-agent control surface. Modes: force_codex preserves Codex-first behavior; force_claude forces Claude; select/obey_user honor an explicit requested backend; unrestricted honors any valid requested backend; per_project enables project-specific overrides. Routing/monitoring null or empty values preserve current behavior.",
   "mode": "force_codex",
-  "per_project": {}
+  "per_project": {},
+  "routing": {
+    "default": {
+      "model": null,
+      "reasoning_effort": null
+    },
+    "by_category": {}
+  },
+  "monitoring": {
+    "stall_timeout_seconds": null
+  }
 }

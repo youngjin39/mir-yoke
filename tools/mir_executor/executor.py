@@ -25,6 +25,107 @@ from mir.core.conductor.dispatch_brief import (
     load_dispatch_brief,
 )
 from mir.core.contracts.dispatch_brief import DispatchBrief
+from tools.mir_executor.codex_mcp_client import (
+    CodexMcpClient,
+    CodexMcpError,
+    CodexMcpTimeoutError,
+)
+from tools.mir_executor.dispatch import _MCP_DISPATCH_BASE_INSTRUCTIONS
+
+_CODEX_EXEC_FLAGS_WITH_VALUE = frozenset(
+    {
+        "--approval",
+        "--approval-policy",
+        "--add-dir",
+        "--cd",
+        "--color",
+        "--config",
+        "--config-profile",
+        "--cwd",
+        "--disable",
+        "--enable",
+        "--image",
+        "--local-provider",
+        "--model",
+        "--output-last-message",
+        "--output-schema",
+        "--profile",
+        "--reasoning-effort",
+        "--sandbox",
+        "-C",
+        "-c",
+        "-i",
+        "-m",
+        "-o",
+        "-p",
+        "-s",
+    }
+)
+_CODEX_EXEC_BOOLEAN_FLAGS = frozenset(
+    {
+        "--dangerously-bypass-approvals-and-sandbox",
+        "--dangerously-bypass-hook-trust",
+        "--ephemeral",
+        "--full-auto",
+        "--help",
+        "--ignore-rules",
+        "--ignore-user-config",
+        "--json",
+        "--no-color",
+        "--oss",
+        "--skip-git-repo-check",
+        "--strict-config",
+        "--version",
+        "-V",
+        "-h",
+    }
+)
+
+
+def _prompt_from_codex_args(codex_args: list[str]) -> str:
+    """Extract the prompt positional from an exec-shaped Codex argv."""
+    prompt_parts: list[str] = []
+    index = 0
+    while index < len(codex_args):
+        token = codex_args[index]
+        if token == "--":
+            prompt_parts = codex_args[index + 1 :]
+            break
+        if token == "exec" and not prompt_parts:
+            index += 1
+            continue
+
+        flag_name = token.split("=", 1)[0]
+        if flag_name in _CODEX_EXEC_FLAGS_WITH_VALUE:
+            index += 1 if "=" in token else 2
+            continue
+        if flag_name in _CODEX_EXEC_BOOLEAN_FLAGS:
+            index += 1
+            continue
+        if token.startswith("-") and not prompt_parts:
+            index += 1
+            continue
+
+        prompt_parts = codex_args[index:]
+        break
+
+    return " ".join(prompt_parts).strip()
+
+
+def _codex_mcp_command(codex_bin: str, prompt: str) -> list[str]:
+    """Return a representative command list for result/ledger reporting."""
+    command = [codex_bin, "mcp-server", "codex"]
+    if prompt:
+        command.append(prompt)
+    return command
+
+
+def _codex_mcp_config(reasoning_effort: str | None = None) -> dict[str, object]:
+    """Return the lightweight MCP config, optionally pinning reasoning effort."""
+    config: dict[str, object] = {"project_doc_max_bytes": 0}
+    if reasoning_effort is not None:
+        config["model_reasoning_effort"] = reasoning_effort
+    return config
 
 
 def _is_linked_worktree(cwd: os.PathLike[str] | str) -> bool:
@@ -130,10 +231,13 @@ class MirExecutor:
         timeout_seconds: int = 600,
         *,
         cwd: os.PathLike[str] | str | None = None,
+        model: str | None = None,
+        reasoning_effort: str | None = None,
+        stall_timeout: float | None = None,
     ) -> SubprocessResult:
-        """Run ``${CODEX_BIN:-codex} *codex_args`` via subprocess.run (blocking).
+        """Run Codex through the MCP backend (blocking).
 
-        Captures stdout/stderr (text mode). Returns SubprocessResult.
+        Maps the MCP response into the existing SubprocessResult contract.
         Raises FileNotFoundError with clear message if binary missing.
         Raises subprocess.TimeoutExpired on timeout (not swallowed).
         """
@@ -141,29 +245,56 @@ class MirExecutor:
         resolved_cwd = resolved_cwd.resolve()
         _guard_codex_main_worktree(resolved_cwd, os.environ)
         codex_bin = os.environ.get("CODEX_BIN", "codex")
-        command = [codex_bin, *self.resolve_codex_args(codex_args)]
+        prompt = _prompt_from_codex_args(self.resolve_codex_args(codex_args))
+        command = _codex_mcp_command(codex_bin, prompt)
 
         start = time.monotonic()
         try:
-            completed = subprocess.run(
-                command,
-                capture_output=True,
-                text=True,
+            with CodexMcpClient(
+                codex_bin=codex_bin,
+                call_timeout=float(timeout_seconds),
+            ) as client:
+                call_kwargs: dict[str, object] = {
+                    "prompt": prompt,
+                    "cwd": resolved_cwd,
+                    "sandbox": "danger-full-access",
+                    "approval_policy": "never",
+                    "base_instructions": _MCP_DISPATCH_BASE_INSTRUCTIONS,
+                    "config": _codex_mcp_config(reasoning_effort),
+                    "timeout": float(timeout_seconds),
+                }
+                if model is not None:
+                    call_kwargs["model"] = model
+                if stall_timeout is not None:
+                    call_kwargs["stall_timeout"] = stall_timeout
+                result = client.call_codex(**call_kwargs)
+        except CodexMcpTimeoutError as exc:
+            raise subprocess.TimeoutExpired(
+                cmd=command,
                 timeout=timeout_seconds,
-                shell=False,
-                cwd=str(resolved_cwd),
-            )
+                output="",
+                stderr=str(exc),
+            ) from exc
         except FileNotFoundError as exc:
             raise FileNotFoundError(
                 f"Codex binary not found: {codex_bin!r}. "
                 "Set CODEX_BIN to the full path of the codex executable."
             ) from exc
+        except CodexMcpError as exc:
+            duration = time.monotonic() - start
+            return SubprocessResult(
+                exit_code=1,
+                stdout="",
+                stderr=str(exc),
+                duration_seconds=duration,
+                command=command,
+            )
         duration = time.monotonic() - start
 
         return SubprocessResult(
-            exit_code=completed.returncode,
-            stdout=completed.stdout,
-            stderr=completed.stderr,
+            exit_code=0,
+            stdout=result.content_text,
+            stderr="",
             duration_seconds=duration,
             command=command,
         )
@@ -285,6 +416,10 @@ class MirExecutor:
         category: str,
         codex_args: list[str],
         timeout_seconds: int = 600,
+        *,
+        model: str | None = None,
+        reasoning_effort: str | None = None,
+        stall_timeout: float | None = None,
     ) -> tuple[SubprocessResult, LedgerUpdate]:
         """Convenience: run_codex + update_ledger together.
 
@@ -293,7 +428,14 @@ class MirExecutor:
         """
         # Fast-fail: validate before the expensive Codex subprocess.
         self._validate_ledger_entry(change_id, category)
-        result = self.run_codex(codex_args, timeout_seconds=timeout_seconds)
+        run_kwargs: dict[str, object] = {"timeout_seconds": timeout_seconds}
+        if model is not None:
+            run_kwargs["model"] = model
+        if reasoning_effort is not None:
+            run_kwargs["reasoning_effort"] = reasoning_effort
+        if stall_timeout is not None:
+            run_kwargs["stall_timeout"] = stall_timeout
+        result = self.run_codex(codex_args, **run_kwargs)
         update = self.update_ledger(change_id, category, result)
         return result, update
 
@@ -303,61 +445,86 @@ class MirExecutor:
         timeout_seconds: int = 600,
         *,
         cwd: os.PathLike[str] | str | None = None,
+        model: str | None = None,
+        reasoning_effort: str | None = None,
+        stall_timeout: float | None = None,
     ) -> SubprocessResult:
-        """Async variant of run_codex using asyncio.create_subprocess_exec.
+        """Async variant of run_codex using the MCP backend in a worker thread.
 
         Single call: prefer sync run_codex. Multi-call or long-running: use this.
-        On timeout: asyncio.TimeoutError (not subprocess.TimeoutExpired — caller catches both
+        On timeout: TimeoutError (caller catches both sync and async timeout classes
         when mixing sync and async paths).
         Raises FileNotFoundError with clear message if binary missing.
         """
         resolved_cwd = pathlib.Path.cwd() if cwd is None else pathlib.Path(cwd)
         resolved_cwd = resolved_cwd.resolve()
         _guard_codex_main_worktree(resolved_cwd, os.environ)
-        codex_bin = os.environ.get("CODEX_BIN", "codex")
-        resolved_args = self.resolve_codex_args(codex_args)
-        command = [codex_bin, *resolved_args]
+        return await asyncio.to_thread(
+            self._run_codex_mcp_for_async,
+            codex_args,
+            timeout_seconds,
+            resolved_cwd,
+            model,
+            reasoning_effort,
+            stall_timeout,
+        )
 
+    def _run_codex_mcp_for_async(
+        self,
+        codex_args: list[str],
+        timeout_seconds: int,
+        resolved_cwd: pathlib.Path,
+        model: str | None,
+        reasoning_effort: str | None,
+        stall_timeout: float | None,
+    ) -> SubprocessResult:
+        """Run the shared MCP call for the async wrapper without timeout remapping."""
+        codex_bin = os.environ.get("CODEX_BIN", "codex")
+        prompt = _prompt_from_codex_args(self.resolve_codex_args(codex_args))
+        command = _codex_mcp_command(codex_bin, prompt)
         start = time.monotonic()
         try:
-            proc = await asyncio.create_subprocess_exec(
-                codex_bin,
-                *resolved_args,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-                cwd=str(resolved_cwd),
-            )
+            with CodexMcpClient(
+                codex_bin=codex_bin,
+                call_timeout=float(timeout_seconds),
+            ) as client:
+                call_kwargs: dict[str, object] = {
+                    "prompt": prompt,
+                    "cwd": resolved_cwd,
+                    "sandbox": "danger-full-access",
+                    "approval_policy": "never",
+                    "base_instructions": _MCP_DISPATCH_BASE_INSTRUCTIONS,
+                    "config": _codex_mcp_config(reasoning_effort),
+                    "timeout": float(timeout_seconds),
+                }
+                if model is not None:
+                    call_kwargs["model"] = model
+                if stall_timeout is not None:
+                    call_kwargs["stall_timeout"] = stall_timeout
+                result = client.call_codex(**call_kwargs)
+        except CodexMcpTimeoutError:
+            raise
         except FileNotFoundError as exc:
             raise FileNotFoundError(
                 f"Codex binary not found: {codex_bin!r}. "
                 "Set CODEX_BIN to the full path of the codex executable."
             ) from exc
-
-        try:
-            raw_stdout, raw_stderr = await asyncio.wait_for(
-                proc.communicate(), timeout=timeout_seconds
+        except CodexMcpError as exc:
+            duration = time.monotonic() - start
+            return SubprocessResult(
+                exit_code=1,
+                stdout="",
+                stderr=str(exc),
+                duration_seconds=duration,
+                command=command,
             )
-        except TimeoutError:
-            try:
-                proc.kill()
-            except ProcessLookupError:
-                pass
-            try:
-                await asyncio.wait_for(proc.communicate(), timeout=5.0)
-            except Exception:
-                pass  # best-effort pipe/transport drain before the event loop closes
-            try:
-                await asyncio.wait_for(proc.wait(), timeout=5.0)
-            except Exception:
-                pass  # best-effort cleanup; do not mask the original timeout
-            raise
 
         duration = time.monotonic() - start
 
         return SubprocessResult(
-            exit_code=proc.returncode,
-            stdout=raw_stdout.decode("utf-8", errors="replace"),
-            stderr=raw_stderr.decode("utf-8", errors="replace"),
+            exit_code=0,
+            stdout=result.content_text,
+            stderr="",
             duration_seconds=duration,
             command=command,
         )
@@ -368,6 +535,10 @@ class MirExecutor:
         category: str,
         codex_args: list[str],
         timeout_seconds: int = 600,
+        *,
+        model: str | None = None,
+        reasoning_effort: str | None = None,
+        stall_timeout: float | None = None,
     ) -> tuple[SubprocessResult, LedgerUpdate]:
         """Async variant of execute: validate + run_codex_async + update_ledger.
 
@@ -376,6 +547,13 @@ class MirExecutor:
         """
         # Fast-fail: validate before the expensive async Codex subprocess.
         self._validate_ledger_entry(change_id, category)
-        result = await self.run_codex_async(codex_args, timeout_seconds=timeout_seconds)
+        run_kwargs: dict[str, object] = {"timeout_seconds": timeout_seconds}
+        if model is not None:
+            run_kwargs["model"] = model
+        if reasoning_effort is not None:
+            run_kwargs["reasoning_effort"] = reasoning_effort
+        if stall_timeout is not None:
+            run_kwargs["stall_timeout"] = stall_timeout
+        result = await self.run_codex_async(codex_args, **run_kwargs)
         update = self.update_ledger(change_id, category, result)
         return result, update

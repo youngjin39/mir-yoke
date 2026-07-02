@@ -80,9 +80,10 @@
 - If `spawn_agent` returns capacity or thread-limit errors, stop parallel expansion, reduce ownership to one harness surface per subagent, retry one subagent at a time, and record degraded mode in the active plan or handoff.
 
 ### Sub-agent Routing
-- Claude-main → Codex sub-agent: use Codex MCP (`mcp__codex__codex`; continue with `codex-reply`) with `sandbox=danger-full-access`; `workspace-write` is forbidden for this lane.
-- Codex-main → Codex sub-agent: use native `multi_agent_v1` (`tool_search` → `spawn_agent` → `wait_agent` → `close_agent`).
+- Claude-main → Codex sub-agent: use Codex MCP (`mcp__codex__codex`; continue with `codex-reply`). Read-only investigation/review = `sandbox=read-only`; code-writing/mutating = `danger-full-access` (`workspace-write` forbidden).
+- Codex-main → Codex sub-agent: use native `multi_agent_v1` (`tool_search` → `spawn_agent` → `wait_agent` → `close_agent`) for read-only breadth.
 - In-repo code, TDD, and review work: route through `mir_executor --dispatch` so worktree isolation, merge gates, and TDD evidence stay active.
+- **Codex sub-agent = lightweight mcp (ADR-67)**: slim base-instructions + `config{project_doc_max_bytes:0}` (blocks cwd AGENTS.md auto-load = token savings) · per-task `model`/`model_reasoning_effort` routing · `stall_timeout` watchdog + live progress monitoring · global policy `config/sub-agent-policy.json` · dispatch/execute = mcp-only (raw exec fallback removed).
 - Raw `codex exec`: guarded exception only; record why the primary route could not be used and keep verification explicit.
 
 ## Hook Policy Boundary
