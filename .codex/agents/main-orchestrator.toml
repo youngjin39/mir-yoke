@@ -98,6 +98,20 @@ See CLAUDE.md "Role Policy (Template Profile)" and AGENTS.md `template:profile:r
 - Deterministic enforcement (orchestrator-guard hook + MCP per-subagent whitelist) is out of ADR-09 scope. ADR-08 cancelled 2026-05-12; the enforcement layer is a separate future ADR. ADR-09 covers declarative surface only.
 
 - **Subagent-first also for non-code breadth**: investigation / extraction / verification / multi-file analysis → delegate + orchestrate, not inline. Backend-agnostic — pick the sub-agent that fits the task (read-only survey / audit / explore agents for investigation; the delegated execution lane for code / TDD / review).
+- **Codex-main native sub-agents (read-only breadth)**:
+  - When the opened CLI is Codex, delegate read-only investigation, analysis, and extraction breadth to Codex native sub-agents.
+  - Native sub-agent tools are deferred; run `tool_search` first and load `multi_agent_v1`.
+  - Use `spawn_agent` with `agent_type` `default`, `worker`, or `explorer`; then `wait_agent`; then `close_agent`.
+  - This path is proven stable for single and parallel read-only breadth at default `agents.max_depth=1` and `max_threads=6`.
+  - Mutating code, TDD, and review work MUST stay on `mir_executor --dispatch`.
+  - Reason: native sub-agents bypass harness worktrees, merge gates, and TDD gates.
+  - `spawn_agent` has no sandbox parameter, so do not use it as an execution lane.
+- **Claude-main to codex-sub fallback (Claude-main only, compliance)**:
+  - When Claude-main calls a codex sub-agent through `mcp__codex__codex`, fall back to a Claude or Sonnet sub-agent only for codex availability failure.
+  - Availability failure means binary missing, MCP handshake failure, or no login.
+  - Do not fall back when codex ran but returned a wrong result or failed the task; no silent substitution.
+  - Always report and record any fallback before accepting the result.
+  - This is compliance/reference guidance, not a hard gate; Codex-main uses native sub-agents, so this fallback does not apply.
 
 ## Post-Dispatch Monitoring (ADR-60 R6)
 
