@@ -15,7 +15,6 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
-from tools.autonomous_loop.loop import trigger_spinning
 from tools.mir_executor.jobs import JobRegistry
 from tools.stall_watchdog.jsonl_tail import (
     JsonlEntry,
@@ -190,14 +189,14 @@ def scan_subagent_pool(
     *,
     tmp_root: Path | None = None,
 ) -> list[StallVerdict]:
-    '''Scan sub-agent transcript files in /private/tmp/claude-<uid>/<workspace>/<session>/tasks/*.output.
+    '''Scan sub-agent transcript files under the local Claude temp pool.
 
     Sub-agent (Agent/Task-tool) transcripts are JSONL files at
     tmp_root/<workspace-encoded>/<session-uuid>/tasks/<agent-id>.output.
     Tolerant of absence (tmp_root may not exist). Read-only.
     '''
     if tmp_root is None:
-        tmp_root = Path(f'/private/tmp/claude-{os.getuid()}')
+        tmp_root = Path(os.sep) / "private" / "tmp" / f"claude-{os.getuid()}"
     now = _aware(now)
     verdicts: list[StallVerdict] = []
 
@@ -321,7 +320,7 @@ def scan_subagent_pool(
 
 @dataclass(frozen=True)
 class CodexEvent:
-    """One row from tasks/codex-exec-events.jsonl (L1 shim output)."""
+    """One row from an agent-check codex event log."""
 
     ts: str | None
     pid: int | None
@@ -330,6 +329,17 @@ class CodexEvent:
     signal: str | None
     duration_s: float | None
     error_sig: str | None
+    transport: str | None
+
+    @property
+    def is_mcp_dispatch_signal(self) -> bool:
+        return self.transport == "mcp"
+
+    @property
+    def mcp_dispatch_status(self) -> str | None:
+        if not self.is_mcp_dispatch_signal or self.exit_code is None:
+            return None
+        return "completed" if self.exit_code == 0 else "failed"
 
 
 HANG_EXIT_CODE = 142
@@ -337,6 +347,7 @@ HANG_EXIT_CODES = (HANG_EXIT_CODE, 124)
 HANG_SIGNAL = "SIG14"
 DURATION_ANOMALY_MULTIPLIER = 3.0
 DURATION_ANOMALY_MIN_BASELINE_S = 30.0
+SPINNING_THRESHOLD = 3
 
 
 @dataclass(frozen=True)
@@ -385,9 +396,25 @@ def _parse_codex_events(events_path: Path) -> list[CodexEvent]:
                 signal=row.get("signal"),
                 duration_s=row.get("duration_s"),
                 error_sig=row.get("error_sig") or None,
+                transport=row.get("transport"),
             )
         )
     return events
+
+
+def _trigger_spinning_reason(error_sig_history: list[str | None]) -> str | None:
+    """Return an advisory spinning reason for repeated trailing error signatures."""
+    meaningful = [sig for sig in error_sig_history if sig]
+    if len(meaningful) < SPINNING_THRESHOLD:
+        return None
+    tail = meaningful[-SPINNING_THRESHOLD:]
+    if len(set(tail)) != 1:
+        return None
+    sig = tail[0]
+    return (
+        f"same error_sig={sig!r} repeated {SPINNING_THRESHOLD}x consecutively; "
+        "recommended action: ESCALATE_HUMAN"
+    )
 
 
 def scan_codex_events(
@@ -399,14 +426,19 @@ def scan_codex_events(
     """Scan L1 codex-exec event log. Read-only; verdicts advisory only.
 
     Detects:
-    - HANG: any event with exit_code in (142, 124) OR signal==SIG14.
-    - SPINNING: same non-empty error_sig appears >=3 consecutive times.
-    - DURATION_ANOMALY: duration_s > baseline * multiplier when baseline > threshold.
+    - HANG: any exec-shim event with exit_code in (142, 124) OR signal==SIG14.
+    - SPINNING: same non-empty exec-shim error_sig appears >=3 consecutive times.
+    - DURATION_ANOMALY: exec-shim duration_s > baseline * multiplier when baseline > threshold.
+
+    ADR-66 MCP dispatches emit one synthetic event per attempt. Those rows are
+    valid completed/failed attempt signals, not exec-shim lifecycle events, so
+    they are excluded from the exec-specific health heuristics below.
     """
     events = _parse_codex_events(events_path)
     verdicts: list[ExecutionHealthVerdict] = []
+    exec_events = [ev for ev in events if not ev.is_mcp_dispatch_signal]
 
-    for ev in events:
+    for ev in exec_events:
         if ev.exit_code in HANG_EXIT_CODES or ev.signal == HANG_SIGNAL:
             verdicts.append(
                 ExecutionHealthVerdict(
@@ -420,19 +452,19 @@ def scan_codex_events(
                 )
             )
 
-    error_sigs = [ev.error_sig for ev in events]
-    spin_result = trigger_spinning(error_sigs)
-    if spin_result is not None:
+    error_sigs = [ev.error_sig for ev in exec_events]
+    spin_reason = _trigger_spinning_reason(error_sigs)
+    if spin_reason is not None:
         verdicts.append(
             ExecutionHealthVerdict(
                 verdict="SPINNING",
                 recommendation="ESCALATE_HUMAN",
                 source="codex_events",
-                detail=spin_result.reason,
+                detail=spin_reason,
             )
         )
 
-    durations = [ev.duration_s for ev in events if ev.duration_s is not None]
+    durations = [ev.duration_s for ev in exec_events if ev.duration_s is not None]
     if len(durations) >= 2:
         sorted_d = sorted(durations[:-1])
         mid = len(sorted_d) // 2

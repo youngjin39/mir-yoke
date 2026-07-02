@@ -12,3 +12,7 @@ this file on every launch — keep it short.
 ## P0 — bootstrap
 
 Step P0: IN_PROGRESS | started=YYYY-MM-DD | scope=initial template install. Run `./setup.sh`, verify the hooks fire on a sample edit, write the first real plan entry.
+
+## Runtime Overrides
+
+- 2026-07-02: Direct main-agent patch for ADR-66 MCP backend because raw `codex exec` is prohibited for this task and native sub-agent execution is not available as a mutating harness lane in this session.

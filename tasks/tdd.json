@@ -1,4 +1,81 @@
 {
   "version": 1,
-  "changes": []
+  "changes": [
+    {
+      "id": "adr66-codex-mcp-backend-2026-07-02",
+      "scope": "Add a sanitized MCP-backed Codex dispatch transport for mir_executor, keep raw exec as availability fallback only, classify MCP events in stall_watchdog, and cover the behavior with focused tests.",
+      "targets": [
+        "tools/mir_executor/codex_mcp_client.py",
+        "tools/mir_executor/dispatch.py",
+        "tools/mir_executor/cli.py",
+        "tools/stall_watchdog/scan.py",
+        "tools/stall_watchdog/family_paths.py",
+        "tools/mir_executor/tests/test_codex_mcp_client.py",
+        "tools/mir_executor/tests/test_dispatch.py",
+        "tools/stall_watchdog/tests/test_agent_check.py",
+        "tools/stall_watchdog/tests/test_cli.py",
+        "tools/stall_watchdog/tests/test_execution_health.py",
+        "tools/stall_watchdog/tests/test_family_paths.py",
+        "tools/stall_watchdog/tests/test_scan.py"
+      ],
+      "categories": {
+        "unit": {
+          "status": "pass",
+          "command": "uv run pytest tools/mir_executor/tests tools/stall_watchdog/tests -q",
+          "notes": "302 passed; covers the MCP client, dispatch runner, prompt extraction, fallback selection, and MCP event classification."
+        },
+        "integration": {
+          "status": "pass",
+          "command": "uv run pytest tools/mir_executor/tests tools/stall_watchdog/tests -q",
+          "notes": "302 passed; exercises CLI dispatch wiring with JobRegistry and dispatch worktree flow using patched runners."
+        },
+        "e2e": {
+          "status": "pass",
+          "command": "uv run pytest tools/mir_executor/tests tools/stall_watchdog/tests -q",
+          "notes": "302 passed; runs the requested executor and stall-watchdog test suites through their public command entry points."
+        },
+        "browser": {
+          "status": "not_applicable",
+          "reason": "No UI or browser surface is changed."
+        },
+        "edge": {
+          "status": "pass",
+          "command": "uv run pytest tools/mir_executor/tests tools/stall_watchdog/tests -q",
+          "notes": "302 passed; covers malformed MCP JSON, timeout handling, exec-shaped prompt arguments, and MCP timeout event rows."
+        },
+        "architecture": {
+          "status": "pass",
+          "command": "uv run pytest tools/mir_executor/tests tools/stall_watchdog/tests -q",
+          "notes": "302 passed; checks MCP remains behind the existing dispatch runner boundary while preserving public-local result behavior."
+        },
+        "availability": {
+          "status": "pass",
+          "command": "uv run pytest tools/mir_executor/tests tools/stall_watchdog/tests -q",
+          "notes": "302 passed; covers MCP transport failure mapping and raw exec fallback only for availability failures."
+        },
+        "load": {
+          "status": "not_applicable",
+          "reason": "The change is not on a throughput-sensitive path."
+        },
+        "soak": {
+          "status": "not_applicable",
+          "reason": "No long-running daemon or persistent loop behavior is added."
+        },
+        "security": {
+          "status": "pass",
+          "command": "uv run python scripts/verify_template_applied_state.py --template . --format json",
+          "notes": "overall=pass with no findings; no-Korean verifier passed; changed-file scans found 0 Hangul, 0 source markers, 0 absolute paths, and 0 credential-shaped secrets."
+        },
+        "compatibility": {
+          "status": "pass",
+          "command": "uv run pytest tools/mir_executor/tests tools/stall_watchdog/tests -q",
+          "notes": "302 passed; preserves the legacy exec runner as an availability fallback and keeps existing public dispatch result behavior."
+        },
+        "transaction_locking": {
+          "status": "not_applicable",
+          "reason": "No concurrent writer, database transaction, or lock boundary is changed."
+        }
+      }
+    }
+  ]
 }

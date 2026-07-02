@@ -63,6 +63,71 @@ def test_agent_check_hang_verdict_in_table(tmp_path, capsys, monkeypatch):
     assert "ESCALATE_HUMAN" in out
 
 
+def test_agent_check_mcp_success_event_no_issues(tmp_path, capsys, monkeypatch):
+    events_file = tmp_path / "events.jsonl"
+    events_file.write_text(
+        json.dumps(
+            {
+                "ts": "2026-07-02T09:58:00Z",
+                "exit_code": 0,
+                "duration_s": 9000.0,
+                "error_sig": "",
+                "transport": "mcp",
+                "threadId": "thread-abc",
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    pool = tmp_path / "pool"
+    pool.mkdir()
+    monkeypatch.setenv("MIR_STALL_WATCHDOG_POOL_ROOT", str(pool))
+    monkeypatch.setenv("MIR_AGENT_CHECK_EVENTS_PATH", str(events_file))
+    monkeypatch.setenv("MIR_AGENT_CHECK_DB_PATH", str(tmp_path / "no.db"))
+    monkeypatch.setenv("MIR_AGENT_CHECK_CHANGE_ID", "")
+
+    rc = main(["agent-check"])
+
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "=== No issues found ===" in out
+    assert "HANG" not in out
+    assert "DURATION_ANOMALY" not in out
+
+
+def test_agent_check_mcp_failed_event_no_false_hang(tmp_path, capsys, monkeypatch):
+    events_file = tmp_path / "events.jsonl"
+    events_file.write_text(
+        json.dumps(
+            {
+                "ts": "2026-07-02T09:58:00Z",
+                "exit_code": 124,
+                "signal": None,
+                "duration_s": 120.0,
+                "error_sig": "timeout-sig",
+                "transport": "mcp",
+                "threadId": None,
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    pool = tmp_path / "pool"
+    pool.mkdir()
+    monkeypatch.setenv("MIR_STALL_WATCHDOG_POOL_ROOT", str(pool))
+    monkeypatch.setenv("MIR_AGENT_CHECK_EVENTS_PATH", str(events_file))
+    monkeypatch.setenv("MIR_AGENT_CHECK_DB_PATH", str(tmp_path / "no.db"))
+    monkeypatch.setenv("MIR_AGENT_CHECK_CHANGE_ID", "")
+
+    rc = main(["agent-check"])
+
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "=== No issues found ===" in out
+    assert "HANG" not in out
+    assert "DURATION_ANOMALY" not in out
+
+
 def test_agent_check_stall_in_table(tmp_path, capsys, monkeypatch):
     pool = tmp_path / "pool"
     now = datetime.now(tz=UTC)

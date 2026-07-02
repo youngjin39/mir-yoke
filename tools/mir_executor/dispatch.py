@@ -1,4 +1,4 @@
-"""ADR-60 dispatch helper for isolated Codex subprocess execution.
+"""ADR-60 dispatch helper for isolated Codex execution.
 
 The helper owns the per-task attempt policy: create an isolated dispatch
 worktree, run Codex for a finite number of attempts, then either surface a
@@ -7,15 +7,22 @@ single fallback opportunity or block the lane for human orchestration.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import pathlib
 import shlex
 import shutil
 import subprocess
+import time
 from collections.abc import Callable
 from dataclasses import dataclass
 
+from tools.mir_executor.codex_mcp_client import (
+    CodexMcpClient,
+    CodexMcpError,
+    CodexMcpTimeoutError,
+)
 from tools.mir_executor.jobs import JobRegistry
 from tools.mir_executor.worktree import (
     DispatchWorktree,
@@ -235,6 +242,14 @@ def _last_json_line(path: pathlib.Path) -> dict[str, object]:
     return {}
 
 
+def _error_sig_from_text(text: str) -> str:
+    """Return the 12-character error signature shape used by the Codex shim."""
+    if not text:
+        return ""
+    tail = "\n".join(text.splitlines()[-20:])
+    return hashlib.sha256(tail.encode("utf-8")).hexdigest()[:12]
+
+
 def persist_dispatch_artifacts(
     wt: DispatchWorktree,
     main_repo_root: pathlib.Path,
@@ -280,7 +295,11 @@ def build_codex_runner(
     *,
     timeout_seconds: int = 600,
 ) -> Callable[[DispatchWorktree, int], CodexAttempt]:
-    """Build the real Codex runner used by ``execute --background --dispatch``."""
+    """Build the legacy raw-exec Codex runner.
+
+    ADR-66 keeps this runner only for MCP availability fallback. The normal
+    dispatch path uses ``build_codex_mcp_runner``.
+    """
 
     def _runner(wt: DispatchWorktree, attempt: int) -> CodexAttempt:
         env = dispatch_env(main_repo_root, session_id=wt.dispatch_id)
@@ -314,6 +333,70 @@ def build_codex_runner(
             stdout=completed.stdout,
             stderr=completed.stderr,
         )
+
+    return _runner
+
+
+def build_codex_mcp_runner(
+    main_repo_root: pathlib.Path,
+    prompt: str,
+    *,
+    timeout_seconds: int = 600,
+    client_factory: Callable[..., CodexMcpClient] = CodexMcpClient,
+) -> Callable[[DispatchWorktree, int], CodexAttempt]:
+    """Build an ADR-66 MCP-backed Codex runner without ``codex exec`` argv."""
+
+    def _runner(wt: DispatchWorktree, attempt: int) -> CodexAttempt:
+        _ = attempt
+        env = dispatch_env(main_repo_root, session_id=wt.dispatch_id)
+        events_file = wt.path / ".mir-dispatch" / "events.jsonl"
+        events_file.parent.mkdir(parents=True, exist_ok=True)
+        env["CODEX_EVENTS_FILE"] = str(events_file)
+        started_at = time.monotonic()
+        thread_id: str | None = None
+
+        try:
+            with client_factory(env=env, call_timeout=float(timeout_seconds)) as client:
+                result = client.call_codex(
+                    prompt=prompt,
+                    cwd=str(wt.path),
+                    sandbox="danger-full-access",
+                    approval_policy="never",
+                    timeout=float(timeout_seconds),
+                )
+            thread_id = result.thread_id
+            duration_s = time.monotonic() - started_at
+            _append_event(
+                events_file,
+                {
+                    "exit_code": 0,
+                    "duration_s": duration_s,
+                    "error_sig": "",
+                    "transport": "mcp",
+                    "threadId": thread_id,
+                },
+            )
+            return CodexAttempt(exit_code=0, stdout=result.content_text)
+        except CodexMcpTimeoutError as exc:
+            stderr = str(exc)
+            exit_code = 124
+        except (CodexMcpError, FileNotFoundError, OSError) as exc:
+            stderr = str(exc)
+            exit_code = 1
+
+        duration_s = time.monotonic() - started_at
+        error_sig = _error_sig_from_text(stderr)
+        _append_event(
+            events_file,
+            {
+                "exit_code": exit_code,
+                "duration_s": duration_s,
+                "error_sig": error_sig,
+                "transport": "mcp",
+                "threadId": thread_id,
+            },
+        )
+        return CodexAttempt(exit_code=exit_code, stderr=stderr, error_sig=error_sig)
 
     return _runner
 

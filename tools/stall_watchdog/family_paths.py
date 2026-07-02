@@ -38,7 +38,7 @@ WORKSPACE_DIR_TO_FAMILY: dict[str, str] = {
 }
 
 FAMILY_SLUG_TO_DISPLAY: dict[str, str] = {
-    "<example-family-1>": "<example-family>",
+    "<example-family>": "<example-family>",
     "<example-family-2>": "<example-family>",
     "minesweeper": "<example-family>",
     "story-director": "<example-family>",
@@ -61,6 +61,10 @@ def family_slug_to_env_key(family_slug: str) -> str:
     for use in ``MIR_STALL_WATCHDOG_WEBHOOK_<SUFFIX>``. Unknown slug returns
     ``"UNKNOWN"`` (callers should fall back to the DEFAULT webhook).
     """
+    if family_slug == "<example-family>":
+        return "WRITE_SCORE"
+    if family_slug == "your-harness":
+        return "MIR_HARNESS"
     if family_slug not in FAMILY_SLUG_TO_DISPLAY:
         return "UNKNOWN"
     return family_slug.upper().replace("-", "_")

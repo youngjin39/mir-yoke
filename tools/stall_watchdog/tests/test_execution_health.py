@@ -52,7 +52,7 @@ def _make_db(path: Path, jobs: list[dict]) -> None:
                 job["job_id"],
                 job["change_id"],
                 job.get("category", "unit"),
-                job.get("repo_root", "/tmp"),
+                job.get("repo_root", "repo"),
                 "[]",
                 job["timeout_seconds"],
                 job["status"],
@@ -298,6 +298,69 @@ def test_no_duration_anomaly_short_baseline(tmp_path: Path):
     verdicts = scan_codex_events(events_file)
     anomalies = [v for v in verdicts if v.verdict == "DURATION_ANOMALY"]
     assert anomalies == []
+
+
+def test_mcp_timeout_event_is_not_exec_hang(tmp_path: Path):
+    events_file = tmp_path / "events.jsonl"
+    _write_events(
+        events_file,
+        [
+            {
+                "ts": "T1",
+                "pid": None,
+                "exit_code": 124,
+                "signal": None,
+                "duration_s": 120.0,
+                "error_sig": "timeout-sig",
+                "transport": "mcp",
+            }
+        ],
+    )
+
+    verdicts = scan_codex_events(events_file)
+
+    assert [v for v in verdicts if v.verdict == "HANG"] == []
+
+
+def test_mcp_events_do_not_drive_spinning_or_duration_anomaly(tmp_path: Path):
+    events_file = tmp_path / "events.jsonl"
+    _write_events(
+        events_file,
+        [
+            {
+                "ts": "T1",
+                "pid": None,
+                "exit_code": 1,
+                "signal": None,
+                "duration_s": 60.0,
+                "error_sig": "same",
+                "transport": "mcp",
+            },
+            {
+                "ts": "T2",
+                "pid": None,
+                "exit_code": 1,
+                "signal": None,
+                "duration_s": 60.0,
+                "error_sig": "same",
+                "transport": "mcp",
+            },
+            {
+                "ts": "T3",
+                "pid": None,
+                "exit_code": 1,
+                "signal": None,
+                "duration_s": 9000.0,
+                "error_sig": "same",
+                "transport": "mcp",
+            },
+        ],
+    )
+
+    verdicts = scan_codex_events(events_file)
+
+    assert [v for v in verdicts if v.verdict == "SPINNING"] == []
+    assert [v for v in verdicts if v.verdict == "DURATION_ANOMALY"] == []
 
 
 def test_absent_events_file(tmp_path: Path):

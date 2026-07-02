@@ -232,7 +232,7 @@ def test_two_families_two_workspaces(tmp_path: Path):
     }
     verdicts = scan_pool(config, _NOW, mapping)
     families = sorted({v.family_slug for v in verdicts if v.is_stall})
-    assert families == ["your-harness", "<example-family>"]
+    assert families == ["<example-family>", "your-harness"]
 
 
 def test_partial_write_does_not_break_scan(tmp_path: Path):

@@ -61,6 +61,65 @@ _STANDARD_CATEGORIES = [
 _DEFAULT_JOBS_DB_RELPATH = pathlib.Path("tasks") / "jobs.db"
 _MERGED_FINALIZE_ACTIONS = {"merged", "merged-but-cleanup-failed"}
 _DISPATCH_BACKENDS = frozenset({"codex", "claude"})
+_DEFAULT_DISPATCH_PROMPT = (
+    "Read the task brief at .mir-dispatch/brief.md and implement it fully "
+    "in this worktree. Do not edit tasks/plan.md."
+)
+_MCP_AVAILABILITY_FAILURE_MARKERS = (
+    "Codex binary not found",
+    "Codex MCP client already started",
+    "Codex MCP server exited",
+    "Codex MCP server stdin",
+    "No such file or directory",
+)
+_CODEX_EXEC_FLAGS_WITH_VALUE = frozenset(
+    {
+        "--approval",
+        "--approval-policy",
+        "--add-dir",
+        "--cd",
+        "--color",
+        "--config",
+        "--config-profile",
+        "--cwd",
+        "--disable",
+        "--enable",
+        "--image",
+        "--local-provider",
+        "--model",
+        "--output-last-message",
+        "--output-schema",
+        "--profile",
+        "--reasoning-effort",
+        "--sandbox",
+        "-C",
+        "-c",
+        "-i",
+        "-m",
+        "-o",
+        "-p",
+        "-s",
+    }
+)
+_CODEX_EXEC_BOOLEAN_FLAGS = frozenset(
+    {
+        "--dangerously-bypass-approvals-and-sandbox",
+        "--dangerously-bypass-hook-trust",
+        "--ephemeral",
+        "--full-auto",
+        "--help",
+        "--ignore-rules",
+        "--ignore-user-config",
+        "--json",
+        "--no-color",
+        "--oss",
+        "--skip-git-repo-check",
+        "--strict-config",
+        "--version",
+        "-V",
+        "-h",
+    }
+)
 
 
 def _utc_now() -> str:
@@ -78,7 +137,10 @@ def _resolve_jobs_db(args_jobs_db: str | None, repo_root: pathlib.Path) -> pathl
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="python -m tools.mir_executor",
-        description="your-harness Executor — Codex CLI subprocess wrapper + tdd.json ledger update.",
+        description=(
+            "your-harness Executor — Codex CLI subprocess wrapper "
+            "+ tdd.json ledger update."
+        ),
     )
     # Global --jobs-db option available for all subcommands
     parser.add_argument(
@@ -118,8 +180,9 @@ def _build_parser() -> argparse.ArgumentParser:
         required=True,
         metavar="QUOTED_STRING",
         help=(
-            "Arguments to pass to the Codex binary "
-            "(shell-quoted string; shlex.split applied internally)."
+            "Arguments for legacy Codex invocation. In --dispatch mode, "
+            "exec-shaped flags are dropped and the positional prompt is sent "
+            "to the MCP Codex backend."
         ),
     )
     exec_p.add_argument(
@@ -215,6 +278,17 @@ def _build_parser() -> argparse.ArgumentParser:
         default=argparse.SUPPRESS,
         metavar="COMMAND",
         help="Repeatable ADR-60 dispatch verification command to re-run before merge.",
+    )
+    exec_p.add_argument(
+        "--dispatch-brief",
+        type=pathlib.Path,
+        default=None,
+        dest="dispatch_brief",
+        metavar="PATH",
+        help=(
+            "Persisted DispatchBrief JSON. In --dispatch mode, expanded_goal "
+            "is used as the MCP prompt when --codex-args contains no prompt positional."
+        ),
     )
 
     # ------------------------------------------------------------------
@@ -447,19 +521,102 @@ def _build_dispatch_runner(
     backend: str,
     repo_root: pathlib.Path,
     codex_args: list[str],
+    prompt: str,
     timeout_seconds: int,
 ) -> object:
-    """Build the runner for the resolved backend."""
+    """Build the runner for the resolved backend.
+
+    Codex dispatch defaults to the ADR-66 MCP backend. The raw ``codex exec``
+    runner is retained only as a lazy availability fallback when the MCP server
+    cannot spawn or the transport is unavailable.
+    """
     if backend == "claude":
         return dispatch_module.build_claude_runner(
             repo_root,
             timeout_seconds=timeout_seconds,
         )
-    return dispatch_module.build_codex_runner(
+    mcp_runner = dispatch_module.build_codex_mcp_runner(
         repo_root,
-        codex_args,
+        prompt,
         timeout_seconds=timeout_seconds,
     )
+    exec_runner = None
+
+    def _runner(wt: object, attempt: int) -> object:
+        nonlocal exec_runner
+        result = mcp_runner(wt, attempt)
+        if not _is_mcp_availability_failure(result):
+            return result
+        if exec_runner is None:
+            exec_runner = dispatch_module.build_codex_runner(
+                repo_root,
+                codex_args,
+                timeout_seconds=timeout_seconds,
+            )
+        return exec_runner(wt, attempt)
+
+    return _runner
+
+
+def _is_mcp_availability_failure(result: object) -> bool:
+    """Return True only for MCP spawn/transport failures eligible for exec fallback."""
+    if getattr(result, "exit_code", 0) == 0:
+        return False
+    stderr = str(getattr(result, "stderr", ""))
+    return any(marker in stderr for marker in _MCP_AVAILABILITY_FAILURE_MARKERS)
+
+
+def _prompt_from_codex_args(codex_args: list[str]) -> str:
+    """Extract the prompt positional from an exec-shaped Codex argv."""
+    prompt_parts: list[str] = []
+    index = 0
+    while index < len(codex_args):
+        token = codex_args[index]
+        if token == "--":
+            prompt_parts = codex_args[index + 1 :]
+            break
+        if token == "exec" and not prompt_parts:
+            index += 1
+            continue
+
+        flag_name = token.split("=", 1)[0]
+        if flag_name in _CODEX_EXEC_FLAGS_WITH_VALUE:
+            index += 1 if "=" in token else 2
+            continue
+        if flag_name in _CODEX_EXEC_BOOLEAN_FLAGS:
+            index += 1
+            continue
+        if token.startswith("-") and not prompt_parts:
+            index += 1
+            continue
+
+        prompt_parts = codex_args[index:]
+        break
+
+    return " ".join(prompt_parts).strip()
+
+
+def _prompt_from_dispatch_brief(path: pathlib.Path | None) -> str:
+    """Load DispatchBrief.expanded_goal when a persisted brief is supplied."""
+    if path is None:
+        return ""
+    from mir.core.conductor.dispatch_brief import load_dispatch_brief  # noqa: PLC0415
+
+    return load_dispatch_brief(path).expanded_goal.strip()
+
+
+def _resolve_dispatch_prompt(
+    codex_args: list[str],
+    dispatch_brief_path: pathlib.Path | None,
+) -> str:
+    """Resolve the structured prompt sent to the MCP Codex backend."""
+    prompt = _prompt_from_codex_args(codex_args)
+    if prompt:
+        return prompt
+    prompt = _prompt_from_dispatch_brief(dispatch_brief_path)
+    if prompt:
+        return prompt
+    return _DEFAULT_DISPATCH_PROMPT
 
 
 def _handle_dispatch(args: argparse.Namespace, repo_root: pathlib.Path) -> int:
@@ -469,6 +626,10 @@ def _handle_dispatch(args: argparse.Namespace, repo_root: pathlib.Path) -> int:
     from tools.mir_executor.policy import load_sub_agent_policy  # noqa: PLC0415
 
     codex_args = shlex.split(args.codex_args)
+    dispatch_brief_path = (
+        args.dispatch_brief.resolve() if getattr(args, "dispatch_brief", None) else None
+    )
+    prompt = _resolve_dispatch_prompt(codex_args, dispatch_brief_path)
     jobs_db_path = _resolve_jobs_db(args.jobs_db, repo_root)
     prior = dispatch.count_consecutive_codex_failures(
         jobs_db_path,
@@ -484,6 +645,9 @@ def _handle_dispatch(args: argparse.Namespace, repo_root: pathlib.Path) -> int:
             family=args.family,
             repo_root=str(repo_root),
             codex_args=codex_args,
+            dispatch_brief_path=(
+                str(dispatch_brief_path) if dispatch_brief_path is not None else None
+            ),
             timeout_seconds=args.timeout,
             status="running",
             started_at=_utc_now(),
@@ -501,13 +665,14 @@ def _handle_dispatch(args: argparse.Namespace, repo_root: pathlib.Path) -> int:
         backend=backend,
         repo_root=repo_root,
         codex_args=codex_args,
+        prompt=prompt,
         timeout_seconds=args.timeout,
     )
     try:
         outcome = dispatch.run_dispatch(
             repo_root,
             dispatch_id=job_id,
-            brief_text=" ".join(codex_args),
+            brief_text=prompt,
             codex_runner=runner,
             claude_fallback=None,
             prior_consecutive_codex_failures=prior,
