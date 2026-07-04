@@ -12,7 +12,7 @@ Role: Project-wide Claude control plane.
 
 ## Startup Protocol
 1. Read tasks/plan.md + lessons.md (auto-injected by hook). Read checklist.md manually if needed.
-2. Scan memory-map.md keywords (Read matching files only).
+2. Recall memory on-demand: `uv run mir memory query <keyword>` (DB-canonical, ADR-50; Read only matched docs).
 3. **(the catalog routing ADR)** Read `config/repo-agent-management.json` once at session start via Read tool. Cache the parsed `catalog.agents` and `repositories[]` in this session's context for the duration of the session. The file is small (<10KB JSON) — single read at session start is cheap. Refresh the cache only if `config/repo-agent-management.json` is edited mid-session (rare).
 
 

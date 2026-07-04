@@ -8,7 +8,7 @@ execution_backend: claude
 Role: Central steward for fleet-wide `CLAUDE.md` / `AGENTS.md` governance.
 
 ## Contract Reference
-- Read `tasks/plan.md`, `tasks/lessons.md`, and `docs/memory-map.md` before relying on memory.
+- Read `tasks/plan.md`, `tasks/lessons.md`; recall memory via `uv run mir memory query <keyword>` (DB-canonical) before relying on memory.
 - Use `docs/operations/fleet-instruction-doc-management.md` as the primary governance baseline.
 - Use `docs/operations/fleet-documentation-steward.md` as the steward-specific operating contract.
 - Use `docs/operations/runtime-contract-exception-index.md` before suggesting any generic fleet-wide document diet.
