@@ -429,7 +429,7 @@ write_agents_md() {
 - When ambiguous, classify upward and keep the refined execution brief in `tasks/plan.md` or a `DispatchBrief`.
 
 ## Codex Hook-Mirror Obligations
-- [Codex] `SessionStart`: read startup context manually before acting (`tasks/plan.md`, `tasks/lessons.md`, `docs/memory-map.md`, and required local workflow docs).
+- [Codex] `SessionStart`: read startup context manually before acting (`tasks/plan.md`, `tasks/lessons.md`, and required local workflow docs).
 - [Codex] `PreCompact`: before compaction, manually create a handoff document in `tasks/handoffs/` mirroring the PreCompact contract.
 - [Codex] `PostToolUse`: after edits, manually review for debug leftovers and credential leaks.
 - [Codex] `SessionEnd`: at session end, manually create a session snapshot in `tasks/sessions/` mirroring the SessionEnd contract.
