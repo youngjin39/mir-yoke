@@ -154,12 +154,12 @@ uv run mir context pull "<query>"     # on-demand context (top-k snippets)
 | `template-sync-validator` | Claude | template_transitional | Public template sync sanitize validation |
 
 The `execution_backend` field in each agent's frontmatter is the single declarative surface that
-tells the orchestrator whether to dispatch via the Codex CLI subprocess or a direct Claude agent
+tells the orchestrator whether to dispatch via the MCP-backed Codex lane or a direct Claude agent
 session. The agent loader (`tools/agent_loader`) validates this frontmatter on demand.
 
 **Dispatch rule (ADR-09)**: Any agent declaring `execution_backend: codex` must be dispatched
-via the `codex exec` subprocess pattern, NOT via Claude's direct Agent tool. Violation logs are
-written to `tasks/log/dispatch-log.jsonl`.
+via Codex MCP (`mcp__codex__codex` or `mir_executor --dispatch`), NOT via Claude's direct Agent
+tool or raw `codex exec`. Violation logs are written to `tasks/log/dispatch-log.jsonl`.
 
 ---
 
@@ -455,7 +455,7 @@ Specifically, this template is the only one in the comparison table that:
 2. **Gates implementation edits behind a typed TDD ledger** (`tasks/tdd.json`), not a free-form
    list. The 12-category matrix is the contract.
 3. **Carries a 12-agent catalog with declared execution backends** so the orchestrator knows at
-   dispatch time whether to use `claude` or `codex exec` — no runtime guessing.
+   dispatch time whether to use `claude` or the MCP-backed Codex lane — no runtime guessing.
 4. **Treats hook bypass attempts (e.g. `--no-verify`) as deny-list patterns themselves**, so the
    gate cannot be lifted by inviting the agent to lift it.
 5. **Ships in a form you can rip out**. There is no runtime, no service, no schema migration.

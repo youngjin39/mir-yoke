@@ -18,7 +18,7 @@ runtime executes an agent's body. Every agent frontmatter under
 
 ```yaml
 execution_backend: claude   # body executed by the Claude session
-execution_backend: codex    # body executed by Codex CLI subprocess
+execution_backend: codex    # body executed by the MCP-backed Codex lane
 ```
 
 No other surface (TOML, JSON, hook, body header prose) is authoritative.
@@ -31,9 +31,11 @@ Three agents in this template declare `execution_backend: codex`:
 - `executor-agent` — code/TDD/review execution.
 - `pipeline-validator` — read-only data-pipeline schema audit.
 
-The Codex CLI subprocess invocation pattern is documented in
-`.claude/agents/executor-agent.md` (the `perl -e 'alarm <N>; exec
-@ARGV' codex exec ...` shape).
+The MCP-backed Codex routing pattern is documented in
+`.claude/agents/executor-agent.md`: Claude→Codex uses MCP,
+in-repo code/TDD/review writes use `mir_executor --dispatch`, and
+Codex→Codex breadth uses native `multi_agent_v1`. Raw `codex exec`
+is banned by ADR-69.
 
 ## Mirror artifacts
 

@@ -2,7 +2,7 @@
   "version": 1,
   "strategy": "one-way-claude-to-codex",
   "generated_by": "scripts/generate_codex_derivatives.sh",
-  "notes": "Mir-specific: codex-final-reviewer.toml preserved outside manifest. Profiles: core=12 runtime-default skills, full=18 including Starter-derived optional-pack skills.",
+  "notes": "Profiles: core=12 runtime-default skills, full=18 including Starter-derived optional-pack skills.",
   "mappings": [
     {
       "source": "CLAUDE.md",
@@ -15,6 +15,14 @@
     {
       "source": ".claude/agents/README.md",
       "targets": [".codex/agents/.toml"],
+      "change_scope": "content",
+      "sync_policy": "regenerate",
+      "owner": "project-maintainer",
+      "notes": "Generated custom agent"
+    },
+    {
+      "source": ".claude/agents/codex-final-reviewer.md",
+      "targets": [".codex/agents/codex-final-reviewer.toml"],
       "change_scope": "content",
       "sync_policy": "regenerate",
       "owner": "project-maintainer",

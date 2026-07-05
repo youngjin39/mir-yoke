@@ -4,7 +4,7 @@ status: accepted
 source: mirrored-summary
 ---
 
-# ADR-60 — Claude-Orchestrator / Codex-Subprocess Sub-Agent Execution
+# ADR-60 — Claude-Orchestrator / MCP-Backed Codex Sub-Agent Execution
 
 ## Context
 
@@ -13,16 +13,17 @@ verification can confirm the baseline catalog is complete.
 
 ## Decision
 
-The orchestration/execution split is codified: Claude is the orchestrator (control plane —
-requirements, design, dispatch judgment, the cursor), and ALL sub-agent work (execution and review)
-runs as `codex exec` subprocesses, never as Claude-model Agent-loop sub-agents — conserving Claude
-tokens and sidestepping Anthropic-API overload for sub-agent work. Each sub-agent runs in its own git
-worktree (structural isolation: it works on a copy and cannot reach the shared control cursor) and
-reports a structured result the orchestrator reads and merges only after verification. A finite
-resilience fallback to a Claude sub-agent applies after repeated codex failure for a single task; a
-broader codex outage halts and alerts rather than mass-falling-back. The cursor is main-only (the
-delegated agent never edits it); each subprocess is monitored, with the orchestrator running a health
-check after every dispatch. Detailed execution history remains in the upstream control repository.
+The orchestration/execution split is codified: the opened main session is the orchestrator (control
+plane — requirements, design, dispatch judgment, the cursor), and backend-capable sub-agent work
+routes through Codex without direct Claude-model Agent-loop execution. ADR-69 amends the transport:
+Claude→Codex uses MCP, in-repo code/TDD/review writes use MCP-backed `mir_executor --dispatch`, and
+Codex→Codex breadth uses native `multi_agent_v1`. Raw `codex exec` is banned; a missing MCP/native
+path is `BLOCKED`, never an exec fallback. Each mutating sub-agent run uses its own git worktree
+(structural isolation: it works on a copy and cannot reach the shared control cursor) and reports a
+structured result the orchestrator reads and merges only after verification. The cursor is main-only
+(the delegated agent never edits it); each dispatch is monitored, with the orchestrator running a
+health check after every dispatch. Detailed execution history remains in the upstream control
+repository.
 
 ## Consequences
 

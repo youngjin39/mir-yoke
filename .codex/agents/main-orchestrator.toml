@@ -69,7 +69,7 @@ See CLAUDE.md "Orchestration Presets" table (single source of truth).
 Before dispatching any agent via the Agent tool:
 
 1. Inspect the target agent's frontmatter via tools.agent_loader or by reading the .md file. (Cached from Startup Protocol step 3 — no re-Read needed unless cache stale.)
-2. If `execution_backend: codex`, the dispatch MUST flow through the Codex CLI subprocess pattern documented in `.claude/agents/executor-agent.md` (the `perl -e 'alarm <N>; exec @ARGV' codex exec ...` invocation). Direct Agent tool dispatch of these agents is forbidden.
+2. If `execution_backend: codex`, do not dispatch it via the Agent tool. Claude→Codex delegation is MCP-only per ADR-69 (`mcp__codex__codex` / `tools/mir_executor/codex_mcp_client.py`). In-repo write/mutating code/TDD/review work routes through `mir_executor … --dispatch` (R4 worktree + deterministic merge gate, MCP backend). Raw `codex exec` is BANNED in all forms; missing MCP path means `BLOCKED`, never exec fallback.
 3. Affected agents today: `codex-final-reviewer`, `executor-agent`, `pipeline-validator`. New agents declaring `execution_backend: codex` are automatically in scope.
 4. Best-effort log: append a line to `tasks/log/dispatch-log.jsonl` with `{ts, agent_slug, routed_via, purpose, task_id}`. routed_via = `codex_cli` | `claude_session` | `unknown`. If the log directory doesn't exist, do not fail the dispatch — log absence is INFO-level only.
 
@@ -88,7 +88,7 @@ This is prompt-level guidance. Verifier R11 audits post-hoc.
 See CLAUDE.md "Role Policy (Template Profile)" and AGENTS.md `template:profile:role-policy` block for the binding policy contract. This section covers the per-agent declarative surface introduced by ADR-09.
 
 - Code work is always delegated to a sub-agent. The orchestrator does not Edit/Write production code directly.
-- Default sub-agent for code/TDD/review: `executor-agent` (frontmatter `execution_backend: codex`). Codex CLI is the code/TDD/review lane.
+- Default sub-agent for code/TDD/review: `executor-agent` (frontmatter `execution_backend: codex`). The MCP-backed Codex lane is the code/TDD/review lane.
 - Default sub-agent for read-only review fallback or tie-break: `quality-agent` (frontmatter `execution_backend: claude`).
 - Default sub-agent for final design-vs-code consistency review: `codex-final-reviewer` (frontmatter `execution_backend: codex`).
 - Sub-agent for fleet-wide instruction-doc governance review (read-only, no code edits): `fleet-doc-steward` (frontmatter `execution_backend: claude`). Not part of the code/TDD/review lane.
@@ -98,9 +98,10 @@ See CLAUDE.md "Role Policy (Template Profile)" and AGENTS.md `template:profile:r
 - Deterministic enforcement (orchestrator-guard hook + MCP per-subagent whitelist) is out of ADR-09 scope. ADR-08 cancelled 2026-05-12; the enforcement layer is a separate future ADR. ADR-09 covers declarative surface only.
 
 - **Subagent-first also for non-code breadth**: investigation / extraction / verification / multi-file analysis → delegate + orchestrate, not inline. Backend-agnostic — pick the sub-agent that fits the task (read-only survey / audit / explore agents for investigation; the delegated execution lane for code / TDD / review).
+- Routing SoT: ADR-65 amended by ADR-69. Mnemonic: Claude→codex = MCP only; Codex→codex = native; in-repo code = `mir_executor --dispatch` (MCP backend); raw `codex exec` = BANNED. Missing MCP path = `BLOCKED`, never exec fallback.
 - **Claude-main → codex sub-agent (mcp, PRIMARY)**:
-  - Read-only investigation: call `mcp__codex__codex` with `sandbox=danger-full-access`; keep the prompt read-only and bounded.
-  - Cross-repo or mutating work: set the target `cwd` explicitly and use `sandbox=danger-full-access`; never use `workspace-write`.
+  - Read-only investigation/review: call `mcp__codex__codex` with `sandbox=read-only`; keep the prompt read-only and bounded.
+  - Cross-repo or mutating work that is not an in-repo code path: set the target `cwd` explicitly and use `sandbox=danger-full-access`; never use `workspace-write`.
   - Continuation: use `codex-reply` on the existing Codex MCP conversation instead of starting a new one.
 - **Codex-main native sub-agents (read-only breadth)**:
   - When the opened CLI is Codex, delegate read-only investigation, analysis, and extraction breadth to Codex native sub-agents.
@@ -110,17 +111,14 @@ See CLAUDE.md "Role Policy (Template Profile)" and AGENTS.md `template:profile:r
   - Mutating code, TDD, and review work MUST stay on `mir_executor --dispatch`.
   - Reason: native sub-agents bypass harness worktrees, merge gates, and TDD gates.
   - `spawn_agent` has no sandbox parameter, so do not use it as an execution lane.
-- **Claude-main to codex-sub fallback (Claude-main only, compliance)**:
-  - When Claude-main calls a codex sub-agent through the primary MCP route, fall back to a Claude or Sonnet sub-agent only for codex availability failure.
-  - Availability failure means binary missing, MCP handshake failure, or no login.
-  - Do not fall back when codex ran but returned a wrong result or failed the task; no silent substitution.
-  - Always report and record any fallback before accepting the result.
-  - This is compliance/reference guidance, not a hard gate; Codex-main uses native sub-agents, so this fallback does not apply.
+- In-repo code/TDD/review writes (`tools/`, `src/`, `scripts/`) stay on `mir_executor … --dispatch` (MCP backend); raw `codex exec` is BANNED, not an exception path.
+- Availability failure: if the MCP/native path is missing, handshake fails, login is unavailable, or provisioning is broken, report `BLOCKED` and stop; do not substitute raw exec or another backend silently.
 
 ## Post-Dispatch Monitoring (ADR-60 R6)
 
-After EACH codex-exec sub-agent dispatch (the R2/R3 codex-subprocess lane — `mir_executor`
-`run_dispatch` / `execute --background --dispatch`, or a direct `codex exec` through the codex-shim),
+After EACH MCP-backed Codex sub-agent dispatch (the R2/R3 delegated lane — `mir_executor`
+`run_dispatch` / `execute --background --dispatch`, backed by `tools/mir_executor/codex_mcp_client.py`;
+raw `codex exec` is banned by ADR-69),
 run the ADR-59 agent-check and READ the verdict table BEFORE accepting the sub-agent's result:
 
 ```

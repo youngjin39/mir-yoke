@@ -34,7 +34,7 @@
     "execution_backend": {
       "type": "string",
       "enum": ["claude", "codex"],
-      "description": "ADR-09: which CLI executes the agent's work. 'claude' = direct Claude session. 'codex' = Codex CLI subprocess dispatch."
+      "description": "ADR-09/ADR-69: which backend executes the agent's work. 'claude' = direct Claude session. 'codex' = MCP-backed Codex dispatch."
     }
   }
 }

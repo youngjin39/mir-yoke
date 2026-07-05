@@ -4,7 +4,7 @@
 # Modifications:
 #   - Mir-specific manifest path (.codex-sync/manifest.json — same)
 #   - Mir skill profiles: core=12 runtime-default skills, full=18 including Starter-derived optional packs
-#   - Codex-final-reviewer.toml PRESERVED (Mir-specific, not in manifest)
+#   - Agent TOML mirrors are generated from .claude/agents source.
 #   - write_hooks_json() SKIPPED (Mir P0-G hooks.json preserved byte-for-byte)
 #   - codex_hooks = true added to [features] in write_config_toml
 #   - link_skill_md uses symlinks (claude-starter approach replaces old write_skill_md copy)
@@ -280,7 +280,7 @@ emit_agent_sections_for_codex() {
       headings=(
         "## Protocol"
         "## Codex CLI invocation (ADR-09 round 4 — lessons from Phase 9A phantom \"stdin issue\")"
-        "## State Checkpoint (externalize, don't trust memory)"
+        "## State Checkpoint (externalize, don't trust memory — ADR-60 R5)"
         "## Report Format"
         "## Language"
       )
@@ -608,7 +608,7 @@ write_manifest_json() {
     echo '  "version": 1,'
     echo '  "strategy": "one-way-claude-to-codex",'
     echo '  "generated_by": "scripts/generate_codex_derivatives.sh",'
-    echo '  "notes": "Mir-specific: codex-final-reviewer.toml preserved outside manifest. Profiles: core=12 runtime-default skills, full=18 including Starter-derived optional-pack skills.",'
+    echo '  "notes": "Profiles: core=12 runtime-default skills, full=18 including Starter-derived optional-pack skills.",'
     echo '  "mappings": ['
 
     local first=1
@@ -660,10 +660,6 @@ write_manifest_json() {
     while IFS= read -r src; do
       [ -n "$src" ] || continue
       name="$(extract_frontmatter_field "$src" "name")"
-      # Skip codex-final-reviewer: Mir-specific agent, not derived from .claude source
-      if [ "$name" = "codex-final-reviewer" ]; then
-        continue
-      fi
       append_mapping "$src" "[\".codex/agents/${name}.toml\"]" "content" "Generated custom agent"
     done < <(printf '%s\n' .claude/agents/*.md | LC_ALL=C sort)
 
@@ -716,10 +712,6 @@ fi
 while IFS= read -r src; do
   [ -n "$src" ] || continue
   name="$(extract_frontmatter_field "$src" "name")"
-  # Skip codex-final-reviewer: Mir-specific, not derived from .claude/agents source
-  if [ "$name" = "codex-final-reviewer" ]; then
-    continue
-  fi
   write_agent_toml "$src"
 done < <(printf '%s\n' .claude/agents/*.md | LC_ALL=C sort)
 
@@ -738,7 +730,7 @@ echo "Generated Codex derivatives:"
 echo "  $OUTPUT_ROOT/AGENTS.md"
 echo "  $OUTPUT_ROOT/.codex/config.toml"
 echo "  $OUTPUT_ROOT/.codex/hooks.json (PRESERVED — P0-G artifact, not regenerated)"
-echo "  $OUTPUT_ROOT/.codex/agents/*.toml (codex-final-reviewer preserved)"
+echo "  $OUTPUT_ROOT/.codex/agents/*.toml"
 echo "  $OUTPUT_ROOT/.codex/hooks/*.sh (peer source — not regenerated)"
 echo "  $OUTPUT_ROOT/.agents/skills/*/SKILL.md (symlinks to .claude/skills/*/SKILL.md)"
 echo "  $OUTPUT_ROOT/.codex-sync/manifest.json"

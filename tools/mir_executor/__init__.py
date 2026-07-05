@@ -1,1 +1,1 @@
-"""your-harness Executor — Codex CLI subprocess wrapper + tdd.json ledger update (P0-J)."""
+"""your-harness Executor — MCP-backed Codex runner + tdd.json ledger update."""

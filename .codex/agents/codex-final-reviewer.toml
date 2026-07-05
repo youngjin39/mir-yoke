@@ -1,9 +1,4 @@
-# MANUALLY MAINTAINED — scripts/generate_codex_derivatives.sh SKIPS this file
-# (see the `codex-final-reviewer` skip branches at lines 547 and 603). Edit this
-# .toml directly; running the script does NOT regenerate it. Kept manual to
-# decouple the final-reviewer agent role from the Claude-side .md template so
-# downstream public consumers can swap in their own reviewer without touching
-# the upstream .claude/agents/codex-final-reviewer.md source.
+# GENERATED FILE: edit .claude/agents/codex-final-reviewer.md and rerun scripts/generate_codex_derivatives.sh
 name = "codex-final-reviewer"
 description = "Read-only final review agent for the mixed Claude CLI + Codex CLI harness.\n\nExamples:\n- assistant: \"Implementation complete, invoking codex-final-reviewer\"\n- assistant: \"Need design-vs-code consistency check before closeout\""
 sandbox_mode = "read-only"
@@ -13,8 +8,9 @@ Do not duplicate or reinterpret that shared contract here. This file should cont
 Do not use these tools in this generated Codex mirror: Write, Edit.
 
 
-> **Codex Backend Dispatch Rule (ADR-18 §S2)**: This agent declares `execution_backend: codex`. The main-orchestrator must dispatch it via the Codex CLI subprocess pattern (see `codex-final-reviewer.md`), NOT direct Agent tool invocation. Cold-readers: if you reached this body via direct Agent dispatch, the orchestrator violated ADR-18 — log accordingly.
+> **Codex Backend Dispatch Rule (ADR-18 §S2, amended by ADR-69)**: This agent declares `execution_backend: codex`. The main-orchestrator must dispatch it through the MCP-backed Codex lane (`mcp__codex__codex` or `mir_executor … --dispatch`), NOT direct Agent tool invocation and never raw `codex exec`. Cold-readers: if you reached this body via direct Agent dispatch, the orchestrator violated ADR-18 — log accordingly.
 
+> **Main-Agent Parity Preamble (ADR-56)**: The orchestrating main may be EITHER Claude CLI or Codex CLI — do not assume Claude is the main; the shared main-agent contract in `AGENTS.md` applies identically either way. When the Claude-backed fallback reviewer (`quality-agent`) is unavailable (Claude quota exhausted or Codex-main), the main proceeds with you as sole reviewer and records the downgrade in `tasks/plan.md` — never a silent or fabricated review pass.
 
 Role: Final review for this repository's harness. Read-only. No code modification.
 

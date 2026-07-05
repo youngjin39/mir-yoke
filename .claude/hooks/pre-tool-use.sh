@@ -176,12 +176,10 @@ if [ "$TOOL_NAME" = "Bash" ]; then
   if echo "$CMD" | grep -qE '(^|[[:space:]])sudo([[:space:]]|$)'; then
     block "sudo requires user confirmation, not this hook: $CMD"
   fi
-  # 7. codex exec without stdin redirect hangs on EOF wait (silent stall; force-kill still exits 0).
-  #    Safe forms: '< /dev/null', a heredoc/herestring (<<), or a pipe feeding codex exec.
+  # 7. ADR-69: raw codex exec is banned. Claude→Codex delegation must use MCP;
+  #    in-repo code/TDD/review writes must use mir_executor --dispatch.
   if echo "$CMD" | grep -qE 'codex[[:space:]]+exec'; then
-    if ! echo "$CMD" | grep -qE '<[[:space:]]*/dev/null|<<|\|[^|]*codex[[:space:]]+exec'; then
-      block "codex exec without stdin redirect hangs on EOF wait — append '< /dev/null'"
-    fi
+    block "ADR-69: raw codex exec is banned; use mcp__codex__codex or tools.mir_executor --dispatch"
   fi
   if echo "$CMD" | grep -qE '(^|[[:space:]])git[[:space:]]+commit([[:space:]]|$)'; then
     if [ -f "$PRE_COMMIT_VERIFICATION_SCRIPT" ]; then
@@ -195,10 +193,6 @@ if [ "$TOOL_NAME" = "Bash" ]; then
     if echo "$CMD" | grep -qE '(<your-home>/Router_Control|<your-home>/Project|<your-harness-path>'; then
       block "sealed-family external push requires explicit user override (sealed-repo policy 2026-05-23)"
     fi
-  fi
-  # F6-hook. Codex exec stdin guard (advisory — open stdin hangs on EOF)
-  if echo "$CMD" | grep -qE 'codex[[:space:]]+exec' && ! echo "$CMD" | grep -qE '(<[[:space:]]*/dev/null|--stdin)'; then
-    warn "append < /dev/null (open stdin hangs on EOF)"
   fi
   apply_deny_list "$CMD" "bash"
 fi
@@ -226,8 +220,8 @@ if [ "$TOOL_NAME" = "Write" ] || [ "$TOOL_NAME" = "Edit" ]; then
   fi
   # ADR-60 R5: a sub-agent / codex-delegated context must NOT write the MAIN control-plane
   # cursor tasks/plan.md (the control_plane main owns it). Defense-in-depth behind the R4
-  # worktree isolation. Detect the delegated context via MIR_CODEX_SESSION_ID (set by
-  # scripts/spawn_codex_session.sh). The main (MIR_CODEX_SESSION_ID unset) is allowed.
+  # worktree isolation. Detect the delegated context via MIR_CODEX_SESSION_ID.
+  # The main (MIR_CODEX_SESSION_ID unset) is allowed.
   if [ -n "${MIR_CODEX_SESSION_ID:-}" ]; then
     case "$FP" in
       tasks/plan.md|*/tasks/plan.md)

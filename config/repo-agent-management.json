@@ -893,8 +893,7 @@
         ],
         "generation_verification_pipeline": [
           "scripts/generate_codex_derivatives.sh",
-          "scripts/verify_codex_sync.py",
-          "scripts/spawn_codex_session.sh"
+          "scripts/verify_codex_sync.py"
         ],
         "operating_contract": [
           "tasks/plan.md",

@@ -132,7 +132,7 @@ def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="python -m tools.mir_executor",
         description=(
-            "your-harness Executor — Codex CLI subprocess wrapper + tdd.json ledger update."
+            "your-harness Executor — MCP-backed Codex runner + tdd.json ledger update."
         ),
     )
     # Global --jobs-db option available for all subcommands

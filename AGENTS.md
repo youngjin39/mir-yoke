@@ -125,7 +125,8 @@
 - Codex-main → Codex sub-agent: use native `multi_agent_v1` (`tool_search` → `spawn_agent` → `wait_agent` → `close_agent`) for read-only breadth.
 - In-repo code, TDD, and review work: route through `mir_executor --dispatch` so worktree isolation, merge gates, and TDD evidence stay active.
 - **Codex sub-agent = lightweight mcp (ADR-67)**: slim base-instructions + `config{project_doc_max_bytes:0}` (blocks cwd AGENTS.md auto-load = token savings) · per-task `model`/`model_reasoning_effort` routing · `stall_timeout` watchdog + live progress monitoring · global policy `config/sub-agent-policy.json` · dispatch/execute = mcp-only (raw exec fallback removed).
-- Raw `codex exec`: guarded exception only; record why the primary route could not be used and keep verification explicit.
+- Raw `codex exec` = BANNED (ADR-69, owner order 2026-07-04). Claude→codex = MCP only (`mcp__codex__codex` / `tools/mir_executor/codex_mcp_client.py`); in-repo code = `mir_executor … --dispatch` (MCP backend); codex→codex = native `multi_agent_v1`. Missing MCP path → BLOCKED, never exec fallback.
+- Obsolete raw-exec guards: timeout/stdin/perl-alarm hang guards for `codex exec` are no longer a live delegation contract under ADR-69. MCP transport owns call timeouts, stall progress, and cancellation through `tools/mir_executor/codex_mcp_client.py`.
 
 ## Hook Policy Boundary
 - **Enforcement domain** — Hook-strict:

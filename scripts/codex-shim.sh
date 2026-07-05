@@ -4,17 +4,18 @@
 # Every codex invocation routes through this shim so NO call escapes a
 # monitorable lifecycle record.  The shim:
 #   1. Captures start time, pid, caller.
-#   2. Runs the REAL codex binary (CODEX_REAL_BIN — never resolves "codex"
-#      via PATH to avoid recursion) with the existing timeout + stdin guard.
-#   3. Appends one bounded JSON event line to tasks/codex-exec-events.jsonl.
-#   4. Exits with the real codex exit code.
+#   2. Rejects raw `codex exec` per ADR-69.
+#   3. Runs the REAL codex binary (CODEX_REAL_BIN — never resolves "codex"
+#      via PATH to avoid recursion) for supported MCP/non-exec subcommands.
+#   4. Appends one bounded JSON event line to tasks/codex-exec-events.jsonl.
+#   5. Exits with the real codex exit code or the ADR-69 block code.
 #
 # Activation (set in harness env or .env):
-#   export CODEX_REAL_BIN="~/.bun/bin/codex"  # absolute path
+#   export CODEX_REAL_BIN="<path-to-codex>"
 #   export CODEX_BIN="$(pwd)/scripts/codex-shim.sh"          # routes MirExecutor
 #   PATH="$(pwd)/scripts/codex-shim-dir:$PATH"               # routes shutil.which
 #
-# The spawn wrapper already honors CODEX_BIN so it routes through the shim too.
+# MCP-backed clients honor CODEX_BIN when a shimmed Codex binary is required.
 # See ADR-59 §5.1 for the full wiring rationale.
 set -eu
 
@@ -56,29 +57,18 @@ if [ ! -f "$_EVENTS_FILE" ]; then
 fi
 
 # ---------------------------------------------------------------------------
-# Run the real codex binary with the existing timeout + stdin guard.
-# Mirror the timeout logic from scripts/spawn_codex_session.sh.
+# Run the real codex binary for supported subcommands.
+# Raw `codex exec` is banned by ADR-69; MCP-backed clients use `mcp-server codex`.
 # NEVER resolve "codex" via PATH here — use CODEX_REAL_BIN only.
 # ---------------------------------------------------------------------------
-_MIR_CODEX_EXEC_TIMEOUT="${MIR_CODEX_EXEC_TIMEOUT:-1800}"
-
 # Capture stderr to a temp file so we can compute error_sig after exit.
 _STDERR_TMP="$(mktemp /tmp/codex-shim-stderr.XXXXXX)"
 
 _SHIM_EXIT=0
 case "${1:-}" in
   exec|e)
-    if command -v timeout >/dev/null 2>&1; then
-        timeout "$_MIR_CODEX_EXEC_TIMEOUT" "$CODEX_REAL_BIN" "$@" \
-            </dev/null 2>"$_STDERR_TMP" || _SHIM_EXIT=$?
-    elif command -v gtimeout >/dev/null 2>&1; then
-        gtimeout "$_MIR_CODEX_EXEC_TIMEOUT" "$CODEX_REAL_BIN" "$@" \
-            </dev/null 2>"$_STDERR_TMP" || _SHIM_EXIT=$?
-    else
-        perl -e 'alarm shift; exec @ARGV or exit 127' \
-            "$_MIR_CODEX_EXEC_TIMEOUT" "$CODEX_REAL_BIN" "$@" \
-            </dev/null 2>"$_STDERR_TMP" || _SHIM_EXIT=$?
-    fi
+    printf '[codex-shim] ADR-69: raw codex exec is banned; use Codex MCP or mir_executor --dispatch.\n' >"$_STDERR_TMP"
+    _SHIM_EXIT=2
     ;;
   *)
     "$CODEX_REAL_BIN" "$@" 2>"$_STDERR_TMP" || _SHIM_EXIT=$?

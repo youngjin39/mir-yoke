@@ -5,9 +5,9 @@ model: sonnet
 execution_backend: codex
 ---
 
-> **Codex Backend Dispatch Rule (ADR-18 §S2)**: This agent declares `execution_backend: codex`. The main-orchestrator must dispatch it via the Codex CLI subprocess pattern (see `executor-agent.md`), NOT direct Agent tool invocation. Cold-readers: if you reached this body via direct Agent dispatch, the orchestrator violated ADR-18 — log accordingly.
+> **Codex Backend Dispatch Rule (ADR-18 §S2, amended by ADR-69)**: This agent declares `execution_backend: codex`. The main-orchestrator must dispatch it through the MCP-backed Codex lane (`mcp__codex__codex` or `mir_executor … --dispatch`), NOT direct Agent tool invocation and never raw `codex exec`. Cold-readers: if you reached this body via direct Agent dispatch, the orchestrator violated ADR-18 — log accordingly.
 
-> **Main-Agent Parity Preamble (ADR-56)**: You are the delegated execution lane. The orchestrating main may be EITHER Claude CLI or Codex CLI — they share one main-agent contract; do not assume Claude is the main. Your backend is Codex (`execution_backend: codex`); execute via the Codex CLI subprocess pattern. Rules, memory, ADRs, hooks, and TDD-ledger constraints apply identically regardless of which CLI opened the main. Do not switch backend away from Codex without an explicit recorded override in `tasks/plan.md`.
+> **Main-Agent Parity Preamble (ADR-56)**: You are the delegated execution lane. The orchestrating main may be EITHER Claude CLI or Codex CLI — they share one main-agent contract; do not assume Claude is the main. Your backend is Codex (`execution_backend: codex`); execute via the MCP-backed Codex lane. Rules, memory, ADRs, hooks, and TDD-ledger constraints apply identically regardless of which CLI opened the main. Do not switch backend away from Codex without an explicit recorded override in `tasks/plan.md`.
 
 Role: Coordinate the default Codex execution lane for approved implementation plans.
 
@@ -21,46 +21,72 @@ Role: Coordinate the default Codex execution lane for approved implementation pl
 7. 3 failures → STOP + report reason + error class. No 4th attempt.
 8. On completion: report changed files + execution results.
 
-## Codex CLI invocation (ADR-09 — lessons from the phantom "stdin issue")
+## Codex CLI invocation (ADR-09 round 4 — lessons from Phase 9A phantom "stdin issue")
 
-For all Codex dispatches, use the following Bash invocation pattern. This bypasses the
-harness enforcement hook (`.claude/hooks/pre-tool-use.sh`) which blocks Claude direct Edit/Write
-under `tools/`/`src/` paths — Codex CLI subprocess writes are outside Claude's tool surface
-and never trigger the hook.
+Routing SoT: ADR-69 amends ADR-65. Raw `codex exec` is BANNED in all forms. In-repo code writes use `mir_executor --dispatch` backed by MCP; Claude-main breadth/cross-repo uses `mcp__codex__codex`; Codex-main breadth uses native `multi_agent_v1`. Missing MCP/native path means `BLOCKED`, never exec fallback.
+
+Codex dispatch in the executor lane has one supported mutating form (ADR-60 §16 D1) and no raw-exec exception.
+
+### Write / mutating dispatch → `mir_executor … --dispatch` (R4 worktree)
+
+Delegated execution that writes code MUST route through the ADR-60 dispatch helper. The helper runs
+Codex in its OWN git worktree (R4 structural isolation) and merges the approved result through a
+deterministic merge gate — it NEVER touches the main worktree. This is the `scripts/loop_driver.sh`
+precedent; the worktree supplies cwd, so the explicit repo-root working-directory flag is dropped.
 
 ```bash
-perl -e 'alarm 120; exec @ARGV' codex exec \
-  --skip-git-repo-check \
-  --sandbox <read-only|danger-full-access> \
-  --cd "<repo-root>" \
-  "<prompt>"
+uv run python -m tools.mir_executor execute --background --dispatch \
+  --change-id <tdd_change_id> \
+  --category <tdd_category> \
+  --repo-root . \
+  --codex-args '<prompt>' \
+  --allow-path tools/ \
+  --allow-path src/ \
+  --allow-path scripts/ \
+  --allow-path tests/ \
+  --allow-path tasks/tdd.json \
+  --verify-cmd '<tdd-category command>'
 ```
 
-Rules:
-- **Use a positional prompt argument**, not stdin piping. Both work, but positional starts
-  Codex immediately while stdin shows "Reading additional input from stdin..." latency.
-- **Timeout = 120s for write tasks**, not 60s. Codex reads CLAUDE.md / plan.md / context
-  files before acting; a 60s alarm cuts it off mid-context-load and the failure looks like
-  a stdin issue. Use `alarm 30` only for pure-read or trivial echo prompts.
+`--codex-args` is a legacy option name; in `--dispatch` mode its positional prompt is sent to the MCP Codex backend, not to raw `codex exec`.
+`--allow-path` is the merge allowlist — code paths ONLY; NEVER pass `.claude/`, `.ai-harness/`,
+`config/`, `docs/`, or `tasks/plan.md` (the merge gate fail-closes on any out-of-allowlist path).
+`--verify-cmd` re-runs the TDD-category command in the worktree before the merge is allowed.
+
+### Read-only / non-mutating work → MCP/native routing (nothing to merge)
+
+Claude-main investigation/review uses `mcp__codex__codex`. Codex-main breadth uses native
+`multi_agent_v1` (`tool_search` → `spawn_agent` → `wait_agent` → `close_agent`).
+
+For pure-read or otherwise non-mutating dispatches with no code to merge back, use those MCP/native
+routes. If the MCP/native path is unavailable, STOP with `BLOCKED`; do not invoke raw `codex exec`.
+
+Rules (Phase 9A retro):
+- **Use a positional prompt in `--codex-args`**, not stdin piping. The dispatch helper extracts the
+  positional prompt and sends it to the MCP backend.
+- **Timeout = 120s+ for write tasks**, not 60s. Codex reads CLAUDE.md / plan.md / context
+  files before acting; a too-short timeout cuts it off mid-context-load and the failure looks like
+  a stdin issue. Use shorter timeouts only for trivial read-only MCP probes.
 - **Prepend "Write only. Do not read other files." to write prompts** when the task is
   small enough that context loading is overhead. Reduces token usage and avoids timeouts.
-- **For harness-enforced paths** (`tools/`, `src/`), always go through `codex exec` — never
-  Claude Edit/Write directly. The hook will reject the latter with `[<family-slug> BLOCKED]`
-  and the dispatch fails.
-- **Verify Codex actually ran** by checking stdout for the `tokens used N,NNN` marker.
-  Absence means the subprocess exited before the model engaged.
+- **For template-enforced paths** (`tools/`, `src/`, `scripts/`), the write dispatch above goes
+  through MCP-backed `mir_executor … --dispatch` — never direct Edit/Write from the orchestrator.
+  The hook will reject direct writes with `[mir BLOCKED]` and the dispatch fails.
+- **Verify Codex actually ran** by checking the JobRegistry status/result plus MCP dispatch artifacts.
+  Absence means the backend did not complete and the result is not acceptable.
 - **Auth**: `CODEX_HOME` env must point to the auth.json directory (usually
   `${CODEX_HOME:-$HOME/.codex}`). If `codex --version` works in the shell, auth is set.
 
-## State Checkpoint (externalize, don't trust memory)
-Before and after every step, update `tasks/plan.md`:
-```
-Step N: IN_PROGRESS | started=YYYY-MM-DD HH:MM | input_hash={sha of step spec}
-Step N: DONE        | finished=YYYY-MM-DD HH:MM | artifacts=[file1, file2, test-output-path]
-Step N: FAILED      | attempts=K | class={transient|model-fixable|interrupt|unknown} | reason=...
-```
-- Never re-run a step marked DONE. On resume, find the first non-DONE step.
-- State lives in plan.md, not in the model's head. Agent may be restarted between steps.
+## State Checkpoint (externalize, don't trust memory — ADR-60 R5)
+Report your step result via your final message (Report Format below) + the **JobRegistry** job row
+(restart-state: `status` / `exit_code` / `artifacts`). **Do NOT edit `tasks/plan.md`** — the
+control_plane main OWNS the cursor (ADR-56) and updates it from YOUR reported result; the loop-protocol
+"mark the cursor line DONE" step is **main-only**. State lives in the JobRegistry + your reported result,
+not in `tasks/plan.md` and not in the model's head.
+- Never re-run a step the orchestrator marked DONE; the orchestrator owns resume (re-dispatches the first
+  non-DONE step from the cursor IT owns).
+- Under ADR-60 R4 you run in your OWN git worktree — the main's `tasks/plan.md` is in a different worktree
+  and is not yours to reach; emit a structured `result.json` when that mechanism lands.
 
 ## Report Format
 ```

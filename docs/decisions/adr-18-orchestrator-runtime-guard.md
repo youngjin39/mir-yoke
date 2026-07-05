@@ -25,8 +25,8 @@ now formally accepted.
 ADR-09 introduced the `execution_backend` agent
 frontmatter field with enum `[claude, codex]`. The intent was to
 declare which CLI executes the agent's work — Claude session direct,
-or Codex CLI subprocess. The field is read by `tools/agent_loader` for
-validation only. There is no runtime enforcement.
+or the MCP-backed Codex lane. The field is read by `tools/agent_loader`
+for validation only. There is no runtime enforcement.
 
 Three agents currently carry `execution_backend: codex` (verified
 2026-05-21):
@@ -38,10 +38,10 @@ Three agents currently carry `execution_backend: codex` (verified
 | `pipeline-validator` | specialist | `.codex/agents/pipeline-validator.toml` declares `sandbox_mode = "read-only"` |
 
 The mixed-harness operating model (CLAUDE.md, ARCHITECTURE.md, ADR-09)
-states the Codex CLI owns final review + execution + (per-specialist)
+states the Codex lane owns final review + execution + (per-specialist)
 deterministic read-only review for these three agents. The model only
 holds if dispatching these three agents actually flows through the
-Codex CLI subprocess, not the Claude session directly.
+MCP-backed Codex lane, not the Claude session directly.
 
 Two operational facts make the current state risky:
 
@@ -102,11 +102,12 @@ agent via `Agent(subagent_type=<slug>)`:
 1. Read the agent's frontmatter via `tools.agent_loader` (or read the
    `.md` file directly).
 2. If `execution_backend: codex`:
-   - The orchestrator must dispatch through the Codex CLI subprocess
-     pattern documented in `executor-agent.md` lines 20-49 (the
-     standard `perl -e 'alarm <N>; exec @ARGV' codex exec ...`
-     invocation). Direct `Agent` tool dispatch is forbidden for these
-     three agents.
+   - The orchestrator must dispatch through the MCP-backed Codex lane
+     documented in `executor-agent.md`. Claude→Codex uses MCP,
+     in-repo code/TDD/review writes use `mir_executor --dispatch`, and
+     Codex→Codex breadth uses native `multi_agent_v1`. Direct `Agent`
+     tool dispatch is forbidden for these three agents. Raw `codex exec`
+     is banned by ADR-69.
    - This requirement is repeated in the agent's own .md body header
      so a Codex executor cold-reading the agent definition
      understands the rule.
@@ -144,7 +145,7 @@ Log line schema (`tasks/log/dispatch-log.jsonl`):
 
 `routed_via` enum: `codex_cli | claude_session | unknown | skipped_inactive | skipped_empty_scope`.
 
-- `codex_cli` — compliant Codex CLI subprocess dispatch.
+- `codex_cli` — legacy log value for compliant Codex backend dispatch.
 - `claude_session` / `unknown` — ADR-18 §S2 violation; R11 WARN.
 - `skipped_inactive` — Active Agent Resolution rejected the dispatch
   (specialist not in family `active_agents`). Intentional non-dispatch,
@@ -270,7 +271,7 @@ not code.
   long-term coverage drift becomes visible in fleet_observe metrics.
 - **R2**: Log file growth. Mitigation: gitignore + verifier reads
   only last-N entries.
-- **R3**: Codex CLI subprocess invocation pattern in executor-agent
+- **R3**: MCP-backed Codex routing pattern in executor-agent
   may need future revision; the dispatch self-check must stay in
   sync. Mitigation: agent .md body refers to executor-agent.md as
   authoritative — single source of truth.
@@ -417,7 +418,7 @@ extension of the existing `execution_backend` declaration.
     entry written 2026-05-21T12:55:00Z capturing a real Agent-tool
     dispatch of codex-final-reviewer. routed_via=claude_session
     (audit-truthful: Agent tool from Claude session does NOT route
-    via Codex CLI subprocess; this confirms §3 observation-only
+    via the Codex backend; this confirms §3 observation-only
     framing). Verifier R11 output: "1 entries, 0 compliant,
     1 non-compliant; WARN: dispatch-log.jsonl: ... routed_via=
     claude_session (expected codex_cli)". The audit gap is now

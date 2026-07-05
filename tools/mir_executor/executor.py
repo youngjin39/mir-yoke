@@ -1,10 +1,10 @@
 """
 executor.py
 -----------
-MirExecutor: Codex CLI subprocess wrapper + tdd.json ledger update.
+MirExecutor: MCP-backed Codex runner + tdd.json ledger update.
 
 Design inspiration: harness_framework (Hermes pattern) — no code copied.
-P0-J MVP: blocking subprocess only. Async / Stop hook wiring deferred to P0-J.1.
+P0-J MVP: blocking runner only. Async / Stop hook wiring deferred to P0-J.1.
 """
 
 from __future__ import annotations

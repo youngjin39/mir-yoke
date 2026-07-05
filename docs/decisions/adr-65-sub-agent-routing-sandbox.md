@@ -22,8 +22,8 @@ Sub-agent routing depends on which CLI owns the main control plane:
   `spawn_agent`, `wait_agent`, then `close_agent`.
 - In-repo code, TDD, and review work routes through `mir_executor --dispatch`, preserving dispatch
   worktrees, deterministic merge gates, and TDD evidence.
-- Raw `codex exec` is a guarded exception only, used when the primary route is unavailable or
-  inappropriate for a clearly recorded reason.
+- Raw `codex exec` is banned by ADR-69. Missing MCP/native routing means `BLOCKED`, never an exec
+  fallback.
 
 Codex MCP and mutating Codex lanes use `sandbox=danger-full-access`. `workspace-write` is forbidden
 for those lanes. Read-only cases may still use `read-only`.
@@ -33,5 +33,7 @@ for those lanes. Read-only cases may still use `read-only`.
 - Claude-main and Codex-main keep the same control-plane contract while using the routing surface
   native to each runtime.
 - Mutating repository work keeps deterministic merge and verification gates.
+- Raw exec availability failures surface as `BLOCKED` provisioning issues instead of fallback
+  execution.
 - The public template carries only generic English policy text; private paths, deployment names, and
   secrets stay out of the template.

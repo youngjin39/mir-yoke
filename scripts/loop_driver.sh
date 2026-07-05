@@ -65,15 +65,42 @@ for ((iter = 1; iter <= MAX_ITERS; iter++)); do
 
       uv run mir loop mark --step "$step_id" --status IN_PROGRESS
 
-      repo_root="$(pwd -P)"
       prompt="Read DispatchBrief $brief and execute exactly one bounded step. Do not edit tasks/plan.md cursor; scripts/loop_driver.sh updates it. Respect all repository hooks and verification gates."
-      codex_args="$(printf 'exec --skip-git-repo-check --sandbox workspace-write --cd %q %q' "$repo_root" "$prompt")"
+      codex_args="$(printf '%q' "$prompt")"
+      verify_cmd="$(
+        TDD_CHANGE_ID="$change_id" TDD_CATEGORY="$category" uv run python - <<'PY'
+import json
+import os
+from pathlib import Path
 
-      if uv run python -m tools.mir_executor execute \
+data = json.loads(Path("tasks/tdd.json").read_text(encoding="utf-8"))
+change = {}
+if isinstance(data, dict):
+    for candidate in data.get("changes", []):
+        if isinstance(candidate, dict) and candidate.get("id") == os.environ["TDD_CHANGE_ID"]:
+            change = candidate
+            break
+    if not change:
+        candidate = data.get(os.environ["TDD_CHANGE_ID"], {})
+        change = candidate if isinstance(candidate, dict) else {}
+categories = change.get("categories", {}) if isinstance(change, dict) else {}
+category = categories.get(os.environ["TDD_CATEGORY"], {})
+command = category.get("command", "") if isinstance(category, dict) else ""
+print(command or "uv run ruff check")
+PY
+      )"
+
+      if uv run python -m tools.mir_executor execute --background --dispatch \
         --change-id "$change_id" \
         --category "$category" \
         --repo-root . \
-        --codex-args "$codex_args"; then
+        --codex-args "$codex_args" \
+        --allow-path tools/ \
+        --allow-path src/ \
+        --allow-path scripts/ \
+        --allow-path tests/ \
+        --allow-path tasks/tdd.json \
+        --verify-cmd "$verify_cmd"; then
         uv run mir loop mark --step "$step_id" --status DONE
       else
         rc=$?

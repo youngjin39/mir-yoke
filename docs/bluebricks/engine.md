@@ -20,7 +20,7 @@ Compile drafted intent into an executable job, enforce policy and isolation gate
 ## Non-Obvious Hazards
 - Do not skip `target_files` root confinement or SHA pin checks.
 - Do not move required tool or provider allowlist validation out of compile.
-- Do not let reviewer CLI contract drift; `codex exec --output-schema` requires a schema file path, not inline JSON.
+- Do not let reviewer transport contracts drift; Codex-backed review must use MCP/native routing, not raw `codex exec`.
 - Do not weaken sanitizer-first ordering in intent verification.
 - Do not turn async/sync provider boundaries into ad hoc mixed call paths.
 
