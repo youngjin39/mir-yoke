@@ -175,6 +175,19 @@ def _guard_codex_main_worktree(
     )
 
 
+def _ledger_entry_for(ledger: dict, change_id: str) -> dict | None:
+    changes = ledger.get("changes")
+    if isinstance(changes, list):
+        for item in changes:
+            if item.get("id") == change_id:
+                return item
+
+    entry = ledger.get(change_id)
+    if isinstance(entry, dict):
+        return entry
+    return None
+
+
 @dataclass
 class SubprocessResult:
     exit_code: int
@@ -315,13 +328,7 @@ class MirExecutor:
             )
 
         ledger = json.loads(self._ledger_path.read_text(encoding="utf-8"))
-        changes: list[dict] = ledger.get("changes", [])
-
-        entry: dict | None = None
-        for ch in changes:
-            if ch.get("id") == change_id:
-                entry = ch
-                break
+        entry = _ledger_entry_for(ledger, change_id)
 
         if entry is None:
             raise KeyError(
@@ -363,13 +370,7 @@ class MirExecutor:
         self._validate_ledger_entry(change_id, category)
 
         ledger = json.loads(self._ledger_path.read_text(encoding="utf-8"))
-        changes: list[dict] = ledger.get("changes", [])
-
-        entry: dict | None = None
-        for ch in changes:
-            if ch.get("id") == change_id:
-                entry = ch
-                break
+        entry = _ledger_entry_for(ledger, change_id)
 
         categories: dict = entry.get("categories", {})
 

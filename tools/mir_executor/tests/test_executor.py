@@ -43,6 +43,23 @@ def _make_ledger(tmp_path: pathlib.Path, categories: dict) -> pathlib.Path:
     return ledger_path
 
 
+def _make_mapping_ledger(tmp_path: pathlib.Path, categories: dict) -> pathlib.Path:
+    """Write a minimal top-level-mapping tdd.json with no changes[] list."""
+    tasks_dir = tmp_path / "tasks"
+    tasks_dir.mkdir(parents=True, exist_ok=True)
+    ledger_path = tasks_dir / "tdd.json"
+    ledger = {
+        "version": 1,
+        "mapping-change-id": {
+            "scope": "synthetic mapping test entry",
+            "targets": ["tasks/tdd.json"],
+            "categories": categories,
+        },
+    }
+    ledger_path.write_text(json.dumps(ledger, indent=2), encoding="utf-8")
+    return ledger_path
+
+
 def _install_fake_codex_mcp_client(
     monkeypatch: pytest.MonkeyPatch,
     *,
@@ -287,6 +304,23 @@ def test_update_ledger_sets_status_pass_on_exit_zero(tmp_path):
     assert update.new_status == "pass"
     reloaded = json.loads(ledger_path.read_text(encoding="utf-8"))
     assert reloaded["changes"][0]["categories"]["unit"]["status"] == "pass"
+
+
+def test_validate_and_update_ledger_support_top_level_mapping_schema(tmp_path):
+    ledger_path = _make_mapping_ledger(tmp_path, {"unit": {"status": "planned"}})
+    executor = MirExecutor(repo_root=tmp_path, ledger_path=ledger_path)
+    result = SubprocessResult(
+        exit_code=0, stdout="", stderr="", duration_seconds=0.1, command=["codex", "exec"]
+    )
+
+    entry = executor._validate_ledger_entry("mapping-change-id", "unit")
+    assert entry["scope"] == "synthetic mapping test entry"
+
+    update = executor.update_ledger("mapping-change-id", "unit", result)
+    assert update.new_status == "pass"
+    reloaded = json.loads(ledger_path.read_text(encoding="utf-8"))
+    assert "changes" not in reloaded
+    assert reloaded["mapping-change-id"]["categories"]["unit"]["status"] == "pass"
 
 
 # ---------------------------------------------------------------------------
