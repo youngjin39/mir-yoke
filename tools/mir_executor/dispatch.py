@@ -511,10 +511,11 @@ def finalize_dispatch(
     verification_commands: list[str],
     verify_timeout: int = 600,
     expect_changes: bool = True,
+    allow_harness_self_modify: bool = False,
 ) -> FinalizeResult:
     """Commit, gate, merge, and clean up a completed dispatch fail-closed."""
     main_repo_root = pathlib.Path(main_repo_root)
-    allow_harness = _resolve_harness_self_modify(main_repo_root)
+    allow_harness = allow_harness_self_modify or _resolve_harness_self_modify(main_repo_root)
     if outcome.status not in {"completed", "fallback_completed"}:
         persist_dispatch_artifacts(wt, main_repo_root)
         return FinalizeResult(

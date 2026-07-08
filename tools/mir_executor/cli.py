@@ -7,10 +7,11 @@ Usage:
     python -m tools.mir_executor execute \\
         --change-id <id> \\
         --category <name> \\
-        --codex-args "<quoted string>" \\
+        (--codex-args "<quoted string>" | --codex-args-file <path>) \\
         [--timeout <seconds>] \\
         (--family <slug> | --repo-root <path>)
         [--background | -b]
+        [--allow-harness-self-modify]
         [--jobs-db <path>]
 
     python -m tools.mir_executor status --job-id <id> [--jobs-db <path>]
@@ -168,14 +169,23 @@ def _build_parser() -> argparse.ArgumentParser:
             + "."
         ),
     )
-    exec_p.add_argument(
+    codex_args_group = exec_p.add_mutually_exclusive_group(required=True)
+    codex_args_group.add_argument(
         "--codex-args",
-        required=True,
         metavar="QUOTED_STRING",
         help=(
             "Arguments for legacy Codex invocation. In --dispatch mode, "
             "exec-shaped flags are dropped and the positional prompt is sent "
             "to the MCP Codex backend."
+        ),
+    )
+    codex_args_group.add_argument(
+        "--codex-args-file",
+        type=pathlib.Path,
+        metavar="PATH",
+        help=(
+            "Read UTF-8 file content and use it as one raw positional prompt "
+            "argument, without shlex tokenization."
         ),
     )
     exec_p.add_argument(
@@ -278,6 +288,17 @@ def _build_parser() -> argparse.ArgumentParser:
         help=(
             "Require a dispatch to produce a git diff before merge (default: true). "
             "Use --no-expect-changes for legitimate no-op or verify-only dispatches."
+        ),
+    )
+    exec_p.add_argument(
+        "--allow-harness-self-modify",
+        action="store_true",
+        default=False,
+        dest="allow_harness_self_modify",
+        help=(
+            "Allow dispatch merge-back for liftable harness prefixes "
+            "(.claude/, .ai-harness/, config/, docs/) when also allowlisted. "
+            "tasks/ remains denied."
         ),
     )
     exec_p.add_argument(
@@ -654,6 +675,8 @@ def _prompt_from_codex_args(codex_args: list[str]) -> str:
         prompt_parts = codex_args[index:]
         break
 
+    if len(prompt_parts) == 1:
+        return prompt_parts[0]
     return " ".join(prompt_parts).strip()
 
 
@@ -680,13 +703,31 @@ def _resolve_dispatch_prompt(
     return _DEFAULT_DISPATCH_PROMPT
 
 
-def _handle_dispatch(args: argparse.Namespace, repo_root: pathlib.Path) -> int:
+def _resolve_execute_codex_args(args: argparse.Namespace) -> list[str]:
+    """Resolve execute prompt source into persisted argv-shaped codex_args."""
+    codex_args_text = getattr(args, "codex_args", None)
+    codex_args_file = getattr(args, "codex_args_file", None)
+    has_codex_args = codex_args_text is not None
+    has_codex_args_file = codex_args_file is not None
+    if has_codex_args == has_codex_args_file:
+        raise ValueError("exactly one of --codex-args or --codex-args-file must be provided")
+    if has_codex_args_file:
+        return [pathlib.Path(codex_args_file).read_text(encoding="utf-8")]
+    return shlex.split(codex_args_text)
+
+
+def _handle_dispatch(
+    args: argparse.Namespace,
+    repo_root: pathlib.Path,
+    codex_args: list[str] | None = None,
+) -> int:
     """Route execute --background --dispatch through the ADR-60 helper."""
     from tools.mir_executor import dispatch  # noqa: PLC0415
     from tools.mir_executor.jobs import JobRecord, JobRegistry  # noqa: PLC0415
     from tools.mir_executor.policy import load_sub_agent_policy  # noqa: PLC0415
 
-    codex_args = shlex.split(args.codex_args)
+    if codex_args is None:
+        codex_args = _resolve_execute_codex_args(args)
     dispatch_brief_path = (
         args.dispatch_brief.resolve() if getattr(args, "dispatch_brief", None) else None
     )
@@ -709,6 +750,7 @@ def _handle_dispatch(args: argparse.Namespace, repo_root: pathlib.Path) -> int:
             dispatch_brief_path=(
                 str(dispatch_brief_path) if dispatch_brief_path is not None else None
             ),
+            allow_harness_self_modify=args.allow_harness_self_modify,
             timeout_seconds=args.timeout,
             status="running",
             started_at=_utc_now(),
@@ -757,6 +799,7 @@ def _handle_dispatch(args: argparse.Namespace, repo_root: pathlib.Path) -> int:
                 allowlist=getattr(args, "allow_paths", None) or [],
                 verification_commands=getattr(args, "verify_cmds", None) or [],
                 expect_changes=args.expect_changes,
+                allow_harness_self_modify=args.allow_harness_self_modify,
             )
 
         # status is the codex-lane outcome for the outage guard; task success requires merge.
@@ -805,9 +848,12 @@ def _handle_dispatch(args: argparse.Namespace, repo_root: pathlib.Path) -> int:
 def _handle_execute(args: argparse.Namespace) -> int:
     """Handle the 'execute' subcommand."""
     try:
-        codex_args = shlex.split(args.codex_args)
+        codex_args = _resolve_execute_codex_args(args)
     except ValueError as exc:
         print(f"[mir_executor] argument parse error: {exc}", file=sys.stderr)
+        return 1
+    except OSError as exc:
+        print(f"[mir_executor] {type(exc).__name__}: {exc}", file=sys.stderr)
         return 1
 
     if args.family is not None:
@@ -835,7 +881,7 @@ def _handle_execute(args: argparse.Namespace) -> int:
 
     if args.background:
         if args.dispatch:
-            return _handle_dispatch(args, repo_root)
+            return _handle_dispatch(args, repo_root, codex_args)
         # Background mode: insert job record, print job_id, then run async and update.
         # MVP: runs in same CLI process (true daemon detachment is ADR §8 O1 future work).
         from tools.mir_executor.jobs import JobRecord, JobRegistry  # noqa: PLC0415
@@ -851,6 +897,7 @@ def _handle_execute(args: argparse.Namespace) -> int:
             family=args.family,
             repo_root=str(repo_root),
             codex_args=codex_args,
+            allow_harness_self_modify=args.allow_harness_self_modify,
             timeout_seconds=args.timeout,
             status="running",
             started_at=_utc_now(),
@@ -965,6 +1012,7 @@ def _handle_status(args: argparse.Namespace) -> int:
     print(f"[STATUS] change_id={job.change_id!r} category={job.category!r}")
     print(f"[STATUS] family={job.family!r} repo_root={job.repo_root!r}")
     print(f"[STATUS] dispatch_brief_path={job.dispatch_brief_path!r}")
+    print(f"[STATUS] allow_harness_self_modify={job.allow_harness_self_modify}")
     print(f"[STATUS] resume_count={job.resume_count} last_resumed_at={job.last_resumed_at!r}")
     print(f"[STATUS] started_at={job.started_at} completed_at={job.completed_at}")
     print(f"[STATUS] cancel_requested={job.cancel_requested}")
@@ -994,6 +1042,7 @@ def _handle_result(args: argparse.Namespace) -> int:
     print(f"[RESULT] status={job.status}")
     print(f"[RESULT] exit_code={job.exit_code}")
     print(f"[RESULT] dispatch_brief_path={job.dispatch_brief_path!r}")
+    print(f"[RESULT] allow_harness_self_modify={job.allow_harness_self_modify}")
     print(f"[RESULT] resume_count={job.resume_count} last_resumed_at={job.last_resumed_at!r}")
     print(f"[RESULT] duration_seconds={job.duration_seconds}")
     if job.stdout:
@@ -1111,7 +1160,7 @@ def _handle_resume(args: argparse.Namespace) -> int:
 
     print(
         f"[RESUME] job_id={job.job_id} dispatch_brief={job.dispatch_brief_path!r} "
-        f"resumed_at={resumed_at}"
+        f"allow_harness_self_modify={job.allow_harness_self_modify} resumed_at={resumed_at}"
     )
     print(f"[RESULT] change_id={update.change_id!r} category={update.category!r}")
     print(f"[RESULT] codex exit_code={result.exit_code} duration={result.duration_seconds:.2f}s")

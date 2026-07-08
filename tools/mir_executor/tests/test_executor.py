@@ -526,6 +526,65 @@ def test_cli_execute_subcommand_invokes_executor(tmp_path, monkeypatch):
     }
 
 
+def test_cli_execute_codex_args_file_uses_raw_prompt(tmp_path, monkeypatch):
+    prompt = "Don't split \"quoted text\" or --flag-like words."
+    prompt_path = tmp_path / "prompt.txt"
+    prompt_path.write_text(prompt, encoding="utf-8")
+    calls, _init_kwargs = _install_fake_codex_mcp_client(
+        monkeypatch,
+        result=CodexMcpResult(
+            content_text="cli-file-ok",
+            thread_id="thread-test",
+            raw_result={},
+        ),
+    )
+    _make_ledger(tmp_path, {"unit": {"status": "planned"}})
+
+    from tools.mir_executor.cli import main
+
+    main(
+        [
+            "execute",
+            "--change-id", "test-change-id",
+            "--category", "unit",
+            "--codex-args-file", str(prompt_path),
+            "--repo-root", str(tmp_path),
+        ]
+    )
+
+    assert calls[0]["prompt"] == prompt
+
+
+def test_single_part_prompt_passthrough_preserves_raw_text():
+    from tools.mir_executor import cli as cli_module
+    from tools.mir_executor import executor as executor_module
+
+    prompt = "  Don't trim this raw prompt.\n"
+
+    assert cli_module._prompt_from_codex_args([prompt]) == prompt
+    assert executor_module._prompt_from_codex_args([prompt]) == prompt
+
+
+def test_cli_execute_codex_args_file_read_error_returns_rc1(tmp_path, capsys):
+    from tools.mir_executor.cli import main
+
+    missing_path = tmp_path / "missing-prompt.txt"
+
+    with pytest.raises(SystemExit) as exc_info:
+        main(
+            [
+                "execute",
+                "--change-id", "test-change-id",
+                "--category", "unit",
+                "--codex-args-file", str(missing_path),
+                "--repo-root", str(tmp_path),
+            ]
+        )
+
+    assert exc_info.value.code == 1
+    assert "FileNotFoundError" in capsys.readouterr().err
+
+
 # ---------------------------------------------------------------------------
 # 18. execute() fails fast on unknown change_id — Codex never invoked (W3)
 # ---------------------------------------------------------------------------

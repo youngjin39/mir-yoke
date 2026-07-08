@@ -109,6 +109,8 @@ def _prompt_from_codex_args(codex_args: list[str]) -> str:
         prompt_parts = codex_args[index:]
         break
 
+    if len(prompt_parts) == 1:
+        return prompt_parts[0]
     return " ".join(prompt_parts).strip()
 
 

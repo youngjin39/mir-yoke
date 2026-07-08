@@ -7,6 +7,7 @@ ADR: docs/decisions/p2-4-l4-background-jobs-2026-05-10.md §4.1–§4.2
 
 Schema v1 (tasks/jobs.db):
     jobs(job_id, change_id, category, family, repo_root, codex_args, dispatch_brief_path,
+         allow_harness_self_modify,
          resume_count, last_resumed_at,
          timeout_seconds, status, exit_code, stdout, stderr,
          duration_seconds, started_at, completed_at, cancel_requested)
@@ -41,6 +42,7 @@ class JobRecord:
         repo_root: absolute path to repository root.
         codex_args: argument list passed to Codex CLI.
         dispatch_brief_path: persisted DispatchBrief JSON path, if present.
+        allow_harness_self_modify: True iff liftable harness prefixes may merge back.
         resume_count: number of successful/attempted resume launches for this job row.
         last_resumed_at: last UTC timestamp when resume was requested.
         timeout_seconds: subprocess timeout.
@@ -72,6 +74,7 @@ class JobRecord:
     started_at: str = ""
     completed_at: str | None = None
     cancel_requested: bool = False
+    allow_harness_self_modify: bool = False
 
 
 # ---------------------------------------------------------------------------
@@ -116,6 +119,7 @@ class JobRegistry:
             repo_root          TEXT    NOT NULL,
             codex_args         TEXT    NOT NULL,
             dispatch_brief_path TEXT,
+            allow_harness_self_modify INTEGER NOT NULL DEFAULT 0,
             resume_count       INTEGER NOT NULL DEFAULT 0,
             last_resumed_at    TEXT,
             timeout_seconds    INTEGER NOT NULL,
@@ -139,6 +143,11 @@ class JobRegistry:
                 }
                 if "dispatch_brief_path" not in columns:
                     self._conn.execute("ALTER TABLE jobs ADD COLUMN dispatch_brief_path TEXT")
+                if "allow_harness_self_modify" not in columns:
+                    self._conn.execute(
+                        "ALTER TABLE jobs "
+                        "ADD COLUMN allow_harness_self_modify INTEGER NOT NULL DEFAULT 0"
+                    )
                 if "resume_count" not in columns:
                     self._conn.execute(
                         "ALTER TABLE jobs ADD COLUMN resume_count INTEGER NOT NULL DEFAULT 0"
@@ -155,9 +164,10 @@ class JobRegistry:
         sql = """
         INSERT INTO jobs (
             job_id, change_id, category, family, repo_root, codex_args, dispatch_brief_path,
-            resume_count, last_resumed_at, timeout_seconds, status, exit_code, stdout, stderr,
-            duration_seconds, started_at, completed_at, cancel_requested
-        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            allow_harness_self_modify, resume_count, last_resumed_at, timeout_seconds, status,
+            exit_code, stdout, stderr, duration_seconds, started_at, completed_at,
+            cancel_requested
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         """
         params = (
             job.job_id,
@@ -167,6 +177,7 @@ class JobRegistry:
             job.repo_root,
             json.dumps(job.codex_args),
             job.dispatch_brief_path,
+            1 if job.allow_harness_self_modify else 0,
             job.resume_count,
             job.last_resumed_at,
             job.timeout_seconds,
@@ -273,6 +284,7 @@ class JobRegistry:
             repo_root=row["repo_root"],
             codex_args=json.loads(row["codex_args"]),
             dispatch_brief_path=row["dispatch_brief_path"],
+            allow_harness_self_modify=bool(row["allow_harness_self_modify"]),
             resume_count=row["resume_count"],
             last_resumed_at=row["last_resumed_at"],
             timeout_seconds=row["timeout_seconds"],

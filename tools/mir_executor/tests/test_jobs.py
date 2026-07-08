@@ -298,6 +298,72 @@ def test_dispatch_brief_path_roundtrip(tmp_path):
     assert fetched.dispatch_brief_path == "/tmp/tasks/dispatch/task/slice.json"
 
 
+def test_allow_harness_self_modify_roundtrip(tmp_path):
+    reg = _make_registry(tmp_path)
+    job = _make_job(job_id="allowharness")
+    job.allow_harness_self_modify = True
+    reg.insert(job)
+    fetched = reg.get("allowharness")
+    assert fetched is not None
+    assert fetched.allow_harness_self_modify is True
+
+
+def test_allow_harness_self_modify_legacy_rows_default_false(tmp_path):
+    db_path = tmp_path / "legacy.db"
+    conn = sqlite3.connect(str(db_path))
+    conn.executescript(
+        """
+        CREATE TABLE jobs (
+            job_id             TEXT    PRIMARY KEY,
+            change_id          TEXT    NOT NULL,
+            category           TEXT    NOT NULL,
+            family             TEXT,
+            repo_root          TEXT    NOT NULL,
+            codex_args         TEXT    NOT NULL,
+            dispatch_brief_path TEXT,
+            resume_count       INTEGER NOT NULL DEFAULT 0,
+            last_resumed_at    TEXT,
+            timeout_seconds    INTEGER NOT NULL,
+            status             TEXT    NOT NULL,
+            exit_code          INTEGER,
+            stdout             TEXT,
+            stderr             TEXT,
+            duration_seconds   REAL,
+            started_at         TEXT    NOT NULL,
+            completed_at       TEXT,
+            cancel_requested   INTEGER NOT NULL DEFAULT 0
+        );
+        """
+    )
+    conn.execute(
+        """
+        INSERT INTO jobs (
+            job_id, change_id, category, family, repo_root, codex_args,
+            dispatch_brief_path, timeout_seconds, status, started_at
+        ) VALUES (?,?,?,?,?,?,?,?,?,?)
+        """,
+        (
+            "legacyharness",
+            "change",
+            "unit",
+            None,
+            "/tmp/repo",
+            json.dumps(["exec", "hi"]),
+            None,
+            600,
+            "running",
+            "2026-05-10T00:00:00+00:00",
+        ),
+    )
+    conn.commit()
+    conn.close()
+
+    reg = JobRegistry(db_path)
+    fetched = reg.get("legacyharness")
+    assert fetched is not None
+    assert fetched.allow_harness_self_modify is False
+
+
 def test_mark_resumed_increments_counter_and_timestamp(tmp_path):
     reg = _make_registry(tmp_path)
     reg.insert(_make_job(job_id="resume-counter"))
@@ -494,6 +560,7 @@ def test_cli_status_outputs_record(tmp_path):
     assert "statusjob" in output
     assert "running" in output
     assert "dispatch_brief_path" in output
+    assert "allow_harness_self_modify=False" in output
     assert "resume_count=0" in output
 
 
@@ -540,6 +607,7 @@ def test_cli_result_outputs_completed_record(tmp_path):
     assert "exit_code=0" in output
     assert "15 passed" in output
     assert "dispatch_brief_path" in output
+    assert "allow_harness_self_modify=False" in output
     assert "resume_count=0" in output
 
 
@@ -590,17 +658,17 @@ def test_cli_resume_replays_job_with_dispatch_brief(tmp_path, monkeypatch):
     brief_path = _write_dispatch_brief(tmp_path)
     jobs_db = tmp_path / "jobs.db"
     reg = JobRegistry(jobs_db)
-    reg.insert(
-        _make_job(
-            job_id="resumejob",
-            change_id="bg-test-change",
-            category="unit",
-            repo_root=str(tmp_path),
-            codex_args=[],
-            dispatch_brief_path=str(brief_path),
-            status="failed",
-        )
+    job = _make_job(
+        job_id="resumejob",
+        change_id="bg-test-change",
+        category="unit",
+        repo_root=str(tmp_path),
+        codex_args=[],
+        dispatch_brief_path=str(brief_path),
+        status="failed",
     )
+    job.allow_harness_self_modify = True
+    reg.insert(job)
     reg.close()
 
     def _fake_run_codex(self, codex_args, timeout_seconds=600):
@@ -631,6 +699,7 @@ def test_cli_resume_replays_job_with_dispatch_brief(tmp_path, monkeypatch):
     output = buf.getvalue()
     assert rc == 0
     assert "[RESUME] job_id=resumejob" in output
+    assert "allow_harness_self_modify=True" in output
     assert "Resume executor job [role=executor, stack=python]" in output
 
     reg2 = JobRegistry(jobs_db)

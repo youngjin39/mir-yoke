@@ -32,7 +32,7 @@ from tools.mir_executor.dispatch import (
     finalize_dispatch,
     run_dispatch,
 )
-from tools.mir_executor.executor import MirExecutor
+from tools.mir_executor.executor import LedgerUpdate, MirExecutor, SubprocessResult
 from tools.mir_executor.jobs import JobRecord, JobRegistry
 from tools.mir_executor.worktree import (
     DispatchWorktree,
@@ -935,6 +935,85 @@ def test_execute_parser_accepts_performance_options(tmp_path: pathlib.Path) -> N
     assert args.reasoning_effort == "xhigh"
 
 
+def test_execute_parser_rejects_both_codex_arg_sources(
+    tmp_path: pathlib.Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    parser = cli._build_parser()
+    prompt_path = tmp_path / "prompt.txt"
+    prompt_path.write_text("prompt", encoding="utf-8")
+
+    with pytest.raises(SystemExit) as exc_info:
+        parser.parse_args(
+            [
+                "execute",
+                "--change-id",
+                "X",
+                "--category",
+                "unit",
+                "--codex-args",
+                "exec hi",
+                "--codex-args-file",
+                str(prompt_path),
+                "--repo-root",
+                str(tmp_path),
+            ]
+        )
+
+    assert exc_info.value.code == 2
+    assert "not allowed with argument" in capsys.readouterr().err
+
+
+def test_execute_parser_requires_one_codex_arg_source(
+    tmp_path: pathlib.Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    parser = cli._build_parser()
+
+    with pytest.raises(SystemExit) as exc_info:
+        parser.parse_args(
+            [
+                "execute",
+                "--change-id",
+                "X",
+                "--category",
+                "unit",
+                "--repo-root",
+                str(tmp_path),
+            ]
+        )
+
+    assert exc_info.value.code == 2
+    assert "one of the arguments --codex-args --codex-args-file is required" in (
+        capsys.readouterr().err
+    )
+
+
+def test_execute_parser_accepts_allow_harness_self_modify_flag(
+    tmp_path: pathlib.Path,
+) -> None:
+    parser = cli._build_parser()
+
+    base_args = [
+        "execute",
+        "--change-id",
+        "X",
+        "--category",
+        "unit",
+        "--codex-args",
+        "exec hi",
+        "--repo-root",
+        str(tmp_path),
+    ]
+
+    assert parser.parse_args(base_args).allow_harness_self_modify is False
+    assert (
+        parser.parse_args([*base_args, "--allow-harness-self-modify"])
+        .allow_harness_self_modify
+        is True
+    )
+
+
 def test_run_guarded_uses_timeout_stdin_and_env(
     tmp_path: pathlib.Path,
     monkeypatch,
@@ -1415,6 +1494,80 @@ def test_evaluate_merge_gate_meta_harness_source_out_of_allowlist(
 
         assert gate.approved is False
         assert gate.reason.startswith(f"out-of-allowlist:{path}")
+    finally:
+        cleanup_worktree(wt)
+
+
+def test_finalize_dispatch_default_denies_docs_even_when_allowlisted(
+    tmp_path: pathlib.Path,
+) -> None:
+    repo = _make_repo(tmp_path)
+    wt = create_dispatch_worktree(repo, "finalize-docs-default-denied")
+    path = "docs/decisions/example.md"
+    try:
+        _write_repo_file(wt.path, path, "WORKTREE\n")
+
+        final = finalize_dispatch(
+            wt,
+            repo,
+            _completed_outcome(wt),
+            allowlist=["docs/"],
+            verification_commands=["true"],
+        )
+
+        assert final.action == "blocked"
+        assert final.reason.startswith(f"denied-harness:{path}")
+        assert not (repo / path).exists()
+    finally:
+        cleanup_worktree(wt)
+
+
+def test_finalize_dispatch_allow_harness_self_modify_merges_docs_when_allowlisted(
+    tmp_path: pathlib.Path,
+) -> None:
+    repo = _make_repo(tmp_path)
+    wt = create_dispatch_worktree(repo, "finalize-docs-flag-allowed")
+    path = "docs/decisions/example.md"
+    try:
+        _write_repo_file(wt.path, path, "WORKTREE\n")
+
+        final = finalize_dispatch(
+            wt,
+            repo,
+            _completed_outcome(wt),
+            allowlist=["docs/"],
+            verification_commands=["true"],
+            allow_harness_self_modify=True,
+        )
+
+        assert final.action == "merged"
+        assert final.reason == "approved"
+        assert final.merged_files == [path]
+        assert (repo / path).read_text(encoding="utf-8") == "WORKTREE\n"
+    finally:
+        cleanup_worktree(wt)
+
+
+def test_finalize_dispatch_allow_harness_self_modify_still_denies_tasks(
+    tmp_path: pathlib.Path,
+) -> None:
+    repo = _make_repo(tmp_path)
+    wt = create_dispatch_worktree(repo, "finalize-tasks-flag-denied")
+    try:
+        (wt.path / "tasks" / "plan.md").write_text("WORKTREE\n", encoding="utf-8")
+
+        final = finalize_dispatch(
+            wt,
+            repo,
+            _completed_outcome(wt),
+            allowlist=["tasks/"],
+            verification_commands=["true"],
+            allow_harness_self_modify=True,
+        )
+
+        assert final.action == "blocked"
+        assert final.reason.startswith("denied-harness:tasks/plan.md")
+        assert (repo / "tasks" / "plan.md").read_text(encoding="utf-8") == "MAIN-PLAN-V1\n"
     finally:
         cleanup_worktree(wt)
 
@@ -2092,6 +2245,171 @@ def test_cli_dispatch_uses_dispatch_brief_expanded_goal_for_mcp_prompt(
     assert rc == 0
     assert mcp_calls[0]["prompt"] == "Brief goal from JSON"
     assert calls[0]["kwargs"]["brief_text"] == "Brief goal from JSON"
+
+
+def test_cli_dispatch_codex_args_file_persists_raw_prompt_for_resume(
+    tmp_path: pathlib.Path,
+    monkeypatch,
+) -> None:
+    repo = _make_repo(tmp_path)
+    _make_ledger(repo)
+    db_path = tmp_path / "jobs.db"
+    prompt = "Don't shlex \"quoted text\" or --flag-like words.\nKeep apostrophe's line."
+    prompt_path = tmp_path / "prompt.txt"
+    prompt_path.write_text(prompt, encoding="utf-8")
+    brief_path = _write_dispatch_brief_json(tmp_path, "Brief fallback should not win")
+    mcp_calls = _patch_mcp_runner(monkeypatch, CodexAttempt(0))
+    persisted_briefs: list[str] = []
+
+    def fake_finalize(
+        wt: DispatchWorktree,
+        *_args: object,
+        **_kwargs: object,
+    ) -> FinalizeResult:
+        persisted_briefs.append(
+            (wt.path / ".mir-dispatch" / "brief.md").read_text(encoding="utf-8")
+        )
+        return FinalizeResult("merged", "approved", ["pkg/mod.py"])
+
+    monkeypatch.setattr("tools.mir_executor.dispatch.finalize_dispatch", fake_finalize)
+
+    try:
+        rc = cli.main(
+            [
+                "execute",
+                "--background",
+                "--dispatch",
+                "--change-id",
+                "X",
+                "--category",
+                "unit",
+                "--repo-root",
+                str(repo),
+                "--jobs-db",
+                str(db_path),
+                "--codex-args-file",
+                str(prompt_path),
+                "--dispatch-brief",
+                str(brief_path),
+            ]
+        )
+    finally:
+        _cleanup_repo_dispatch_worktrees(repo)
+
+    assert rc == 0
+    assert mcp_calls[0]["prompt"] == prompt
+    assert persisted_briefs == [prompt]
+
+    registry = JobRegistry(db_path)
+    try:
+        job = registry.list_jobs()[0]
+    finally:
+        registry.close()
+    assert job.codex_args == [prompt]
+
+    prompt_path.write_text("changed after dispatch", encoding="utf-8")
+    resume_codex_args: list[list[str]] = []
+
+    def fake_run_codex(
+        self: MirExecutor,
+        codex_args: list[str],
+        timeout_seconds: int = 600,
+        **_kwargs: object,
+    ) -> SubprocessResult:
+        _ = self
+        _ = timeout_seconds
+        resume_codex_args.append(list(codex_args))
+        return SubprocessResult(
+            exit_code=0,
+            stdout="resume-ok",
+            stderr="",
+            duration_seconds=0.1,
+            command=["codex", *codex_args],
+        )
+
+    def fake_update_ledger(
+        self: MirExecutor,
+        change_id: str,
+        category: str,
+        result: SubprocessResult,
+    ) -> LedgerUpdate:
+        _ = self
+        _ = result
+        return LedgerUpdate(
+            change_id=change_id,
+            category=category,
+            previous_status="planned",
+            new_status="pass",
+            notes="resume test",
+        )
+
+    monkeypatch.setattr(MirExecutor, "run_codex", fake_run_codex)
+    monkeypatch.setattr(MirExecutor, "update_ledger", fake_update_ledger)
+
+    assert cli.main(["--jobs-db", str(db_path), "resume", "--job-id", job.job_id]) == 0
+    assert resume_codex_args == [[prompt]]
+
+
+def test_cli_dispatch_threads_allow_harness_self_modify_to_finalize_and_registry(
+    tmp_path: pathlib.Path,
+    monkeypatch,
+) -> None:
+    repo = _make_repo(tmp_path)
+    _make_ledger(repo)
+    db_path = tmp_path / "jobs.db"
+    wt = create_dispatch_worktree(repo, "cli-allow-harness-flag")
+    finalize_calls: list[dict[str, object]] = []
+
+    def fake_run_dispatch(
+        _main_repo_root: pathlib.Path,
+        dispatch_id: str,
+        **_kwargs: object,
+    ) -> DispatchOutcome:
+        _ = dispatch_id
+        return DispatchOutcome("completed", 1, False, None, wt)
+
+    def fake_finalize(*args: object, **kwargs: object) -> FinalizeResult:
+        finalize_calls.append({"args": args, "kwargs": kwargs})
+        return FinalizeResult("merged", "approved", ["docs/decisions/example.md"])
+
+    monkeypatch.setattr("tools.mir_executor.dispatch.run_dispatch", fake_run_dispatch)
+    monkeypatch.setattr("tools.mir_executor.dispatch.finalize_dispatch", fake_finalize)
+
+    try:
+        rc = cli.main(
+            [
+                "execute",
+                "--background",
+                "--dispatch",
+                "--allow-harness-self-modify",
+                "--change-id",
+                "X",
+                "--category",
+                "unit",
+                "--repo-root",
+                str(repo),
+                "--jobs-db",
+                str(db_path),
+                "--codex-args",
+                "exec hi",
+                "--allow-path",
+                "docs/",
+                "--verify-cmd",
+                "true",
+            ]
+        )
+
+        assert rc == 0
+        assert finalize_calls[0]["kwargs"]["allow_harness_self_modify"] is True
+
+        registry = JobRegistry(db_path)
+        try:
+            job = registry.list_jobs()[0]
+            assert job.allow_harness_self_modify is True
+        finally:
+            registry.close()
+    finally:
+        cleanup_worktree(wt)
 
 
 @pytest.mark.parametrize(
