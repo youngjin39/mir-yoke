@@ -46,6 +46,14 @@ What you get out of the box:
   `Agent`/`Task` sub-agent spawn is **hard-blocked at the PreToolUse hook**, so delegated work is
   forced to the Codex lane; flip to `unrestricted` / `select` / `per_project` when you want a
   different backend. A deterministic (no-LLM) monitor surfaces any Claude-sub usage.
+- **Priority-ordered model/effort routing** — the same `config/sub-agent-policy.json` carries a
+  `routing` block: a global `model_rank` / `effort_rank` plus per-TDD-category routes
+  (single `{model, reasoning_effort}` or an ordered `prefer` list). Model/effort strings are
+  free pass-through — no hardcoded model names, so a new model generation needs zero code change.
+  `mir policy resolve --category <cat>` resolves the route so BOTH a Claude main
+  (`mcp__codex__codex`) and a Codex main (native `spawn_agent`) route their direct codex calls the
+  same way; `mir_executor … --dispatch` resolves it internally. Values are deployment-owned via a
+  `MIR_SUB_AGENT_POLICY` global overlay.
 - **Git-diff merge gate for delegated execution** — `mir_executor … --dispatch` runs the Codex
   sub-agent in a throwaway git worktree and merges its edits back **only after a deterministic
   gate**: a real `git diff` (an empty diff is a failure) plus a re-run of the change's verification
@@ -326,7 +334,49 @@ and a hook makes the choice enforceable rather than advisory.
 | `unrestricted` | no sub-agent constraint. |
 
 A home-server overlay env (`MIR_SUB_AGENT_POLICY=/path/to.json`) changes the mode without editing
-the repo file; the resolver fails closed to `force_codex` on any error.
+the repo file; the resolver fails closed to `force_codex` on any error. The overlay shallow-merges
+over the repo file, so a `routing`-only overlay changes routing while leaving each repo's `mode`
+intact.
+
+### Model/effort routing — priority schema
+
+The same file's optional `routing` block decides which model + reasoning effort each delegated
+codex call uses, per TDD category:
+
+```json
+{
+  "mode": "force_codex",
+  "routing": {
+    "model_rank":  ["<top-model>", "<mid-model>", "<small-model>"],
+    "effort_rank": ["xhigh", "high", "medium", "low"],
+    "default": { "model": null, "reasoning_effort": null },
+    "by_category": {
+      "unit":         { "model": "<small-model>", "reasoning_effort": "low" },
+      "architecture": { "prefer": [
+          { "model": "<top-model>", "reasoning_effort": "xhigh" },
+          { "model": "<mid-model>", "reasoning_effort": "high" } ] }
+    }
+  }
+}
+```
+
+- `model_rank` / `effort_rank` — global priority order (highest → lowest). Free strings; fill with
+  your provider's actual model ids so a new model generation needs no code change.
+- `by_category.<cat>` — either a single `{model, reasoning_effort}` or an ordered `prefer` list
+  (`prefer[0]` is the primary route). `default` applies when a category has no route; `null` = the
+  codex default.
+
+Resolve a route from anywhere:
+
+```bash
+uv run mir policy resolve --category architecture   # -> {"model": "...", "reasoning_effort": "..."}
+```
+
+`mir_executor … --dispatch` resolves this internally. For **direct** codex calls — a Claude main's
+`mcp__codex__codex` or a Codex main's native `spawn_agent` — the main resolves the route with
+`mir policy resolve` and passes `model` (+ `config.model_reasoning_effort`) to the call, so both
+CLIs route identically. (This is advisory: hooks do not inject routing, and codex→codex native
+calls cannot be hook-intercepted, so resolution is uniform on both paths.)
 
 ### The gate — `.claude/hooks/sub-agent-policy-gate.sh`
 
