@@ -9,7 +9,7 @@ type: guide
 
 ## Purpose
 
-Keep the public template aligned with Mir's deeper rollout baseline without forcing every clone into heavyweight planning for tiny maintenance work.
+Keep the public template aligned with the source repo's deeper rollout baseline without forcing every clone into heavyweight planning for tiny maintenance work.
 
 ## Default Triage
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """ADR-42 template applied-state verification tool.
 
-ADR completeness skips mir-self ADRs marked with frontmatter
+ADR completeness skips source-repo ADRs marked with frontmatter
 ``template_scope: mir-private`` when they are absent from the public template.
 """
 

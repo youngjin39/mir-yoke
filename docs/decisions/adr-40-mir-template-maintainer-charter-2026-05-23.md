@@ -4,7 +4,7 @@ status: accepted
 source: mirrored-summary
 ---
 
-# ADR-40 — Mir Template Maintainer Charter
+# ADR-40 — Template Maintainer Charter
 
 ## Context
 

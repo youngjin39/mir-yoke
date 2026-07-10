@@ -84,7 +84,7 @@ satisfies the template verifier.
 
 ## [0.3.0] — 2026-05-24 — Phase-4 state machine modules
 
-Synced upstream Mir R18+R20+R21 phase-4 state machine implementation.
+Synced the phase-4 state machine implementation.
 
 ### Added
 
@@ -124,12 +124,12 @@ Synced upstream Mir R18+R20+R21 phase-4 state machine implementation.
 - Tool contract validation is OFF by default; activate via
   `.claude/settings.json` env `MIR_TOOL_CONTRACT_REQUIRED=1` (enforce) or
   `MIR_TOOL_CONTRACT_LOG=1` (advisory only).
-- This release tracks upstream Mir R18 (`393ce52`) + R20 (`be8873f`) + R21 (`c4b8388`).
+- This release consolidates the phase-4 state-machine work.
 - 0 Korean leakage across all synced surfaces.
 
 ## [0.2.0] — 2026-05-24 — R17 fleet rollout hook sync
 
-Synced upstream Mir-self hook updates from the R17 fleet phase rollout.
+Synced upstream the source harness repo hook updates from the R17 fleet phase rollout.
 
 ### Changed
 
@@ -147,12 +147,12 @@ Synced upstream Mir-self hook updates from the R17 fleet phase rollout.
 ### Notes
 
 - 0 Korean leakage verified across all synced hook surfaces.
-- All synced hooks have backup files in upstream Mir under `<hook>.r17-backup-2026-05-24` (not included in template).
-- This release tracks upstream Mir R17 (commits `be420d0`~`76b9d57`).
+- Synced hooks are versioned in the source repo; backups are not included in the template.
+- This release consolidates the R17 hook sync.
 
 ## [0.1.0] — 2026-05-23 — PROMOTE-R5a (schemas + light ADR)
 
-Initial semver release. First sanitized promote of upstream Mir-self harness-engineering work to the public template (rounds R5 through R10-R3 backlog is tracked at [`tasks/role_b_backlog.md`](https://github.com/youngjin39/claude-codex-harness/blob/main/tasks/role_b_backlog.md) in the upstream repo).
+Initial semver release. First sanitized promotion of upstream harness-engineering work to the public template.
 
 ### Added
 

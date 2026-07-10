@@ -278,7 +278,7 @@
       ],
       "phase_doc_globs": [
         "docs/harness-engineering/phase-*.md",
-        "docs/harness-engineering/applications/mir-self/phase-*.md"
+        "docs/harness-engineering/applications/phase-*.md"
       ],
       "live_claim_keywords": [
         "land",

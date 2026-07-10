@@ -147,14 +147,14 @@ def _build_rule_inputs(
         # - template repo itself -> "." (self-referential, no abs path)
         # - every other target  -> keep the source absolute path verbatim
         #   so checker resolves against the real template, not the family root.
-        # Never inherit mir-self exclude_paths for non-mir targets.
+        # Never inherit the source repo's exclude_paths for non-source targets.
         _template_slug = "claude-codex-harness"
         if target_slug == _template_slug:
             tp["template_repo"] = "."
         else:
-            # Keep source absolute path (already set by mir-self manifest)
+            # Keep source absolute path (already set by the source manifest)
             pass  # tp["template_repo"] already present from deepcopy
-        # Remove mir-self-specific exclude_paths for non-mir-self targets
+        # Remove source-specific exclude_paths for non-source targets
         _source_is_mir = source_slug == "mir-harness"
         _target_is_mir = target_slug == "mir-harness"
         if _source_is_mir and not _target_is_mir:

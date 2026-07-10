@@ -1,24 +1,24 @@
 ---
 status: design-v1
 date: 2026-05-23
-scope: Mir → template sanitize glossary + substitution patterns + exempt file list
-audience: Mir Role B (Template Maintainer) + R11 sanitize_for_template.py developer
+scope: source repo → template sanitize glossary + substitution patterns + exempt file list
+audience: the template maintainer + R11 sanitize_for_template.py developer
 priority: R10-R1 added (resolves Slice 2 BLOCKING #4)
 ---
 
-# Sanitize Glossary (Mir → Template)
+# Sanitize Glossary (source → Template)
 
 > **Purpose**: Korean→English glossary + family-specific→generic substitution table + exempt file list consumed by `scripts/sanitize_for_template.py` (R11). The authoritative Korean→English mapping is the `KOREAN_GLOSSARY` dict in code; this document is the human-readable, English-only spec. R10-R1 added.
 
 ## 0.5 Design Goals (R10-R1 anchor)
 
 **3-axis contribution**:
-- **Axis I**: Block Mir-self Korean / family-specific expressions from leaking into the template
+- **Axis I**: Block the source harness repo Korean / family-specific expressions from leaking into the template
 - **Axis II**: Guarantee the template "applied state" is English-only + generic
 - **Axis III**: Zero Korean dependency when the fleet adopts the template
 
 **Inter-phase contract**:
-- **Input** (consumed): all Mir-self landed changes (commit hash)
+- **Input** (consumed): all the source harness repo landed changes (commit hash)
 - **Output** (produced): sanitized text → phase-10 stage 2 sync may proceed
 
 ## 1. The 3 Sanitize Layers
@@ -44,44 +44,44 @@ When an unmapped Korean term is detected:
 ### 2-2. Exempt Korean
 Korean in these areas is preserved (sanitize NOT applied):
 - `archive/` (historical record)
-- the reference-docs directory (raw input; Mir-self only)
+- the reference-docs directory (raw input; the source harness repo only)
 - Korean slugs under `memory/` (reflexive reference)
 - the "Korean quotation" section of an ADR
 - user quotes (e.g. a dated user-explicit quote)
 
 ## 3. Family-Specific → Generic Substitution
 
-Auto-substitute Mir-self family-specific terms with the template's generic expressions.
+Auto-substitute the source harness repo family-specific terms with the template's generic expressions.
 
 ### 3-1. Identity Substitution
-| Mir-self pattern | Template generic | Note |
+| the source harness repo pattern | Template generic | Note |
 |---|---|---|
-| `Mir-harness`, `mir-harness` | `your-harness` | single name → generic |
-| `Mir-self` | `your-harness-self` | self-reference |
-| `Mir-as-agent` | `your-harness-agent` | agent reference |
-| Mir harness (Korean display form) | `your harness` | Korean → English + generic |
-| `Mir` (standalone noun) | `your-harness` | careful — overlap risk |
+| `<your-project>`, `<your-project-lower>` | `your-harness` | single name → generic |
+| `the source harness repo` | `your-harness-self` | self-reference |
+| `<your-project>-as-agent` | `your-harness-agent` | agent reference |
+| your harness (localized display form) | `your harness` | Korean → English + generic |
+| `<your-project>` (standalone noun) | `your-harness` | careful — overlap risk |
 | `youngjin39` (user GitHub) | `<template-owner>` | remove personal identity |
 | `MaJu` | (removed) | personal identity |
 | `LG Electronics` | (removed) | personal identity |
 | `Seoul` | (removed) | personal identity |
 
 ### 3-2. Path Substitution
-| Mir-self path | Template generic |
+| the source harness repo path | Template generic |
 |---|---|
-| the Mir-self project path | `<your-harness-path>/` |
+| the the source harness repo project path | `<your-harness-path>/` |
 | the user home directory | `~/` or `<user-home>/` |
 | the public template repo path | `<this-repo>` |
-| the Mir-self agent-home path | `~/.claude/` |
+| the the source harness repo agent-home path | `~/.claude/` |
 
 ### 3-3. Family Reference Substitution
-Mir-self references to other families (used as examples only):
+the source harness repo references to other families (used as examples only):
 - the 14 family slugs (grownote / hermes / home-hub / memory-keeper / minesweeper / mir-harness / musinsa-brand / my-life / quietleaf / shortmoviedirector / stockdirector / storydirector / write-score / claude-codex-harness)
 - in the template: all replaced with `<example-family>` or distinct example family names (`example-product`, `example-code-app`, `example-meta`, `example-hybrid`, `example-content`)
 - generalize every reference outside user quotes / examples
 
 ### 3-4. Discord Channel Substitution
-| Mir-self pattern | Template generic |
+| the source harness repo pattern | Template generic |
 |---|---|
 | a literal `chat_id="..."` | `<your-discord-channel-id>` |
 | a literal `user="..."` | `<example-user>` |
@@ -99,8 +99,8 @@ These files are NOT sanitized (preserved):
 | `memory/MEMORY.md` | excluded — not committed to the template |
 | `memory/**/*.md` | excluded — not committed to the template |
 | `config/repos/*.json` (all families) | excluded — not committed to the template |
-| `config/fleet-harness-state.json` | excluded — Mir-side state |
-| `config/fleet-drift-log/**/*` | excluded — Mir-side log |
+| `config/fleet-harness-state.json` | excluded — source-repo-side state |
+| `config/fleet-drift-log/**/*` | excluded — source-repo-side log |
 | `tasks/*.json` (active ledger) | excluded |
 | `.git/`, `.venv/`, `node_modules/`, `__pycache__/` | tooling cache |
 | `.DS_Store` | system file |
@@ -113,7 +113,7 @@ def test_no_korean_in_template():
     # runs the no-Korean-in-user-facing check from ci.md §3-4
 
 def test_no_mir_self_paths():
-    # asserts 0 occurrences of the Mir-self absolute path pattern
+    # asserts 0 occurrences of the the source harness repo absolute path pattern
 
 def test_no_personal_identity():
     # asserts 0 occurrences of "youngjin39", "MaJu", "LG Electronics", "Seoul"
@@ -131,7 +131,7 @@ def test_no_family_specific_names():
 ## 6. Sanitize Procedure (aligned with [phase-10 §3-3](../../phase-10-rollout-pipeline.md))
 
 ```bash
-# 1. diff (Mir-self → template changes)
+# 1. diff (the source harness repo → template changes)
 python scripts/verify_codex_sync.py --diff
 
 # 2. sanitize dry-run (validate changes)
@@ -154,7 +154,7 @@ Updating the §2/§3 tables of this doc:
 - new family / path appears → add to §3
 - the glossary update needs no ADR — doc PR only
 
-## 8. Mir Adoption State (2026-05-23)
+## 8. Adoption State (2026-05-23)
 
 | Item | State |
 |---|---|

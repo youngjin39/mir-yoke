@@ -6,7 +6,7 @@ context: fork
 
 # memory-gc
 
-Scan the Mir memory database for facts whose `valid_to` date has passed and mark them `expired`.
+Scan the the memory database for facts whose `valid_to` date has passed and mark them `expired`.
 
 ## Usage
 

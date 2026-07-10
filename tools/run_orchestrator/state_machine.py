@@ -1,4 +1,4 @@
-"""Mir orchestrator 13-state SM (phase-4)."""
+"""harness orchestrator 13-state SM (phase-4)."""
 from __future__ import annotations
 
 from enum import StrEnum

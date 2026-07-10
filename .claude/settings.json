@@ -30,7 +30,7 @@
           {
             "type": "command",
             "command": ".claude/hooks/sub-agent-policy-gate.sh",
-            "statusMessage": "Mir sub-agent-policy gate (force_codex)"
+            "statusMessage": "sub-agent-policy gate (force_codex)"
           }
         ]
       }

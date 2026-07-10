@@ -45,7 +45,7 @@ def _register_project_archive(
 ) -> tuple[external_store.ExternalStore, int]:
     es = external_store.ExternalStore(c)
     archive_id = es.register(
-        slug="mir-self",
+        slug="source-repo",
         root_path=str(root),
         mode="indexed",
         glob_include=("**/*.md",),

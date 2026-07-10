@@ -294,9 +294,9 @@ def test_build_rule_inputs_non_template_keeps_abs_template_repo(tmp_path: Path) 
     assert tp["template_repo"] == abs_template, (
         f"Expected verbatim abs path {abs_template!r}, got {tp['template_repo']!r}"
     )
-    # mir-self exclude_paths must NOT be inherited by non-mir target
+    # source-repo exclude_paths must NOT be inherited by non-mir target
     assert "exclude_paths" not in tp, (
-        f"mir-self exclude_paths must be stripped for non-mir targets, got {tp}"
+        f"source-repo exclude_paths must be stripped for non-source targets, got {tp}"
     )
 
 

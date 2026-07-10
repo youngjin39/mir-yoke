@@ -61,7 +61,7 @@
                 "lint_test",
                 "lint_test_ledger"
               ],
-              "description": "deferred=mir-self exemption; lint_test=option-1 (managed fleet); lint_test_ledger=full."
+              "description": "deferred=source-repo exemption; lint_test=option-1 (managed fleet); lint_test_ledger=full."
             },
             "tools_tdd_ledger": {
               "enum": [

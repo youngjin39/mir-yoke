@@ -6,7 +6,7 @@ status: applied-baseline
 
 # Phase 10 — Rollout / Share Pipeline
 
-> Purpose: Describe mir-self to template to fleet promotion and direct-apply management for active repositories.
+> Purpose: Describe the source repo to template to fleet promotion and direct-apply management for active repositories.
 
 ## 0.5 Design Goals
 

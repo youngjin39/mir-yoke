@@ -47,7 +47,7 @@
   "last_reviewed_at": "2026-05-22",
   "notes": [
     "Local sync copy of upstream config/repos/<family_slug>.json.",
-    "Source of truth: upstream Mir Harness config/repos/<family_slug>.json. This file MAY be locally edited; harness refresh treats one-way push (upstream -> family).",
+    "Source of truth: the source harness config/repos/<family_slug>.json. This file MAY be locally edited; harness refresh treats one-way push (upstream -> family).",
     "Auto-synced by tools/profile_compiler/specialist_deploy.py::refresh_specialists(apply=True).",
     "2026-05-22 expansion: orchestration_profile minimal -> standard; active_agents 4 -> 12; active_skills 2 -> 11."
   ]

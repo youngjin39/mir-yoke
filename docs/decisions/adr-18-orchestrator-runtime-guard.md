@@ -5,7 +5,7 @@ date: 2026-05-21
 accepted: 2026-05-21
 acceptance_basis: P18-A self-check section in main-orchestrator.md (commit 9bbfe62) + P18-B verifier R11 + 3 manifest tests (9bbfe62) + P18-C orchestrator log-write prompt (c18d80c) + P18-D first dispatch evidence (tasks/log/dispatch-log.jsonl entry 2026-05-21T12:55:00Z, R11 WARN fires correctly — audit-truthful observation gap documented in §3 framing).
 revision: v3 (v2 + P18-D evidence cold-review absorption: R9→R11 identifier reconciliation + BORROWED-FROM §S5→§S6 + Hook Policy attribution + dispatch log first entry)
-authors: [Mir Harness orchestrator]
+authors: [your-harness Harness orchestrator]
 related:
   - claude-codex-role-policy-2026-05-02.md
   - adr-08-cancelled (orchestrator-guard + per-subagent MCP whitelist)
@@ -128,7 +128,7 @@ Specifically:
   catalog.
 - For such entries, the log line must contain `routed_via: "codex_cli"`.
   Absence = WARN.
-- Mir-self only (other family repos run their own audits).
+- the source harness repo only (other family repos run their own audits).
 
 Log line schema (`tasks/log/dispatch-log.jsonl`):
 
@@ -304,7 +304,7 @@ not code.
   orchestrator self-check on each dispatch ("verify log line was
   written, abort if not")? Recommend best-effort to avoid blocking.
 - **Q3**: Family-side adoption — if a family later wants the same
-  audit, do they replicate ADR-18 in their own scope, or does Mir
+  audit, do they replicate ADR-18 in their own scope, or does the central harness repo
   push the pattern? Per ADR-16 principle 1, replication is opt-in.
 - **Q4**: Verifier extension R11 — does it run on every CI pass, or
   on-demand only? Recommend every CI to keep the signal warm.

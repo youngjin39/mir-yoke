@@ -93,7 +93,7 @@
         "type": "string"
       },
       "uniqueItems": true,
-      "description": "Distinguishing traits — controlled vocab (R10-R1 ).  vocab list  repo-agent-management.schema.json $defs/repository.character.items.enum  (31 values). family repo  self-recovery   schema  fallback."
+      "description": "Distinguishing traits — controlled vocabulary (see the repo-agent-management vocab list)."
     }
   },
   "allOf": [

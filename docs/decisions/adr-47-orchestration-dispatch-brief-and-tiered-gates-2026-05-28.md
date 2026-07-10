@@ -17,7 +17,7 @@ The public template adopts the DispatchBrief pattern and tiny/normal/heavy task 
 
 ## Why
 
-This keeps the template aligned with the current Mir orchestration baseline while remaining public-template safe.
+This keeps the template aligned with the current orchestration baseline while remaining public-template safe.
 
 ## Consequence
 

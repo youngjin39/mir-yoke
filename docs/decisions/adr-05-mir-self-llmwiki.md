@@ -4,7 +4,7 @@ status: accepted
 source: mirrored-summary
 ---
 
-# ADR-05 — Mir Self LLM Wiki
+# ADR-05 — Source-repo LLM Wiki
 
 ## Context
 

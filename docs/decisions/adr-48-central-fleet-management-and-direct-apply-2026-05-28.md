@@ -6,7 +6,7 @@ status: accepted
 
 ## Decision
 
-The public template documents Mir as the central manager for active managed repositories and uses direct apply as the default rollout model, with explicit exception handling.
+The public template documents the source harness as the central manager for active managed repositories and uses direct apply as the default rollout model, with explicit exception handling.
 
 - Active managed repositories should receive minimum viable harness patches directly from the control repository.
 - Public-template sync remains sanitized and user-directed.

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://mir-harness.local/schemas/fleet_harness_state.schema.json",
   "title": "Fleet Harness State (Central Catalog)",
-  "description": "R9-T06 . 17 family  harness engineering adoption state  catalog. Mir  ·share ,  X. phase-9-fleet-catalog.md SoT.",
+  "description": "Fleet-wide harness-engineering adoption-state catalog across managed family repositories.",
   "type": "object",
   "required": ["version", "last_updated", "families"],
   "additionalProperties": false,
@@ -26,7 +26,7 @@
     },
     "template_version": {
       "type": "string",
-      "description": "   public template (claude-codex-harness) version (semver)"
+      "description": "Public template version (semver)."
     },
     "families": {
       "type": "object",
@@ -55,20 +55,20 @@
         "sealed": {
           "type": "boolean",
           "default": false,
-          "description": "feedback_sealed_repo_policy_2026_05_23  5  family "
+          "description": "Sealed-repo policy flag."
         },
         "sealed_policy": {
           "type": "boolean",
           "default": false,
-          "description": "feedback_sealed_repo_policy_2026_05_23 policy flag (push  ). sealed    ."
+          "description": "Sealed-repo policy flag — when set, no external push. Sealed is separate from status."
         },
         "repo_path": {
           "type": "string",
-          "description": "absolute path to family repo. Mir-self   repo path."
+          "description": "Absolute path to the family repository."
         },
         "purpose": {
           "type": "string",
-          "description": "Family    (free-form operator description)."
+          "description": "Family purpose (free-form operator description)."
         },
         "character": {
           "type": "array",
@@ -108,7 +108,7 @@
             "superseded",
             "n_a"
           ],
-          "description": "Mir  enforce  . family  . n_a  family_type   ."
+          "description": "Per-family enforcement applicability; n_a when not applicable to the family_type."
         },
         "last_sync": {
           "type": "string",
@@ -121,7 +121,7 @@
         },
         "adopted_version": {
           "type": "string",
-          "description": "phase  version   (template version )"
+          "description": "Adopted template/phase version."
         },
         "family_override": {
           "type": "object",

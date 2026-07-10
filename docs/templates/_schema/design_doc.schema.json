@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://mir-harness.local/schemas/design_doc.schema.json",
   "title": "Design Document",
-  "description": "R9-T06 . design  phase / ADR / schema artifact ·  capture  . 5 design_goals + grep evidence + alternatives + acceptance.",
+  "description": "Design document — a design phase, ADR, or schema artifact. Captures user_intent and the 5 design_goals axes.",
   "type": "object",
   "required": [
     "id",
@@ -28,7 +28,7 @@
     "type": {
       "type": "string",
       "enum": ["phase", "adr", "schema", "skill", "agent", "hook", "config"],
-      "description": "   "
+      "description": "The kind of design artifact."
     },
     "status": {
       "type": "string",
@@ -40,7 +40,7 @@
 
     "design_goals": {
       "type": "object",
-      "description": "R9-T11 mandate — 5   -vacuous  . design  enforce.",
+      "description": "The 5 required design-goals axes — all must be present and non-vacuous.",
       "required": [
         "axis_i_mir_self",
         "axis_ii_template_sync",
@@ -53,17 +53,17 @@
         "axis_i_mir_self": {
           "type": "string",
           "minLength": 20,
-          "description": "Mir-self      "
+          "description": "How this contributes to the source harness engineering."
         },
         "axis_ii_template_sync": {
           "type": "string",
           "minLength": 20,
-          "description": "public template (claude-codex-harness) baseline    "
+          "description": "How this is reflected in the public template baseline."
         },
         "axis_iii_fleet_share": {
           "type": "string",
           "minLength": 20,
-          "description": "Mir catalog  fleet 17 family    share  ( X, opt-in)"
+          "description": "How this flows to/from fleet families (opt-in)."
         },
         "inter_phase_input": {
           "type": "string",
@@ -87,7 +87,7 @@
     "grep_evidence": {
       "type": "array",
       "minItems": 1,
-      "description": "feedback_design_must_grep_existing_code  grep 5 location .   .",
+      "description": "Evidence that existing code was grep-searched before proposing new modules/CLI/hooks.",
       "items": {
         "type": "object",
         "required": ["location", "query", "hit_count", "reviewed_at"],
@@ -117,7 +117,7 @@
     "alternatives": {
       "type": "array",
       "minItems": 2,
-      "description": " 2  . 1   alternatives  .",
+      "description": "At least 2 alternatives considered, with 1+ rejected and the reason.",
       "items": {
         "type": "object",
         "required": ["name", "summary", "decision"],
@@ -142,7 +142,7 @@
 
     "interfaces": {
       "type": "object",
-      "description": "   interface (schema / API /  ).",
+      "description": "The interface (schema / API / contract).",
       "properties": {
         "input_schema": { "type": "string", "description": "schema  path  inline" },
         "output_schema": { "type": "string" },
@@ -154,7 +154,7 @@
       "type": "array",
       "minItems": 1,
       "items": { "type": "string", "minLength": 10 },
-      "description": "    .   ."
+      "description": "Verifiable acceptance criteria for the design."
     },
 
     "test_plan": {
@@ -164,13 +164,13 @@
 
     "rollback": {
       "type": "string",
-      "description": "land   rollback  (git revert / config restore )"
+      "description": "Rollback plan once the change lands (e.g., git revert / config restore)."
     },
 
     "review_round_ids": {
       "type": "array",
       "items": { "type": "string" },
-      "description": "   review round id (R9-T01 )"
+      "description": "Review-round identifiers for this design."
     },
 
     "related_adrs": {

@@ -6,7 +6,7 @@ status: applied-baseline
 
 # Phase 14 — Completion Consistency
 
-> Purpose: keep template completion wording from being misread as full mir-self or fleet completion.
+> Purpose: keep template completion wording from being misread as full the source repo or fleet completion.
 
 ## 0.5 Design Goals
 

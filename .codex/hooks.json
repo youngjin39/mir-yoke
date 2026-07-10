@@ -25,7 +25,7 @@
             "type": "command",
             "command": ".claude/hooks/pre-merge-gate.sh",
             "timeout": 30,
-            "statusMessage": "Mir pre-merge gate"
+            "statusMessage": "pre-merge gate"
           }
         ]
       }

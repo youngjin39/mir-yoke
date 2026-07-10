@@ -5,7 +5,7 @@ tier: block — SE-meta self-stop obligation enforcement (R27-T02 / Choice 5=A).
 
 Verifies that a share recommendation sourced from your-harness
 is only forwarded to the fleet when the corresponding phase in
-the mir-self rollout ledger has been adopted.
+the source-repo rollout ledger has been adopted.
 
 Exit codes:
   0 — PASS or WARN (WARN + --strict → 1)
@@ -119,7 +119,7 @@ _UNKNOWN = "unknown"
 
 
 def _build_mir_self_ledger_md(rows: dict[str, str]) -> str:
-    """Build a minimal mir-self README.md ledger markdown for testing."""
+    """Build a minimal source-repo README.md ledger markdown for testing."""
     lines = [
         "# your-harness Self-Dogfooding — 9-Phase Rollout Ledger\n",
         "## 2. Rollout Ledger\n",
@@ -164,7 +164,7 @@ def _build_fleet_state_json(phase_statuses: dict[str, str]) -> dict:
 
 
 def parse_mir_self_ledger(ledger_path: Path, phase_ref: str) -> str:
-    """Parse mir-self/README.md ledger table and return status for phase_ref.
+    """Parse the source-repo README.md ledger table and return status for phase_ref.
 
     Returns the status string (e.g. "pending", "done") or _UNKNOWN on failure.
     Robust to varying whitespace in table cells.
@@ -571,8 +571,8 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                    help='Phase reference (e.g. "phase-4").')
     p.add_argument(
         "--ledger",
-        default="docs/harness-engineering/applications/mir-self/README.md",
-        help="Path to mir-self rollout ledger (default: docs/harness-engineering/applications/mir-self/README.md).",  # noqa: E501
+        default="docs/harness-engineering/applications/source-repo/README.md",
+        help="Path to source-repo rollout ledger (default: docs/harness-engineering/applications/source-repo/README.md).",  # noqa: E501
     )
     p.add_argument(
         "--catalog",

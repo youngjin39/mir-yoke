@@ -3,7 +3,7 @@ tools.profile_compiler.cli
 --------------------------
 Minimal profile compiler CLI stub for the Claude+Codex Harness Template.
 
-The full Mir profile compiler (cli.py with render/, bootstrap.py, etc.) is
+The full profile compiler (cli.py with render/, bootstrap.py, etc.) is
 fleet-private. This stub provides the minimum surface the public template
 verifier (scripts/verify_repo_agent_management.py) needs:
 

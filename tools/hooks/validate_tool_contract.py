@@ -5,7 +5,7 @@ Invoked by .claude/hooks/pre-tool-use.sh as:
 
 Exit codes:
     0 -- valid contract, allow
-    2 -- contract missing/invalid, BLOCK (per Mir hook convention)
+    2 -- contract missing/invalid, BLOCK (per the hook convention)
 """
 from __future__ import annotations
 
