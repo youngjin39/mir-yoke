@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import json
+import os
 import pathlib
+import subprocess
+import sys
 
 import pytest
 
@@ -160,6 +163,144 @@ def test_routing_prefer_for_category_returns_empty_for_malformed_values(
         reasoning_effort=None,
         stall_timeout=None,
     ) == ("single-model", "low", None)
+
+
+def test_resolve_category_prefers_primary_prefer_route(
+    tmp_path: pathlib.Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.delenv(POLICY_ENV_VAR, raising=False)
+    _write_policy(
+        tmp_path,
+        {
+            "mode": "force_codex",
+            "per_project": {},
+            "routing": {
+                "default": {
+                    "model": "default-model",
+                    "reasoning_effort": "medium",
+                },
+                "by_category": {
+                    "architecture": {
+                        "model": "single-model",
+                        "reasoning_effort": "low",
+                        "prefer": [
+                            {
+                                "model": " preferred-model ",
+                                "reasoning_effort": " high ",
+                            },
+                            {
+                                "model": "fallback-model",
+                                "reasoning_effort": "medium",
+                            },
+                        ],
+                    },
+                },
+            },
+        },
+    )
+    policy = load_sub_agent_policy(tmp_path)
+
+    assert policy.resolve_category("architecture") == {
+        "model": "preferred-model",
+        "reasoning_effort": "high",
+    }
+
+
+def test_resolve_category_uses_single_value_category_without_prefer(
+    tmp_path: pathlib.Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.delenv(POLICY_ENV_VAR, raising=False)
+    _write_policy(
+        tmp_path,
+        {
+            "mode": "force_codex",
+            "per_project": {},
+            "routing": {
+                "default": {
+                    "model": "default-model",
+                    "reasoning_effort": "medium",
+                },
+                "by_category": {
+                    "unit": {
+                        "model": "single-model",
+                        "reasoning_effort": "low",
+                    },
+                },
+            },
+        },
+    )
+    policy = load_sub_agent_policy(tmp_path)
+
+    assert policy.resolve_category("unit") == {
+        "model": "single-model",
+        "reasoning_effort": "low",
+    }
+
+
+def test_resolve_category_uses_routing_default(
+    tmp_path: pathlib.Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.delenv(POLICY_ENV_VAR, raising=False)
+    _write_policy(
+        tmp_path,
+        {
+            "mode": "force_codex",
+            "per_project": {},
+            "routing": {
+                "default": {
+                    "model": "default-model",
+                    "reasoning_effort": "medium",
+                },
+            },
+        },
+    )
+    policy = load_sub_agent_policy(tmp_path)
+
+    assert policy.resolve_category("unit") == {
+        "model": "default-model",
+        "reasoning_effort": "medium",
+    }
+
+
+def test_resolve_category_uses_flat_default(
+    tmp_path: pathlib.Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.delenv(POLICY_ENV_VAR, raising=False)
+    _write_policy(
+        tmp_path,
+        {
+            "mode": "force_codex",
+            "per_project": {},
+            "routing": {
+                "default_model": "flat-model",
+                "default_reasoning_effort": "flat-effort",
+            },
+        },
+    )
+    policy = load_sub_agent_policy(tmp_path)
+
+    assert policy.resolve_category("unit") == {
+        "model": "flat-model",
+        "reasoning_effort": "flat-effort",
+    }
+
+
+def test_resolve_category_returns_none_when_absent(
+    tmp_path: pathlib.Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.delenv(POLICY_ENV_VAR, raising=False)
+    _write_policy(tmp_path, {"mode": "force_codex", "per_project": {}})
+    policy = load_sub_agent_policy(tmp_path)
+
+    assert policy.resolve_category("unit") == {
+        "model": None,
+        "reasoning_effort": None,
+    }
 
 
 def test_missing_routing_and_monitoring_sections_default_empty(
@@ -507,3 +648,61 @@ def test_policy_runtime_options_cli_flags_override_prefer_route(
         reasoning_effort="cli-effort",
         stall_timeout=None,
     ) == ("cli-model", "cli-effort", None)
+
+
+def test_policy_resolve_cli_subcommand_prints_json(
+    tmp_path: pathlib.Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.delenv(POLICY_ENV_VAR, raising=False)
+    _write_policy(
+        tmp_path,
+        {
+            "mode": "force_codex",
+            "per_project": {},
+            "routing": {
+                "by_category": {
+                    "unit": {
+                        "model": "cli-policy-model",
+                        "reasoning_effort": "low",
+                    },
+                },
+            },
+        },
+    )
+    env = os.environ.copy()
+    env.pop(POLICY_ENV_VAR, None)
+    repo_root = pathlib.Path(__file__).resolve().parents[3]
+    pythonpath = os.pathsep.join(
+        [
+            str(repo_root / "src"),
+            str(repo_root),
+            env.get("PYTHONPATH", ""),
+        ]
+    )
+    env["PYTHONPATH"] = pythonpath
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "mir",
+            "policy",
+            "resolve",
+            "--category",
+            "unit",
+            "--repo-root",
+            str(tmp_path),
+        ],
+        capture_output=True,
+        text=True,
+        env=env,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert json.loads(result.stdout) == {
+        "model": "cli-policy-model",
+        "reasoning_effort": "low",
+    }
+    assert result.stderr == ""

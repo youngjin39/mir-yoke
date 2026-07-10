@@ -99,6 +99,20 @@ class SubAgentPolicy:
                 entries.append(entry)
         return entries
 
+    def resolve_category(self, category: str) -> dict[str, str | None]:
+        """Resolve model/effort routing for one category."""
+        category_route = self.routing_for_category(category)
+        category_prefer = self.routing_prefer_for_category(category)
+        primary_route = category_prefer[0] if category_prefer else category_route
+
+        model = _string_value(primary_route.get("model"))
+        reasoning_effort = _string_value(primary_route.get("reasoning_effort"))
+        if model is None:
+            model = self.routing_default_model()
+        if reasoning_effort is None:
+            reasoning_effort = self.routing_default_reasoning_effort()
+        return {"model": model, "reasoning_effort": reasoning_effort}
+
     def monitoring_stall_timeout_seconds(self) -> float | None:
         """Return the no-progress stall timeout, if configured."""
         value = self.monitoring.get("stall_timeout_seconds")

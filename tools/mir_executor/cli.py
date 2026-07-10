@@ -568,13 +568,6 @@ def _resolve_repo_policy_slug(repo_root: pathlib.Path) -> str | None:
     return None
 
 
-def _string_route_value(value: object) -> str | None:
-    if not isinstance(value, str):
-        return None
-    value = value.strip()
-    return value or None
-
-
 def _resolve_policy_runtime_options(
     sub_agent_policy: object,
     *,
@@ -584,39 +577,19 @@ def _resolve_policy_runtime_options(
     stall_timeout: float | None,
 ) -> tuple[str | None, str | None, float | None]:
     """Resolve policy routing/monitoring defaults without overriding CLI flags."""
-    category_route: dict[str, object] = {}
-    routing_for_category = getattr(sub_agent_policy, "routing_for_category", None)
-    if callable(routing_for_category):
-        route = routing_for_category(category)
+    policy_route: dict[str, object] = {}
+    resolve_category = getattr(sub_agent_policy, "resolve_category", None)
+    if callable(resolve_category):
+        route = resolve_category(category)
         if isinstance(route, dict):
-            category_route = route
+            policy_route = route
 
-    category_prefer: list[dict[str, object]] = []
-    routing_prefer_for_category = getattr(
-        sub_agent_policy,
-        "routing_prefer_for_category",
-        None,
-    )
-    if callable(routing_prefer_for_category):
-        prefer = routing_prefer_for_category(category)
-        if isinstance(prefer, list):
-            category_prefer = [item for item in prefer if isinstance(item, dict)]
-
-    primary_route = category_prefer[0] if category_prefer else category_route
-    policy_model = _string_route_value(primary_route.get("model"))
-    policy_reasoning_effort = _string_route_value(primary_route.get("reasoning_effort"))
-
-    routing_default_model = getattr(sub_agent_policy, "routing_default_model", None)
-    if policy_model is None and callable(routing_default_model):
-        policy_model = routing_default_model()
-
-    routing_default_reasoning_effort = getattr(
-        sub_agent_policy,
-        "routing_default_reasoning_effort",
-        None,
-    )
-    if policy_reasoning_effort is None and callable(routing_default_reasoning_effort):
-        policy_reasoning_effort = routing_default_reasoning_effort()
+    policy_model = policy_route.get("model")
+    if not isinstance(policy_model, str):
+        policy_model = None
+    policy_reasoning_effort = policy_route.get("reasoning_effort")
+    if not isinstance(policy_reasoning_effort, str):
+        policy_reasoning_effort = None
 
     monitoring_stall_timeout_seconds = getattr(
         sub_agent_policy,

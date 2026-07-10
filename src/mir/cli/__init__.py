@@ -15,6 +15,7 @@ from . import context as _context
 from . import loop as _loop
 from . import memory as _memory
 from . import migrate as _migrate
+from . import policy as _policy
 
 # Registry pattern (design §0): no hard-coded ladder in __main__.
 # New subcommand = 1 row here.
@@ -23,4 +24,5 @@ SUBCOMMANDS: dict[str, Callable[[list[str]], int]] = {
     'memory': _memory.main,
     'context': _context.main,
     'loop': _loop.main,
+    'policy': _policy.main,
 }
