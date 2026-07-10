@@ -38,6 +38,95 @@
     "updated": { "type": "string", "format": "date" },
     "owner": { "type": "string", "description": "agent or user identifier" },
 
+    "materials": {
+      "type": "array",
+      "description": "Inputs treated as material, not ground truth; each classified before it informs the design.",
+      "items": {
+        "type": "object",
+        "required": ["source", "state"],
+        "additionalProperties": false,
+        "properties": {
+          "source": { "type": "string" },
+          "state": {
+            "type": "string",
+            "enum": ["confirmed", "derived", "observed", "assumed", "conflict", "open", "tunable"]
+          },
+          "note": { "type": "string" }
+        }
+      }
+    },
+
+    "decision_surface": {
+      "type": "array",
+      "description": "Load-bearing decisions enumerated across axes; only genuinely-open, high-cost ones are surfaced.",
+      "items": {
+        "type": "object",
+        "required": ["axis", "decision", "state"],
+        "additionalProperties": false,
+        "properties": {
+          "axis": {
+            "type": "string",
+            "enum": ["goal_boundary", "actors", "data_state", "behavior", "safety_policy", "compatibility_ops", "verification"]
+          },
+          "decision": { "type": "string" },
+          "state": {
+            "type": "string",
+            "enum": ["confirmed", "derived", "assumed", "open", "conflict", "tunable"]
+          },
+          "surfaced": { "type": "boolean" }
+        }
+      }
+    },
+
+    "open_decisions": {
+      "type": "array",
+      "description": "The subset of decision-surface entries surfaced to the user.",
+      "items": {
+        "type": "object",
+        "required": ["question", "recommendation"],
+        "additionalProperties": false,
+        "properties": {
+          "question": { "type": "string" },
+          "options": { "type": "array", "items": { "type": "string" } },
+          "recommendation": { "type": "string" },
+          "rationale": { "type": "string" },
+          "resolution": { "type": "string" }
+        }
+      }
+    },
+
+    "authority_notes": {
+      "type": "string",
+      "description": "Where code/memory/prior decisions were treated as material vs. authority, and how any spec-vs-code conflict was resolved."
+    },
+
+    "migration_closure": {
+      "type": "array",
+      "description": "For existing-code onboarding, each item and how it was closed; not_applicable requires a reason.",
+      "items": {
+        "type": "object",
+        "required": ["item", "closure"],
+        "additionalProperties": false,
+        "properties": {
+          "item": { "type": "string" },
+          "closure": {
+            "type": "string",
+            "enum": ["code_confirmed", "user_confirmed", "derived", "not_applicable", "unresolved", "conflict"]
+          },
+          "reason": { "type": "string" }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": { "closure": { "const": "not_applicable" } },
+              "required": ["closure"]
+            },
+            "then": { "required": ["reason"] }
+          }
+        ]
+      }
+    },
+
     "design_goals": {
       "type": "object",
       "description": "The 5 required design-goals axes — all must be present and non-vacuous.",

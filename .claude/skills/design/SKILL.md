@@ -35,5 +35,20 @@ description: "Pre-coding design enforcement (brainstorming, planning, design ana
    - template/fleet claim boundary when public or cross-repo wording is involved
 4. If the request is a bounded development task, a short design pass is still required; shorten the output, not the structure.
 
+## Intent Extraction
+
+An advisory design-skill discipline (no runtime hook): extract the user's real intent before designing.
+
+1. **Materials** — Treat inputs as material, not ground truth. Classify each as `confirmed`, `derived`, `observed`, `assumed`, `conflict`, `open`, or `tunable` before it informs the design.
+2. **Decision Surface** — Internally enumerate load-bearing decisions across `goal_boundary`, `actors`, `data_state`, `behavior`, `safety_policy`, `compatibility_ops`, and `verification`. Each carries a state of `confirmed`, `derived`, `assumed`, `open`, `conflict`, or `tunable`. Surface only genuinely open, high-cost decisions.
+3. **Grill-style elicit** — Ask only open, high-cost questions, giving options, a recommendation, and rationale. Never re-ask answered items or code-verifiable facts. Ask domain policy; propose technical choices; default tuning choices and mark them tunable. In remote channels, use numbered text lists rather than interactive pickers.
+4. **Authority separation** — Code is reality-material, not intent-authority. Keep spec-versus-code disagreement explicit until resolved; memory and prior decisions provide context but do not automatically override the current request.
+
+For existing-code onboarding, run a migration interview. Close each policy or behavior item as `code_confirmed`, `user_confirmed`, `derived`, `not_applicable` with a reason, `unresolved`, or `conflict`. Never close `unresolved` or `conflict` by inference.
+
+Apply by triage: **Tiny** skips full extraction (goal, targets, verification, non-goals only); **Normal** classifies materials, enumerates the Decision Surface, and elicits open decisions; **Heavy** adds the migration interview when existing code is involved plus an independent review.
+
+Record structured output through the optional `materials`, `decision_surface`, `open_decisions`, `authority_notes`, and `migration_closure` fields in `docs/templates/_schema/design_doc.schema.json`.
+
 ## Status
 This skill is the canonical entry point. Legacy slugs remain dispatchable until P15-I archive completes. Harness-structured design is the default for development-changing requests.
