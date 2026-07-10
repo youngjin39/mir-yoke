@@ -65,6 +65,24 @@ behaving like it did before.
 
 ---
 
+## Bootstrap into your project (agent-guided)
+
+You do not configure this by hand. **Point an AI agent at the repo and let it set itself up for
+your purpose.** Clone, open Claude Code or Codex CLI in the folder, and say:
+
+> Read `BOOTSTRAP.md` and set up this repo as a **code_app** project for **"an internal billing API in Python"**.
+
+The agent then follows [`BOOTSTRAP.md`](BOOTSTRAP.md): it interviews you (project type, language,
+which reviewers, Codex or Claude-only), writes your `config/repos/<slug>.json` with the right agents
+and skills for that project type, fills the identity file, wires the Codex lane (or sets Claude-only
+mode), runs `setup.sh`, offers to strip template-only content, and proves a gate fires. You end with
+a project already under the harness, shaped for what you are building.
+
+Prefer to do it yourself? `BOOTSTRAP.md` has a manual checklist too, and the Quick start below is the
+5-minute mechanical path.
+
+---
+
 ## Why dual CLI?
 
 Claude Code and Codex CLI overlap in capability but differ in token budget, scoping, and review
