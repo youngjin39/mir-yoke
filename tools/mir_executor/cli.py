@@ -62,7 +62,6 @@ _STANDARD_CATEGORIES = [
 _DEFAULT_JOBS_DB_RELPATH = pathlib.Path("tasks") / "jobs.db"
 _MERGED_FINALIZE_ACTIONS = {"merged", "merged-but-cleanup-failed"}
 _DISPATCH_BACKENDS = frozenset({"codex", "claude"})
-_PERFORMANCE_CHOICES = ("low", "medium", "high", "xhigh")
 _DEFAULT_DISPATCH_PROMPT = (
     "Read the task brief at .mir-dispatch/brief.md and implement it fully "
     "in this worktree. Do not edit tasks/plan.md."
@@ -132,9 +131,7 @@ def _resolve_jobs_db(args_jobs_db: str | None, repo_root: pathlib.Path) -> pathl
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="python -m tools.mir_executor",
-        description=(
-            "your-harness Executor — MCP-backed Codex runner + tdd.json ledger update."
-        ),
+        description="your-harness Executor — Codex CLI subprocess wrapper + tdd.json ledger update.",
     )
     # Global --jobs-db option available for all subcommands
     parser.add_argument(
@@ -197,17 +194,21 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     exec_p.add_argument(
         "--model",
-        choices=_PERFORMANCE_CHOICES,
         default=None,
         metavar="MODEL",
-        help="Optional Codex performance model route; omit to inherit Codex defaults.",
+        help=(
+            "Optional Codex model name (e.g. a codex model id); omit to inherit "
+            "Codex defaults."
+        ),
     )
     exec_p.add_argument(
         "--reasoning-effort",
-        choices=_PERFORMANCE_CHOICES,
         default=None,
         metavar="EFFORT",
-        help="Optional Codex model_reasoning_effort; omit to inherit Codex defaults.",
+        help=(
+            "Optional Codex model_reasoning_effort (free string); omit to inherit "
+            "Codex defaults."
+        ),
     )
     exec_p.add_argument(
         "--stall-timeout",
@@ -590,8 +591,20 @@ def _resolve_policy_runtime_options(
         if isinstance(route, dict):
             category_route = route
 
-    policy_model = _string_route_value(category_route.get("model"))
-    policy_reasoning_effort = _string_route_value(category_route.get("reasoning_effort"))
+    category_prefer: list[dict[str, object]] = []
+    routing_prefer_for_category = getattr(
+        sub_agent_policy,
+        "routing_prefer_for_category",
+        None,
+    )
+    if callable(routing_prefer_for_category):
+        prefer = routing_prefer_for_category(category)
+        if isinstance(prefer, list):
+            category_prefer = [item for item in prefer if isinstance(item, dict)]
+
+    primary_route = category_prefer[0] if category_prefer else category_route
+    policy_model = _string_route_value(primary_route.get("model"))
+    policy_reasoning_effort = _string_route_value(primary_route.get("reasoning_effort"))
 
     routing_default_model = getattr(sub_agent_policy, "routing_default_model", None)
     if policy_model is None and callable(routing_default_model):

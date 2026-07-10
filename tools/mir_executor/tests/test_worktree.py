@@ -16,8 +16,6 @@ from tools.mir_executor.worktree import (
     create_dispatch_worktree,
     dispatch_env,
     merge_result,
-    read_result,
-    write_result,
 )
 
 
@@ -67,6 +65,15 @@ def test_create_makes_isolated_checkout(tmp_path: pathlib.Path) -> None:
         cleanup_worktree(wt)
 
 
+def test_create_writes_brief_with_lone_surrogate(tmp_path: pathlib.Path) -> None:
+    repo = _make_repo(tmp_path)
+    wt = create_dispatch_worktree(repo, "surrogate-brief", brief_text="\udce2")
+    try:
+        assert wt.brief_path.read_text(encoding="utf-8", errors="surrogatepass") == "\udce2"
+    finally:
+        cleanup_worktree(wt)
+
+
 def test_create_copies_gitignored_repo_profile(tmp_path: pathlib.Path) -> None:
     repo = _make_repo(tmp_path)
     (repo / ".gitignore").write_text(".mir/\n", encoding="utf-8")
@@ -102,17 +109,6 @@ def test_structural_isolation_plan_edit_does_not_touch_main(tmp_path: pathlib.Pa
             encoding="utf-8",
         )
         assert (repo / "tasks" / "plan.md").read_bytes() == original
-    finally:
-        cleanup_worktree(wt)
-
-
-def test_read_result_roundtrip_and_absent(tmp_path: pathlib.Path) -> None:
-    repo = _make_repo(tmp_path)
-    wt = create_dispatch_worktree(repo, "result")
-    try:
-        assert read_result(wt) is None
-        write_result(wt, {"status": "ok", "n": 3})
-        assert read_result(wt) == {"status": "ok", "n": 3}
     finally:
         cleanup_worktree(wt)
 

@@ -54,6 +54,14 @@ class SubAgentPolicy:
             self.routing.get("default_reasoning_effort")
         )
 
+    def routing_model_rank(self) -> list[str]:
+        """Return global model routing priority from highest to lowest."""
+        return _string_list(self.routing.get("model_rank"))
+
+    def routing_effort_rank(self) -> list[str]:
+        """Return global reasoning effort routing priority from highest to lowest."""
+        return _string_list(self.routing.get("effort_rank"))
+
     def routing_by_category(self, category: str | None = None) -> dict[str, Any]:
         """Return all category-specific routing entries or one category route."""
         by_category = self.routing.get("by_category", {})
@@ -69,6 +77,27 @@ class SubAgentPolicy:
     def routing_for_category(self, category: str) -> dict[str, Any]:
         """Return the routing entry for one TDD category, if configured."""
         return self.routing_by_category(category)
+
+    def routing_prefer_for_category(self, category: str) -> list[dict[str, Any]]:
+        """Return ordered category routing preferences, if configured."""
+        prefer = self.routing_by_category(category).get("prefer")
+        if not isinstance(prefer, list):
+            return []
+
+        entries: list[dict[str, Any]] = []
+        for item in prefer:
+            if not isinstance(item, dict):
+                continue
+            entry: dict[str, Any] = {}
+            model = _string_value(item.get("model"))
+            if model is not None:
+                entry["model"] = model
+            reasoning_effort = _string_value(item.get("reasoning_effort"))
+            if reasoning_effort is not None:
+                entry["reasoning_effort"] = reasoning_effort
+            if entry:
+                entries.append(entry)
+        return entries
 
     def monitoring_stall_timeout_seconds(self) -> float | None:
         """Return the no-progress stall timeout, if configured."""
@@ -91,6 +120,17 @@ def _string_value(value: Any) -> str | None:
         return None
     value = value.strip()
     return value or None
+
+
+def _string_list(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    strings: list[str] = []
+    for item in value:
+        string_item = _string_value(item)
+        if string_item is not None:
+            strings.append(string_item)
+    return strings
 
 
 def _default_policy() -> SubAgentPolicy:

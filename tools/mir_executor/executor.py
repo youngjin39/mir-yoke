@@ -4,7 +4,7 @@ executor.py
 MirExecutor: MCP-backed Codex runner + tdd.json ledger update.
 
 Design inspiration: harness_framework (Hermes pattern) — no code copied.
-P0-J MVP: blocking runner only. Async / Stop hook wiring deferred to P0-J.1.
+P0-J lineage: blocking executor MVP; ADR-69 bans raw exec delegation, so Codex runs through codex_mcp_client.py.
 """
 
 from __future__ import annotations

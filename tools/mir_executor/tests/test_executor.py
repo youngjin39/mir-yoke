@@ -113,9 +113,7 @@ def _write_dispatch_brief(tmp_path: pathlib.Path) -> pathlib.Path:
                 "expanded_goal": "Fix src/foo.py [role=executor, stack=python]",
                 "owned_scope": ["src/foo.py"],
                 "out_of_scope": ["docs/**"],
-                "verification_commands": [
-                    "uv run pytest -q tools/mir_executor/tests/test_executor.py"
-                ],
+                "verification_commands": ["uv run pytest -q tools/mir_executor/tests/test_executor.py"],
                 "stop_conditions": ["Stop if the change requires files outside owned_scope."],
                 "handoff_refs": [],
                 "tdd_change_refs": ["tasks/tdd.json#test-change-id"],

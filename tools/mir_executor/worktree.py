@@ -133,7 +133,7 @@ def create_dispatch_worktree(
     status_path = dispatch_dir / "status.json"
     result_path = dispatch_dir / "result.json"
 
-    brief_path.write_text(brief_text, encoding="utf-8")
+    brief_path.write_text(brief_text, encoding="utf-8", errors="surrogatepass")
     _write_json(
         status_path,
         {
@@ -155,29 +155,11 @@ def create_dispatch_worktree(
     )
 
 
-def read_result(worktree: DispatchWorktree) -> dict | None:
-    """Read the structured result contract, returning None when it is absent or empty."""
-    if not worktree.result_path.exists():
-        return None
-    text = worktree.result_path.read_text(encoding="utf-8")
-    if not text.strip():
-        return None
-    data = json.loads(text)
-    if not isinstance(data, dict):
-        raise TypeError(f"expected JSON object in {worktree.result_path}")
-    return data
-
-
 def write_status(worktree: DispatchWorktree, state: str, **fields: object) -> None:
     """Merge a state update into the worktree-local status.json."""
     status = _read_json_object(worktree.status_path)
     status.update({"state": state, **fields})
     _write_json(worktree.status_path, status)
-
-
-def write_result(worktree: DispatchWorktree, result: dict) -> None:
-    """Write the structured result contract for orchestrator/test round-trips."""
-    _write_json(worktree.result_path, result)
 
 
 def merge_result(
