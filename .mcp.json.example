@@ -1,0 +1,13 @@
+{
+  "_comment": "Copy to .mcp.json to enable the Codex delegation lane. This wires the `codex` MCP server so the `mcp__codex__codex` tool (and `mir_executor --dispatch`) can reach Codex. Requires the Codex CLI installed and logged in. `command` must resolve to your codex binary — use `codex` if it is on PATH, or an absolute path. Remove this _comment key before use if your loader rejects unknown keys.",
+  "mcpServers": {
+    "codex": {
+      "type": "stdio",
+      "command": "codex",
+      "args": ["mcp-server"],
+      "env": {
+        "CODEX_HOME": "${HOME}/.codex"
+      }
+    }
+  }
+}

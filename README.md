@@ -80,6 +80,38 @@ events (`TaskCreated`, `TaskCompleted`, `StopFailure`) get Claude-only enforceme
 
 ---
 
+## Prerequisites
+
+The **Claude-side harness** (hooks, agents, skills, gates, TDD ledger) is self-contained and works
+from a fresh clone with no global config — Claude Code and Codex CLI read the project-local
+`.claude/` and `.codex/` folders directly. Nothing here depends on a global `~/.claude` /
+`~/.codex` agents folder.
+
+The **Codex delegation lane** (`executor-agent`, `codex-final-reviewer`, `mir_executor --dispatch`,
+the `mcp__codex__codex` tool) additionally needs:
+
+1. **Codex CLI** installed and logged in (`codex` on your `PATH`, or note its absolute path).
+2. **`uv`** (Python package runner) for the `mir` CLI — `uv run mir …`.
+3. **The `codex` MCP server wired** so the `mcp__codex__codex` tool exists. This template does NOT
+   ship a `.mcp.json` (it would carry machine-specific paths). Copy the example and adjust:
+
+   ```bash
+   cp .mcp.json.example .mcp.json
+   # edit .mcp.json: set "command" to your codex binary ("codex" if on PATH, else an absolute
+   # path) and CODEX_HOME if your Codex home is not ~/.codex
+   ```
+
+Optional: shared global coding rules (Think Before Coding / Simplicity First / Surgical Changes /
+Goal-Driven Execution) live in [`global-rules/`](global-rules/) — merge them into your own global
+`~/.claude/CLAUDE.md` and `~/.codex/AGENTS.md` if you want them applied across all your repos, not
+just this one. They are optional; the project-local `CLAUDE.md` is self-sufficient without them.
+
+Without the Codex lane wired, the Claude side still works fully (hooks, gates, Claude agents) — but
+`force_codex` delegation will report `BLOCKED` because there is no Codex backend to route to; set
+`config/sub-agent-policy.json` `mode` to `unrestricted` for a Claude-only setup.
+
+---
+
 ## Quick start (5 minutes)
 
 ```bash
@@ -90,10 +122,13 @@ cd my-project
 # 2. Run the setup script.
 ./setup.sh
 
-# 3. Open the project in Claude Code.
+# 3. (Codex lane) wire the Codex MCP server.
+cp .mcp.json.example .mcp.json   # then edit the codex command/CODEX_HOME
+
+# 4. Open the project in Claude Code.
 claude .
 
-# 4. Or in Codex CLI.
+# 5. Or in Codex CLI.
 codex
 ```
 
