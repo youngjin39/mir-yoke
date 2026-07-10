@@ -104,7 +104,7 @@ VERSION file: `mir-yoke/VERSION` (single line semver). Git tag: `v<semver>`. CHA
 See [`applications/template-repo/versioning.md`](applications/template-repo/versioning.md) for details.
 
 ### 3-4. Health Check Coverage
-- **Internal link integrity**: resolve validation for `@import` and markdown `[](path)` links
+- **Internal link integrity**: resolve validation for `@import` and markdown link references
 - **Schema validity**: self-validation of all `docs/templates/_schema/*.json`
 - **Hook executability**: syntax + permission validation of `.claude/hooks/*.sh`
 - **Phase doc completeness**: presence check for §0.5 + Exit Criterion + Apply State table in each phase-N-*.md

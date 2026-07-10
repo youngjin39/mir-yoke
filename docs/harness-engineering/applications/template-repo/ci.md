@@ -142,7 +142,7 @@ def test_all_schemas_self_validate():
 ```
 
 ### 3-2. `test_link_integrity.py`
-Verify resolve for all markdown `[text](path)` and `@import path`.
+Verify resolve for all markdown links and `@import` references.
 
 ```python
 import re

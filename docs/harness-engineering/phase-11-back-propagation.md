@@ -49,7 +49,7 @@ date: 2026-05-23
 
 ## 2. Innovation Detection -- `harness_drift.py`
 
-[`tools/fleet_observe/harness_drift.py`](../../tools/fleet_observe/harness_drift.py). This section is the spec; code is a separate round.
+`tools/fleet_observe/harness_drift.py` (fleet extension — not shipped in the template). This section is the spec; code is a separate round.
 
 ### 2-1. Detection Targets
 | Kind | Detection Method | Example |
@@ -241,7 +241,7 @@ When an innovation conflicts with existing template patterns.
 
 | Item | Status | Location |
 |---|---|---|
-| `harness_drift.py` | landed | `tools/fleet_observe/harness_drift.py` |
+| `harness_drift.py` | fleet extension | `tools/fleet_observe/harness_drift.py` |
 | Triage UI (Discord digest) | partial (manual Discord notification) | Discord notification (auto cron not running) |
 | `share_dispatcher` | landed | `tools/fleet_observe/share_dispatcher.py` |
 | This phase doc | this round | this file |

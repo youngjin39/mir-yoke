@@ -386,7 +386,7 @@ and a hook makes the choice enforceable rather than advisory.
 | `per_project` | per-repo override keyed by slug. |
 | `unrestricted` | no sub-agent constraint. |
 
-A home-server overlay env (`MIR_SUB_AGENT_POLICY=/path/to.json`) changes the mode without editing
+A home-server overlay env (`MIR_SUB_AGENT_POLICY=<abs-path-to-policy.json>`) changes the mode without editing
 the repo file; the resolver fails closed to `force_codex` on any error. The overlay shallow-merges
 over the repo file, so a `routing`-only overlay changes routing while leaving each repo's `mode`
 intact.

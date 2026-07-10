@@ -20,6 +20,12 @@ if [ -d .claude/hooks ]; then
   chmod +x .claude/hooks/*.sh 2>/dev/null || true
   say "✓ hook scripts marked executable"
 fi
+# 1b. Sync Python deps so `uv run mir …` and the verifiers work offline.
+if command -v uv >/dev/null 2>&1; then
+  uv sync --quiet 2>/dev/null && say "✓ python deps synced (uv)" || say "• uv sync skipped (run 'uv sync' manually)"
+else
+  warn "uv not found — install uv, then 'uv sync', for the mir CLI + verifiers"
+fi
 
 # 2. Ensure tasks/tdd.json exists with the empty schema. Do not overwrite.
 if [ ! -f tasks/tdd.json ]; then
