@@ -1,6 +1,6 @@
 # Migration Guide
 
-This document records breaking changes between major versions of `claude-codex-harness`. Each entry covers migration steps for existing fleet adopters to upgrade.
+This document records breaking changes between major versions of `mir-yoke`. Each entry covers migration steps for existing fleet adopters to upgrade.
 
 ## Format
 

@@ -191,7 +191,7 @@ This section supplements phase-10 §3-3 sync procedure. Perspective of an extern
 ### 5-1. Template User Perspective (greenfield owner)
 ```bash
 # 1. clone
-git clone https://github.com/<org>/claude-codex-harness new-family
+git clone https://github.com/<org>/mir-yoke new-family
 
 # 2. family initialization (see phase-10 section 5-1)
 python scripts/bootstrap.py --family-name new-family --family-type SE-product
@@ -205,7 +205,7 @@ python scripts/bootstrap.py --family-name new-family --family-type SE-product
 ```bash
 # 1. Receive new template version notification from central harness or Discord
 # 2. Review template changes
-git -C /path/to/claude-codex-harness log v1.0.0..v1.1.0
+git -C /path/to/mir-yoke log v1.0.0..v1.1.0
 
 # 3. Decide on cherry-pick for your family
 # - adopt: apply changes to family .claude/

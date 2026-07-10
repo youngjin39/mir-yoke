@@ -1,4 +1,4 @@
-# claude-codex-harness
+# Mir Yoke
 
 **An enforcement-first harness template for the Claude Code + Codex CLI pair.**
 
@@ -116,7 +116,7 @@ Without the Codex lane wired, the Claude side still works fully (hooks, gates, C
 
 ```bash
 # 1. Clone or copy the template into your repo.
-git clone https://github.com/youngjin39/claude-codex-harness.git my-project
+git clone https://github.com/youngjin39/mir-yoke.git my-project
 cd my-project
 
 # 2. Run the setup script.

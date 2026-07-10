@@ -169,7 +169,7 @@ Sync with public template repos.
 | 8-step porting procedure | landed | survey / classify / migrate / observe |
 | Strictness differential | partial | Per-family JSON hooks settings |
 | Cross-pollination | landed | external agents/skills catalog |
-| Public template sync | landed | claude-codex-harness operations |
+| Public template sync | landed | mir-yoke operations |
 
 **Gaps**: Inheritance graph introduction + stronger self-stop enforcement + 1 new family "1-week advisory-clean" measurement.
 

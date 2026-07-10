@@ -1,6 +1,6 @@
-# Harness Rollout Report — claude-codex-harness
+# Harness Rollout Report — mir-yoke
 
-Repository: `claude-codex-harness`
+Repository: `mir-yoke`
 Type: `template_transitional`
 Inspected at: `2026-05-28`
 Current harness surfaces: `CLAUDE.md`, `AGENTS.md`, `.claude/`, `.ai-harness/`, `config/`, `docs/`, `tasks/`

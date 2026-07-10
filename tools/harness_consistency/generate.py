@@ -148,7 +148,7 @@ def _build_rule_inputs(
         # - every other target  -> keep the source absolute path verbatim
         #   so checker resolves against the real template, not the family root.
         # Never inherit the source repo's exclude_paths for non-source targets.
-        _template_slug = "claude-codex-harness"
+        _template_slug = "mir-yoke"
         if target_slug == _template_slug:
             tp["template_repo"] = "."
         else:

@@ -42,7 +42,7 @@ Each phase assumes the completion of the previous phase. If introducing a new fa
 
 **R30 update (2026-05-25)**: Rather than directly adding `phase-13` to the per-family rollout system, a separate closure lane was introduced for `your-harness`/template verdict truth-alignment. Therefore the total conceptual phases are 14, but the general family rollout target continues to be `phase-0..12`.
 
-**R30 decision** (Applied-State Closure phase): `your-harness` is the self-baseline, but by ledger standards still has 0 `done` phases, and the public template `claude-codex-harness` has remaining applied-state verdict conflicts between catalog rows and physical artifacts. This R30 phase-13 bundles **the completion criteria and measurement criteria for both into a single closure lane**.
+**R30 decision** (Applied-State Closure phase): `your-harness` is the self-baseline, but by ledger standards still has 0 `done` phases, and the public template `mir-yoke` has remaining applied-state verdict conflicts between catalog rows and physical artifacts. This R30 phase-13 bundles **the completion criteria and measurement criteria for both into a single closure lane**.
 - `your-harness` side goal: close the self ledger (`applications/example-harness/README.md`) `pending/partial` to `done` or `blocked` honestly with actual verification evidence
 - Template side goal: align the verdict for ADR-39 applied-state charter, ADR-42 verifier, catalog row, and physical template repo snapshot to the same standard
 - External families are not direct rollout targets for this phase and are tracked as `n_a` in catalog

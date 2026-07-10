@@ -29,7 +29,7 @@ priority: P4
 | Migration procedure 8-step | §6 | land — survey / classify / migrate / observe |
 | Strictness differentiation | §7 | partial land — each family JSON hooks configuration |
 | Cross-pollination | §8 | land — external agents/skills catalog |
-| Public template sync | §9 | land — claude-codex-harness operation |
+| Public template sync | §9 | land — mir-yoke operation |
 
 **Gap**: No exit-criterion-level blockers. Inheritance graph visualization enhancement may remain as a follow-up improvement item, but fleet-wide parity direct-apply and verifier-clean registry state satisfy phase exit.
 
@@ -78,7 +78,7 @@ This phase itself is the "propagation" control phase, so exceptions.md entire do
 | All families | enforced — type classification + enabled_phases mandatory |
 | Family refuses to specify `family_type` | family JSON rejected, `config/repo-agent-management.json` registration blocked |
 | Family violates inheritance graph (e.g., code_app not inheriting SE-meta) | warn → block (1-week migration grace period) |
-| Public template (claude-codex-harness) | sanitize mandatory + enforced |
+| Public template (mir-yoke) | sanitize mandatory + enforced |
 
 **Specific Exceptions**:
 - `example-infra` → code_app backfill

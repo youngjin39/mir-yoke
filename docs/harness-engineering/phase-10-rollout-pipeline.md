@@ -142,7 +142,7 @@ New project bootstrap:
 ### 5-1. Procedure
 ```bash
 # 1. Clone from template
-git clone https://github.com/<org>/claude-codex-harness new-project
+git clone https://github.com/<org>/mir-yoke new-project
 cd new-project
 
 # 2. Family-specific initialization
@@ -154,7 +154,7 @@ python scripts/bootstrap.py   --family-name new-project   --family-type SE-produ
 
 # 6. First commit + push
 git remote set-url origin <new repo>
-git commit -m "bootstrap: harness engineering from claude-codex-harness v<version>"
+git commit -m "bootstrap: harness engineering from mir-yoke v<version>"
 git push -u origin main
 ```
 

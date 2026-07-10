@@ -25,7 +25,7 @@ date: 2026-05-23
 
 | Storage | Location | Content | Owner | Refresh |
 |---|---|---|---|---|
-| **Public Template** | `github.com/<org>/claude-codex-harness/families/<family>/` | blueprint (recommended_phases / recommended_hooks / recommended_agents / family_type strictness) -- starting point for new projects | central harness (sync via `scripts/verify_codex_sync.py`) | After central harness lands and share decision made |
+| **Public Template** | `github.com/<org>/mir-yoke/families/<family>/` | blueprint (recommended_phases / recommended_hooks / recommended_agents / family_type strictness) -- starting point for new projects | central harness (sync via `scripts/verify_codex_sync.py`) | After central harness lands and share decision made |
 | **Central State Cache** | `config/fleet-harness-state.json` | actual adoption state per family, last_sync, drift, innovations | central harness auto-update | Daily (fleet_observe scan) |
 | **Drift Log** | `config/fleet-drift-log/<family>-<ts>.json` | time-series of differences between template baseline and family state | central harness auto | Weekly snapshot |
 | **Per-family local** | `<family-repo>/.claude/` | family's own hook / skill / agent files | central manager | direct apply + verify |

@@ -3,7 +3,7 @@
   "version": 1,
   "_generated": {
     "by": "tools.harness_consistency generate",
-    "repo_slug": "claude-codex-harness",
+    "repo_slug": "mir-yoke",
     "note": "Irreducible rule_inputs (retired_symbols, gate_liveness, code_schema pairs, artifact_map, manual_trigger_allowlist) are empty and must be hand-tuned per family; derivable sections were introspected. Run `python -m tools.harness_consistency run` and tune until green. In --green mode, ERROR rules listed in disabled_rules were auto-disabled because they ERROR on this repo and should be re-enabled after the family adds the prerequisite or tunes the input.",
     "disabled_rules": [
       {
@@ -19,7 +19,7 @@
     ]
   },
   "repo": {
-    "slug": "claude-codex-harness",
+    "slug": "mir-yoke",
     "repository_type": "template_transitional",
     "role": "code_tdd_review_plane",
     "fleet_manager": true,
@@ -226,7 +226,7 @@
           "render_module": "tools.profile_compiler",
           "render_args": [
             "--family",
-            "claude-codex-harness",
+            "mir-yoke",
             "--dry-run",
             "--target",
             "role-policy"

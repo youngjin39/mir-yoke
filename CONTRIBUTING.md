@@ -1,4 +1,4 @@
-# Contributing to claude-codex-harness
+# Contributing to mir-yoke
 
 Thanks for the interest. This template's job is to stay small and copy-pasteable. Please keep that in mind when proposing changes.
 

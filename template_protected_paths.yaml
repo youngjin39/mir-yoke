@@ -1,5 +1,5 @@
 # template_protected_paths.yaml — ci.md §2-2
-# Edit constraints for version-critical files in the claude-codex-harness template repo.
+# Edit constraints for version-critical files in the mir-yoke template repo.
 # These paths require special review before modification.
 protected_paths:
   - path: VERSION

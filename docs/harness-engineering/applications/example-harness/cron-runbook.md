@@ -121,7 +121,7 @@ The script unloads and removes all `com.your-harness.*` plist files from `~/Libr
 | Exit code non-zero in `launchctl list` | Python error at runtime | Check `.err` log file in `/tmp/` |
 | `ModuleNotFoundError` | venv path wrong | Verify `.venv/bin/python` exists; re-run `setup.sh` |
 | `FileNotFoundError: fleet-harness-state.json` | Config path wrong | Check `config/fleet-harness-state.json` exists |
-| Template path error | Public template repo missing | Clone `github.com/<your-org>/claude-codex-harness` to `<template-repo-path>` |
+| Template path error | Public template repo missing | Clone `github.com/<your-org>/mir-yoke` to `<template-repo-path>` |
 
 **Re-install after plist edits**:
 ```bash

@@ -76,7 +76,7 @@ Auto-substitute the source harness repo family-specific terms with the template'
 
 ### 3-3. Family Reference Substitution
 the source harness repo references to other families (used as examples only):
-- the 14 family slugs (grownote / hermes / home-hub / memory-keeper / minesweeper / mir-harness / musinsa-brand / my-life / quietleaf / shortmoviedirector / stockdirector / storydirector / write-score / claude-codex-harness)
+- the 14 family slugs (grownote / hermes / home-hub / memory-keeper / minesweeper / mir-harness / musinsa-brand / my-life / quietleaf / shortmoviedirector / stockdirector / storydirector / write-score / mir-yoke)
 - in the template: all replaced with `<example-family>` or distinct example family names (`example-product`, `example-code-app`, `example-meta`, `example-hybrid`, `example-content`)
 - generalize every reference outside user quotes / examples
 

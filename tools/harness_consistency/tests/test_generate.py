@@ -38,11 +38,11 @@ def _role_policy_render_args(manifest: dict) -> list[str]:
 def test_build_manifest_real_repo_section_and_rules() -> None:
     manifest = build_manifest(
         PROJECT_ROOT,
-        PROJECT_ROOT / "config" / "repos" / "claude-codex-harness.json",
+        PROJECT_ROOT / "config" / "repos" / "mir-yoke.json",
     )
 
     assert manifest["repo"] == {
-        "slug": "claude-codex-harness",
+        "slug": "mir-yoke",
         "repository_type": "template_transitional",
         "role": "code_tdd_review_plane",
         "fleet_manager": True,
@@ -53,7 +53,7 @@ def test_build_manifest_real_repo_section_and_rules() -> None:
     }
     assert len(manifest["rules"]) == 17
     # template source manifest has R3+R8 disabled
-    assert manifest["_generated"]["repo_slug"] == "claude-codex-harness"
+    assert manifest["_generated"]["repo_slug"] == "mir-yoke"
     assert "repo_root" not in manifest["_generated"]
     assert "/" not in manifest["_generated"]["repo_slug"]
     assert "disabled_rules" not in manifest["_generated"]
@@ -62,7 +62,7 @@ def test_build_manifest_real_repo_section_and_rules() -> None:
 def test_build_manifest_schema_validates_real_repo() -> None:
     manifest = build_manifest(
         PROJECT_ROOT,
-        PROJECT_ROOT / "config" / "repos" / "claude-codex-harness.json",
+        PROJECT_ROOT / "config" / "repos" / "mir-yoke.json",
     )
 
     jsonschema.validate(instance=manifest, schema=_schema())
@@ -153,7 +153,7 @@ def test_build_manifest_localizes_generated_metadata_and_role_policy_surface(
 def test_build_manifest_green_real_repo_runs_pass() -> None:
     manifest = build_manifest(
         PROJECT_ROOT,
-        PROJECT_ROOT / "config" / "repos" / "claude-codex-harness.json",
+        PROJECT_ROOT / "config" / "repos" / "mir-yoke.json",
         green=True,
     )
 
@@ -301,7 +301,7 @@ def test_build_rule_inputs_non_template_keeps_abs_template_repo(tmp_path: Path) 
 
 
 def test_build_rule_inputs_template_target_gets_dot_template_repo(tmp_path: Path) -> None:
-    """B2b: claude-codex-harness target gets template_repo == "." (self-referential)."""
+    """B2b: mir-yoke target gets template_repo == "." (self-referential)."""
     from tools.harness_consistency.generate import _build_rule_inputs
 
     abs_template = str(tmp_path / "template-root")
@@ -319,7 +319,7 @@ def test_build_rule_inputs_template_target_gets_dot_template_repo(tmp_path: Path
         tmp_path,
         source_inputs,
         source_slug="mir-harness",
-        target_slug="claude-codex-harness",
+        target_slug="mir-yoke",
     )
 
     assert "template_parity" in result
@@ -374,7 +374,7 @@ def test_build_manifest_rule_inputs_contains_agent_surface_contract(
 def test_build_manifest_real_repo_rule_inputs_has_agent_surface_contract() -> None:
     manifest = build_manifest(
         PROJECT_ROOT,
-        PROJECT_ROOT / "config" / "repos" / "claude-codex-harness.json",
+        PROJECT_ROOT / "config" / "repos" / "mir-yoke.json",
     )
 
     assert "agent_surface_contract" in manifest["rule_inputs"]

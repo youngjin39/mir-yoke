@@ -8,7 +8,7 @@ date: 2026-05-23
 
 # Phase 12 -- Template Lifecycle (Template Sunset + Upgrade Migration)
 
-> **Purpose**: Lifecycle management for the public template repo (`claude-codex-harness`) -- version-lag detection, upgrade migration runbook, sunset / hand-off / fork. The lifecycle lane for Role B (Template Maintainer).
+> **Purpose**: Lifecycle management for the public template repo (`mir-yoke`) -- version-lag detection, upgrade migration runbook, sunset / hand-off / fork. The lifecycle lane for Role B (Template Maintainer).
 
 ## 0.5 Design Goals (R10 anchor)
 
@@ -59,7 +59,7 @@ Owner of each stage = central harness as agent (Role B). Stages requiring operat
 | Sunset Type | Description | Procedure |
 |---|---|---|
 | **Archive** | Freeze template repo as read-only | (a) archive notice in `CHANGELOG.md` (b) fleet 90-day notification (c) catalog `family_type: archived_template` label (d) freeze `adopted_version` for all families at last active version |
-| **Replace** | Migrate to new template repo (`claude-codex-harness-v2`) | (a) bootstrap new repo (b) 6-month dual-live (c) family migration cadence (d) archive old repo |
+| **Replace** | Migrate to new template repo (`mir-yoke-v2`) | (a) bootstrap new repo (b) 6-month dual-live (c) family migration cadence (d) archive old repo |
 | **Rename** | Same owner, URL change only | (a) verify old URL -> new URL redirect (b) update `template_repo_url` in fleet config (c) 7-day grace |
 | **Fork** | External owner forks for independence | (a) fork gets `family_type=template` separate catalog entry (b) cross-pollination decision between two templates (not maintained by central harness) |
 

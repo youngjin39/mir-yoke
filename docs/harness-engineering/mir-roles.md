@@ -30,7 +30,7 @@ The harness agent performs **two job lanes** simultaneously.
 | Lane | Role name | Responsibility | Artifacts |
 |---|---|---|---|
 | **A** | Per-Family Tracker | Track and manage harness engineering adoption state across all fleet families | `config/fleet-harness-state.json`, `config/fleet-drift-log/<family>-<ts>.json` |
-| **B** | Template Maintainer | Standing maintenance of public template repo (`claude-codex-harness`) | Template repo VERSION + CI + health check + release notes |
+| **B** | Template Maintainer | Standing maintenance of public template repo (`mir-yoke`) | Template repo VERSION + CI + health check + release notes |
 
 **Key point**: The two lanes have different job scopes, different tools, different failure modes, and different cadences. This doc explicitly separates per-lane SLA, signals, and failure modes.
 
@@ -79,7 +79,7 @@ The harness agent performs **two job lanes** simultaneously.
 ## 3. Role B — Template Maintainer
 
 ### 3-1. Charter
-> The harness agent is the standing maintenance owner of the public template repo (`claude-codex-harness`). In addition to promoting from self-harness lands, responsibilities include: (a) bug-fix-only PRs (b) link/schema health checks (c) dependency updates (d) security patches (e) deprecation procedures (f) release notes generation.
+> The harness agent is the standing maintenance owner of the public template repo (`mir-yoke`). In addition to promoting from self-harness lands, responsibilities include: (a) bug-fix-only PRs (b) link/schema health checks (c) dependency updates (d) security patches (e) deprecation procedures (f) release notes generation.
 
 ### 3-2. Maintenance Scope
 | Category | Cadence | Tool / Process |
@@ -99,7 +99,7 @@ The harness agent performs **two job lanes** simultaneously.
 - **MINOR** (`vN.M+1.0`): new phase / hook / skill, backwards-compatible extension to existing phases
 - **MAJOR** (`vN+1.0.0`): breaking change (e.g. phase rename, schema field removal, hook signature change, family_type enum change)
 
-VERSION file: `claude-codex-harness/VERSION` (single line semver). Git tag: `v<semver>`. CHANGELOG entry required.
+VERSION file: `mir-yoke/VERSION` (single line semver). Git tag: `v<semver>`. CHANGELOG entry required.
 
 See [`applications/template-repo/versioning.md`](applications/template-repo/versioning.md) for details.
 
@@ -127,7 +127,7 @@ Handoff points between the two lanes.
 
 ### 4-1. From catalog perspective
 - Role A reads and writes all rows in `fleet-harness-state.json`.
-- Role B writes only the `families.claude-codex-harness` row (template self-row) — Role A scan cannot update the template's internal version.
+- Role B writes only the `families.mir-yoke` row (template self-row) — Role A scan cannot update the template's internal version.
 - Therefore the template row's `template_version` field is **Role B only** (result of self-harness land + sanitize + version bump).
 
 ### 4-2. Innovation flow
@@ -161,7 +161,7 @@ The agent's own self-monitoring is separate from the family row. New file:
 
 The family row is the your-harness repo's apply state; agent-self-health.json is the agent's runtime health. **These two concepts are explicitly separate**.
 
-### 5-3. `claude-codex-harness` row family_type
+### 5-3. `mir-yoke` row family_type
 The fleet_harness_state schema includes a `family_type` enum with 6 types (SE-meta / code_app / SE-product / hybrid_pipeline / template included). A prior audit flagged "behavior of template type undefined."
 
 This doc defines:

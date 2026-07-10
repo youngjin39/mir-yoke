@@ -1,5 +1,5 @@
 #!/bin/bash
-# setup.sh — bootstrap claude-codex-harness in a fresh or existing repo.
+# setup.sh — bootstrap mir-yoke in a fresh or existing repo.
 #
 # Idempotent. Run as many times as you like. Does not overwrite existing files.
 # Warns when placeholder values remain from the template (see §Placeholder guard below).
@@ -13,7 +13,7 @@ say() { printf '%s\n' "$*"; }
 warn() { printf '[WARN] %s\n' "$*" >&2; }
 die() { printf '[ERROR] %s\n' "$*" >&2; exit 1; }
 
-say "claude-codex-harness setup ▸ root=$ROOT"
+say "mir-yoke setup ▸ root=$ROOT"
 
 # 1. Make every hook executable.
 if [ -d .claude/hooks ]; then

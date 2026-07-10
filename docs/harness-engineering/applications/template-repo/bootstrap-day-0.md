@@ -25,7 +25,7 @@ priority: R10-T02 newly established (resolves R9 Slice D Scenario 1 BLOCKING)
 
 ### Step 1 — Clone template
 ```bash
-git clone https://github.com/<your-org>/claude-codex-harness <new-family-name>
+git clone https://github.com/<your-org>/mir-yoke <new-family-name>
 cd <new-family-name>
 ```
 

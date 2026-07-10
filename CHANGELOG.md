@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to `claude-codex-harness` will be documented in this file.
+All notable changes to `mir-yoke` will be documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) from `v0.1.0` onward.
 
@@ -197,7 +197,7 @@ Initial semver release. First sanitized promotion of upstream harness-engineerin
 ### Notes for adopters
 
 - PROMOTE-R5a deliberately ships **schemas + 1 light ADR + versioning artifacts only**. The Korean-heavy `docs/harness-engineering/` directory (24 docs × 70-180 Korean lines each) is deferred to a follow-up round once an LLM-assisted sanitize pipeline (`scripts/sanitize_for_template.py`, upstream R11) is available. Hand-translating 24 docs accurately exceeds a single-round budget.
-- See upstream [`docs/harness-engineering/applications/template-repo/current-state.md`](https://github.com/youngjin39/claude-codex-harness/blob/main/) (placeholder link; doc lives upstream until R11 promote) for the full physical-vs-design gap snapshot.
+- See upstream [`docs/harness-engineering/applications/template-repo/current-state.md`](https://github.com/youngjin39/mir-yoke/blob/main/) (placeholder link; doc lives upstream until R11 promote) for the full physical-vs-design gap snapshot.
 - New JSON Schemas are all `additionalProperties: false` (Draft 2020-12). Validate your family configs with `python -m jsonschema -i config/repos/<name>.json docs/templates/_schema/<schema>.json`.
 
 ---
