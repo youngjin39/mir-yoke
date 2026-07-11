@@ -188,7 +188,7 @@ Sanitize verifier — verify zero Korean Hangul traces.
 import re
 from pathlib import Path
 
-HANGUL = re.compile(r'[가-힯ᄀ-ᇿ㄰-㆏]')
+HANGUL = re.compile(r'[\uac00-\ud7a3\u1100-\u11ff\u3130-\u318f]')
 
 def test_no_korean_in_template():
     # template = English-only public mirror

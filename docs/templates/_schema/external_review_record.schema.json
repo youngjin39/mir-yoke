@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mir-harness.local/schemas/external_review_record.schema.json",
+  "title": "External Review Record",
+  "description": "A record of an external AI review and the final decision made from it.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "task_id",
+    "repo_scope",
+    "task_type",
+    "original_prompt",
+    "reason_for_external_review",
+    "external_output_summary",
+    "final_decision",
+    "selected_engine",
+    "prompt_hash",
+    "input_bundle_hash",
+    "external_output_raw_path",
+    "accepted_recommendations",
+    "rejected_recommendations",
+    "reuse_tags",
+    "related_files",
+    "related_reports",
+    "follow_up_actions",
+    "confidence",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "task_id": { "type": "string", "minLength": 1 },
+    "repo_scope": { "type": "string", "minLength": 1 },
+    "task_type": { "type": "string", "minLength": 1 },
+    "original_prompt": { "type": "string", "minLength": 1 },
+    "reason_for_external_review": { "type": "string", "minLength": 1 },
+    "external_output_summary": { "type": "string", "minLength": 1 },
+    "final_decision": { "type": "string", "minLength": 1 },
+    "selected_engine": { "type": "string", "minLength": 1 },
+    "prompt_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "input_bundle_hash": {
+      "type": ["string", "null"],
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "external_output_raw_path": {
+      "type": "string",
+      "pattern": "^\\.mir/external-review/"
+    },
+    "accepted_recommendations": { "type": "array", "items": { "type": "string" } },
+    "rejected_recommendations": { "type": "array", "items": { "type": "string" } },
+    "reuse_tags": { "type": "array", "items": { "type": "string" } },
+    "related_files": { "type": "array", "items": { "type": "string" } },
+    "related_reports": { "type": "array", "items": { "type": "string" } },
+    "follow_up_actions": { "type": "array", "items": { "type": "string" } },
+    "confidence": { "type": "string", "enum": ["low", "medium", "high"] },
+    "token_saving_estimate": { "type": ["integer", "null"] },
+    "created_at": { "type": "string", "format": "date-time" },
+    "updated_at": { "type": "string", "format": "date-time" }
+  }
+}

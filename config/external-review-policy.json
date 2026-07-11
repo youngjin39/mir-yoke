@@ -1,0 +1,28 @@
+{
+  "$schema": "external-review-policy.schema.json",
+  "_comment_": "ADR-71 external AI review router: generic example engine-routing policy. Advisory only; no runtime hook.",
+  "version": "1.0",
+  "enabled": true,
+  "engines": {
+    "external-web-primary": { "kind": "web", "roles": ["design_review", "deep_research", "prompt_refinement", "long_form_critique", "conflict_resolution"] },
+    "external-web-secondary": { "kind": "web", "roles": ["web_recon", "freshness_check", "second_opinion"] },
+    "internal-deep-research": { "kind": "local", "roles": ["deep_research"] }
+  },
+  "routing": {
+    "default": { "prefer": [] },
+    "by_task_type": {
+      "design_review": { "prefer": [{ "engine": "external-web-primary" }, { "engine": "external-web-secondary" }] },
+      "deep_research": { "prefer": [{ "engine": "external-web-primary" }, { "engine": "internal-deep-research" }] },
+      "prompt_refinement": { "prefer": [{ "engine": "external-web-primary" }] },
+      "long_form_critique": { "prefer": [{ "engine": "external-web-primary" }] },
+      "conflict_resolution": { "prefer": [{ "engine": "external-web-primary" }] },
+      "web_recon": { "prefer": [{ "engine": "external-web-secondary" }] },
+      "freshness_check": { "prefer": [{ "engine": "external-web-secondary" }] },
+      "second_opinion": { "prefer": [{ "engine": "external-web-secondary" }, { "engine": "external-web-primary" }] }
+    }
+  },
+  "transports": {
+    "t1_browser": { "status": "candidate" },
+    "t2_human_relay": { "status": "guaranteed" }
+  }
+}

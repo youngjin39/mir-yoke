@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mir-harness.local/schemas/external-review-policy.schema.json",
+  "title": "External Review Policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "enabled", "engines", "routing", "transports"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "_comment_": { "type": "string" },
+    "version": { "const": "1.0" },
+    "enabled": { "type": "boolean" },
+    "engines": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "roles"],
+        "properties": {
+          "kind": { "enum": ["web", "local"] },
+          "roles": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+        }
+      }
+    },
+    "routing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["default", "by_task_type"],
+      "properties": {
+        "default": { "$ref": "#/$defs/route" },
+        "by_task_type": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/route" }
+        }
+      }
+    },
+    "transports": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["status"],
+        "properties": {
+          "status": { "enum": ["candidate", "guaranteed", "disabled"] }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "route": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["prefer"],
+      "properties": {
+        "prefer": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["engine"],
+            "properties": { "engine": { "type": "string", "minLength": 1 } }
+          }
+        }
+      }
+    }
+  }
+}

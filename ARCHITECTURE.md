@@ -22,6 +22,11 @@
 ## Verification Boundary
 - `scripts/verify_context_paths.py` validates required-read and context-doc path references.
 - `tasks/tdd.json` remains the implementation proof ledger for code changes.
+- For single-operator local use, pre-commit hooks, the TDD ledger, and the merge gate are local
+  evidence.
+- Team or multi-contributor use requires a server-side authoritative gate: protected `main`, CI
+  rerunning tests and lint, and no direct pushes to `main`. Local evidence is not authoritative;
+  this is a mandatory adoption prerequisite. See ADR-72.
 
 ## Non-Goals
 - This file does not replace detailed rollout history in `docs/decisions/`.

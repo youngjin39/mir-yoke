@@ -128,6 +128,14 @@ Without the Codex lane wired, the Claude side still works fully (hooks, gates, C
 `force_codex` delegation will report `BLOCKED` because there is no Codex backend to route to; set
 `config/sub-agent-policy.json` `mode` to `unrestricted` for a Claude-only setup.
 
+## Team use (required gates)
+
+Per [ADR-72](docs/decisions/adr-72-dispatch-resilience.md), local pre-commit hooks, the TDD ledger,
+and the merge gate are local evidence suitable for single-operator use only. Multi-contributor
+adoption requires a server-side authoritative gate: protect the `main` branch, run tests and lint
+again in CI on the server, and prohibit direct pushes to `main`. This is a mandatory adoption
+prerequisite for team use.
+
 ---
 
 ## Quick start (5 minutes)
