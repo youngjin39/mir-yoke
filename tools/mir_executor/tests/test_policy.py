@@ -397,7 +397,7 @@ def test_per_project_mode_returns_per_project_map(
     monkeypatch,
 ) -> None:
     monkeypatch.delenv(POLICY_ENV_VAR, raising=False)
-    per_project = {"your-harness": "force_codex", "example": "select"}
+    per_project = {"mir-harness": "force_codex", "example": "select"}
     _write_policy(tmp_path, {"mode": "per_project", "per_project": per_project})
 
     policy = load_sub_agent_policy(tmp_path)
@@ -412,7 +412,7 @@ def test_user_policy_overlay_takes_precedence_when_present(
 ) -> None:
     _write_policy(tmp_path, {"mode": "force_codex", "per_project": {}})
     overlay = tmp_path / "user-policy.json"
-    overlay_per_project = {"your-harness": "select"}
+    overlay_per_project = {"mir-harness": "select"}
     overlay.write_text(
         json.dumps({"mode": "per_project", "per_project": overlay_per_project}),
         encoding="utf-8",

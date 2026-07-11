@@ -15,8 +15,14 @@ import shlex
 import shutil
 import subprocess
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
+
+try:
+    import fcntl as _fcntl
+except ImportError:  # pragma: no cover - Windows is not a target
+    _fcntl = None  # type: ignore[assignment]
 
 from tools.mir_executor.codex_mcp_client import (
     CodexMcpClient,
@@ -46,6 +52,7 @@ class CodexAttempt:
     error_sig: str = ""
     stdout: str = ""
     stderr: str = ""
+    lane_unavailable: bool = False
 
 
 @dataclass(frozen=True)
@@ -70,7 +77,11 @@ class MergeGate:
 
 @dataclass(frozen=True)
 class FinalizeResult:
-    """Final action taken for a completed or blocked dispatch worktree."""
+    """Final action taken for a completed or blocked dispatch worktree.
+
+    ``merged`` means allowlisted changes were checked out and staged in the
+    main working tree; the control-plane main is responsible for committing them.
+    """
 
     action: str
     reason: str
@@ -131,8 +142,16 @@ def run_dispatch(
                 "attempt": attempt,
                 "exit_code": result.exit_code,
                 "error_sig": result.error_sig,
+                "lane_unavailable": result.lane_unavailable,
             },
         )
+        if result.lane_unavailable:
+            _append_event(
+                events_path,
+                {"kind": "lane_unavailable", "dispatch_id": dispatch_id, "attempt": attempt},
+            )
+            write_status(wt, "blocked", reason="lane-unavailable", attempt=attempt)
+            return DispatchOutcome("blocked", attempt, False, "lane-unavailable", wt)
         if result.error_sig and error_sigs.count(result.error_sig) >= 3:
             write_status(wt, "spinning", attempt=attempt, error_sig=result.error_sig)
             _append_event(
@@ -290,7 +309,29 @@ def build_codex_mcp_runner(
             )
 
         try:
-            with client_factory(env=env, call_timeout=float(timeout_seconds)) as client:
+            try:
+                client = client_factory(env=env, call_timeout=float(timeout_seconds))
+                client.__enter__()
+            except Exception as exc:  # startup and handshake failures mean no usable lane
+                stderr = str(exc)
+                error_sig = _error_sig_from_text(stderr)
+                _append_event(
+                    events_file,
+                    {
+                        "exit_code": 1,
+                        "duration_s": time.monotonic() - started_at,
+                        "error_sig": error_sig,
+                        "transport": "mcp",
+                        "lane_unavailable": True,
+                    },
+                )
+                return CodexAttempt(
+                    exit_code=1,
+                    stderr=stderr,
+                    error_sig=error_sig,
+                    lane_unavailable=True,
+                )
+            try:
                 call_kwargs: dict[str, object] = {
                     "prompt": prompt,
                     "cwd": str(wt.path),
@@ -305,7 +346,9 @@ def build_codex_mcp_runner(
                     call_kwargs["model"] = model
                 if stall_timeout is not None:
                     call_kwargs["stall_timeout"] = stall_timeout
-                result = client.call_codex(**call_kwargs)
+                result = client.call_codex(**call_kwargs)  # type: ignore[arg-type]
+            finally:
+                client.__exit__(None, None, None)
             thread_id = result.thread_id
             duration_s = time.monotonic() - started_at
             _append_event(
@@ -316,6 +359,7 @@ def build_codex_mcp_runner(
                     "error_sig": "",
                     "transport": "mcp",
                     "threadId": thread_id,
+                    "lane_unavailable": False,
                 },
             )
             return CodexAttempt(exit_code=0, stdout=result.content_text)
@@ -336,9 +380,15 @@ def build_codex_mcp_runner(
                 "error_sig": error_sig,
                 "transport": "mcp",
                 "threadId": thread_id,
+                "lane_unavailable": False,
             },
         )
-        return CodexAttempt(exit_code=exit_code, stderr=stderr, error_sig=error_sig)
+        return CodexAttempt(
+            exit_code=exit_code,
+            stderr=stderr,
+            error_sig=error_sig,
+            lane_unavailable=False,
+        )
 
     return _runner
 
@@ -349,7 +399,7 @@ _CLAUDE_DISPATCH_PROMPT = (
 )
 
 _MCP_DISPATCH_BASE_INSTRUCTIONS = (
-    "You are a code-implementation sub-agent in an isolated git worktree for the your-harness "
+    "You are a code-implementation sub-agent in an isolated git worktree for the Mir "
     "harness. Read .mir-dispatch/brief.md and implement the task fully. Rules: modify "
     "only files inside this worktree, never edit tasks/plan.md, follow existing code "
     "style and structure, keep changes minimal and scoped to the brief, when tests are "
@@ -502,6 +552,41 @@ def _commit_worktree_if_needed(wt: DispatchWorktree) -> None:
         _git(wt.path, ["commit", "-m", f"mir-dispatch {wt.dispatch_id}"])
 
 
+@contextmanager
+def _finalize_lock(
+    main_repo_root: pathlib.Path,
+    timeout: int,
+) -> Iterator[bool]:
+    """Acquire the per-repository finalize lock within a bounded wait."""
+    lock_path = pathlib.Path(main_repo_root) / ".mir" / "dispatch-finalize.lock"
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    if _fcntl is None:
+        yield True
+        return
+
+    acquired = False
+    deadline = time.monotonic() + max(timeout, 0)
+    with lock_path.open("a+") as lock_file:
+        while True:
+            try:
+                _fcntl.flock(
+                    lock_file.fileno(),
+                    _fcntl.LOCK_EX | _fcntl.LOCK_NB,
+                )
+                acquired = True
+                break
+            except BlockingIOError:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    break
+                time.sleep(min(0.05, remaining))
+        try:
+            yield acquired
+        finally:
+            if acquired:
+                _fcntl.flock(lock_file.fileno(), _fcntl.LOCK_UN)
+
+
 def finalize_dispatch(
     wt: DispatchWorktree,
     main_repo_root: pathlib.Path,
@@ -510,10 +595,15 @@ def finalize_dispatch(
     allowlist: list[str],
     verification_commands: list[str],
     verify_timeout: int = 600,
+    finalize_lock_timeout: int = 600,
     expect_changes: bool = True,
     allow_harness_self_modify: bool = False,
 ) -> FinalizeResult:
-    """Commit, gate, merge, and clean up a completed dispatch fail-closed."""
+    """Gate and finalize a dispatch fail-closed.
+
+    A ``merged`` result means allowlisted changes were checked out and staged in
+    the main working tree; the control-plane main must commit them afterward.
+    """
     main_repo_root = pathlib.Path(main_repo_root)
     allow_harness = allow_harness_self_modify or _resolve_harness_self_modify(main_repo_root)
     if outcome.status not in {"completed", "fallback_completed"}:
@@ -538,40 +628,71 @@ def finalize_dispatch(
             persist_dispatch_artifacts(wt, main_repo_root)
             return FinalizeResult("blocked", gate.reason, [])
 
-        main_head = _git(main_repo_root, ["rev-parse", "HEAD"]).stdout.strip()
-        if main_head != wt.base_commit:
-            persist_dispatch_artifacts(wt, main_repo_root)
-            return FinalizeResult("blocked", "main-moved", [])
+        with _finalize_lock(main_repo_root, finalize_lock_timeout) as lock_acquired:
+            if not lock_acquired:
+                return FinalizeResult("blocked", "finalize-lock-timeout", [])
 
-        dirty = _git(main_repo_root, ["status", "--porcelain"]).stdout.strip()
-        if dirty:
-            persist_dispatch_artifacts(wt, main_repo_root)
-            return FinalizeResult("blocked", "main-dirty", [])
-
-        try:
-            merge_outcome = merge_result(wt, allow_harness_self_modify=allow_harness)
-        except Exception as exc:  # noqa: BLE001
-            _git(
-                main_repo_root,
-                ["restore", "--source=HEAD", "--staged", "--worktree", "--", "."],
-                check=False,
-            )
             try:
-                persist_dispatch_artifacts(wt, main_repo_root)
-            except Exception:  # noqa: BLE001
-                pass
-            return FinalizeResult("blocked", f"merge-error:{exc}", [])
+                main_head = _git(main_repo_root, ["rev-parse", "HEAD"]).stdout.strip()
+                if main_head != wt.base_commit:
+                    persist_dispatch_artifacts(wt, main_repo_root)
+                    return FinalizeResult("blocked", "main-moved", [])
 
-        try:
-            persist_dispatch_artifacts(wt, main_repo_root)
-            cleanup_worktree(wt)
-        except Exception as exc:  # noqa: BLE001
-            return FinalizeResult(
-                "merged-but-cleanup-failed",
-                f"post-merge-error:{exc}",
-                merge_outcome.merged_files,
-            )
-        return FinalizeResult("merged", "approved", merge_outcome.merged_files)
+                dirty = _git(
+                    main_repo_root,
+                    [
+                        "status",
+                        "--porcelain",
+                        "--",
+                        ".",
+                        ":(exclude).mir/dispatch-finalize.lock",
+                    ],
+                ).stdout.strip()
+                if dirty:
+                    persist_dispatch_artifacts(wt, main_repo_root)
+                    return FinalizeResult("blocked", "main-dirty", [])
+
+                try:
+                    merge_outcome = merge_result(
+                        wt,
+                        allow_harness_self_modify=allow_harness,
+                    )
+                except Exception as exc:  # noqa: BLE001
+                    _git(
+                        main_repo_root,
+                        [
+                            "restore",
+                            "--source=HEAD",
+                            "--staged",
+                            "--worktree",
+                            "--",
+                            ".",
+                        ],
+                        check=False,
+                    )
+                    _git(main_repo_root, ["clean", "-fd"], check=False)
+                    try:
+                        persist_dispatch_artifacts(wt, main_repo_root)
+                    except Exception:  # noqa: BLE001
+                        pass
+                    return FinalizeResult("blocked", f"merge-error:{exc}", [])
+
+                try:
+                    persist_dispatch_artifacts(wt, main_repo_root)
+                    cleanup_worktree(wt)
+                except Exception as exc:  # noqa: BLE001
+                    return FinalizeResult(
+                        "merged-but-cleanup-failed",
+                        f"post-merge-error:{exc}",
+                        merge_outcome.merged_files,
+                    )
+                return FinalizeResult("merged", "approved", merge_outcome.merged_files)
+            except Exception as exc:  # noqa: BLE001
+                try:
+                    persist_dispatch_artifacts(wt, main_repo_root)
+                except Exception:  # noqa: BLE001
+                    pass
+                return FinalizeResult("blocked", f"error:{exc}", [])
     except Exception as exc:  # noqa: BLE001
         try:
             persist_dispatch_artifacts(wt, main_repo_root)

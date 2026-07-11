@@ -1,7 +1,7 @@
 """
 jobs.py
 -------
-sqlite-backed JobRegistry for your-harness Executor background jobs.
+sqlite-backed JobRegistry for Mir Executor background jobs.
 
 ADR: docs/decisions/p2-4-l4-background-jobs-2026-05-10.md §4.1–§4.2
 
@@ -20,6 +20,7 @@ BORROWED-FROM: codex-plugin-cc background job pattern (structure, not code).
 
 from __future__ import annotations
 
+import datetime
 import json
 import pathlib
 import sqlite3
@@ -96,17 +97,25 @@ class JobRegistry:
         jobs = registry.list_jobs(status_filter="running")
     """
 
-    def __init__(self, db_path: pathlib.Path) -> None:
+    def __init__(self, db_path: pathlib.Path, *, read_only: bool = False) -> None:
         """Open (or create) the sqlite database and ensure the schema exists."""
         self._db_path = db_path
-        db_path.parent.mkdir(parents=True, exist_ok=True)
-        self._conn = sqlite3.connect(
-            str(db_path),
-            check_same_thread=False,
-        )
+        if read_only:
+            self._conn = sqlite3.connect(
+                f"{db_path.resolve().as_uri()}?mode=ro",
+                uri=True,
+                check_same_thread=False,
+            )
+        else:
+            db_path.parent.mkdir(parents=True, exist_ok=True)
+            self._conn = sqlite3.connect(
+                str(db_path),
+                check_same_thread=False,
+            )
         self._conn.row_factory = sqlite3.Row
         self._lock = threading.Lock()
-        self._ensure_schema()
+        if not read_only:
+            self._ensure_schema()
 
     def _ensure_schema(self) -> None:
         """CREATE TABLE IF NOT EXISTS jobs + index — idempotent."""
@@ -268,6 +277,34 @@ class JobRegistry:
                 "SELECT * FROM jobs WHERE status = ? ORDER BY started_at DESC", (status_filter,)
             ).fetchall()
         return [self._row_to_record(r) for r in rows]
+
+    def find_stale(
+        self,
+        now: datetime.datetime,
+        grace_seconds: int = 120,
+    ) -> list[JobRecord]:
+        """Return running jobs strictly past their timeout plus grace period."""
+        if now.tzinfo is None:
+            now = now.replace(tzinfo=datetime.UTC)
+        else:
+            now = now.astimezone(datetime.UTC)
+
+        stale: list[JobRecord] = []
+        for job in self.list_jobs(status_filter="running"):
+            try:
+                started_at = datetime.datetime.fromisoformat(job.started_at)
+                if started_at.tzinfo is None:
+                    started_at = started_at.replace(tzinfo=datetime.UTC)
+                else:
+                    started_at = started_at.astimezone(datetime.UTC)
+            except (TypeError, ValueError):
+                continue
+            deadline = started_at + datetime.timedelta(
+                seconds=job.timeout_seconds + grace_seconds
+            )
+            if now > deadline:
+                stale.append(job)
+        return stale
 
     # ------------------------------------------------------------------
     # Internal helpers

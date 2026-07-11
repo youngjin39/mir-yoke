@@ -7,8 +7,8 @@ Six base tests + two P2.2 registry tests covering:
   4. Neither --family nor --repo-root → argparse exit 2
   5. --family + --async flag work together (async mock layer, ledger updated)
   6. --repo-root backwards-compatibility (BC)
-  7. P2.2: <example-family> slug exists in _FAMILY_PATHS (17 entries after <example-family> + <example-family> land)
-  8. P2.2: --family <example-family> → exit 1 (executor refuses fleet-excluded slug)
+  7. P2.2: claude-starter slug exists in _FAMILY_PATHS (17 entries after mir-yoke + musinsa-brand land)
+  8. P2.2: --family claude-starter → exit 1 (executor refuses fleet-excluded slug)
 """
 
 from __future__ import annotations
@@ -76,18 +76,18 @@ def _install_fake_codex_mcp_client(monkeypatch: pytest.MonkeyPatch) -> None:
 # ---------------------------------------------------------------------------
 
 def test_cli_family_option_resolves_via_registry(tmp_path, monkeypatch):
-    fake_root = tmp_path / "fake-<example-family>"
+    fake_root = tmp_path / "fake-grownote"
     fake_root.mkdir()
     ledger_path = _make_ledger(fake_root, change_id="x", category="unit")
 
     from tools.profile_compiler import cli as pc_cli
-    monkeypatch.setitem(pc_cli._FAMILY_PATHS, "<example-family>", fake_root)
+    monkeypatch.setitem(pc_cli._FAMILY_PATHS, "grownote", fake_root)
 
     _install_fake_codex_mcp_client(monkeypatch)
 
     rc = cli.main([
         "execute",
-        "--family", "<example-family>",
+        "--family", "grownote",
         "--change-id", "x",
         "--category", "unit",
         "--codex-args", "ignored",
@@ -124,7 +124,7 @@ def test_cli_family_and_repo_root_mutually_exclusive(tmp_path):
     with pytest.raises(SystemExit) as exc_info:
         cli.main([
             "execute",
-            "--family", "<example-family>",
+            "--family", "grownote",
             "--repo-root", str(tmp_path),
             "--change-id", "x",
             "--category", "unit",
@@ -153,18 +153,18 @@ def test_cli_neither_family_nor_repo_root_errors():
 # ---------------------------------------------------------------------------
 
 def test_cli_family_with_async_flag_works(tmp_path, monkeypatch):
-    fake_root = tmp_path / "fake-<example-family>-async"
+    fake_root = tmp_path / "fake-grownote-async"
     fake_root.mkdir()
     ledger_path = _make_ledger(fake_root, change_id="x", category="unit")
 
     from tools.profile_compiler import cli as pc_cli
-    monkeypatch.setitem(pc_cli._FAMILY_PATHS, "<example-family>", fake_root)
+    monkeypatch.setitem(pc_cli._FAMILY_PATHS, "grownote", fake_root)
 
     _install_fake_codex_mcp_client(monkeypatch)
 
     rc = cli.main([
         "execute",
-        "--family", "<example-family>",
+        "--family", "grownote",
         "--async",
         "--change-id", "x",
         "--category", "unit",
@@ -197,14 +197,14 @@ def test_cli_repo_root_still_works_BC(tmp_path, monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# Test 8: P2.2 — --family <example-family> via executor exits with refusal
+# Test 8: P2.2 — --family claude-starter via executor exits with refusal
 # ---------------------------------------------------------------------------
 
 def test_claude_starter_compile_skips_with_message(capsys):
-    """P2.2: compile_family('<example-family>') returns a skip result (not an error/raise)."""
+    """P2.2: compile_family('claude-starter') returns a skip result (not an error/raise)."""
     result = profile_compiler_cli.compile_family(CLAUDE_STARTER_SLUG, mode="dry-run")
     assert "skipped" in result.profile_status, (
-        f"compile_family(<example-family>) must return skip result; got {result.profile_status!r}"
+        f"compile_family(claude-starter) must return skip result; got {result.profile_status!r}"
     )
     assert "P2.2" in result.profile_status, (
         "skip message must reference P2.2 for traceability"

@@ -1,7 +1,7 @@
 """
 cli.py
 ------
-Argparse CLI entry point for the your-harness Executor.
+Argparse CLI entry point for the Mir Executor.
 
 Usage:
     python -m tools.mir_executor execute \\
@@ -35,6 +35,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import datetime
+import json
 import pathlib
 import shlex
 import subprocess
@@ -131,7 +132,7 @@ def _resolve_jobs_db(args_jobs_db: str | None, repo_root: pathlib.Path) -> pathl
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="python -m tools.mir_executor",
-        description="your-harness Executor — Codex CLI subprocess wrapper + tdd.json ledger update.",
+        description="Mir Executor — Codex CLI subprocess wrapper + tdd.json ledger update.",
     )
     # Global --jobs-db option available for all subcommands
     parser.add_argument(
@@ -232,7 +233,7 @@ def _build_parser() -> argparse.ArgumentParser:
         metavar="SLUG",
         help=(
             "Family slug to look up in the profile_compiler registry "
-            "(e.g. '<example-family>'). Resolves to the registered absolute repo root."
+            "(e.g. 'grownote'). Resolves to the registered absolute repo root."
         ),
     )
     root_group.add_argument(
@@ -449,6 +450,37 @@ def _build_parser() -> argparse.ArgumentParser:
         metavar="PATH",
         default=None,
         help="Repository root path (for default jobs.db location).",
+    )
+
+    sweep_p = sub.add_parser(
+        "sweep",
+        help="Report or reap stale jobs and orphan dispatch worktrees.",
+    )
+    sweep_p.add_argument(
+        "--apply",
+        action="store_true",
+        default=False,
+        help="Apply the reported cleanup (default: dry-run).",
+    )
+    sweep_p.add_argument(
+        "--repo-root",
+        type=pathlib.Path,
+        default=pathlib.Path.cwd(),
+        metavar="PATH",
+        help="Main repository root (default: current directory).",
+    )
+    sweep_p.add_argument(
+        "--jobs-db",
+        metavar="PATH",
+        default=argparse.SUPPRESS,
+        help="Override path to jobs.db (default: <repo-root>/tasks/jobs.db).",
+    )
+    sweep_p.add_argument(
+        "--grace-seconds",
+        type=int,
+        default=120,
+        metavar="N",
+        help="Additional lifetime after each job timeout (default: 120).",
     )
 
     return parser
@@ -801,11 +833,18 @@ def _handle_dispatch(
                 "see docs/harness-engineering/codex-dispatch-failure-diagnostic.md",
                 file=sys.stderr,
             )
+        result_payload = f"artifacts=tasks/dispatch/{job_id}"
+        reason_payload = (
+            f"status={outcome.status} blocked_reason={outcome.blocked_reason}"
+            if outcome.blocked_reason is not None
+            else None
+        )
         registry.update_status(
             job_id,
             job_status,
             exit_code=task_exit,
-            stdout=f"artifacts=tasks/dispatch/{job_id}",
+            stdout=result_payload,
+            stderr=reason_payload,
             completed_at=_utc_now(),
         )
     finally:
@@ -978,6 +1017,16 @@ def _handle_execute(args: argparse.Namespace) -> int:
     return 0
 
 
+def _blocked_reason(payload: str | None) -> str | None:
+    """Extract the additive blocked-reason marker from a stored result payload."""
+    if not payload:
+        return None
+    marker = "blocked_reason="
+    if marker not in payload:
+        return None
+    return payload.split(marker, 1)[1].split()[0] or None
+
+
 def _handle_status(args: argparse.Namespace) -> int:
     """Handle the 'status' subcommand."""
     from tools.mir_executor.jobs import JobRegistry  # noqa: PLC0415
@@ -1002,6 +1051,9 @@ def _handle_status(args: argparse.Namespace) -> int:
     print(f"[STATUS] resume_count={job.resume_count} last_resumed_at={job.last_resumed_at!r}")
     print(f"[STATUS] started_at={job.started_at} completed_at={job.completed_at}")
     print(f"[STATUS] cancel_requested={job.cancel_requested}")
+    blocked_reason = _blocked_reason(job.stdout) or _blocked_reason(job.stderr)
+    if blocked_reason is not None:
+        print(f"[STATUS] blocked_reason={blocked_reason}")
     return 0
 
 
@@ -1177,7 +1229,24 @@ def _handle_list_jobs(args: argparse.Namespace) -> int:
             f"dispatch_brief_path={job.dispatch_brief_path!r} "
             f"resume_count={job.resume_count} "
             f"started_at={job.started_at}"
+            f" blocked_reason={(_blocked_reason(job.stdout) or _blocked_reason(job.stderr))!r}"
         )
+    return 0
+
+
+def _handle_sweep(args: argparse.Namespace) -> int:
+    """Handle the dry-run-by-default run-state sweep."""
+    from tools.mir_executor.sweep import sweep_run_state  # noqa: PLC0415
+
+    repo_root = args.repo_root.resolve()
+    jobs_db_path = _resolve_jobs_db(args.jobs_db, repo_root)
+    result = sweep_run_state(
+        repo_root,
+        jobs_db_path,
+        grace_seconds=args.grace_seconds,
+        apply=args.apply,
+    )
+    print(json.dumps(result, separators=(",", ":")))
     return 0
 
 
@@ -1205,6 +1274,8 @@ def main(argv: list[str] | None = None) -> int:
         rc = _handle_resume(args)
     elif args.subcommand == "list-jobs":
         rc = _handle_list_jobs(args)
+    elif args.subcommand == "sweep":
+        rc = _handle_sweep(args)
     else:
         parser.print_help()
         rc = 0

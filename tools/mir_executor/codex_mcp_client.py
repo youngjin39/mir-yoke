@@ -15,7 +15,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from typing import Any
 
-DEFAULT_CODEX_BIN = "<your-home>/.bun/bin/codex"
+DEFAULT_CODEX_BIN = "/Users/ai_agent/.bun/bin/codex"
 DEFAULT_PROTOCOL_VERSION = "2024-11-05"
 
 

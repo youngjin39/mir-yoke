@@ -4,7 +4,13 @@ from __future__ import annotations
 
 import json
 import pathlib
+import shutil
 import subprocess
+
+try:
+    import fcntl
+except ImportError:  # pragma: no cover - Windows is not a target
+    fcntl = None  # type: ignore[assignment]
 
 import pytest
 
@@ -21,6 +27,7 @@ from tools.mir_executor.dispatch import (
     DispatchOutcome,
     FinalizeResult,
     MergeGate,
+    _finalize_lock,
     _last_json_line,
     _resolve_harness_self_modify,
     _run_guarded,
@@ -202,12 +209,18 @@ def _patch_mcp_runner(monkeypatch, attempt_result):
         prompt: str,
         *,
         timeout_seconds: int = 600,
+        model: str | None = None,
+        reasoning_effort: str | None = None,
+        stall_timeout: float | None = None,
     ):
         calls.append(
             {
                 "repo_root": repo_root,
                 "prompt": prompt,
                 "timeout_seconds": timeout_seconds,
+                "model": model,
+                "reasoning_effort": reasoning_effort,
+                "stall_timeout": stall_timeout,
             }
         )
 
@@ -1612,6 +1625,75 @@ def test_merge_gate_approves_clean_allowlist_and_verify(tmp_path: pathlib.Path) 
         cleanup_worktree(wt)
 
 
+@pytest.mark.skipif(fcntl is None, reason="fcntl is unavailable")
+def test_finalize_lock_is_mutually_exclusive_and_releases(
+    tmp_path: pathlib.Path,
+) -> None:
+    repo = _make_repo(tmp_path)
+
+    with _finalize_lock(repo, 0) as first_acquired:
+        assert first_acquired is True
+        with _finalize_lock(repo, 0) as second_acquired:
+            assert second_acquired is False
+
+    with _finalize_lock(repo, 0) as acquired_after_release:
+        assert acquired_after_release is True
+
+
+@pytest.mark.skipif(fcntl is None, reason="fcntl is unavailable")
+def test_finalize_dispatch_times_out_on_held_lock_without_merging(
+    tmp_path: pathlib.Path,
+) -> None:
+    repo = _make_repo(tmp_path)
+    wt = create_dispatch_worktree(repo, "finalize-lock-timeout")
+    lock_path = repo / ".mir" / "dispatch-finalize.lock"
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        (wt.path / "pkg" / "mod.py").write_text("x = 22\n", encoding="utf-8")
+        with lock_path.open("a+") as lock_file:
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            main_head = _git(repo, "rev-parse", "HEAD").stdout
+            main_status = _git(repo, "status", "--porcelain").stdout
+            final = finalize_dispatch(
+                wt,
+                repo,
+                _completed_outcome(wt),
+                allowlist=["pkg/"],
+                verification_commands=["true"],
+                finalize_lock_timeout=0,
+            )
+
+        assert final == FinalizeResult("blocked", "finalize-lock-timeout", [])
+        assert _git(repo, "rev-parse", "HEAD").stdout == main_head
+        assert _git(repo, "status", "--porcelain").stdout == main_status
+        assert (repo / "pkg" / "mod.py").read_text(encoding="utf-8") == "x = 1\n"
+    finally:
+        cleanup_worktree(wt)
+
+
+def test_finalize_dispatch_with_free_lock_merges_normally(
+    tmp_path: pathlib.Path,
+) -> None:
+    repo = _make_repo(tmp_path)
+    wt = create_dispatch_worktree(repo, "finalize-lock-free")
+    try:
+        (wt.path / "pkg" / "mod.py").write_text("x = 23\n", encoding="utf-8")
+
+        final = finalize_dispatch(
+            wt,
+            repo,
+            _completed_outcome(wt),
+            allowlist=["pkg/"],
+            verification_commands=["true"],
+            finalize_lock_timeout=0,
+        )
+
+        assert final == FinalizeResult("merged", "approved", ["pkg/mod.py"])
+        assert (repo / "pkg" / "mod.py").read_text(encoding="utf-8") == "x = 23\n"
+    finally:
+        cleanup_worktree(wt)
+
+
 def test_finalize_persists_artifacts_before_cleanup(tmp_path: pathlib.Path) -> None:
     repo = _make_repo(tmp_path)
     wt = create_dispatch_worktree(repo, "persist-clean")
@@ -1847,16 +1929,21 @@ def test_finalize_rolls_back_on_merge_error(
     monkeypatch,
 ) -> None:
     repo = _make_repo(tmp_path)
+    (repo / ".git" / "info" / "exclude").write_text(".mir/\n", encoding="utf-8")
+    (repo / ".mir").mkdir()
+    (repo / ".mir" / "keepme").write_text("runtime state\n", encoding="utf-8")
     wt = create_dispatch_worktree(repo, "gate-merge-error")
 
     def fake_merge_result(_wt: DispatchWorktree, **_kwargs: object) -> object:
         (repo / "pkg" / "mod.py").write_text("partial merge\n", encoding="utf-8")
+        shutil.copy2(_wt.path / "pkg" / "new.py", repo / "pkg" / "new.py")
         raise RuntimeError("boom")
 
     monkeypatch.setattr("tools.mir_executor.dispatch.merge_result", fake_merge_result)
 
     try:
         (wt.path / "pkg" / "mod.py").write_text("x = 10\n", encoding="utf-8")
+        (wt.path / "pkg" / "new.py").write_text("partial copy\n", encoding="utf-8")
 
         final = finalize_dispatch(
             wt,
@@ -1870,6 +1957,8 @@ def test_finalize_rolls_back_on_merge_error(
         assert final.reason == "merge-error:boom"
         assert wt.path.exists()
         assert (repo / "pkg" / "mod.py").read_text(encoding="utf-8") == "x = 1\n"
+        assert not (repo / "pkg" / "new.py").exists()
+        assert (repo / ".mir" / "keepme").read_text(encoding="utf-8") == "runtime state\n"
     finally:
         cleanup_worktree(wt)
 
@@ -2446,8 +2535,11 @@ def test_cli_dispatch_policy_selects_runner(
         prompt: str,
         *,
         timeout_seconds: int = 600,
+        model: str | None = None,
+        reasoning_effort: str | None = None,
+        stall_timeout: float | None = None,
     ):
-        _ = timeout_seconds
+        _ = timeout_seconds, model, reasoning_effort, stall_timeout
         assert prompt == "hi"
         selected.append("codex")
         return codex_runner
@@ -2623,8 +2715,8 @@ def test_cli_dispatch_per_project_policy_uses_repo_profile_slug(
 ) -> None:
     repo = _make_repo(tmp_path)
     _make_ledger(repo, change_id="X")
-    _write_repo_profile_slug(repo, "your-harness")
-    _write_sub_agent_policy(repo, "per_project", {"your-harness": "claude"})
+    _write_repo_profile_slug(repo, "mir-harness")
+    _write_sub_agent_policy(repo, "per_project", {"mir-harness": "claude"})
     db_path = tmp_path / "jobs.db"
     wt = create_dispatch_worktree(repo, "cli-policy-profile-slug")
     selected: list[str] = []
@@ -2698,7 +2790,7 @@ def test_cli_dispatch_per_project_policy_uses_repo_profile_slug(
         )
 
         assert rc == 0
-        assert repo.name != "your-harness"
+        assert repo.name != "mir-harness"
         assert selected == ["claude"]
     finally:
         cleanup_worktree(wt)
