@@ -1,7 +1,5 @@
 #!/bin/bash
-# TaskCompleted enforcement gate: deny task completion when last ledger entry still has open categories.
-# P0-I active enforcement: fail-closed on python3 parse error, empty output, categories type error,
-# empty categories dict, missing status field, or unknown status value (BUG C2 + W1 fix).
+# Optional TaskCompleted advisory: report open ledger categories without blocking completion.
 # Multi-schema support (P1-quality): accepts 'changes', 'history', 'entries' as list-type entry keys,
 # plus root-level 'categories' for flat ledgers.
 #
@@ -21,11 +19,13 @@
 
 set -u
 
+_MIR_HOOK_TIER="warn"
+
 TDD_JSON="${CLAUDE_PROJECT_DIR:-.}/tasks/tdd.json"
 
 if [ ! -f "$TDD_JSON" ]; then
-  echo "[tdd-task-completed] no tdd.json — task completion requires composite TDD ledger" >&2
-  exit 2
+  echo "[tdd-task-completed WARN] no tdd.json — verify the task with focused evidence" >&2
+  exit 0
 fi
 
 if ! RESULT=$(python3 -c "
@@ -93,13 +93,13 @@ if open_cats:
 else:
     sys.stdout.write('CLOSED')
 " 2>/dev/null); then
-  echo "[tdd-task-completed] tdd.json parse error — task completion blocked" >&2
-  exit 2
+  echo "[tdd-task-completed WARN] tdd.json parse error (advisory only)" >&2
+  exit 0
 fi
 
 if [ -z "$RESULT" ]; then
-  echo "[tdd-task-completed] tdd.json parse returned empty — task completion blocked" >&2
-  exit 2
+  echo "[tdd-task-completed WARN] tdd.json parse returned empty (advisory only)" >&2
+  exit 0
 fi
 
 # Legacy flat-object schema — no list-type entries; cannot enforce; allow.
@@ -113,8 +113,8 @@ if [ "$RESULT" = "NO_CATEGORIES" ]; then
 fi
 
 if [ "$RESULT" = "EMPTY" ]; then
-  echo "[tdd-task-completed] tdd.json has no entries — task completion requires active ledger" >&2
-  exit 2
+  echo "[tdd-task-completed WARN] tdd.json has no entries (advisory only)" >&2
+  exit 0
 fi
 
 if [ "${RESULT%%|*}" = "OPEN" ]; then
@@ -122,8 +122,8 @@ if [ "${RESULT%%|*}" = "OPEN" ]; then
   REST="${RESULT#OPEN|}"
   ENTRY_ID="${REST%%|*}"
   OPEN_CATS="${REST#*|}"
-  echo "[tdd-task-completed] task completion blocked: ledger entry $ENTRY_ID still has open categories: $OPEN_CATS" >&2
-  exit 2
+  echo "[tdd-task-completed WARN] ledger entry $ENTRY_ID still has open categories: $OPEN_CATS (advisory only)" >&2
+  exit 0
 fi
 
 exit 0

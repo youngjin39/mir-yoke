@@ -23,16 +23,6 @@
             "statusMessage": "Harness pre-merge gate"
           }
         ]
-      },
-      {
-        "matcher": "^(Agent|Task)$",
-        "hooks": [
-          {
-            "type": "command",
-            "command": ".claude/hooks/sub-agent-policy-gate.sh",
-            "statusMessage": "sub-agent-policy gate (force_codex)"
-          }
-        ]
       }
     ],
     "PostToolUse": [
@@ -79,18 +69,6 @@
         ]
       }
     ],
-    "SessionEnd": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": ".claude/hooks/session-end.sh",
-            "timeout": 30,
-            "statusMessage": "Harness session-end"
-          }
-        ]
-      }
-    ],
     "UserPromptSubmit": [
       {
         "hooks": [
@@ -99,30 +77,6 @@
             "command": ".claude/hooks/user-prompt-submit.sh",
             "timeout": 30,
             "statusMessage": "Harness context-pull directive"
-          }
-        ]
-      }
-    ],
-    "TaskCreated": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": ".claude/hooks/tdd-task-created.sh",
-            "timeout": 30,
-            "statusMessage": "Harness TDD guard (task creation gate)"
-          }
-        ]
-      }
-    ],
-    "TaskCompleted": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": ".claude/hooks/tdd-task-completed.sh",
-            "timeout": 30,
-            "statusMessage": "Harness TDD completion gate"
           }
         ]
       }

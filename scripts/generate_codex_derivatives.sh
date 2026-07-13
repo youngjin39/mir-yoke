@@ -420,13 +420,11 @@ write_agents_md() {
   - `force:` prefix bypasses the ambiguity gate.
 - Task Classification:
   - 0 specificity signals -> design interview -> ambiguity gating.
-  - Simple non-code (1-2 steps) -> execute directly -> self-check -> done.
-  - Development-changing request -> design first.
-  - Simple or bounded development -> short harness-structured design -> executor-agent -> codex-final-reviewer -> verify.
-  - Complex, repo-wide, or ambiguous development -> full design-process pipeline.
-  - Complex (3+ steps) -> design -> executor-agent -> codex-final-reviewer -> verify.
-- Treat code, tests, repository structure, phases, ADRs, skills, agents, template sync, fleet rollout/share, policy docs, and generated surfaces as development-changing.
-- When ambiguous, classify upward and keep the refined execution brief in `tasks/plan.md` or a `DispatchBrief`.
+  - Tiny or bounded work -> execute directly -> smallest useful check -> done.
+  - Normal work -> use a short design note only when a material choice exists; execute directly or delegate when useful.
+  - Heavy, restartable, or cross-repo work -> persist a plan or `DispatchBrief`; use isolation or delegation when it reduces risk.
+- Classify from uncertainty, blast radius, coordination, and reversibility, not step or file count.
+- Source-of-truth, protected-scope, and fleet rollout boundaries still apply to harness and generated surfaces.
 
 ## Codex Hook-Mirror Obligations
 - [Codex] `SessionStart`: read startup context manually before acting (`tasks/plan.md`, `tasks/lessons.md`, and required local workflow docs).
@@ -434,7 +432,7 @@ write_agents_md() {
 - [Codex] `PostToolUse`: after edits, manually review for debug leftovers and credential leaks.
 - [Codex] `SessionEnd`: at session end, manually create a session snapshot in `tasks/sessions/` mirroring the SessionEnd contract.
 - [Codex] `UserPromptSubmit`: for substantial prompts, run `uv run mir context pull "<query>"` for memory retrieval.
-- [Codex] `TaskCreated` / `TaskCompleted`: keep `tasks/tdd.json` current; TDD ledger closure is enforced at pre-merge by `.claude/hooks/pre-merge-gate.sh`.
+- [Codex] `TaskCreated` / `TaskCompleted`: use `tasks/tdd.json` for broad or high-risk work; lifecycle hooks are advisory.
 EOF
       # DEDUP GUARD: only inject if CLAUDE.md does NOT already contain the section.
       # (Some CLAUDE.md variants have it and it arrives via body_without_frontmatter below.)
@@ -442,19 +440,12 @@ EOF
         echo
         cat <<'LOOP_EOF'
 ## Continuation Loop Protocol
-- Applies to BOTH mains: whichever CLI is opened, Claude or Codex, follows the same file-backed continuation loop.
-- Cursor of record: `tasks/plan.md` formal `Step N:` lines; do not create a second cursor in `run_state.json`.
-- Each runnable step carries bounded machine refs: `brief=<path>` and `tdd=<change_id>#<category>`.
-- Move 1: read the cursor with `uv run mir loop next --json`.
-- Move 2: select exactly one non-DONE/non-CLOSED step from the first active task section.
-- Move 3: execute ONE bounded step through the delegated Codex lane or `scripts/loop_driver.sh`.
-- Move 4: update `tasks/tdd.json` evidence for that step's declared category.
-- Move 5: rewrite only that cursor line to `DONE`, `FAILED | attempts=K`, or `BLOCKED | reason=...`.
-- Move 6: stop after the one bounded step; the next pass must re-read the file cursor.
-- `FAILED` retries are finite; after the configured attempt cap, mark `BLOCKED` and return control.
-- `BLOCKED` means no fabricated continuation: a main agent or user must revise the plan or brief.
-- `COMPLETE` means all machine steps in the active section are `DONE` or `CLOSED`.
-- Non-LLM automation may drive the loop, but it must not bypass hooks, TDD gates, or verification.
+- Use the file-backed loop only for restartable, delegated, or multi-session work.
+- `tasks/plan.md` is the sole cursor when used; do not create a second cursor in `run_state.json`.
+- Execute coherent independently verifiable work units and update the declared evidence before advancing the cursor.
+- A failed step returns control without automatic retry. Retry only after a plausible transient cause or a material brief or approach change.
+- `BLOCKED` means no safe in-scope path remains without new authority or repair of an explicit failed requirement.
+- Non-LLM automation must preserve protected boundaries and explicitly selected verification.
 - `tools/run_orchestrator` remains observer-only; it is not the continuation executor.
 LOOP_EOF
       fi

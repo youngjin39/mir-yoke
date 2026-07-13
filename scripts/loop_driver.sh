@@ -5,7 +5,6 @@ export MIR_CODEX_MAIN=1
 export MIR_CODEX_SESSION_ID="${MIR_CODEX_SESSION_ID:-loop-driver-$$}"
 
 MAX_ITERS="${MIR_LOOP_MAX_ITERS:-20}"
-BACKOFF_SECONDS="${MIR_LOOP_BACKOFF_SECONDS:-5}"
 LOCK_PATH="${MIR_LOOP_LOCK:-tasks/loop.lock}"
 
 mkdir -p "$(dirname "$LOCK_PATH")"
@@ -40,6 +39,10 @@ for ((iter = 1; iter <= MAX_ITERS; iter++)); do
     BLOCKED)
       echo "[loop_driver] blocked: $(json_field "$next_json" reason)" >&2
       exit 2
+      ;;
+    FAILED)
+      echo "[loop_driver] failed step requires operator or brief revision: $(json_field "$next_json" reason)" >&2
+      exit 1
       ;;
     STEP)
       step_id="$(json_field "$next_json" step_id)"
@@ -106,7 +109,7 @@ PY
         rc=$?
         uv run mir loop mark --step "$step_id" --status FAILED \
           --reason "executor_rc=$rc"
-        sleep "$BACKOFF_SECONDS"
+        exit "$rc"
       fi
       ;;
     *)

@@ -23,13 +23,11 @@
   - `force:` prefix bypasses the ambiguity gate.
 - Task Classification:
   - 0 specificity signals -> design interview -> ambiguity gating.
-  - Simple non-code (1-2 steps) -> execute directly -> self-check -> done.
-  - Development-changing request -> design first.
-  - Simple or bounded development -> short harness-structured design -> executor-agent -> codex-final-reviewer -> verify.
-  - Complex, repo-wide, or ambiguous development -> full design-process pipeline.
-  - Complex (3+ steps) -> design -> executor-agent -> codex-final-reviewer -> verify.
-- Treat code, tests, repository structure, phases, ADRs, skills, agents, template sync, fleet rollout/share, policy docs, and generated surfaces as development-changing.
-- When ambiguous, classify upward and keep the refined execution brief in `tasks/plan.md` or a `DispatchBrief`.
+  - Tiny or bounded work -> execute directly -> smallest useful check -> done.
+  - Normal work -> use a short design note only when a material choice exists; execute directly or delegate when useful.
+  - Heavy, restartable, or cross-repo work -> persist a plan or `DispatchBrief`; use isolation or delegation when it reduces risk.
+- Classify from uncertainty, blast radius, coordination, and reversibility, not step or file count.
+- Source-of-truth, protected-scope, and fleet rollout boundaries still apply to harness and generated surfaces.
 
 ## Codex Hook-Mirror Obligations
 - [Codex] `SessionStart`: read startup context manually before acting (`tasks/plan.md`, `tasks/lessons.md`, and required local workflow docs).
@@ -37,7 +35,7 @@
 - [Codex] `PostToolUse`: after edits, manually review for debug leftovers and credential leaks.
 - [Codex] `SessionEnd`: at session end, manually create a session snapshot in `tasks/sessions/` mirroring the SessionEnd contract.
 - [Codex] `UserPromptSubmit`: for substantial prompts, run `uv run mir context pull "<query>"` for memory retrieval.
-- [Codex] `TaskCreated` / `TaskCompleted`: keep `tasks/tdd.json` current; TDD ledger closure is enforced at pre-merge by `.claude/hooks/pre-merge-gate.sh`.
+- [Codex] `TaskCreated` / `TaskCompleted`: use `tasks/tdd.json` for broad or high-risk work; lifecycle hooks are advisory.
 
 # Claude+Codex Harness Template — Opinionated Claude Code Starter
 
@@ -84,7 +82,7 @@
 - 0 specificity signals: load `design` skill (interview subtype).
 - Simple non-code work: execute directly + self-check.
 - Before development-changing execution, classify the task as `tiny`, `normal`, or `heavy`.
-- Development-changing work defaults to a harness-structured design pass first, even when the request is specific.
+- Use only the design artifact needed to resolve a material choice; bounded work may proceed directly.
 - `tiny` tasks may execute without a formal phase or slice when the overhead would outweigh the value, but they still need a clear verification step.
 - `normal` and `heavy` tasks should prefer explicit phases or bounded slices before execution.
 - Simple code task: short `design` pass → Codex execution + TDD + review.
@@ -104,8 +102,8 @@
 - Move 3: execute ONE bounded step through the delegated Codex lane or `scripts/loop_driver.sh`.
 - Move 4: update `tasks/tdd.json` evidence for that step's declared category.
 - Move 5: rewrite only that cursor line to `DONE`, `FAILED | attempts=K`, or `BLOCKED | reason=...`.
-- Move 6: stop after the one bounded step; the next pass must re-read the file cursor.
-- `FAILED` retries are finite; after the configured attempt cap, mark `BLOCKED` and return control.
+- Complete one coherent, independently verifiable work unit before advancing the cursor.
+- A failed step returns control without automatic retry. Retry only after a plausible transient cause or a materially changed brief or approach.
 - `BLOCKED` means no fabricated continuation: a main agent or user must revise the plan or brief.
 - `COMPLETE` means all machine steps in the active section are `DONE` or `CLOSED`.
 - Non-LLM automation may drive the loop, but it must not bypass hooks, TDD gates, or verification.
@@ -113,7 +111,7 @@
 
 
 ## Subagent Resource Management
-- **Subagent-first**: investigation / extraction / verification / multi-file work → delegate to sub-agents and orchestrate (no broad inline read / extract / audit / survey). The main agent fans out and synthesizes; it does not read everything itself. Detail in `main-orchestrator`.
+- Use sub-agents when parallelism, isolation, specialist context, or context economy justifies their coordination cost. Direct bounded work is valid.
 - Default live subagent cap = 4. Raise it only when Claude/Codex lanes are clearly independent and the current lane is healthy.
 - Design-process work may raise the live cap to 4 without separate user approval when Step 2 parallel analysis and Step 4 independent verification both need coverage; record the temporary cap in `tasks/plan.md` or the active handoff note.
 - Prefer `fork_context: false` for bounded harness docs, config, or verifier work. Use `fork_context: true` only for broad role-policy review, runtime-contract review, or independent final verification.
@@ -125,7 +123,7 @@
 - Codex-main → Codex sub-agent: use native `multi_agent_v1` (`tool_search` → `spawn_agent` → `wait_agent` → `close_agent`) for read-only breadth.
 - In-repo code, TDD, and review work: route through `mir_executor --dispatch` so worktree isolation, merge gates, and TDD evidence stay active.
 - **Codex sub-agent = lightweight mcp (ADR-67)**: slim base-instructions + `config{project_doc_max_bytes:0}` (blocks cwd AGENTS.md auto-load = token savings) · per-task `model`/`model_reasoning_effort` routing · `stall_timeout` watchdog + live progress monitoring · global policy `config/sub-agent-policy.json` · dispatch/execute = mcp-only (raw exec fallback removed).
-- Raw `codex exec` = BANNED (ADR-69, owner order 2026-07-04). Claude→codex = MCP only (`mcp__codex__codex` / `tools/mir_executor/codex_mcp_client.py`); in-repo code = `mir_executor … --dispatch` (MCP backend); codex→codex = native `multi_agent_v1`. Missing MCP path → BLOCKED, never exec fallback.
+- Raw `codex exec` = BANNED (ADR-69, owner order 2026-07-04). Claude→codex = MCP only (`mcp__codex__codex` / `tools/mir_executor/codex_mcp_client.py`); in-repo code = `mir_executor … --dispatch` (MCP backend); codex→codex = native `multi_agent_v1`. A missing preferred MCP lane is not a task blocker when a safe direct, native, or manual path remains; never use raw exec fallback.
 - Obsolete raw-exec guards: timeout/stdin/perl-alarm hang guards for `codex exec` are no longer a live delegation contract under ADR-69. MCP transport owns call timeouts, stall progress, and cancellation through `tools/mir_executor/codex_mcp_client.py`.
 
 ## Hook Policy Boundary
@@ -194,17 +192,16 @@
 
 **Claude main** and **Codex main** share the same default main-agent contract: requirements clarification, architecture, design approval, orchestration, planning, dispatch, exception handling, verification synthesis, and final merge judgment.
 
-**Delegated sub-agents** are the default execution plane for the repository modes listed under `codex_allowed_modes`. That delegated work may include implementation, code modification, composite TDD execution, deterministic verification, and code review within the profile's review and TDD scope.
+**Delegated sub-agents** are the preferred execution option when isolation, parallelism, specialist context, or restartability materially helps. Bounded direct-main work is valid within the same safety and verification boundaries.
 
 **Codex** is the default backend for delegated backend-capable execution work. The repository-level `main_role=control_plane` / `delegated_execution=codex_first` / `codex_backend_role=code_tdd_review_plane` fields describe the default backend ownership model, not a different main-agent contract by runtime.
 
-A runtime role swap requires an explicit recorded override in the active plan or handoff note.
+Routine direct-versus-delegated selection needs no override record. Record only a material runtime role swap.
 
-### Orchestration-Only Main (ADR-63, 2026-06-28)
+### Proportional Main Execution
 
-The control_plane main (whichever CLI is opened) does ORCHESTRATION ONLY: read, analyze, design/decide, dispatch, plan.md cursor rewrites (ADR-60 R5 Move 5), verification synthesis, and user communication.
-ALL editing, authoring, code changes, config, and cross-repo writes route to the Codex delegated lane — regardless of domain (advisory or code-path). This extends codex_first beyond the tools/src/scripts hard gate to the full advisory domain.
-Enforcement: policy/discipline (advisory tier, per ADR-51/52) — no new runtime hook.
-Exception: the plan.md Step N cursor line and the active handoff note may be written by the main (orchestration-state bookkeeping it must own).
+The control_plane main may read, analyze, design, edit, verify, and communicate directly for bounded work.
+Prefer delegation for broad, parallel, isolated, or restartable work when its coordination cost is justified.
+Keep destructive operations, credential boundaries, protected Git operations, and delegated plan-cursor ownership as hard safety gates.
 
 <!-- template:profile:role-policy:end -->

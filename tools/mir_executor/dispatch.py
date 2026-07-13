@@ -41,7 +41,7 @@ from tools.mir_executor.worktree import (
     write_status,
 )
 
-MAX_CODEX_ATTEMPTS = 3
+MAX_CODEX_ATTEMPTS = 1
 OUTAGE_THRESHOLD = 3
 
 
@@ -114,7 +114,7 @@ def run_dispatch(
     prior_consecutive_codex_failures: int = 0,
     worktrees_root: pathlib.Path | None = None,
 ) -> DispatchOutcome:
-    """Run one isolated dispatch with finite Codex attempts and fallback policy."""
+    """Run one isolated dispatch; retries require an explicit non-default attempt count."""
     main_repo_root = pathlib.Path(main_repo_root)
     wt = create_dispatch_worktree(
         main_repo_root,

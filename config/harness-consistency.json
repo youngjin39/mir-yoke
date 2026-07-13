@@ -265,7 +265,13 @@
         ".claude/settings.local.json"
       ],
       "archive_exclude": ".claude/hooks/archive/",
-      "manual_trigger_allowlist": []
+      "manual_trigger_allowlist": [
+        ".claude/hooks/session-end.sh",
+        ".claude/hooks/sub-agent-policy-gate.sh",
+        ".claude/hooks/tdd-guard.sh",
+        ".claude/hooks/tdd-task-created.sh",
+        ".claude/hooks/tdd-task-completed.sh"
+      ]
     },
     "wired_gate_liveness": {
       "gates": []

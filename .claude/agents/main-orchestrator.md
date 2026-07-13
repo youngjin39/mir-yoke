@@ -31,9 +31,9 @@ Request → specificity signals? → if none: deep-interview → classify
 - Treat requests that touch code, tests, repository structure, phases, ADRs, skills, agents, template sync, fleet rollout/share, policy docs, or generated surfaces as `development-changing` even when the user provides exact files or steps.
 - For complex or delegated development work, explicitly classify the execution lane as `tiny`, `normal`, or `heavy` before handoff. Use the tier to refine handoff depth and persistence; treat it as a soft default, not a hard gate.
 - Match trigger table (CLAUDE.md) → Read matching skills (max 3) → one-line report.
-- For code-development work, do not write production code directly unless an explicit role override is approved and recorded.
+- The main may write bounded production code directly and run the smallest relevant verification.
 
-- **Subagent-first (breadth work)**: investigation, extraction, verification, and multi-file analysis are delegated to sub-agents and orchestrated — decompose → dispatch (parallel where independent) → verify. Do NOT do broad read / extract / audit / survey inline in the main context; the orchestrator fans out and synthesizes, it does not read everything itself.
+- Use sub-agents for breadth only when parallelism, isolation, specialist knowledge, or context economy justifies the dispatch cost; direct bounded investigation is valid.
 ## Orchestration Presets
 See CLAUDE.md "Orchestration Presets" table (single source of truth).
 
@@ -93,8 +93,8 @@ This routing applies only to specialists. The scope-pattern filter is the dispat
 
 See CLAUDE.md "Role Policy (Template Profile)" and AGENTS.md `template:profile:role-policy` block for the binding policy contract. This section covers the per-agent declarative surface introduced by ADR-09.
 
-- Code work is always delegated to a sub-agent. The orchestrator does not Edit/Write production code directly.
-- Default sub-agent for code/TDD/review: `executor-agent` (frontmatter `execution_backend: codex`). The MCP-backed Codex lane is the code/TDD/review lane.
+- The main may execute bounded code work directly; delegate when it materially improves isolation, parallelism, or review quality.
+- Default delegated sub-agent for code/TDD/review: `executor-agent`. This is a preference, not a precondition for direct bounded work.
 - Default sub-agent for read-only review fallback or tie-break: `quality-agent` (frontmatter `execution_backend: claude`).
 - Default sub-agent for final design-vs-code consistency review: `codex-final-reviewer` (frontmatter `execution_backend: codex`).
 - Sub-agent for fleet-wide instruction-doc governance review (read-only, no code edits): `fleet-doc-steward` (frontmatter `execution_backend: claude`). Not part of the code/TDD/review lane.
@@ -103,8 +103,8 @@ See CLAUDE.md "Role Policy (Template Profile)" and AGENTS.md `template:profile:r
 - A runtime backend override (per-turn deviation) must be recorded in `tasks/plan.md` or the active handoff note before dispatch, per `docs/decisions/role-policy.md`.
 - Deterministic enforcement (orchestrator-guard hook + MCP per-subagent whitelist) is out of ADR-09 scope. ADR-08 cancelled 2026-05-12; the enforcement layer is a separate future ADR. ADR-09 covers declarative surface only.
 
-- **Subagent-first also for non-code breadth**: investigation / extraction / verification / multi-file analysis → delegate + orchestrate, not inline. Backend-agnostic — pick the sub-agent that fits the task (read-only survey / audit / explore agents for investigation; the delegated execution lane for code / TDD / review).
-- Routing SoT: ADR-65 amended by ADR-69. Mnemonic: Claude→codex = MCP only; Codex→codex = native; in-repo code = `mir_executor --dispatch` (MCP backend); raw `codex exec` = BANNED. Missing MCP path = `BLOCKED`, never exec fallback.
+- Non-code breadth may be handled directly or delegated according to uncertainty, isolation needs, and context cost.
+- A missing preferred MCP lane is a lane limitation, not a task blocker when a safe direct, native, or manual path remains. Never use raw `codex exec` fallback.
 - **Model/effort routing (CLI-agnostic — ADR-67 priority schema)**: before ANY codex sub-agent call — Codex-main native `spawn_agent` OR Claude-main `mcp__codex__codex` — resolve the model + reasoning effort for the task's TDD category via `uv run mir policy resolve --category <cat>` and pass the returned `model` (and `config.model_reasoning_effort`). A null field means inherit the codex default. Values are home-server-owned (`sub-agent-policy.json` routing, `MIR_SUB_AGENT_POLICY` overlay). Advisory (ADR-63 tier) — hooks do not inject routing and codex→codex native calls cannot be hook-intercepted, so resolve-and-pass uniformly on both paths. `mir_executor … --dispatch` resolves the same routing internally.
 - **Claude-main → codex sub-agent (mcp, PRIMARY)**:
   - Read-only investigation/review: call `mcp__codex__codex` with `sandbox=read-only`; keep the prompt read-only and bounded.
@@ -118,8 +118,9 @@ See CLAUDE.md "Role Policy (Template Profile)" and AGENTS.md `template:profile:r
   - Mutating code, TDD, and review work MUST stay on `mir_executor --dispatch`.
   - Reason: native sub-agents bypass harness worktrees, merge gates, and TDD gates.
   - `spawn_agent` has no sandbox parameter, so do not use it as an execution lane.
-- In-repo code/TDD/review writes (`tools/`, `src/`, `scripts/`) stay on `mir_executor … --dispatch` (MCP backend); raw `codex exec` is BANNED, not an exception path.
-- Availability failure: if the MCP/native path is missing, handshake fails, login is unavailable, or provisioning is broken, report `BLOCKED` and stop; do not substitute raw exec or another backend silently.
+- For delegated in-repo mutation, prefer `mir_executor … --dispatch` when worktree isolation or its merge gate is useful; bounded direct-main edits are valid. Raw `codex exec` remains banned.
+- The 600-second elapsed and 180-second inactivity observations report only; they never auto-kill, auto-fail, auto-retry, advance retry counters, or block finalization. Omitted timeout means continued execution; an explicit positive operator cap remains binding.
+  - Availability failure: report the lane limitation and do not substitute raw exec; use another safe in-scope route when available.
 ## Post-Dispatch Monitoring (ADR-60 R6)
 
 After EACH MCP-backed Codex sub-agent dispatch (the R2/R3 delegated lane — `mir_executor`

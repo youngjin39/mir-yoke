@@ -16,7 +16,6 @@ if str(_HARNESS_ROOT) not in sys.path:
 
 from tools.autonomous_loop.loop import (  # noqa: E402
     trigger_circuit_breaker,
-    trigger_retry_budget,
 )
 from tools.plan_archive.archiver import (  # noqa: E402
     _BODY_STEP_STATUS_RE,
@@ -28,7 +27,6 @@ from tools.plan_archive.archiver import (  # noqa: E402
 PLAN_PATH = Path("tasks/plan.md")
 MARK_STATUSES = STEP_STATUS_VOCAB
 DONE_STATUSES = {"DONE", "CLOSED"}
-STEP_ATTEMPT_BLOCK_THRESHOLD = 3
 
 
 class LoopError(RuntimeError):
@@ -154,6 +152,17 @@ def _step_result(step: PlanStep) -> NextResult:
     )
 
 
+def _failed_result(step: PlanStep) -> NextResult:
+    return NextResult(
+        status="FAILED",
+        step_id=step.step_id,
+        brief=step.brief,
+        tdd_change_id=step.tdd_change_id,
+        tdd_category=step.tdd_category,
+        reason=step.fields.get("reason") or "operator_decision_required",
+    )
+
+
 def next_step(plan_path: Path = PLAN_PATH) -> NextResult:
     section = _active_task_section(plan_path.read_text(encoding="utf-8"))
     if section is None:
@@ -171,19 +180,7 @@ def next_step(plan_path: Path = PLAN_PATH) -> NextResult:
             reason = trigger.reason if trigger else "step_blocked"
             return _blocked_result(step, reason)
         if step.status == "FAILED":
-            retry_trigger = trigger_retry_budget(
-                {"retry_count": {"total": step.attempts}}
-            )
-            if retry_trigger is not None:
-                return _blocked_result(step, retry_trigger.reason)
-            if step.attempts >= STEP_ATTEMPT_BLOCK_THRESHOLD:
-                return _blocked_result(
-                    step,
-                    (
-                        f"attempts={step.attempts} >= "
-                        f"threshold={STEP_ATTEMPT_BLOCK_THRESHOLD}"
-                    ),
-                )
+            return _failed_result(step)
         return _step_result(step)
 
     return NextResult(status="COMPLETE")

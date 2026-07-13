@@ -20,8 +20,8 @@ Role: Coordinate the default Codex execution lane for approved implementation pl
 3. Confirm the default runtime is Codex. If not, require an explicit recorded override before proceeding.
 4. Execute each step in order through the Codex lane.
 5. Per step: write code → run composite TDD commands → verify result against the TDD ledger.
-6. Unexpected result → classify per Error Taxonomy (transient/model-fixable/interrupt/unknown) → respond accordingly. Max 3 attempts.
-7. 3 failures → STOP + report reason + error class. No 4th attempt.
+6. Unexpected result → inspect and classify it. Do not retry automatically.
+7. Retry only for a plausible transient condition or after a materially changed brief/approach; otherwise stop and report.
 8. On completion: report changed files + execution results.
 
 
@@ -33,7 +33,7 @@ Codex dispatch in the executor lane has one supported mutating form (ADR-60 §16
 
 ### Write / mutating dispatch → `mir_executor … --dispatch` (R4 worktree)
 
-Delegated execution that writes code MUST route through the ADR-60 dispatch helper. The helper runs
+When delegated write isolation is useful, route through the ADR-60 dispatch helper. The helper runs
 Codex in its OWN git worktree (R4 structural isolation) and merges the approved result through a
 deterministic merge gate — it NEVER touches the main worktree. This is the `scripts/loop_driver.sh`
 precedent; the worktree supplies cwd, so the explicit repo-root working-directory flag is dropped.
@@ -110,7 +110,7 @@ not in `tasks/plan.md` and not in the model's head.
 
 <Failure_Modes_To_Avoid>
 - Adding "improvements" not in the plan. Execute plan only.
-- Blindly trying variations on failure. If root cause unknown after 3 attempts → STOP.
+- Repeating the same failed shape without a plausible transient cause or materially changed approach.
 - Starting without handoff. Insufficient context → report NEEDS_CONTEXT.
 - Switching away from Codex without an explicit recorded override.
 - Starting implementation edits without `tasks/tdd.json`. This violates the harness contract.

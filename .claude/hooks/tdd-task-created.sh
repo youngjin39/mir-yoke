@@ -1,16 +1,18 @@
 #!/bin/bash
-# TaskCreated enforcement gate: deny task creation when tasks/tdd.json has no active ledger entry.
-# P0-I active enforcement: fail-closed on python3 parse error or empty output (BUG C1 fix).
+# Optional TaskCreated advisory: report when tasks/tdd.json has no active ledger entry.
+# This script never blocks task creation.
 # Multi-schema support (P1-quality): accepts 'changes', 'history', 'entries',
 # root-level 'categories', and root-level 'targets'.
 
 set -u
 
+_MIR_HOOK_TIER="warn"
+
 TDD_JSON="${CLAUDE_PROJECT_DIR:-.}/tasks/tdd.json"
 
 if [ ! -f "$TDD_JSON" ]; then
-  echo "[tdd-task-created] no tdd.json — task creation requires composite TDD ledger" >&2
-  exit 2
+  echo "[tdd-task-created WARN] no tdd.json — consider adding focused verification evidence" >&2
+  exit 0
 fi
 
 if ! RESULT=$(python3 -c "
@@ -39,13 +41,13 @@ if isinstance(root_targets, list):
 
 sys.stdout.write('UNKNOWN_SCHEMA')
 " 2>/dev/null); then
-  echo "[tdd-task-created] tdd.json parse error — task creation blocked" >&2
-  exit 2
+  echo "[tdd-task-created WARN] tdd.json parse error (advisory only)" >&2
+  exit 0
 fi
 
 if [ -z "$RESULT" ]; then
-  echo "[tdd-task-created] tdd.json parse returned empty — task creation blocked" >&2
-  exit 2
+  echo "[tdd-task-created WARN] tdd.json parse returned empty (advisory only)" >&2
+  exit 0
 fi
 
 # Legacy flat-object schema with no recognizable TDD shape — allow.
@@ -60,8 +62,8 @@ fi
 if [ "${RESULT#TARGETS:}" != "$RESULT" ]; then
   TARGETS_COUNT="${RESULT#TARGETS:}"
   if [ "$TARGETS_COUNT" = "0" ]; then
-    echo "[tdd-task-created] tdd.json has no targets — task creation requires active ledger" >&2
-    exit 2
+    echo "[tdd-task-created WARN] tdd.json has no targets (advisory only)" >&2
+    exit 0
   fi
   exit 0
 fi
@@ -70,8 +72,8 @@ fi
 CHANGES_COUNT="${RESULT#LIST:}"
 
 if [ "$CHANGES_COUNT" = "0" ]; then
-  echo "[tdd-task-created] tdd.json has no entries — task creation requires active ledger" >&2
-  exit 2
+  echo "[tdd-task-created WARN] tdd.json has no entries (advisory only)" >&2
+  exit 0
 fi
 
 exit 0

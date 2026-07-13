@@ -1,22 +1,22 @@
 ---
 name: ui-design
-description: "UI/UX design enforcement (flow + wireframe + component spec before UI code).\n\nTrigger: UI, UX, interface, wireframe, component spec, frontend design\n\nAbsorbs: ux-ui-design"
+description: "Proportional UI/UX design guidance for flows, wireframes, component specs, and consequential frontend choices.\n\nTrigger: UI, UX, interface, wireframe, component spec, frontend design\n\nAbsorbs: ux-ui-design"
 ---
 
 # UI Design
 
 ## Use When
-- Before writing any UI or frontend code.
+- When a UI change has material interaction, accessibility, visual-system, or responsive-layout uncertainty.
 - When designing user flows, wireframes, or component specifications.
-- When a design-system-grounded component spec is required before implementation.
+- A tiny bounded edit inside an established design system may proceed directly with a focused check.
 
 ## Absorbed legacy skills
-- ux-ui-design — Hard gate before any UI code. Produce flow + wireframe + design-system-grounded component spec BEFORE implementation.
+- ux-ui-design — Produce only the flow, wireframe, or design-system detail needed to resolve the actual uncertainty.
 
 ## Workflow
-1. Identify which absorbed legacy intent applies (design vs. plan vs. interview etc.).
-2. Refer to the archived legacy SKILL.md under `archive/skills/<legacy>/` for original workflow.
-3. Output per absorbed legacy's protocol.
+1. Inspect the existing flow and design system.
+2. Resolve the material UX choice with the smallest useful artifact.
+3. Implement or hand off the bounded result and run the smallest relevant UI/accessibility check.
 
 ## Status
 This skill is the canonical entry point. Legacy slugs remain dispatchable until P15-I archive completes.

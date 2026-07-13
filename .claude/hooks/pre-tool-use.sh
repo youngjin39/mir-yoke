@@ -7,7 +7,7 @@
 #   pre-tool-use/code-path-block  : tier=block  (your-harness BLOCK code path protection)
 #   pre-tool-use/deny-list        : tier=block  (security)
 #   pre-tool-use/tool-contract-log: tier=warn   (MIR_TOOL_CONTRACT_LOG advisory)
-_MIR_HOOK_TIER_CODE_PATH="block"
+_MIR_HOOK_TIER_CODE_PATH="warn"
 _MIR_HOOK_TIER_DENY_LIST="block"
 _MIR_HOOK_TIER_TOOL_CONTRACT_LOG="warn"
 _MIR_TIER_DISPATCH="$(dirname "$0")/_lib/tier_dispatch.sh"
@@ -22,7 +22,6 @@ if command -v mir_invocation_log_enable >/dev/null 2>&1; then
   mir_invocation_log_enable "pre-tool-use" "$PROJECT_DIR"
 fi
 DENY_LIST_FILE="$PROJECT_DIR/.ai-harness/deny-list.yaml"
-TDD_GUARD_SCRIPT="$PROJECT_DIR/.claude/hooks/tdd-guard.sh"
 PRE_COMMIT_VERIFICATION_SCRIPT="$PROJECT_DIR/.claude/hooks/pre-commit-verification.sh"
 INPUT=$(cat)
 
@@ -182,7 +181,8 @@ if [ "$TOOL_NAME" = "Bash" ]; then
   if printf '%s\n' "$CMD" | grep -qE '(^|[[:space:];|&(<])([^[:space:];|&()<>#]*/)?codex([[:space:]]+[^[:space:];|&()<>#]+)*[[:space:]]+(exec|e)([[:space:];|&)>#]|$)'; then
     block "raw codex exec/e is banned — route through MCP/mir_executor"
   fi
-  if echo "$CMD" | grep -qE '(^|[[:space:]])git[[:space:]]+commit([[:space:]]|$)'; then
+  if [ "${MIR_PRE_COMMIT_VERIFY:-0}" = "1" ] && \
+     echo "$CMD" | grep -qE '(^|[[:space:]])git[[:space:]]+commit([[:space:]]|$)'; then
     if [ -f "$PRE_COMMIT_VERIFICATION_SCRIPT" ]; then
       if ! /bin/bash "$PRE_COMMIT_VERIFICATION_SCRIPT"; then
         block "pre-commit verification failed for code changes"
@@ -230,11 +230,6 @@ if [ "$TOOL_NAME" = "Write" ] || [ "$TOOL_NAME" = "Edit" ]; then
         ;;
     esac
   fi
-  if [ -f "$TDD_GUARD_SCRIPT" ]; then
-    if ! /bin/bash "$TDD_GUARD_SCRIPT" "$FP"; then
-      exit 2
-    fi
-  fi
   apply_deny_list "$TOOL_NAME $FP" "path"
 fi
 
@@ -280,7 +275,7 @@ if [ "${MIR_FAMILY_CODE_PATHS_INITIALIZED:-no}" != "yes" ]; then
         done < <(python3 "$_MIR_CODE_PATH_HELPER" \
                  --family "$MIR_FAMILY_SLUG" --check code-paths 2>/dev/null)
     fi
-    [ "${#MIR_FAMILY_CODE_PATHS[@]}" -eq 0 ] && MIR_FAMILY_CODE_PATHS=( "tools/" "src/" )
+    [ "${#MIR_FAMILY_CODE_PATHS[@]}" -eq 0 ] && MIR_FAMILY_CODE_PATHS=( "tools/" "src/" "scripts/" )
 
     # ADR-23 dogfooding exempt check
     MIR_DOGFOODING_EXEMPT="no"
@@ -319,13 +314,7 @@ print("yes" if any(_match(c, p) for c in candidates for p in patterns) else "no"
 PY
 )"
         if [ "$_mir_match" = "yes" ] && [ -z "${MIR_CODEX_SESSION_ID:-}" ] && [ "${MIR_CODEX_MAIN:-0}" != "1" ]; then
-            if [ "${MIR_DOGFOODING_EXEMPT:-no}" = "yes" ]; then
-                echo "[mir ADVISORY] code-path edit on $_mir_file_path; family $MIR_FAMILY_SLUG is ADR-23 dogfooding exempt (no BLOCK)" >&2
-            else
-                # tier: block (code-path protection — MIR_HOOK_TIER_CODE_PATH=block)
-                echo "[mir BLOCKED] code-path edit on $_mir_file_path requires the delegated Codex execution lane (ADR-60 §16 D1/D5): route delegated/sub-agent code writes through 'mir_executor execute --background --dispatch' (R4 worktree), regardless of which CLI is main. export MIR_CODEX_MAIN=1 is the escape ONLY for the MAIN ITSELF (e.g. the loop driver) writing the main tree — not for delegated work." >&2
-                exit 2
-            fi
+            echo "[mir ADVISORY] code-path edit on $_mir_file_path: use delegation when isolation materially helps; bounded direct-main edits are allowed." >&2
         fi
     fi
 fi

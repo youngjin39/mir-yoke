@@ -2,7 +2,7 @@
 # tier_dispatch.sh — shared tier-routing helper for Mir hooks.
 # Usage: source this file, then call emit_tier_result <hook_id> <tier> <msg>
 # tier: block | suggest | warn
-# For suggest tier: exits 0 + records bypass if MIR_SUGGEST_TIER_CONFIRM=1, else exits 2.
+# For suggest tier: prints guidance and returns 0.
 # For warn tier: exits 0, prints to stderr.
 # For block tier: exits 2, prints to stderr.
 #
@@ -27,14 +27,8 @@ emit_tier_result() {
             exit 0
             ;;
         suggest)
-            if [ "${MIR_SUGGEST_TIER_CONFIRM:-0}" = "1" ]; then
-                _mir_record_suggest_bypass "$hook_id" "$msg"
-                echo "[hook SUGGEST bypass] $hook_id: $msg" >&2
-                exit 0
-            else
-                echo "[hook SUGGEST block] $hook_id: $msg (set MIR_SUGGEST_TIER_CONFIRM=1 to bypass)" >&2
-                exit 2
-            fi
+            echo "[hook SUGGEST] $hook_id: $msg" >&2
+            return 0
             ;;
         block)
             echo "[hook BLOCK] $hook_id: $msg" >&2
