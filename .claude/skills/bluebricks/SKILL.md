@@ -1,6 +1,6 @@
 ---
 name: bluebricks
-description: "Mandatory workflow for code writing, code analysis, debugging, refactoring, architecture review, PR review, repository exploration, dependency analysis, and bluebricks-based development.\n\nTrigger: code, debug, refactor, architecture, module, repository, PR review, bluebrick, dependency"
+description: "Proportional guidance for code writing, analysis, debugging, refactoring, architecture review, repository exploration, dependency analysis, and bluebricks-based development.\n\nTrigger: code, debug, refactor, architecture, module, repository, PR review, bluebrick, dependency"
 ---
 
 # AI-Ready Bluebricks Development
@@ -25,13 +25,11 @@ Before non-trivial code work, read:
 2. Identify the affected module or bluebrick.
 3. Answer WHAT / HOW / HOW NOT / WHERE / WHY for the relevant boundary.
 4. Decide whether the work is local, cross-module, or orchestration-level.
-5. Apply role policy: Claude plans and controls; Codex writes code, runs composite TDD, and performs code review by default.
-6. If Codex is not the execution lane, record the override reason in `tasks/plan.md` or the active handoff before touching implementation code.
-7. Create or update `tasks/tdd.json` before editing implementation code.
-8. Classify every mandatory TDD category: `unit`, `integration`, `e2e`, `browser`, `edge`, `architecture`, `availability`, `load`, `soak`, `security`, `compatibility`, `transaction_locking`.
-9. Use the smallest safe change.
-10. Run the applicable validation commands declared in `tasks/tdd.json` first.
-11. Record newly discovered hazards or failure patterns in `.ai-harness/`.
+5. Decide whether direct execution or delegation is cheaper and safer for this scope.
+6. Follow the Ponytail ladder before adding code: remove unnecessary work, reuse project code, use built-ins, justify a dependency, and write minimum custom code last.
+7. For non-trivial logic, run the smallest check that can fail for the changed behavior.
+8. Use `tasks/tdd.json` and the full matrix only for broad, high-risk, release, restartable, or explicitly ledger-driven work.
+9. Record a newly discovered hazard only when it is reusable and non-obvious.
 
 ## Bluebrick Checklist
 For each affected bluebrick, identify:
@@ -76,12 +74,12 @@ Do not use sub-agent for:
 - Do not remove legacy fields without dependency checks.
 
 ## Validation Order
-1. commands declared by applicable composite TDD categories in `tasks/tdd.json`
-2. lint or typecheck
-3. build
-4. full test suite only when necessary
+1. the smallest behavior-specific check
+2. ledger commands when a ledger is used
+3. affected-boundary lint, typecheck, build, or integration checks
+4. full test suite only for broad, shared, or release risk
 
-Codex review is the default adversarial pass. Executed composite TDD evidence is the primary proof. Claude-side review is fallback or synthesis unless a role override is explicitly approved.
+Executed relevant evidence is the primary proof. Independent review is proportional to uncertainty and risk.
 
 ## Final Response
 When finishing, report:

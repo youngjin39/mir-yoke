@@ -44,27 +44,12 @@ How to test or verify changes.
 
 ## Current Core Bluebricks
 
-## Composite TDD Validation Rule
+## Proportional Validation Rule
 
-For every non-trivial code change, the affected bluebrick must define a composite TDD matrix in
-`tasks/tdd.json`.
-
-Each bluebrick validation pass must explicitly classify:
-
-- `unit`
-- `integration`
-- `e2e`
-- `browser`
-- `edge`
-- `architecture`
-- `availability`
-- `load`
-- `soak`
-- `security`
-- `compatibility`
-- `transaction_locking`
-
-The category may be closed as `not_applicable`, but it may not be omitted.
+For non-trivial code changes, identify the affected bluebrick and run the smallest check that can
+fail for the changed behavior. Use the composite matrix in `tasks/tdd.json` only for broad,
+high-risk, release, restartable, or explicitly ledger-driven work. Irrelevant categories may be
+omitted for bounded changes; do not manufacture `not_applicable` entries as ceremony.
 
 ### Bluebrick: Conductor
 
@@ -108,7 +93,8 @@ Full brick: docs/bluebricks/worker.md
 
 **Critical hazards:**
 - Do not patch `AGENTS.md`, `.agents/`, or `.codex/` by hand.
-- Do not leave deny-list as documentation-only policy; hook enforcement must stay wired.
+- Keep narrow destructive, credential, protected-scope, and raw-Codex safeguards effective.
+  Advisory workflow preferences do not require hook enforcement.
 
 Full brick: docs/bluebricks/harness-runtime.md
 

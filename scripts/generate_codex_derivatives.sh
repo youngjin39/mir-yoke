@@ -5,7 +5,7 @@
 #   - Mir-specific manifest path (.codex-sync/manifest.json — same)
 #   - Mir skill profiles: core=12 runtime-default skills, full=18 including Starter-derived optional packs
 #   - Agent TOML mirrors are generated from .claude/agents source.
-#   - write_hooks_json() SKIPPED (Mir P0-G hooks.json preserved byte-for-byte)
+#   - write_hooks_json() SKIPPED (repository-owned P0-G hooks.json preserved byte-for-byte)
 #   - codex_hooks = true added to [features] in write_config_toml
 #   - link_skill_md uses symlinks (claude-starter approach replaces old write_skill_md copy)
 #   - FULL_SKILLS expanded to Mir 19: core 12 + Starter-derived optional-pack skills
@@ -518,8 +518,8 @@ write_config_toml() {
   } > "$OUTPUT_ROOT/.codex/config.toml"
 }
 
-# write_hooks_json is SKIPPED for Mir: .codex/hooks.json is a P0-G artifact managed by
-# tools/profile_compiler/render/codex_hooks.py and must be preserved byte-for-byte.
+# write_hooks_json is skipped: .codex/hooks.json is a reviewed repository-owned P0-G artifact.
+# Keep it behaviorally aligned with .claude/settings.json when either hook surface changes.
 # BORROWED-FROM modification: claude-starter calls write_hooks_json() here; Mir does not.
 
 write_agent_toml() {

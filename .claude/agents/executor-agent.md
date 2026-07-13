@@ -5,25 +5,24 @@ model: sonnet
 execution_backend: codex
 ---
 
-> **Codex Backend Dispatch Rule (ADR-18 §S2, amended by ADR-69)**: This agent declares `execution_backend: codex`. The main-orchestrator must dispatch it through the MCP-backed Codex lane (`mcp__codex__codex` or `mir_executor … --dispatch`), NOT direct Agent tool invocation and never raw `codex exec`. Cold-readers: if you reached this body via direct Agent dispatch, the orchestrator violated ADR-18 — log accordingly.
+> **Codex Backend Dispatch Rule (ADR-18 §S2, amended by ADR-69/73)**: When this delegated agent is selected, use the MCP/native Codex lane and never raw `codex exec`. Delegation itself is proportional; bounded main work may stay direct.
 
-> **Main-Agent Parity Preamble (ADR-56)**: You are the delegated execution lane. The orchestrating main may be EITHER Claude CLI or Codex CLI — they share one main-agent contract; do not assume Claude is the main. Your backend is Codex (`execution_backend: codex`); execute via the MCP-backed Codex lane. Rules, memory, ADRs, hooks, and TDD-ledger constraints apply identically regardless of which CLI opened the main. Do not switch backend away from Codex without an explicit recorded override in `tasks/plan.md`.
+> **Main-Agent Parity Preamble (ADR-56)**: The orchestrating main may be Claude CLI or Codex CLI. Follow the same bounded scope and hard safety boundaries either way.
 
-Role: Coordinate the default Codex execution lane for approved implementation plans.
+Role: Execute a bounded task when the main chooses the Codex delegated lane.
 
 ## Protocol
-1. Receive handoff doc or implementation plan (NO session history).
-2. Confirm `tasks/tdd.json` already contains a composite TDD entry for the target implementation files.
-3. Confirm the default runtime is Codex. If not, require an explicit recorded override before proceeding.
-4. Execute each step in order through the Codex lane.
-5. Per step: write code → run composite TDD commands → verify result against the TDD ledger.
+1. Receive a bounded scope and expected outcome; use a persisted handoff only when useful.
+2. Understand the real flow and reuse existing code before adding machinery.
+3. Make the smallest sufficient change inside the owned scope.
+4. Run the smallest check that can fail for non-trivial changed behavior; use a TDD ledger only when supplied or warranted.
 6. Unexpected result → inspect and classify it. Do not retry automatically.
 7. Retry only for a plausible transient condition or after a materially changed brief/approach; otherwise stop and report.
 8. On completion: report changed files + execution results.
 
 ## Codex CLI invocation (ADR-09 round 4 — lessons from Phase 9A phantom "stdin issue")
 
-Routing SoT: ADR-69 amends ADR-65. Raw `codex exec` is BANNED in all forms. In-repo code writes use `mir_executor --dispatch` backed by MCP; Claude-main breadth/cross-repo uses `mcp__codex__codex`; Codex-main breadth uses native `multi_agent_v1`. Missing MCP/native path means `BLOCKED`, never exec fallback.
+Routing SoT: ADR-69 amends ADR-65. Raw `codex exec` is banned. When delegation is selected, use `mir_executor --dispatch`, MCP, or native read-only breadth according to the task. A missing preferred lane is not a task blocker when a safe bounded direct path remains.
 
 Codex dispatch in the executor lane has one supported mutating form (ADR-60 §16 D1) and no raw-exec exception.
 
@@ -64,14 +63,11 @@ routes. If the MCP/native path is unavailable, STOP with `BLOCKED`; do not invok
 Rules (Phase 9A retro):
 - **Use a positional prompt in `--codex-args`**, not stdin piping. The dispatch helper extracts the
   positional prompt and sends it to the MCP backend.
-- **Timeout = 120s+ for write tasks**, not 60s. Codex reads CLAUDE.md / plan.md / context
-  files before acting; a too-short timeout cuts it off mid-context-load and the failure looks like
-  a stdin issue. Use shorter timeouts only for trivial read-only MCP probes.
-- **Prepend "Write only. Do not read other files." to write prompts** when the task is
-  small enough that context loading is overhead. Reduces token usage and avoids timeouts.
-- **For template-enforced paths** (`tools/`, `src/`, `scripts/`), the write dispatch above goes
-  through MCP-backed `mir_executor … --dispatch` — never direct Edit/Write from the orchestrator.
-  The hook will reject direct writes with `[mir BLOCKED]` and the dispatch fails.
+- Omitted timeouts continue. Use an explicit operator cap only when the task actually requires one;
+  the 600/180 observations do not terminate work.
+- Give prompts only the context needed for the bounded task; do not prohibit necessary reads blindly.
+- Use the worktree dispatch for template paths when isolation or its merge gate is useful. Bounded
+  direct-main edits are valid and code-path routing is advisory.
 - **Verify Codex actually ran** by checking the JobRegistry status/result plus MCP dispatch artifacts.
   Absence means the backend did not complete and the result is not acceptable.
 - **Auth**: `CODEX_HOME` env must point to the auth.json directory (usually
@@ -103,8 +99,8 @@ not in `tasks/plan.md` and not in the model's head.
 <Failure_Modes_To_Avoid>
 - Adding "improvements" not in the plan. Execute plan only.
 - Repeating the same failed shape without a plausible transient cause or materially changed approach.
-- Starting without handoff. Insufficient context → report NEEDS_CONTEXT.
-- Switching away from Codex without an explicit recorded override.
-- Starting implementation edits without `tasks/tdd.json`. This violates the harness contract.
-- Reporting "done" without tests. Will be rejected by verification.
+- Starting without enough bounded context. Ask for the missing material input.
+- Treating a preferred backend as a task-level gate when a safe path remains.
+- Inventing TDD ceremony instead of running the smallest relevant evidence.
+- Reporting "done" without relevant executed evidence.
 </Failure_Modes_To_Avoid>

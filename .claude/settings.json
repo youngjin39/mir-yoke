@@ -1,5 +1,4 @@
 {
-  "effortLevel": "xhigh",
   "hooks": {
     "PreToolUse": [
       {
@@ -10,17 +9,6 @@
             "command": ".claude/hooks/pre-tool-use.sh",
             "timeout": 30,
             "statusMessage": "Harness L2 PreToolUse"
-          }
-        ]
-      },
-      {
-        "matcher": "^Bash$",
-        "hooks": [
-          {
-            "type": "command",
-            "command": ".claude/hooks/pre-merge-gate.sh",
-            "timeout": 30,
-            "statusMessage": "Harness pre-merge gate"
           }
         ]
       }

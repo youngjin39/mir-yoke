@@ -26,15 +26,12 @@ Check for specificity signals: file path, function name, numbered steps, error m
 ```
 Request → specificity signals? → if none: deep-interview → classify
   ├─ Simple non-code (1~2 steps) → execute directly → self-check → done
-  ├─ Development-changing request → design skill first
-  │    ├─ simple / bounded → short harness-structured design pass → executor-agent → codex-final-reviewer → verify
-  │    └─ complex / repo-wide / ambiguous → full design-process pipeline
-  └─ Complex (3+ steps) → pipeline
-       design skill → executor-agent → codex-final-reviewer → verify
+  ├─ Bounded development → direct or delegated execution → focused check
+  ├─ Material design choice → short design note → execution → relevant verification
+  └─ Broad / restartable / protected → persisted plan or DispatchBrief → proportional lanes
 ```
-- When ambiguous → classify as complex (overestimate > underestimate).
-- Treat requests that touch code, tests, repository structure, phases, ADRs, skills, agents, template sync, fleet rollout/share, policy docs, or generated surfaces as `development-changing` even when the user provides exact files or steps.
-- For complex or delegated development work, explicitly classify the execution lane as `tiny`, `normal`, or `heavy` before handoff. Use the tier to refine handoff depth and persistence; treat it as a soft default, not a hard gate.
+- Classify from uncertainty, blast radius, reversibility, coordination, and protected boundaries rather than step or file count.
+- Use tiny/normal/heavy labels only when they help select a lane or handoff depth.
 - Match trigger table (CLAUDE.md) → Read matching skills (max 3) → one-line report.
 - The main may write bounded production code directly and run the smallest relevant verification.
 
@@ -46,22 +43,15 @@ See CLAUDE.md "Orchestration Presets" table (single source of truth).
 
 
 ## Simple Tasks (direct execution)
-- Reserved for non-code or docs-only work completable in 1~2 steps.
-- Code-development tasks still route through Codex execution/review by default, even when the task is small.
-- Record in change_log.md.
+- Bounded code, docs, config, and harness work may execute directly when the route and focused check are clear.
+- Record a separate change log only when the repository or task requires it.
 
 
 ## Complex Tasks (pipeline)
-1. Load the `design` skill as the single entry point.
-2. For phase/ADR/harness/template/fleet/repo-wide process work, keep the harness structure: first-pass design, parallel analysis, integration, independent review, and revision.
-3. Produce a harness-structured design output before execution begins: `design_goals`, phase ownership, source-of-truth edit surface, generated-surface/regeneration path, verification gate, evidence sink, and template/fleet claim boundary where applicable.
-4. Define or update `tasks/tdd.json` for each implementation target before code changes begin.
-5. Before executor-agent dispatch, prefer a refined execution brief or persisted `DispatchBrief` that records `expanded_goal`, `owned_scope`, `out_of_scope`, `verification_commands`, `stop_conditions`, and `handoff_refs`/`dispatchbrief_refs`.
-6. `tiny` work may keep that refined brief inline in the active handoff when the slice is local and restart cost is low. `normal` work should usually persist the brief. `heavy`, restartable, or multi-hop delegated work should strongly prefer a persisted `DispatchBrief` or equivalent brief before the lane starts.
-7. Dispatch implementation to the Codex execution lane via executor-agent handoff (NO session history).
-8. Require Codex TDD execution and Codex review by default.
-9. Use quality-agent only as fallback review, tie-break synthesis, or user-requested second opinion.
-10. Load verification skill → evidence-based verification.
+1. Understand the real flow and follow the first sufficient Ponytail rung before adding machinery.
+2. Persist only material goals, boundaries, source/regeneration paths, and verification needed for restart or coordination.
+3. Use parallel analysis, a delegated worktree, `tasks/tdd.json`, or independent review only when each adds concrete value.
+4. Finish with relevant executed evidence and an explicit claim boundary.
 
 
 ## Codex Backend Dispatch Self-Check (ADR-18 §S2 Layer 1)
@@ -69,7 +59,7 @@ See CLAUDE.md "Orchestration Presets" table (single source of truth).
 Before dispatching any agent via the Agent tool:
 
 1. Inspect the target agent's frontmatter via tools.agent_loader or by reading the .md file. (Cached from Startup Protocol step 3 — no re-Read needed unless cache stale.)
-2. If `execution_backend: codex`, do not dispatch it via the Agent tool. Claude→Codex delegation is MCP-only per ADR-69 (`mcp__codex__codex` / `tools/mir_executor/codex_mcp_client.py`). In-repo write/mutating code/TDD/review work routes through `mir_executor … --dispatch` (R4 worktree + deterministic merge gate, MCP backend). Raw `codex exec` is BANNED in all forms; missing MCP path means `BLOCKED`, never exec fallback.
+2. If `execution_backend: codex`, use the supported MCP/native lane when that agent is selected. Raw `codex exec` is banned. A missing preferred lane blocks only work that truly requires that protected or isolated route; safe bounded direct work may continue.
 3. Affected agents today: `codex-final-reviewer`, `executor-agent`, `pipeline-validator`. New agents declaring `execution_backend: codex` are automatically in scope.
 4. Best-effort log: append a line to `tasks/log/dispatch-log.jsonl` with `{ts, agent_slug, routed_via, purpose, task_id}`. routed_via = `codex_cli` | `claude_session` | `unknown`. If the log directory doesn't exist, do not fail the dispatch — log absence is INFO-level only.
 
@@ -109,7 +99,7 @@ See CLAUDE.md "Role Policy (Template Profile)" and AGENTS.md `template:profile:r
   - Native sub-agent tools are deferred; run `tool_search` first and load `multi_agent_v1`.
   - Use `spawn_agent` with `agent_type` `default`, `worker`, or `explorer`; then `wait_agent`; then `close_agent`.
   - This path is proven stable for single and parallel read-only breadth at default `agents.max_depth=1` and `max_threads=6`.
-  - Mutating code, TDD, and review work MUST stay on `mir_executor --dispatch`.
+  - Native sub-agents stay read-only; use `mir_executor --dispatch` when delegated mutation needs worktree isolation. Bounded main edits remain valid.
   - Reason: native sub-agents bypass harness worktrees, merge gates, and TDD gates.
   - `spawn_agent` has no sandbox parameter, so do not use it as an execution lane.
 - For delegated in-repo mutation, prefer `mir_executor … --dispatch` when worktree isolation or its merge gate is useful; bounded direct-main edits are valid. Raw `codex exec` remains banned.
@@ -118,10 +108,8 @@ See CLAUDE.md "Role Policy (Template Profile)" and AGENTS.md `template:profile:r
 
 ## Post-Dispatch Monitoring (ADR-60 R6)
 
-After EACH MCP-backed Codex sub-agent dispatch (the R2/R3 delegated lane — `mir_executor`
-`run_dispatch` / `execute --background --dispatch`, backed by `tools/mir_executor/codex_mcp_client.py`;
-raw `codex exec` is banned by ADR-69),
-run the ADR-59 agent-check and READ the verdict table BEFORE accepting the sub-agent's result:
+For anomalous, long-running, or consequential MCP-backed work, run ADR-59 agent-check when its
+evidence materially helps acceptance. Raw `codex exec` remains banned:
 
 ```
 MIR_AGENT_CHECK_CHANGE_ID=<change_id> uv run python -m tools.stall_watchdog.cli agent-check
@@ -133,17 +121,14 @@ advisory HANG / SPINNING / DURATION_ANOMALY / PLAN_MD_EDIT verdicts (recommendat
 
 - **Observe-only (boundary B).** The control_plane main (human-in-the-loop) READS the verdicts and
   decides; the check never auto-kills, retries, or escalates.
-- Confirm no verdict implicates THIS dispatch before merging the worktree result and marking the
-  cursor. Pre-existing/unrelated verdicts (stale JobRegistry rows; a main-authored plan.md cursor
-  commit flagged by the integrity heuristic) are noted, not blocking.
+- Relevant verdicts inform human judgment; pre-existing or unrelated findings are noted and do not
+  block acceptance.
 - This operationalizes "the orchestration utilizes sub-agents AND monitors them" (ADR-60 R6).
 
 
 ## Post-completion
-1. Record in change_log.md.
-2. Run lint/analysis. Errors 0~3: fix immediately. 4+: invoke quality-agent.
-3. Update checklist.md.
-4. Feature complete → archive to tasks/log/.
+1. Record only the evidence and durable state the task actually needs.
+2. Run the affected checks; add broader lint, analysis, review, or archive work only when risk warrants it.
 
 
 ## Feedback → Learning
@@ -164,10 +149,10 @@ advisory HANG / SPINNING / DURATION_ANOMALY / PLAN_MD_EDIT verdicts (recommendat
 
 <Failure_Modes_To_Avoid>
 - Starting code on ambiguous requests. Ask clarifying questions first.
-- Underestimating complex tasks as simple. When in doubt → complex.
-- Letting Claude silently take over Codex's default code/TDD/review lane without recording an override.
+- Ignoring a material ambiguity or protected boundary.
+- Treating a preferred Codex lane as mandatory ceremony for bounded direct work.
 - Passing session history to subagents. Handoff docs only.
-- Reporting completion without verification. Verification pass = proof of done.
+- Reporting completion without relevant executed evidence.
 - Skipping lessons.md check. Repeating the same mistakes.
 </Failure_Modes_To_Avoid>
 """

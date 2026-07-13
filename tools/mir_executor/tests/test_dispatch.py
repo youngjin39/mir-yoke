@@ -319,7 +319,7 @@ def test_codex_success_first_attempt(tmp_path: pathlib.Path) -> None:
         _cleanup(outcome)
 
 
-def test_three_codex_failures_trigger_one_fallback(tmp_path: pathlib.Path) -> None:
+def test_one_codex_failure_triggers_configured_fallback(tmp_path: pathlib.Path) -> None:
     repo = _make_repo(tmp_path)
     events_path = tmp_path / "dispatch-events.jsonl"
     codex_calls: list[int] = []
@@ -341,11 +341,31 @@ def test_three_codex_failures_trigger_one_fallback(tmp_path: pathlib.Path) -> No
         dispatch_events_path=events_path,
     )
     try:
-        assert codex_calls == [1, 2, 3]
+        assert codex_calls == [1]
         assert len(fallback_calls) == 1
         assert outcome.status == "fallback_completed"
         assert outcome.fell_back is True
         assert any(event["kind"] == "fallback" for event in _read_events(events_path))
+    finally:
+        _cleanup(outcome)
+
+
+def test_one_codex_failure_returns_control_without_configured_fallback(
+    tmp_path: pathlib.Path,
+) -> None:
+    repo = _make_repo(tmp_path)
+    codex_calls: list[int] = []
+
+    def codex_runner(_wt: DispatchWorktree, attempt: int) -> CodexAttempt:
+        codex_calls.append(attempt)
+        return CodexAttempt(1, error_sig="e")
+
+    outcome = run_dispatch(repo, "no-fallback", codex_runner=codex_runner)
+    try:
+        assert codex_calls == [1]
+        assert outcome.status == "blocked"
+        assert outcome.blocked_reason == "fallback-required"
+        assert outcome.fell_back is False
     finally:
         _cleanup(outcome)
 

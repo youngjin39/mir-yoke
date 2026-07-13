@@ -1,83 +1,51 @@
-# Composite TDD matrix
+# Proportional TDD Matrix
 
-The 12-category matrix that backs `tasks/tdd.json`. Every `change` entry must declare a status for each row, even if the answer is `not_applicable`.
+Executed evidence is the primary proof for changed behavior. The matrix is a risk-analysis tool,
+not a universal pre-write ceremony.
 
-The matrix exists because freeform review consistently skips half of these dimensions. Forcing the agent to declare a status for `transaction_locking` (most often `not_applicable`) costs nothing when the answer is no, and catches the rare cases when the answer should have been yes.
+## Core rule
 
-| Category | What it covers | Common reasons for `not_applicable` |
-|---|---|---|
-| `unit` | function-level tests of changed modules | docs/config-only changes |
-| `integration` | how the change interacts with existing modules in-process | leaf utility with no callers |
-| `e2e` | full workflow from CLI / API entry point to side effects | internal helper |
-| `browser` | UI-driven test (Playwright / Cypress / Selenium) | no UI surface |
-| `edge` | input edge cases (empty, max, unicode, malformed) | no input surface |
-| `architecture` | the change does not violate module boundaries / layering | docs/test-only |
-| `availability` | retry, timeout, queue, recovery behavior | no failure mode added |
-| `load` | throughput-sensitive code paths | not on a hot path |
-| `soak` | long-running resource lifecycle | no long-running surface |
-| `security` | auth, secrets, sandbox boundaries | no boundary touched |
-| `compatibility` | older clients, schema migrations, API versions | no external surface |
-| `transaction_locking` | concurrent writers, lock boundaries, atomicity | single-writer code path |
+- For non-trivial logic, run at least the smallest command that can fail for the changed behavior.
+- Reuse existing coverage before adding tests.
+- A truly trivial one-line or prose-only change does not require a fabricated test.
+- A failed check explicitly required by the user or selected for the affected behavior blocks a
+  completion or merge claim until resolved or explicitly waived by the user.
 
-## Status values
+## When to use `tasks/tdd.json`
 
-- **`pass`** — the test ran and passed. Requires `command` (runnable) and `notes` (one line, what was checked).
-- **`covered_existing`** — the change is already covered by tests that pass. Name them in `notes`.
-- **`not_applicable`** — there is no meaningful test for this dimension. `reason` (one line) is mandatory.
-- **`planned`** — only valid before `git commit`. The pre-commit hook rejects entries still in this state.
+Use the machine-readable ledger when work is broad, high-risk, restartable, delegated across slices,
+release-bound, or explicitly requires an auditable test matrix. A bounded change with one obvious
+verification command may record that command in the plan, commit message, or final report instead.
 
-## Schema
+When a ledger is used, each entry should identify the target, affected boundary when useful, and only
+the relevant categories and evidence.
 
-```jsonc
-{
-  "version": 1,
-  "changes": [
-    {
-      "id": "<short-slug>-<YYYY-MM-DD>",
-      "scope": "one-paragraph description of what this change does and why",
-      "targets": [
-        "src/foo/bar.py",
-        "tests/test_bar.py"
-      ],
-      "categories": {
-        "unit": {
-          "status": "pass",
-          "command": "pytest -q tests/test_bar.py",
-          "notes": "covers the new branch and the existing happy path"
-        },
-        "integration": {
-          "status": "covered_existing",
-          "notes": "tests/test_bar_integration.py already exercises the call site"
-        },
-        "e2e": { "status": "not_applicable", "reason": "internal helper, no entry point" },
-        "browser": { "status": "not_applicable", "reason": "no UI surface" },
-        "edge": {
-          "status": "pass",
-          "command": "pytest -q tests/test_bar.py -k edge",
-          "notes": "empty input + unicode + max-int"
-        },
-        "architecture": {
-          "status": "covered_existing",
-          "notes": "no new module boundaries crossed"
-        },
-        "availability": { "status": "not_applicable", "reason": "no retry/queue path added" },
-        "load": { "status": "not_applicable", "reason": "not on a hot path" },
-        "soak": { "status": "not_applicable", "reason": "no long-lived resource" },
-        "security": {
-          "status": "covered_existing",
-          "notes": "no auth/secret/sandbox surface touched"
-        },
-        "compatibility": {
-          "status": "covered_existing",
-          "notes": "no public schema or API surface changed"
-        },
-        "transaction_locking": { "status": "not_applicable", "reason": "single-writer" }
-      }
-    }
-  ]
-}
-```
+## Risk menu
 
-## Rule of thumb
+Consider these categories; classify all twelve only for a broad or high-risk matrix:
 
-`not_applicable` outnumbers `pass` in most ledger entries — that is fine. The point is forcing the agent to *consider* each dimension, not to write twelve tests per change.
+- `unit` — local logic
+- `integration` — module or service boundary
+- `e2e` — top-level user flow
+- `browser` — browser or UI behavior
+- `edge` — meaningful boundary and error cases
+- `architecture` — dependency or structural invariant
+- `availability` — retry, timeout, fallback, recovery
+- `load` — throughput or concurrency
+- `soak` — long-running resource lifecycle
+- `security` — trust boundary, auth, secret, injection
+- `compatibility` — schema, migration, public API, older data
+- `transaction_locking` — transactional or concurrent state
+
+Omitting an irrelevant category is valid for bounded work. When a full matrix is explicitly used,
+`not_applicable` should carry a concrete reason.
+
+## Evidence quality
+
+- Preserve the real exit status. Piped commands use `set -o pipefail` or inspect the original status.
+- A selector that collects zero expected tests is not evidence for that behavior.
+- Prefer one focused check over many unrelated green commands.
+- Add a full suite only when shared runtime, broad refactoring, release, or observed coupling warrants it.
+
+Runtime hooks may enforce a ledger for a repository profile that explicitly opts into it. Missing
+ledger ceremony is not, by itself, a universal safety failure under ADR-73.

@@ -5,7 +5,10 @@ related: []
 created: 2026-05-02
 ---
 
-# Main-Agent Parity / Delegated Execution Role Policy
+# Main-Agent Parity / Proportional Execution Role Policy
+
+Amended 2026-07-13 by ADR-73 proportional guidance: delegation is a tool, not a universal
+execution gate.
 
 ## Decision
 
@@ -20,14 +23,12 @@ This harness uses a **two-layer role policy**.
   - exception handling
   - verification synthesis
   - final acceptance judgment
-- Delegated sub-agents are the execution plane by default:
-  - code writing
-  - code modification
-  - composite TDD execution
-  - deterministic pass/fail validation
-  - code review
-  - targeted research and bounded verification
+- The opened main may execute bounded work directly. Delegated sub-agents are preferred when
+  isolation, parallelism, specialist context, independent review, or restartability materially
+  helps.
 - Codex is the default backend for delegated backend-capable execution work unless an explicit override or capability constraint requires otherwise.
+- Design artifacts, TDD ledgers, review rounds, worktrees, agent-check, and full-suite verification
+  are proportional tools rather than universal prerequisites.
 
 ## Why
 
@@ -37,9 +38,10 @@ This matches the harness goal better than either:
 
 Reasons:
 - the user should get the same main-session harness behavior from Claude or Codex
-- execution work should stay pinned to delegated, verifier-heavy lanes
+- bounded work should not pay for delegated or verifier-heavy lanes without a concrete benefit
 - Codex remains the preferred backend for delegated code-heavy loops
-- delegated separation reduces self-approval bias without forcing main-agent asymmetry
+- delegated separation can reduce self-approval bias for consequential work without forcing it on
+  every edit
 
 ## Override Policy
 
@@ -47,16 +49,17 @@ This harness distinguishes between a **runtime override** and a **project-level 
 
 ### Runtime Override
 
-Role overrides are allowed, but only conditionally for the active task or session.
+Choosing bounded direct-main work is not a role override. A runtime override is a material change to
+the selected ownership model for a task that genuinely requires a protected or delegated lane.
 
 Allowed triggers:
 - explicit user request
 - delegated Codex execution unavailable
-- delegated Codex execution hits the configured failure limit
-- task is docs-only or otherwise outside delegated execution scope
+- a task-specific protected route is unavailable
+- the user explicitly changes ownership
 
 Required action:
-- record the override and reason in `tasks/plan.md` or the active handoff note
+- record only a material override and its reason in `tasks/plan.md` or the active handoff note
 - keep the shared main-agent contract intact unless the policy itself is being revised
 
 Runtime overrides are:
@@ -83,17 +86,18 @@ Project-level policy revisions are:
 
 - Do not make the main-agent contract depend on whether Claude or Codex was launched first.
 - Do not make delegated sub-agents fully interchangeable across orchestration and execution ownership.
-- Do not let "flexibility" erase Codex-first delegated backend defaults without an explicit reason.
+- Do not confuse a Codex-first delegated backend preference with mandatory delegation.
 - Do not treat a runtime override as if it were a policy revision.
-- Do not treat review as a substitute for executed TDD evidence.
+- Do not treat review as a substitute for relevant executed evidence.
 
 ## Operational Consequence
 
 The harness contract must say the same thing in all layers:
 - `CLAUDE.md`
 - `AGENTS.md`
-- mandatory code-work skills
+- relevant code-work skills
 - agent role definitions
 - regression tests
 
-If one layer says the main agent differs by runtime or removes Codex-first delegated execution without an explicit exception, the contract is drifting.
+If one layer makes bounded direct work a universal block, or another weakens destructive,
+credential, protected-scope, raw-Codex, or real-conflict boundaries, the contract is drifting.

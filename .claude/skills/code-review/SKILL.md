@@ -8,46 +8,26 @@ allowed-tools: Read, Grep, Glob, Bash
 # Code Review
 
 ## Default Review Policy
-- Primary code review lane: Codex.
-- Primary correctness gate: executed composite TDD evidence.
-- Claude-side `quality-agent` review is fallback or secondary synthesis, not the default reviewer for code changes.
-- If review runs anywhere other than Codex, record the override reason in `tasks/plan.md` or the active handoff note.
+- Review directly or independently according to uncertainty, blast radius, and self-approval risk.
+- Primary correctness evidence is the smallest executed check relevant to the changed behavior.
+- Codex and `quality-agent` are optional independent reviewers, not prerequisites for every change.
 
 ## Procedure
 1. Identify changed files (`change_log.md` or `git diff`).
 2. Determine **source scope** before reviewing — read the *Scope SSOT* (see §5b) and pin the boundary.
-3. Run Codex review on the diff by default.
+3. Use an independent reviewer when it materially reduces uncertainty; otherwise review the bounded diff directly.
 4. Per file: error handling gaps, security risks, naming violations, duplication, unnecessary complexity.
 5. Classify each finding: **P0 (CRITICAL — model-shaking)** / **P1 (HIGH)** / **P2 (LOW)**.
 6. For every P0 finding produce **≥1 alternative candidate** (see §Defect + Alternative Mode).
 7. Apply **scope filter (§5b)** + **citation verification (§5a, runs in `verification` skill stage 0)** before recording verdict.
 8. Structured report with evidence (cite exact lines).
 
-## Round Counter + Reroll ASK (ADR-07 Phase 7E)
+## Optional round history
 
-Each merge attempt is a **round** for the active PR. The L2 hook (`pre-merge-gate.sh` step 6) is the **single source of truth for round increments** — SKILL.md must NOT call `increment` itself (review W5: double-increment risk if both SKILL.md and hook increment per merge attempt).
-
-SKILL.md responsibilities (advisory):
-
-- **Read** the active round state: `uv run python -m tools.review_rounds query-active --pr-ref <ref>` to see `round_number` and prior `findings[]` for cross-reference.
-- **Close** the round after a verdict is reached: `close --round-id <id> --verdict <Sound|Reroll>`.
-- **Defer** P2 findings at round 3+: `defer --round-id <id> --reason "round 3+ P2 deferred"`.
-- **Record** findings (incl. Stage 0 citation results): `record-finding --round-id <id> --severity P0/P1/P2 ...`.
-
-Round semantics:
-
-- `round_number == 1`: first merge attempt (hook increments on entry to pre-merge gate; verdict assigned by reviewer + verification).
-- `round_number == 2`: second merge attempt; cross-reference previous round's findings.
-- `round_number >= 3`: **the L2 hook blocks the merge command deterministically** (`should-ask` exits 0). Treat this round as P0/P1-only — P2 findings are recorded but flagged `deferred` and removed from verdict input. Surface a Discord ASK to the user with three options:
-  ```
-  Round 3+ reached for {pr-ref}. Choose:
-  1. Reroll — restart from §1 design step (resets round counter via close + new local-* ref)
-  2. Sound  — accept current verdict, close the round, retry merge
-  3. Ignore — defer round; user takes responsibility
-  ```
-- After user reply: invoke `close --verdict Sound` or `close --verdict Reroll` (or `defer --reason ...`) on the round_id.
-
-Hook-level enforcement: `should-ask --pr-ref <ref>` exits 0 when `round_number >= 3` for any **open** round of that pr_ref, which `pre-merge-gate.sh` translates to `exit 2 = block` plus Discord notification. SKILL.md body remains advisory — the deterministic brake lives in the L2 hook.
+Review-round history may be queried or recorded when repeated review has useful prior findings.
+Round count alone is not correctness evidence and never forces a reroll, merge block, or another
+reviewer call. After a repeated unchanged finding, inspect the cause and let the main or user decide
+whether to fix, defer, change approach, or accept the risk.
 
 ## §5a Reviewer Citation Verification
 
@@ -91,7 +71,7 @@ If no real alternative exists, write `No alternative — <one-line reason>`. A b
 Multi-reviewer dispatch can be skipped iff **all** of the following hold:
 
 - Diff ≤ 10 lines.
-- No code-extension files in the diff (`.py`, `.ts`, `.tsx`, `.js`, `.jsx`, `.rs`, `.go`, `.rb`, `.java`, `.kt`, `.swift`, `.c`, `.cc`, `.cpp`, `.h`, `.hpp`, `.sql`). **The `pre-merge-gate.sh` Step 5 path-gate prints an INFO line when this condition is violated; LLM self-claim of "trivial" for a code-touching diff fails the SKILL contract** (review Skill W4 — advisory + hook-assisted enforcement).
+- No code-extension files in the diff (`.py`, `.ts`, `.tsx`, `.js`, `.jsx`, `.rs`, `.go`, `.rb`, `.java`, `.kt`, `.swift`, `.c`, `.cc`, `.cpp`, `.h`, `.hpp`, `.sql`).
 - No changes to: `instructions/core/`, `AGENTS.md`, `CLAUDE.md`, `.ai-harness/*.md`, `config/*.yaml`, `tools/profile_compiler/`, `.claude/hooks/`, `.claude/skills/`, `tasks/phase.json`, `tasks/tdd.json`, `tasks/review-rounds.json`, schema files.
 - Regression risk = 0 (no behavior change reachable via the diff).
 

@@ -11,7 +11,7 @@ description: "Proportional design guidance (brainstorming, planning, design anal
 - When a plan or implementation steps are needed.
 - When a design or architecture needs audit or analysis.
 - When a multi-role pipeline review is required.
-- When the request touches harness docs, phases, ADRs, skills, agents, template sync, fleet rollout/share, repo-wide policy, or generated surfaces.
+- When harness, ADR, template, fleet, policy, or generated-surface work contains a material choice or broad rollout boundary.
 - When a material decision exists. A known tiny or bounded development change may proceed directly.
 
 ## Absorbed legacy skills
@@ -25,15 +25,16 @@ description: "Proportional design guidance (brainstorming, planning, design anal
 
 ## Workflow
 1. Identify which absorbed legacy intent applies (design vs. plan vs. interview etc.).
-2. Use only the design, parallel analysis, or independent review needed to resolve consequential uncertainty.
-3. For harness-structured design outputs, explicitly include:
+2. Understand the real flow and stop at the first sufficient Ponytail rung: remove unnecessary work, reuse project code, use built-ins, justify a dependency, and write minimum custom code last.
+3. Use only the design, parallel analysis, or independent review needed to resolve consequential uncertainty.
+4. For a persisted harness design, include only relevant fields:
    - phase ownership / rollout binding
    - source-of-truth edit surfaces
    - generated-surface regeneration and verifier path
    - verification gate
    - evidence sink
    - template/fleet claim boundary when public or cross-repo wording is involved
-6. If a bounded task has an obvious verification path, skip the separate design artifact and execute directly.
+5. If a bounded task has an obvious verification path, skip the separate design artifact and execute directly.
 
 ## Intent Extraction
 

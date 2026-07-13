@@ -28,9 +28,9 @@
 
 ## AI Development Harness
 - Non-code tasks follow `.ai-harness/common-ai-rules.md` and `.ai-harness/session-closeout.md`.
-- Code-writing, debugging, refactoring, architecture review, repository exploration, and test generation must load `bluebricks` first.
+- Use `bluebricks` for non-trivial codebase boundaries, debugging, refactoring, architecture review, or repository exploration; skip the load for an obvious tiny edit.
 - Code-development safeguards live in `.ai-harness/development-ai-rules.md`, `.ai-harness/bluebricks.md`, `.ai-harness/tdd-matrix.md`, `.ai-harness/deny-list.yaml`, and `.ai-harness/failure-patterns.md`.
-- Code-development proof rule: design first, then maintain `tasks/tdd.json`, then implementation, then executed TDD evidence as the primary proof of correctness.
+- Code-development proof rule: understand the affected boundary, make the smallest sufficient change, and run the smallest check that can fail for the changed behavior. Use a design artifact or `tasks/tdd.json` only when risk or restartability justifies it.
 
 ## Project Structure
 - Root control files: `CLAUDE.md`, `AGENTS.md`, `.mcp.json` (optional — add if your project uses MCP servers), `setup.sh`, `README.md`
@@ -42,32 +42,23 @@
 ## Workflow
 - 0 specificity signals: load `design` skill (interview subtype).
 - Simple non-code work: execute directly + self-check.
-- Before development-changing execution, classify the task as `tiny`, `normal`, or `heavy`.
-- Use only the design artifact needed to resolve a material choice; bounded work may proceed directly.
-- `tiny` tasks may execute without a formal phase or slice when the overhead would outweigh the value, but they still need a clear verification step.
-- `normal` and `heavy` tasks should prefer explicit phases or bounded slices before execution.
-- Simple code task: short `design` pass → Codex execution + TDD + review.
-- Complex 3+ step work: `design` → Codex execution lane → Codex review lane → `verify`.
-- Harness docs, phases, ADRs, skills, agents, template sync, fleet rollout/share, repo-wide policy, and generated-surface changes must route through `design` before execution.
-- Use `ui-design` before any real UI work.
-- `automation` is the default for long-running or restartable work.
-- Delegated, restartable, or 3+ step work should emit a persisted `DispatchBrief` or equivalent handoff artifact before the execution lane starts.
-- Sub-agent contracts must stay pinned by regression tests.
+- Bounded work with a clear route may execute directly with a focused check.
+- Use a short design note only when a material choice exists; persist a plan or `DispatchBrief` for broad, restartable, protected, or cross-repo work when it adds recovery value.
+- Use `ui-design` for material UI choices and `automation` when restartability is actually needed.
+- Choose direct execution, delegation, TDD ledgers, review, worktrees, and full-suite verification in proportion to uncertainty, blast radius, reversibility, and coordination cost.
+- Ponytail baseline: understand the real flow, then stop at the first sufficient rung—remove unnecessary work, reuse project code, use built-ins or the standard library, use a justified dependency, and write minimum custom code last.
 
 ## Continuation Loop Protocol
 - Applies to BOTH mains: whichever CLI is opened, Claude or Codex, follows the same file-backed continuation loop.
 - Cursor of record: `tasks/plan.md` formal `Step N:` lines; do not create a second cursor in `run_state.json`.
-- Each runnable step carries bounded machine refs: `brief=<path>` and `tdd=<change_id>#<category>`.
-- Move 1: read the cursor with `uv run mir loop next --json`.
-- Move 2: select exactly one non-DONE/non-CLOSED step from the first active task section.
-- Move 3: execute ONE bounded step through the delegated Codex lane or `scripts/loop_driver.sh`.
-- Move 4: update `tasks/tdd.json` evidence for that step's declared category.
-- Move 5: rewrite only that cursor line to `DONE`, `FAILED | attempts=K`, or `BLOCKED | reason=...`.
+- Read the cursor with `uv run mir loop next --json` and select the next coherent non-DONE work unit.
+- A step may carry `brief=<path>` or `tdd=<change_id>#<category>` when those artifacts are useful; they are not universal ceremony.
+- Execute directly or through the delegated lane according to the task, record the selected evidence, and update only the cursor owned by the main.
 - Complete one coherent, independently verifiable work unit before advancing the cursor.
 - A failed step returns control without automatic retry. Retry only after a plausible transient cause or a materially changed brief or approach.
 - `BLOCKED` means no fabricated continuation: a main agent or user must revise the plan or brief.
 - `COMPLETE` means all machine steps in the active section are `DONE` or `CLOSED`.
-- Non-LLM automation may drive the loop, but it must not bypass hooks, TDD gates, or verification.
+- Non-LLM automation may drive the loop, but it must preserve hard safety boundaries and explicitly selected verification.
 - `tools/run_orchestrator` remains observer-only; it is not the continuation executor.
 
 
@@ -82,24 +73,19 @@
 ### Sub-agent Routing
 - Claude-main → Codex sub-agent: use Codex MCP (`mcp__codex__codex`; continue with `codex-reply`). Read-only investigation/review = `sandbox=read-only`; code-writing/mutating = `danger-full-access` (`workspace-write` forbidden).
 - Codex-main → Codex sub-agent: use native `multi_agent_v1` (`tool_search` → `spawn_agent` → `wait_agent` → `close_agent`) for read-only breadth.
-- In-repo code, TDD, and review work: route through `mir_executor --dispatch` so worktree isolation, merge gates, and TDD evidence stay active.
+- Use `mir_executor --dispatch` for in-repo work when worktree isolation, restartability, or a deterministic merge gate is worth the overhead.
 - **Codex sub-agent = lightweight mcp (ADR-67)**: slim base-instructions + `config{project_doc_max_bytes:0}` (blocks cwd AGENTS.md auto-load = token savings) · per-task `model`/`model_reasoning_effort` routing · `stall_timeout` watchdog + live progress monitoring · global policy `config/sub-agent-policy.json` · dispatch/execute = mcp-only (raw exec fallback removed).
 - Raw `codex exec` = BANNED (ADR-69, owner order 2026-07-04). Claude→codex = MCP only (`mcp__codex__codex` / `tools/mir_executor/codex_mcp_client.py`); in-repo code = `mir_executor … --dispatch` (MCP backend); codex→codex = native `multi_agent_v1`. A missing preferred MCP lane is not a task blocker when a safe direct, native, or manual path remains; never use raw exec fallback.
 - Obsolete raw-exec guards: timeout/stdin/perl-alarm hang guards for `codex exec` are no longer a live delegation contract under ADR-69. MCP transport owns call timeouts, stall progress, and cancellation through `tools/mir_executor/codex_mcp_client.py`.
 
 ## Hook Policy Boundary
-- **Enforcement domain** — Hook-strict:
-  - `tools/`, `src/`, `lib/` code paths: Claude direct Edit/Write is blocked by `.claude/hooks/pre-tool-use.sh`. Changes must go through the Codex execution lane.
-  - Pre-commit lint / typecheck / test (`pre-commit-verification.sh`): auto-enforced on code changes.
-  - TDD ledger (`tdd-guard.sh`): implementation-before-test pattern is blocked.
-- **Advisory domain** — Hook-loose / non-enforced:
-  - `.claude/agents/`, `.claude/skills/`, `config/repo-agent-management.json`, `docs/`, `tasks/`: direct edits allowed. Verifier (`scripts/verify_repo_agent_management.py`) emits advisory WARN/INFO only.
-  - Monthly catalog review cadence: no cron, no auto-fire. fleet-doc-steward surfaces reminders to `tasks/checklist.md`.
-- **Principle**: Core design (catalog / skill / agent / orchestration) must not depend on hooks for correctness. Hooks add (a) TDD enforcement on code surfaces, (b) Codex execution lane routing, and (c) verification automation. Hook enforcement must not leak into core design execution.
+- Hard blocks are limited to deterministic destructive operations, credential/privacy boundaries, protected paths or Git operations, real integration conflicts, raw `codex exec`, and explicitly selected failed verification.
+- Code-path routing, TDD ledgers, pre-commit verification, review rounds, and session closeout are advisory or operator-selected. Bounded direct edits are valid.
+- Core design must not depend on hooks for correctness. Hooks provide narrow safety enforcement and useful guidance, not universal workflow control.
 
 ## Runtime Role Policy
 - Full contract: §Role Policy (Template Profile) below (generated block — single SoT for parity/delegation/Codex-first defaults).
-- Record every runtime override in `tasks/plan.md` or the active handoff note. Long-term policy changes must update `docs/decisions/role-policy.md`, this file, and its regressions together.
+- Record only material runtime role swaps in `tasks/plan.md` or the active handoff. Choosing bounded direct-main work is not a role swap.
 
 ## Language Protocol
 - User-facing output: match your team's language convention.
