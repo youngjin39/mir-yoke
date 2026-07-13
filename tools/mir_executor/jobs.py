@@ -46,7 +46,7 @@ class JobRecord:
         allow_harness_self_modify: True iff liftable harness prefixes may merge back.
         resume_count: number of successful/attempted resume launches for this job row.
         last_resumed_at: last UTC timestamp when resume was requested.
-        timeout_seconds: subprocess timeout.
+        timeout_seconds: advisory monitoring threshold.
         status: running / completed / cancelled / failed.
         exit_code: Codex exit code (None while running).
         stdout: captured stdout text (None while running).
@@ -283,7 +283,7 @@ class JobRegistry:
         now: datetime.datetime,
         grace_seconds: int = 120,
     ) -> list[JobRecord]:
-        """Return running jobs strictly past their timeout plus grace period."""
+        """Return running jobs past their advisory elapsed threshold plus grace."""
         if now.tzinfo is None:
             now = now.replace(tzinfo=datetime.UTC)
         else:

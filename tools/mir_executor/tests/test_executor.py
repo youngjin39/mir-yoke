@@ -65,6 +65,7 @@ def _install_fake_codex_mcp_client(
     *,
     result: CodexMcpResult | None = None,
     side_effect: BaseException | None = None,
+    enter_side_effect: BaseException | None = None,
 ) -> tuple[list[dict[str, object]], list[dict[str, object]]]:
     """Monkeypatch executor.CodexMcpClient and return (calls, init_kwargs)."""
     calls: list[dict[str, object]] = []
@@ -80,6 +81,8 @@ def _install_fake_codex_mcp_client(
             init_kwargs.append(kwargs)
 
         def __enter__(self) -> FakeCodexMcpClient:
+            if enter_side_effect is not None:
+                raise enter_side_effect
             return self
 
         def __exit__(self, *_exc_info: object) -> None:
@@ -223,7 +226,8 @@ def test_run_codex_passes_lightweight_mcp_options(tmp_path, monkeypatch):
     assert calls[0]["approval_policy"] == "never"
     assert calls[0]["base_instructions"] == _MCP_DISPATCH_BASE_INSTRUCTIONS
     assert calls[0]["config"] == {"project_doc_max_bytes": 0}
-    assert calls[0]["timeout"] == 600.0
+    assert calls[0]["timeout"] is None
+    assert _init_kwargs[0]["call_timeout"] is None
 
 
 def test_run_codex_passes_model_and_reasoning_effort(tmp_path, monkeypatch):
@@ -286,6 +290,19 @@ def test_run_codex_propagates_timeout(tmp_path, monkeypatch):
     executor = MirExecutor(repo_root=tmp_path)
     with pytest.raises(subprocess.TimeoutExpired):
         executor.run_codex(["--help"], timeout_seconds=1)
+
+
+def test_run_codex_default_init_timeout_is_normal_mcp_failure(tmp_path, monkeypatch):
+    _install_fake_codex_mcp_client(
+        monkeypatch,
+        enter_side_effect=CodexMcpTimeoutError("initialize timed out after 10s"),
+    )
+    executor = MirExecutor(repo_root=tmp_path)
+
+    result = executor.run_codex(["--help"])
+
+    assert result.exit_code == 1
+    assert result.stderr == "initialize timed out after 10s"
 
 
 # ---------------------------------------------------------------------------
@@ -522,6 +539,7 @@ def test_cli_execute_subcommand_invokes_executor(tmp_path, monkeypatch):
         "project_doc_max_bytes": 0,
         "model_reasoning_effort": "high",
     }
+    assert calls[0]["timeout"] is None
 
 
 def test_cli_execute_codex_args_file_uses_raw_prompt(tmp_path, monkeypatch):
@@ -631,6 +649,7 @@ def test_cli_handles_timeout_expired_gracefully(tmp_path, monkeypatch, capsys):
         "--change-id", "test-change-id",
         "--category", "unit",
         "--codex-args", "exec pytest",
+        "--timeout", "1",
         "--repo-root", str(tmp_path),
     ]
     with pytest.raises(SystemExit) as exc_info:

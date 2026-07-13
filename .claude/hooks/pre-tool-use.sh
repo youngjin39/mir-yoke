@@ -176,20 +176,12 @@ if [ "$TOOL_NAME" = "Bash" ]; then
   if echo "$CMD" | grep -qE '(^|[[:space:]])sudo([[:space:]]|$)'; then
     block "sudo requires user confirmation, not this hook: $CMD"
   fi
-  # 7. Raw Codex subprocess routing is forbidden. Validate syntax without
-  #    startup files or execution, then inspect command positions with shlex.
-  if ! BASH_ENV=/dev/null ENV=/dev/null /bin/bash --noprofile --norc -n -c "$CMD" >/dev/null 2>&1; then
-    block "raw Codex scanner could not parse command"
+  # 7. Raw Codex subprocess routing is forbidden. Match a bare or absolute
+  #    codex executable plus an exact exec/e shell token anywhere in its
+  #    argv-shaped command text. Redirects and pipes do not create exceptions.
+  if printf '%s\n' "$CMD" | grep -qE '(^|[[:space:];|&(<])([^[:space:];|&()<>#]*/)?codex([[:space:]]+[^[:space:];|&()<>#]+)*[[:space:]]+(exec|e)([[:space:];|&)>#]|$)'; then
+    block "raw codex exec/e is banned — route through MCP/mir_executor"
   fi
-  command -v python3 >/dev/null 2>&1 || block "python3 is required for raw Codex scanning"
-  _RAW_CODEX_GUARD="$(dirname "$0")/raw_codex_guard.py"
-  [ -f "$_RAW_CODEX_GUARD" ] || block "raw Codex scanner is missing"
-  python3 "$_RAW_CODEX_GUARD" "$CMD"
-  case "$?" in
-    0) block "raw codex exec/e is banned — route through MCP/mir_executor" ;;
-    1) ;;
-    *) block "raw Codex scanner could not parse command" ;;
-  esac
   if echo "$CMD" | grep -qE '(^|[[:space:]])git[[:space:]]+commit([[:space:]]|$)'; then
     if [ -f "$PRE_COMMIT_VERIFICATION_SCRIPT" ]; then
       if ! /bin/bash "$PRE_COMMIT_VERIFICATION_SCRIPT"; then

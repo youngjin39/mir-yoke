@@ -650,6 +650,69 @@ def test_build_codex_mcp_runner_success_writes_stdout_and_event(
         cleanup_worktree(wt)
 
 
+def test_build_codex_mcp_runner_default_has_no_call_timeout(
+    tmp_path: pathlib.Path,
+) -> None:
+    repo = _make_repo(tmp_path)
+    calls: list[dict[str, object]] = []
+    init_kwargs: list[dict[str, object]] = []
+
+    class FakeClient:
+        def __init__(self, **kwargs: object) -> None:
+            init_kwargs.append(kwargs)
+
+        def __enter__(self) -> FakeClient:
+            return self
+
+        def __exit__(self, *_exc_info: object) -> None:
+            return None
+
+        def call_codex(self, **kwargs: object) -> CodexMcpResult:
+            calls.append(kwargs)
+            return CodexMcpResult("done", "thread-default", {})
+
+    wt = create_dispatch_worktree(repo, "mcp-no-default-timeout")
+    try:
+        attempt = build_codex_mcp_runner(
+            repo,
+            "structured prompt",
+            client_factory=FakeClient,
+        )(wt, 1)
+
+        assert attempt.exit_code == 0
+        assert init_kwargs[0]["call_timeout"] is None
+        assert calls[0]["timeout"] is None
+    finally:
+        cleanup_worktree(wt)
+
+
+def test_build_codex_mcp_runner_default_init_timeout_is_lane_failure(
+    tmp_path: pathlib.Path,
+) -> None:
+    repo = _make_repo(tmp_path)
+
+    class InitTimeoutClient:
+        def __init__(self, **_kwargs: object) -> None:
+            pass
+
+        def __enter__(self) -> InitTimeoutClient:
+            raise CodexMcpTimeoutError("initialize timed out after 10s")
+
+    wt = create_dispatch_worktree(repo, "mcp-init-timeout")
+    try:
+        attempt = build_codex_mcp_runner(
+            repo,
+            "structured prompt",
+            client_factory=InitTimeoutClient,
+        )(wt, 1)
+
+        assert attempt.exit_code == 1
+        assert attempt.stderr == "initialize timed out after 10s"
+        assert attempt.lane_unavailable is True
+    finally:
+        cleanup_worktree(wt)
+
+
 def test_build_codex_mcp_runner_passes_lightweight_context_options(
     tmp_path: pathlib.Path,
 ) -> None:
@@ -983,6 +1046,28 @@ def test_execute_parser_accepts_performance_options(tmp_path: pathlib.Path) -> N
     assert args.reasoning_effort == "xhigh"
 
 
+def test_execute_and_resume_parser_default_to_no_hard_timeout(tmp_path: pathlib.Path) -> None:
+    parser = cli._build_parser()
+
+    execute = parser.parse_args(
+        [
+            "execute",
+            "--change-id",
+            "X",
+            "--category",
+            "unit",
+            "--codex-args",
+            "exec hi",
+            "--repo-root",
+            str(tmp_path),
+        ]
+    )
+    resume = parser.parse_args(["resume", "--job-id", "job"])
+
+    assert execute.timeout is None
+    assert resume.timeout is None
+
+
 def test_execute_parser_rejects_both_codex_arg_sources(
     tmp_path: pathlib.Path,
     capsys: pytest.CaptureFixture[str],
@@ -1080,6 +1165,37 @@ def test_run_guarded_uses_timeout_stdin_and_env(
     assert calls["stdin"] == subprocess.DEVNULL
     assert calls["capture_output"] is True
     assert calls["text"] is True
+
+
+def test_claude_runners_default_to_no_hard_timeout(
+    tmp_path: pathlib.Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repo = _make_repo(tmp_path)
+    observed_timeouts: list[int | None] = []
+
+    def fake_run_guarded(
+        command: list[str],
+        cwd: pathlib.Path,
+        env: dict[str, str],
+        timeout_seconds: int | None,
+    ) -> subprocess.CompletedProcess[str]:
+        _ = cwd, env
+        observed_timeouts.append(timeout_seconds)
+        return subprocess.CompletedProcess(command, 0, stdout="", stderr="")
+
+    monkeypatch.delenv("MIR_DISPATCH_FALLBACK_DEPTH", raising=False)
+    monkeypatch.setattr(dispatch_module, "_run_guarded", fake_run_guarded)
+    wt = create_dispatch_worktree(repo, "claude-no-default-timeout")
+    try:
+        build_claude_runner(repo)(wt, 1)
+        build_claude_fallback(repo)(wt)
+        build_claude_runner(repo, timeout_seconds=7)(wt, 1)
+        build_claude_fallback(repo, timeout_seconds=8)(wt)
+
+        assert observed_timeouts == [None, None, 7, 8]
+    finally:
+        cleanup_worktree(wt)
 
 
 def test_build_claude_fallback_invocation_and_env(
@@ -2514,6 +2630,35 @@ def test_verify_command_timeout_blocks(tmp_path: pathlib.Path) -> None:
         cleanup_worktree(wt)
 
 
+def test_default_verification_timeout_waits_without_a_hard_limit(
+    tmp_path: pathlib.Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repo = _make_repo(tmp_path)
+    wt = create_dispatch_worktree(repo, "gate-verify-no-timeout")
+    real_run = subprocess.run
+    timeouts: list[object] = []
+
+    def record_run(command, **kwargs):
+        if command == ["true"]:
+            timeouts.append(kwargs["timeout"])
+        return real_run(command, **kwargs)
+
+    monkeypatch.setattr(dispatch_module.subprocess, "run", record_run)
+    try:
+        gate = evaluate_merge_gate(
+            wt,
+            allowlist=["pkg/"],
+            verification_commands=["true"],
+            expect_changes=False,
+        )
+
+        assert gate.approved is True
+        assert timeouts == [None]
+    finally:
+        cleanup_worktree(wt)
+
+
 def test_merge_gate_empty_diff_fail_closed_by_default_and_opt_out_allows(
     tmp_path: pathlib.Path,
 ) -> None:
@@ -2807,6 +2952,7 @@ def test_cli_dispatch_flag_routes_to_run_dispatch(tmp_path: pathlib.Path, monkey
     assert rc == 0
     assert len(calls) == 1
     assert mcp_calls[0]["prompt"] == "hi"
+    assert mcp_calls[0]["timeout_seconds"] is None
     assert calls[0]["main_repo_root"] == repo.resolve()
     kwargs = calls[0]["kwargs"]
     assert kwargs["brief_text"] == "hi"

@@ -243,7 +243,7 @@ class MirExecutor:
     def run_codex(
         self,
         codex_args: list[str],
-        timeout_seconds: int = 600,
+        timeout_seconds: int | None = None,
         *,
         cwd: os.PathLike[str] | str | None = None,
         model: str | None = None,
@@ -267,7 +267,7 @@ class MirExecutor:
         try:
             with CodexMcpClient(
                 codex_bin=codex_bin,
-                call_timeout=float(timeout_seconds),
+                call_timeout=timeout_seconds,
             ) as client:
                 call_kwargs: dict[str, object] = {
                     "prompt": prompt,
@@ -276,7 +276,7 @@ class MirExecutor:
                     "approval_policy": "never",
                     "base_instructions": _MCP_DISPATCH_BASE_INSTRUCTIONS,
                     "config": _codex_mcp_config(reasoning_effort),
-                    "timeout": float(timeout_seconds),
+                    "timeout": timeout_seconds,
                 }
                 if model is not None:
                     call_kwargs["model"] = model
@@ -284,12 +284,21 @@ class MirExecutor:
                     call_kwargs["stall_timeout"] = stall_timeout
                 result = client.call_codex(**call_kwargs)
         except CodexMcpTimeoutError as exc:
-            raise subprocess.TimeoutExpired(
-                cmd=command,
-                timeout=timeout_seconds,
-                output="",
+            if timeout_seconds is not None:
+                raise subprocess.TimeoutExpired(
+                    cmd=command,
+                    timeout=timeout_seconds,
+                    output="",
+                    stderr=str(exc),
+                ) from exc
+            duration = time.monotonic() - start
+            return SubprocessResult(
+                exit_code=1,
+                stdout="",
                 stderr=str(exc),
-            ) from exc
+                duration_seconds=duration,
+                command=command,
+            )
         except FileNotFoundError as exc:
             raise FileNotFoundError(
                 f"Codex binary not found: {codex_bin!r}. "
@@ -418,7 +427,7 @@ class MirExecutor:
         change_id: str,
         category: str,
         codex_args: list[str],
-        timeout_seconds: int = 600,
+        timeout_seconds: int | None = None,
         *,
         model: str | None = None,
         reasoning_effort: str | None = None,
@@ -445,7 +454,7 @@ class MirExecutor:
     async def run_codex_async(
         self,
         codex_args: list[str],
-        timeout_seconds: int = 600,
+        timeout_seconds: int | None = None,
         *,
         cwd: os.PathLike[str] | str | None = None,
         model: str | None = None,
@@ -475,7 +484,7 @@ class MirExecutor:
     def _run_codex_mcp_for_async(
         self,
         codex_args: list[str],
-        timeout_seconds: int,
+        timeout_seconds: int | None,
         resolved_cwd: pathlib.Path,
         model: str | None,
         reasoning_effort: str | None,
@@ -489,7 +498,7 @@ class MirExecutor:
         try:
             with CodexMcpClient(
                 codex_bin=codex_bin,
-                call_timeout=float(timeout_seconds),
+                call_timeout=timeout_seconds,
             ) as client:
                 call_kwargs: dict[str, object] = {
                     "prompt": prompt,
@@ -498,15 +507,24 @@ class MirExecutor:
                     "approval_policy": "never",
                     "base_instructions": _MCP_DISPATCH_BASE_INSTRUCTIONS,
                     "config": _codex_mcp_config(reasoning_effort),
-                    "timeout": float(timeout_seconds),
+                    "timeout": timeout_seconds,
                 }
                 if model is not None:
                     call_kwargs["model"] = model
                 if stall_timeout is not None:
                     call_kwargs["stall_timeout"] = stall_timeout
                 result = client.call_codex(**call_kwargs)
-        except CodexMcpTimeoutError:
-            raise
+        except CodexMcpTimeoutError as exc:
+            if timeout_seconds is not None:
+                raise
+            duration = time.monotonic() - start
+            return SubprocessResult(
+                exit_code=1,
+                stdout="",
+                stderr=str(exc),
+                duration_seconds=duration,
+                command=command,
+            )
         except FileNotFoundError as exc:
             raise FileNotFoundError(
                 f"Codex binary not found: {codex_bin!r}. "
@@ -537,7 +555,7 @@ class MirExecutor:
         change_id: str,
         category: str,
         codex_args: list[str],
-        timeout_seconds: int = 600,
+        timeout_seconds: int | None = None,
         *,
         model: str | None = None,
         reasoning_effort: str | None = None,

@@ -114,10 +114,11 @@ def test_dry_run_detects_orphan_and_mutates_nothing(tmp_path: pathlib.Path) -> N
     registry.close()
 
 
-def test_apply_reaps_stale_job_removes_orphan_and_second_apply_is_noop(
+def test_apply_reports_stale_job_without_reaping_its_running_worktree(
     tmp_path: pathlib.Path,
 ) -> None:
     repo = _repo(tmp_path)
+    stale_worktree = _worktree(repo, tmp_path, "stale-job")
     orphan = _worktree(repo, tmp_path, "finished-job")
     jobs_db = tmp_path / "jobs.db"
     registry = JobRegistry(jobs_db)
@@ -133,15 +134,18 @@ def test_apply_reaps_stale_job_removes_orphan_and_second_apply_is_noop(
         apply=True,
     )
 
-    assert result["reaped_jobs"] == ["stale-job"]
+    assert result["stale_jobs"] == ["stale-job"]
+    assert result["reaped_jobs"] == []
+    assert str(stale_worktree) not in result["orphan_worktrees"]
+    assert str(stale_worktree) not in result["removed_worktrees"]
     assert result["removed_worktrees"] == [str(orphan)]
     assert result["errors"] == []
     assert not orphan.exists()
     registry = JobRegistry(jobs_db)
     stale = registry.get("stale-job")
     assert stale is not None
-    assert stale.status == "failed"
-    assert stale.stderr == "stale-reaped"
+    assert stale.status == "running"
+    assert stale.stderr is None
     registry.close()
 
     second = sweep_run_state(
@@ -151,7 +155,7 @@ def test_apply_reaps_stale_job_removes_orphan_and_second_apply_is_noop(
         grace_seconds=120,
         apply=True,
     )
-    assert second["stale_jobs"] == []
+    assert second["stale_jobs"] == ["stale-job"]
     assert second["orphan_worktrees"] == []
     assert second["reaped_jobs"] == []
     assert second["removed_worktrees"] == []

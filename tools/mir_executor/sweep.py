@@ -191,7 +191,7 @@ def sweep_run_state(
     grace_seconds: int = 120,
     apply: bool = False,
 ) -> dict[str, object]:
-    """Report or reap stale running jobs and orphan dispatch worktrees."""
+    """Report stale running jobs and reap only independently orphaned worktrees."""
     repo_root = pathlib.Path(repo_root).resolve()
     jobs_db = pathlib.Path(jobs_db).resolve()
     now = now or datetime.datetime.now(datetime.UTC)
@@ -206,20 +206,7 @@ def sweep_run_state(
         stale = registry.find_stale(now, grace_seconds) if registry is not None else []
         stale_ids = sorted(job.job_id for job in stale)
         reaped_jobs: list[str] = []
-        projected_failed = set(stale_ids) if not apply else set()
-        if apply and registry is not None:
-            for job_id in stale_ids:
-                try:
-                    registry.update_status(
-                        job_id,
-                        "failed",
-                        stderr="stale-reaped",
-                        completed_at=now.isoformat(),
-                    )
-                    reaped_jobs.append(job_id)
-                    projected_failed.add(job_id)
-                except Exception as exc:  # noqa: BLE001
-                    errors.append(f"stale job {job_id}: {exc}")
+        projected_failed: set[str] = set()
 
         jobs_by_id = {job.job_id: job for job in jobs}
         try:

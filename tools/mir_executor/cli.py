@@ -189,9 +189,9 @@ def _build_parser() -> argparse.ArgumentParser:
     exec_p.add_argument(
         "--timeout",
         type=int,
-        default=600,
+        default=None,
         metavar="SECONDS",
-        help="Subprocess timeout in seconds (default: 600).",
+        help="Optional hard subprocess timeout in seconds.",
     )
     exec_p.add_argument(
         "--model",
@@ -217,8 +217,7 @@ def _build_parser() -> argparse.ArgumentParser:
         default=None,
         metavar="SECONDS",
         help=(
-            "Optional no-progress MCP stall timeout in seconds; omit to inherit "
-            "policy monitoring defaults."
+            "Optional no-progress MCP stall timeout in seconds."
         ),
     )
     exec_p.add_argument(
@@ -410,9 +409,9 @@ def _build_parser() -> argparse.ArgumentParser:
     resume_p.add_argument(
         "--timeout",
         type=int,
-        default=600,
+        default=None,
         metavar="SECONDS",
-        help="Subprocess timeout in seconds (default: 600).",
+        help="Optional hard subprocess timeout in seconds.",
     )
     resume_p.add_argument(
         "--async",
@@ -454,7 +453,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
     sweep_p = sub.add_parser(
         "sweep",
-        help="Report or reap stale jobs and orphan dispatch worktrees.",
+        help="Report advisory-overdue jobs and orphan dispatch worktrees.",
     )
     sweep_p.add_argument(
         "--apply",
@@ -480,7 +479,7 @@ def _build_parser() -> argparse.ArgumentParser:
         type=int,
         default=120,
         metavar="N",
-        help="Additional lifetime after each job timeout (default: 120).",
+        help="Grace after each advisory elapsed threshold (default: 120).",
     )
 
     return parser
@@ -496,7 +495,7 @@ async def _run_background(
     change_id: str,
     category: str,
     codex_args: list[str],
-    timeout_seconds: int,
+    timeout_seconds: int | None,
     jobs_db_path: pathlib.Path,
     model: str | None = None,
     reasoning_effort: str | None = None,
@@ -608,7 +607,7 @@ def _resolve_policy_runtime_options(
     reasoning_effort: str | None,
     stall_timeout: float | None,
 ) -> tuple[str | None, str | None, float | None]:
-    """Resolve policy routing/monitoring defaults without overriding CLI flags."""
+    """Resolve policy routing defaults without overriding CLI flags."""
     policy_route: dict[str, object] = {}
     resolve_category = getattr(sub_agent_policy, "resolve_category", None)
     if callable(resolve_category):
@@ -623,19 +622,10 @@ def _resolve_policy_runtime_options(
     if not isinstance(policy_reasoning_effort, str):
         policy_reasoning_effort = None
 
-    monitoring_stall_timeout_seconds = getattr(
-        sub_agent_policy,
-        "monitoring_stall_timeout_seconds",
-        None,
-    )
-    policy_stall_timeout: float | None = None
-    if callable(monitoring_stall_timeout_seconds):
-        policy_stall_timeout = monitoring_stall_timeout_seconds()
-
     return (
         model if model is not None else policy_model,
         reasoning_effort if reasoning_effort is not None else policy_reasoning_effort,
-        stall_timeout if stall_timeout is not None else policy_stall_timeout,
+        stall_timeout,
     )
 
 
@@ -645,7 +635,7 @@ def _build_dispatch_runner(
     backend: str,
     repo_root: pathlib.Path,
     prompt: str,
-    timeout_seconds: int,
+    timeout_seconds: int | None,
     model: str | None = None,
     reasoning_effort: str | None = None,
     stall_timeout: float | None = None,
@@ -785,7 +775,7 @@ def _handle_dispatch(
                 str(dispatch_brief_path) if dispatch_brief_path is not None else None
             ),
             allow_harness_self_modify=args.allow_harness_self_modify,
-            timeout_seconds=args.timeout,
+            timeout_seconds=args.timeout if args.timeout is not None else 600,
             status="running",
             started_at=_utc_now(),
         )
@@ -955,7 +945,7 @@ def _handle_execute(args: argparse.Namespace) -> int:
             repo_root=str(repo_root),
             codex_args=codex_args,
             allow_harness_self_modify=args.allow_harness_self_modify,
-            timeout_seconds=args.timeout,
+            timeout_seconds=args.timeout if args.timeout is not None else 600,
             status="running",
             started_at=_utc_now(),
         )

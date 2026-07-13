@@ -490,7 +490,14 @@ def test_cli_execute_background_returns_job_id(tmp_path, monkeypatch):
         notes="test",
     )
 
-    async def _fake_run_codex_async(self, codex_args, timeout_seconds=600):
+    observed_timeouts: list[int | None] = []
+
+    async def _fake_run_codex_async(
+        self,
+        codex_args,
+        timeout_seconds: int | None = None,
+    ):
+        observed_timeouts.append(timeout_seconds)
         return fake_result
 
     def _fake_update_ledger(self, change_id, category, result):
@@ -524,6 +531,12 @@ def test_cli_execute_background_returns_job_id(tmp_path, monkeypatch):
     # UUID4 hex is 32 lowercase hex chars
     assert len(job_id_part) == 32
     assert all(c in "0123456789abcdef" for c in job_id_part)
+    registry = JobRegistry(jobs_db)
+    job = registry.get(job_id_part)
+    registry.close()
+    assert job is not None
+    assert job.timeout_seconds == 600
+    assert observed_timeouts == [None]
 
 
 # ---------------------------------------------------------------------------
@@ -671,7 +684,10 @@ def test_cli_resume_replays_job_with_dispatch_brief(tmp_path, monkeypatch):
     reg.insert(job)
     reg.close()
 
-    def _fake_run_codex(self, codex_args, timeout_seconds=600):
+    observed_timeouts: list[int | None] = []
+
+    def _fake_run_codex(self, codex_args, timeout_seconds: int | None = None):
+        observed_timeouts.append(timeout_seconds)
         return SubprocessResult(
             exit_code=0,
             stdout="resume-ok",
@@ -710,6 +726,7 @@ def test_cli_resume_replays_job_with_dispatch_brief(tmp_path, monkeypatch):
     assert resumed.stdout == "resume-ok"
     assert resumed.resume_count == 1
     assert resumed.last_resumed_at is not None
+    assert observed_timeouts == [None]
 
 
 def test_cli_resume_requires_dispatch_brief_path(tmp_path, capsys):

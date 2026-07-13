@@ -486,7 +486,7 @@ def test_policy_runtime_options_apply_category_then_default_and_preserve_cli_fla
         model=None,
         reasoning_effort=None,
         stall_timeout=None,
-    ) == ("gpt-5.5", "low", 30.0)
+    ) == ("gpt-5.5", "low", None)
     assert cli._resolve_policy_runtime_options(
         policy,
         category="unit",

@@ -264,7 +264,7 @@ def _run_guarded(
     command: list[str],
     cwd: pathlib.Path,
     env: dict[str, str],
-    timeout_seconds: int,
+    timeout_seconds: int | None,
 ) -> subprocess.CompletedProcess[str]:
     """Run a guarded headless subprocess with closed stdin and captured output."""
     return subprocess.run(
@@ -282,7 +282,7 @@ def build_codex_mcp_runner(
     main_repo_root: pathlib.Path,
     prompt: str,
     *,
-    timeout_seconds: int = 600,
+    timeout_seconds: int | None = None,
     model: str | None = None,
     reasoning_effort: str | None = None,
     stall_timeout: float | None = None,
@@ -315,7 +315,7 @@ def build_codex_mcp_runner(
 
         try:
             try:
-                client = client_factory(env=env, call_timeout=float(timeout_seconds))
+                client = client_factory(env=env, call_timeout=timeout_seconds)
                 client.__enter__()
             except Exception as exc:  # startup and handshake failures mean no usable lane
                 stderr = str(exc)
@@ -344,7 +344,7 @@ def build_codex_mcp_runner(
                     "approval_policy": "never",
                     "base_instructions": _MCP_DISPATCH_BASE_INSTRUCTIONS,
                     "config": config,
-                    "timeout": float(timeout_seconds),
+                    "timeout": timeout_seconds,
                     "progress_callback": append_progress,
                 }
                 if model is not None:
@@ -416,7 +416,7 @@ def _run_claude_adapter(
     main_repo_root: pathlib.Path,
     wt: DispatchWorktree,
     *,
-    timeout_seconds: int,
+    timeout_seconds: int | None,
     mark_fallback_depth: bool,
 ) -> CodexAttempt:
     """Run headless ``claude -p`` in a dispatch worktree."""
@@ -443,7 +443,7 @@ def _run_claude_adapter(
 def build_claude_runner(
     main_repo_root: pathlib.Path,
     *,
-    timeout_seconds: int = 600,
+    timeout_seconds: int | None = None,
 ) -> Callable[[DispatchWorktree, int], CodexAttempt]:
     """Build the primary headless ``claude -p`` dispatch runner."""
 
@@ -505,7 +505,7 @@ def evaluate_merge_gate(
     *,
     allowlist: list[str],
     verification_commands: list[str],
-    verify_timeout: int = 600,
+    verify_timeout: int | None = None,
     allow_harness_self_modify: bool = False,
     expect_changes: bool = True,
     source_commit: str | None = None,
@@ -766,7 +766,7 @@ def finalize_dispatch(
     *,
     allowlist: list[str],
     verification_commands: list[str],
-    verify_timeout: int = 600,
+    verify_timeout: int | None = None,
     finalize_lock_timeout: int = 600,
     expect_changes: bool = True,
     allow_harness_self_modify: bool = False,
@@ -887,7 +887,7 @@ def finalize_dispatch(
 def build_claude_fallback(
     main_repo_root: pathlib.Path,
     *,
-    timeout_seconds: int = 600,
+    timeout_seconds: int | None = None,
 ) -> Callable[[DispatchWorktree], CodexAttempt]:
     """Build the headless ``claude -p`` fallback runner for ADR-60 R3."""
 

@@ -41,6 +41,7 @@ def _install_fake_codex_mcp_client(
     *,
     result: CodexMcpResult | None = None,
     side_effect: BaseException | None = None,
+    enter_side_effect: BaseException | None = None,
 ) -> tuple[list[dict[str, object]], list[dict[str, object]]]:
     """Monkeypatch executor.CodexMcpClient and return (calls, init_kwargs)."""
     calls: list[dict[str, object]] = []
@@ -56,6 +57,8 @@ def _install_fake_codex_mcp_client(
             init_kwargs.append(kwargs)
 
         def __enter__(self) -> FakeCodexMcpClient:
+            if enter_side_effect is not None:
+                raise enter_side_effect
             return self
 
         def __exit__(self, *_exc_info: object) -> None:
@@ -113,6 +116,16 @@ def test_run_codex_async_maps_content_to_stdout(tmp_path, monkeypatch):
     assert result.stderr == ""
 
 
+def test_run_codex_async_default_timeout_waits_for_completion(tmp_path, monkeypatch):
+    calls, init_kwargs = _install_fake_codex_mcp_client(monkeypatch)
+    executor = MirExecutor(repo_root=tmp_path, ledger_path=tmp_path / "tasks" / "tdd.json")
+
+    asyncio.run(executor.run_codex_async(["arg"]))
+
+    assert calls[0]["timeout"] is None
+    assert init_kwargs[0]["call_timeout"] is None
+
+
 # ---------------------------------------------------------------------------
 # 3. run_codex_async uses CODEX_BIN env var as first argument
 # ---------------------------------------------------------------------------
@@ -139,6 +152,22 @@ def test_run_codex_async_propagates_timeout(tmp_path, monkeypatch):
 
     with pytest.raises(asyncio.TimeoutError):
         asyncio.run(executor.run_codex_async(["arg"], timeout_seconds=0))
+
+
+def test_run_codex_async_default_init_timeout_is_normal_mcp_failure(
+    tmp_path,
+    monkeypatch,
+):
+    _install_fake_codex_mcp_client(
+        monkeypatch,
+        enter_side_effect=CodexMcpTimeoutError("initialize timed out after 10s"),
+    )
+    executor = MirExecutor(repo_root=tmp_path, ledger_path=tmp_path / "tasks" / "tdd.json")
+
+    result = asyncio.run(executor.run_codex_async(["arg"]))
+
+    assert result.exit_code == 1
+    assert result.stderr == "initialize timed out after 10s"
 
 
 # ---------------------------------------------------------------------------
@@ -208,7 +237,7 @@ def test_execute_async_fast_fails_on_unknown_change_id_BEFORE_running_codex(
 # ---------------------------------------------------------------------------
 
 def test_cli_with_async_flag_dispatches_to_async_path(tmp_path, monkeypatch):
-    _install_fake_codex_mcp_client(
+    calls, _init_kwargs = _install_fake_codex_mcp_client(
         monkeypatch,
         result=CodexMcpResult(
             content_text="cli-async-ok",
@@ -232,6 +261,7 @@ def test_cli_with_async_flag_dispatches_to_async_path(tmp_path, monkeypatch):
 
     reloaded = json.loads(ledger_path.read_text(encoding="utf-8"))
     assert reloaded["changes"][0]["categories"]["unit"]["status"] == "pass"
+    assert calls[0]["timeout"] is None
 
 
 # ---------------------------------------------------------------------------

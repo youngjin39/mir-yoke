@@ -64,7 +64,7 @@ class CodexMcpClient:
         codex_bin: str | None = None,
         env: Mapping[str, str] | None = None,
         initialize_timeout: float = 10.0,
-        call_timeout: float = 600.0,
+        call_timeout: float | None = None,
         kill_timeout: float = 2.0,
         protocol_version: str = DEFAULT_PROTOCOL_VERSION,
     ) -> None:
@@ -251,7 +251,7 @@ class CodexMcpClient:
         method: str,
         params: Mapping[str, Any],
         *,
-        timeout: float,
+        timeout: float | None,
         stall_timeout: float | None = None,
     ) -> Any:
         request_id = self._next_request_id()
@@ -285,7 +285,9 @@ class CodexMcpClient:
             )
             watchdog_thread.start()
 
-        if not pending.event.wait(timeout):
+        if timeout is None:
+            pending.event.wait()
+        elif not pending.event.wait(timeout):
             error = CodexMcpTimeoutError(
                 f"Codex MCP request {method!r} timed out after {timeout:g}s"
             )

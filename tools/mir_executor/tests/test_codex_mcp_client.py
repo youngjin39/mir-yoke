@@ -14,11 +14,21 @@ import time
 import pytest
 
 from tools.mir_executor.codex_mcp_client import (
+    DEFAULT_CODEX_BIN,
     CodexMcpClient,
     CodexMcpProcessError,
     CodexMcpStallError,
     CodexMcpTimeoutError,
 )
+
+
+def test_default_codex_command_is_portable(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("CODEX_BIN", raising=False)
+    client = CodexMcpClient()
+
+    assert DEFAULT_CODEX_BIN == "codex"
+    assert client._codex_bin == DEFAULT_CODEX_BIN
+    assert "/Users" not in client._codex_bin
 
 
 def _write_fake_mcp_server(tmp_path: pathlib.Path, *, mode: str) -> pathlib.Path:
@@ -69,6 +79,8 @@ def _write_fake_mcp_server(tmp_path: pathlib.Path, *, mode: str) -> pathlib.Path
                 elif method == "tools/call":
                     if MODE == "timeout":
                         time.sleep(30)
+                    elif MODE == "delayed":
+                        time.sleep(0.05)
                     elif MODE == "notification":
                         send({{
                             "jsonrpc": "2.0",
@@ -261,6 +273,41 @@ def test_call_timeout_kills_server_and_rejects_pending(tmp_path: pathlib.Path) -
 
     assert client.pending_count == 0
     assert client.is_running is False
+
+
+def test_call_timeout_none_waits_for_completion(tmp_path: pathlib.Path) -> None:
+    fake_bin = _write_fake_mcp_server(tmp_path, mode="delayed")
+
+    with CodexMcpClient(codex_bin=str(fake_bin), initialize_timeout=1.0) as client:
+        result = client.call_codex(prompt="wait", cwd=tmp_path, timeout=None)
+
+    assert result.content_text == "codex completed"
+
+
+def test_call_timeout_none_passes_none_to_effective_request(
+    tmp_path: pathlib.Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = CodexMcpClient(call_timeout=None)
+    observed_timeouts: list[float | None] = []
+
+    def fake_request(
+        method: str,
+        params: object,
+        *,
+        timeout: float | None,
+        stall_timeout: float | None = None,
+    ) -> object:
+        _ = method, params, stall_timeout
+        observed_timeouts.append(timeout)
+        return {"content": [{"type": "text", "text": "done"}]}
+
+    monkeypatch.setattr(client, "_request", fake_request)
+
+    result = client.call_codex(prompt="wait", cwd=tmp_path, timeout=None)
+
+    assert result.content_text == "done"
+    assert observed_timeouts == [None]
 
 
 def test_stall_watchdog_kills_silent_server_and_rejects_pending(
