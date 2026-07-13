@@ -4,14 +4,13 @@
 # Every codex invocation routes through this shim so NO call escapes a
 # monitorable lifecycle record.  The shim:
 #   1. Captures start time, pid, caller.
-#   2. Rejects raw `codex exec` per ADR-69.
-#   3. Runs the REAL codex binary (CODEX_REAL_BIN — never resolves "codex"
-#      via PATH to avoid recursion) for supported MCP/non-exec subcommands.
-#   4. Appends one bounded JSON event line to tasks/codex-exec-events.jsonl.
-#   5. Exits with the real codex exit code or the ADR-69 block code.
+#   2. Rejects raw exec/e tokens, otherwise forwards to the REAL codex binary
+#      (CODEX_REAL_BIN — never resolves "codex" via PATH to avoid recursion).
+#   3. Appends one bounded JSON event line to tasks/codex-exec-events.jsonl.
+#   4. Exits with the policy or real codex exit code.
 #
 # Activation (set in harness env or .env):
-#   export CODEX_REAL_BIN="<path-to-codex>"
+#   export CODEX_REAL_BIN="<path-to-codex>"  # absolute path
 #   export CODEX_BIN="$(pwd)/scripts/codex-shim.sh"          # routes MirExecutor
 #   PATH="$(pwd)/scripts/codex-shim-dir:$PATH"               # routes shutil.which
 #
@@ -19,13 +18,27 @@
 # See ADR-59 §5.1 for the full wiring rationale.
 set -eu
 
+# Raw Codex execution is forbidden. This is deliberately a strict,
+# syntax-agnostic exact-token scan: a separate option value named exec/e is
+# rejected fail-closed, while an equals-form value is not an exact token.
+_RAW_EXEC_REJECTED=0
+for _SHIM_ARG in "$@"; do
+    case "$_SHIM_ARG" in
+      exec|e)
+        _RAW_EXEC_REJECTED=1
+        break
+        ;;
+    esac
+done
+
 # ---------------------------------------------------------------------------
 # Guard: refuse to run without CODEX_REAL_BIN so the shim never silently
-# loops back to itself via PATH.
+# loops back to itself via PATH. A raw-exec policy rejection does not need
+# the real binary and is logged below before exiting.
 # ---------------------------------------------------------------------------
+_REAL_BIN_MISSING=0
 if [ -z "${CODEX_REAL_BIN:-}" ]; then
-    printf '[codex-shim] CODEX_REAL_BIN is not set — cannot resolve the real codex binary.\n' >&2
-    exit 1
+    _REAL_BIN_MISSING=1
 fi
 
 # ---------------------------------------------------------------------------
@@ -57,23 +70,26 @@ if [ ! -f "$_EVENTS_FILE" ]; then
 fi
 
 # ---------------------------------------------------------------------------
-# Run the real codex binary for supported subcommands.
-# Raw `codex exec` is banned by ADR-69; MCP-backed clients use `mcp-server codex`.
+# Reject raw exec or forward an allowed invocation.
 # NEVER resolve "codex" via PATH here — use CODEX_REAL_BIN only.
 # ---------------------------------------------------------------------------
 # Capture stderr to a temp file so we can compute error_sig after exit.
 _STDERR_TMP="$(mktemp /tmp/codex-shim-stderr.XXXXXX)"
 
 _SHIM_EXIT=0
-case "${1:-}" in
-  exec|e)
-    printf '[codex-shim] ADR-69: raw codex exec is banned; use Codex MCP or mir_executor --dispatch.\n' >"$_STDERR_TMP"
+if [ "$_RAW_EXEC_REJECTED" -eq 1 ]; then
+    _POLICY_MESSAGE="[codex-shim] raw 'codex exec' and 'codex e' are prohibited; use MCP-backed dispatch."
+    printf '%s\n' "$_POLICY_MESSAGE" > "$_STDERR_TMP"
+    printf '%s\n' "$_POLICY_MESSAGE" >&2
     _SHIM_EXIT=2
-    ;;
-  *)
+elif [ "$_REAL_BIN_MISSING" -eq 1 ]; then
+    _CONFIG_MESSAGE='[codex-shim] CODEX_REAL_BIN is not set — cannot resolve the real codex binary.'
+    printf '%s\n' "$_CONFIG_MESSAGE" > "$_STDERR_TMP"
+    printf '%s\n' "$_CONFIG_MESSAGE" >&2
+    _SHIM_EXIT=1
+else
     "$CODEX_REAL_BIN" "$@" 2>"$_STDERR_TMP" || _SHIM_EXIT=$?
-    ;;
-esac
+fi
 
 # Derive signal name if exit code > 128 (shell convention: 128+signum).
 _SHIM_SIGNAL=""
@@ -121,5 +137,5 @@ printf '{"ts":"%s","pid":%s,"caller":"%s","exit_code":%s,"signal":"%s","duration
 # Clean up stderr temp file.
 rm -f "$_STDERR_TMP"
 
-# Preserve real codex exit code.
+# Preserve policy or real codex exit code.
 exit "$_SHIM_EXIT"

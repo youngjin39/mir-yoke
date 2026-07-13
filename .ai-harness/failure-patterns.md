@@ -46,3 +46,23 @@ Recurring AI mistakes the harness was built to prevent. Add new entries when the
 **Shape**: agent edits a generated file (`.codex/hooks.json`, `.claude/settings.json`) directly. Next compile run wipes it.
 **Trigger**: the renderer is hidden behind a tool; agent does not realize the file is generated.
 **Mitigation**: GENERATED notice at the top of every renderer-emitted file + entry in `.ai-harness/failure-patterns.md`.
+
+## 2026-07-13 - Transport progress is not artifact progress; preservation must be deterministic
+
+### Failure
+Two backup dispatch waves emitted transport activity but produced no usable backup artifact. States such as `created` and `codex_completed` described delivery or model lifecycle, not a verified file, ref, index/worktree snapshot, or evidence package. Retrying the same model lane consumed time without improving recoverability.
+
+### Why It Happened
+The progress signal measured the transport and model process instead of the requested artifact. Preservation was also assigned to a generative lane even though its acceptance criteria were deterministic: exact Git objects, binary diffs, file metadata, hashes, and a replayed restore.
+
+### Rule
+Measure progress only through artifact fingerprints: expected file existence and hash, safety ref or bundle identity, index/worktree status, manifest counts and hashes, and completed verification evidence. A live transport with no changed artifact fingerprint is `STALL`; a completed transport without the required artifact is `EVIDENCE_MISSING`. Stop same-shape model retries. Route preservation to deterministic machinery that creates a Git bundle, staged and unstaged `--binary --full-index` patches, an untracked-file manifest/archive containing path, type, mode, size, and SHA-256, and disposable restore proof. `REDISPATCH` only after decomposing the failed task into a materially smaller or different lane. Use `ESCALATE_HUMAN` when no deterministic lane is available.
+
+### Scope
+Backup and restore gates, dirty-worktree reconciliation, delegated dispatch monitoring, artifact-producing automation, and session closeout.
+
+### Failure Class
+EVIDENCE_MISSING
+
+### Recommended Action
+REDISPATCH

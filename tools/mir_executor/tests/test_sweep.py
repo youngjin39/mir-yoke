@@ -8,6 +8,9 @@ import json
 import pathlib
 import subprocess
 
+import pytest
+
+from tools.mir_executor import sweep as sweep_module
 from tools.mir_executor.cli import main
 from tools.mir_executor.jobs import JobRecord, JobRegistry
 from tools.mir_executor.sweep import sweep_run_state
@@ -152,6 +155,176 @@ def test_apply_reaps_stale_job_removes_orphan_and_second_apply_is_noop(
     assert second["orphan_worktrees"] == []
     assert second["reaped_jobs"] == []
     assert second["removed_worktrees"] == []
+
+
+def test_apply_preserves_orphan_with_unique_commit(tmp_path: pathlib.Path) -> None:
+    repo = _repo(tmp_path)
+    orphan = _worktree(repo, tmp_path, "unique-commit")
+    (orphan / "tracked.txt").write_text("unique\n", encoding="utf-8")
+    _git(orphan, "add", "tracked.txt")
+    _git(orphan, "commit", "-m", "unique work")
+
+    result = sweep_run_state(repo, tmp_path / "jobs.db", apply=True)
+
+    assert result["removed_worktrees"] == []
+    assert result["preserved_worktrees"] == [
+        {"path": str(orphan), "reasons": ["unique-commit"]}
+    ]
+    assert orphan.exists()
+    assert _git(repo, "show-ref", "--verify", "refs/heads/mir-dispatch/unique-commit")
+
+
+@pytest.mark.parametrize(
+    "dirty_kind",
+    ["tracked", "staged", "untracked", "ignored"],
+)
+def test_apply_preserves_orphan_with_non_runtime_dirt(
+    tmp_path: pathlib.Path,
+    dirty_kind: str,
+) -> None:
+    repo = _repo(tmp_path)
+    orphan = _worktree(repo, tmp_path, f"dirty-{dirty_kind}")
+    if dirty_kind == "tracked":
+        (orphan / "tracked.txt").write_text("dirty\n", encoding="utf-8")
+    elif dirty_kind == "staged":
+        (orphan / "staged.txt").write_text("staged\n", encoding="utf-8")
+        _git(orphan, "add", "staged.txt")
+    elif dirty_kind == "untracked":
+        (orphan / "untracked.txt").write_text("untracked\n", encoding="utf-8")
+    else:
+        (repo / ".git" / "info" / "exclude").write_text("*.ignored\n", encoding="utf-8")
+        (orphan / "cache.ignored").write_text("ignored\n", encoding="utf-8")
+
+    result = sweep_run_state(repo, tmp_path / "jobs.db", apply=True)
+
+    assert result["removed_worktrees"] == []
+    assert result["preserved_worktrees"] == [
+        {"path": str(orphan), "reasons": ["worktree-dirty"]}
+    ]
+    assert orphan.exists()
+
+
+def test_apply_reinspection_preserves_toctou_dirty_worktree(
+    tmp_path: pathlib.Path,
+    monkeypatch,
+) -> None:
+    repo = _repo(tmp_path)
+    orphan = _worktree(repo, tmp_path, "toctou")
+    real_inspect = sweep_module._inspect_removal_candidate
+    calls = 0
+
+    def mutate_before_second_inspection(repo_root, listed):
+        nonlocal calls
+        calls += 1
+        if calls == 2:
+            (orphan / "late.txt").write_text("late dirt\n", encoding="utf-8")
+        return real_inspect(repo_root, listed)
+
+    monkeypatch.setattr(sweep_module, "_inspect_removal_candidate", mutate_before_second_inspection)
+
+    result = sweep_run_state(repo, tmp_path / "jobs.db", apply=True)
+
+    assert result["removed_worktrees"] == []
+    assert result["preserved_worktrees"] == [
+        {"path": str(orphan), "reasons": ["apply-time-drift", "worktree-dirty"]}
+    ]
+    assert orphan.exists()
+
+
+def test_eligible_apply_uses_only_non_force_removal(
+    tmp_path: pathlib.Path,
+    monkeypatch,
+) -> None:
+    repo = _repo(tmp_path)
+    orphan = _worktree(repo, tmp_path, "safe-remove")
+    real_run = subprocess.run
+    commands: list[list[str]] = []
+
+    def record_run(command, **kwargs):
+        commands.append(list(command))
+        return real_run(command, **kwargs)
+
+    monkeypatch.setattr(sweep_module.subprocess, "run", record_run)
+
+    result = sweep_run_state(repo, tmp_path / "jobs.db", apply=True)
+
+    assert result["removed_worktrees"] == [str(orphan)]
+    removal = next(command for command in commands if command[-3:-1] == ["worktree", "remove"])
+    branch_delete = next(command for command in commands if command[-3:-1] == ["branch", "-d"])
+    assert "--force" not in removal
+    assert "-D" not in branch_delete
+
+
+def test_apply_preserves_candidate_when_inspection_fails(
+    tmp_path: pathlib.Path,
+    monkeypatch,
+) -> None:
+    repo = _repo(tmp_path)
+    orphan = _worktree(repo, tmp_path, "inspection-failure")
+    real_run = subprocess.run
+
+    def fail_branch_inspection(command, **kwargs):
+        if "rev-parse" in command and "mir-dispatch/inspection-failure" in command:
+            raise OSError("inspection unavailable")
+        return real_run(command, **kwargs)
+
+    monkeypatch.setattr(sweep_module.subprocess, "run", fail_branch_inspection)
+
+    result = sweep_run_state(repo, tmp_path / "jobs.db", apply=True)
+
+    assert result["removed_worktrees"] == []
+    assert result["preserved_worktrees"] == [
+        {"path": str(orphan), "reasons": ["inspection-failed:branch-tip"]}
+    ]
+    assert orphan.exists()
+
+
+def test_runtime_evidence_is_preserved_byte_identically(
+    tmp_path: pathlib.Path,
+) -> None:
+    repo = _repo(tmp_path)
+    orphan = _worktree(repo, tmp_path, "runtime-evidence")
+    runtime = orphan / ".mir-dispatch"
+    runtime.mkdir()
+    (runtime / "status.json").write_bytes(b'{"state":"complete"}\n')
+    before = _digest(runtime / "status.json")
+
+    result = sweep_run_state(repo, tmp_path / "jobs.db", apply=True)
+
+    assert result["removed_worktrees"] == []
+    assert result["removable_worktrees"] == []
+    assert result["preserved_worktrees"] == [
+        {"path": str(orphan), "reasons": ["runtime-evidence-present"]}
+    ]
+    assert _digest(runtime / "status.json") == before
+    assert orphan.exists()
+
+
+def test_remove_refusal_preserves_clean_candidate(
+    tmp_path: pathlib.Path,
+    monkeypatch,
+) -> None:
+    repo = _repo(tmp_path)
+    orphan = _worktree(repo, tmp_path, "remove-refused")
+    real_run = subprocess.run
+
+    def refuse_remove(command, **kwargs):
+        if "worktree" in command and "remove" in command:
+            raise OSError("remove unavailable")
+        return real_run(command, **kwargs)
+
+    monkeypatch.setattr(sweep_module.subprocess, "run", refuse_remove)
+    result = sweep_run_state(repo, tmp_path / "jobs.db", apply=True)
+
+    assert result["removed_worktrees"] == []
+    assert result["removable_worktrees"] == []
+    assert result["preserved_worktrees"] == [
+        {
+            "path": str(orphan),
+            "reasons": ["apply-time-drift:remove-inspection-failed"],
+        }
+    ]
+    assert orphan.exists()
 
 
 def test_live_running_job_and_its_worktree_are_preserved(tmp_path: pathlib.Path) -> None:

@@ -167,7 +167,7 @@ def _build_parser() -> argparse.ArgumentParser:
             + "."
         ),
     )
-    codex_args_group = exec_p.add_mutually_exclusive_group(required=True)
+    codex_args_group = exec_p.add_mutually_exclusive_group(required=False)
     codex_args_group.add_argument(
         "--codex-args",
         metavar="QUOTED_STRING",
@@ -727,10 +727,17 @@ def _resolve_execute_codex_args(args: argparse.Namespace) -> list[str]:
     codex_args_file = getattr(args, "codex_args_file", None)
     has_codex_args = codex_args_text is not None
     has_codex_args_file = codex_args_file is not None
-    if has_codex_args == has_codex_args_file:
+    if not has_codex_args and not has_codex_args_file:
+        dispatch_brief = getattr(args, "dispatch_brief", None)
+        if args.background and args.dispatch and dispatch_brief is not None:
+            return []
+        raise ValueError("exactly one of --codex-args or --codex-args-file must be provided")
+    if has_codex_args and has_codex_args_file:
         raise ValueError("exactly one of --codex-args or --codex-args-file must be provided")
     if has_codex_args_file:
+        assert codex_args_file is not None
         return [pathlib.Path(codex_args_file).read_text(encoding="utf-8")]
+    assert codex_args_text is not None
     return shlex.split(codex_args_text)
 
 
@@ -749,7 +756,16 @@ def _handle_dispatch(
     dispatch_brief_path = (
         args.dispatch_brief.resolve() if getattr(args, "dispatch_brief", None) else None
     )
-    prompt = _resolve_dispatch_prompt(codex_args, dispatch_brief_path)
+    try:
+        if not codex_args:
+            prompt = _prompt_from_dispatch_brief(dispatch_brief_path)
+            if not prompt:
+                raise ValueError("DispatchBrief expanded_goal must be non-empty")
+        else:
+            prompt = _resolve_dispatch_prompt(codex_args, dispatch_brief_path)
+    except (OSError, TypeError, ValueError) as exc:
+        print(f"[mir_executor] DispatchBrief error: {exc}", file=sys.stderr)
+        return 1
     jobs_db_path = _resolve_jobs_db(args.jobs_db, repo_root)
     prior = dispatch.count_consecutive_codex_failures(
         jobs_db_path,
@@ -820,13 +836,9 @@ def _handle_dispatch(
                 allow_harness_self_modify=args.allow_harness_self_modify,
             )
 
-        # status is the codex-lane outcome for the outage guard; task success requires merge.
-        job_status = "completed" if outcome.status == "completed" else "failed"
-        task_exit = (
-            0
-            if final is not None and final.action in _MERGED_FINALIZE_ACTIONS
-            else 1
-        )
+        merged = final is not None and final.action in _MERGED_FINALIZE_ACTIONS
+        job_status = "completed" if merged else "failed"
+        task_exit = 0 if merged else 1
         if outcome.status == "blocked":
             print(
                 "[DISPATCH] blocked with no fallback under sub-agent policy; "
@@ -834,11 +846,30 @@ def _handle_dispatch(
                 file=sys.stderr,
             )
         result_payload = f"artifacts=tasks/dispatch/{job_id}"
-        reason_payload = (
-            f"status={outcome.status} blocked_reason={outcome.blocked_reason}"
-            if outcome.blocked_reason is not None
-            else None
-        )
+        reason_payload = None
+        if final is not None and final.action == "merged-but-cleanup-failed":
+            reason_payload = " ".join(
+                [
+                    f"dispatch_status={outcome.status}",
+                    f"finalize_action={final.action}",
+                    f"finalize_reason={final.reason}",
+                ]
+            )
+        elif not merged:
+            blocked_reason = (
+                final.reason
+                if final is not None
+                else outcome.blocked_reason or "no-finalize-result"
+            )
+            reason_payload = " ".join(
+                [
+                    f"dispatch_status={outcome.status}",
+                    f"dispatch_reason={outcome.blocked_reason}",
+                    f"finalize_action={final.action if final is not None else None}",
+                    f"finalize_reason={final.reason if final is not None else None}",
+                    f"blocked_reason={blocked_reason}",
+                ]
+            )
         registry.update_status(
             job_id,
             job_status,

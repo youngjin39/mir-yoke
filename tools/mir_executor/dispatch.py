@@ -14,6 +14,7 @@ import pathlib
 import shlex
 import shutil
 import subprocess
+import tempfile
 import time
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
@@ -86,6 +87,10 @@ class FinalizeResult:
     action: str
     reason: str
     merged_files: list[str]
+
+
+class _VerificationCleanupError(RuntimeError):
+    """Raised when an isolated verification worktree cannot be deregistered."""
 
 
 def _append_event(events_path: pathlib.Path, event: dict[str, object]) -> None:
@@ -503,10 +508,16 @@ def evaluate_merge_gate(
     verify_timeout: int = 600,
     allow_harness_self_modify: bool = False,
     expect_changes: bool = True,
+    source_commit: str | None = None,
 ) -> MergeGate:
     """Evaluate the deterministic ADR-60 P2 merge gate for one dispatch."""
-    changed_text = _git(wt.path, ["diff", "--name-only", wt.base_commit, "HEAD"]).stdout
-    changed = [line for line in changed_text.splitlines() if line]
+    if source_commit is None:
+        source_commit = _git(wt.path, ["rev-parse", "HEAD"]).stdout.strip()
+    changed_text = _git(
+        wt.path,
+        ["diff", "--no-renames", "--name-only", "-z", wt.base_commit, source_commit],
+    ).stdout
+    changed = [path for path in changed_text.split("\0") if path]
 
     if expect_changes and not changed:
         return MergeGate(False, "empty-diff fail-closed", [])
@@ -525,20 +536,28 @@ def evaluate_merge_gate(
     if not verification_commands:
         return MergeGate(False, "no-verification-commands (fail-closed)", changed)
 
-    for cmd in verification_commands:
-        try:
-            completed = subprocess.run(
-                shlex.split(cmd),
-                cwd=str(wt.path),
-                capture_output=True,
-                text=True,
-                stdin=subprocess.DEVNULL,
-                timeout=verify_timeout,
-            )
-        except subprocess.TimeoutExpired:
-            return MergeGate(False, "verification-timeout", changed)
-        if completed.returncode != 0:
-            return MergeGate(False, f"verification-failed:{cmd}", changed)
+    if _dispatch_nonruntime_status(wt.path):
+        return MergeGate(False, "dispatch-dirty", changed)
+    try:
+        with _isolated_verification_worktree(wt, source_commit) as verification_root:
+            for cmd in verification_commands:
+                try:
+                    completed = subprocess.run(
+                        shlex.split(cmd),
+                        cwd=str(verification_root),
+                        capture_output=True,
+                        text=True,
+                        stdin=subprocess.DEVNULL,
+                        timeout=verify_timeout,
+                    )
+                except subprocess.TimeoutExpired:
+                    return MergeGate(False, "verification-timeout", changed)
+                if completed.returncode != 0:
+                    return MergeGate(False, f"verification-failed:{cmd}", changed)
+    except _VerificationCleanupError:
+        return MergeGate(False, "verification-cleanup-failed", changed)
+    if _dispatch_nonruntime_status(wt.path):
+        return MergeGate(False, "dispatch-dirty", changed)
 
     return MergeGate(True, "approved", changed)
 
@@ -550,6 +569,159 @@ def _commit_worktree_if_needed(wt: DispatchWorktree) -> None:
     staged = _git(wt.path, ["diff", "--cached", "--quiet"], check=False)
     if staged.returncode == 1:
         _git(wt.path, ["commit", "-m", f"mir-dispatch {wt.dispatch_id}"])
+
+
+def _dispatch_nonruntime_status(worktree_root: pathlib.Path) -> str:
+    return _git(
+        worktree_root,
+        [
+            "status",
+            "--porcelain=v2",
+            "-z",
+            "--untracked-files=all",
+            "--",
+            ".",
+            ":(exclude).mir-dispatch",
+            ":(exclude).mir-dispatch/**",
+        ],
+    ).stdout
+
+
+@contextmanager
+def _isolated_verification_worktree(
+    wt: DispatchWorktree,
+    source_commit: str,
+) -> Iterator[pathlib.Path]:
+    temp_base = pathlib.Path(tempfile.mkdtemp(prefix="mir-verify-"))
+    verification_root = temp_base / "worktree"
+    added = False
+    try:
+        _git(
+            wt.main_repo_root,
+            ["worktree", "add", "--detach", str(verification_root), source_commit],
+        )
+        added = True
+        profile = wt.path / ".mir" / "repo-profile.toml"
+        if profile.is_file():
+            target = verification_root / ".mir" / "repo-profile.toml"
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(profile, target)
+        yield verification_root
+    finally:
+        if not added:
+            shutil.rmtree(temp_base, ignore_errors=True)
+        else:
+            try:
+                remove = _git(
+                    wt.main_repo_root,
+                    ["worktree", "remove", "--force", str(verification_root)],
+                    check=False,
+                )
+            except OSError:
+                remove = None
+            if remove is None or remove.returncode != 0:
+                try:
+                    _git(wt.main_repo_root, ["worktree", "prune"], check=False)
+                except OSError:
+                    pass
+                if not verification_root.exists():
+                    shutil.rmtree(temp_base, ignore_errors=True)
+                raise _VerificationCleanupError("verification-cleanup-failed")
+            shutil.rmtree(temp_base, ignore_errors=True)
+
+
+def _head_tracks_path(repo_root: pathlib.Path, path: str) -> bool:
+    result = _git(
+        repo_root,
+        ["--literal-pathspecs", "ls-tree", "-z", "--name-only", "HEAD", "--", path],
+    )
+    return bool(result.stdout)
+
+
+def _head_absent_path_collision(repo_root: pathlib.Path, path: str) -> bool:
+    if _head_tracks_path(repo_root, path):
+        return False
+
+    candidate = repo_root / pathlib.PurePosixPath(path)
+    if os.path.lexists(candidate):
+        return True
+
+    current = repo_root
+    for part in pathlib.PurePosixPath(path).parts[:-1]:
+        current /= part
+        if os.path.lexists(current) and (current.is_symlink() or not current.is_dir()):
+            return True
+    return False
+
+
+def _target_status(repo_root: pathlib.Path, paths: list[str]) -> str:
+    if not paths:
+        return ""
+    return _git(
+        repo_root,
+        [
+            "--literal-pathspecs",
+            "status",
+            "--porcelain=v2",
+            "-z",
+            "--untracked-files=all",
+            "--ignored=matching",
+            "--",
+            *paths,
+        ],
+    ).stdout
+
+
+def _targets_dirty(repo_root: pathlib.Path, paths: list[str]) -> bool:
+    return any(_head_absent_path_collision(repo_root, path) for path in paths) or bool(
+        _target_status(repo_root, paths)
+    )
+
+
+def _rollback_targets(
+    repo_root: pathlib.Path,
+    paths: list[str],
+    tracked_at_head: set[str],
+) -> list[str]:
+    failures: list[str] = []
+    for path in paths:
+        reset = _git(
+            repo_root,
+            ["--literal-pathspecs", "reset", "--", path],
+            check=False,
+        )
+        if reset.returncode != 0:
+            failures.append(f"reset:{path}")
+        if path in tracked_at_head:
+            restored = _git(
+                repo_root,
+                [
+                    "--literal-pathspecs",
+                    "restore",
+                    "--source=HEAD",
+                    "--staged",
+                    "--worktree",
+                    "--",
+                    path,
+                ],
+                check=False,
+            )
+            if restored.returncode != 0:
+                failures.append(f"restore:{path}")
+        else:
+            cleaned = _git(
+                repo_root,
+                ["--literal-pathspecs", "clean", "-fdx", "--", path],
+                check=False,
+            )
+            if cleaned.returncode != 0:
+                failures.append(f"clean:{path}")
+    try:
+        if _targets_dirty(repo_root, paths):
+            failures.append("target-residue")
+    except Exception as exc:  # noqa: BLE001
+        failures.append(f"status:{exc}")
+    return failures
 
 
 @contextmanager
@@ -616,6 +788,7 @@ def finalize_dispatch(
 
     try:
         _commit_worktree_if_needed(wt)
+        source_commit = _git(wt.path, ["rev-parse", "HEAD"]).stdout.strip()
         gate = evaluate_merge_gate(
             wt,
             allowlist=allowlist,
@@ -623,6 +796,7 @@ def finalize_dispatch(
             verify_timeout=verify_timeout,
             allow_harness_self_modify=allow_harness,
             expect_changes=expect_changes,
+            source_commit=source_commit,
         )
         if not gate.approved:
             persist_dispatch_artifacts(wt, main_repo_root)
@@ -630,6 +804,7 @@ def finalize_dispatch(
 
         with _finalize_lock(main_repo_root, finalize_lock_timeout) as lock_acquired:
             if not lock_acquired:
+                persist_dispatch_artifacts(wt, main_repo_root)
                 return FinalizeResult("blocked", "finalize-lock-timeout", [])
 
             try:
@@ -638,43 +813,51 @@ def finalize_dispatch(
                     persist_dispatch_artifacts(wt, main_repo_root)
                     return FinalizeResult("blocked", "main-moved", [])
 
-                dirty = _git(
-                    main_repo_root,
-                    [
-                        "status",
-                        "--porcelain",
-                        "--",
-                        ".",
-                        ":(exclude).mir/dispatch-finalize.lock",
-                    ],
+                current_dispatch_head = _git(
+                    wt.path,
+                    ["rev-parse", "HEAD"],
                 ).stdout.strip()
-                if dirty:
+                if current_dispatch_head != source_commit:
+                    persist_dispatch_artifacts(wt, main_repo_root)
+                    return FinalizeResult("blocked", "dispatch-moved", [])
+
+                if _dispatch_nonruntime_status(wt.path):
+                    persist_dispatch_artifacts(wt, main_repo_root)
+                    return FinalizeResult("blocked", "dispatch-dirty", [])
+
+                if _targets_dirty(main_repo_root, gate.changed_files):
                     persist_dispatch_artifacts(wt, main_repo_root)
                     return FinalizeResult("blocked", "main-dirty", [])
 
+                tracked_at_head = {
+                    path
+                    for path in gate.changed_files
+                    if _head_tracks_path(main_repo_root, path)
+                }
                 try:
                     merge_outcome = merge_result(
                         wt,
+                        source_commit=source_commit,
+                        approved_files=gate.changed_files,
                         allow_harness_self_modify=allow_harness,
                     )
                 except Exception as exc:  # noqa: BLE001
-                    _git(
+                    rollback_failures = _rollback_targets(
                         main_repo_root,
-                        [
-                            "restore",
-                            "--source=HEAD",
-                            "--staged",
-                            "--worktree",
-                            "--",
-                            ".",
-                        ],
-                        check=False,
+                        gate.changed_files,
+                        tracked_at_head,
                     )
-                    _git(main_repo_root, ["clean", "-fd"], check=False)
                     try:
                         persist_dispatch_artifacts(wt, main_repo_root)
                     except Exception:  # noqa: BLE001
                         pass
+                    if rollback_failures:
+                        return FinalizeResult(
+                            "blocked",
+                            "rollback-failed:"
+                            f"merge-error:{exc}; failures={rollback_failures}",
+                            [],
+                        )
                     return FinalizeResult("blocked", f"merge-error:{exc}", [])
 
                 try:
@@ -738,7 +921,18 @@ def count_consecutive_codex_failures(
         for job in jobs:
             if job.status != "failed":
                 break
+            dispatch_status = _diagnostic_token(job.stderr, "dispatch_status")
+            if dispatch_status in {"completed", "fallback_completed"}:
+                break
             count += 1
         return count
     finally:
         registry.close()
+
+
+def _diagnostic_token(payload: str | None, key: str) -> str | None:
+    prefix = f"{key}="
+    for token in (payload or "").split():
+        if token.startswith(prefix):
+            return token.removeprefix(prefix)
+    return None

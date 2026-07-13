@@ -59,7 +59,9 @@ def _is_denied_harness_path(path: str, *, allow_harness_self_modify: bool = Fals
     return any(path.startswith(prefix) for prefix in HARNESS_DENY_PREFIXES)
 
 
-def _git(repo_root: pathlib.Path, args: list[str], *, check: bool = True) -> subprocess.CompletedProcess[str]:
+def _git(
+    repo_root: pathlib.Path, args: list[str], *, check: bool = True
+) -> subprocess.CompletedProcess[str]:
     """Run git with list arguments and captured text output."""
     return subprocess.run(
         ["git", "-C", str(repo_root), *args],
@@ -165,16 +167,30 @@ def write_status(worktree: DispatchWorktree, state: str, **fields: object) -> No
 def merge_result(
     worktree: DispatchWorktree,
     *,
+    source_commit: str | None = None,
+    approved_files: list[str] | None = None,
     commit_message: str | None = None,
     allow_harness_self_modify: bool = False,
 ) -> MergeOutcome:
     """Merge committed worktree branch changes into main, excluding harness state."""
     _ = commit_message
-    changed_text = _git(
-        worktree.main_repo_root,
-        ["diff", "--name-only", worktree.base_commit, worktree.branch],
-    ).stdout
-    changed = [line for line in changed_text.splitlines() if line]
+    if source_commit is None:
+        source_commit = _git(worktree.path, ["rev-parse", "HEAD"]).stdout.strip()
+    if approved_files is None:
+        changed_text = _git(
+            worktree.main_repo_root,
+            [
+                "diff",
+                "--no-renames",
+                "--name-only",
+                "-z",
+                worktree.base_commit,
+                source_commit,
+            ],
+        ).stdout
+        changed = [path for path in changed_text.split("\0") if path]
+    else:
+        changed = list(approved_files)
 
     merged_files: list[str] = []
     skipped: list[str] = []
@@ -185,7 +201,28 @@ def merge_result(
         ):
             skipped.append(path)
             continue
-        _git(worktree.main_repo_root, ["checkout", worktree.branch, "--", path])
+        source_entry = _git(
+            worktree.main_repo_root,
+            [
+                "--literal-pathspecs",
+                "ls-tree",
+                "-z",
+                "--name-only",
+                source_commit,
+                "--",
+                path,
+            ],
+        )
+        if source_entry.stdout:
+            _git(
+                worktree.main_repo_root,
+                ["--literal-pathspecs", "checkout", source_commit, "--", path],
+            )
+        else:
+            _git(
+                worktree.main_repo_root,
+                ["--literal-pathspecs", "rm", "--", path],
+            )
         merged_files.append(path)
 
     return MergeOutcome(merged_files=merged_files, skipped=skipped)

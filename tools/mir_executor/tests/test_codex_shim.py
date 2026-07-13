@@ -18,7 +18,10 @@ import json
 import os
 import pathlib
 import stat
+import subprocess
 import textwrap
+
+import pytest
 
 from tools.mir_executor.executor import MirExecutor
 
@@ -31,6 +34,9 @@ def _make_stub_codex(tmp_path, exit_code, stderr_text):
     stub.write_text(
         textwrap.dedent(
             '#!/usr/bin/env sh\n'
+            'if [ -n "${STUB_ARGS_FILE:-}" ]; then\n'
+            '    printf \'%s\\n\' "$@" > "$STUB_ARGS_FILE"\n'
+            'fi\n'
             "printf '%s\\n' '" + stderr_text + "' >&2\n"
             'exit ' + str(exit_code) + '\n'
         ),
@@ -56,6 +62,34 @@ def _make_minimal_ledger(tmp_path):
     return ledger_path
 
 
+def _read_events(events_file):
+    return [
+        json.loads(line)
+        for line in events_file.read_text(encoding='utf-8').splitlines()
+        if line.strip()
+    ]
+
+
+def _run_shim(tmp_path, args, *, include_real_binary=True):
+    stub = _make_stub_codex(tmp_path, exit_code=0, stderr_text='')
+    args_file = tmp_path / 'stub-args.txt'
+    events_file = tmp_path / 'events.jsonl'
+    env = {
+        **os.environ,
+        'CODEX_EVENTS_FILE': str(events_file),
+        'STUB_ARGS_FILE': str(args_file),
+    }
+    if include_real_binary:
+        env['CODEX_REAL_BIN'] = str(stub)
+    result = subprocess.run(
+        [str(_SHIM), *args],
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+    return result, args_file, events_file
+
+
 class TestCodexShimPrimaryPath:
     def test_event_row_appended_with_exit_code_and_error_sig(self, tmp_path, monkeypatch):
         stub = _make_stub_codex(tmp_path, exit_code=7, stderr_text='stub-error-output')
@@ -68,14 +102,14 @@ class TestCodexShimPrimaryPath:
 
         ledger_path = _make_minimal_ledger(tmp_path)
         executor = MirExecutor(tmp_path, ledger_path=ledger_path)
-        result = executor.run_codex(['exec', '--help'])
+        result = executor.run_codex(['mcp-server'])
 
         assert result.exit_code == 1
         assert 'Codex MCP server exited with code 7' in result.stderr
         assert events_file.exists()
-        lines = [ln for ln in events_file.read_text(encoding='utf-8').splitlines() if ln.strip()]
-        assert len(lines) == 1
-        event = json.loads(lines[0])
+        events = _read_events(events_file)
+        assert len(events) == 1
+        event = events[0]
         assert event['exit_code'] == 7
         assert event.get('error_sig')
         assert len(event['error_sig']) == 12
@@ -91,14 +125,13 @@ class TestCodexShimPrimaryPath:
 
         ledger_path = _make_minimal_ledger(tmp_path)
         executor = MirExecutor(tmp_path, ledger_path=ledger_path)
-        executor.run_codex(['exec', 'echo', 'hi'])
+        executor.run_codex(['mcp-server'])
         assert events_file.exists()
 
     def test_no_shim_recursion(self, tmp_path, monkeypatch):
-        import subprocess
         events_file = tmp_path / 'tasks' / 'events.jsonl'
         result = subprocess.run(
-            ['sh', str(_SHIM), 'exec', '--version'],
+            [str(_SHIM), 'mcp-server'],
             capture_output=True,
             text=True,
             env={
@@ -107,8 +140,12 @@ class TestCodexShimPrimaryPath:
                 'CODEX_EVENTS_FILE': str(events_file),
             },
         )
-        assert result.returncode != 0
+        assert result.returncode == 1
         assert 'CODEX_REAL_BIN is not set' in result.stderr
+        events = _read_events(events_file)
+        assert len(events) == 1
+        assert events[0]['exit_code'] == 1
+        assert len(events[0]['error_sig']) == 12
 
     def test_second_run_appends_second_row(self, tmp_path, monkeypatch):
         stub = _make_stub_codex(tmp_path, exit_code=0, stderr_text='run2')
@@ -120,8 +157,74 @@ class TestCodexShimPrimaryPath:
 
         ledger_path = _make_minimal_ledger(tmp_path)
         executor = MirExecutor(tmp_path, ledger_path=ledger_path)
-        executor.run_codex(['exec', 'a'])
-        executor.run_codex(['exec', 'b'])
+        executor.run_codex(['mcp-server'])
+        executor.run_codex(['mcp-server'])
 
-        lines = [ln for ln in events_file.read_text(encoding='utf-8').splitlines() if ln.strip()]
-        assert len(lines) == 2
+        assert len(_read_events(events_file)) == 2
+
+
+@pytest.mark.parametrize(
+    'args',
+    [
+        pytest.param(['exec'], id='exec'),
+        pytest.param(['e'], id='e'),
+        pytest.param(['--model', 'gpt-5', 'exec'], id='global-option-before-exec'),
+        pytest.param(['--model=gpt-5', 'e'], id='equals-option-before-e'),
+    ],
+)
+@pytest.mark.parametrize('include_real_binary', [True, False])
+def test_rejects_raw_exec_without_invoking_real_binary(
+    tmp_path,
+    args,
+    include_real_binary,
+):
+    result, args_file, events_file = _run_shim(
+        tmp_path,
+        args,
+        include_real_binary=include_real_binary,
+    )
+
+    assert result.returncode == 2
+    assert result.stderr == (
+        "[codex-shim] raw 'codex exec' and 'codex e' are prohibited; "
+        'use MCP-backed dispatch.\n'
+    )
+    assert not args_file.exists()
+    events = _read_events(events_file)
+    assert len(events) == 1
+    assert events[0]['exit_code'] == 2
+    assert len(events[0]['error_sig']) == 12
+
+
+@pytest.mark.parametrize('value', ['exec', 'e'])
+def test_rejects_exact_token_used_as_separate_option_value(tmp_path, value):
+    result, args_file, events_file = _run_shim(
+        tmp_path,
+        ['--profile', value, 'mcp-server'],
+    )
+
+    assert result.returncode == 2
+    assert not args_file.exists()
+    assert [event['exit_code'] for event in _read_events(events_file)] == [2]
+
+
+@pytest.mark.parametrize('value', ['exec', 'e'])
+def test_allows_equals_form_option_value_for_mcp_server(tmp_path, value):
+    args = [f'--profile={value}', 'mcp-server']
+    result, args_file, events_file = _run_shim(tmp_path, args)
+
+    assert result.returncode == 0
+    assert args_file.read_text(encoding='utf-8').splitlines() == args
+    assert [event['exit_code'] for event in _read_events(events_file)] == [0]
+
+
+def test_shim_is_executable_in_filesystem_and_git_index():
+    assert os.access(_SHIM, os.X_OK)
+    index_row = subprocess.run(
+        ['git', 'ls-files', '-s', '--', 'scripts/codex-shim.sh'],
+        cwd=_REPO_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout
+    assert index_row.split()[0] == '100755'

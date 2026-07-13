@@ -15,6 +15,7 @@ except ImportError:  # pragma: no cover - Windows is not a target
 import pytest
 
 from tools.mir_executor import cli
+from tools.mir_executor import dispatch as dispatch_module
 from tools.mir_executor.codex_mcp_client import (
     CodexMcpProcessError,
     CodexMcpResult,
@@ -462,6 +463,40 @@ def test_count_consecutive_codex_failures(tmp_path: pathlib.Path) -> None:
         registry.close()
 
     assert count_consecutive_codex_failures(db_path) == 2
+
+
+def test_finalize_failure_after_completed_dispatch_resets_codex_failure_run(
+    tmp_path: pathlib.Path,
+) -> None:
+    db_path = tmp_path / "jobs.db"
+    registry = JobRegistry(db_path)
+    try:
+        for job_id, started_at, stderr in (
+            ("older-codex-failure", "2026-07-13T00:00:00+00:00", "transport failed"),
+            (
+                "newer-finalize-failure",
+                "2026-07-13T00:01:00+00:00",
+                "dispatch_status=completed finalize_action=blocked",
+            ),
+        ):
+            registry.insert(
+                JobRecord(
+                    job_id=job_id,
+                    change_id="X",
+                    category="unit",
+                    family=None,
+                    repo_root=str(tmp_path),
+                    codex_args=[],
+                    timeout_seconds=60,
+                    status="failed",
+                    stderr=stderr,
+                    started_at=started_at,
+                )
+            )
+    finally:
+        registry.close()
+
+    assert count_consecutive_codex_failures(db_path) == 0
 
 
 def test_last_json_line_best_effort(tmp_path: pathlib.Path) -> None:
@@ -977,14 +1012,12 @@ def test_execute_parser_rejects_both_codex_arg_sources(
     assert "not allowed with argument" in capsys.readouterr().err
 
 
-def test_execute_parser_requires_one_codex_arg_source(
+def test_execute_without_codex_arg_source_fails_semantically(
     tmp_path: pathlib.Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    parser = cli._build_parser()
-
     with pytest.raises(SystemExit) as exc_info:
-        parser.parse_args(
+        cli.main(
             [
                 "execute",
                 "--change-id",
@@ -995,11 +1028,8 @@ def test_execute_parser_requires_one_codex_arg_source(
                 str(tmp_path),
             ]
         )
-
-    assert exc_info.value.code == 2
-    assert "one of the arguments --codex-args --codex-args-file is required" in (
-        capsys.readouterr().err
-    )
+    assert exc_info.value.code == 1
+    assert "exactly one of --codex-args or --codex-args-file" in capsys.readouterr().err
 
 
 def test_execute_parser_accepts_allow_harness_self_modify_flag(
@@ -1295,6 +1325,7 @@ def test_dispatch_records_exit_code_and_artifact(
             assert job.exit_code == 0
             assert job.stdout is not None
             assert "artifacts=tasks/dispatch/" in job.stdout
+            assert job.stderr is None
             assert (repo / "tasks" / "dispatch" / job.job_id / "status.json").exists()
         finally:
             registry.close()
@@ -1340,13 +1371,76 @@ def test_dispatch_exit_code_reflects_finalize_block(
             jobs = registry.list_jobs()
             assert len(jobs) == 1
             job = jobs[0]
-            assert job.status == "completed"
+            assert job.status == "failed"
             assert job.exit_code == 1
             assert job.stdout == f"artifacts=tasks/dispatch/{job.job_id}"
+            artifact_path = repo / job.stdout.removeprefix("artifacts=") / "status.json"
+            assert artifact_path.exists()
+            assert job.stderr is not None
+            assert "dispatch_status=completed" in job.stderr
+            assert "finalize_action=blocked" in job.stderr
+            assert "blocked_reason=empty-diff fail-closed" in job.stderr
         finally:
             registry.close()
     finally:
         _cleanup_repo_dispatch_worktrees(repo)
+
+
+def test_dispatch_records_fallback_merge_as_completed(
+    tmp_path: pathlib.Path,
+    monkeypatch,
+) -> None:
+    repo = _make_repo(tmp_path)
+    _make_ledger(repo, change_id="C")
+    db_path = tmp_path / "jobs.db"
+    _patch_mcp_runner(monkeypatch, CodexAttempt(0))
+    wt = create_dispatch_worktree(repo, "cli-fallback-merged-status")
+
+    monkeypatch.setattr(
+        "tools.mir_executor.dispatch.run_dispatch",
+        lambda *_args, **_kwargs: DispatchOutcome(
+            "fallback_completed",
+            4,
+            True,
+            None,
+            wt,
+        ),
+    )
+    monkeypatch.setattr(
+        "tools.mir_executor.dispatch.finalize_dispatch",
+        lambda *_args, **_kwargs: FinalizeResult("merged", "approved", ["pkg/mod.py"]),
+    )
+
+    try:
+        assert (
+            cli.main(
+                [
+                    "execute",
+                    "--background",
+                    "--dispatch",
+                    "--change-id",
+                    "C",
+                    "--category",
+                    "unit",
+                    "--repo-root",
+                    str(repo),
+                    "--jobs-db",
+                    str(db_path),
+                    "--codex-args",
+                    "exec x",
+                ]
+            )
+            == 0
+        )
+        registry = JobRegistry(db_path)
+        try:
+            job = registry.list_jobs()[0]
+            assert job.status == "completed"
+            assert job.exit_code == 0
+        finally:
+            registry.close()
+    finally:
+        cleanup_worktree(wt)
 
 
 def test_mcp_failure_still_counts_as_codex_failure(
@@ -1625,6 +1719,117 @@ def test_merge_gate_approves_clean_allowlist_and_verify(tmp_path: pathlib.Path) 
         cleanup_worktree(wt)
 
 
+def test_finalize_allows_unrelated_wip_and_preserves_its_index_and_status(
+    tmp_path: pathlib.Path,
+) -> None:
+    repo = _make_repo(tmp_path)
+    _write_repo_file(repo, "wip/staged.txt", "staged base\n")
+    _write_repo_file(repo, "wip/unstaged.txt", "unstaged base\n")
+    (repo / ".gitignore").write_text("*.ignored\n", encoding="utf-8")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-m", "seed unrelated wip paths")
+    wt = create_dispatch_worktree(repo, "path-scoped-wip")
+    try:
+        (wt.path / "pkg" / "mod.py").write_text("x = 24\n", encoding="utf-8")
+
+        (repo / "wip" / "staged.txt").write_text("staged wip\n", encoding="utf-8")
+        _git(repo, "add", "wip/staged.txt")
+        (repo / "wip" / "unstaged.txt").write_text("unstaged wip\n", encoding="utf-8")
+        (repo / "wip" / "untracked.txt").write_text("untracked wip\n", encoding="utf-8")
+        (repo / "wip" / "cache.ignored").write_text("ignored wip\n", encoding="utf-8")
+        status_before = _git(
+            repo,
+            "status",
+            "--porcelain",
+            "--ignored",
+            "--",
+            "wip",
+        ).stdout
+        staged_before = _git(repo, "diff", "--cached", "--binary", "--", "wip").stdout
+        unstaged_before = _git(repo, "diff", "--binary", "--", "wip").stdout
+
+        final = finalize_dispatch(
+            wt,
+            repo,
+            _completed_outcome(wt),
+            allowlist=["pkg/mod.py"],
+            verification_commands=["true"],
+        )
+
+        assert final == FinalizeResult("merged", "approved", ["pkg/mod.py"])
+        assert (repo / "pkg" / "mod.py").read_text(encoding="utf-8") == "x = 24\n"
+        assert _git(
+            repo,
+            "status",
+            "--porcelain",
+            "--ignored",
+            "--",
+            "wip",
+        ).stdout == status_before
+        assert _git(repo, "diff", "--cached", "--binary", "--", "wip").stdout == staged_before
+        assert _git(repo, "diff", "--binary", "--", "wip").stdout == unstaged_before
+    finally:
+        cleanup_worktree(wt)
+
+
+@pytest.mark.parametrize("ignored", [False, True], ids=["untracked", "ignored"])
+def test_finalize_blocks_untracked_target_collision(
+    tmp_path: pathlib.Path,
+    ignored: bool,
+) -> None:
+    repo = _make_repo(tmp_path)
+    target = "pkg/generated.ignored" if ignored else "pkg/generated.py"
+    if ignored:
+        (repo / ".gitignore").write_text("*.ignored\n", encoding="utf-8")
+        _git(repo, "add", ".gitignore")
+        _git(repo, "commit", "-m", "seed ignore rule")
+    wt = create_dispatch_worktree(repo, f"target-collision-{ignored}")
+    try:
+        _write_repo_file(wt.path, target, "dispatch output\n")
+        if ignored:
+            _git(wt.path, "add", "-f", target)
+            _git(wt.path, "commit", "-m", "add ignored dispatch output")
+        _write_repo_file(repo, target, "main wip\n")
+
+        final = finalize_dispatch(
+            wt,
+            repo,
+            _completed_outcome(wt),
+            allowlist=[target],
+            verification_commands=["true"],
+        )
+
+        assert final.action == "blocked"
+        assert final.reason.startswith("main-dirty")
+        assert (repo / target).read_text(encoding="utf-8") == "main wip\n"
+        assert wt.path.exists()
+    finally:
+        cleanup_worktree(wt)
+
+
+def test_finalize_blocks_head_absent_parent_type_collision(tmp_path: pathlib.Path) -> None:
+    repo = _make_repo(tmp_path)
+    wt = create_dispatch_worktree(repo, "target-parent-type-collision")
+    try:
+        _write_repo_file(wt.path, "generated/output.py", "dispatch output\n")
+        (repo / "generated").write_text("main file collision\n", encoding="utf-8")
+
+        final = finalize_dispatch(
+            wt,
+            repo,
+            _completed_outcome(wt),
+            allowlist=["generated/output.py"],
+            verification_commands=["true"],
+        )
+
+        assert final == FinalizeResult("blocked", "main-dirty", [])
+        assert (repo / "generated").read_text(encoding="utf-8") == "main file collision\n"
+        assert wt.path.exists()
+    finally:
+        (repo / "generated").unlink()
+        cleanup_worktree(wt)
+
+
 @pytest.mark.skipif(fcntl is None, reason="fcntl is unavailable")
 def test_finalize_lock_is_mutually_exclusive_and_releases(
     tmp_path: pathlib.Path,
@@ -1665,8 +1870,14 @@ def test_finalize_dispatch_times_out_on_held_lock_without_merging(
 
         assert final == FinalizeResult("blocked", "finalize-lock-timeout", [])
         assert _git(repo, "rev-parse", "HEAD").stdout == main_head
-        assert _git(repo, "status", "--porcelain").stdout == main_status
+        assert set(_git(repo, "status", "--porcelain").stdout.splitlines()) == {
+            *main_status.splitlines(),
+            "?? tasks/dispatch/",
+        }
         assert (repo / "pkg" / "mod.py").read_text(encoding="utf-8") == "x = 1\n"
+        assert (
+            repo / "tasks" / "dispatch" / wt.dispatch_id / "status.json"
+        ).exists()
     finally:
         cleanup_worktree(wt)
 
@@ -1853,6 +2064,117 @@ def test_merge_gate_rejects_verification_failure(tmp_path: pathlib.Path) -> None
         cleanup_worktree(wt)
 
 
+def test_merge_gate_rejects_verification_exit_five(tmp_path: pathlib.Path) -> None:
+    repo = _make_repo(tmp_path)
+    wt = create_dispatch_worktree(repo, "gate-verify-exit-five")
+    try:
+        (wt.path / "pkg" / "mod.py").write_text("x = 30\n", encoding="utf-8")
+        final = finalize_dispatch(
+            wt,
+            repo,
+            _completed_outcome(wt),
+            allowlist=["pkg/"],
+            verification_commands=["sh -c 'exit 5'"],
+        )
+
+        assert final.action == "blocked"
+        assert final.reason == "verification-failed:sh -c 'exit 5'"
+        assert (repo / "pkg" / "mod.py").read_text(encoding="utf-8") == "x = 1\n"
+        assert wt.path.exists()
+    finally:
+        cleanup_worktree(wt)
+
+
+def test_verification_mutation_is_isolated_from_dispatch_and_main(
+    tmp_path: pathlib.Path,
+    monkeypatch,
+) -> None:
+    repo = _make_repo(tmp_path)
+    (repo / ".gitignore").write_text("*.cache\n", encoding="utf-8")
+    _git(repo, "add", ".gitignore")
+    _git(repo, "commit", "-m", "seed ignored verification artifact")
+    wt = create_dispatch_worktree(repo, "gate-verification-drift")
+    monkeypatch.setattr(dispatch_module, "cleanup_worktree", lambda _wt: None)
+    try:
+        (wt.path / "pkg" / "mod.py").write_text("x = 33\n", encoding="utf-8")
+        (wt.path / "pkg" / "local.cache").write_text("dispatch cache\n", encoding="utf-8")
+        final = finalize_dispatch(
+            wt,
+            repo,
+            _completed_outcome(wt),
+            allowlist=["pkg/"],
+            verification_commands=[
+                "sh -c 'test ! -e pkg/local.cache && touch pkg/verify.tmp'"
+            ],
+        )
+        assert final == FinalizeResult("merged", "approved", ["pkg/mod.py"])
+        assert (repo / "pkg" / "mod.py").read_text(encoding="utf-8") == "x = 33\n"
+        assert not (repo / "pkg" / "verify.tmp").exists()
+        assert not (wt.path / "pkg" / "verify.tmp").exists()
+        assert (wt.path / "pkg" / "local.cache").read_text(encoding="utf-8") == (
+            "dispatch cache\n"
+        )
+    finally:
+        cleanup_worktree(wt)
+
+
+def test_verification_cleanup_failure_blocks_merge_and_persists_artifacts(
+    tmp_path: pathlib.Path,
+    monkeypatch,
+) -> None:
+    repo = _make_repo(tmp_path)
+    wt = create_dispatch_worktree(repo, "gate-verification-cleanup-failed")
+    verification_base = tmp_path / "verification-temp"
+    verification_root = verification_base / "worktree"
+    real_git = dispatch_module._git
+
+    def fixed_mkdtemp(*, prefix: str) -> str:
+        assert prefix == "mir-verify-"
+        verification_base.mkdir()
+        return str(verification_base)
+
+    def fail_verification_remove(
+        repo_root: pathlib.Path,
+        args: list[str],
+        *,
+        check: bool = True,
+    ) -> subprocess.CompletedProcess[str]:
+        if args == ["worktree", "remove", "--force", str(verification_root)]:
+            return subprocess.CompletedProcess(args, 1, "", "busy")
+        return real_git(repo_root, args, check=check)
+
+    monkeypatch.setattr(dispatch_module.tempfile, "mkdtemp", fixed_mkdtemp)
+    monkeypatch.setattr(dispatch_module, "_git", fail_verification_remove)
+    try:
+        (wt.path / "pkg" / "mod.py").write_text("x = 34\n", encoding="utf-8")
+        main_head = real_git(repo, ["rev-parse", "HEAD"]).stdout.strip()
+
+        final = finalize_dispatch(
+            wt,
+            repo,
+            _completed_outcome(wt),
+            allowlist=["pkg/"],
+            verification_commands=["true"],
+        )
+
+        assert final == FinalizeResult("blocked", "verification-cleanup-failed", [])
+        assert real_git(repo, ["rev-parse", "HEAD"]).stdout.strip() == main_head
+        assert (repo / "pkg" / "mod.py").read_text(encoding="utf-8") == "x = 1\n"
+        assert verification_root.exists()
+        assert (
+            repo / "tasks" / "dispatch" / wt.dispatch_id / "status.json"
+        ).exists()
+    finally:
+        monkeypatch.setattr(dispatch_module, "_git", real_git)
+        real_git(
+            repo,
+            ["worktree", "remove", "--force", str(verification_root)],
+            check=False,
+        )
+        shutil.rmtree(verification_base, ignore_errors=True)
+        cleanup_worktree(wt)
+
+
 def test_merge_gate_fail_closed_on_missing_verification(tmp_path: pathlib.Path) -> None:
     repo = _make_repo(tmp_path)
     wt = create_dispatch_worktree(repo, "gate-missing-verify")
@@ -1871,6 +2193,128 @@ def test_merge_gate_fail_closed_on_missing_verification(tmp_path: pathlib.Path) 
         assert final.reason == "no-verification-commands (fail-closed)"
         assert wt.path.exists()
         assert (repo / "pkg" / "mod.py").read_text(encoding="utf-8") == "x = 1\n"
+    finally:
+        cleanup_worktree(wt)
+
+
+def test_finalize_cannot_merge_changes_added_after_gate_approval(
+    tmp_path: pathlib.Path,
+    monkeypatch,
+) -> None:
+    repo = _make_repo(tmp_path)
+    wt = create_dispatch_worktree(repo, "gate-approved-commit-moved")
+    real_evaluate_merge_gate = evaluate_merge_gate
+
+    def approve_then_move_branch(
+        worktree: DispatchWorktree,
+        **kwargs: object,
+    ) -> MergeGate:
+        gate = real_evaluate_merge_gate(worktree, **kwargs)
+        assert gate.approved is True
+        (worktree.path / "pkg" / "broadened.py").write_text(
+            "not gate approved\n",
+            encoding="utf-8",
+        )
+        _git(worktree.path, "add", "pkg/broadened.py")
+        _git(worktree.path, "commit", "-m", "move branch after gate")
+        return gate
+
+    monkeypatch.setattr(
+        "tools.mir_executor.dispatch.evaluate_merge_gate",
+        approve_then_move_branch,
+    )
+
+    try:
+        (wt.path / "pkg" / "mod.py").write_text("x = 25\n", encoding="utf-8")
+
+        final = finalize_dispatch(
+            wt,
+            repo,
+            _completed_outcome(wt),
+            allowlist=["pkg/mod.py"],
+            verification_commands=["true"],
+        )
+
+        assert final.action == "blocked"
+        assert final.reason == "dispatch-moved"
+        assert not (repo / "pkg" / "broadened.py").exists()
+        assert (repo / "pkg" / "mod.py").read_text(encoding="utf-8") == "x = 1\n"
+    finally:
+        cleanup_worktree(wt)
+
+
+def test_finalize_blocks_uncommitted_dispatch_drift_after_gate(
+    tmp_path: pathlib.Path,
+    monkeypatch,
+) -> None:
+    repo = _make_repo(tmp_path)
+    wt = create_dispatch_worktree(repo, "dispatch-uncommitted-drift")
+    real_gate = evaluate_merge_gate
+
+    def approve_then_dirty(worktree: DispatchWorktree, **kwargs: object) -> MergeGate:
+        gate = real_gate(worktree, **kwargs)
+        (worktree.path / "pkg" / "late.py").write_text("late\n", encoding="utf-8")
+        return gate
+
+    monkeypatch.setattr(dispatch_module, "evaluate_merge_gate", approve_then_dirty)
+    try:
+        (wt.path / "pkg" / "mod.py").write_text("x = 32\n", encoding="utf-8")
+        final = finalize_dispatch(
+            wt,
+            repo,
+            _completed_outcome(wt),
+            allowlist=["pkg/mod.py"],
+            verification_commands=["true"],
+        )
+        assert final == FinalizeResult("blocked", "dispatch-dirty", [])
+        assert (repo / "pkg" / "mod.py").read_text(encoding="utf-8") == "x = 1\n"
+    finally:
+        cleanup_worktree(wt)
+
+
+def test_finalize_applies_approved_deletion_and_rename(tmp_path: pathlib.Path) -> None:
+    repo = _make_repo(tmp_path)
+    _write_repo_file(repo, "pkg/delete.py", "delete me\n")
+    _write_repo_file(repo, "pkg/old.py", "rename me\n")
+    _git(repo, "add", "pkg/delete.py", "pkg/old.py")
+    _git(repo, "commit", "-m", "seed deletion and rename")
+    wt = create_dispatch_worktree(repo, "deletion-rename")
+    try:
+        (wt.path / "pkg" / "delete.py").unlink()
+        (wt.path / "pkg" / "old.py").rename(wt.path / "pkg" / "new.py")
+        final = finalize_dispatch(
+            wt,
+            repo,
+            _completed_outcome(wt),
+            allowlist=["pkg/delete.py", "pkg/old.py", "pkg/new.py"],
+            verification_commands=["true"],
+        )
+        assert final.action == "merged"
+        assert set(final.merged_files) == {"pkg/delete.py", "pkg/old.py", "pkg/new.py"}
+        assert not (repo / "pkg" / "delete.py").exists()
+        assert not (repo / "pkg" / "old.py").exists()
+        assert (repo / "pkg" / "new.py").read_text(encoding="utf-8") == "rename me\n"
+    finally:
+        cleanup_worktree(wt)
+
+
+def test_finalize_treats_changed_filename_as_literal_pathspec(tmp_path: pathlib.Path) -> None:
+    repo = _make_repo(tmp_path)
+    literal_name = ":(literal)dispatch-output.txt"
+    wt = create_dispatch_worktree(repo, "literal-pathspec")
+    try:
+        (wt.path / literal_name).write_text("literal output\n", encoding="utf-8")
+
+        final = finalize_dispatch(
+            wt,
+            repo,
+            _completed_outcome(wt),
+            allowlist=[literal_name],
+            verification_commands=["true"],
+        )
+
+        assert final == FinalizeResult("merged", "approved", [literal_name])
+        assert (repo / literal_name).read_text(encoding="utf-8") == "literal output\n"
     finally:
         cleanup_worktree(wt)
 
@@ -1929,7 +2373,14 @@ def test_finalize_rolls_back_on_merge_error(
     monkeypatch,
 ) -> None:
     repo = _make_repo(tmp_path)
-    (repo / ".git" / "info" / "exclude").write_text(".mir/\n", encoding="utf-8")
+    _write_repo_file(repo, "wip/staged.txt", "staged base\n")
+    _write_repo_file(repo, "wip/unstaged.txt", "unstaged base\n")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-m", "seed rollback wip paths")
+    (repo / ".git" / "info" / "exclude").write_text(
+        ".mir/\n*.ignored\n",
+        encoding="utf-8",
+    )
     (repo / ".mir").mkdir()
     (repo / ".mir" / "keepme").write_text("runtime state\n", encoding="utf-8")
     wt = create_dispatch_worktree(repo, "gate-merge-error")
@@ -1937,6 +2388,7 @@ def test_finalize_rolls_back_on_merge_error(
     def fake_merge_result(_wt: DispatchWorktree, **_kwargs: object) -> object:
         (repo / "pkg" / "mod.py").write_text("partial merge\n", encoding="utf-8")
         shutil.copy2(_wt.path / "pkg" / "new.py", repo / "pkg" / "new.py")
+        _git(repo, "add", "pkg/mod.py", "pkg/new.py")
         raise RuntimeError("boom")
 
     monkeypatch.setattr("tools.mir_executor.dispatch.merge_result", fake_merge_result)
@@ -1944,6 +2396,29 @@ def test_finalize_rolls_back_on_merge_error(
     try:
         (wt.path / "pkg" / "mod.py").write_text("x = 10\n", encoding="utf-8")
         (wt.path / "pkg" / "new.py").write_text("partial copy\n", encoding="utf-8")
+        (repo / "wip" / "staged.txt").write_text("staged wip\n", encoding="utf-8")
+        _git(repo, "add", "wip/staged.txt")
+        (repo / "wip" / "unstaged.txt").write_text("unstaged wip\n", encoding="utf-8")
+        (repo / "wip" / "untracked.txt").write_text("untracked wip\n", encoding="utf-8")
+        (repo / "wip" / "cache.ignored").write_text("ignored wip\n", encoding="utf-8")
+        wip_status_before = _git(
+            repo,
+            "status",
+            "--porcelain",
+            "--ignored",
+            "--",
+            "wip",
+            ".mir",
+        ).stdout
+        wip_staged_before = _git(
+            repo,
+            "diff",
+            "--cached",
+            "--binary",
+            "--",
+            "wip",
+        ).stdout
+        wip_unstaged_before = _git(repo, "diff", "--binary", "--", "wip").stdout
 
         final = finalize_dispatch(
             wt,
@@ -1959,7 +2434,65 @@ def test_finalize_rolls_back_on_merge_error(
         assert (repo / "pkg" / "mod.py").read_text(encoding="utf-8") == "x = 1\n"
         assert not (repo / "pkg" / "new.py").exists()
         assert (repo / ".mir" / "keepme").read_text(encoding="utf-8") == "runtime state\n"
+        assert _git(
+            repo,
+            "status",
+            "--porcelain",
+            "--ignored",
+            "--",
+            "wip",
+            ".mir",
+        ).stdout == wip_status_before
+        assert _git(
+            repo,
+            "diff",
+            "--cached",
+            "--binary",
+            "--",
+            "wip",
+        ).stdout == wip_staged_before
+        assert _git(repo, "diff", "--binary", "--", "wip").stdout == wip_unstaged_before
     finally:
+        cleanup_worktree(wt)
+
+
+def test_finalize_reports_rollback_failed_when_target_residue_remains(
+    tmp_path: pathlib.Path,
+    monkeypatch,
+) -> None:
+    repo = _make_repo(tmp_path)
+    wt = create_dispatch_worktree(repo, "gate-rollback-residue")
+
+    def fail_after_partial_merge(_wt: DispatchWorktree, **_kwargs: object) -> object:
+        (repo / "pkg" / "mod.py").write_text("residue\n", encoding="utf-8")
+        raise RuntimeError("boom")
+
+    real_dispatch_git = dispatch_module._git
+
+    def refuse_target_restore(repo_root, args, *, check=True):
+        if "restore" in args and args[-1] == "pkg/mod.py":
+            return subprocess.CompletedProcess(args, 1, "", "restore refused")
+        return real_dispatch_git(repo_root, args, check=check)
+
+    monkeypatch.setattr(dispatch_module, "merge_result", fail_after_partial_merge)
+    monkeypatch.setattr(dispatch_module, "_git", refuse_target_restore)
+    try:
+        (wt.path / "pkg" / "mod.py").write_text("x = 31\n", encoding="utf-8")
+        final = finalize_dispatch(
+            wt,
+            repo,
+            _completed_outcome(wt),
+            allowlist=["pkg/mod.py"],
+            verification_commands=["true"],
+        )
+
+        assert final.action == "blocked"
+        assert final.reason.startswith("rollback-failed:merge-error:boom")
+        assert (repo / "pkg" / "mod.py").read_text(encoding="utf-8") == "residue\n"
+        assert wt.path.exists()
+        assert (repo / "tasks" / "dispatch" / wt.dispatch_id / "status.json").exists()
+    finally:
+        _git(repo, "restore", "--staged", "--worktree", "pkg/mod.py")
         cleanup_worktree(wt)
 
 
@@ -2106,8 +2639,9 @@ def test_finalize_dispatch_threads_same_boolean_to_both_sites(
         verify_timeout: int = 600,
         allow_harness_self_modify: bool = False,
         expect_changes: bool = True,
+        source_commit: str | None = None,
     ) -> MergeGate:
-        _ = allowlist, verification_commands, verify_timeout
+        _ = allowlist, verification_commands, verify_timeout, source_commit
         gate_kwargs.append(allow_harness_self_modify)
         gate_expect_changes.append(expect_changes)
         return MergeGate(True, "approved", ["pkg/mod.py"])
@@ -2283,7 +2817,7 @@ def test_cli_dispatch_flag_routes_to_run_dispatch(tmp_path: pathlib.Path, monkey
     assert finalize_calls[0]["kwargs"]["expect_changes"] is True
 
 
-def test_cli_dispatch_uses_dispatch_brief_expanded_goal_for_mcp_prompt(
+def test_cli_background_dispatch_uses_brief_without_codex_args(
     tmp_path: pathlib.Path,
     monkeypatch,
 ) -> None:
@@ -2291,8 +2825,14 @@ def test_cli_dispatch_uses_dispatch_brief_expanded_goal_for_mcp_prompt(
     _make_ledger(repo)
     brief_path = _write_dispatch_brief_json(tmp_path, "Brief goal from JSON")
     calls: list[dict[str, object]] = []
+    brief_reads: list[pathlib.Path | None] = []
     mcp_calls = _patch_mcp_runner(monkeypatch, CodexAttempt(0))
     wt = create_dispatch_worktree(repo, "cli-brief-prompt")
+    real_brief_reader = cli._prompt_from_dispatch_brief
+
+    def read_brief_once(path: pathlib.Path | None) -> str:
+        brief_reads.append(path)
+        return real_brief_reader(path)
 
     def fake_run_dispatch(main_repo_root: pathlib.Path, dispatch_id: str, **kwargs: object):
         calls.append(
@@ -2309,6 +2849,7 @@ def test_cli_dispatch_uses_dispatch_brief_expanded_goal_for_mcp_prompt(
 
     monkeypatch.setattr("tools.mir_executor.dispatch.run_dispatch", fake_run_dispatch)
     monkeypatch.setattr("tools.mir_executor.dispatch.finalize_dispatch", fake_finalize)
+    monkeypatch.setattr(cli, "_prompt_from_dispatch_brief", read_brief_once)
 
     try:
         rc = cli.main(
@@ -2322,8 +2863,6 @@ def test_cli_dispatch_uses_dispatch_brief_expanded_goal_for_mcp_prompt(
                 "unit",
                 "--repo-root",
                 str(repo),
-                "--codex-args",
-                "exec --sandbox workspace-write --skip-git-repo-check",
                 "--dispatch-brief",
                 str(brief_path),
             ]
@@ -2334,6 +2873,73 @@ def test_cli_dispatch_uses_dispatch_brief_expanded_goal_for_mcp_prompt(
     assert rc == 0
     assert mcp_calls[0]["prompt"] == "Brief goal from JSON"
     assert calls[0]["kwargs"]["brief_text"] == "Brief goal from JSON"
+    assert brief_reads == [brief_path.resolve()]
+
+
+@pytest.mark.parametrize(
+    ("mode_args", "with_brief"),
+    [
+        (["--dispatch"], True),
+        (["--background"], True),
+        (["--background", "--dispatch"], False),
+    ],
+    ids=["foreground-dispatch", "non-dispatch", "dispatch-without-brief"],
+)
+def test_cli_codex_args_omission_fails_outside_effective_brief_dispatch(
+    tmp_path: pathlib.Path,
+    capsys: pytest.CaptureFixture[str],
+    mode_args: list[str],
+    with_brief: bool,
+) -> None:
+    brief_path = _write_dispatch_brief_json(tmp_path, "Brief goal")
+    argv = [
+        "execute",
+        *mode_args,
+        "--change-id",
+        "X",
+        "--category",
+        "unit",
+        "--repo-root",
+        str(tmp_path),
+    ]
+    if with_brief:
+        argv.extend(["--dispatch-brief", str(brief_path)])
+
+    with pytest.raises(SystemExit) as exc_info:
+        cli.main(argv)
+    assert exc_info.value.code == 1
+    assert "--codex-args" in capsys.readouterr().err
+
+
+def test_cli_brief_only_dispatch_rejects_empty_expanded_goal_before_job_creation(
+    tmp_path: pathlib.Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    brief_path = _write_dispatch_brief_json(tmp_path, "   ")
+    jobs_db = tmp_path / "jobs.db"
+
+    with pytest.raises(SystemExit) as exc_info:
+        cli.main(
+            [
+                "execute",
+                "--background",
+                "--dispatch",
+                "--change-id",
+                "X",
+                "--category",
+                "unit",
+                "--repo-root",
+                str(tmp_path),
+                "--jobs-db",
+                str(jobs_db),
+                "--dispatch-brief",
+                str(brief_path),
+            ]
+        )
+
+    assert exc_info.value.code == 1
+    assert "expanded_goal" in capsys.readouterr().err
+    assert not jobs_db.exists()
 
 
 def test_cli_dispatch_codex_args_file_persists_raw_prompt_for_resume(
@@ -2951,7 +3557,11 @@ def test_cli_dispatch_cleanup_failed_action_returns_success(
         registry = JobRegistry(db_path)
         try:
             job = registry.list_jobs()[0]
+            assert job.status == "completed"
             assert job.exit_code == 0
+            assert job.stderr is not None
+            assert "finalize_action=merged-but-cleanup-failed" in job.stderr
+            assert "finalize_reason=post-merge-error:cleanup offline" in job.stderr
         finally:
             registry.close()
     finally:

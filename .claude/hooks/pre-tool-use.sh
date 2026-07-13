@@ -176,10 +176,11 @@ if [ "$TOOL_NAME" = "Bash" ]; then
   if echo "$CMD" | grep -qE '(^|[[:space:]])sudo([[:space:]]|$)'; then
     block "sudo requires user confirmation, not this hook: $CMD"
   fi
-  # 7. ADR-69: raw codex exec is banned. Claude→Codex delegation must use MCP;
-  #    in-repo code/TDD/review writes must use mir_executor --dispatch.
-  if echo "$CMD" | grep -qE 'codex[[:space:]]+exec'; then
-    block "ADR-69: raw codex exec is banned; use mcp__codex__codex or tools.mir_executor --dispatch"
+  # 7. Raw Codex subprocess routing is forbidden. Match a bare or absolute
+  #    codex executable plus an exact exec/e shell token anywhere in its
+  #    argv-shaped command text. Redirects and pipes do not create exceptions.
+  if printf '%s\n' "$CMD" | grep -qE '(^|[[:space:];|&(<])([^[:space:];|&()<>#]*/)?codex([[:space:]]+[^[:space:];|&()<>#]+)*[[:space:]]+(exec|e)([[:space:];|&)>#]|$)'; then
+    block "raw codex exec/e is banned — route through MCP/mir_executor"
   fi
   if echo "$CMD" | grep -qE '(^|[[:space:]])git[[:space:]]+commit([[:space:]]|$)'; then
     if [ -f "$PRE_COMMIT_VERIFICATION_SCRIPT" ]; then
