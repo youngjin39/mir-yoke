@@ -729,7 +729,7 @@ def _resolve_execute_codex_args(args: argparse.Namespace) -> list[str]:
     has_codex_args_file = codex_args_file is not None
     if not has_codex_args and not has_codex_args_file:
         dispatch_brief = getattr(args, "dispatch_brief", None)
-        if args.background and args.dispatch and dispatch_brief is not None:
+        if args.dispatch and dispatch_brief is not None:
             return []
         raise ValueError("exactly one of --codex-args or --codex-args-file must be provided")
     if has_codex_args and has_codex_args_file:
@@ -746,7 +746,7 @@ def _handle_dispatch(
     repo_root: pathlib.Path,
     codex_args: list[str] | None = None,
 ) -> int:
-    """Route execute --background --dispatch through the ADR-60 helper."""
+    """Route execute --dispatch through the ADR-60 helper."""
     from tools.mir_executor import dispatch  # noqa: PLC0415
     from tools.mir_executor.jobs import JobRecord, JobRegistry  # noqa: PLC0415
     from tools.mir_executor.policy import load_sub_agent_policy  # noqa: PLC0415
@@ -935,9 +935,10 @@ def _handle_execute(args: argparse.Namespace) -> int:
         stall_timeout=getattr(args, "stall_timeout", None),
     )
 
+    if args.dispatch:
+        return _handle_dispatch(args, repo_root, codex_args)
+
     if args.background:
-        if args.dispatch:
-            return _handle_dispatch(args, repo_root, codex_args)
         # Background mode: insert job record, print job_id, then run async and update.
         # MVP: runs in same CLI process (true daemon detachment is ADR §8 O1 future work).
         from tools.mir_executor.jobs import JobRecord, JobRegistry  # noqa: PLC0415

@@ -66,3 +66,17 @@ EVIDENCE_MISSING
 
 ### Recommended Action
 REDISPATCH
+
+## 2026-07-13 - Raw shell-text regexes confuse code with comments and data
+
+### Failure
+A regex guard both blocked harmless `codex exec` mentions and missed quoted executable invocations.
+
+### Why It Happened
+Raw text matching cannot simultaneously model shell comments, quote normalization, and command position.
+
+### Rule
+For executable-routing guards, use a non-executing lexer with command-position checks and paired positive-deny and negative-false-positive regressions. Propagate producer placeholders as argv taint through execution consumers, keep a reviewed allowlist for terminal data commands, and inspect bounded embedded-code statements using consumer flag semantics, including clustered flags and multiline code arguments. Keep shell separators as scan boundaries and fail closed when the bounded scanner cannot safely classify the syntax.
+
+### Scope
+Shell-command policy hooks and other guards that distinguish executable argv from comments or data.

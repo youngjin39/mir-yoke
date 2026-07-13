@@ -2817,9 +2817,15 @@ def test_cli_dispatch_flag_routes_to_run_dispatch(tmp_path: pathlib.Path, monkey
     assert finalize_calls[0]["kwargs"]["expect_changes"] is True
 
 
-def test_cli_background_dispatch_uses_brief_without_codex_args(
+@pytest.mark.parametrize(
+    "dispatch_mode",
+    ["--dispatch", "--background --dispatch"],
+    ids=["foreground", "background"],
+)
+def test_cli_dispatch_uses_brief_without_codex_args(
     tmp_path: pathlib.Path,
     monkeypatch,
+    dispatch_mode: str,
 ) -> None:
     repo = _make_repo(tmp_path)
     _make_ledger(repo)
@@ -2855,8 +2861,7 @@ def test_cli_background_dispatch_uses_brief_without_codex_args(
         rc = cli.main(
             [
                 "execute",
-                "--background",
-                "--dispatch",
+                *dispatch_mode.split(),
                 "--change-id",
                 "X",
                 "--category",
@@ -2879,7 +2884,7 @@ def test_cli_background_dispatch_uses_brief_without_codex_args(
 @pytest.mark.parametrize(
     ("mode_args", "with_brief"),
     [
-        (["--dispatch"], True),
+        (["--dispatch"], False),
         (["--background"], True),
         (["--background", "--dispatch"], False),
     ],
