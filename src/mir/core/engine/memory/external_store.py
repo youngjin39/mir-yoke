@@ -26,7 +26,7 @@ import re
 from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from mir.core.engine.memory.distill import _parse_frontmatter, sanitize_fts_query
 from mir.core.engine.memory.store import Connection
@@ -38,7 +38,8 @@ from mir.core.engine.memory.vector_index import (
 DEFAULT_CHUNK_SIZE = 800
 DEFAULT_CHUNK_OVERLAP = 100
 DEFAULT_EMBED_DIM = 1024
-CURRENT_METADATA_VERSION = '3'  # v3: archive-path status derivation backfill (ADR-53 D5)
+CURRENT_METADATA_VERSION = '4'  # v4: logical subroot + task-history metadata backfill
+_ARCHIVE_METADATA_VERSION_PREFIX = 'schema_metadata_version:archive:'
 
 
 # --- Errors ------------------------------------------------------------
@@ -190,9 +191,56 @@ def _matches_any(rel: str, patterns: Iterable[str]) -> bool:
 
 
 
+_METADATA_ROOTS = ('docs', 'tasks', '.ai-harness')
+_TASK_HISTORY_RE = re.compile(
+    r'^tasks/(?:handoffs|sessions|dispatch|runner|archive)(?:/|$)'
+    r'|^tasks/plan[-_]archive(?:[-/._]|$)'
+)
+
+
+def _logical_metadata_path(archive_root: str, rel: str) -> str:
+    """Return a repository-logical path without changing the stored relative path.
+
+    Production archives commonly register ``docs/``, ``tasks/``, and
+    ``.ai-harness/`` as independent roots. Their archive-relative paths therefore
+    omit the prefix needed by metadata classification.
+    """
+    if any(rel == root or rel.startswith(f'{root}/') for root in _METADATA_ROOTS):
+        return rel
+    root_name = Path(archive_root).name
+    if root_name in _METADATA_ROOTS:
+        return f'{root_name}/{rel}' if rel else root_name
+    return rel
+
+
+def _is_history_path(rel: str) -> bool:
+    return (
+        '/_archive/' in rel
+        or rel.startswith('docs/_archive/')
+        or rel.startswith('_archive/')
+        or _TASK_HISTORY_RE.match(rel) is not None
+    )
+
+
+def _is_within_path_scope(rel: str, scope: str) -> bool:
+    """Match one repository-logical file against an exact, directory, or glob scope."""
+    normalized = scope.strip().replace('\\', '/')
+    while normalized.startswith('./'):
+        normalized = normalized[2:]
+    if not normalized:
+        return False
+    pure = PurePosixPath(normalized)
+    if pure.is_absolute() or '..' in pure.parts:
+        return False
+    if any(char in normalized for char in '*?['):
+        return fnmatch.fnmatch(rel, normalized)
+    base = normalized.rstrip('/')
+    return rel == base or rel.startswith(f'{base}/')
+
+
 def _derive_doc_category(rel: str) -> str | None:
-    # archive check precedes decisions: archive paths may contain /decisions/
-    if '/_archive/' in rel or rel.startswith('docs/_archive/') or rel.startswith('_archive/'):
+    # History check precedes decisions: archived paths may contain /decisions/.
+    if _is_history_path(rel):
         return 'archive'
     if rel.startswith('docs/decisions/'):
         return 'decision'
@@ -206,13 +254,7 @@ def _derive_doc_category(rel: str) -> str | None:
 
 
 def _derive_layer(rel: str) -> str | None:
-    if (
-        '/_archive/' in rel
-        or rel.startswith('docs/_archive/')
-        or rel.startswith('_archive/')
-        or rel.startswith('tasks/handoffs/')
-        or rel.startswith('tasks/sessions/')
-    ):
+    if _is_history_path(rel):
         return 'episodic'
     if rel.startswith('docs/'):
         return 'semantic'
@@ -461,11 +503,16 @@ class ExternalStore:
         _stored_ver = self._conn.conn.execute(
             "SELECT value FROM external_store_meta WHERE key='schema_metadata_version'"
         ).fetchone()
-        if (
-            _stored_ver is not None
-            and _int_ver(_stored_ver[0]) < _int_ver(CURRENT_METADATA_VERSION)
-        ):
-            forced_rescan = True
+        archive_metadata_key = f'{_ARCHIVE_METADATA_VERSION_PREFIX}{archive_id}'
+        _archive_ver = self._conn.conn.execute(
+            "SELECT value FROM external_store_meta WHERE key = ?",
+            (archive_metadata_key,),
+        ).fetchone()
+        if db_set:
+            forced_rescan = (
+                _archive_ver is None
+                or _int_ver(_archive_ver[0]) < _int_ver(CURRENT_METADATA_VERSION)
+            )
 
         to_delete = db_set - current_fs
         to_insert = current_fs - db_set
@@ -505,18 +552,40 @@ class ExternalStore:
             except Exception as e:
                 failed.append((rel, f"reindex: {e}"))
 
-        if forced_rescan and not failed:
+        if not failed:
             self._conn.conn.execute(
                 "INSERT OR REPLACE INTO external_store_meta(key, value) "
-                "VALUES ('schema_metadata_version', ?)",
-                (CURRENT_METADATA_VERSION,),
+                "VALUES (?, ?)",
+                (archive_metadata_key, CURRENT_METADATA_VERSION),
             )
-        elif _stored_ver is None:
+        else:
             self._conn.conn.execute(
-                "INSERT OR IGNORE INTO external_store_meta(key, value) "
-                "VALUES ('schema_metadata_version', ?)",
-                (CURRENT_METADATA_VERSION,),
+                "DELETE FROM external_store_meta WHERE key = ?",
+                (archive_metadata_key,),
             )
+
+        archive_versions = self._conn.conn.execute(
+            "SELECT m.value FROM external_archives a "
+            "LEFT JOIN external_store_meta m "
+            "ON m.key = ? || CAST(a.id AS TEXT)",
+            (_ARCHIVE_METADATA_VERSION_PREFIX,),
+        ).fetchall()
+        all_archives_current = bool(archive_versions) and all(
+            row[0] is not None
+            and _int_ver(row[0]) >= _int_ver(CURRENT_METADATA_VERSION)
+            for row in archive_versions
+        )
+        if all_archives_current:
+            global_version = CURRENT_METADATA_VERSION
+        else:
+            current_int = _int_ver(CURRENT_METADATA_VERSION)
+            stored_int = _int_ver(_stored_ver[0]) if _stored_ver is not None else 0
+            global_version = str(min(stored_int, max(0, current_int - 1)))
+        self._conn.conn.execute(
+            "INSERT OR REPLACE INTO external_store_meta(key, value) "
+            "VALUES ('schema_metadata_version', ?)",
+            (global_version,),
+        )
 
         self._conn.conn.execute(
             "UPDATE external_archives SET last_scanned_at = ? WHERE id = ?",
@@ -587,8 +656,9 @@ class ExternalStore:
         conn = self._conn.conn
         with conn:
             source_slug = 'your-harness'
-            doc_category = _derive_doc_category(rel)
-            layer = _derive_layer(rel)
+            logical_rel = _logical_metadata_path(archive.root_path, rel)
+            doc_category = _derive_doc_category(logical_rel)
+            layer = _derive_layer(logical_rel)
             title, frontmatter_json = _extract_title_and_frontmatter(text)
             # ADR-53 D4: path-derived status — archive paths are 'expired' so default
             # retrieval excludes them; include_history=True still reaches them.
@@ -649,8 +719,9 @@ class ExternalStore:
                 self._delete_chunk_rowid(cid)
             conn.execute("DELETE FROM external_chunks WHERE document_id = ?", (doc_id,))
             source_slug = 'your-harness'
-            doc_category = _derive_doc_category(rel)
-            layer = _derive_layer(rel)
+            logical_rel = _logical_metadata_path(archive.root_path, rel)
+            doc_category = _derive_doc_category(logical_rel)
+            layer = _derive_layer(logical_rel)
             title, frontmatter_json = _extract_title_and_frontmatter(text)
             # ADR-53 D4: path-derived status — archive paths are 'expired'.
             doc_status = 'expired' if doc_category == 'archive' else 'active'
@@ -728,6 +799,7 @@ class ExternalStore:
         *,
         k: int = 10,
         archive_slugs: tuple[str, ...] | None = None,
+        path_scopes: tuple[str, ...] | None = None,
         embed_fn=None,
         include_history: bool = False,
     ) -> list[ExternalHit]:
@@ -736,6 +808,10 @@ class ExternalStore:
         When ``embed_fn`` is provided and ``conn.vec_available`` is True,
         this performs a vec0 kNN + FTS5 MATCH + Reciprocal Rank Fusion.
         Otherwise it falls back to FTS5-only ranking (TB1).
+
+        ``path_scopes`` limits candidates by repository-logical path before
+        fusion. It is used by profile-guided current-task retrieval; callers
+        that explicitly request history may omit it.
 
         Only chunk metadata (path + byte range + score) is returned —
         the caller re-reads the file to get body text (ADR 1 §2.2).
@@ -760,14 +836,39 @@ class ExternalStore:
             if not allowed_chunk_ids:
                 return []
 
+        if path_scopes:
+            path_chunk_ids = {
+                chunk_id
+                for chunk_id, archive_root, rel in self._conn.conn.execute(
+                    'SELECT c.id, a.root_path, d.relative_path FROM external_chunks c '
+                    'JOIN external_documents d ON d.id = c.document_id '
+                    'JOIN external_archives a ON a.id = d.archive_id',
+                ).fetchall()
+                if any(
+                    _is_within_path_scope(
+                        _logical_metadata_path(archive_root, rel), scope
+                    )
+                    for scope in path_scopes
+                )
+            }
+            if allowed_chunk_ids is None:
+                allowed_chunk_ids = path_chunk_ids
+            else:
+                allowed_chunk_ids &= path_chunk_ids
+            if not allowed_chunk_ids:
+                return []
+
         # ADR-53 D4: default current-only filter (status='active'). include_history=True skips.
         if not include_history:
             status_chunk_ids: set[int] = {
-                row[0] for row in self._conn.conn.execute(
-                    'SELECT c.id FROM external_chunks c '
+                chunk_id
+                for chunk_id, archive_root, rel in self._conn.conn.execute(
+                    'SELECT c.id, a.root_path, d.relative_path FROM external_chunks c '
                     'JOIN external_documents d ON d.id = c.document_id '
+                    'JOIN external_archives a ON a.id = d.archive_id '
                     "WHERE d.status = 'active'",
                 ).fetchall()
+                if not _is_history_path(_logical_metadata_path(archive_root, rel))
             }
             if allowed_chunk_ids is not None:
                 allowed_chunk_ids = allowed_chunk_ids & status_chunk_ids
@@ -775,6 +876,30 @@ class ExternalStore:
                 allowed_chunk_ids = status_chunk_ids
             if not allowed_chunk_ids:
                 return []
+
+        ranked_target = k * 3
+        if ranked_target <= 0:
+            return []
+        total_chunks = self._conn.conn.execute(
+            'SELECT COUNT(*) FROM external_chunks'
+        ).fetchone()[0]
+
+        def _fetch_until_allowed(fetch):
+            limit = min(ranked_target, total_chunks)
+            if allowed_chunk_ids is None:
+                return fetch(limit)
+            needed = min(ranked_target, len(allowed_chunk_ids))
+            while limit > 0:
+                rows = fetch(limit)
+                filtered = [row for row in rows if row[0] in allowed_chunk_ids]
+                if (
+                    len(filtered) >= needed
+                    or len(rows) < limit
+                    or limit >= total_chunks
+                ):
+                    return filtered[:ranked_target]
+                limit = min(total_chunks, max(limit + 1, limit * 2))
+            return []
 
         vec_hits: list[tuple[int, float]] = []
         if embed_fn is not None and self._conn.vec_available:
@@ -787,22 +912,27 @@ class ExternalStore:
             # bge-m3 embeddings are normalized, so this works as a cosine substitute.
             # To switch to another metric, specify distance_metric at vec0 CREATE.
             # For now, keep the default L2.
-            vec_hits = list(self._conn.conn.execute(
-                "SELECT rowid, distance FROM external_chunks_vec "
-                "WHERE embedding MATCH ? ORDER BY distance LIMIT ?",
-                (_pack_vector(query_vec), k * 3),
-            ).fetchall())
-            if allowed_chunk_ids is not None:
-                vec_hits = [h for h in vec_hits if h[0] in allowed_chunk_ids]
+            vec_hits = _fetch_until_allowed(
+                lambda limit: list(
+                    self._conn.conn.execute(
+                        "SELECT rowid, distance FROM external_chunks_vec "
+                        "WHERE embedding MATCH ? ORDER BY distance LIMIT ?",
+                        (_pack_vector(query_vec), limit),
+                    ).fetchall()
+                )
+            )
 
         safe_query = sanitize_fts_query(query)
-        fts_rows = list(self._conn.conn.execute(
-            "SELECT rowid, rank FROM external_chunks_fts "
-            "WHERE external_chunks_fts MATCH ? ORDER BY rank, rowid ASC LIMIT ?",
-            (safe_query, k * 3),
-        ).fetchall())
-        if allowed_chunk_ids is not None:
-            fts_rows = [r for r in fts_rows if r[0] in allowed_chunk_ids]
+        fts_rows = _fetch_until_allowed(
+            lambda limit: list(
+                self._conn.conn.execute(
+                    "SELECT rowid, rank FROM external_chunks_fts "
+                    "WHERE external_chunks_fts MATCH ? "
+                    "ORDER BY rank, rowid ASC LIMIT ?",
+                    (safe_query, limit),
+                ).fetchall()
+            )
+        )
 
         # RRF fusion (k_rrf = 60 as in the literature standard).
         k_rrf = 60.0

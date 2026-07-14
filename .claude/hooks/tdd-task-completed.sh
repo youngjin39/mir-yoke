@@ -1,5 +1,5 @@
 #!/bin/bash
-# Optional TaskCompleted advisory: report open ledger categories without blocking completion.
+# TaskCompleted advisory: payloads have no stable change id, so this never blocks.
 # Multi-schema support (P1-quality): accepts 'changes', 'history', 'entries' as list-type entry keys,
 # plus root-level 'categories' for flat ledgers.
 #
@@ -24,7 +24,7 @@ _MIR_HOOK_TIER="warn"
 TDD_JSON="${CLAUDE_PROJECT_DIR:-.}/tasks/tdd.json"
 
 if [ ! -f "$TDD_JSON" ]; then
-  echo "[tdd-task-completed WARN] no tdd.json — verify the task with focused evidence" >&2
+  echo "[tdd-task-completed WARN] no tdd.json — record focused evidence" >&2
   exit 0
 fi
 
@@ -35,13 +35,25 @@ CLOSED = {'pass', 'not_applicable', 'covered_existing'}
 
 data = json.load(open('$TDD_JSON'))
 
+keyed_entries = [
+    (key, value) for key, value in data.items()
+    if key not in ('version', 'changes', 'history', 'entries')
+    and isinstance(value, dict) and isinstance(value.get('categories'), dict)
+]
+if keyed_entries:
+    entry_id, entry = keyed_entries[-1]
+    categories = entry['categories']
+    entries = 'KEYED'
+else:
+    entries = None
+
 # Resolve entries list from known schemas (priority order).
-entries = None
-for key in ('changes', 'history', 'entries'):
-    val = data.get(key)
-    if isinstance(val, list):
-        entries = val
-        break
+if entries is None:
+    for key in ('changes', 'history', 'entries'):
+        val = data.get(key)
+        if isinstance(val, list):
+            entries = val
+            break
 
 if entries is None:
     root_categories = data.get('categories')
@@ -49,10 +61,9 @@ if entries is None:
         entry_id = data.get('id', data.get('task', '<root>'))
         categories = root_categories
     else:
-        # Legacy flat-object schema — cannot enforce; allow.
         sys.stdout.write('UNKNOWN_SCHEMA')
         sys.exit(0)
-else:
+elif entries != 'KEYED':
     if not entries:
         sys.stdout.write('EMPTY')
         sys.exit(0)
@@ -102,13 +113,13 @@ if [ -z "$RESULT" ]; then
   exit 0
 fi
 
-# Legacy flat-object schema — no list-type entries; cannot enforce; allow.
 if [ "$RESULT" = "UNKNOWN_SCHEMA" ]; then
+  echo "[tdd-task-completed WARN] tdd.json has no recognizable ledger entry (advisory only)" >&2
   exit 0
 fi
 
-# Entry exists but has no 'categories' key — different ledger semantics; allow.
 if [ "$RESULT" = "NO_CATEGORIES" ]; then
+  echo "[tdd-task-completed WARN] ledger entry has no categories (advisory only)" >&2
   exit 0
 fi
 

@@ -38,7 +38,7 @@ if [ "${_TRIMMED:0:1}" = "<" ]; then
   exit 0
 fi
 
-# Extract meaningful terms: lowercase, split on whitespace/punctuation,
+# Extract meaningful Unicode terms: lowercase, split on punctuation,
 # drop common stopwords, take first 6 remaining tokens.
 _TERMS=$(printf '%s' "$_PROMPT" | python3 -c "
 import sys, re
@@ -54,7 +54,7 @@ STOPWORDS = {
 }
 
 raw = sys.stdin.read().lower()
-tokens = re.split(r'[^a-z0-9]+', raw)
+tokens = re.findall(r'[^\W_]+', raw, flags=re.UNICODE)
 kept = [t for t in tokens if t and len(t) > 2 and t not in STOPWORDS]
 terms = kept[:6]
 print(' '.join(terms), end='')

@@ -132,18 +132,32 @@
 | Delegated execution backend | codex_first |
 | Codex backend role | code_tdd_review_plane |
 | Codex default enabled | true |
-| Codex allowed modes | code, review, tdd |
-| Codex blocked modes | none |
+| Delegation required tasks | adopter_wide_template_contract_or_bootstrap_change, release_review |
+| Delegation recommended tasks | tools_or_src_implementation, tests, independent_review |
+| Main-direct tasks | placeholder_or_profile_check, small_documentation_change, final_publish_judgment |
+| Delegable implementation paths | tools/, src/, scripts/ |
+| Delegation allowed capabilities | code, review, tdd |
+| Delegation blocked capabilities | none |
 | Review scope | tools/, tests/ |
-| TDD scope | scripts/** |
+| TDD scope | tools/, src/ |
+| Main/operator-only runtime boundaries | none |
+| Secret paths | .env, .env.* |
+| Data sensitivity | low |
+| Release window | anytime |
+| External service boundaries | none |
+| Required operational gates | none |
 
 **Claude main** and **Codex main** share the same default main-agent contract: requirements clarification, architecture, design approval, orchestration, planning, dispatch, exception handling, verification synthesis, and final merge judgment.
 
-**Delegated sub-agents** are the preferred execution option when isolation, parallelism, specialist context, or restartability materially helps. Bounded direct-main work is valid within the same safety and verification boundaries.
+**Delegated sub-agents** are the preferred execution option when isolation, parallelism, or restartability materially helps. Bounded direct-main edits are valid when they are the simpler path and retain the same safety and verification boundaries.
 
-**Codex** is the default backend for delegated backend-capable execution work. The repository-level `main_role=control_plane` / `delegated_execution=codex_first` / `codex_backend_role=code_tdd_review_plane` fields describe the default backend ownership model, not a different main-agent contract by runtime.
+**The opened CLI (Claude or Codex) is the control_plane main.** `delegated_execution=codex_first` and `codex_backend_role=code_tdd_review_plane` describe the delegated backend preference, not a mandatory routing gate. The opened main may perform bounded work directly regardless of which CLI launched the session.
 
-Routine direct-versus-delegated selection needs no override record. Record only a material runtime role swap.
+The task rows classify work, not agents. A required task must include the relevant delegated implementation, TDD, or independent-review slice; the main still owns scope and final judgment. Recommended tasks use delegation when its benefit exceeds coordination cost. Main-direct tasks should stay local unless a concrete reason justifies delegation.
+
+Path and capability rows bound delegated work. Runtime, secret, data, and external-service rows do not grant delegated mutation authority; required operational gates and operator approval still apply. `protected_paths` retain repository-specific semantics and are not promoted to a universal no-write rule.
+
+A material runtime role swap should be recorded in the active plan or handoff. Choosing a bounded direct-main edit is not a role swap.
 
 ### Proportional Main Execution
 

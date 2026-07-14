@@ -1,8 +1,7 @@
-"""ADR-60 dispatch helper for isolated Codex execution.
+"""ADR-60 dispatch helper for isolated delegated execution.
 
-The helper owns the per-task attempt policy: create an isolated dispatch
-worktree, run Codex for a finite number of attempts, then either surface a
-single fallback opportunity or block the lane for human orchestration.
+The helper creates an isolated dispatch worktree and runs once by default.
+Additional attempts require an explicit positive attempt budget.
 """
 
 from __future__ import annotations
@@ -43,17 +42,20 @@ from tools.mir_executor.worktree import (
 
 MAX_CODEX_ATTEMPTS = 1
 OUTAGE_THRESHOLD = 3
+DEFAULT_FINALIZE_LOCK_TIMEOUT = 30
 
 
 @dataclass(frozen=True)
 class CodexAttempt:
-    """Result of one Codex or fallback execution attempt."""
+    """Result of one delegated execution attempt."""
 
     exit_code: int
     error_sig: str = ""
     stdout: str = ""
     stderr: str = ""
     lane_unavailable: bool = False
+    retryable: bool = True
+    blocked_reason: str | None = None
 
 
 @dataclass(frozen=True)
@@ -107,15 +109,16 @@ def run_dispatch(
     brief_text: str = "",
     base_commit: str = "HEAD",
     codex_runner: Callable[[DispatchWorktree, int], CodexAttempt],
-    claude_fallback: Callable[[DispatchWorktree], CodexAttempt] | None = None,
     dispatch_events_path: pathlib.Path | None = None,
     max_codex_attempts: int = MAX_CODEX_ATTEMPTS,
     outage_threshold: int = OUTAGE_THRESHOLD,
     prior_consecutive_codex_failures: int = 0,
     worktrees_root: pathlib.Path | None = None,
 ) -> DispatchOutcome:
-    """Run one isolated dispatch; retries require an explicit non-default attempt count."""
+    """Run one isolated dispatch, honoring an explicit positive attempt budget."""
     main_repo_root = pathlib.Path(main_repo_root)
+    if max_codex_attempts < 1:
+        raise ValueError("max_codex_attempts must be positive")
     wt = create_dispatch_worktree(
         main_repo_root,
         dispatch_id,
@@ -126,8 +129,8 @@ def run_dispatch(
     events_path = dispatch_events_path or wt.path / ".mir-dispatch" / "dispatch-events.jsonl"
 
     attempts = 0
-    error_sigs: list[str] = []
-    for attempt in range(1, max_codex_attempts + 1):
+    attempt_budget = max_codex_attempts
+    for attempt in range(1, attempt_budget + 1):
         result = codex_runner(wt, attempt)
         attempts = attempt
         if result.exit_code == 0:
@@ -138,7 +141,6 @@ def run_dispatch(
             )
             return DispatchOutcome("completed", attempt, False, None, wt)
 
-        error_sigs.append(result.error_sig)
         _append_event(
             events_path,
             {
@@ -148,6 +150,7 @@ def run_dispatch(
                 "exit_code": result.exit_code,
                 "error_sig": result.error_sig,
                 "lane_unavailable": result.lane_unavailable,
+                "retryable": result.retryable,
             },
         )
         if result.lane_unavailable:
@@ -157,18 +160,19 @@ def run_dispatch(
             )
             write_status(wt, "blocked", reason="lane-unavailable", attempt=attempt)
             return DispatchOutcome("blocked", attempt, False, "lane-unavailable", wt)
-        if result.error_sig and error_sigs.count(result.error_sig) >= 3:
-            write_status(wt, "spinning", attempt=attempt, error_sig=result.error_sig)
+        if not result.retryable:
+            reason = result.blocked_reason or "non-retryable"
             _append_event(
                 events_path,
                 {
-                    "kind": "spinning",
+                    "kind": "non_retryable_blocker",
                     "dispatch_id": dispatch_id,
-                    "error_sig": result.error_sig,
+                    "attempt": attempt,
+                    "reason": reason,
                 },
             )
-            break
-
+            write_status(wt, "blocked", reason=reason, attempt=attempt)
+            return DispatchOutcome("blocked", attempt, False, reason, wt)
     write_status(wt, "codex_failed", attempts=attempts)
 
     consecutive = prior_consecutive_codex_failures + 1
@@ -185,34 +189,12 @@ def run_dispatch(
         write_status(wt, "blocked", reason="codex-outage")
         return DispatchOutcome("blocked", attempts, False, "codex-outage", wt)
 
-    if claude_fallback is None:
-        _append_event(
-            events_path,
-            {"kind": "fallback_required", "dispatch_id": dispatch_id, "attempts": attempts},
-        )
-        write_status(wt, "blocked", reason="fallback-required")
-        return DispatchOutcome("blocked", attempts, False, "fallback-required", wt)
-
     _append_event(
         events_path,
-        {"kind": "fallback", "dispatch_id": dispatch_id, "after_attempts": attempts},
+        {"kind": "retry_exhausted", "dispatch_id": dispatch_id, "attempts": attempts},
     )
-    fallback_result = claude_fallback(wt)
-    if fallback_result.exit_code == 0:
-        write_status(wt, "fallback_completed")
-        _append_event(events_path, {"kind": "fallback_success", "dispatch_id": dispatch_id})
-        return DispatchOutcome("fallback_completed", attempts, True, None, wt)
-
-    _append_event(
-        events_path,
-        {
-            "kind": "fallback_failed",
-            "dispatch_id": dispatch_id,
-            "exit_code": fallback_result.exit_code,
-        },
-    )
-    write_status(wt, "blocked", reason="fallback-failed")
-    return DispatchOutcome("blocked", attempts, True, "fallback-failed", wt)
+    write_status(wt, "blocked", reason="retry-exhausted")
+    return DispatchOutcome("blocked", attempts, False, "retry-exhausted", wt)
 
 
 def _last_json_line(path: pathlib.Path) -> dict[str, object]:
@@ -317,24 +299,27 @@ def build_codex_mcp_runner(
             try:
                 client = client_factory(env=env, call_timeout=timeout_seconds)
                 client.__enter__()
-            except Exception as exc:  # startup and handshake failures mean no usable lane
+            except Exception as exc:
                 stderr = str(exc)
                 error_sig = _error_sig_from_text(stderr)
+                lane_unavailable = isinstance(exc, (FileNotFoundError, PermissionError))
+                exit_code = 124 if isinstance(exc, CodexMcpTimeoutError) else 1
                 _append_event(
                     events_file,
                     {
-                        "exit_code": 1,
+                        "exit_code": exit_code,
                         "duration_s": time.monotonic() - started_at,
                         "error_sig": error_sig,
                         "transport": "mcp",
-                        "lane_unavailable": True,
+                        "lane_unavailable": lane_unavailable,
                     },
                 )
                 return CodexAttempt(
-                    exit_code=1,
+                    exit_code=exit_code,
                     stderr=stderr,
                     error_sig=error_sig,
-                    lane_unavailable=True,
+                    lane_unavailable=lane_unavailable,
+                    retryable=not lane_unavailable,
                 )
             try:
                 call_kwargs: dict[str, object] = {
@@ -371,9 +356,11 @@ def build_codex_mcp_runner(
         except CodexMcpTimeoutError as exc:
             stderr = str(exc)
             exit_code = 124
+            lane_unavailable = False
         except (CodexMcpError, FileNotFoundError, OSError) as exc:
             stderr = str(exc)
             exit_code = 1
+            lane_unavailable = isinstance(exc, (FileNotFoundError, PermissionError))
 
         duration_s = time.monotonic() - started_at
         error_sig = _error_sig_from_text(stderr)
@@ -385,14 +372,15 @@ def build_codex_mcp_runner(
                 "error_sig": error_sig,
                 "transport": "mcp",
                 "threadId": thread_id,
-                "lane_unavailable": False,
+                "lane_unavailable": lane_unavailable,
             },
         )
         return CodexAttempt(
             exit_code=exit_code,
             stderr=stderr,
             error_sig=error_sig,
-            lane_unavailable=False,
+            lane_unavailable=lane_unavailable,
+            retryable=not lane_unavailable,
         )
 
     return _runner
@@ -417,13 +405,10 @@ def _run_claude_adapter(
     wt: DispatchWorktree,
     *,
     timeout_seconds: int | None,
-    mark_fallback_depth: bool,
 ) -> CodexAttempt:
     """Run headless ``claude -p`` in a dispatch worktree."""
     env = dispatch_env(main_repo_root, session_id=wt.dispatch_id)
     env["CLAUDE_PROJECT_DIR"] = str(wt.path)
-    if mark_fallback_depth:
-        env["MIR_DISPATCH_FALLBACK_DEPTH"] = "1"
     claude_bin = os.environ.get("CLAUDE_BIN", "claude")
     command = [claude_bin, "-p", _CLAUDE_DISPATCH_PROMPT]
     try:
@@ -453,7 +438,6 @@ def build_claude_runner(
             main_repo_root,
             wt,
             timeout_seconds=timeout_seconds,
-            mark_fallback_depth=False,
         )
 
     return _runner
@@ -767,7 +751,7 @@ def finalize_dispatch(
     allowlist: list[str],
     verification_commands: list[str],
     verify_timeout: int | None = None,
-    finalize_lock_timeout: int = 600,
+    finalize_lock_timeout: int = DEFAULT_FINALIZE_LOCK_TIMEOUT,
     expect_changes: bool = True,
     allow_harness_self_modify: bool = False,
 ) -> FinalizeResult:
@@ -778,7 +762,7 @@ def finalize_dispatch(
     """
     main_repo_root = pathlib.Path(main_repo_root)
     allow_harness = allow_harness_self_modify or _resolve_harness_self_modify(main_repo_root)
-    if outcome.status not in {"completed", "fallback_completed"}:
+    if outcome.status != "completed":
         persist_dispatch_artifacts(wt, main_repo_root)
         return FinalizeResult(
             "preserved",
@@ -884,27 +868,6 @@ def finalize_dispatch(
         return FinalizeResult("blocked", f"error:{exc}", [])
 
 
-def build_claude_fallback(
-    main_repo_root: pathlib.Path,
-    *,
-    timeout_seconds: int | None = None,
-) -> Callable[[DispatchWorktree], CodexAttempt]:
-    """Build the headless ``claude -p`` fallback runner for ADR-60 R3."""
-
-    def _fallback(wt: DispatchWorktree) -> CodexAttempt:
-        if os.environ.get("MIR_DISPATCH_FALLBACK_DEPTH"):
-            return CodexAttempt(exit_code=70, stderr="fallback-depth-exceeded")
-
-        return _run_claude_adapter(
-            main_repo_root,
-            wt,
-            timeout_seconds=timeout_seconds,
-            mark_fallback_depth=True,
-        )
-
-    return _fallback
-
-
 def count_consecutive_codex_failures(
     jobs_db_path: pathlib.Path,
     *,
@@ -922,7 +885,7 @@ def count_consecutive_codex_failures(
             if job.status != "failed":
                 break
             dispatch_status = _diagnostic_token(job.stderr, "dispatch_status")
-            if dispatch_status in {"completed", "fallback_completed"}:
+            if dispatch_status == "completed":
                 break
             count += 1
         return count

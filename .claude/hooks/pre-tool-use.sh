@@ -264,7 +264,7 @@ fi
 # mir:bluebrick-advisory:end
 
 # mir:profile:enforcement:begin
-# --- your-harness profile-driven enforcement (V2.2 — phase-2 scope + ADR-23 dogfooding exemption) ---
+# --- Mir profile-driven enforcement (V2.2 — phase-2 scope + ADR-23 dogfooding exemption) ---
 if [ "${MIR_FAMILY_CODE_PATHS_INITIALIZED:-no}" != "yes" ]; then
     MIR_FAMILY_SLUG="${MIR_FAMILY_SLUG:-your-harness}"
     MIR_FAMILY_CODE_PATHS=()
@@ -275,7 +275,7 @@ if [ "${MIR_FAMILY_CODE_PATHS_INITIALIZED:-no}" != "yes" ]; then
         done < <(python3 "$_MIR_CODE_PATH_HELPER" \
                  --family "$MIR_FAMILY_SLUG" --check code-paths 2>/dev/null)
     fi
-    [ "${#MIR_FAMILY_CODE_PATHS[@]}" -eq 0 ] && MIR_FAMILY_CODE_PATHS=( "tools/" "src/" "scripts/" )
+    [ "${#MIR_FAMILY_CODE_PATHS[@]}" -eq 0 ] && MIR_FAMILY_CODE_PATHS=( "tools/" "src/" )
 
     # ADR-23 dogfooding exempt check
     MIR_DOGFOODING_EXEMPT="no"
@@ -288,6 +288,62 @@ if [ "${MIR_FAMILY_CODE_PATHS_INITIALIZED:-no}" != "yes" ]; then
     MIR_FAMILY_CODE_PATHS_INITIALIZED=yes
 fi
 
+_mir_path_matches_code_path() {
+    python3 - "$1" "${MIR_FAMILY_CODE_PATHS[@]}" <<'PY'
+import fnmatch
+import os
+import sys
+
+path, *patterns = sys.argv[1:]
+pwd = os.environ.get("PWD", "")
+candidates = [path]
+if pwd and path.startswith(pwd + "/"):
+    candidates.append(path[len(pwd) + 1:])
+
+def matches(candidate, pattern):
+    if pattern.endswith("/"):
+        return candidate.startswith(pattern) or ("/" + pattern) in ("/" + candidate + "/")
+    return fnmatch.fnmatch(candidate, pattern.replace("**", "*"))
+
+print("yes" if any(matches(candidate, pattern) for candidate in candidates for pattern in patterns) else "no")
+PY
+}
+
+_mir_patch_path_safety_reason() {
+    python3 - "$1" "$PROJECT_DIR" <<'PY'
+import os
+from pathlib import Path
+import sys
+
+raw_path, project_dir = sys.argv[1:]
+root = Path(project_dir).resolve()
+candidate = Path(os.path.expanduser(raw_path))
+if not candidate.is_absolute():
+    candidate = root / candidate
+resolved = candidate.resolve(strict=False)
+try:
+    relative = resolved.relative_to(root).as_posix()
+except ValueError:
+    print("patch path outside project root")
+    raise SystemExit(0)
+
+parts = Path(relative).parts
+if ".git" in parts:
+    print("patch targets git internal state")
+    raise SystemExit(0)
+
+name = Path(relative).name
+secret_names = {".env", "credentials", "id_rsa", "id_ed25519"}
+if (
+    name in secret_names
+    or name.startswith(".env.")
+    or name.startswith("credentials.")
+    or name.endswith((".pem", ".key", ".p12"))
+):
+    print("patch targets a secret or credential file")
+PY
+}
+
 if [ -n "${INPUT:-}" ]; then
     _mir_payload="$INPUT"
 else
@@ -298,27 +354,37 @@ fi
 _mir_tool_name="$(printf '%s' "$_mir_payload" | python3 -c 'import sys,json; print(json.loads(sys.stdin.read()).get("tool_name",""))' 2>/dev/null || echo "")"
 if [ "$_mir_tool_name" = "Edit" ] || [ "$_mir_tool_name" = "Write" ]; then
     _mir_file_path="$(printf '%s' "$_mir_payload" | python3 -c 'import sys,json; d=json.loads(sys.stdin.read()); print(d.get("tool_input",{}).get("file_path") or d.get("tool_input",{}).get("path") or "")' 2>/dev/null || echo "")"
-    if [ -n "$_mir_file_path" ] && [ "${#MIR_FAMILY_CODE_PATHS[@]}" -gt 0 ]; then
-        _mir_match="$(python3 - "$_mir_file_path" "${MIR_FAMILY_CODE_PATHS[@]}" <<'PY'
-import sys, os, fnmatch
-path, *patterns = sys.argv[1:]
-pwd = os.environ.get("PWD", "")
-candidates = [path]
-if pwd and path.startswith(pwd + "/"):
-    candidates.append(path[len(pwd) + 1:])
-def _match(candidate, pat):
-    if pat.endswith("/"):
-        return candidate.startswith(pat) or ("/" + pat) in ("/" + candidate + "/")
-    return fnmatch.fnmatch(candidate, pat.replace("**", "*"))
-print("yes" if any(_match(c, p) for c in candidates for p in patterns) else "no")
-PY
-)"
-        if [ "$_mir_match" = "yes" ] && [ -z "${MIR_CODEX_SESSION_ID:-}" ] && [ "${MIR_CODEX_MAIN:-0}" != "1" ]; then
-            echo "[mir ADVISORY] code-path edit on $_mir_file_path: use delegation when isolation materially helps; bounded direct-main edits are allowed." >&2
+    if [ -n "$_mir_file_path" ]; then
+        _mir_file_safety_reason="$(_mir_patch_path_safety_reason "$_mir_file_path")"
+        if [ -n "$_mir_file_safety_reason" ]; then
+            echo "[PreToolUse BLOCK] $_mir_file_safety_reason: $_mir_file_path" >&2
+            exit 2
+        fi
+        if [ "${#MIR_FAMILY_CODE_PATHS[@]}" -gt 0 ]; then
+            _mir_match="$(_mir_path_matches_code_path "$_mir_file_path")"
+            if [ "$_mir_match" = "yes" ] && [ -z "${MIR_CODEX_SESSION_ID:-}" ] && [ "${MIR_CODEX_MAIN:-0}" != "1" ]; then
+                echo "[mir ADVISORY] code-path edit on $_mir_file_path: consider the delegated lane when isolation, review independence, or parallelism justifies its cost; bounded direct-main edits are allowed." >&2
+            fi
         fi
     fi
 fi
-# --- end your-harness profile-driven enforcement (V2.2) ---
+if [ "$_mir_tool_name" = "apply_patch" ] || [ "$_mir_tool_name" = "ApplyPatch" ]; then
+    _mir_patch="$(printf '%s' "$_mir_payload" | python3 -c 'import sys,json; d=json.loads(sys.stdin.read()); i=d.get("tool_input",{}); print(i.get("input") or i.get("patch") or i.get("content") or "")' 2>/dev/null || echo "")"
+    while IFS= read -r _mir_patch_path; do
+        [ -n "$_mir_patch_path" ] || continue
+        _mir_patch_safety_reason="$(_mir_patch_path_safety_reason "$_mir_patch_path")"
+        if [ -n "$_mir_patch_safety_reason" ]; then
+            echo "[PreToolUse BLOCK] $_mir_patch_safety_reason: $_mir_patch_path" >&2
+            exit 2
+        fi
+        if [ "$(_mir_path_matches_code_path "$_mir_patch_path")" = "yes" ] && [ -z "${MIR_CODEX_SESSION_ID:-}" ] && [ "${MIR_CODEX_MAIN:-0}" != "1" ]; then
+            echo "[mir ADVISORY] code-path patch on $_mir_patch_path: consider the delegated lane when isolation, review independence, or parallelism justifies its cost; bounded direct-main edits are allowed." >&2
+        fi
+    done < <(printf '%s\n' "$_mir_patch" | sed -nE \
+        -e 's/^\*\*\* (Add|Update|Delete) File: (.*)$/\2/p' \
+        -e 's/^\*\*\* Move to: (.*)$/\1/p')
+fi
+# --- end Mir profile-driven enforcement (V2.2) ---
 
 # mir:profile:enforcement:end
 

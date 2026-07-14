@@ -32,7 +32,6 @@ from tools.mir_executor.dispatch import (
     _last_json_line,
     _resolve_harness_self_modify,
     _run_guarded,
-    build_claude_fallback,
     build_claude_runner,
     build_codex_mcp_runner,
     count_consecutive_codex_failures,
@@ -300,57 +299,23 @@ def _completed_outcome(wt: DispatchWorktree) -> DispatchOutcome:
 def test_codex_success_first_attempt(tmp_path: pathlib.Path) -> None:
     repo = _make_repo(tmp_path)
     events_path = tmp_path / "dispatch-events.jsonl"
-    fallback_calls: list[DispatchWorktree] = []
 
     outcome = run_dispatch(
         repo,
         "success",
         codex_runner=lambda _wt, _attempt: CodexAttempt(0),
-        claude_fallback=lambda wt: fallback_calls.append(wt) or CodexAttempt(0),
         dispatch_events_path=events_path,
     )
     try:
         assert outcome.status == "completed"
         assert outcome.attempts == 1
         assert outcome.fell_back is False
-        assert fallback_calls == []
         assert any(event["kind"] == "codex_success" for event in _read_events(events_path))
     finally:
         _cleanup(outcome)
 
 
-def test_one_codex_failure_triggers_configured_fallback(tmp_path: pathlib.Path) -> None:
-    repo = _make_repo(tmp_path)
-    events_path = tmp_path / "dispatch-events.jsonl"
-    codex_calls: list[int] = []
-    fallback_calls: list[DispatchWorktree] = []
-
-    def codex_runner(_wt: DispatchWorktree, attempt: int) -> CodexAttempt:
-        codex_calls.append(attempt)
-        return CodexAttempt(1, error_sig="e")
-
-    def claude_fallback(wt: DispatchWorktree) -> CodexAttempt:
-        fallback_calls.append(wt)
-        return CodexAttempt(0)
-
-    outcome = run_dispatch(
-        repo,
-        "fallback",
-        codex_runner=codex_runner,
-        claude_fallback=claude_fallback,
-        dispatch_events_path=events_path,
-    )
-    try:
-        assert codex_calls == [1]
-        assert len(fallback_calls) == 1
-        assert outcome.status == "fallback_completed"
-        assert outcome.fell_back is True
-        assert any(event["kind"] == "fallback" for event in _read_events(events_path))
-    finally:
-        _cleanup(outcome)
-
-
-def test_one_codex_failure_returns_control_without_configured_fallback(
+def test_dispatch_attempts_retryable_failure_once_by_default(
     tmp_path: pathlib.Path,
 ) -> None:
     repo = _make_repo(tmp_path)
@@ -358,80 +323,153 @@ def test_one_codex_failure_returns_control_without_configured_fallback(
 
     def codex_runner(_wt: DispatchWorktree, attempt: int) -> CodexAttempt:
         codex_calls.append(attempt)
-        return CodexAttempt(1, error_sig="e")
-
-    outcome = run_dispatch(repo, "no-fallback", codex_runner=codex_runner)
-    try:
-        assert codex_calls == [1]
-        assert outcome.status == "blocked"
-        assert outcome.blocked_reason == "fallback-required"
-        assert outcome.fell_back is False
-    finally:
-        _cleanup(outcome)
-
-
-def test_failed_fallback_blocks(tmp_path: pathlib.Path) -> None:
-    repo = _make_repo(tmp_path)
-    events_path = tmp_path / "dispatch-events.jsonl"
+        return CodexAttempt(1, error_sig=f"retryable-{attempt}")
 
     outcome = run_dispatch(
         repo,
-        "fallback-failed",
-        codex_runner=lambda _wt, _attempt: CodexAttempt(1, error_sig="e"),
-        claude_fallback=lambda _wt: CodexAttempt(1),
-        dispatch_events_path=events_path,
+        "one-default-attempt",
+        codex_runner=codex_runner,
     )
     try:
+        assert codex_calls == [1]
+        assert outcome.attempts == 1
         assert outcome.status == "blocked"
-        assert outcome.blocked_reason == "fallback-failed"
-        assert any(event["kind"] == "fallback_failed" for event in _read_events(events_path))
+        assert outcome.blocked_reason == "retry-exhausted"
     finally:
         _cleanup(outcome)
 
 
-def test_outage_guard_halts_without_fallback(tmp_path: pathlib.Path) -> None:
+@pytest.mark.parametrize(
+    ("requested_budget", "expected_calls"),
+    [
+        (None, [1]),
+        (1, [1]),
+        (5, [1, 2, 3, 4, 5]),
+    ],
+    ids=["default-one", "explicit-one", "explicit-larger-budget"],
+)
+def test_dispatch_honors_explicit_positive_attempt_budget(
+    tmp_path: pathlib.Path,
+    requested_budget: int | None,
+    expected_calls: list[int],
+) -> None:
+    repo = _make_repo(tmp_path)
+    codex_calls: list[int] = []
+
+    def codex_runner(_wt: DispatchWorktree, attempt: int) -> CodexAttempt:
+        codex_calls.append(attempt)
+        return CodexAttempt(1, error_sig=f"retryable-{attempt}")
+
+    kwargs: dict[str, int] = {}
+    if requested_budget is not None:
+        kwargs["max_codex_attempts"] = requested_budget
+    outcome = run_dispatch(
+        repo,
+        f"attempt-budget-{requested_budget}",
+        codex_runner=codex_runner,
+        **kwargs,
+    )
+    try:
+        assert codex_calls == expected_calls
+        assert outcome.attempts == len(expected_calls)
+        assert outcome.blocked_reason == "retry-exhausted"
+    finally:
+        _cleanup(outcome)
+
+
+def test_dispatch_rejects_nonpositive_attempt_budget_before_creating_worktree(
+    tmp_path: pathlib.Path,
+) -> None:
+    repo = _make_repo(tmp_path)
+
+    with pytest.raises(ValueError, match="max_codex_attempts must be positive"):
+        run_dispatch(
+            repo,
+            "invalid-attempt-budget",
+            codex_runner=lambda _wt, _attempt: CodexAttempt(0),
+            max_codex_attempts=0,
+        )
+
+    assert _git(repo, "worktree", "list", "--porcelain").stdout.count("worktree ") == 1
+
+
+def test_dispatch_stops_retrying_after_success(tmp_path: pathlib.Path) -> None:
+    repo = _make_repo(tmp_path)
+    codex_calls: list[int] = []
+
+    def codex_runner(_wt: DispatchWorktree, attempt: int) -> CodexAttempt:
+        codex_calls.append(attempt)
+        return CodexAttempt(0 if attempt == 2 else 1, error_sig="transient")
+
+    outcome = run_dispatch(
+        repo,
+        "success-on-second-attempt",
+        codex_runner=codex_runner,
+        max_codex_attempts=5,
+    )
+    try:
+        assert codex_calls == [1, 2]
+        assert outcome.status == "completed"
+        assert outcome.attempts == 2
+    finally:
+        _cleanup(outcome)
+
+
+def test_dispatch_stops_after_deterministic_non_retryable_blocker(
+    tmp_path: pathlib.Path,
+) -> None:
     repo = _make_repo(tmp_path)
     events_path = tmp_path / "dispatch-events.jsonl"
-    fallback_calls: list[DispatchWorktree] = []
+    codex_calls: list[int] = []
+
+    def codex_runner(_wt: DispatchWorktree, attempt: int) -> CodexAttempt:
+        codex_calls.append(attempt)
+        return CodexAttempt(
+            1,
+            error_sig="credential-denied",
+            retryable=False,
+            blocked_reason="credential-denied",
+        )
+
+    outcome = run_dispatch(
+        repo,
+        "deterministic-blocker",
+        codex_runner=codex_runner,
+        dispatch_events_path=events_path,
+        max_codex_attempts=5,
+    )
+    try:
+        assert codex_calls == [1]
+        assert outcome.status == "blocked"
+        assert outcome.attempts == 1
+        assert outcome.blocked_reason == "credential-denied"
+        assert any(
+            event["kind"] == "non_retryable_blocker" for event in _read_events(events_path)
+        )
+    finally:
+        _cleanup(outcome)
+
+
+def test_outage_guard_halts_after_internal_attempts(tmp_path: pathlib.Path) -> None:
+    repo = _make_repo(tmp_path)
+    events_path = tmp_path / "dispatch-events.jsonl"
 
     outcome = run_dispatch(
         repo,
         "outage",
         codex_runner=lambda _wt, _attempt: CodexAttempt(1, error_sig="e"),
-        claude_fallback=lambda wt: fallback_calls.append(wt) or CodexAttempt(0),
         dispatch_events_path=events_path,
         prior_consecutive_codex_failures=OUTAGE_THRESHOLD - 1,
     )
     try:
         assert outcome.status == "blocked"
         assert outcome.blocked_reason == "codex-outage"
-        assert fallback_calls == []
         assert any(event["kind"] == "codex_outage_halt" for event in _read_events(events_path))
     finally:
         _cleanup(outcome)
 
 
-def test_fallback_required_when_no_fallback(tmp_path: pathlib.Path) -> None:
-    repo = _make_repo(tmp_path)
-    events_path = tmp_path / "dispatch-events.jsonl"
-
-    outcome = run_dispatch(
-        repo,
-        "no-fallback",
-        codex_runner=lambda _wt, _attempt: CodexAttempt(1, error_sig="e"),
-        claude_fallback=None,
-        dispatch_events_path=events_path,
-        prior_consecutive_codex_failures=0,
-    )
-    try:
-        assert outcome.status == "blocked"
-        assert outcome.blocked_reason == "fallback-required"
-        assert any(event["kind"] == "fallback_required" for event in _read_events(events_path))
-    finally:
-        _cleanup(outcome)
-
-
-def test_spinning_same_error_sig_short_circuits(tmp_path: pathlib.Path) -> None:
+def test_same_error_sig_uses_declared_attempt_budget(tmp_path: pathlib.Path) -> None:
     repo = _make_repo(tmp_path)
     events_path = tmp_path / "dispatch-events.jsonl"
     codex_calls: list[int] = []
@@ -444,14 +482,12 @@ def test_spinning_same_error_sig_short_circuits(tmp_path: pathlib.Path) -> None:
         repo,
         "spinning",
         codex_runner=codex_runner,
-        claude_fallback=None,
         dispatch_events_path=events_path,
-        max_codex_attempts=5,
     )
     try:
-        assert codex_calls == [1, 2, 3]
+        assert codex_calls == [1]
         assert outcome.status == "blocked"
-        assert outcome.blocked_reason == "fallback-required"
+        assert outcome.blocked_reason == "retry-exhausted"
     finally:
         _cleanup(outcome)
 
@@ -706,7 +742,7 @@ def test_build_codex_mcp_runner_default_has_no_call_timeout(
         cleanup_worktree(wt)
 
 
-def test_build_codex_mcp_runner_default_init_timeout_is_lane_failure(
+def test_build_codex_mcp_runner_default_init_timeout_is_retryable(
     tmp_path: pathlib.Path,
 ) -> None:
     repo = _make_repo(tmp_path)
@@ -726,9 +762,9 @@ def test_build_codex_mcp_runner_default_init_timeout_is_lane_failure(
             client_factory=InitTimeoutClient,
         )(wt, 1)
 
-        assert attempt.exit_code == 1
+        assert attempt.exit_code == 124
         assert attempt.stderr == "initialize timed out after 10s"
-        assert attempt.lane_unavailable is True
+        assert attempt.lane_unavailable is False
     finally:
         cleanup_worktree(wt)
 
@@ -896,6 +932,98 @@ def test_build_codex_mcp_runner_transport_error_maps_to_nonzero(
         assert event["exit_code"] == attempt.exit_code
         assert event["transport"] == "mcp"
         assert event["error_sig"] == attempt.error_sig
+    finally:
+        cleanup_worktree(wt)
+
+
+@pytest.mark.parametrize(
+    "stderr",
+    [
+        "transient upstream response: denied while polling",
+        "transient transport report mentions integrity but is not a blocker",
+    ],
+    ids=["denied-text", "integrity-text"],
+)
+def test_build_codex_mcp_runner_keeps_unstructured_stderr_retryable(
+    tmp_path: pathlib.Path,
+    stderr: str,
+) -> None:
+    repo = _make_repo(tmp_path)
+
+    class TransientTextClient:
+        def __init__(self, **_kwargs: object) -> None:
+            pass
+
+        def __enter__(self) -> TransientTextClient:
+            return self
+
+        def __exit__(self, *_exc_info: object) -> None:
+            return None
+
+        def call_codex(self, **_kwargs: object) -> CodexMcpResult:
+            raise CodexMcpProcessError(stderr)
+
+    wt = create_dispatch_worktree(repo, "mcp-unstructured-stderr")
+    try:
+        attempt = build_codex_mcp_runner(
+            repo,
+            "structured prompt",
+            client_factory=TransientTextClient,
+        )(wt, 1)
+
+        assert attempt.retryable is True
+        assert attempt.blocked_reason is None
+    finally:
+        cleanup_worktree(wt)
+
+
+@pytest.mark.parametrize(
+    "exception_type",
+    [FileNotFoundError, PermissionError],
+    ids=["file-not-found", "permission-error"],
+)
+def test_build_codex_mcp_runner_stops_for_typed_lane_unavailability(
+    tmp_path: pathlib.Path,
+    exception_type: type[OSError],
+) -> None:
+    repo = _make_repo(tmp_path)
+
+    class UnavailableClient:
+        def __init__(self, **_kwargs: object) -> None:
+            pass
+
+        def __enter__(self) -> UnavailableClient:
+            raise exception_type("typed lane unavailable")
+
+    wt = create_dispatch_worktree(repo, "mcp-typed-unavailable")
+    try:
+        attempt = build_codex_mcp_runner(
+            repo,
+            "structured prompt",
+            client_factory=UnavailableClient,
+        )(wt, 1)
+
+        assert attempt.lane_unavailable is True
+        assert attempt.retryable is False
+
+        codex_calls: list[int] = []
+
+        def codex_runner(_wt: DispatchWorktree, call: int) -> CodexAttempt:
+            codex_calls.append(call)
+            return attempt
+
+        outcome = run_dispatch(
+            repo,
+            f"typed-unavailable-{exception_type.__name__}",
+            codex_runner=codex_runner,
+            max_codex_attempts=5,
+        )
+        try:
+            assert codex_calls == [1]
+            assert outcome.attempts == 1
+            assert outcome.blocked_reason == "lane-unavailable"
+        finally:
+            _cleanup(outcome)
     finally:
         cleanup_worktree(wt)
 
@@ -1209,42 +1337,9 @@ def test_claude_runners_default_to_no_hard_timeout(
     wt = create_dispatch_worktree(repo, "claude-no-default-timeout")
     try:
         build_claude_runner(repo)(wt, 1)
-        build_claude_fallback(repo)(wt)
         build_claude_runner(repo, timeout_seconds=7)(wt, 1)
-        build_claude_fallback(repo, timeout_seconds=8)(wt)
 
-        assert observed_timeouts == [None, None, 7, 8]
-    finally:
-        cleanup_worktree(wt)
-
-
-def test_build_claude_fallback_invocation_and_env(
-    tmp_path: pathlib.Path,
-    monkeypatch,
-) -> None:
-    repo = _make_repo(tmp_path)
-    record_path = tmp_path / "fake-claude-record.txt"
-    fake_claude = _write_fake_claude_bin(tmp_path)
-    monkeypatch.setenv("CLAUDE_BIN", str(fake_claude))
-    monkeypatch.setenv("FAKE_CLAUDE_RECORD", str(record_path))
-    monkeypatch.setenv("FAKE_CLAUDE_EXIT", "13")
-
-    wt = create_dispatch_worktree(repo, "claude-fallback", brief_text="brief body")
-    try:
-        fallback = build_claude_fallback(repo, timeout_seconds=5)
-        attempt = fallback(wt)
-        record = _read_fake_record(record_path)
-
-        assert attempt.exit_code == 13
-        assert record["argv"].startswith(
-            "<-p><Read the task brief at .mir-dispatch/brief.md"
-        )
-        assert "brief body" not in record["argv"]
-        assert record["pwd"] == str(wt.path)
-        assert record["project"] == str(wt.path)
-        assert record["session"] == wt.dispatch_id
-        assert record["depth"] == "1"
-        assert record["brief"] == "brief body"
+        assert observed_timeouts == [None, 7]
     finally:
         cleanup_worktree(wt)
 
@@ -1278,87 +1373,6 @@ def test_build_claude_runner_invocation_and_env(
         assert record["brief"] == "brief body"
     finally:
         cleanup_worktree(wt)
-
-
-def test_fallback_depth_guard_refuses_nested(
-    tmp_path: pathlib.Path,
-    monkeypatch,
-) -> None:
-    repo = _make_repo(tmp_path)
-    record_path = tmp_path / "fake-claude-record.txt"
-    fake_claude = _write_fake_claude_bin(tmp_path)
-    monkeypatch.setenv("CLAUDE_BIN", str(fake_claude))
-    monkeypatch.setenv("FAKE_CLAUDE_RECORD", str(record_path))
-    monkeypatch.setenv("FAKE_CLAUDE_EXIT", "0")
-    monkeypatch.setenv("MIR_DISPATCH_FALLBACK_DEPTH", "1")
-
-    wt = create_dispatch_worktree(repo, "nested-fallback")
-    try:
-        fallback = build_claude_fallback(repo, timeout_seconds=5)
-        attempt = fallback(wt)
-
-        assert attempt.exit_code == 70
-        assert attempt.stderr == "fallback-depth-exceeded"
-        assert not record_path.exists()
-    finally:
-        cleanup_worktree(wt)
-
-
-def test_run_dispatch_uses_real_fallback_once(
-    tmp_path: pathlib.Path,
-    monkeypatch,
-) -> None:
-    repo = _make_repo(tmp_path)
-    events_path = tmp_path / "dispatch-events.jsonl"
-    record_path = tmp_path / "fake-claude-record.txt"
-    fake_claude = _write_fake_claude_bin(tmp_path)
-    monkeypatch.setenv("CLAUDE_BIN", str(fake_claude))
-    monkeypatch.setenv("FAKE_CLAUDE_RECORD", str(record_path))
-    monkeypatch.setenv("FAKE_CLAUDE_EXIT", "0")
-
-    outcome = run_dispatch(
-        repo,
-        "real-fallback-once",
-        brief_text="implement fallback",
-        codex_runner=lambda _wt, _attempt: CodexAttempt(1, error_sig="e"),
-        claude_fallback=build_claude_fallback(repo, timeout_seconds=5),
-        dispatch_events_path=events_path,
-    )
-    try:
-        lines = record_path.read_text(encoding="utf-8").splitlines()
-        assert outcome.status == "fallback_completed"
-        assert outcome.fell_back is True
-        assert sum(1 for line in lines if line.startswith("argv:")) == 1
-    finally:
-        _cleanup(outcome)
-
-
-def test_run_dispatch_blocks_when_real_fallback_fails(
-    tmp_path: pathlib.Path,
-    monkeypatch,
-) -> None:
-    repo = _make_repo(tmp_path)
-    events_path = tmp_path / "dispatch-events.jsonl"
-    record_path = tmp_path / "fake-claude-record.txt"
-    fake_claude = _write_fake_claude_bin(tmp_path)
-    monkeypatch.setenv("CLAUDE_BIN", str(fake_claude))
-    monkeypatch.setenv("FAKE_CLAUDE_RECORD", str(record_path))
-    monkeypatch.setenv("FAKE_CLAUDE_EXIT", "2")
-
-    outcome = run_dispatch(
-        repo,
-        "real-fallback-fails",
-        codex_runner=lambda _wt, _attempt: CodexAttempt(1, error_sig="e"),
-        claude_fallback=build_claude_fallback(repo, timeout_seconds=5),
-        dispatch_events_path=events_path,
-    )
-    try:
-        assert outcome.status == "blocked"
-        assert outcome.fell_back is True
-        assert outcome.blocked_reason == "fallback-failed"
-        assert record_path.exists()
-    finally:
-        _cleanup(outcome)
 
 
 def test_dispatch_records_jobregistry_and_outage_accumulates(
@@ -1522,63 +1536,6 @@ def test_dispatch_exit_code_reflects_finalize_block(
         _cleanup_repo_dispatch_worktrees(repo)
 
 
-def test_dispatch_records_fallback_merge_as_completed(
-    tmp_path: pathlib.Path,
-    monkeypatch,
-) -> None:
-    repo = _make_repo(tmp_path)
-    _make_ledger(repo, change_id="C")
-    db_path = tmp_path / "jobs.db"
-    _patch_mcp_runner(monkeypatch, CodexAttempt(0))
-    wt = create_dispatch_worktree(repo, "cli-fallback-merged-status")
-
-    monkeypatch.setattr(
-        "tools.mir_executor.dispatch.run_dispatch",
-        lambda *_args, **_kwargs: DispatchOutcome(
-            "fallback_completed",
-            4,
-            True,
-            None,
-            wt,
-        ),
-    )
-    monkeypatch.setattr(
-        "tools.mir_executor.dispatch.finalize_dispatch",
-        lambda *_args, **_kwargs: FinalizeResult("merged", "approved", ["pkg/mod.py"]),
-    )
-
-    try:
-        assert (
-            cli.main(
-                [
-                    "execute",
-                    "--background",
-                    "--dispatch",
-                    "--change-id",
-                    "C",
-                    "--category",
-                    "unit",
-                    "--repo-root",
-                    str(repo),
-                    "--jobs-db",
-                    str(db_path),
-                    "--codex-args",
-                    "exec x",
-                ]
-            )
-            == 0
-        )
-        registry = JobRegistry(db_path)
-        try:
-            job = registry.list_jobs()[0]
-            assert job.status == "completed"
-            assert job.exit_code == 0
-        finally:
-            registry.close()
-    finally:
-        cleanup_worktree(wt)
-
-
 def test_mcp_failure_still_counts_as_codex_failure(
     tmp_path: pathlib.Path,
     monkeypatch,
@@ -1626,7 +1583,7 @@ def test_mcp_failure_still_counts_as_codex_failure(
         _cleanup_repo_dispatch_worktrees(repo)
 
 
-def test_spinning_emits_event(tmp_path: pathlib.Path) -> None:
+def test_repeated_error_emits_retry_exhausted_event(tmp_path: pathlib.Path) -> None:
     repo = _make_repo(tmp_path)
     events_path = tmp_path / "dispatch-events.jsonl"
     codex_calls: list[int] = []
@@ -1639,13 +1596,11 @@ def test_spinning_emits_event(tmp_path: pathlib.Path) -> None:
         repo,
         "spinning-event",
         codex_runner=codex_runner,
-        claude_fallback=None,
         dispatch_events_path=events_path,
-        max_codex_attempts=5,
     )
     try:
-        assert codex_calls == [1, 2, 3]
-        assert any(event["kind"] == "spinning" for event in _read_events(events_path))
+        assert codex_calls == [1]
+        assert any(event["kind"] == "retry_exhausted" for event in _read_events(events_path))
     finally:
         _cleanup(outcome)
 
@@ -2945,7 +2900,6 @@ def test_cli_dispatch_flag_routes_to_run_dispatch(tmp_path: pathlib.Path, monkey
 
     monkeypatch.setattr("tools.mir_executor.dispatch.run_dispatch", fake_run_dispatch)
     monkeypatch.setattr("tools.mir_executor.dispatch.finalize_dispatch", fake_finalize)
-
     try:
         rc = cli.main(
             [
@@ -2976,11 +2930,112 @@ def test_cli_dispatch_flag_routes_to_run_dispatch(tmp_path: pathlib.Path, monkey
     assert calls[0]["main_repo_root"] == repo.resolve()
     kwargs = calls[0]["kwargs"]
     assert kwargs["brief_text"] == "hi"
-    assert kwargs["claude_fallback"] is None
+    assert kwargs["max_codex_attempts"] == 1
     assert len(finalize_calls) == 1
     assert finalize_calls[0]["kwargs"]["allowlist"] == ["pkg/"]
     assert finalize_calls[0]["kwargs"]["verification_commands"] == ["true"]
+    assert finalize_calls[0]["kwargs"]["finalize_lock_timeout"] == 30
     assert finalize_calls[0]["kwargs"]["expect_changes"] is True
+
+
+@pytest.mark.parametrize(
+    ("change_id", "category"),
+    [
+        ("missing-change", "unit"),
+        ("X", "integration"),
+    ],
+    ids=["unknown-change-id", "unknown-category"],
+)
+def test_cli_dispatch_validates_exact_ledger_before_job_or_worktree(
+    tmp_path: pathlib.Path,
+    monkeypatch: pytest.MonkeyPatch,
+    change_id: str,
+    category: str,
+) -> None:
+    repo = _make_repo(tmp_path)
+    _make_ledger(repo, change_id="X")
+    jobs_db = tmp_path / "jobs.db"
+    dispatch_calls: list[dict[str, object]] = []
+
+    def unexpected_dispatch(*_args: object, **kwargs: object) -> DispatchOutcome:
+        dispatch_calls.append(dict(kwargs))
+        return DispatchOutcome("blocked", 0, False, "unexpected", None)
+
+    monkeypatch.setattr(dispatch_module, "run_dispatch", unexpected_dispatch)
+    with pytest.raises(SystemExit) as exc_info:
+        cli.main(
+            [
+                "execute",
+                "--background",
+                "--dispatch",
+                "--change-id",
+                change_id,
+                "--category",
+                category,
+                "--repo-root",
+                str(repo),
+                "--jobs-db",
+                str(jobs_db),
+                "--codex-args",
+                "exec hi",
+            ]
+        )
+
+    assert exc_info.value.code == 1
+    assert dispatch_calls == []
+    assert not jobs_db.exists()
+
+
+def test_cli_dispatch_without_ledger_identity_runs_once_and_skips_agent_check(
+    tmp_path: pathlib.Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repo = _make_repo(tmp_path)
+    jobs_db = tmp_path / "jobs.db"
+    calls: list[dict[str, object]] = []
+    wt = create_dispatch_worktree(repo, "cli-no-ledger")
+
+    def fake_run_dispatch(
+        _main_repo_root: pathlib.Path,
+        dispatch_id: str,
+        **kwargs: object,
+    ) -> DispatchOutcome:
+        _ = dispatch_id
+        calls.append(dict(kwargs))
+        return DispatchOutcome("completed", 1, False, None, wt)
+
+    monkeypatch.setattr(dispatch_module, "run_dispatch", fake_run_dispatch)
+    monkeypatch.setattr(
+        dispatch_module,
+        "finalize_dispatch",
+        lambda *_args, **_kwargs: FinalizeResult("merged", "approved", ["pkg/mod.py"]),
+    )
+    try:
+        rc = cli.main(
+            [
+                "execute",
+                "--dispatch",
+                "--repo-root",
+                str(repo),
+                "--jobs-db",
+                str(jobs_db),
+                "--codex-args",
+                "exec hi",
+            ]
+        )
+    finally:
+        cleanup_worktree(wt)
+
+    assert rc == 0
+    assert not hasattr(cli, "_run_agent_check_observation")
+    assert calls[0]["max_codex_attempts"] == 1
+    registry = JobRegistry(jobs_db)
+    try:
+        [job] = registry.list_jobs()
+        assert job.change_id.startswith("dispatch-")
+        assert job.category == "unclassified"
+    finally:
+        registry.close()
 
 
 @pytest.mark.parametrize(
@@ -3631,12 +3686,13 @@ def test_cli_dispatch_claude_backend_uses_worktree_and_merge_gate(
         _cleanup_repo_dispatch_worktrees(repo)
 
 
-def test_cli_dispatch_blocked_prints_no_fallback_diagnostic(
+def test_cli_dispatch_blocked_prints_retry_diagnostic(
     tmp_path: pathlib.Path,
     monkeypatch,
     capsys,
 ) -> None:
     repo = _make_repo(tmp_path)
+    _make_ledger(repo, change_id="X")
     db_path = tmp_path / "jobs.db"
 
     def fake_run_dispatch(
@@ -3645,8 +3701,7 @@ def test_cli_dispatch_blocked_prints_no_fallback_diagnostic(
         **kwargs: object,
     ) -> DispatchOutcome:
         _ = dispatch_id
-        assert kwargs["claude_fallback"] is None
-        return DispatchOutcome("blocked", 3, False, "fallback-required", None)
+        return DispatchOutcome("blocked", 3, False, "retry-exhausted", None)
 
     monkeypatch.setattr("tools.mir_executor.dispatch.run_dispatch", fake_run_dispatch)
 
@@ -3671,7 +3726,7 @@ def test_cli_dispatch_blocked_prints_no_fallback_diagnostic(
 
     captured = capsys.readouterr()
     assert excinfo.value.code == 1
-    assert "blocked with no fallback under sub-agent policy" in captured.err
+    assert "[DISPATCH] blocked;" in captured.err
     assert (
         "docs/harness-engineering/codex-dispatch-failure-diagnostic.md"
         in captured.err

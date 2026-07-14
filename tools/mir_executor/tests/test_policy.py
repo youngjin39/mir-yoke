@@ -46,6 +46,11 @@ def test_force_claude_policy_mode_is_accepted(
     assert policy.per_project == {}
     assert policy.routing == {}
     assert policy.monitoring == {}
+    assert cli._resolve_dispatch_backend(
+        policy,
+        requested_backend="claude",
+        repo_slug=None,
+    ) == "claude"
 
 
 def test_loader_parses_routing_and_monitoring(
@@ -346,7 +351,7 @@ def test_invalid_routing_and_monitoring_values_default_empty(
     assert policy.monitoring == {}
 
 
-def test_missing_config_file_resolves_to_force_codex(
+def test_missing_config_file_resolves_to_select(
     tmp_path: pathlib.Path,
     monkeypatch,
 ) -> None:
@@ -354,13 +359,18 @@ def test_missing_config_file_resolves_to_force_codex(
 
     policy = load_sub_agent_policy(tmp_path)
 
-    assert policy.mode == "force_codex"
+    assert policy.mode == "select"
     assert policy.per_project == {}
     assert policy.routing == {}
     assert policy.monitoring == {}
+    assert cli._resolve_dispatch_backend(
+        policy,
+        requested_backend="claude",
+        repo_slug=None,
+    ) == "claude"
 
 
-def test_malformed_json_resolves_to_force_codex(
+def test_malformed_json_resolves_to_select(
     tmp_path: pathlib.Path,
     monkeypatch,
 ) -> None:
@@ -371,13 +381,18 @@ def test_malformed_json_resolves_to_force_codex(
 
     policy = load_sub_agent_policy(tmp_path)
 
-    assert policy.mode == "force_codex"
+    assert policy.mode == "select"
     assert policy.per_project == {}
     assert policy.routing == {}
     assert policy.monitoring == {}
+    assert cli._resolve_dispatch_backend(
+        policy,
+        requested_backend="claude",
+        repo_slug=None,
+    ) == "claude"
 
 
-def test_unknown_mode_value_resolves_to_force_codex(
+def test_unknown_mode_value_resolves_to_select(
     tmp_path: pathlib.Path,
     monkeypatch,
 ) -> None:
@@ -386,7 +401,7 @@ def test_unknown_mode_value_resolves_to_force_codex(
 
     policy = load_sub_agent_policy(tmp_path)
 
-    assert policy.mode == "force_codex"
+    assert policy.mode == "select"
     assert policy.per_project == {}
     assert policy.routing == {}
     assert policy.monitoring == {}

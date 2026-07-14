@@ -5,8 +5,7 @@ Argparse CLI entry point for the Mir Executor.
 
 Usage:
     python -m tools.mir_executor execute \\
-        --change-id <id> \\
-        --category <name> \\
+        [--change-id <id> --category <name>] \\
         (--codex-args "<quoted string>" | --codex-args-file <path>) \\
         [--timeout <seconds>] \\
         (--family <slug> | --repo-root <path>)
@@ -21,7 +20,7 @@ Usage:
     python -m tools.mir_executor list-jobs [--status <status>] [--jobs-db <path>]
 
 Exit codes:
-    0 — execution and ledger update both succeeded (Codex exit code is in stdout).
+    0 — execution succeeded (and a selected ledger update, when requested, succeeded).
     1 — meta-execution error (FileNotFoundError, KeyError, etc.).
 
 Background mode (--background / -b):
@@ -43,6 +42,10 @@ import sys
 import tomllib
 import uuid
 
+from tools.mir_executor.dispatch import (
+    DEFAULT_FINALIZE_LOCK_TIMEOUT,
+    MAX_CODEX_ATTEMPTS,
+)
 from tools.mir_executor.executor import MirExecutor
 
 _STANDARD_CATEGORIES = [
@@ -129,10 +132,26 @@ def _resolve_jobs_db(args_jobs_db: str | None, repo_root: pathlib.Path) -> pathl
     return (repo_root / _DEFAULT_JOBS_DB_RELPATH).resolve()
 
 
+def _positive_int(value: str) -> int:
+    """Parse a strictly positive integer for explicit retry budgets."""
+    parsed = int(value)
+    if parsed < 1:
+        raise argparse.ArgumentTypeError("must be a positive integer")
+    return parsed
+
+
+def _nonnegative_int(value: str) -> int:
+    """Parse a non-negative integer for bounded lock waits."""
+    parsed = int(value)
+    if parsed < 0:
+        raise argparse.ArgumentTypeError("must be a non-negative integer")
+    return parsed
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="python -m tools.mir_executor",
-        description="Mir Executor — Codex CLI subprocess wrapper + tdd.json ledger update.",
+        description="Mir Executor — isolated delegated execution with optional TDD ledger update.",
     )
     # Global --jobs-db option available for all subcommands
     parser.add_argument(
@@ -148,21 +167,21 @@ def _build_parser() -> argparse.ArgumentParser:
     # ------------------------------------------------------------------
     exec_p = sub.add_parser(
         "execute",
-        help="Run a Codex command and record the result in tdd.json.",
+        help="Run a delegated command; ledger identity is optional in dispatch mode.",
     )
     exec_p.add_argument(
         "--change-id",
-        required=True,
+        required=False,
         metavar="ID",
-        help="The tdd.json change entry id to update.",
+        help="Optional tdd.json change entry id; required outside --dispatch.",
     )
     exec_p.add_argument(
         "--category",
-        required=True,
+        required=False,
         choices=_STANDARD_CATEGORIES,
         metavar="NAME",
         help=(
-            "The category to update. One of: "
+            "Optional tdd.json category; required outside --dispatch. One of: "
             + ", ".join(_STANDARD_CATEGORIES)
             + "."
         ),
@@ -266,8 +285,30 @@ def _build_parser() -> argparse.ArgumentParser:
         default=False,
         dest="dispatch",
         help=(
-            "ADR-60 R2/R3: run the codex-exec dispatch helper (worktree + finite "
-            "fallback + outage guard) instead of the legacy background runner."
+            "Run the delegated dispatch helper with an isolated worktree, one "
+            "attempt by default, and the outage guard."
+        ),
+    )
+    exec_p.add_argument(
+        "--max-codex-attempts",
+        type=_positive_int,
+        default=MAX_CODEX_ATTEMPTS,
+        dest="max_codex_attempts",
+        metavar="N",
+        help=(
+            "Explicit dispatch attempt budget (default: 1). Values above one opt "
+            "into retrying the same dispatch."
+        ),
+    )
+    exec_p.add_argument(
+        "--finalize-lock-timeout",
+        type=_nonnegative_int,
+        default=DEFAULT_FINALIZE_LOCK_TIMEOUT,
+        dest="finalize_lock_timeout",
+        metavar="SECONDS",
+        help=(
+            "Maximum wait for the short merge-finalize lock (default: 30). "
+            "This never stops a running delegated agent."
         ),
     )
     exec_p.add_argument(
@@ -278,7 +319,7 @@ def _build_parser() -> argparse.ArgumentParser:
         metavar="BACKEND",
         help=(
             "ADR-61 dispatch-only backend request. Used only when the sub-agent "
-            "policy mode is select; force_codex and unknown values fail closed to codex."
+            "policy permits selection; omitted requests retain the Codex preference."
         ),
     )
     exec_p.add_argument(
@@ -560,8 +601,8 @@ def _resolve_dispatch_backend(
     requested_backend: str | None,
     repo_slug: str | None,
 ) -> str:
-    """Resolve the effective dispatch runner backend, fail-closed to codex."""
-    mode = getattr(sub_agent_policy, "mode", "force_codex")
+    """Resolve the effective dispatch runner while retaining Codex as a preference."""
+    mode = getattr(sub_agent_policy, "mode", "select")
     per_project = getattr(sub_agent_policy, "per_project", {})
     if mode == "force_codex":
         return "codex"
@@ -756,18 +797,28 @@ def _handle_dispatch(
     except (OSError, TypeError, ValueError) as exc:
         print(f"[mir_executor] DispatchBrief error: {exc}", file=sys.stderr)
         return 1
+
+    if args.change_id is not None:
+        try:
+            MirExecutor(repo_root)._validate_ledger_entry(args.change_id, args.category)
+        except (FileNotFoundError, KeyError, ValueError) as exc:
+            print(f"[mir_executor] {type(exc).__name__}: {exc}", file=sys.stderr)
+            return 1
+
     jobs_db_path = _resolve_jobs_db(args.jobs_db, repo_root)
+    job_id = uuid.uuid4().hex
+    job_change_id = args.change_id or f"dispatch-{job_id}"
+    job_category = args.category or "unclassified"
     prior = dispatch.count_consecutive_codex_failures(
         jobs_db_path,
-        change_id_prefix=args.change_id,
+        change_id_prefix=job_change_id,
     )
-    job_id = uuid.uuid4().hex
     registry = JobRegistry(jobs_db_path)
     registry.insert(
         JobRecord(
             job_id=job_id,
-            change_id=args.change_id,
-            category=args.category,
+            change_id=job_change_id,
+            category=job_category,
             family=args.family,
             repo_root=str(repo_root),
             codex_args=codex_args,
@@ -783,7 +834,7 @@ def _handle_dispatch(
     sub_agent_policy = load_sub_agent_policy(repo_root)
     model, reasoning_effort, stall_timeout = _resolve_policy_runtime_options(
         sub_agent_policy,
-        category=args.category,
+        category=args.category or "",
         model=args.model,
         reasoning_effort=args.reasoning_effort,
         stall_timeout=getattr(args, "stall_timeout", None),
@@ -810,7 +861,7 @@ def _handle_dispatch(
             dispatch_id=job_id,
             brief_text=prompt,
             codex_runner=runner,
-            claude_fallback=None,
+            max_codex_attempts=args.max_codex_attempts,
             prior_consecutive_codex_failures=prior,
         )
 
@@ -822,6 +873,7 @@ def _handle_dispatch(
                 outcome,
                 allowlist=getattr(args, "allow_paths", None) or [],
                 verification_commands=getattr(args, "verify_cmds", None) or [],
+                finalize_lock_timeout=args.finalize_lock_timeout,
                 expect_changes=args.expect_changes,
                 allow_harness_self_modify=args.allow_harness_self_modify,
             )
@@ -831,7 +883,7 @@ def _handle_dispatch(
         task_exit = 0 if merged else 1
         if outcome.status == "blocked":
             print(
-                "[DISPATCH] blocked with no fallback under sub-agent policy; "
+                "[DISPATCH] blocked; "
                 "see docs/harness-engineering/codex-dispatch-failure-diagnostic.md",
                 file=sys.stderr,
             )
@@ -893,6 +945,21 @@ def _handle_dispatch(
 
 def _handle_execute(args: argparse.Namespace) -> int:
     """Handle the 'execute' subcommand."""
+    has_change_id = args.change_id is not None
+    has_category = args.category is not None
+    if has_change_id != has_category:
+        print(
+            "[mir_executor] --change-id and --category must be supplied together",
+            file=sys.stderr,
+        )
+        return 1
+    if not args.dispatch and not has_change_id:
+        print(
+            "[mir_executor] --change-id and --category are required outside --dispatch",
+            file=sys.stderr,
+        )
+        return 1
+
     try:
         codex_args = _resolve_execute_codex_args(args)
     except ValueError as exc:
@@ -919,7 +986,7 @@ def _handle_execute(args: argparse.Namespace) -> int:
     sub_agent_policy = load_sub_agent_policy(repo_root)
     model, reasoning_effort, stall_timeout = _resolve_policy_runtime_options(
         sub_agent_policy,
-        category=args.category,
+        category=args.category or "",
         model=args.model,
         reasoning_effort=args.reasoning_effort,
         stall_timeout=getattr(args, "stall_timeout", None),

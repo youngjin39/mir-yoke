@@ -11,10 +11,15 @@ Role: Project-wide Claude control plane.
 
 
 ## Startup Protocol
-1. Read tasks/plan.md + lessons.md (auto-injected by hook). Read checklist.md manually if needed.
-2. Recall memory on-demand: `uv run mir memory query <keyword>` (DB-canonical, ADR-50; Read only matched docs).
-3. **(the catalog routing ADR)** Read `config/repo-agent-management.json` once at session start via Read tool. Cache the parsed `catalog.agents` and `repositories[]` in this session's context for the duration of the session. The file is small (<10KB JSON) — single read at session start is cheap. Refresh the cache only if `config/repo-agent-management.json` is edited mid-session (rare).
-
+1. Read the compact `.mir/repo-profile.toml` identity and safety boundary, then classify the current
+   task's purpose, target paths, and risk. Do not load unrelated history or capabilities.
+2. Use `uv run mir context pull "<query>" [--path <target>] [--risk low|normal|high]` for selected
+   canonical references and current-only depth. Read `tasks/plan.md` only when restartable,
+   delegated, or multi-session work has an active cursor; recall lessons/history only for a
+   relevant question.
+3. Load a repository agent catalog only when the task selects delegation discovery, fleet,
+   rollout, or capability management. When `config/repo-agent-management.json` is present, use
+   `tools.catalog_loader.load_catalog(ROOT)` and cache it only for that task.
 
 ## Ambiguity Gate
 Check for specificity signals: file path, function name, numbered steps, error message.

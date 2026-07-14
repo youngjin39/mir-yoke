@@ -68,7 +68,12 @@ slug = "your-harness"
 display_name = "Your Harness"
 repository_type = "starter_template"
 rollout_class = "bootstrap_only"
+overlay_archetype = "template_transitional"
 status = "active"
+purpose = "Describe the repository's purpose in one sentence."
+technology_stack = []
+profile_base_commit = "unverified"
+profile_verified_at = ""
 
 [ownership]
 main_role = "control_plane"
@@ -76,6 +81,51 @@ delegated_execution = "codex_first"
 main_agent_contract = "shared_parity"
 codex_backend_role = "code_tdd_review_plane"
 codex_default_enabled = true
+allow_role_override = true
+override_requires_record = true
+
+[paths]
+code_paths = ["tools/", "src/", "scripts/"]
+non_code_paths = ["docs/", "README.md", "CLAUDE.md", "AGENTS.md"]
+protected_paths = [".env", ".env.*", "secrets/**"]
+generated_paths = []
+architecture_refs = ["ARCHITECTURE.md"]
+configuration_paths = ["pyproject.toml", "config/"]
+verification_paths = ["tests/"]
+workflow_refs = ["CLAUDE.md", ".ai-harness/"]
+exception_refs = [".mir/boundary.md", ".mir-preserve.toml"]
+
+[preserve]
+skills = []
+claude_sections = []
+agent_memory_paths = []
+commands = []
+extra_docs = []
+
+[boundaries]
+live_runtime = []
+secrets = [".env", ".env.*"]
+data_sensitivity = "low"
+release_window = "anytime"
+external_services = []
+
+[execution]
+delegated_execution_contract = "subagents_codex_first"
+delegation_required_tasks = ["adopter_wide_template_contract_or_bootstrap_change", "release_review"]
+delegation_recommended_tasks = ["tools_or_src_implementation", "tests", "independent_review"]
+main_direct_tasks = ["placeholder_or_profile_check", "small_documentation_change", "final_publish_judgment"]
+codex_allowed_modes = ["code", "review", "tdd"]
+codex_blocked_modes = []
+review_scope = ["tools/", "src/", "tests/"]
+tdd_scope = ["tools/", "src/"]
+non_code_profile = "common_ai_only"
+
+[gates]
+requires_phase_gate = false
+requires_secrets_vault = false
+requires_dynamic_egress = false
+requires_release_window = false
+requires_external_store = false
 TOML
   say "✓ .mir/repo-profile.toml created (placeholder — edit before committing)"
 else

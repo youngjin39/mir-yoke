@@ -1,4 +1,4 @@
-# Public template repository overlay profile baseline
+# Mir repository overlay profile template
 
 [repo]
 slug = ""
@@ -8,11 +8,16 @@ repository_type = ""
 rollout_class = ""
 overlay_archetype = ""
 status = ""
+purpose = ""
+technology_stack = []
+profile_base_commit = "unverified"
+profile_verified_at = ""
 
 [ownership]
-claude_role = "control_plane"
+main_role = "control_plane"
+delegated_execution = "codex_first"
 main_agent_contract = "shared_parity"
-codex_role = "code_tdd_review_plane"
+codex_backend_role = "code_tdd_review_plane"
 codex_default_enabled = true
 allow_role_override = true
 override_requires_record = true
@@ -22,6 +27,11 @@ code_paths = []
 non_code_paths = []
 protected_paths = []
 generated_paths = []
+architecture_refs = []
+configuration_paths = []
+verification_paths = []
+workflow_refs = []
+exception_refs = []
 
 [preserve]
 skills = []
@@ -39,6 +49,9 @@ external_services = []
 
 [execution]
 delegated_execution_contract = "subagents_codex_first"
+delegation_required_tasks = []
+delegation_recommended_tasks = ["implementation", "tdd", "independent_review", "parallel_work"]
+main_direct_tasks = ["simple_investigation", "small_documentation_change", "configuration_inspection", "final_judgment"]
 codex_allowed_modes = []
 codex_blocked_modes = []
 review_scope = []

@@ -1,6 +1,5 @@
 #!/bin/bash
-# Optional TaskCreated advisory: report when tasks/tdd.json has no active ledger entry.
-# This script never blocks task creation.
+# TaskCreated advisory: payloads have no stable change id, so this never blocks.
 # Multi-schema support (P1-quality): accepts 'changes', 'history', 'entries',
 # root-level 'categories', and root-level 'targets'.
 
@@ -11,7 +10,7 @@ _MIR_HOOK_TIER="warn"
 TDD_JSON="${CLAUDE_PROJECT_DIR:-.}/tasks/tdd.json"
 
 if [ ! -f "$TDD_JSON" ]; then
-  echo "[tdd-task-created WARN] no tdd.json — consider adding focused verification evidence" >&2
+  echo "[tdd-task-created WARN] no tdd.json — add relevant verification evidence first" >&2
   exit 0
 fi
 
@@ -20,23 +19,32 @@ import json, sys
 
 data = json.load(open('$TDD_JSON'))
 
+keyed_entries = [
+    value for key, value in data.items()
+    if key not in ('version', 'changes', 'history', 'entries')
+    and isinstance(value, dict) and isinstance(value.get('categories'), dict)
+    and value['categories']
+]
+if keyed_entries:
+    sys.stdout.write('KEYED:' + str(len(keyed_entries)))
+    sys.exit(0)
+
 # Try each known list-type entry key in priority order.
 for key in ('changes', 'history', 'entries'):
     val = data.get(key)
     if isinstance(val, list):
-        sys.stdout.write('LIST:' + str(len(val)))
+        valid = [
+            entry for entry in val
+            if isinstance(entry, dict) and isinstance(entry.get('categories'), dict)
+            and entry['categories']
+        ]
+        sys.stdout.write('LIST:' + str(len(valid)))
         sys.exit(0)
 
 # Flat root-level categories: treat as an active composite ledger.
 root_categories = data.get('categories')
 if isinstance(root_categories, dict):
-    sys.stdout.write('ROOT_CATEGORIES')
-    sys.exit(0)
-
-# Flat root-level targets: allow only when there is at least one declared target.
-root_targets = data.get('targets')
-if isinstance(root_targets, list):
-    sys.stdout.write('TARGETS:' + str(len(root_targets)))
+    sys.stdout.write('ROOT:' + str(len(root_categories)))
     sys.exit(0)
 
 sys.stdout.write('UNKNOWN_SCHEMA')
@@ -50,26 +58,12 @@ if [ -z "$RESULT" ]; then
   exit 0
 fi
 
-# Legacy flat-object schema with no recognizable TDD shape — allow.
 if [ "$RESULT" = "UNKNOWN_SCHEMA" ]; then
+  echo "[tdd-task-created WARN] tdd.json has no recognizable ledger entry (advisory only)" >&2
   exit 0
 fi
 
-if [ "$RESULT" = "ROOT_CATEGORIES" ]; then
-  exit 0
-fi
-
-if [ "${RESULT#TARGETS:}" != "$RESULT" ]; then
-  TARGETS_COUNT="${RESULT#TARGETS:}"
-  if [ "$TARGETS_COUNT" = "0" ]; then
-    echo "[tdd-task-created WARN] tdd.json has no targets (advisory only)" >&2
-    exit 0
-  fi
-  exit 0
-fi
-
-# LIST:<count> — extract count
-CHANGES_COUNT="${RESULT#LIST:}"
+CHANGES_COUNT="${RESULT#*:}"
 
 if [ "$CHANGES_COUNT" = "0" ]; then
   echo "[tdd-task-created WARN] tdd.json has no entries (advisory only)" >&2

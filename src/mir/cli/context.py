@@ -9,11 +9,13 @@ Design pinned in docs/decisions/adr-53-context-assembly-current-only-retrieval-2
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 from pathlib import Path
 from typing import Any
 
+from mir.core.context.profile_task_context import build_profile_task_context
 from mir.core.engine.memory import store
 from mir.core.engine.memory.external_store import ExternalStore
 
@@ -72,16 +74,94 @@ def _build_embed_fn(cfg) -> Any | None:
 # ---------------------------------------------------------------------------
 
 
+def _profile_context_lines(context: dict[str, Any] | None) -> list[str]:
+    if context is None:
+        return []
+    repo = context["repository"]
+    purpose = " ".join(str(repo.get("purpose", "")).split())
+    line = (
+        f"[repository] {repo.get('slug', 'unknown')} "
+        f"type={repo.get('repository_type', 'unknown')}"
+    )
+    if purpose:
+        line += f" purpose={purpose}"
+    lines = [line]
+    stack = repo.get("technology_stack", [])
+    if stack:
+        lines.append(f"[repository-stack] {', '.join(stack)}")
+
+    safety = context["safety"]
+    protected = safety.get("protected_paths", [])
+    if protected:
+        lines.append(f"[safety] protected_paths={', '.join(protected)}")
+    generated = safety.get("generated_paths", [])
+    if generated:
+        lines.append(f"[safety] generated_paths={', '.join(generated)}")
+    for section in ("preserve", "boundaries"):
+        values = safety.get(section, {})
+        for key, value in values.items():
+            if value in (None, "", [], False):
+                continue
+            rendered = ", ".join(str(item) for item in value) if isinstance(value, list) else str(value)
+            lines.append(f"[safety] {section}.{key}={rendered}")
+    enabled_gates = sorted(key for key, value in safety.get("gates", {}).items() if value is True)
+    if enabled_gates:
+        lines.append(f"[safety] enabled_gates={', '.join(enabled_gates)}")
+
+    for item in context["selected_refs"]:
+        lines.append(f"[context-ref] {item['kind']} {item['path']}")
+    freshness = context["freshness"]
+    freshness_line = (
+        f"[profile-freshness] state={freshness['state']} "
+        f"base={freshness['base_commit']}"
+    )
+    changed = freshness.get("changed_selected", [])
+    if changed:
+        freshness_line += f" changed={','.join(changed)}"
+    freshness_line += f" reason={freshness['reason']}"
+    lines.append(freshness_line)
+    if context["needs_investigation"]:
+        lines.append("[context-advisory] inspect only the selected or uncertain boundary before expanding")
+    lines.extend(f"[context-advisory] {warning}" for warning in context.get("warnings", []))
+    return lines
+
+
+def _profile_search_scopes(context: dict[str, Any] | None) -> tuple[str, ...] | None:
+    """Return profile-selected corpus scopes without broadening an explicit target."""
+    if context is None:
+        return None
+    targets = context.get("task", {}).get("target_paths", [])
+    selected = context.get("selected_refs", [])
+    refs = [
+        item.get("path")
+        for item in selected
+        if isinstance(item, dict)
+        and isinstance(item.get("path"), str)
+        and (not targets or item.get("kind") not in {"code_scope", "non_code_scope"})
+    ]
+    scopes = [*targets, *refs]
+    compact = tuple(dict.fromkeys(scope for scope in scopes if scope))
+    return compact or None
+
+
 def _do_pull(
     ns: argparse.Namespace,
     conn,
     cfg,
+    project_root: Path,
 ) -> int:
     """Execute pull logic. Returns exit code."""
     query = ns.query
     k = ns.k
     include_history = ns.history
     output_json = ns.json
+    profile_context = build_profile_task_context(
+        project_root,
+        query=query,
+        target_paths=tuple(ns.target_paths),
+        risk=ns.risk,
+    )
+    path_scopes = None if include_history else _profile_search_scopes(profile_context)
 
     notices: list[str] = []
     degraded = False
@@ -109,21 +189,41 @@ def _do_pull(
             "[[memory.external_archives]] to harness_a.toml")
         notices.append(msg)
         if output_json:
-            print(json.dumps({"degraded": degraded, "notices": notices, "facts": [], "chunks": []}))
+            print(json.dumps({
+                "degraded": degraded,
+                "notices": notices,
+                "repository_context": profile_context,
+                "facts": [],
+                "chunks": [],
+            }))
         else:
+            for line in _profile_context_lines(profile_context):
+                print(line)
             print(msg)
         return 0
 
     # Try search; on embed exception retry FTS-only
     hits = []
     try:
-        hits = es.search(query, k=k, embed_fn=embed_fn, include_history=include_history)
+        hits = es.search(
+            query,
+            k=k,
+            path_scopes=path_scopes,
+            embed_fn=embed_fn,
+            include_history=include_history,
+        )
     except Exception:
         if embed_fn is not None:
             degraded = True
             notices.append("[degraded] embedding unavailable — FTS-only results")
             try:
-                hits = es.search(query, k=k, embed_fn=None, include_history=include_history)
+                hits = es.search(
+                    query,
+                    k=k,
+                    path_scopes=path_scopes,
+                    embed_fn=None,
+                    include_history=include_history,
+                )
             except Exception:
                 hits = []
         else:
@@ -133,8 +233,11 @@ def _do_pull(
     kept_snippets: list[tuple[Any, str]] = []  # (hit, snippet_text)
     for hit in hits:
         archive_row = conn.conn.execute(
-            "SELECT root_path FROM external_archives WHERE slug = ?",
-            (hit.archive_slug,)
+            "SELECT a.root_path, d.file_hash "
+            "FROM external_archives a "
+            "JOIN external_documents d ON d.archive_id = a.id "
+            "WHERE a.slug = ? AND d.relative_path = ?",
+            (hit.archive_slug, hit.relative_path),
         ).fetchone()
         if archive_row is None:
             notices.append("[stale] index entry skipped — run 'mir context sync'")
@@ -142,6 +245,9 @@ def _do_pull(
         file_path = Path(archive_row[0]) / hit.relative_path
         try:
             data = file_path.read_bytes()
+            if hashlib.sha256(data).hexdigest() != archive_row[1]:
+                notices.append("[stale] index entry skipped — run 'mir context sync'")
+                continue
             snippet = data[hit.byte_start:hit.byte_end].decode("utf-8", errors="replace")
         except Exception:
             notices.append("[stale] index entry skipped — run 'mir context sync'")
@@ -217,6 +323,7 @@ def _do_pull(
         out = {
             "degraded": degraded,
             "notices": notices,
+            "repository_context": profile_context,
             "facts": [
                 {"id": fid, "status": status, "predicate": pred, "object": obj}
                 for fid, status, pred, obj in fact_rows
@@ -238,6 +345,8 @@ def _do_pull(
         return 0
 
     # Human output
+    for line in _profile_context_lines(profile_context):
+        print(line)
     for n in notices:
         print(n)
 
@@ -333,6 +442,10 @@ def _parse(argv: list[str]) -> argparse.Namespace:
                     help="machine-readable JSON output")
     pl.add_argument("--k", type=int, default=8, dest="k",
                     help="number of results (default: 8)")
+    pl.add_argument("--path", action="append", default=[], dest="target_paths",
+                    help="repository-relative task target (repeatable)")
+    pl.add_argument("--risk", choices=("low", "normal", "high"), default="normal",
+                    help="main-agent task risk classification (default: normal)")
     pl.add_argument("--db", type=Path, default=None)
 
     sy = sub.add_parser("sync", help="ADR-53 D2: scan all configured archives")
@@ -349,6 +462,11 @@ def _parse(argv: list[str]) -> argparse.Namespace:
 def main(argv: list[str]) -> int:
     ns = _parse(argv)
     db_path = ns.db or default_db_path()
+    project_root = (
+        db_path.parent.parent
+        if db_path.name == "memory.db" and db_path.parent.name == ".mir"
+        else db_path.parent
+    )
     if not db_path.is_file():
         print(f"no memory.db at {db_path} — run 'mir migrate up' first")
         return 2
@@ -390,7 +508,7 @@ def main(argv: list[str]) -> int:
     conn = store.connect(db_path)
     try:
         if ns.action == "pull":
-            return _do_pull(ns, conn, cfg)
+            return _do_pull(ns, conn, cfg, project_root)
         if ns.action == "sync":
             return _do_sync(ns, conn, cfg)
     finally:

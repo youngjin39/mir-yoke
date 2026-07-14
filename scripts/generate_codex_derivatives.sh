@@ -404,7 +404,7 @@ write_agents_md() {
       echo "- Do not hand-edit \`AGENTS.md\`, \`.codex/\`, or \`.agents/\`."
       echo
       echo "## Startup"
-      echo "- Read the startup context files required by the local Claude workflow before acting."
+      echo "- Read the compact repository identity and safety context, classify the task, and retrieve only relevant depth."
       echo "- Use generated Codex skills first."
       echo "- If derived files are stale, regenerate from Claude source."
       echo
@@ -427,11 +427,11 @@ write_agents_md() {
 - Source-of-truth, protected-scope, and fleet rollout boundaries still apply to harness and generated surfaces.
 
 ## Codex Hook-Mirror Obligations
-- [Codex] `SessionStart`: read startup context manually before acting (`tasks/plan.md`, `tasks/lessons.md`, and required local workflow docs).
+- [Codex] `SessionStart`: read the compact repository profile and safety context. Do not automatically full-read `tasks/plan.md`, lessons, history, or unrelated workflow docs; retrieve them only after task classification.
 - [Codex] `PreCompact`: before compaction, manually create a handoff document in `tasks/handoffs/` mirroring the PreCompact contract.
 - [Codex] `PostToolUse`: after edits, manually review for debug leftovers and credential leaks.
 - [Codex] `SessionEnd`: at session end, manually create a session snapshot in `tasks/sessions/` mirroring the SessionEnd contract.
-- [Codex] `UserPromptSubmit`: for substantial prompts, run `uv run mir context pull "<query>"` for memory retrieval.
+- [Codex] `UserPromptSubmit`: for substantial prompts, run `uv run mir context pull "<query>" [--path <target>] [--risk low|normal|high]` for task-scoped retrieval.
 - [Codex] `TaskCreated` / `TaskCompleted`: use `tasks/tdd.json` for broad or high-risk work; lifecycle hooks are advisory.
 EOF
       # DEDUP GUARD: only inject if CLAUDE.md does NOT already contain the section.

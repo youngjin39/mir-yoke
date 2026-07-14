@@ -148,7 +148,7 @@ def _string_list(value: Any) -> list[str]:
 
 
 def _default_policy() -> SubAgentPolicy:
-    return SubAgentPolicy(mode="force_codex", per_project={}, routing={}, monitoring={})
+    return SubAgentPolicy(mode="select", per_project={}, routing={}, monitoring={})
 
 
 def _read_json_object(path: pathlib.Path) -> dict[str, Any]:
@@ -178,7 +178,7 @@ def _resolve_policy(data: dict[str, Any]) -> SubAgentPolicy:
 
 
 def load_sub_agent_policy(repo_root: pathlib.Path) -> SubAgentPolicy:
-    """Load sub-agent policy, fail-closed to force_codex on invalid inputs."""
+    """Load sub-agent preferences, falling back to selectable routing."""
     try:
         data = _read_json_object(repo_root / POLICY_RELPATH)
         overlay_env = os.environ.get(POLICY_ENV_VAR)

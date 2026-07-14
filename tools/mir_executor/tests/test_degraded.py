@@ -56,7 +56,7 @@ def _repo(tmp_path: pathlib.Path) -> pathlib.Path:
 def test_runner_marks_context_start_failure_as_lane_unavailable(tmp_path):
     repo = _repo(tmp_path)
     runner = build_codex_mcp_runner(repo, "prompt", client_factory=_Factory(_Client(start_error=FileNotFoundError("missing"))))
-    outcome = run_dispatch(repo, "start-failure", codex_runner=runner, max_codex_attempts=3)
+    outcome = run_dispatch(repo, "start-failure", codex_runner=runner)
     try:
         assert outcome.status == "blocked"
         assert outcome.attempts == 1
@@ -85,7 +85,6 @@ def test_run_dispatch_lane_unavailable_never_falls_back(tmp_path):
         repo,
         "blocked-lane",
         codex_runner=lambda _wt, attempt: (calls.append(attempt) or CodexAttempt(1, lane_unavailable=True)),
-        claude_fallback=lambda _wt: (_ for _ in ()).throw(AssertionError("fallback called")),
     )
     try:
         assert (outcome.status, outcome.attempts, outcome.fell_back, outcome.blocked_reason) == (
