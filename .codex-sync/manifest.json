@@ -2,7 +2,7 @@
   "version": 1,
   "strategy": "one-way-claude-to-codex",
   "generated_by": "scripts/generate_codex_derivatives.sh",
-  "notes": "Profiles: core=12 runtime-default skills, full=18 including Starter-derived optional-pack skills.",
+  "notes": "Profiles: core=12 runtime-default skills, full=12 after consolidation.",
   "mappings": [
     {
       "source": "CLAUDE.md",
@@ -11,14 +11,6 @@
       "sync_policy": "regenerate",
       "owner": "project-maintainer",
       "notes": "Main Codex instructions"
-    },
-    {
-      "source": ".claude/agents/README.md",
-      "targets": [".codex/agents/.toml"],
-      "change_scope": "content",
-      "sync_policy": "regenerate",
-      "owner": "project-maintainer",
-      "notes": "Generated custom agent"
     },
     {
       "source": ".claude/agents/codex-final-reviewer.md",

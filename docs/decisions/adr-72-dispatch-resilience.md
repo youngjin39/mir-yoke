@@ -1,37 +1,24 @@
 ---
 adr: 72
-status: proposed
+status: accepted
 date: 2026-07-11
-source: mirrored-summary
+amended: 2026-07-15
+source: sanitized-template-summary
+amended_by: [adr-73]
 ---
 
 # ADR-72 — Dispatch Resilience
 
-## Context
+## Current Decision
 
-The public template needs a concise reference for bounded dispatch recovery and the
-verification boundary between single-operator and team use.
+Elapsed-time and inactivity observations are advisory. Age alone never marks a running job failed,
+advances retries, or makes its worktree removable. Cleanup is limited to terminal jobs or explicit
+operator action, is dry-run by default, and must never touch the main worktree.
 
-## Decision
+A lane-local startup or handshake failure is recorded honestly but does not automatically block the
+whole task. Main inspects the evidence once and may use a materially different safe direct, native,
+MCP, or manual path when the repository contract permits it. There is no common retry count,
+automatic cross-engine fallback, alternate auto-executor, or queue daemon.
 
-Dispatch resilience uses a deterministic run-state sweep: stale running jobs are reaped
-from `started_at + timeout + grace`, and orphan dispatch worktrees are reaped when their
-job is absent or no longer running. A user-triggered CLI is dry-run by default; apply mode
-performs the bounded cleanup. The sweep is repeatable and does not introduce a new state
-store, heartbeat scheme, or daemon.
-
-Lightweight degraded mode is a documented design: if the delegated lane is unavailable,
-the first attempt reports `BLOCKED | reason=lane-unavailable`, retries remain finite, and a
-manual relay path records the resulting evidence. There is no alternate automatic executor.
-
-For single-operator local use, pre-commit hooks, the TDD ledger, and the merge gate are
-local evidence. Team or multi-contributor adoption requires a server-side authoritative
-gate: a protected `main` branch, CI that reruns tests and lint server-side, and no direct
-pushes to `main`.
-
-## Consequences
-
-- Recovery is explicit, bounded, and safe to inspect before mutation.
-- Lane outages surface honestly instead of silently switching execution backends.
-- Team use has a mandatory server-side gate prerequisite; local evidence alone is not
-  authoritative.
+For team or multi-contributor use, local hooks and ledgers are evidence rather than an authoritative
+gate. Protect the main branch and rerun required tests and lint in server-side CI.

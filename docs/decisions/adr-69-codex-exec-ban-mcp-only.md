@@ -2,29 +2,26 @@
 adr: 69
 status: accepted
 date: 2026-07-05
+amended: 2026-07-15
 source: sanitized-template-summary
+amended_by: [adr-73]
 ---
 
-# ADR-69 — Codex Exec Ban: MCP-Only Delegation
+# ADR-69 — Raw Codex Exec Ban
 
-## Context
+## Current Decision
 
-ADR-65 allowed raw `codex exec` as a recorded exception. ADR-66 and ADR-67 moved the in-repository
-Codex backend to MCP while preserving worktree isolation, allowlists, verification, and merge gates.
-The remaining policy gap was the continued existence of raw exec as a fallback path.
+- Raw `codex exec` is prohibited in every delegated route because of its demonstrated hang class.
+- Claude-to-Codex delegation uses MCP.
+- Codex-to-Codex breadth uses the native sub-agent lane.
+- Isolated in-repository mutation may use MCP-backed `mir_executor --dispatch`.
+- Missing MCP or native routing never permits a raw-exec fallback.
 
-## Decision
+## ADR-73 Precedence
 
-- Raw `codex exec` is banned in all forms.
-- Claude→Codex delegation uses MCP only: `mcp__codex__codex` or
-  `tools/mir_executor/codex_mcp_client.py`.
-- In-repo code, TDD, and review writes use `mir_executor … --dispatch` with the MCP backend.
-- Codex→Codex breadth uses native `multi_agent_v1`.
-- Missing MCP/native routing means `BLOCKED`, never an exec fallback.
-- The generated raw-exec launcher artifact is removed from the public template.
+The ban applies when delegation is selected; delegation itself is proportional. A missing preferred
+lane degrades that route rather than blocking the entire task when safe direct, native, MCP, or
+manual work remains available under the repository contract.
 
-## Consequences
-
-- Raw-exec timeout, stdin, and perl-alarm guards are obsolete as delegation guidance.
-- Missing MCP provisioning must be fixed directly instead of bypassed.
-- The public template keeps only sanitized, generic routing instructions.
+The shell hook is a narrow recognizer for obvious direct command forms. It is not a general shell
+parser and must not expand into one.

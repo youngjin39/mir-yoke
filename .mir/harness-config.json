@@ -2,8 +2,8 @@
   "version": 1,
   "family_slug": "mir-yoke",
   "catalog_version": 2,
-  "catalog_revision": "v3.7",
-  "last_synced_from_upstream_at": "2026-05-22T03:30:00Z",
+  "catalog_revision": "v3.8",
+  "last_synced_from_upstream_at": "2026-07-15T11:30:00Z",
   "last_synced_upstream_commit": "ae98d957359d3c0f7ec05fa9eb170cb26686856d",
   "repository_type": "template_transitional",
   "overlay_archetype": "template_transitional",
@@ -30,6 +30,7 @@
     "ui-design",
     "governance",
     "knowledge",
+    "memory-gc",
     "automation",
     "efficiency",
     "bluebricks",
@@ -43,12 +44,12 @@
     "add": [],
     "remove": []
   },
-  "rationale": "template_transitional public template; full 12-agent + 11-skill default activated 2026-05-22 per fleet-policy A — public repo is the canonical universal template.",
-  "last_reviewed_at": "2026-05-22",
+  "rationale": "template_transitional public template; full 12-agent + 12-skill catalog v3.8 baseline — public repo is the canonical universal template.",
+  "last_reviewed_at": "2026-07-15",
   "notes": [
     "Local sync copy of upstream config/repos/<family_slug>.json.",
     "Source of truth: the source harness config/repos/<family_slug>.json. This file MAY be locally edited; harness refresh treats one-way push (upstream -> family).",
     "Auto-synced by tools/profile_compiler/specialist_deploy.py::refresh_specialists(apply=True).",
-    "2026-05-22 expansion: orchestration_profile minimal -> standard; active_agents 4 -> 12; active_skills 2 -> 11."
+    "2026-07-15 catalog v3.8 alignment: active_agents 12; active_skills 12 including memory-gc."
   ]
 }

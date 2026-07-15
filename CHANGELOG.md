@@ -6,6 +6,37 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are kept for historical reference. All future entries use the `## [vN.M.X] — YYYY-MM-DD — title` format.
 
+## [0.7.0] — 2026-07-15 — Proportional dual-CLI operating baseline
+
+### Changed
+
+- Adopted the ADR-73 proportional operating contract: bounded Main-direct work is valid, while
+  delegation, worktrees, TDD matrices, independent review, monitoring, and broad suites are selected
+  when their risk reduction justifies their cost.
+- Retained the ADR-69 raw-`codex exec` ban while treating unavailable preferred lanes as lane-local
+  limitations when another safe in-scope path remains.
+- Made aged-run monitoring observe-only and cleanup terminal-only; retained the server-side CI and
+  protected-branch prerequisite for multi-contributor use.
+- Aligned the public agent/skill catalog to revision v3.8 with 12 consolidated skills, including
+  `memory-gc`.
+- Refreshed the public decision index and compact current ADR summaries without importing private
+  fleet state, family paths, or private review history.
+
+### Fixed
+
+- Prevented `.claude/agents/README.md` from generating the invalid
+  `.codex/agents/.toml` manifest target.
+- Removed private-language task aliases from the public context classifier and restored the
+  `changed_selected_count` freshness field.
+- Reconciled README guidance with the checked-in `unrestricted` sub-agent policy default.
+
+### Verification
+
+- Codex derivatives are regenerated from Claude sources and checked by
+  `scripts/verify_codex_sync.py`.
+- Template applied-state, sanitize, context-path, focused test, and parity-generation checks are
+  required before the release commit is tagged.
+
 ## [0.6.0] — 2026-06-28 — Sub-agent execution policy (force_codex) + delegated-execution gate
 
 Added the `force_codex` sub-agent execution policy to the template:

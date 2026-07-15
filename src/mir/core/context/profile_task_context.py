@@ -33,11 +33,8 @@ _GROUP_TERMS = {
         "src",
         "tool",
         "tools",
-        "버그",
-        "코드",
-        "구현",
     },
-    "documentation": {"adr", "design", "doc", "docs", "readme", "문서", "설계"},
+    "documentation": {"adr", "design", "doc", "docs", "readme"},
     "configuration": {
         "config",
         "configuration",
@@ -46,22 +43,14 @@ _GROUP_TERMS = {
         "settings",
         "toml",
         "yaml",
-        "구성",
-        "설정",
-        "프로필",
     },
-    "verification": {"test", "tests", "tdd", "validation", "verify", "검증", "테스트"},
+    "verification": {"test", "tests", "tdd", "validation", "verify"},
     "workflow": {
         "dispatch",
         "hook",
         "merge",
         "process",
         "workflow",
-        "병합",
-        "위임",
-        "작업",
-        "프로세스",
-        "훅",
     },
     "exception": {
         "exception",
@@ -71,12 +60,6 @@ _GROUP_TERMS = {
         "risk",
         "runtime",
         "secret",
-        "런타임",
-        "배포",
-        "보호",
-        "비밀",
-        "예외",
-        "위험",
     },
 }
 _FULL_COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
@@ -206,6 +189,7 @@ def _freshness(
         "base_commit": base_commit or "unverified",
         "head": "",
         "changed_selected": [],
+        "changed_selected_count": 0,
         "reason": "profile baseline is unverified",
     }
     code, head = _git_output(root, ["rev-parse", "HEAD"])
@@ -230,6 +214,7 @@ def _freshness(
         path for path in changed if any(_path_matches(scope, path) for scope in selected)
     )
     result["changed_selected"] = changed_selected[:50]
+    result["changed_selected_count"] = len(changed_selected)
     if changed_selected:
         result.update(
             state="review_required",

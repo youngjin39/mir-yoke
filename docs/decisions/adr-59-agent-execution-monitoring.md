@@ -1,35 +1,28 @@
 ---
 adr: 59
 status: accepted
-source: mirrored-summary
+date: 2026-06-22
+amended: 2026-07-15
+source: sanitized-template-summary
+amended_by: [adr-69, adr-72, adr-73]
 ---
 
-# ADR-59 — Agent-Execution Monitoring (main + sub-agents, observe-only)
+# ADR-59 — Observe-Only Agent Execution Monitoring
 
-## Context
+## Current Decision
 
-The public template needs a stable reference record for ADR-59 so applied-state
-verification can confirm the baseline catalog is complete.
+Agent execution remains inspectable through the evidence produced by the active lane: MCP or native
+dispatch records, job state, transcripts, lifecycle events, changed paths, and verification output.
+Monitoring is evidence for the control-plane Main, never an autonomous actuator or a second task
+cursor.
 
-## Decision
+Monitoring must not automatically kill, fail, retry, merge, delete worktrees, or classify the whole
+task as blocked. Run an agent health check only when work is anomalous, consequential, long-running,
+or needs independent acceptance evidence.
 
-A read-only monitoring structure makes BOTH the main agent and every sub-agent (especially
-delegated code-execution subprocesses) observable, closing recording gaps where a directly-spawned
-execution subprocess and sub-agent transcripts escape existing records. Three reuse-first layers,
-all observe-only: (L1) a single execution-binary shim emits a bounded lifecycle event
-(start/exit/signal/duration) for every invocation — the minimal slice of event-sourcing for
-monitoring, not a full event-sourcing engine; (L2) a unified health monitor over the lifecycle log,
-the job registry, and main+sub transcripts, detecting hangs, stalls, repeated-error spinning, and
-duration anomalies; (L2b) deterministic evidence-integrity checks the control-plane agent runs after
-a dispatch (e.g. a narrowed lint-selection gate, executor edits to a prior committed ledger or the
-control cursor); (L3) an agent-runnable check surface (scan/doctor) — the agent inspects health; a
-human need not watch. All layers are advisory and surface to the control-plane agent, which decides;
-no autonomous monitor-evolve loop, no auto-intervention. Detailed execution history remains in the
-upstream control repository.
+## Current Boundaries
 
-## Consequences
-
-- The template keeps a stable ADR number map.
-- Public consumers can verify baseline completeness.
-- Monitoring is observe-only and agent-checked; deterministic gates remain the sole hard blockers,
-  preserving the human-in-the-loop, no-fabricated-continuation model.
+- Raw `codex exec` is prohibited by ADR-69 and is not a monitoring transport.
+- Elapsed time and inactivity are advisory under ADR-72 and ADR-73.
+- A deterministic safety or explicitly required verification failure remains binding on its own
+  merits.

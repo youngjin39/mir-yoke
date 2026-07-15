@@ -102,7 +102,7 @@ def test_scan_populates_source_slug_doc_category_and_layer_by_path(tmp_path: Pat
 def test_stored_metadata_version_1_forces_unchanged_file_reindex(
     tmp_path: Path,
 ):
-    assert getattr(external_store, "CURRENT_METADATA_VERSION", None) == "3"
+    assert getattr(external_store, "CURRENT_METADATA_VERSION", None) == "4"
 
     c = _fresh_db(tmp_path)
     try:
@@ -120,6 +120,10 @@ def test_stored_metadata_version_1_forces_unchanged_file_reindex(
             "UPDATE external_store_meta SET value = '1' "
             "WHERE key = 'schema_metadata_version'"
         )
+        c.conn.execute(
+            "DELETE FROM external_store_meta WHERE key = ?",
+            (f"schema_metadata_version:archive:{archive_id}",),
+        )
         c.conn.commit()
 
         second = es.scan(archive_id, embed_fn=None)
@@ -127,7 +131,7 @@ def test_stored_metadata_version_1_forces_unchanged_file_reindex(
         assert second.inserted == 0
         assert second.reindexed == 1
         assert second.unchanged == 0
-        assert _schema_metadata_version(c.conn) == "3"
+        assert _schema_metadata_version(c.conn) == "4"
         assert _metadata_rows(c.conn) == {
             "docs/decisions/adr-99-test.md": (
                 "your-harness",
@@ -142,7 +146,7 @@ def test_stored_metadata_version_1_forces_unchanged_file_reindex(
 def test_stored_current_metadata_version_does_not_reindex_unchanged_file(
     tmp_path: Path,
 ):
-    assert getattr(external_store, "CURRENT_METADATA_VERSION", None) == "3"
+    assert getattr(external_store, "CURRENT_METADATA_VERSION", None) == "4"
 
     c = _fresh_db(tmp_path)
     try:
@@ -151,7 +155,7 @@ def test_stored_current_metadata_version_does_not_reindex_unchanged_file(
         first = es.scan(archive_id, embed_fn=None)
         assert first.inserted == 1
         c.conn.execute(
-            "UPDATE external_store_meta SET value = '3' "
+            "UPDATE external_store_meta SET value = '4' "
             "WHERE key = 'schema_metadata_version'"
         )
         c.conn.commit()
@@ -161,7 +165,7 @@ def test_stored_current_metadata_version_does_not_reindex_unchanged_file(
         assert second.inserted == 0
         assert second.reindexed == 0
         assert second.unchanged == 1
-        assert _schema_metadata_version(c.conn) == "3"
+        assert _schema_metadata_version(c.conn) == "4"
     finally:
         c.conn.close()
 
@@ -179,6 +183,10 @@ def test_forced_rescan_failure_does_not_advance_sentinel(tmp_path: Path):
             "UPDATE external_store_meta SET value = '1' "
             "WHERE key = 'schema_metadata_version'"
         )
+        c.conn.execute(
+            "DELETE FROM external_store_meta WHERE key = ?",
+            (f"schema_metadata_version:archive:{archive_id}",),
+        )
         c.conn.commit()
         # Monkeypatch _reindex_if_changed to raise so forced rescan has a failure
         def failing_reindex(*args, **kwargs):
@@ -193,7 +201,7 @@ def test_forced_rescan_failure_does_not_advance_sentinel(tmp_path: Path):
         # Now a successful scan should backfill and advance sentinel
         _write(tmp_path, "docs/decisions/adr-99-test.md", "changed body\n")
         es.scan(archive_id, embed_fn=None)
-        assert _schema_metadata_version(c.conn) == "3", (
+        assert _schema_metadata_version(c.conn) == "4", (
             "sentinel must advance after successful scan"
         )
     finally:
@@ -308,8 +316,8 @@ def test_layer_episodic_for_sessions_and_handoffs(tmp_path: Path):
     try:
         es, archive_id = _register_project_archive(c, tmp_path)
         expected = {
-            "tasks/sessions/2026-06-06.md": ("your-harness", "task", "episodic"),
-            "tasks/handoffs/handoff-abc.md": ("your-harness", "task", "episodic"),
+            "tasks/sessions/2026-06-06.md": ("your-harness", "archive", "episodic"),
+            "tasks/handoffs/handoff-abc.md": ("your-harness", "archive", "episodic"),
         }
         for rel in expected:
             _write(tmp_path, rel, f"{rel}\n")

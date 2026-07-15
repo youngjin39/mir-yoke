@@ -1,10 +1,10 @@
 # Mir Yoke
 
-**An enforcement-first harness template for the Claude Code + Codex CLI pair.**
+**A proportional, safety-first harness template for the Claude Code + Codex CLI pair.**
 
-A reusable starting point for teams who want their AI coding assistants to follow rules — not
-just hope they do. Hooks block destructive shell, gate code-path edits behind a TDD ledger, and
-run the same verification on both Claude Code and Codex CLI.
+A reusable starting point for teams who want their AI coding assistants to share one operating
+contract. Hooks block narrow deterministic hazards, while design, delegation, TDD, review, and
+verification scale with the changed boundary.
 
 If you have ever asked an AI to "be careful" and watched it overwrite a config file anyway, this
 is the answer: replace politely-worded prompts with executable guards.
@@ -18,34 +18,32 @@ so that Claude Code and Codex CLI behave like team members under the same playbo
 
 What you get out of the box:
 
-- **12-agent topology (all active by default)** — main-orchestrator (Claude), executor-agent
+- **12-agent topology (recommended template set)** — main-orchestrator (Claude), executor-agent
   (Codex), codex-final-reviewer (Codex), quality-agent (Claude), fleet-doc-steward (governance),
   plus 7 specialists active out of the box: CWE auditor, dependency auditor, UI reviewer,
   pipeline validator, ontology validator, runtime-contract reviewer, template-sync validator.
   Each agent declares its execution backend in frontmatter so the orchestrator knows exactly
   which CLI subprocess to use. Trim per-family by editing `active_agents` in
   `config/repos/<slug>.json` when a project does not need a specialist.
-- **11-skill library** — design, verify, code-review, testing, ui-design, governance, knowledge,
-  automation, efficiency, bluebricks, commit. Skills load on demand when the request matches a
-  trigger keyword. No token cost when unused.
+- **12-skill library** — design, verify, code-review, testing, ui-design, governance, knowledge,
+  memory-gc, automation, efficiency, bluebricks, commit. Skills load on demand when the request
+  matches a trigger keyword. No token cost when unused.
 - **Per-family JSON registry** — `config/repo-agent-management.json` catalogs agents and skills.
   When you fork and add repositories, each family gets its own `config/repos/<slug>.json` with
   per-family agent topology, skill pack, and specialist overrides.
 - **Pre-tool-use guard** — denies destructive shell patterns and protected paths before the tool runs.
 - **Post-edit checks** — flag debug statements and credential leaks immediately after every Edit/Write.
-- **Composite TDD ledger** — implementation edits are blocked unless `tasks/tdd.json` has a planning
-  entry covering the file.
-- **Pre-commit verification** — the planning entry's verification commands must pass before the
+- **Composite TDD ledger** — broad or high-risk work can record a typed verification matrix in
+  `tasks/tdd.json`; bounded work can use the smallest relevant check directly.
+- **Pre-commit verification** — explicitly selected verification commands must pass before the
   commit lands.
-- **Session lifecycle** — auto-loaded plan/lessons/memory at session start, auto-saved snapshots
-  at session end, auto-handoff at compact.
+- **Session lifecycle** — startup loads compact repository identity and safety context, deeper
+  history is retrieved on demand, and closeout refreshes one canonical handoff.
 - **Dual CLI parity** — the same hooks fire from both Claude Code (`.claude/settings.json`) and
   Codex CLI (`.codex/hooks.json`). The wire format is shared, so you author once.
-- **Sub-agent execution policy (force_codex)** — a global `config/sub-agent-policy.json` switch
-  governs which backend the delegated sub-agents use. Under `force_codex` (the default), a Claude
-  `Agent`/`Task` sub-agent spawn is **hard-blocked at the PreToolUse hook**, so delegated work is
-  forced to the Codex lane; flip to `unrestricted` / `select` / `per_project` when you want a
-  different backend. A deterministic (no-LLM) monitor surfaces any Claude-sub usage.
+- **Sub-agent execution policy** — `config/sub-agent-policy.json` controls a delegated backend when
+  delegation is useful. The template defaults to `unrestricted`; projects may explicitly select
+  `force_codex`, `select`, or `per_project` for their own boundary.
 - **Priority-ordered model/effort routing** — the same `config/sub-agent-policy.json` carries a
   `routing` block: a global `model_rank` / `effort_rank` plus per-TDD-category routes
   (single `{model, reasoning_effort}` or an ordered `prefer` list). Model/effort strings are
@@ -54,7 +52,7 @@ What you get out of the box:
   (`mcp__codex__codex`) and a Codex main (native `spawn_agent`) route their direct codex calls the
   same way; `mir_executor … --dispatch` resolves it internally. Values are deployment-owned via a
   `MIR_SUB_AGENT_POLICY` global overlay.
-- **Git-diff merge gate for delegated execution** — `mir_executor … --dispatch` runs the Codex
+- **Optional Git-diff merge gate for delegated execution** — `mir_executor … --dispatch` runs the Codex
   sub-agent in a throwaway git worktree and merges its edits back **only after a deterministic
   gate**: a real `git diff` (an empty diff is a failure) plus a re-run of the change's verification
   commands. The sub-agent's self-reported success is never trusted — the filesystem is.
@@ -87,8 +85,8 @@ Prefer to do it yourself? `BOOTSTRAP.md` has a manual checklist too, and the Qui
 
 Claude Code and Codex CLI overlap in capability but differ in token budget, scoping, and review
 style. Most non-trivial work benefits from using both. Whichever CLI you **open** becomes the
-control-plane main (requirements, planning, design, orchestration, judgment); delegated sub-agent
-execution stays Codex-centered (code writing, TDD, review). The two mains share one contract — the
+control-plane main (requirements, planning, design, orchestration, judgment). When delegation is
+selected, Codex is the preferred backend for code, TDD, and independent review. The two mains share one contract — the
 rules, hooks, memory, and architecture apply identically no matter which CLI you launched. This
 template assumes you will run both — and pins the rules so they cannot drift apart.
 
@@ -124,9 +122,9 @@ Goal-Driven Execution) live in [`global-rules/`](global-rules/) — merge them i
 `~/.claude/CLAUDE.md` and `~/.codex/AGENTS.md` if you want them applied across all your repos, not
 just this one. They are optional; the project-local `CLAUDE.md` is self-sufficient without them.
 
-Without the Codex lane wired, the Claude side still works fully (hooks, gates, Claude agents) — but
-`force_codex` delegation will report `BLOCKED` because there is no Codex backend to route to; set
-`config/sub-agent-policy.json` `mode` to `unrestricted` for a Claude-only setup.
+Without the Codex lane wired, the Claude side still works fully. A missing preferred lane limits
+that route but does not block safe bounded direct or manual work. Select `force_codex` only when the
+project intentionally requires that delegated backend.
 
 ## Team use (required gates)
 
@@ -170,19 +168,18 @@ Both CLIs will pick up the hooks on next launch. No daemon, no background proces
 
 ## Using the harness — the loop
 
-For any non-trivial change the harness expects this loop (the gates enforce most of it):
+Use the smallest sufficient loop for the change:
 
-1. **Design first.** Trigger the `design` skill (or just describe the change). For harness / ADR /
-   architecture work this is a hard gate before code; capture `user_intent` + design goals up front.
-2. **Plan the TDD.** Add a `change` entry to `tasks/tdd.json` for the files you'll touch, with the
-   verification command(s). Implementation edits stay blocked until this entry exists.
-3. **Delegate the code.** Under `force_codex` the main orchestrates but does **not** edit production
-   code inline — it routes edits to the Codex lane (`mir_executor … --dispatch`), and the worktree
-   + merge gate verify the result by `git diff`.
-4. **Verify.** The pre-commit hook re-runs the ledger's verification commands; a commit whose `pass`
-   entry does not actually pass is blocked. Run the full suite yourself before pushing.
-5. **Close out.** `session-closeout` records intent + a handoff so the next session — or the *other*
-   CLI — resumes with full context. Intent survives compaction and context resets.
+1. **Understand the boundary.** Use `design` when a material choice exists; tiny, clear work may
+   proceed directly.
+2. **Choose evidence.** Use `tasks/tdd.json` for broad or high-risk work. Otherwise identify the
+   smallest check that can fail for the changed behavior.
+3. **Choose execution.** Main may implement bounded work directly. Delegate when isolation,
+   parallelism, specialist context, independent review, or restartability is worth the cost.
+4. **Verify.** Run the selected check and add broader coverage only when the risk or release context
+   warrants it. Failed explicitly required verification blocks a completion claim.
+5. **Close out.** Refresh the canonical handoff with decisions, unresolved issues, next actions,
+   changed files, verification, and key risks.
 
 Recall memory on demand instead of re-reading everything:
 
@@ -254,7 +251,7 @@ Skills load only when triggered. Body lives at `.claude/skills/<name>/SKILL.md`.
 
 ## Per-family JSON pattern
 
-The registry uses a per-family JSON split (ADR-15 v3.7):
+The registry uses a per-family JSON split (ADR-15 v3.8):
 
 ```
 config/
@@ -315,7 +312,7 @@ python3 scripts/verify_repo_agent_management.py
 │   └── repos/                  #   per-family entries (empty in template)
 │
 ├── tools/                      # harness tooling
-│   ├── catalog_loader.py       #   ADR-15 v3.7 per-family catalog aggregator
+│   ├── catalog_loader.py       #   ADR-15 v3.8 per-family catalog aggregator
 │   ├── agent_loader/           #   ADR-09 frontmatter parser + validator
 │   └── profile_compiler/       #   role-policy compiler stub (extend for your fleet)
 │
@@ -376,28 +373,26 @@ The ledger has 12 categories — `unit`, `integration`, `e2e`, `browser`, `edge`
 
 ## Sub-agent execution policy & delegated execution
 
-The harness runs on one split: **the opened CLI is the control-plane main (orchestration only);
-the sub-agents that do the heavy, context-hungry work — code edits, TDD, review, verification —
-run as delegated executors.** A single global setting decides which backend those sub-agents use,
-and a hook makes the choice enforceable rather than advisory.
+The opened CLI is the control-plane Main. It may work directly or select delegated executors when
+their isolation, parallelism, or independent context adds value. A project-owned setting chooses
+the backend for work that is delegated.
 
 ### The policy switch — `config/sub-agent-policy.json`
 
 ```json
-{ "mode": "force_codex", "per_project": {} }
+{ "mode": "unrestricted", "per_project": {} }
 ```
 
 | mode | behavior |
 |---|---|
-| `force_codex` *(default)* | Claude `Agent`/`Task` sub-agent spawns are **hard-blocked**; all delegated work routes to the Codex lane. |
+| `force_codex` | Explicitly requires delegated work to use the Codex lane. |
 | `select` | honors an explicit per-call backend request (`--execution-backend`). |
 | `per_project` | per-repo override keyed by slug. |
-| `unrestricted` | no sub-agent constraint. |
+| `unrestricted` *(default)* | No sub-agent backend constraint; Main still applies repository policy. |
 
-A home-server overlay env (`MIR_SUB_AGENT_POLICY=<abs-path-to-policy.json>`) changes the mode without editing
-the repo file; the resolver fails closed to `force_codex` on any error. The overlay shallow-merges
-over the repo file, so a `routing`-only overlay changes routing while leaving each repo's `mode`
-intact.
+A home-server overlay env (`MIR_SUB_AGENT_POLICY=<abs-path-to-policy.json>`) changes the mode without
+editing the repo file. The overlay shallow-merges over the repo file, so a `routing`-only overlay
+changes routing while leaving each repo's `mode` intact.
 
 ### Model/effort routing — priority schema
 
@@ -406,7 +401,7 @@ codex call uses, per TDD category:
 
 ```json
 {
-  "mode": "force_codex",
+  "mode": "unrestricted",
   "routing": {
     "model_rank":  ["<top-model>", "<mid-model>", "<small-model>"],
     "effort_rank": ["xhigh", "high", "medium", "low"],
@@ -441,7 +436,8 @@ calls cannot be hook-intercepted, so resolution is uniform on both paths.)
 
 ### The gate — `.claude/hooks/sub-agent-policy-gate.sh`
 
-Wired as a PreToolUse hook matching `^(Agent|Task)$`. When the mode is `force_codex` and a Claude
+Wired as a PreToolUse hook matching `^(Agent|Task)$`. When a project explicitly selects
+`force_codex` and a Claude
 `Agent`/`Task` spawn is attempted, the hook prints a route-to-Codex message and **exits 2**
 (blocked). It is slug-free and family-invariant, so the same file deploys to every repo.
 
@@ -452,14 +448,14 @@ MIR_R3_FALLBACK=1 <your command>
 $EDITOR config/sub-agent-policy.json   # set "mode": "unrestricted"
 ```
 
-### Delegated execution is a verified Codex worktree — `mir_executor --dispatch`
+### Optional isolated delegation — `mir_executor --dispatch`
 
-Delegated code work never edits your main tree directly:
+When isolated delegation is useful, run it in a verified worktree:
 
 ```bash
 uv run python -m tools.mir_executor execute --background --dispatch \
   --change-id <ledger-id> --category <tdd-category> --repo-root . \
-  --codex-args 'exec --sandbox workspace-write "<task or DispatchBrief ref>"' \
+  --codex-args '<task or DispatchBrief ref>' \
   --allow-path tools/ --allow-path tests/ \
   --verify-cmd "uv run pytest tests/ -q"
 ```
@@ -476,7 +472,7 @@ This is "trust the filesystem, not the self-report" made executable, and it is t
 
 ### Self-recognition — the monitor
 
-A deterministic, LLM-free scanner (`stall_watchdog`) reads the session transcript and reports, via
+A deterministic, LLM-free scanner (`stall_watchdog`) can read the session transcript and report, via
 `agent-check`, whether any Claude `Agent`/`Task` sub-agent ran while the policy was `force_codex`
 — so the operating main can notice and self-correct:
 
@@ -493,7 +489,7 @@ which backend it must use.
 
 ### 1. Add your family repository
 
-Create `config/repos/my-repo.json`:
+Use `config/repos/example.json` as the canonical template for your repository entry:
 
 ```json
 {
@@ -552,10 +548,8 @@ Run `python3 scripts/verify_repo_agent_management.py` to confirm the registry is
 
 ## Comparison
 
-This template is opinionated about one specific thing: **enforcement**. It exists because
-advisory rules in markdown — "please don't push to main", "remember to write tests" — are read
-by AI agents the same way humans read EULAs. Rules need to be code that runs, not text that gets
-glanced at.
+This template is opinionated about one specific thing: deterministic hazards should have executable
+guards, while workflow choices should stay proportional to the task.
 
 ### The unique slice
 
@@ -563,8 +557,8 @@ Specifically, this template is the only one in the comparison table that:
 
 1. **Wires both Claude Code and Codex CLI to the same hook scripts**, so when you fix a deny-list
    pattern it fixes both CLIs without a copy.
-2. **Gates implementation edits behind a typed TDD ledger** (`tasks/tdd.json`), not a free-form
-   list. The 12-category matrix is the contract.
+2. **Provides a typed TDD ledger** (`tasks/tdd.json`) for broad or high-risk work without forcing it
+   onto every bounded edit.
 3. **Carries a 12-agent catalog with declared execution backends** so the orchestrator knows at
    dispatch time whether to use `claude` or the MCP-backed Codex lane — no runtime guessing.
 4. **Treats hook bypass attempts (e.g. `--no-verify`) as deny-list patterns themselves**, so the
@@ -577,7 +571,7 @@ Specifically, this template is the only one in the comparison table that:
 
 - A repo where you run both Claude Code and Codex CLI and want them to stay coherent.
 - A team where "please don't" notes have failed before.
-- A project that can express its TDD plan in 12 categories before each change.
+- A project that wants a structured TDD matrix for changes whose risk justifies one.
 - A solo developer who wants the Saturday-morning AI-edit session to not destroy Friday-night's work.
 
 ### When this template is the wrong fit

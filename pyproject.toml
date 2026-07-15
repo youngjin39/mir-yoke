@@ -1,6 +1,6 @@
 [project]
 name = "mir-harness"
-version = "0.5.0"
+version = "0.7.0"
 description = "mir-yoke — public template for Claude Code + Codex teams"
 readme = "README.md"
 license = {file = "LICENSE"}

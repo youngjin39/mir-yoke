@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "catalog_revision": "v3.7",
+  "catalog_revision": "v3.8",
   "purpose": "Per-repository agent-management registry for the Claude+Codex Harness Template. Fork and customize for your fleet.",
   "repositories_dir": "config/repos",
   "catalog": {
@@ -349,6 +349,13 @@
         "scope": "universal",
         "status": "active",
         "source_path": ".claude/skills/commit/"
+      },
+      "memory-gc": {
+        "category": "automation",
+        "absorbs": [],
+        "scope": "meta_harness",
+        "status": "active",
+        "source_path": ".claude/skills/memory-gc/"
       }
     }
   },

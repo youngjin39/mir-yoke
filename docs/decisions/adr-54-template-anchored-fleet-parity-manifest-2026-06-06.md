@@ -1,21 +1,26 @@
 ---
 adr: 54
 status: accepted
-source: mirrored-summary
+date: 2026-06-06
+amended: 2026-07-15
+source: sanitized-template-summary
+amended_by: [adr-73]
 ---
 
-# ADR-54 — Template-Anchored Fleet Parity Manifest
+# ADR-54 — Template-Anchored Parity Manifest
 
-## Context
+## Current Decision
 
-The public template needs a stable reference record for ADR-54 so applied-state verification can confirm the baseline catalog is complete.
+`config/parity-manifest.json` is a generated, read-only comparison artifact anchored to a known
+Mir Yoke release. It reports drift on portable template-owned surfaces after the declared
+normalization. It does not select repositories, authorize writes, or require family-owned files to
+match the template.
 
-## Decision
+The manifest is refreshed from the public template source after a release commit. A stale base
+makes parity findings advisory until the manifest is regenerated. Scans are user-directed; this ADR
+does not install a weekly scheduler or mutation step.
 
-ADR-54 mechanizes template-to-repository parity as a generated manifest plus an advisory checker and a weekly read-only scan, turning the question 'is this repository in sync with the template?' into a deterministic command. The template preserves a concise, English-only reference stub for this ADR number. Detailed execution history remains in the mir-harness control repository.
+## ADR-73 Precedence
 
-## Consequences
-
-- The template keeps a stable ADR number map.
-- Public consumers can verify baseline completeness.
-- Repository-specific operational detail stays in mir-harness.
+Repair only deterministic portable drift. Repository-specific behavior and optional surfaces remain
+profile-owned and are not overwritten merely to make a hash pass.

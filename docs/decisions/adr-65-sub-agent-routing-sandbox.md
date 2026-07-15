@@ -1,39 +1,29 @@
 ---
 adr: 65
 status: accepted
-source: mirrored-summary
+date: 2026-07-02
+amended: 2026-07-15
+source: sanitized-template-summary
+amended_by: [adr-69, adr-73]
 ---
 
-# ADR-65 — Sub-Agent Routing and Codex Sandbox Policy
+# ADR-65 — Delegated Routing and Sandbox Policy
 
-## Context
+## Current Decision
 
-The public template needs a stable, generic routing record for Codex-backed sub-agent work. The
-record must describe the operational contract without repository-specific paths, private deployment
-names, or secrets.
+When delegation is selected:
 
-## Decision
+- Claude Main uses the supported Codex MCP lane.
+- Codex Main may use its native sub-agent lane.
+- Isolated in-repository mutation may use MCP-backed `mir_executor --dispatch` when its worktree,
+  allowlist, and merge evidence justify the coordination cost.
+- Raw `codex exec` is prohibited by ADR-69.
 
-Sub-agent routing depends on which CLI owns the main control plane:
+Mutating Codex lanes use the approved sandbox and repository safety boundaries. Read-only work may
+use a narrower sandbox when the active runtime supports it.
 
-- Claude-main routes Codex sub-agent work through Codex MCP. Start with `mcp__codex__codex`; continue
-  the same conversation with `codex-reply`.
-- Codex-main routes Codex sub-agent work through native `multi_agent_v1`: `tool_search`,
-  `spawn_agent`, `wait_agent`, then `close_agent`.
-- In-repo code, TDD, and review work routes through `mir_executor --dispatch`, preserving dispatch
-  worktrees, deterministic merge gates, and TDD evidence.
-- Raw `codex exec` is banned by ADR-69. Missing MCP/native routing means `BLOCKED`, never an exec
-  fallback.
+## ADR-73 Precedence
 
-Codex MCP and mutating Codex lanes use `sandbox=danger-full-access`. `workspace-write` is forbidden
-for those lanes. Read-only cases may still use `read-only`.
-
-## Consequences
-
-- Claude-main and Codex-main keep the same control-plane contract while using the routing surface
-  native to each runtime.
-- Mutating repository work keeps deterministic merge and verification gates.
-- Raw exec availability failures surface as `BLOCKED` provisioning issues instead of fallback
-  execution.
-- The public template carries only generic English policy text; private paths, deployment names, and
-  secrets stay out of the template.
+These are routing rules for delegated work, not a requirement to delegate every code change. An
+unavailable preferred lane is a lane limitation; it blocks the task only when no safe in-scope path
+remains.

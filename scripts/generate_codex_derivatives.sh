@@ -3,14 +3,12 @@
 # Attribution: claude-starter (yojini/claude-starter, Apache-2.0)
 # Modifications:
 #   - Mir-specific manifest path (.codex-sync/manifest.json — same)
-#   - Mir skill profiles: core=12 runtime-default skills, full=18 including Starter-derived optional packs
+#   - Mir skill profiles: core=full=12 consolidated runtime groups
 #   - Agent TOML mirrors are generated from .claude/agents source.
 #   - write_hooks_json() SKIPPED (repository-owned P0-G hooks.json preserved byte-for-byte)
 #   - codex_hooks = true added to [features] in write_config_toml
 #   - link_skill_md uses symlinks (claude-starter approach replaces old write_skill_md copy)
-#   - FULL_SKILLS expanded to Mir 19: core 12 + Starter-derived optional-pack skills
-#     (ai-readiness-cartography, improve-token-efficiency, knowledge-ingest,
-#      knowledge-lint, browser-automation, code-review-graph).
+#   - FULL_SKILLS matches the 12 consolidated runtime skill groups.
 
 set -euo pipefail
 shopt -s nullglob
@@ -599,7 +597,7 @@ write_manifest_json() {
     echo '  "version": 1,'
     echo '  "strategy": "one-way-claude-to-codex",'
     echo '  "generated_by": "scripts/generate_codex_derivatives.sh",'
-    echo '  "notes": "Profiles: core=12 runtime-default skills, full=18 including Starter-derived optional-pack skills.",'
+    echo '  "notes": "Profiles: core=12 runtime-default skills, full=12 after consolidation.",'
     echo '  "mappings": ['
 
     local first=1
@@ -651,6 +649,7 @@ write_manifest_json() {
     while IFS= read -r src; do
       [ -n "$src" ] || continue
       name="$(extract_frontmatter_field "$src" "name")"
+      [ -n "$name" ] || continue
       append_mapping "$src" "[\".codex/agents/${name}.toml\"]" "content" "Generated custom agent"
     done < <(printf '%s\n' .claude/agents/*.md | LC_ALL=C sort)
 
@@ -703,6 +702,7 @@ fi
 while IFS= read -r src; do
   [ -n "$src" ] || continue
   name="$(extract_frontmatter_field "$src" "name")"
+  [ -n "$name" ] || continue
   write_agent_toml "$src"
 done < <(printf '%s\n' .claude/agents/*.md | LC_ALL=C sort)
 

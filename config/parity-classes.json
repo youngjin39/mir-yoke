@@ -44,11 +44,10 @@
     },
     {
       "path": ".claude/hooks/session-start.sh",
-      "ownership_class": "marker-block",
+      "ownership_class": "parameterized",
       "params": {
-        "marker_name": "mir:adr53:context-core",
-        "marker_begin": "# mir:adr53:context-core:begin",
-        "marker_end": "# mir:adr53:context-core:end"
+        "slug_site_count": 2,
+        "note": "Current compact SessionStart hook differs only by repository slug; the former mir:adr53:context-core marker was retired."
       }
     },
     {

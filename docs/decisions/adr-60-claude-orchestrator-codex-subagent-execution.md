@@ -1,33 +1,28 @@
 ---
 adr: 60
 status: accepted
-source: mirrored-summary
+date: 2026-06-22
+amended: 2026-07-15
+source: sanitized-template-summary
+amended_by: [adr-65, adr-69, adr-73]
 ---
 
-# ADR-60 — Claude-Orchestrator / MCP-Backed Codex Sub-Agent Execution
+# ADR-60 — Delegated Isolation and Main-Owned Integration
 
-## Context
+## Current Decision
 
-The public template needs a stable reference record for ADR-60 so applied-state
-verification can confirm the baseline catalog is complete.
+Whichever supported CLI is opened is the control-plane Main. Main owns scope, any active plan
+cursor, integration judgment, verification synthesis, and final communication.
 
-## Decision
+When delegated mutation benefits from isolation or restartability, use the repository-approved
+dispatch lane and a separate worktree. Accept delegated output only with deterministic changed-path
+and relevant verification evidence. Job age and inactivity remain advisory and never authorize
+automatic failure, retry, or worktree deletion.
 
-The orchestration/execution split is codified: the opened main session is the orchestrator (control
-plane — requirements, design, dispatch judgment, the cursor), and backend-capable sub-agent work
-routes through Codex without direct Claude-model Agent-loop execution. ADR-69 amends the transport:
-Claude→Codex uses MCP, in-repo code/TDD/review writes use MCP-backed `mir_executor --dispatch`, and
-Codex→Codex breadth uses native `multi_agent_v1`. Raw `codex exec` is banned; a missing MCP/native
-path is `BLOCKED`, never an exec fallback. Each mutating sub-agent run uses its own git worktree
-(structural isolation: it works on a copy and cannot reach the shared control cursor) and reports a
-structured result the orchestrator reads and merges only after verification. The cursor is main-only
-(the delegated agent never edits it); each dispatch is monitored, with the orchestrator running a
-health check after every dispatch. Detailed execution history remains in the upstream control
-repository.
+## ADR-73 Precedence
 
-## Consequences
+Delegation, per-agent worktrees, health checks, and fixed retry sequences are not universal entry
+gates. Bounded work may be completed directly by Main. A missing preferred lane does not block safe
+direct, native, MCP, or manual work that remains within the repository contract.
 
-- The template keeps a stable ADR number map.
-- Public consumers can verify baseline completeness.
-- Sub-agent execution is token-conserving, isolated, and monitored; the control cursor stays
-  main-owned; deterministic gates and human-in-the-loop control are preserved.
+Raw `codex exec` remains prohibited by ADR-69.

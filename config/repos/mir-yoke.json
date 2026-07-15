@@ -1,18 +1,18 @@
 {
   "$schema": "../repo-agent-management.schema.json#/$defs/repository",
-  "slug": "example",
-  "display_name": "Example Code App",
-  "registry_path": "/path/to/your/repo",
-  "profile_slug": "example",
-  "repository_type": "code_app",
-  "rollout_class": "immediate_migrate",
-  "overlay_archetype": "code_app",
+  "slug": "mir-yoke",
+  "display_name": "Mir Yoke (public template)",
+  "registry_path": ".",
+  "profile_slug": "mir-yoke",
+  "repository_type": "template_transitional",
+  "rollout_class": "partial_migrate",
+  "overlay_archetype": "template_transitional",
   "status": "active",
-  "management_template_id": "code_app",
-  "management_mode": "harness-managed",
+  "management_template_id": "template_transitional",
+  "management_mode": "bounded-managed",
   "profile_source": {
-    "kind": "example-profile",
-    "path": "docs/examples/repositories/example/repo-profile.toml"
+    "kind": "live-profile",
+    "path": ".mir/repo-profile.toml"
   },
   "managed_domains": [
     "central_ownership_contract",
@@ -31,20 +31,21 @@
   },
   "exception_review": {
     "requires_repo_specific_runtime_review": false,
-    "protected_categories": []
+    "protected_categories": [
+      "public-template-license-surface"
+    ]
   },
   "evidence_trace": {
     "source_documents": [
-      "docs/examples/repositories/example/repo-profile.toml"
+      ".mir/repo-profile.toml"
     ],
     "open_questions": [],
     "assumptions": [
-      "Standard code_app template is sufficient for this repo."
+      "Private fleet paths and implementation-only policy remain outside the public template."
     ]
   },
   "notes": [
-    "Copy this file and rename for your repo, edit slug + display_name + registry_path.",
-    "This example ships with all 12 catalog agents and 12 catalog skills active by default (matches the template-wide policy). Trim the lists below if a specific repo does not need a specialist or skill — empty 'skill_overrides.add' / 'agent_overrides.add_specialists' mean no additions beyond active_*."
+    "Sanitized self-profile used by public harness-consistency generation and verification."
   ],
   "active_agents": [
     "main-orchestrator",
@@ -82,5 +83,7 @@
     "add": [],
     "remove": []
   },
-  "orchestration_profile": "standard"
+  "orchestration_profile": "standard",
+  "last_reviewed_at": "2026-07-15",
+  "rationale": "Public template self-profile aligned to the catalog v3.8 proportional baseline."
 }
