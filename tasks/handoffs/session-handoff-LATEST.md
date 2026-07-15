@@ -45,5 +45,5 @@
 - No open plan items.
 
 ### Working Tree
-- Working tree dirty (30 paths; inspect git status --short).
+- Working tree clean.
 <!-- mir:runtime-snapshot:end -->
