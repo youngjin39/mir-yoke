@@ -92,7 +92,7 @@ template assumes you will run both — and pins the rules so they cannot drift a
 
 The hook events shared by both CLIs — `PreToolUse`, `PostToolUse`, `PreCompact`,
 `SessionStart`, `Stop`, `PermissionRequest` — get the same script. Claude Code's additional
-events (`TaskCreated`, `TaskCompleted`, `StopFailure`) get Claude-only enforcement.
+events (`SessionEnd`, `TaskCreated`, `TaskCompleted`, `StopFailure`) get Claude-only enforcement.
 
 ---
 
@@ -324,8 +324,8 @@ python3 scripts/verify_repo_agent_management.py
 │   ├── tdd.json                #   composite TDD ledger (the gate)
 │   ├── change_log.md           #   what changed and why
 │   ├── lessons.md              #   patterns promoted to rules
-│   ├── sessions/               #   session snapshots
-│   └── handoffs/               #   inter-session handoffs
+│   ├── sessions/               #   Stop/StopFailure runtime audit logs
+│   └── handoffs/               #   canonical inter-session handoff
 │
 ├── docs/                       # prose memory + generated md projections
 │   ├── memory-map.md           #   keyword → file index (generated from .mir/memory.db)
@@ -541,8 +541,10 @@ entry has `id`, `pattern` (regex), `severity` (`block` / `warn`), and `reason`.
 
 ### 3. Set your role policy
 
-Edit `CLAUDE.md` (the role policy table) and `AGENTS.md` (the Codex-side mirror).
-Run `python3 scripts/verify_repo_agent_management.py` to confirm the registry is consistent.
+Edit `.mir/repo-profile.toml` for detailed role boundaries and keep only shared startup invariants
+in `CLAUDE.md`. Then run `scripts/generate_codex_derivatives.sh`; `AGENTS.md` is generated and must
+not be edited directly. Run `python3 scripts/verify_repo_agent_management.py` to confirm the
+registry is consistent.
 
 ---
 

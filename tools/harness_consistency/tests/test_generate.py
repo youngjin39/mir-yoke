@@ -25,16 +25,6 @@ def _schema() -> dict:
     )
 
 
-def _role_policy_render_args(manifest: dict) -> list[str]:
-    surfaces = manifest["rule_inputs"]["generated_marker_rerender"]["surfaces"]
-    return next(
-        surface["render_args"]
-        for surface in surfaces
-        if surface["file"] == "CLAUDE.md"
-        and surface["render_module"] == "tools.profile_compiler"
-    )
-
-
 def test_build_manifest_real_repo_section_and_rules() -> None:
     manifest = build_manifest(
         PROJECT_ROOT,
@@ -110,7 +100,7 @@ def test_build_manifest_non_fleet_manager_defaults(tmp_path: Path) -> None:
     }
 
 
-def test_build_manifest_localizes_generated_metadata_and_role_policy_surface(
+def test_build_manifest_localizes_metadata_without_private_profile_rendering(
     tmp_path: Path,
 ) -> None:
     profile_path = tmp_path / "demo-fam.json"
@@ -123,8 +113,6 @@ def test_build_manifest_localizes_generated_metadata_and_role_policy_surface(
     )
 
     manifest = build_manifest(PROJECT_ROOT, profile_path)
-    render_args = _role_policy_render_args(manifest)
-
     assert manifest["_generated"]["repo_slug"] == "demo-fam"
     assert "repo_root" not in manifest["_generated"]
     # template_repo is intentionally an absolute path (B2 fix: preserved verbatim).
@@ -140,14 +128,8 @@ def test_build_manifest_localizes_generated_metadata_and_role_policy_surface(
     assert "/Users/" not in dumped_no_template, (
         "host-absolute /Users/ path leaked into generated manifest (excluding template_repo)"
     )
-    assert render_args == [
-        "--family",
-        "demo-fam",
-        "--dry-run",
-        "--target",
-        "role-policy",
-    ]
-    assert "mir-harness" not in render_args
+    surfaces = manifest["rule_inputs"]["generated_marker_rerender"]["surfaces"]
+    assert all(surface["file"] != "CLAUDE.md" for surface in surfaces)
 
 
 def test_build_manifest_green_real_repo_runs_pass() -> None:

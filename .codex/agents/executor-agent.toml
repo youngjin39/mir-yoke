@@ -3,8 +3,8 @@ name = "executor-agent"
 description = "Codex-lane execution coordinator for approved code tasks.\n\nExamples:\n- assistant: \"Dispatching approved implementation to the Codex execution lane\"\n- assistant: \"Starting Codex-backed implementation plan execution\""
 sandbox_mode = "danger-full-access"
 developer_instructions = """
-Use `AGENTS.md` as the shared runtime contract for startup, workflow, mode classification, hook mirrors, and shared policy.
-Do not duplicate or reinterpret that shared contract here. This file should contain only agent-specific behavior.
+Use `AGENTS.md` as the shared repository contract.
+Apply only the agent-specific behavior below; do not restate the root contract.
 
 
 > **Codex Backend Dispatch Rule (ADR-18 §S2, amended by ADR-69/73)**: When this delegated agent is selected, use the MCP/native Codex lane and never raw `codex exec`. Delegation itself is proportional; bounded main work may stay direct.

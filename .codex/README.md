@@ -16,6 +16,8 @@
 | `PermissionRequest` | yes | `.claude/hooks/pre-tool-use.sh` (same deny-list) |
 
 `SessionEnd`, `TaskCreated`, `TaskCompleted` are Claude Code-only and do not exist in Codex CLI.
+On an explicit Codex closeout, run `.claude/hooks/session-end.sh` to refresh the same canonical
+`tasks/handoffs/session-handoff-LATEST.md` used by Claude.
 
 ## Auth and credentials
 

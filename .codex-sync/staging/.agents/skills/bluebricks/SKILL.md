@@ -1,1 +1,0 @@
-../../../../../.claude/skills/bluebricks/SKILL.md

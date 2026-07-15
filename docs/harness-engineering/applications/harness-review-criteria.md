@@ -37,7 +37,9 @@ Three parts: **A. Structure-review criteria** (how to audit one repo), **B. Impr
 ### A5. Token budget standard
 - Fixed per-session injection target: ≤ ~9K tok (the source repo class), ≤ ~8K (template adopters), family CLAUDE.md ≤ 12KB.
 - SessionStart stdout hard cap 10,240B (UTF-8-safe truncation) — fleet-wide invariant since Wave 3.
-- Ledger budgets via `config/doc-size-guard.json` (deterministic WARN at session start): plan.md 800 lines, tdd.json 20,000 lines, lessons.md 600 lines. Exceed → run archiver, never hand-trim.
+- Static document budgets live in `config/doc-size-guard.json` and are checked by the focused
+  derivative regression without adding a per-session subprocess. Exceed → run the relevant
+  archiver; never hand-trim generated ledgers.
 - Whole-file reads of ledgers are the top historical waste (2026-06-09 audit: read/grep ≈ 90% of original tokens) — prefer ranged reads; keep ledgers under budget so whole-reads stay cheap when they happen.
 
 ### A6. Contract-pin awareness
@@ -98,18 +100,20 @@ Three parts: **A. Structure-review criteria** (how to audit one repo), **B. Impr
 6. Close: lessons → DB, projections re-rendered, criteria doc updated if the method itself changed, backups refreshed (`python -m tools.backup_collector collect-fleet`) when the wave touched family repos.
 
 ### C4. Deterministic verifier command set (run per review; zero-LLM-token)
-> Note: several entries below (`tools.harness_consistency`, `tools.fleet_skill_sync`, `mir doc-guard`, `verify_template_applied_state.py`) belong to the full Mir harness and are NOT wired into this template's minimal CLI subset — run them from the full harness, or skip on a fresh clone.
+> Note: several entries below (`tools.harness_consistency`, `tools.fleet_skill_sync`,
+> `verify_template_applied_state.py`) belong to the full Mir harness and are not wired into this
+> template's minimal CLI subset. Static document budgets are covered by the focused test below.
 ```
 uv run python -m tools.harness_consistency run            # the source repo self-check R1–R17
 uv run python scripts/verify_repo_agent_management.py     # catalog ↔ profiles ↔ disk
 uv run python -m tools.fleet_skill_sync                   # deployed skills vs canonical
 uv run python scripts/verify_template_applied_state.py --template <T> --the source repo <M> --format json
-uv run mir doc-guard --config config/doc-size-guard.json --project-dir <repo>
+uv run pytest -q tests/test_codex_derivation_script.py
 uv run pytest -q                                          # full suite, read summary line directly
 launchctl list | grep com.mir                             # cron exit codes
 ```
 
 ### C5. Cadence
-- Deterministic scans: weekly (existing Monday fleet scan) + per-session doc-guard — zero LLM tokens.
+- Deterministic scans: run the focused static-budget regression during template verification.
 - Full 3-pillar fleet review: user-triggered (this document is the entry point); do not auto-fire.
 - Re-entry rule: a new full review starts from THIS document + the latest evidence-sink report — do not re-derive the method.

@@ -3,8 +3,8 @@ name = "template-sync-validator"
 description = "Sanitize consistency and public template sync validation specialist. Read-only. No code modification.\n\nExamples:\n- assistant: \"Dispatching template-sync-validator before mir-yoke public sync\"\n- assistant: \"Running template-sync-validator to check sanitize rule compliance\""
 sandbox_mode = "read-only"
 developer_instructions = """
-Use `AGENTS.md` as the shared runtime contract for startup, workflow, mode classification, hook mirrors, and shared policy.
-Do not duplicate or reinterpret that shared contract here. This file should contain only agent-specific behavior.
+Use `AGENTS.md` as the shared repository contract.
+Apply only the agent-specific behavior below; do not restate the root contract.
 Do not use these tools in this generated Codex mirror: Write, Edit.
 
 

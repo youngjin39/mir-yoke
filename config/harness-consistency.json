@@ -218,21 +218,6 @@
           ],
           "source": ".mir/memory.db",
           "skip_if_source_absent": true
-        },
-        {
-          "file": "CLAUDE.md",
-          "marker_begin": "<!-- mir:profile:role-policy:begin -->",
-          "marker_end": "<!-- mir:profile:role-policy:end -->",
-          "render_module": "tools.profile_compiler",
-          "render_args": [
-            "--family",
-            "mir-yoke",
-            "--dry-run",
-            "--target",
-            "role-policy"
-          ],
-          "source": ".mir/repo-profile.toml",
-          "skip_if_source_absent": true
         }
       ]
     },
@@ -319,7 +304,7 @@
       "agents_md": "AGENTS.md",
       "memory_marker": "mir:generated",
       "marker_surfaces": ["docs/memory-map.md", "tasks/lessons.md"],
-      "mirror_heading": "## Memory (DB-canonical"
+      "mirror_heading": "## Outcome and completion"
     }
   }
 }

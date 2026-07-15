@@ -1,1 +1,0 @@
-../../../../../.claude/skills/ui-design/SKILL.md

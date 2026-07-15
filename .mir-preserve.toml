@@ -8,8 +8,9 @@ paths = [
 
 [claude_md_preserve]
 sections = [
-  "## Template Purpose",
-  "## Role Policy (Template Profile)",
-  "## Hook Policy Boundary",
-  "## Workflow"
+  "## Outcome and completion",
+  "## Bootstrap and sources",
+  "## Authority and safety",
+  "## Execution and evidence",
+  "## Role policy (template summary)"
 ]

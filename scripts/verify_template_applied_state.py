@@ -50,9 +50,12 @@ CHECK_LABELS = {
 }
 
 ROLE_POLICY_SNIPPETS = (
-    "share the same default main-agent contract",
-    "are the default execution plane",
-    "is the default backend for delegated backend-capable execution work",
+    "The opened Claude or Codex CLI acts as `control_plane`; "
+    "both own final scope and verification.",
+    "`codex_first` / `code_tdd_review_plane` is a delegated-lane preference, "
+    "not a direct-work gate.",
+    "All detailed path, capability, boundary, and gate values remain canonical "
+    "in `.mir/repo-profile.toml`",
 )
 
 

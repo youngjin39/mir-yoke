@@ -956,40 +956,39 @@
   },
   "hook_policy": {
     "enforcement_domain": [
-      "tools/",
-      "src/",
-      "lib/",
-      "pre-commit (lint+test gate)",
-      "tdd-guard (implementation-before-test block)"
+      "deterministic destructive-operation blocks",
+      "credential, secret, and privacy boundaries",
+      "protected Git or repository boundaries",
+      "raw codex exec delegation ban",
+      "explicitly selected required verification failures"
     ],
     "advisory_domain": [
-      ".claude/agents/",
-      ".claude/skills/",
-      "config/repo-agent-management.json",
-      "docs/",
-      "tasks/"
+      "direct-versus-delegated routing",
+      "code-path ownership guidance",
+      "TDD ledger and review selection",
+      "progress and monitoring cadence",
+      "documentation and task-state hygiene"
     ],
-    "doc_pointer": "CLAUDE.md#hook-policy-boundary"
+    "doc_pointer": "CLAUDE.md#authority-and-safety"
   },
   "claude_codex_compatibility": {
-    "claude_only_responsibilities": [
+    "shared_main_responsibilities": [
       "requirements clarification",
       "architecture",
-      "design approval",
+      "design",
       "orchestration",
       "planning",
       "dispatch",
       "exception handling",
+      "bounded direct execution",
+      "verification synthesis",
       "final merge judgment"
     ],
-    "codex_only_responsibilities": [
-      "code writing",
-      "code modification",
-      "composite TDD execution",
-      "deterministic verification",
-      "code review"
+    "delegated_backend_preferences": [
+      "Codex-first for code, TDD, and independent review when delegation is selected",
+      "delegation remains proportional rather than a direct-work gate"
     ],
-    "runtime_override_path": "tasks/plan.md or the active handoff note",
+    "runtime_override_path": "tasks/plan.md or the active handoff note for material role swaps only",
     "doc_pointer": "docs/decisions/role-policy.md"
   },
   "change_log": []

@@ -33,6 +33,33 @@ def main() -> int:
             path = ROOT / target
             if not path.exists() and not path.is_symlink():
                 failures.append(f"missing target: {target}")
+            if (
+                mapping.get("sync_policy") == "symlink"
+                and source.startswith(".claude/skills/")
+            ):
+                if not path.is_symlink():
+                    failures.append(f"project skill target is not a directory symlink: {target}")
+                elif path.resolve() != (ROOT / source).resolve():
+                    failures.append(f"project skill target resolves to the wrong source: {target}")
+                staging_path = ROOT / ".codex-sync" / "staging" / target
+                if not staging_path.is_symlink():
+                    failures.append(
+                        f"staged project skill target is not a directory symlink: {target}"
+                    )
+                elif staging_path.resolve() != (ROOT / source).resolve():
+                    failures.append(
+                        f"staged project skill target resolves to the wrong source: {target}"
+                    )
+
+    agents_text = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+    if "- Skills: `" in agents_text:
+        failures.append("AGENTS.md duplicates the auto-discovered skill catalog")
+    if "adopt it as your session contract" in agents_text:
+        failures.append("AGENTS.md forces a custom-agent body into main startup context")
+    if "project_doc_fallback_filenames" in (ROOT / ".codex" / "config.toml").read_text(
+        encoding="utf-8"
+    ):
+        failures.append("Codex config redundantly declares AGENTS.md as its own fallback")
 
     with tempfile.TemporaryDirectory(prefix="mir-yoke-codex-sync-") as temp_dir:
         env = os.environ.copy()

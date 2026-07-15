@@ -111,7 +111,7 @@
     },
     "hook_policy": {
       "type": "object",
-      "description": "Catalog-level Hook policy enforcement vs advisory boundary summary. Pointer to CLAUDE.md Hook Policy Boundary section. ADR-15 S5 + architecture audit 2026-05-21 H1.",
+      "description": "Catalog-level deterministic safety enforcement versus advisory workflow summary.",
       "additionalProperties": false,
       "properties": {
         "enforcement_domain": {
@@ -119,14 +119,14 @@
           "items": {
             "type": "string"
           },
-          "description": "Path globs / surface names where Hook strictness applies (e.g., tools/, src/, pre-commit, tdd-guard)."
+          "description": "Deterministic safety or explicitly selected verification failures that may block."
         },
         "advisory_domain": {
           "type": "array",
           "items": {
             "type": "string"
           },
-          "description": "Path globs / surface names where Hook is observation-only."
+          "description": "Workflow and routing choices that remain advisory."
         },
         "doc_pointer": {
           "type": "string",
@@ -136,16 +136,16 @@
     },
     "claude_codex_compatibility": {
       "type": "object",
-      "description": "Catalog-level Claude+Codex coexistence policy summary. ADR-15 + ADR-18 + claude-codex-role-policy-2026-05-02.md.",
+      "description": "Catalog-level shared-Main and proportional delegated-backend policy summary.",
       "additionalProperties": false,
       "properties": {
-        "claude_only_responsibilities": {
+        "shared_main_responsibilities": {
           "type": "array",
           "items": {
             "type": "string"
           }
         },
-        "codex_only_responsibilities": {
+        "delegated_backend_preferences": {
           "type": "array",
           "items": {
             "type": "string"

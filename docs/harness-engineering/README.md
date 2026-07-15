@@ -98,7 +98,8 @@ When **feature-based** entry is needed rather than phase-based:
 
 - This directory is a **consolidated reference**. ADRs / actual operational decisions are placed in `docs/decisions/`.
 - Phase definitions do not correspond 1:1 to the phase numbers in `tasks/phase.json`. The phases in this document are **harness engineering conceptual stages**, and P0-F~P14 in `tasks/phase.json` are **harness implementation stages**. The two axes are mapped in [Appendix A §3](appendix-a-sources.md).
-- `CLAUDE.md` / `AGENTS.md` are the source of truth. This document is supplementary context.
+- `.mir/repo-profile.toml` owns detailed boundaries and `CLAUDE.md` owns shared startup
+  invariants. `AGENTS.md` is generated; this directory is supplementary context.
 
 ## 6. Update Policy
 

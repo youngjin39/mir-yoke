@@ -3,8 +3,8 @@ name = "main-orchestrator"
 description = "Main orchestrator. Entry point for all tasks.\n\nExamples:\n- user: \"Add new feature\"\n- user: \"Fix bug\"\n- user: \"Refactor\"\n- user: \"Prepare deployment\""
 sandbox_mode = "danger-full-access"
 developer_instructions = """
-Use `AGENTS.md` as the shared runtime contract for startup, workflow, mode classification, hook mirrors, and shared policy.
-Do not duplicate or reinterpret that shared contract here. This file should contain only agent-specific behavior.
+Use `AGENTS.md` as the shared repository contract.
+Apply only the agent-specific behavior below; do not restate the root contract.
 
 
 Role: Project-wide Claude control plane.

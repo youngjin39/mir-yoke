@@ -43,7 +43,9 @@ Ask the user, as a short numbered list, and wait for real answers:
 
 **c. Codex lane.** If they use Codex: `cp .mcp.json.example .mcp.json` and set the `codex` command (binary path) + `CODEX_HOME`. If Claude-only: set `config/sub-agent-policy.json` `"mode": "unrestricted"` (otherwise `force_codex` will BLOCK delegation with no Codex backend).
 
-**d. Role policy.** Adjust the role-policy table in `CLAUDE.md` (and the `AGENTS.md` mirror) for the project — usually the defaults are fine; only change if they want a non-standard main/delegation split.
+**d. Role policy.** Set project-specific role and boundary values in `.mir/repo-profile.toml`, keep
+only shared startup invariants in `CLAUDE.md`, then run `scripts/generate_codex_derivatives.sh`.
+`AGENTS.md` is generated and must not be edited directly.
 
 **e. Remove template-only content — ASK FIRST.** Offer to delete what the user does not need: `examples/`, `docs/harness-engineering/` (the template's own build history), template-specific ADRs. Keep `.claude/`, `.codex/`, `.ai-harness/`, `config/`, `tools/`, `src/`, hooks — those ARE the harness.
 

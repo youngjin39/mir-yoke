@@ -7,7 +7,7 @@
 #   - Agent TOML mirrors are generated from .claude/agents source.
 #   - write_hooks_json() SKIPPED (repository-owned P0-G hooks.json preserved byte-for-byte)
 #   - codex_hooks = true added to [features] in write_config_toml
-#   - link_skill_md uses symlinks (claude-starter approach replaces old write_skill_md copy)
+#   - link_skill_dir uses directory symlinks so Codex discovers project skills lazily
 #   - FULL_SKILLS matches the 12 consolidated runtime skill groups.
 
 set -euo pipefail
@@ -351,106 +351,18 @@ sys.stdout.write(text)
 }
 
 write_agents_md() {
-  local skill_list
-  skill_list="$(selected_skill_names | tr '\n' ',' | sed 's/,$//' | sed 's/,/, /g')"
-  if is_canonical_starter_claude CLAUDE.md; then
-    {
-      echo "<!-- GENERATED FILE: edit CLAUDE.md and rerun scripts/generate_codex_derivatives.sh -->"
-      echo
-      echo "# Codex Project Instructions"
-      echo
-      echo "## Source Of Truth"
-      echo "- Edit \`CLAUDE.md\`, \`.claude/agents/*\`, \`.claude/skills/*\`."
-      echo "- Do not hand-edit \`AGENTS.md\`, \`.codex/\`, or \`.agents/\`."
-      echo
-      echo "## Startup"
-      echo "- Read the startup context files required by the SessionStart mirror rule before acting."
-      echo "- Use generated Codex skills first."
-      echo "- If derived files are stale, regenerate from Claude source."
-      echo
-      echo "- Skills: \`$skill_list\`"
-      echo
-      emit_codex_required_reads CLAUDE.md
-      echo
-      emit_section CLAUDE.md "## Workflow"
-      echo
-      emit_section CLAUDE.md "## Mode Classification"
-      echo
-      emit_codex_agent_skill_hook_contract CLAUDE.md
-      echo
-      emit_section CLAUDE.md "## Harness Defaults"
-      echo
-      emit_section CLAUDE.md "## Custom Harness Rules"
-      echo
-      emit_section CLAUDE.md "## Codex Derivation Layer"
-      echo
-      emit_section CLAUDE.md "## Codex Use Boundary"
-      echo
-      emit_section CLAUDE.md "## Skill Trigger Table"
-      echo
-      emit_shared_policy_sections CLAUDE.md
-    } > "$OUTPUT_ROOT/AGENTS.md"
-  else
-    {
-      echo "<!-- GENERATED FILE: edit CLAUDE.md and rerun scripts/generate_codex_derivatives.sh -->"
-      echo
-      echo "# Codex Project Instructions"
-      echo
-      echo
-      echo "## Source Of Truth"
-      echo "- Edit \`CLAUDE.md\`, \`.claude/agents/*\`, \`.claude/skills/*\`."
-      echo "- Do not hand-edit \`AGENTS.md\`, \`.codex/\`, or \`.agents/\`."
-      echo
-      echo "## Startup"
-      echo "- Read the compact repository identity and safety context, classify the task, and retrieve only relevant depth."
-      echo "- Use generated Codex skills first."
-      echo "- If derived files are stale, regenerate from Claude source."
-      echo
-      echo "- Skills: \`$skill_list\`"
-      echo
-      cat <<'EOF'
-## Main-Agent Orchestration Contract
-- The opened CLI (Claude or Codex) is the control_plane main; Codex main carries the same orchestration contract as Claude main.
-- Full Startup Protocol, Ambiguity Gate, and Task Classification: `.codex/agents/main-orchestrator.toml` (generated mirror of `.claude/agents/main-orchestrator.md`) - adopt it as your session contract.
-- Ambiguity Gate:
-  - Specificity signals: file path, function name, numbered steps, or error message.
-  - 0 specificity signals -> load `design` skill (interview subtype) and resolve ambiguity before execution.
-  - `force:` prefix bypasses the ambiguity gate.
-- Task Classification:
-  - 0 specificity signals -> design interview -> ambiguity gating.
-  - Tiny or bounded work -> execute directly -> smallest useful check -> done.
-  - Normal work -> use a short design note only when a material choice exists; execute directly or delegate when useful.
-  - Heavy, restartable, or cross-repo work -> persist a plan or `DispatchBrief`; use isolation or delegation when it reduces risk.
-- Classify from uncertainty, blast radius, coordination, and reversibility, not step or file count.
-- Source-of-truth, protected-scope, and fleet rollout boundaries still apply to harness and generated surfaces.
+  {
+    echo "<!-- GENERATED FILE: edit CLAUDE.md and rerun scripts/generate_codex_derivatives.sh -->"
+    echo
+    body_without_frontmatter CLAUDE.md
+    echo
+    cat <<'EOF'
+## Codex closeout delta
 
-## Codex Hook-Mirror Obligations
-- [Codex] `SessionStart`: read the compact repository profile and safety context. Do not automatically full-read `tasks/plan.md`, lessons, history, or unrelated workflow docs; retrieve them only after task classification.
-- [Codex] `PreCompact`: before compaction, manually create a handoff document in `tasks/handoffs/` mirroring the PreCompact contract.
-- [Codex] `PostToolUse`: after edits, manually review for debug leftovers and credential leaks.
-- [Codex] `SessionEnd`: at session end, manually create a session snapshot in `tasks/sessions/` mirroring the SessionEnd contract.
-- [Codex] `UserPromptSubmit`: for substantial prompts, run `uv run mir context pull "<query>" [--path <target>] [--risk low|normal|high]` for task-scoped retrieval.
-- [Codex] `TaskCreated` / `TaskCompleted`: use `tasks/tdd.json` for broad or high-risk work; lifecycle hooks are advisory.
+Codex has no native `SessionEnd` event. On an explicit closeout request, run the canonical
+`.claude/hooks/session-end.sh` path named above.
 EOF
-      # DEDUP GUARD: only inject if CLAUDE.md does NOT already contain the section.
-      # (Some CLAUDE.md variants have it and it arrives via body_without_frontmatter below.)
-      if ! grep -q '## Continuation Loop Protocol' CLAUDE.md 2>/dev/null; then
-        echo
-        cat <<'LOOP_EOF'
-## Continuation Loop Protocol
-- Use the file-backed loop only for restartable, delegated, or multi-session work.
-- `tasks/plan.md` is the sole cursor when used; do not create a second cursor in `run_state.json`.
-- Execute coherent independently verifiable work units and update the declared evidence before advancing the cursor.
-- A failed step returns control without automatic retry. Retry only after a plausible transient cause or a material brief or approach change.
-- `BLOCKED` means no safe in-scope path remains without new authority or repair of an explicit failed requirement.
-- Non-LLM automation must preserve protected boundaries and explicitly selected verification.
-- `tools/run_orchestrator` remains observer-only; it is not the continuation executor.
-LOOP_EOF
-      fi
-      echo
-      body_without_frontmatter CLAUDE.md
-    } > "$OUTPUT_ROOT/AGENTS.md"
-  fi
+  } > "$OUTPUT_ROOT/AGENTS.md"
 }
 
 write_config_toml() {
@@ -490,7 +402,6 @@ write_config_toml() {
     echo 'sandbox_mode = "danger-full-access"'
     echo 'web_search = "cached"'
     echo 'personality = "pragmatic"'
-    echo 'project_doc_fallback_filenames = ["AGENTS.md"]'
     echo 'project_doc_max_bytes = 32768'
     echo
     echo '[agents]'
@@ -553,8 +464,8 @@ write_agent_toml() {
     echo "description = \"$description\""
     echo "sandbox_mode = \"$sandbox_mode\""
     echo 'developer_instructions = """'
-    echo "Use \`AGENTS.md\` as the shared runtime contract for startup, workflow, mode classification, hook mirrors, and shared policy."
-    echo "Do not duplicate or reinterpret that shared contract here. This file should contain only agent-specific behavior."
+    echo "Use \`AGENTS.md\` as the shared repository contract."
+    echo "Apply only the agent-specific behavior below; do not restate the root contract."
     if [ -n "$disallowed_tools" ]; then
       echo "Do not use these tools in this generated Codex mirror: $disallowed_tools."
     fi
@@ -564,29 +475,22 @@ write_agent_toml() {
   } > "$out"
 }
 
-link_skill_md() {
+link_skill_dir() {
   local src="$1"
-  local rel skill_name live_target staging_target live_link_target staging_link_target
-  rel="${src#.claude/skills/}"
+  local skill_name live_target staging_target live_link_target staging_link_target
   skill_name="$(basename "$(dirname "$src")")"
 
-  # Live .agents/skills/<X>/SKILL.md → ../../../.claude/skills/<X>/SKILL.md
-  live_target="$OUTPUT_ROOT/.agents/skills/$rel"
-  mkdir -p "$OUTPUT_ROOT/.agents/skills/$skill_name"
-  live_link_target="../../../.claude/skills/$skill_name/SKILL.md"
-  if [ -e "$live_target" ] && [ ! -L "$live_target" ]; then rm -rf "$live_target"; fi
-  if [ ! -L "$live_target" ]; then
-    ln -s "$live_link_target" "$live_target"
-  fi
+  live_target="$OUTPUT_ROOT/.agents/skills/$skill_name"
+  mkdir -p "$OUTPUT_ROOT/.agents/skills"
+  live_link_target="../../.claude/skills/$skill_name"
+  rm -rf "$live_target"
+  ln -s "$live_link_target" "$live_target"
 
-  # Staging .codex-sync/staging/.agents/skills/<X>/SKILL.md → ../../../../../.claude/skills/<X>/SKILL.md
-  staging_target="$OUTPUT_ROOT/.codex-sync/staging/.agents/skills/$rel"
-  mkdir -p "$OUTPUT_ROOT/.codex-sync/staging/.agents/skills/$skill_name"
-  staging_link_target="../../../../../.claude/skills/$skill_name/SKILL.md"
-  if [ -e "$staging_target" ] && [ ! -L "$staging_target" ]; then rm -rf "$staging_target"; fi
-  if [ ! -L "$staging_target" ]; then
-    ln -s "$staging_link_target" "$staging_target"
-  fi
+  staging_target="$OUTPUT_ROOT/.codex-sync/staging/.agents/skills/$skill_name"
+  mkdir -p "$OUTPUT_ROOT/.codex-sync/staging/.agents/skills"
+  staging_link_target="../../../../.claude/skills/$skill_name"
+  rm -rf "$staging_target"
+  ln -s "$staging_link_target" "$staging_target"
 }
 
 write_manifest_json() {
@@ -645,7 +549,7 @@ write_manifest_json() {
 
     append_mapping "CLAUDE.md" '["AGENTS.md"]' "content" "Main Codex instructions"
 
-    local src rel name
+    local src name
     while IFS= read -r src; do
       [ -n "$src" ] || continue
       name="$(extract_frontmatter_field "$src" "name")"
@@ -655,12 +559,11 @@ write_manifest_json() {
 
     while IFS= read -r src; do
       [ -n "$src" ] || continue
-      rel="${src#.claude/skills/}"
       name="$(basename "$(dirname "$src")")"
       if ! has_selected_skill "$name"; then
         continue
       fi
-      append_symlink_mapping "$src" "[\".agents/skills/${rel}\"]" "Symlinked Codex skill (symlink to .claude/skills/${name}/SKILL.md)"
+      append_symlink_mapping ".claude/skills/${name}" "[\".agents/skills/${name}\"]" "Symlinked Codex skill directory"
     done < <(printf '%s\n' .claude/skills/*/SKILL.md | LC_ALL=C sort)
 
     if [ -f ".claude/settings.local.json" ] || [ -f ".claude/settings.json" ] || [ -f ".mcp.json" ]; then
@@ -712,7 +615,7 @@ while IFS= read -r src; do
   if ! has_selected_skill "$name"; then
     continue
   fi
-  link_skill_md "$src"
+  link_skill_dir "$src"
 done < <(printf '%s\n' .claude/skills/*/SKILL.md | LC_ALL=C sort)
 
 write_manifest_json
@@ -723,6 +626,6 @@ echo "  $OUTPUT_ROOT/.codex/config.toml"
 echo "  $OUTPUT_ROOT/.codex/hooks.json (PRESERVED — P0-G artifact, not regenerated)"
 echo "  $OUTPUT_ROOT/.codex/agents/*.toml"
 echo "  $OUTPUT_ROOT/.codex/hooks/*.sh (peer source — not regenerated)"
-echo "  $OUTPUT_ROOT/.agents/skills/*/SKILL.md (symlinks to .claude/skills/*/SKILL.md)"
+echo "  $OUTPUT_ROOT/.agents/skills/* (directory symlinks to .claude/skills/*)"
 echo "  $OUTPUT_ROOT/.codex-sync/manifest.json"
 echo "  profile=$DERIVATION_PROFILE"

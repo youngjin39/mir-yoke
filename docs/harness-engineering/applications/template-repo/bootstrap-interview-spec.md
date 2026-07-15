@@ -128,8 +128,9 @@ Commit the same information to the family side (cross-reference + self-recovery 
 ### 5-3. `config/fleet-harness-state.json` new row append
 Add new family row to catalog + all phases default to `opt_in_pending`.
 
-### 5-4. Family repo CLAUDE.md / AGENTS.md
-Auto-replace template generic expressions with family-specific values (purpose, display_name reflected).
+### 5-4. Family repo profile and startup source
+Auto-replace template generic expressions in `.mir/repo-profile.toml` and `CLAUDE.md`, then
+regenerate `AGENTS.md` and other Codex derivatives.
 
 ### 5-5. Discord notification
 your-harness Role A sends new family registration notification (for user + self).
@@ -148,7 +149,7 @@ All inputs must conform to `repo-agent-management.schema.json` + `family-config.
 `python scripts/verify_repo_agent_management.py` auto-runs immediately after bootstrap → exit 0 required.
 
 ### 6-4. Runtime role contract pass required
-- Bootstrap output `CLAUDE.md` / `AGENTS.md` must preserve `Main agent parity:`.
+- Bootstrap output must preserve Claude/Codex Main parity in `CLAUDE.md` and generated `AGENTS.md`.
 - Bootstrap output profile baseline must specify `main_agent_contract = "shared_parity"` and `delegated_execution_contract = "subagents_codex_first"`.
 - Before public-template promotion, verify role contract with `python scripts/verify_template_applied_state.py` or equivalent verifier.
 

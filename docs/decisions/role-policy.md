@@ -26,7 +26,8 @@ This harness uses a **two-layer role policy**.
 - The opened main may execute bounded work directly. Delegated sub-agents are preferred when
   isolation, parallelism, specialist context, independent review, or restartability materially
   helps.
-- Codex is the default backend for delegated backend-capable execution work unless an explicit override or capability constraint requires otherwise.
+- Codex is the preferred backend when delegated backend-capable work is selected, unless an
+  explicit override or capability constraint requires otherwise.
 - Design artifacts, TDD ledgers, review rounds, worktrees, agent-check, and full-suite verification
   are proportional tools rather than universal prerequisites.
 

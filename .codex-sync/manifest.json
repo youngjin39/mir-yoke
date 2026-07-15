@@ -109,100 +109,100 @@
       "notes": "Generated custom agent"
     },
     {
-      "source": ".claude/skills/automation/SKILL.md",
-      "targets": [".agents/skills/automation/SKILL.md"],
+      "source": ".claude/skills/automation",
+      "targets": [".agents/skills/automation"],
       "change_scope": "symlink",
       "sync_policy": "symlink",
       "owner": "project-maintainer",
-      "notes": "Symlinked Codex skill (symlink to .claude/skills/automation/SKILL.md)"
+      "notes": "Symlinked Codex skill directory"
     },
     {
-      "source": ".claude/skills/bluebricks/SKILL.md",
-      "targets": [".agents/skills/bluebricks/SKILL.md"],
+      "source": ".claude/skills/bluebricks",
+      "targets": [".agents/skills/bluebricks"],
       "change_scope": "symlink",
       "sync_policy": "symlink",
       "owner": "project-maintainer",
-      "notes": "Symlinked Codex skill (symlink to .claude/skills/bluebricks/SKILL.md)"
+      "notes": "Symlinked Codex skill directory"
     },
     {
-      "source": ".claude/skills/code-review/SKILL.md",
-      "targets": [".agents/skills/code-review/SKILL.md"],
+      "source": ".claude/skills/code-review",
+      "targets": [".agents/skills/code-review"],
       "change_scope": "symlink",
       "sync_policy": "symlink",
       "owner": "project-maintainer",
-      "notes": "Symlinked Codex skill (symlink to .claude/skills/code-review/SKILL.md)"
+      "notes": "Symlinked Codex skill directory"
     },
     {
-      "source": ".claude/skills/commit/SKILL.md",
-      "targets": [".agents/skills/commit/SKILL.md"],
+      "source": ".claude/skills/commit",
+      "targets": [".agents/skills/commit"],
       "change_scope": "symlink",
       "sync_policy": "symlink",
       "owner": "project-maintainer",
-      "notes": "Symlinked Codex skill (symlink to .claude/skills/commit/SKILL.md)"
+      "notes": "Symlinked Codex skill directory"
     },
     {
-      "source": ".claude/skills/design/SKILL.md",
-      "targets": [".agents/skills/design/SKILL.md"],
+      "source": ".claude/skills/design",
+      "targets": [".agents/skills/design"],
       "change_scope": "symlink",
       "sync_policy": "symlink",
       "owner": "project-maintainer",
-      "notes": "Symlinked Codex skill (symlink to .claude/skills/design/SKILL.md)"
+      "notes": "Symlinked Codex skill directory"
     },
     {
-      "source": ".claude/skills/efficiency/SKILL.md",
-      "targets": [".agents/skills/efficiency/SKILL.md"],
+      "source": ".claude/skills/efficiency",
+      "targets": [".agents/skills/efficiency"],
       "change_scope": "symlink",
       "sync_policy": "symlink",
       "owner": "project-maintainer",
-      "notes": "Symlinked Codex skill (symlink to .claude/skills/efficiency/SKILL.md)"
+      "notes": "Symlinked Codex skill directory"
     },
     {
-      "source": ".claude/skills/governance/SKILL.md",
-      "targets": [".agents/skills/governance/SKILL.md"],
+      "source": ".claude/skills/governance",
+      "targets": [".agents/skills/governance"],
       "change_scope": "symlink",
       "sync_policy": "symlink",
       "owner": "project-maintainer",
-      "notes": "Symlinked Codex skill (symlink to .claude/skills/governance/SKILL.md)"
+      "notes": "Symlinked Codex skill directory"
     },
     {
-      "source": ".claude/skills/knowledge/SKILL.md",
-      "targets": [".agents/skills/knowledge/SKILL.md"],
+      "source": ".claude/skills/knowledge",
+      "targets": [".agents/skills/knowledge"],
       "change_scope": "symlink",
       "sync_policy": "symlink",
       "owner": "project-maintainer",
-      "notes": "Symlinked Codex skill (symlink to .claude/skills/knowledge/SKILL.md)"
+      "notes": "Symlinked Codex skill directory"
     },
     {
-      "source": ".claude/skills/memory-gc/SKILL.md",
-      "targets": [".agents/skills/memory-gc/SKILL.md"],
+      "source": ".claude/skills/memory-gc",
+      "targets": [".agents/skills/memory-gc"],
       "change_scope": "symlink",
       "sync_policy": "symlink",
       "owner": "project-maintainer",
-      "notes": "Symlinked Codex skill (symlink to .claude/skills/memory-gc/SKILL.md)"
+      "notes": "Symlinked Codex skill directory"
     },
     {
-      "source": ".claude/skills/testing/SKILL.md",
-      "targets": [".agents/skills/testing/SKILL.md"],
+      "source": ".claude/skills/testing",
+      "targets": [".agents/skills/testing"],
       "change_scope": "symlink",
       "sync_policy": "symlink",
       "owner": "project-maintainer",
-      "notes": "Symlinked Codex skill (symlink to .claude/skills/testing/SKILL.md)"
+      "notes": "Symlinked Codex skill directory"
     },
     {
-      "source": ".claude/skills/ui-design/SKILL.md",
-      "targets": [".agents/skills/ui-design/SKILL.md"],
+      "source": ".claude/skills/ui-design",
+      "targets": [".agents/skills/ui-design"],
       "change_scope": "symlink",
       "sync_policy": "symlink",
       "owner": "project-maintainer",
-      "notes": "Symlinked Codex skill (symlink to .claude/skills/ui-design/SKILL.md)"
+      "notes": "Symlinked Codex skill directory"
     },
     {
-      "source": ".claude/skills/verify/SKILL.md",
-      "targets": [".agents/skills/verify/SKILL.md"],
+      "source": ".claude/skills/verify",
+      "targets": [".agents/skills/verify"],
       "change_scope": "symlink",
       "sync_policy": "symlink",
       "owner": "project-maintainer",
-      "notes": "Symlinked Codex skill (symlink to .claude/skills/verify/SKILL.md)"
+      "notes": "Symlinked Codex skill directory"
     },
     {
       "source": ".claude/settings.json",

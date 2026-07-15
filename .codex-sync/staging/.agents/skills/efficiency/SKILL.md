@@ -1,1 +1,0 @@
-../../../../../.claude/skills/efficiency/SKILL.md

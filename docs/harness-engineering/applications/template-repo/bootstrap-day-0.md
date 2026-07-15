@@ -64,18 +64,20 @@ python scripts/verify_repo_agent_management.py
 # Expected: exit 0, no errors
 ```
 
-### Step 5 — Update Family CLAUDE.md / AGENTS.md
-Replace generic template expressions with family-specific values:
+### Step 5 — Update the family profile and startup source
+Replace generic template expressions in canonical sources, then regenerate Codex derivatives:
 ```bash
 # Replace family name + purpose (not Korean → English translation)
 sed -i "s/your-harness/recipe-tracker/g" CLAUDE.md
-sed -i "s/your-harness/recipe-tracker/g" AGENTS.md
+sed -i "s/your-harness/recipe-tracker/g" .mir/repo-profile.toml
+bash scripts/generate_codex_derivatives.sh
 ```
 
 After bootstrap, verify role contract:
-- Confirm `Main agent parity:` is preserved in `CLAUDE.md` and `AGENTS.md`
-- Confirm `Delegated sub-agents are the default execution plane` is preserved
-- Confirm `Codex-first backend default:` is preserved
+- Confirm Claude/Codex Main parity is preserved in generated `AGENTS.md`
+- Confirm bounded direct work remains valid and delegated lanes are selected only when their
+  isolation, parallelism, review, or restartability value justifies the cost
+- Confirm Codex-first remains a delegated-lane preference, not a direct-work gate
 
 ### Step 6 — Register in your-harness catalog
 ```bash

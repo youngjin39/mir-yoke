@@ -6,6 +6,32 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are kept for historical reference. All future entries use the `## [vN.M.X] — YYYY-MM-DD — title` format.
 
+## [0.7.1] — 2026-07-15 — Compact startup context and canonical closeout
+
+### Changed
+
+- Reduced `CLAUDE.md` and generated `AGENTS.md` to outcomes, canonical sources, authority
+  boundaries, evidence, completion, and a compact role summary.
+- Moved detailed workflow and role values behind on-demand documents and `.mir/repo-profile.toml`.
+- Switched Codex project skills to discoverable directory symlinks and removed duplicated skill,
+  agent, and hook catalogs from startup instructions.
+- Made startup document budgets static test evidence instead of a missing per-session CLI call.
+- Updated bootstrap and preservation guidance so generated `AGENTS.md` is never edited directly.
+
+### Fixed
+
+- Removed dead global-backup and nonfunctional profile-compiler work from public SessionStart.
+- Replaced timestamped closeout summaries with one canonical
+  `tasks/handoffs/session-handoff-LATEST.md` and wired Claude `SessionEnd` to it.
+- Aligned catalog compatibility and hook-policy summaries with the ADR-73 proportional shared-Main
+  contract.
+- Replaced stale applied-state role-policy strings and broken compact-document section selectors.
+
+### Verification
+
+- Codex derivative, closeout, context-path, registry, applied-state, sanitize, focused startup, and
+  full regression checks are release gates for this patch.
+
 ## [0.7.0] — 2026-07-15 — Proportional dual-CLI operating baseline
 
 ### Changed

@@ -3,8 +3,8 @@ name = "pipeline-validator"
 description = "Data pipeline schema and integrity validation specialist. Deterministic execution via Codex. Read-only. No code modification.\n\nExamples:\n- assistant: \"Dispatching pipeline-validator for schema drift check on changed pipeline files\"\n- assistant: \"Running pipeline-validator integrity scan before data migration\""
 sandbox_mode = "read-only"
 developer_instructions = """
-Use `AGENTS.md` as the shared runtime contract for startup, workflow, mode classification, hook mirrors, and shared policy.
-Do not duplicate or reinterpret that shared contract here. This file should contain only agent-specific behavior.
+Use `AGENTS.md` as the shared repository contract.
+Apply only the agent-specific behavior below; do not restate the root contract.
 Do not use these tools in this generated Codex mirror: Write, Edit.
 
 

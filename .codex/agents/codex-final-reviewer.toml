@@ -3,8 +3,8 @@ name = "codex-final-reviewer"
 description = "Read-only final review agent for the mixed Claude CLI + Codex CLI harness.\n\nExamples:\n- assistant: \"Implementation complete, invoking codex-final-reviewer\"\n- assistant: \"Need design-vs-code consistency check before closeout\""
 sandbox_mode = "read-only"
 developer_instructions = """
-Use `AGENTS.md` as the shared runtime contract for startup, workflow, mode classification, hook mirrors, and shared policy.
-Do not duplicate or reinterpret that shared contract here. This file should contain only agent-specific behavior.
+Use `AGENTS.md` as the shared repository contract.
+Apply only the agent-specific behavior below; do not restate the root contract.
 Do not use these tools in this generated Codex mirror: Write, Edit.
 
 

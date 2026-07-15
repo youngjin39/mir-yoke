@@ -145,11 +145,6 @@ if grep -q 'display_name = "Your Harness"' .mir/repo-profile.toml 2>/dev/null; t
   PLACEHOLDER_HITS=$((PLACEHOLDER_HITS + 1))
 fi
 
-if grep -q 'family = "your-harness"' .claude/hooks/session-start.sh 2>/dev/null; then
-  warn ".claude/hooks/session-start.sh: family= is still \"your-harness\" — update the profile block"
-  PLACEHOLDER_HITS=$((PLACEHOLDER_HITS + 1))
-fi
-
 if [ "$PLACEHOLDER_HITS" -gt 0 ]; then
   say
   say "  $PLACEHOLDER_HITS placeholder(s) remain. Edit the files listed above before first commit."
@@ -160,8 +155,8 @@ fi
 say
 say "Post-clone setup checklist:"
 say "  [1] Set slug/display_name in .mir/repo-profile.toml (placeholder guard above catches leftovers)"
-say "  [2] Update family profile block in .claude/hooks/session-start.sh"
-say "  [3] Update CLAUDE.md + AGENTS.md role-policy table with real family name and scope"
+say "  [2] Update CLAUDE.md only when shared startup invariants differ"
+say "  [3] Run: bash scripts/generate_codex_derivatives.sh"
 say "  [4] Run: ./setup.sh          (verify placeholder guard passes — 0 warnings)"
 say "  [5] Run: uv run mir migrate up   (initialize memory store)"
 say "  [6] Run: uv run python scripts/verify_context_paths.py (verify harness path wiring)"
