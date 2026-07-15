@@ -1,7 +1,7 @@
 {
-  "template_version": "0.7.0",
-  "template_commit": "2bda213c8bd85410d6bfce35edfd2485d770e8d3",
-  "generated_at": "2026-07-15T11:38:17.711140+00:00",
+  "template_version": "0.7.1",
+  "template_commit": "72882eb6de4fa815abcc6c5a0256efcd9053fb8d",
+  "generated_at": "2026-07-15T15:23:45.136018+00:00",
   "normalization": {
     "verbatim": "sha256 of LF-normalized raw bytes",
     "parameterized": "sha256 after slug normalization (your-harness / repo.slug \u2192 {{SLUG}})",
@@ -92,8 +92,9 @@
     {
       "path": ".claude/hooks/session-start.sh",
       "ownership_class": "parameterized",
-      "hash": "10ae8b718458d71ad3bbf09db5cf6d99fa0dfb2b08512bab985006bb95f0eaa3",
+      "hash": "7354335a14a8fa48b69122509e9c424c0a21fa624a14db5a29757fecbf143bd2",
       "previous_hashes": [
+        "10ae8b718458d71ad3bbf09db5cf6d99fa0dfb2b08512bab985006bb95f0eaa3",
         "b9a749fcb7996c7d4e7f2f76223c9a09595b75b41581fe5a26b8429727750d8d",
         "5b9b2b8a5384ed5e9302478100e1539f77443a365dbeb88005800b6e6afc25a3",
         "2e9198f8eddae3dc72fbd4487313cbcaed5456e34aeaf8035afe76f0c588b93e",

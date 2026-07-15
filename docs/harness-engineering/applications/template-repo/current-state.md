@@ -1,10 +1,9 @@
 ---
 status: snapshot-live
-date: 2026-06-27
-scope: template-harness physical state measured after baseline raise
-audience: your-harness Role B (Template Maintainer) + user
-template_commit: 235a18d
-template_version: 0.5.0
+date: 2026-07-15
+scope: public template startup context, dual-CLI parity, and closeout state
+template_commit: 72882eb6de4fa815abcc6c5a0256efcd9053fb8d
+template_version: 0.7.1
 verifier_overall: pass
 verifier_major: 0
 verifier_minor: 0
@@ -14,62 +13,42 @@ schema_present: 19
 schema_required: 19
 ---
 
-# Template Repo Current State — template-harness (2026-05-25 live snapshot)
+# Mir Yoke Current State — 0.7.1
 
-> **Purpose**: Honestly pin the current physical state of the public template. Records whether the template backlog from phase-13 closure was actually resolved following R30 follow-up application.
+## Current baseline
 
-> **Conclusion**: The template workspace has been raised to the `v0.4.0` baseline, and `verify_template_applied_state.py` returns `pass`. Phase docs (13), schemas (19), ADR parity baseline, versioning, sanitize, catalog drift, and main-agent parity / delegated Codex-first role-policy baseline all satisfy verifier criteria.
+- The public template is repository-agnostic and sanitized. Private fleet topology, paths, and
+  operator records remain outside the public contract.
+- `CLAUDE.md` is the compact startup source; `AGENTS.md`, `.codex/`, and `.agents/` are generated.
+- Claude and Codex share the opened-Main contract. Codex-first is a delegated-lane preference, not
+  a direct-work gate.
+- `.mir/repo-profile.toml` owns detailed identity and boundary values.
+- Closeout updates one `tasks/handoffs/session-handoff-LATEST.md`; it does not create timestamped
+  session summaries.
 
-## 1. Git / Versioning State
+## Measured evidence
 
-| Item | Measured value |
+| Check | Result |
 |---|---|
-| HEAD commit | `abb202a` |
-| VERSION | `0.4.0` present |
-| CHANGELOG.md | present |
-| MIGRATION.md | present |
-| verifier overall | `pass` |
-| verifier major / minor | `0 / 0` |
+| Root startup instructions | 7,735 bytes total (`CLAUDE.md` 3,740; `AGENTS.md` 3,995) |
+| Codex prompt-input JSON | 22,963 bytes with all 12 repository skills discovered |
+| SessionStart stdout | 491 bytes |
+| Codex derivatives | pass |
+| Context paths | pass, 6 files / 68 references |
+| Registry and catalog | pass |
+| Public applied-state checks 1–8 | pass, no findings |
+| Full regression | 564 passed, 1 skipped |
 
-## 2. What Is Physically Present
+## Residual review items
 
-| Surface | State |
-|---|---|
-| `VERSION`, `CHANGELOG.md`, `MIGRATION.md` | present |
-| `docs/templates/_schema/` | 19 / 19 present |
-| `docs/decisions/` | verifier baseline parity present |
-| `.claude/` runtime surface | present |
-| `docs/harness-engineering/phase-0..12` | 13 / 13 present |
-| `CLAUDE.md` / `AGENTS.md` role policy | main-agent parity + delegated Codex-first baseline present |
-| `docs/templates/repo-profile.template.toml` | `shared_parity` + `subagents_codex_first` present |
+- Whole-repository Ruff still reports 47 pre-existing findings in untouched legacy surfaces;
+  changed Python scopes pass Ruff.
+- A local ignored `.mir/memory.db` can make the R11 generated-memory projection check warn. A clean
+  public clone has no canonical DB until the adopter initializes it, so the check skips there.
+- Root instruction and generator surfaces are repository-fit rollout metadata, not blanket
+  verbatim parity inputs for downstream repositories.
 
-## 3. Remaining Physical Gaps
+## Next release action
 
-No verifier-blocking physical gaps remain in the current workspace state.
-
-### Remaining follow-up items outside verifier scope
-
-- create a commit/tag that records the `0.4.0` working-tree baseline
-- replace concise ADR stubs with fuller public summaries where needed
-
-## 4. Phase-13 Closure Interpretation
-
-phase-13 now closes in the stronger sense:
-
-- current template verdict: **applied**
-- reason: physical phase docs, required schemas, ADR parity baseline, sanitize, versioning, and role-policy parity all pass the verifier
-- allowed claim: `template phase-0..12 adopted`
-- closure lane `phase-13` remains adopted because truth sources still align
-
-## 5. Next Step After Closure
-
-The next closeout path is operational, not physical:
-
-1. commit/tag the `0.4.0` baseline
-2. keep template CI green on future promotes
-3. replace any concise placeholder ADR text where deeper public detail becomes useful
-
-## 6. Change Log
-
-- 2026-05-25 R30: stale 2026-05-23 snapshot replaced with live measured snapshot for phase-13 closure.
-- 2026-05-25 R30 follow-up: template physical baseline raised to verifier-clean `pass`; snapshot updated to applied state.
+- Publish the parity metadata commit anchored to content commit `72882eb`; tag only if the release
+  process requires a tag.
