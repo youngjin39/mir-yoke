@@ -47,9 +47,7 @@ if [ ! -f tasks/plan.md ]; then
   cat > tasks/plan.md <<'MD'
 # Plan
 
-## P0 — bootstrap
-
-Step P0: IN_PROGRESS | scope=initial template install. First real plan entry goes here.
+No active work. Add only the current task and up to three recent completed sections.
 MD
   say "✓ tasks/plan.md created"
 else
@@ -86,25 +84,25 @@ override_requires_record = true
 
 [paths]
 code_paths = ["tools/", "src/", "scripts/"]
-non_code_paths = ["docs/", "README.md", "CLAUDE.md", "AGENTS.md"]
-protected_paths = [".env", ".env.*", "secrets/**"]
-generated_paths = []
-architecture_refs = ["ARCHITECTURE.md"]
+non_code_paths = ["docs/", ".ai-harness/", "README.md", "CLAUDE.md", "AGENTS.md"]
+protected_paths = [".env", ".env.*", "secrets/**", ".mir/memory.db*"]
+generated_paths = ["AGENTS.md", "**/AGENTS.md", ".codex/**", ".agents/**", ".codex-sync/manifest.json", "docs/memory-map.md", "tasks/lessons.md"]
+architecture_refs = ["ARCHITECTURE.md", "docs/decisions/"]
 configuration_paths = ["pyproject.toml", "config/"]
-verification_paths = ["tests/"]
-workflow_refs = ["CLAUDE.md", ".ai-harness/"]
+verification_paths = ["tests/", "scripts/verify_context_paths.py", "scripts/verify_codex_sync.py", "tools/harness_consistency/"]
+workflow_refs = ["CLAUDE.md", ".ai-harness/", ".claude/", "tasks/intent.json", "tasks/plan.md", "tasks/handoffs/session-handoff-LATEST.md"]
 exception_refs = [".mir/boundary.md", ".mir-preserve.toml"]
 
 [preserve]
 skills = []
 claude_sections = []
-agent_memory_paths = []
+agent_memory_paths = [".mir/memory.db"]
 commands = []
 extra_docs = []
 
 [boundaries]
 live_runtime = []
-secrets = [".env", ".env.*"]
+secrets = [".env", ".env.*", "secrets/**"]
 data_sensitivity = "low"
 release_window = "anytime"
 external_services = []
@@ -116,8 +114,8 @@ delegation_recommended_tasks = ["tools_or_src_implementation", "tests", "indepen
 main_direct_tasks = ["placeholder_or_profile_check", "small_documentation_change", "final_publish_judgment"]
 codex_allowed_modes = ["code", "review", "tdd"]
 codex_blocked_modes = []
-review_scope = ["tools/", "src/", "tests/"]
-tdd_scope = ["tools/", "src/"]
+review_scope = ["tools/", "src/", "scripts/", "tests/"]
+tdd_scope = ["tools/", "src/", "scripts/"]
 non_code_profile = "common_ai_only"
 
 [gates]

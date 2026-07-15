@@ -19,6 +19,7 @@ from tools.autonomous_loop.loop import (  # noqa: E402
 )
 from tools.plan_archive.archiver import (  # noqa: E402
     _BODY_STEP_STATUS_RE,
+    _HEADING_COMPLETE_RE,
     STEP_STATUS_VOCAB,
     Section,
     parse_sections,
@@ -170,6 +171,8 @@ def next_step(plan_path: Path = PLAN_PATH) -> NextResult:
 
     steps = _section_steps(section)
     if not steps:
+        if _HEADING_COMPLETE_RE.search(section.heading):
+            return NextResult(status="COMPLETE")
         return NextResult(status="BLOCKED", reason="no_machine_steps")
 
     for step in steps:

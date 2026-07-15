@@ -2,6 +2,69 @@
   "version": 1,
   "changes": [
     {
+      "id": "public-startup-runtime-parity-2026-07-16",
+      "scope": "Reduce always-loaded repository instructions, preserve Claude/Codex generated parity, make lightweight runtime signals proportional, and restore compact current-state continuity without publishing.",
+      "targets": [
+        "CLAUDE.md",
+        "AGENTS.md",
+        "setup.sh",
+        "scripts/build_session_upfront_context.py",
+        "scripts/generate_codex_derivatives.sh",
+        "scripts/verify_codex_sync.py",
+        "scripts/intent_store.py",
+        ".claude/hooks/pre-tool-use.sh",
+        "src/mir/cli/loop.py",
+        "tools/autonomous_loop/loop.py",
+        "tools/plan_archive/"
+      ],
+      "categories": {
+        "unit": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_intent_store.py tools/plan_archive/tests/test_plan_archive.py tests/test_session_upfront_context.py tests/test_setup_profile.py tests/test_codex_derivation_script.py tests/test_hook_executability.py tests/test_loop_cli.py tests/test_autonomous_loop.py tests/test_closeout_hooks.py",
+          "notes": "53 passed; covers root derivation, compact startup, profile bootstrap, proportional hook/loop behavior, intent history, plan recency, and single-handoff closeout."
+        },
+        "integration": {
+          "status": "pass",
+          "command": "uv run pytest -q",
+          "notes": "595 passed, 1 skipped."
+        },
+        "e2e": {
+          "status": "pass",
+          "command": "uv run python scripts/verify_template_applied_state.py --template . --mir-self /Volumes/T7 Shield/Project/09.Mini_Harness --format json",
+          "notes": "All eight applied-state checks passed with no findings."
+        },
+        "browser": {"status": "not_applicable", "reason": "No browser or UI surface changes."},
+        "edge": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_hook_executability.py tests/test_loop_cli.py tests/test_autonomous_loop.py",
+          "notes": "Search text no longer triggers raw-exec blocking; direct, piped, env-wrapped, and absolute raw paths remain blocked; prose completion and retry decisions are covered."
+        },
+        "architecture": {
+          "status": "pass",
+          "command": "uv run python scripts/verify_codex_sync.py && uv run python scripts/verify_context_paths.py",
+          "notes": "Generated Claude/Codex mirrors matched; 6 files and 59 path references passed."
+        },
+        "availability": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_autonomous_loop.py",
+          "notes": "Recoverable retry-budget exhaustion remains observable without requesting approval; hard safety signals still request it."
+        },
+        "load": {"status": "not_applicable", "reason": "No throughput-sensitive runtime is changed."},
+        "soak": {"status": "not_applicable", "reason": "No daemon or persistent process is added."},
+        "security": {
+          "status": "pass",
+          "command": "uv run python scripts/verify_template_applied_state.py --template . --mir-self /Volumes/T7 Shield/Project/09.Mini_Harness --format json",
+          "notes": "Sanitization and all applied-state checks passed; no protected memory database was mutated."
+        },
+        "compatibility": {
+          "status": "pass",
+          "command": "uv run pytest -q",
+          "notes": "595 passed, 1 skipped across the public template suite."
+        },
+        "transaction_locking": {"status": "not_applicable", "reason": "No concurrent writer or transaction boundary is changed."}
+      }
+    },
+    {
       "id": "adr66-codex-mcp-backend-2026-07-02",
       "scope": "Add a sanitized MCP-backed Codex dispatch transport for mir_executor, keep raw exec as availability fallback only, classify MCP events in stall_watchdog, and cover the behavior with focused tests.",
       "targets": [

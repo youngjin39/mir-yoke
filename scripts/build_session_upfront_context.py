@@ -147,13 +147,7 @@ def build_upfront_context(project_dir: Path) -> str:
         )
     if advisory := _intent_conflict_advisory(project_dir):
         lines.append(advisory)
-    lines.extend(
-        [
-            'Context depth on demand: uv run mir context pull "<query>" '
-            "(--history for archived/expired)",
-            "=== END REPOSITORY CONTEXT ===",
-        ]
-    )
+    lines.append("=== END REPOSITORY CONTEXT ===")
     return "\n".join(lines)
 
 

@@ -1,6 +1,6 @@
 [
-  {"path": "CLAUDE.md", "max_lines": 80, "label": "CLAUDE.md (startup contract)"},
-  {"path": "AGENTS.md", "max_lines": 90, "label": "AGENTS.md (generated startup contract)"},
+  {"path": "CLAUDE.md", "max_lines": 55, "max_bytes": 3600, "label": "CLAUDE.md (startup invariants only; keep procedures on demand)"},
+  {"path": "AGENTS.md", "max_lines": 60, "max_bytes": 3800, "label": "AGENTS.md (generated shared startup contract)"},
   {"path": "tasks/plan.md", "max_lines": 800, "label": "tasks/plan.md"},
   {"path": "tasks/tdd.json", "max_lines": 20000, "label": "tasks/tdd.json (TDD ledger — run archiver when exceeded)"},
   {"path": "tasks/lessons.md", "max_lines": 600, "label": "tasks/lessons.md (generated projection)"}

@@ -355,14 +355,29 @@ write_agents_md() {
     echo "<!-- GENERATED FILE: edit CLAUDE.md and rerun scripts/generate_codex_derivatives.sh -->"
     echo
     body_without_frontmatter CLAUDE.md
-    echo
-    cat <<'EOF'
-## Codex closeout delta
-
-Codex has no native `SessionEnd` event. On an explicit closeout request, run the canonical
-`.claude/hooks/session-end.sh` path named above.
-EOF
   } > "$OUTPUT_ROOT/AGENTS.md"
+}
+
+nested_claude_sources() {
+  local root
+  for root in scripts src tests tools; do
+    [ -d "$root" ] || continue
+    find "$root" -type f -name CLAUDE.md -print
+  done | LC_ALL=C sort
+}
+
+write_nested_agents_md() {
+  local src target
+  while IFS= read -r src; do
+    [ -n "$src" ] || continue
+    target="${src%CLAUDE.md}AGENTS.md"
+    mkdir -p "$OUTPUT_ROOT/$(dirname "$target")"
+    {
+      echo "<!-- GENERATED FILE: edit $src and rerun scripts/generate_codex_derivatives.sh -->"
+      echo
+      body_without_frontmatter "$src" | sed 's/CLAUDE\.md/AGENTS.md/g'
+    } > "$OUTPUT_ROOT/$target"
+  done < <(nested_claude_sources)
 }
 
 write_config_toml() {
@@ -549,6 +564,13 @@ write_manifest_json() {
 
     append_mapping "CLAUDE.md" '["AGENTS.md"]' "content" "Main Codex instructions"
 
+    local nested_src nested_target
+    while IFS= read -r nested_src; do
+      [ -n "$nested_src" ] || continue
+      nested_target="${nested_src%CLAUDE.md}AGENTS.md"
+      append_mapping "$nested_src" "[\"$nested_target\"]" "content" "Path-scoped Codex instructions"
+    done < <(nested_claude_sources)
+
     local src name
     while IFS= read -r src; do
       [ -n "$src" ] || continue
@@ -595,6 +617,7 @@ write_manifest_json() {
 }
 
 write_agents_md
+write_nested_agents_md
 write_config_toml
 
 find "$OUTPUT_ROOT/.agents/skills" -mindepth 1 -depth -exec rm -rf {} +
@@ -622,6 +645,7 @@ write_manifest_json
 
 echo "Generated Codex derivatives:"
 echo "  $OUTPUT_ROOT/AGENTS.md"
+echo "  $OUTPUT_ROOT/{scripts,src,tests,tools}/**/AGENTS.md"
 echo "  $OUTPUT_ROOT/.codex/config.toml"
 echo "  $OUTPUT_ROOT/.codex/hooks.json (PRESERVED — P0-G artifact, not regenerated)"
 echo "  $OUTPUT_ROOT/.codex/agents/*.toml"

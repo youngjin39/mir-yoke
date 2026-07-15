@@ -11,10 +11,47 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 MANIFEST = ROOT / ".codex-sync" / "manifest.json"
+PATH_SCOPED_INSTRUCTION_ROOTS = ("scripts", "src", "tests", "tools")
 
 
 def _source_paths(source: str) -> list[Path]:
     return [ROOT / item.strip() for item in source.split("+") if item.strip()]
+
+
+def nested_instruction_pairs(root: Path = ROOT) -> list[tuple[Path, Path]]:
+    """Return path-scoped Claude sources and their generated Codex targets."""
+    pairs: list[tuple[Path, Path]] = []
+    for relative_root in PATH_SCOPED_INSTRUCTION_ROOTS:
+        source_root = root / relative_root
+        if not source_root.is_dir():
+            continue
+        for source in source_root.rglob("CLAUDE.md"):
+            pairs.append((source, source.with_name("AGENTS.md")))
+    return sorted(pairs)
+
+
+def validate_nested_instruction_derivatives(
+    failures: list[str], root: Path = ROOT
+) -> None:
+    """Pin source direction and Codex-local references for path-scoped rules."""
+    for source, target in nested_instruction_pairs(root):
+        source_rel = source.relative_to(root)
+        target_rel = target.relative_to(root)
+        if not target.is_file():
+            failures.append(f"missing nested AGENTS derivative: {target_rel}")
+            continue
+        target_text = target.read_text(encoding="utf-8")
+        body = target_text.split("\n", 2)[-1]
+        if "CLAUDE.md" in body:
+            failures.append(
+                f"nested AGENTS derivative retains Claude-only path reference: {target_rel}"
+            )
+        expected_marker = (
+            f"<!-- GENERATED FILE: edit {source_rel} and rerun "
+            "scripts/generate_codex_derivatives.sh -->"
+        )
+        if not target_text.startswith(expected_marker):
+            failures.append(f"nested AGENTS source marker drifted: {target_rel}")
 
 
 def main() -> int:
@@ -60,6 +97,7 @@ def main() -> int:
         encoding="utf-8"
     ):
         failures.append("Codex config redundantly declares AGENTS.md as its own fallback")
+    validate_nested_instruction_derivatives(failures)
 
     with tempfile.TemporaryDirectory(prefix="mir-yoke-codex-sync-") as temp_dir:
         env = os.environ.copy()

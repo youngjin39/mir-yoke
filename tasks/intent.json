@@ -1,7 +1,8 @@
 {
-  "goal": "",
+  "goal": "Apply the verified token-efficient startup contract, proportional runtime behavior, Claude/Codex parity, and current-state continuity to public mir-yoke locally without committing or publishing.",
   "goal_type": "other",
   "scope": "local",
   "priority": "normal",
-  "updated": "2026-06-11"
+  "updated": "2026-07-16",
+  "history": []
 }

@@ -4,13 +4,14 @@ import re
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 
-_DONE_MONTH_RE = re.compile(r"\((\d{4}-\d{2})-\d{2}, DONE\)")
+_DATE_MONTH_RE = re.compile(r"\b(\d{4}-\d{2})-\d{2}\b")
 _TOMBSTONE_RE = re.compile(
     r"^Archived to tasks/archive/plan-archive-\d{4}-\d{2}\.md: ## .+$"
 )
 
 _HEADING_DONE_RE = re.compile(r"\(.*\bDONE\b.*\)")
 _HEADING_CLOSED_RE = re.compile(r"\(.*\bCLOSED\b.*\)")
+_HEADING_COMPLETE_RE = re.compile(r"\bCOMPLETE\b")
 _BODY_ELEVATION_CLOSED_RE = re.compile(r"elevation:\s*CLOSED")
 STEP_STATUS_VOCAB = ("TODO", "IN_PROGRESS", "DONE", "FAILED", "BLOCKED")
 _BODY_STEP_STATUS_RE = re.compile(
@@ -36,7 +37,11 @@ def _is_archivable(section: Section) -> bool:
     body_lines = section.content.splitlines()
     if _is_hard_keep(heading, body_lines):
         return False
-    if _HEADING_DONE_RE.search(heading) or _HEADING_CLOSED_RE.search(heading):
+    if (
+        _HEADING_DONE_RE.search(heading)
+        or _HEADING_CLOSED_RE.search(heading)
+        or _HEADING_COMPLETE_RE.search(heading)
+    ):
         return True
     for line in body_lines[:6]:
         if _BODY_ELEVATION_CLOSED_RE.search(line):
@@ -66,7 +71,7 @@ class ArchiveResult:
 
 
 def _done_month(heading: str) -> str | None:
-    match = _DONE_MONTH_RE.search(heading)
+    match = _DATE_MONTH_RE.search(heading)
     if not match:
         return None
     return match.group(1)
@@ -110,15 +115,17 @@ def parse_sections(text: str) -> list[Section]:
     return sections
 
 
-def classify(sections,recency_keep=5):
-    a=[s for s in sections if _is_archivable(s)]
-    arch=a[:-recency_keep] if recency_keep>0 else a
-    kept=a[-recency_keep:] if recency_keep>0 else []
-    ids={id(s) for s in a}
+def classify(sections: list[Section], recency_keep: int = 3) -> ArchiveResult:
+    completed = [section for section in sections if _is_archivable(section)]
+    archivable = completed[:-recency_keep] if recency_keep > 0 else completed
+    kept = completed[-recency_keep:] if recency_keep > 0 else []
+    completed_ids = {id(section) for section in completed}
     return ArchiveResult(
-        archivable=arch,
+        archivable=archivable,
         kept_done=kept,
-        active_sections=[s for s in sections if id(s) not in ids],
+        active_sections=[
+            section for section in sections if id(section) not in completed_ids
+        ],
     )
 
 
@@ -219,6 +226,6 @@ def apply_archive(
         *old_tombstones_b,
         *old_tombstones_c,
         *new_tombstones,
-    ][-20:]
+    ][-3:]
     _write_plan(result, active_sections, kept_done, tombstones)
     return {"archived": len(archivable), "tombstones_written": len(tombstones)}

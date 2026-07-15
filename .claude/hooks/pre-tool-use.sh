@@ -175,10 +175,58 @@ if [ "$TOOL_NAME" = "Bash" ]; then
   if echo "$CMD" | grep -qE '(^|[[:space:]])sudo([[:space:]]|$)'; then
     block "sudo requires user confirmation, not this hook: $CMD"
   fi
-  # 7. Raw Codex subprocess routing is forbidden. Match a bare or absolute
-  #    codex executable plus an exact exec/e shell token anywhere in its
-  #    argv-shaped command text. Redirects and pipes do not create exceptions.
-  if printf '%s\n' "$CMD" | grep -qE '(^|[[:space:];|&(<])([^[:space:];|&()<>#]*/)?codex([[:space:]]+[^[:space:];|&()<>#]+)*[[:space:]]+(exec|e)([[:space:];|&)>#]|$)'; then
+  # 7. Raw Codex subprocess routing is forbidden. Use a small, non-executing
+  #    token check so quoted search/data strings do not look like commands.
+  #    This is intentionally best-effort rather than a shell-language parser.
+  if command -v python3 >/dev/null 2>&1 && printf '%s' "$CMD" | python3 -c '
+import os
+import re
+import shlex
+import sys
+
+assignment = re.compile(r"[A-Za-z_][A-Za-z0-9_]*=.*", re.S)
+try:
+    lexer = shlex.shlex(
+        sys.stdin.read(), posix=True, punctuation_chars=";&|()<>\n"
+    )
+    lexer.whitespace = " \t\r"
+    lexer.whitespace_split = True
+    lexer.commenters = "#"
+    tokens = list(lexer)
+except (ValueError, TypeError):
+    raise SystemExit(1)
+
+segments = []
+segment = []
+for token in tokens:
+    if token and set(token) <= set(";&|()\n"):
+        if segment:
+            segments.append(segment)
+            segment = []
+    else:
+        segment.append(token)
+if segment:
+    segments.append(segment)
+
+for argv in segments:
+    index = 0
+    while index < len(argv) and assignment.fullmatch(argv[index]):
+        index += 1
+    if index < len(argv) and os.path.basename(argv[index].rstrip("/")) == "env":
+        index += 1
+        while index < len(argv) and (
+            argv[index] == "--"
+            or argv[index].startswith("-")
+            or assignment.fullmatch(argv[index])
+        ):
+            index += 1
+    if index >= len(argv):
+        continue
+    executable = os.path.basename(argv[index].rstrip("/"))
+    if executable == "codex" and any(arg in {"exec", "e"} for arg in argv[index + 1 :]):
+        raise SystemExit(0)
+raise SystemExit(1)
+'; then
     block "raw codex exec/e is banned — route through MCP/mir_executor"
   fi
   if [ "${MIR_PRE_COMMIT_VERIFY:-0}" = "1" ] && \

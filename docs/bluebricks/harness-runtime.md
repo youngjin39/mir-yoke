@@ -14,6 +14,8 @@ Define the durable human/agent operating contract: startup context, skills, hook
 ## Internal Rules
 - Source of truth lives in `CLAUDE.md`, `.claude/agents/*`, and `.claude/skills/*`.
 - Generated Codex mirrors must be regenerated, not hand-edited.
+- A path-scoped `CLAUDE.md` under `scripts/`, `src/`, `tests/`, or `tools/` generates a sibling
+  `AGENTS.md`; neither path-scoped body belongs in root startup context.
 - Startup context, closeout, and guardrail behavior must match the documented harness contract.
 - Root guidance stays short; durable detail belongs under `.ai-harness/`.
 

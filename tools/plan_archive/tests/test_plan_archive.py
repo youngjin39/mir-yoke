@@ -9,6 +9,7 @@ from tools.plan_archive.archiver import (
     dry_run,
     parse_sections,
 )
+from tools.plan_archive.cli import build_parser
 
 
 def _done(index: int, month: str = "2026-01") -> str:
@@ -50,34 +51,57 @@ def test_classify_done_active_and_kept():
     result = classify(parse_sections(text))
 
     assert [section.heading for section in result.archivable] == [
-        "Done 0 (2026-01-01, DONE)",
-        "Done 1 (2026-01-02, DONE)",
+        f"Done {index} (2026-01-{index + 1:02d}, DONE)" for index in range(4)
     ]
     assert [section.heading for section in result.kept_done] == [
-        f"Done {index} (2026-01-{index + 1:02d}, DONE)" for index in range(2, 7)
+        f"Done {index} (2026-01-{index + 1:02d}, DONE)" for index in range(4, 7)
     ]
     assert [section.heading for section in result.active_sections] == ["", "Active"]
 
 
-def test_five_done_sections_are_all_kept():
-    result = classify(parse_sections("".join(_done(index) for index in range(5))))
+def test_three_done_sections_are_all_kept():
+    result = classify(parse_sections("".join(_done(index) for index in range(3))))
 
     assert result.archivable == []
-    assert len(result.kept_done) == 5
+    assert len(result.kept_done) == 3
 
 
-def test_six_done_sections_archives_one():
-    result = classify(parse_sections("".join(_done(index) for index in range(6))))
+def test_four_done_sections_archives_one():
+    result = classify(parse_sections("".join(_done(index) for index in range(4))))
 
     assert [section.heading for section in result.archivable] == ["Done 0 (2026-01-01, DONE)"]
-    assert len(result.kept_done) == 5
+    assert len(result.kept_done) == 3
+
+
+def test_zero_recency_archives_all_completed_sections():
+    result = classify(
+        parse_sections("".join(_done(index) for index in range(3))),
+        recency_keep=0,
+    )
+
+    assert len(result.archivable) == 3
+    assert result.kept_done == []
+
+
+def test_cli_accepts_explicit_recency_keep():
+    args = build_parser().parse_args(["--recency-keep", "0"])
+
+    assert args.recency_keep == 0
+
+
+def test_complete_heading_is_classified_as_completed():
+    result = classify(parse_sections("## Current audit — COMPLETE\nbody\n"))
+
+    assert [section.heading for section in result.kept_done] == [
+        "Current audit — COMPLETE"
+    ]
 
 
 def test_dry_run_counts_by_month_and_fallback():
     text = (
         "## Done A (2026-01-01, DONE)\na\n\n"
         "## Done B (DONE)\nb\n\n"
-        + "".join(_done(index, month="2026-03") for index in range(5))
+        + "".join(_done(index, month="2026-03") for index in range(3))
     )
     result = classify(parse_sections(text))
 
@@ -94,7 +118,7 @@ def test_dry_run_counts_by_month_and_fallback():
 
 def test_apply_archive_is_idempotent(tmp_path):
     plan_path = tmp_path / "plan.md"
-    plan_path.write_text("".join(_done(index) for index in range(6)), encoding="utf-8")
+    plan_path.write_text("".join(_done(index) for index in range(4)), encoding="utf-8")
 
     first = apply_archive(_result_for(plan_path))
     second = apply_archive(_result_for(plan_path))
@@ -107,14 +131,14 @@ def test_apply_archive_is_idempotent(tmp_path):
     assert archive_text.count("## Done 0 (2026-01-01, DONE)") == 1
 
 
-def test_tombstone_cap_at_20(tmp_path):
+def test_tombstone_cap_at_three(tmp_path):
     plan_path = tmp_path / "plan.md"
     old_tombstones = "".join(
         f"Archived to tasks/archive/plan-archive-2025-01.md: ## Old {index:02d}\n"
         for index in range(26)
     )
     plan_path.write_text(
-        "".join(_done(index) for index in range(6)) + "\n" + old_tombstones,
+        "".join(_done(index) for index in range(4)) + "\n" + old_tombstones,
         encoding="utf-8",
     )
 
@@ -125,16 +149,16 @@ def test_tombstone_cap_at_20(tmp_path):
         for line in plan_path.read_text(encoding="utf-8").splitlines()
         if line.startswith("Archived to ")
     ]
-    assert result == {"archived": 1, "tombstones_written": 20}
-    assert len(tombstones) == 20
-    assert not any("Old 06" in line for line in tombstones)
-    assert any("Old 07" in line for line in tombstones)
+    assert result == {"archived": 1, "tombstones_written": 3}
+    assert len(tombstones) == 3
+    assert not any("Old 23" in line for line in tombstones)
+    assert any("Old 24" in line for line in tombstones)
     assert tombstones[-1].endswith("## Done 0 (2026-01-01, DONE)")
 
 
 def test_archive_file_content(tmp_path):
     plan_path = tmp_path / "plan.md"
-    plan_path.write_text("".join(_done(index) for index in range(6)), encoding="utf-8")
+    plan_path.write_text("".join(_done(index) for index in range(4)), encoding="utf-8")
 
     apply_archive(_result_for(plan_path))
 
@@ -159,7 +183,7 @@ def test_fallback_month_for_no_date_section(tmp_path):
     plan_path = tmp_path / "plan.md"
     plan_path.write_text(
         "## Done Without Date (DONE)\nold\n\n"
-        + "".join(_done(index, month="2026-07") for index in range(5)),
+        + "".join(_done(index, month="2026-07") for index in range(3)),
         encoding="utf-8",
     )
 
@@ -177,7 +201,7 @@ def test_fallback_month_for_no_date_section(tmp_path):
 def test_heading_closed_is_archivable():
     result = classify(parse_sections(
         "## Session X (2026-01-01, CLOSED)\nbody\n\n"
-        + "".join(_done(index) for index in range(5))
+        + "".join(_done(index) for index in range(3))
     ))
     assert any(s.heading == "Session X (2026-01-01, CLOSED)" for s in result.archivable)
 
@@ -185,7 +209,7 @@ def test_heading_closed_is_archivable():
 def test_elevation_closed_body_is_archivable():
     text = (
         "## Session Y\nelevation: CLOSED\nbody\n\n"
-        + "".join(_done(index) for index in range(5))
+        + "".join(_done(index) for index in range(3))
     )
     result = classify(parse_sections(text))
     assert any(s.heading == "Session Y" for s in result.archivable)
@@ -194,7 +218,7 @@ def test_elevation_closed_body_is_archivable():
 def test_step_done_body_is_archivable():
     text = (
         "## Session Z\nStep 1: DONE\nbody\n\n"
-        + "".join(_done(index) for index in range(5))
+        + "".join(_done(index) for index in range(3))
     )
     result = classify(parse_sections(text))
     assert any(s.heading == "Session Z" for s in result.archivable)
@@ -203,7 +227,7 @@ def test_step_done_body_is_archivable():
 def test_active_in_body_is_hard_keep():
     text = (
         "## Session A\nelevation: ACTIVE\nbody\n\n"
-        + "".join(_done(index) for index in range(6))
+        + "".join(_done(index) for index in range(4))
     )
     result = classify(parse_sections(text))
     headings = [s.heading for s in result.archivable] + [s.heading for s in result.kept_done]
@@ -213,7 +237,7 @@ def test_active_in_body_is_hard_keep():
 def test_pinned_tracker_policies_never_moves():
     text = (
         "## Pinned Tracker Policies (2026-01-01, DONE)\npolicy body\n\n"
-        + "".join(_done(index) for index in range(6))
+        + "".join(_done(index) for index in range(4))
     )
     result = classify(parse_sections(text))
     headings = [s.heading for s in result.archivable] + [s.heading for s in result.kept_done]

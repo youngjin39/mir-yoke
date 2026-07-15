@@ -9,7 +9,7 @@ paths = [
 [claude_md_preserve]
 sections = [
   "## Outcome and completion",
-  "## Bootstrap and sources",
+  "## Sources",
   "## Authority and safety",
   "## Execution and evidence",
   "## Role policy (template summary)"

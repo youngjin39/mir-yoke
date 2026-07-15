@@ -18,17 +18,28 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="fallback YYYY-MM for DONE headings without a date",
     )
+    parser.add_argument(
+        "--recency-keep",
+        type=int,
+        default=3,
+        help="number of recent completed sections to keep in the active plan",
+    )
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    if args.recency_keep < 0:
+        raise SystemExit("--recency-keep must be zero or greater")
     if args.month is None:
 
         args.month = datetime.date.today().strftime("%Y-%m")
     plan_path = Path(args.plan)
     archive_dir = Path(args.archive_dir)
-    result = classify(parse_sections(plan_path.read_text(encoding="utf-8")))
+    result = classify(
+        parse_sections(plan_path.read_text(encoding="utf-8")),
+        recency_keep=args.recency_keep,
+    )
     result = replace(
         result,
         plan_path=plan_path,
