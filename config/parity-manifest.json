@@ -1,7 +1,7 @@
 {
-  "template_version": "0.6.0",
-  "template_commit": "28a214a0c353def0bc9faaee0011e3567d508a6b",
-  "generated_at": "2026-06-30T13:44:26.241701+00:00",
+  "template_version": "0.7.0",
+  "template_commit": "2bda213c8bd85410d6bfce35edfd2485d770e8d3",
+  "generated_at": "2026-07-15T11:38:17.711140+00:00",
   "normalization": {
     "verbatim": "sha256 of LF-normalized raw bytes",
     "parameterized": "sha256 after slug normalization (your-harness / repo.slug \u2192 {{SLUG}})",
@@ -15,8 +15,9 @@
     {
       "path": "src/mir/cli/__init__.py",
       "ownership_class": "verbatim",
-      "hash": "77b7f03732df65d3b134214bbecbddc49f11d6fefadbbf50c87bc384326e7682",
+      "hash": "575bddc330d7c6222a43150d2c584270c0798ad9c47bdc26d4ed2c8bf5fa88bf",
       "previous_hashes": [
+        "77b7f03732df65d3b134214bbecbddc49f11d6fefadbbf50c87bc384326e7682",
         "0df30e4ecbdbe40f818e717f540801956ebab247d05c506fa0085cadc4b5b9ff",
         "e841cf28ff4c732911e7ce7f15896d6048c73d81627dc557c38d75275eae3919"
       ]
@@ -33,8 +34,9 @@
     {
       "path": "src/mir/cli/context.py",
       "ownership_class": "parameterized",
-      "hash": "5df5adc4136c899baeeadb86e67db3e4baf5f83dcd1795708c7d8b20bd581e20",
+      "hash": "994f2e1727efd6a967537a887c12bf5157af6ab5a14adbbb1d677857011aab12",
       "previous_hashes": [
+        "5df5adc4136c899baeeadb86e67db3e4baf5f83dcd1795708c7d8b20bd581e20",
         "1ead397804337049b5e56fee5f235760cebfdcb9073b353561280f85dc2cf070"
       ],
       "params": {
@@ -53,8 +55,9 @@
     {
       "path": "src/mir/core/engine/memory/external_store.py",
       "ownership_class": "parameterized",
-      "hash": "db2095c7f5f367df49a5ee0c5cb94b0518c704712050f8e21c2863bf78b602f4",
+      "hash": "45e78593128c2565eeab0bfc176b3c877d72e2fbb3f3ec53020497ae4838e4b9",
       "previous_hashes": [
+        "db2095c7f5f367df49a5ee0c5cb94b0518c704712050f8e21c2863bf78b602f4",
         "3622f36325cf48a451f5e4a4c15ec2216d570709fb24ffa18dfd5e1e6cf5522c",
         "84c4823b83a98f8ebe8fb2c11164fe61447a072320f6079b5f93f2bd608ce063"
       ],
@@ -80,23 +83,35 @@
     {
       "path": ".claude/hooks/user-prompt-submit.sh",
       "ownership_class": "verbatim",
-      "hash": "37eb5ec55b1244852f90dac9154c868712aa67ea8a5c61edbd5a4bc4a95f1b79",
+      "hash": "453ef154a34f643157b464b3bdbd98340ca36894dc9387258cdfcb97e484e753",
       "previous_hashes": [
+        "37eb5ec55b1244852f90dac9154c868712aa67ea8a5c61edbd5a4bc4a95f1b79",
         "610f3f47386726aee67b511d5d25edb1b6e48ede67edd8ce6b0ee29386f72630"
       ]
     },
     {
       "path": ".claude/hooks/session-start.sh",
-      "ownership_class": "marker-block",
-      "hash": "0c0d4ecbb836fae6673ea81ef6104276cd365ffd734b3f6fc50ff7b258f02364",
+      "ownership_class": "parameterized",
+      "hash": "10ae8b718458d71ad3bbf09db5cf6d99fa0dfb2b08512bab985006bb95f0eaa3",
       "previous_hashes": [
-        "dafef0bf6dbaa8196ff8396d59b1665a6d81443618dc433ee36a09c23dda88aa",
-        "38dd4a355cfc3f539c083404afeb52df883fcb3218f740ffef483c54fdcd10a1"
+        "b9a749fcb7996c7d4e7f2f76223c9a09595b75b41581fe5a26b8429727750d8d",
+        "5b9b2b8a5384ed5e9302478100e1539f77443a365dbeb88005800b6e6afc25a3",
+        "2e9198f8eddae3dc72fbd4487313cbcaed5456e34aeaf8035afe76f0c588b93e",
+        "3feba018603c68f6f4eb91b56b31f882a50a36e2df6dc7f2f85ab0302a766285",
+        "84107939cfa1e320aefa454ed6c95dda4f9365e6434ce13bdffca291de9a9226",
+        "8c201895abda36f41aa8df5586d41f5fcc667f5ce3425d011bcce2c2ce3dc8d2",
+        "49cb18152b65838beda8c3ed706ec24d12fcc08b1ade4b3b2b86577d1deef9b6",
+        "e1d47652d2aed45ad1460b11ace4cc5d0564606b2bb051fdabb3a3dc125ec922",
+        "da74b0587dff6e30178cc937944c58d7ea12094e92e752aa8eb7c55088097965",
+        "b1179c38909fb45ca82605f492df07b095a6af0025d4ea4c6d2c7765a118a19c",
+        "a45e349fba4fb437ba546d546cd7e290e043d470b6286c939352f70f32875df1",
+        "bce7c9e9f4d96b28f688c3ab8c6c7fddaa9e9b5b931bac4ab186a5dabc22f468",
+        "c1ffaf53342a84620ca153d548ae864df367c1e65c1b9522c1e6606f70065045",
+        "4b87368f4981291fe24567736b97aa35963a1bb6bffe556fd6e921264f02b6ef"
       ],
       "params": {
-        "marker_name": "mir:adr53:context-core",
-        "marker_begin": "# mir:adr53:context-core:begin",
-        "marker_end": "# mir:adr53:context-core:end"
+        "slug_site_count": 2,
+        "note": "Current compact SessionStart hook differs only by repository slug; the former mir:adr53:context-core marker was retired."
       }
     },
     {
@@ -132,8 +147,11 @@
     {
       "path": "tests/test_adr53_phase2_population.py",
       "ownership_class": "parameterized",
-      "hash": "168f67c0dfcff71d04ad9e0f8d02a4a39a8a66276b77b3ee20d52326bcc97411",
-      "previous_hashes": [],
+      "hash": "a654e44ec7264f9b917ce930927f9efa8673a18ee0e6e1af94d0b3cd2425a24e",
+      "previous_hashes": [
+        "7019ab1c7ac860934c03497a57ba27335f8cb8060b328089961261177fa2b8c6",
+        "168f67c0dfcff71d04ad9e0f8d02a4a39a8a66276b77b3ee20d52326bcc97411"
+      ],
       "params": {
         "slug_site_count": 10,
         "note": "L52, L80-85, L89, L133, L311-312"
@@ -158,6 +176,7 @@
       "ownership_class": "managed-keys",
       "hash": "17ccbde4ba2b370e4f628ba8f47bc69c9eec0b26cd04932ed494bb197add07f2",
       "previous_hashes": [
+        "17ccbde4ba2b370e4f628ba8f47bc69c9eec0b26cd04932ed494bb197add07f2",
         "148efc4bc9abe5d16a10d3e240de925819ee7798e5fa1668e6bc21d9d07f6d4b",
         "552b42423e111b579bd4f83d6cb60d1a830e296af161d93ffa3113a060f7f8b4"
       ],
