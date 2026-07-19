@@ -31,5 +31,5 @@ that lane, not necessarily the task.
 ## Template Boundary
 
 Mir Yoke carries this portable operating contract. Private fleet tooling, repository paths, family
-state, authenticated external-review transports, and private historical records stay outside the
-public template.
+state, authenticated private transports, and private historical records stay outside the public
+template.

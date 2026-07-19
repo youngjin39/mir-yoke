@@ -21,9 +21,6 @@ amendment, the later decision controls and the older text remains historical evi
 5. [ADR-59](adr-59-agent-execution-monitoring.md) keeps monitoring observe-only.
 6. [ADR-54](adr-54-template-anchored-fleet-parity-manifest-2026-06-06.md) keeps parity read-only and
    ownership-aware.
-7. [ADR-71](adr-71-external-ai-review-router.md) keeps external review optional, sanitized, and
-   untrusted.
-
 The [role policy](role-policy.md) binds Claude Main and Codex Main to the same control-plane
 contract. Repository profiles and preserve rules narrow these portable defaults for each adopter.
 
