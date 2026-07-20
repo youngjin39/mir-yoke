@@ -38,6 +38,10 @@ Each phase assumes the completion of the previous phase. If introducing a new fa
 
 - [`harness-roles.md`](mir-roles.md) — Dual-role (Role A Per-Family Tracker / Role B Template Maintainer) separation + identity disambiguation + SoT reconciliation rule.
 
+### Appendix — Graph Engineering Structuring (2026-07-20 added)
+
+- [`graph-engineering-structuring.md`](graph-engineering-structuring.md) — structuring contract for fixed multi-step flows: promotion criteria, six structure requirements (stages / transitions / state / per-stage verification / resume / run record), and the L0–L3 maturity ladder.
+
 **R9 update (2026-05-23)**: This consolidated document expanded from 9 phases → 12 rollout phases. R9's 3 newly added phases (9 Fleet Catalog / 10 Rollout Share Pipeline / 11 Back-Propagation) are the core of **Axis III (Fleet Central Management·Back-Propagation)** — the 3-axis goal fleet-wide application path. The `§0.5 "Design Goals"` anchor in all phases aligns with the [`design` skill](../../.claude/skills/design/SKILL.md) R9-T11 mandate.
 
 **R30 update (2026-05-25)**: Rather than directly adding `phase-13` to the per-family rollout system, a separate closure lane was introduced for `your-harness`/template verdict truth-alignment. Therefore the total conceptual phases are 14, but the general family rollout target continues to be `phase-0..12`.
