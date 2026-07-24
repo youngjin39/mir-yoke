@@ -69,3 +69,6 @@ last. Consumers resolve logical index → physical table through one resolver.
   second model onto a single fingerprint-less table.
 - **Never** rebuild an index destructively as the migration strategy; build the
   candidate next to the active index and switch pointers.
+
+Operational runbooks (enable, late enable, model change, rollback, evidence):
+`docs/operations/embedding-lifecycle-operations.md`.

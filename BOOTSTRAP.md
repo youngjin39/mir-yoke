@@ -70,6 +70,8 @@ The model is likewise a recommendation, not a restriction: bge-m3 (dim 1024) is 
 
 **New environment = fresh index.** When setting up on a new machine or runtime, propose starting fresh. Never copy a vector DB produced by a different runtime or quantization — the same model name under a different runtime is a different encoder fingerprint (`docs/architecture/embedding-index-lifecycle-shape.md`).
 
+Day-2 operations (re-index, model change, rollback, evidence) live in `docs/operations/embedding-lifecycle-operations.md`.
+
 ### Step 3 — Run setup
 
 ```bash
