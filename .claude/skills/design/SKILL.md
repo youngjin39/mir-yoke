@@ -45,6 +45,13 @@ An advisory design-skill discipline (no runtime hook): extract the user's real i
 3. **Grill-style elicit** — Ask only open, high-cost questions, giving options, a recommendation, and rationale. Never re-ask answered items or code-verifiable facts. Ask domain policy; propose technical choices; default tuning choices and mark them tunable. In remote channels, use numbered text lists rather than interactive pickers.
 4. **Authority separation** — Code is reality-material, not intent-authority. Keep spec-versus-code disagreement explicit until resolved; memory and prior decisions provide context but do not automatically override the current request.
 
+Second-pass reinforcements (dryforge; central directive 2026-07-25):
+
+- **Derive-first elicit** — Before surfacing any question, first attempt to derive the answer from stated goals, constraints, and code facts; ask only when a specific unresolved decision remains. Question count is not a quality metric.
+- **Proposal-as-material** — A user-proposed solution is material serving the stated intent, not automatic specification authority. Confirm the underlying intent and surface a simpler path when one satisfies it; the user's explicit trade-off decision remains binding once made.
+- **Specification-over-plan precedence** — The specification (design behavior, constraints, invariants) defines the result; the plan describes how to reach it. When they disagree, the specification governs and the conflict is surfaced, never silently resolved.
+- **Non-reconstructible intent** — Handoffs record authority boundaries and intent that a future executor must not re-derive from implementation evidence.
+
 For existing-code onboarding, run a migration interview. Close each policy or behavior item as `code_confirmed`, `user_confirmed`, `derived`, `not_applicable` with a reason, `unresolved`, or `conflict`. Never close `unresolved` or `conflict` by inference.
 
 Apply by triage: **Tiny** skips full extraction (goal, targets, verification, non-goals only); **Normal** classifies materials, enumerates the Decision Surface, and elicits open decisions; **Heavy** adds the migration interview when existing code is involved plus an independent review.

@@ -85,6 +85,11 @@ Track 2 (workflow body / skill body) is **not supported** in this harness; the s
 - [ ] Naming conventions (consistent with project)
 - [ ] No duplication (DRY violations)
 - [ ] No over-engineering (YAGNI violations)
+- [ ] Nested conditionals objectified — guard clauses, polymorphism, or dispatch tables
+- [ ] No hardcoded literals — constants, configuration, or canonical source
+- [ ] Module boundaries respected; no monolithic growth
+- [ ] Transaction boundaries analyzed for multi-step writes — atomicity, rollback, partial failure
+- [ ] SSOT respected — no duplicated authoritative values; generated surfaces regenerated
 - [ ] Each P0 has ≥1 alternative candidate (Defect + Alternative mode)
 - [ ] Each finding has `scope_status` assigned (§5b)
 - [ ] Citation verified for every cited file:line (§5a via verification stage 0)

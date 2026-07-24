@@ -17,6 +17,10 @@ description: "Evidence-based verification (verification gate, spec compliance, s
 - self-audit — Starter compliance self-check. Validates CLAUDE.md sections, .claude/ components, docs/ structure, and tasks/ files against the 21-element baseline.
 - review-code — Review written code via independent sub-agents (multi-layer, bias-free).
 
+## Evidence-claim discipline (central directive 2026-07-25)
+- Completion is an evidence claim, not a confidence statement.
+- A required check that cannot be evaluated — missing tool, unrunnable command, unreadable output — counts as a failure, not a pass.
+
 ## Workflow
 1. Identify which absorbed legacy intent applies (design vs. plan vs. interview etc.).
 2. Refer to the archived legacy SKILL.md under `archive/skills/<legacy>/` for original workflow.

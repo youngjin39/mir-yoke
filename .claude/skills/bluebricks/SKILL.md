@@ -67,6 +67,7 @@ Do not use sub-agent for:
 - small diff review
 
 ## Safe Modification Rules
+- Apply the Code Structure Principles in `.ai-harness/development-ai-rules.md`: nested-conditional objectification, no hardcoding, modularization, transaction-boundary analysis, SSOT. Report out-of-boundary violations instead of rewriting them.
 - Preserve architecture boundaries.
 - Do not silently expand scope.
 - Do not edit generated files unless generation is the task.

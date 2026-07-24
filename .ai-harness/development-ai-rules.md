@@ -54,3 +54,23 @@ accessibility, or explicit owner requirements.
 
 Touch only what the requested outcome requires. Report adjacent cleanup instead of rolling it in
 silently. Remove imports, variables, or helpers made unused by your own change.
+
+## Code Structure Principles
+
+Owner directive (2026-07-24). These apply fully to new and changed code inside the task
+boundary; a violation observed outside the boundary is reported or rerouted as a finding, not
+silently rewritten.
+
+1. **Nested conditionals → objectify.** Resolve nested `if` chains: guard clauses and early
+   returns first; when branching encodes type or policy variation, replace it with polymorphism,
+   strategy objects, or dispatch/lookup tables.
+2. **No hardcoding.** No inline magic values. Extract literals to named constants, configuration,
+   or the canonical profile source. Environment-, policy-, or deployment-dependent values never
+   live inline in logic.
+3. **Modularize.** Single-responsibility modules with explicit boundaries. Do not let a module
+   grow monolithic; split along module boundaries before responsibilities mix.
+4. **Transaction handling.** For state-mutating flows, identify transaction boundaries and analyze
+   atomicity, rollback, and partial-failure states; every multi-step write needs an explicit
+   consistency resolution point.
+5. **SSOT.** Every fact or value has one canonical source. Derived surfaces are regenerated, never
+   hand-edited; a duplicated authoritative value is a defect.
