@@ -8,10 +8,28 @@ plugin_mode = "disabled"
 recall_policy = "progressive"
 
 [memory.embedding]
-# Configure your embedding backend.
+# OPTIONAL vector-search backend. Without it the engine runs FTS5 keyword-only
+# (fully functional). Chunks indexed without vectors are NOT auto-backfilled —
+# enabling this later requires a re-index, so enable at bootstrap when possible.
+# The agent must ASK before installing any server or model (BOOTSTRAP.md Step 2 f).
+# Any OpenAI-compatible /v1/embeddings server works ("omlx_http" is historical).
+# The model below is a RECOMMENDATION, not a restriction: any embedding model
+# works when `dim` matches its output and vectors return L2-normalized (both
+# validated at call time; mismatches fail closed).
+# Never reuse a vector DB produced by a different runtime/quantization — the
+# same model name under a different runtime is a different encoder fingerprint.
+#
+# macOS (Apple Silicon), recommended — oMLX:
 # backend = "omlx_http"
 # base_url = "http://127.0.0.1:8001/v1"
 # model = "bge-m3-mlx-fp16"
+# dim = 1024
+# timeout_sec = 10
+#
+# Windows / Linux, recommended — Ollama (`ollama pull bge-m3`):
+# backend = "omlx_http"
+# base_url = "http://127.0.0.1:11434/v1"
+# model = "bge-m3"
 # dim = 1024
 # timeout_sec = 10
 

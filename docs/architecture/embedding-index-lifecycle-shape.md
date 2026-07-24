@@ -58,6 +58,10 @@ last. Consumers resolve logical index → physical table through one resolver.
 
 - **At bootstrap**: nothing extra — but record the encoder fingerprint next to
   any vectors you write, and key caches on `(fingerprint, content_hash)`.
+- **On a new machine or runtime**: propose starting a fresh index and
+  re-embedding; never copy a vector DB across runtimes or quantizations. The
+  same model name under a different runtime (e.g. MLX fp16 vs GGUF) is a
+  different encoder fingerprint.
 - **Before adding or replacing a model**: adopt a lifecycle manager implementing
   the shape above (a maintained implementation exists in the operator's fleet as
   the `mir-embedding-lifecycle` package — versioned sidecars, resumable backfill,
