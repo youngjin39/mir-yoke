@@ -72,21 +72,56 @@ The model is likewise a recommendation, not a restriction: bge-m3 (dim 1024) is 
 
 Day-2 operations (re-index, model change, rollback, evidence) live in `docs/operations/embedding-lifecycle-operations.md`.
 
-### Step 3 — Run setup
+### Step 3 — Decide where skills live (avoid a stale duplicate)
+
+This template ships `.claude/skills/` and `.agents/skills/` as real files so a plain clone works on
+any machine, including Windows and anywhere without symlinks. On a machine that already publishes
+the same skills globally, those files become a **second copy** — and the project copy wins, so the
+global one is ignored and the repository quietly runs an older version.
+
+Check first:
+
+```bash
+ls ~/.claude/skills/ 2>/dev/null        # macOS / Linux
+dir "%USERPROFILE%\.claude\skills"     # Windows
+```
+
+| What you see | Do this | Why |
+|---|---|---|
+| The same skill names are already there | **Remove the project copies** of the ones that overlap, keeping any this project owns | The global copy stays current; a project copy would freeze at clone time |
+| Nothing, or different names | **Keep the project copies** | They are the only source on this machine |
+| Unsure, or the project will be cloned elsewhere too | **Keep them** | A copy that is redundant costs nothing; a missing skill breaks the clone |
+
+Removing overlapping copies:
+
+```bash
+for s in design verify testing code-review bluebricks commit; do
+  rm -rf ".claude/skills/$s" ".agents/skills/$s"
+done
+```
+
+Record the choice in `config/repos/<slug>.json` — `active_skills` still declares what the project
+uses, regardless of which copy serves it. Declaring a skill you deleted locally is correct when the
+global copy provides it.
+
+A skill this project modifies for itself is no longer shared. Keep that one as a project copy even
+when a global copy exists, and say so in the report.
+
+### Step 4 — Run setup
 
 ```bash
 ./setup.sh   # idempotent: makes hooks executable, seeds tasks/tdd.json + tasks/plan.md + .mir/repo-profile.toml
 ```
 
-### Step 4 — First plan + prove the gates
+### Step 5 — First plan + prove the gates
 
 - Verify the registry: `python3 scripts/verify_repo_agent_management.py`.
 - Write the first real `tasks/plan.md` entry for the user's actual first task.
 - Prove a gate fires: try to `Edit` a file under `src/`/`tools/` **without** a `tasks/tdd.json` entry — the pre-tool-use hook should block it. That block means the harness is live.
 
-### Step 5 — Report
+### Step 6 — Report
 
-Summarize: project type, agents/skills enabled, Codex wired (y/n), what was removed, and the first suggested task. Do not commit unless asked.
+Summarize: project type, agents/skills enabled, whether skills are served locally or globally, Codex wired (y/n), what was removed, and the first suggested task. Do not commit unless asked.
 
 ---
 
@@ -97,6 +132,10 @@ Summarize: project type, agents/skills enabled, Codex wired (y/n), what was remo
 3. `cp .mcp.json.example .mcp.json` and set your codex command (skip if Claude-only; then set `sub-agent-policy.json` mode `unrestricted`).
 4. Create `config/repos/<slug>.json` (copy an entry's shape; pick `active_agents`, specialists by type from the table above, `active_skills`).
 5. Fill `.mir/repo-profile.toml` (no placeholders left).
+5a. If this machine already publishes the same skills globally (`ls ~/.claude/skills/`), delete the
+    overlapping copies under `.claude/skills/` and `.agents/skills/` so the repository does not
+    freeze an older version. Keep them when nothing is published globally, when the project will be
+    cloned onto another machine, or when the project has modified a skill for itself. See Step 3.
 6. Optional: enable vector search — configure `[memory.embedding]` in `harness_a.toml` (see `harness_a.toml.example` and Step 2 f for platform recommendations). Without it, retrieval is keyword-only; enabling later requires a re-index.
 7. `python3 scripts/verify_repo_agent_management.py` to confirm the registry is consistent.
 8. Open `claude .` or `codex`. See `README.md` → "Using the harness — the loop".
