@@ -72,40 +72,36 @@ The model is likewise a recommendation, not a restriction: bge-m3 (dim 1024) is 
 
 Day-2 operations (re-index, model change, rollback, evidence) live in `docs/operations/embedding-lifecycle-operations.md`.
 
-### Step 3 — Decide where skills live (avoid a stale duplicate)
+### Step 3 — Decide where skills live (a same-named global skill silently wins)
 
 This template ships `.claude/skills/` and `.agents/skills/` as real files so a plain clone works on
-any machine, including Windows and anywhere without symlinks. On a machine that already publishes
-the same skills globally, those files become a **second copy** — and the project copy wins, so the
-global one is ignored and the repository quietly runs an older version.
+any machine, including Windows and anywhere without symlinks.
 
-Check first:
+On a machine that already publishes the same skill names globally, know which one actually runs.
+Claude Code resolves a name collision as **enterprise > personal (`~/.claude/skills`) > project
+(`.claude/skills`)** — the opposite of most configuration. A global skill of the same name wins, and
+the project's copy is never loaded. One exception: if the project entry is a symlink pointing at the
+same directory the global entry resolves to, it is one skill and loads once.
+
+Check what is already published:
 
 ```bash
 ls ~/.claude/skills/ 2>/dev/null        # macOS / Linux
 dir "%USERPROFILE%\.claude\skills"     # Windows
 ```
 
-| What you see | Do this | Why |
+| Situation | Do this | Why |
 |---|---|---|
-| The same skill names are already there | **Remove the project copies** of the ones that overlap, keeping any this project owns | The global copy stays current; a project copy would freeze at clone time |
-| Nothing, or different names | **Keep the project copies** | They are the only source on this machine |
-| Unsure, or the project will be cloned elsewhere too | **Keep them** | A copy that is redundant costs nothing; a missing skill breaks the clone |
+| No global skills, or different names | **Keep the project copies** | They are the only source on this machine |
+| Same names published globally, and this project uses them unchanged | **Keep the copies** | They are inert here — the global one serves — and they are required when this repository is cloned onto a machine without them |
+| Same names published globally, but **this project modified one** | **Rename the modified skill** (for example `design-acme`) | Under the same name the modification never loads. It disappears without a warning |
 
-Removing overlapping copies:
+The third row is the one that costs you. A repository that tailors a shared skill and keeps the
+shared name gets the global version instead, on any machine that publishes one. Distinct names are
+the supported way to specialise; there is no project-level override to rely on.
 
-```bash
-for s in design verify testing code-review bluebricks commit; do
-  rm -rf ".claude/skills/$s" ".agents/skills/$s"
-done
-```
-
-Record the choice in `config/repos/<slug>.json` — `active_skills` still declares what the project
-uses, regardless of which copy serves it. Declaring a skill you deleted locally is correct when the
-global copy provides it.
-
-A skill this project modifies for itself is no longer shared. Keep that one as a project copy even
-when a global copy exists, and say so in the report.
+`active_skills` in `config/repos/<slug>.json` declares what the project uses. It does not say which
+copy serves it, so it stays accurate either way.
 
 ### Step 4 — Run setup
 
@@ -132,10 +128,10 @@ Summarize: project type, agents/skills enabled, whether skills are served locall
 3. `cp .mcp.json.example .mcp.json` and set your codex command (skip if Claude-only; then set `sub-agent-policy.json` mode `unrestricted`).
 4. Create `config/repos/<slug>.json` (copy an entry's shape; pick `active_agents`, specialists by type from the table above, `active_skills`).
 5. Fill `.mir/repo-profile.toml` (no placeholders left).
-5a. If this machine already publishes the same skills globally (`ls ~/.claude/skills/`), delete the
-    overlapping copies under `.claude/skills/` and `.agents/skills/` so the repository does not
-    freeze an older version. Keep them when nothing is published globally, when the project will be
-    cloned onto another machine, or when the project has modified a skill for itself. See Step 3.
+5a. Check `ls ~/.claude/skills/`. A globally published skill of the same name **wins over the
+    project's copy** (personal overrides project), so keep the copies — they are inert here and
+    required on machines without them — but **rename any skill this project modified**, or the
+    modification will never load. See Step 3.
 6. Optional: enable vector search — configure `[memory.embedding]` in `harness_a.toml` (see `harness_a.toml.example` and Step 2 f for platform recommendations). Without it, retrieval is keyword-only; enabling later requires a re-index.
 7. `python3 scripts/verify_repo_agent_management.py` to confirm the registry is consistent.
 8. Open `claude .` or `codex`. See `README.md` → "Using the harness — the loop".
