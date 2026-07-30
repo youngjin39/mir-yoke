@@ -3,7 +3,7 @@
 # Attribution: claude-starter (yojini/claude-starter, Apache-2.0)
 # Modifications:
 #   - Mir-specific manifest path (.codex-sync/manifest.json — same)
-#   - Mir skill profiles: core=full=12 consolidated runtime groups
+#   - Mir skill profiles: core=full=13 consolidated runtime groups
 #   - Agent TOML mirrors are generated from .claude/agents source.
 #   - write_hooks_json() SKIPPED (repository-owned P0-G hooks.json preserved byte-for-byte)
 #   - codex_hooks = true added to [features] in write_config_toml
@@ -54,6 +54,7 @@ CORE_SKILLS=(
   knowledge
   memory-gc
   automation
+  spec-architect
   testing
   ui-design
   verify
@@ -72,6 +73,7 @@ FULL_SKILLS=(
   knowledge
   memory-gc
   automation
+  spec-architect
   testing
   ui-design
   verify
@@ -516,7 +518,7 @@ write_manifest_json() {
     echo '  "version": 1,'
     echo '  "strategy": "one-way-claude-to-codex",'
     echo '  "generated_by": "scripts/generate_codex_derivatives.sh",'
-    echo '  "notes": "Profiles: core=12 runtime-default skills, full=12 after consolidation.",'
+    echo '  "notes": "Profiles: core=13 runtime-default skills, full=13 after consolidation.",'
     echo '  "mappings": ['
 
     local first=1

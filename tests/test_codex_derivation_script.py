@@ -33,7 +33,7 @@ def test_generator_skips_non_agent_markdown_and_empty_targets(tmp_path: Path) ->
     mappings = manifest["mappings"]
     assert all(mapping["source"] != ".claude/agents/README.md" for mapping in mappings)
     assert all(target != ".codex/agents/.toml" for item in mappings for target in item["targets"])
-    assert "full=12 after consolidation" in manifest["notes"]
+    assert "full=13 after consolidation" in manifest["notes"]
 
     claude_text = (ROOT / "CLAUDE.md").read_text(encoding="utf-8")
     agents_text = (tmp_path / "AGENTS.md").read_text(encoding="utf-8")
@@ -61,7 +61,7 @@ def test_generator_skips_non_agent_markdown_and_empty_targets(tmp_path: Path) ->
         for mapping in mappings
         if mapping["source"].startswith(".claude/skills/")
     ]
-    assert len(skill_mappings) == 12
+    assert len(skill_mappings) == 13
     for mapping in skill_mappings:
         skill_name = Path(mapping["source"]).name
         assert mapping["targets"] == [f".agents/skills/{skill_name}"]

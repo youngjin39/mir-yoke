@@ -255,6 +255,13 @@
         "status": "active",
         "source_path": ".claude/skills/design/"
       },
+      "spec-architect": {
+        "category": "design",
+        "absorbs": [],
+        "scope": "universal",
+        "status": "active",
+        "source_path": ".claude/skills/spec-architect/"
+      },
       "verify": {
         "category": "verify",
         "absorbs": [
