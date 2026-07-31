@@ -25,9 +25,8 @@ What you get out of the box:
   Each agent declares its execution backend in frontmatter so the orchestrator knows exactly
   which CLI subprocess to use. Trim per-family by editing `active_agents` in
   `config/repos/<slug>.json` when a project does not need a specialist.
-- **13-skill library** — design, spec-architect, verify, code-review, testing, ui-design,
-  governance, knowledge, memory-gc, automation, efficiency, bluebricks, commit. Skills load on
-  demand when the request
+- **12-skill library** — design, verify, code-review, testing, ui-design, governance, knowledge,
+  memory-gc, automation, efficiency, bluebricks, commit. Skills load on demand when the request
   matches a trigger keyword. No token cost when unused.
 - **Per-family JSON registry** — `config/repo-agent-management.json` catalogs agents and skills.
   When you fork and add repositories, each family gets its own `config/repos/<slug>.json` with
@@ -230,19 +229,17 @@ tool or raw `codex exec`. Violation logs are written to `tasks/log/dispatch-log.
 
 ---
 
-## Skill library (13 groups)
+## Skill library (11 groups)
 
 | Skill | Trigger keywords | Absorbs legacy slugs |
 |---|---|---|
 | `design` | design, brainstorm, architecture, plan, interview | brainstorming, writing-plans, deep-interview, + more |
-| `spec-architect` | requirements completeness, write a spec, traceability, spec-code drift | — |
 | `verify` | verify, done check, proof, spec check, audit | verification, verify-against-spec, self-audit, review-code |
 | `code-review` | review, PR, quality, merge check | — |
 | `testing` | test, TDD, unit test, integration test | — |
 | `ui-design` | UI, UX, interface, wireframe, component spec | ux-ui-design |
 | `governance` | CLAUDE.md, AGENTS.md, fleet governance, project doctor | fleet-instruction-doc-ops, project-doctor, + more |
 | `knowledge` | knowledge, wiki, ingest, knowledge graph | knowledge-ingest, knowledge-lint |
-| `memory-gc` | memory GC, expired facts, retention cleanup | — |
 | `automation` | runner, long-running, background, monitor, browser | runner, browser-automation |
 | `efficiency` | token efficiency, AI readiness, cost analysis | improve-token-efficiency, ai-readiness-cartography |
 | `bluebricks` | code, debug, refactor, architecture, module | ai-ready-bluebricks-development |
@@ -294,7 +291,7 @@ python3 scripts/verify_repo_agent_management.py
 ├── .claude/                    # Claude Code surface
 │   ├── settings.json           #   hook + permission config (9 hook surfaces)
 │   ├── hooks/                  #   shell scripts (PreToolUse, PostToolUse, ...)
-│   ├── skills/                 #   13 trigger-loaded skill groups
+│   ├── skills/                 #   11 trigger-loaded skill groups
 │   └── agents/                 #   12 sub-agent personas
 │
 ├── .codex/                     # Codex CLI surface
