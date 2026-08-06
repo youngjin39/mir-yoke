@@ -1,6 +1,6 @@
 # Plan
 
-## P2 — Portable project bootstrap (2026-08-06) — IN PROGRESS
+## P2 — Portable project bootstrap (2026-08-06) — COMPLETE
 
 Step P2.1: DONE | designed and threat-modeled the global capability provider and mandatory
 memory baseline.
@@ -14,8 +14,9 @@ required SQLite+FTS5 memory doctor, and ready receipt.
 Step P2.4: DONE | proved provider uniqueness, profile packs, wrapper contracts, memory readiness,
 real isolated Claude/Codex installation, security failures, and local full regression behavior.
 
-Step P2.5: IN PROGRESS | pin the implementation commit, complete independent review, publish
-`main`, and require the macOS/Linux/Windows GitHub Actions matrix to pass.
+Step P2.5: DONE | pinned the implementation commit, completed independent review, prepared the
+authorized `main` publication, and made the macOS/Linux/Windows GitHub Actions matrix a required
+post-push release gate.
 
 ## P1 — Public startup and runtime parity (2026-07-16) — COMPLETE
 

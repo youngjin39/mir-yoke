@@ -86,6 +86,27 @@ def test_agent_divergence_refuses_remote_update(tmp_path: Path) -> None:
     assert agent.read_text() == "user-owned divergence\n"
 
 
+def test_initial_sync_refuses_an_existing_unlocked_agent(tmp_path: Path) -> None:
+    project = make_project(tmp_path)
+    agent = project / ".claude" / "agents" / "main-orchestrator.md"
+    agent.write_text("project-owned customization\n", encoding="utf-8")
+    capability_home = tmp_path / "capability-home"
+    manager = CapabilityManager(
+        project,
+        capability_home=capability_home,
+        user_home=tmp_path / "user",
+        git=CopyGit(),
+        command_runner=runtime_runner(capability_home / "active"),
+        which=lambda executable: f"/fake/{executable}",
+    )
+
+    with pytest.raises(CapabilityError, match="refusing overwrite"):
+        manager.sync("content_workspace", apply=True)
+
+    assert agent.read_text(encoding="utf-8") == "project-owned customization\n"
+    assert not (project / ".mir" / "capability-lock.json").exists()
+
+
 def test_global_one_version_conflict_is_fail_closed(tmp_path: Path) -> None:
     home = tmp_path / "home"
     first = CapabilityManager(

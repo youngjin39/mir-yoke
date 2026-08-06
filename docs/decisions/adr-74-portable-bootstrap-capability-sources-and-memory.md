@@ -1,6 +1,6 @@
 ---
 title: Portable Bootstrap, Capability Sources, and Required Memory
-status: proposed
+status: accepted
 date: 2026-08-06
 ---
 
@@ -107,7 +107,9 @@ inside the session that performed the install. Phase one performs a no-write pre
 verifies the pinned provider, and exits with `restart_required`. After Claude reload or a new Codex
 session, phase two proves active provider hashes, then requires the initial project structure pass
 to invoke `mir-core:design` followed by `mir-core:spec-architect` regardless of whether the first
-product request was code or prose.
+product request was code or prose. Finalize requires non-empty `spec/STATE.md`, `spec/index.yaml`,
+and `spec/graph.yaml` plus tracked JSON evidence that binds that sequence and those outputs to the
+pinned capability commit; a boolean attestation alone cannot produce a ready receipt.
 
 Phase two validates staged configuration/database/provider state,
 atomically replaces only generated outputs, and writes the receipt last. Existing authored

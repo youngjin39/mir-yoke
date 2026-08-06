@@ -2,10 +2,13 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import subprocess
+import sys
 from hashlib import sha256
 from pathlib import Path
 from unittest.mock import patch
 
+from mir.cli import SUBCOMMANDS
 from mir.cli import bootstrap as bootstrap_cli
 
 _SOURCE_CONFIG = {
@@ -55,6 +58,28 @@ def _bootstrap(root: Path) -> int:
             "--allow-incomplete",
             "--json",
         ]
+    )
+
+
+def _write_architecture_evidence(root: Path, commit: str) -> None:
+    _write(root / "spec" / "STATE.md", "# Project specification state\n")
+    _write(root / "spec" / "index.yaml", "version: 1\n")
+    _write(root / "spec" / "graph.yaml", "nodes: []\n")
+    _write(
+        root / "spec" / "bootstrap-evidence.json",
+        json.dumps(
+            {
+                "schema_version": 1,
+                "sequence": ["mir-core:design", "mir-core:spec-architect"],
+                "capability_commit": commit,
+                "outputs": ["spec/STATE.md", "spec/index.yaml", "spec/graph.yaml"],
+            }
+        )
+        + "\n",
+    )
+    _write(
+        root / ".mir" / "capability-lock.json",
+        json.dumps({"source": {"commit": commit}}) + "\n",
     )
 
 
@@ -126,6 +151,18 @@ def test_bootstrap_source_has_no_symlink_dependency():
         assert not (root / relative).is_symlink()
 
 
+def test_public_cli_registers_bootstrap_and_capability() -> None:
+    assert {"bootstrap", "capability"} <= set(SUBCOMMANDS)
+    for command in ("bootstrap", "capability"):
+        completed = subprocess.run(
+            [sys.executable, "-m", "mir", command, "--help"],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        assert completed.returncode == 0, completed.stderr
+
+
 def test_capability_install_requires_restart_before_ready(tmp_path, capsys):
     _make_harness_surfaces(tmp_path)
     evidence = {
@@ -139,6 +176,7 @@ def test_capability_install_requires_restart_before_ready(tmp_path, capsys):
     install_receipt = json.loads(capsys.readouterr().out)
     assert install_receipt["status"] == "restart_required"
     assert install_receipt["capabilities"]["status"] == "restart_required"
+    _write_architecture_evidence(tmp_path, "a" * 40)
 
     with patch.object(bootstrap_cli, "_finalize_capabilities", return_value=("ready", evidence)):
         assert (
@@ -157,6 +195,41 @@ def test_capability_install_requires_restart_before_ready(tmp_path, capsys):
     assert final_receipt["status"] == "ready"
     assert final_receipt["capabilities"]["selected_plugins"] == ["mir-core"]
     assert final_receipt["architecture_initialization"]["attested"] is True
+    assert set(final_receipt["architecture_initialization"]["evidence"]["output_hashes"]) == {
+        "spec/STATE.md",
+        "spec/index.yaml",
+        "spec/graph.yaml",
+    }
+
+
+def test_finalize_refuses_boolean_attestation_without_architecture_outputs(tmp_path, capsys):
+    _make_harness_surfaces(tmp_path)
+    with patch.object(
+        bootstrap_cli,
+        "_activate_capabilities",
+        return_value=("ready", {"source_commit": "a" * 40}),
+    ):
+        assert bootstrap_cli.main(["--project-root", str(tmp_path), "--json"]) == 0
+    capsys.readouterr()
+
+    with patch.object(bootstrap_cli, "_finalize_capabilities") as finalize:
+        assert (
+            bootstrap_cli.main(
+                [
+                    "--project-root",
+                    str(tmp_path),
+                    "--finalize",
+                    "--architecture-initialized",
+                    "--json",
+                ]
+            )
+            == 1
+        )
+    report = json.loads(capsys.readouterr().out)
+    assert report["status"] == "incomplete"
+    assert report["architecture_initialization"]["attested"] is False
+    assert "architecture evidence is missing" in report["capabilities"]["reason"]
+    finalize.assert_not_called()
 
 
 def test_failed_rerun_preserves_existing_db_and_projection(tmp_path, capsys):

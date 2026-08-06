@@ -9,6 +9,7 @@ from unittest.mock import patch
 from mir.cli import context as context_cli
 from mir.cli import memory as memory_cli
 from mir.core.engine.memory import distill, store
+from mir.core.engine.memory.external_store import ExternalStore, ScanResult
 
 
 def _write_memory_config(root: Path) -> None:
@@ -175,19 +176,27 @@ def test_archive_symlink_escape_is_rejected(tmp_path, capsys):
 
 
 def test_required_vector_mode_blocks_fts_only_index(tmp_path, capsys):
-    _ready_project(tmp_path)
-    capsys.readouterr()
-    config_path = tmp_path / "harness_a.toml"
-    config = config_path.read_text(encoding="utf-8")
-    config = config.replace('vector_mode = "off"', 'vector_mode = "required"')
-    config = config.replace("enabled = false\nrequired = false", "enabled = true\nrequired = true")
-    config_path.write_text(config, encoding="utf-8")
-
-    with patch(
-        "mir.core.engine.memory.backends.omlx_http.from_config",
-        side_effect=RuntimeError("embedding endpoint unavailable"),
+    with patch.object(
+        store, "_load_sqlite_vec", return_value=(False, "test extension unavailable")
     ):
-        assert memory_cli.main(["doctor", "--project-root", str(tmp_path), "--json"]) == 1
+        _ready_project(tmp_path)
+        capsys.readouterr()
+        config_path = tmp_path / "harness_a.toml"
+        config = config_path.read_text(encoding="utf-8")
+        config = config.replace('vector_mode = "off"', 'vector_mode = "required"')
+        config = config.replace(
+            "enabled = false\nrequired = false", "enabled = true\nrequired = true"
+        )
+        config_path.write_text(config, encoding="utf-8")
+
+        with patch(
+            "mir.core.engine.memory.backends.omlx_http.from_config",
+            side_effect=RuntimeError("embedding endpoint unavailable"),
+        ):
+            assert (
+                memory_cli.main(["doctor", "--project-root", str(tmp_path), "--json"])
+                == 1
+            )
     report = json.loads(capsys.readouterr().out)
     assert report["vector"]["documents_missing_vectors"] >= 1
     assert any("no vector index evidence" in error for error in report["errors"])
@@ -210,7 +219,28 @@ def test_optional_embedding_failure_retries_fts_only_sync(tmp_path, capsys):
     def unavailable(_texts):
         raise RuntimeError("optional endpoint unavailable")
 
-    with patch.object(context_cli, "_build_embed_fn", return_value=unavailable):
+    original_scan = ExternalStore.scan
+
+    def fail_vector_scan(self, archive_id, *, embed_fn=None, embed_batch_size=None):
+        if embed_fn is not None:
+            return ScanResult(
+                inserted=0,
+                deleted=0,
+                reindexed=0,
+                unchanged=0,
+                failed=(("memory.md", "embedding unavailable"),),
+            )
+        return original_scan(
+            self,
+            archive_id,
+            embed_fn=None,
+            embed_batch_size=embed_batch_size,
+        )
+
+    with (
+        patch.object(context_cli, "_build_embed_fn", return_value=unavailable),
+        patch.object(ExternalStore, "scan", new=fail_vector_scan),
+    ):
         assert context_cli.main(["sync", "--db", str(db_path)]) == 0
     output = capsys.readouterr().out
     assert "retrying FTS-only" in output

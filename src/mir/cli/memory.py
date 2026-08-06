@@ -571,28 +571,34 @@ def run_doctor(project_root: Path, *, db_override: Path | None = None) -> tuple[
                 if cfg.memory.embedding.required or cfg.memory.vector_mode == "required":
                     report["errors"].append(f"required embedding backend is unavailable: {exc}")
 
-        if cfg.memory.vector_mode == "required" and not connection.vec_available:
-            report["errors"].append(
-                f"required sqlite-vec is unavailable: {connection.vec_reason or 'unknown reason'}"
-            )
-        if cfg.memory.vector_mode == "required" and connection.vec_available:
+        if cfg.memory.vector_mode == "required":
             unindexed_documents = conn.execute(
                 "SELECT COUNT(*) FROM external_documents WHERE vec_indexed_at IS NULL"
             ).fetchone()[0]
-            vector_table = conn.execute(
-                "SELECT 1 FROM sqlite_master WHERE name = 'external_chunks_vec'"
-            ).fetchone()
             vector["documents_missing_vectors"] = unindexed_documents
-            if vector_table is None:
+            if not connection.vec_available:
                 vector["chunk_rows"] = 0
-                report["errors"].append("required external_chunks_vec table is missing")
+                report["errors"].append(
+                    "required sqlite-vec is unavailable: "
+                    f"{connection.vec_reason or 'unknown reason'}"
+                )
             else:
-                vector_rows = conn.execute("SELECT COUNT(*) FROM external_chunks_vec").fetchone()[0]
-                vector["chunk_rows"] = vector_rows
-                if vector_rows != chunk_count:
-                    report["errors"].append(
-                        f"vector row count {vector_rows} does not match chunk count {chunk_count}"
-                    )
+                vector_table = conn.execute(
+                    "SELECT 1 FROM sqlite_master WHERE name = 'external_chunks_vec'"
+                ).fetchone()
+                if vector_table is None:
+                    vector["chunk_rows"] = 0
+                    report["errors"].append("required external_chunks_vec table is missing")
+                else:
+                    vector_rows = conn.execute(
+                        "SELECT COUNT(*) FROM external_chunks_vec"
+                    ).fetchone()[0]
+                    vector["chunk_rows"] = vector_rows
+                    if vector_rows != chunk_count:
+                        report["errors"].append(
+                            f"vector row count {vector_rows} does not match "
+                            f"chunk count {chunk_count}"
+                        )
             if unindexed_documents:
                 report["errors"].append(
                     f"{unindexed_documents} external documents have no vector index evidence"

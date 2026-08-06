@@ -77,7 +77,8 @@ your purpose.** Clone, open Claude Code or Codex CLI in the folder, and say:
 The agent follows [`BOOTSTRAP.md`](BOOTSTRAP.md): it selects a profile, runs the cross-platform
 coordinator, installs the pinned global plugins, builds the required memory index, and selects the
 project-local agent pack. After a runtime restart it performs the mandatory initial
-`design` → `spec-architect` structure pass and verifies a ready receipt.
+`design` → `spec-architect` structure pass, records pinned non-empty spec evidence, and verifies a
+ready receipt.
 
 Prefer to do it yourself? `BOOTSTRAP.md` has a manual checklist too, and the Quick start below is the
 5-minute mechanical path.

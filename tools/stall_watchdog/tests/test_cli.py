@@ -5,6 +5,7 @@ from __future__ import annotations
 import ast
 import json
 import os
+import platform
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -340,4 +341,4 @@ def test_python_version_in_doctor_report(tmp_path: Path, capsys, monkeypatch):
     assert main(["doctor"]) == 0
     out = capsys.readouterr().out
     parsed = json.loads(out)
-    assert parsed["python_version"].startswith(("3.12", "3.13"))
+    assert parsed["python_version"] == platform.python_version()

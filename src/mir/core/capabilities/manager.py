@@ -693,7 +693,7 @@ class CapabilityManager:
             ".claude-plugin/marketplace.json",
             ".agents/plugins/marketplace.json",
             *self.config.plugins.values(),
-            *selected_agents,
+            *self.config.agents,
         ]
         with tempfile.TemporaryDirectory(prefix="mir-capability-check-") as raw_temp:
             checkout = Path(raw_temp) / "checkout"
@@ -717,14 +717,12 @@ class CapabilityManager:
                 }
                 if actual_skills != set(expected_skills):
                     raise CapabilityError(f"remote plugin skill inventory drift: {name}")
-            agent_hashes = {
-                path: _file_digest(checkout / path) for path in selected_agents
-            }
+            agent_hashes = {path: _file_digest(checkout / path) for path in self.config.agents}
             skill_names = _skill_names(checkout, self.config, selected_plugins)
             collisions = _standalone_collisions(
                 skill_names, self.project_root, self.user_home
             )
-            agent_changes = self._agent_changes(lock, agent_hashes)
+            agent_changes = self._agent_changes(lock, agent_hashes, selected_agents)
             missing_project_paths = self._missing_project_paths()
             result: dict[str, object] = {
                 "operation": operation,
@@ -756,6 +754,15 @@ class CapabilityManager:
             if missing_project_paths:
                 joined = ", ".join(missing_project_paths)
                 raise CapabilityError(f"required project harness paths are missing: {joined}")
+            divergent_agents = [
+                path for path, state in agent_changes.items() if state == "diverged"
+            ]
+            if divergent_agents:
+                joined = ", ".join(divergent_agents)
+                raise CapabilityError(
+                    "project-local agents diverged from the trusted source or prior lock; "
+                    f"refusing overwrite: {joined}"
+                )
             registration = self._apply(
                 checkout=checkout,
                 commit=desired_commit,
@@ -777,16 +784,31 @@ class CapabilityManager:
             return result
 
     def _agent_changes(
-        self, lock: dict[str, object] | None, desired: dict[str, str]
+        self,
+        lock: dict[str, object] | None,
+        desired: dict[str, str],
+        selected_agents: Sequence[str],
     ) -> dict[str, str]:
         previous = lock.get("agents", {}) if lock else {}
         if not isinstance(previous, dict):
             raise CapabilityError("capability lock agents field is invalid")
+        selected = set(selected_agents)
         changes: dict[str, str] = {}
         for path, digest in desired.items():
             old = previous.get(path)
             old_digest = old.get("sha256") if isinstance(old, dict) else None
             target = self._project_target(path)
+            if path not in selected:
+                if not target.exists() and not target.is_symlink():
+                    changes[path] = "absent"
+                elif target.is_file() and not target.is_symlink() and _file_digest(target) in {
+                    digest,
+                    old_digest,
+                }:
+                    changes[path] = "remove"
+                else:
+                    changes[path] = "diverged"
+                continue
             if old_digest is not None:
                 if (
                     not target.is_file()
@@ -866,6 +888,19 @@ class CapabilityManager:
     ) -> dict[str, object]:
         self._assert_agents_unchanged(previous_lock)
         registry = self._assert_global_version(commit, selected_plugins, plugin_hashes)
+        agent_snapshots = {
+            self._project_target(path): (
+                self._project_target(path).read_bytes()
+                if self._project_target(path).is_file()
+                else None
+            )
+            for path in self.config.agents
+        }
+        state_paths = (self.lock_path, self.registry_path, self.active_receipt_path)
+        state_snapshots = {
+            path: path.read_bytes() if path.is_file() else None for path in state_paths
+        }
+        previous_active_receipt = _read_json(self.active_receipt_path)
         with _apply_guard(self.capability_home):
             stage_parent = self.capability_home / "tmp"
             stage_parent.mkdir(parents=True, exist_ok=True)
@@ -894,77 +929,204 @@ class CapabilityManager:
                 if backup.is_symlink() or (backup.exists() and not backup.is_dir()):
                     raise CapabilityError("global capability backup path is unsafe")
                 if backup.exists():
-                    shutil.rmtree(backup)
-                if self.active_path.exists():
-                    os.replace(self.active_path, backup)
-                os.replace(staged_active, self.active_path)
-                if backup.exists():
-                    shutil.rmtree(backup)
+                    raise CapabilityError(
+                        "a prior capability backup exists; inspect it before applying"
+                    )
 
-            for source_path in selected_agents:
-                _atomic_write_bytes(
-                    self._project_target(source_path),
-                    (checkout / source_path).read_bytes(),
-                )
+                old_active_moved = False
+                new_active_published = False
+                registration_attempted = False
+                derivatives_attempted = False
+                try:
+                    if self.active_path.exists():
+                        os.replace(self.active_path, backup)
+                        old_active_moved = True
+                    os.replace(staged_active, self.active_path)
+                    new_active_published = True
 
-            selected_hashes = {
-                plugin: plugin_hashes[plugin] for plugin in selected_plugins
-            }
-            consumer_key = _consumer_key(self.project_root)
-            consumers = registry.setdefault("consumers", {})
-            if not isinstance(consumers, dict):
-                raise CapabilityError("global consumer registry is invalid")
-            consumers[consumer_key] = {
-                "commit": commit,
-                "plugins": selected_hashes,
-                "profile": profile,
-            }
-            registry["schema_version"] = 1
-            registry["active_commit"] = commit
+                    for source_path in selected_agents:
+                        _atomic_write_bytes(
+                            self._project_target(source_path),
+                            (checkout / source_path).read_bytes(),
+                        )
+                    for source_path in set(self.config.agents) - set(selected_agents):
+                        self._project_target(source_path).unlink(missing_ok=True)
 
-            registration = self._registration_plan(selected_plugins)
-            registration = self._install_and_verify(
-                registration,
-                {
-                    plugin: {"sha256": plugin_hashes[plugin]}
-                    for plugin in selected_plugins
-                },
-            )
-            timestamp = datetime.now(UTC).isoformat()
-            lock: dict[str, object] = {
-                "schema_version": 1,
-                "source": {
-                    "url": self.config.source_url,
-                    "ref": self.config.source_ref,
-                    "commit": commit,
-                },
-                "profile": profile,
-                "plugins": {
-                    plugin: {
-                        "path": self.config.plugins[plugin],
-                        "sha256": plugin_hashes[plugin],
+                    selected_hashes = {
+                        plugin: plugin_hashes[plugin] for plugin in selected_plugins
                     }
+                    consumer_key = _consumer_key(self.project_root)
+                    consumers = registry.setdefault("consumers", {})
+                    if not isinstance(consumers, dict):
+                        raise CapabilityError("global consumer registry is invalid")
+                    consumers[consumer_key] = {
+                        "commit": commit,
+                        "plugins": selected_hashes,
+                        "profile": profile,
+                    }
+                    registry["schema_version"] = 1
+                    registry["active_commit"] = commit
+
+                    registration_attempted = True
+                    registration = self._install_and_verify(
+                        self._registration_plan(selected_plugins),
+                        {
+                            plugin: {"sha256": plugin_hashes[plugin]}
+                            for plugin in selected_plugins
+                        },
+                    )
+                    if registration["status"] != "restart-required":
+                        raise CapabilityError("runtime plugin registration failed")
+                    derivatives_attempted = True
+                    self._regenerate_agent_derivatives()
+                    timestamp = datetime.now(UTC).isoformat()
+                    lock: dict[str, object] = {
+                        "schema_version": 1,
+                        "source": {
+                            "url": self.config.source_url,
+                            "ref": self.config.source_ref,
+                            "commit": commit,
+                        },
+                        "profile": profile,
+                        "plugins": {
+                            plugin: {
+                                "path": self.config.plugins[plugin],
+                                "sha256": plugin_hashes[plugin],
+                            }
+                            for plugin in selected_plugins
+                        },
+                        "agents": {
+                            path: {"sha256": agent_hashes[path], "project_path": path}
+                            for path in selected_agents
+                        },
+                        "registration": {"status": registration["status"]},
+                        "synced_at": timestamp,
+                    }
+                    active_receipt: dict[str, object] = {
+                        "schema_version": 1,
+                        "commit": commit,
+                        "source_url": self.config.source_url,
+                        "plugins": selected_hashes,
+                        "materialized_root": str(self.active_path),
+                        "updated_at": timestamp,
+                    }
+                    _atomic_write_json(self.active_receipt_path, active_receipt)
+                    _atomic_write_json(self.registry_path, registry)
+                    _atomic_write_json(self.lock_path, lock)
+                except Exception as exc:
+                    if new_active_published and self.active_path.exists():
+                        shutil.rmtree(self.active_path)
+                    if old_active_moved and backup.exists():
+                        os.replace(backup, self.active_path)
+                    for path, body in agent_snapshots.items():
+                        if body is None:
+                            path.unlink(missing_ok=True)
+                        else:
+                            _atomic_write_bytes(path, body)
+                    derivatives_rollback = True
+                    if derivatives_attempted:
+                        derivatives_rollback = self._regenerate_agent_derivatives(
+                            raise_on_error=False
+                        )
+                    for path, body in state_snapshots.items():
+                        if body is None:
+                            path.unlink(missing_ok=True)
+                        else:
+                            _atomic_write_bytes(path, body)
+                    runtime_rollback = True
+                    if registration_attempted:
+                        runtime_rollback = self._rollback_runtime_registration(
+                            selected_plugins, previous_active_receipt
+                        )
+                    rollback_complete = runtime_rollback and derivatives_rollback
+                    detail = "complete" if rollback_complete else "incomplete"
+                    raise CapabilityError(
+                        f"capability apply failed and local rollback was {detail}: {exc}"
+                    ) from exc
+                else:
+                    if backup.exists():
+                        shutil.rmtree(backup)
+                    return registration
+
+    def _regenerate_agent_derivatives(self, *, raise_on_error: bool = True) -> bool:
+        script = self.project_root / "scripts" / "generate_codex_derivatives.sh"
+        bash = self.which("bash")
+        if bash is None or not script.is_file() or script.is_symlink():
+            if raise_on_error:
+                raise CapabilityError(
+                    "agent pack activation requires Bash and scripts/generate_codex_derivatives.sh"
+                )
+            return False
+        completed = self.command_runner(
+            [bash, str(script)],
+            cwd=self.project_root,
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if completed.returncode != 0:
+            if raise_on_error:
+                detail = completed.stderr.strip() or completed.stdout.strip() or "unknown error"
+                raise CapabilityError(f"agent derivative regeneration failed: {detail}")
+            return False
+        return True
+
+    def _rollback_runtime_registration(
+        self,
+        selected_plugins: Sequence[str],
+        previous_active_receipt: dict[str, object] | None,
+    ) -> bool:
+        previous_plugins = (
+            previous_active_receipt.get("plugins") if previous_active_receipt else None
+        )
+        if isinstance(previous_plugins, dict) and previous_plugins:
+            expected = {
+                name: {"sha256": digest}
+                for name, digest in previous_plugins.items()
+                if isinstance(name, str) and isinstance(digest, str)
+            }
+            if expected:
+                restored = self._install_and_verify(
+                    self._registration_plan(tuple(sorted(expected))), expected
+                )
+                return restored.get("status") == "restart-required"
+
+        commands = {
+            "claude": [
+                *(
+                    ["plugin", "uninstall", f"{plugin}@mir-yoke", "--scope", "user"]
                     for plugin in selected_plugins
-                },
-                "agents": {
-                    path: {"sha256": agent_hashes[path], "project_path": path}
-                    for path in selected_agents
-                },
-                "registration": {"status": registration["status"]},
-                "synced_at": timestamp,
-            }
-            active_receipt: dict[str, object] = {
-                "schema_version": 1,
-                "commit": commit,
-                "source_url": self.config.source_url,
-                "plugins": plugin_hashes,
-                "materialized_root": str(self.active_path),
-                "updated_at": timestamp,
-            }
-            _atomic_write_json(self.active_receipt_path, active_receipt)
-            _atomic_write_json(self.registry_path, registry)
-            _atomic_write_json(self.lock_path, lock)
-            return registration
+                ),
+                ["plugin", "marketplace", "remove", "mir-yoke", "--scope", "user"],
+            ],
+            "codex": [
+                *(
+                    ["plugin", "remove", f"{plugin}@mir-yoke", "--json"]
+                    for plugin in selected_plugins
+                ),
+                ["plugin", "marketplace", "remove", "mir-yoke", "--json"],
+            ],
+        }
+        success = True
+        for executable, command_group in commands.items():
+            resolved = self.which(executable)
+            if resolved is None:
+                continue
+            for args in command_group:
+                try:
+                    completed = self.command_runner(
+                        [resolved, *args],
+                        stdin=subprocess.DEVNULL,
+                        capture_output=True,
+                        text=True,
+                        check=False,
+                    )
+                except Exception:
+                    success = False
+                else:
+                    success = success and completed.returncode == 0
+        return success
 
     def _registration_plan(self, selected_plugins: Sequence[str]) -> dict[str, object]:
         claude_commands: list[list[str]] = [

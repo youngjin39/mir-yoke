@@ -103,7 +103,8 @@
     ".ai-harness",
     "tasks",
     "config",
-    ".claude/agents"
+    ".claude/agents",
+    "scripts/generate_codex_derivatives.sh"
   ],
   "runtime_support": {
     "supported": ["claude-code", "codex-cli", "codex-desktop"],

@@ -517,6 +517,11 @@ write_config_toml
 rm -rf -- "$OUTPUT_ROOT/.agents/skills"
 rm -rf -- "$OUTPUT_ROOT/.codex-sync/staging/.agents/skills"
 
+# Agent TOMLs are a complete mirror of the currently selected Claude agent pack.
+# Recreate the managed directory so agents removed by a profile switch cannot remain active.
+rm -rf -- "$OUTPUT_ROOT/.codex/agents"
+mkdir -p "$OUTPUT_ROOT/.codex/agents"
+
 while IFS= read -r src; do
   [ -n "$src" ] || continue
   name="$(extract_frontmatter_field "$src" "name")"

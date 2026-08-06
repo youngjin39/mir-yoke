@@ -15,6 +15,9 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_generator_skips_non_agent_markdown_and_empty_targets(tmp_path: Path) -> None:
+    stale_agent = tmp_path / ".codex" / "agents" / "stale-agent.toml"
+    stale_agent.parent.mkdir(parents=True)
+    stale_agent.write_text('name = "stale-agent"\n', encoding="utf-8")
     stale_live = tmp_path / ".agents" / "skills" / "spec-architect"
     stale_live.parent.mkdir(parents=True)
     stale_live.write_text("../../.claude/skills/spec-architect", encoding="utf-8")
@@ -75,6 +78,16 @@ def test_generator_skips_non_agent_markdown_and_empty_targets(tmp_path: Path) ->
     )
     assert not (tmp_path / ".agents" / "skills").exists()
     assert not (tmp_path / ".codex-sync" / "staging" / ".agents" / "skills").exists()
+    assert not stale_agent.exists()
+    generated_agents = {
+        path.stem for path in (tmp_path / ".codex" / "agents").glob("*.toml")
+    }
+    source_agents = {
+        path.stem
+        for path in (ROOT / ".claude" / "agents").glob("*.md")
+        if path.name != "README.md"
+    }
+    assert generated_agents == source_agents
 
     spec_architect_reference = (
         ROOT

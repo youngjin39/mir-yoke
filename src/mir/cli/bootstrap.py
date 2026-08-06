@@ -27,6 +27,8 @@ from . import memory as memory_cli
 _PROFILE_CHOICES = ("code_app", "hybrid_pipeline", "infra_runtime", "content_workspace")
 _PROFILE_ALIASES = {"hybrid": "hybrid_pipeline", "infra": "infra_runtime"}
 _SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{0,63}$")
+_ARCHITECTURE_OUTPUTS = ("spec/STATE.md", "spec/index.yaml", "spec/graph.yaml")
+_ARCHITECTURE_SEQUENCE = ("mir-core:design", "mir-core:spec-architect")
 
 
 def _parse(argv: list[str]) -> argparse.Namespace:
@@ -326,6 +328,52 @@ def _finalize_capabilities(root: Path, prior_receipt: dict | None) -> tuple[str,
     return status, evidence
 
 
+def _validate_architecture_evidence(root: Path) -> tuple[list[str], dict[str, object]]:
+    evidence_path = root / "spec" / "bootstrap-evidence.json"
+    lock_path = root / ".mir" / "capability-lock.json"
+    errors: list[str] = []
+    if evidence_path.is_symlink() or not evidence_path.is_file():
+        return ["architecture evidence is missing: spec/bootstrap-evidence.json"], {}
+    try:
+        evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
+        lock = json.loads(lock_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return [f"architecture evidence or capability lock is invalid: {exc}"], {}
+    if not isinstance(evidence, dict) or evidence.get("schema_version") != 1:
+        errors.append("architecture evidence schema_version must be 1")
+        evidence = {}
+    sequence = evidence.get("sequence")
+    if sequence != list(_ARCHITECTURE_SEQUENCE):
+        errors.append("architecture evidence must record design then spec-architect")
+    source = lock.get("source") if isinstance(lock, dict) else None
+    locked_commit = source.get("commit") if isinstance(source, dict) else None
+    if evidence.get("capability_commit") != locked_commit or not isinstance(
+        locked_commit, str
+    ):
+        errors.append("architecture evidence capability_commit does not match the lock")
+    outputs = evidence.get("outputs")
+    if outputs != list(_ARCHITECTURE_OUTPUTS):
+        errors.append("architecture evidence must list the required spec outputs")
+
+    output_hashes: dict[str, str] = {}
+    for relative in _ARCHITECTURE_OUTPUTS:
+        path = root / relative
+        if path.is_symlink() or not path.is_file():
+            errors.append(f"architecture output is missing or linked: {relative}")
+            continue
+        body = path.read_bytes()
+        if not body.strip():
+            errors.append(f"architecture output is empty: {relative}")
+            continue
+        output_hashes[relative] = hashlib.sha256(body).hexdigest()
+    return errors, {
+        "path": "spec/bootstrap-evidence.json",
+        "sequence": list(_ARCHITECTURE_SEQUENCE),
+        "capability_commit": locked_commit,
+        "output_hashes": output_hashes,
+    }
+
+
 def _validate_json_file(path: Path) -> str | None:
     try:
         json.loads(path.read_text(encoding="utf-8"))
@@ -526,6 +574,8 @@ def main(argv: list[str]) -> int:
     projection_updates: dict[Path, str] = {}
     working_db_path: Path | None = None
     staged_db = False
+    architecture_evidence: dict[str, object] = {}
+    architecture_attested = False
     receipt_path = root / ".mir" / "bootstrap-receipt.json"
     prior_receipt = None
     if receipt_path.is_file():
@@ -638,7 +688,13 @@ def main(argv: list[str]) -> int:
                     "explicit mir-core:design then mir-core:spec-architect execution"
                 }
             else:
-                capability_status, evidence = _finalize_capabilities(root, prior_receipt)
+                architecture_errors, architecture_evidence = _validate_architecture_evidence(root)
+                if architecture_errors:
+                    capability_status = "failed"
+                    evidence = {"reason": "; ".join(architecture_errors)}
+                else:
+                    capability_status, evidence = _finalize_capabilities(root, prior_receipt)
+                    architecture_attested = capability_status == "ready"
             capability = {"status": capability_status, **evidence}
         else:
             capability_status, evidence = _activate_capabilities(root, profile)
@@ -704,9 +760,10 @@ def main(argv: list[str]) -> int:
         "capabilities": capability,
         "architecture_initialization": {
             "required": True,
-            "sequence": ["mir-core:design", "mir-core:spec-architect"],
+            "sequence": list(_ARCHITECTURE_SEQUENCE),
             "applies_regardless_of_first_request_type": True,
-            "attested": bool(ns.finalize and ns.architecture_initialized),
+            "attested": architecture_attested,
+            "evidence": architecture_evidence,
         },
         "errors": unique_errors,
     }

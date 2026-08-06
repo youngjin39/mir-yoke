@@ -76,6 +76,21 @@ Reload Claude Code and begin a new Codex session. In that new session, explicitl
 This initial structure pass is mandatory even when the first product request is prose. It does not
 mean that every later prose edit must invoke `spec-architect`.
 
+The pass must leave non-empty `spec/STATE.md`, `spec/index.yaml`, and `spec/graph.yaml`, plus
+`spec/bootstrap-evidence.json`:
+
+```json
+{
+  "schema_version": 1,
+  "sequence": ["mir-core:design", "mir-core:spec-architect"],
+  "capability_commit": "<commit from .mir/capability-lock.json>",
+  "outputs": ["spec/STATE.md", "spec/index.yaml", "spec/graph.yaml"]
+}
+```
+
+The boolean finalize flag is only an operator attestation; it cannot substitute for these pinned,
+non-empty outputs.
+
 After completing the two skills, attest and finalize:
 
 ```bash
@@ -86,8 +101,9 @@ After completing the two skills, attest and finalize:
 .\setup.ps1 -Profile code_app -Finalize -ArchitectureInitialized
 ```
 
-Finalize verifies the installed plugin paths and hashes reported by both CLIs, memory readiness,
-and the prior restart receipt. Only then may the receipt become `status: ready`.
+Finalize verifies the installed plugin paths and hashes reported by both CLIs, the architecture
+evidence and output hashes, memory readiness, and the prior restart receipt. Only then may the
+receipt become `status: ready`.
 
 ## Required memory contract
 

@@ -11,6 +11,7 @@ import pytest
 
 from mir.cli import capability as capability_cli
 from mir.core.capabilities import CapabilityError, CapabilityManager, load_capability_config
+from mir.core.capabilities.manager import _file_digest, _tree_digest
 
 ROOT = Path(__file__).resolve().parents[1]
 SHA_A = "a" * 40
@@ -43,7 +44,9 @@ class CopyGit:
                 shutil.copy2(source, target)
 
 
-def make_project(tmp_path: Path, name: str = "project") -> Path:
+def make_project(
+    tmp_path: Path, name: str = "project", *, real_derivatives: bool = False
+) -> Path:
     project = tmp_path / name
     (project / "config").mkdir(parents=True)
     shutil.copy2(
@@ -54,6 +57,13 @@ def make_project(tmp_path: Path, name: str = "project") -> Path:
         (project / filename).write_text(f"# {filename}\n", encoding="utf-8")
     for directory in (".ai-harness", "tasks", ".claude/agents"):
         (project / directory).mkdir(parents=True, exist_ok=True)
+    derivative = project / "scripts" / "generate_codex_derivatives.sh"
+    derivative.parent.mkdir(parents=True)
+    if real_derivatives:
+        shutil.copy2(ROOT / "scripts" / "generate_codex_derivatives.sh", derivative)
+        (project / ".claude" / "hooks" / "lib").mkdir(parents=True)
+    else:
+        derivative.write_text("#!/usr/bin/env bash\nexit 0\n", encoding="utf-8")
     return project
 
 
@@ -73,6 +83,18 @@ def runtime_runner(active: Path):
     return run
 
 
+def runtime_with_real_derivatives(active: Path):
+    fake_runtime = runtime_runner(active)
+
+    def run(args: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        if Path(args[0]).name == "bash":
+            actual_args = [shutil.which("bash") or "/bin/bash", *args[1:]]
+            return subprocess.run(actual_args, **kwargs)  # type: ignore[arg-type]
+        return fake_runtime(args, **kwargs)
+
+    return run
+
+
 def test_profiles_are_canonical_and_have_distinct_inventories() -> None:
     config = load_capability_config(ROOT / "config" / "capability-sources.json")
     assert set(config.packs) == {
@@ -85,6 +107,23 @@ def test_profiles_are_canonical_and_have_distinct_inventories() -> None:
     assert len(inventories) == 4
     assert config.resolve_profile("hybrid")[0] == "hybrid_pipeline"
     assert config.resolve_profile("infra")[0] == "infra_runtime"
+
+
+def test_repository_lock_is_portable_and_matches_managed_trees() -> None:
+    lock = json.loads((ROOT / ".mir" / "capability-lock.json").read_text(encoding="utf-8"))
+    commit = lock["source"]["commit"]
+    ancestry = subprocess.run(
+        ["git", "merge-base", "--is-ancestor", commit, "HEAD"],
+        cwd=ROOT,
+        check=False,
+    )
+    assert ancestry.returncode == 0
+    assert str(ROOT) not in json.dumps(lock)
+    assert "materialized_root" not in lock
+    for metadata in lock["plugins"].values():
+        assert _tree_digest(ROOT / metadata["path"]) == metadata["sha256"]
+    for path, metadata in lock["agents"].items():
+        assert _file_digest(ROOT / path) == metadata["sha256"]
 
 
 def test_sync_materializes_exact_lock_and_requires_restart(tmp_path: Path) -> None:
@@ -118,6 +157,37 @@ def test_sync_materializes_exact_lock_and_requires_restart(tmp_path: Path) -> No
     status = manager.status()
     assert status["ready"] is False
     assert status["activation"]["status"] == "restart-required"
+
+
+def test_profile_materializes_only_its_selected_agent_pack(tmp_path: Path) -> None:
+    project = make_project(tmp_path, real_derivatives=True)
+    for source_path in load_capability_config(
+        ROOT / "config" / "capability-sources.json"
+    ).agents:
+        target = project / source_path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(ROOT / source_path, target)
+    stale_codex_agent = project / ".codex" / "agents" / "stale-agent.toml"
+    stale_codex_agent.parent.mkdir(parents=True)
+    stale_codex_agent.write_text('name = "stale-agent"\n', encoding="utf-8")
+    capability_home = tmp_path / "capability-home"
+    manager = CapabilityManager(
+        project,
+        capability_home=capability_home,
+        user_home=tmp_path / "user",
+        git=CopyGit(),
+        command_runner=runtime_with_real_derivatives(capability_home / "active"),
+        which=lambda executable: f"/fake/{executable}",
+    )
+
+    manager.sync("content_workspace", apply=True)
+
+    selected = set(manager.config.packs["content_workspace"].agents)
+    for source_path in manager.config.agents:
+        assert (project / source_path).exists() is (source_path in selected)
+    assert {path.stem for path in (project / ".codex" / "agents").glob("*.toml")} == {
+        Path(source_path).stem for source_path in selected
+    }
 
 
 def test_check_is_read_only_for_project_and_capability_home(tmp_path: Path) -> None:
@@ -205,9 +275,49 @@ def test_sync_apply_fails_ready_when_supported_clis_are_missing(tmp_path: Path) 
     )
     with pytest.raises(CapabilityError, match="registration failed"):
         manager.sync("code_app", apply=True)
-    lock = json.loads((project / ".mir" / "capability-lock.json").read_text())
-    assert lock["registration"]["status"] == "registration-failed"
+    assert not (project / ".mir" / "capability-lock.json").exists()
+    assert not (tmp_path / "home" / "active").exists()
     assert manager.status()["ready"] is False
+
+
+def test_failed_reregistration_restores_provider_agents_and_state(tmp_path: Path) -> None:
+    project = make_project(tmp_path)
+    capability_home = tmp_path / "capability-home"
+    fail = False
+
+    def toggled_runner(
+        args: list[str], **kwargs: object
+    ) -> subprocess.CompletedProcess[str]:
+        if fail:
+            return subprocess.CompletedProcess(args, 1, "", "forced failure")
+        return runtime_runner(capability_home / "active")(args, **kwargs)
+
+    manager = CapabilityManager(
+        project,
+        capability_home=capability_home,
+        user_home=tmp_path / "user",
+        git=CopyGit(),
+        command_runner=toggled_runner,
+        which=lambda executable: f"/fake/{executable}",
+    )
+    manager.sync("content_workspace", apply=True)
+    marker = capability_home / "active" / "previous-provider-marker"
+    marker.write_text("preserve\n", encoding="utf-8")
+    tracked = [
+        project / ".mir" / "capability-lock.json",
+        capability_home / "consumers.json",
+        capability_home / "active.json",
+        project / ".claude" / "agents" / "main-orchestrator.md",
+    ]
+    before = {path: path.read_bytes() for path in tracked}
+
+    fail = True
+    with pytest.raises(CapabilityError, match="local rollback was incomplete"):
+        manager.sync("content_workspace", apply=True)
+
+    assert marker.read_text(encoding="utf-8") == "preserve\n"
+    assert {path: path.read_bytes() for path in tracked} == before
+    assert not (capability_home / ".active.previous").exists()
 
 
 def test_cli_accepts_bootstrap_argument_order(monkeypatch, tmp_path: Path, capsys) -> None:

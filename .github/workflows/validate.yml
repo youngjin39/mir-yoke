@@ -51,6 +51,11 @@ jobs:
         uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
       - name: Sync test environment
         run: uv sync --extra dev --frozen
+      - name: Install pinned agent runtimes
+        run: >-
+          npm install --global
+          @anthropic-ai/claude-code@2.1.223
+          @openai/codex@0.146.1
       - name: Run portable contract tests
         run: >-
           uv run pytest -q
@@ -60,17 +65,32 @@ jobs:
           tests/test_memory_doctor.py
           tests/test_bootstrap_cli.py
           tests/test_setup_wrappers.py
-      - name: Bootstrap on Unix
+      - name: Verify real isolated plugin activation
+        run: uv run python scripts/verify_plugin_cli_activation.py
+      - name: Bootstrap phase 1 on Unix
+        if: runner.os != 'Windows'
+        run: ./setup.sh --profile content_workspace --json
+      - name: Bootstrap phase 1 on Windows PowerShell
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: .\setup.ps1 -Profile content_workspace -Json
+      - name: Prepare deterministic architecture evidence fixture
+        run: uv run python tests/write_bootstrap_evidence_fixture.py
+      - name: Finalize ready bootstrap on Unix
         if: runner.os != 'Windows'
         run: >-
-          ./setup.sh --profile content_workspace
-          --skip-capability-activation --allow-incomplete --json
-      - name: Bootstrap on Windows PowerShell
+          ./setup.sh --profile content_workspace --finalize
+          --architecture-initialized --json
+      - name: Finalize ready bootstrap on Windows PowerShell
         if: runner.os == 'Windows'
         shell: pwsh
         run: >-
-          .\setup.ps1 -Profile content_workspace
-          -SkipCapabilityActivation -AllowIncomplete -Json
+          .\setup.ps1 -Profile content_workspace -Finalize
+          -ArchitectureInitialized -Json
+      - name: Assert ready receipt
+        run: >-
+          uv run python -c
+          "import json,pathlib; p=json.loads(pathlib.Path('.mir/bootstrap-receipt.json').read_text()); assert p['status']=='ready', p"
       - name: Prove memory readiness
         run: uv run mir memory doctor --project-root . --json
       - name: Smoke the Git Bash hook runtime

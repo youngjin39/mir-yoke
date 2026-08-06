@@ -1,0 +1,77 @@
+{
+  "agents": {
+    ".claude/agents/codex-final-reviewer.md": {
+      "project_path": ".claude/agents/codex-final-reviewer.md",
+      "sha256": "9e7de3201cb66bdc33444c4fe4102f37058d8c8839ac4e050005683c1cf9c4ce"
+    },
+    ".claude/agents/cwe-auditor.md": {
+      "project_path": ".claude/agents/cwe-auditor.md",
+      "sha256": "b76afb67fd1766f996c67a1b480be7e4deb2c36b472502bc27d270966b2b5838"
+    },
+    ".claude/agents/dep-auditor.md": {
+      "project_path": ".claude/agents/dep-auditor.md",
+      "sha256": "448a5843ca7cc6274d614adcb854abeee530f174005ac00433388ba2564dbce0"
+    },
+    ".claude/agents/executor-agent.md": {
+      "project_path": ".claude/agents/executor-agent.md",
+      "sha256": "b6dc1f7b2ac2b3c727fcb8a7c4882356533cb989bccc2590ebde7aaf5f3abd38"
+    },
+    ".claude/agents/fleet-doc-steward.md": {
+      "project_path": ".claude/agents/fleet-doc-steward.md",
+      "sha256": "225897f9b875fe240b3cd2937f2b0478d00b20982af5eba1ddbe22c5a6505c73"
+    },
+    ".claude/agents/main-orchestrator.md": {
+      "project_path": ".claude/agents/main-orchestrator.md",
+      "sha256": "3cb93612b4f19e25e721e79244bf57a26270fbe02f007cf21f6293491ac0bb8e"
+    },
+    ".claude/agents/ontology-validator.md": {
+      "project_path": ".claude/agents/ontology-validator.md",
+      "sha256": "bdadf432c5f478f8e11b82c08c974bff0194a9351ceab84cf48427c4b92e0f2d"
+    },
+    ".claude/agents/pipeline-validator.md": {
+      "project_path": ".claude/agents/pipeline-validator.md",
+      "sha256": "aff5b7328a39f19c7a01b9a6388887fde0adef17b0b55eb687c194235489cf90"
+    },
+    ".claude/agents/quality-agent.md": {
+      "project_path": ".claude/agents/quality-agent.md",
+      "sha256": "579fc339b4b3f7bc10170325925b22a333ac1a394da8320b57b370e9d98bc82a"
+    },
+    ".claude/agents/runtime-contract-reviewer.md": {
+      "project_path": ".claude/agents/runtime-contract-reviewer.md",
+      "sha256": "056960c98f48dca25f110d68e785a8240a2c7d4a7ae99cba623349661d14398f"
+    },
+    ".claude/agents/template-sync-validator.md": {
+      "project_path": ".claude/agents/template-sync-validator.md",
+      "sha256": "1b3c26ca6fef24df8dd6d3d99e14429bf36f046d887fd9002146ef2a04518114"
+    },
+    ".claude/agents/ui-reviewer.md": {
+      "project_path": ".claude/agents/ui-reviewer.md",
+      "sha256": "f9663406ce8e6fda5504f1c7d0552a1c4723983baf846a8824d32d7743c70efe"
+    }
+  },
+  "plugins": {
+    "mir-code": {
+      "path": "plugins/mir-code",
+      "sha256": "d42308e5aec3742c72fe8b6abd08fe76de8859c8f6fbc937210de76ea5916756"
+    },
+    "mir-content": {
+      "path": "plugins/mir-content",
+      "sha256": "2d867cee61ba11bca6dceb6ba7431dc857e70e221f6ef8c22d24e5ab1e4d0a8c"
+    },
+    "mir-core": {
+      "path": "plugins/mir-core",
+      "sha256": "c106a083aa1684de0de5ba5a2f060662021f41064174d2bf1649df039774dd96"
+    }
+  },
+  "profile": "hybrid_pipeline",
+  "registration": {
+    "status": "pinned"
+  },
+  "schema_version": 1,
+  "source": {
+    "commit": "a3634c3217b66d67b6febfca0779de18ebe01441",
+    "ref": "main",
+    "url": "https://github.com/youngjin39/mir-yoke.git"
+  },
+  "synced_at": "2026-08-06T23:48:33+09:00"
+}
