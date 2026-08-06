@@ -131,20 +131,20 @@ def _validate_catalog_drift(manifest: dict) -> tuple[list[str], list[str], list[
                 )
             continue
         elif meta["status"] == "proposed":
-            if src.startswith(".claude/skills/"):
-                path = ROOT / src
-                if not path.is_dir():
-                    infos.append(f"SKILL {slug}: proposed, dir pending")
-                else:
-                    infos.append(
-                        f"SKILL {slug}: proposed, dir present - review for active flip"
-                    )
+            path = ROOT / src
+            if not path.is_dir():
+                infos.append(f"SKILL {slug}: proposed, dir pending")
+            else:
+                infos.append(
+                    f"SKILL {slug}: proposed, dir present - review for active flip"
+                )
             continue
         elif meta["status"] == "active":
-            if src.startswith(".claude/skills/"):
-                path = ROOT / src
-                if not path.is_dir():
-                    errors.append(f"SKILL {slug}: active but dir missing: {src}")
+            path = ROOT / src
+            if not path.is_dir():
+                errors.append(f"SKILL {slug}: active but dir missing: {src}")
+            elif not (path / "SKILL.md").is_file():
+                errors.append(f"SKILL {slug}: active but SKILL.md missing: {src}")
         elif meta["status"] == "consolidated":
             continue
         else:
@@ -153,16 +153,23 @@ def _validate_catalog_drift(manifest: dict) -> tuple[list[str], list[str], list[
                 " — schema/verifier drift, update verifier"
             )
 
-    skills_dir = ROOT / ".claude" / "skills"
-    if skills_dir.is_dir():
+    skill_roots = sorted(
+        {
+            (ROOT / meta["source_path"]).parent
+            for meta in catalog_skills.values()
+            if meta["status"] in {"active", "proposed"}
+            and meta["source_path"] != "external"
+        }
+    )
+    for skills_dir in skill_roots:
+        if not skills_dir.is_dir():
+            continue
         for actual_dir in skills_dir.iterdir():
-            if actual_dir.is_dir():
-                slug = actual_dir.name
-                if slug not in catalog_skills:
-                    warns.append(
-                        f"SKILL {slug}: directory present but no catalog entry"
-                        " - refresh needed"
-                    )
+            if actual_dir.is_dir() and actual_dir.name not in catalog_skills:
+                warns.append(
+                    f"SKILL {actual_dir.name}: directory present but no catalog entry"
+                    " - refresh needed"
+                )
 
     return (errors, warns, infos)
 

@@ -6,6 +6,7 @@ Subcommands:
 
 Design pinned in docs/decisions/adr-53-context-assembly-current-only-retrieval-2026-06-05.md
 """
+
 from __future__ import annotations
 
 import argparse
@@ -15,6 +16,7 @@ import re
 from pathlib import Path
 from typing import Any
 
+from mir.core.config.loader import ConfigLoadError, load_config, resolve_archive_root
 from mir.core.context.profile_task_context import build_profile_task_context
 from mir.core.engine.memory import store
 from mir.core.engine.memory.external_store import ExternalStore
@@ -33,10 +35,10 @@ _NEAR_DUP_JACCARD_THRESHOLD = 0.85
 
 def _shingles(text: str, n: int = _NEAR_DUP_SHINGLE_N) -> set[str]:
     """Lowercase, whitespace-normalised n-gram shingle set."""
-    normalised = re.sub(r'\s+', ' ', text.lower()).strip()
+    normalised = re.sub(r"\s+", " ", text.lower()).strip()
     if len(normalised) < n:
         return {normalised} if normalised else set()
-    return {normalised[i:i + n] for i in range(len(normalised) - n + 1)}
+    return {normalised[i : i + n] for i in range(len(normalised) - n + 1)}
 
 
 def _jaccard(a: set[str], b: set[str]) -> float:
@@ -59,14 +61,11 @@ def _build_embed_fn(cfg) -> Any | None:
     construction errors (caller catches and degrades).
     """
     emb_cfg = cfg.memory.embedding
-    if not emb_cfg or not emb_cfg.base_url:
+    if not emb_cfg.enabled:
         return None
-    try:
-        from mir.core.engine.memory.embeddings import build_embed_fn  # type: ignore
-        return build_embed_fn(emb_cfg)
-    except (ImportError, Exception):
-        # If embeddings module does not exist or fails, return None
-        return None
+    from mir.core.engine.memory.backends.omlx_http import from_config
+
+    return from_config(emb_cfg).encode
 
 
 # ---------------------------------------------------------------------------
@@ -80,8 +79,7 @@ def _profile_context_lines(context: dict[str, Any] | None) -> list[str]:
     repo = context["repository"]
     purpose = " ".join(str(repo.get("purpose", "")).split())
     line = (
-        f"[repository] {repo.get('slug', 'unknown')} "
-        f"type={repo.get('repository_type', 'unknown')}"
+        f"[repository] {repo.get('slug', 'unknown')} type={repo.get('repository_type', 'unknown')}"
     )
     if purpose:
         line += f" purpose={purpose}"
@@ -102,7 +100,9 @@ def _profile_context_lines(context: dict[str, Any] | None) -> list[str]:
         for key, value in values.items():
             if value in (None, "", [], False):
                 continue
-            rendered = ", ".join(str(item) for item in value) if isinstance(value, list) else str(value)
+            rendered = (
+                ", ".join(str(item) for item in value) if isinstance(value, list) else str(value)
+            )
             lines.append(f"[safety] {section}.{key}={rendered}")
     enabled_gates = sorted(key for key, value in safety.get("gates", {}).items() if value is True)
     if enabled_gates:
@@ -112,8 +112,7 @@ def _profile_context_lines(context: dict[str, Any] | None) -> list[str]:
         lines.append(f"[context-ref] {item['kind']} {item['path']}")
     freshness = context["freshness"]
     freshness_line = (
-        f"[profile-freshness] state={freshness['state']} "
-        f"base={freshness['base_commit']}"
+        f"[profile-freshness] state={freshness['state']} base={freshness['base_commit']}"
     )
     changed = freshness.get("changed_selected", [])
     if changed:
@@ -121,7 +120,9 @@ def _profile_context_lines(context: dict[str, Any] | None) -> list[str]:
     freshness_line += f" reason={freshness['reason']}"
     lines.append(freshness_line)
     if context["needs_investigation"]:
-        lines.append("[context-advisory] inspect only the selected or uncertain boundary before expanding")
+        lines.append(
+            "[context-advisory] inspect only the selected or uncertain boundary before expanding"
+        )
     lines.extend(f"[context-advisory] {warning}" for warning in context.get("warnings", []))
     return lines
 
@@ -185,17 +186,23 @@ def _do_pull(
         "SELECT id, slug FROM external_archives ORDER BY id"
     ).fetchall()
     if not archive_rows:
-        msg = ("no archives configured — run 'mir context sync' after adding "
-            "[[memory.external_archives]] to harness_a.toml")
+        msg = (
+            "no archives configured — run 'mir context sync' after adding "
+            "[[memory.external_archives]] to harness_a.toml"
+        )
         notices.append(msg)
         if output_json:
-            print(json.dumps({
-                "degraded": degraded,
-                "notices": notices,
-                "repository_context": profile_context,
-                "facts": [],
-                "chunks": [],
-            }))
+            print(
+                json.dumps(
+                    {
+                        "degraded": degraded,
+                        "notices": notices,
+                        "repository_context": profile_context,
+                        "facts": [],
+                        "chunks": [],
+                    }
+                )
+            )
         else:
             for line in _profile_context_lines(profile_context):
                 print(line)
@@ -248,7 +255,7 @@ def _do_pull(
             if hashlib.sha256(data).hexdigest() != archive_row[1]:
                 notices.append("[stale] index entry skipped — run 'mir context sync'")
                 continue
-            snippet = data[hit.byte_start:hit.byte_end].decode("utf-8", errors="replace")
+            snippet = data[hit.byte_start : hit.byte_end].decode("utf-8", errors="replace")
         except Exception:
             notices.append("[stale] index entry skipped — run 'mir context sync'")
             continue
@@ -259,10 +266,7 @@ def _do_pull(
     kept_shingles: list[set[str]] = []
     for hit, snippet in kept_snippets:
         shingles = _shingles(snippet)
-        is_dup = any(
-            _jaccard(shingles, ks) > _NEAR_DUP_JACCARD_THRESHOLD
-            for ks in kept_shingles
-        )
+        is_dup = any(_jaccard(shingles, ks) > _NEAR_DUP_JACCARD_THRESHOLD for ks in kept_shingles)
         if not is_dup:
             collapsed.append((hit, snippet))
             kept_shingles.append(shingles)
@@ -304,6 +308,7 @@ def _do_pull(
     fact_rows: list[tuple[int, str, str, str]] = []
     if include_history:
         from mir.core.engine.memory.distill import fts_search
+
         raw_facts = fts_search(conn.conn, query, limit=k, include_history=True)
         if raw_facts:
             fact_ids = [fid for fid, _, _ in raw_facts]
@@ -374,21 +379,19 @@ def _do_pull(
 # ---------------------------------------------------------------------------
 
 
-def _do_sync(ns: argparse.Namespace, conn, cfg) -> int:
+def _do_sync(ns: argparse.Namespace, conn, cfg, project_root: Path) -> int:
     """Execute sync logic. Returns exit code (1 if any failures)."""
     es = ExternalStore(conn)
     # D8: register archives from harness_a.toml config if not yet in DB
     existing_slugs: set[str] = {
-        row[0] for row in conn.conn.execute(
-            "SELECT slug FROM external_archives"
-        ).fetchall()
+        row[0] for row in conn.conn.execute("SELECT slug FROM external_archives").fetchall()
     }
     if hasattr(cfg, "memory") and hasattr(cfg.memory, "external_archives"):
         for arch in cfg.memory.external_archives:
             if arch.slug not in existing_slugs:
                 es.register(
                     slug=arch.slug,
-                    root_path=arch.root,
+                    root_path=str(resolve_archive_root(project_root, arch)),
                     mode=arch.mode,
                     glob_include=tuple(arch.glob_include) if arch.glob_include else ("**/*.md",),
                     owner="family:your-harness",
@@ -403,12 +406,18 @@ def _do_sync(ns: argparse.Namespace, conn, cfg) -> int:
     embed_fn = None
     try:
         embed_fn = _build_embed_fn(cfg)
-    except Exception:
-        pass  # FTS-only sync
+    except Exception as exc:
+        if cfg.memory.embedding.required or cfg.memory.vector_mode == "required":
+            print(f"required embedding backend unavailable: {exc}")
+            return 1
+        print(f"[degraded] embedding unavailable — FTS-only sync: {exc}")
 
     any_failed = False
     for archive_id, slug in archive_rows:
         result = es.scan(archive_id, embed_fn=embed_fn)
+        if result.failed and embed_fn is not None and cfg.memory.vector_mode == "optional":
+            print(f"[degraded] {slug}: vector indexing failed — retrying FTS-only")
+            result = es.scan(archive_id, embed_fn=None)
         status_parts = [
             f"inserted={result.inserted}",
             f"reindexed={result.reindexed}",
@@ -436,20 +445,39 @@ def _parse(argv: list[str]) -> argparse.Namespace:
 
     pl = sub.add_parser("pull", help="ADR-53 D2: hybrid context retrieval")
     pl.add_argument("query", help="search query")
-    pl.add_argument("--history", action="store_true", default=False,
-                    help="include expired/archived docs and facts")
-    pl.add_argument("--json", action="store_true", default=False, dest="json",
-                    help="machine-readable JSON output")
-    pl.add_argument("--k", type=int, default=8, dest="k",
-                    help="number of results (default: 8)")
-    pl.add_argument("--path", action="append", default=[], dest="target_paths",
-                    help="repository-relative task target (repeatable)")
-    pl.add_argument("--risk", choices=("low", "normal", "high"), default="normal",
-                    help="main-agent task risk classification (default: normal)")
+    pl.add_argument(
+        "--history",
+        action="store_true",
+        default=False,
+        help="include expired/archived docs and facts",
+    )
+    pl.add_argument(
+        "--json",
+        action="store_true",
+        default=False,
+        dest="json",
+        help="machine-readable JSON output",
+    )
+    pl.add_argument("--k", type=int, default=8, dest="k", help="number of results (default: 8)")
+    pl.add_argument(
+        "--path",
+        action="append",
+        default=[],
+        dest="target_paths",
+        help="repository-relative task target (repeatable)",
+    )
+    pl.add_argument(
+        "--risk",
+        choices=("low", "normal", "high"),
+        default="normal",
+        help="main-agent task risk classification (default: normal)",
+    )
     pl.add_argument("--db", type=Path, default=None)
+    pl.add_argument("--project-root", type=Path, default=None, dest="project_root")
 
     sy = sub.add_parser("sync", help="ADR-53 D2: scan all configured archives")
     sy.add_argument("--db", type=Path, default=None)
+    sy.add_argument("--project-root", type=Path, default=None, dest="project_root")
 
     return p.parse_args(argv)
 
@@ -462,55 +490,29 @@ def _parse(argv: list[str]) -> argparse.Namespace:
 def main(argv: list[str]) -> int:
     ns = _parse(argv)
     db_path = ns.db or default_db_path()
-    project_root = (
+    project_root = ns.project_root or (
         db_path.parent.parent
         if db_path.name == "memory.db" and db_path.parent.name == ".mir"
         else db_path.parent
     )
+    project_root = project_root.resolve()
     if not db_path.is_file():
         print(f"no memory.db at {db_path} — run 'mir migrate up' first")
         return 2
 
-    # Load config (harness_a.toml). Fail gracefully if absent.
+    # Load config (harness_a.toml). Malformed authored intent fails loud.
     try:
-        from mir.core.config.loader import load_config
-        cfg = load_config(db_path.parent.parent if db_path.name == "memory.db" else Path.cwd())
-    except Exception:
-        # Fallback: minimal TOML parse for [[memory.external_archives]] without pydantic.
-        import tomllib as _tomllib
-
-        class _ArchiveStub:
-            def __init__(self, d: dict) -> None:
-                self.slug = d["slug"]
-                self.root = d["root"]
-                self.mode = d.get("mode", "indexed")
-                self.glob_include = d.get("glob_include", ["**/*.md"])
-
-        class _StubMemory:
-            embedding = None
-            external_archives: list = []
-
-        class _StubCfg:
-            memory = _StubMemory()
-
-        _project_root = db_path.parent.parent if db_path.name == "memory.db" else Path.cwd()
-        _toml_path = _project_root / "harness_a.toml"
-        if _toml_path.is_file():
-            try:
-                with _toml_path.open("rb") as _f:
-                    _raw = _tomllib.load(_f)
-                _archives = _raw.get("memory", {}).get("external_archives", [])
-                _StubMemory.external_archives = [_ArchiveStub(a) for a in _archives]
-            except Exception:
-                pass
-        cfg = _StubCfg()
+        cfg = load_config(project_root)
+    except ConfigLoadError as exc:
+        print(f"invalid memory configuration: {exc}")
+        return 2
 
     conn = store.connect(db_path)
     try:
         if ns.action == "pull":
             return _do_pull(ns, conn, cfg, project_root)
         if ns.action == "sync":
-            return _do_sync(ns, conn, cfg)
+            return _do_sync(ns, conn, cfg, project_root)
     finally:
         conn.conn.close()
     return 2

@@ -44,7 +44,7 @@
   },
   "notes": [
     "Copy this file and rename for your repo, edit slug + display_name + registry_path.",
-    "This example ships with all 12 catalog agents and 12 catalog skills active by default (matches the template-wide policy). Trim the lists below if a specific repo does not need a specialist or skill — empty 'skill_overrides.add' / 'agent_overrides.add_specialists' mean no additions beyond active_*."
+    "This example ships with all 12 catalog agents and 13 catalog skills active by default (matches the template-wide policy). Trim the lists below if a specific repo does not need a specialist or skill — empty 'skill_overrides.add' / 'agent_overrides.add_specialists' mean no additions beyond active_*."
   ],
   "active_agents": [
     "main-orchestrator",
@@ -62,6 +62,7 @@
   ],
   "active_skills": [
     "design",
+    "spec-architect",
     "verify",
     "code-review",
     "testing",

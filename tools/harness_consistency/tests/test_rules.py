@@ -863,6 +863,43 @@ def test_r17_skill_missing_skill_md(tmp_path):
     )
 
 
+def test_r17_plugin_skill_roots_are_all_checked(tmp_path):
+    """skills_structure checks every configured namespaced plugin root."""
+    from tools.harness_consistency.rules import agent_surface_contract
+
+    root = tmp_path / "plugin_skill_gap"
+    root.mkdir()
+    _write_text_r17(root / "CLAUDE.md", "")
+    _write_text_r17(
+        root / "plugins" / "mir-core" / "skills" / "design" / "SKILL.md",
+        "# design",
+    )
+    (root / "plugins" / "mir-content" / "skills" / "knowledge").mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+    findings = agent_surface_contract(
+        root,
+        {
+            "claude_md": "CLAUDE.md",
+            "agents_dir": ".claude/agents",
+            "skills_dirs": [
+                "plugins/mir-core/skills",
+                "plugins/mir-content/skills",
+            ],
+            "settings_files": [],
+            "agents_md": "AGENTS.md",
+            "memory_marker": "mir:generated",
+            "marker_surfaces": [],
+            "mirror_heading": "## Memory (DB-canonical",
+        },
+    )
+
+    assert [finding.location for finding in findings] == [
+        "plugins/mir-content/skills/knowledge"
+    ]
+
+
 def test_r17_mirror_contract_missing_heading(tmp_path):
     """mirror_contract: AGENTS.md missing required memory heading triggers finding."""
     from tools.harness_consistency.rules import agent_surface_contract

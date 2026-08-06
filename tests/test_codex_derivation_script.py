@@ -15,6 +15,20 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_generator_skips_non_agent_markdown_and_empty_targets(tmp_path: Path) -> None:
+    stale_live = tmp_path / ".agents" / "skills" / "spec-architect"
+    stale_live.parent.mkdir(parents=True)
+    stale_live.write_text("../../.claude/skills/spec-architect", encoding="utf-8")
+    stale_staging = (
+        tmp_path
+        / ".codex-sync"
+        / "staging"
+        / ".agents"
+        / "skills"
+        / "spec-architect"
+    )
+    stale_staging.mkdir(parents=True)
+    (stale_staging / "obsolete.txt").write_text("stale\n", encoding="utf-8")
+
     env = os.environ.copy()
     env["CODEX_DERIVATION_OUTPUT_ROOT"] = str(tmp_path)
     completed = subprocess.run(
@@ -33,7 +47,7 @@ def test_generator_skips_non_agent_markdown_and_empty_targets(tmp_path: Path) ->
     mappings = manifest["mappings"]
     assert all(mapping["source"] != ".claude/agents/README.md" for mapping in mappings)
     assert all(target != ".codex/agents/.toml" for item in mappings for target in item["targets"])
-    assert "full=13 after consolidation" in manifest["notes"]
+    assert "namespaced plugins" in manifest["notes"]
 
     claude_text = (ROOT / "CLAUDE.md").read_text(encoding="utf-8")
     agents_text = (tmp_path / "AGENTS.md").read_text(encoding="utf-8")
@@ -56,21 +70,22 @@ def test_generator_skips_non_agent_markdown_and_empty_targets(tmp_path: Path) ->
     assert len(claude_text.encode()) <= budgets["CLAUDE.md"]["max_bytes"]
     assert len(agents_text.encode()) <= budgets["AGENTS.md"]["max_bytes"]
 
-    skill_mappings = [
-        mapping
-        for mapping in mappings
-        if mapping["source"].startswith(".claude/skills/")
-    ]
-    assert len(skill_mappings) == 13
-    for mapping in skill_mappings:
-        skill_name = Path(mapping["source"]).name
-        assert mapping["targets"] == [f".agents/skills/{skill_name}"]
-        target = tmp_path / mapping["targets"][0]
-        assert target.is_symlink()
-        assert target.readlink() == Path(f"../../.claude/skills/{skill_name}")
-        staging_target = tmp_path / ".codex-sync" / "staging" / mapping["targets"][0]
-        assert staging_target.is_symlink()
-        assert staging_target.readlink() == Path(f"../../../../.claude/skills/{skill_name}")
+    assert not any(
+        mapping["source"].startswith(".claude/skills/") for mapping in mappings
+    )
+    assert not (tmp_path / ".agents" / "skills").exists()
+    assert not (tmp_path / ".codex-sync" / "staging" / ".agents" / "skills").exists()
+
+    spec_architect_reference = (
+        ROOT
+        / "plugins"
+        / "mir-core"
+        / "skills"
+        / "spec-architect"
+        / "references"
+        / "05-views.md"
+    )
+    assert spec_architect_reference.is_file()
 
     preserve = tomllib.loads((ROOT / ".mir-preserve.toml").read_text(encoding="utf-8"))
     for heading in preserve["claude_md_preserve"]["sections"]:
@@ -130,3 +145,35 @@ def test_verifier_rejects_nested_agents_drift(tmp_path: Path) -> None:
     assert failures == [
         "nested AGENTS derivative retains Claude-only path reference: src/AGENTS.md"
     ]
+
+
+def test_verifier_rejects_legacy_raw_skill_provider(tmp_path: Path) -> None:
+    raw_skill = tmp_path / ".agents" / "skills" / "example" / "SKILL.md"
+    raw_skill.parent.mkdir(parents=True)
+    raw_skill.write_text("# Example\n", encoding="utf-8")
+    failures: list[str] = []
+
+    verify_codex_sync.validate_plugin_skill_providers(failures, root=tmp_path)
+
+    assert "legacy raw skill provider remains: .agents/skills" in failures
+
+
+def test_generator_emits_real_portable_hook_library(tmp_path: Path) -> None:
+    env = {**os.environ, "CODEX_DERIVATION_OUTPUT_ROOT": str(tmp_path)}
+    completed = subprocess.run(
+        ["/bin/bash", "scripts/generate_codex_derivatives.sh"],
+        cwd=ROOT,
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stderr
+    target = tmp_path / ".codex" / "hooks" / "lib"
+    assert target.is_dir()
+    assert not target.is_symlink()
+    failures: list[str] = []
+    verify_codex_sync.validate_portable_hook_copy(
+        failures, source_root=ROOT, output_root=tmp_path
+    )
+    assert failures == []

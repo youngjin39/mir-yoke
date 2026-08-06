@@ -2,7 +2,7 @@
   "version": 1,
   "strategy": "one-way-claude-to-codex",
   "generated_by": "scripts/generate_codex_derivatives.sh",
-  "notes": "Profiles: core=13 runtime-default skills, full=13 after consolidation.",
+  "notes": "Common skills are provided once through namespaced plugins; no repo-local skill derivatives.",
   "mappings": [
     {
       "source": "CLAUDE.md",
@@ -109,110 +109,6 @@
       "notes": "Generated custom agent"
     },
     {
-      "source": ".claude/skills/automation",
-      "targets": [".agents/skills/automation"],
-      "change_scope": "symlink",
-      "sync_policy": "symlink",
-      "owner": "project-maintainer",
-      "notes": "Symlinked Codex skill directory"
-    },
-    {
-      "source": ".claude/skills/bluebricks",
-      "targets": [".agents/skills/bluebricks"],
-      "change_scope": "symlink",
-      "sync_policy": "symlink",
-      "owner": "project-maintainer",
-      "notes": "Symlinked Codex skill directory"
-    },
-    {
-      "source": ".claude/skills/code-review",
-      "targets": [".agents/skills/code-review"],
-      "change_scope": "symlink",
-      "sync_policy": "symlink",
-      "owner": "project-maintainer",
-      "notes": "Symlinked Codex skill directory"
-    },
-    {
-      "source": ".claude/skills/commit",
-      "targets": [".agents/skills/commit"],
-      "change_scope": "symlink",
-      "sync_policy": "symlink",
-      "owner": "project-maintainer",
-      "notes": "Symlinked Codex skill directory"
-    },
-    {
-      "source": ".claude/skills/design",
-      "targets": [".agents/skills/design"],
-      "change_scope": "symlink",
-      "sync_policy": "symlink",
-      "owner": "project-maintainer",
-      "notes": "Symlinked Codex skill directory"
-    },
-    {
-      "source": ".claude/skills/efficiency",
-      "targets": [".agents/skills/efficiency"],
-      "change_scope": "symlink",
-      "sync_policy": "symlink",
-      "owner": "project-maintainer",
-      "notes": "Symlinked Codex skill directory"
-    },
-    {
-      "source": ".claude/skills/governance",
-      "targets": [".agents/skills/governance"],
-      "change_scope": "symlink",
-      "sync_policy": "symlink",
-      "owner": "project-maintainer",
-      "notes": "Symlinked Codex skill directory"
-    },
-    {
-      "source": ".claude/skills/knowledge",
-      "targets": [".agents/skills/knowledge"],
-      "change_scope": "symlink",
-      "sync_policy": "symlink",
-      "owner": "project-maintainer",
-      "notes": "Symlinked Codex skill directory"
-    },
-    {
-      "source": ".claude/skills/memory-gc",
-      "targets": [".agents/skills/memory-gc"],
-      "change_scope": "symlink",
-      "sync_policy": "symlink",
-      "owner": "project-maintainer",
-      "notes": "Symlinked Codex skill directory"
-    },
-    {
-      "source": ".claude/skills/spec-architect",
-      "targets": [".agents/skills/spec-architect"],
-      "change_scope": "symlink",
-      "sync_policy": "symlink",
-      "owner": "project-maintainer",
-      "notes": "Symlinked Codex skill directory"
-    },
-    {
-      "source": ".claude/skills/testing",
-      "targets": [".agents/skills/testing"],
-      "change_scope": "symlink",
-      "sync_policy": "symlink",
-      "owner": "project-maintainer",
-      "notes": "Symlinked Codex skill directory"
-    },
-    {
-      "source": ".claude/skills/ui-design",
-      "targets": [".agents/skills/ui-design"],
-      "change_scope": "symlink",
-      "sync_policy": "symlink",
-      "owner": "project-maintainer",
-      "notes": "Symlinked Codex skill directory"
-    },
-    {
-      "source": ".claude/skills/verify",
-      "targets": [".agents/skills/verify"],
-      "change_scope": "symlink",
-      "sync_policy": "symlink",
-      "owner": "project-maintainer",
-      "notes": "Symlinked Codex skill directory"
-    },
-    {
       "source": ".claude/settings.json",
       "targets": [".codex/config.toml"],
       "change_scope": "config",
@@ -223,10 +119,10 @@
     {
       "source": ".claude/hooks/lib",
       "targets": [".codex/hooks/lib"],
-      "change_scope": "symlink",
-      "sync_policy": "symlink",
+      "change_scope": "directory",
+      "sync_policy": "regenerate",
       "owner": "project-maintainer",
-      "notes": "Shared hook policy lib; .codex/hooks/lib symlinks to .claude/hooks/lib (peer source)"
+      "notes": "Portable Codex hook library copy"
     }
   ]
 }

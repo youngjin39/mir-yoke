@@ -3,12 +3,10 @@
 # Attribution: claude-starter (yojini/claude-starter, Apache-2.0)
 # Modifications:
 #   - Mir-specific manifest path (.codex-sync/manifest.json — same)
-#   - Mir skill profiles: core=full=13 consolidated runtime groups
+#   - Common skills are plugin-owned and never generated as repo-local copies.
 #   - Agent TOML mirrors are generated from .claude/agents source.
 #   - write_hooks_json() SKIPPED (repository-owned P0-G hooks.json preserved byte-for-byte)
 #   - codex_hooks = true added to [features] in write_config_toml
-#   - link_skill_dir uses directory symlinks so Codex discovers project skills lazily
-#   - FULL_SKILLS matches the 12 consolidated runtime skill groups.
 
 set -euo pipefail
 shopt -s nullglob
@@ -29,55 +27,12 @@ if [ ! -f "CLAUDE.md" ]; then
   exit 1
 fi
 
-mkdir -p "$OUTPUT_ROOT/.codex/agents" "$OUTPUT_ROOT/.codex/hooks" "$OUTPUT_ROOT/.agents/skills" "$OUTPUT_ROOT/.codex-sync"
+mkdir -p "$OUTPUT_ROOT/.codex/agents" "$OUTPUT_ROOT/.codex/hooks" "$OUTPUT_ROOT/.codex-sync"
 mkdir -p "$OUTPUT_ROOT/.claude/hooks/lib"
 
-# .codex/hooks/lib must be a symlink to ../../.claude/hooks/lib (canonical shared lib).
-# Idempotent: if a real directory exists from a stale checkout, remove it first.
-if [ -e "$OUTPUT_ROOT/.codex/hooks/lib" ] && [ ! -L "$OUTPUT_ROOT/.codex/hooks/lib" ]; then
-  rm -rf "$OUTPUT_ROOT/.codex/hooks/lib"
-fi
-if [ ! -L "$OUTPUT_ROOT/.codex/hooks/lib" ]; then
-  ln -s ../../.claude/hooks/lib "$OUTPUT_ROOT/.codex/hooks/lib"
-fi
-
-# Mir core profile has 12 runtime-default skill groups (ADR-15 §S4 consolidation).
-# Each group absorbs one or more legacy slugs; legacy SKILL.md files remain
-# dispatchable until P15-I archive moves them under archive/skills/.
-CORE_SKILLS=(
-  bluebricks
-  code-review
-  commit
-  design
-  efficiency
-  governance
-  knowledge
-  memory-gc
-  automation
-  spec-architect
-  testing
-  ui-design
-  verify
-)
-
-# Mir full profile is identical to CORE after ADR-15 §S4 consolidation —
-# the 12 groups already absorb every legacy Starter-derived skill (P15-D
-# catalog: 27 Mir-owned → 12 groups, 1:1 mapped).
-FULL_SKILLS=(
-  bluebricks
-  code-review
-  commit
-  design
-  efficiency
-  governance
-  knowledge
-  memory-gc
-  automation
-  spec-architect
-  testing
-  ui-design
-  verify
-)
+# Keep the Codex hook library portable on Windows: generate a real directory copy.
+rm -rf -- "$OUTPUT_ROOT/.codex/hooks/lib"
+cp -R ".claude/hooks/lib" "$OUTPUT_ROOT/.codex/hooks/lib"
 
 extract_frontmatter_field() {
   local file="$1"
@@ -171,22 +126,6 @@ is_canonical_starter_claude() {
 
 escape_toml_multiline() {
   perl -0pe 's/"""/\\"""/g'
-}
-
-selected_skill_names() {
-  case "$DERIVATION_PROFILE" in
-    core) printf '%s\n' "${CORE_SKILLS[@]}" ;;
-    full) printf '%s\n' "${FULL_SKILLS[@]}" ;;
-    *)
-      echo "ERROR: unsupported CODEX_DERIVATION_PROFILE=$DERIVATION_PROFILE" >&2
-      exit 1
-      ;;
-  esac
-}
-
-has_selected_skill() {
-  local name="$1"
-  selected_skill_names | grep -qx "$name"
 }
 
 emit_section() {
@@ -492,24 +431,6 @@ write_agent_toml() {
   } > "$out"
 }
 
-link_skill_dir() {
-  local src="$1"
-  local skill_name live_target staging_target live_link_target staging_link_target
-  skill_name="$(basename "$(dirname "$src")")"
-
-  live_target="$OUTPUT_ROOT/.agents/skills/$skill_name"
-  mkdir -p "$OUTPUT_ROOT/.agents/skills"
-  live_link_target="../../.claude/skills/$skill_name"
-  rm -rf "$live_target"
-  ln -s "$live_link_target" "$live_target"
-
-  staging_target="$OUTPUT_ROOT/.codex-sync/staging/.agents/skills/$skill_name"
-  mkdir -p "$OUTPUT_ROOT/.codex-sync/staging/.agents/skills"
-  staging_link_target="../../../../.claude/skills/$skill_name"
-  rm -rf "$staging_target"
-  ln -s "$staging_link_target" "$staging_target"
-}
-
 write_manifest_json() {
   local tmp
   tmp="$(mktemp)"
@@ -518,7 +439,7 @@ write_manifest_json() {
     echo '  "version": 1,'
     echo '  "strategy": "one-way-claude-to-codex",'
     echo '  "generated_by": "scripts/generate_codex_derivatives.sh",'
-    echo '  "notes": "Profiles: core=13 runtime-default skills, full=13 after consolidation.",'
+    echo '  "notes": "Common skills are provided once through namespaced plugins; no repo-local skill derivatives.",'
     echo '  "mappings": ['
 
     local first=1
@@ -544,26 +465,6 @@ write_manifest_json() {
       printf '    }'
     }
 
-    append_symlink_mapping() {
-      local source="$1"
-      shift
-      local targets_json="$1"
-      shift
-      local notes="$1"
-      if [ "$first" -eq 0 ]; then
-        echo ','
-      fi
-      first=0
-      printf '    {\n'
-      printf '      "source": "%s",\n' "$source"
-      printf '      "targets": %s,\n' "$targets_json"
-      printf '      "change_scope": "symlink",\n'
-      printf '      "sync_policy": "symlink",\n'
-      printf '      "owner": "project-maintainer",\n'
-      printf '      "notes": "%s"\n' "$notes"
-      printf '    }'
-    }
-
     append_mapping "CLAUDE.md" '["AGENTS.md"]' "content" "Main Codex instructions"
 
     local nested_src nested_target
@@ -581,21 +482,11 @@ write_manifest_json() {
       append_mapping "$src" "[\".codex/agents/${name}.toml\"]" "content" "Generated custom agent"
     done < <(printf '%s\n' .claude/agents/*.md | LC_ALL=C sort)
 
-    while IFS= read -r src; do
-      [ -n "$src" ] || continue
-      name="$(basename "$(dirname "$src")")"
-      if ! has_selected_skill "$name"; then
-        continue
-      fi
-      append_symlink_mapping ".claude/skills/${name}" "[\".agents/skills/${name}\"]" "Symlinked Codex skill directory"
-    done < <(printf '%s\n' .claude/skills/*/SKILL.md | LC_ALL=C sort)
-
     if [ -f ".claude/settings.local.json" ] || [ -f ".claude/settings.json" ] || [ -f ".mcp.json" ]; then
       append_mapping "__CONFIG_SOURCES__" '[".codex/config.toml"]' "config" "Semantic mapping from Claude permissions and MCP settings"
     fi
 
-    # Shared hook lib: peer source (not regenerated); .codex/hooks/lib is a symlink to .claude/hooks/lib.
-    append_symlink_mapping ".claude/hooks/lib" '[".codex/hooks/lib"]' "Shared hook policy lib; .codex/hooks/lib symlinks to .claude/hooks/lib (peer source)"
+    append_mapping ".claude/hooks/lib" '[".codex/hooks/lib"]' "directory" "Portable Codex hook library copy"
 
     echo
     echo '  ]'
@@ -622,10 +513,9 @@ write_agents_md
 write_nested_agents_md
 write_config_toml
 
-find "$OUTPUT_ROOT/.agents/skills" -mindepth 1 -depth -exec rm -rf {} +
-if [ -d "$OUTPUT_ROOT/.codex-sync/staging/.agents/skills" ]; then
-  find "$OUTPUT_ROOT/.codex-sync/staging/.agents/skills" -mindepth 1 -depth -exec rm -rf {} +
-fi
+# Remove legacy raw skill providers. Common skills now live only under plugins/*/skills.
+rm -rf -- "$OUTPUT_ROOT/.agents/skills"
+rm -rf -- "$OUTPUT_ROOT/.codex-sync/staging/.agents/skills"
 
 while IFS= read -r src; do
   [ -n "$src" ] || continue
@@ -633,15 +523,6 @@ while IFS= read -r src; do
   [ -n "$name" ] || continue
   write_agent_toml "$src"
 done < <(printf '%s\n' .claude/agents/*.md | LC_ALL=C sort)
-
-while IFS= read -r src; do
-  [ -n "$src" ] || continue
-  name="$(basename "$(dirname "$src")")"
-  if ! has_selected_skill "$name"; then
-    continue
-  fi
-  link_skill_dir "$src"
-done < <(printf '%s\n' .claude/skills/*/SKILL.md | LC_ALL=C sort)
 
 write_manifest_json
 
@@ -651,7 +532,8 @@ echo "  $OUTPUT_ROOT/{scripts,src,tests,tools}/**/AGENTS.md"
 echo "  $OUTPUT_ROOT/.codex/config.toml"
 echo "  $OUTPUT_ROOT/.codex/hooks.json (PRESERVED — P0-G artifact, not regenerated)"
 echo "  $OUTPUT_ROOT/.codex/agents/*.toml"
-echo "  $OUTPUT_ROOT/.codex/hooks/*.sh (peer source — not regenerated)"
-echo "  $OUTPUT_ROOT/.agents/skills/* (directory symlinks to .claude/skills/*)"
+echo "  $OUTPUT_ROOT/.codex/hooks/lib (portable directory copy)"
+echo "  $OUTPUT_ROOT/.agents/skills (REMOVED — common skills are plugin-owned)"
+echo "  $OUTPUT_ROOT/.codex-sync/staging/.agents/skills (REMOVED)"
 echo "  $OUTPUT_ROOT/.codex-sync/manifest.json"
 echo "  profile=$DERIVATION_PROFILE"

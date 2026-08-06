@@ -2,6 +2,40 @@
   "version": 1,
   "changes": [
     {
+      "id": "portable-project-bootstrap-2026-08-06",
+      "record_status": "in_progress",
+      "scope": "Provide namespaced global skill packs, pinned Git capability provenance, one cross-platform bootstrap coordinator, and a mandatory portable SQLite plus FTS5 memory baseline.",
+      "targets": [
+        "plugins/",
+        ".claude-plugin/marketplace.json",
+        ".agents/plugins/marketplace.json",
+        "config/capability-sources.json",
+        "src/mir/cli/bootstrap.py",
+        "src/mir/cli/capability.py",
+        "src/mir/cli/memory.py",
+        "src/mir/core/config/loader.py",
+        "setup.sh",
+        "setup.ps1",
+        "tests/"
+      ],
+      "design_ref": "docs/decisions/adr-74-portable-bootstrap-capability-sources-and-memory.md",
+      "bluebrick": "Portable Harness Bootstrap / Namespaced Capability Provider / Memory Store",
+      "categories": {
+        "unit": {"status": "pass", "command": "uv run pytest -q tests/test_capability_cli.py tests/test_memory_doctor.py tests/test_bootstrap_cli.py", "notes": "Capability lifecycle, memory doctor, vector coverage, and transactional bootstrap tests passed."},
+        "integration": {"status": "pass", "command": "uv run pytest -q --ignore=tests/test_harness_consistency.py", "notes": "650 passed and 1 skipped; the omitted consistency test requires the second, exact-SHA lock commit."},
+        "e2e": {"status": "pass", "command": "uv run python scripts/verify_plugin_cli_activation.py", "notes": "Both real CLIs installed all three plugins in isolated homes and reported enabled trees matching the source hashes."},
+        "browser": {"status": "not_applicable", "reason": "No browser or UI surface changes."},
+        "edge": {"status": "pass", "command": "uv run pytest -q tests/test_capability_security.py tests/test_memory_doctor.py", "notes": "Unsafe Git content, collisions, archive escapes, empty indexes, and required-vector gaps fail closed."},
+        "architecture": {"status": "pass", "command": "uv run python scripts/verify_codex_sync.py && uv run python scripts/verify_repo_agent_management.py", "notes": "Generated surfaces and the profile registry agree with plugin-owned skills."},
+        "availability": {"status": "pass", "command": "uv run pytest -q tests/test_memory_doctor.py tests/test_setup_wrappers.py", "notes": "The FTS-only baseline and both platform wrapper contracts pass without vector dependencies."},
+        "load": {"status": "not_applicable", "reason": "Bootstrap and update checks are bounded operator commands."},
+        "soak": {"status": "not_applicable", "reason": "No daemon or persistent polling loop is added."},
+        "security": {"status": "pass", "command": "uv run pytest -q tests/test_capability_security.py tests/test_plugin_skill_packages.py", "notes": "Credential URLs, traversal, symlinks, submodules, executables, duplicate providers, and divergence are rejected."},
+        "compatibility": {"status": "pass", "command": "uv run pytest -q --ignore=tests/test_harness_consistency.py && git diff --check", "notes": "Local regression is green apart from the deliberately deferred exact-lock citation gate; changed-file Ruff and plugin validators pass."},
+        "transaction_locking": {"status": "pass", "command": "uv run pytest -q tests/test_bootstrap_cli.py tests/test_capability_cli.py", "notes": "Staged SQLite snapshots, atomic receipts/locks, consumer conflicts, and agent divergence protections pass."}
+      }
+    },
+    {
       "id": "public-startup-runtime-parity-2026-07-16",
       "scope": "Reduce always-loaded repository instructions, preserve Claude/Codex generated parity, make lightweight runtime signals proportional, and restore compact current-state continuity without publishing.",
       "targets": [

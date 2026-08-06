@@ -320,7 +320,11 @@ def test_build_manifest_rule_inputs_contains_agent_surface_contract(
     agent_surface_contract = {
         "claude_md": "CLAUDE.md",
         "agents_dir": ".claude/agents",
-        "skills_dir": ".claude/skills",
+        "skills_dirs": [
+            "plugins/mir-core/skills",
+            "plugins/mir-code/skills",
+            "plugins/mir-content/skills",
+        ],
         "settings_files": [".claude/settings.json", ".claude/settings.local.json"],
         "agents_md": "AGENTS.md",
         "memory_marker": "mir:generated",
@@ -343,7 +347,7 @@ def test_build_manifest_rule_inputs_contains_agent_surface_contract(
     expected_keys = {
         "claude_md",
         "agents_dir",
-        "skills_dir",
+        "skills_dirs",
         "settings_files",
         "agents_md",
         "memory_marker",

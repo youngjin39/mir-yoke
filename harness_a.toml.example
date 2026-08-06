@@ -1,13 +1,23 @@
 # harness_a.toml.example — Engine + Worker configuration scaffold.
-# Copy to harness_a.toml and fill in your values before running `mir migrate up`.
-# ADR-53 D9: template sync wave.
+# `mir bootstrap` creates the active harness_a.toml when it is absent. This
+# file documents the portable contract for an intentional manual setup.
+#
+# Required topology: one per-repository SQLite + FTS5 DB. Tracked Markdown
+# archives can be re-indexed on another machine. A shared embedding endpoint is
+# optional; a shared/network Mir DB or vector service is not currently supported.
 
 [memory]
 enabled = true
+required = true
+backend = "sqlite_fts5"
+db_path = ".mir/memory.db"
+vector_mode = "off"
 plugin_mode = "disabled"
 recall_policy = "progressive"
 
 [memory.embedding]
+enabled = false
+required = false
 # OPTIONAL vector-search backend. Without it the engine runs FTS5 keyword-only
 # (fully functional). Chunks indexed without vectors are NOT auto-backfilled —
 # enabling this later requires a re-index, so enable at bootstrap when possible.
@@ -36,20 +46,20 @@ recall_policy = "progressive"
 # External archives are indexed doc trees that `mir context sync` will scan and
 # make available to `mir context pull`. Add one block per archive.
 
-# [[memory.external_archives]]
-# slug = "your-harness-docs"
-# root = "docs"
-# mode = "indexed"
-# glob_include = ["**/*.md"]
+[[memory.external_archives]]
+slug = "your-harness-docs"
+root = "docs"
+mode = "indexed"
+glob_include = ["**/*.md"]
 
-# [[memory.external_archives]]
-# slug = "your-harness-tasks"
-# root = "tasks"
-# mode = "indexed"
-# glob_include = ["**/*.md"]
+[[memory.external_archives]]
+slug = "your-harness-tasks"
+root = "tasks"
+mode = "indexed"
+glob_include = ["**/*.md"]
 
-# [[memory.external_archives]]
-# slug = "your-harness-rules"
-# root = ".ai-harness"
-# mode = "indexed"
-# glob_include = ["**/*.md"]
+[[memory.external_archives]]
+slug = "your-harness-rules"
+root = ".ai-harness"
+mode = "indexed"
+glob_include = ["**/*.md"]

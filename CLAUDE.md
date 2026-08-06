@@ -9,14 +9,17 @@
 
 ## Sources
 
-- `setup.sh` owns new-clone profile defaults; after bootstrap, `.mir/repo-profile.toml` is canonical
-  for repository identity, role policy, protected paths, and execution boundaries. SessionStart
-  supplies compact identity and safety.
+- `mir bootstrap` owns cross-platform new-clone defaults; `setup.sh` and `setup.ps1` are wrappers.
+  After bootstrap, `.mir/repo-profile.toml` owns identity, role policy, paths, and boundaries.
 - For substantial repository-dependent work, make one task-scoped
   `uv run mir context pull "<query>" [--path <target>] [--risk low|normal|high]`; expand only for
   missing, stale, or conflicting evidence.
-- `.mir/memory.db` is canonical memory; `docs/memory-map.md` and `tasks/lessons.md` are generated
-  projections; do not hand-edit generated regions.
+- Every ready project has a required local SQLite+FTS5 memory store. Tracked authored Markdown is
+  durable cross-machine memory; `.mir/memory.db` is its machine-local runtime query index/state.
+  `docs/memory-map.md` and `tasks/lessons.md` are generated; do not hand-edit their markers.
+- `config/capability-sources.json` and `.mir/capability-lock.json` own trusted Git provenance and
+  exact global plugin hashes. Remote checks are read-only; activation requires explicit apply.
+- Before changing requirements, agents, or skills, run `mir capability check`; review before apply.
 
 ## Authority and safety
 
@@ -24,12 +27,10 @@
   in-scope repository edits and relevant verification.
 - Get explicit direction before destructive actions, credential or secret access, external writes
   or messages, protected-scope mutation, or material scope expansion.
-- Keep the public surface generic and sanitized. Repository-specific workflow, hooks, agents, and
-  optional capabilities remain adopter-owned unless a shared correctness or safety fix requires a
-  template change.
-- Edit canonical sources first: `CLAUDE.md`, `setup.sh` or the adopted `.mir/repo-profile.toml`,
-  `.claude/agents/`, and `.claude/skills/`. Regenerate `AGENTS.md`, `.codex/`, and `.agents/`; do not
-  hand-edit them.
+- Keep the public surface generic and sanitized. Adopter-specific policy remains adopter-owned.
+- Edit canonical sources first: `CLAUDE.md`, the Python bootstrap coordinator or the adopted
+  `.mir/repo-profile.toml`, `.claude/agents/`, and `plugins/*/skills/`. Regenerate `AGENTS.md` and
+  `.codex/`. Common skills are namespaced plugins; project skills use unique names.
 
 ## Execution and evidence
 
@@ -38,9 +39,9 @@
 - Read `.ai-harness/bluebricks.md` only when architecture, delegation, or integration matters. Read
   `.ai-harness/session-closeout.md` only for explicit closeout.
 
-Commands: `uv run pytest`, `uv run ruff check`, `uv run mir --help`.
-User-facing language follows the adopter's convention. Internal docs, code, commits, and handoffs
-are English.
+Commands: `uv run pytest`, `uv run ruff check`, `uv run mir bootstrap --help`,
+`uv run mir capability --help`, `uv run mir memory doctor --help`. Internal artifacts are English;
+user-facing language follows the adopter's convention.
 
 ## Role policy (template summary)
 

@@ -6,6 +6,42 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are kept for historical reference. All future entries use the `## [vN.M.X] — YYYY-MM-DD — title` format.
 
+## [0.8.0] — 2026-08-06 — Portable project bootstrap
+
+### Added
+
+- Added dual Claude/Codex marketplaces with namespaced `mir-core`, `mir-code`, and `mir-content`
+  plugins, including `spec-architect` in every project profile.
+- Added an exact-SHA Git capability lock, read-only update checks, explicit verified updates,
+  global consumer conflict protection, and project-local managed agent packs.
+- Added a cross-platform Python bootstrap coordinator with Unix and PowerShell wrappers, a
+  two-phase restart/finalize contract, and Windows Git Bash readiness checks.
+- Added a required SQLite+FTS5 memory doctor, tracked-Markdown archive indexing, automatic durable
+  edit synchronization, and optional/required vector validation modes.
+
+### Changed
+
+- Moved common skills out of raw project directories into one plugin-owned canonical tree and
+  replaced generated hook symlinks with real copies.
+- Made tracked Markdown the portable memory source of truth and `.mir/memory.db` a machine-local,
+  rebuildable query index.
+- Made `sqlite-vec` an optional dependency so the required non-vector memory baseline installs on
+  macOS, Windows, and Linux.
+
+### Security
+
+- Capability updates reject credential-bearing URLs, unsafe refs and paths, symlinks, submodules,
+  executable remote content, duplicate skill providers, conflicting global versions, and locally
+  diverged managed agents.
+- Bootstrap stages database changes and refuses ready receipts when memory, plugin activation,
+  runtime hashes, architecture initialization, or required platform prerequisites are unproven.
+
+### Verification
+
+- Plugin manifests and isolated closure, capability lifecycle and security, bootstrap transaction,
+  memory doctor and vector coverage, derivative parity, full regression, and a macOS/Linux/Windows
+  clean-clone workflow are release gates.
+
 ## [0.7.1] — 2026-07-15 — Compact startup context and canonical closeout
 
 ### Changed

@@ -1,0 +1,1091 @@
+"""Pinned, fail-closed capability synchronization for shared Mir plugins."""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import os
+import re
+import shutil
+import stat
+import subprocess
+import tempfile
+from collections.abc import Callable, Iterator, Sequence
+from contextlib import contextmanager
+from datetime import UTC, datetime
+from pathlib import Path, PurePosixPath
+
+from .config import CapabilityConfig, load_capability_config
+
+_SHA = re.compile(r"^[0-9a-f]{40}$")
+_MARKDOWN_LINK = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
+_PLUGIN_ROOT_ENTRIES = {".claude-plugin", ".codex-plugin", "skills"}
+
+
+class CapabilityError(RuntimeError):
+    """Capability state is unsafe, divergent, or unavailable."""
+
+
+Run = Callable[..., subprocess.CompletedProcess[str]]
+Which = Callable[[str], str | None]
+
+
+def _run_process(args: Sequence[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(args, **kwargs)  # noqa: S603 - fixed executable and argv-only calls
+
+
+def _git_environment() -> dict[str, str]:
+    environment = os.environ.copy()
+    environment.update(
+        {
+            "GIT_CONFIG_NOSYSTEM": "1",
+            "GIT_CONFIG_GLOBAL": os.devnull,
+            "GIT_TERMINAL_PROMPT": "0",
+            "GIT_OPTIONAL_LOCKS": "0",
+        }
+    )
+    return environment
+
+
+class GitClient:
+    """Minimal git transport with no shell, prompts, hooks, or broad checkout."""
+
+    def __init__(self, runner: Run = _run_process) -> None:
+        self._runner = runner
+
+    def _run(self, args: Sequence[str], *, cwd: Path | None = None) -> str:
+        completed = self._runner(
+            list(args),
+            cwd=cwd,
+            env=_git_environment(),
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if completed.returncode != 0:
+            detail = completed.stderr.strip() or completed.stdout.strip() or "git failed"
+            raise CapabilityError(detail)
+        return completed.stdout
+
+    def resolve(self, url: str, ref: str) -> str:
+        output = self._run(
+            [
+                "git",
+                "ls-remote",
+                "--exit-code",
+                url,
+                f"refs/heads/{ref}",
+                f"refs/tags/{ref}",
+                f"refs/tags/{ref}^{{}}",
+            ]
+        )
+        candidates: list[tuple[str, str]] = []
+        for line in output.splitlines():
+            fields = line.split()
+            if len(fields) == 2 and _SHA.fullmatch(fields[0]):
+                candidates.append((fields[1], fields[0]))
+        if not candidates:
+            raise CapabilityError(f"source ref not found: {ref}")
+        peeled = [sha for name, sha in candidates if name.endswith("^{}")]
+        return peeled[0] if peeled else candidates[0][1]
+
+    def export(
+        self,
+        url: str,
+        ref: str,
+        commit: str,
+        paths: Sequence[str],
+        destination: Path,
+    ) -> None:
+        destination.mkdir(parents=True, exist_ok=False)
+        self._run(["git", "init", "--quiet"], cwd=destination)
+        self._run(["git", "remote", "add", "origin", url], cwd=destination)
+        try:
+            self._run(
+                [
+                    "git",
+                    "-c",
+                    "protocol.file.allow=never",
+                    "fetch",
+                    "--quiet",
+                    "--depth=1",
+                    "origin",
+                    commit,
+                ],
+                cwd=destination,
+            )
+        except CapabilityError:
+            self._run(
+                [
+                    "git",
+                    "-c",
+                    "protocol.file.allow=never",
+                    "fetch",
+                    "--quiet",
+                    "--depth=1",
+                    "origin",
+                    ref,
+                ],
+                cwd=destination,
+            )
+        fetched = self._run(["git", "rev-parse", "FETCH_HEAD^{commit}"], cwd=destination).strip()
+        if fetched != commit:
+            raise CapabilityError(
+                f"fetched commit {fetched!r} does not match required commit {commit!r}"
+            )
+        gitmodules = self._run(
+            ["git", "ls-tree", "--name-only", commit, "--", ".gitmodules"],
+            cwd=destination,
+        )
+        if gitmodules.strip():
+            raise CapabilityError("capability source contains a submodule declaration")
+        listing = self._run(
+            ["git", "ls-tree", "-z", "-r", "-t", commit, "--", *paths], cwd=destination
+        )
+        found_paths: set[str] = set()
+        for line in listing.split("\0"):
+            metadata, separator, raw_path = line.partition("\t")
+            if not separator:
+                continue
+            mode = metadata.split(" ", 1)[0]
+            if mode in {"120000", "160000"}:
+                raise CapabilityError(f"remote symlink or submodule rejected: {raw_path}")
+            if mode == "100755":
+                raise CapabilityError(f"remote executable content rejected: {raw_path}")
+            found_paths.add(raw_path)
+        for required in paths:
+            prefix = f"{required}/"
+            if required not in found_paths and not any(
+                path.startswith(prefix) for path in found_paths
+            ):
+                raise CapabilityError(f"required capability path is missing: {required}")
+        self._run(
+            [
+                "git",
+                "-c",
+                f"core.hooksPath={os.devnull}",
+                "checkout",
+                "--quiet",
+                commit,
+                "--",
+                *paths,
+            ],
+            cwd=destination,
+        )
+        shutil.rmtree(destination / ".git")
+
+
+def default_capability_home() -> Path:
+    override = os.environ.get("MIR_CAPABILITY_HOME")
+    if override:
+        return Path(override).expanduser()
+    if os.name == "nt":
+        base = Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local"))
+        return base / "Mir" / "capabilities"
+    if sys_platform() == "darwin":
+        return Path.home() / "Library" / "Caches" / "mir" / "capabilities"
+    return Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache")) / "mir" / "capabilities"
+
+
+def sys_platform() -> str:
+    """Small seam for platform-specific cache tests."""
+    import sys
+
+    return sys.platform
+
+
+def _read_json(path: Path) -> dict[str, object] | None:
+    if not path.is_file():
+        return None
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise CapabilityError(f"invalid JSON state file: {path}") from exc
+    if not isinstance(value, dict):
+        raise CapabilityError(f"JSON state file must contain an object: {path}")
+    return value
+
+
+def _atomic_write_json(path: Path, payload: dict[str, object]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, raw_temp = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
+    temp_path = Path(raw_temp)
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8", newline="\n") as stream:
+            json.dump(payload, stream, indent=2, sort_keys=True)
+            stream.write("\n")
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.chmod(temp_path, stat.S_IRUSR | stat.S_IWUSR)
+        os.replace(temp_path, path)
+    finally:
+        temp_path.unlink(missing_ok=True)
+
+
+def _atomic_write_bytes(path: Path, payload: bytes) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, raw_temp = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
+    temp_path = Path(raw_temp)
+    try:
+        with os.fdopen(descriptor, "wb") as stream:
+            stream.write(payload)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temp_path, path)
+    finally:
+        temp_path.unlink(missing_ok=True)
+
+
+def _tree_digest(root: Path) -> str:
+    if root.is_symlink() or not root.is_dir():
+        raise CapabilityError(f"capability tree is not a real directory: {root}")
+    digest = hashlib.sha256()
+    for path in sorted(root.rglob("*")):
+        if path.is_symlink():
+            raise CapabilityError(f"capability tree contains a symlink: {path}")
+        relative = path.relative_to(root).as_posix()
+        digest.update(relative.encode())
+        digest.update(b"\0")
+        if path.is_file():
+            if path.stat().st_mode & 0o111:
+                raise CapabilityError(f"capability tree contains executable content: {path}")
+            digest.update(path.read_bytes())
+        digest.update(b"\0")
+    return digest.hexdigest()
+
+
+def _file_digest(path: Path) -> str:
+    if path.is_symlink() or not path.is_file():
+        raise CapabilityError(f"capability file is missing or linked: {path}")
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _validate_plugin(plugin_root: Path, expected_name: str) -> str:
+    entries = {path.name for path in plugin_root.iterdir()}
+    if entries != _PLUGIN_ROOT_ENTRIES:
+        extra = ", ".join(sorted(entries - _PLUGIN_ROOT_ENTRIES)) or "none"
+        raise CapabilityError(f"non-skill plugin content rejected in {expected_name}: {extra}")
+    manifests: list[dict[str, object]] = []
+    for runtime in ("claude", "codex"):
+        manifest_path = plugin_root / f".{runtime}-plugin" / "plugin.json"
+        payload = _read_json(manifest_path)
+        if payload is None or payload.get("name") != expected_name:
+            raise CapabilityError(f"invalid {runtime} manifest for {expected_name}")
+        manifests.append(payload)
+    if manifests[0].get("version") != manifests[1].get("version"):
+        raise CapabilityError(f"dual-runtime manifest version drift for {expected_name}")
+    if manifests[1].get("skills") != "./skills/":
+        raise CapabilityError(f"Codex skills path drift for {expected_name}")
+    for forbidden in ("hooks", "mcpServers", "apps", "scripts", "agents"):
+        if any(forbidden in manifest for manifest in manifests):
+            raise CapabilityError(f"remote plugin component rejected: {expected_name}.{forbidden}")
+
+    skill_files = list((plugin_root / "skills").glob("*/SKILL.md"))
+    if not skill_files:
+        raise CapabilityError(f"plugin has no skills: {expected_name}")
+    for markdown in plugin_root.rglob("*.md"):
+        text = markdown.read_text(encoding="utf-8")
+        if "archive/skills/" in text or "memory_gc_runner.py" in text:
+            raise CapabilityError(f"plugin references an unavailable resource: {markdown}")
+        for target in _MARKDOWN_LINK.findall(text):
+            target = target.strip().split("#", 1)[0]
+            if not target or "://" in target or target.startswith(("mailto:", "#")):
+                continue
+            if "\\" in target or PurePosixPath(target).is_absolute():
+                raise CapabilityError(f"unsafe plugin link in {markdown}: {target}")
+            resolved = (markdown.parent / target).resolve()
+            try:
+                resolved.relative_to(plugin_root.resolve())
+            except ValueError as exc:
+                raise CapabilityError(
+                    f"plugin link escapes its root: {markdown}: {target}"
+                ) from exc
+            if not resolved.exists():
+                raise CapabilityError(f"plugin link target is missing: {markdown}: {target}")
+    return _tree_digest(plugin_root)
+
+
+def _consumer_key(project_root: Path) -> str:
+    return os.path.normcase(str(project_root.resolve()))
+
+
+def _skill_names(checkout: Path, config: CapabilityConfig, plugins: Sequence[str]) -> set[str]:
+    names: set[str] = set()
+    for plugin in plugins:
+        root = checkout / config.plugins[plugin] / "skills"
+        names.update(path.parent.name for path in root.glob("*/SKILL.md"))
+    return names
+
+
+def _standalone_collisions(
+    skill_names: set[str], project_root: Path, user_home: Path
+) -> list[str]:
+    roots = (
+        user_home / ".claude" / "skills",
+        user_home / ".agents" / "skills",
+        project_root / ".claude" / "skills",
+        project_root / ".agents" / "skills",
+    )
+    collisions: list[str] = []
+    for root in roots:
+        for name in sorted(skill_names):
+            candidate = root / name
+            if candidate.exists() or candidate.is_symlink():
+                collisions.append(str(candidate))
+    return collisions
+
+
+@contextmanager
+def _apply_guard(capability_home: Path) -> Iterator[None]:
+    capability_home.mkdir(parents=True, exist_ok=True)
+    guard = capability_home / ".apply.lock"
+    try:
+        guard.mkdir()
+    except FileExistsError as exc:
+        raise CapabilityError(f"another capability apply is active: {guard}") from exc
+    try:
+        yield
+    finally:
+        guard.rmdir()
+
+
+class CapabilityManager:
+    """Status, check, sync, and update operations for a project consumer."""
+
+    def __init__(
+        self,
+        project_root: Path,
+        *,
+        config_path: Path | None = None,
+        capability_home: Path | None = None,
+        user_home: Path | None = None,
+        git: GitClient | None = None,
+        command_runner: Run = _run_process,
+        which: Which = shutil.which,
+    ) -> None:
+        self.project_root = project_root.resolve()
+        self.config_path = config_path or self.project_root / "config" / "capability-sources.json"
+        self.config = load_capability_config(self.config_path)
+        self.capability_home = (capability_home or default_capability_home()).resolve()
+        self.user_home = (user_home or Path.home()).resolve()
+        self.git = git or GitClient()
+        self.command_runner = command_runner
+        self.which = which
+        self.lock_path = self.project_root / ".mir" / "capability-lock.json"
+        self.registry_path = self.capability_home / "consumers.json"
+        self.active_path = self.capability_home / "active"
+        self.active_receipt_path = self.capability_home / "active.json"
+
+    def _load_lock(self) -> dict[str, object] | None:
+        return _read_json(self.lock_path)
+
+    def _load_registry(self) -> dict[str, object]:
+        return _read_json(self.registry_path) or {
+            "schema_version": 1,
+            "active_commit": None,
+            "consumers": {},
+        }
+
+    def _profile(self, requested: str | None, lock: dict[str, object] | None):
+        value = requested or (lock.get("profile") if lock else None) or "default"
+        if not isinstance(value, str):
+            raise CapabilityError("capability lock profile is invalid")
+        return self.config.resolve_profile(value)
+
+    def _agent_status(
+        self, lock: dict[str, object] | None, selected_agents: Sequence[str]
+    ) -> dict[str, str]:
+        locked_agents = lock.get("agents", {}) if lock else {}
+        if not isinstance(locked_agents, dict):
+            raise CapabilityError("capability lock agents field is invalid")
+        result: dict[str, str] = {}
+        for source_path in selected_agents:
+            metadata = locked_agents.get(source_path)
+            target = self.project_root / source_path
+            if not isinstance(metadata, dict) or not isinstance(metadata.get("sha256"), str):
+                result[source_path] = "unlocked"
+            elif not target.is_file() or target.is_symlink():
+                result[source_path] = "missing"
+            elif _file_digest(target) != metadata["sha256"]:
+                result[source_path] = "diverged"
+            else:
+                result[source_path] = "unchanged"
+        return result
+
+    def status(self, profile: str | None = None) -> dict[str, object]:
+        lock = self._load_lock()
+        resolved_profile, pack = self._profile(profile, lock)
+        plugins = pack.plugins
+        skill_names: set[str] = set()
+        active_receipt = _read_json(self.active_receipt_path)
+        if self.active_path.is_dir():
+            skill_names = _skill_names(self.active_path, self.config, plugins)
+        collisions = _standalone_collisions(
+            skill_names or self._configured_skill_names(plugins),
+            self.project_root,
+            self.user_home,
+        )
+        registry = self._load_registry()
+        consumer = None
+        consumers = registry.get("consumers")
+        if isinstance(consumers, dict):
+            consumer = consumers.get(_consumer_key(self.project_root))
+        lock_commit = None
+        if lock and isinstance(lock.get("source"), dict):
+            lock_commit = lock["source"].get("commit")
+        active_commit = active_receipt.get("commit") if active_receipt else None
+        active_integrity = self._active_integrity(lock, plugins)
+        consumer_integrity = self._consumer_integrity(lock, consumer, plugins)
+        agent_status = self._agent_status(lock, pack.agents)
+        missing_project_paths = self._missing_project_paths()
+        activation = self._activation_evidence(lock) if lock else {"status": "not-synced"}
+        ready = bool(
+            lock
+            and _SHA.fullmatch(str(lock_commit))
+            and active_commit == lock_commit
+            and active_integrity
+            and isinstance(consumer, dict)
+            and consumer.get("commit") == lock_commit
+            and consumer_integrity
+            and not collisions
+            and not missing_project_paths
+            and all(value == "unchanged" for value in agent_status.values())
+            and activation.get("status") == "active"
+        )
+        return {
+            "operation": "status",
+            "dry_run": True,
+            "ready": ready,
+            "profile": resolved_profile,
+            "plugins": list(plugins),
+            "required_commit": lock_commit,
+            "active_commit": active_commit,
+            "active_integrity": active_integrity,
+            "consumer_integrity": consumer_integrity,
+            "collisions": collisions,
+            "missing_project_paths": missing_project_paths,
+            "agent_status": agent_status,
+            "runtime_support": self.config.runtime_support,
+            "registration": lock.get("registration") if lock else None,
+            "activation": activation,
+        }
+
+    def _configured_skill_names(self, plugins: Sequence[str]) -> set[str]:
+        return {
+            skill
+            for plugin in plugins
+            for skill in self.config.plugin_skills[plugin]
+        }
+
+    def _missing_project_paths(self) -> list[str]:
+        missing: list[str] = []
+        for path in self.config.required_project_paths:
+            target = self.project_root / path
+            if not target.exists() or target.is_symlink():
+                missing.append(path)
+        return missing
+
+    def _project_target(self, relative: str) -> Path:
+        target = self.project_root / relative
+        current = target.parent
+        while current != self.project_root:
+            if current.is_symlink():
+                raise CapabilityError(f"project target parent is a symlink: {relative}")
+            current = current.parent
+        try:
+            target.parent.resolve().relative_to(self.project_root)
+        except ValueError as exc:
+            raise CapabilityError(f"project target escapes repository: {relative}") from exc
+        return target
+
+    def _active_integrity(
+        self, lock: dict[str, object] | None, plugins: Sequence[str]
+    ) -> bool:
+        if lock is None:
+            return False
+        locked_plugins = lock.get("plugins")
+        if not isinstance(locked_plugins, dict):
+            return False
+        for plugin in plugins:
+            metadata = locked_plugins.get(plugin)
+            if not isinstance(metadata, dict) or not isinstance(metadata.get("sha256"), str):
+                return False
+            try:
+                actual = _tree_digest(self.active_path / self.config.plugins[plugin])
+            except CapabilityError:
+                return False
+            if actual != metadata["sha256"]:
+                return False
+        return True
+
+    def _consumer_integrity(
+        self,
+        lock: dict[str, object] | None,
+        consumer: object,
+        plugins: Sequence[str],
+    ) -> bool:
+        if lock is None or not isinstance(consumer, dict):
+            return False
+        locked_plugins = lock.get("plugins")
+        required = consumer.get("plugins")
+        if not isinstance(locked_plugins, dict) or not isinstance(required, dict):
+            return False
+        for plugin in plugins:
+            metadata = locked_plugins.get(plugin)
+            if not isinstance(metadata, dict) or required.get(plugin) != metadata.get("sha256"):
+                return False
+        return True
+
+    def check(self, profile: str | None = None) -> dict[str, object]:
+        return self._execute("check", profile=profile, apply=False)
+
+    def sync(self, profile: str | None = None, *, apply: bool = False) -> dict[str, object]:
+        return self._execute("sync", profile=profile, apply=apply)
+
+    def update(self, profile: str | None = None, *, apply: bool = False) -> dict[str, object]:
+        return self._execute("update", profile=profile, apply=apply)
+
+    def finalize(self, *, apply: bool = False, after_restart: bool = False) -> dict[str, object]:
+        lock = self._load_lock()
+        if lock is None:
+            raise CapabilityError("capabilities must be synced before activation can be finalized")
+        evidence = self._activation_evidence(lock, require_active_receipt=False)
+        result: dict[str, object] = {
+            "operation": "finalize",
+            "dry_run": not apply,
+            "after_restart": after_restart,
+            "activation": evidence,
+        }
+        if not apply:
+            result["ready_to_finalize"] = evidence.get("status") == "verified"
+            return result
+        if not after_restart:
+            raise CapabilityError("finalize --apply requires --after-restart attestation")
+        if evidence.get("status") != "verified":
+            raise CapabilityError("runtime plugin installation could not be verified")
+        registration = lock.get("registration")
+        if not isinstance(registration, dict):
+            raise CapabilityError("capability lock registration field is invalid")
+        registration["status"] = "active"
+        registration["finalized_at"] = datetime.now(UTC).isoformat()
+        _atomic_write_json(self.lock_path, lock)
+        active_receipt = _read_json(self.active_receipt_path) or {"schema_version": 1}
+        active_receipt["activation"] = evidence.get("runtimes")
+        active_receipt["finalized_at"] = registration["finalized_at"]
+        _atomic_write_json(self.active_receipt_path, active_receipt)
+        result["dry_run"] = False
+        result["activation"] = {**evidence, "status": "active"}
+        return result
+
+    def _activation_evidence(
+        self,
+        lock: dict[str, object],
+        *,
+        require_active_receipt: bool = True,
+    ) -> dict[str, object]:
+        registration = lock.get("registration")
+        plugins = lock.get("plugins")
+        if not isinstance(registration, dict) or not isinstance(plugins, dict):
+            return {"status": "invalid-lock", "runtimes": {}}
+        runtime_results = {
+            "claude-code": self._probe_runtime(
+                "claude", ["plugin", "list", "--json"], plugins
+            ),
+            "codex-cli-desktop": self._probe_runtime(
+                "codex", ["plugin", "list", "--json"], plugins
+            ),
+        }
+        verified = all(result.get("verified") is True for result in runtime_results.values())
+        if not verified:
+            status = "cli-evidence-missing"
+        elif require_active_receipt and registration.get("status") != "active":
+            status = "restart-required"
+        else:
+            status = "active" if registration.get("status") == "active" else "verified"
+        return {"status": status, "runtimes": runtime_results}
+
+    def _probe_runtime(
+        self,
+        executable: str,
+        args: Sequence[str],
+        locked_plugins: dict[str, object],
+    ) -> dict[str, object]:
+        resolved = self.which(executable)
+        if resolved is None:
+            return {"verified": False, "reason": "cli-missing"}
+        completed = self.command_runner(
+            [resolved, *args],
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if completed.returncode != 0:
+            return {
+                "verified": False,
+                "reason": "list-failed",
+                "detail": completed.stderr.strip(),
+            }
+        try:
+            payload = json.loads(completed.stdout)
+        except json.JSONDecodeError:
+            return {"verified": False, "reason": "invalid-json"}
+        entries = _plugin_entries(payload)
+        evidence: dict[str, object] = {}
+        verified = True
+        for name, metadata in locked_plugins.items():
+            expected = metadata.get("sha256") if isinstance(metadata, dict) else None
+            matches = [entry for entry in entries if _plugin_name(entry) == name]
+            if len(matches) != 1:
+                evidence[name] = {"status": "missing-or-duplicate"}
+                verified = False
+                continue
+            entry = matches[0]
+            enabled = entry.get("enabled") is True or entry.get("status") == "enabled"
+            raw_path = _installed_path(entry)
+            if not enabled:
+                evidence[name] = {"status": "disabled"}
+                verified = False
+            elif raw_path is None:
+                evidence[name] = {"status": "installed-path-missing"}
+                verified = False
+            else:
+                installed_path = Path(raw_path).expanduser()
+                try:
+                    actual = _tree_digest(installed_path)
+                except CapabilityError:
+                    actual = None
+                if actual != expected:
+                    evidence[name] = {
+                        "status": "digest-mismatch",
+                        "installed_path": str(installed_path),
+                    }
+                    verified = False
+                else:
+                    evidence[name] = {
+                        "status": "enabled",
+                        "installed_path": str(installed_path),
+                        "sha256": actual,
+                    }
+        return {"verified": verified, "plugins": evidence}
+
+    def _execute(self, operation: str, *, profile: str | None, apply: bool) -> dict[str, object]:
+        lock = self._load_lock()
+        resolved_profile, pack = self._profile(profile, lock)
+        selected_plugins = pack.plugins
+        selected_agents = pack.agents
+        remote_commit = self.git.resolve(self.config.source_url, self.config.source_ref)
+        locked_commit = None
+        if lock and isinstance(lock.get("source"), dict):
+            locked_commit = lock["source"].get("commit")
+        desired_commit = (
+            locked_commit
+            if operation == "sync"
+            and isinstance(locked_commit, str)
+            and _SHA.fullmatch(locked_commit)
+            else remote_commit
+        )
+        if not isinstance(desired_commit, str) or _SHA.fullmatch(desired_commit) is None:
+            raise CapabilityError("required capability commit is invalid")
+
+        export_paths = [
+            ".claude-plugin/marketplace.json",
+            ".agents/plugins/marketplace.json",
+            *self.config.plugins.values(),
+            *selected_agents,
+        ]
+        with tempfile.TemporaryDirectory(prefix="mir-capability-check-") as raw_temp:
+            checkout = Path(raw_temp) / "checkout"
+            self.git.export(
+                self.config.source_url,
+                self.config.source_ref,
+                desired_commit,
+                export_paths,
+                checkout,
+            )
+            plugin_hashes = {
+                name: _validate_plugin(checkout / path, name)
+                for name, path in self.config.plugins.items()
+            }
+            for name, expected_skills in self.config.plugin_skills.items():
+                actual_skills = {
+                    path.parent.name
+                    for path in (checkout / self.config.plugins[name] / "skills").glob(
+                        "*/SKILL.md"
+                    )
+                }
+                if actual_skills != set(expected_skills):
+                    raise CapabilityError(f"remote plugin skill inventory drift: {name}")
+            agent_hashes = {
+                path: _file_digest(checkout / path) for path in selected_agents
+            }
+            skill_names = _skill_names(checkout, self.config, selected_plugins)
+            collisions = _standalone_collisions(
+                skill_names, self.project_root, self.user_home
+            )
+            agent_changes = self._agent_changes(lock, agent_hashes)
+            missing_project_paths = self._missing_project_paths()
+            result: dict[str, object] = {
+                "operation": operation,
+                "dry_run": not apply,
+                "profile": resolved_profile,
+                "plugins": list(selected_plugins),
+                "locked_commit": locked_commit,
+                "remote_commit": remote_commit,
+                "required_commit": desired_commit,
+                "update_available": bool(locked_commit and locked_commit != remote_commit),
+                "collisions": collisions,
+                "missing_project_paths": missing_project_paths,
+                "agent_changes": agent_changes,
+                "runtime_support": self.config.runtime_support,
+            }
+            if operation == "check" or not apply:
+                result["ready_to_apply"] = (
+                    not collisions
+                    and not missing_project_paths
+                    and not any(value == "diverged" for value in agent_changes.values())
+                )
+                return result
+            if collisions:
+                joined = "\n- ".join(collisions)
+                raise CapabilityError(
+                    "standalone skill collision detected; move or disable it explicitly before "
+                    f"applying (nothing was removed):\n- {joined}"
+                )
+            if missing_project_paths:
+                joined = ", ".join(missing_project_paths)
+                raise CapabilityError(f"required project harness paths are missing: {joined}")
+            registration = self._apply(
+                checkout=checkout,
+                commit=desired_commit,
+                profile=resolved_profile,
+                selected_plugins=selected_plugins,
+                selected_agents=selected_agents,
+                plugin_hashes=plugin_hashes,
+                agent_hashes=agent_hashes,
+                previous_lock=lock,
+            )
+            result["dry_run"] = False
+            result["applied"] = True
+            result["materialized_root"] = str(self.active_path)
+            result["registration_status"] = registration["status"]
+            if registration["status"] != "restart-required":
+                raise CapabilityError(
+                    "runtime plugin registration failed; inspect capability status evidence"
+                )
+            return result
+
+    def _agent_changes(
+        self, lock: dict[str, object] | None, desired: dict[str, str]
+    ) -> dict[str, str]:
+        previous = lock.get("agents", {}) if lock else {}
+        if not isinstance(previous, dict):
+            raise CapabilityError("capability lock agents field is invalid")
+        changes: dict[str, str] = {}
+        for path, digest in desired.items():
+            old = previous.get(path)
+            old_digest = old.get("sha256") if isinstance(old, dict) else None
+            target = self._project_target(path)
+            if old_digest is not None:
+                if (
+                    not target.is_file()
+                    or target.is_symlink()
+                    or _file_digest(target) != old_digest
+                ):
+                    changes[path] = "diverged"
+                elif old_digest == digest:
+                    changes[path] = "unchanged"
+                else:
+                    changes[path] = "update"
+            elif target.is_file() and not target.is_symlink():
+                changes[path] = "unchanged" if _file_digest(target) == digest else "diverged"
+            else:
+                changes[path] = "add"
+        return changes
+
+    def _assert_global_version(
+        self, commit: str, selected_plugins: Sequence[str], plugin_hashes: dict[str, str]
+    ) -> dict[str, object]:
+        registry = self._load_registry()
+        consumers = registry.get("consumers")
+        if not isinstance(consumers, dict):
+            raise CapabilityError("global consumer registry is invalid")
+        current_key = _consumer_key(self.project_root)
+        for root, metadata in consumers.items():
+            if root == current_key:
+                continue
+            if not isinstance(metadata, dict) or metadata.get("commit") != commit:
+                raise CapabilityError(
+                    "global capability update conflicts with another registered consumer: "
+                    f"{root}"
+                )
+            required = metadata.get("plugins")
+            if not isinstance(required, dict):
+                raise CapabilityError(f"global consumer registry entry is invalid: {root}")
+            for plugin in selected_plugins:
+                if plugin in required and required[plugin] != plugin_hashes[plugin]:
+                    raise CapabilityError(
+                        "global plugin digest conflicts with another registered consumer: "
+                        f"{root} -> {plugin}"
+                    )
+        return registry
+
+    def _assert_agents_unchanged(self, lock: dict[str, object] | None) -> None:
+        if lock is None:
+            return
+        previous = lock.get("agents")
+        if not isinstance(previous, dict):
+            raise CapabilityError("capability lock agents field is invalid")
+        for source_path, metadata in previous.items():
+            if not isinstance(source_path, str) or not isinstance(metadata, dict):
+                raise CapabilityError("capability lock agent entry is invalid")
+            digest = metadata.get("sha256")
+            target = self._project_target(source_path)
+            if (
+                not isinstance(digest, str)
+                or not target.is_file()
+                or target.is_symlink()
+                or _file_digest(target) != digest
+            ):
+                raise CapabilityError(
+                    f"project-local agent diverged from its lock; refusing overwrite: {source_path}"
+                )
+
+    def _apply(
+        self,
+        *,
+        checkout: Path,
+        commit: str,
+        profile: str,
+        selected_plugins: Sequence[str],
+        selected_agents: Sequence[str],
+        plugin_hashes: dict[str, str],
+        agent_hashes: dict[str, str],
+        previous_lock: dict[str, object] | None,
+    ) -> dict[str, object]:
+        self._assert_agents_unchanged(previous_lock)
+        registry = self._assert_global_version(commit, selected_plugins, plugin_hashes)
+        with _apply_guard(self.capability_home):
+            stage_parent = self.capability_home / "tmp"
+            stage_parent.mkdir(parents=True, exist_ok=True)
+            with tempfile.TemporaryDirectory(prefix="apply-", dir=stage_parent) as raw_stage:
+                staged_active = Path(raw_stage) / "active"
+                staged_active.mkdir()
+                for relative in (
+                    ".claude-plugin/marketplace.json",
+                    ".agents/plugins/marketplace.json",
+                ):
+                    source = checkout / relative
+                    target = staged_active / relative
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(source, target)
+                for plugin_path in self.config.plugins.values():
+                    source = checkout / plugin_path
+                    target = staged_active / plugin_path
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copytree(source, target)
+
+                backup = self.capability_home / ".active.previous"
+                if self.active_path.is_symlink() or (
+                    self.active_path.exists() and not self.active_path.is_dir()
+                ):
+                    raise CapabilityError("global active capability path is not a real directory")
+                if backup.is_symlink() or (backup.exists() and not backup.is_dir()):
+                    raise CapabilityError("global capability backup path is unsafe")
+                if backup.exists():
+                    shutil.rmtree(backup)
+                if self.active_path.exists():
+                    os.replace(self.active_path, backup)
+                os.replace(staged_active, self.active_path)
+                if backup.exists():
+                    shutil.rmtree(backup)
+
+            for source_path in selected_agents:
+                _atomic_write_bytes(
+                    self._project_target(source_path),
+                    (checkout / source_path).read_bytes(),
+                )
+
+            selected_hashes = {
+                plugin: plugin_hashes[plugin] for plugin in selected_plugins
+            }
+            consumer_key = _consumer_key(self.project_root)
+            consumers = registry.setdefault("consumers", {})
+            if not isinstance(consumers, dict):
+                raise CapabilityError("global consumer registry is invalid")
+            consumers[consumer_key] = {
+                "commit": commit,
+                "plugins": selected_hashes,
+                "profile": profile,
+            }
+            registry["schema_version"] = 1
+            registry["active_commit"] = commit
+
+            registration = self._registration_plan(selected_plugins)
+            registration = self._install_and_verify(
+                registration,
+                {
+                    plugin: {"sha256": plugin_hashes[plugin]}
+                    for plugin in selected_plugins
+                },
+            )
+            timestamp = datetime.now(UTC).isoformat()
+            lock: dict[str, object] = {
+                "schema_version": 1,
+                "source": {
+                    "url": self.config.source_url,
+                    "ref": self.config.source_ref,
+                    "commit": commit,
+                },
+                "profile": profile,
+                "plugins": {
+                    plugin: {
+                        "path": self.config.plugins[plugin],
+                        "sha256": plugin_hashes[plugin],
+                    }
+                    for plugin in selected_plugins
+                },
+                "agents": {
+                    path: {"sha256": agent_hashes[path], "project_path": path}
+                    for path in selected_agents
+                },
+                "registration": {"status": registration["status"]},
+                "synced_at": timestamp,
+            }
+            active_receipt: dict[str, object] = {
+                "schema_version": 1,
+                "commit": commit,
+                "source_url": self.config.source_url,
+                "plugins": plugin_hashes,
+                "materialized_root": str(self.active_path),
+                "updated_at": timestamp,
+            }
+            _atomic_write_json(self.active_receipt_path, active_receipt)
+            _atomic_write_json(self.registry_path, registry)
+            _atomic_write_json(self.lock_path, lock)
+            return registration
+
+    def _registration_plan(self, selected_plugins: Sequence[str]) -> dict[str, object]:
+        claude_commands: list[list[str]] = [
+            ["claude", "plugin", "marketplace", "add", str(self.active_path), "--scope", "user"]
+        ]
+        claude_commands.extend(
+            ["claude", "plugin", "install", f"{plugin}@mir-yoke", "--scope", "user"]
+            for plugin in selected_plugins
+        )
+        codex_commands: list[list[str]] = [
+            ["codex", "plugin", "marketplace", "add", str(self.active_path)]
+        ]
+        codex_commands.extend(
+            ["codex", "plugin", "add", f"{plugin}@mir-yoke"]
+            for plugin in selected_plugins
+        )
+        return {
+            "status": "pending",
+            "automatic_execution": True,
+            "claude_code": claude_commands,
+            "codex_cli_desktop": codex_commands,
+            "codex_ide_extension": "unsupported; project-local agents and instructions only",
+            "after_agent_update": ["bash", "scripts/generate_codex_derivatives.sh"],
+            "next_step": (
+                "reload plugins in Claude Code, start a new Codex session, then run "
+                "capability finalize --apply --after-restart"
+            ),
+        }
+
+    def _install_and_verify(
+        self,
+        registration: dict[str, object],
+        locked_plugins: dict[str, object],
+    ) -> dict[str, object]:
+        command_groups = {
+            "claude-code": registration["claude_code"],
+            "codex-cli-desktop": registration["codex_cli_desktop"],
+        }
+        attempts: dict[str, object] = {}
+        for runtime, raw_commands in command_groups.items():
+            if not isinstance(raw_commands, list):
+                attempts[runtime] = {"status": "invalid-plan"}
+                continue
+            executable = "claude" if runtime == "claude-code" else "codex"
+            resolved = self.which(executable)
+            if resolved is None:
+                attempts[runtime] = {"status": "cli-missing"}
+                continue
+            results: list[dict[str, object]] = []
+            for raw_command in raw_commands:
+                if not isinstance(raw_command, list) or not all(
+                    isinstance(item, str) for item in raw_command
+                ):
+                    results.append({"status": "invalid-command"})
+                    continue
+                completed = self.command_runner(
+                    [resolved, *raw_command[1:]],
+                    stdin=subprocess.DEVNULL,
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                )
+                results.append(
+                    {
+                        "argv": raw_command,
+                        "exit_code": completed.returncode,
+                        "status": "ok" if completed.returncode == 0 else "failed",
+                    }
+                )
+            attempts[runtime] = {"status": "attempted", "commands": results}
+
+        evidence = {
+            "claude-code": self._probe_runtime(
+                "claude", ["plugin", "list", "--json"], locked_plugins
+            ),
+            "codex-cli-desktop": self._probe_runtime(
+                "codex", ["plugin", "list", "--json"], locked_plugins
+            ),
+        }
+        registration["install_attempts"] = attempts
+        registration["evidence"] = evidence
+        registration["status"] = (
+            "restart-required"
+            if all(result.get("verified") is True for result in evidence.values())
+            else "registration-failed"
+        )
+        return registration
+
+
+def _plugin_entries(payload: object) -> list[dict[str, object]]:
+    if isinstance(payload, list):
+        return [entry for entry in payload if isinstance(entry, dict)]
+    if isinstance(payload, dict):
+        installed = payload.get("installed")
+        if isinstance(installed, list):
+            return [entry for entry in installed if isinstance(entry, dict)]
+        plugins = payload.get("plugins")
+        if isinstance(plugins, list):
+            return [entry for entry in plugins if isinstance(entry, dict)]
+    return []
+
+
+def _plugin_name(entry: dict[str, object]) -> str | None:
+    value = entry.get("name")
+    if isinstance(value, str) and value:
+        return value
+    for field in ("id", "pluginId"):
+        identifier = entry.get(field)
+        if isinstance(identifier, str) and identifier:
+            return identifier.split("@", 1)[0]
+    return None
+
+
+def _installed_path(entry: dict[str, object]) -> str | None:
+    for field in ("installedPath", "installPath", "installed_path", "path"):
+        value = entry.get(field)
+        if isinstance(value, str) and value:
+            return value
+    source = entry.get("source")
+    if isinstance(source, dict):
+        value = source.get("path")
+        if isinstance(value, str) and value:
+            return value
+    return None

@@ -25,9 +25,13 @@ What you get out of the box:
   Each agent declares its execution backend in frontmatter so the orchestrator knows exactly
   which CLI subprocess to use. Trim per-family by editing `active_agents` in
   `config/repos/<slug>.json` when a project does not need a specialist.
-- **12-skill library** — design, verify, code-review, testing, ui-design, governance, knowledge,
-  memory-gc, automation, efficiency, bluebricks, commit. Skills load on demand when the request
-  matches a trigger keyword. No token cost when unused.
+- **13-skill library in three global plugins** — `mir-core` always supplies architecture,
+  `spec-architect`, governance, memory, and verification; `mir-code` and `mir-content` add the
+  profile-specific code or no-code capabilities. Namespaces prevent project/global duplication.
+- **Required portable memory** — every completed bootstrap proves a local SQLite+FTS5 index over
+  tracked Markdown. Embeddings and vectors are optional; memory is not.
+- **Pinned capability source** — a trusted Git URL plus exact commit and tree hashes let later
+  agents check for skill/agent updates without silently activating mutable remote instructions.
 - **Per-family JSON registry** — `config/repo-agent-management.json` catalogs agents and skills.
   When you fork and add repositories, each family gets its own `config/repos/<slug>.json` with
   per-family agent topology, skill pack, and specialist overrides.
@@ -70,11 +74,10 @@ your purpose.** Clone, open Claude Code or Codex CLI in the folder, and say:
 
 > Read `BOOTSTRAP.md` and set up this repo as a **code_app** project for **"an internal billing API in Python"**.
 
-The agent then follows [`BOOTSTRAP.md`](BOOTSTRAP.md): it interviews you (project type, language,
-which reviewers, Codex or Claude-only), writes your `config/repos/<slug>.json` with the right agents
-and skills for that project type, fills the identity file, wires the Codex lane (or sets Claude-only
-mode), runs `setup.sh`, offers to strip template-only content, and proves a gate fires. You end with
-a project already under the harness, shaped for what you are building.
+The agent follows [`BOOTSTRAP.md`](BOOTSTRAP.md): it selects a profile, runs the cross-platform
+coordinator, installs the pinned global plugins, builds the required memory index, and selects the
+project-local agent pack. After a runtime restart it performs the mandatory initial
+`design` → `spec-architect` structure pass and verifies a ready receipt.
 
 Prefer to do it yourself? `BOOTSTRAP.md` has a manual checklist too, and the Quick start below is the
 5-minute mechanical path.
@@ -98,17 +101,18 @@ events (`SessionEnd`, `TaskCreated`, `TaskCompleted`, `StopFailure`) get Claude-
 
 ## Prerequisites
 
-The **Claude-side harness** (hooks, agents, skills, gates, TDD ledger) is self-contained and works
-from a fresh clone with no global config — Claude Code and Codex CLI read the project-local
-`.claude/` and `.codex/` folders directly. Nothing here depends on a global `~/.claude` /
-`~/.codex` agents folder.
+Project policy, hooks, permissions, orchestration, and agents are repository-local. Reusable common
+skills are installed once as namespaced Claude/Codex plugins from the pinned Git provider; raw
+same-name copies under user or project skill directories are rejected.
 
 The **Codex delegation lane** (`executor-agent`, `codex-final-reviewer`, `mir_executor --dispatch`,
 the `mcp__codex__codex` tool) additionally needs:
 
-1. **Codex CLI** installed and logged in (`codex` on your `PATH`, or note its absolute path).
-2. **`uv`** (Python package runner) for the `mir` CLI — `uv run mir …`.
-3. **The `codex` MCP server wired** so the `mcp__codex__codex` tool exists. This template does NOT
+1. **Claude Code and Codex CLI** installed and logged in (`claude` and `codex` on `PATH`).
+2. **Python 3.12+, Git, and `uv`** for the `mir` CLI — `uv run mir …`.
+3. **Bash** on macOS/Linux/WSL; native Windows uses `setup.ps1` but still requires Git Bash or WSL
+   Bash on `PATH` for hooks.
+4. **The `codex` MCP server wired** so the `mcp__codex__codex` tool exists. This template does NOT
    ship a `.mcp.json` (it would carry machine-specific paths). Copy the example and adjust:
 
    ```bash
@@ -122,9 +126,8 @@ Goal-Driven Execution) live in [`global-rules/`](global-rules/) — merge them i
 `~/.claude/CLAUDE.md` and `~/.codex/AGENTS.md` if you want them applied across all your repos, not
 just this one. They are optional; the project-local `CLAUDE.md` is self-sufficient without them.
 
-Without the Codex lane wired, the Claude side still works fully. A missing preferred lane limits
-that route but does not block safe bounded direct or manual work. Select `force_codex` only when the
-project intentionally requires that delegated backend.
+The dual-runtime bootstrap does not claim `ready` until both CLIs report the selected plugins
+enabled at the pinned hashes. Codex IDE extensions are outside this plugin-ready claim.
 
 ## Team use (required gates)
 
@@ -143,26 +146,27 @@ prerequisite for team use.
 git clone https://github.com/youngjin39/mir-yoke.git my-project
 cd my-project
 
-# 2. Run the setup script.
-./setup.sh
+# 2. Phase 1: install plugins and build the mandatory memory baseline.
+./setup.sh --profile code_app
 
 # 3. (Codex lane) wire the Codex MCP server.
 cp .mcp.json.example .mcp.json   # then edit the codex command/CODEX_HOME
 
-# 4. Open the project in Claude Code.
+# 4. Restart/open both runtimes, run mir-core:design then mir-core:spec-architect,
+#    and finalize with an honest attestation.
+./setup.sh --profile code_app --finalize --architecture-initialized
+
+# 5. Open the project in Claude Code.
 claude .
 
-# 5. Or in Codex CLI.
+# 6. Or in Codex CLI.
 codex
 ```
 
-The setup script:
-- Makes the hook scripts executable
-- Creates starter `tasks/plan.md` and an empty `tasks/tdd.json` if absent
-- Initializes `.mir/repo-profile.toml` and runs the placeholder guard
-- Prints a post-clone checklist of next steps
-
-Both CLIs will pick up the hooks on next launch. No daemon, no background process.
+On native Windows use `.\setup.ps1 -Profile code_app`, then finalize with `-Finalize
+-ArchitectureInitialized`. Both wrappers call the same Python coordinator. It validates the harness,
+installs the pinned profile pack, indexes durable Markdown into SQLite+FTS5, and writes a machine-local
+receipt. There is no daemon or background service.
 
 ---
 
@@ -229,23 +233,26 @@ tool or raw `codex exec`. Violation logs are written to `tasks/log/dispatch-log.
 
 ---
 
-## Skill library (11 groups)
+## Skill library (13 groups)
 
 | Skill | Trigger keywords | Absorbs legacy slugs |
 |---|---|---|
 | `design` | design, brainstorm, architecture, plan, interview | brainstorming, writing-plans, deep-interview, + more |
+| `spec-architect` | requirements completeness, write a spec, architecture docs, traceability | — |
 | `verify` | verify, done check, proof, spec check, audit | verification, verify-against-spec, self-audit, review-code |
 | `code-review` | review, PR, quality, merge check | — |
 | `testing` | test, TDD, unit test, integration test | — |
 | `ui-design` | UI, UX, interface, wireframe, component spec | ux-ui-design |
 | `governance` | CLAUDE.md, AGENTS.md, fleet governance, project doctor | fleet-instruction-doc-ops, project-doctor, + more |
 | `knowledge` | knowledge, wiki, ingest, knowledge graph | knowledge-ingest, knowledge-lint |
+| `memory-gc` | memory GC (explicit user request only) | — |
 | `automation` | runner, long-running, background, monitor, browser | runner, browser-automation |
 | `efficiency` | token efficiency, AI readiness, cost analysis | improve-token-efficiency, ai-readiness-cartography |
 | `bluebricks` | code, debug, refactor, architecture, module | ai-ready-bluebricks-development |
 | `commit` | commit, git, save changes | git-commit |
 
-Skills load only when triggered. Body lives at `.claude/skills/<name>/SKILL.md`.
+Skills load only when triggered. Canonical bodies live under `plugins/<pack>/skills/<name>/SKILL.md`
+and are installed through the Claude and Codex marketplace manifests.
 
 ---
 
@@ -283,7 +290,7 @@ python3 scripts/verify_repo_agent_management.py
 ├── CLAUDE.md                   # Claude Code workspace rules (orchestration, role policy, gates)
 ├── AGENTS.md                   # Codex CLI mirror — same rules, Codex-flavored
 ├── ARCHITECTURE.md             # component map — Conductor / Engine / Worker layers
-├── setup.sh                    # one-command bootstrap
+├── setup.sh / setup.ps1        # thin Unix and Windows bootstrap wrappers
 ├── README.md                   # (this file)
 ├── LICENSE                     # MIT
 ├── CONTRIBUTING.md             # how to extend the template
@@ -291,7 +298,6 @@ python3 scripts/verify_repo_agent_management.py
 ├── .claude/                    # Claude Code surface
 │   ├── settings.json           #   hook + permission config (9 hook surfaces)
 │   ├── hooks/                  #   shell scripts (PreToolUse, PostToolUse, ...)
-│   ├── skills/                 #   11 trigger-loaded skill groups
 │   └── agents/                 #   12 sub-agent personas
 │
 ├── .codex/                     # Codex CLI surface
@@ -307,6 +313,7 @@ python3 scripts/verify_repo_agent_management.py
 │   └── failure-patterns.md     #   recurring AI mistakes worth pinning
 │
 ├── config/                     # agent-management registry
+│   ├── capability-sources.json #   trusted Git source + profile packs
 │   ├── repo-agent-management.json        # root catalog
 │   ├── repo-agent-management.schema.json # JSONSchema
 │   └── repos/                  #   per-family entries (empty in template)
@@ -327,11 +334,12 @@ python3 scripts/verify_repo_agent_management.py
 │   ├── sessions/               #   Stop/StopFailure runtime audit logs
 │   └── handoffs/               #   canonical inter-session handoff
 │
-├── docs/                       # prose memory + generated md projections
-│   ├── memory-map.md           #   keyword → file index (generated from .mir/memory.db)
+├── plugins/                    # namespaced global mir-core/mir-code/mir-content skills
+├── docs/                       # durable Markdown memory + generated projections
+│   ├── memory-map.md           #   generated keyword → file index
 │   └── decisions/              #   ADRs
 │
-├── .mir/                       # canonical memory DB (.mir/memory.db, gitignored)
+├── .mir/                       # machine-local DB/receipt + tracked capability lock
 │
 └── examples/                   # short walk-throughs
 ```
@@ -530,7 +538,7 @@ Use `config/repos/example.json` as the canonical template for your repository en
   },
   "notes": [],
   "active_agents": ["main-orchestrator", "executor-agent", "codex-final-reviewer", "quality-agent"],
-  "active_skills": ["design", "verify", "testing", "code-review", "bluebricks"]
+  "active_skills": ["design", "spec-architect", "verify", "testing", "code-review", "bluebricks"]
 }
 ```
 
@@ -565,9 +573,8 @@ Specifically, this template is the only one in the comparison table that:
    dispatch time whether to use `claude` or the MCP-backed Codex lane — no runtime guessing.
 4. **Treats hook bypass attempts (e.g. `--no-verify`) as deny-list patterns themselves**, so the
    gate cannot be lifted by inviting the agent to lift it.
-5. **Ships in a form you can rip out**. There is no runtime, no service, no schema migration.
-   Delete `.claude/`, `.codex/`, `.ai-harness/`, `config/`, `tools/` and your repo behaves like
-   a normal repo again.
+5. **Ships without a daemon or SaaS dependency.** The required memory engine is repository-local;
+   tracked Markdown remains portable and the SQLite index can be rebuilt on every machine.
 
 ### When this template fits well
 
@@ -580,9 +587,7 @@ Specifically, this template is the only one in the comparison table that:
 
 - You need a single-agent setup with no enforcement (use Claude Code default).
 - You want a managed multi-agent platform (use Archon, autoGPT family, etc.).
-- Your project does not have a TDD culture and cannot adopt one — the gates here will fight you
-  the whole way.
-- You need cross-language hooks beyond shell (the hook scripts are bash).
+- You need all hook execution to be native PowerShell; current hooks require Git Bash or WSL Bash.
 
 ---
 

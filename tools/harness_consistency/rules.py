@@ -856,7 +856,7 @@ def agent_surface_contract(project_root: Path, rule_inputs: dict) -> list[Findin
                        prefix) scripts must also be executable.
     3. agents_front:   .claude/agents/*.md (excluding README*/INDEX*/RECOVERY*) must
                        start with --- frontmatter containing 'name:'.
-    4. skills_struct:  each directory under .claude/skills/ must contain SKILL.md.
+    4. skills_struct:  each directory under every configured skill root must contain SKILL.md.
     5. mirror_contract: if AGENTS.md exists, the mirror_heading must appear in both
                         CLAUDE.md and AGENTS.md.
     6. marker_pairs:   marker_surfaces files must have equal counts of
@@ -1048,9 +1048,13 @@ def agent_surface_contract(project_root: Path, rule_inputs: dict) -> list[Findin
                 )
 
     # ---- 4. skills_structure --------------------------------------------------
-    skills_dir_rel = rule_inputs.get("skills_dir", ".claude/skills")
-    skills_dir = project_root / skills_dir_rel
-    if skills_dir.is_dir():
+    skills_dirs_rel = rule_inputs.get("skills_dirs")
+    if skills_dirs_rel is None:
+        skills_dirs_rel = [rule_inputs.get("skills_dir", ".claude/skills")]
+    for skills_dir_rel in skills_dirs_rel:
+        skills_dir = project_root / skills_dir_rel
+        if not skills_dir.is_dir():
+            continue
         for skill_subdir in sorted(skills_dir.iterdir()):
             if not skill_subdir.is_dir():
                 continue

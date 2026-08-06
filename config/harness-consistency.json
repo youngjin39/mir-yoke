@@ -299,7 +299,11 @@
     "agent_surface_contract": {
       "claude_md": "CLAUDE.md",
       "agents_dir": ".claude/agents",
-      "skills_dir": ".claude/skills",
+      "skills_dirs": [
+        "plugins/mir-core/skills",
+        "plugins/mir-code/skills",
+        "plugins/mir-content/skills"
+      ],
       "settings_files": [".claude/settings.json", ".claude/settings.local.json"],
       "agents_md": "AGENTS.md",
       "memory_marker": "mir:generated",

@@ -2,6 +2,8 @@ name: validate
 on:
   pull_request:
     branches: [main]
+  push:
+    branches: [main]
 jobs:
   schema:
     runs-on: ubuntu-latest
@@ -34,3 +36,45 @@ jobs:
         with: { python-version: '3.11' }
       - run: pip install pytest
       - run: python tests/test_phase_doc_completeness.py
+  portable_bootstrap:
+    name: portable bootstrap (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - name: Install uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+      - name: Sync test environment
+        run: uv sync --extra dev --frozen
+      - name: Run portable contract tests
+        run: >-
+          uv run pytest -q
+          tests/test_plugin_skill_packages.py
+          tests/test_capability_cli.py
+          tests/test_capability_security.py
+          tests/test_memory_doctor.py
+          tests/test_bootstrap_cli.py
+          tests/test_setup_wrappers.py
+      - name: Bootstrap on Unix
+        if: runner.os != 'Windows'
+        run: >-
+          ./setup.sh --profile content_workspace
+          --skip-capability-activation --allow-incomplete --json
+      - name: Bootstrap on Windows PowerShell
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: >-
+          .\setup.ps1 -Profile content_workspace
+          -SkipCapabilityActivation -AllowIncomplete -Json
+      - name: Prove memory readiness
+        run: uv run mir memory doctor --project-root . --json
+      - name: Smoke the Git Bash hook runtime
+        shell: bash
+        env:
+          CLAUDE_PROJECT_DIR: ${{ github.workspace }}
+        run: bash .claude/hooks/session-start.sh >/dev/null

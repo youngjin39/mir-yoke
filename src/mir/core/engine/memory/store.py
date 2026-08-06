@@ -15,6 +15,7 @@ All paths come from `ResolvedConfig` or explicit caller arguments — never
 hard-coded here. sqlite-vec loading is best-effort; a missing extension
 falls back to FTS5-only mode and records the reason on the connection.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -37,6 +38,7 @@ _MIGRATION_RE = re.compile(r"^(\d{3})_[a-z0-9_]+\.sql$")
 
 
 # --- Connection management ---
+
 
 def _load_sqlite_vec(conn: sqlite3.Connection) -> tuple[bool, str | None]:
     """Try to load sqlite-vec extension. Returns (loaded, reason_if_not).
@@ -104,6 +106,7 @@ def connect(
 
 # --- Migration runner ---
 
+
 @dataclass(frozen=True)
 class MigrationEntry:
     version: str
@@ -170,8 +173,7 @@ def apply_migrations(conn: sqlite3.Connection) -> list[str]:
     # ``executescript`` here because there is nothing to roll back.
     conn.executescript(_SCHEMA_MIGRATIONS_DDL)
     applied_before = {
-        row[0]
-        for row in conn.execute("SELECT version FROM schema_migrations").fetchall()
+        row[0] for row in conn.execute("SELECT version FROM schema_migrations").fetchall()
     }
     newly_applied: list[str] = []
     for mig in _iter_migrations():
@@ -182,8 +184,7 @@ def apply_migrations(conn: sqlite3.Connection) -> list[str]:
             for stmt in _iter_complete_statements(mig.body):
                 conn.execute(stmt)
             conn.execute(
-                "INSERT INTO schema_migrations(version, name, applied_at) "
-                "VALUES (?, ?, ?)",
+                "INSERT INTO schema_migrations(version, name, applied_at) VALUES (?, ?, ?)",
                 (mig.version, mig.name, _now_iso()),
             )
             conn.commit()
@@ -196,10 +197,14 @@ def apply_migrations(conn: sqlite3.Connection) -> list[str]:
 
 def schema_version(conn: sqlite3.Connection) -> str | None:
     """Return the highest applied migration version, or None if none."""
-    row = conn.execute(
-        "SELECT MAX(version) FROM schema_migrations"
-    ).fetchone()
+    row = conn.execute("SELECT MAX(version) FROM schema_migrations").fetchone()
     return row[0] if row else None
+
+
+def latest_schema_version() -> str | None:
+    """Return the newest migration packaged with this Mir build."""
+    versions = [migration.version for migration in _iter_migrations()]
+    return versions[-1] if versions else None
 
 
 # --- Audit log hash chain (design §5.3 R6) ---
@@ -244,18 +249,13 @@ def audit_append(
             # Another writer holds the immediate lock; sqlite will retry per
             # busy_timeout. Fall through and rely on the engine's ordering.
             pass
-    prev = conn.execute(
-        "SELECT hash FROM audit_log ORDER BY id DESC LIMIT 1"
-    ).fetchone()
+    prev = conn.execute("SELECT hash FROM audit_log ORDER BY id DESC LIMIT 1").fetchone()
     prev_hash = prev[0] if prev else _GENESIS_HASH
     ts = _now_iso()
     body = _canonical_json(payload)
-    digest = hashlib.sha256(
-        f"{prev_hash}|{ts}|{event}|{body}".encode()
-    ).hexdigest()
+    digest = hashlib.sha256(f"{prev_hash}|{ts}|{event}|{body}".encode()).hexdigest()
     conn.execute(
-        "INSERT INTO audit_log(ts, event, payload, prev_hash, hash) "
-        "VALUES (?, ?, ?, ?, ?)",
+        "INSERT INTO audit_log(ts, event, payload, prev_hash, hash) VALUES (?, ?, ?, ?, ?)",
         (ts, event, body, prev_hash, digest),
     )
     if commit and not in_transaction:
@@ -276,22 +276,23 @@ def audit_verify(conn: sqlite3.Connection) -> AuditVerifyResult:
     prev_hash = _GENESIS_HASH
     count = 0
     cur = conn.execute(
-        "SELECT id, ts, event, payload, prev_hash, hash FROM audit_log "
-        "ORDER BY id ASC"
+        "SELECT id, ts, event, payload, prev_hash, hash FROM audit_log ORDER BY id ASC"
     )
     for row_id, ts, event, body, prev_recorded, hash_recorded in cur:
         if prev_recorded != prev_hash:
             return AuditVerifyResult(
-                False, count, row_id,
+                False,
+                count,
+                row_id,
                 f"row {row_id}: prev_hash mismatch "
                 f"(recorded={prev_recorded[:12]}..., expected={prev_hash[:12]}...)",
             )
-        expected = hashlib.sha256(
-            f"{prev_hash}|{ts}|{event}|{body}".encode()
-        ).hexdigest()
+        expected = hashlib.sha256(f"{prev_hash}|{ts}|{event}|{body}".encode()).hexdigest()
         if hash_recorded != expected:
             return AuditVerifyResult(
-                False, count, row_id,
+                False,
+                count,
+                row_id,
                 f"row {row_id}: hash mismatch",
             )
         prev_hash = hash_recorded

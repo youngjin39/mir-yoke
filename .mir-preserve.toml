@@ -3,7 +3,10 @@ paths = [
   "docs/harness-engineering/**",
   "docs/decisions/**",
   ".ai-harness/**",
-  "config/**"
+  "config/**",
+  "plugins/**",
+  ".claude-plugin/**",
+  ".agents/plugins/**"
 ]
 
 [claude_md_preserve]

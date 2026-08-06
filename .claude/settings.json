@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/pre-tool-use.sh",
+            "command": "bash .claude/hooks/pre-tool-use.sh",
             "timeout": 30,
             "statusMessage": "Harness L2 PreToolUse"
           }
@@ -19,13 +19,13 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/post-edit-check.sh",
+            "command": "bash .claude/hooks/post-edit-check.sh",
             "timeout": 30,
             "statusMessage": "Harness post-edit check"
           },
           {
             "type": "command",
-            "command": ".claude/hooks/post-edit-self-ingest.sh",
+            "command": "bash .claude/hooks/post-edit-self-ingest.sh",
             "timeout": 30,
             "statusMessage": "ADR-05 self-ingest"
           }
@@ -38,7 +38,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/pre-tool-use.sh",
+            "command": "bash .claude/hooks/pre-tool-use.sh",
             "timeout": 30,
             "statusMessage": "Harness L2 PermissionRequest"
           }
@@ -50,7 +50,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/session-start.sh",
+            "command": "bash .claude/hooks/session-start.sh",
             "timeout": 30,
             "statusMessage": "Harness session-start"
           }
@@ -62,7 +62,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/session-end.sh",
+            "command": "bash .claude/hooks/session-end.sh",
             "timeout": 60,
             "statusMessage": "Harness canonical closeout"
           }
@@ -74,7 +74,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/user-prompt-submit.sh",
+            "command": "bash .claude/hooks/user-prompt-submit.sh",
             "timeout": 30,
             "statusMessage": "Harness context-pull directive"
           }
@@ -86,7 +86,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/mir-stop.sh",
+            "command": "bash .claude/hooks/mir-stop.sh",
             "timeout": 30,
             "statusMessage": "Harness Stop audit"
           }
@@ -98,7 +98,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/stop-failure-audit.sh",
+            "command": "bash .claude/hooks/stop-failure-audit.sh",
             "timeout": 30,
             "statusMessage": "Harness StopFailure audit"
           }
@@ -110,7 +110,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/pre-compact.sh",
+            "command": "bash .claude/hooks/pre-compact.sh",
             "timeout": 60,
             "statusMessage": "Harness PreCompact checkpoint"
           }

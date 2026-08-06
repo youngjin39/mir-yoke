@@ -46,5 +46,8 @@ out/
 .mir/*.db-shm
 .mir/*.db-wal
 
+# Machine-local bootstrap evidence. The capability lock remains tracked.
+.mir/bootstrap-receipt.json
+
 # Operator-specific profile — created by setup.sh, filled in by repo owner
 .mir/repo-profile.toml

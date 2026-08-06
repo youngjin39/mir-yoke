@@ -1,0 +1,24 @@
+{
+  "name": "mir-code",
+  "version": "0.8.0",
+  "description": "Portable Mir coding, testing, and review skills.",
+  "author": {
+    "name": "Harness Contributors",
+    "url": "https://github.com/youngjin39"
+  },
+  "homepage": "https://github.com/youngjin39/mir-yoke",
+  "repository": "https://github.com/youngjin39/mir-yoke",
+  "license": "MIT",
+  "keywords": ["code", "testing", "review", "bluebricks"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Mir Code",
+    "shortDescription": "Shared development, testing, and review skills.",
+    "longDescription": "Mir Code provides proportional codebase exploration, implementation, testing, and code-review guidance.",
+    "developerName": "Harness Contributors",
+    "category": "Developer Tools",
+    "capabilities": ["Code", "Testing", "Review"],
+    "websiteURL": "https://github.com/youngjin39/mir-yoke",
+    "defaultPrompt": ["Use Mir Code to implement and verify this change."]
+  }
+}

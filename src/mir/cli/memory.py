@@ -13,12 +13,23 @@ P50-B (2026-05-31) adds the ``render`` subcommand that projects DB contents
 ``<!-- mir:generated:start -->`` / ``<!-- mir:generated:end -->`` marker blocks.
 Default is dry-run (stdout only). ``--apply`` writes the file.
 """
+
 from __future__ import annotations
 
 import argparse
+import json
+import re
+import uuid
 from pathlib import Path
 
+from mir.core.config.loader import (
+    ConfigLoadError,
+    load_config,
+    resolve_archive_root,
+    resolve_memory_db,
+)
 from mir.core.engine.memory import distill, store
+from mir.core.engine.memory.external_store import CURRENT_METADATA_VERSION
 
 from ._common import default_db_path
 
@@ -100,8 +111,7 @@ def _parse(argv: list[str]) -> argparse.Namespace:
     ins.add_argument("--subject", required=True)
     ins.add_argument("--predicate", required=True)
     ins.add_argument("--object", required=True, dest="obj")
-    ins.add_argument("--consent", default="ephemeral",
-                     choices=("ephemeral", "persistent"))
+    ins.add_argument("--consent", default="ephemeral", choices=("ephemeral", "persistent"))
     ins.add_argument("--db", type=Path, default=None)
 
     q = sub.add_parser("query", help="FTS5 keyword search")
@@ -119,8 +129,7 @@ def _parse(argv: list[str]) -> argparse.Namespace:
         "ingest-md",
         help="ADR-05 S1: ingest a whitelisted markdown file frontmatter",
     )
-    ig.add_argument("path", type=Path,
-                    help="path to a whitelisted markdown file")
+    ig.add_argument("path", type=Path, help="path to a whitelisted markdown file")
     ig.add_argument("--db", type=Path, default=None)
     ig.add_argument(
         "--whitelist",
@@ -158,11 +167,53 @@ def _parse(argv: list[str]) -> argparse.Namespace:
         "reconcile-missing",
         help="B2-FOLLOWUP: expire active facts whose source doc no longer exists",
     )
-    rc.add_argument("--project-root", type=Path, default=None, dest="project_root",
-                    help="project root for relative path resolution (default: cwd)")
-    rc.add_argument("--dry-run", action="store_true", default=False, dest="dry_run",
-                    help="report count without writing any rows")
+    rc.add_argument(
+        "--project-root",
+        type=Path,
+        default=None,
+        dest="project_root",
+        help="project root for relative path resolution (default: cwd)",
+    )
+    rc.add_argument(
+        "--dry-run",
+        action="store_true",
+        default=False,
+        dest="dry_run",
+        help="report count without writing any rows",
+    )
     rc.add_argument("--db", type=Path, default=None)
+
+    doc = sub.add_parser("doctor", help="verify the required memory baseline")
+    doc.add_argument(
+        "--project-root",
+        type=Path,
+        default=Path.cwd(),
+        dest="project_root",
+        help="repository root containing harness_a.toml (default: cwd)",
+    )
+    doc.add_argument(
+        "--json",
+        action="store_true",
+        default=False,
+        dest="json",
+        help="emit machine-readable evidence",
+    )
+
+    gc = sub.add_parser("gc", help="expire facts whose valid_to date has passed")
+    gc.add_argument(
+        "--apply",
+        action="store_true",
+        default=False,
+        help="apply expiry updates (default: dry-run)",
+    )
+    gc.add_argument(
+        "--json",
+        action="store_true",
+        default=False,
+        dest="json",
+        help="emit machine-readable counts",
+    )
+    gc.add_argument("--db", type=Path, default=None)
 
     return p.parse_args(argv)
 
@@ -174,6 +225,21 @@ def _parse(argv: list[str]) -> argparse.Namespace:
 
 def main(argv: list[str]) -> int:
     ns = _parse(argv)
+    if ns.action == "doctor":
+        code, report = run_doctor(ns.project_root)
+        if ns.json:
+            print(json.dumps(report, sort_keys=True, separators=(",", ":")))
+        else:
+            print(f"memory doctor: {report['status']}")
+            for error in report["errors"]:
+                print(f"  [not-ready] {error}")
+            if not report["errors"]:
+                print(f"  db: {report['memory']['db_path']}")
+                print(f"  schema: {report['memory']['schema_version']}")
+                print(f"  archives: {report['memory']['archives_registered']}")
+                print(f"  vector: {report['vector']['status']}")
+        return code
+
     db_path = ns.db or default_db_path()
     if not db_path.is_file():
         print(f"no memory.db at {db_path} — run `mir migrate up` first")
@@ -222,12 +288,21 @@ def main(argv: list[str]) -> int:
                     print(f"  #{fid}  {predicate}  {body}")
             return 0
 
+        if ns.action == "gc":
+            result = store.gc_scan(conn.conn, dry_run=not ns.apply)
+            payload = {"applied": ns.apply, **result}
+            if ns.json:
+                print(json.dumps(payload, sort_keys=True, separators=(",", ":")))
+            elif ns.apply:
+                print(f"expired={result['expired']} kept_active={result['kept_active']}")
+            else:
+                print(
+                    f"dry_run: would_expire={result['expired']} kept_active={result['kept_active']}"
+                )
+            return 0
+
         if ns.action == "ingest-md":
-            globs = (
-                tuple(ns.whitelist)
-                if ns.whitelist
-                else distill.DEFAULT_WHITELIST
-            )
+            globs = tuple(ns.whitelist) if ns.whitelist else distill.DEFAULT_WHITELIST
             result = distill.ingest_markdown_file(
                 ns.path,
                 conn=conn.conn,
@@ -249,6 +324,7 @@ def main(argv: list[str]) -> int:
             return _do_render(ns, conn.conn)
         if ns.action == "reconcile-missing":
             from mir.core.engine.memory.distill import reconcile_missing_source
+
             count = reconcile_missing_source(
                 conn.conn,
                 project_root=ns.project_root,
@@ -263,6 +339,282 @@ def main(argv: list[str]) -> int:
     finally:
         conn.conn.close()
     return 2
+
+
+_REQUIRED_MEMORY_OBJECTS = {
+    "schema_migrations",
+    "entities",
+    "facts",
+    "facts_fts",
+    "external_archives",
+    "external_documents",
+    "external_chunks",
+    "external_chunks_fts",
+    "external_store_meta",
+}
+
+
+def _relative_or_absolute(path: Path, root: Path) -> str:
+    try:
+        return path.relative_to(root).as_posix()
+    except ValueError:
+        return str(path)
+
+
+def run_doctor(project_root: Path, *, db_override: Path | None = None) -> tuple[int, dict]:
+    """Inspect memory readiness without creating a missing database.
+
+    Exit classification mirrors the CLI: 0 ready, 1 operationally not ready,
+    2 invalid configuration or project-root arguments.
+    """
+    root = project_root.expanduser().resolve(strict=False)
+    report: dict = {
+        "status": "not_ready",
+        "errors": [],
+        "memory": {
+            "required": True,
+            "backend": "unknown",
+            "db_path": ".mir/memory.db",
+            "integrity": "not_checked",
+            "schema_version": None,
+            "latest_schema_version": store.latest_schema_version(),
+            "fts5": "not_checked",
+            "round_trip": "not_checked",
+            "archives_configured": 0,
+            "archives_registered": 0,
+            "archives_synced": 0,
+        },
+        "vector": {
+            "mode": "off",
+            "sqlite_vec": "not_checked",
+            "embedding": "disabled",
+            "status": "off",
+        },
+    }
+    if not root.is_dir():
+        report["errors"].append(f"project root is not a directory: {root}")
+        return 2, report
+    if not (root / "harness_a.toml").is_file():
+        report["errors"].append("active harness_a.toml is missing")
+        return 2, report
+    try:
+        cfg = load_config(root)
+    except ConfigLoadError as exc:
+        report["errors"].append(str(exc))
+        return 2, report
+
+    memory = report["memory"]
+    vector = report["vector"]
+    memory["required"] = cfg.memory.required
+    memory["backend"] = cfg.memory.backend
+    memory["archives_configured"] = len(cfg.memory.external_archives)
+    vector["mode"] = cfg.memory.vector_mode
+
+    if not cfg.memory.enabled or not cfg.memory.required:
+        report["errors"].append("portable baseline requires memory enabled=true and required=true")
+    if not cfg.memory.external_archives:
+        report["errors"].append("at least one external archive must be configured")
+    for archive in cfg.memory.external_archives:
+        archive_root = resolve_archive_root(root, archive)
+        if not archive_root.is_dir():
+            report["errors"].append(
+                f"configured archive root is missing: {archive.slug!r} ({archive_root})"
+            )
+
+    configured_db_path = resolve_memory_db(root, cfg)
+    db_path = db_override or configured_db_path
+    memory["db_path"] = _relative_or_absolute(configured_db_path, root)
+    if not db_path.is_file():
+        report["errors"].append(f"memory database is missing: {db_path}")
+        return 1, report
+
+    connection = None
+    embedding_backend = None
+    try:
+        connection = store.connect(db_path)
+        conn = connection.conn
+        vector["sqlite_vec"] = "available" if connection.vec_available else "unavailable"
+
+        integrity_rows = conn.execute("PRAGMA integrity_check").fetchall()
+        integrity = ", ".join(str(row[0]) for row in integrity_rows)
+        memory["integrity"] = integrity
+        if integrity_rows != [("ok",)]:
+            report["errors"].append(f"SQLite integrity_check failed: {integrity}")
+
+        actual_version = store.schema_version(conn)
+        latest_version = store.latest_schema_version()
+        memory["schema_version"] = actual_version
+        if actual_version != latest_version:
+            report["errors"].append(
+                f"schema version {actual_version!r} is not latest {latest_version!r}"
+            )
+
+        objects = {
+            row[0]
+            for row in conn.execute(
+                "SELECT name FROM sqlite_master WHERE type IN ('table', 'view')"
+            ).fetchall()
+        }
+        missing_objects = sorted(_REQUIRED_MEMORY_OBJECTS - objects)
+        if missing_objects:
+            report["errors"].append(
+                "required memory tables are missing: " + ", ".join(missing_objects)
+            )
+        else:
+            memory["fts5"] = "ok"
+
+        if not missing_objects:
+            probe_token = f"mirdoctor{uuid.uuid4().hex}"
+            try:
+                conn.execute("BEGIN")
+                distill.insert_triple(
+                    conn,
+                    distill.Triple(
+                        subject_slug="mir-memory-doctor",
+                        predicate="doctor_probe",
+                        object_literal=probe_token,
+                    ),
+                )
+                matches = distill.fts_search(conn, probe_token, limit=1)
+                if not matches:
+                    raise RuntimeError("inserted fact was not returned by FTS5")
+                memory["round_trip"] = "ok"
+            except Exception as exc:
+                memory["round_trip"] = "failed"
+                report["errors"].append(f"rollback-only FTS5 probe failed: {exc}")
+            finally:
+                conn.rollback()
+
+        archive_rows = conn.execute(
+            "SELECT id, slug, root_path, last_scanned_at FROM external_archives"
+        ).fetchall()
+        memory["archives_registered"] = len(archive_rows)
+        if not archive_rows:
+            report["errors"].append("no external archives are registered")
+        registered = {row[1]: row for row in archive_rows}
+        synced = 0
+        for archive in cfg.memory.external_archives:
+            row = registered.get(archive.slug)
+            if row is None:
+                report["errors"].append(f"configured archive is not registered: {archive.slug!r}")
+                continue
+            expected_root = resolve_archive_root(root, archive)
+            actual_root = Path(row[2]).resolve(strict=False)
+            if actual_root != expected_root:
+                report["errors"].append(
+                    f"archive root drift for {archive.slug!r}: {actual_root} != {expected_root}"
+                )
+            metadata = conn.execute(
+                "SELECT value FROM external_store_meta WHERE key = ?",
+                (f"schema_metadata_version:archive:{row[0]}",),
+            ).fetchone()
+            if row[3] is None or metadata is None or metadata[0] != CURRENT_METADATA_VERSION:
+                report["errors"].append(
+                    f"archive has no successful current sync evidence: {archive.slug!r}"
+                )
+            else:
+                synced += 1
+        memory["archives_synced"] = synced
+
+        document_count = conn.execute("SELECT COUNT(*) FROM external_documents").fetchone()[0]
+        chunk_count = conn.execute("SELECT COUNT(*) FROM external_chunks").fetchone()[0]
+        memory["documents_indexed"] = document_count
+        memory["chunks_indexed"] = chunk_count
+        memory["archive_fts_probe"] = "not_checked"
+        if document_count < 1 or chunk_count < 1:
+            report["errors"].append("archive sync produced no searchable documents/chunks")
+        else:
+            sample = conn.execute(
+                "SELECT a.root_path, d.relative_path, c.byte_start, c.byte_end "
+                "FROM external_chunks c "
+                "JOIN external_documents d ON d.id = c.document_id "
+                "JOIN external_archives a ON a.id = d.archive_id "
+                "ORDER BY c.id LIMIT 1"
+            ).fetchone()
+            try:
+                snippet = (
+                    (Path(sample[0]) / sample[1])
+                    .read_bytes()[sample[2] : sample[3]]
+                    .decode("utf-8")
+                )
+                tokens = [
+                    token
+                    for token in re.findall(r"[A-Za-z0-9_\u00C0-\uFFFF]+", snippet)
+                    if len(token) >= 6
+                ]
+                if not tokens:
+                    raise RuntimeError("indexed sample contains no stable probe token")
+                probe_query = distill.sanitize_fts_query(tokens[0])
+                probe_row = conn.execute(
+                    "SELECT c.id FROM external_chunks_fts f "
+                    "JOIN external_chunks c ON c.id = f.rowid "
+                    "WHERE external_chunks_fts MATCH ? LIMIT 1",
+                    (probe_query,),
+                ).fetchone()
+                if probe_row is None:
+                    raise RuntimeError("indexed archive token was not returned by FTS5")
+                memory["archive_fts_probe"] = "ok"
+            except Exception as exc:
+                memory["archive_fts_probe"] = "failed"
+                report["errors"].append(f"archive FTS5 probe failed: {exc}")
+
+        if cfg.memory.embedding.enabled:
+            try:
+                from mir.core.engine.memory.backends.omlx_http import from_config
+
+                embedding_backend = from_config(cfg.memory.embedding)
+                embedding_backend.encode(["mir memory doctor"])
+                vector["embedding"] = "ready"
+            except Exception as exc:
+                vector["embedding"] = "unavailable"
+                vector["embedding_reason"] = str(exc)
+                if cfg.memory.embedding.required or cfg.memory.vector_mode == "required":
+                    report["errors"].append(f"required embedding backend is unavailable: {exc}")
+
+        if cfg.memory.vector_mode == "required" and not connection.vec_available:
+            report["errors"].append(
+                f"required sqlite-vec is unavailable: {connection.vec_reason or 'unknown reason'}"
+            )
+        if cfg.memory.vector_mode == "required" and connection.vec_available:
+            unindexed_documents = conn.execute(
+                "SELECT COUNT(*) FROM external_documents WHERE vec_indexed_at IS NULL"
+            ).fetchone()[0]
+            vector_table = conn.execute(
+                "SELECT 1 FROM sqlite_master WHERE name = 'external_chunks_vec'"
+            ).fetchone()
+            vector["documents_missing_vectors"] = unindexed_documents
+            if vector_table is None:
+                vector["chunk_rows"] = 0
+                report["errors"].append("required external_chunks_vec table is missing")
+            else:
+                vector_rows = conn.execute("SELECT COUNT(*) FROM external_chunks_vec").fetchone()[0]
+                vector["chunk_rows"] = vector_rows
+                if vector_rows != chunk_count:
+                    report["errors"].append(
+                        f"vector row count {vector_rows} does not match chunk count {chunk_count}"
+                    )
+            if unindexed_documents:
+                report["errors"].append(
+                    f"{unindexed_documents} external documents have no vector index evidence"
+                )
+        if cfg.memory.vector_mode == "off":
+            vector["status"] = "off"
+        elif connection.vec_available and vector["embedding"] == "ready":
+            vector["status"] = "ready"
+        else:
+            vector["status"] = "unavailable"
+    except Exception as exc:
+        report["errors"].append(f"memory doctor operational failure: {exc}")
+    finally:
+        if embedding_backend is not None:
+            embedding_backend.close()
+        if connection is not None:
+            connection.conn.close()
+
+    if not report["errors"]:
+        report["status"] = "ready"
+        return 0, report
+    return 1, report
 
 
 def _do_render(ns: argparse.Namespace, conn) -> int:

@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "mir-core",
+  "version": "0.8.0",
+  "description": "Portable Mir architecture, governance, memory, and verification skills.",
+  "author": {
+    "name": "Harness Contributors",
+    "url": "https://github.com/youngjin39"
+  },
+  "homepage": "https://github.com/youngjin39/mir-yoke",
+  "repository": "https://github.com/youngjin39/mir-yoke",
+  "license": "MIT",
+  "keywords": ["architecture", "governance", "memory", "specification"]
+}

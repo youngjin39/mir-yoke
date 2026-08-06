@@ -1,0 +1,44 @@
+{
+  "name": "mir-yoke",
+  "interface": {
+    "displayName": "Mir Yoke"
+  },
+  "plugins": [
+    {
+      "name": "mir-core",
+      "source": {
+        "source": "local",
+        "path": "./plugins/mir-core"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    },
+    {
+      "name": "mir-code",
+      "source": {
+        "source": "local",
+        "path": "./plugins/mir-code"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    },
+    {
+      "name": "mir-content",
+      "source": {
+        "source": "local",
+        "path": "./plugins/mir-content"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

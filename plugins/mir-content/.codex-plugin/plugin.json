@@ -1,0 +1,24 @@
+{
+  "name": "mir-content",
+  "version": "0.8.0",
+  "description": "Portable Mir knowledge and interface design skills.",
+  "author": {
+    "name": "Harness Contributors",
+    "url": "https://github.com/youngjin39"
+  },
+  "homepage": "https://github.com/youngjin39/mir-yoke",
+  "repository": "https://github.com/youngjin39/mir-yoke",
+  "license": "MIT",
+  "keywords": ["knowledge", "content", "ui", "ux"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Mir Content",
+    "shortDescription": "Shared knowledge and interface design skills.",
+    "longDescription": "Mir Content provides knowledge graph maintenance and proportional UI and UX design guidance.",
+    "developerName": "Harness Contributors",
+    "category": "Productivity",
+    "capabilities": ["Knowledge", "UI Design", "UX Design"],
+    "websiteURL": "https://github.com/youngjin39/mir-yoke",
+    "defaultPrompt": ["Use Mir Content to structure this knowledge or interface task."]
+  }
+}

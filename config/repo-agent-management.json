@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "catalog_revision": "v3.8",
+  "catalog_revision": "v4.0",
   "purpose": "Per-repository agent-management registry for the Claude+Codex Harness Template. Fork and customize for your fleet.",
   "repositories_dir": "config/repos",
   "catalog": {
@@ -253,14 +253,14 @@
         ],
         "scope": "universal",
         "status": "active",
-        "source_path": ".claude/skills/design/"
+        "source_path": "plugins/mir-core/skills/design/"
       },
       "spec-architect": {
         "category": "design",
         "absorbs": [],
         "scope": "universal",
         "status": "active",
-        "source_path": ".claude/skills/spec-architect/"
+        "source_path": "plugins/mir-core/skills/spec-architect/"
       },
       "verify": {
         "category": "verify",
@@ -272,21 +272,21 @@
         ],
         "scope": "universal",
         "status": "active",
-        "source_path": ".claude/skills/verify/"
+        "source_path": "plugins/mir-core/skills/verify/"
       },
       "code-review": {
         "category": "code-review",
         "absorbs": [],
         "scope": "universal",
         "status": "active",
-        "source_path": ".claude/skills/code-review/"
+        "source_path": "plugins/mir-code/skills/code-review/"
       },
       "testing": {
         "category": "testing",
         "absorbs": [],
         "scope": "universal",
         "status": "active",
-        "source_path": ".claude/skills/testing/"
+        "source_path": "plugins/mir-code/skills/testing/"
       },
       "ui-design": {
         "category": "ui-design",
@@ -295,7 +295,7 @@
         ],
         "scope": "universal",
         "status": "active",
-        "source_path": ".claude/skills/ui-design/"
+        "source_path": "plugins/mir-content/skills/ui-design/"
       },
       "governance": {
         "category": "governance",
@@ -307,7 +307,7 @@
         ],
         "scope": "meta_harness",
         "status": "active",
-        "source_path": ".claude/skills/governance/"
+        "source_path": "plugins/mir-core/skills/governance/"
       },
       "knowledge": {
         "category": "knowledge",
@@ -317,7 +317,7 @@
         ],
         "scope": "universal",
         "status": "active",
-        "source_path": ".claude/skills/knowledge/"
+        "source_path": "plugins/mir-content/skills/knowledge/"
       },
       "automation": {
         "category": "automation",
@@ -327,7 +327,7 @@
         ],
         "scope": "universal",
         "status": "active",
-        "source_path": ".claude/skills/automation/"
+        "source_path": "plugins/mir-core/skills/automation/"
       },
       "efficiency": {
         "category": "efficiency",
@@ -337,7 +337,7 @@
         ],
         "scope": "universal",
         "status": "active",
-        "source_path": ".claude/skills/efficiency/"
+        "source_path": "plugins/mir-core/skills/efficiency/"
       },
       "bluebricks": {
         "category": "bluebricks",
@@ -346,7 +346,7 @@
         ],
         "scope": "universal",
         "status": "active",
-        "source_path": ".claude/skills/bluebricks/"
+        "source_path": "plugins/mir-code/skills/bluebricks/"
       },
       "commit": {
         "category": "commit",
@@ -355,14 +355,14 @@
         ],
         "scope": "universal",
         "status": "active",
-        "source_path": ".claude/skills/commit/"
+        "source_path": "plugins/mir-core/skills/commit/"
       },
       "memory-gc": {
         "category": "automation",
         "absorbs": [],
         "scope": "meta_harness",
         "status": "active",
-        "source_path": ".claude/skills/memory-gc/"
+        "source_path": "plugins/mir-core/skills/memory-gc/"
       }
     }
   },
@@ -435,7 +435,7 @@
           "CLAUDE.md",
           "AGENTS.md",
           ".claude/agents/**",
-          ".claude/skills/**"
+          "plugins/**/skills/**"
         ],
         "repository_overlay": [
           ".mir/repo-profile.toml",
@@ -488,6 +488,7 @@
       "default_skill_pack": {
         "core": [
           "design",
+          "spec-architect",
           "verify"
         ],
         "code": [
@@ -528,7 +529,7 @@
         ],
         "harness_structure": [
           ".claude/hooks/**",
-          ".claude/skills/**",
+          "plugins/**/skills/**",
           ".ai-harness/**"
         ],
         "harness_format": [
@@ -556,6 +557,7 @@
       "default_skill_pack": {
         "core": [
           "design",
+          "spec-architect",
           "verify"
         ],
         "code": [
@@ -592,7 +594,7 @@
         ],
         "harness_structure": [
           ".claude/hooks/**",
-          ".claude/skills/**",
+          "plugins/**/skills/**",
           ".ai-harness/**"
         ],
         "harness_format": [
@@ -622,6 +624,7 @@
       "default_skill_pack": {
         "core": [
           "design",
+          "spec-architect",
           "verify"
         ],
         "code": [
@@ -657,7 +660,7 @@
         ],
         "harness_structure": [
           ".claude/hooks/**",
-          ".claude/skills/**",
+          "plugins/**/skills/**",
           ".ai-harness/**"
         ],
         "harness_format": [
@@ -687,6 +690,7 @@
       "default_skill_pack": {
         "core": [
           "design",
+          "spec-architect",
           "verify"
         ],
         "code": [
@@ -722,7 +726,7 @@
         ],
         "harness_structure": [
           ".claude/hooks/**",
-          ".claude/skills/**",
+          "plugins/**/skills/**",
           ".ai-harness/**"
         ],
         "harness_format": [
@@ -751,6 +755,7 @@
       "default_skill_pack": {
         "core": [
           "design",
+          "spec-architect",
           "verify"
         ],
         "code": [
@@ -783,7 +788,7 @@
         ],
         "harness_structure": [
           ".claude/hooks/**",
-          ".claude/skills/**",
+          "plugins/**/skills/**",
           ".ai-harness/**"
         ],
         "harness_format": [
@@ -810,6 +815,7 @@
       "default_skill_pack": {
         "core": [
           "design",
+          "spec-architect",
           "verify"
         ],
         "code": [
@@ -847,7 +853,7 @@
         ],
         "harness_structure": [
           ".claude/hooks/**",
-          ".claude/skills/**",
+          "plugins/**/skills/**",
           ".ai-harness/**"
         ],
         "harness_format": [
@@ -879,6 +885,7 @@
       "default_skill_pack": {
         "core": [
           "design",
+          "spec-architect",
           "verify"
         ],
         "code": [
@@ -916,7 +923,7 @@
         ],
         "harness_structure": [
           ".claude/hooks/**",
-          ".claude/skills/**",
+          "plugins/**/skills/**",
           ".ai-harness/**"
         ],
         "harness_format": [
@@ -950,6 +957,7 @@
       "default_skill_pack": {
         "core": [
           "design",
+          "spec-architect",
           "verify"
         ],
         "code": [

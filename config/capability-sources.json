@@ -1,0 +1,124 @@
+{
+  "schema_version": 1,
+  "source": {
+    "url": "https://github.com/youngjin39/mir-yoke.git",
+    "ref": "main"
+  },
+  "plugins": {
+    "mir-core": {
+      "path": "plugins/mir-core",
+      "skills": ["automation", "commit", "design", "efficiency", "governance", "memory-gc", "spec-architect", "verify"]
+    },
+    "mir-code": {
+      "path": "plugins/mir-code",
+      "skills": ["bluebricks", "code-review", "testing"]
+    },
+    "mir-content": {
+      "path": "plugins/mir-content",
+      "skills": ["knowledge", "ui-design"]
+    }
+  },
+  "profiles": {
+    "aliases": {
+      "default": "hybrid_pipeline",
+      "code": "code_app",
+      "hybrid": "hybrid_pipeline",
+      "infra": "infra_runtime",
+      "content": "content_workspace",
+      "ontology_content": "content_workspace"
+    },
+    "packs": {
+      "code_app": {
+        "plugins": ["mir-core", "mir-code"],
+        "agents": [
+          ".claude/agents/main-orchestrator.md",
+          ".claude/agents/executor-agent.md",
+          ".claude/agents/codex-final-reviewer.md",
+          ".claude/agents/cwe-auditor.md",
+          ".claude/agents/quality-agent.md",
+          ".claude/agents/runtime-contract-reviewer.md",
+          ".claude/agents/ui-reviewer.md"
+        ]
+      },
+      "hybrid_pipeline": {
+        "plugins": ["mir-core", "mir-code", "mir-content"],
+        "agents": [
+          ".claude/agents/main-orchestrator.md",
+          ".claude/agents/executor-agent.md",
+          ".claude/agents/codex-final-reviewer.md",
+          ".claude/agents/cwe-auditor.md",
+          ".claude/agents/dep-auditor.md",
+          ".claude/agents/fleet-doc-steward.md",
+          ".claude/agents/ontology-validator.md",
+          ".claude/agents/pipeline-validator.md",
+          ".claude/agents/quality-agent.md",
+          ".claude/agents/runtime-contract-reviewer.md",
+          ".claude/agents/template-sync-validator.md",
+          ".claude/agents/ui-reviewer.md"
+        ]
+      },
+      "infra_runtime": {
+        "plugins": ["mir-core", "mir-code"],
+        "agents": [
+          ".claude/agents/main-orchestrator.md",
+          ".claude/agents/executor-agent.md",
+          ".claude/agents/cwe-auditor.md",
+          ".claude/agents/dep-auditor.md",
+          ".claude/agents/pipeline-validator.md",
+          ".claude/agents/quality-agent.md",
+          ".claude/agents/runtime-contract-reviewer.md"
+        ]
+      },
+      "content_workspace": {
+        "plugins": ["mir-core", "mir-content"],
+        "agents": [
+          ".claude/agents/main-orchestrator.md",
+          ".claude/agents/fleet-doc-steward.md",
+          ".claude/agents/ontology-validator.md",
+          ".claude/agents/quality-agent.md",
+          ".claude/agents/ui-reviewer.md"
+        ]
+      }
+    }
+  },
+  "agents": {
+    "allowlist": [
+      ".claude/agents/codex-final-reviewer.md",
+      ".claude/agents/cwe-auditor.md",
+      ".claude/agents/dep-auditor.md",
+      ".claude/agents/executor-agent.md",
+      ".claude/agents/fleet-doc-steward.md",
+      ".claude/agents/main-orchestrator.md",
+      ".claude/agents/ontology-validator.md",
+      ".claude/agents/pipeline-validator.md",
+      ".claude/agents/quality-agent.md",
+      ".claude/agents/runtime-contract-reviewer.md",
+      ".claude/agents/template-sync-validator.md",
+      ".claude/agents/ui-reviewer.md"
+    ]
+  },
+  "required_project_paths": [
+    "CLAUDE.md",
+    "AGENTS.md",
+    ".ai-harness",
+    "tasks",
+    "config",
+    ".claude/agents"
+  ],
+  "runtime_support": {
+    "supported": ["claude-code", "codex-cli", "codex-desktop"],
+    "unsupported": {
+      "codex-ide-extension": "Codex IDE extensions do not currently expose the plugin marketplace contract; use project-local agents and instructions there."
+    }
+  },
+  "policy": {
+    "check_trigger": "requirements-agents-or-skills-change",
+    "check_mode": "read-only",
+    "activation": "explicit-apply",
+    "one_global_active_version": true,
+    "remote_executable_content": "reject",
+    "host_registration": "explicit-sync-apply",
+    "claude_reload_required": true,
+    "codex_new_session_required": true
+  }
+}

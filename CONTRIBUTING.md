@@ -5,7 +5,10 @@ Thanks for the interest. This template's job is to stay small and copy-pasteable
 ## What we want
 
 - **New deny-list patterns.** Anything you have seen an AI assistant accidentally do that you wish it could not have done. Add an entry to `.ai-harness/deny-list.yaml`. Include a real-world reason in the `reason:` field — patterns without context get pruned later.
-- **New skills.** Trigger-loaded markdown bodies under `.claude/skills/<name>/SKILL.md`. Each skill should have a clear single responsibility (design / planning / testing / review / verification etc.) and an `Trigger:` line that lists the keywords that load it.
+- **New common skills.** Trigger-loaded Markdown bodies under
+  `plugins/<provider>/skills/<name>/SKILL.md`. Each skill must be self-contained inside its plugin,
+  have a clear responsibility, and list precise triggers. Project-only examples may use a uniquely
+  named repository-local skill; do not duplicate a common plugin skill name.
 - **Examples.** Real workflows under `examples/`. Show the prompt, the hook output, and the resulting tasks/tdd.json entry.
 - **Hook tests.** Bash test harnesses under `tests/` (you can add this directory) that run the hooks against synthetic stdin payloads.
 - **Documentation that explains *why*.** Every gate exists to prevent a specific failure mode. If you can name the failure mode in one sentence, the doc gets clearer.
@@ -13,7 +16,9 @@ Thanks for the interest. This template's job is to stay small and copy-pasteable
 ## What we do not want
 
 - **Project-specific runtime code.** This is a template, not a binary. Python modules, Rust crates, Node packages — all out of scope. If you want to ship code, fork and add it; don't push it back here.
-- **CLI-specific features.** If a feature would only work on Claude Code OR only on Codex CLI, it goes behind a clearly labeled section. Default surface stays portable.
+- **Unlabeled CLI-specific features.** Runtime differences belong behind explicit capability gates.
+  The plugin baseline supports Claude Code and Codex CLI/desktop; Codex IDE extensions are not part
+  of the current plugin readiness claim.
 - **Secret-bearing examples.** Even a fake-looking AWS key in a sample config is going to trip somebody's leak scanner. Use obviously-bogus literals like `EXAMPLE_KEY_DO_NOT_USE`.
 - **Replacing markdown rules with prose-only docs.** The point of this template is that rules are executable. Adding rules without a hook to enforce them is the failure mode we are trying to avoid.
 

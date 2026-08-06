@@ -7,12 +7,13 @@ Define the durable human/agent operating contract: startup context, skills, hook
 - `CLAUDE.md`
 - `AGENTS.md` generated mirror
 - `.claude/hooks/*`
-- `.claude/skills/*`
+- `plugins/*/skills/*`
+- `.claude-plugin/marketplace.json` and `.agents/plugins/marketplace.json`
 - `.ai-harness/*.md` and `.ai-harness/deny-list.yaml`
 - `scripts/generate_codex_derivatives.sh`
 
 ## Internal Rules
-- Source of truth lives in `CLAUDE.md`, `.claude/agents/*`, and `.claude/skills/*`.
+- Source of truth lives in `CLAUDE.md`, `.claude/agents/*`, and `plugins/*/skills/*`.
 - Generated Codex mirrors must be regenerated, not hand-edited.
 - A path-scoped `CLAUDE.md` under `scripts/`, `src/`, `tests/`, or `tools/` generates a sibling
   `AGENTS.md`; neither path-scoped body belongs in root startup context.
@@ -20,7 +21,8 @@ Define the durable human/agent operating contract: startup context, skills, hook
 - Root guidance stays short; durable detail belongs under `.ai-harness/`.
 
 ## Non-Obvious Hazards
-- Do not patch `AGENTS.md`, `.agents/`, or `.codex/` by hand.
+- Do not patch `AGENTS.md` or `.codex/` by hand. The Codex marketplace under
+  `.agents/plugins/` is canonical, not a generated skill copy.
 - Do not leave deny-list as documentation-only policy; hook enforcement must stay wired.
 - Do not let SessionStart/PreCompact/SessionEnd behavior drift from the runtime docs.
 - Do not bloat root files with per-module detail that belongs in durable harness docs.
@@ -39,7 +41,7 @@ Define the durable human/agent operating contract: startup context, skills, hook
 
 ## Composition
 - `CLAUDE.md`, `AGENTS.md`
-- `.claude/**`, `.agents/**`, `.codex/**`
+- `.claude/**`, `.claude-plugin/**`, `.agents/plugins/**`, `.codex/**`, `plugins/**`
 - `.ai-harness/**`
 - `tasks/**`
 - `scripts/generate_codex_derivatives.sh`

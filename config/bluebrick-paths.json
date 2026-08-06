@@ -4,7 +4,7 @@
   "src/mir/core/engine/": "engine",
   "src/mir/core/worker/": "worker",
   ".claude/hooks/": "harness-runtime",
-  ".claude/skills/": "harness-runtime",
+  "plugins/": "harness-runtime",
   ".ai-harness/": "harness-runtime",
   "scripts/generate_codex_derivatives.sh": "harness-runtime"
 }

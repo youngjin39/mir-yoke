@@ -1,11 +1,12 @@
 ---
 title: Memory map — keyword index
-description: DB-canonical memory. The keyword index is a generated projection of .mir/memory.db.
+description: Generated index over portable, tracked memory documents.
 ---
 
 # Memory map
 
-> Long-term memory is **DB-canonical** (`.mir/memory.db`, SQLite + FTS5 + sqlite-vec).
+> Durable cross-machine memory is authored in tracked Markdown. `.mir/memory.db` is a required,
+> machine-local SQLite+FTS5 query index that can be rebuilt from those documents.
 > The keyword index below is a **generated projection** inside the `mir:generated` markers — never hand-edit it.
 > Frontmatter required on every memory doc: title, keywords, related, created, last_used.
 
@@ -28,13 +29,16 @@ description: DB-canonical memory. The keyword index is a generated projection of
    last_used: {YYYY-MM-DD}
    ---
    ```
-2. Ingest into the DB: `mir memory ingest-md docs/<category>/<topic>.md` (deterministic frontmatter → facts; no LLM).
+2. Synchronize tracked archives: `mir context sync`.
 3. Regenerate the index: `mir memory render --target memory-map --apply --output-path docs/memory-map.md`.
-4. The keyword index below is **DB-generated** — do not hand-edit it; re-ingest + re-render instead.
+4. The keyword index below is **DB-generated** — do not hand-edit it; update the tracked source,
+   synchronize, and re-render instead.
 
 ## Promotion
 
-- Pattern fires twice → capture a lesson in the DB: `mir memory insert --predicate lesson --subject <slug> --object "<rule>"`, then `mir memory render --target lessons --apply --output-path tasks/lessons.md`.
+- Pattern fires twice → capture the durable lesson in tracked Markdown, synchronize it, and then
+  render the derived projections. A DB-only fact is machine-local and will not follow the repository
+  to another computer.
 
 <!-- mir:generated:start -->
 ## Keyword → File Index (DB projection)

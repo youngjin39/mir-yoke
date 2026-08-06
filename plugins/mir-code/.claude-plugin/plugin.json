@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "mir-code",
+  "version": "0.8.0",
+  "description": "Portable Mir coding, testing, and review skills.",
+  "author": {
+    "name": "Harness Contributors",
+    "url": "https://github.com/youngjin39"
+  },
+  "homepage": "https://github.com/youngjin39/mir-yoke",
+  "repository": "https://github.com/youngjin39/mir-yoke",
+  "license": "MIT",
+  "keywords": ["code", "testing", "review", "bluebricks"]
+}

@@ -6,9 +6,9 @@
   <string>com.mir.memory_gc_daily</string>
   <key>ProgramArguments</key>
   <array>
-    <string><your-harness-path>/.venv/bin/python</string>
-    <string><your-harness-path>/scripts/memory_gc_runner.py</string>
-    <string>--dry-run</string>
+    <string><your-harness-path>/.venv/bin/mir</string>
+    <string>memory</string>
+    <string>gc</string>
   </array>
   <key>WorkingDirectory</key>
   <string><your-harness-path></string>

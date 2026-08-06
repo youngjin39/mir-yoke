@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import subprocess
@@ -12,6 +13,20 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 MANIFEST = ROOT / ".codex-sync" / "manifest.json"
 PATH_SCOPED_INSTRUCTION_ROOTS = ("scripts", "src", "tests", "tools")
+PLUGIN_SKILLS = {
+    "mir-core": {
+        "automation",
+        "commit",
+        "design",
+        "efficiency",
+        "governance",
+        "memory-gc",
+        "spec-architect",
+        "verify",
+    },
+    "mir-code": {"bluebricks", "code-review", "testing"},
+    "mir-content": {"knowledge", "ui-design"},
+}
 
 
 def _source_paths(source: str) -> list[Path]:
@@ -54,6 +69,104 @@ def validate_nested_instruction_derivatives(
             failures.append(f"nested AGENTS source marker drifted: {target_rel}")
 
 
+def _read_json(path: Path, failures: list[str]) -> dict[str, object] | None:
+    try:
+        label = path.relative_to(ROOT)
+    except ValueError:
+        label = path
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        failures.append(f"invalid JSON: {label}")
+        return None
+    if not isinstance(value, dict):
+        failures.append(f"JSON root is not an object: {label}")
+        return None
+    return value
+
+
+def validate_plugin_skill_providers(failures: list[str], root: Path = ROOT) -> None:
+    """Assert every common skill has exactly one dual-runtime plugin provider."""
+    for legacy in (
+        root / ".claude" / "skills",
+        root / ".agents" / "skills",
+        root / ".codex-sync" / "staging" / ".agents" / "skills",
+    ):
+        if legacy.exists() or legacy.is_symlink():
+            failures.append(f"legacy raw skill provider remains: {legacy.relative_to(root)}")
+
+    seen: dict[str, str] = {}
+    for plugin_name, expected_skills in PLUGIN_SKILLS.items():
+        plugin_root = root / "plugins" / plugin_name
+        manifests = {}
+        for runtime in ("claude", "codex"):
+            path = plugin_root / f".{runtime}-plugin" / "plugin.json"
+            payload = _read_json(path, failures)
+            if payload is None:
+                continue
+            manifests[runtime] = payload
+            if payload.get("name") != plugin_name:
+                failures.append(f"{runtime} plugin name mismatch: {plugin_name}")
+            if payload.get("version") != "0.8.0":
+                failures.append(f"{runtime} plugin version mismatch: {plugin_name}")
+        if len(manifests) == 2:
+            for field in ("name", "version", "description", "repository", "license"):
+                if manifests["claude"].get(field) != manifests["codex"].get(field):
+                    failures.append(f"dual-runtime manifest drift: {plugin_name}.{field}")
+
+        skills_root = plugin_root / "skills"
+        actual_skills = {
+            path.parent.name for path in skills_root.glob("*/SKILL.md") if path.is_file()
+        }
+        if actual_skills != expected_skills:
+            failures.append(f"plugin skill inventory drift: {plugin_name}")
+        for skill in actual_skills:
+            if skill in seen:
+                failures.append(
+                    f"duplicate common skill provider: {skill} ({seen[skill]}, {plugin_name})"
+                )
+            seen[skill] = plugin_name
+        if any(path.is_symlink() for path in plugin_root.rglob("*")):
+            failures.append(f"plugin contains symlink: {plugin_name}")
+
+    expected_names = set(PLUGIN_SKILLS)
+    claude_market = _read_json(root / ".claude-plugin" / "marketplace.json", failures)
+    codex_market = _read_json(root / ".agents" / "plugins" / "marketplace.json", failures)
+    if claude_market is not None:
+        names = {item.get("name") for item in claude_market.get("plugins", [])}
+        if names != expected_names:
+            failures.append("Claude marketplace plugin inventory drift")
+    if codex_market is not None:
+        names = {item.get("name") for item in codex_market.get("plugins", [])}
+        if names != expected_names:
+            failures.append("Codex marketplace plugin inventory drift")
+
+
+def _directory_digest(root: Path) -> str | None:
+    if root.is_symlink() or not root.is_dir():
+        return None
+    digest = hashlib.sha256()
+    for path in sorted(root.rglob("*")):
+        relative = path.relative_to(root).as_posix().encode()
+        if path.is_symlink():
+            return None
+        digest.update(relative)
+        digest.update(b"\0")
+        if path.is_file():
+            digest.update(path.read_bytes())
+        digest.update(b"\0")
+    return digest.hexdigest()
+
+
+def validate_portable_hook_copy(
+    failures: list[str], *, source_root: Path = ROOT, output_root: Path = ROOT
+) -> None:
+    source = source_root / ".claude" / "hooks" / "lib"
+    target = output_root / ".codex" / "hooks" / "lib"
+    if _directory_digest(source) != _directory_digest(target):
+        failures.append("portable Codex hook library drift")
+
+
 def main() -> int:
     failures: list[str] = []
     manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
@@ -70,23 +183,8 @@ def main() -> int:
             path = ROOT / target
             if not path.exists() and not path.is_symlink():
                 failures.append(f"missing target: {target}")
-            if (
-                mapping.get("sync_policy") == "symlink"
-                and source.startswith(".claude/skills/")
-            ):
-                if not path.is_symlink():
-                    failures.append(f"project skill target is not a directory symlink: {target}")
-                elif path.resolve() != (ROOT / source).resolve():
-                    failures.append(f"project skill target resolves to the wrong source: {target}")
-                staging_path = ROOT / ".codex-sync" / "staging" / target
-                if not staging_path.is_symlink():
-                    failures.append(
-                        f"staged project skill target is not a directory symlink: {target}"
-                    )
-                elif staging_path.resolve() != (ROOT / source).resolve():
-                    failures.append(
-                        f"staged project skill target resolves to the wrong source: {target}"
-                    )
+    validate_plugin_skill_providers(failures)
+    validate_portable_hook_copy(failures)
 
     agents_text = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     if "- Skills: `" in agents_text:
@@ -122,6 +220,7 @@ def main() -> int:
                 target
                 for mapping in generated_manifest["mappings"]
                 if mapping.get("sync_policy") == "regenerate"
+                and mapping.get("change_scope") != "directory"
                 for target in mapping["targets"]
             )
             for relative in sorted(generated_files):
@@ -131,6 +230,13 @@ def main() -> int:
                     failures.append(f"missing generated file: {relative}")
                 elif expected.read_bytes() != actual.read_bytes():
                     failures.append(f"generated drift: {relative}")
+            if (generated_root / ".agents" / "skills").exists():
+                failures.append("generator recreated a legacy raw skill provider")
+            validate_portable_hook_copy(
+                failures,
+                source_root=ROOT,
+                output_root=generated_root,
+            )
 
     if failures:
         for failure in failures:

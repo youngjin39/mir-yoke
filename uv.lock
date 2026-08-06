@@ -156,7 +156,7 @@ wheels = [
 
 [[package]]
 name = "mir-harness"
-version = "0.7.1"
+version = "0.8.0"
 source = { editable = "." }
 dependencies = [
     { name = "httpx" },
@@ -164,7 +164,6 @@ dependencies = [
     { name = "markdown-it-py" },
     { name = "pydantic" },
     { name = "pyyaml" },
-    { name = "sqlite-vec" },
 ]
 
 [package.optional-dependencies]
@@ -172,6 +171,9 @@ dev = [
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "ruff" },
+]
+vector = [
+    { name = "sqlite-vec" },
 ]
 
 [package.metadata]
@@ -184,9 +186,9 @@ requires-dist = [
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.24" },
     { name = "pyyaml", specifier = ">=6,<7" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.7" },
-    { name = "sqlite-vec", specifier = ">=0.1.9,<0.2" },
+    { name = "sqlite-vec", marker = "extra == 'vector'", specifier = ">=0.1.9,<0.2" },
 ]
-provides-extras = ["dev"]
+provides-extras = ["vector", "dev"]
 
 [[package]]
 name = "packaging"

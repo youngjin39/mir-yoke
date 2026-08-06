@@ -1,6 +1,6 @@
 [project]
 name = "mir-harness"
-version = "0.7.1"
+version = "0.8.0"
 description = "mir-yoke — public template for Claude Code + Codex teams"
 readme = "README.md"
 license = {file = "LICENSE"}
@@ -11,7 +11,6 @@ authors = [{name = "Harness Contributors"}]
 # pydantic and PyYAML are required by `mir loop`; private heavy deps stay out.
 dependencies = [
     "httpx>=0.27,<1",
-    "sqlite-vec>=0.1.9,<0.2",
     "markdown-it-py>=3.0,<4",
     "pydantic>=2,<3",
     "PyYAML>=6,<7",
@@ -19,6 +18,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+vector = ["sqlite-vec>=0.1.9,<0.2"]
 dev = [
     "pytest>=8",
     "pytest-asyncio>=0.24",

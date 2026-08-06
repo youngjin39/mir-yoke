@@ -1,139 +1,148 @@
-# Bootstrap — turn this template into your project
+# Bootstrap — turn this template into a project
 
-Two ways to set up: **hand it to an AI agent** (recommended) or do it manually.
+Mir Yoke starts code and non-code repositories with the same minimum harness. The first product
+request may be prose, fiction, analysis, infrastructure, or application code; project architecture
+and memory are initialized before normal work begins.
 
----
+## Prerequisites
 
-## Option A — Agent-guided (recommended)
+- Git, Python 3.12+, and `uv`.
+- Claude Code and Codex CLI on `PATH` for the supported dual-runtime ready state.
+- macOS/Linux/WSL: Bash. Native Windows: PowerShell plus Git Bash or WSL Bash on `PATH`, because
+  hook scripts use Bash.
+- Authenticated Claude Code and Codex CLI sessions.
 
-Clone, open the repo in Claude Code **or** Codex CLI, and tell the agent:
+Codex IDE extensions do not expose this plugin marketplace contract and are not part of the ready
+claim. They can still read the project-local agents and instruction files.
 
-> Read `BOOTSTRAP.md` and set up this repo as a **<project-type>** project for **<one-line purpose>**.
+## Profiles
 
-The agent then runs the procedure below. It is written to be executed by an agent, not just read.
+Choose exactly one profile. Each profile receives `mir-core`, which contains `design` and
+`spec-architect`; the optional plugin and local agent packs differ.
 
-### Step 1 — Interview (ask, then wait)
-
-Ask the user, as a short numbered list, and wait for real answers:
-
-1. **Project slug + one-line purpose** (e.g. `acme-api` — "internal billing API").
-2. **Project type** — one of: `code_app` (app/service), `content_workspace` (docs/content), `infra_runtime` (infra/runtime/library), `hybrid_pipeline` (data/ML pipeline).
-3. **Primary language / stack** (e.g. Python, TypeScript, Go, Flutter).
-4. **Extra reviewers** — recommend the specialists for their type (table below); let them opt out of any.
-5. **Codex too?** — will they also run Codex CLI (delegated code/TDD/review lane), or Claude-only?
-6. **Vector search (optional)?** — recommend the embedding backend (Step 2 f): explain the effect first, then ask. Never install a server or model without explicit consent.
-
-### Step 2 — Configure (from the answers)
-
-**a. Per-repo registry.** Create `config/repos/<slug>.json` from an existing entry's shape:
-- `slug`, `display_name`, `registry_path` (this repo's absolute path), `repository_type` = the chosen type.
-- `active_agents`: always `["main-orchestrator", "executor-agent", "codex-final-reviewer", "quality-agent"]` + `fleet-doc-steward` if they manage docs.
-- `agent_overrides.add_specialists`: the specialists for the type (table below), minus opt-outs.
-- `active_skills`: default `["design", "verify", "testing", "code-review", "bluebricks", "commit"]`; add `ui-design` for UI work, `governance` if managing CLAUDE.md/AGENTS.md, `knowledge` for a wiki.
-
-**Specialists by project type:**
-
-| Project type | Recommended specialists |
-|---|---|
-| `code_app` | cwe-auditor, dep-auditor, ui-reviewer |
-| `content_workspace` | ontology-validator |
-| `infra_runtime` | runtime-contract-reviewer |
-| `hybrid_pipeline` | cwe-auditor, dep-auditor, pipeline-validator |
-
-**b. Identity.** Fill `.mir/repo-profile.toml` — replace every placeholder (slug, display name, type). `setup.sh` warns while placeholders remain.
-
-**c. Codex lane.** If they use Codex: `cp .mcp.json.example .mcp.json` and set the `codex` command (binary path) + `CODEX_HOME`. If Claude-only: set `config/sub-agent-policy.json` `"mode": "unrestricted"` (otherwise `force_codex` will BLOCK delegation with no Codex backend).
-
-**d. Role policy.** Set project-specific role and boundary values in `.mir/repo-profile.toml`, keep
-only shared startup invariants in `CLAUDE.md`, then run `scripts/generate_codex_derivatives.sh`.
-`AGENTS.md` is generated and must not be edited directly.
-
-**e. Remove template-only content — ASK FIRST.** Offer to delete what the user does not need: `examples/`, `docs/harness-engineering/` (the template's own build history), template-specific ADRs. Keep `.claude/`, `.codex/`, `.ai-harness/`, `config/`, `tools/`, `src/`, hooks — those ARE the harness.
-
-**f. Embedding backend — RECOMMEND, EXPLAIN, then ASK. Never install without consent.**
-Vector search is optional: without it the memory engine runs FTS5 keyword-only and is fully functional. Before touching anything, explain both outcomes to the user:
-
-- **Enable now**: `mir context pull` gets hybrid vector + keyword retrieval, and the index never has vector gaps.
-- **Enable later**: chunks indexed in the meantime carry no vectors and are **not auto-backfilled** — a full re-index is required when the model arrives.
-
-Then ask whether to set it up. Installing a server or pulling a model always requires explicit user consent — this is a hard gate, not a default.
-
-Recommended backends by platform — **recommendations, not restrictions**. Any OpenAI-compatible `/v1/embeddings` server works (the `omlx_http` backend name is historical):
-
-| Platform | Recommended server | base_url | model |
-|---|---|---|---|
-| macOS (Apple Silicon) | oMLX | `http://127.0.0.1:8001/v1` | `bge-m3-mlx-fp16` |
-| Windows / Linux | Ollama (`ollama pull bge-m3`) | `http://127.0.0.1:11434/v1` | `bge-m3` |
-| Anything else | any OpenAI-compatible server | — | your choice |
-
-The model is likewise a recommendation, not a restriction: bge-m3 (dim 1024) is the tested default, but any embedding model works as long as `dim` in `harness_a.toml` matches the model's output and the server returns L2-normalized vectors — the engine validates both and fails closed on mismatch. After filling `[memory.embedding]` (see `harness_a.toml.example`), verify with one test call (dimension = `dim`, L2 norm ≈ 1.0) before running `mir context sync`.
-
-**New environment = fresh index.** When setting up on a new machine or runtime, propose starting fresh. Never copy a vector DB produced by a different runtime or quantization — the same model name under a different runtime is a different encoder fingerprint (`docs/architecture/embedding-index-lifecycle-shape.md`).
-
-Day-2 operations (re-index, model change, rollback, evidence) live in `docs/operations/embedding-lifecycle-operations.md`.
-
-### Step 3 — Decide where skills live (a same-named global skill silently wins)
-
-This template ships `.claude/skills/` and `.agents/skills/` as real files so a plain clone works on
-any machine, including Windows and anywhere without symlinks.
-
-On a machine that already publishes the same skill names globally, know which one actually runs.
-Claude Code resolves a name collision as **enterprise > personal (`~/.claude/skills`) > project
-(`.claude/skills`)** — the opposite of most configuration. A global skill of the same name wins, and
-the project's copy is never loaded. One exception: if the project entry is a symlink pointing at the
-same directory the global entry resolves to, it is one skill and loads once.
-
-Check what is already published:
-
-```bash
-ls ~/.claude/skills/ 2>/dev/null        # macOS / Linux
-dir "%USERPROFILE%\.claude\skills"     # Windows
-```
-
-| Situation | Do this | Why |
+| Profile | Shared plugins | Intended use |
 |---|---|---|
-| No global skills, or different names | **Keep the project copies** | They are the only source on this machine |
-| Same names published globally, and this project uses them unchanged | **Keep the copies** | They are inert here — the global one serves — and they are required when this repository is cloned onto a machine without them |
-| Same names published globally, but **this project modified one** | **Rename the modified skill** (for example `design-acme`) | Under the same name the modification never loads. It disappears without a warning |
+| `code_app` | `mir-core`, `mir-code` | applications and services |
+| `infra_runtime` | `mir-core`, `mir-code` | infrastructure, runtimes, libraries |
+| `hybrid_pipeline` | `mir-core`, `mir-code`, `mir-content` | data/ML and mixed pipelines |
+| `content_workspace` | `mir-core`, `mir-content` | prose, research, knowledge, content |
 
-The third row is the one that costs you. A repository that tailors a shared skill and keeps the
-shared name gets the global version instead, on any machine that publishes one. Distinct names are
-the supported way to specialise; there is no project-level override to rely on.
+## Agent-guided setup
 
-`active_skills` in `config/repos/<slug>.json` declares what the project uses. It does not say which
-copy serves it, so it stays accurate either way.
+Open the clone in Claude Code or Codex CLI and ask:
 
-### Step 4 — Run setup
+> Read `BOOTSTRAP.md` and initialize this repository as a `<profile>` project for `<purpose>`.
+
+The agent must confirm the slug, profile, purpose, and primary stack. It must not remove template
+history or enable a vector service without explicit approval.
+
+### Phase 1 — install the pinned baseline
+
+macOS, Linux, or WSL:
 
 ```bash
-./setup.sh   # idempotent: makes hooks executable, seeds tasks/tdd.json + tasks/plan.md + .mir/repo-profile.toml
+./setup.sh --slug my-project --profile code_app
 ```
 
-### Step 5 — First plan + prove the gates
+Native Windows PowerShell:
 
-- Verify the registry: `python3 scripts/verify_repo_agent_management.py`.
-- Write the first real `tasks/plan.md` entry for the user's actual first task.
-- Prove a gate fires: try to `Edit` a file under `src/`/`tools/` **without** a `tasks/tdd.json` entry — the pre-tool-use hook should block it. That block means the harness is live.
+```powershell
+.\setup.ps1 -Slug my-project -Profile code_app
+```
 
-### Step 6 — Report
+The wrapper runs `uv sync`, then the cross-platform Python coordinator. The coordinator:
 
-Summarize: project type, agents/skills enabled, whether skills are served locally or globally, Codex wired (y/n), what was removed, and the first suggested task. Do not commit unless asked.
+1. validates hooks, permissions, orchestration policy, local agent surfaces, and the selected pack;
+2. creates a required local SQLite+FTS5 memory index and indexes tracked Markdown;
+3. fetches the trusted Git capability source, validates only allowlisted plugins and agents, pins
+   their commit and hashes, and refuses duplicate standalone skill providers;
+4. registers and installs the selected global plugins in Claude Code and Codex CLI; and
+5. writes `.mir/bootstrap-receipt.json` with `status: restart_required`.
 
----
+Common skills are not copied to `.claude/skills` or `.agents/skills`. Their runtime names are
+namespaced, such as `mir-core:spec-architect`, so one managed global provider serves every project
+without a same-name project copy. Project-specific skills are allowed only under distinct names.
 
-## Option B — Manual
+If setup reports an existing standalone collision, move, rename, or deliberately remove that old
+provider and rerun. Setup never deletes it automatically.
 
-1. `git clone <this-repo> my-project && cd my-project`
-2. `./setup.sh`
-3. `cp .mcp.json.example .mcp.json` and set your codex command (skip if Claude-only; then set `sub-agent-policy.json` mode `unrestricted`).
-4. Create `config/repos/<slug>.json` (copy an entry's shape; pick `active_agents`, specialists by type from the table above, `active_skills`).
-5. Fill `.mir/repo-profile.toml` (no placeholders left).
-5a. Check `ls ~/.claude/skills/`. A globally published skill of the same name **wins over the
-    project's copy** (personal overrides project), so keep the copies — they are inert here and
-    required on machines without them — but **rename any skill this project modified**, or the
-    modification will never load. See Step 3.
-6. Optional: enable vector search — configure `[memory.embedding]` in `harness_a.toml` (see `harness_a.toml.example` and Step 2 f for platform recommendations). Without it, retrieval is keyword-only; enabling later requires a re-index.
-7. `python3 scripts/verify_repo_agent_management.py` to confirm the registry is consistent.
-8. Open `claude .` or `codex`. See `README.md` → "Using the harness — the loop".
+### Phase 2 — restart, initialize architecture, finalize
 
-Optional global rules: merge `global-rules/CLAUDE.global.md` / `AGENTS.global.md` into your own `~/.claude/CLAUDE.md` / `~/.codex/AGENTS.md`.
+Reload Claude Code and begin a new Codex session. In that new session, explicitly run:
+
+1. `mir-core:design` to settle the initial project boundaries;
+2. `mir-core:spec-architect` to create or validate the initial implementable spec structure.
+
+This initial structure pass is mandatory even when the first product request is prose. It does not
+mean that every later prose edit must invoke `spec-architect`.
+
+After completing the two skills, attest and finalize:
+
+```bash
+./setup.sh --profile code_app --finalize --architecture-initialized
+```
+
+```powershell
+.\setup.ps1 -Profile code_app -Finalize -ArchitectureInitialized
+```
+
+Finalize verifies the installed plugin paths and hashes reported by both CLIs, memory readiness,
+and the prior restart receipt. Only then may the receipt become `status: ready`.
+
+## Required memory contract
+
+Every ready project has at least one real memory backend. The default is local SQLite+FTS5; it does
+not require an embedding server or `sqlite-vec`.
+
+- Tracked authored Markdown under `docs/`, `tasks/`, and `.ai-harness/` is the durable,
+  cross-machine source of truth.
+- `.mir/memory.db` is a required machine-local query index and is rebuilt on a new computer.
+- `docs/memory-map.md` and `tasks/lessons.md` contain generated projections; do not hand-edit their
+  generated regions.
+- The post-edit hook re-indexes relevant durable Markdown edits after bootstrap.
+- A shared network database/vector service is not included. Repositories may share tracked
+  archives or an explicitly configured embedding endpoint.
+
+Verify at any time:
+
+```bash
+uv run mir memory doctor --project-root . --json
+uv run mir context pull "<query>"
+```
+
+Vector modes in `harness_a.toml` are `off` (default), `optional`, and `required`. Enabling a model or
+server is an explicit operator choice. Required mode blocks readiness unless endpoint validation
+and complete vector coverage both pass.
+
+## Capability source and later updates
+
+`config/capability-sources.json` remembers the trusted Git URL, discovery branch, plugins, agent
+allowlist, and profile packs. `.mir/capability-lock.json` pins the exact commit and artifact hashes.
+When requirements, agents, or skills change, the repository instructions require the agent to run
+a read-only check before proposing an update:
+
+```bash
+uv run mir capability status --project-root . --json   # local, no network mutation
+uv run mir capability check --project-root . --json    # remote comparison, read-only
+uv run mir capability update --project-root . --json   # proposed update, dry-run
+uv run mir capability update --project-root . --apply --json
+```
+
+Only the final command changes the pin and active provider. It rejects credential-bearing URLs,
+path traversal, symlinks, submodules, executable remote content, local agent divergence, and a
+plugin digest that conflicts with another registered project. Hooks, permissions, MCP servers, and
+orchestration policy are never imported from the remote capability source.
+
+## Completion checklist
+
+- `.mir/bootstrap-receipt.json` says `ready`.
+- `uv run mir memory doctor --project-root . --json` succeeds with indexed documents and an FTS
+  probe.
+- `uv run mir capability status --project-root . --json` says `ready: true` and reports both
+  runtimes active at the pinned hashes.
+- `python3 scripts/verify_repo_agent_management.py` succeeds.
+- `python3 scripts/verify_codex_sync.py` succeeds.
+- There are no tracked symlinks.
+- On Windows, Git Bash/WSL Bash is present and the hook syntax smoke check succeeds.
+
+Do not commit or push unless the operator asks.

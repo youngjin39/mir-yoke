@@ -15,7 +15,8 @@ repositories; a single-repo user can treat them as opt-in guidance.
 
 The meta-harness organises only the **common, reusable** harness structure.
 Each child repository is the authority on its own `.claude/hooks/`,
-`.claude/agents/`, `.claude/skills/`, and `.codex/` layout.
+`.claude/agents/`, repository-specific skills, and `.codex/` layout. Common Mir skills come from a
+namespaced, Git-pinned global plugin provider; local specializations use distinct names.
 
 The meta-harness's job is to **catalogue and curate**, not to force
 uniformity. One repository's hook should be portable to another repository
@@ -43,7 +44,8 @@ repository's behaviour are out of scope.
 ## Principle 3 — Direct management for skills and tools
 
 Principle 2 extends to:
-- Skills (`.claude/skills/<id>/SKILL.md`)
+- Common plugin skills (`plugins/<provider>/skills/<id>/SKILL.md`) and uniquely named
+  repository-local skills
 - Tools (the project-local `tools/` package and `.mcp.json` registration)
 
 The meta-harness measures their presence, names, and frontmatter compatibility;
