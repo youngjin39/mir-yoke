@@ -1,7 +1,7 @@
 """CLI entry points — `python -m mir …` dispatcher.
 
-The public template exposes memory, bootstrap, capability, policy, and loop
-operations through this registry.
+The public template exposes memory, bootstrap, existing-repository adoption,
+capability, policy, and loop operations through this registry.
 
 Subcommand registration is the only job here; real work lives under each
 subcommand module.
@@ -11,6 +11,7 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from . import bootstrap as _bootstrap
+from . import bootstrap_adoption as _bootstrap_adoption
 from . import capability as _capability
 from . import context as _context
 from . import loop as _loop
@@ -22,6 +23,7 @@ from . import policy as _policy
 # New subcommand = 1 row here.
 SUBCOMMANDS: dict[str, Callable[[list[str]], int]] = {
     "bootstrap": _bootstrap.main,
+    "bootstrap-adoption": _bootstrap_adoption.main,
     "capability": _capability.main,
     "context": _context.main,
     "loop": _loop.main,

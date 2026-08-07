@@ -1,0 +1,241 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "mir/template/bootstrap-adoption",
+  "title": "Mir Existing-Repository Bootstrap Adoption",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "project_slug",
+    "repository_archetype",
+    "profile",
+    "mir_yoke_source_commit",
+    "surfaces"
+  ],
+  "properties": {
+    "$schema": {"type": "string"},
+    "schema_version": {"const": 1},
+    "project_slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
+    },
+    "repository_archetype": {"type": "string", "minLength": 1},
+    "profile": {
+      "enum": [
+        "code_app",
+        "hybrid_pipeline",
+        "infra_runtime",
+        "content_workspace",
+        "meta_harness",
+        "template_transitional"
+      ]
+    },
+    "mir_yoke_source_commit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "surfaces": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "bootstrap_start_gate",
+        "project_profile",
+        "identity_finalize",
+        "managed_python_launcher",
+        "content_onboarding",
+        "memory_acceptance",
+        "phase2_spec"
+      ],
+      "properties": {
+        "bootstrap_start_gate": {"$ref": "#/$defs/surface"},
+        "project_profile": {"$ref": "#/$defs/surface"},
+        "identity_finalize": {"$ref": "#/$defs/surface"},
+        "managed_python_launcher": {"$ref": "#/$defs/surface"},
+        "content_onboarding": {"$ref": "#/$defs/surface"},
+        "memory_acceptance": {"$ref": "#/$defs/memorySurface"},
+        "phase2_spec": {"$ref": "#/$defs/phase2Surface"}
+      }
+    }
+  },
+  "$defs": {
+    "surfaceConditions": {
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "disposition": {
+                "enum": ["applied", "repository_owned", "exception"]
+              }
+            }
+          },
+          "then": {"properties": {"evidence_paths": {"minItems": 1}}}
+        },
+        {
+          "if": {"properties": {"disposition": {"const": "exception"}}},
+          "then": {"required": ["reason", "blockers"]}
+        },
+        {
+          "if": {"properties": {"disposition": {"const": "not_applicable"}}},
+          "then": {"required": ["reason"]}
+        }
+      ]
+    },
+    "surface": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["disposition", "evidence_paths"],
+      "properties": {
+        "disposition": {
+          "enum": ["applied", "repository_owned", "not_applicable", "exception"]
+        },
+        "evidence_paths": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "uniqueItems": true
+        },
+        "reason": {"type": "string", "minLength": 1},
+        "blockers": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "minItems": 1
+        }
+      },
+      "allOf": [{"$ref": "#/$defs/surfaceConditions"}]
+    },
+    "query": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["archive_slug", "query", "expected_path"],
+      "properties": {
+        "archive_slug": {"type": "string", "minLength": 1},
+        "query": {"type": "string", "minLength": 1},
+        "expected_path": {"type": "string", "minLength": 1}
+      }
+    },
+    "memorySurface": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": ["disposition", "evidence_paths"],
+      "properties": {
+        "disposition": {
+          "enum": ["applied", "repository_owned", "not_applicable", "exception"]
+        },
+        "evidence_paths": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "uniqueItems": true
+        },
+        "reason": {"type": "string", "minLength": 1},
+        "blockers": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "minItems": 1
+        },
+        "queries": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/query"}
+        }
+      },
+      "allOf": [
+        {"$ref": "#/$defs/surfaceConditions"},
+        {
+          "if": {
+            "properties": {
+              "disposition": {"enum": ["applied", "repository_owned"]}
+            }
+          },
+          "then": {
+            "required": ["queries"],
+            "properties": {"queries": {"minItems": 1}}
+          }
+        }
+      ]
+    },
+    "coverageRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["total", "filled", "derived", "na", "tbd"],
+      "properties": {
+        "total": {"type": "integer", "minimum": 1},
+        "filled": {"type": "integer", "minimum": 0},
+        "derived": {"type": "integer", "minimum": 0},
+        "na": {"type": "integer", "minimum": 0},
+        "tbd": {"const": 0}
+      }
+    },
+    "phase2Surface": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": ["disposition", "evidence_paths"],
+      "properties": {
+        "disposition": {
+          "enum": ["applied", "repository_owned", "not_applicable", "exception"]
+        },
+        "evidence_paths": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "uniqueItems": true
+        },
+        "reason": {"type": "string", "minLength": 1},
+        "blockers": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "minItems": 1
+        },
+        "coverage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["l1", "l2", "l3", "l4"],
+          "properties": {
+            "l1": {"$ref": "#/$defs/coverageRow"},
+            "l2": {"$ref": "#/$defs/coverageRow"},
+            "l3": {"$ref": "#/$defs/coverageRow"},
+            "l4": {"$ref": "#/$defs/coverageRow"}
+          }
+        },
+        "ai_ready": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["ready", "incomplete", "blocked"],
+          "properties": {
+            "ready": {"type": "integer", "minimum": 1},
+            "incomplete": {"const": 0},
+            "blocked": {"const": 0}
+          }
+        },
+        "open_gaps": {"const": 0},
+        "full_review": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "project_structure",
+            "memory",
+            "discoverability",
+            "requirements",
+            "organization"
+          ],
+          "properties": {
+            "project_structure": {"const": "pass"},
+            "memory": {"const": "pass"},
+            "discoverability": {"const": "pass"},
+            "requirements": {"const": "pass"},
+            "organization": {"const": "pass"}
+          }
+        }
+      },
+      "allOf": [
+        {"$ref": "#/$defs/surfaceConditions"},
+        {
+          "if": {
+            "properties": {
+              "disposition": {"enum": ["applied", "repository_owned"]}
+            }
+          },
+          "then": {
+            "required": ["coverage", "ai_ready", "open_gaps", "full_review"]
+          }
+        }
+      ]
+    }
+  }
+}

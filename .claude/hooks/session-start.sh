@@ -26,7 +26,7 @@ PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
 echo "=== SESSION CONTEXT ==="
 
 if [ "$_MIR_BOOTSTRAP_READY" != yes ]; then
-  mir_bootstrap_gate_instructions "$_MIR_BOOTSTRAP_STATE"
+  mir_bootstrap_gate_instructions "$_MIR_BOOTSTRAP_STATE" "$PROJECT_DIR"
   return 0
 fi
 

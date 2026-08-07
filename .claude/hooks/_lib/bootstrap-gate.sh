@@ -26,22 +26,35 @@ mir_bootstrap_gate_state() {
 
 mir_bootstrap_gate_instructions() {
   local state="$1"
+  local project_dir="${2:-${CLAUDE_PROJECT_DIR:-.}}"
   printf 'bootstrap_gate: required (state=%s)\n' "$state"
   printf 'normal_mutation: blocked until .mir/bootstrap-receipt.json has status=ready\n'
-  printf 'phase_1: run setup.sh/setup.ps1 with --profile, --purpose, and --stack\n'
-  printf 'phase_2: restart, run mir-core:design then mir-core:spec-architect, write coverage/gap evidence, and finalize\n'
+  if [ -f "$project_dir/config/bootstrap-adoption.json" ]; then
+    printf 'existing_repository: complete tracked adoption evidence, then run uv run mir bootstrap-adoption --apply\n'
+  else
+    printf 'phase_1: run setup.sh/setup.ps1 with --profile, --purpose, and --stack\n'
+    printf 'phase_2: restart, run mir-core:design then mir-core:spec-architect, write coverage/gap evidence, and finalize\n'
+  fi
 }
 
 _mir_bootstrap_allowed_path() {
   local normalized="${1//\\//}"
+  local project_dir="${2:-${CLAUDE_PROJECT_DIR:-.}}"
+  local project_normalized="${project_dir//\\//}"
+  normalized="${normalized#./}"
+  if [ "${normalized#"$project_normalized"/}" != "$normalized" ]; then
+    normalized="${normalized#"$project_normalized"/}"
+  fi
   case "$normalized" in
-    spec/*|*/spec/*)
+    spec/*|*/spec/*|config/bootstrap-adoption.json|config/content-onboarding.json)
       return 0
       ;;
-    *)
-      return 1
-      ;;
   esac
+  local manifest="$project_dir/config/bootstrap-adoption.json"
+  if [ -f "$manifest" ] && command -v jq >/dev/null 2>&1; then
+    jq -e --arg path "$normalized" '[.surfaces[]?.evidence_paths[]?] | index($path) != null' "$manifest" >/dev/null 2>&1 && return 0
+  fi
+  return 1
 }
 
 mir_bootstrap_gate_enforce() {
@@ -60,14 +73,14 @@ mir_bootstrap_gate_enforce() {
     Bash)
       local command
       command="$(printf '%s' "$payload" | jq -r '.tool_input.command // ""')"
-      if printf '%s' "$command" | grep -Eq '(^|[[:space:]])(\./setup\.sh|\.\\setup\.ps1|uv[[:space:]]+run.*[[:space:]](mir[[:space:]]+(bootstrap|memory|context|capability)|pytest|ruff)|git[[:space:]]+(status|diff)|rg([[:space:]]|$)|find[[:space:]]|ls([[:space:]]|$)|pwd([[:space:]]|$)|sed[[:space:]]|head[[:space:]]|tail[[:space:]]|jq[[:space:]])'; then
+      if printf '%s' "$command" | grep -Eq '(^|[[:space:]])(\./setup\.sh|\.\\setup\.ps1|uv[[:space:]]+run.*[[:space:]](mir[[:space:]]+(bootstrap-adoption|bootstrap|memory|context|capability)|pytest|ruff)|git[[:space:]]+(status|diff)|rg([[:space:]]|$)|find[[:space:]]|ls([[:space:]]|$)|pwd([[:space:]]|$)|sed[[:space:]]|head[[:space:]]|tail[[:space:]]|jq[[:space:]])'; then
         return 0
       fi
       ;;
     Write|Edit)
       local path
       path="$(printf '%s' "$payload" | jq -r '.tool_input.file_path // .tool_input.path // ""')"
-      _mir_bootstrap_allowed_path "$path" && return 0
+      _mir_bootstrap_allowed_path "$path" "$project_dir" && return 0
       ;;
     apply_patch|ApplyPatch)
       local patch paths found_path
@@ -78,7 +91,7 @@ mir_bootstrap_gate_enforce() {
         while IFS= read -r path; do
           [ -n "$path" ] || continue
           found_path=yes
-          _mir_bootstrap_allowed_path "$path" || {
+          _mir_bootstrap_allowed_path "$path" "$project_dir" || {
             found_path=no
             break
           }
@@ -90,6 +103,6 @@ EOF
       ;;
   esac
   printf '[BootstrapGate BLOCK] bootstrap is %s; normal work must wait for Phase 2 ready receipt\n' "$state" >&2
-  printf '[BootstrapGate BLOCK] only setup, memory/spec verification, and spec/ evidence edits are allowed\n' >&2
+  printf '[BootstrapGate BLOCK] only setup/adoption, memory/spec verification, and declared evidence edits are allowed\n' >&2
   return 2
 }

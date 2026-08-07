@@ -12,7 +12,7 @@ HOOKS = ROOT / ".claude" / "hooks"
 
 def _copy_hooks(project: Path) -> Path:
     target = project / ".claude" / "hooks"
-    shutil.copytree(HOOKS, target)
+    shutil.copytree(HOOKS, target, dirs_exist_ok=True)
     return target
 
 
@@ -55,6 +55,7 @@ def test_missing_receipt_allows_setup_and_bootstrap_commands(tmp_path: Path) -> 
     for command in (
         './setup.sh --profile content_workspace --purpose "Career records" --stack markdown',
         "uv run mir bootstrap --profile content_workspace --purpose records --stack markdown",
+        "uv run mir bootstrap-adoption --apply",
     ):
         project = tmp_path / str(len(command))
         project.mkdir()
@@ -63,6 +64,36 @@ def test_missing_receipt_allows_setup_and_bootstrap_commands(tmp_path: Path) -> 
             {"tool_name": "Bash", "tool_input": {"command": command}},
         )
         assert completed.returncode == 0, completed.stderr
+
+
+def test_adoption_manifest_allows_only_declared_evidence_edits(tmp_path: Path) -> None:
+    (tmp_path / "config").mkdir()
+    (tmp_path / "config" / "bootstrap-adoption.json").write_text(
+        json.dumps(
+            {
+                "surfaces": {
+                    "phase2_spec": {"evidence_paths": ["docs/native-spec.md"]}
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    for path in (
+        "config/bootstrap-adoption.json",
+        "config/content-onboarding.json",
+        "docs/native-spec.md",
+    ):
+        completed = _run_pretool(
+            tmp_path,
+            {"tool_name": "Write", "tool_input": {"file_path": path}},
+        )
+        assert completed.returncode == 0, completed.stderr
+
+    blocked = _run_pretool(
+        tmp_path,
+        {"tool_name": "Write", "tool_input": {"file_path": "src/application.py"}},
+    )
+    assert blocked.returncode == 2
 
 
 def test_ready_receipt_releases_normal_mutation(tmp_path: Path) -> None:
@@ -96,6 +127,27 @@ def test_session_start_requires_bootstrap_without_running_python(tmp_path: Path)
     assert completed.returncode == 0, completed.stderr
     assert "bootstrap_gate: required (state=missing)" in completed.stdout
     assert "normal_mutation: blocked" in completed.stdout
+
+
+def test_session_start_routes_existing_repository_to_adoption(tmp_path: Path) -> None:
+    (tmp_path / "config").mkdir()
+    (tmp_path / "config" / "bootstrap-adoption.json").write_text("{}\n", encoding="utf-8")
+    hooks = _copy_hooks(tmp_path)
+    env = os.environ.copy()
+    env["CLAUDE_PROJECT_DIR"] = str(tmp_path)
+    env["PATH"] = "/usr/bin:/bin"
+
+    completed = subprocess.run(
+        ["bash", str(hooks / "session-start.sh")],
+        capture_output=True,
+        text=True,
+        check=False,
+        env=env,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    assert "uv run mir bootstrap-adoption --apply" in completed.stdout
+    assert "run setup.sh/setup.ps1" not in completed.stdout
 
 
 def test_hooks_use_only_the_managed_python_launcher() -> None:

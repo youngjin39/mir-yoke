@@ -198,6 +198,30 @@ Until that ready receipt exists, SessionStart identifies the incomplete state an
 normal mutations. Setup/memory verification and Phase 2 `spec/` evidence work remain allowed. This
 gate applies even when the first request is prose or document organization.
 
+## Existing repository adoption
+
+Do not run the greenfield coordinator over an established repository. Preserve its authored
+profile, hook layout, archive slugs, memory database, and native specification system. Add the
+tracked `config/bootstrap-adoption.json` manifest described by
+`docs/templates/_schema/bootstrap-adoption.schema.json`, then check it without writing:
+
+```bash
+uv run mir bootstrap-adoption --project-root . --json
+```
+
+After the read-only report is ready, write only the machine-local receipt:
+
+```bash
+uv run mir bootstrap-adoption --project-root . --apply --json
+```
+
+The manifest must name all seven surfaces. Use `repository_owned` for native mechanisms that pass
+the same live checks. Use `exception` only with a concrete reason, blockers, and existing
+evidence; exceptions remain visible in a ready receipt so they cannot masquerade as completed
+implementation. Non-content repositories may mark only `content_onboarding` as
+`not_applicable`. The command never installs hooks, reclassifies content, rebuilds memory, or
+rewrites native spec artifacts. ADR-77 records the preservation and exception semantics.
+
 ## Required memory contract
 
 Every ready project has at least one real memory backend. The default is local SQLite+FTS5; it does

@@ -2,6 +2,84 @@
   "version": 1,
   "changes": [
     {
+      "id": "existing-repository-bootstrap-adoption-2026-08-07",
+      "record_status": "complete",
+      "scope": "Add a preservation-first, read-only-by-default adoption gate for applying the seven bootstrap and Phase 2 controls to mature repositories without rewriting their native policy, archives, memory, or specifications.",
+      "targets": [
+        "src/mir/cli/bootstrap_adoption.py",
+        "src/mir/cli/__init__.py",
+        ".claude/hooks/_lib/bootstrap-gate.sh",
+        ".claude/hooks/session-start.sh",
+        "docs/templates/_schema/bootstrap-adoption.schema.json",
+        "docs/decisions/adr-77-existing-repository-bootstrap-adoption.md",
+        "docs/decisions/INDEX.md",
+        "BOOTSTRAP.md",
+        "tests/test_bootstrap_adoption_cli.py",
+        "tests/test_bootstrap_start_gate.py"
+      ],
+      "design_ref": "docs/decisions/adr-77-existing-repository-bootstrap-adoption.md",
+      "bluebrick": "Harness Runtime / Existing-Repository Bootstrap Adoption",
+      "categories": {
+        "unit": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_bootstrap_adoption_cli.py tests/test_bootstrap_start_gate.py",
+          "notes": "Manifest validation, identity mapping, immutable SQLite FTS queries, native Phase 2 coverage, explicit exceptions, atomic receipt apply, and adoption-aware startup gating pass."
+        },
+        "integration": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_bootstrap_adoption_cli.py tests/test_bootstrap_start_gate.py tests/test_bootstrap_cli.py tests/test_setup_wrappers.py tests/test_setup_profile.py tests/test_bootstrap_skill_contract.py",
+          "notes": "The new existing-repository path and the unchanged greenfield bootstrap contract pass together."
+        },
+        "e2e": {
+          "status": "pass",
+          "command": "uv run mir bootstrap-adoption --help",
+          "notes": "The installed project CLI exposes the registered bootstrap-adoption surface."
+        },
+        "browser": {
+          "status": "not_applicable",
+          "reason": "No browser or graphical interface changed."
+        },
+        "edge": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_bootstrap_adoption_cli.py",
+          "notes": "Missing surfaces and evidence, placeholder evidence, mapping conflicts, unclassified content, incomplete coverage, and incomplete exceptions fail closed."
+        },
+        "architecture": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_bootstrap_adoption_cli.py",
+          "notes": "The tracked schema validates, the seven surface keys are exact, and ADR-77 separates mature adoption from greenfield creation."
+        },
+        "availability": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_bootstrap_start_gate.py",
+          "notes": "A mature repository with an adoption manifest is routed to the non-destructive command and may edit only declared evidence while blocked."
+        },
+        "load": {
+          "status": "not_applicable",
+          "reason": "The operator command performs bounded local checks."
+        },
+        "soak": {
+          "status": "not_applicable",
+          "reason": "No daemon or persistent process is added."
+        },
+        "security": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_bootstrap_adoption_cli.py",
+          "notes": "Project-relative evidence confinement, exact live archive/path queries, read-only database access, and fail-closed receipt writes are covered."
+        },
+        "compatibility": {
+          "status": "pass",
+          "command": "uv run ruff check src/mir/cli/bootstrap_adoption.py src/mir/cli/__init__.py tests/test_bootstrap_adoption_cli.py tests/test_bootstrap_start_gate.py && git diff --check",
+          "notes": "Focused Ruff and whitespace checks pass; existing greenfield bootstrap tests remain green."
+        },
+        "transaction_locking": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_bootstrap_adoption_cli.py",
+          "notes": "Receipt replacement is atomic, dry-run is non-writing, and failed apply preserves an existing receipt byte-for-byte."
+        }
+      }
+    },
+    {
       "id": "portable-project-bootstrap-2026-08-06",
       "record_status": "complete",
       "scope": "Provide namespaced global skill packs, pinned Git capability provenance, one cross-platform bootstrap coordinator, and a mandatory portable SQLite plus FTS5 memory baseline.",
