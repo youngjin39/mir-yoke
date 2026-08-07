@@ -42,6 +42,11 @@ packages = ["src/mir"]
 "src/mir/core/engine/memory/migrations" = "mir/core/engine/memory/migrations"
 
 [tool.pytest.ini_options]
+# Reclaim pytest scratch immediately. The default retention keeps three full runs,
+# which filled the internal SSD to 100% in the Mir harness on 2026-07-28.
+tmp_path_retention_policy = "failed"
+tmp_path_retention_count = 1
+
 testpaths = ["tests", "tools"]
 pythonpath = [".", "src"]
 asyncio_mode = "auto"
