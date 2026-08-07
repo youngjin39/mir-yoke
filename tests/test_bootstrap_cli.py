@@ -19,7 +19,12 @@ _SOURCE_CONFIG = {
         "ref": "refs/heads/main",
     },
     "plugins": {"mir-core": {"path": "plugins/mir-core"}},
-    "profiles": {"packs": {"code_app": ["mir-core"]}},
+    "profiles": {
+        "packs": {
+            "code_app": ["mir-core"],
+            "content_workspace": ["mir-core"],
+        }
+    },
 }
 
 
@@ -55,6 +60,12 @@ def _bootstrap(root: Path, *extra: str) -> int:
             str(root),
             "--slug",
             "sample-project",
+            "--profile",
+            "code_app",
+            "--purpose",
+            "Build and verify a portable sample project harness.",
+            "--stack",
+            "python,markdown",
             "--skip-capability-activation",
             "--allow-incomplete",
             "--json",
@@ -64,17 +75,44 @@ def _bootstrap(root: Path, *extra: str) -> int:
 
 
 def _write_architecture_evidence(root: Path, commit: str) -> None:
-    _write(root / "spec" / "STATE.md", "# Project specification state\n")
-    _write(root / "spec" / "index.yaml", "version: 1\n")
-    _write(root / "spec" / "graph.yaml", "nodes: []\n")
+    _write(root / "spec" / "STATE.md", "# Project specification state\n\nAll requirements ready.\n")
+    _write(
+        root / "spec" / "index.yaml",
+        "version: 1\nrequirements:\n  - id: REQ-001\n    status: ready\n",
+    )
+    _write(
+        root / "spec" / "graph.yaml",
+        "nodes:\n  - id: REQ-001\nedges: []\n",
+    )
+    _write(root / "spec" / "gaps.yaml", "gaps: []\n")
     _write(
         root / "spec" / "bootstrap-evidence.json",
         json.dumps(
             {
-                "schema_version": 1,
+                "schema_version": 2,
                 "sequence": ["mir-core:design", "mir-core:spec-architect"],
                 "capability_commit": commit,
-                "outputs": ["spec/STATE.md", "spec/index.yaml", "spec/graph.yaml"],
+                "outputs": [
+                    "spec/STATE.md",
+                    "spec/index.yaml",
+                    "spec/graph.yaml",
+                    "spec/gaps.yaml",
+                ],
+                "coverage": {
+                    "l1": {"total": 1, "filled": 1, "derived": 0, "na": 0, "tbd": 0},
+                    "l2": {"total": 1, "filled": 1, "derived": 0, "na": 0, "tbd": 0},
+                    "l3": {"total": 9, "filled": 9, "derived": 0, "na": 0, "tbd": 0},
+                    "l4": {"total": 10, "filled": 10, "derived": 0, "na": 0, "tbd": 0},
+                    "ai_ready": {"ready": 1, "incomplete": 0, "blocked": 0},
+                },
+                "open_gaps": 0,
+                "full_review": {
+                    "project_structure": "pass",
+                    "memory": "pass",
+                    "discoverability": "pass",
+                    "requirements": "pass",
+                    "organization": "pass",
+                },
             }
         )
         + "\n",
@@ -108,6 +146,159 @@ def test_bootstrap_builds_required_memory_and_is_idempotent(tmp_path, capsys):
     assert second_projection == first_projection
     with sqlite3.connect(tmp_path / ".mir" / "memory.db") as connection:
         assert connection.execute("SELECT COUNT(*) FROM external_archives").fetchone()[0] == 3
+
+
+def test_content_workspace_classifies_existing_records_and_proves_search(tmp_path, capsys):
+    _make_harness_surfaces(tmp_path)
+    _write(
+        tmp_path / "career-records" / "applications.md",
+        "# Applications\n\nAcmePlatform interview preparation and outcome notes.\n",
+    )
+
+    assert (
+        bootstrap_cli.main(
+            [
+                "--project-root",
+                str(tmp_path),
+                "--slug",
+                "career-harness",
+                "--profile",
+                "content_workspace",
+                "--purpose",
+                "Organize career transitions and application evidence.",
+                "--stack",
+                "markdown,sqlite",
+                "--archive",
+                "applications=career-records",
+                "--skip-capability-activation",
+                "--allow-incomplete",
+                "--json",
+            ]
+        )
+        == 0
+    )
+
+    receipt = json.loads(capsys.readouterr().out)
+    manifest = json.loads(
+        (tmp_path / "config" / "content-onboarding.json").read_text(encoding="utf-8")
+    )
+    assert receipt["content_onboarding"]["status"] == "pass"
+    assert {item["classification"] for item in manifest["archives"]} == {
+        "project-definition",
+        "applications",
+    }
+    assert manifest["scan"]["unclassified"] == []
+    assert manifest["archives"][1]["path"] == "career-records"
+    assert manifest["archives"][1]["formats"] == ["md"]
+    assert all(query["status"] == "pass" for query in receipt["content_onboarding"]["queries"])
+    assert "Organize career transitions" in (
+        tmp_path / "docs" / "project-purpose.md"
+    ).read_text(encoding="utf-8")
+
+
+def test_content_workspace_blocks_unclassified_existing_records(tmp_path, capsys):
+    _make_harness_surfaces(tmp_path)
+    _write(tmp_path / "legacy-notes" / "history.md", "UniqueHistory evidence.\n")
+
+    assert (
+        bootstrap_cli.main(
+            [
+                "--project-root",
+                str(tmp_path),
+                "--profile",
+                "content_workspace",
+                "--purpose",
+                "Organize historical records for reliable retrieval.",
+                "--stack",
+                "markdown",
+                "--skip-capability-activation",
+                "--allow-incomplete",
+                "--json",
+            ]
+        )
+        == 2
+    )
+    report = json.loads(capsys.readouterr().out)
+    assert any("unclassified existing content" in error for error in report["errors"])
+    assert not (tmp_path / "config" / "content-onboarding.json").exists()
+
+
+def test_content_workspace_reports_non_indexable_record_formats(tmp_path, capsys):
+    _make_harness_surfaces(tmp_path)
+    _write(tmp_path / "legacy-documents" / "resume.pdf", "%PDF sample\n")
+    base = [
+        "--project-root",
+        str(tmp_path),
+        "--profile",
+        "content_workspace",
+        "--purpose",
+        "Organize historical application records for retrieval.",
+        "--stack",
+        "markdown",
+        "--skip-capability-activation",
+        "--allow-incomplete",
+        "--json",
+    ]
+
+    assert bootstrap_cli.main(base) == 2
+    discovery = json.loads(capsys.readouterr().out)
+    assert any("legacy-documents [pdf]" in error for error in discovery["errors"])
+
+    assert bootstrap_cli.main([*base, "--archive", "resumes=legacy-documents"]) == 2
+    conversion = json.loads(capsys.readouterr().out)
+    assert any("non-indexable formats ['pdf']" in error for error in conversion["errors"])
+    assert any("UTF-8 text projection" in error for error in conversion["errors"])
+
+
+def test_content_finalize_blocks_stale_onboarding_manifest(tmp_path, capsys):
+    _make_harness_surfaces(tmp_path)
+    _write(
+        tmp_path / "career-records" / "timeline.md",
+        "StableCareerTimeline for the initial memory acceptance.\n",
+    )
+    phase1 = [
+        "--project-root",
+        str(tmp_path),
+        "--slug",
+        "career-harness",
+        "--profile",
+        "content_workspace",
+        "--purpose",
+        "Organize career transitions and application evidence.",
+        "--stack",
+        "markdown,sqlite",
+        "--archive",
+        "career-history=career-records",
+        "--skip-capability-activation",
+        "--allow-incomplete",
+        "--json",
+    ]
+    assert bootstrap_cli.main(phase1) == 0
+    capsys.readouterr()
+    _write(
+        tmp_path / "career-records" / "new-interview.md",
+        "NewInterviewEvidence added after the onboarding receipt.\n",
+    )
+
+    assert (
+        bootstrap_cli.main(
+            [
+                "--project-root",
+                str(tmp_path),
+                "--slug",
+                "career-harness",
+                "--profile",
+                "content_workspace",
+                "--finalize",
+                "--skip-capability-activation",
+                "--allow-incomplete",
+                "--json",
+            ]
+        )
+        == 2
+    )
+    report = json.loads(capsys.readouterr().out)
+    assert any("content onboarding manifest is stale" in error for error in report["errors"])
 
 
 def test_external_storage_root_is_verified_and_recorded(tmp_path, capsys):
@@ -176,6 +367,22 @@ def test_preflight_failure_does_not_create_authored_config_or_db(tmp_path, capsy
     assert (tmp_path / ".mir" / "bootstrap-receipt.json").is_file()
 
 
+def test_bootstrap_requires_jq_for_active_hook_payloads(tmp_path, capsys):
+    _make_harness_surfaces(tmp_path)
+    real_which = bootstrap_cli.shutil.which
+    with patch.object(
+        bootstrap_cli.shutil,
+        "which",
+        side_effect=lambda name: None if name == "jq" else real_which(name),
+    ):
+        assert _bootstrap(tmp_path) == 1
+
+    report = json.loads(capsys.readouterr().out)
+    assert report["platform"]["hook_runtime"]["jq"] == "missing"
+    assert any("requires jq" in error for error in report["errors"])
+    assert not (tmp_path / ".mir" / "memory.db").exists()
+
+
 def test_invalid_existing_config_is_preserved_and_blocks_bootstrap(tmp_path, capsys):
     _make_harness_surfaces(tmp_path)
     invalid = "[memory\nenabled = true\n"
@@ -228,7 +435,22 @@ def test_capability_install_requires_restart_before_ready(tmp_path, capsys):
     }
 
     with patch.object(bootstrap_cli, "_activate_capabilities", return_value=("ready", evidence)):
-        assert bootstrap_cli.main(["--project-root", str(tmp_path), "--json"]) == 0
+        assert (
+            bootstrap_cli.main(
+                [
+                    "--project-root",
+                    str(tmp_path),
+                    "--profile",
+                    "code_app",
+                    "--purpose",
+                    "Build a portable application harness.",
+                    "--stack",
+                    "python",
+                    "--json",
+                ]
+            )
+            == 0
+        )
     install_receipt = json.loads(capsys.readouterr().out)
     assert install_receipt["status"] == "restart_required"
     assert install_receipt["capabilities"]["status"] == "restart_required"
@@ -240,6 +462,8 @@ def test_capability_install_requires_restart_before_ready(tmp_path, capsys):
                 [
                     "--project-root",
                     str(tmp_path),
+                    "--profile",
+                    "code_app",
                     "--finalize",
                     "--architecture-initialized",
                     "--json",
@@ -255,7 +479,68 @@ def test_capability_install_requires_restart_before_ready(tmp_path, capsys):
         "spec/STATE.md",
         "spec/index.yaml",
         "spec/graph.yaml",
+        "spec/gaps.yaml",
     }
+
+
+def test_content_workspace_completes_phase2_after_restart(tmp_path, capsys):
+    _make_harness_surfaces(tmp_path)
+    _write(
+        tmp_path / "career-records" / "timeline.md",
+        "# Career timeline\n\nPortableCareerEvidence for prior roles and outcomes.\n",
+    )
+    capability = {
+        "source_commit": "b" * 40,
+        "selected_plugins": ["mir-core", "mir-content"],
+    }
+    phase1 = [
+        "--project-root",
+        str(tmp_path),
+        "--slug",
+        "career-harness",
+        "--profile",
+        "content_workspace",
+        "--purpose",
+        "Organize career transitions and application evidence.",
+        "--stack",
+        "markdown,sqlite",
+        "--archive",
+        "career-history=career-records",
+        "--json",
+    ]
+    with patch.object(bootstrap_cli, "_activate_capabilities", return_value=("ready", capability)):
+        assert bootstrap_cli.main(phase1) == 0
+    phase1_receipt = json.loads(capsys.readouterr().out)
+    assert phase1_receipt["status"] == "restart_required"
+
+    _write_architecture_evidence(tmp_path, "b" * 40)
+    with patch.object(bootstrap_cli, "_finalize_capabilities", return_value=("ready", capability)):
+        assert (
+            bootstrap_cli.main(
+                [
+                    "--project-root",
+                    str(tmp_path),
+                    "--slug",
+                    "career-harness",
+                    "--profile",
+                    "content_workspace",
+                    "--finalize",
+                    "--architecture-initialized",
+                    "--json",
+                ]
+            )
+            == 0
+        )
+    final_receipt = json.loads(capsys.readouterr().out)
+    assert final_receipt["status"] == "ready"
+    assert final_receipt["content_onboarding"]["status"] == "pass"
+    assert final_receipt["architecture_initialization"]["evidence"]["open_gaps"] == 0
+    assert all(
+        status == "pass"
+        for status in final_receipt["architecture_initialization"]["evidence"][
+            "full_review"
+        ].values()
+    )
 
 
 def test_finalize_refuses_boolean_attestation_without_architecture_outputs(tmp_path, capsys):
@@ -265,7 +550,22 @@ def test_finalize_refuses_boolean_attestation_without_architecture_outputs(tmp_p
         "_activate_capabilities",
         return_value=("ready", {"source_commit": "a" * 40}),
     ):
-        assert bootstrap_cli.main(["--project-root", str(tmp_path), "--json"]) == 0
+        assert (
+            bootstrap_cli.main(
+                [
+                    "--project-root",
+                    str(tmp_path),
+                    "--profile",
+                    "code_app",
+                    "--purpose",
+                    "Build a portable application harness.",
+                    "--stack",
+                    "python",
+                    "--json",
+                ]
+            )
+            == 0
+        )
     capsys.readouterr()
 
     with patch.object(bootstrap_cli, "_finalize_capabilities") as finalize:
@@ -274,6 +574,8 @@ def test_finalize_refuses_boolean_attestation_without_architecture_outputs(tmp_p
                 [
                     "--project-root",
                     str(tmp_path),
+                    "--profile",
+                    "code_app",
                     "--finalize",
                     "--architecture-initialized",
                     "--json",
@@ -286,6 +588,31 @@ def test_finalize_refuses_boolean_attestation_without_architecture_outputs(tmp_p
     assert report["architecture_initialization"]["attested"] is False
     assert "architecture evidence is missing" in report["capabilities"]["reason"]
     finalize.assert_not_called()
+
+
+def test_phase2_rejects_incomplete_spec_coverage_and_open_gaps(tmp_path):
+    _write_architecture_evidence(tmp_path, "a" * 40)
+    evidence_path = tmp_path / "spec" / "bootstrap-evidence.json"
+    evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
+    evidence["coverage"]["l4"] = {
+        "total": 10,
+        "filled": 9,
+        "derived": 0,
+        "na": 0,
+        "tbd": 1,
+    }
+    evidence["open_gaps"] = 1
+    evidence_path.write_text(json.dumps(evidence) + "\n", encoding="utf-8")
+    _write(
+        tmp_path / "spec" / "gaps.yaml",
+        "gaps:\n  - id: GAP-001\n    status: open\n",
+    )
+
+    errors, report = bootstrap_cli._validate_architecture_evidence(tmp_path)
+
+    assert any("l4 still contains TBD" in error for error in errors)
+    assert any("contains 1 open gap" in error for error in errors)
+    assert report["open_gaps"] == 1
 
 
 def test_failed_rerun_preserves_existing_db_and_projection(tmp_path, capsys):

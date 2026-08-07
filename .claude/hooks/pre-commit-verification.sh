@@ -1,4 +1,5 @@
 #!/bin/bash
+_MIR_PYTHON_LAUNCHER="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/_lib/run-python.sh"
 # Pre-commit verification helper: run project verification only for code changes.
 #
 # Tier declarations per ADR-33 / R27-T02 (Choice 5=A):
@@ -27,7 +28,7 @@ _MIR_FLEET_MANAGER=no
 _MIR_TOOLS_COMMIT_GATE=""
 _MIR_HC_MANIFEST="$PROJECT_DIR/config/harness-consistency.json"
 if [ -f "$_MIR_HC_MANIFEST" ]; then
-  _MIR_TOOLS_COMMIT_GATE="$(python3 -c "
+  _MIR_TOOLS_COMMIT_GATE="$("$_MIR_PYTHON_LAUNCHER" -c "
 import json, sys
 try:
     print(json.load(open(sys.argv[1]))['repo']['enforcement']['tools_commit_gate'])
@@ -133,7 +134,7 @@ main() {
       echo "[PreCommitVerification BLOCK] Missing helper: $TDD_MATRIX_GUARD_SCRIPT" >&2
       exit 2
     fi
-    if ! python3 "$TDD_MATRIX_GUARD_SCRIPT" precommit "$PROJECT_DIR" "$changed_code_file" >"$tdd_commands_file"; then
+    if ! "$_MIR_PYTHON_LAUNCHER" "$TDD_MATRIX_GUARD_SCRIPT" precommit "$PROJECT_DIR" "$changed_code_file" >"$tdd_commands_file"; then
       exit 2
     fi
   fi

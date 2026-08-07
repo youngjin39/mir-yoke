@@ -1,4 +1,5 @@
 #!/bin/bash
+_MIR_PYTHON_LAUNCHER="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/_lib/run-python.sh"
 # PreToolUse hook: input-stage guardrail.
 # Blocks destructive patterns + denied paths BEFORE the tool runs.
 # Reads tool_input from stdin (JSON). Exit 2 = block; exit 0 = allow.
@@ -10,11 +11,18 @@
 _MIR_HOOK_TIER_CODE_PATH="warn"
 _MIR_HOOK_TIER_DENY_LIST="block"
 _MIR_HOOK_TIER_TOOL_CONTRACT_LOG="warn"
+PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
+INPUT=$(cat)
+_MIR_BOOTSTRAP_GATE="$(dirname "$_MIR_PYTHON_LAUNCHER")/bootstrap-gate.sh"
+# shellcheck source=./_lib/bootstrap-gate.sh
+[ -f "$_MIR_BOOTSTRAP_GATE" ] && . "$_MIR_BOOTSTRAP_GATE"
+if command -v mir_bootstrap_gate_enforce >/dev/null 2>&1; then
+  mir_bootstrap_gate_enforce "$INPUT" "$PROJECT_DIR" || exit $?
+fi
 _MIR_TIER_DISPATCH="$(dirname "$0")/_lib/tier_dispatch.sh"
 # shellcheck source=./_lib/tier_dispatch.sh
 [ -f "$_MIR_TIER_DISPATCH" ] && . "$_MIR_TIER_DISPATCH"
 
-PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
 _MIR_INVOCATION_LOG_HELPER="$(dirname "$0")/_lib/invocation_log.sh"
 # shellcheck source=./_lib/invocation_log.sh
 [ -f "$_MIR_INVOCATION_LOG_HELPER" ] && . "$_MIR_INVOCATION_LOG_HELPER"
@@ -23,7 +31,6 @@ if command -v mir_invocation_log_enable >/dev/null 2>&1; then
 fi
 DENY_LIST_FILE="$PROJECT_DIR/.ai-harness/deny-list.yaml"
 PRE_COMMIT_VERIFICATION_SCRIPT="$PROJECT_DIR/.claude/hooks/pre-commit-verification.sh"
-INPUT=$(cat)
 
 block() {
   # Claude Code: stdout on exit 2 is shown to the agent as a tool error.
@@ -178,7 +185,7 @@ if [ "$TOOL_NAME" = "Bash" ]; then
   # 7. Raw Codex subprocess routing is forbidden. Use a small, non-executing
   #    token check so quoted search/data strings do not look like commands.
   #    This is intentionally best-effort rather than a shell-language parser.
-  if command -v python3 >/dev/null 2>&1 && printf '%s' "$CMD" | python3 -c '
+  if [ -x "$_MIR_PYTHON_LAUNCHER" ] && printf '%s' "$CMD" | "$_MIR_PYTHON_LAUNCHER" -c '
 import os
 import re
 import shlex
@@ -288,7 +295,7 @@ _MIR_BB_CONFIG="$PROJECT_DIR/config/bluebrick-paths.json"
 if [ -f "$_MIR_BB_CONFIG" ] && ([ "$TOOL_NAME" = "Edit" ] || [ "$TOOL_NAME" = "Write" ]); then
   _bb_fp="$(extract_json '.tool_input.file_path // .tool_input.path' 2>/dev/null || echo "")"
   if [ -n "$_bb_fp" ]; then
-    _bb_match="$(python3 - "$_bb_fp" "$_MIR_BB_CONFIG" <<'BBPY'
+    _bb_match="$("$_MIR_PYTHON_LAUNCHER" - "$_bb_fp" "$_MIR_BB_CONFIG" <<'BBPY'
 import sys, json, os
 fp, cfg_path = sys.argv[1], sys.argv[2]
 try:
@@ -320,7 +327,7 @@ if [ "${MIR_FAMILY_CODE_PATHS_INITIALIZED:-no}" != "yes" ]; then
     if [ -f "$_MIR_CODE_PATH_HELPER" ]; then
         while IFS= read -r line; do
             [ -n "$line" ] && MIR_FAMILY_CODE_PATHS+=("$line")
-        done < <(python3 "$_MIR_CODE_PATH_HELPER" \
+        done < <("$_MIR_PYTHON_LAUNCHER" "$_MIR_CODE_PATH_HELPER" \
                  --family "$MIR_FAMILY_SLUG" --check code-paths 2>/dev/null)
     fi
     [ "${#MIR_FAMILY_CODE_PATHS[@]}" -eq 0 ] && MIR_FAMILY_CODE_PATHS=( "tools/" "src/" )
@@ -328,7 +335,7 @@ if [ "${MIR_FAMILY_CODE_PATHS_INITIALIZED:-no}" != "yes" ]; then
     # ADR-23 dogfooding exempt check
     MIR_DOGFOODING_EXEMPT="no"
     if [ -f "$_MIR_CODE_PATH_HELPER" ]; then
-        MIR_DOGFOODING_EXEMPT="$(python3 "$_MIR_CODE_PATH_HELPER" \
+        MIR_DOGFOODING_EXEMPT="$("$_MIR_PYTHON_LAUNCHER" "$_MIR_CODE_PATH_HELPER" \
                                 --family "$MIR_FAMILY_SLUG" --check dogfooding-exempt 2>/dev/null || echo "no")"
     fi
 
@@ -337,7 +344,7 @@ if [ "${MIR_FAMILY_CODE_PATHS_INITIALIZED:-no}" != "yes" ]; then
 fi
 
 _mir_path_matches_code_path() {
-    python3 - "$1" "${MIR_FAMILY_CODE_PATHS[@]}" <<'PY'
+    "$_MIR_PYTHON_LAUNCHER" - "$1" "${MIR_FAMILY_CODE_PATHS[@]}" <<'PY'
 import fnmatch
 import os
 import sys
@@ -358,7 +365,7 @@ PY
 }
 
 _mir_patch_path_safety_reason() {
-    python3 - "$1" "$PROJECT_DIR" <<'PY'
+    "$_MIR_PYTHON_LAUNCHER" - "$1" "$PROJECT_DIR" <<'PY'
 import os
 from pathlib import Path
 import sys
@@ -399,9 +406,9 @@ else
     INPUT="$_mir_payload"
 fi
 
-_mir_tool_name="$(printf '%s' "$_mir_payload" | python3 -c 'import sys,json; print(json.loads(sys.stdin.read()).get("tool_name",""))' 2>/dev/null || echo "")"
+_mir_tool_name="$(printf '%s' "$_mir_payload" | "$_MIR_PYTHON_LAUNCHER" -c 'import sys,json; print(json.loads(sys.stdin.read()).get("tool_name",""))' 2>/dev/null || echo "")"
 if [ "$_mir_tool_name" = "Edit" ] || [ "$_mir_tool_name" = "Write" ]; then
-    _mir_file_path="$(printf '%s' "$_mir_payload" | python3 -c 'import sys,json; d=json.loads(sys.stdin.read()); print(d.get("tool_input",{}).get("file_path") or d.get("tool_input",{}).get("path") or "")' 2>/dev/null || echo "")"
+    _mir_file_path="$(printf '%s' "$_mir_payload" | "$_MIR_PYTHON_LAUNCHER" -c 'import sys,json; d=json.loads(sys.stdin.read()); print(d.get("tool_input",{}).get("file_path") or d.get("tool_input",{}).get("path") or "")' 2>/dev/null || echo "")"
     if [ -n "$_mir_file_path" ]; then
         _mir_file_safety_reason="$(_mir_patch_path_safety_reason "$_mir_file_path")"
         if [ -n "$_mir_file_safety_reason" ]; then
@@ -417,7 +424,7 @@ if [ "$_mir_tool_name" = "Edit" ] || [ "$_mir_tool_name" = "Write" ]; then
     fi
 fi
 if [ "$_mir_tool_name" = "apply_patch" ] || [ "$_mir_tool_name" = "ApplyPatch" ]; then
-    _mir_patch="$(printf '%s' "$_mir_payload" | python3 -c 'import sys,json; d=json.loads(sys.stdin.read()); i=d.get("tool_input",{}); print(i.get("input") or i.get("patch") or i.get("content") or "")' 2>/dev/null || echo "")"
+    _mir_patch="$(printf '%s' "$_mir_payload" | "$_MIR_PYTHON_LAUNCHER" -c 'import sys,json; d=json.loads(sys.stdin.read()); i=d.get("tool_input",{}); print(i.get("input") or i.get("patch") or i.get("content") or "")' 2>/dev/null || echo "")"
     while IFS= read -r _mir_patch_path; do
         [ -n "$_mir_patch_path" ] || continue
         _mir_patch_safety_reason="$(_mir_patch_path_safety_reason "$_mir_patch_path")"
@@ -443,7 +450,7 @@ if [ "${MIR_ENABLED_PHASES_CHECK:-0}" = "1" ]; then
     _MIR_EP_PHASE="${MIR_ACTIVE_PHASE:-}"
     _MIR_EP_CONFIG="$PROJECT_DIR/config/repos/${_MIR_EP_FAMILY}.json"
     if [ -n "$_MIR_EP_PHASE" ] && [ -f "$_MIR_EP_CONFIG" ]; then
-        _MIR_EP_ALLOWED="$(python3 -c "
+        _MIR_EP_ALLOWED="$("$_MIR_PYTHON_LAUNCHER" -c "
 import json, sys
 try:
     d = json.load(open('$_MIR_EP_CONFIG'))
@@ -462,16 +469,12 @@ fi
 
 # mir:tool-contract:begin
 # --- R20-T01: phase-4 §4 tool contract validation (gated by env) ---
-# Resolve project-venv python (requires 3.11+ for StrEnum); fall back to python3
-_MIR_TC_PYTHON="$PROJECT_DIR/.venv/bin/python3"
-if [ ! -x "$_MIR_TC_PYTHON" ]; then
-    _MIR_TC_PYTHON="python3"
-fi
+# The shared launcher selects the project venv or uses `uv run`.
 if [ "${MIR_TOOL_CONTRACT_REQUIRED:-0}" = "1" ]; then
     _MIR_TC_VALIDATOR="$PROJECT_DIR/tools/hooks/validate_tool_contract.py"
     if [ -f "$_MIR_TC_VALIDATOR" ]; then
         # Replay INPUT through stdin to the validator
-        _mir_tc_result="$(printf '%s' "${INPUT:-}" | "$_MIR_TC_PYTHON" "$_MIR_TC_VALIDATOR" 2>&1)"
+        _mir_tc_result="$(printf '%s' "${INPUT:-}" | "$_MIR_PYTHON_LAUNCHER" "$_MIR_TC_VALIDATOR" 2>&1)"
         _mir_tc_exit=$?
         if [ "$_mir_tc_exit" -ne 0 ]; then
             echo "$_mir_tc_result" >&2
@@ -483,7 +486,7 @@ if [ "${MIR_TOOL_CONTRACT_REQUIRED:-0}" = "1" ]; then
     fi
 elif [ "${MIR_TOOL_CONTRACT_LOG:-0}" = "1" ]; then
     # Advisory log mode — record contract presence without enforcing
-    _mir_tc_has_contract="$(printf '%s' "${INPUT:-}" | "$_MIR_TC_PYTHON" -c 'import sys,json
+    _mir_tc_has_contract="$(printf '%s' "${INPUT:-}" | "$_MIR_PYTHON_LAUNCHER" -c 'import sys,json
 try:
     d = json.loads(sys.stdin.read())
     tin = d.get("tool_input", {})

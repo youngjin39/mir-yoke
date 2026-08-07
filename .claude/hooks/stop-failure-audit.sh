@@ -1,4 +1,5 @@
 #!/bin/bash
+_MIR_PYTHON_LAUNCHER="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/_lib/run-python.sh"
 # stop-failure-audit.sh
 # ADR-06 Phase 6D: Claude StopFailure hook. Records turn-level API errors
 # (rate_limit / server_error / authentication_failed / etc.) to
@@ -70,6 +71,6 @@ except OSError as exc:
 sys.exit(0)
 PYEOF
 
-printf '%s' "$STDIN_DATA" | python3 "$_PY_TMP" "$SESSIONS_DIR" || true
+printf '%s' "$STDIN_DATA" | "$_MIR_PYTHON_LAUNCHER" "$_PY_TMP" "$SESSIONS_DIR" || true
 rm -f "$_PY_TMP"
 exit 0

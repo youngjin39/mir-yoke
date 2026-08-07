@@ -113,7 +113,7 @@ The **Codex delegation lane** (`executor-agent`, `codex-final-reviewer`, `mir_ex
 the `mcp__codex__codex` tool) additionally needs:
 
 1. **Claude Code and Codex CLI** installed and logged in (`claude` and `codex` on `PATH`).
-2. **Python 3.12+, Git, and `uv`** for the `mir` CLI — `uv run mir …`.
+2. **Python 3.12+, Git, `uv`, and `jq`** for the CLI and hook JSON parsing — `uv run mir …`.
 3. **Bash** on macOS/Linux/WSL; native Windows uses `setup.ps1` but still requires Git Bash or WSL
    Bash on `PATH` for hooks.
 4. **The `codex` MCP server wired** so the `mcp__codex__codex` tool exists. This template does NOT
@@ -151,7 +151,9 @@ git clone https://github.com/youngjin39/mir-yoke.git my-project
 cd my-project
 
 # 2. Phase 1: install plugins and build the mandatory memory baseline.
-./setup.sh --profile code_app
+./setup.sh --profile code_app \
+  --purpose "Build a portable project service." \
+  --stack python --stack sqlite
 
 # 3. (Codex lane) wire the Codex MCP server.
 cp .mcp.json.example .mcp.json   # then edit the codex command/CODEX_HOME
@@ -170,16 +172,23 @@ codex
 For a project cloned onto an external SSD, keep large shared payloads on that same volume:
 
 ```bash
-./setup.sh --storage-root "/Volumes/T7 Shield/.mir-runtime" --profile code_app
+./setup.sh --storage-root "/Volumes/T7 Shield/.mir-runtime" --profile code_app \
+  --purpose "Build a portable project service." --stack python
 ```
 
 The path is a host choice, not a value committed by the template. See `BOOTSTRAP.md` for persistent
 shell variables and the storage boundary.
 
-On native Windows use `.\setup.ps1 -Profile code_app`, then finalize with `-Finalize
+On native Windows use `.\setup.ps1 -Profile code_app -Purpose "Build a portable project service."
+-Stack python,sqlite`, then finalize with `-Finalize
 -ArchitectureInitialized`. Both wrappers call the same Python coordinator. It validates the harness,
 installs the pinned profile pack, indexes durable Markdown into SQLite+FTS5, and writes a machine-local
 receipt. There is no daemon or background service.
+
+`content_workspace` additionally scans for pre-existing text records and requires each discovered
+path to be classified with `--archive CLASSIFICATION=PATH`. The tracked onboarding manifest records
+paths and formats, and bootstrap proves each project-specific acceptance query returns the expected
+document from SQLite+FTS5 before readiness.
 
 ---
 

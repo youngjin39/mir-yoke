@@ -1,4 +1,5 @@
 #!/bin/bash
+_MIR_PYTHON_LAUNCHER="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/_lib/run-python.sh"
 # PreCompact hook: refresh the one canonical handoff before compaction.
 
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
@@ -103,7 +104,7 @@ trap 'rm -f "$SNAPSHOT_FILE"' EXIT
     echo ""
     echo "### Dispatch Brief"
     echo "- Brief: $DISPATCH_REL"
-    python3 - "$LATEST_DISPATCH_BRIEF" <<'PY'
+    "$_MIR_PYTHON_LAUNCHER" - "$LATEST_DISPATCH_BRIEF" <<'PY'
 import json
 import pathlib
 import sys
@@ -119,7 +120,7 @@ PY
   echo "<!-- mir:runtime-snapshot:end -->"
 } > "$SNAPSHOT_FILE"
 
-if ! python3 - "$HANDOFF_FILE" "$SNAPSHOT_FILE" <<'PY'
+if ! "$_MIR_PYTHON_LAUNCHER" - "$HANDOFF_FILE" "$SNAPSHOT_FILE" <<'PY'
 from pathlib import Path
 import sys
 

@@ -1,4 +1,5 @@
 #!/bin/bash
+_MIR_PYTHON_LAUNCHER="${_MIR_PYTHON_LAUNCHER:-$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/run-python.sh}"
 # tier_dispatch.sh — shared tier-routing helper for Mir hooks.
 # Usage: source this file, then call emit_tier_result <hook_id> <tier> <msg>
 # tier: block | suggest | warn
@@ -15,7 +16,7 @@ _mir_record_suggest_bypass() {
     local audit_dir="$proj_dir/tasks/audit"
     mkdir -p "$audit_dir"
     local ts
-    ts="$(python3 -c 'import datetime; print(datetime.datetime.now(datetime.timezone.utc).isoformat())' 2>/dev/null || date -u +%Y-%m-%dT%H:%M:%SZ)"
+    ts="$("$_MIR_PYTHON_LAUNCHER" -c 'import datetime; print(datetime.datetime.now(datetime.timezone.utc).isoformat())' 2>/dev/null || date -u +%Y-%m-%dT%H:%M:%SZ)"
     printf '{"ts":"%s","hook_id":"%s","reason":"%s"}\n' "$ts" "$hook_id" "$reason" >> "$audit_dir/suggest_bypass.jsonl"
 }
 

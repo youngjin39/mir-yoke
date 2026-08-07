@@ -18,6 +18,8 @@ import tempfile
 import tomllib
 from pathlib import Path
 
+import yaml
+
 from mir.core.config.loader import ConfigLoadError, load_config, resolve_memory_db
 from mir.core.engine.memory import store
 
@@ -27,8 +29,68 @@ from . import memory as memory_cli
 _PROFILE_CHOICES = ("code_app", "hybrid_pipeline", "infra_runtime", "content_workspace")
 _PROFILE_ALIASES = {"hybrid": "hybrid_pipeline", "infra": "infra_runtime"}
 _SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{0,63}$")
-_ARCHITECTURE_OUTPUTS = ("spec/STATE.md", "spec/index.yaml", "spec/graph.yaml")
+_ARCHITECTURE_OUTPUTS = (
+    "spec/STATE.md",
+    "spec/index.yaml",
+    "spec/graph.yaml",
+    "spec/gaps.yaml",
+)
 _ARCHITECTURE_SEQUENCE = ("mir-core:design", "mir-core:spec-architect")
+_CONTENT_EXTENSIONS = (".md", ".txt", ".rst", ".json", ".yaml", ".yml", ".toml", ".csv")
+_DISCOVERABLE_CONTENT_EXTENSIONS = _CONTENT_EXTENSIONS + (
+    ".doc",
+    ".docx",
+    ".htm",
+    ".html",
+    ".odt",
+    ".pages",
+    ".pdf",
+    ".ppt",
+    ".pptx",
+    ".rtf",
+    ".xls",
+    ".xlsx",
+)
+_CONTENT_SCAN_EXCLUDES = {
+    ".agents",
+    ".ai-harness",
+    ".claude",
+    ".codex",
+    ".git",
+    ".github",
+    ".mir",
+    ".venv",
+    "app",
+    "config",
+    "docs",
+    "examples",
+    "global-rules",
+    "lib",
+    "plugins",
+    "scripts",
+    "spec",
+    "src",
+    "tasks",
+    "tests",
+    "tools",
+}
+_ROOT_CONTENT_EXCLUDES = {
+    "AGENTS.md",
+    "ARCHITECTURE.md",
+    "BOOTSTRAP.md",
+    "CHANGELOG.md",
+    "CLAUDE.md",
+    "CONTRIBUTING.md",
+    "MIGRATION.md",
+    "README.md",
+    "SECURITY.md",
+    "harness_a.toml",
+    "llms.txt",
+    "pyproject.toml",
+    "template_protected_paths.yaml",
+    "uv.lock",
+}
+_PLACEHOLDER_RE = re.compile(r"\b(?:describe|placeholder|replace[ -]?me|tbd|todo|unknown)\b", re.I)
 _EXTERNAL_STORAGE_PATHS = {
     "UV_CACHE_DIR": Path("uv/cache"),
     "UV_PYTHON_INSTALL_DIR": Path("uv/python"),
@@ -41,7 +103,25 @@ def _parse(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(prog="mir bootstrap")
     parser.add_argument("--project-root", type=Path, default=Path.cwd())
     parser.add_argument("--slug", default=None)
-    parser.add_argument("--profile", default="code_app")
+    parser.add_argument(
+        "--profile",
+        required=True,
+        help="required project archetype; no implicit code_app default",
+    )
+    parser.add_argument("--purpose", help="non-placeholder project mission (required in phase 1)")
+    parser.add_argument(
+        "--stack",
+        action="append",
+        default=[],
+        help="technology or working-medium item; repeat or pass comma-separated values",
+    )
+    parser.add_argument(
+        "--archive",
+        action="append",
+        default=[],
+        metavar="CLASSIFICATION=PATH",
+        help="classify an existing content path for onboarding (content_workspace)",
+    )
     parser.add_argument(
         "--storage-root",
         type=Path,
@@ -156,8 +236,267 @@ def _normalise_slug(raw: str) -> str:
     return slug
 
 
-def _memory_config_text(slug: str) -> str:
-    return f'''# Active portable memory baseline. Managed by `mir bootstrap` when absent.
+def _normalise_stack(values: list[str]) -> list[str]:
+    return list(
+        dict.fromkeys(
+            item.strip()
+            for value in values
+            for item in value.split(",")
+            if item.strip()
+        )
+    )
+
+
+def _validate_project_identity(purpose: str | None, stack: list[str]) -> list[str]:
+    errors: list[str] = []
+    if not purpose or not purpose.strip():
+        errors.append("--purpose is required during bootstrap phase 1")
+    elif "\n" in purpose or "\r" in purpose:
+        errors.append("--purpose must be a single line")
+    elif _PLACEHOLDER_RE.search(purpose):
+        errors.append("--purpose must not contain placeholder text")
+    if not stack:
+        errors.append("at least one --stack value is required during bootstrap phase 1")
+    for item in stack:
+        if _PLACEHOLDER_RE.search(item):
+            errors.append(f"--stack must not contain placeholder text: {item!r}")
+    return errors
+
+
+def _project_relative(root: Path, raw: str) -> tuple[Path, str]:
+    authored = Path(raw)
+    if authored.is_absolute():
+        raise ValueError(f"content archive path must be project-relative: {raw}")
+    resolved = (root / authored).resolve(strict=False)
+    try:
+        relative = resolved.relative_to(root).as_posix()
+    except ValueError as exc:
+        raise ValueError(f"content archive path escapes the project: {raw}") from exc
+    if relative in ("", "."):
+        raise ValueError("content archive path must name a file or directory, not project root")
+    return resolved, relative
+
+
+def _discoverable_content_files(root: Path, path: Path) -> list[Path]:
+    if path.is_symlink():
+        raise ValueError(f"content archive path must not be a symlink: {path.relative_to(root)}")
+    candidates = [path] if path.is_file() else sorted(path.rglob("*")) if path.is_dir() else []
+    files: list[Path] = []
+    for candidate in candidates:
+        if candidate.is_symlink():
+            raise ValueError(
+                f"content archive contains a symlink: {candidate.relative_to(root).as_posix()}"
+            )
+        if candidate.is_file() and candidate.suffix.lower() in _DISCOVERABLE_CONTENT_EXTENSIONS:
+            files.append(candidate)
+    return files
+
+
+def _supported_content_files(root: Path, path: Path) -> list[Path]:
+    return [
+        candidate
+        for candidate in _discoverable_content_files(root, path)
+        if candidate.suffix.lower() in _CONTENT_EXTENSIONS
+    ]
+
+
+def _acceptance_query(body: str, label: str) -> str:
+    for token in re.findall(r"[\w]+", body, flags=re.UNICODE):
+        if len(token) >= 6 and not _PLACEHOLDER_RE.fullmatch(token):
+            return token
+    raise ValueError(
+        f"content archive {label!r} has no searchable token of at least six characters"
+    )
+
+
+def _project_definition_text(purpose: str, stack: list[str]) -> str:
+    rendered_stack = ", ".join(stack)
+    return f"# Project definition\n\nPurpose: {purpose}\n\nWorking stack: {rendered_stack}\n"
+
+
+def _scan_content_candidates(root: Path) -> list[dict[str, object]]:
+    candidates: list[dict[str, object]] = []
+    for child in sorted(root.iterdir(), key=lambda item: item.name):
+        if child.name in _CONTENT_SCAN_EXCLUDES or child.name in _ROOT_CONTENT_EXCLUDES:
+            continue
+        if child.name.startswith("."):
+            continue
+        files = _discoverable_content_files(root, child)
+        if not files:
+            continue
+        formats = sorted({path.suffix.lower().lstrip(".") for path in files})
+        candidates.append(
+            {
+                "path": child.relative_to(root).as_posix(),
+                "kind": "directory" if child.is_dir() else "file",
+                "formats": formats,
+                "document_count": len(files),
+                "memory_indexable": any(
+                    path.suffix.lower() in _CONTENT_EXTENSIONS for path in files
+                ),
+            }
+        )
+    return candidates
+
+
+def _parse_content_archives(
+    root: Path, raw_archives: list[str]
+) -> list[dict[str, object]]:
+    archives: list[dict[str, object]] = []
+    seen_classifications: set[str] = set()
+    resolved_paths: list[tuple[str, Path]] = []
+    for raw in raw_archives:
+        classification, separator, authored_path = raw.partition("=")
+        classification = classification.strip().lower()
+        if not separator or not _SLUG_RE.fullmatch(classification):
+            raise ValueError(
+                f"invalid --archive {raw!r}; expected lowercase CLASSIFICATION=PATH"
+            )
+        if classification in seen_classifications:
+            raise ValueError(f"duplicate content classification: {classification}")
+        path, relative = _project_relative(root, authored_path.strip())
+        if not path.exists():
+            raise ValueError(f"content archive path does not exist: {relative}")
+        for prior_label, prior_path in resolved_paths:
+            if path == prior_path or path in prior_path.parents or prior_path in path.parents:
+                raise ValueError(
+                    f"content archive paths overlap: {prior_label!r} and {classification!r}"
+                )
+        discovered_files = _discoverable_content_files(root, path)
+        files = [
+            candidate
+            for candidate in discovered_files
+            if candidate.suffix.lower() in _CONTENT_EXTENSIONS
+        ]
+        if not discovered_files:
+            raise ValueError(f"content archive has no recognized record files: {relative}")
+        if not files:
+            formats = sorted(
+                {candidate.suffix.lower().lstrip(".") for candidate in discovered_files}
+            )
+            raise ValueError(
+                f"content archive {relative!r} contains only non-indexable formats {formats}; "
+                "add a tracked UTF-8 text projection before bootstrap"
+            )
+        acceptance_path = files[0]
+        try:
+            acceptance_body = acceptance_path.read_text(encoding="utf-8")
+        except UnicodeDecodeError as exc:
+            raise ValueError(
+                f"content archive file is not UTF-8: {acceptance_path.relative_to(root)}"
+            ) from exc
+        archives.append(
+            {
+                "classification": classification,
+                "path": relative,
+                "kind": "directory" if path.is_dir() else "file",
+                "formats": sorted(
+                    {item.suffix.lower().lstrip(".") for item in discovered_files}
+                ),
+                "indexed_formats": sorted(
+                    {item.suffix.lower().lstrip(".") for item in files}
+                ),
+                "document_count": len(discovered_files),
+                "indexed_document_count": len(files),
+                "acceptance": {
+                    "query": _acceptance_query(acceptance_body, relative),
+                    "expected_path": acceptance_path.relative_to(root).as_posix(),
+                },
+            }
+        )
+        seen_classifications.add(classification)
+        resolved_paths.append((classification, path))
+    return archives
+
+
+def _build_content_onboarding(
+    root: Path, purpose: str, stack: list[str], raw_archives: list[str]
+) -> tuple[dict[str, object], str]:
+    definition_body = _project_definition_text(purpose, stack)
+    archives = [
+        {
+            "classification": "project-definition",
+            "path": "docs/project-purpose.md",
+            "kind": "file",
+            "formats": ["md"],
+            "indexed_formats": ["md"],
+            "document_count": 1,
+            "indexed_document_count": 1,
+            "acceptance": {
+                "query": _acceptance_query(definition_body, "project-definition"),
+                "expected_path": "docs/project-purpose.md",
+            },
+        },
+        *_parse_content_archives(root, raw_archives),
+    ]
+    candidates = _scan_content_candidates(root)
+    classified_paths = [Path(str(item["path"])) for item in archives[1:]]
+    unclassified = [
+        candidate
+        for candidate in candidates
+        if not any(
+            Path(str(candidate["path"])) == classified
+            or classified in Path(str(candidate["path"])).parents
+            for classified in classified_paths
+        )
+    ]
+    return (
+        {
+            "schema_version": 1,
+            "profile": "content_workspace",
+            "purpose": purpose,
+            "technology_stack": stack,
+            "archives": archives,
+            "scan": {"candidates": candidates, "unclassified": unclassified},
+        },
+        definition_body,
+    )
+
+
+def _load_content_onboarding(path: Path) -> dict[str, object]:
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ValueError(f"invalid config/content-onboarding.json: {exc}") from exc
+    if not isinstance(raw, dict) or raw.get("schema_version") != 1:
+        raise ValueError("config/content-onboarding.json schema_version must be 1")
+    if raw.get("profile") != "content_workspace":
+        raise ValueError("content onboarding manifest profile must be content_workspace")
+    archives = raw.get("archives")
+    scan = raw.get("scan")
+    if not isinstance(archives, list) or not archives:
+        raise ValueError("content onboarding manifest must contain classified archives")
+    if not isinstance(scan, dict) or scan.get("unclassified"):
+        raise ValueError("content onboarding manifest contains unclassified archive candidates")
+    return raw
+
+
+def _content_archive_globs(onboarding: dict[str, object]) -> list[str]:
+    globs = {"docs/**/*.md", "tasks/**/*.md", ".ai-harness/**/*.md"}
+    for item in onboarding.get("archives", []):
+        if not isinstance(item, dict):
+            continue
+        relative = str(item.get("path", ""))
+        if item.get("kind") == "file":
+            globs.add(relative)
+        else:
+            for suffix in _CONTENT_EXTENSIONS:
+                globs.add(f"{relative}/**/*{suffix}")
+    return sorted(globs)
+
+
+def _content_archive_args(onboarding: dict[str, object]) -> list[str]:
+    return [
+        f"{item['classification']}={item['path']}"
+        for item in onboarding.get("archives", [])
+        if isinstance(item, dict) and item.get("classification") != "project-definition"
+    ]
+
+
+def _memory_config_text(
+    slug: str, profile: str, onboarding: dict[str, object] | None
+) -> str:
+    header = '''# Active portable memory baseline. Managed by `mir bootstrap` when absent.
 
 [memory]
 enabled = true
@@ -171,6 +510,19 @@ recall_policy = "progressive"
 [memory.embedding]
 enabled = false
 required = false
+'''
+    if profile == "content_workspace":
+        assert onboarding is not None
+        globs = json.dumps(_content_archive_globs(onboarding), ensure_ascii=False)
+        return header + f'''
+
+[[memory.external_archives]]
+slug = "{slug}-content"
+root = "."
+mode = "indexed"
+glob_include = {globs}
+'''
+    return header + f'''
 
 [[memory.external_archives]]
 slug = "{slug}-docs"
@@ -192,19 +544,24 @@ glob_include = ["**/*.md"]
 '''
 
 
-def _repo_profile_text(slug: str, profile: str) -> str:
+def _repo_profile_text(
+    root: Path, slug: str, profile: str, purpose: str, stack: list[str]
+) -> str:
+    root_value = json.dumps(str(root.resolve()), ensure_ascii=False)
+    purpose_value = json.dumps(purpose, ensure_ascii=False)
+    stack_value = json.dumps(stack, ensure_ascii=False)
     return f'''# Repository identity generated by `mir bootstrap`.
 
 [repo]
 slug = "{slug}"
 display_name = "{slug.replace("-", " ").title()}"
-path = "."
+path = {root_value}
 repository_type = "starter_project"
 rollout_class = "bootstrap_only"
 overlay_archetype = "template_transitional"
 status = "active"
-purpose = "Describe this repository's purpose."
-technology_stack = []
+purpose = {purpose_value}
+technology_stack = {stack_value}
 profile_base_commit = "unverified"
 profile_verified_at = ""
 
@@ -264,12 +621,30 @@ requires_global_capabilities = true
 '''
 
 
-def _validate_existing_profile(path: Path) -> None:
+def _validate_existing_profile(path: Path, expected_profile: str) -> dict[str, object]:
     try:
         with path.open("rb") as handle:
             raw = tomllib.load(handle)
     except (OSError, tomllib.TOMLDecodeError) as exc:
         raise ValueError(f"invalid existing .mir/repo-profile.toml: {exc}") from exc
+    repo = raw.get("repo", {})
+    execution = raw.get("execution", {})
+    purpose = repo.get("purpose") if isinstance(repo, dict) else None
+    stack = repo.get("technology_stack") if isinstance(repo, dict) else None
+    identity_errors = _validate_project_identity(
+        purpose if isinstance(purpose, str) else None,
+        [str(item) for item in stack] if isinstance(stack, list) else [],
+    )
+    if identity_errors:
+        raise ValueError(
+            "existing .mir/repo-profile.toml has incomplete project identity: "
+            + "; ".join(identity_errors)
+        )
+    if not isinstance(execution, dict) or execution.get("non_code_profile") != expected_profile:
+        raise ValueError(
+            "existing .mir/repo-profile.toml profile does not match "
+            f"--profile {expected_profile!r}"
+        )
     gates = raw.get("gates", {})
     if (
         gates.get("requires_memory_store") is not True
@@ -280,9 +655,18 @@ def _validate_existing_profile(path: Path) -> None:
             "[gates].requires_memory_store=true and requires_global_capabilities=true; "
             "bootstrap will not overwrite authored policy"
         )
+    return raw
 
 
-def _ensure_authored_files(root: Path, slug: str, profile: str) -> None:
+def _ensure_authored_files(
+    root: Path,
+    slug: str,
+    profile: str,
+    purpose: str,
+    stack: list[str],
+    onboarding: dict[str, object] | None,
+    definition_body: str | None,
+) -> None:
     (root / ".mir").mkdir(parents=True, exist_ok=True)
     (root / "docs").mkdir(parents=True, exist_ok=True)
     (root / "tasks").mkdir(parents=True, exist_ok=True)
@@ -290,11 +674,25 @@ def _ensure_authored_files(root: Path, slug: str, profile: str) -> None:
 
     harness_path = root / "harness_a.toml"
     if not harness_path.exists():
-        _atomic_write_text(harness_path, _memory_config_text(slug))
+        _atomic_write_text(harness_path, _memory_config_text(slug, profile, onboarding))
 
     profile_path = root / ".mir" / "repo-profile.toml"
     if not profile_path.exists():
-        _atomic_write_text(profile_path, _repo_profile_text(slug, profile))
+        _atomic_write_text(
+            profile_path,
+            _repo_profile_text(root, slug, profile, purpose, stack),
+        )
+
+    if profile == "content_workspace":
+        assert onboarding is not None and definition_body is not None
+        onboarding_path = root / "config" / "content-onboarding.json"
+        onboarding_path.parent.mkdir(parents=True, exist_ok=True)
+        if onboarding_path.exists():
+            _load_content_onboarding(onboarding_path)
+        _atomic_write_json(onboarding_path, onboarding)
+        definition_path = root / "docs" / "project-purpose.md"
+        if not definition_path.exists():
+            _atomic_write_text(definition_path, definition_body)
 
     tdd_path = root / "tasks" / "tdd.json"
     if not tdd_path.exists():
@@ -424,8 +822,8 @@ def _validate_architecture_evidence(root: Path) -> tuple[list[str], dict[str, ob
         lock = json.loads(lock_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         return [f"architecture evidence or capability lock is invalid: {exc}"], {}
-    if not isinstance(evidence, dict) or evidence.get("schema_version") != 1:
-        errors.append("architecture evidence schema_version must be 1")
+    if not isinstance(evidence, dict) or evidence.get("schema_version") != 2:
+        errors.append("architecture evidence schema_version must be 2")
         evidence = {}
     sequence = evidence.get("sequence")
     if sequence != list(_ARCHITECTURE_SEQUENCE):
@@ -440,6 +838,57 @@ def _validate_architecture_evidence(root: Path) -> tuple[list[str], dict[str, ob
     if outputs != list(_ARCHITECTURE_OUTPUTS):
         errors.append("architecture evidence must list the required spec outputs")
 
+    coverage = evidence.get("coverage")
+    expected_totals = {"l1": None, "l2": None, "l3": 9, "l4": 10}
+    if not isinstance(coverage, dict):
+        errors.append("architecture evidence must contain four-layer spec coverage")
+        coverage = {}
+    for layer, exact_total in expected_totals.items():
+        row = coverage.get(layer)
+        if not isinstance(row, dict):
+            errors.append(f"architecture coverage is missing {layer}")
+            continue
+        values = {key: row.get(key) for key in ("total", "filled", "derived", "na", "tbd")}
+        if any(not isinstance(value, int) or value < 0 for value in values.values()):
+            errors.append(f"architecture coverage {layer} counts must be non-negative integers")
+            continue
+        total = values["total"]
+        if total == 0 or (exact_total is not None and total != exact_total):
+            expected = f"exactly {exact_total}" if exact_total is not None else "greater than zero"
+            errors.append(f"architecture coverage {layer}.total must be {expected}")
+        if values["filled"] + values["derived"] + values["na"] + values["tbd"] != total:
+            errors.append(f"architecture coverage {layer} counts do not sum to total")
+        if values["tbd"] != 0:
+            errors.append(f"architecture coverage {layer} still contains TBD requirements")
+    ai_ready = coverage.get("ai_ready")
+    l1 = coverage.get("l1")
+    l1_total = l1.get("total") if isinstance(l1, dict) else None
+    if not isinstance(ai_ready, dict) or any(
+        not isinstance(ai_ready.get(key), int) or ai_ready.get(key) < 0
+        for key in ("ready", "incomplete", "blocked")
+    ):
+        errors.append("architecture coverage ai_ready counts are missing or invalid")
+    elif (
+        ai_ready["ready"] == 0
+        or ai_ready["ready"] != l1_total
+        or ai_ready["incomplete"] != 0
+        or ai_ready["blocked"] != 0
+    ):
+        errors.append("all requirements must be AI-ready with no incomplete or blocked items")
+
+    full_review = evidence.get("full_review")
+    required_reviews = (
+        "project_structure",
+        "memory",
+        "discoverability",
+        "requirements",
+        "organization",
+    )
+    if not isinstance(full_review, dict) or any(
+        full_review.get(item) != "pass" for item in required_reviews
+    ):
+        errors.append("architecture evidence must record a passing full project review")
+
     output_hashes: dict[str, str] = {}
     for relative in _ARCHITECTURE_OUTPUTS:
         path = root / relative
@@ -450,11 +899,66 @@ def _validate_architecture_evidence(root: Path) -> tuple[list[str], dict[str, ob
         if not body.strip():
             errors.append(f"architecture output is empty: {relative}")
             continue
+        if _PLACEHOLDER_RE.search(body.decode("utf-8", errors="replace")):
+            errors.append(f"architecture output contains placeholder text: {relative}")
         output_hashes[relative] = hashlib.sha256(body).hexdigest()
+
+    gaps_path = root / "spec" / "gaps.yaml"
+    open_gaps = -1
+    try:
+        gaps_doc = yaml.safe_load(gaps_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, yaml.YAMLError) as exc:
+        errors.append(f"spec/gaps.yaml is invalid: {exc}")
+    else:
+        gaps = gaps_doc.get("gaps") if isinstance(gaps_doc, dict) else None
+        if not isinstance(gaps, list):
+            errors.append("spec/gaps.yaml must contain a gaps list")
+        else:
+            open_gaps = sum(
+                1
+                for gap in gaps
+                if not isinstance(gap, dict)
+                or gap.get("status") not in {"resolved", "dismissed", "na"}
+            )
+            if open_gaps:
+                errors.append(f"spec/gaps.yaml contains {open_gaps} open gap(s)")
+    if evidence.get("open_gaps") != open_gaps or open_gaps != 0:
+        errors.append("architecture evidence open_gaps must match spec/gaps.yaml and equal zero")
+
+    for name in ("index.yaml", "graph.yaml"):
+        path = root / "spec" / name
+        try:
+            document = yaml.safe_load(path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, yaml.YAMLError) as exc:
+            errors.append(f"spec/{name} is invalid: {exc}")
+            continue
+        if not isinstance(document, dict):
+            errors.append(f"spec/{name} must be a mapping")
+        elif name == "index.yaml":
+            requirements = document.get("requirements")
+            if not isinstance(requirements, list):
+                errors.append("spec/index.yaml must contain a requirements list")
+            elif len(requirements) != l1_total or any(
+                not isinstance(requirement, dict)
+                or requirement.get("status") != "ready"
+                for requirement in requirements
+            ):
+                errors.append(
+                    "spec/index.yaml requirements must match L1 total and all be ready"
+                )
+        elif name == "graph.yaml" and (
+            not isinstance(document.get("nodes"), list)
+            or not document.get("nodes")
+            or not isinstance(document.get("edges"), list)
+        ):
+            errors.append("spec/graph.yaml must contain non-empty nodes and an edges list")
     return errors, {
         "path": "spec/bootstrap-evidence.json",
         "sequence": list(_ARCHITECTURE_SEQUENCE),
         "capability_commit": locked_commit,
+        "coverage": coverage,
+        "open_gaps": open_gaps,
+        "full_review": full_review,
         "output_hashes": output_hashes,
     }
 
@@ -521,10 +1025,15 @@ def _validate_surfaces(root: Path) -> tuple[list[str], dict]:
         "kind": "bash",
         "required_on_windows": True,
         "bash": "not_checked",
+        "jq": "not_checked",
         "syntax": "not_checked",
     }
     representative_hook = root / ".claude" / "hooks" / "session-start.sh"
     bash_path = shutil.which("bash")
+    jq_path = shutil.which("jq")
+    hook_runtime["jq"] = jq_path or "missing"
+    if jq_path is None:
+        errors.append("hook runtime requires jq on PATH for JSON payload parsing")
     if platform.system() == "Windows":
         if bash_path is None:
             errors.append("Windows hook runtime requires bash from Git for Windows or WSL on PATH")
@@ -618,6 +1127,80 @@ def _build_projection_updates(root: Path, db_path: Path) -> dict[Path, str]:
     return updates
 
 
+def _validate_content_memory_acceptance(
+    root: Path,
+    db_path: Path,
+    slug: str,
+    onboarding: dict[str, object],
+) -> tuple[list[str], dict[str, object]]:
+    errors: list[str] = []
+    results: list[dict[str, object]] = []
+    expected_archive = f"{slug}-content"
+    connection = store.connect(db_path)
+    try:
+        for archive in onboarding.get("archives", []):
+            if not isinstance(archive, dict):
+                errors.append("content onboarding archive entry must be an object")
+                continue
+            acceptance = archive.get("acceptance")
+            if not isinstance(acceptance, dict):
+                errors.append(
+                    f"content classification {archive.get('classification')!r} lacks acceptance"
+                )
+                continue
+            query = acceptance.get("query")
+            expected_path = acceptance.get("expected_path")
+            if not isinstance(query, str) or not isinstance(expected_path, str):
+                classification = archive.get("classification")
+                errors.append(
+                    f"content classification {classification!r} has invalid acceptance"
+                )
+                continue
+            row = connection.conn.execute(
+                "SELECT a.slug, d.relative_path "
+                "FROM external_chunks_fts f "
+                "JOIN external_chunks c ON c.id = f.rowid "
+                "JOIN external_documents d ON d.id = c.document_id "
+                "JOIN external_archives a ON a.id = d.archive_id "
+                "WHERE external_chunks_fts MATCH ? "
+                "AND a.slug = ? AND d.relative_path = ? LIMIT 1",
+                (query, expected_archive, expected_path),
+            ).fetchone()
+            passed = row is not None
+            results.append(
+                {
+                    "classification": archive.get("classification"),
+                    "query": query,
+                    "expected_path": expected_path,
+                    "status": "pass" if passed else "fail",
+                }
+            )
+            if not passed:
+                errors.append(
+                    "project-specific memory query returned no matching path for "
+                    f"{archive.get('classification')!r}: {query!r} -> {expected_path!r}"
+                )
+    finally:
+        connection.conn.close()
+    return errors, {
+        "status": "pass" if not errors else "fail",
+        "manifest": "config/content-onboarding.json",
+        "archive_slug": expected_archive,
+        "classifications": [
+            {
+                "classification": item.get("classification"),
+                "path": item.get("path"),
+                "formats": item.get("formats"),
+                "document_count": item.get("document_count"),
+                "indexed_document_count": item.get("indexed_document_count"),
+            }
+            for item in onboarding.get("archives", [])
+            if isinstance(item, dict)
+        ],
+        "queries": results,
+    }
+
+
 def _emit(ns: argparse.Namespace, receipt: dict) -> None:
     if ns.json:
         print(json.dumps(receipt, sort_keys=True, separators=(",", ":")))
@@ -651,6 +1234,11 @@ def main(argv: list[str]) -> int:
         )
         return 2
 
+    purpose = ns.purpose.strip() if isinstance(ns.purpose, str) else None
+    stack = _normalise_stack(ns.stack)
+    onboarding: dict[str, object] | None = None
+    definition_body: str | None = None
+
     errors: list[str] = []
     invalid_config = False
     capability: dict = {"status": "not_checked"}
@@ -661,6 +1249,7 @@ def main(argv: list[str]) -> int:
     staged_db = False
     architecture_evidence: dict[str, object] = {}
     architecture_attested = False
+    content_acceptance: dict[str, object] = {"status": "not_required"}
     storage_errors, storage_report = _storage_preflight(root, ns.storage_root)
     if storage_errors:
         errors.extend(storage_errors)
@@ -673,6 +1262,89 @@ def main(argv: list[str]) -> int:
             prior_receipt = candidate if isinstance(candidate, dict) else None
         except (OSError, json.JSONDecodeError):
             prior_receipt = None
+
+    onboarding_path = root / "config" / "content-onboarding.json"
+    if ns.finalize:
+        if profile == "content_workspace":
+            if not onboarding_path.is_file():
+                errors.append(
+                    "content_workspace finalize requires config/content-onboarding.json"
+                )
+                invalid_config = True
+            else:
+                try:
+                    onboarding = _load_content_onboarding(onboarding_path)
+                    manifest_purpose = onboarding.get("purpose")
+                    manifest_stack = onboarding.get("technology_stack")
+                    if not isinstance(manifest_purpose, str) or not isinstance(
+                        manifest_stack, list
+                    ):
+                        raise ValueError(
+                            "content onboarding manifest requires purpose and technology_stack"
+                        )
+                    purpose = manifest_purpose
+                    stack = [str(item) for item in manifest_stack]
+                    definition_body = _project_definition_text(purpose, stack)
+                    if ns.purpose and ns.purpose.strip() != purpose:
+                        raise ValueError("--purpose conflicts with content onboarding manifest")
+                    if ns.stack and _normalise_stack(ns.stack) != stack:
+                        raise ValueError("--stack conflicts with content onboarding manifest")
+                    refreshed, _ = _build_content_onboarding(
+                        root,
+                        purpose,
+                        stack,
+                        _content_archive_args(onboarding),
+                    )
+                    if refreshed != onboarding:
+                        raise ValueError(
+                            "content onboarding manifest is stale; rerun Phase 1 with all "
+                            "--archive classifications before finalize"
+                        )
+                except ValueError as exc:
+                    errors.append(str(exc))
+                    invalid_config = True
+    else:
+        identity_errors = _validate_project_identity(purpose, stack)
+        if identity_errors:
+            errors.extend(identity_errors)
+            invalid_config = True
+        elif profile == "content_workspace":
+            try:
+                if onboarding_path.is_file() and not ns.archive:
+                    existing_onboarding = _load_content_onboarding(onboarding_path)
+                    if existing_onboarding.get("purpose") != purpose or existing_onboarding.get(
+                        "technology_stack"
+                    ) != stack:
+                        raise ValueError(
+                            "bootstrap identity conflicts with config/content-onboarding.json"
+                        )
+                    onboarding, definition_body = _build_content_onboarding(
+                        root,
+                        purpose or "",
+                        stack,
+                        _content_archive_args(existing_onboarding),
+                    )
+                else:
+                    onboarding, definition_body = _build_content_onboarding(
+                        root, purpose or "", stack, ns.archive
+                    )
+                unclassified = onboarding.get("scan", {}).get("unclassified", [])
+                if unclassified:
+                    paths = ", ".join(
+                        f"{item.get('path')} [{', '.join(item.get('formats', []))}]"
+                        for item in unclassified
+                        if isinstance(item, dict)
+                    )
+                    raise ValueError(
+                        "unclassified existing content detected; rerun with "
+                        f"--archive CLASSIFICATION=PATH for: {paths}"
+                    )
+            except ValueError as exc:
+                errors.append(str(exc))
+                invalid_config = True
+        elif ns.archive:
+            errors.append("--archive is supported only with --profile content_workspace")
+            invalid_config = True
 
     if not (os.environ.get("VIRTUAL_ENV") or sys.prefix != sys.base_prefix):
         errors.append("mir bootstrap must run inside `uv run` after the wrapper executes `uv sync`")
@@ -689,10 +1361,27 @@ def main(argv: list[str]) -> int:
     existing_profile = root / ".mir" / "repo-profile.toml"
     if existing_profile.exists():
         try:
-            _validate_existing_profile(existing_profile)
+            profile_data = _validate_existing_profile(existing_profile, profile)
+            repo_data = profile_data.get("repo", {})
+            if ns.finalize and isinstance(repo_data, dict):
+                profile_purpose = repo_data.get("purpose")
+                profile_stack = repo_data.get("technology_stack")
+                if purpose is not None and profile_purpose != purpose:
+                    raise ValueError(
+                        "project purpose conflicts between profile and onboarding manifest"
+                    )
+                if stack and profile_stack != stack:
+                    raise ValueError(
+                        "project stack conflicts between profile and onboarding manifest"
+                    )
+                purpose = str(profile_purpose)
+                stack = [str(item) for item in profile_stack]
         except ValueError as exc:
             errors.append(str(exc))
             invalid_config = True
+    elif ns.finalize:
+        errors.append("--finalize requires the phase 1 .mir/repo-profile.toml")
+        invalid_config = True
     existing_harness = root / "harness_a.toml"
     if existing_harness.exists():
         try:
@@ -705,14 +1394,23 @@ def main(argv: list[str]) -> int:
     db_path = root / ".mir" / "memory.db"
     if not errors:
         try:
-            _ensure_authored_files(root, slug, profile)
+            assert purpose is not None and stack
+            _ensure_authored_files(
+                root,
+                slug,
+                profile,
+                purpose,
+                stack,
+                onboarding,
+                definition_body,
+            )
             cfg = load_config(root)
             if not cfg.memory.enabled or not cfg.memory.required:
                 errors.append("bootstrap requires memory enabled=true and required=true")
             db_path = resolve_memory_db(root, cfg)
             working_db_path = _stage_memory_db(db_path)
             staged_db = True
-        except (ConfigLoadError, OSError) as exc:
+        except (ConfigLoadError, OSError, ValueError) as exc:
             errors.append(str(exc))
             invalid_config = True
 
@@ -763,6 +1461,12 @@ def main(argv: list[str]) -> int:
                     projection_updates = _build_projection_updates(root, working_db_path)
                 except Exception as exc:
                     errors.append(f"memory projection preparation failed: {exc}")
+                if profile == "content_workspace" and not errors:
+                    assert onboarding is not None
+                    acceptance_errors, content_acceptance = _validate_content_memory_acceptance(
+                        root, working_db_path, slug, onboarding
+                    )
+                    errors.extend(acceptance_errors)
 
     if ns.skip_capability_activation:
         capability = {"status": "skipped", "reason": "explicit test/development boundary"}
@@ -845,6 +1549,7 @@ def main(argv: list[str]) -> int:
             "portable_sources": "tracked_markdown_archives_reindexable_cross_machine",
             "shared_database_or_vector_service": "unsupported",
         },
+        "content_onboarding": content_acceptance,
         "vector": memory_report.get("vector", {}),
         "shared_embedding_endpoint": "optional",
         "capabilities": capability,

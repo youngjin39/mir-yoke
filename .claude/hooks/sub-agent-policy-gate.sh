@@ -1,4 +1,5 @@
 #!/bin/bash
+_MIR_PYTHON_LAUNCHER="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/_lib/run-python.sh"
 # Family-deploy source: standalone family-invariant force_codex Agent/Task gate. mir-self itself uses the inline gate in pre-tool-use.sh; this file is deployed to fleet families (slug-safe) via the Bash-channel + sync_family_hooks. Mirrors the inline gate logic.
 
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
@@ -31,7 +32,7 @@ read_sub_agent_policy_mode() {
     jq -er '(.mode // empty) | select(type == "string")' "$policy_file" 2>/dev/null
     return $?
   fi
-  python3 - "$policy_file" <<'PY' 2>/dev/null
+  "$_MIR_PYTHON_LAUNCHER" - "$policy_file" <<'PY' 2>/dev/null
 import json
 import sys
 

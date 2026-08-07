@@ -1,8 +1,9 @@
 #!/bin/bash
+_MIR_PYTHON_LAUNCHER="${_MIR_PYTHON_LAUNCHER:-$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/run-python.sh}"
 # Best-effort hook invocation log writer for phase-6 usage telemetry.
 
 _mir_invocation_log_now_ms() {
-  python3 - <<'PY' 2>/dev/null || return 1
+  "$_MIR_PYTHON_LAUNCHER" - <<'PY' 2>/dev/null || return 1
 import time
 
 print(int(time.time() * 1000))
@@ -29,7 +30,7 @@ mir_invocation_log_flush() {
   MIR_INVOCATION_LOG_HOOK_NAME="$MIR_INVOCATION_LOG_HOOK_NAME" \
   MIR_INVOCATION_LOG_EXIT_CODE="$exit_code" \
   MIR_INVOCATION_LOG_STARTED_AT_MS="${MIR_INVOCATION_LOG_STARTED_AT_MS:-}" \
-  python3 - <<'PY' >/dev/null 2>&1 || true
+  "$_MIR_PYTHON_LAUNCHER" - <<'PY' >/dev/null 2>&1 || true
 from __future__ import annotations
 
 from datetime import datetime, timezone

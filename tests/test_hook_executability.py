@@ -33,6 +33,10 @@ def _run_pre_tool_use(
     command: str, project_dir: Path
 ) -> subprocess.CompletedProcess[str]:
     script = ROOT / ".claude" / "hooks" / "pre-tool-use.sh"
+    (project_dir / ".mir").mkdir(parents=True, exist_ok=True)
+    (project_dir / ".mir" / "bootstrap-receipt.json").write_text(
+        '{"status":"ready"}\n', encoding="utf-8"
+    )
     env = os.environ.copy()
     env["CLAUDE_PROJECT_DIR"] = str(project_dir)
     return subprocess.run(

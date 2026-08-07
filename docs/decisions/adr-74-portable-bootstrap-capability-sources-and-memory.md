@@ -68,10 +68,12 @@ Every completed bootstrap MUST have at least one working memory backend. The por
 a repository-local SQLite database with FTS5. It is required, works without a vector extension or
 network service, and can be rebuilt from tracked Markdown archives on a new computer.
 
-Bootstrap creates `harness_a.toml`, configures at least the `docs`, `tasks`, and `.ai-harness`
-archives, applies migrations, indexes the archives, renders the tracked projections, and runs a
-memory doctor. Completion is refused unless integrity, current schema, required tables, FTS5, an
-insert/query rollback probe, and at least one successfully indexed archive are proven.
+Bootstrap creates `harness_a.toml`, configures tracked archives, applies migrations, indexes the
+archives, renders the tracked projections, and runs a memory doctor. `content_workspace` also scans
+custom top-level text paths, requires an explicit classification for each discovered path, and
+records path, format, count, and an acceptance query in `config/content-onboarding.json`. Completion
+is refused unless integrity, current schema, required tables, FTS5, an insert/query rollback probe,
+and every project-specific acceptance query returning its expected path are proven.
 
 Vector and embedding modes are independent extensions:
 
@@ -89,6 +91,9 @@ vector service is not implemented by this release and must not be inferred from 
 ### 4. One bootstrap implementation
 
 A Python bootstrap coordinator owns all behavior. `setup.sh` and `setup.ps1` are thin wrappers.
+Profile selection is explicit; Phase 1 has no implicit profile and requires non-placeholder purpose
+and stack inputs. Python-based hooks use one project-environment launcher that selects `.venv` or
+`uv run` and never falls back to the host Python interpreter.
 On Windows, PowerShell is the native bootstrap entrypoint while Git Bash is a declared prerequisite
 for the existing hook runtime. A missing Bash runtime blocks readiness. Tracked runtime artifacts
 must contain no symlinks.
@@ -107,16 +112,21 @@ inside the session that performed the install. Phase one performs a no-write pre
 verifies the pinned provider, and exits with `restart_required`. After Claude reload or a new Codex
 session, phase two proves active provider hashes, then requires the initial project structure pass
 to invoke `mir-core:design` followed by `mir-core:spec-architect` regardless of whether the first
-product request was code or prose. Finalize requires non-empty `spec/STATE.md`, `spec/index.yaml`,
-and `spec/graph.yaml` plus tracked JSON evidence that binds that sequence and those outputs to the
-pinned capability commit; a boolean attestation alone cannot produce a ready receipt.
+product request was code or prose. Finalize requires `spec/STATE.md`, `spec/index.yaml`,
+`spec/graph.yaml`, and `spec/gaps.yaml` plus tracked JSON evidence that binds that sequence and those
+outputs to the pinned capability commit. The evidence must account for four-layer coverage
+(including all 9 Layer 3 and 10 Layer 4 slots), report no TBD/incomplete/blocked requirements, prove
+zero open gaps, and record a passing full project review; a boolean attestation or merely non-empty
+files cannot produce a ready receipt.
 
 Phase two validates staged configuration/database/provider state,
 atomically replaces only generated outputs, and writes the receipt last. Existing authored
 configuration is preserved or reported as a conflict. Failed runs cannot leave a ready receipt,
 and newly registered global state is rolled back where the host CLI supports a bounded reversal.
 
-The first task type never changes the architecture baseline. This does not require every later
+SessionStart reports incomplete bootstrap state and the mutation hook blocks normal work until a
+ready receipt exists, while allowing setup, memory verification, and Phase 2 spec evidence. The
+first task type never changes the architecture baseline. This does not require every later
 prose or fiction edit to invoke `spec-architect`; it requires the first project structure/spec pass
 before normal work begins. The selected project profile controls optional packs.
 
@@ -169,6 +179,9 @@ launcher links stay in the user home; moving complete Claude or Codex homes is o
     than only extension or endpoint availability.
 11. An explicit external storage root is used before dependency synchronization and readiness
     evidence proves the uv cache and project environment are on the same filesystem.
+12. Missing or incomplete receipts block normal mutation; purpose/profile/stack, classified content
+    onboarding, project-specific FTS hits, four-layer coverage, and zero open gaps are required by
+    executable gates rather than documentation alone.
 
 ## Consequences
 

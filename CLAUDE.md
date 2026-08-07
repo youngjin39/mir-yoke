@@ -9,16 +9,16 @@
 
 ## Sources
 
-- `mir bootstrap` owns cross-platform new-clone defaults; `setup.sh` and `setup.ps1` are wrappers.
-  After bootstrap, `.mir/repo-profile.toml` owns identity, role policy, paths, and boundaries.
-- For substantial repository-dependent work, make one task-scoped
-  `uv run mir context pull "<query>" [--path <target>] [--risk low|normal|high]`; expand only for
-  missing, stale, or conflicting evidence.
-- Every ready project has a required local SQLite+FTS5 memory store. Tracked authored Markdown is
-  durable cross-machine memory; `.mir/memory.db` is its machine-local runtime query index/state.
-  `docs/memory-map.md` and `tasks/lessons.md` are generated; do not hand-edit their markers.
-- `config/capability-sources.json` and `.mir/capability-lock.json` own trusted Git provenance and
-  exact global plugin hashes. Remote checks are read-only; activation requires explicit apply.
+- `mir bootstrap` owns cross-platform defaults; afterward `.mir/repo-profile.toml` owns identity,
+  paths, and boundaries. Require a ready receipt before normal work; incomplete runs may initialize
+  or Phase 2 evidence only. Phase 1 requires explicit identity and classified content onboarding.
+- For substantial work, run one task-scoped `uv run mir context pull "<query>"`; add path/risk or
+  expand only for missing, stale, or conflicting evidence.
+- Ready projects require local SQLite+FTS5 and project-specific FTS hits. Tracked content is durable;
+  `.mir/memory.db` is local. Generated projections are not hand-edited. Phase 2 requires four-layer
+  coverage, AI-ready requirements, zero open gaps, and a passing full review—not non-empty files.
+- `config/capability-sources.json` and `.mir/capability-lock.json` own Git provenance and hashes;
+  remote checks are read-only and activation requires explicit apply.
 - Before changing requirements, agents, or skills, run `mir capability check`; review before apply.
 
 ## Authority and safety

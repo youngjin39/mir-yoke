@@ -1,4 +1,5 @@
 #!/bin/bash
+_MIR_PYTHON_LAUNCHER="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/_lib/run-python.sh"
 # TaskCompleted advisory: payloads have no stable change id, so this never blocks.
 # Multi-schema support (P1-quality): accepts 'changes', 'history', 'entries' as list-type entry keys,
 # plus root-level 'categories' for flat ledgers.
@@ -28,7 +29,7 @@ if [ ! -f "$TDD_JSON" ]; then
   exit 0
 fi
 
-if ! RESULT=$(python3 -c "
+if ! RESULT=$("$_MIR_PYTHON_LAUNCHER" -c "
 import json, sys
 
 CLOSED = {'pass', 'not_applicable', 'covered_existing'}

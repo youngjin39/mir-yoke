@@ -1,4 +1,5 @@
 #!/bin/bash
+_MIR_PYTHON_LAUNCHER="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/_lib/run-python.sh"
 # Optional TDD advisory: report missing composite TDD evidence without blocking edits.
 # tier: warn — invoke directly when ledger guidance is useful.
 _MIR_HOOK_TIER="warn"
@@ -42,7 +43,7 @@ main() {
     exit 0
   fi
   if [ -f "$TDD_MATRIX_GUARD_SCRIPT" ]; then
-    if ! python3 "$TDD_MATRIX_GUARD_SCRIPT" prewrite "$PROJECT_DIR" "$rel" >/dev/null 2>&1; then
+    if ! "$_MIR_PYTHON_LAUNCHER" "$TDD_MATRIX_GUARD_SCRIPT" prewrite "$PROJECT_DIR" "$rel" >/dev/null 2>&1; then
       echo "[TddGuard WARN] composite TDD evidence is incomplete for $rel (advisory only)" >&2
     fi
   else

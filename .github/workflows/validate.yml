@@ -70,11 +70,17 @@ jobs:
         run: uv run python scripts/verify_plugin_cli_activation.py
       - name: Bootstrap phase 1 on Unix
         if: runner.os != 'Windows'
-        run: ./setup.sh --profile content_workspace --json
+        run: >-
+          ./setup.sh --profile content_workspace
+          --purpose "Validate the portable content workspace bootstrap contract."
+          --stack markdown --stack sqlite --json
       - name: Bootstrap phase 1 on Windows PowerShell
         if: runner.os == 'Windows'
         shell: pwsh
-        run: .\setup.ps1 -Profile content_workspace -Json
+        run: >-
+          .\setup.ps1 -Profile content_workspace
+          -Purpose "Validate the portable content workspace bootstrap contract."
+          -Stack markdown,sqlite -Json
       - name: Prepare deterministic architecture evidence fixture
         run: uv run python tests/write_bootstrap_evidence_fixture.py
       - name: Finalize ready bootstrap on Unix

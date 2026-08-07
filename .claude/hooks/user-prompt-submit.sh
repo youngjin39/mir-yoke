@@ -1,4 +1,5 @@
 #!/bin/bash
+_MIR_PYTHON_LAUNCHER="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/_lib/run-python.sh"
 # UserPromptSubmit hook: emit a [context-pull] candidate retrieval directive.
 # ADR-53 D3: deterministic, no LLM, no network, <100ms.
 #
@@ -11,7 +12,7 @@ _MIR_HOOK_TIER="warn"
 
 # Read stdin JSON
 _INPUT=$(cat)
-_PROMPT=$(printf '%s' "$_INPUT" | python3 -c "
+_PROMPT=$(printf '%s' "$_INPUT" | "$_MIR_PYTHON_LAUNCHER" -c "
 import json, sys
 try:
     d = json.load(sys.stdin)
@@ -40,7 +41,7 @@ fi
 
 # Extract meaningful Unicode terms: lowercase, split on punctuation,
 # drop common stopwords, take first 6 remaining tokens.
-_TERMS=$(printf '%s' "$_PROMPT" | python3 -c "
+_TERMS=$(printf '%s' "$_PROMPT" | "$_MIR_PYTHON_LAUNCHER" -c "
 import sys, re
 
 STOPWORDS = {

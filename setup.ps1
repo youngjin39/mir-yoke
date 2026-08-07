@@ -3,7 +3,11 @@
 param(
     [string]$Slug,
     [ValidateSet("code_app", "hybrid_pipeline", "infra_runtime", "content_workspace", "infra", "hybrid")]
-    [string]$Profile = "code_app",
+    [Parameter(Mandatory = $true)]
+    [string]$Profile,
+    [string]$Purpose,
+    [string[]]$Stack,
+    [string[]]$Archive,
     [switch]$Json,
     [switch]$Finalize,
     [switch]$ArchitectureInitialized,
@@ -50,6 +54,9 @@ $BootstrapArgs = @(
     "--profile", $Profile
 )
 if ($Slug) { $BootstrapArgs += @("--slug", $Slug) }
+if ($Purpose) { $BootstrapArgs += @("--purpose", $Purpose) }
+foreach ($Item in $Stack) { $BootstrapArgs += @("--stack", $Item) }
+foreach ($Item in $Archive) { $BootstrapArgs += @("--archive", $Item) }
 if ($Json) { $BootstrapArgs += "--json" }
 if ($Finalize) { $BootstrapArgs += "--finalize" }
 if ($ArchitectureInitialized) { $BootstrapArgs += "--architecture-initialized" }

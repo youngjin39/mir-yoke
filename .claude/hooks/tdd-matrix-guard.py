@@ -5,6 +5,7 @@ tier: block — TDD obligation enforcement (R27-T02 / Choice 5=A).
 Python hooks use Tier enum from src.mir.core.engine.hook_chain.
 Shell callers: _MIR_HOOK_TIER=block is documented here for cross-reference.
 """
+
 from __future__ import annotations
 
 import json
@@ -67,7 +68,8 @@ def load_ledger(project_dir: Path) -> dict:
     ledger_path = project_dir / "tasks" / "tdd.json"
     if not ledger_path.is_file():
         raise SystemExit(
-            "[TddGuard BLOCK] Missing tasks/tdd.json. Create the composite TDD ledger before editing code."
+            "[TddGuard BLOCK] Missing tasks/tdd.json. Create the composite TDD "
+            "ledger before editing code."
         )
     try:
         data = json.loads(ledger_path.read_text(encoding="utf-8"))
@@ -140,9 +142,7 @@ def validate_change(change: dict, *, phase: str) -> list[str]:
     for category in categories_to_check:
         entry = categories.get(category)
         if not isinstance(entry, dict):
-            raise SystemExit(
-                f"{prefix} Missing category '{category}' for target {target_label}."
-            )
+            raise SystemExit(f"{prefix} Missing category '{category}' for target {target_label}.")
         status = entry.get("status")
         if status not in allowed_statuses:
             if phase == "precommit" and status == "planned":
@@ -150,19 +150,22 @@ def validate_change(change: dict, *, phase: str) -> list[str]:
                     f"{prefix} Category '{category}' is still planned for target {target_label}."
                 )
             raise SystemExit(
-                f"{prefix} Invalid status '{status}' for category '{category}' in target {target_label}."
+                f"{prefix} Invalid status '{status}' for category '{category}' "
+                f"in target {target_label}."
             )
         if status == "not_applicable":
             reason = entry.get("reason")
             if not isinstance(reason, str) or not reason.strip():
                 raise SystemExit(
-                    f"{prefix} Category '{category}' marked not_applicable without reason for target {target_label}."
+                    f"{prefix} Category '{category}' marked not_applicable without "
+                    f"reason for target {target_label}."
                 )
         if status in {"pass", "covered_existing"}:
             command = entry.get("command")
             if not isinstance(command, str) or not command.strip():
                 raise SystemExit(
-                    f"{prefix} Category '{category}' requires a runnable command for target {target_label}."
+                    f"{prefix} Category '{category}' requires a runnable command "
+                    f"for target {target_label}."
                 )
             commands.append(command.strip())
     return commands
@@ -199,7 +202,8 @@ def precommit(project_dir: Path, changed_file_list: Path) -> int:
         change = find_change(data, rel_path)
         if change is None:
             print(
-                f"[PreCommitVerification BLOCK] No composite TDD entry found in tasks/tdd.json for {rel_path}.",
+                "[PreCommitVerification BLOCK] No composite TDD entry found in "
+                f"tasks/tdd.json for {rel_path}.",
                 file=sys.stderr,
             )
             return 2
@@ -234,7 +238,11 @@ def _git_changed_files(project_dir: Path) -> list[str]:
         try:
             out = subprocess.run(
                 ["git", *args],
-                capture_output=True, text=True, cwd=project_dir, check=False, timeout=10,
+                capture_output=True,
+                text=True,
+                cwd=project_dir,
+                check=False,
+                timeout=10,
             )
             return out.returncode, out.stdout
         except (FileNotFoundError, subprocess.TimeoutExpired):
@@ -305,7 +313,8 @@ def precommit_merge(project_dir: Path) -> int:
         "docs/memory-map.md",
     }
     code_changed = [
-        c for c in changed
+        c
+        for c in changed
         if c not in _META_PATHS
         and not c.startswith("tasks/sessions/")
         and not c.startswith("tasks/log/")
@@ -317,15 +326,14 @@ def precommit_merge(project_dir: Path) -> int:
         targets = change.get("targets", [])
         # Only consider non-meta source/test targets for relevance.
         code_targets = [
-            t for t in targets
+            t
+            for t in targets
             if t not in _META_PATHS
             and not t.startswith("tasks/sessions/")
             and not t.startswith("tasks/log/")
             and not t.startswith("tasks/handoffs/")
         ]
-        relevant = any(
-            matches_target(t, c) for t in code_targets for c in code_changed
-        )
+        relevant = any(matches_target(t, c) for t in code_targets for c in code_changed)
         cats = change.get("categories", {})
         cat_violations: list[str] = []
         for cat_name, cat_body in cats.items():

@@ -1,4 +1,5 @@
 #!/bin/bash
+_MIR_PYTHON_LAUNCHER="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/_lib/run-python.sh"
 # mir-stop.sh
 # Claude Stop hook: write audit log entry to tasks/sessions/stop-<ISO8601>-<pid>-<rand>.log.
 # ADR: docs/decisions/p0j2-claude-stop-hook-2026-05-09.md (Alternative C, MVP audit-only).
@@ -8,7 +9,7 @@ set -u
 
 SESSIONS_DIR="${CLAUDE_PROJECT_DIR:-.}/tasks/sessions"
 
-# W1 fix: read stdin into variable, then pipe to python3 via stdin (avoids ARG_MAX limit).
+# W1 fix: read stdin into variable, then pipe to "$_MIR_PYTHON_LAUNCHER" via stdin (avoids ARG_MAX limit).
 STDIN_DATA=$(cat)
 
 # Write the python helper to a temp file so we can both pipe STDIN_DATA and run python code.
@@ -75,8 +76,8 @@ except OSError as e:
     print(f"mir-stop: warning: could not write audit log: {e}", file=sys.stderr)
 PYEOF
 
-if ! printf '%s' "$STDIN_DATA" | python3 "$_PY_TMP" "$SESSIONS_DIR"; then
-    : # python3 failed — log nothing, still exit 0
+if ! printf '%s' "$STDIN_DATA" | "$_MIR_PYTHON_LAUNCHER" "$_PY_TMP" "$SESSIONS_DIR"; then
+    : # "$_MIR_PYTHON_LAUNCHER" failed — log nothing, still exit 0
 fi
 
 rm -f "$_PY_TMP"
@@ -87,7 +88,7 @@ rm -f "$_PY_TMP"
 if [ "${MIR_REVIEW_GATE:-0}" = "1" ]; then
     _REVIEW_TS="$(date -u +%Y%m%dT%H%M%SZ 2>/dev/null || printf 'ts')"
     _LAST_MSG_HASH="$(printf '%s' "${STDIN_DATA}" | shasum 2>/dev/null | cut -c1-12 || printf 'nohash')"
-    python3 -m tools.mir_executor execute \
+    "$_MIR_PYTHON_LAUNCHER" -m tools.mir_executor execute \
         --background \
         --change-id "auto-review-${_REVIEW_TS}-${_LAST_MSG_HASH}" \
         --category review \
