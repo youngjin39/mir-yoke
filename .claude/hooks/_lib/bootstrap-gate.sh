@@ -57,6 +57,23 @@ _mir_bootstrap_allowed_path() {
   return 1
 }
 
+_mir_bootstrap_patch_paths_allowed() {
+  local patch="$1"
+  local project_dir="${2:-${CLAUDE_PROJECT_DIR:-.}}"
+  local paths found_path path
+  paths="$(printf '%s\n' "$patch" | sed -nE 's/^\*\*\* (Add|Update|Delete) File: (.*)$/\2/p')"
+  [ -n "$paths" ] || return 1
+  found_path=no
+  while IFS= read -r path; do
+    [ -n "$path" ] || continue
+    found_path=yes
+    _mir_bootstrap_allowed_path "$path" "$project_dir" || return 1
+  done <<EOF
+$paths
+EOF
+  [ "$found_path" = yes ]
+}
+
 mir_bootstrap_gate_enforce() {
   local payload="$1"
   local project_dir="${2:-${CLAUDE_PROJECT_DIR:-.}}"
@@ -73,7 +90,9 @@ mir_bootstrap_gate_enforce() {
     Bash)
       local command
       command="$(printf '%s' "$payload" | jq -r '.tool_input.command // ""')"
-      if printf '%s' "$command" | grep -Eq '(^|[[:space:]])(\./setup\.sh|\.\\setup\.ps1|uv[[:space:]]+run.*[[:space:]](mir[[:space:]]+(bootstrap-adoption|bootstrap|memory|context|capability)|pytest|ruff)|git[[:space:]]+(status|diff)|rg([[:space:]]|$)|find[[:space:]]|ls([[:space:]]|$)|pwd([[:space:]]|$)|sed[[:space:]]|head[[:space:]]|tail[[:space:]]|jq[[:space:]])'; then
+      if printf '%s\n' "$command" | grep -Eq '(^|[;&|][[:space:]]*)apply_patch[[:space:]]*<<'; then
+        _mir_bootstrap_patch_paths_allowed "$command" "$project_dir" && return 0
+      elif printf '%s' "$command" | grep -Eq '(^|[[:space:]])(\./setup\.sh|\.\\setup\.ps1|uv[[:space:]]+run.*[[:space:]](mir[[:space:]]+(bootstrap-adoption|bootstrap|memory|context|capability)|pytest|ruff)|git[[:space:]]+(status|diff)|rg([[:space:]]|$)|find[[:space:]]|ls([[:space:]]|$)|pwd([[:space:]]|$)|sed[[:space:]]|head[[:space:]]|tail[[:space:]]|jq[[:space:]])'; then
         return 0
       fi
       ;;
@@ -83,23 +102,9 @@ mir_bootstrap_gate_enforce() {
       _mir_bootstrap_allowed_path "$path" "$project_dir" && return 0
       ;;
     apply_patch|ApplyPatch)
-      local patch paths found_path
+      local patch
       patch="$(printf '%s' "$payload" | jq -r '.tool_input.input // .tool_input.patch // .tool_input.content // ""')"
-      paths="$(printf '%s\n' "$patch" | sed -nE 's/^\*\*\* (Add|Update|Delete) File: (.*)$/\2/p')"
-      if [ -n "$paths" ]; then
-        found_path=no
-        while IFS= read -r path; do
-          [ -n "$path" ] || continue
-          found_path=yes
-          _mir_bootstrap_allowed_path "$path" "$project_dir" || {
-            found_path=no
-            break
-          }
-        done <<EOF
-$paths
-EOF
-        [ "$found_path" = yes ] && return 0
-      fi
+      _mir_bootstrap_patch_paths_allowed "$patch" "$project_dir" && return 0
       ;;
   esac
   printf '[BootstrapGate BLOCK] bootstrap is %s; normal work must wait for Phase 2 ready receipt\n' "$state" >&2

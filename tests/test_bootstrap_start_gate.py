@@ -96,6 +96,48 @@ def test_adoption_manifest_allows_only_declared_evidence_edits(tmp_path: Path) -
     assert blocked.returncode == 2
 
 
+def test_adoption_gate_accepts_codex_shell_wrapped_apply_patch(tmp_path: Path) -> None:
+    allowed = _run_pretool(
+        tmp_path,
+        {
+            "tool_name": "Bash",
+            "tool_input": {
+                "command": "\n".join(
+                    (
+                        "apply_patch <<'PATCH'",
+                        "*** Begin Patch",
+                        "*** Add File: config/bootstrap-adoption.json",
+                        "+{}",
+                        "*** End Patch",
+                        "PATCH",
+                    )
+                )
+            },
+        },
+    )
+    assert allowed.returncode == 0, allowed.stderr
+
+    blocked = _run_pretool(
+        tmp_path,
+        {
+            "tool_name": "Bash",
+            "tool_input": {
+                "command": "\n".join(
+                    (
+                        "apply_patch <<'PATCH'",
+                        "*** Begin Patch",
+                        "*** Add File: src/application.py",
+                        "+jq is not an authorization token",
+                        "*** End Patch",
+                        "PATCH",
+                    )
+                )
+            },
+        },
+    )
+    assert blocked.returncode == 2
+
+
 def test_ready_receipt_releases_normal_mutation(tmp_path: Path) -> None:
     (tmp_path / ".mir").mkdir()
     (tmp_path / ".mir" / "bootstrap-receipt.json").write_text(
