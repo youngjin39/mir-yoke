@@ -212,7 +212,7 @@ _mir_bootstrap_git_add_allowed() {
   local project_dir="${2:-${CLAUDE_PROJECT_DIR:-.}}"
   local path
   printf '%s\n' "$command" | grep -Eq \
-    '^[[:space:]]*git[[:space:]]+add[[:space:]]+--[[:space:]]+("[^"]+"|'\''[^'\'']+'\''|[^[:space:]'\'']+)[[:space:]]*$' || return 1
+    "^[[:space:]]*git[[:space:]]+add[[:space:]]+--[[:space:]]+(\"[^\"]+\"|'[^']+'|[^[:space:]'\"]+)[[:space:]]*$" || return 1
   path="$(printf '%s\n' "$command" | sed -E 's/^[[:space:]]*git[[:space:]]+add[[:space:]]+--[[:space:]]+//; s/[[:space:]]*$//')"
   case "$path" in
     \"*\") path="${path#\"}"; path="${path%\"}" ;;

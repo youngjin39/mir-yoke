@@ -207,6 +207,9 @@ def test_missing_receipt_allows_only_single_declared_evidence_git_add(
     (tmp_path / "spec/bootstrap-adoption-review.yaml").write_text(
         "review: ready\n", encoding="utf-8"
     )
+    (tmp_path / 'spec/"bootstrap-adoption-review.yaml"').write_text(
+        "decoy: true\n", encoding="utf-8"
+    )
     (tmp_path / "docs").mkdir()
     (tmp_path / "docs/native-spec.md").write_text("ready\n", encoding="utf-8")
     (tmp_path / "docs/native spec.md").write_text("ready\n", encoding="utf-8")
@@ -229,6 +232,7 @@ def test_missing_receipt_allows_only_single_declared_evidence_git_add(
         "git add -- ':(glob)spec/**'",
         "git add -- spec/{a,b}.yaml",
         "git add -- 'spec/$FILES.yaml'",
+        'git add -- spec/"bootstrap-adoption-review.yaml"',
         "git add -- spec/evidence-dir",
         "git add -- ../other/spec/evidence.yaml",
     ):
