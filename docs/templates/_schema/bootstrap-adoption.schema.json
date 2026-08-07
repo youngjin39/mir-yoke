@@ -163,6 +163,18 @@
         "tbd": {"const": 0}
       }
     },
+    "nativePhase2Evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "meta_path", "coverage_key", "gaps_path", "review_path"],
+      "properties": {
+        "format": {"const": "mir_spec_yaml_v1"},
+        "meta_path": {"type": "string", "minLength": 1},
+        "coverage_key": {"enum": ["coverage", "completeness"]},
+        "gaps_path": {"type": "string", "minLength": 1},
+        "review_path": {"type": "string", "minLength": 1}
+      }
+    },
     "phase2Surface": {
       "type": "object",
       "unevaluatedProperties": false,
@@ -221,6 +233,9 @@
             "requirements": {"const": "pass"},
             "organization": {"const": "pass"}
           }
+        },
+        "native_evidence": {
+          "$ref": "#/$defs/nativePhase2Evidence"
         }
       },
       "allOf": [
@@ -232,7 +247,7 @@
             }
           },
           "then": {
-            "required": ["coverage", "ai_ready", "open_gaps", "full_review"]
+            "required": ["coverage", "ai_ready", "open_gaps", "full_review", "native_evidence"]
           }
         }
       ]

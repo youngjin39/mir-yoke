@@ -1,4 +1,5 @@
 """Test hook executability, syntax, and narrow raw-Codex command screening."""
+import hashlib
 import json
 import os
 import stat
@@ -33,9 +34,44 @@ def _run_pre_tool_use(
     command: str, project_dir: Path
 ) -> subprocess.CompletedProcess[str]:
     script = ROOT / ".claude" / "hooks" / "pre-tool-use.sh"
+    manifest = project_dir / "config/bootstrap-adoption.json"
+    evidence = project_dir / "spec/bootstrap-evidence.yaml"
+    manifest.parent.mkdir(parents=True, exist_ok=True)
+    evidence.parent.mkdir(parents=True, exist_ok=True)
+    evidence.write_text("verified: true\n", encoding="utf-8")
+    manifest.write_text(
+        json.dumps(
+            {
+                "mir_yoke_source_commit": "a" * 40,
+                "surfaces": {
+                    "bootstrap_start_gate": {
+                        "evidence_paths": ["spec/bootstrap-evidence.yaml"]
+                    }
+                },
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
     (project_dir / ".mir").mkdir(parents=True, exist_ok=True)
     (project_dir / ".mir" / "bootstrap-receipt.json").write_text(
-        '{"status":"ready"}\n', encoding="utf-8"
+        json.dumps(
+            {
+                "status": "ready",
+                "source": {"mir_yoke_commit": "a" * 40},
+                "manifest": {
+                    "sha256": hashlib.sha256(manifest.read_bytes()).hexdigest()
+                },
+                "evidence": [
+                    {
+                        "path": "spec/bootstrap-evidence.yaml",
+                        "sha256": hashlib.sha256(evidence.read_bytes()).hexdigest(),
+                    }
+                ],
+            }
+        )
+        + "\n",
+        encoding="utf-8",
     )
     env = os.environ.copy()
     env["CLAUDE_PROJECT_DIR"] = str(project_dir)

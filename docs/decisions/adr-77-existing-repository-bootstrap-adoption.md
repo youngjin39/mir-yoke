@@ -42,7 +42,18 @@ against existing archive slugs and relative paths. It does not rebuild or modify
 Phase 2 accepts native spec evidence: every one of four layers has a positive total, nonnegative
 counts sum to that total, and has no TBD items; AI-ready has at least one ready item and no
 incomplete or blocked items; open gaps are zero; and all five full-review dimensions pass.
-AI-ready counts are deliberately not equated to Layer 1 totals.
+AI-ready counts are deliberately not equated to Layer 1 totals. Applied and repository-owned Phase
+2 entries must map their native YAML metadata, gaps, and review files through `native_evidence`.
+The command parses those files and requires the manifest coverage, AI-ready, gap count, and review
+claims to match them exactly.
+
+The receipt records a SHA-256 digest for the manifest and for the complete set of evidence paths
+declared by all surfaces. At every SessionStart or mutation check, the gate compares the source
+commit, manifest digest, exact evidence path set, and live evidence digests. A missing, added,
+changed, duplicated, absolute, or parent-traversing evidence entry invalidates readiness. The
+blocked shell path recognizes complete command forms rather than substring matches and rejects
+compound commands, redirection, command substitution, mutating inspection flags, and commands
+wrapped around an allowed token.
 
 ## Consequences
 
@@ -55,8 +66,12 @@ technical debt in every regenerated receipt.
 
 1. A dry run never creates or replaces the receipt and opens memory in SQLite read-only mode.
 2. A failed apply preserves any prior receipt byte-for-byte.
-3. A passing apply writes a schema-versioned ready receipt bound to the manifest hash and source
-   commit, including live query results, all dispositions, and Phase 2 exceptions.
+3. A passing apply writes a schema-versioned ready receipt bound to the source commit, manifest
+   hash, exact declared evidence path set, and live evidence hashes, including query results, all
+   dispositions, and Phase 2 exceptions.
 4. Existing archive slugs, relative paths, profile policy, and native spec shapes are not mutated.
 5. The startup gate routes repositories with the adoption manifest to this command and permits
-   only the tracked manifest, content onboarding, spec, and declared evidence edits while blocked.
+   only the tracked manifest, content onboarding, spec, and declared evidence edits while blocked;
+   its shell allowlist accepts only complete single-command grammar.
+6. Applied or repository-owned Phase 2 claims equal the parsed native coverage, AI-ready, gaps,
+   and review evidence rather than trusting duplicated manifest counts.

@@ -13,6 +13,8 @@ import tempfile
 import tomllib
 from pathlib import Path
 
+import yaml
+
 from mir.core.engine.memory.distill import sanitize_fts_query
 
 from .bootstrap import _scan_content_candidates
@@ -230,7 +232,9 @@ def _validate_surface_contract(
         if key == "memory_acceptance":
             allowed_keys.add("queries")
         elif key == "phase2_spec":
-            allowed_keys.update({"coverage", "ai_ready", "open_gaps", "full_review"})
+            allowed_keys.update(
+                {"coverage", "ai_ready", "open_gaps", "full_review", "native_evidence"}
+            )
         extra_keys = sorted(set(raw) - allowed_keys)
         if extra_keys:
             errors.append(f"surface {key!r} has unknown fields: {extra_keys}")
@@ -652,6 +656,107 @@ def _validate_phase2(
     elif any(full_review.get(key) != "pass" for key in _REVIEW_KEYS):
         errors.append("phase2_spec full_review must pass every review key")
 
+    native_evidence = surface.get("native_evidence")
+    native_report: dict[str, object] = {"status": "fail"}
+    if not isinstance(native_evidence, dict):
+        errors.append("phase2_spec requires native_evidence field mappings")
+    else:
+        expected_native_keys = {
+            "format",
+            "meta_path",
+            "coverage_key",
+            "gaps_path",
+            "review_path",
+        }
+        if set(native_evidence) != expected_native_keys:
+            errors.append(
+                "phase2_spec native_evidence must contain exactly format, meta_path, "
+                "coverage_key, gaps_path, and review_path"
+            )
+        if native_evidence.get("format") != "mir_spec_yaml_v1":
+            errors.append("phase2_spec native_evidence format must be mir_spec_yaml_v1")
+        coverage_key = native_evidence.get("coverage_key")
+        if coverage_key not in {"coverage", "completeness"}:
+            errors.append(
+                "phase2_spec native_evidence coverage_key must be coverage or completeness"
+            )
+
+        documents: dict[str, dict[str, object]] = {}
+        normalized_paths: dict[str, str] = {}
+        declared_paths = set(surface.get("evidence_paths", []))
+        for field in ("meta_path", "gaps_path", "review_path"):
+            try:
+                path, normalized = _tracked_path(
+                    root,
+                    native_evidence.get(field),
+                    label=f"phase2_spec native_evidence.{field}",
+                )
+            except AdoptionError as exc:
+                errors.append(str(exc))
+                continue
+            normalized_paths[field] = normalized
+            if normalized not in declared_paths:
+                errors.append(
+                    f"phase2_spec native evidence must be listed in evidence_paths: {normalized}"
+                )
+            try:
+                document = yaml.safe_load(path.read_text(encoding="utf-8"))
+            except (OSError, UnicodeDecodeError, yaml.YAMLError) as exc:
+                errors.append(f"phase2_spec native evidence is unreadable: {normalized}: {exc}")
+                continue
+            if not isinstance(document, dict):
+                errors.append(
+                    f"phase2_spec native evidence must contain a mapping: {normalized}"
+                )
+                continue
+            documents[field] = document
+
+        meta = documents.get("meta_path", {})
+        native_coverage = meta.get(coverage_key) if isinstance(coverage_key, str) else None
+        if not isinstance(native_coverage, dict):
+            errors.append(
+                f"phase2_spec native meta is missing mapped coverage key {coverage_key!r}"
+            )
+        else:
+            for layer in _LAYER_KEYS:
+                native_row = native_coverage.get(layer)
+                manifest_row = coverage.get(layer) if isinstance(coverage, dict) else None
+                if not isinstance(native_row, dict):
+                    errors.append(f"phase2_spec native coverage is missing {layer}")
+                    continue
+                native_counts = {key: native_row.get(key) for key in _COUNT_KEYS}
+                manifest_counts = (
+                    {key: manifest_row.get(key) for key in _COUNT_KEYS}
+                    if isinstance(manifest_row, dict)
+                    else None
+                )
+                if native_counts != manifest_counts:
+                    errors.append(
+                        f"phase2_spec manifest coverage {layer} does not match native evidence"
+                    )
+
+        native_ai_ready = meta.get("ai_ready")
+        if native_ai_ready != ai_ready:
+            errors.append("phase2_spec manifest ai_ready does not match native evidence")
+
+        gaps_document = documents.get("gaps_path", {})
+        native_gaps = gaps_document.get("gaps")
+        if not isinstance(native_gaps, list):
+            errors.append("phase2_spec native gaps evidence must contain a gaps array")
+        elif len(native_gaps) != surface.get("open_gaps"):
+            errors.append("phase2_spec manifest open_gaps does not match native evidence")
+
+        review_document = documents.get("review_path", {})
+        native_reviews = review_document.get("reviews")
+        if native_reviews != full_review:
+            errors.append("phase2_spec full_review does not match native review evidence")
+        native_report = {
+            "status": "pass" if not errors else "fail",
+            "format": native_evidence.get("format"),
+            "paths": normalized_paths,
+        }
+
+    native_paths = set(native_report.get("paths", {}).values())
     for relative in surface.get("evidence_paths", []):
         path = root / str(relative)
         try:
@@ -660,7 +765,7 @@ def _validate_phase2(
             continue
         if not body.strip():
             errors.append(f"phase2_spec evidence is empty: {relative}")
-        elif _contains_unresolved_placeholder(body):
+        elif relative not in native_paths and _contains_unresolved_placeholder(body):
             errors.append(f"phase2_spec evidence contains placeholder text: {relative}")
     return errors, {
         "status": "pass" if not errors else "fail",
@@ -668,8 +773,30 @@ def _validate_phase2(
         "ai_ready": ai_ready,
         "open_gaps": surface.get("open_gaps"),
         "full_review": full_review,
+        "native_evidence": native_report,
         "exceptions": [],
     }
+
+
+def _evidence_digests(
+    root: Path, surfaces: dict[str, dict[str, object]]
+) -> list[dict[str, str]]:
+    paths = sorted(
+        {
+            str(relative)
+            for surface in surfaces.values()
+            for relative in surface.get("evidence_paths", [])
+        }
+    )
+    evidence: list[dict[str, str]] = []
+    for relative in paths:
+        path = root / relative
+        try:
+            digest = hashlib.sha256(path.read_bytes()).hexdigest()
+        except OSError:
+            continue
+        evidence.append({"path": relative, "sha256": digest})
+    return evidence
 
 
 def _atomic_write_json(path: Path, payload: dict[str, object]) -> None:
@@ -812,6 +939,7 @@ def main(argv: list[str] | None = None) -> int:
             "path": "config/bootstrap-adoption.json",
             "sha256": manifest_hash,
         },
+        "evidence": _evidence_digests(root, surfaces),
         "profile": profile,
         "surfaces": surfaces,
         "bootstrap_start_gate": gate,

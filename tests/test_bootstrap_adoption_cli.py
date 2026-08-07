@@ -164,7 +164,11 @@ def _manifest() -> dict[str, object]:
     }
     surfaces["phase2_spec"] = {
         "disposition": "repository_owned",
-        "evidence_paths": ["spec/native-evidence.md"],
+        "evidence_paths": [
+            "spec/meta.yaml",
+            "spec/gaps.yaml",
+            "spec/bootstrap-adoption-review.yaml",
+        ],
         "coverage": {
             "l1": {"total": 2, "filled": 2, "derived": 0, "na": 0, "tbd": 0},
             "l2": {"total": 3, "filled": 2, "derived": 1, "na": 0, "tbd": 0},
@@ -180,6 +184,13 @@ def _manifest() -> dict[str, object]:
             "requirements": "pass",
             "organization": "pass",
         },
+        "native_evidence": {
+            "format": "mir_spec_yaml_v1",
+            "meta_path": "spec/meta.yaml",
+            "coverage_key": "coverage",
+            "gaps_path": "spec/gaps.yaml",
+            "review_path": "spec/bootstrap-adoption-review.yaml",
+        },
     }
     return {
         "schema_version": 1,
@@ -193,7 +204,27 @@ def _manifest() -> dict[str, object]:
 
 def _ready_project(root: Path) -> dict[str, object]:
     _write(root / "CLAUDE.md", "# Repository contract\n\nPreserve authored behavior.\n")
-    _write(root / "spec/native-evidence.md", "# Native specification evidence\n\nVerified.\n")
+    _write(
+        root / "spec/meta.yaml",
+        """coverage:
+  l1: {total: 2, filled: 2, derived: 0, na: 0, tbd: 0}
+  l2: {total: 3, filled: 2, derived: 1, na: 0, tbd: 0}
+  l3: {total: 4, filled: 3, derived: 1, na: 0, tbd: 0}
+  l4: {total: 5, filled: 4, derived: 0, na: 1, tbd: 0}
+ai_ready: {ready: 1, incomplete: 0, blocked: 0}
+""",
+    )
+    _write(root / "spec/gaps.yaml", "gaps: []\n")
+    _write(
+        root / "spec/bootstrap-adoption-review.yaml",
+        """reviews:
+  project_structure: pass
+  memory: pass
+  discoverability: pass
+  requirements: pass
+  organization: pass
+""",
+    )
     _write_profile(root)
     _write_gate_and_launcher(root)
     _write_memory(root)
@@ -337,6 +368,10 @@ def test_bootstrap_adoption_documented_exceptions_should_remain_visible_in_ready
         "reason": "The mature repository retains its accepted native specification system.",
         "blockers": ["Automated four-layer export is not available from the native format."],
     }
+    _write(
+        tmp_path / "spec/native-evidence.md",
+        "# Native specification evidence\n\nThe accepted native format remains in force.\n",
+    )
     _write(tmp_path / "config/bootstrap-adoption.json", json.dumps(manifest))
 
     assert _run(tmp_path, "--apply") == 0
@@ -357,7 +392,7 @@ def test_bootstrap_adoption_should_reject_missing_or_placeholder_phase2_evidence
     tmp_path, capsys
 ):
     manifest = _ready_project(tmp_path)
-    manifest["surfaces"]["phase2_spec"]["evidence_paths"] = ["spec/missing.md"]
+    manifest["surfaces"]["phase2_spec"]["evidence_paths"].append("spec/missing.md")
     _write(tmp_path / "config/bootstrap-adoption.json", json.dumps(manifest))
 
     assert _run(tmp_path) == 2
@@ -375,9 +410,9 @@ def test_bootstrap_adoption_should_accept_resolved_tbd_count_in_phase2_evidence(
 ):
     manifest = _ready_project(tmp_path)
     _write(tmp_path / "spec/evidence.yaml", "tbd: 0\n")
-    manifest["surfaces"]["phase2_spec"]["evidence_paths"] = [
+    manifest["surfaces"]["phase2_spec"]["evidence_paths"].append(
         "spec/evidence.yaml"
-    ]
+    )
     _write(tmp_path / "config/bootstrap-adoption.json", json.dumps(manifest))
 
     assert _run(tmp_path) == 0
@@ -458,6 +493,24 @@ def test_bootstrap_adoption_should_reject_incomplete_native_coverage(tmp_path, c
     assert _run(tmp_path) == 2
     report = json.loads(capsys.readouterr().out)
     assert any("unresolved TBD" in error for error in report["errors"])
+
+
+def test_bootstrap_adoption_should_reject_manifest_counts_that_drift_from_native_spec(
+    tmp_path, capsys
+):
+    manifest = _ready_project(tmp_path)
+    manifest["surfaces"]["phase2_spec"]["coverage"]["l3"] = {
+        "total": 4,
+        "filled": 3,
+        "derived": 0,
+        "na": 1,
+        "tbd": 0,
+    }
+    _write(tmp_path / "config/bootstrap-adoption.json", json.dumps(manifest))
+
+    assert _run(tmp_path) == 2
+    report = json.loads(capsys.readouterr().out)
+    assert any("does not match native evidence" in error for error in report["errors"])
 
 
 def test_bootstrap_adoption_should_verify_gate_and_managed_launcher_wiring(tmp_path, capsys):
