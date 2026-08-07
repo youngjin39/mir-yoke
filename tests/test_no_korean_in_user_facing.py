@@ -1,4 +1,5 @@
-"""Test that no Korean Hangul characters appear in user-facing files (public template must be English-only)."""
+"""Ensure the public template has no Hangul in user-facing files."""
+
 import re
 from pathlib import Path
 
@@ -7,9 +8,15 @@ from pathlib import Path
 # U+1100-U+11FF: Hangul Jamo
 # U+3130-U+318F: Hangul compatibility Jamo
 _RANGE = (
-    chr(0xAC00) + "-" + chr(0xD7AF)
-    + chr(0x1100) + "-" + chr(0x11FF)
-    + chr(0x3130) + "-" + chr(0x318F)
+    chr(0xAC00)
+    + "-"
+    + chr(0xD7AF)
+    + chr(0x1100)
+    + "-"
+    + chr(0x11FF)
+    + chr(0x3130)
+    + "-"
+    + chr(0x318F)
 )
 HANGUL = re.compile("[" + _RANGE + "]")
 
@@ -46,9 +53,8 @@ def test_no_korean_in_template():
         matches = HANGUL.findall(content)
         if matches:
             violations.append((str(path), matches[:5]))
-    assert not violations, (
-        f"Korean Hangul detected in {len(violations)} file(s):\n"
-        + "\n".join(f"  {p}: {m}" for p, m in violations[:10])
+    assert not violations, f"Korean Hangul detected in {len(violations)} file(s):\n" + "\n".join(
+        f"  {p}: {m}" for p, m in violations[:10]
     )
 
 

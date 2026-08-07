@@ -7,7 +7,6 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parent.parent
 SKIP_PARTS = {".git", ".claude", ".codex", ".agents", ".mir-backup", ".venv", "__pycache__"}
 DEFAULT_RELATIVE_TARGETS = (
@@ -22,8 +21,27 @@ DEFAULT_RELATIVE_TARGETS = (
     "tests/CLAUDE.md",
     "src/CLAUDE.md",
 )
-ROOT_DOC_NAMES = {"CLAUDE.md", "AGENTS.md", "ARCHITECTURE.md", "PRD.md", "ADR.md", "UI_GUIDE.md", "README.md"}
-KNOWN_PREFIXES = ("./", "../", ".claude/", ".codex/", ".agents/", "docs/", "tasks/", "scripts/", "tests/", "src/")
+ROOT_DOC_NAMES = {
+    "CLAUDE.md",
+    "AGENTS.md",
+    "ARCHITECTURE.md",
+    "PRD.md",
+    "ADR.md",
+    "UI_GUIDE.md",
+    "README.md",
+}
+KNOWN_PREFIXES = (
+    "./",
+    "../",
+    ".claude/",
+    ".codex/",
+    ".agents/",
+    "docs/",
+    "tasks/",
+    "scripts/",
+    "tests/",
+    "src/",
+)
 PATH_SUFFIXES = {".md", ".json", ".py", ".sh", ".toml", ".yaml", ".yml", ".txt"}
 MARKDOWN_LINK_RE = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
 BACKTICK_RE = re.compile(r"`([^`\n]+)`")
@@ -115,7 +133,9 @@ def normalize_token(token: str) -> str | None:
     if token.startswith(KNOWN_PREFIXES):
         return token
     if "/" in token:
-        if token.startswith(".") and not token.startswith(("./", "../", ".claude/", ".codex/", ".agents/")):
+        if token.startswith(".") and not token.startswith(
+            ("./", "../", ".claude/", ".codex/", ".agents/")
+        ):
             return None
         suffix = Path(token.rstrip("/")).suffix
         if token.endswith("/") or suffix in PATH_SUFFIXES:

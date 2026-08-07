@@ -47,7 +47,9 @@ def resolve_family_path(slug: str) -> pathlib.Path:
     normalized = _normalize_slug(slug)
     if normalized not in _FAMILY_PATHS:
         known = ", ".join(sorted(_FAMILY_PATHS)) or "(none registered)"
-        raise KeyError(f"Unknown family slug: {slug!r} (normalized: {normalized!r}).\nKnown slugs: {known}")
+        raise KeyError(
+            f"Unknown family slug: {slug!r} (normalized: {normalized!r}).\nKnown slugs: {known}"
+        )
     return _FAMILY_PATHS[normalized]
 
 

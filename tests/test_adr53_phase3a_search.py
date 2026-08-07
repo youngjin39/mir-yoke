@@ -1,4 +1,5 @@
 """ADR-53 Phase 3a — search() status filter + recency ranking tests (TDD-first)."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -68,9 +69,7 @@ def test_search_include_history_returns_all(tmp_path):
         )
         c.conn.commit()
 
-        hits = es.search(
-            "quantum entanglement", k=10, embed_fn=None, include_history=True
-        )
+        hits = es.search("quantum entanglement", k=10, embed_fn=None, include_history=True)
         paths = {h.relative_path for h in hits}
 
         assert "active.md" in paths
@@ -268,22 +267,23 @@ def test_search_fts_only_result_order_is_deterministic(tmp_path):
     finally:
         c.conn.close()
 
+
 def test_search_include_history_hit_has_correct_status(tmp_path):
-    """include_history=True: expired doc hit has status=='expired', active doc has status=='active'."""
-    c = store.connect(tmp_path / 'memory.db')
+    """Return the right status for expired and active history search hits."""
+    c = store.connect(tmp_path / "memory.db")
     try:
         store.apply_migrations(c.conn)
         es = ExternalStore(c)
-        root = tmp_path / 'archive'
-        _write(root, 'active.md', 'quantum entanglement active document text here')
-        _write(root, 'expired.md', 'quantum entanglement expired document text here')
+        root = tmp_path / "archive"
+        _write(root, "active.md", "quantum entanglement active document text here")
+        _write(root, "expired.md", "quantum entanglement expired document text here")
 
         archive_id = es.register(
-            slug='test-status-archive',
+            slug="test-status-archive",
             root_path=str(root),
-            mode='indexed',
-            owner='family:x',
-            glob_include=('**/*.md',),
+            mode="indexed",
+            owner="family:x",
+            glob_include=("**/*.md",),
         )
         es.scan(archive_id, embed_fn=None)
 
@@ -292,12 +292,12 @@ def test_search_include_history_hit_has_correct_status(tmp_path):
         )
         c.conn.commit()
 
-        hits = es.search('quantum entanglement', k=10, embed_fn=None, include_history=True)
+        hits = es.search("quantum entanglement", k=10, embed_fn=None, include_history=True)
         by_path = {h.relative_path: h for h in hits}
 
-        assert 'active.md' in by_path, 'active doc must appear'
-        assert 'expired.md' in by_path, 'expired doc must appear with include_history=True'
-        assert by_path['active.md'].status == 'active', 'active doc hit must have status=active'
-        assert by_path['expired.md'].status == 'expired', 'expired doc hit must have status=expired'
+        assert "active.md" in by_path, "active doc must appear"
+        assert "expired.md" in by_path, "expired doc must appear with include_history=True"
+        assert by_path["active.md"].status == "active", "active doc hit must have status=active"
+        assert by_path["expired.md"].status == "expired", "expired doc hit must have status=expired"
     finally:
         c.conn.close()

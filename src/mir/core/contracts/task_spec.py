@@ -3,6 +3,7 @@
 design §4.1.4 · Q2 5 required + 6 optional + extensions.
 Harness B Hook #1 (`taskspec_validate.py`) validates against this schema.
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -24,7 +25,10 @@ class TaskSpec(BaseModel):
     intent: str = Field(
         min_length=1,
         max_length=8000,
-        description="Natural-language summary of the user intent. Extracted by Conductor from the Discord message.",
+        description=(
+            "Natural-language summary of the user intent. Extracted by Conductor "
+            "from the Discord message."
+        ),
     )
     scope: tuple[str, ...] = Field(
         min_length=1,
@@ -32,20 +36,26 @@ class TaskSpec(BaseModel):
     )
     success_criteria: tuple[str, ...] = Field(
         min_length=1,
-        description="Observable completion criteria (for example, 'tests pass', 'lint=0'). Evidence for intent verification.",
+        description=(
+            "Observable completion criteria (for example, 'tests pass', "
+            "'lint=0'). Evidence for intent verification."
+        ),
     )
     role_binding: str = Field(pattern=r"^(executor|reviewer|planner|tester)$")
     budget: dict[str, int] = Field(
-        description="{tokens, time_sec, retries}. Merged with env.budget_defaults during Engine compile.",
+        description=(
+            "{tokens, time_sec, retries}. Merged with env.budget_defaults during "
+            "Engine compile."
+        ),
     )
 
     # === optional (6) ===
-    target_files: tuple[dict, ...] = ()          # [{path, inode?, sha256?}]  — fixed at compile time
-    expected_symbols: tuple[str, ...] = ()       # for function/class/module verification
-    required_tools: tuple[str, ...] = ()         # your-harness MCP tool allowlist subset
-    stack: str | None = None                     # "python" / "flutter" / ... (guides.toml mapping)
-    parent_task_id: int | None = None            # retry / child-task linkage
-    fingerprint: str | None = None               # Discord event canonical_json sha256 (R4 TOCTOU)
+    target_files: tuple[dict, ...] = ()  # [{path, inode?, sha256?}]  — fixed at compile time
+    expected_symbols: tuple[str, ...] = ()  # for function/class/module verification
+    required_tools: tuple[str, ...] = ()  # your-harness MCP tool allowlist subset
+    stack: str | None = None  # "python" / "flutter" / ... (guides.toml mapping)
+    parent_task_id: int | None = None  # retry / child-task linkage
+    fingerprint: str | None = None  # Discord event canonical_json sha256 (R4 TOCTOU)
 
     # === v0.6 ADR 3 Phase gate ===
     phase_tag: str | None = None

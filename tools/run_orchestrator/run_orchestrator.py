@@ -1,4 +1,5 @@
 """Mir orchestrator run_state driver — phase-4 13-state SM."""
+
 from __future__ import annotations
 
 import json
@@ -20,7 +21,9 @@ from tools.run_orchestrator.state_machine import (
 )
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_RUN_STATE_PATH = Path(os.environ.get("MIR_RUN_STATE_PATH", str(PROJECT_ROOT / "tasks" / "run_state.json")))
+DEFAULT_RUN_STATE_PATH = Path(
+    os.environ.get("MIR_RUN_STATE_PATH", str(PROJECT_ROOT / "tasks" / "run_state.json"))
+)
 DEFAULT_RUN_STATE_SCHEMA_PATH = (
     PROJECT_ROOT / "docs" / "templates" / "_schema" / "run_state.schema.json"
 )
@@ -38,6 +41,7 @@ class SchemaValidationError(RunOrchestratorError):
 
 
 # ----- ULID generation -----
+
 
 def _generate_ulid() -> str:
     """Generate a 26-char Crockford base32 ULID.
@@ -69,7 +73,7 @@ def _generate_ulid() -> str:
 
 # ----- ULID validation -----
 
-_ULID_PATTERN = re.compile(r'^[0-9A-HJKMNP-TV-Z]{26}$')
+_ULID_PATTERN = re.compile(r"^[0-9A-HJKMNP-TV-Z]{26}$")
 
 
 def _validate_ulid(value: str, field_name: str) -> None:
@@ -77,7 +81,7 @@ def _validate_ulid(value: str, field_name: str) -> None:
     if not _ULID_PATTERN.match(value):
         raise ValueError(
             f"Invalid ULID for '{field_name}': {value!r}. "
-            'Must be 26 uppercase Crockford base32 characters [0-9A-HJKMNP-TV-Z].'
+            "Must be 26 uppercase Crockford base32 characters [0-9A-HJKMNP-TV-Z]."
         )
 
 
@@ -103,6 +107,7 @@ def _validate(run_state: dict, schema_path: Path = DEFAULT_RUN_STATE_SCHEMA_PATH
 
 # ----- atomic write -----
 
+
 def _atomic_write(data: dict, path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp = tempfile.mkstemp(
@@ -122,6 +127,7 @@ def _atomic_write(data: dict, path: Path) -> None:
 
 
 # ----- public API -----
+
 
 def load_run_state(path: Path = DEFAULT_RUN_STATE_PATH) -> dict:
     """Load + jsonschema validate run_state.json. Raise on schema fail."""
@@ -148,8 +154,8 @@ def init_run(
         "last_transition": now,
     }
     if session_id is not None:
-        _validate_ulid(session_id, 'session_id')
-        run_state['session_id'] = session_id
+        _validate_ulid(session_id, "session_id")
+        run_state["session_id"] = session_id
     _validate(run_state)
     _atomic_write(run_state, path)
     return run_state
@@ -174,8 +180,7 @@ def transition(
     if not is_valid_run_transition(current, target):
         allowed = sorted(s.value for s in RUN_TRANSITIONS.get(current, set()))
         raise InvalidRunTransitionError(
-            f"Invalid transition {current.value} -> {target.value}. "
-            f"Allowed: {allowed}"
+            f"Invalid transition {current.value} -> {target.value}. Allowed: {allowed}"
         )
 
     now = datetime.now(UTC).isoformat()
@@ -184,8 +189,13 @@ def transition(
 
     # Permitted optional fields from kwargs
     _ALLOWED_KWARGS = {
-        'current_lane', 'blocked_reason', 'rollback_target', 'approval_id', 'retry_count',
-        'current_step_id', 'session_id',
+        "current_lane",
+        "blocked_reason",
+        "rollback_target",
+        "approval_id",
+        "retry_count",
+        "current_step_id",
+        "session_id",
     }
     for key, value in kwargs.items():
         if key in _ALLOWED_KWARGS:

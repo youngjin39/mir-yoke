@@ -14,6 +14,7 @@ classify_drift(ledger_entry, harness_source_path, deployed_path) -> str
 refresh_specialists(family_root, slugs, *, apply=False, dry_run=True) -> dict
 SpecialistDeployError(Exception)
 """
+
 from __future__ import annotations
 
 import difflib
@@ -22,7 +23,7 @@ import json
 import os
 import subprocess
 import tempfile
-from datetime import UTC, datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -159,8 +160,12 @@ def classify_drift(
     recorded_source_sha = ledger_entry.get("source_sha256", "")
     recorded_deployed_sha = ledger_entry.get("deployed_sha256", "")
 
-    current_source_sha = compute_normalized_sha256(harness_source_path) if harness_source_path.exists() else ""
-    current_deployed_sha = compute_normalized_sha256(deployed_path) if deployed_path.exists() else ""
+    current_source_sha = (
+        compute_normalized_sha256(harness_source_path) if harness_source_path.exists() else ""
+    )
+    current_deployed_sha = (
+        compute_normalized_sha256(deployed_path) if deployed_path.exists() else ""
+    )
 
     source_changed = current_source_sha != recorded_source_sha
     deployed_changed = current_deployed_sha != recorded_deployed_sha
@@ -230,18 +235,22 @@ def print_three_way_diff(
         baseline_label = "<no ledger entry>"
 
     print("=== Harness HEAD vs family-local ===")
-    diff_ab = list(difflib.unified_diff(
-        harness_lines, family_lines, fromfile=harness_label, tofile=family_label
-    ))
+    diff_ab = list(
+        difflib.unified_diff(
+            harness_lines, family_lines, fromfile=harness_label, tofile=family_label
+        )
+    )
     if diff_ab:
         print("".join(diff_ab), end="")
     else:
         print("(no diff)")
 
     print("=== Harness HEAD vs ledger-baseline ===")
-    diff_ac = list(difflib.unified_diff(
-        harness_lines, baseline_lines, fromfile=harness_label, tofile=baseline_label
-    ))
+    diff_ac = list(
+        difflib.unified_diff(
+            harness_lines, baseline_lines, fromfile=harness_label, tofile=baseline_label
+        )
+    )
     if diff_ac:
         print("".join(diff_ac), end="")
     else:
@@ -249,7 +258,7 @@ def print_three_way_diff(
 
 
 def write_harness_config(family_root: Path, family_slug: str, harness_root: Path) -> None:
-    """Write/update <family-root>/.mir/harness-config.json as a sync copy of the central catalog config/repos/<family_slug>.json entry.
+    """Write the family harness config from its central catalog entry.
 
     Phase C — each repository carries its own harness JSON synced from the central catalog.
     """
@@ -340,9 +349,7 @@ def refresh_specialists(
     """
     active_modes = [m for m in (apply, diff, accept_family) if m]
     if len(active_modes) > 1:
-        raise SpecialistDeployError(
-            "--apply, --diff, --accept-family are mutually exclusive"
-        )
+        raise SpecialistDeployError("--apply, --diff, --accept-family are mutually exclusive")
 
     harness_root = get_harness_root()
     ledger = load_ledger(family_root)
@@ -359,7 +366,9 @@ def refresh_specialists(
                 "drift_status": "missing_source",
                 "error": f"Harness source not found: {source_path}",
             }
-            raise SpecialistDeployError(f"Harness source not found for slug '{slug}': {source_path}")
+            raise SpecialistDeployError(
+                f"Harness source not found for slug '{slug}': {source_path}"
+            )
 
         ledger_entry = ledger["specialists"].get(slug)
         drift_status = classify_drift(ledger_entry, source_path, deployed_path)
@@ -391,7 +400,7 @@ def refresh_specialists(
                 compute_normalized_sha256(deployed_path) if deployed_path.exists() else ""
             )
             source_commit = get_harness_head_commit()
-            now_utc = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+            now_utc = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
             ledger["specialists"][slug] = {
                 "source_path": f".claude/agents/{slug}.md",
                 "source_sha256": source_sha,
@@ -414,7 +423,8 @@ def refresh_specialists(
             # Abort if harness working tree is dirty for this file
             if is_harness_dirty(slug):
                 raise SpecialistDeployError(
-                    f"Harness working tree is dirty for '{slug}'. Commit or stash before deploying.",
+                    f"Harness working tree is dirty for '{slug}'. Commit or stash "
+                    "before deploying.",
                 )
 
             # Idempotent skip on in_sync
@@ -437,18 +447,22 @@ def refresh_specialists(
                     "drift_status": drift_status,
                     "source_sha256": source_sha,
                     "deployed_sha256": current_deployed_sha,
-                    "note": "Family-local file has been modified. Resolve conflict manually before re-running.",
+                    "note": (
+                        "Family-local file has been modified. Resolve conflict "
+                        "manually before re-running."
+                    ),
                 }
                 continue
 
             # Safe to copy
             deployed_path.parent.mkdir(parents=True, exist_ok=True)
             import shutil
+
             shutil.copy2(str(source_path), str(deployed_path))
 
             deployed_sha = compute_normalized_sha256(deployed_path)
             source_commit = get_harness_head_commit()
-            now_utc = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+            now_utc = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
             ledger["specialists"][slug] = {
                 "source_path": f".claude/agents/{slug}.md",
@@ -471,7 +485,9 @@ def refresh_specialists(
             current_deployed_sha = (
                 compute_normalized_sha256(deployed_path) if deployed_path.exists() else ""
             )
-            action = "conflict" if drift_status in ("family_modified", "both_diverged") else "would-copy"
+            action = (
+                "conflict" if drift_status in ("family_modified", "both_diverged") else "would-copy"
+            )
             if drift_status == "in_sync":
                 action = "skipped"
             report[slug] = {

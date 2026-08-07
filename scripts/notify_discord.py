@@ -19,7 +19,6 @@ import sys
 import urllib.request
 from pathlib import Path
 
-
 _MAX_DISCORD_LENGTH = 1900  # leave room for @here prefix and code block markers
 
 

@@ -14,9 +14,10 @@ from __future__ import annotations
 
 import asyncio
 
+from mir.core.worker.mir_provider_adapter import MirProviderAdapter
+
 from mir.core.contracts.compiled_job import CompiledJob
 from mir.core.contracts.provider_result import ProviderResult
-from mir.core.worker.mir_provider_adapter import MirProviderAdapter
 
 
 async def run_provider(

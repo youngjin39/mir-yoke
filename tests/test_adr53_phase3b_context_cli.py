@@ -10,6 +10,7 @@ Tests cover:
 End-to-end wiring test uses subprocess import of `mir.cli.context` main
 to prove the subcommand is callable (not just the internal functions).
 """
+
 from __future__ import annotations
 
 import json
@@ -67,6 +68,7 @@ def test_context_module_importable():
 def test_context_registered_in_subcommands():
     """'context' must appear in the SUBCOMMANDS registry."""
     from mir.cli import SUBCOMMANDS
+
     assert "context" in SUBCOMMANDS, "SUBCOMMANDS must contain 'context'"
 
 
@@ -79,6 +81,7 @@ def test_pull_returns_chunk_lines(tmp_path, capsys):
     """pull with matching query prints [chunk] lines."""
     db_path, _ = _make_db_with_archive(tmp_path)
     from mir.cli.context import main
+
     ret = main(["pull", "machine learning", "--db", str(db_path)])
     out = capsys.readouterr().out
     assert ret == 0
@@ -90,6 +93,7 @@ def test_pull_no_match_prints_notice(tmp_path, capsys):
     """pull with zero matches prints a notice and exits 0."""
     db_path, _ = _make_db_with_archive(tmp_path)
     from mir.cli.context import main
+
     ret = main(["pull", "xyzquux_nomatch_9999", "--db", str(db_path)])
     out = capsys.readouterr().out
     assert ret == 0
@@ -104,6 +108,7 @@ def test_pull_history_flag_queries_facts(tmp_path, capsys):
     c = store.connect(db_path)
     try:
         from mir.core.engine.memory.distill import Triple, insert_triple
+
         insert_triple(
             c.conn,
             Triple(
@@ -118,6 +123,7 @@ def test_pull_history_flag_queries_facts(tmp_path, capsys):
         c.conn.close()
 
     from mir.cli.context import main
+
     ret = main(["pull", "machine learning", "--history", "--db", str(db_path)])
     out = capsys.readouterr().out
     assert ret == 0
@@ -129,6 +135,7 @@ def test_pull_json_flag_returns_machine_shape(tmp_path, capsys):
     """--json flag returns JSON with expected top-level keys."""
     db_path, _ = _make_db_with_archive(tmp_path)
     from mir.cli.context import main
+
     ret = main(["pull", "machine learning", "--json", "--db", str(db_path)])
     out = capsys.readouterr().out
     assert ret == 0
@@ -154,12 +161,15 @@ def test_pull_embed_exception_degrades_to_fts(tmp_path, capsys):
         raise RuntimeError("embedding service unavailable")
 
     from mir.cli import context as ctx_module
+
     # Patch the embed construction so it raises
     with patch.object(
-        ctx_module, "_build_embed_fn",
+        ctx_module,
+        "_build_embed_fn",
         side_effect=RuntimeError("embedding service unavailable"),
     ):
         from mir.cli.context import main
+
         ret = main(["pull", "machine learning", "--db", str(db_path)])
     out = capsys.readouterr().out
     assert ret == 0
@@ -190,8 +200,11 @@ def test_pull_near_dup_collapse(tmp_path, capsys):
         _write(root, "dup_a.md", body)
         _write(root, "dup_b.md", body + " x")  # one token diff — still near-identical
         # One clearly distinct file — different vocabulary, no overlap
-        _write(root, "distinct.md",
-               "photosynthesis chlorophyll sunlight carbon dioxide oxygen plant biology")
+        _write(
+            root,
+            "distinct.md",
+            "photosynthesis chlorophyll sunlight carbon dioxide oxygen plant biology",
+        )
         archive_id = es.register(
             slug="dup-archive",
             root_path=str(root),
@@ -204,6 +217,7 @@ def test_pull_near_dup_collapse(tmp_path, capsys):
         c.conn.close()
 
     from mir.cli.context import main
+
     ret = main(["pull", "machine learning gradient", "--k", "5", "--db", str(db_path)])
     out = capsys.readouterr().out
     assert ret == 0
@@ -230,6 +244,7 @@ def test_pull_read_failure_drops_hit_with_stale_notice(tmp_path, capsys):
     (tmp_path / "archive" / "alpha.md").unlink()
 
     from mir.cli.context import main
+
     ret = main(["pull", "machine learning", "--db", str(db_path)])
     out = capsys.readouterr().out
     assert ret == 0
@@ -267,15 +282,19 @@ def test_pull_snippet_budget_truncates(tmp_path, capsys):
         c.conn.close()
 
     from mir.cli.context import main
+
     ret = main(["pull", "machine learning optimization", "--k", "10", "--db", str(db_path)])
     out = capsys.readouterr().out
     assert ret == 0
     # Total output of snippet content should be bounded
     # Check: all snippet text together < 8KB (budget is 6KB + overhead)
     snippet_content = "\n".join(
-        ln for ln in out.splitlines()
-        if not ln.strip().startswith("[chunk]") and not ln.strip().startswith("[fact]")
-           and not ln.strip().startswith("[stale]") and not ln.strip().startswith("[degraded]")
+        ln
+        for ln in out.splitlines()
+        if not ln.strip().startswith("[chunk]")
+        and not ln.strip().startswith("[fact]")
+        and not ln.strip().startswith("[stale]")
+        and not ln.strip().startswith("[degraded]")
     )
     snippet_bytes = len(snippet_content.encode("utf-8"))
     assert snippet_bytes <= 6144, (
@@ -311,6 +330,7 @@ def test_sync_prints_scan_result(tmp_path, capsys):
         c.conn.close()
 
     from mir.cli.context import main
+
     ret = main(["sync", "--db", str(db_path)])
     out = capsys.readouterr().out
     assert ret == 0
@@ -341,11 +361,18 @@ def test_sync_exits_1_on_failed_entries(tmp_path, capsys):
     # Patch ExternalStore.scan to return a ScanResult with failures
     from mir.cli import context as ctx_module
     from mir.core.engine.memory.external_store import ScanResult
-    with patch.object(ctx_module.ExternalStore, "scan",
-                      return_value=ScanResult(
-                          inserted=0, deleted=0, reindexed=0, unchanged=1,
-                          failed=(("valid.md", "permission denied"),)
-                      )):
+
+    with patch.object(
+        ctx_module.ExternalStore,
+        "scan",
+        return_value=ScanResult(
+            inserted=0,
+            deleted=0,
+            reindexed=0,
+            unchanged=1,
+            failed=(("valid.md", "permission denied"),),
+        ),
+    ):
         ret = ctx_module.main(["sync", "--db", str(db_path)])
     out = capsys.readouterr().out
     assert ret == 1
@@ -368,6 +395,7 @@ def test_pull_empty_archives_notice(tmp_path, capsys):
         c.conn.close()
 
     from mir.cli.context import main
+
     ret = main(["pull", "anything", "--db", str(db_path)])
     out = capsys.readouterr().out
     assert ret == 0
@@ -405,6 +433,7 @@ def test_doc_created_ordinal_datetime_string():
     dt_obj_ordinal = _doc_created_ordinal(json.dumps({"created": "2026-06-06 09:00:00"}))
     assert dt_obj_ordinal == datetime.date(2026, 6, 6).toordinal()
 
+
 def test_pull_history_chunk_shows_expired_status(tmp_path, capsys):
     """pull --history: expired doc chunk must show [expired] label, not [active]."""
     db_path = tmp_path / "memory.db"
@@ -413,10 +442,8 @@ def test_pull_history_chunk_shows_expired_status(tmp_path, capsys):
         store.apply_migrations(c.conn)
         es = ExternalStore(c)
         root = tmp_path / "archive"
-        _write(root, "expired_doc.md",
-               "quantum entanglement expired document content text")
-        _write(root, "active_doc.md",
-               "quantum entanglement active document content text")
+        _write(root, "expired_doc.md", "quantum entanglement expired document content text")
+        _write(root, "active_doc.md", "quantum entanglement active document content text")
         archive_id = es.register(
             slug="status-archive",
             root_path=str(root),
@@ -426,21 +453,19 @@ def test_pull_history_chunk_shows_expired_status(tmp_path, capsys):
         )
         es.scan(archive_id, embed_fn=None)
         c.conn.execute(
-            "UPDATE external_documents SET status='expired' "
-            "WHERE relative_path='expired_doc.md'"
+            "UPDATE external_documents SET status='expired' WHERE relative_path='expired_doc.md'"
         )
         c.conn.commit()
     finally:
         c.conn.close()
 
     from mir.cli.context import main
+
     ret = main(["pull", "quantum entanglement", "--history", "--db", str(db_path)])
     out = capsys.readouterr().out
     assert ret == 0
     # The expired doc chunk must be labeled [expired], not [active]
-    assert "[expired]" in out, (
-        f"Expected [expired] label in output for expired doc, got:\n{out}"
-    )
+    assert "[expired]" in out, f"Expected [expired] label in output for expired doc, got:\n{out}"
 
 
 def test_pull_json_history_chunk_has_status_field(tmp_path, capsys):
@@ -451,8 +476,7 @@ def test_pull_json_history_chunk_has_status_field(tmp_path, capsys):
         store.apply_migrations(c.conn)
         es = ExternalStore(c)
         root = tmp_path / "archive"
-        _write(root, "expired_doc.md",
-               "quantum entanglement expired document content text")
+        _write(root, "expired_doc.md", "quantum entanglement expired document content text")
         archive_id = es.register(
             slug="status-json-archive",
             root_path=str(root),
@@ -462,16 +486,15 @@ def test_pull_json_history_chunk_has_status_field(tmp_path, capsys):
         )
         es.scan(archive_id, embed_fn=None)
         c.conn.execute(
-            "UPDATE external_documents SET status='expired' "
-            "WHERE relative_path='expired_doc.md'"
+            "UPDATE external_documents SET status='expired' WHERE relative_path='expired_doc.md'"
         )
         c.conn.commit()
     finally:
         c.conn.close()
 
     from mir.cli.context import main
-    ret = main(["pull", "quantum entanglement", "--history", "--json",
-                "--db", str(db_path)])
+
+    ret = main(["pull", "quantum entanglement", "--history", "--json", "--db", str(db_path)])
     out = capsys.readouterr().out
     assert ret == 0
     data = json.loads(out)
@@ -548,19 +571,15 @@ glob_include = ["**/*.md"]
 
     builtins.__import__ = _block_loader
     try:
-        ret = ctx_mod.main(["sync", "--db", str(db_path)])
+        ctx_mod.main(["sync", "--db", str(db_path)])
     finally:
         builtins.__import__ = _original_import
 
     # After sync, the archive must be registered and at least 1 document indexed
     c = store.connect(db_path)
     try:
-        archive_rows = c.conn.execute(
-            "SELECT id, slug FROM external_archives"
-        ).fetchall()
-        doc_count = c.conn.execute(
-            "SELECT COUNT(*) FROM external_documents"
-        ).fetchone()[0]
+        archive_rows = c.conn.execute("SELECT id, slug FROM external_archives").fetchall()
+        doc_count = c.conn.execute("SELECT COUNT(*) FROM external_documents").fetchone()[0]
     finally:
         c.conn.close()
 
@@ -569,6 +588,4 @@ glob_include = ["**/*.md"]
         f"got {len(archive_rows)}. This gap was introduced by the stub-config branch "
         f"not parsing TOML archives (ADR-53 stage-3 fix required)."
     )
-    assert doc_count >= 1, (
-        f"Expected >= 1 document ingested after sync, got {doc_count}."
-    )
+    assert doc_count >= 1, f"Expected >= 1 document ingested after sync, got {doc_count}."

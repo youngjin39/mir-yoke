@@ -23,6 +23,7 @@ _REPO_ROOT = pathlib.Path(__file__).resolve().parents[3]
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_ledger(tmp_path: pathlib.Path, categories: dict) -> pathlib.Path:
     """Write a minimal tdd.json with one entry to tmp_path/tasks/tdd.json."""
     tasks_dir = tmp_path / "tasks"
@@ -116,7 +117,9 @@ def _write_dispatch_brief(tmp_path: pathlib.Path) -> pathlib.Path:
                 "expanded_goal": "Fix src/foo.py [role=executor, stack=python]",
                 "owned_scope": ["src/foo.py"],
                 "out_of_scope": ["docs/**"],
-                "verification_commands": ["uv run pytest -q tools/mir_executor/tests/test_executor.py"],
+                "verification_commands": [
+                    "uv run pytest -q tools/mir_executor/tests/test_executor.py"
+                ],
                 "stop_conditions": ["Stop if the change requires files outside owned_scope."],
                 "handoff_refs": [],
                 "tdd_change_refs": ["tasks/tdd.json#test-change-id"],
@@ -139,6 +142,7 @@ def _write_dispatch_brief(tmp_path: pathlib.Path) -> pathlib.Path:
 # 1. SubprocessResult exit_code pass
 # ---------------------------------------------------------------------------
 
+
 def test_subprocess_result_exit_code_pass(tmp_path, monkeypatch):
     _install_fake_codex_mcp_client(monkeypatch)
     executor = MirExecutor(repo_root=tmp_path)
@@ -149,6 +153,7 @@ def test_subprocess_result_exit_code_pass(tmp_path, monkeypatch):
 # ---------------------------------------------------------------------------
 # 2. CodexMcpResult content maps to stdout and stderr stays empty
 # ---------------------------------------------------------------------------
+
 
 def test_subprocess_result_maps_mcp_content_to_stdout(tmp_path, monkeypatch):
     _install_fake_codex_mcp_client(
@@ -169,6 +174,7 @@ def test_subprocess_result_maps_mcp_content_to_stdout(tmp_path, monkeypatch):
 # 3. CODEX_BIN env var is used
 # ---------------------------------------------------------------------------
 
+
 def test_run_codex_uses_codex_bin_env_var(tmp_path, monkeypatch):
     _calls, init_kwargs = _install_fake_codex_mcp_client(monkeypatch)
     monkeypatch.setenv("CODEX_BIN", "/usr/bin/true")
@@ -181,6 +187,7 @@ def test_run_codex_uses_codex_bin_env_var(tmp_path, monkeypatch):
 # ---------------------------------------------------------------------------
 # 4. Default codex bin when CODEX_BIN unset
 # ---------------------------------------------------------------------------
+
 
 def test_run_codex_default_codex_bin_when_env_unset(tmp_path, monkeypatch):
     _calls, init_kwargs = _install_fake_codex_mcp_client(monkeypatch)
@@ -267,6 +274,7 @@ def test_run_codex_maps_mcp_error_to_subprocess_result(tmp_path, monkeypatch):
 # 5. FileNotFoundError propagated with clear message
 # ---------------------------------------------------------------------------
 
+
 def test_run_codex_raises_file_not_found_when_codex_missing(tmp_path, monkeypatch):
     monkeypatch.setenv("CODEX_BIN", "/nonexistent/codex")
     _install_fake_codex_mcp_client(
@@ -281,6 +289,7 @@ def test_run_codex_raises_file_not_found_when_codex_missing(tmp_path, monkeypatc
 # ---------------------------------------------------------------------------
 # 6. TimeoutExpired propagated
 # ---------------------------------------------------------------------------
+
 
 def test_run_codex_propagates_timeout(tmp_path, monkeypatch):
     _install_fake_codex_mcp_client(
@@ -308,6 +317,7 @@ def test_run_codex_default_init_timeout_is_normal_mcp_failure(tmp_path, monkeypa
 # ---------------------------------------------------------------------------
 # 7. update_ledger sets status=pass on exit_code=0
 # ---------------------------------------------------------------------------
+
 
 def test_update_ledger_sets_status_pass_on_exit_zero(tmp_path):
     ledger_path = _make_ledger(tmp_path, {"unit": {"status": "planned"}})
@@ -342,6 +352,7 @@ def test_validate_and_update_ledger_support_top_level_mapping_schema(tmp_path):
 # 8. update_ledger sets status=fail on nonzero exit
 # ---------------------------------------------------------------------------
 
+
 def test_update_ledger_sets_status_fail_on_nonzero_exit(tmp_path, monkeypatch):
     ledger_path = _make_ledger(tmp_path, {"unit": {"status": "planned"}})
     executor = MirExecutor(repo_root=tmp_path, ledger_path=ledger_path)
@@ -357,6 +368,7 @@ def test_update_ledger_sets_status_fail_on_nonzero_exit(tmp_path, monkeypatch):
 # ---------------------------------------------------------------------------
 # 9. update_ledger writes command field
 # ---------------------------------------------------------------------------
+
 
 def test_update_ledger_writes_command_field(tmp_path):
     ledger_path = _make_ledger(tmp_path, {"unit": {"status": "planned"}})
@@ -378,6 +390,7 @@ def test_update_ledger_writes_command_field(tmp_path):
 # ---------------------------------------------------------------------------
 # 10. update_ledger writes notes with rc= and stderr excerpt
 # ---------------------------------------------------------------------------
+
 
 def test_update_ledger_writes_notes_with_rc_and_stderr_excerpt(tmp_path):
     ledger_path = _make_ledger(tmp_path, {"unit": {"status": "planned"}})
@@ -402,6 +415,7 @@ def test_update_ledger_writes_notes_with_rc_and_stderr_excerpt(tmp_path):
 # 11. update_ledger returns previous_status
 # ---------------------------------------------------------------------------
 
+
 def test_update_ledger_returns_previous_status(tmp_path):
     ledger_path = _make_ledger(tmp_path, {"unit": {"status": "in_progress"}})
     executor = MirExecutor(repo_root=tmp_path, ledger_path=ledger_path)
@@ -415,6 +429,7 @@ def test_update_ledger_returns_previous_status(tmp_path):
 # ---------------------------------------------------------------------------
 # 12. update_ledger raises KeyError on unknown change_id
 # ---------------------------------------------------------------------------
+
 
 def test_update_ledger_raises_key_error_on_unknown_change_id(tmp_path):
     ledger_path = _make_ledger(tmp_path, {"unit": {"status": "planned"}})
@@ -430,6 +445,7 @@ def test_update_ledger_raises_key_error_on_unknown_change_id(tmp_path):
 # 13. update_ledger raises KeyError on unknown category (no silent add)
 # ---------------------------------------------------------------------------
 
+
 def test_update_ledger_raises_key_error_on_unknown_category(tmp_path):
     ledger_path = _make_ledger(tmp_path, {"unit": {"status": "planned"}})
     executor = MirExecutor(repo_root=tmp_path, ledger_path=ledger_path)
@@ -444,6 +460,7 @@ def test_update_ledger_raises_key_error_on_unknown_category(tmp_path):
 # 14. update_ledger raises FileNotFoundError when ledger missing
 # ---------------------------------------------------------------------------
 
+
 def test_update_ledger_raises_file_not_found_when_ledger_missing(tmp_path):
     missing = tmp_path / "tasks" / "tdd.json"
     executor = MirExecutor(repo_root=tmp_path, ledger_path=missing)
@@ -457,6 +474,7 @@ def test_update_ledger_raises_file_not_found_when_ledger_missing(tmp_path):
 # ---------------------------------------------------------------------------
 # 15. update_ledger atomic write — result file is valid JSON, no .tmp left
 # ---------------------------------------------------------------------------
+
 
 def test_update_ledger_atomic_write(tmp_path):
     ledger_path = _make_ledger(tmp_path, {"unit": {"status": "planned"}})
@@ -478,6 +496,7 @@ def test_update_ledger_atomic_write(tmp_path):
 # ---------------------------------------------------------------------------
 # 16. execute() convenience method calls both run_codex and update_ledger
 # ---------------------------------------------------------------------------
+
 
 def test_execute_combines_run_and_update(tmp_path, monkeypatch):
     _install_fake_codex_mcp_client(
@@ -507,6 +526,7 @@ def test_execute_combines_run_and_update(tmp_path, monkeypatch):
 # 17. CLI execute subcommand invokes executor and updates ledger
 # ---------------------------------------------------------------------------
 
+
 def test_cli_execute_subcommand_invokes_executor(tmp_path, monkeypatch):
     calls, _init_kwargs = _install_fake_codex_mcp_client(
         monkeypatch,
@@ -522,12 +542,18 @@ def test_cli_execute_subcommand_invokes_executor(tmp_path, monkeypatch):
 
     argv = [
         "execute",
-        "--change-id", "test-change-id",
-        "--category", "unit",
-        "--codex-args", "exec --help",
-        "--repo-root", str(tmp_path),
-        "--model", "medium",
-        "--reasoning-effort", "high",
+        "--change-id",
+        "test-change-id",
+        "--category",
+        "unit",
+        "--codex-args",
+        "exec --help",
+        "--repo-root",
+        str(tmp_path),
+        "--model",
+        "medium",
+        "--reasoning-effort",
+        "high",
     ]
     # Inject the ledger_path by pointing repo_root to tmp_path — ledger is at tasks/tdd.json
     main(argv)
@@ -543,7 +569,7 @@ def test_cli_execute_subcommand_invokes_executor(tmp_path, monkeypatch):
 
 
 def test_cli_execute_codex_args_file_uses_raw_prompt(tmp_path, monkeypatch):
-    prompt = "Don't split \"quoted text\" or --flag-like words."
+    prompt = 'Don\'t split "quoted text" or --flag-like words.'
     prompt_path = tmp_path / "prompt.txt"
     prompt_path.write_text(prompt, encoding="utf-8")
     calls, _init_kwargs = _install_fake_codex_mcp_client(
@@ -561,10 +587,14 @@ def test_cli_execute_codex_args_file_uses_raw_prompt(tmp_path, monkeypatch):
     main(
         [
             "execute",
-            "--change-id", "test-change-id",
-            "--category", "unit",
-            "--codex-args-file", str(prompt_path),
-            "--repo-root", str(tmp_path),
+            "--change-id",
+            "test-change-id",
+            "--category",
+            "unit",
+            "--codex-args-file",
+            str(prompt_path),
+            "--repo-root",
+            str(tmp_path),
         ]
     )
 
@@ -590,10 +620,14 @@ def test_cli_execute_codex_args_file_read_error_returns_rc1(tmp_path, capsys):
         main(
             [
                 "execute",
-                "--change-id", "test-change-id",
-                "--category", "unit",
-                "--codex-args-file", str(missing_path),
-                "--repo-root", str(tmp_path),
+                "--change-id",
+                "test-change-id",
+                "--category",
+                "unit",
+                "--codex-args-file",
+                str(missing_path),
+                "--repo-root",
+                str(tmp_path),
             ]
         )
 
@@ -604,6 +638,7 @@ def test_cli_execute_codex_args_file_read_error_returns_rc1(tmp_path, capsys):
 # ---------------------------------------------------------------------------
 # 18. execute() fails fast on unknown change_id — Codex never invoked (W3)
 # ---------------------------------------------------------------------------
+
 
 def test_execute_fails_fast_on_unknown_change_id_BEFORE_running_codex(tmp_path, monkeypatch):
     ledger_path = _make_ledger(tmp_path, {"unit": {"status": "planned"}})
@@ -620,6 +655,7 @@ def test_execute_fails_fast_on_unknown_change_id_BEFORE_running_codex(tmp_path, 
 # 19. execute() fails fast on unknown category — Codex never invoked (W3)
 # ---------------------------------------------------------------------------
 
+
 def test_execute_fails_fast_on_unknown_category_BEFORE_running_codex(tmp_path, monkeypatch):
     ledger_path = _make_ledger(tmp_path, {"unit": {"status": "planned"}})
     calls, _init_kwargs = _install_fake_codex_mcp_client(monkeypatch)
@@ -635,6 +671,7 @@ def test_execute_fails_fast_on_unknown_category_BEFORE_running_codex(tmp_path, m
 # 20. CLI exits rc=1 with 'timeout' in stderr on TimeoutExpired (W4)
 # ---------------------------------------------------------------------------
 
+
 def test_cli_handles_timeout_expired_gracefully(tmp_path, monkeypatch, capsys):
     _make_ledger(tmp_path, {"unit": {"status": "planned"}})
     _install_fake_codex_mcp_client(
@@ -646,11 +683,16 @@ def test_cli_handles_timeout_expired_gracefully(tmp_path, monkeypatch, capsys):
 
     argv = [
         "execute",
-        "--change-id", "test-change-id",
-        "--category", "unit",
-        "--codex-args", "exec pytest",
-        "--timeout", "1",
-        "--repo-root", str(tmp_path),
+        "--change-id",
+        "test-change-id",
+        "--category",
+        "unit",
+        "--codex-args",
+        "exec pytest",
+        "--timeout",
+        "1",
+        "--repo-root",
+        str(tmp_path),
     ]
     with pytest.raises(SystemExit) as exc_info:
         main(argv)
@@ -664,6 +706,7 @@ def test_cli_handles_timeout_expired_gracefully(tmp_path, monkeypatch, capsys):
 # 21. CLI exits rc=1 with parse error on unclosed shlex quote (W4)
 # ---------------------------------------------------------------------------
 
+
 def test_cli_handles_value_error_from_shlex_unclosed_quote(tmp_path, capsys):
     _make_ledger(tmp_path, {"unit": {"status": "planned"}})
 
@@ -671,10 +714,14 @@ def test_cli_handles_value_error_from_shlex_unclosed_quote(tmp_path, capsys):
 
     argv = [
         "execute",
-        "--change-id", "test-change-id",
-        "--category", "unit",
-        "--codex-args", "unclosed '",
-        "--repo-root", str(tmp_path),
+        "--change-id",
+        "test-change-id",
+        "--category",
+        "unit",
+        "--codex-args",
+        "unclosed '",
+        "--repo-root",
+        str(tmp_path),
     ]
     with pytest.raises(SystemExit) as exc_info:
         main(argv)
@@ -688,6 +735,7 @@ def test_cli_handles_value_error_from_shlex_unclosed_quote(tmp_path, capsys):
 # 22. CLI exits rc=1 with 'not_applicable' in stderr on guarded category (W5)
 # ---------------------------------------------------------------------------
 
+
 def test_cli_handles_not_applicable_category(tmp_path, monkeypatch, capsys):
     _make_ledger(
         tmp_path,
@@ -699,10 +747,14 @@ def test_cli_handles_not_applicable_category(tmp_path, monkeypatch, capsys):
 
     argv = [
         "execute",
-        "--change-id", "test-change-id",
-        "--category", "e2e",
-        "--codex-args", "exec pytest",
-        "--repo-root", str(tmp_path),
+        "--change-id",
+        "test-change-id",
+        "--category",
+        "e2e",
+        "--codex-args",
+        "exec pytest",
+        "--repo-root",
+        str(tmp_path),
     ]
     with pytest.raises(SystemExit) as exc_info:
         main(argv)

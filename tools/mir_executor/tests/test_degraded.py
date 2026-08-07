@@ -13,7 +13,9 @@ from tools.mir_executor.worktree import cleanup_worktree, create_dispatch_worktr
 
 
 class _Client:
-    def __init__(self, *, start_error: Exception | None = None, call_error: Exception | None = None):
+    def __init__(
+        self, *, start_error: Exception | None = None, call_error: Exception | None = None
+    ):
         self.start_error = start_error
         self.call_error = call_error
 
@@ -49,18 +51,27 @@ def _repo(tmp_path: pathlib.Path) -> pathlib.Path:
     subprocess.run(["git", "-C", str(repo), "config", "user.name", "t"], check=True)
     (repo / "file").write_text("x\n")
     subprocess.run(["git", "-C", str(repo), "add", "-A"], check=True)
-    subprocess.run(["git", "-C", str(repo), "commit", "-m", "init"], check=True, capture_output=True)
+    subprocess.run(
+        ["git", "-C", str(repo), "commit", "-m", "init"], check=True, capture_output=True
+    )
     return repo
 
 
 def test_runner_marks_context_start_failure_as_lane_unavailable(tmp_path):
     repo = _repo(tmp_path)
-    runner = build_codex_mcp_runner(repo, "prompt", client_factory=_Factory(_Client(start_error=FileNotFoundError("missing"))))
+    runner = build_codex_mcp_runner(
+        repo, "prompt", client_factory=_Factory(_Client(start_error=FileNotFoundError("missing")))
+    )
     outcome = run_dispatch(repo, "start-failure", codex_runner=runner)
     try:
         assert outcome.status == "blocked"
         assert outcome.attempts == 1
-        events = [json.loads(line) for line in (outcome.worktree.path / ".mir-dispatch" / "events.jsonl").read_text().splitlines()]
+        events = [
+            json.loads(line)
+            for line in (outcome.worktree.path / ".mir-dispatch" / "events.jsonl")
+            .read_text()
+            .splitlines()
+        ]
         assert any(event.get("lane_unavailable") is True for event in events)
     finally:
         cleanup_worktree(outcome.worktree)
@@ -68,7 +79,9 @@ def test_runner_marks_context_start_failure_as_lane_unavailable(tmp_path):
 
 def test_runner_keeps_call_failure_as_task_failure(tmp_path):
     repo = _repo(tmp_path)
-    runner = build_codex_mcp_runner(repo, "prompt", client_factory=_Factory(_Client(call_error=CodexMcpError("task"))))
+    runner = build_codex_mcp_runner(
+        repo, "prompt", client_factory=_Factory(_Client(call_error=CodexMcpError("task")))
+    )
     wt = create_dispatch_worktree(repo, "call-failure")
     try:
         result = runner(wt, 1)
@@ -84,11 +97,16 @@ def test_run_dispatch_lane_unavailable_never_falls_back(tmp_path):
     outcome = run_dispatch(
         repo,
         "blocked-lane",
-        codex_runner=lambda _wt, attempt: (calls.append(attempt) or CodexAttempt(1, lane_unavailable=True)),
+        codex_runner=lambda _wt, attempt: (
+            calls.append(attempt) or CodexAttempt(1, lane_unavailable=True)
+        ),
     )
     try:
         assert (outcome.status, outcome.attempts, outcome.fell_back, outcome.blocked_reason) == (
-            "blocked", 1, False, "lane-unavailable"
+            "blocked",
+            1,
+            False,
+            "lane-unavailable",
         )
         assert calls == [1]
         status = json.loads((outcome.worktree.path / ".mir-dispatch" / "status.json").read_text())

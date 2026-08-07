@@ -37,9 +37,9 @@ def _cmd_up(ns) -> int:
             print("applied {}: {}".format(len(applied), ", ".join(applied)))
         else:
             print("already up to date")
-        print("schema_version: {}".format(version))
+        print(f"schema_version: {version}")
         vec_status = "ok" if conn.vec_available else "unavailable"
-        print("sqlite-vec: {}".format(vec_status))
+        print(f"sqlite-vec: {vec_status}")
     finally:
         conn.conn.close()
     return 0

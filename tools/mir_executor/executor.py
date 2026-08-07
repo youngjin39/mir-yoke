@@ -4,7 +4,8 @@ executor.py
 MirExecutor: MCP-backed Codex runner + tdd.json ledger update.
 
 Design inspiration: harness_framework (Hermes pattern) — no code copied.
-P0-J lineage: blocking executor MVP; ADR-69 bans raw exec delegation, so Codex runs through codex_mcp_client.py.
+P0-J lineage: blocking executor MVP; ADR-69 bans raw exec delegation, so Codex
+runs through codex_mcp_client.py.
 """
 
 from __future__ import annotations
@@ -388,10 +389,7 @@ class MirExecutor:
         previous_status: str | None = categories[category].get("status")
         new_status = "pass" if result.exit_code == 0 else "fail"
         command_str = " ".join(shlex.quote(p) for p in result.command)
-        notes = (
-            f"P0-J auto: rc={result.exit_code}, "
-            f"stderr first 200 chars: {result.stderr[:200]!r}"
-        )
+        notes = f"P0-J auto: rc={result.exit_code}, stderr first 200 chars: {result.stderr[:200]!r}"
 
         categories[category] = {
             "status": new_status,

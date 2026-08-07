@@ -130,8 +130,9 @@ def _build_mir_self_ledger_md(rows: dict[str, str]) -> str:
         # Extract phase number
         m = re.match(r"phase-(\d+)", phase_key)
         n = m.group(1) if m else "?"
-        lines.append(f"| {n} | [phase-{n}-application](phase-{n}-application.md)"
-                     f" | {status} | – | – | – |")
+        lines.append(
+            f"| {n} | [phase-{n}-application](phase-{n}-application.md) | {status} | – | – | – |"
+        )
     return "\n".join(lines) + "\n"
 
 
@@ -182,7 +183,8 @@ def parse_mir_self_ledger(ledger_path: Path, phase_ref: str) -> str:
 
     # Match table rows: | N[optional extra] | ... | <status> | ...
     # The table has 6 columns; status is column 3 (0-indexed: cols 0-5).
-    # Pattern: row starting with | <phase_num> followed by optional text (e.g. "(R9 added (newly))") |
+    # Pattern: row starting with | <phase_num> followed by optional text
+    # (for example, "(R9 added (newly))") |
     pattern = re.compile(
         r"^\|\s*" + re.escape(phase_num) + r"[^|]*\|[^|]*\|\s*([a-z_]+)\s*\|",
         re.MULTILINE,
@@ -198,9 +200,7 @@ def parse_mir_self_ledger(ledger_path: Path, phase_ref: str) -> str:
 # ---------------------------------------------------------------------------
 
 
-def read_json_adoption_status(
-    catalog_path: Path, family: str, phase_ref: str
-) -> str:
+def read_json_adoption_status(catalog_path: Path, family: str, phase_ref: str) -> str:
     """Read adoption status for (family, phase_ref) from fleet-harness-state.json."""
     try:
         data = json.loads(catalog_path.read_text(encoding="utf-8"))
@@ -299,7 +299,10 @@ def verify_self_stop(  # noqa: PLR0912 (acceptable complexity for gate logic)
     if source_family != "your-harness":
         return VerifyResult(
             decision=Decision.PASS,
-            reason=f"source_family={source_family!r} is not your-harness; self-stop not applicable.",
+            reason=(
+                f"source_family={source_family!r} is not your-harness; "
+                "self-stop not applicable."
+            ),
             source_family=source_family,
             phase=phase,
             ledger_status="n/a",
@@ -453,8 +456,9 @@ _CHECK_MARK = "  v"
 _CROSS_MARK = "  x"
 
 
-def _fmt_console(result: VerifyResult, *, source_family: str, phase: str,
-                 ledger_path: Path, catalog_path: Path) -> str:
+def _fmt_console(
+    result: VerifyResult, *, source_family: str, phase: str, ledger_path: Path, catalog_path: Path
+) -> str:
     lines = [
         "=== your-harness Self-Stop Verification ===",
         f"source_family: {source_family}",
@@ -565,10 +569,10 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         prog="verify_self_stop",
         description="ADR-41 SE-meta self-stop runtime gate.",
     )
-    p.add_argument("--source-family", required=True,
-                   help='Share source family (e.g. "your-harness").')
-    p.add_argument("--phase", required=True,
-                   help='Phase reference (e.g. "phase-4").')
+    p.add_argument(
+        "--source-family", required=True, help='Share source family (e.g. "your-harness").'
+    )
+    p.add_argument("--phase", required=True, help='Phase reference (e.g. "phase-4").')
     p.add_argument(
         "--ledger",
         default="docs/harness-engineering/applications/source-repo/README.md",
@@ -633,14 +637,10 @@ def main(argv: list[str] | None = None) -> int:
     # File existence check (graceful error = exit 2)
     if args.source_family == "your-harness":
         if not ledger_path.exists():
-            sys.stderr.write(
-                f"ERROR: ledger file not found: {ledger_path}\n"
-            )
+            sys.stderr.write(f"ERROR: ledger file not found: {ledger_path}\n")
             return 2
         if not catalog_path.exists():
-            sys.stderr.write(
-                f"ERROR: catalog file not found: {catalog_path}\n"
-            )
+            sys.stderr.write(f"ERROR: catalog file not found: {catalog_path}\n")
             return 2
 
     override = OverrideConfig(

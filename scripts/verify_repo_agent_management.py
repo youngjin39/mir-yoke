@@ -9,6 +9,7 @@ Fleet-specific checks (registry alignment, profile source cross-ref, fleet overr
 enforcement) are skipped because the public template starts with an empty
 repositories_dir and no per-family entries.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -22,7 +23,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from tools.catalog_loader import load_catalog
+from tools.catalog_loader import load_catalog  # noqa: E402
 
 MANIFEST_PATH = ROOT / "config" / "repo-agent-management.json"
 SCHEMA_PATH = ROOT / "config" / "repo-agent-management.schema.json"
@@ -66,9 +67,7 @@ def _validate_template_contract(manifest: dict) -> None:
     for entry in manifest.get("repositories", []):
         template_id = entry["management_template_id"]
         if template_id not in templates:
-            raise AssertionError(
-                f"{entry['slug']}: unknown template {template_id!r}"
-            )
+            raise AssertionError(f"{entry['slug']}: unknown template {template_id!r}")
 
 
 def _validate_catalog_drift(manifest: dict) -> tuple[list[str], list[str], list[str]]:
@@ -85,25 +84,19 @@ def _validate_catalog_drift(manifest: dict) -> tuple[list[str], list[str], list[
             continue
         elif meta["status"] == "external":
             if expected_path != "external":
-                errors.append(
-                    f"AGENT {slug}: external status but source_path != external"
-                )
+                errors.append(f"AGENT {slug}: external status but source_path != external")
             continue
         elif meta["status"] == "proposed":
             path = ROOT / expected_path
             if not path.exists():
                 infos.append(f"AGENT {slug}: proposed, file pending")
             else:
-                infos.append(
-                    f"AGENT {slug}: proposed, file present - review for active flip"
-                )
+                infos.append(f"AGENT {slug}: proposed, file present - review for active flip")
             continue
         elif meta["status"] == "active":
             path = ROOT / expected_path
             if not path.exists():
-                errors.append(
-                    f"AGENT {slug}: status=active but file missing: {expected_path}"
-                )
+                errors.append(f"AGENT {slug}: status=active but file missing: {expected_path}")
         else:
             warns.append(
                 f"AGENT {slug}: unknown status {meta['status']!r}"
@@ -116,8 +109,7 @@ def _validate_catalog_drift(manifest: dict) -> tuple[list[str], list[str], list[
             continue
         if slug not in catalog_agents:
             warns.append(
-                f"AGENT {slug}: directory file present but no catalog entry"
-                " - refresh needed"
+                f"AGENT {slug}: directory file present but no catalog entry - refresh needed"
             )
 
     for slug, meta in catalog_skills.items():
@@ -126,18 +118,14 @@ def _validate_catalog_drift(manifest: dict) -> tuple[list[str], list[str], list[
             continue
         elif meta["status"] == "external":
             if src != "external":
-                errors.append(
-                    f"SKILL {slug}: external status but source_path != external"
-                )
+                errors.append(f"SKILL {slug}: external status but source_path != external")
             continue
         elif meta["status"] == "proposed":
             path = ROOT / src
             if not path.is_dir():
                 infos.append(f"SKILL {slug}: proposed, dir pending")
             else:
-                infos.append(
-                    f"SKILL {slug}: proposed, dir present - review for active flip"
-                )
+                infos.append(f"SKILL {slug}: proposed, dir present - review for active flip")
             continue
         elif meta["status"] == "active":
             path = ROOT / src
@@ -157,8 +145,7 @@ def _validate_catalog_drift(manifest: dict) -> tuple[list[str], list[str], list[
         {
             (ROOT / meta["source_path"]).parent
             for meta in catalog_skills.values()
-            if meta["status"] in {"active", "proposed"}
-            and meta["source_path"] != "external"
+            if meta["status"] in {"active", "proposed"} and meta["source_path"] != "external"
         }
     )
     for skills_dir in skill_roots:
@@ -188,8 +175,7 @@ def _validate_template_pack_refs(manifest: dict) -> list[str]:
             slug = agent_pack.get(field)
             if slug and slug not in catalog_agents:
                 errors.append(
-                    f"template {key}.default_agent_pack.{field} ref {slug!r}"
-                    " not in catalog.agents"
+                    f"template {key}.default_agent_pack.{field} ref {slug!r} not in catalog.agents"
                 )
         for field in ("reviewers", "specialists"):
             for slug in agent_pack.get(field, []):
@@ -246,26 +232,21 @@ def _check_codex_backend_dispatch_log(manifest: dict) -> tuple[list[str], list[s
 
     catalog_agents = manifest.get("catalog", {}).get("agents", {})
     codex_backend_slugs = {
-        slug for slug, meta in catalog_agents.items()
-        if meta.get("execution_backend") == "codex"
+        slug for slug, meta in catalog_agents.items() if meta.get("execution_backend") == "codex"
     }
 
     total = 0
     compliant = 0
     non_compliant = 0
 
-    for lineno, line in enumerate(
-        dispatch_log_path.read_text(encoding="utf-8").splitlines(), 1
-    ):
+    for lineno, line in enumerate(dispatch_log_path.read_text(encoding="utf-8").splitlines(), 1):
         line = line.strip()
         if not line:
             continue
         try:
             entry = json.loads(line)
         except json.JSONDecodeError:
-            warns.append(
-                f"dispatch-log.jsonl line {lineno}: unparseable JSON — skipped"
-            )
+            warns.append(f"dispatch-log.jsonl line {lineno}: unparseable JSON — skipped")
             continue
 
         agent_slug = entry.get("agent_slug", "")
@@ -341,9 +322,7 @@ def _print_findings(errors: list[str], warns: list[str], infos: list[str]) -> No
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(
-        description="Verify config/repo-agent-management.json"
-    )
+    parser = argparse.ArgumentParser(description="Verify config/repo-agent-management.json")
     parser.add_argument(
         "--check-drift",
         action="store_true",
