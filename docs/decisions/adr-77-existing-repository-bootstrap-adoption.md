@@ -53,7 +53,10 @@ commit, manifest digest, exact evidence path set, and live evidence digests. A m
 changed, duplicated, absolute, or parent-traversing evidence entry invalidates readiness. The
 blocked shell path recognizes complete command forms rather than substring matches and rejects
 compound commands, redirection, command substitution, mutating inspection flags, and commands
-wrapped around an allowed token.
+wrapped around an allowed token. It also rejects arbitrary test and lint runners while bootstrap
+is incomplete because an allowed spec file can contain executable test code and runner output or
+cache options can write outside the evidence boundary. It never permits deletion of the adoption
+manifest as a scoped evidence edit.
 
 ## Consequences
 

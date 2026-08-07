@@ -53,7 +53,6 @@ def test_missing_receipt_allows_setup_and_bootstrap_commands(tmp_path: Path) -> 
     for command in (
         './setup.sh --profile content_workspace --purpose "Career records" --stack markdown',
         "uv run mir bootstrap --profile content_workspace --purpose records --stack markdown",
-        "uv run mir bootstrap-adoption --apply",
     ):
         project = tmp_path / str(len(command))
         project.mkdir()
@@ -93,6 +92,14 @@ def test_missing_receipt_allows_setup_and_bootstrap_commands(tmp_path: Path) -> 
         json.dumps({"mir_yoke_source_commit": source_commit}) + "\n",
         encoding="utf-8",
     )
+    local_adoption = _run_pretool(
+        project,
+        {
+            "tool_name": "Bash",
+            "tool_input": {"command": "uv run mir bootstrap-adoption --apply"},
+        },
+    )
+    assert local_adoption.returncode == 0, local_adoption.stderr
     quoted_project = _run_pretool(
         project,
         {
@@ -121,6 +128,30 @@ def test_missing_receipt_allows_setup_and_bootstrap_commands(tmp_path: Path) -> 
         },
     )
     assert dirty_source.returncode == 2
+
+
+def test_bootstrap_commands_are_mode_aware(tmp_path: Path) -> None:
+    no_manifest = _run_pretool(
+        tmp_path / "greenfield",
+        {
+            "tool_name": "Bash",
+            "tool_input": {"command": "uv run mir bootstrap-adoption --apply"},
+        },
+    )
+    assert no_manifest.returncode == 2
+
+    adopted = tmp_path / "adopted"
+    (adopted / "config").mkdir(parents=True)
+    (adopted / "config/bootstrap-adoption.json").write_text("{}\n", encoding="utf-8")
+    for command in (
+        "./setup.sh --profile code_app --purpose app --stack python",
+        "uv run mir bootstrap --profile code_app --purpose app --stack python",
+    ):
+        completed = _run_pretool(
+            adopted,
+            {"tool_name": "Bash", "tool_input": {"command": command}},
+        )
+        assert completed.returncode == 2, command
 
 
 def test_adoption_manifest_allows_only_declared_evidence_edits(tmp_path: Path) -> None:
@@ -254,6 +285,41 @@ def test_adoption_gate_accepts_codex_shell_wrapped_apply_patch(tmp_path: Path) -
     )
     assert moved.returncode == 2
 
+    deleted_manifest = _run_pretool(
+        tmp_path,
+        {
+            "tool_name": "Bash",
+            "tool_input": {
+                "command": "\n".join(
+                    (
+                        "apply_patch <<'PATCH'",
+                        "*** Begin Patch",
+                        "*** Delete File: config/bootstrap-adoption.json",
+                        "*** End Patch",
+                        "PATCH",
+                    )
+                )
+            },
+        },
+    )
+    assert deleted_manifest.returncode == 2
+
+
+def test_forged_template_profile_does_not_bypass_bootstrap(tmp_path: Path) -> None:
+    (tmp_path / ".mir").mkdir()
+    (tmp_path / ".mir/repo-profile.toml").write_text(
+        '[repo]\nslug = "mir-yoke"\nrepository_type = "public_harness_template"\n',
+        encoding="utf-8",
+    )
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+
+    completed = _run_pretool(
+        tmp_path,
+        {"tool_name": "Write", "tool_input": {"file_path": "src/application.py"}},
+    )
+
+    assert completed.returncode == 2
+
 
 def test_missing_receipt_rejects_compound_safe_command_and_patch_suffix(
     tmp_path: Path,
@@ -287,6 +353,12 @@ def test_missing_receipt_rejects_mutating_or_wrapped_shell_commands(tmp_path: Pa
         "jq . config/bootstrap-adoption.json > spec/copied.json",
         "git diff --output=spec/diff.txt",
         "uv run ruff format spec",
+        "uv run ruff check .",
+        "uv run ruff check --output-file src/unauthorized.py .",
+        "uv run ruff check -o src/unauthorized.py .",
+        "uv run ruff check --cache-dir src/cache .",
+        "uv run pytest spec/evil.py",
+        "uv run pytest --rootdir /tmp/other /tmp/other/test_evil.py",
         "uv run python -c 'print(1)' mir bootstrap",
         "ls $(touch spec/unauthorized.yaml)",
     ):

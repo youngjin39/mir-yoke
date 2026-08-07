@@ -16,9 +16,17 @@ mir_bootstrap_gate_state() {
   local profile="$project_dir/.mir/repo-profile.toml"
   local receipt="$project_dir/.mir/bootstrap-receipt.json"
 
-  if [ -f "$profile" ] && grep -Eq '^[[:space:]]*repository_type[[:space:]]*=[[:space:]]*"public_harness_template"' "$profile"; then
-    printf 'template_maintainer\n'
-    return 0
+  if [ -f "$profile" ] && [ ! -L "$profile" ] && \
+     grep -Eq '^[[:space:]]*slug[[:space:]]*=[[:space:]]*"mir-yoke"' "$profile" && \
+     grep -Eq '^[[:space:]]*repository_type[[:space:]]*=[[:space:]]*"public_harness_template"' "$profile"; then
+    local template_origin
+    template_origin="$(git -C "$project_dir" remote get-url origin 2>/dev/null || true)"
+    case "$template_origin" in
+      https://github.com/youngjin39/mir-yoke.git|git@github.com:youngjin39/mir-yoke.git)
+        printf 'template_maintainer\n'
+        return 0
+        ;;
+    esac
   fi
   if [ ! -f "$receipt" ]; then
     printf 'missing\n'
@@ -172,6 +180,7 @@ _mir_bootstrap_patch_paths_allowed() {
   local project_dir="${2:-${CLAUDE_PROJECT_DIR:-.}}"
   local paths found_path path
   printf '%s\n' "$patch" | grep -q '^\*\*\* Move to:' && return 1
+  printf '%s\n' "$patch" | grep -Eq '^\*\*\* Delete File: (.*[/\\])?config[/\\]bootstrap-adoption\.json$' && return 1
   paths="$(printf '%s\n' "$patch" | sed -nE 's/^\*\*\* (Add|Update|Delete) File: (.*)$/\2/p')"
   [ -n "$paths" ] || return 1
   found_path=no
@@ -209,11 +218,19 @@ _mir_bootstrap_safe_single_command() {
   esac
   if printf '%s\n' "$command" | grep -Eq \
     '^[[:space:]]*(\./setup\.sh|\.\\setup\.ps1)([[:space:]].*)?[[:space:]]*$'; then
-    return 0
+    [ ! -e "$project_dir/config/bootstrap-adoption.json" ] && return 0
+    return 1
   fi
   uv_project="(--project[[:space:]]+(\"[^\"]+\"|'[^']+'|[^[:space:]]+)[[:space:]]+)?"
   if printf '%s\n' "$command" | grep -Eq \
     "^[[:space:]]*uv[[:space:]]+run[[:space:]]+${uv_project}mir[[:space:]]+(bootstrap|bootstrap-adoption)([[:space:]].*)?[[:space:]]*$"; then
+    if [ -e "$project_dir/config/bootstrap-adoption.json" ]; then
+      printf '%s\n' "$command" | grep -Eq \
+        "^[[:space:]]*uv[[:space:]]+run[[:space:]]+${uv_project}mir[[:space:]]+bootstrap-adoption([[:space:]].*)?[[:space:]]*$" || return 1
+    else
+      printf '%s\n' "$command" | grep -Eq \
+        "^[[:space:]]*uv[[:space:]]+run[[:space:]]+${uv_project}mir[[:space:]]+bootstrap([[:space:]].*)?[[:space:]]*$" || return 1
+    fi
     local mir_args
     case "$command" in
       *"mir bootstrap-adoption"*) mir_args="${command#*"mir bootstrap-adoption"}" ;;
@@ -224,17 +241,6 @@ _mir_bootstrap_safe_single_command() {
       remaining_args="$(printf '%s\n' "$mir_args" | sed -E "s/(^|[[:space:]])--project-root[[:space:]]+(\\.|\"\\.\"|'\\.')([[:space:]]|$)/ /g")"
       printf '%s\n' "$remaining_args" | grep -Eq -- '(^|[[:space:]])--project' && return 1
     fi
-    return 0
-  fi
-  if printf '%s\n' "$command" | grep -Eq \
-    "^[[:space:]]*uv[[:space:]]+run[[:space:]]+${uv_project}pytest([[:space:]].*)?[[:space:]]*$"; then
-    return 0
-  fi
-  if printf '%s\n' "$command" | grep -Eq \
-    "^[[:space:]]*uv[[:space:]]+run[[:space:]]+${uv_project}ruff[[:space:]]+check([[:space:]].*)?[[:space:]]*$"; then
-    case "$command" in
-      *--fix*|*--unsafe-fixes*|*--add-noqa*) return 1 ;;
-    esac
     return 0
   fi
   if printf '%s\n' "$command" | grep -Eq \

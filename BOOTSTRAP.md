@@ -195,8 +195,10 @@ coverage/gaps, the full-review result, project-specific memory search, output ha
 restart receipt. Only then may the receipt become `status: ready`.
 
 Until that ready receipt exists, SessionStart identifies the incomplete state and PreToolUse blocks
-normal mutations. Setup/memory verification and Phase 2 `spec/` evidence work remain allowed. This
-gate applies even when the first request is prose or document organization.
+normal mutations. Setup/adoption validation, read-only inspection, and scoped Phase 2 evidence
+edits remain allowed; arbitrary test and lint runners remain blocked because their options or
+inputs can execute code or write outside the bootstrap evidence boundary. This gate applies even
+when the first request is prose or document organization.
 
 ## Existing repository adoption
 
@@ -230,7 +232,7 @@ copying passing numbers into the manifest is not sufficient.
 The ready receipt is valid only while its source commit, manifest hash, complete declared evidence
 path set, and every evidence hash still match the working tree. Any drift closes the startup gate
 until `mir bootstrap-adoption --apply` revalidates the repository. While closed, the shell route is
-fail-closed: only a single recognized setup, adoption, read-only inspection, test, or lint command,
+fail-closed: only a single recognized setup, adoption, or read-only inspection command,
 or an exact `apply_patch` heredoc limited to declared bootstrap evidence, is allowed.
 
 ## Required memory contract
