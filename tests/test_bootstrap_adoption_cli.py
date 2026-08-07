@@ -436,7 +436,10 @@ def test_bootstrap_adoption_should_accept_resolved_tbd_count_in_phase2_evidence(
     tmp_path, capsys
 ):
     manifest = _ready_project(tmp_path)
-    _write(tmp_path / "spec/evidence.yaml", "tbd: 0\n")
+    _write(
+        tmp_path / "spec/evidence.yaml",
+        "counts: {total: 3, todo: 0, tbd: 0}\n",
+    )
     manifest["surfaces"]["phase2_spec"]["evidence_paths"].append(
         "spec/evidence.yaml"
     )

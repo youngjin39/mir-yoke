@@ -184,6 +184,51 @@ def test_adoption_manifest_allows_only_declared_evidence_edits(tmp_path: Path) -
     assert blocked.returncode == 2
 
 
+def test_missing_receipt_allows_only_single_declared_evidence_git_add(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "config").mkdir()
+    (tmp_path / "config" / "bootstrap-adoption.json").write_text(
+        json.dumps(
+            {
+                "surfaces": {
+                    "phase2_spec": {
+                        "evidence_paths": [
+                            "docs/native-spec.md",
+                            "docs/native spec.md",
+                        ]
+                    }
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    for command in (
+        "git add -- config/bootstrap-adoption.json",
+        "git add -- spec/bootstrap-adoption-review.yaml",
+        "git add -- docs/native-spec.md",
+        "git add -- 'docs/native spec.md'",
+    ):
+        completed = _run_pretool(
+            tmp_path,
+            {"tool_name": "Bash", "tool_input": {"command": command}},
+        )
+        assert completed.returncode == 0, command
+
+    for command in (
+        "git add -- src/application.py",
+        "git add -A",
+        "git add -- spec/a.yaml spec/b.yaml",
+        "git add -- ':(glob)spec/**'",
+        "git add -- ../other/spec/evidence.yaml",
+    ):
+        completed = _run_pretool(
+            tmp_path,
+            {"tool_name": "Bash", "tool_input": {"command": command}},
+        )
+        assert completed.returncode == 2, command
+
+
 def test_adoption_gate_accepts_codex_shell_wrapped_apply_patch(tmp_path: Path) -> None:
     allowed = _run_pretool(
         tmp_path,

@@ -235,7 +235,9 @@ The ready receipt is valid only while its source commit, manifest hash, complete
 path set, and every evidence hash still match the working tree. Any drift closes the startup gate
 until `mir bootstrap-adoption --apply` revalidates the repository. While closed, the shell route is
 fail-closed: only a single recognized setup, adoption, or read-only inspection command,
-or an exact `apply_patch` heredoc limited to declared bootstrap evidence, is allowed.
+an exact `apply_patch` heredoc limited to declared bootstrap evidence, or
+`git add -- <one-declared-evidence-path>` is allowed. The scoped staging command lets a new
+adoption make required evidence Git-tracked without opening broader mutation or pathspec access.
 
 ## Required memory contract
 

@@ -207,6 +207,23 @@ _mir_bootstrap_shell_patch_allowed() {
   _mir_bootstrap_patch_paths_allowed "$command" "$project_dir"
 }
 
+_mir_bootstrap_git_add_allowed() {
+  local command="$1"
+  local project_dir="${2:-${CLAUDE_PROJECT_DIR:-.}}"
+  local path
+  printf '%s\n' "$command" | grep -Eq \
+    '^[[:space:]]*git[[:space:]]+add[[:space:]]+--[[:space:]]+("[^"]+"|'\''[^'\'']+'\''|[^[:space:]'\'']+)[[:space:]]*$' || return 1
+  path="$(printf '%s\n' "$command" | sed -E 's/^[[:space:]]*git[[:space:]]+add[[:space:]]+--[[:space:]]+//; s/[[:space:]]*$//')"
+  case "$path" in
+    \"*\") path="${path#\"}"; path="${path%\"}" ;;
+    \'*\') path="${path#\'}"; path="${path%\'}" ;;
+  esac
+  case "$path" in
+    :*|*'*'*|*'?'*|*'['*) return 1 ;;
+  esac
+  _mir_bootstrap_allowed_path "$path" "$project_dir"
+}
+
 _mir_bootstrap_safe_single_command() {
   local command="$1"
   local project_dir="${2:-${CLAUDE_PROJECT_DIR:-.}}"
@@ -245,6 +262,9 @@ _mir_bootstrap_safe_single_command() {
   fi
   if printf '%s\n' "$command" | grep -Eq \
     '^[[:space:]]*git[[:space:]]+status([[:space:]].*)?[[:space:]]*$'; then
+    return 0
+  fi
+  if _mir_bootstrap_git_add_allowed "$command" "$project_dir"; then
     return 0
   fi
   if printf '%s\n' "$command" | grep -Eq \

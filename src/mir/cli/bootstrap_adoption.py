@@ -68,7 +68,9 @@ _REVIEW_KEYS = (
 _RAW_PYTHON_RE = re.compile(
     r"(?:^|[;&|]\s*|\bexec\s+)(?:/usr/bin/)?python3?(?:\s|$)"
 )
-_RESOLVED_TBD_COUNT_RE = re.compile(r'''["']?tbd["']?\s*[:=]\s*0\s*,?''', re.I)
+_RESOLVED_PLACEHOLDER_COUNT_RE = re.compile(
+    r'''["']?(?:tbd|todo)["']?\s*[:=]\s*0\b\s*,?''', re.I
+)
 
 
 class AdoptionError(ValueError):
@@ -136,8 +138,7 @@ def _non_placeholder_text(value: object, *, label: str) -> str:
 
 def _contains_unresolved_placeholder(body: str) -> bool:
     return any(
-        _PLACEHOLDER_RE.search(line)
-        and not _RESOLVED_TBD_COUNT_RE.fullmatch(line.strip())
+        _PLACEHOLDER_RE.search(_RESOLVED_PLACEHOLDER_COUNT_RE.sub("", line))
         for line in body.splitlines()
     )
 
