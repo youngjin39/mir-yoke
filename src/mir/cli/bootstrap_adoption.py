@@ -30,6 +30,20 @@ _SURFACE_KEYS = (
     "phase2_spec",
 )
 _DISPOSITIONS = {"applied", "repository_owned", "not_applicable", "exception"}
+_REQUIRED_RUNTIME_EVIDENCE = {
+    "bootstrap_start_gate": (
+        ".claude/hooks/_lib/bootstrap-gate.sh",
+        ".claude/hooks/session-start.sh",
+        ".claude/hooks/pre-tool-use.sh",
+        ".claude/settings.json",
+        ".codex/hooks.json",
+    ),
+    "managed_python_launcher": (
+        ".claude/hooks/_lib/run-python.sh",
+        ".claude/hooks/session-start.sh",
+        ".claude/hooks/pre-tool-use.sh",
+    ),
+}
 _DIRECT_PROFILE_MAP = {
     "code_app": "code_app",
     "code_product": "code_app",
@@ -71,6 +85,7 @@ _RAW_PYTHON_RE = re.compile(
 _RESOLVED_PLACEHOLDER_COUNT_RE = re.compile(
     r'''["']?(?:tbd|todo)["']?\s*[:=]\s*0\b\s*,?''', re.I
 )
+_SOURCE_ROOT = Path(__file__).resolve().parents[3]
 
 
 class AdoptionError(ValueError):
@@ -391,6 +406,51 @@ def _validate_bootstrap_gate(root: Path) -> tuple[list[str], dict[str, object]]:
         if not any(mutation_name in command for command in commands):
             errors.append(f"bootstrap gate mutation hook is not active in {runtime} wiring")
     return errors, {"status": "pass" if not errors else "fail", "paths": paths}
+
+
+def _validate_canonical_applied_helper(
+    root: Path, relative: str, *, label: str
+) -> tuple[list[str], dict[str, object]]:
+    source_path = _SOURCE_ROOT / relative
+    target_path = root / relative
+    try:
+        source_bytes = source_path.read_bytes()
+    except OSError as exc:
+        return [f"{label} canonical Mir Yoke source is unreadable: {relative}: {exc}"], {
+            "status": "fail",
+            "path": relative,
+        }
+    try:
+        target_bytes = target_path.read_bytes()
+    except OSError as exc:
+        return [f"{label} applied file is unreadable: {relative}: {exc}"], {
+            "status": "fail",
+            "path": relative,
+        }
+    source_hash = hashlib.sha256(source_bytes).hexdigest()
+    target_hash = hashlib.sha256(target_bytes).hexdigest()
+    errors = (
+        []
+        if source_hash == target_hash
+        else [f"{label} does not match Mir Yoke canonical source: {relative}"]
+    )
+    return errors, {
+        "status": "pass" if not errors else "fail",
+        "path": relative,
+        "source_sha256": source_hash,
+        "live_sha256": target_hash,
+    }
+
+
+def _validate_required_runtime_evidence(
+    surface: dict[str, object], *, surface_name: str
+) -> list[str]:
+    declared = set(surface.get("evidence_paths", []))
+    return [
+        f"{surface_name} must declare runtime evidence path: {relative}"
+        for relative in _REQUIRED_RUNTIME_EVIDENCE[surface_name]
+        if relative not in declared
+    ]
 
 
 def _has_raw_python(body: str) -> bool:
@@ -954,13 +1014,41 @@ def main(argv: list[str] | None = None) -> int:
     if surfaces:
         gate_surface = surfaces.get("bootstrap_start_gate", {})
         if gate_surface.get("disposition") in {"applied", "repository_owned"}:
+            errors.extend(
+                _validate_required_runtime_evidence(
+                    gate_surface,
+                    surface_name="bootstrap_start_gate",
+                )
+            )
             check_errors, gate = _validate_bootstrap_gate(root)
             errors.extend(check_errors)
+            if gate_surface.get("disposition") == "applied":
+                check_errors, canonical = _validate_canonical_applied_helper(
+                    root,
+                    ".claude/hooks/_lib/bootstrap-gate.sh",
+                    label="bootstrap gate helper",
+                )
+                errors.extend(check_errors)
+                gate["canonical"] = canonical
 
         launcher_surface = surfaces.get("managed_python_launcher", {})
         if launcher_surface.get("disposition") in {"applied", "repository_owned"}:
+            errors.extend(
+                _validate_required_runtime_evidence(
+                    launcher_surface,
+                    surface_name="managed_python_launcher",
+                )
+            )
             check_errors, launcher = _validate_python_launcher(root)
             errors.extend(check_errors)
+            if launcher_surface.get("disposition") == "applied":
+                check_errors, canonical = _validate_canonical_applied_helper(
+                    root,
+                    ".claude/hooks/_lib/run-python.sh",
+                    label="managed Python launcher",
+                )
+                errors.extend(check_errors)
+                launcher["canonical"] = canonical
 
         content_surface = surfaces.get("content_onboarding", {})
         content_disposition = content_surface.get("disposition")

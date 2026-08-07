@@ -50,21 +50,15 @@ non_code_profile = "deliberately-unrelated-value"
 
 
 def _write_gate_and_launcher(root: Path) -> None:
-    _write(
-        root / ".claude/hooks/_lib/bootstrap-gate.sh",
-        "#!/usr/bin/env bash\n"
-        "mir_bootstrap_gate_state() { return 0; }\n"
-        "mir_bootstrap_gate_enforce() { return 0; }\n",
-    )
-    _write(
-        root / ".claude/hooks/_lib/run-python.sh",
-        "#!/usr/bin/env bash\n"
-        'if [ -x "$PROJECT_DIR/.venv/bin/python" ]; then '
-        'exec "$PROJECT_DIR/.venv/bin/python" "$@"; fi\n'
-        'if [ -x "$PROJECT_DIR/.venv/Scripts/python.exe" ]; then '
-        'exec "$PROJECT_DIR/.venv/Scripts/python.exe" "$@"; fi\n'
-        'exec uv run --project "$PROJECT_DIR" python "$@"\n',
-    )
+    source_root = Path(__file__).resolve().parents[1]
+    for relative in (
+        ".claude/hooks/_lib/bootstrap-gate.sh",
+        ".claude/hooks/_lib/run-python.sh",
+    ):
+        _write(
+            root / relative,
+            (source_root / relative).read_text(encoding="utf-8"),
+        )
     _write(
         root / ".claude/hooks/session-start.sh",
         "#!/usr/bin/env bash\n"
@@ -588,6 +582,57 @@ def test_bootstrap_adoption_should_verify_gate_and_managed_launcher_wiring(tmp_p
     report = json.loads(capsys.readouterr().out)
     assert any("bootstrap gate" in error for error in report["errors"])
     assert any("managed Python launcher" in error for error in report["errors"])
+
+
+def test_bootstrap_adoption_should_require_runtime_files_as_declared_evidence(
+    tmp_path, capsys
+):
+    manifest = _ready_project(tmp_path)
+    manifest["surfaces"]["bootstrap_start_gate"]["evidence_paths"].remove(
+        ".codex/hooks.json"
+    )
+    manifest["surfaces"]["managed_python_launcher"]["evidence_paths"].remove(
+        ".claude/hooks/pre-tool-use.sh"
+    )
+    _write(tmp_path / "config/bootstrap-adoption.json", json.dumps(manifest))
+
+    assert _run(tmp_path) == 2
+    report = json.loads(capsys.readouterr().out)
+    errors = " ".join(report["errors"])
+    assert (
+        "bootstrap_start_gate must declare runtime evidence path: .codex/hooks.json"
+        in errors
+    )
+    assert (
+        "managed_python_launcher must declare runtime evidence path: "
+        ".claude/hooks/pre-tool-use.sh"
+    ) in errors
+
+
+def test_bootstrap_adoption_should_reject_stale_applied_canonical_helpers(
+    tmp_path, capsys
+):
+    _ready_project(tmp_path)
+    for relative in (
+        ".claude/hooks/_lib/bootstrap-gate.sh",
+        ".claude/hooks/_lib/run-python.sh",
+    ):
+        path = tmp_path / relative
+        path.write_text(
+            path.read_text(encoding="utf-8") + "\n# stale applied helper\n",
+            encoding="utf-8",
+        )
+
+    assert _run(tmp_path) == 2
+    report = json.loads(capsys.readouterr().out)
+    assert any(
+        "bootstrap gate helper does not match Mir Yoke canonical source" in error
+        for error in report["errors"]
+    )
+    assert any(
+        "managed Python launcher does not match Mir Yoke canonical source" in error
+        for error in report["errors"]
+    )
 
 
 def test_bootstrap_adoption_apply_should_write_hash_bound_atomic_ready_receipt(
