@@ -10,6 +10,7 @@ import shutil
 import stat
 import subprocess
 import tempfile
+import tomllib
 from collections.abc import Callable, Iterator, Sequence
 from contextlib import contextmanager
 from datetime import UTC, datetime
@@ -20,6 +21,13 @@ from .config import CapabilityConfig, load_capability_config
 _SHA = re.compile(r"^[0-9a-f]{40}$")
 _MARKDOWN_LINK = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
 _PLUGIN_ROOT_ENTRIES = {".claude-plugin", ".codex-plugin", "skills"}
+_PLUGIN_VERSION = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
+_SESSION_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,255}$")
+_RUNTIMES = ("claude-code", "codex-cli-desktop")
+_SESSION_ENV = {
+    "claude-code": ("CLAUDE_SESSION_ID", "CLAUDE_CODE_SESSION_ID"),
+    "codex-cli-desktop": ("CODEX_THREAD_ID", "CODEX_SESSION_ID"),
+}
 
 
 class CapabilityError(RuntimeError):
@@ -207,6 +215,36 @@ def _read_json(path: Path) -> dict[str, object] | None:
     return value
 
 
+def _configured_provider_home(codex_home: Path, source_url: str) -> Path | None:
+    """Recover a verified external provider root from persistent Codex state."""
+    config_path = codex_home / "config.toml"
+    if not config_path.is_file():
+        return None
+    try:
+        config = tomllib.loads(config_path.read_text(encoding="utf-8"))
+    except (OSError, tomllib.TOMLDecodeError):
+        return None
+    marketplaces = config.get("marketplaces")
+    marketplace = marketplaces.get("mir-yoke") if isinstance(marketplaces, dict) else None
+    if not isinstance(marketplace, dict) or marketplace.get("source_type") != "local":
+        return None
+    raw_source = marketplace.get("source")
+    if not isinstance(raw_source, str):
+        return None
+    source = Path(raw_source).expanduser().resolve()
+    if source.name != "active" or source.is_symlink() or not source.is_dir():
+        return None
+    receipt = _read_json(source.parent / "active.json")
+    if receipt is None or receipt.get("source_url") != source_url:
+        return None
+    materialized_root = receipt.get("materialized_root")
+    if not isinstance(materialized_root, str):
+        return None
+    if Path(materialized_root).expanduser().resolve() != source:
+        return None
+    return source.parent
+
+
 def _atomic_write_json(path: Path, payload: dict[str, object]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     descriptor, raw_temp = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
@@ -318,9 +356,7 @@ def _skill_names(checkout: Path, config: CapabilityConfig, plugins: Sequence[str
     return names
 
 
-def _standalone_collisions(
-    skill_names: set[str], project_root: Path, user_home: Path
-) -> list[str]:
+def _standalone_collisions(skill_names: set[str], project_root: Path, user_home: Path) -> list[str]:
     roots = (
         user_home / ".claude" / "skills",
         user_home / ".agents" / "skills",
@@ -360,6 +396,7 @@ class CapabilityManager:
         config_path: Path | None = None,
         capability_home: Path | None = None,
         user_home: Path | None = None,
+        codex_home: Path | None = None,
         git: GitClient | None = None,
         command_runner: Run = _run_process,
         which: Which = shutil.which,
@@ -367,8 +404,20 @@ class CapabilityManager:
         self.project_root = project_root.resolve()
         self.config_path = config_path or self.project_root / "config" / "capability-sources.json"
         self.config = load_capability_config(self.config_path)
-        self.capability_home = (capability_home or default_capability_home()).resolve()
         self.user_home = (user_home or Path.home()).resolve()
+        raw_codex_home = os.environ.get("CODEX_HOME")
+        configured_codex_home = codex_home or (
+            Path(raw_codex_home) if raw_codex_home else self.user_home / ".codex"
+        )
+        self.codex_home = configured_codex_home.expanduser().resolve()
+        configured_capability_home = capability_home
+        if configured_capability_home is None and "MIR_CAPABILITY_HOME" not in os.environ:
+            configured_capability_home = _configured_provider_home(
+                self.codex_home, self.config.source_url
+            )
+        self.capability_home = (
+            configured_capability_home or default_capability_home()
+        ).expanduser().resolve()
         self.git = git or GitClient()
         self.command_runner = command_runner
         self.which = which
@@ -440,6 +489,7 @@ class CapabilityManager:
         agent_status = self._agent_status(lock, pack.agents)
         missing_project_paths = self._missing_project_paths()
         activation = self._activation_evidence(lock) if lock else {"status": "not-synced"}
+        discovery = self._discovery_evidence(lock) if lock else {"status": "not-synced"}
         ready = bool(
             lock
             and _SHA.fullmatch(str(lock_commit))
@@ -452,6 +502,7 @@ class CapabilityManager:
             and not missing_project_paths
             and all(value == "unchanged" for value in agent_status.values())
             and activation.get("status") == "active"
+            and discovery.get("status") == "verified"
         )
         return {
             "operation": "status",
@@ -469,14 +520,11 @@ class CapabilityManager:
             "runtime_support": self.config.runtime_support,
             "registration": lock.get("registration") if lock else None,
             "activation": activation,
+            "discovery": discovery,
         }
 
     def _configured_skill_names(self, plugins: Sequence[str]) -> set[str]:
-        return {
-            skill
-            for plugin in plugins
-            for skill in self.config.plugin_skills[plugin]
-        }
+        return {skill for plugin in plugins for skill in self.config.plugin_skills[plugin]}
 
     def _missing_project_paths(self) -> list[str]:
         missing: list[str] = []
@@ -499,9 +547,7 @@ class CapabilityManager:
             raise CapabilityError(f"project target escapes repository: {relative}") from exc
         return target
 
-    def _active_integrity(
-        self, lock: dict[str, object] | None, plugins: Sequence[str]
-    ) -> bool:
+    def _active_integrity(self, lock: dict[str, object] | None, plugins: Sequence[str]) -> bool:
         if lock is None:
             return False
         locked_plugins = lock.get("plugins")
@@ -546,24 +592,205 @@ class CapabilityManager:
     def update(self, profile: str | None = None, *, apply: bool = False) -> dict[str, object]:
         return self._execute("update", profile=profile, apply=apply)
 
+    def _expected_runtime_skills(self, lock: dict[str, object]) -> set[str]:
+        plugins = lock.get("plugins")
+        if not isinstance(plugins, dict):
+            raise CapabilityError("capability lock plugins field is invalid")
+        return {
+            f"{plugin}:{skill}"
+            for plugin in plugins
+            if plugin in self.config.plugin_skills
+            for skill in self.config.plugin_skills[plugin]
+        }
+
+    def _current_session_id(self, runtime: str) -> str | None:
+        for variable in _SESSION_ENV[runtime]:
+            value = os.environ.get(variable)
+            if value:
+                return value
+        return None
+
+    def attest(
+        self,
+        runtime: str,
+        observed_skills: Sequence[str],
+        *,
+        apply: bool = False,
+    ) -> dict[str, object]:
+        if runtime not in _RUNTIMES:
+            raise CapabilityError(f"unsupported runtime attestation: {runtime}")
+        lock = self._load_lock()
+        if lock is None:
+            raise CapabilityError("capabilities must be synced before runtime attestation")
+        active_receipt = _read_json(self.active_receipt_path)
+        source = lock.get("source")
+        commit = source.get("commit") if isinstance(source, dict) else None
+        if (
+            active_receipt is None
+            or not isinstance(commit, str)
+            or active_receipt.get("commit") != commit
+        ):
+            raise CapabilityError("active provider receipt does not match the project lock")
+
+        expected = self._expected_runtime_skills(lock)
+        observed = {skill.strip() for skill in observed_skills if skill.strip()}
+        missing = sorted(expected - observed)
+        resolved_session = self._current_session_id(runtime)
+        session_valid = bool(
+            isinstance(resolved_session, str) and _SESSION_ID.fullmatch(resolved_session)
+        )
+        consumer_key = _consumer_key(self.project_root)
+        installation_sessions = active_receipt.get("installation_sessions")
+        installation_session = None
+        if isinstance(installation_sessions, dict):
+            consumer_sessions = installation_sessions.get(consumer_key)
+            if isinstance(consumer_sessions, dict):
+                installation_session = consumer_sessions.get(runtime)
+        new_session = bool(
+            session_valid
+            and (
+                not isinstance(installation_session, str)
+                or resolved_session != installation_session
+            )
+        )
+
+        activation = self._activation_evidence(lock, require_active_receipt=False)
+        runtimes = activation.get("runtimes")
+        runtime_evidence = runtimes.get(runtime) if isinstance(runtimes, dict) else None
+        runtime_verified = bool(
+            isinstance(runtime_evidence, dict) and runtime_evidence.get("verified") is True
+        )
+        result: dict[str, object] = {
+            "operation": "attest",
+            "dry_run": not apply,
+            "runtime": runtime,
+            "session_id": resolved_session,
+            "missing_skills": missing,
+            "runtime_verified": runtime_verified,
+            "new_session": new_session,
+            "attestation_kind": "operator-observed-runtime-catalog",
+            "ready_to_attest": not missing and runtime_verified and new_session,
+        }
+        if not apply:
+            return result
+        if missing:
+            raise CapabilityError(
+                "runtime skill discovery is missing expected skills: " + ", ".join(missing)
+            )
+        if not session_valid:
+            raise CapabilityError(
+                "runtime attestation requires a valid session id exposed by the "
+                "current runtime environment"
+            )
+        if not new_session:
+            raise CapabilityError("runtime attestation requires a new runtime session")
+        if not runtime_verified:
+            raise CapabilityError("runtime plugin installation could not be verified")
+
+        plugins = lock.get("plugins")
+        assert isinstance(plugins, dict)  # validated by _expected_runtime_skills
+        plugin_hashes = {
+            name: metadata["sha256"]
+            for name, metadata in plugins.items()
+            if isinstance(metadata, dict) and isinstance(metadata.get("sha256"), str)
+        }
+        discovery = active_receipt.setdefault("discovery", {})
+        if not isinstance(discovery, dict):
+            raise CapabilityError("active provider discovery receipt is invalid")
+        consumer_discovery = discovery.setdefault(consumer_key, {})
+        if not isinstance(consumer_discovery, dict):
+            raise CapabilityError("consumer discovery receipt is invalid")
+        timestamp = datetime.now(UTC).isoformat()
+        consumer_discovery[runtime] = {
+            "commit": commit,
+            "plugins": plugin_hashes,
+            "session_id": resolved_session,
+            "observed_skills": sorted(observed),
+            "attestation_kind": "operator-observed-runtime-catalog",
+            "attested_at": timestamp,
+        }
+        active_receipt["updated_at"] = timestamp
+        _atomic_write_json(self.active_receipt_path, active_receipt)
+        result.update({"dry_run": False, "status": "attested", "attested_at": timestamp})
+        return result
+
+    def _discovery_evidence(self, lock: dict[str, object]) -> dict[str, object]:
+        active_receipt = _read_json(self.active_receipt_path)
+        source = lock.get("source")
+        plugins = lock.get("plugins")
+        commit = source.get("commit") if isinstance(source, dict) else None
+        expected_skills = self._expected_runtime_skills(lock)
+        assert isinstance(plugins, dict)  # validated by _expected_runtime_skills
+        expected_plugins = {
+            name: metadata.get("sha256")
+            for name, metadata in plugins.items()
+            if isinstance(metadata, dict)
+        }
+        consumer_receipts = None
+        if isinstance(active_receipt, dict):
+            discovery = active_receipt.get("discovery")
+            if isinstance(discovery, dict):
+                candidate = discovery.get(_consumer_key(self.project_root))
+                if isinstance(candidate, dict):
+                    consumer_receipts = candidate
+
+        evidence: dict[str, object] = {}
+        verified = True
+        for runtime in _RUNTIMES:
+            receipt = (
+                consumer_receipts.get(runtime) if isinstance(consumer_receipts, dict) else None
+            )
+            if not isinstance(receipt, dict):
+                evidence[runtime] = {"status": "missing"}
+                verified = False
+                continue
+            observed = receipt.get("observed_skills")
+            observed_set = (
+                {item for item in observed if isinstance(item, str)}
+                if isinstance(observed, list)
+                else set()
+            )
+            missing = sorted(expected_skills - observed_set)
+            session_id = receipt.get("session_id")
+            if receipt.get("commit") != commit or receipt.get("plugins") != expected_plugins:
+                status = "provider-mismatch"
+            elif not isinstance(session_id, str) or _SESSION_ID.fullmatch(session_id) is None:
+                status = "session-invalid"
+            elif missing:
+                status = "skills-missing"
+            else:
+                status = "verified"
+            evidence[runtime] = {"status": status, "missing_skills": missing}
+            verified = verified and status == "verified"
+        return {
+            "status": "verified" if verified else "incomplete",
+            "runtimes": evidence,
+        }
+
     def finalize(self, *, apply: bool = False, after_restart: bool = False) -> dict[str, object]:
         lock = self._load_lock()
         if lock is None:
             raise CapabilityError("capabilities must be synced before activation can be finalized")
         evidence = self._activation_evidence(lock, require_active_receipt=False)
+        discovery = self._discovery_evidence(lock)
         result: dict[str, object] = {
             "operation": "finalize",
             "dry_run": not apply,
             "after_restart": after_restart,
             "activation": evidence,
+            "discovery": discovery,
         }
         if not apply:
-            result["ready_to_finalize"] = evidence.get("status") == "verified"
+            result["ready_to_finalize"] = (
+                evidence.get("status") == "verified" and discovery.get("status") == "verified"
+            )
             return result
         if not after_restart:
             raise CapabilityError("finalize --apply requires --after-restart attestation")
         if evidence.get("status") != "verified":
             raise CapabilityError("runtime plugin installation could not be verified")
+        if discovery.get("status") != "verified":
+            raise CapabilityError("runtime skill discovery receipts are incomplete")
         registration = lock.get("registration")
         if not isinstance(registration, dict):
             raise CapabilityError("capability lock registration field is invalid")
@@ -589,9 +816,7 @@ class CapabilityManager:
         if not isinstance(registration, dict) or not isinstance(plugins, dict):
             return {"status": "invalid-lock", "runtimes": {}}
         runtime_results = {
-            "claude-code": self._probe_runtime(
-                "claude", ["plugin", "list", "--json"], plugins
-            ),
+            "claude-code": self._probe_runtime("claude", ["plugin", "list", "--json"], plugins),
             "codex-cli-desktop": self._probe_runtime(
                 "codex", ["plugin", "list", "--json"], plugins
             ),
@@ -605,6 +830,58 @@ class CapabilityManager:
             status = "active" if registration.get("status") == "active" else "verified"
         return {"status": status, "runtimes": runtime_results}
 
+    def _runtime_cwd(self, executable: str) -> Path:
+        if executable == "codex" and self.codex_home.is_dir():
+            return self.codex_home
+        if executable == "claude" and self.user_home.is_dir():
+            return self.user_home
+        return self.project_root
+
+    def _codex_config(self) -> dict[str, object] | None:
+        config_path = self.codex_home / "config.toml"
+        if not config_path.is_file():
+            return None
+        try:
+            payload = tomllib.loads(config_path.read_text(encoding="utf-8"))
+        except (OSError, tomllib.TOMLDecodeError):
+            return None
+        return payload if isinstance(payload, dict) else None
+
+    def _codex_persistence_error(self, config: dict[str, object] | None, plugin: str) -> str | None:
+        if config is None:
+            return "codex-config-missing-or-invalid"
+        marketplaces = config.get("marketplaces")
+        marketplace = marketplaces.get("mir-yoke") if isinstance(marketplaces, dict) else None
+        if not isinstance(marketplace, dict):
+            return "codex-marketplace-missing"
+        if marketplace.get("source_type") != "local":
+            return "codex-marketplace-not-local"
+        source = marketplace.get("source")
+        if not isinstance(source, str):
+            return "codex-marketplace-source-missing"
+        try:
+            source_path = Path(source).expanduser().resolve()
+        except OSError:
+            return "codex-marketplace-source-invalid"
+        if source_path != self.active_path:
+            return "codex-marketplace-source-mismatch"
+        plugins = config.get("plugins")
+        plugin_config = plugins.get(f"{plugin}@mir-yoke") if isinstance(plugins, dict) else None
+        if not isinstance(plugin_config, dict) or plugin_config.get("enabled") is not True:
+            return "codex-plugin-not-persistently-enabled"
+        return None
+
+    def _codex_cache_path(
+        self, entry: dict[str, object], plugin: str
+    ) -> tuple[Path | None, str | None]:
+        version = entry.get("version")
+        if not isinstance(version, str) or _PLUGIN_VERSION.fullmatch(version) is None:
+            return None, "codex-plugin-version-invalid"
+        return (
+            self.codex_home / "plugins" / "cache" / "mir-yoke" / plugin / version,
+            None,
+        )
+
     def _probe_runtime(
         self,
         executable: str,
@@ -616,6 +893,7 @@ class CapabilityManager:
             return {"verified": False, "reason": "cli-missing"}
         completed = self.command_runner(
             [resolved, *args],
+            cwd=self._runtime_cwd(executable),
             stdin=subprocess.DEVNULL,
             capture_output=True,
             text=True,
@@ -632,6 +910,7 @@ class CapabilityManager:
         except json.JSONDecodeError:
             return {"verified": False, "reason": "invalid-json"}
         entries = _plugin_entries(payload)
+        codex_config = self._codex_config() if executable == "codex" else None
         evidence: dict[str, object] = {}
         verified = True
         for name, metadata in locked_plugins.items():
@@ -643,15 +922,21 @@ class CapabilityManager:
                 continue
             entry = matches[0]
             enabled = entry.get("enabled") is True or entry.get("status") == "enabled"
-            raw_path = _installed_path(entry)
+            if executable == "codex":
+                persistence_error = self._codex_persistence_error(codex_config, name)
+                installed_path, cache_error = self._codex_cache_path(entry, name)
+                path_error = persistence_error or cache_error
+            else:
+                raw_path = _installed_path(entry)
+                installed_path = Path(raw_path).expanduser() if raw_path is not None else None
+                path_error = None if installed_path is not None else "installed-path-missing"
             if not enabled:
                 evidence[name] = {"status": "disabled"}
                 verified = False
-            elif raw_path is None:
-                evidence[name] = {"status": "installed-path-missing"}
+            elif path_error is not None or installed_path is None:
+                evidence[name] = {"status": path_error or "installed-path-missing"}
                 verified = False
             else:
-                installed_path = Path(raw_path).expanduser()
                 try:
                     actual = _tree_digest(installed_path)
                 except CapabilityError:
@@ -711,17 +996,13 @@ class CapabilityManager:
             for name, expected_skills in self.config.plugin_skills.items():
                 actual_skills = {
                     path.parent.name
-                    for path in (checkout / self.config.plugins[name] / "skills").glob(
-                        "*/SKILL.md"
-                    )
+                    for path in (checkout / self.config.plugins[name] / "skills").glob("*/SKILL.md")
                 }
                 if actual_skills != set(expected_skills):
                     raise CapabilityError(f"remote plugin skill inventory drift: {name}")
             agent_hashes = {path: _file_digest(checkout / path) for path in self.config.agents}
             skill_names = _skill_names(checkout, self.config, selected_plugins)
-            collisions = _standalone_collisions(
-                skill_names, self.project_root, self.user_home
-            )
+            collisions = _standalone_collisions(skill_names, self.project_root, self.user_home)
             agent_changes = self._agent_changes(lock, agent_hashes, selected_agents)
             missing_project_paths = self._missing_project_paths()
             result: dict[str, object] = {
@@ -801,10 +1082,15 @@ class CapabilityManager:
             if path not in selected:
                 if not target.exists() and not target.is_symlink():
                     changes[path] = "absent"
-                elif target.is_file() and not target.is_symlink() and _file_digest(target) in {
-                    digest,
-                    old_digest,
-                }:
+                elif (
+                    target.is_file()
+                    and not target.is_symlink()
+                    and _file_digest(target)
+                    in {
+                        digest,
+                        old_digest,
+                    }
+                ):
                     changes[path] = "remove"
                 else:
                     changes[path] = "diverged"
@@ -839,8 +1125,7 @@ class CapabilityManager:
                 continue
             if not isinstance(metadata, dict) or metadata.get("commit") != commit:
                 raise CapabilityError(
-                    "global capability update conflicts with another registered consumer: "
-                    f"{root}"
+                    f"global capability update conflicts with another registered consumer: {root}"
                 )
             required = metadata.get("plugins")
             if not isinstance(required, dict):
@@ -952,9 +1237,7 @@ class CapabilityManager:
                     for source_path in set(self.config.agents) - set(selected_agents):
                         self._project_target(source_path).unlink(missing_ok=True)
 
-                    selected_hashes = {
-                        plugin: plugin_hashes[plugin] for plugin in selected_plugins
-                    }
+                    selected_hashes = {plugin: plugin_hashes[plugin] for plugin in selected_plugins}
                     consumer_key = _consumer_key(self.project_root)
                     consumers = registry.setdefault("consumers", {})
                     if not isinstance(consumers, dict):
@@ -970,10 +1253,7 @@ class CapabilityManager:
                     registration_attempted = True
                     registration = self._install_and_verify(
                         self._registration_plan(selected_plugins),
-                        {
-                            plugin: {"sha256": plugin_hashes[plugin]}
-                            for plugin in selected_plugins
-                        },
+                        {plugin: {"sha256": plugin_hashes[plugin]} for plugin in selected_plugins},
                     )
                     if registration["status"] != "restart-required":
                         raise CapabilityError("runtime plugin registration failed")
@@ -1002,12 +1282,32 @@ class CapabilityManager:
                         "registration": {"status": registration["status"]},
                         "synced_at": timestamp,
                     }
+                    preserved_discovery: dict[str, object] = {}
+                    preserved_installation_sessions: dict[str, object] = {}
+                    if (
+                        isinstance(previous_active_receipt, dict)
+                        and previous_active_receipt.get("commit") == commit
+                    ):
+                        prior_discovery = previous_active_receipt.get("discovery")
+                        if isinstance(prior_discovery, dict):
+                            preserved_discovery = dict(prior_discovery)
+                        prior_sessions = previous_active_receipt.get("installation_sessions")
+                        if isinstance(prior_sessions, dict):
+                            preserved_installation_sessions = dict(prior_sessions)
+                    preserved_discovery.pop(consumer_key, None)
+                    preserved_installation_sessions[consumer_key] = {
+                        runtime: value
+                        for runtime in _RUNTIMES
+                        if (value := self._current_session_id(runtime)) is not None
+                    }
                     active_receipt: dict[str, object] = {
                         "schema_version": 1,
                         "commit": commit,
                         "source_url": self.config.source_url,
                         "plugins": selected_hashes,
                         "materialized_root": str(self.active_path),
+                        "discovery": preserved_discovery,
+                        "installation_sessions": preserved_installation_sessions,
                         "updated_at": timestamp,
                     }
                     _atomic_write_json(self.active_receipt_path, active_receipt)
@@ -1117,6 +1417,7 @@ class CapabilityManager:
                 try:
                     completed = self.command_runner(
                         [resolved, *args],
+                        cwd=self._runtime_cwd(executable),
                         stdin=subprocess.DEVNULL,
                         capture_output=True,
                         text=True,
@@ -1137,10 +1438,10 @@ class CapabilityManager:
             for plugin in selected_plugins
         )
         codex_commands: list[list[str]] = [
-            ["codex", "plugin", "marketplace", "add", str(self.active_path)]
+            ["codex", "plugin", "marketplace", "add", str(self.active_path), "--json"]
         ]
         codex_commands.extend(
-            ["codex", "plugin", "add", f"{plugin}@mir-yoke"]
+            ["codex", "plugin", "add", f"{plugin}@mir-yoke", "--json"]
             for plugin in selected_plugins
         )
         return {
@@ -1151,8 +1452,8 @@ class CapabilityManager:
             "codex_ide_extension": "unsupported; project-local agents and instructions only",
             "after_agent_update": ["bash", "scripts/generate_codex_derivatives.sh"],
             "next_step": (
-                "reload plugins in Claude Code, start a new Codex session, then run "
-                "capability finalize --apply --after-restart"
+                "start new Claude Code and Codex sessions, attest each runtime's discovered "
+                "skills, then run capability finalize --apply --after-restart"
             ),
         }
 
@@ -1175,6 +1476,13 @@ class CapabilityManager:
             if resolved is None:
                 attempts[runtime] = {"status": "cli-missing"}
                 continue
+            if executable == "codex":
+                if self.codex_home.is_symlink() or (
+                    self.codex_home.exists() and not self.codex_home.is_dir()
+                ):
+                    attempts[runtime] = {"status": "codex-home-unsafe"}
+                    continue
+                self.codex_home.mkdir(parents=True, exist_ok=True)
             results: list[dict[str, object]] = []
             for raw_command in raw_commands:
                 if not isinstance(raw_command, list) or not all(
@@ -1184,6 +1492,7 @@ class CapabilityManager:
                     continue
                 completed = self.command_runner(
                     [resolved, *raw_command[1:]],
+                    cwd=self._runtime_cwd(executable),
                     stdin=subprocess.DEVNULL,
                     capture_output=True,
                     text=True,
@@ -1243,11 +1552,6 @@ def _plugin_name(entry: dict[str, object]) -> str | None:
 def _installed_path(entry: dict[str, object]) -> str | None:
     for field in ("installedPath", "installPath", "installed_path", "path"):
         value = entry.get(field)
-        if isinstance(value, str) and value:
-            return value
-    source = entry.get("source")
-    if isinstance(source, dict):
-        value = source.get("path")
         if isinstance(value, str) and value:
             return value
     return None

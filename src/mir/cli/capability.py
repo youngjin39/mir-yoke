@@ -31,8 +31,18 @@ def _parser() -> argparse.ArgumentParser:
     finalize.add_argument(
         "--after-restart",
         action="store_true",
-        help="attest that Claude Code was reloaded and Codex started a new session",
+        help="confirm that operator observations came from restarted runtime sessions",
     )
+    attest = subcommands.add_parser("attest")
+    _add_common_options(attest)
+    attest.add_argument("--runtime", choices=("claude-code", "codex-cli-desktop"), required=True)
+    attest.add_argument(
+        "--observed-skill",
+        action="append",
+        default=[],
+        help="operator-observed namespaced skill from the current runtime catalog",
+    )
+    attest.add_argument("--apply", action="store_true")
     return parser
 
 
@@ -70,6 +80,12 @@ def main(argv: list[str] | None = None) -> int:
             result = manager.finalize(
                 apply=namespace.apply,
                 after_restart=namespace.after_restart,
+            )
+        elif namespace.command == "attest":
+            result = manager.attest(
+                namespace.runtime,
+                namespace.observed_skill,
+                apply=namespace.apply,
             )
         else:  # pragma: no cover - argparse owns the command choices
             return 2

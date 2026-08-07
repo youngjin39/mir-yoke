@@ -133,6 +133,11 @@ just this one. They are optional; the project-local `CLAUDE.md` is self-sufficie
 The dual-runtime bootstrap does not claim `ready` until both CLIs report the selected plugins
 enabled at the pinned hashes. Codex IDE extensions are outside this plugin-ready claim.
 
+Existing repositories that already contain same-name raw skills must complete the
+[global plugin migration runbook](docs/operations/global-plugin-migration.md) before the first
+user-global activation. One clean repository is not sufficient evidence when sibling repositories
+under the same user have not been inventoried.
+
 ## Team use (required gates)
 
 Per [ADR-72](docs/decisions/adr-72-dispatch-resilience.md), local pre-commit hooks, the TDD ledger,
@@ -159,7 +164,7 @@ cd my-project
 cp .mcp.json.example .mcp.json   # then edit the codex command/CODEX_HOME
 
 # 4. Restart/open both runtimes, run mir-core:design then mir-core:spec-architect,
-#    and finalize with an honest attestation.
+#    and finalize with an honest operator observation bound to the runtime session.
 ./setup.sh --profile code_app --finalize --architecture-initialized
 
 # 5. Open the project in Claude Code.

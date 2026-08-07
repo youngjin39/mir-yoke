@@ -69,12 +69,14 @@ def test_standalone_collision_fails_without_deleting_it(tmp_path: Path) -> None:
 
 def test_agent_divergence_refuses_remote_update(tmp_path: Path) -> None:
     project = make_project(tmp_path)
+    codex_home = tmp_path / "codex-home"
     manager = CapabilityManager(
         project,
         capability_home=tmp_path / "home",
         user_home=tmp_path / "user",
+        codex_home=codex_home,
         git=CopyGit(commit="a" * 40),
-        command_runner=runtime_runner(tmp_path / "home" / "active"),
+        command_runner=runtime_runner(tmp_path / "home" / "active", codex_home),
         which=lambda executable: f"/fake/{executable}",
     )
     manager.sync("content_workspace", apply=True)
@@ -91,12 +93,14 @@ def test_initial_sync_refuses_an_existing_unlocked_agent(tmp_path: Path) -> None
     agent = project / ".claude" / "agents" / "main-orchestrator.md"
     agent.write_text("project-owned customization\n", encoding="utf-8")
     capability_home = tmp_path / "capability-home"
+    codex_home = tmp_path / "codex-home"
     manager = CapabilityManager(
         project,
         capability_home=capability_home,
         user_home=tmp_path / "user",
+        codex_home=codex_home,
         git=CopyGit(),
-        command_runner=runtime_runner(capability_home / "active"),
+        command_runner=runtime_runner(capability_home / "active", codex_home),
         which=lambda executable: f"/fake/{executable}",
     )
 
@@ -109,20 +113,24 @@ def test_initial_sync_refuses_an_existing_unlocked_agent(tmp_path: Path) -> None
 
 def test_global_one_version_conflict_is_fail_closed(tmp_path: Path) -> None:
     home = tmp_path / "home"
+    codex_home = tmp_path / "codex-home"
+    runner = runtime_runner(home / "active", codex_home)
     first = CapabilityManager(
         make_project(tmp_path, "first"),
         capability_home=home,
         user_home=tmp_path / "user",
+        codex_home=codex_home,
         git=CopyGit(commit="a" * 40),
-        command_runner=runtime_runner(home / "active"),
+        command_runner=runner,
         which=lambda executable: f"/fake/{executable}",
     )
     second = CapabilityManager(
         make_project(tmp_path, "second"),
         capability_home=home,
         user_home=tmp_path / "user",
+        codex_home=codex_home,
         git=CopyGit(commit="a" * 40),
-        command_runner=runtime_runner(home / "active"),
+        command_runner=runner,
         which=lambda executable: f"/fake/{executable}",
     )
     first.sync("infra_runtime", apply=True)

@@ -1,49 +1,40 @@
-# Session Handoff — Current
+# Session Handoff — Global Plugin Migration Gate
 
 ## Completed Work
 
-- Applied the token-efficient root contract and proportional runtime fixes to public Mir Yoke.
-- Regenerated Claude/Codex derivatives and restored compact intent, plan, projection, and closeout continuity.
+- Added the pinned global provider lifecycle, dual-runtime installation evidence, collision checks,
+  consumer integrity, and fail-closed restart/finalization boundary.
+- Required runtime discovery observations to use the current runtime-exported session ID; the CLI
+  no longer accepts an operator-supplied session ID.
+- Labeled namespaced skill discovery honestly as an operator-observed runtime catalog rather than
+  a cryptographically authenticated runtime API.
+- Added provider-owned common-skill contract coverage for all thirteen portable skills.
 
-## Decisions
+## Current Capability State
 
-- `CLAUDE.md` and `setup.sh` are public sources; `AGENTS.md`, `.codex/`, and `.agents/` are generated.
-- The local ignored `.mir/repo-profile.toml` identifies this checkout as Mir Yoke; `setup.sh` retains adopter placeholders for new clones.
-- Recoverable retry/stall signals are advisory. Secret, destructive, protected-path, external-write, and hard circuit-breaker controls remain blocking.
+- Provider commit `2ac5044415df1196d5493d0b37d98945b4d59fac` is materialized with matching
+  active and consumer integrity.
+- Codex discovery is verified from the current restarted thread.
+- Claude discovery is missing. `ready=false`, registration remains `restart-required`, and
+  `capability finalize --apply --after-restart` correctly fails closed.
 
-## Unresolved Issues
+## Next Action
 
-- No implementation blocker. `config/parity-manifest.json` remains anchored to the last versioned
-  release and therefore reports expected drift until a later release refresh.
+- From an actually restarted Claude session, inspect its injected namespaced skill catalog and run
+  the operator observation command with the runtime-exported Claude session ID.
+- Run finalization only after the fleet commit/clean gate and both runtime observations pass.
 
-## Next Actions
+## Verification
 
-- No active implementation action. Refresh release metadata only if a versioned release is requested.
+- Full suite: 688 passed, 1 skipped.
+- Ruff: clean.
+- Focused capability/provider suite: 42 passed.
+- Mini Harness fleet observer: 13 CLEAR, 1 RECOVERY, zero provider collisions; path absence is a
+  blocking incomplete inventory.
 
-## Modified Files
+## Residual Risk
 
-- Root contract/generator/profile: `CLAUDE.md`, generated `AGENTS.md`, `setup.sh`, `.mir-preserve.toml`, `scripts/`.
-- Runtime: `.claude/hooks/pre-tool-use.sh`, `src/mir/cli/loop.py`, `tools/autonomous_loop/`, `tools/plan_archive/`.
-- Continuity/tests: `tasks/`, `.ai-harness/session-closeout.md`, focused regression tests.
-
-## Verification Results
-
-- Focused regression: 53 passed.
-- Full suite: 595 passed, 1 skipped.
-- Codex sync, 59 path references, applied-state checks 1-8, changed-file Ruff, shell syntax, and `git diff --check`: passed.
-- Root instructions: 7,735 B baseline to 5,691 B; SessionStart is 563 B and task-blind.
-
-## Key Risks
-
-- Primary commit `0deca8b` is pushed to `origin/main`. No version bump, tag, or release workflow ran.
-- The parity manifest warning is expected until release metadata is intentionally refreshed.
-
-<!-- mir:runtime-snapshot:begin -->
-## Runtime Snapshot (Generated)
-
-### Active Plan Items
-- No open plan items.
-
-### Working Tree
-- Working tree clean.
-<!-- mir:runtime-snapshot:end -->
+- Observed skill names are operator attestations; session identity and installed plugin hashes are
+  code-checked, but skill-catalog injection is not exposed through an authenticated runtime API.
+- This handoff makes no working-tree cleanliness claim; verify with `git status --short` after the
+  selective commit.

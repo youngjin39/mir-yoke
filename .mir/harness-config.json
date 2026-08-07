@@ -36,6 +36,7 @@
     "bluebricks",
     "commit"
   ],
+  "local_skills": [],
   "agent_overrides": {
     "add_specialists": [],
     "remove_specialists": []

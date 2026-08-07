@@ -732,7 +732,7 @@ def _activate_capabilities(root: Path, profile: str) -> tuple[str, dict]:
     except ImportError as exc:
         return "failed", {"reason": f"capability CLI unavailable: {exc}"}
     output = io.StringIO()
-    with contextlib.redirect_stdout(output):
+    with contextlib.redirect_stdout(output), contextlib.redirect_stderr(output):
         code = capability_cli.main(
             [
                 "sync",
@@ -1211,6 +1211,7 @@ def _emit(ns: argparse.Namespace, receipt: dict) -> None:
         if receipt["status"] == "restart_required":
             print("  selected global plugins are installed and hash-verified")
             print("  restart Claude Code and begin a new Codex session")
+            print("  attest the namespaced skill catalog once from each runtime")
             print("  run mir-core:design then mir-core:spec-architect, then finalize")
         print("  receipt: .mir/bootstrap-receipt.json")
 
