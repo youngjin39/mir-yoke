@@ -50,7 +50,49 @@ Native Windows PowerShell:
 .\setup.ps1 -Slug my-project -Profile code_app
 ```
 
-The wrapper runs `uv sync`, then the cross-platform Python coordinator. The coordinator:
+### External-first storage (recommended when internal SSD capacity is constrained)
+
+Keep the repository itself on the external volume, then give setup one shared machine-storage
+root on that same volume. On this Mac, for example:
+
+```bash
+./setup.sh \
+  --storage-root "/Volumes/T7 Shield/.mir-runtime" \
+  --slug my-project \
+  --profile code_app
+```
+
+On another machine, choose that host's external volume instead of copying the Mac path. Native
+Windows example:
+
+```powershell
+.\setup.ps1 -StorageRoot "E:\.mir-runtime" -Slug my-project -Profile code_app
+```
+
+This keeps each repository's `.venv` and `.mir/memory.db` beside the project, while the shared uv
+cache, uv-managed Python installations, uv tool environments, and Mir global capability provider
+live under the external storage root. Bootstrap verifies that the cache root and project are on the
+same filesystem, allowing uv to use its native clone/link mode instead of duplicating full package
+files.
+
+`--storage-root` configures the setup process. For later direct `uv` commands, persist the same
+values in the host's shell or user environment:
+
+```bash
+export MIR_STORAGE_ROOT="/Volumes/T7 Shield/.mir-runtime"
+export UV_CACHE_DIR="$MIR_STORAGE_ROOT/uv/cache"
+export UV_PYTHON_INSTALL_DIR="$MIR_STORAGE_ROOT/uv/python"
+export UV_TOOL_DIR="$MIR_STORAGE_ROOT/uv/tools"
+export MIR_CAPABILITY_HOME="$MIR_STORAGE_ROOT/mir/capabilities"
+```
+
+Use a stable volume name and APFS on macOS. Small launchers, runtime registry metadata, and
+credentials remain in the user home. Do not move the entire Claude or Codex home because those
+directories may contain credentials. A user-home symlink may be used as a machine-specific
+entrypoint, but the template never commits symlinks or uses them to distribute skills/plugins.
+
+The wrapper configures any requested storage root before it runs `uv sync`, then invokes the
+cross-platform Python coordinator. The coordinator:
 
 1. validates hooks, permissions, orchestration policy, local agent surfaces, and the selected pack;
 2. creates a required local SQLite+FTS5 memory index and indexes tracked Markdown;

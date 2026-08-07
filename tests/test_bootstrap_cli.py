@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sqlite3
 import subprocess
 import sys
@@ -47,7 +48,7 @@ def _make_harness_surfaces(root: Path) -> None:
     )
 
 
-def _bootstrap(root: Path) -> int:
+def _bootstrap(root: Path, *extra: str) -> int:
     return bootstrap_cli.main(
         [
             "--project-root",
@@ -57,6 +58,7 @@ def _bootstrap(root: Path) -> int:
             "--skip-capability-activation",
             "--allow-incomplete",
             "--json",
+            *extra,
         ]
     )
 
@@ -106,6 +108,60 @@ def test_bootstrap_builds_required_memory_and_is_idempotent(tmp_path, capsys):
     assert second_projection == first_projection
     with sqlite3.connect(tmp_path / ".mir" / "memory.db") as connection:
         assert connection.execute("SELECT COUNT(*) FROM external_archives").fetchone()[0] == 3
+
+
+def test_external_storage_root_is_verified_and_recorded(tmp_path, capsys):
+    project = tmp_path / "project"
+    storage = tmp_path / "machine-storage"
+    project.mkdir()
+    _make_harness_surfaces(project)
+    expected = {
+        "UV_CACHE_DIR": storage / "uv" / "cache",
+        "UV_PYTHON_INSTALL_DIR": storage / "uv" / "python",
+        "UV_TOOL_DIR": storage / "uv" / "tools",
+        "MIR_CAPABILITY_HOME": storage / "mir" / "capabilities",
+    }
+    for path in expected.values():
+        path.mkdir(parents=True, exist_ok=True)
+
+    storage_env = {name: str(path) for name, path in expected.items()}
+    storage_env["UV_PROJECT_ENVIRONMENT"] = str(project / ".venv")
+    with patch.dict(os.environ, storage_env):
+        assert _bootstrap(project, "--storage-root", str(storage)) == 0
+
+    receipt = json.loads(capsys.readouterr().out)
+    assert receipt["storage"]["mode"] == "external-first"
+    assert receipt["storage"]["root"] == str(storage.resolve())
+    assert receipt["storage"]["same_filesystem_as_project"] is True
+    assert receipt["storage"]["large_payloads"] == {
+        name: str(path.resolve()) for name, path in expected.items()
+    }
+
+
+def test_external_storage_root_requires_wrapper_environment(tmp_path, capsys):
+    project = tmp_path / "project"
+    storage = tmp_path / "machine-storage"
+    project.mkdir()
+    storage.mkdir()
+    _make_harness_surfaces(project)
+
+    with patch.dict(
+        os.environ,
+        {
+            "UV_CACHE_DIR": "",
+            "UV_PYTHON_INSTALL_DIR": "",
+            "UV_TOOL_DIR": "",
+            "MIR_CAPABILITY_HOME": "",
+            "UV_PROJECT_ENVIRONMENT": "",
+        },
+    ):
+        assert _bootstrap(project, "--storage-root", str(storage)) == 2
+
+    report = json.loads(capsys.readouterr().out)
+    assert report["status"] == "incomplete"
+    assert report["storage"]["mode"] == "external-first"
+    assert any("UV_CACHE_DIR" in error for error in report["errors"])
+    assert not (project / ".mir" / "memory.db").exists()
 
 
 def test_preflight_failure_does_not_create_authored_config_or_db(tmp_path, capsys):

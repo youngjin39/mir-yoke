@@ -30,6 +30,9 @@ What you get out of the box:
   profile-specific code or no-code capabilities. Namespaces prevent project/global duplication.
 - **Required portable memory** — every completed bootstrap proves a local SQLite+FTS5 index over
   tracked Markdown. Embeddings and vectors are optional; memory is not.
+- **External-first storage profile** — an optional shared storage root keeps uv cache, managed
+  Python, tools, and the global capability provider on the same external filesystem as project
+  `.venv` directories, while credentials stay in the user home.
 - **Pinned capability source** — a trusted Git URL plus exact commit and tree hashes let later
   agents check for skill/agent updates without silently activating mutable remote instructions.
 - **Per-family JSON registry** — `config/repo-agent-management.json` catalogs agents and skills.
@@ -163,6 +166,15 @@ claude .
 # 6. Or in Codex CLI.
 codex
 ```
+
+For a project cloned onto an external SSD, keep large shared payloads on that same volume:
+
+```bash
+./setup.sh --storage-root "/Volumes/T7 Shield/.mir-runtime" --profile code_app
+```
+
+The path is a host choice, not a value committed by the template. See `BOOTSTRAP.md` for persistent
+shell variables and the storage boundary.
 
 On native Windows use `.\setup.ps1 -Profile code_app`, then finalize with `-Finalize
 -ArchitectureInitialized`. Both wrappers call the same Python coordinator. It validates the harness,

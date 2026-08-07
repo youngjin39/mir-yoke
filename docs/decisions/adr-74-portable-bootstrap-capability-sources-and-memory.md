@@ -120,9 +120,24 @@ The first task type never changes the architecture baseline. This does not requi
 prose or fiction edit to invoke `spec-architect`; it requires the first project structure/spec pass
 before normal work begins. The selected project profile controls optional packs.
 
+### 5. External-first machine storage
+
+External storage is an optional host profile, not a repository path committed into the template.
+When selected, the repository and its project-local `.venv` stay on the external volume, while one
+shared storage root on the same filesystem owns the uv cache, uv-managed Python installations, uv
+tool environments, and Mir capability provider. Bootstrap records the resolved paths and refuses
+the profile when the project and storage root are on different filesystems, because that would
+force uv to copy cached package data instead of using its native clone/link mode.
+
+The template uses environment-variable configuration as the portable contract. A macOS operator
+may use user-home symbolic links as machine-specific entrypoints, but no tracked harness artifact
+or cross-project skill/plugin provider depends on a symlink. Credentials, auth state, and small
+launcher links stay in the user home; moving complete Claude or Codex homes is outside this profile.
+
 ## Rejected alternatives
 
-- User-directory symlinks: they are not portable to native Windows and can target the wrong clone.
+- User-directory symlinks as capability distribution: they are not portable to native Windows and
+  can target the wrong clone. A host-local storage entrypoint is allowed but never required.
 - Same-name user and repository copies: Claude may shadow one while Codex may expose both.
 - Repository copies for all common skills: they drift independently and lose global provenance.
 - Automatic activation of the newest branch head: it executes mutable remote instructions without
@@ -152,6 +167,8 @@ before normal work begins. The selected project profile controls optional packs.
 10. A baseline DB path outside the repository and an archive symlink escaping its declared root are
     rejected before any read or write. Required vector mode proves complete vector coverage rather
     than only extension or endpoint availability.
+11. An explicit external storage root is used before dependency synchronization and readiness
+    evidence proves the uv cache and project environment are on the same filesystem.
 
 ## Consequences
 

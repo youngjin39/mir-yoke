@@ -29,6 +29,12 @@ _PROFILE_ALIASES = {"hybrid": "hybrid_pipeline", "infra": "infra_runtime"}
 _SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{0,63}$")
 _ARCHITECTURE_OUTPUTS = ("spec/STATE.md", "spec/index.yaml", "spec/graph.yaml")
 _ARCHITECTURE_SEQUENCE = ("mir-core:design", "mir-core:spec-architect")
+_EXTERNAL_STORAGE_PATHS = {
+    "UV_CACHE_DIR": Path("uv/cache"),
+    "UV_PYTHON_INSTALL_DIR": Path("uv/python"),
+    "UV_TOOL_DIR": Path("uv/tools"),
+    "MIR_CAPABILITY_HOME": Path("mir/capabilities"),
+}
 
 
 def _parse(argv: list[str]) -> argparse.Namespace:
@@ -36,6 +42,11 @@ def _parse(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--project-root", type=Path, default=Path.cwd())
     parser.add_argument("--slug", default=None)
     parser.add_argument("--profile", default="code_app")
+    parser.add_argument(
+        "--storage-root",
+        type=Path,
+        help="shared external-volume root configured by setup.sh or setup.ps1",
+    )
     parser.add_argument("--json", action="store_true", default=False, dest="json")
     parser.add_argument(
         "--finalize",
@@ -62,6 +73,80 @@ def _parse(argv: list[str]) -> argparse.Namespace:
         help=argparse.SUPPRESS,
     )
     return parser.parse_args(argv)
+
+
+def _storage_preflight(root: Path, requested: Path | None) -> tuple[list[str], dict]:
+    if requested is None:
+        return [], {
+            "mode": "host-default",
+            "root": None,
+            "same_filesystem_as_project": None,
+            "large_payloads": {},
+        }
+
+    storage_root = requested.expanduser().resolve(strict=False)
+    report = {
+        "mode": "external-first",
+        "root": str(storage_root),
+        "project_environment": str((root / ".venv").resolve(strict=False)),
+        "same_filesystem_as_project": False,
+        "large_payloads": {},
+    }
+    errors: list[str] = []
+    if not storage_root.is_dir():
+        errors.append(f"external storage root is not a directory: {storage_root}")
+        return errors, report
+    if not os.access(storage_root, os.W_OK):
+        errors.append(f"external storage root is not writable: {storage_root}")
+
+    configured_paths: list[Path] = []
+    for name, relative in _EXTERNAL_STORAGE_PATHS.items():
+        expected = (storage_root / relative).resolve(strict=False)
+        raw = os.environ.get(name)
+        if not raw:
+            errors.append(
+                f"{name} is not configured; invoke bootstrap through setup.sh/setup.ps1 "
+                "with --storage-root"
+            )
+            continue
+        actual = Path(raw).expanduser().resolve(strict=False)
+        report["large_payloads"][name] = str(actual)
+        if actual != expected:
+            errors.append(f"{name} must resolve to {expected}, got {actual}")
+        elif not actual.is_dir():
+            errors.append(f"{name} directory is missing: {actual}")
+        else:
+            configured_paths.append(actual)
+
+    expected_environment = (root / ".venv").resolve(strict=False)
+    raw_environment = os.environ.get("UV_PROJECT_ENVIRONMENT")
+    if not raw_environment:
+        errors.append("UV_PROJECT_ENVIRONMENT is not configured for project-local .venv")
+    else:
+        actual_environment = Path(raw_environment).expanduser().resolve(strict=False)
+        if actual_environment != expected_environment:
+            errors.append(
+                f"UV_PROJECT_ENVIRONMENT must resolve to {expected_environment}, "
+                f"got {actual_environment}"
+            )
+
+    try:
+        project_device = os.stat(root).st_dev
+        same_filesystem = (
+            len(configured_paths) == len(_EXTERNAL_STORAGE_PATHS)
+            and os.stat(storage_root).st_dev == project_device
+            and all(os.stat(path).st_dev == project_device for path in configured_paths)
+        )
+    except OSError as exc:
+        errors.append(f"external storage filesystem check failed: {exc}")
+    else:
+        report["same_filesystem_as_project"] = same_filesystem
+        if not same_filesystem:
+            errors.append(
+                "external storage root and project must use the same filesystem so uv can "
+                "clone/link cached packages instead of copying them"
+            )
+    return errors, report
 
 
 def _normalise_slug(raw: str) -> str:
@@ -576,6 +661,10 @@ def main(argv: list[str]) -> int:
     staged_db = False
     architecture_evidence: dict[str, object] = {}
     architecture_attested = False
+    storage_errors, storage_report = _storage_preflight(root, ns.storage_root)
+    if storage_errors:
+        errors.extend(storage_errors)
+        invalid_config = True
     receipt_path = root / ".mir" / "bootstrap-receipt.json"
     prior_receipt = None
     if receipt_path.is_file():
@@ -749,6 +838,7 @@ def main(argv: list[str]) -> int:
             "python": platform.python_version(),
             "hook_runtime": hook_runtime,
         },
+        "storage": storage_report,
         "memory": {
             **memory_report.get("memory", {}),
             "topology": "per_repository_sqlite_fts5",
