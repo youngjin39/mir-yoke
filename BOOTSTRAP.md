@@ -227,7 +227,9 @@ rewrites native spec artifacts. ADR-77 records the preservation and exception se
 For an applied or repository-owned Phase 2 surface, `native_evidence` maps the manifest to the
 repository's YAML coverage metadata, gap list, and five-dimension review record. The adoption
 command parses those native files and requires their counts and results to match the manifest;
-copying passing numbers into the manifest is not sufficient.
+copying passing numbers into the manifest is not sufficient. Every review dimension records
+`status: pass`, one or more tracked `evidence_paths`, and a concrete `verification` observation;
+those paths must also be declared as Phase 2 evidence and are hash-bound into the receipt.
 
 The ready receipt is valid only while its source commit, manifest hash, complete declared evidence
 path set, and every evidence hash still match the working tree. Any drift closes the startup gate

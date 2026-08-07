@@ -165,6 +165,9 @@ def _manifest() -> dict[str, object]:
     surfaces["phase2_spec"] = {
         "disposition": "repository_owned",
         "evidence_paths": [
+            "CLAUDE.md",
+            "harness_a.toml",
+            "docs/memory.md",
             "spec/meta.yaml",
             "spec/gaps.yaml",
             "spec/bootstrap-adoption-review.yaml",
@@ -218,11 +221,26 @@ ai_ready: {ready: 1, incomplete: 0, blocked: 0}
     _write(
         root / "spec/bootstrap-adoption-review.yaml",
         """reviews:
-  project_structure: pass
-  memory: pass
-  discoverability: pass
-  requirements: pass
-  organization: pass
+  project_structure:
+    status: pass
+    evidence_paths: [spec/meta.yaml]
+    verification: Parsed four-layer structure matches the adoption manifest.
+  memory:
+    status: pass
+    evidence_paths: [harness_a.toml, docs/memory.md]
+    verification: Live project memory query returns the expected archive path.
+  discoverability:
+    status: pass
+    evidence_paths: [CLAUDE.md]
+    verification: Repository instructions expose the maintained project contract.
+  requirements:
+    status: pass
+    evidence_paths: [spec/meta.yaml]
+    verification: Native coverage has no unresolved requirement slots.
+  organization:
+    status: pass
+    evidence_paths: [spec/gaps.yaml]
+    verification: Native gaps evidence contains no open entries.
 """,
     )
     _write_profile(root)
@@ -511,6 +529,26 @@ def test_bootstrap_adoption_should_reject_manifest_counts_that_drift_from_native
     assert _run(tmp_path) == 2
     report = json.loads(capsys.readouterr().out)
     assert any("does not match native evidence" in error for error in report["errors"])
+
+
+def test_bootstrap_adoption_should_reject_unsubstantiated_native_review(
+    tmp_path, capsys
+):
+    _ready_project(tmp_path)
+    _write(
+        tmp_path / "spec/bootstrap-adoption-review.yaml",
+        """reviews:
+  project_structure: pass
+  memory: pass
+  discoverability: pass
+  requirements: pass
+  organization: pass
+""",
+    )
+
+    assert _run(tmp_path) == 2
+    report = json.loads(capsys.readouterr().out)
+    assert any("native review dimension" in error for error in report["errors"])
 
 
 def test_bootstrap_adoption_should_verify_gate_and_managed_launcher_wiring(tmp_path, capsys):

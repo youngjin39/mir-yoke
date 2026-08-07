@@ -748,12 +748,73 @@ def _validate_phase2(
 
         review_document = documents.get("review_path", {})
         native_reviews = review_document.get("reviews")
-        if native_reviews != full_review:
+        review_statuses: dict[str, object] = {}
+        review_evidence: dict[str, dict[str, object]] = {}
+        if not isinstance(native_reviews, dict) or set(native_reviews) != set(_REVIEW_KEYS):
+            errors.append(
+                "phase2_spec native review evidence must contain exactly five review dimensions"
+            )
+        else:
+            for dimension in _REVIEW_KEYS:
+                row = native_reviews.get(dimension)
+                if not isinstance(row, dict) or set(row) != {
+                    "status",
+                    "evidence_paths",
+                    "verification",
+                }:
+                    errors.append(
+                        "phase2_spec native review dimension must contain exactly status, "
+                        f"evidence_paths, and verification: {dimension}"
+                    )
+                    continue
+                review_statuses[dimension] = row.get("status")
+                evidence_paths = row.get("evidence_paths")
+                if (
+                    not isinstance(evidence_paths, list)
+                    or not evidence_paths
+                    or len(set(map(str, evidence_paths))) != len(evidence_paths)
+                ):
+                    errors.append(
+                        f"phase2_spec native review {dimension} requires unique evidence_paths"
+                    )
+                    evidence_paths = []
+                verified_paths: list[str] = []
+                for review_path in evidence_paths:
+                    try:
+                        _path, normalized = _tracked_path(
+                            root,
+                            review_path,
+                            label=f"phase2_spec native review {dimension} evidence",
+                        )
+                    except AdoptionError as exc:
+                        errors.append(str(exc))
+                        continue
+                    if normalized not in declared_paths:
+                        errors.append(
+                            "phase2_spec native review evidence must be listed in "
+                            f"evidence_paths: {normalized}"
+                        )
+                    verified_paths.append(normalized)
+                try:
+                    verification = _non_placeholder_text(
+                        row.get("verification"),
+                        label=f"phase2_spec native review {dimension}.verification",
+                    )
+                except AdoptionError as exc:
+                    errors.append(str(exc))
+                    verification = ""
+                review_evidence[dimension] = {
+                    "status": row.get("status"),
+                    "evidence_paths": verified_paths,
+                    "verification": verification,
+                }
+        if review_statuses != full_review:
             errors.append("phase2_spec full_review does not match native review evidence")
         native_report = {
             "status": "pass" if not errors else "fail",
             "format": native_evidence.get("format"),
             "paths": normalized_paths,
+            "reviews": review_evidence,
         }
 
     native_paths = set(native_report.get("paths", {}).values())

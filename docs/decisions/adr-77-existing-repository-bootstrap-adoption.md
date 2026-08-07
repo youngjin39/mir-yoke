@@ -45,7 +45,9 @@ incomplete or blocked items; open gaps are zero; and all five full-review dimens
 AI-ready counts are deliberately not equated to Layer 1 totals. Applied and repository-owned Phase
 2 entries must map their native YAML metadata, gaps, and review files through `native_evidence`.
 The command parses those files and requires the manifest coverage, AI-ready, gap count, and review
-claims to match them exactly.
+claims to match them exactly. Each native review dimension must carry a passing status, tracked
+evidence paths included in the Phase 2 evidence set, and a non-placeholder verification
+observation, preventing an unsubstantiated five-word pass file from satisfying the gate.
 
 The receipt records a SHA-256 digest for the manifest and for the complete set of evidence paths
 declared by all surfaces. At every SessionStart or mutation check, the gate compares the source
