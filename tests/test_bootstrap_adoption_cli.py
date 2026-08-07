@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import sqlite3
+import subprocess
 from pathlib import Path
 
 import jsonschema
@@ -248,11 +249,17 @@ ai_ready: {ready: 1, incomplete: 0, blocked: 0}
     _write_memory(root)
     manifest = _manifest()
     _write(root / "config/bootstrap-adoption.json", json.dumps(manifest, indent=2))
+    subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+    subprocess.run(["git", "add", "."], cwd=root, check=True)
     return manifest
 
 
 def _run(root: Path, *args: str) -> int:
     return adoption_cli.main(["--project-root", str(root), "--json", *args])
+
+
+def _git_add(root: Path, *paths: str) -> None:
+    subprocess.run(["git", "add", "--", *paths], cwd=root, check=True)
 
 
 def test_bootstrap_adoption_read_only_should_not_write_receipt_or_database(tmp_path, capsys):
@@ -341,6 +348,7 @@ def test_content_workspace_should_use_repository_type_over_hybrid_overlay(
         "evidence_paths": ["config/content-onboarding.json", "records/history.md"],
     }
     _write(tmp_path / "config/bootstrap-adoption.json", json.dumps(manifest))
+    _git_add(tmp_path, "config/content-onboarding.json", "records/history.md")
 
     assert _run(tmp_path) == 0
     report = json.loads(capsys.readouterr().out)
@@ -391,6 +399,7 @@ def test_bootstrap_adoption_documented_exceptions_should_remain_visible_in_ready
         "# Native specification evidence\n\nThe accepted native format remains in force.\n",
     )
     _write(tmp_path / "config/bootstrap-adoption.json", json.dumps(manifest))
+    _git_add(tmp_path, "spec/native-evidence.md")
 
     assert _run(tmp_path, "--apply") == 0
     stdout = json.loads(capsys.readouterr().out)
@@ -432,6 +441,7 @@ def test_bootstrap_adoption_should_accept_resolved_tbd_count_in_phase2_evidence(
         "spec/evidence.yaml"
     )
     _write(tmp_path / "config/bootstrap-adoption.json", json.dumps(manifest))
+    _git_add(tmp_path, "spec/evidence.yaml")
 
     assert _run(tmp_path) == 0
     assert json.loads(capsys.readouterr().out)["status"] == "ready"
@@ -549,6 +559,19 @@ def test_bootstrap_adoption_should_reject_unsubstantiated_native_review(
     assert _run(tmp_path) == 2
     report = json.loads(capsys.readouterr().out)
     assert any("native review dimension" in error for error in report["errors"])
+
+
+def test_bootstrap_adoption_should_reject_untracked_surface_evidence(tmp_path, capsys):
+    manifest = _ready_project(tmp_path)
+    _write(tmp_path / "spec/untracked.md", "Untracked evidence must not satisfy readiness.\n")
+    manifest["surfaces"]["phase2_spec"]["evidence_paths"].append(
+        "spec/untracked.md"
+    )
+    _write(tmp_path / "config/bootstrap-adoption.json", json.dumps(manifest))
+
+    assert _run(tmp_path) == 2
+    report = json.loads(capsys.readouterr().out)
+    assert any("evidence path is not tracked" in error for error in report["errors"])
 
 
 def test_bootstrap_adoption_should_verify_gate_and_managed_launcher_wiring(tmp_path, capsys):

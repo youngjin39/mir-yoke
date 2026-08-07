@@ -8,6 +8,7 @@ import json
 import os
 import re
 import sqlite3
+import subprocess
 import sys
 import tempfile
 import tomllib
@@ -109,6 +110,19 @@ def _tracked_path(root: Path, relative: object, *, label: str) -> tuple[Path, st
     except ValueError as exc:
         raise AdoptionError(f"{label} escapes the project: {relative!r}") from exc
     return resolved, normalized
+
+
+def _is_git_tracked(root: Path, relative: str) -> bool:
+    environment = os.environ.copy()
+    environment["GIT_OPTIONAL_LOCKS"] = "0"
+    result = subprocess.run(
+        ["git", "-C", str(root), "ls-files", "--error-unmatch", "--", relative],
+        check=False,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        env=environment,
+    )
+    return result.returncode == 0
 
 
 def _non_placeholder_text(value: object, *, label: str) -> str:
@@ -264,6 +278,10 @@ def _validate_surface_contract(
             if path.is_symlink() or not path.is_file():
                 errors.append(f"surface {key!r} evidence path is missing: {normalized_path}")
                 continue
+            if not _is_git_tracked(root, normalized_path):
+                errors.append(
+                    f"surface {key!r} evidence path is not tracked: {normalized_path}"
+                )
             try:
                 if not path.read_bytes().strip():
                     errors.append(f"surface {key!r} evidence path is empty: {normalized_path}")
