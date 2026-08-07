@@ -116,10 +116,11 @@
     "check_trigger": "requirements-agents-or-skills-change",
     "check_mode": "read-only",
     "activation": "explicit-apply",
+    "activation_required_runtimes": ["codex-cli-desktop"],
     "one_global_active_version": true,
     "remote_executable_content": "reject",
     "host_registration": "explicit-sync-apply",
-    "claude_reload_required": true,
+    "claude_reload_required": false,
     "codex_new_session_required": true
   }
 }

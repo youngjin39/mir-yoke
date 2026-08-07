@@ -1209,9 +1209,10 @@ def _emit(ns: argparse.Namespace, receipt: dict) -> None:
         for error in receipt.get("errors", []):
             print(f"  [not-ready] {error}")
         if receipt["status"] == "restart_required":
-            print("  selected global plugins are installed and hash-verified")
-            print("  restart Claude Code and begin a new Codex session")
-            print("  attest the namespaced skill catalog once from each runtime")
+            print("  selected global plugins are hash-verified for required runtimes")
+            print("  begin a new session for every required activation runtime")
+            print("  attest the namespaced skill catalog from each required session")
+            print("  optional runtime installation and discovery evidence is advisory")
             print("  run mir-core:design then mir-core:spec-architect, then finalize")
         print("  receipt: .mir/bootstrap-receipt.json")
 

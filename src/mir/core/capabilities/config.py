@@ -11,6 +11,7 @@ from urllib.parse import urlsplit
 _PLUGIN_NAME = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 _WINDOWS_DRIVE = re.compile(r"^[A-Za-z]:")
 _REF = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]*$")
+_RUNTIME_EVIDENCE_KEYS = {"claude-code", "codex-cli-desktop"}
 
 
 class CapabilityConfigError(ValueError):
@@ -76,6 +77,7 @@ class CapabilityConfig:
     packs: dict[str, CapabilityPack]
     agents: tuple[str, ...]
     required_project_paths: tuple[str, ...]
+    required_runtimes: tuple[str, ...]
     runtime_support: dict[str, object]
     policy: dict[str, object]
 
@@ -231,6 +233,19 @@ def load_capability_config(path: Path) -> CapabilityConfig:
     unsupported = runtime_support.get("unsupported")
     if not isinstance(unsupported, dict) or "codex-ide-extension" not in unsupported:
         raise CapabilityConfigError("Codex IDE extension boundary must be explicit")
+    required_runtimes = policy.get("activation_required_runtimes")
+    if (
+        not isinstance(required_runtimes, list)
+        or not required_runtimes
+        or not all(
+            isinstance(runtime, str) and runtime in _RUNTIME_EVIDENCE_KEYS
+            for runtime in required_runtimes
+        )
+        or len(set(required_runtimes)) != len(required_runtimes)
+    ):
+        raise CapabilityConfigError(
+            "policy.activation_required_runtimes must contain unique supported runtimes"
+        )
 
     config = CapabilityConfig(
         source_url=source_url,
@@ -241,6 +256,7 @@ def load_capability_config(path: Path) -> CapabilityConfig:
         packs=packs,
         agents=tuple(agents),
         required_project_paths=required_project_paths,
+        required_runtimes=tuple(required_runtimes),
         runtime_support=runtime_support,
         policy=policy,
     )

@@ -52,8 +52,9 @@ uv run mir capability sync --project-root /absolute/canary --apply --json
 under `MIR_CAPABILITY_HOME`, registers the canary, and installs the selected plugins through the
 supported host CLIs. Codex installation evidence is valid only when the `mir-yoke` marketplace and
 enabled plugin entries persist in `CODEX_HOME/config.toml` and the installed cache trees match the
-lock. The marketplace source tree alone is not installation evidence. Stop if either runtime cannot
-provide installation evidence.
+lock. The marketplace source tree alone is not installation evidence. Stop if a runtime listed in
+`policy.activation_required_runtimes` cannot provide installation evidence. The current policy
+requires Codex only; Claude failures remain visible advisory evidence.
 
 Explicit `--capability-home` and `MIR_CAPABILITY_HOME` remain authoritative. If neither is present
 in a bridge session with a temporary `HOME`, the manager may recover the external provider only
@@ -62,9 +63,9 @@ Git source and materialized root. Persist the storage environment on hosts witho
 
 ## 4. Restart and prove activation
 
-Reload Claude Code and start a new Codex session. In each runtime, inspect the runtime-provided skill
-catalog—not the provider files—and attest every selected namespaced skill. Repeat
-`--observed-skill` for each name actually present, for example:
+Start a new Codex session. Inspect its runtime-provided skill catalog—not the provider files—and
+attest every selected namespaced skill. Repeat `--observed-skill` for each name actually present,
+for example:
 
 ```bash
 uv run mir capability attest --project-root /absolute/canary \
@@ -73,12 +74,13 @@ uv run mir capability attest --project-root /absolute/canary \
   --apply --json
 ```
 
-Run the same command from the restarted Claude session with `--runtime claude-code`. The command
-requires the current runtime to export its session ID and has no operator-supplied session-ID
+Claude operators may run the same command from a restarted Claude session with
+`--runtime claude-code`, but that receipt is optional under the current policy. Each command
+requires its current runtime to export the session ID and has no operator-supplied session-ID
 override. The skill list is still an operator observation: do not derive it from files or from
-`plugin list`; absence from the injected catalog is a failed acceptance test.
+`plugin list`; absence from the required Codex catalog is a failed acceptance test.
 
-After both attestations succeed, run:
+After the required Codex attestation succeeds, run:
 
 ```bash
 uv run mir capability finalize --project-root /absolute/canary \
@@ -86,9 +88,11 @@ uv run mir capability finalize --project-root /absolute/canary \
 uv run mir capability status --project-root /absolute/canary --json
 ```
 
-Ready means both runtimes expose exactly one enabled plugin per selected name, every installed tree
-matches the lock digest, and the canary has no standalone collisions. Register each additional
-clean repository with `sync --apply`; the one-version consumer registry refuses a divergent digest.
+Ready means every runtime named by `policy.activation_required_runtimes` exposes exactly one
+enabled plugin per selected name, every required installed tree matches the lock digest, the
+required runtime has a complete discovery receipt, and the canary has no standalone collisions.
+Optional runtime failures remain in status output. Register each additional clean repository with
+`sync --apply`; the one-version consumer registry refuses a divergent digest.
 
 ## 5. Rollback
 

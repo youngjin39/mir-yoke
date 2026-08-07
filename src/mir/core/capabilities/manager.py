@@ -735,14 +735,17 @@ class CapabilityManager:
                     consumer_receipts = candidate
 
         evidence: dict[str, object] = {}
+        required_runtimes = set(self.config.required_runtimes)
         verified = True
         for runtime in _RUNTIMES:
+            required = runtime in required_runtimes
             receipt = (
                 consumer_receipts.get(runtime) if isinstance(consumer_receipts, dict) else None
             )
             if not isinstance(receipt, dict):
-                evidence[runtime] = {"status": "missing"}
-                verified = False
+                evidence[runtime] = {"status": "missing", "required": required}
+                if required:
+                    verified = False
                 continue
             observed = receipt.get("observed_skills")
             observed_set = (
@@ -760,10 +763,16 @@ class CapabilityManager:
                 status = "skills-missing"
             else:
                 status = "verified"
-            evidence[runtime] = {"status": status, "missing_skills": missing}
-            verified = verified and status == "verified"
+            evidence[runtime] = {
+                "status": status,
+                "missing_skills": missing,
+                "required": required,
+            }
+            if required:
+                verified = verified and status == "verified"
         return {
             "status": "verified" if verified else "incomplete",
+            "required_runtimes": list(self.config.required_runtimes),
             "runtimes": evidence,
         }
 
@@ -790,7 +799,7 @@ class CapabilityManager:
         if evidence.get("status") != "verified":
             raise CapabilityError("runtime plugin installation could not be verified")
         if discovery.get("status") != "verified":
-            raise CapabilityError("runtime skill discovery receipts are incomplete")
+            raise CapabilityError("required runtime skill discovery receipts are incomplete")
         registration = lock.get("registration")
         if not isinstance(registration, dict):
             raise CapabilityError("capability lock registration field is invalid")
@@ -821,14 +830,21 @@ class CapabilityManager:
                 "codex", ["plugin", "list", "--json"], plugins
             ),
         }
-        verified = all(result.get("verified") is True for result in runtime_results.values())
+        verified = all(
+            runtime_results[runtime].get("verified") is True
+            for runtime in self.config.required_runtimes
+        )
         if not verified:
             status = "cli-evidence-missing"
         elif require_active_receipt and registration.get("status") != "active":
             status = "restart-required"
         else:
             status = "active" if registration.get("status") == "active" else "verified"
-        return {"status": status, "runtimes": runtime_results}
+        return {
+            "status": status,
+            "required_runtimes": list(self.config.required_runtimes),
+            "runtimes": runtime_results,
+        }
 
     def _runtime_cwd(self, executable: str) -> Path:
         if executable == "codex" and self.codex_home.is_dir():
@@ -1451,9 +1467,10 @@ class CapabilityManager:
             "codex_cli_desktop": codex_commands,
             "codex_ide_extension": "unsupported; project-local agents and instructions only",
             "after_agent_update": ["bash", "scripts/generate_codex_derivatives.sh"],
+            "required_runtimes": list(self.config.required_runtimes),
             "next_step": (
-                "start new Claude Code and Codex sessions, attest each runtime's discovered "
-                "skills, then run capability finalize --apply --after-restart"
+                "start new sessions for every required runtime, attest each discovered skill "
+                "catalog, then run capability finalize --apply --after-restart"
             ),
         }
 
@@ -1517,9 +1534,13 @@ class CapabilityManager:
         }
         registration["install_attempts"] = attempts
         registration["evidence"] = evidence
+        registration["required_runtimes"] = list(self.config.required_runtimes)
         registration["status"] = (
             "restart-required"
-            if all(result.get("verified") is True for result in evidence.values())
+            if all(
+                evidence[runtime].get("verified") is True
+                for runtime in self.config.required_runtimes
+            )
             else "registration-failed"
         )
         return registration

@@ -49,6 +49,23 @@ def test_plugin_paths_reject_traversal_and_platform_escapes(tmp_path: Path, path
         load_capability_config(config)
 
 
+@pytest.mark.parametrize(
+    "required_runtimes",
+    [[], ["unknown-runtime"], ["codex-cli-desktop", "codex-cli-desktop"]],
+)
+def test_activation_required_runtimes_reject_invalid_policy(
+    tmp_path: Path, required_runtimes: list[str]
+) -> None:
+    config = mutated_config(
+        tmp_path,
+        lambda value: value["policy"].update(
+            activation_required_runtimes=required_runtimes
+        ),
+    )
+    with pytest.raises(CapabilityConfigError):
+        load_capability_config(config)
+
+
 def test_standalone_collision_fails_without_deleting_it(tmp_path: Path) -> None:
     project = make_project(tmp_path)
     user_home = tmp_path / "user"

@@ -166,8 +166,16 @@ def attest_both_runtimes(manager: CapabilityManager) -> None:
         manager.attest("codex-cli-desktop", skills, apply=True)
 
 
+def attest_codex_runtime(manager: CapabilityManager) -> None:
+    skills = observed_skills(manager)
+    with pytest.MonkeyPatch.context() as monkeypatch:
+        monkeypatch.setenv("CODEX_THREAD_ID", "codex-new-session")
+        manager.attest("codex-cli-desktop", skills, apply=True)
+
+
 def test_profiles_are_canonical_and_have_distinct_inventories() -> None:
     config = load_capability_config(ROOT / "config" / "capability-sources.json")
+    assert config.required_runtimes == ("codex-cli-desktop",)
     assert set(config.packs) == {
         "code_app",
         "hybrid_pipeline",
@@ -350,8 +358,11 @@ def test_finalize_requires_runtime_path_hash_evidence(tmp_path: Path) -> None:
     assert manager.finalize()["ready_to_finalize"] is False
     with pytest.raises(CapabilityError, match="runtime skill discovery"):
         manager.finalize(apply=True, after_restart=True)
-    attest_both_runtimes(manager)
+    attest_codex_runtime(manager)
     assert manager.finalize()["ready_to_finalize"] is True
+    discovery = manager.finalize()["discovery"]
+    assert discovery["required_runtimes"] == ["codex-cli-desktop"]
+    assert discovery["runtimes"]["claude-code"]["status"] == "missing"
     finalized = manager.finalize(apply=True, after_restart=True)
     assert finalized["activation"]["status"] == "active"
     assert manager.status()["ready"] is True
@@ -467,7 +478,53 @@ def test_attest_requires_expected_skills_and_new_session(
     receipt = manager.attest("codex-cli-desktop", skills, apply=True)
     assert receipt["status"] == "attested"
     assert receipt["attestation_kind"] == "operator-observed-runtime-catalog"
-    assert manager.finalize()["discovery"]["status"] == "incomplete"
+    assert manager.finalize()["discovery"]["status"] == "verified"
+
+
+def test_codex_only_policy_allows_finalize_when_claude_cli_is_missing(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    project = make_project(tmp_path)
+    capability_home = tmp_path / "capability-home"
+    codex_home = tmp_path / "codex-home"
+    manager = CapabilityManager(
+        project,
+        capability_home=capability_home,
+        user_home=tmp_path / "user",
+        codex_home=codex_home,
+        git=CopyGit(),
+        command_runner=runtime_runner(capability_home / "active", codex_home),
+        which=lambda executable: None if executable == "claude" else f"/fake/{executable}",
+    )
+
+    synced = manager.sync("content_workspace", apply=True)
+    assert synced["registration_status"] == "restart-required"
+    monkeypatch.setenv("CODEX_THREAD_ID", "codex-only-session")
+    manager.attest("codex-cli-desktop", observed_skills(manager), apply=True)
+
+    preview = manager.finalize()
+    assert preview["ready_to_finalize"] is True
+    assert preview["activation"]["runtimes"]["claude-code"]["verified"] is False
+    manager.finalize(apply=True, after_restart=True)
+    assert manager.status()["ready"] is True
+
+
+def test_sync_apply_fails_when_required_codex_cli_is_missing(tmp_path: Path) -> None:
+    project = make_project(tmp_path)
+    capability_home = tmp_path / "capability-home"
+    codex_home = tmp_path / "codex-home"
+    manager = CapabilityManager(
+        project,
+        capability_home=capability_home,
+        user_home=tmp_path / "user",
+        codex_home=codex_home,
+        git=CopyGit(),
+        command_runner=runtime_runner(capability_home / "active", codex_home),
+        which=lambda executable: None if executable == "codex" else f"/fake/{executable}",
+    )
+
+    with pytest.raises(CapabilityError, match="registration failed"):
+        manager.sync("content_workspace", apply=True)
 
 
 def test_sync_apply_fails_ready_when_supported_clis_are_missing(tmp_path: Path) -> None:

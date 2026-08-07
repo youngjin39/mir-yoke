@@ -112,7 +112,8 @@ same-name copies under user or project skill directories are rejected.
 The **Codex delegation lane** (`executor-agent`, `codex-final-reviewer`, `mir_executor --dispatch`,
 the `mcp__codex__codex` tool) additionally needs:
 
-1. **Claude Code and Codex CLI** installed and logged in (`claude` and `codex` on `PATH`).
+1. **Codex CLI** installed and logged in (`codex` on `PATH`). Claude Code remains supported and
+   is required only when the adopter chooses to use the Claude runtime.
 2. **Python 3.12+, Git, `uv`, and `jq`** for the CLI and hook JSON parsing — `uv run mir …`.
 3. **Bash** on macOS/Linux/WSL; native Windows uses `setup.ps1` but still requires Git Bash or WSL
    Bash on `PATH` for hooks.
@@ -130,8 +131,10 @@ Goal-Driven Execution) live in [`global-rules/`](global-rules/) — merge them i
 `~/.claude/CLAUDE.md` and `~/.codex/AGENTS.md` if you want them applied across all your repos, not
 just this one. They are optional; the project-local `CLAUDE.md` is self-sufficient without them.
 
-The dual-runtime bootstrap does not claim `ready` until both CLIs report the selected plugins
-enabled at the pinned hashes. Codex IDE extensions are outside this plugin-ready claim.
+The bootstrap does not claim `ready` until Codex CLI/desktop reports the selected plugins enabled
+at the pinned hashes and a new Codex session records the expected skill catalog. Claude
+installation and discovery remain visible status evidence but do not block activation. Codex IDE
+extensions are outside this plugin-ready claim.
 
 Existing repositories that already contain same-name raw skills must complete the
 [global plugin migration runbook](docs/operations/global-plugin-migration.md) before the first
@@ -163,8 +166,8 @@ cd my-project
 # 3. (Codex lane) wire the Codex MCP server.
 cp .mcp.json.example .mcp.json   # then edit the codex command/CODEX_HOME
 
-# 4. Restart/open both runtimes, run mir-core:design then mir-core:spec-architect,
-#    and finalize with an honest operator observation bound to the runtime session.
+# 4. Start a new Codex session, run mir-core:design then mir-core:spec-architect,
+#    and finalize with an honest operator observation bound to that session.
 ./setup.sh --profile code_app --finalize --architecture-initialized
 
 # 5. Open the project in Claude Code.
