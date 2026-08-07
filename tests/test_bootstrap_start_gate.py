@@ -203,6 +203,13 @@ def test_missing_receipt_allows_only_single_declared_evidence_git_add(
         ),
         encoding="utf-8",
     )
+    (tmp_path / "spec").mkdir()
+    (tmp_path / "spec/bootstrap-adoption-review.yaml").write_text(
+        "review: ready\n", encoding="utf-8"
+    )
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs/native-spec.md").write_text("ready\n", encoding="utf-8")
+    (tmp_path / "docs/native spec.md").write_text("ready\n", encoding="utf-8")
     for command in (
         "git add -- config/bootstrap-adoption.json",
         "git add -- spec/bootstrap-adoption-review.yaml",
@@ -220,13 +227,31 @@ def test_missing_receipt_allows_only_single_declared_evidence_git_add(
         "git add -A",
         "git add -- spec/a.yaml spec/b.yaml",
         "git add -- ':(glob)spec/**'",
+        "git add -- spec/{a,b}.yaml",
+        "git add -- 'spec/$FILES.yaml'",
+        "git add -- spec/evidence-dir",
         "git add -- ../other/spec/evidence.yaml",
     ):
+        if command.endswith("spec/evidence-dir"):
+            (tmp_path / "spec/evidence-dir").mkdir()
+            (tmp_path / "spec/evidence-dir/nested.yaml").write_text(
+                "ready: false\n", encoding="utf-8"
+            )
         completed = _run_pretool(
             tmp_path,
             {"tool_name": "Bash", "tool_input": {"command": command}},
         )
         assert completed.returncode == 2, command
+
+    (tmp_path / "config/bootstrap-adoption.json").unlink()
+    deleted_manifest = _run_pretool(
+        tmp_path,
+        {
+            "tool_name": "Bash",
+            "tool_input": {"command": "git add -- config/bootstrap-adoption.json"},
+        },
+    )
+    assert deleted_manifest.returncode == 2
 
 
 def test_adoption_gate_accepts_codex_shell_wrapped_apply_patch(tmp_path: Path) -> None:

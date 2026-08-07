@@ -219,9 +219,12 @@ _mir_bootstrap_git_add_allowed() {
     \'*\') path="${path#\'}"; path="${path%\'}" ;;
   esac
   case "$path" in
-    :*|*'*'*|*'?'*|*'['*) return 1 ;;
+    :*|*'*'*|*'?'*|*'['*|*']'*|*'{'*|*'}'*|*'$'*|*'~'*|*'\\'*|*'!'*|*'('*|*')'*)
+      return 1
+      ;;
   esac
-  _mir_bootstrap_allowed_path "$path" "$project_dir"
+  _mir_bootstrap_allowed_path "$path" "$project_dir" || return 1
+  [ -f "$project_dir/$path" ] && [ ! -L "$project_dir/$path" ]
 }
 
 _mir_bootstrap_safe_single_command() {
