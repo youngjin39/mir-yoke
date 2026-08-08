@@ -1,0 +1,6 @@
+id: authority-boundary
+rule: "No provider or maintainer operation may infer target authority from inventory, version, score, hash, drift, or history."
+pattern: "Every mutation names one owner-invoked local root; read-only comparison returns evidence without an apply side effect."
+forbidden: ["automatic target discovery", "central direct apply", "fleet rollout", "hash-based adoption", "target commit or push"]
+example: "A capability check reports a candidate commit; only a separate explicit local apply may activate it."
+failure_behavior: "Reject the operation before mutation and report the conflicting surface."

@@ -1,0 +1,121 @@
+requirements:
+  - id: CR-001
+    type: constraint
+    statement: "Mir Yoke shall publish a repository-agnostic harness template and reference corpus under its public repository license."
+    origin: "Owner confirmation 2026-08-08; Mir Yoke README:3-17 and LICENSE."
+    actor: public_evaluator
+    trigger: "The public repository is opened."
+    preconditions: ["The repository checkout contains its root contract and license."]
+    postconditions: ["The product is identified as a reusable public template."]
+    acceptance:
+      - {given: "a clean checkout", when: "the root contract is inspected", then: "the first product section identifies a public reusable template and reference repository"}
+      - {given: "a release candidate without a public license or template identity", when: "identity validation runs", then: "validation fails before release"}
+    data_contract: []
+    data_contract_na: "Structural product constraint with no runtime input or output."
+    errors: [{condition: "identity or license is absent", behavior: "fail the release identity check"}]
+    verification: integration
+    authority: system
+    status: ready
+    confidence: high
+    evidence: ["README.md:3", "README.md:14", "LICENSE:1"]
+
+  - id: CR-002
+    type: constraint
+    statement: "Mir Yoke shall start zero agents, daemons, target scans, or background services as provider product behavior."
+    origin: "Owner confirmation 2026-08-08; Mir Yoke README:67-69; repository Profile live_runtime=[]"
+    actor: public_evaluator
+    trigger: "The provider product boundary is evaluated."
+    preconditions: ["Active product surfaces have been classified."]
+    postconditions: ["Provider runtime count remains zero."]
+    acceptance:
+      - {given: "a clean Mir Yoke checkout", when: "provider-runtime validation runs", then: "zero default startup, scheduled daemon, and target-agent launch paths are reported"}
+      - {given: "an active surface that starts a daemon or target agent", when: "provider-runtime validation runs", then: "validation fails and names the surface"}
+    data_contract: []
+    data_contract_na: "Negative structural constraint with no runtime interface."
+    errors: [{condition: "a provider runtime path is detected", behavior: "classify it as optional-consumer or historical before release"}]
+    verification: integration
+    authority: system
+    status: ready
+    confidence: high
+    evidence: ["README.md:71", "ARCHITECTURE.md:25"]
+
+  - id: CR-003
+    type: constraint
+    statement: "Mir Yoke shall perform zero target discovery, cross-repository mutation, rollout, commit, push, or target-agent startup operations."
+    origin: "Owner confirmation 2026-08-08; ADR-76 sections 2.1-2.3; ADR-84 section 4.3."
+    actor: existing_repository_owner
+    trigger: "A Mir Yoke operation is invoked."
+    preconditions: ["The invocation has a consumer-owned working root."]
+    postconditions: ["No repository outside that root changes."]
+    acceptance:
+      - {given: "an explicit consumer-local invocation", when: "the operation completes", then: "all writes are confined to the declared consumer root or local provider cache"}
+      - {given: "an operation resolves an undeclared repository target", when: "authority validation runs", then: "the operation is rejected before a write"}
+    data_contract:
+      - {name: "ConsumerRoot", direction: I, type: "path", format: "repository-relative root identity", unit: "repository", range: "exactly one declared root", nullable: false, default: "none", precision: "exact", tolerance: "zero undeclared roots"}
+    errors: [{condition: "target is absent, multiple, or outside the declared root", behavior: "stop without mutation"}]
+    verification: integration
+    authority: system
+    status: ready
+    confidence: high
+    evidence: ["src/mir/cli/__init__.py:24", "docs/decisions/adr-77-existing-repository-bootstrap-adoption.md:19"]
+
+  - id: CR-004
+    type: constraint
+    statement: "Mir Yoke shall use hashes only for release, provenance, lock, receipt, cache, or time-of-check identity."
+    origin: "Owner confirmation 2026-08-08; ADR-84 section 4.3; ADR-74 sections 2 and 4."
+    actor: greenfield_owner
+    trigger: "A digest is produced or compared."
+    preconditions: ["The digest purpose is declared."]
+    postconditions: ["The digest grants no adoption, drift, rollout, or mutation authority."]
+    acceptance:
+      - {given: "a release or capability digest", when: "the digest is evaluated", then: "the result reports identity or integrity only"}
+      - {given: "a digest used to label a consumer compliant, adopted, or writable", when: "hash-boundary validation runs", then: "validation fails"}
+    data_contract:
+      - {name: "DigestPurpose", direction: I, type: "enum", format: "release|provenance|lock|receipt|cache|toctou", unit: "purpose", range: "six allowed values", nullable: false, default: "none", precision: "exact", tolerance: "zero unclassified purposes"}
+      - {name: "IdentityVerdict", direction: O, type: "enum", format: "match|mismatch|unavailable", unit: "verdict", range: "three values", nullable: false, default: "unavailable", precision: "exact", tolerance: "no authority side effect"}
+    errors: [{condition: "digest purpose is absent or forbidden", behavior: "reject the operation without changing consumer state"}]
+    verification: integration
+    authority: system
+    status: ready
+    confidence: high
+    evidence: ["docs/decisions/adr-74-portable-bootstrap-capability-sources-and-memory.md:41", "docs/decisions/adr-54-template-anchored-fleet-parity-manifest-2026-06-06.md:14"]
+
+  - id: CR-005
+    type: constraint
+    statement: "A consumer repository shall retain final authority over its instructions, Profile, preserved paths, implementation, and verification after adoption."
+    origin: "Owner confirmation 2026-08-08; ADR-76 section 2.3; Mir Yoke ADR-77."
+    actor: existing_repository_owner
+    trigger: "A template asset differs from repository-owned content."
+    preconditions: ["The consumer repository's local authority surfaces are readable."]
+    postconditions: ["The difference is adapted, declined, or reported without overwrite."]
+    acceptance:
+      - {given: "a local customization and a different template asset", when: "adoption is evaluated", then: "the local customization remains unchanged until the owner selects a merge"}
+      - {given: "a tool cannot classify local ownership", when: "adoption is evaluated", then: "the tool reports a conflict and writes no authored file"}
+    data_contract:
+      - {name: "OwnershipDisposition", direction: O, type: "enum", format: "adopt|adapt|decline|repository_owned|conflict", unit: "decision", range: "five values", nullable: false, default: "conflict", precision: "exact", tolerance: "zero silent overwrite"}
+    errors: [{condition: "ownership is unresolved", behavior: "return conflict and preserve the file"}]
+    verification: integration
+    authority: system
+    status: ready
+    confidence: high
+    evidence: ["docs/decisions/adr-77-existing-repository-bootstrap-adoption.md:19", "docs/decisions/adr-54-template-anchored-fleet-parity-manifest-2026-06-06.md:23"]
+
+  - id: CR-006
+    type: constraint
+    statement: "Every published Mir Yoke release shall contain zero private repository paths, fleet topology records, credential values, or authenticated private transports."
+    origin: "Owner public-reuse goal 2026-08-08; Mir Yoke CLAUDE.md:30; ADR-73 template boundary."
+    actor: template_maintainer
+    trigger: "A public release candidate is validated."
+    preconditions: ["The complete tracked release inventory is available."]
+    postconditions: ["The public-surface report contains zero private findings."]
+    acceptance:
+      - {given: "a release candidate with generic content", when: "public-surface validation runs", then: "private-path, fleet-topology, credential, and private-transport finding counts are all zero"}
+      - {given: "one private finding", when: "public-surface validation runs", then: "release validation fails and reports the tracked path"}
+    data_contract:
+      - {name: "PublicSurfaceReport", direction: O, type: "object", format: "JSON", unit: "finding count", range: "each prohibited category equals zero", nullable: false, default: "empty report", precision: "integer", tolerance: "zero findings"}
+    errors: [{condition: "a tracked file cannot be decoded or classified", behavior: "fail closed and report the path"}]
+    verification: integration
+    authority: system
+    status: ready
+    confidence: high
+    evidence: ["CLAUDE.md:24", "docs/decisions/adr-73-proportional-guidance-first-harness.md:31"]

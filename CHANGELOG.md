@@ -6,6 +6,23 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are kept for historical reference. All future entries use the `## [vN.M.X] — YYYY-MM-DD — title` format.
 
+## [Unreleased] — Public template product boundary
+
+### Changed
+
+- Defined Mir Yoke as a public template and reference repository with no provider runtime or
+  standing authority over consumer repositories.
+- Split greenfield bootstrap, preservation-first existing-repository assessment, and
+  integrity-only capability operations into explicit local boundaries with changed-path evidence.
+- Added a MODE-S specification tree, exhaustive asset classification, and clean-candidate release
+  readiness validation.
+
+### Removed
+
+- Removed active fleet parity, direct deployment, cross-workspace scanning, watchdog, cron,
+  notification, and central profile-compilation surfaces; their design history remains indexed as
+  non-authoritative evidence.
+
 ## [0.8.0] — 2026-08-06 — Portable project bootstrap
 
 ### Added
@@ -146,7 +163,7 @@ a post-clone setup checklist, and all missing harness components.
 
 All content under `docs/harness-engineering/` passes the sanitize gate (0 sensitive
 hits), including `applications/template-repo/sanitize-glossary.md`, whose mapping
-table uses placeholder forms (e.g. `/Users/<real-username>/`) on both sides.
+table uses placeholder forms (e.g. `/path/to/project/`) on both sides.
 
 ## [0.4.0] — 2026-05-25 — Applied-state baseline completion
 

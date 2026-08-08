@@ -5,9 +5,8 @@ Verifier for the Claude+Codex Harness Template.
 Runs the general-purpose checks (schema, catalog drift, template pack cross-ref,
 R10 scope_patterns, R11 dispatch log, R12 repos-dir integrity).
 
-Fleet-specific checks (registry alignment, profile source cross-ref, fleet override
-enforcement) are skipped because the public template starts with an empty
-repositories_dir and no per-family entries.
+The verifier reads only this checkout. Repository profiles are examples or local
+inputs; catalog membership never grants cross-repository authority.
 """
 
 from __future__ import annotations
@@ -28,7 +27,7 @@ from tools.catalog_loader import load_catalog  # noqa: E402
 MANIFEST_PATH = ROOT / "config" / "repo-agent-management.json"
 SCHEMA_PATH = ROOT / "config" / "repo-agent-management.schema.json"
 DOMAIN_NAMES = [
-    "central_ownership_contract",
+    "source_ownership_contract",
     "repository_overlay",
     "generation_verification_pipeline",
     "operating_contract",

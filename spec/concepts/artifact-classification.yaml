@@ -1,0 +1,6 @@
+id: artifact-classification
+rule: "Every active product surface has exactly one starter, reference, optional-consumer-tool, template-maintainer-tool, or historical classification."
+pattern: "A tracked classification record binds each shipped surface to one use boundary and validation policy."
+forbidden: ["unclassified executable", "active historical runbook", "maintainer tool copied by default", "consumer tool started automatically"]
+example: "A repository-local bootstrap helper is starter or optional-consumer-tool; a fleet-wide watchdog is historical."
+failure_behavior: "Fail release readiness and report the unclassified or multiply classified path."

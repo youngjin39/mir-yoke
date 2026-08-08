@@ -1,0 +1,18 @@
+id: UC-001
+name: "Evaluate the public template"
+actors: {primary: public_evaluator, secondary: []}
+preconditions:
+  - {title: "Public release exists", description: "One release ref and its tracked metadata are readable.", on_unmet: "Report the repository as not evaluable."}
+postconditions:
+  - {title: "Boundary understood", description: "The evaluator can identify product identity, asset classes, license, and compatibility notes.", on_unmet: "Do not claim the release is adoption-ready."}
+basic_flow:
+  - {no: 1, description: "The public evaluator submits IF-001.IT-001 TemplateReleaseRequest."}
+  - {no: 2, description: "Mir Yoke returns IF-001.IT-002 TemplateReleaseInfo."}
+sweep:
+  A: [{scenario: "The release ref is malformed or absent; report not found.", kind: exceptional, ends: terminate}]
+  B: [{scenario: "The metadata inventory is incomplete; report not evaluable.", kind: exceptional, ends: terminate}]
+  C: [{scenario: "The Git host is unavailable; preserve the request and report unavailable.", kind: exceptional, ends: terminate}]
+  D: {na: "No device contact exists."}
+  E: [{scenario: "The evaluator stops before selecting assets; end with no adoption state.", kind: optional, ends: terminate}]
+  F: [{scenario: "The same release is requested twice; return the same immutable commit metadata.", kind: optional, ends: return}]
+  G: {na: "Reading a public release requires no Mir Yoke authorization decision."}

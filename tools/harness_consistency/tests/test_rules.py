@@ -1028,7 +1028,6 @@ def _make_r17_runner_manifest(repo_root):
             "slug": "test-r17-runner",
             "repository_type": "code_app",
             "role": "code_tdd_review_plane",
-            "fleet_manager": False,
             "enforcement": {
                 "tools_commit_gate": "lint_test",
                 "tools_tdd_ledger": "changes_array",

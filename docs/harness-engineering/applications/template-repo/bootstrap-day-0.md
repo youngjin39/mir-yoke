@@ -41,7 +41,7 @@ cd <new-family-name>
 | `enabled_phases` | phases the family will adopt | `[0,1,2,3,4,5,7,8]` (phase-6 opt-out, phase-9~11 catalog only) |
 | `custom_skills` | family-private new skill candidates | `["recipe-management"]` |
 | `sealed` | whether external git push is prohibited | `false` |
-| `external_path` | actual git working path of the family | `/Users/.../recipe-tracker` |
+| `external_path` | actual git working path of the family | `/path/to/recipe-tracker` |
 
 ### Step 3 — Run bootstrap.py
 ```bash
@@ -50,7 +50,7 @@ cd <new-family-name>
 python tools/profile_compiler/bootstrap.py \
   --family-slug recipe-tracker \
   --display-name "Recipe Tracker" \
-  --family-path /Users/.../recipe-tracker \
+  --family-path /path/to/recipe-tracker \
   --archetype code_app \
   --management-mode standard \
   --rollout-class immediate_migrate
@@ -88,7 +88,7 @@ import json
 state = json.load(open('config/fleet-harness-state.json'))
 state['families']['recipe-tracker'] = {
     'family_type': 'SE-product',
-    'repo_path': '/Users/.../recipe-tracker',
+    'repo_path': '/path/to/recipe-tracker',
     'purpose': 'recipe database + meal plan tracker',
     'character': ['desktop-app', 'personal-data', 'offline-first'],
     'adoption': {

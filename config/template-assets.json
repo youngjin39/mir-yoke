@@ -1,0 +1,184 @@
+{
+  "$schema": "./template-assets.schema.json",
+  "schema_version": 1,
+  "classifications": [
+    "starter",
+    "reference",
+    "optional-consumer-tool",
+    "template-maintainer-tool",
+    "historical"
+  ],
+  "rules": [
+    {
+      "id": "root-metadata",
+      "classification": "reference",
+      "include": [
+        "ARCHITECTURE.md",
+        "BOOTSTRAP.md",
+        "CHANGELOG.md",
+        "CONTRIBUTING.md",
+        "LICENSE",
+        "MIGRATION.md",
+        "README.md",
+        "VERSION",
+        "llms.txt"
+      ],
+      "exclude": [],
+      "reason": "Public identity, usage, rights, compatibility, and release reference material."
+    },
+    {
+      "id": "starter-payload",
+      "classification": "starter",
+      "include": [
+        ".agents/**",
+        ".ai-harness/**",
+        ".claude/**",
+        ".claude-plugin/**",
+        ".codex/**",
+        ".codex-sync/**",
+        ".gitignore",
+        ".mcp.json.example",
+        ".mir/**",
+        ".mir-preserve.toml",
+        "AGENTS.md",
+        "CLAUDE.md",
+        "app/**",
+        "config/bluebrick-paths.json",
+        "config/capability-sources.json",
+        "config/doc-size-guard.json",
+        "config/repo-agent-management.json",
+        "config/repo-agent-management.schema.json",
+        "config/repos/**",
+        "config/sub-agent-policy.json",
+        "docs/memory-map.md",
+        "global-rules/**",
+        "harness_a.toml.example",
+        "lib/**",
+        "plugins/**",
+        "setup.ps1",
+        "setup.sh",
+        "tasks/**",
+        "template_protected_paths.yaml"
+      ],
+      "exclude": [],
+      "reason": "Files copied, composed, or initialized for a consumer-owned harness baseline."
+    },
+    {
+      "id": "public-references",
+      "classification": "reference",
+      "include": [
+        "docs/architecture/**",
+        "docs/bluebricks/**",
+        "docs/history/**",
+        "docs/operations/**",
+        "docs/patterns/**",
+        "docs/references/**",
+        "docs/templates/**",
+        "examples/**",
+        "spec/**"
+      ],
+      "exclude": [],
+      "reason": "Selectable public patterns and explanations that do not apply themselves."
+    },
+    {
+      "id": "current-decisions",
+      "classification": "reference",
+      "include": [
+        "docs/decisions/INDEX.md",
+        "docs/decisions/adr-69-codex-exec-ban-mcp-only.md",
+        "docs/decisions/adr-72-dispatch-resilience.md",
+        "docs/decisions/adr-73-proportional-guidance-first-harness.md",
+        "docs/decisions/adr-74-portable-bootstrap-capability-sources-and-memory.md",
+        "docs/decisions/adr-75-global-plugin-migration-gate.md",
+        "docs/decisions/adr-76-codex-required-plugin-activation.md",
+        "docs/decisions/adr-77-existing-repository-bootstrap-adoption.md",
+        "docs/decisions/adr-78-public-template-identity-and-non-authority.md",
+        "docs/decisions/role-policy.md"
+      ],
+      "exclude": [],
+      "reason": "The current product, adoption, capability, and consumer execution authority set."
+    },
+    {
+      "id": "historical-decisions",
+      "classification": "historical",
+      "include": ["docs/decisions/**"],
+      "exclude": [
+        "docs/decisions/INDEX.md",
+        "docs/decisions/adr-69-codex-exec-ban-mcp-only.md",
+        "docs/decisions/adr-72-dispatch-resilience.md",
+        "docs/decisions/adr-73-proportional-guidance-first-harness.md",
+        "docs/decisions/adr-74-portable-bootstrap-capability-sources-and-memory.md",
+        "docs/decisions/adr-75-global-plugin-migration-gate.md",
+        "docs/decisions/adr-76-codex-required-plugin-activation.md",
+        "docs/decisions/adr-77-existing-repository-bootstrap-adoption.md",
+        "docs/decisions/adr-78-public-template-identity-and-non-authority.md",
+        "docs/decisions/role-policy.md"
+      ],
+      "reason": "Earlier decisions remain retrievable but are outside the current authority index."
+    },
+    {
+      "id": "historical-engineering",
+      "classification": "historical",
+      "include": ["docs/governance/**", "docs/harness-engineering/**"],
+      "exclude": [],
+      "reason": "Centralization-era engineering and governance prose retained for audit only."
+    },
+    {
+      "id": "optional-consumer-code",
+      "classification": "optional-consumer-tool",
+      "include": ["scripts/**", "src/**", "tools/**"],
+      "exclude": [
+        "scripts/extract_changelog_entry.py",
+        "scripts/generate_codex_derivatives.sh",
+        "scripts/verify_codex_sync.py",
+        "scripts/verify_context_paths.py",
+        "scripts/verify_plugin_cli_activation.py",
+        "scripts/verify_release_readiness.py",
+        "scripts/verify_repo_agent_management.py",
+        "tools/harness_consistency/**",
+        "tools/template_assets.py"
+      ],
+      "reason": "Explicitly invoked local CLI, hook support, memory, and execution helpers."
+    },
+    {
+      "id": "maintainer-tools",
+      "classification": "template-maintainer-tool",
+      "include": [
+        ".github/**",
+        "config/harness-consistency.json",
+        "config/harness-consistency.schema.json",
+        "config/template-assets.json",
+        "config/template-assets.schema.json",
+        "pyproject.toml",
+        "scripts/extract_changelog_entry.py",
+        "scripts/generate_codex_derivatives.sh",
+        "scripts/verify_codex_sync.py",
+        "scripts/verify_context_paths.py",
+        "scripts/verify_plugin_cli_activation.py",
+        "scripts/verify_release_readiness.py",
+        "scripts/verify_repo_agent_management.py",
+        "tests/**",
+        "tools/harness_consistency/**",
+        "tools/template_assets.py",
+        "uv.lock"
+      ],
+      "exclude": [],
+      "reason": "Files used to validate, test, package, and release Mir Yoke itself."
+    }
+  ],
+  "prohibited_active_paths": [
+    ".github/workflows/daily_health.yml",
+    ".mir/harness-config.json",
+    ".mir/specialists.json",
+    "config/parity-classes.json",
+    "config/parity-manifest.json",
+    "config/parity-manifest.schema.json",
+    "scripts/cron/**",
+    "scripts/notify_discord.py",
+    "scripts/verify_self_stop.py",
+    "scripts/verify_template_applied_state.py",
+    "tools/harness_consistency/parity.py",
+    "tools/profile_compiler/**",
+    "tools/stall_watchdog/**"
+  ]
+}

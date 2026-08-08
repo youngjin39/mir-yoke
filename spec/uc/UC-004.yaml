@@ -1,0 +1,19 @@
+id: UC-004
+name: "Manage reusable capabilities"
+actors: {primary: greenfield_owner, secondary: [existing_repository_owner]}
+preconditions:
+  - {title: "Trusted source declared", description: "The source, allowed packages, and current lock are readable.", on_unmet: "Refuse synchronization or activation."}
+postconditions:
+  - {title: "Operation boundary proven", description: "The result records identity evidence and any explicit local state change.", on_unmet: "Preserve the prior provider."}
+basic_flow:
+  - {no: 1, description: "The owner submits IF-002.IT-007 CapabilityRequest."}
+  - {no: 2, description: "Mir Yoke validates source, operation, lock, paths, and collisions."}
+  - {no: 3, description: "Mir Yoke returns IF-002.IT-008 CapabilityResult and mutates only for an explicit allowed operation."}
+sweep:
+  A: [{scenario: "The operation, source, commit, or digest is invalid; reject it.", kind: exceptional, ends: terminate}]
+  B: [{scenario: "The exact commit or package is unavailable; report unavailable and preserve the provider.", kind: exceptional, ends: terminate}]
+  C: [{scenario: "Remote comparison times out or disconnects; report unavailable and preserve local state.", kind: exceptional, ends: terminate}]
+  D: {na: "No device state participates in capability management."}
+  E: [{scenario: "The owner declines the candidate update; preserve the lock and provider.", kind: optional, ends: terminate}]
+  F: [{scenario: "The same explicit apply is repeated; verify the existing digest and perform no duplicate activation.", kind: optional, ends: return}]
+  G: [{scenario: "A path, package, collision, or permission exceeds the allowlist; reject before activation.", kind: exceptional, ends: terminate}]

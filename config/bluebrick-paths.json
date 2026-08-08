@@ -1,10 +1,14 @@
 {
-  "src/mir/core/conductor/": "conductor",
-  "src/mir/cli/conductor_dispatch.py": "conductor",
-  "src/mir/core/engine/": "engine",
-  "src/mir/core/worker/": "worker",
-  ".claude/hooks/": "harness-runtime",
-  "plugins/": "harness-runtime",
-  ".ai-harness/": "harness-runtime",
-  "scripts/generate_codex_derivatives.sh": "harness-runtime"
+  "README.md": "contract",
+  "CLAUDE.md": "contract",
+  "ARCHITECTURE.md": "contract",
+  "docs/decisions/": "history",
+  "src/mir/cli/bootstrap.py": "adoption",
+  "src/mir/cli/bootstrap_adoption.py": "adoption",
+  "src/mir/cli/capability.py": "capability",
+  "src/mir/core/capabilities/": "capability",
+  "config/template-assets.json": "maintenance",
+  "tools/template_assets.py": "maintenance",
+  "tools/harness_consistency/": "maintenance",
+  "scripts/verify_release_readiness.py": "maintenance"
 }

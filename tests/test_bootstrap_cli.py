@@ -123,6 +123,7 @@ def _write_architecture_evidence(root: Path, commit: str) -> None:
     )
 
 
+# @spec FR-001 FR-004
 def test_bootstrap_builds_required_memory_and_is_idempotent(tmp_path, capsys):
     _make_harness_surfaces(tmp_path)
 

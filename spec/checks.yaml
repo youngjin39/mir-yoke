@@ -1,0 +1,25 @@
+checks:
+  - id: CHK-001
+    rule: "All root authority documents state public-template identity and deny provider runtime and fleet authority."
+    command: "uv run pytest tests/test_public_template_identity.py -q"
+    on_fail: "Stop implementation closeout and report every conflicting authority document."
+  - id: CHK-002
+    rule: "The provider starts no agent, daemon, target scan, scheduled rollout, or background service."
+    command: "uv run pytest tests/test_public_template_identity.py::test_provider_has_no_runtime -q"
+    on_fail: "Classify the detected surface as optional-consumer or historical before continuing."
+  - id: CHK-003
+    rule: "Mutating consumer operations are explicit, single-root, repository-local, and preservation-first."
+    command: "uv run pytest tests/test_public_template_authority.py tests/test_existing_repository_adoption.py -q"
+    on_fail: "Preserve target state and stop before claiming adoption safety."
+  - id: CHK-004
+    rule: "Every active product surface has exactly one artifact classification."
+    command: "uv run pytest tests/test_template_asset_classification.py -q"
+    on_fail: "Fail release readiness and report every unclassified or duplicate surface."
+  - id: CHK-005
+    rule: "Historical centralization decisions are retrievable but absent from current authority."
+    command: "uv run pytest tests/test_decision_authority.py -q"
+    on_fail: "Stop release preparation and correct status, supersession, or index routing."
+  - id: CHK-006
+    rule: "A public release passes identity, authority, classification, sanitization, derivative consistency, focused behavior, full tests, and lint."
+    command: "uv run python scripts/verify_release_readiness.py"
+    on_fail: "Do not publish a release; record the failing command and unchanged external state."

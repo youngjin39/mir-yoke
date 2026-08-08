@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 from tools.harness_consistency.models import Finding
-from tools.harness_consistency.parity import template_parity as _template_parity_impl
+from tools.template_assets import AssetManifestError, classify_tracked_files, load_manifest
 
 _REPOSITORIES_INDEX_RE = re.compile(r"\[\s*['\"]repositories['\"]\s*\]")
 _EMPTY_ADR_REFERENCES = {"", "null", "(none)", "[]"}
@@ -33,6 +33,28 @@ def _relative_location(project_root: Path, path: Path) -> str:
 def _trim_output(stdout: str, stderr: str, max_lines: int = 5) -> str:
     output = "\n".join(part for part in (stdout, stderr) if part)
     return "\n".join(output.splitlines()[-max_lines:]).strip()
+
+
+# @spec FR-003
+def template_asset_classification(project_root: Path, rule_inputs: dict) -> list[Finding]:
+    manifest_path = _project_path(
+        project_root,
+        rule_inputs.get("manifest_path", "config/template-assets.json"),
+    )
+    try:
+        classify_tracked_files(project_root, load_manifest(manifest_path))
+    except (AssetManifestError, OSError, ValueError) as exc:
+        return [
+            Finding(
+                rule_id="R18",
+                rule_name="template_asset_classification",
+                severity="ERROR",
+                message=str(exc),
+                location=_relative_location(project_root, manifest_path),
+                drift_class=8,
+            )
+        ]
+    return []
 
 
 def _frontmatter_values(path: Path) -> dict[str, list[str]]:
@@ -1160,6 +1182,6 @@ RULES = {
     "settings_dual_fire_dedup": settings_dual_fire_dedup,
     "single_family_source": single_family_source,
     "wired_gate_liveness": wired_gate_liveness,
-    "template_parity": _template_parity_impl,
+    "template_asset_classification": template_asset_classification,
     "agent_surface_contract": agent_surface_contract,
 }

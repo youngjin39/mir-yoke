@@ -1,0 +1,203 @@
+requirements:
+  - id: FR-001
+    type: functional
+    statement: "When a greenfield owner selects a profile and purpose, Mir Yoke shall produce a starter baseline for exactly one new repository."
+    origin: "Owner confirmation 2026-08-08; Mir Yoke README:73-87; ADR-74 context."
+    actor: greenfield_owner
+    trigger: "The owner submits a greenfield bootstrap request."
+    preconditions: ["The target is declared greenfield and required identity inputs are present."]
+    postconditions: ["The new repository contains a locally owned starter baseline and verification result."]
+    acceptance:
+      - {given: "one empty target and valid identity inputs", when: "greenfield bootstrap runs", then: "one target receives the selected starter baseline"}
+      - {given: "an existing authored root contract", when: "greenfield bootstrap runs", then: "the operation stops before replacing that file"}
+    data_contract:
+      - {name: "BootstrapRequest", direction: I, type: "object", format: "profile, purpose, stack, target", unit: "request", range: "one target and non-empty identity", nullable: false, default: "none", precision: "exact", tolerance: "zero implicit profiles"}
+      - {name: "BootstrapResult", direction: O, type: "object", format: "status, created paths, verification", unit: "result", range: "ready|restart_required|conflict|failed", nullable: false, default: "failed", precision: "exact", tolerance: "zero unreported writes"}
+    errors: [{condition: "identity is missing or authored root content exists", behavior: "return conflict without replacement"}]
+    verification: e2e
+    authority: feature
+    status: ready
+    confidence: high
+    evidence: ["README.md:73", "src/mir/cli/bootstrap.py:1"]
+
+  - id: FR-002
+    type: functional
+    statement: "When an existing-repository owner requests guidance, Mir Yoke shall present selectable reference assets without reconstructing the repository."
+    origin: "Owner confirmation 2026-08-08; ADR-77 preservation-first adoption."
+    actor: existing_repository_owner
+    trigger: "The owner requests an existing-repository assessment."
+    preconditions: ["The repository root and preservation boundary are declared."]
+    postconditions: ["The owner receives dispositions and the authored repository remains unchanged."]
+    acceptance:
+      - {given: "an existing repository with local harness files", when: "reference assessment runs", then: "the result lists selectable assets and performs zero authored-file writes"}
+      - {given: "a template pattern conflicts with local policy", when: "reference assessment runs", then: "the result reports conflict rather than replacement"}
+    data_contract:
+      - {name: "ReferenceAssessment", direction: O, type: "array", format: "asset, disposition, evidence", unit: "asset record", range: "zero or more classified records", nullable: false, default: "empty array", precision: "one record per asset", tolerance: "zero unclassified writes"}
+    errors: [{condition: "repository identity or preserve scope is unreadable", behavior: "stop with an unrecovered assessment and no write"}]
+    verification: integration
+    authority: feature
+    status: ready
+    confidence: high
+    evidence: ["docs/decisions/adr-77-existing-repository-bootstrap-adoption.md:17"]
+
+  - id: FR-003
+    type: functional
+    statement: "Mir Yoke shall publish agents, skills, hooks, policies, bootstrap helpers, validators, documentation, and examples with one artifact classification each."
+    origin: "Owner public-template goal 2026-08-08; current Mir Yoke inventory; ADR-84 section 4.4."
+    actor: public_evaluator
+    trigger: "The public asset inventory is inspected."
+    preconditions: ["Tracked release files are enumerated."]
+    postconditions: ["Every shipped product surface has exactly one classification."]
+    acceptance:
+      - {given: "a complete tracked inventory", when: "classification validation runs", then: "every product surface has one starter, reference, optional-consumer-tool, template-maintainer-tool, or historical value"}
+      - {given: "an absent or duplicate classification", when: "classification validation runs", then: "validation fails and reports the path"}
+    data_contract:
+      - {name: "ArtifactClassification", direction: O, type: "enum", format: "starter|reference|optional-consumer-tool|template-maintainer-tool|historical", unit: "classification", range: "exactly one value per surface", nullable: false, default: "none", precision: "exact", tolerance: "zero unclassified surfaces"}
+    errors: [{condition: "a surface matches zero or multiple classes", behavior: "fail release validation"}]
+    verification: integration
+    authority: platform
+    status: ready
+    confidence: high
+    evidence: ["README.md:19", "plugins/:1", "tools/:1"]
+
+  - id: FR-004
+    type: functional
+    statement: "Mir Yoke shall execute bootstrap behavior only after an owner explicitly invokes it for one declared consumer root."
+    origin: "ADR-84 sections 4.1-4.3; Mir Yoke bootstrap CLI."
+    actor: greenfield_owner
+    trigger: "The owner invokes bootstrap."
+    preconditions: ["One target root and explicit bootstrap inputs are supplied."]
+    postconditions: ["Only the declared root and allowed local provider state may change."]
+    acceptance:
+      - {given: "one declared target and explicit inputs", when: "bootstrap is invoked", then: "the operation reports every write within the allowed boundary"}
+      - {given: "no explicit invocation or more than one target", when: "bootstrap entry is evaluated", then: "zero bootstrap writes occur"}
+    data_contract:
+      - {name: "InvocationConsent", direction: I, type: "boolean", format: "explicit command invocation", unit: "consent", range: "true", nullable: false, default: "false", precision: "exact", tolerance: "zero inferred consent"}
+    errors: [{condition: "consent or target identity is invalid", behavior: "return failure before writing"}]
+    verification: integration
+    authority: system
+    status: ready
+    confidence: high
+    evidence: ["src/mir/cli/bootstrap.py:1", "setup.sh:1", "setup.ps1:1"]
+
+  - id: FR-005
+    type: functional
+    statement: "Mir Yoke shall separate capability status, remote check, locked synchronization, candidate update, and explicit update application operations."
+    origin: "ADR-74 section 2; ADR-84 section 4.5."
+    actor: greenfield_owner
+    trigger: "A consumer requests capability inspection or change."
+    preconditions: ["The trusted source and allowed capability set are declared."]
+    postconditions: ["Read-only operations preserve active state and mutation requires explicit apply."]
+    acceptance:
+      - {given: "an installed locked provider", when: "status or check runs", then: "the lock and active provider remain byte-identical"}
+      - {given: "a candidate update without explicit apply", when: "update runs", then: "the candidate is reported and not activated"}
+    data_contract:
+      - {name: "CapabilityOperation", direction: I, type: "enum", format: "status|check|sync|update|update-apply", unit: "operation", range: "five values", nullable: false, default: "status", precision: "exact", tolerance: "zero implicit apply"}
+      - {name: "CapabilityResult", direction: O, type: "object", format: "operation, commit, tree hashes, state change", unit: "result", range: "one result per invocation", nullable: false, default: "none", precision: "exact commit and tree", tolerance: "zero undeclared changes"}
+    errors: [{condition: "source, digest, or collision evidence is invalid", behavior: "refuse activation and preserve the prior provider"}]
+    verification: integration
+    authority: platform
+    status: ready
+    confidence: high
+    evidence: ["src/mir/cli/capability.py:1", "src/mir/core/capabilities/manager.py:1"]
+
+  - id: FR-006
+    type: functional
+    statement: "Mir Yoke existing-repository adoption shall be read-only by default, and explicit apply shall write only a machine-local receipt after all checks pass."
+    origin: "Mir Yoke ADR-77 decision and acceptance criteria."
+    actor: existing_repository_owner
+    trigger: "The owner invokes adoption assessment or apply."
+    preconditions: ["A tracked adoption manifest names the local evidence."]
+    postconditions: ["Dry-run changes no file; passing apply changes only the ignored receipt."]
+    acceptance:
+      - {given: "a valid adoption manifest", when: "dry-run executes", then: "the working tree and prior receipt remain byte-identical"}
+      - {given: "one failed check during apply", when: "apply executes", then: "the prior receipt remains byte-identical and authored files remain unchanged"}
+    data_contract:
+      - {name: "AdoptionMode", direction: I, type: "enum", format: "dry-run|apply", unit: "mode", range: "two values", nullable: false, default: "dry-run", precision: "exact", tolerance: "zero implicit apply"}
+      - {name: "AdoptionReceipt", direction: O, type: "object", format: "JSON", unit: "receipt", range: "one machine-local receipt after all checks pass", nullable: true, default: "absent", precision: "exact evidence hashes", tolerance: "zero partial receipt"}
+    errors: [{condition: "any check or evidence binding fails", behavior: "preserve the prior receipt and return failure"}]
+    verification: e2e
+    authority: platform
+    status: ready
+    confidence: high
+    evidence: ["docs/decisions/adr-77-existing-repository-bootstrap-adoption.md:19", "src/mir/cli/bootstrap_adoption.py:1"]
+
+  - id: FR-007
+    type: functional
+    statement: "Before release, a Mir Yoke maintainer shall validate identity, classification, public sanitization, derivative consistency, links, schemas, and the selected test suite."
+    origin: "ADR-84 verification; current Mir Yoke validation and sanitize surfaces."
+    actor: template_maintainer
+    trigger: "A release candidate is prepared."
+    preconditions: ["The candidate commit and tracked inventory are fixed for the run."]
+    postconditions: ["One report records every required check and zero failed required checks."]
+    acceptance:
+      - {given: "a release candidate satisfying all contracts", when: "release validation runs", then: "the report contains all required checks with pass status"}
+      - {given: "one required check fails or is skipped without an approved reason", when: "release validation runs", then: "release readiness is false"}
+    data_contract:
+      - {name: "ValidationReport", direction: O, type: "object", format: "JSON", unit: "check result", range: "one row per required check", nullable: false, default: "none", precision: "exact command and exit status", tolerance: "zero failed required checks"}
+    errors: [{condition: "a required validator cannot execute", behavior: "mark release not ready and report the validator"}]
+    verification: e2e
+    authority: platform
+    status: ready
+    confidence: high
+    evidence: [".github/workflows/validate.yml:1", "scripts/verify_codex_sync.py:1", "tools/harness_consistency/:1"]
+
+  - id: FR-008
+    type: functional
+    statement: "Mir Yoke shall preserve centralization-era decisions as historical evidence and exclude them from the current authority index."
+    origin: "ADR-84 sections 4.4 and 4.6; owner history-audit request."
+    actor: template_maintainer
+    trigger: "A decision or operating document is indexed."
+    preconditions: ["The document has a status and authority epoch."]
+    postconditions: ["Current readers see only current authority by default and can still retrieve history."]
+    acceptance:
+      - {given: "a historical centralization decision", when: "the current index is generated or inspected", then: "the decision is absent from current authority and reachable through history"}
+      - {given: "a historical document presented as a current command", when: "decision validation runs", then: "validation fails and names the document"}
+    data_contract:
+      - {name: "DecisionDisposition", direction: O, type: "enum", format: "current-template|consumer-contract|historical-upstream|superseded", unit: "status", range: "four values", nullable: false, default: "none", precision: "exact", tolerance: "zero ambiguous decisions"}
+    errors: [{condition: "status or authority epoch is absent", behavior: "exclude the document from current authority and fail validation"}]
+    verification: inspection
+    authority: platform
+    status: ready
+    confidence: high
+    evidence: ["docs/decisions/INDEX.md:9", "docs/decisions/adr-48-central-fleet-management-and-direct-apply-2026-05-28.md:1"]
+
+  - id: IR-001
+    type: interface
+    statement: "The public Git interface shall expose a versioned release, license, changelog, migration notes for breaking changes, and classified reusable assets."
+    origin: "Owner public availability goal 2026-08-08; current VERSION, LICENSE, CHANGELOG, MIGRATION surfaces."
+    actor: public_evaluator
+    trigger: "A public user fetches a release."
+    preconditions: ["The release ref resolves to one commit."]
+    postconditions: ["The user can identify version, rights, changes, migration impact, and assets from tracked files."]
+    acceptance:
+      - {given: "a published release ref", when: "the public interface is inspected", then: "version, license, changelog, compatibility notes, and asset classification are readable"}
+      - {given: "a breaking release without migration notes", when: "release validation runs", then: "release readiness is false"}
+    data_contract:
+      - {name: "TemplateRelease", direction: O, type: "Git tree", format: "commit plus semantic version metadata", unit: "release", range: "one immutable commit per release", nullable: false, default: "none", precision: "exact commit", tolerance: "zero mutable release refs in receipts"}
+    errors: [{condition: "release metadata is incomplete or inconsistent", behavior: "withhold release readiness"}]
+    verification: integration
+    authority: feature
+    status: ready
+    confidence: high
+    evidence: ["VERSION:1", "LICENSE:1", "CHANGELOG.md:1", "MIGRATION.md:1"]
+
+  - id: IR-002
+    type: interface
+    statement: "Every mutating consumer operation shall require one explicit local invocation and shall report the exact changed paths before completion."
+    origin: "ADR-84 sections 4.1-4.3; ADR-77 acceptance."
+    actor: existing_repository_owner
+    trigger: "A consumer requests a state change."
+    preconditions: ["The operation, target root, and mutation scope are explicit."]
+    postconditions: ["The result lists the complete changed-path set or reports zero changes."]
+    acceptance:
+      - {given: "an explicit apply operation", when: "the operation succeeds", then: "the result reports every changed path within the declared root"}
+      - {given: "an implicit, compound, or cross-root mutation request", when: "the operation is parsed", then: "the request is rejected before mutation"}
+    data_contract:
+      - {name: "ChangedPaths", direction: O, type: "array", format: "repository-relative paths", unit: "path", range: "zero or more unique paths under one root", nullable: false, default: "empty array", precision: "complete set", tolerance: "zero omitted paths"}
+    errors: [{condition: "the changed-path set cannot be proven complete", behavior: "report failure and do not claim completion"}]
+    verification: integration
+    authority: system
+    status: ready
+    confidence: high
+    evidence: ["docs/decisions/adr-77-existing-repository-bootstrap-adoption.md:52", "src/mir/cli/bootstrap_adoption.py:1"]

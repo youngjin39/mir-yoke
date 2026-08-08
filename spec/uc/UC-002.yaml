@@ -1,0 +1,19 @@
+id: UC-002
+name: "Start a greenfield repository"
+actors: {primary: greenfield_owner, secondary: []}
+preconditions:
+  - {title: "Greenfield target", description: "Exactly one declared target has no conflicting authored root contract.", on_unmet: "Return conflict before writing."}
+postconditions:
+  - {title: "Local baseline", description: "The target owns a selected starter baseline and a complete result report.", on_unmet: "Remove staged generated output and report failure."}
+basic_flow:
+  - {no: 1, description: "The greenfield owner submits IF-002.IT-003 BootstrapRequest."}
+  - {no: 2, description: "Mir Yoke validates identity, target, and selected starter assets."}
+  - {no: 3, description: "Mir Yoke returns IF-002.IT-004 BootstrapResult after bounded materialization."}
+sweep:
+  A: [{scenario: "Profile, purpose, stack, or target is invalid; reject before writing.", kind: exceptional, ends: terminate}]
+  B: [{scenario: "A prerequisite or selected asset is unavailable; report the missing resource.", kind: exceptional, ends: terminate}]
+  C: [{scenario: "Capability retrieval fails or times out; preserve staged and authored state.", kind: exceptional, ends: terminate}]
+  D: {na: "No device state participates in bootstrap."}
+  E: [{scenario: "The owner cancels before materialization; exit with zero writes.", kind: optional, ends: terminate}]
+  F: [{scenario: "The same request is repeated; detect existing generated state and avoid duplicate creation.", kind: exceptional, ends: terminate}]
+  G: [{scenario: "The target or requested mutation exceeds the declared root; reject before writing.", kind: exceptional, ends: terminate}]

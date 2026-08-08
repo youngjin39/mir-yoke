@@ -1,8 +1,8 @@
 {
-  "goal": "Apply the verified token-efficient startup contract, proportional runtime behavior, Claude/Codex parity, and current-state continuity to public mir-yoke locally without committing or publishing.",
+  "goal": "Implement the owner-approved public-template product boundary from Mir Harness ADR-84 and its MODE-S requirements without committing, pushing, tagging, or publishing.",
   "goal_type": "other",
   "scope": "local",
   "priority": "normal",
-  "updated": "2026-07-16",
+  "updated": "2026-08-08",
   "history": []
 }

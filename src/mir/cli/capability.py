@@ -9,6 +9,8 @@ from pathlib import Path
 
 from mir.core.capabilities import CapabilityConfigError, CapabilityError, CapabilityManager
 
+from ._changes import changed_paths, snapshot_project
+
 
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="mir capability")
@@ -61,10 +63,13 @@ def _render(payload: dict[str, object], as_json: bool) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
+    # @spec CR-004 FR-005 QR-003
     namespace = _parser().parse_args(argv)
+    project_root = namespace.project_root.expanduser().resolve()
+    before = snapshot_project(project_root)
     try:
         manager = CapabilityManager(
-            namespace.project_root,
+            project_root,
             config_path=namespace.config,
             capability_home=namespace.capability_home,
         )
@@ -92,6 +97,7 @@ def main(argv: list[str] | None = None) -> int:
     except (CapabilityConfigError, CapabilityError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
+    result["changed_paths"] = changed_paths(before, snapshot_project(project_root))
     _render(result, namespace.as_json)
     return 0
 

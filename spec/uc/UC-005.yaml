@@ -1,0 +1,19 @@
+id: UC-005
+name: "Validate a template change"
+actors: {primary: template_maintainer, secondary: []}
+preconditions:
+  - {title: "Candidate fixed", description: "One tracked change set and asset inventory are selected.", on_unmet: "Do not produce a release-readiness verdict."}
+postconditions:
+  - {title: "Complete validation", description: "Every required check has a recorded result and every asset has one class.", on_unmet: "Mark the candidate not ready."}
+basic_flow:
+  - {no: 1, description: "The template maintainer submits IF-003.IT-009 ChangeSet."}
+  - {no: 2, description: "Mir Yoke runs identity, classification, sanitization, consistency, and selected behavioral checks."}
+  - {no: 3, description: "Mir Yoke returns IF-003.IT-010 ValidationReport."}
+sweep:
+  A: [{scenario: "The change set or classification manifest is malformed; fail validation.", kind: exceptional, ends: terminate}]
+  B: [{scenario: "A required validator is unavailable; report the missing validator and fail readiness.", kind: exceptional, ends: terminate}]
+  C: {na: "Required release validation is local and does not depend on notification delivery."}
+  D: {na: "No device state participates in validation."}
+  E: [{scenario: "The maintainer stops the run; record cancellation and no readiness verdict.", kind: optional, ends: terminate}]
+  F: [{scenario: "The same fixed candidate is validated twice; produce equivalent required-check outcomes.", kind: optional, ends: return}]
+  G: [{scenario: "A private or cross-repository authority surface is detected; fail validation.", kind: exceptional, ends: terminate}]

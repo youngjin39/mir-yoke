@@ -5,7 +5,6 @@ import json
 from pathlib import Path
 
 from tools.harness_consistency.generate import build_manifest
-from tools.harness_consistency.parity import generate_parity_manifest
 from tools.harness_consistency.runner import run
 
 
@@ -60,12 +59,6 @@ def build_parser() -> argparse.ArgumentParser:
     generate_parser.add_argument("--output", type=Path, default=None)
     generate_parser.add_argument("--green", action="store_true")
 
-    genparity_parser = subparsers.add_parser("generate-parity")
-    genparity_parser.add_argument("--template-root", type=Path, required=True, dest="template_root")
-    genparity_parser.add_argument(
-        "--parity-classes", type=Path, default=None, dest="parity_classes"
-    )
-    genparity_parser.add_argument("--output", type=Path, default=None)
     return parser
 
 
@@ -80,16 +73,6 @@ def main(argv: list[str] | None = None) -> int:
             args.output.write_text(output, encoding="utf-8")
         else:
             print(output, end="")
-        return 0
-
-    if args.command == "generate-parity":
-        parity_classes = args.parity_classes or Path("config/parity-classes.json")
-        manifest = generate_parity_manifest(
-            args.template_root.resolve(), parity_classes, args.output
-        )
-        if args.output is None:
-            import json as _json
-            print(_json.dumps(manifest, indent=2))
         return 0
 
     if args.command != "run":

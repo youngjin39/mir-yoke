@@ -1,0 +1,19 @@
+id: UC-003
+name: "Assess an existing repository"
+actors: {primary: existing_repository_owner, secondary: []}
+preconditions:
+  - {title: "Local authority readable", description: "The target root, instructions, Profile, and preserve boundary are readable.", on_unmet: "Return unrecovered and perform zero writes."}
+postconditions:
+  - {title: "Selectable guidance", description: "Every inspected asset has an adoption disposition and evidence.", on_unmet: "Return incomplete assessment without mutation."}
+basic_flow:
+  - {no: 1, description: "The existing-repository owner submits IF-002.IT-005 AssessmentRequest."}
+  - {no: 2, description: "Mir Yoke compares selected reference assets with repository-local authority."}
+  - {no: 3, description: "Mir Yoke returns IF-002.IT-006 ReferenceAssessment and writes no authored file."}
+sweep:
+  A: [{scenario: "The target or selection is malformed; reject with zero writes.", kind: exceptional, ends: terminate}]
+  B: [{scenario: "A selected reference asset is absent; mark it unavailable and continue other records.", kind: exceptional, ends: return}]
+  C: {na: "The default assessment uses local tracked inputs and requires no remote response."}
+  D: {na: "No device state participates in assessment."}
+  E: [{scenario: "The owner cancels or declines an asset; record no adoption and continue or terminate by owner choice.", kind: optional, ends: return}]
+  F: [{scenario: "The assessment is repeated without source changes; return equivalent dispositions.", kind: optional, ends: return}]
+  G: [{scenario: "A reference conflicts with local policy or preserve scope; report conflict and do not write.", kind: exceptional, ends: return}]

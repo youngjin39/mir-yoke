@@ -1,0 +1,6 @@
+id: MOD-CONTRACT
+responsibility: "Define Mir Yoke product identity, authority, non-goals, and adoption semantics."
+provided:
+  - {name: "ProductBoundary", operations: ["identify product", "resolve authority", "classify prohibited behavior"]}
+required: []
+stability: {fan_in: 4, fan_out: 0, i: 0.0}

@@ -82,7 +82,7 @@ root on that same volume. On this Mac, for example:
 
 ```bash
 ./setup.sh \
-  --storage-root "/Volumes/T7 Shield/.mir-runtime" \
+  --storage-root "/path/to/external-volume/.mir-runtime" \
   --slug my-project \
   --profile code_app \
   --purpose "Build a portable project service." \
@@ -107,7 +107,7 @@ files.
 values in the host's shell or user environment:
 
 ```bash
-export MIR_STORAGE_ROOT="/Volumes/T7 Shield/.mir-runtime"
+export MIR_STORAGE_ROOT="/path/to/external-volume/.mir-runtime"
 export UV_CACHE_DIR="$MIR_STORAGE_ROOT/uv/cache"
 export UV_PYTHON_INSTALL_DIR="$MIR_STORAGE_ROOT/uv/python"
 export UV_TOOL_DIR="$MIR_STORAGE_ROOT/uv/tools"

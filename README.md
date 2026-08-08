@@ -2,6 +2,10 @@
 
 **A proportional, safety-first harness template for the Claude Code + Codex CLI pair.**
 
+Mir Yoke is a public template and reference repository. It is not an agent runtime and has no
+standing authority over a repository that adopts or consults it. Every adoption is an explicit,
+repository-local owner choice.
+
 A reusable starting point for teams who want their AI coding assistants to share one operating
 contract. Hooks block narrow deterministic hazards, while design, delegation, TDD, review, and
 verification scale with the changed boundary.
@@ -19,11 +23,12 @@ so that Claude Code and Codex CLI behave like team members under the same playbo
 What you get out of the box:
 
 - **12-agent topology (recommended template set)** — main-orchestrator (Claude), executor-agent
-  (Codex), codex-final-reviewer (Codex), quality-agent (Claude), fleet-doc-steward (governance),
+  (Codex), codex-final-reviewer (Codex), quality-agent (Claude), a repository-local instruction
+  advisor (legacy slug `fleet-doc-steward`),
   plus 7 specialists active out of the box: CWE auditor, dependency auditor, UI reviewer,
   pipeline validator, ontology validator, runtime-contract reviewer, template-sync validator.
   Each agent declares its execution backend in frontmatter so the orchestrator knows exactly
-  which CLI subprocess to use. Trim per-family by editing `active_agents` in
+  which CLI subprocess to use. Trim per-repository by editing `active_agents` in
   `config/repos/<slug>.json` when a project does not need a specialist.
 - **13-skill library in three global plugins** — `mir-core` always supplies architecture,
   `spec-architect`, governance, memory, and verification; `mir-code` and `mir-content` add the
@@ -35,9 +40,9 @@ What you get out of the box:
   `.venv` directories, while credentials stay in the user home.
 - **Pinned capability source** — a trusted Git URL plus exact commit and tree hashes let later
   agents check for skill/agent updates without silently activating mutable remote instructions.
-- **Per-family JSON registry** — `config/repo-agent-management.json` catalogs agents and skills.
-  When you fork and add repositories, each family gets its own `config/repos/<slug>.json` with
-  per-family agent topology, skill pack, and specialist overrides.
+- **Per-repository JSON registry** — `config/repo-agent-management.json` catalogs agents and skills.
+  A consumer may maintain one explicit `config/repos/<slug>.json` for its own agent topology,
+  skill pack, and specialist overrides; Mir Yoke never discovers sibling repositories.
 - **Pre-tool-use guard** — denies destructive shell patterns and protected paths before the tool runs.
 - **Post-edit checks** — flag debug statements and credential leaks immediately after every Edit/Write.
 - **Composite TDD ledger** — broad or high-risk work can record a typed verification matrix in
@@ -136,10 +141,10 @@ at the pinned hashes and a new Codex session records the expected skill catalog.
 installation and discovery remain visible status evidence but do not block activation. Codex IDE
 extensions are outside this plugin-ready claim.
 
-Existing repositories that already contain same-name raw skills must complete the
-[global plugin migration runbook](docs/operations/global-plugin-migration.md) before the first
-user-global activation. One clean repository is not sufficient evidence when sibling repositories
-under the same user have not been inventoried.
+Existing repositories that already contain same-name raw skills should use the
+[local plugin migration reference](docs/operations/global-plugin-migration.md) before activation.
+Checks are limited to roots the user explicitly names; Mir Yoke does not discover or inventory
+sibling repositories.
 
 ## Team use (required gates)
 
@@ -180,7 +185,7 @@ codex
 For a project cloned onto an external SSD, keep large shared payloads on that same volume:
 
 ```bash
-./setup.sh --storage-root "/Volumes/T7 Shield/.mir-runtime" --profile code_app \
+./setup.sh --storage-root "/path/to/external-volume/.mir-runtime" --profile code_app \
   --purpose "Build a portable project service." --stack python
 ```
 
@@ -224,9 +229,9 @@ uv run mir context pull "<query>"     # on-demand context (top-k snippets)
 
 ---
 
-## Agent topology (12 agents)
+## Agent template catalog
 
-### Universal tier (always active)
+### Universal starter tier
 
 | Agent | Backend | Role | Purpose |
 |---|---|---|---|
@@ -235,11 +240,11 @@ uv run mir context pull "<query>"     # on-demand context (top-k snippets)
 | `codex-final-reviewer` | Codex | review | Final design-vs-code consistency check (read-only) |
 | `quality-agent` | Claude | review | Fallback quality review, tie-break synthesis (read-only) |
 
-### Governance tier
+### Optional governance reference
 
 | Agent | Backend | Role | Purpose |
 |---|---|---|---|
-| `fleet-doc-steward` | Claude | governance | CLAUDE.md / AGENTS.md central governance |
+| `fleet-doc-steward` | Claude | governance | Read-only, repository-local instruction-doc advice |
 
 ### Specialist tier (opt-in by family)
 
@@ -251,7 +256,7 @@ uv run mir context pull "<query>"     # on-demand context (top-k snippets)
 | `pipeline-validator` | Codex | hybrid_pipeline | Data pipeline schema validation |
 | `ontology-validator` | Claude | content_workspace | Content taxonomy and ontology check |
 | `runtime-contract-reviewer` | Claude | infra_runtime | Exception class and public API contract check |
-| `template-sync-validator` | Claude | template_transitional | Public template sync sanitize validation |
+| `template-sync-validator` | Claude | public_template | Explicit, local template comparison validation |
 
 The `execution_backend` field in each agent's frontmatter is the single declarative surface that
 tells the orchestrator whether to dispatch via the MCP-backed Codex lane or a direct Claude agent
@@ -273,7 +278,7 @@ tool or raw `codex exec`. Violation logs are written to `tasks/log/dispatch-log.
 | `code-review` | review, PR, quality, merge check | — |
 | `testing` | test, TDD, unit test, integration test | — |
 | `ui-design` | UI, UX, interface, wireframe, component spec | ux-ui-design |
-| `governance` | CLAUDE.md, AGENTS.md, fleet governance, project doctor | fleet-instruction-doc-ops, project-doctor, + more |
+| `governance` | CLAUDE.md, AGENTS.md, instruction governance, project doctor | instruction-doc ops, project-doctor, + more |
 | `knowledge` | knowledge, wiki, ingest, knowledge graph | knowledge-ingest, knowledge-lint |
 | `memory-gc` | memory GC (explicit user request only) | — |
 | `automation` | runner, long-running, background, monitor, browser | runner, browser-automation |
@@ -286,19 +291,19 @@ and are installed through the Claude and Codex marketplace manifests.
 
 ---
 
-## Per-family JSON pattern
+## Per-repository JSON pattern
 
-The registry uses a per-family JSON split (ADR-15 v3.8):
+The registry uses a per-repository JSON split:
 
 ```
 config/
   repo-agent-management.json   # root catalog (agents, skills, templates)
   repo-agent-management.schema.json
-  repos/                       # one file per family (empty in template)
-    <your-repo>.json           # per-family entry (add when you fork)
+  repos/                       # explicit repository profiles
+    <your-repo>.json           # local entry (add when you fork)
 ```
 
-Each per-family file declares:
+Each repository file declares:
 - `active_agents` — which agents are enabled (subset of catalog)
 - `active_skills` — which skill groups are enabled
 - `agent_overrides.add_specialists` — opt-in specialists beyond the template default
@@ -346,12 +351,12 @@ python3 scripts/verify_repo_agent_management.py
 │   ├── capability-sources.json #   trusted Git source + profile packs
 │   ├── repo-agent-management.json        # root catalog
 │   ├── repo-agent-management.schema.json # JSONSchema
-│   └── repos/                  #   per-family entries (empty in template)
+│   └── repos/                  #   explicit repository profiles
 │
 ├── tools/                      # harness tooling
-│   ├── catalog_loader.py       #   ADR-15 v3.8 per-family catalog aggregator
+│   ├── catalog_loader.py       #   explicit local profile loader
 │   ├── agent_loader/           #   ADR-09 frontmatter parser + validator
-│   └── profile_compiler/       #   role-policy compiler stub (extend for your fleet)
+│   └── harness_consistency/    #   template-local structural validators
 │
 ├── scripts/
 │   └── verify_repo_agent_management.py  # registry verifier
@@ -477,7 +482,8 @@ calls cannot be hook-intercepted, so resolution is uniform on both paths.)
 Wired as a PreToolUse hook matching `^(Agent|Task)$`. When a project explicitly selects
 `force_codex` and a Claude
 `Agent`/`Task` spawn is attempted, the hook prints a route-to-Codex message and **exits 2**
-(blocked). It is slug-free and family-invariant, so the same file deploys to every repo.
+(blocked). It is repository-agnostic, so a consumer may explicitly adopt the same starter file
+locally.
 
 ```bash
 # under force_codex, allow a one-off Claude sub-agent (e.g. an independent cross-model review):
@@ -508,24 +514,14 @@ uv run python -m tools.mir_executor execute --background --dispatch \
 This is "trust the filesystem, not the self-report" made executable, and it is the same path the
 `executor-agent` (Codex) uses.
 
-### Self-recognition — the monitor
-
-A deterministic, LLM-free scanner (`stall_watchdog`) can read the session transcript and report, via
-`agent-check`, whether any Claude `Agent`/`Task` sub-agent ran while the policy was `force_codex`
-— so the operating main can notice and self-correct:
-
-```bash
-uv run python -m tools.stall_watchdog.cli agent-check   # look for the CLAUDE_SUB_DISPATCH row
-```
-
-The active policy mode is also injected into the session-start context, so the main always knows
-which backend it must use.
+Mir Yoke ships no watchdog or background monitor. A consumer may inspect its own task and runtime
+evidence with explicit one-shot commands selected by that repository's local contract.
 
 ---
 
 ## Customizing for your project
 
-### 1. Add your family repository
+### 1. Define your repository-local profile
 
 Use `config/repos/example.json` as the canonical template for your repository entry:
 
@@ -533,17 +529,16 @@ Use `config/repos/example.json` as the canonical template for your repository en
 {
   "slug": "my-repo",
   "display_name": "My Repo",
-  "registry_path": "/path/to/my-repo",
+  "registry_path": ".",
   "profile_slug": "my-repo",
   "repository_type": "code_app",
-  "rollout_class": "immediate_migrate",
+  "adoption_mode": "explicit_local",
   "overlay_archetype": "code_app",
   "status": "active",
   "management_template_id": "code_app",
-  "management_mode": "harness-managed",
+  "management_mode": "self-maintained-template",
   "profile_source": {"kind": "live-profile", "path": ".mir/repo-profile.toml"},
   "managed_domains": [
-    "central_ownership_contract",
     "repository_overlay",
     "generation_verification_pipeline",
     "operating_contract",
@@ -551,12 +546,6 @@ Use `config/repos/example.json` as the canonical template for your repository en
     "harness_format",
     "agent_management"
   ],
-  "fleet_management": {
-    "active_target": true,
-    "control_repo": false,
-    "runtime_contract_exception": false,
-    "diet_mode": "normal"
-  },
   "exception_review": {
     "requires_repo_specific_runtime_review": false,
     "protected_categories": []

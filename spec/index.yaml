@@ -1,0 +1,31 @@
+spec_version: 1
+generated_from: ["Mir Yoke Git/ADR history through 99ab9d4", "Mir Harness ADR-84", "Mir Yoke ADR-78", "owner confirmation 2026-08-08", "current implementation candidate"]
+mode: S
+domain: AI_SYSTEM
+scope: "Mir Yoke public template product boundary and implementation verification"
+counts:
+  features: {total: 4, done: 2, building: 2, planned: 0, deprecated: 0}
+  requirements: {total: 20, ready: 20, incomplete: 0, blocked: 0}
+  use_cases: 6
+  interfaces: 3
+  modules: 5
+  tasks: {total: 8, todo: 0, doing: 0, done: 7, blocked: 1}
+  gaps: {total: 1, blocking: 1}
+shards:
+  feat: [FEAT-001.yaml, FEAT-002.yaml, FEAT-003.yaml, FEAT-004.yaml]
+  req: [identity.yaml, adoption.yaml, quality.yaml]
+  uc: [UC-001.yaml, UC-002.yaml, UC-003.yaml, UC-004.yaml, UC-005.yaml, UC-006.yaml]
+  iface: [IF-001.yaml, IF-002.yaml, IF-003.yaml]
+  mod: [MOD-CONTRACT.yaml, MOD-ADOPTION.yaml, MOD-CAPABILITY.yaml, MOD-MAINTENANCE.yaml, MOD-HISTORY.yaml]
+  views: [features.md, runtime.yaml, deployment.yaml, data.yaml, quality.yaml]
+  concepts: [authority-boundary.yaml, artifact-classification.yaml]
+entry_points:
+  metadata: meta.yaml
+  implementation: tasks.yaml
+  verification: checks.yaml
+  traceability: graph.yaml
+  coverage: coverage.yaml
+  glossary: glossary.yaml
+  unresolved: gaps.yaml
+  rationale: "../docs/decisions/adr-78-public-template-identity-and-non-authority.md"
+  comparison: mode-s.yaml

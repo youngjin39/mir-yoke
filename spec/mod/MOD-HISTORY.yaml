@@ -1,0 +1,6 @@
+id: MOD-HISTORY
+responsibility: "Preserve Mir Yoke decision epochs while exposing only current authority by default."
+provided:
+  - {name: "DecisionAuthority", operations: ["index current decisions", "retrieve history", "validate status and supersession"]}
+required: ["MOD-CONTRACT.ProductBoundary"]
+stability: {fan_in: 1, fan_out: 1, i: 0.5}

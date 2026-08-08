@@ -33,12 +33,11 @@ def test_build_manifest_real_repo_section_and_rules() -> None:
 
     assert manifest["repo"] == {
         "slug": "mir-yoke",
-        "repository_type": "template_transitional",
-        "role": "code_tdd_review_plane",
-        "fleet_manager": True,
+        "repository_type": "public_harness_template",
+        "role": "template_maintainer",
         "enforcement": {
-            "tools_commit_gate": "deferred",
-            "tools_tdd_ledger": "keyed_composite",
+            "tools_commit_gate": "lint_test",
+            "tools_tdd_ledger": "changes_array",
         },
     }
     assert len(manifest["rules"]) == 17
@@ -80,20 +79,21 @@ def test_build_manifest_introspects_hooks(tmp_path: Path) -> None:
     }
 
 
-def test_build_manifest_non_fleet_manager_defaults(tmp_path: Path) -> None:
+def test_build_manifest_never_infers_fleet_authority(tmp_path: Path) -> None:
     profile_path = tmp_path / "config" / "repos" / "app.json"
     _write_json(
         profile_path,
         {
             "slug": "app",
             "repository_type": "code_app",
+            "fleet_management": {"control_repo": True},
         },
     )
 
     manifest = build_manifest(tmp_path, profile_path)
 
     assert manifest["repo"]["role"] == "code_tdd_review_plane"
-    assert manifest["repo"]["fleet_manager"] is False
+    assert "fleet_manager" not in manifest["repo"]
     assert manifest["repo"]["enforcement"] == {
         "tools_commit_gate": "lint_test",
         "tools_tdd_ledger": "changes_array",
@@ -115,18 +115,12 @@ def test_build_manifest_localizes_metadata_without_private_profile_rendering(
     manifest = build_manifest(PROJECT_ROOT, profile_path)
     assert manifest["_generated"]["repo_slug"] == "demo-fam"
     assert "repo_root" not in manifest["_generated"]
-    # template_repo is intentionally an absolute path (B2 fix: preserved verbatim).
-    # Strip it before checking that no other host-absolute paths leaked.
-    import copy as _copy
-    manifest_no_template = _copy.deepcopy(manifest)
-    if "template_parity" in manifest_no_template.get("rule_inputs", {}):
-        manifest_no_template["rule_inputs"]["template_parity"].pop("template_repo", None)
-    dumped_no_template = json.dumps(manifest_no_template)
-    assert "/Volumes" not in dumped_no_template, (
+    dumped_no_template = json.dumps(manifest)
+    assert "/" + "Volumes" not in dumped_no_template, (
         "host-absolute /Volumes path leaked into generated manifest (excluding template_repo)"
     )
-    assert "/Users/" not in dumped_no_template, (
-        "host-absolute /Users/ path leaked into generated manifest (excluding template_repo)"
+    assert "/" + "Users/" not in dumped_no_template, (
+        "host-absolute user path leaked into generated manifest"
     )
     surfaces = manifest["rule_inputs"]["generated_marker_rerender"]["surfaces"]
     assert all(surface["file"] != "CLAUDE.md" for surface in surfaces)
@@ -205,7 +199,7 @@ def test_generate_parser_accepts_green_flag() -> None:
 
 
 # ---------------------------------------------------------------------------
-# B2: template_repo preservation in _build_rule_inputs (ADR-54 S2 D2)
+# Rule-input localization
 # ---------------------------------------------------------------------------
 
 _STUB_SOURCE_INPUTS = {
@@ -217,6 +211,7 @@ _STUB_SOURCE_INPUTS = {
     "adr_supersession_graph": {},
     "context_path_references": {},
     "architecture_contract": {},
+    "template_asset_classification": {"manifest_path": "config/template-assets.json"},
     "generated_marker_rerender": {
         "surfaces": [],
         "marker": "mir:generated",
@@ -248,68 +243,19 @@ _STUB_SOURCE_INPUTS = {
 }
 
 
-def test_build_rule_inputs_non_template_keeps_abs_template_repo(tmp_path: Path) -> None:
-    """B2a: non-template family gets verbatim abs template_repo from source_inputs."""
+def test_build_rule_inputs_keeps_local_asset_manifest(tmp_path: Path) -> None:
     from tools.harness_consistency.generate import _build_rule_inputs
-
-    abs_template = str(tmp_path / "template-root")
-    source_inputs = {
-        **_STUB_SOURCE_INPUTS,
-        "template_parity": {
-            "template_repo": abs_template,
-            "manifest_path": "config/parity-manifest.json",
-            "probes_enabled": True,
-            "exclude_paths": [".claude/hooks/session-start.sh"],
-        },
-    }
 
     result = _build_rule_inputs(
         tmp_path,
-        source_inputs,
+        _STUB_SOURCE_INPUTS,
         source_slug="mir-harness",
         target_slug="some-family",
     )
 
-    assert "template_parity" in result
-    tp = result["template_parity"]
-    # Non-template target must keep verbatim absolute path from source
-    assert tp["template_repo"] == abs_template, (
-        f"Expected verbatim abs path {abs_template!r}, got {tp['template_repo']!r}"
-    )
-    # source-repo exclude_paths must NOT be inherited by non-mir target
-    assert "exclude_paths" not in tp, (
-        f"source-repo exclude_paths must be stripped for non-source targets, got {tp}"
-    )
-
-
-def test_build_rule_inputs_template_target_gets_dot_template_repo(tmp_path: Path) -> None:
-    """B2b: mir-yoke target gets template_repo == "." (self-referential)."""
-    from tools.harness_consistency.generate import _build_rule_inputs
-
-    abs_template = str(tmp_path / "template-root")
-    source_inputs = {
-        **_STUB_SOURCE_INPUTS,
-        "template_parity": {
-            "template_repo": abs_template,
-            "manifest_path": "config/parity-manifest.json",
-            "probes_enabled": True,
-            "exclude_paths": [".claude/hooks/session-start.sh"],
-        },
+    assert result["template_asset_classification"] == {
+        "manifest_path": "config/template-assets.json"
     }
-
-    result = _build_rule_inputs(
-        tmp_path,
-        source_inputs,
-        source_slug="mir-harness",
-        target_slug="mir-yoke",
-    )
-
-    assert "template_parity" in result
-    tp = result["template_parity"]
-    # Template target must use "." so checker resolves against its own root
-    assert tp["template_repo"] == ".", (
-        f"Expected template_repo == '.', got {tp['template_repo']!r}"
-    )
 
 
 def test_build_manifest_rule_inputs_contains_agent_surface_contract(

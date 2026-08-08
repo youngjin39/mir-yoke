@@ -8,7 +8,7 @@ Usage:
         [--change-id <id> --category <name>] \\
         (--codex-args "<quoted string>" | --codex-args-file <path>) \\
         [--timeout <seconds>] \\
-        (--family <slug> | --repo-root <path>)
+        [--repo-root <path>]
         [--background | -b]
         [--allow-harness-self-modify]
         [--jobs-db <path>]
@@ -245,21 +245,14 @@ def _build_parser() -> argparse.ArgumentParser:
         default=argparse.SUPPRESS,
         help="Override path to jobs.db (default: <repo_root>/tasks/jobs.db).",
     )
-    root_group = exec_p.add_mutually_exclusive_group(required=True)
-    root_group.add_argument(
-        "--family",
-        metavar="SLUG",
-        help=(
-            "Family slug to look up in the profile_compiler registry "
-            "(e.g. 'grownote'). Resolves to the registered absolute repo root."
-        ),
-    )
-    root_group.add_argument(
+    exec_p.add_argument(
         "--repo-root",
         type=pathlib.Path,
         metavar="PATH",
+        default=pathlib.Path.cwd(),
         help="Repository root path. Used to locate tasks/tdd.json.",
     )
+    exec_p.set_defaults(family=None)
     exec_p.add_argument(
         "--async",
         "-a",
@@ -819,7 +812,7 @@ def _handle_dispatch(
             job_id=job_id,
             change_id=job_change_id,
             category=job_category,
-            family=args.family,
+            family=None,
             repo_root=str(repo_root),
             codex_args=codex_args,
             dispatch_brief_path=(
@@ -839,7 +832,7 @@ def _handle_dispatch(
         reasoning_effort=args.reasoning_effort,
         stall_timeout=getattr(args, "stall_timeout", None),
     )
-    repo_slug = args.family or _resolve_repo_policy_slug(repo_root)
+    repo_slug = _resolve_repo_policy_slug(repo_root)
     backend = _resolve_dispatch_backend(
         sub_agent_policy,
         requested_backend=getattr(args, "execution_backend", None),
@@ -969,16 +962,8 @@ def _handle_execute(args: argparse.Namespace) -> int:
         print(f"[mir_executor] {type(exc).__name__}: {exc}", file=sys.stderr)
         return 1
 
-    if args.family is not None:
-        # Lazy import avoids circular dependency
-        from tools.profile_compiler.cli import resolve_family_path  # noqa: PLC0415
-        try:
-            repo_root = resolve_family_path(args.family).resolve()
-        except KeyError as exc:
-            print(f"[mir_executor] Unknown family slug: {args.family!r}. {exc}", file=sys.stderr)
-            return 1
-    else:
-        repo_root = args.repo_root.resolve()
+    # @spec CR-003 IR-002
+    repo_root = args.repo_root.resolve()
 
     executor = MirExecutor(repo_root=repo_root)
     from tools.mir_executor.policy import load_sub_agent_policy  # noqa: PLC0415
@@ -1008,7 +993,7 @@ def _handle_execute(args: argparse.Namespace) -> int:
             job_id=job_id,
             change_id=args.change_id,
             category=args.category,
-            family=args.family,
+            family=None,
             repo_root=str(repo_root),
             codex_args=codex_args,
             allow_harness_self_modify=args.allow_harness_self_modify,

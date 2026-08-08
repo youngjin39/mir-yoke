@@ -1,0 +1,51 @@
+lattice_l1:
+  subjects:
+    entities: [template_release, template_asset, consumer_repository]
+    actors: [public_evaluator, greenfield_owner, existing_repository_owner, template_maintainer]
+  denominator: "6 subject axes x 7 subjects + 2 subjectless axes"
+  axes:
+    A: {filled: 5, derived: 1, na: 1, tbd: 0}
+    B: {filled: 5, derived: 1, na: 1, tbd: 0}
+    C: {filled: 4, derived: 2, na: 1, tbd: 0}
+    D: {filled: 3, derived: 2, na: 2, tbd: 0}
+    E: {filled: 4, derived: 2, na: 1, tbd: 0}
+    F: {filled: 1, derived: 0, na: 0, tbd: 0}
+    G: {filled: 1, derived: 0, na: 0, tbd: 0}
+    H: {filled: 3, derived: 2, na: 2, tbd: 0}
+  coverage: {total: 44, filled: 26, derived: 10, na: 8, tbd: 0}
+lattice_l2:
+  denominator: "6 use cases x 7 axes"
+  by_use_case:
+    UC-001: {filled: 3, derived: 2, na: 2, tbd: 0}
+    UC-002: {filled: 5, derived: 1, na: 1, tbd: 0}
+    UC-003: {filled: 4, derived: 2, na: 1, tbd: 0}
+    UC-004: {filled: 5, derived: 1, na: 1, tbd: 0}
+    UC-005: {filled: 4, derived: 2, na: 1, tbd: 0}
+    UC-006: {filled: 4, derived: 1, na: 2, tbd: 0}
+  coverage: {total: 42, filled: 25, derived: 9, na: 8, tbd: 0}
+lattice_l3:
+  characteristics:
+    functional_suitability: filled
+    performance_efficiency: derived
+    compatibility: filled
+    interaction_capability: filled
+    reliability: filled
+    security: filled
+    maintainability: filled
+    flexibility: filled
+    safety: {verdict: na, reason: "The provider has no autonomous runtime or physical control surface."}
+  coverage: {total: 9, filled: 7, derived: 1, na: 1, tbd: 0}
+lattice_l4:
+  checks:
+    requirement_allocation: filled
+    use_case_allocation: filled
+    interface_contracts: filled
+    crosscutting_concepts: filled
+    asynchronous_connectors: {verdict: derived, basis: "No provider runtime or asynchronous connector exists."}
+    shared_resources: {verdict: derived, basis: "Git working tree is single-writer per maintenance task; no service-shared state exists."}
+    recovery_paths: filled
+    executable_structural_checks: filled
+    task_completion: filled
+    quality_tactics: filled
+  coverage: {total: 10, filled: 8, derived: 2, na: 0, tbd: 0}
+ai_ready: {total: 20, ready: 20, incomplete: 0, blocked: 0}

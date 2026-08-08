@@ -59,6 +59,7 @@ def test_shell_wrapper_exports_external_storage_before_uv_sync(tmp_path):
     ]
 
 
+# @spec QR-001
 def test_powershell_wrapper_has_equivalent_coordinator_contract():
     wrapper = ROOT / "setup.ps1"
     body = wrapper.read_text(encoding="utf-8")

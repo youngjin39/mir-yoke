@@ -1,7 +1,7 @@
 {
   "version": 2,
   "catalog_revision": "v4.0",
-  "purpose": "Per-repository agent-management registry for the Claude+Codex Harness Template. Fork and customize for your fleet.",
+  "purpose": "Repository-local agent and skill catalog for selectively composing the public Claude+Codex harness template.",
   "repositories_dir": "config/repos",
   "catalog": {
     "review_cadence": "monthly_user_directed",
@@ -58,10 +58,12 @@
       "fleet-doc-steward": {
         "role": "governance",
         "execution_backend": "claude",
-        "scope": "meta_harness",
+        "scope": "universal",
         "status": "active",
         "source_path": ".claude/agents/fleet-doc-steward.md",
-        "notes": [],
+        "notes": [
+          "Legacy slug for a repository-local, read-only instruction advisor; it grants no fleet authority"
+        ],
         "recommended_skills": [
           "governance"
         ]
@@ -73,7 +75,7 @@
         "status": "active",
         "source_path": ".claude/agents/cwe-auditor.md",
         "notes": [
-          "Deploy when your family has code files; enable per-family once you have dispatch evidence"
+          "Select when the repository has code files and local dispatch evidence"
         ],
         "scope_patterns": [
           "**/*.py",
@@ -103,7 +105,7 @@
         "status": "active",
         "source_path": ".claude/agents/dep-auditor.md",
         "notes": [
-          "Deploy when your family has dependency manifests; enable per-family once you have dispatch evidence"
+          "Select when the repository has dependency manifests and local dispatch evidence"
         ],
         "scope_patterns": [
           "requirements*.txt",
@@ -135,7 +137,7 @@
         "status": "active",
         "source_path": ".claude/agents/ui-reviewer.md",
         "notes": [
-          "Deploy when your family has UI component files"
+          "Select when the repository has UI component files"
         ],
         "scope_patterns": [
           "**/*.tsx",
@@ -158,7 +160,7 @@
         "status": "active",
         "source_path": ".claude/agents/pipeline-validator.md",
         "notes": [
-          "Deploy when your family has data pipeline definitions"
+          "Select when the repository has data pipeline definitions"
         ],
         "scope_patterns": [
           "**/dag/**",
@@ -181,7 +183,7 @@
         "status": "active",
         "source_path": ".claude/agents/ontology-validator.md",
         "notes": [
-          "Deploy when your family has content ontology or taxonomy files"
+          "Select when the repository has content ontology or taxonomy files"
         ],
         "scope_patterns": [
           "content/**/*.md",
@@ -202,7 +204,7 @@
         "status": "active",
         "source_path": ".claude/agents/runtime-contract-reviewer.md",
         "notes": [
-          "Deploy when your family has runtime exception hierarchies or public API contracts"
+          "Select when the repository has runtime exception hierarchies or public API contracts"
         ],
         "scope_patterns": [
           "**/runtime/**",
@@ -219,11 +221,11 @@
       "template-sync-validator": {
         "role": "specialist",
         "execution_backend": "claude",
-        "scope": "template_transitional",
+        "scope": "public_template",
         "status": "active",
         "source_path": ".claude/agents/template-sync-validator.md",
         "notes": [
-          "Deploy when your family manages a public template sync"
+          "Select when the repository explicitly performs a public template comparison"
         ],
         "scope_patterns": [
           "**/CLAUDE.md",
@@ -367,8 +369,8 @@
     }
   },
   "management_domains": {
-    "central_ownership_contract": {
-      "description": "Remember the root source-of-truth surfaces and generated mirrors that define how the repository's agents must be governed.",
+    "source_ownership_contract": {
+      "description": "Remember the source-of-truth surfaces and generated mirrors within one consumer-owned repository.",
       "memory_focus": [
         "CLAUDE.md authority",
         "AGENTS.md generated mirror",
@@ -427,11 +429,11 @@
   },
   "templates": {
     "meta_harness": {
-      "description": "Self-hosting harness control repository. Full authority over contracts, generators, verifiers, and fleet policy.",
-      "default_management_mode": "self-hosted",
-      "default_agent_topology": "claude-control-plus-codex-execution; fleet-doc-steward (governance-tier, read-only fleet review, outside specialist pack)",
+      "description": "Harness maintainer repository with authority only over its own contracts, generators, and verifiers.",
+      "default_management_mode": "self-maintained-template",
+      "default_agent_topology": "claude-control-plus-codex-execution with an optional repository-local instruction advisor",
       "tracked_paths": {
-        "central_ownership_contract": [
+        "source_ownership_contract": [
           "CLAUDE.md",
           "AGENTS.md",
           ".claude/agents/**",
@@ -442,7 +444,6 @@
           "docs/decisions/repo-profile-schema*.md"
         ],
         "generation_verification_pipeline": [
-          "tools/profile_compiler/**",
           "scripts/generate_codex_derivatives.sh",
           "scripts/verify_codex_sync.py"
         ],
@@ -509,7 +510,7 @@
       "default_management_mode": "harness-managed",
       "default_agent_topology": "claude-control-plus-codex-execution",
       "tracked_paths": {
-        "central_ownership_contract": [
+        "source_ownership_contract": [
           "CLAUDE.md",
           "AGENTS.md",
           ".claude/agents/**"
@@ -574,7 +575,7 @@
       "default_management_mode": "harness-managed",
       "default_agent_topology": "claude-control-plus-codex-execution",
       "tracked_paths": {
-        "central_ownership_contract": [
+        "source_ownership_contract": [
           "CLAUDE.md",
           "AGENTS.md",
           ".claude/agents/**"
@@ -640,7 +641,7 @@
       "default_management_mode": "harness-managed",
       "default_agent_topology": "claude-control-plus-codex-execution",
       "tracked_paths": {
-        "central_ownership_contract": [
+        "source_ownership_contract": [
           "CLAUDE.md",
           "AGENTS.md",
           ".claude/agents/**"
@@ -706,7 +707,7 @@
       "default_management_mode": "harness-managed",
       "default_agent_topology": "claude-control-plus-codex-execution",
       "tracked_paths": {
-        "central_ownership_contract": [
+        "source_ownership_contract": [
           "CLAUDE.md",
           "AGENTS.md",
           ".claude/agents/**"
@@ -766,12 +767,12 @@
         "domain": []
       }
     },
-    "template_transitional": {
-      "description": "Transitional template repository — fork and customize for your fleet.",
-      "default_management_mode": "bounded-managed",
+    "public_template": {
+      "description": "Public reference and starter repository with no standing consumer authority.",
+      "default_management_mode": "self-maintained-template",
       "default_agent_topology": "claude-control-plus-codex-execution",
       "tracked_paths": {
-        "central_ownership_contract": [
+        "source_ownership_contract": [
           "CLAUDE.md",
           "AGENTS.md",
           ".claude/agents/**"
@@ -832,7 +833,7 @@
       "default_management_mode": "harness-managed",
       "default_agent_topology": "claude-control-plus-codex-bounded",
       "tracked_paths": {
-        "central_ownership_contract": [
+        "source_ownership_contract": [
           "CLAUDE.md",
           "AGENTS.md",
           ".claude/agents/**"
@@ -902,7 +903,7 @@
       "default_management_mode": "harness-managed",
       "default_agent_topology": "claude-control-plus-codex-execution",
       "tracked_paths": {
-        "central_ownership_contract": [
+        "source_ownership_contract": [
           "CLAUDE.md",
           "AGENTS.md",
           ".claude/agents/**"

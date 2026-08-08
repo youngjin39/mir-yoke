@@ -1,5 +1,26 @@
 # Plan
 
+## P3 — Public-template product boundary (2026-08-08) — BUILDING
+
+Authorization: the owner explicitly authorized implementation in Mir Yoke on 2026-08-08. This
+does not authorize commit, push, tag, public release, fleet notification, or consumer-repository
+mutation.
+
+Step P3.1: DONE | added ADR-78 and one current decision path for the public-template identity.
+
+Step P3.2: DONE | aligned root contracts and classified all 596 release-candidate files exactly once.
+
+Step P3.3: DONE | proved separate greenfield and preservation-first existing-repository adoption,
+plus local-only capability provenance and exact changed-path reporting.
+
+Step P3.4: DONE | removed active central-fleet daemons, scans, parity authority, notifications, and
+cross-repository mutation helpers while retaining historical prose behind an explicit index.
+
+Step P3.5: BLOCKED | lint, derivatives, sanitization, schemas, links, consistency, and 627/628 full
+tests pass. Clean-candidate readiness stops only because two changed agent files require a
+commit-bound refresh of protected `.mir/capability-lock.json`; that valid refresh requires one
+implementation commit followed by one lock commit, so owner direction is required.
+
 ## P2 — Portable project bootstrap (2026-08-06) — COMPLETE
 
 Step P2.1: DONE | designed and threat-modeled the global capability provider and mandatory

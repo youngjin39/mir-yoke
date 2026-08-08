@@ -1,0 +1,6 @@
+id: MOD-CAPABILITY
+responsibility: "Provide opt-in reusable plugin assets and integrity-only provenance operations."
+provided:
+  - {name: "CapabilityLifecycle", operations: ["status", "check", "sync locked", "show update", "apply update"]}
+required: ["MOD-CONTRACT.ProductBoundary"]
+stability: {fan_in: 1, fan_out: 1, i: 0.5}

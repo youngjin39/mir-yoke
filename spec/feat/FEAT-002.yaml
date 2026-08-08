@@ -1,0 +1,10 @@
+id: FEAT-002
+name: "Adopt the template by repository lifecycle"
+summary: "A greenfield or existing-repository owner can use the correct non-centralized adoption path."
+status: done
+owner_module: MOD-ADOPTION
+coverage:
+  l1: {total: 26, filled: 16, derived: 6, na: 4, tbd: 0}
+  l2: {total: 14, filled: 9, derived: 3, na: 2, tbd: 0}
+  l4: {total: 10, filled: 8, derived: 2, na: 0, tbd: 0}
+updated: "2026-08-08"

@@ -20,12 +20,11 @@
   },
   "repo": {
     "slug": "mir-yoke",
-    "repository_type": "template_transitional",
-    "role": "code_tdd_review_plane",
-    "fleet_manager": true,
+    "repository_type": "public_harness_template",
+    "role": "template_maintainer",
     "enforcement": {
-      "tools_commit_gate": "deferred",
-      "tools_tdd_ledger": "keyed_composite"
+      "tools_commit_gate": "lint_test",
+      "tools_tdd_ledger": "changes_array"
     }
   },
   "rules": [
@@ -135,9 +134,9 @@
       "drift_class": 5
     },
     {
-      "id": "R16",
-      "name": "template_parity",
-      "severity": "WARN",
+      "id": "R18",
+      "name": "template_asset_classification",
+      "severity": "ERROR",
       "enabled": true,
       "drift_class": 8
     },
@@ -163,9 +162,7 @@
     },
     "single_family_source": {
       "source_files": [
-        "tools/profile_compiler/cli.py",
-        "scripts/audit_family_adoption.py",
-        "scripts/sync_family_hooks.py"
+        "tools/catalog_loader.py"
       ],
       "required_symbol": "load_family_registry"
     },
@@ -291,10 +288,8 @@
       "marker_prefix": "_MIR_HOOK_TIER",
       "expected_tiers": {}
     },
-    "template_parity": {
-      "template_repo": ".",
-      "manifest_path": "config/parity-manifest.json",
-      "probes_enabled": true
+    "template_asset_classification": {
+      "manifest_path": "config/template-assets.json"
     },
     "agent_surface_contract": {
       "claude_md": "CLAUDE.md",

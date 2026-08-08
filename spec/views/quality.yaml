@@ -1,0 +1,21 @@
+quality_bindings:
+  - quality: QR-001
+    tactic: "One coordinator owns behavior and platform wrappers delegate to it."
+    sensitivity: "A wrapper that implements behavior independently breaks platform equivalence."
+    tradeoff: "Native Windows still requires documented Bash compatibility for Bash-based hooks."
+    measured_by: "Three-lane clean-environment bootstrap matrix and required-key comparison."
+  - quality: QR-002
+    tactic: "Existing-repository operations default to read-only and replace a receipt atomically only after all checks pass."
+    sensitivity: "Any authored-file write or early receipt replacement breaks preservation."
+    tradeoff: "Automatic repair is rejected in favor of explicit repository-owner work."
+    measured_by: "Pre/post SHA-256 comparison for authored files and the prior receipt on dry-run and forced failure."
+  - quality: QR-003
+    tactic: "Capability locks bind one exact source commit and selected plugin tree digests."
+    sensitivity: "A branch-head activation or unverified tree breaks reproducibility."
+    tradeoff: "Consumers do not receive the newest provider version without explicit review and apply."
+    measured_by: "Materialize the lock after the source branch advances and compare every selected tree digest."
+  - quality: QR-004
+    tactic: "A deterministic identity-consistency test evaluates all root authority documents."
+    sensitivity: "One current document with runtime or central-fleet wording breaks product clarity."
+    tradeoff: "Several audience-specific root documents remain, so consistency is enforced rather than collapsed into one file."
+    measured_by: "Four-document required-claim and forbidden-claim report with zero conflicts."

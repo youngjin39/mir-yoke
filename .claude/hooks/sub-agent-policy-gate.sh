@@ -1,6 +1,7 @@
 #!/bin/bash
 _MIR_PYTHON_LAUNCHER="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/_lib/run-python.sh"
-# Family-deploy source: standalone family-invariant force_codex Agent/Task gate. mir-self itself uses the inline gate in pre-tool-use.sh; this file is deployed to fleet families (slug-safe) via the Bash-channel + sync_family_hooks. Mirrors the inline gate logic.
+# Repository-local force_codex Agent/Task gate. A consumer may adopt this file explicitly;
+# Mir Yoke does not deploy it to other repositories.
 
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
 INPUT=$(cat)

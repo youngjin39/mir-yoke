@@ -1,0 +1,19 @@
+id: UC-006
+name: "Publish a template release"
+actors: {primary: template_maintainer, secondary: []}
+preconditions:
+  - {title: "Candidate ready", description: "The fixed candidate has a passing complete ValidationReport.", on_unmet: "Refuse release publication."}
+postconditions:
+  - {title: "Public immutable release", description: "One version resolves to one commit with public metadata and no fleet notification side effect.", on_unmet: "Report publication failure without consumer mutation."}
+basic_flow:
+  - {no: 1, description: "The template maintainer submits IF-003.IT-011 ReleaseCandidate."}
+  - {no: 2, description: "Mir Yoke verifies version, changelog, migration, validation, and public metadata."}
+  - {no: 3, description: "Mir Yoke returns IF-003.IT-012 ReleaseResult after publication."}
+sweep:
+  A: [{scenario: "The version or metadata is invalid; reject publication.", kind: exceptional, ends: terminate}]
+  B: [{scenario: "The Git host or release target is unavailable; report failure without changing consumers.", kind: exceptional, ends: terminate}]
+  C: [{scenario: "Publication is rejected, times out, or disconnects; report the observed state and do not retry automatically.", kind: exceptional, ends: terminate}]
+  D: {na: "No device state participates in publication."}
+  E: [{scenario: "The maintainer cancels before publication; preserve the candidate and publish nothing.", kind: optional, ends: terminate}]
+  F: [{scenario: "The same version already resolves to a different commit; reject the duplicate version.", kind: exceptional, ends: terminate}]
+  G: [{scenario: "Credentials are absent or the release attempts a fleet notification; reject the unauthorized side effect.", kind: exceptional, ends: terminate}]

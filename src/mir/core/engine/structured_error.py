@@ -1,7 +1,7 @@
 """Mir structured error format (phase-4 §5).
 
 All hooks and tool calls should emit errors in this format for consistent
-parsing by run_orchestrator, fleet_observe, and Discord notify.
+parsing by explicitly adopted consumer-local orchestration tools.
 """
 from __future__ import annotations
 

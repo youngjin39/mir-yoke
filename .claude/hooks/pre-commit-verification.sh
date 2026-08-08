@@ -19,12 +19,8 @@ set -u
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
 TDD_MATRIX_GUARD_SCRIPT="$PROJECT_DIR/.claude/hooks/tdd-matrix-guard.py"
 
-# ADR-51 D2/S4d: the per-repo tools/ commit-gate posture comes from the harness-consistency
-# manifest (repo.enforcement.tools_commit_gate: deferred|lint_test|lint_test_ledger). This
-# replaces the binary "fleet catalog present" signal, which is kept only as a fallback for
-# repos that do not yet ship the manifest.
-_MIR_FLEET_MANAGER=no
-[ -f "$PROJECT_DIR/config/repo-agent-management.json" ] && _MIR_FLEET_MANAGER=yes
+# The consumer repository owns its tools/ commit-gate posture through the local
+# harness-consistency manifest. Catalog presence never changes authority or bypasses checks.
 _MIR_TOOLS_COMMIT_GATE=""
 _MIR_HC_MANIFEST="$PROJECT_DIR/config/harness-consistency.json"
 if [ -f "$_MIR_HC_MANIFEST" ]; then
@@ -47,16 +43,10 @@ is_code_path() {
     src/*|tests/*|app/*|lib/*)
       ;;
     tools/*)
-      # ADR-51 D2/S4d: tools/ commit-gate posture is per-repo, read from the manifest's
-      # repo.enforcement.tools_commit_gate. deferred -> not gated (mir-self exemption: keyed
-      # composite-TDD + design->Codex->review instead of the changes[] gate); lint_test or
-      # lint_test_ledger -> gated (managed fleet — commits stay possible; the per-file
-      # TDD-ledger gate is NOT expanded here). Falls back to the legacy "fleet catalog present
-      # => deferred" signal when the repo ships no harness-consistency manifest.
+      # The local manifest may explicitly defer tools/ checks. Without a manifest, tools/
+      # remains gated; an agent catalog is only reference data and never grants an exemption.
       if [ -n "$_MIR_TOOLS_COMMIT_GATE" ]; then
         [ "$_MIR_TOOLS_COMMIT_GATE" = "deferred" ] && return 1
-      else
-        [ "$_MIR_FLEET_MANAGER" = "yes" ] && return 1
       fi
       ;;
     *)

@@ -2,6 +2,9 @@
 
 # Mir Yoke — Harness Template Contract
 
+Mir Yoke is a public template and reference repository. It is not an agent runtime and has no
+standing authority over consumers; adoption is an explicit, repository-local owner action.
+
 ## Outcome and completion
 
 - Maintain a public, repository-agnostic Claude/Codex harness template that adopters can fit to
@@ -12,13 +15,11 @@
 ## Sources
 
 - `mir bootstrap` owns cross-platform defaults; afterward `.mir/repo-profile.toml` owns identity,
-  paths, and boundaries. Require a ready receipt before normal work; incomplete runs may initialize
-  or Phase 2 evidence only. Phase 1 requires explicit identity and classified content onboarding.
+  paths, and boundaries. A ready receipt requires explicit identity and classified content.
 - For substantial work, run one task-scoped `uv run mir context pull "<query>"`; add path/risk or
   expand only for missing, stale, or conflicting evidence.
-- Ready projects require local SQLite+FTS5 and project-specific FTS hits. Tracked content is durable;
-  `.mir/memory.db` is local. Generated projections are not hand-edited. Phase 2 requires four-layer
-  coverage, AI-ready requirements, zero open gaps, and a passing full review—not non-empty files.
+- Ready projects require local SQLite+FTS5 and project-specific FTS hits. `.mir/memory.db` is local;
+  Phase 2 requires four-layer coverage, zero open gaps, and a passing full review.
 - `config/capability-sources.json` and `.mir/capability-lock.json` own Git provenance and hashes;
   remote checks are read-only and activation requires explicit apply.
 - Before changing requirements, agents, or skills, run `mir capability check`; review before apply.
@@ -30,9 +31,8 @@
 - Get explicit direction before destructive actions, credential or secret access, external writes
   or messages, protected-scope mutation, or material scope expansion.
 - Keep the public surface generic and sanitized. Adopter-specific policy remains adopter-owned.
-- Edit canonical sources first: `CLAUDE.md`, the Python bootstrap coordinator or the adopted
-  `.mir/repo-profile.toml`, `.claude/agents/`, and `plugins/*/skills/`. Regenerate `AGENTS.md` and
-  `.codex/`. Common skills are namespaced plugins; project skills use unique names.
+- Edit canonical sources first: `CLAUDE.md`, bootstrap/profile, `.claude/agents/`, and plugin skills.
+  Regenerate `AGENTS.md` and `.codex/`; project skills use unique names.
 
 ## Execution and evidence
 

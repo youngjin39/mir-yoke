@@ -43,17 +43,15 @@ def check_drift(contract: dict, project_root: Path) -> list[dict]:
         # No active enforcement on most constraint types in slice 2 -
         # surface as advisory only; detailed check is deferred
         if ctype == "no_hangul" and c.get("target") == "template":
-            # Stub - would invoke verify_template_applied_state in
-            # real chain. Here just surface as note.
             findings.append({
                 "category": "constraint_advisory",
                 "severity": "minor",
                 "target": ctype,
                 "detail": (
-                    "constraint declared, runtime check deferred to"
-                    " template_health/verify_template_applied_state chain"
+                    "constraint declared; public sanitization runs through"
+                    " tests/test_no_korean_in_user_facing.py"
                 ),
-                "remediation": "Run python -m tools.fleet_observe.template_health",
+                "remediation": "Run uv run python tests/test_no_korean_in_user_facing.py",
             })
     return findings
 

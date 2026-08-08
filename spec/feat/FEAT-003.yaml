@@ -1,0 +1,10 @@
+id: FEAT-003
+name: "Use reusable capabilities with explicit provenance"
+summary: "A consumer can install or update reusable assets without granting Mir Yoke fleet authority."
+status: building
+owner_module: MOD-CAPABILITY
+coverage:
+  l1: {total: 14, filled: 9, derived: 3, na: 2, tbd: 0}
+  l2: {total: 7, filled: 5, derived: 1, na: 1, tbd: 0}
+  l4: {total: 10, filled: 8, derived: 2, na: 0, tbd: 0}
+updated: "2026-08-08"

@@ -14,8 +14,8 @@ Role: Project-wide Claude control plane.
    canonical references and current-only depth. Read `tasks/plan.md` only when restartable,
    delegated, or multi-session work has an active cursor; recall lessons/history only for a
    relevant question.
-3. Load a repository agent catalog only when the task selects delegation discovery, fleet,
-   rollout, or capability management. When `config/repo-agent-management.json` is present, use
+3. Load the repository-local agent catalog only when the task selects delegation discovery or
+   capability management. When `config/repo-agent-management.json` is present, use
    `tools.catalog_loader.load_catalog(ROOT)` and cache it only for that task.
 ## Ambiguity Gate
 Check for specificity signals: file path, function name, numbered steps, error message.
@@ -70,7 +70,9 @@ This is prompt-level guidance. Verifier R11 audits post-hoc.
 When dispatching a `role: specialist` agent (cwe-auditor, dep-auditor, ui-reviewer, pipeline-validator, ontology-validator, runtime-contract-reviewer, template-sync-validator):
 
 1. Look up the agent's `scope_patterns` in cached `catalog.agents[<slug>].scope_patterns`. If the field is absent → default `["**/*"]` (no filtering, current behaviour).
-2. For non-meta family dispatches, also check the family's `repositories[i].agent_overrides.scope_patterns_overrides[<slug>]`. When present, it is a **full replacement** of the catalog default (not merge).
+2. Check the current repository profile's
+   `agent_overrides.scope_patterns_overrides[<slug>]` when present. It is a **full replacement** of
+   the catalog default, not a merge.
 3. Filter the changed-file set against the effective patterns using `fnmatch.fnmatch(filepath_str, pattern)` semantics (NOT `pathlib.Path.match` — empirically `Path.match('**/*.py')` returns False for root-level files; fnmatch handles flat paths correctly).
 4. If the filtered set is **empty** → skip the specialist's dispatch entirely. Log:
    ```
@@ -92,8 +94,9 @@ See CLAUDE.md "Role Policy (Template Profile)" and AGENTS.md `template:profile:r
 - Default delegated sub-agent for code/TDD/review: `executor-agent`. This is a preference, not a precondition for direct bounded work.
 - Default sub-agent for read-only review fallback or tie-break: `quality-agent` (frontmatter `execution_backend: claude`).
 - Default sub-agent for final design-vs-code consistency review: `codex-final-reviewer` (frontmatter `execution_backend: codex`).
-- Sub-agent for fleet-wide instruction-doc governance review (read-only, no code edits): `fleet-doc-steward` (frontmatter `execution_backend: claude`). Not part of the code/TDD/review lane.
-- Sub-agent for fleet observation advisory analysis (bucket 3 hook-risk + bucket 4 soft-advisory, read-only): `fleet-governance-advisory` skill (invoked via Task spawn). Handoff doc `tasks/handoffs/fleet-advisory-<date>.md` mandatory before spawn.
+- Optional sub-agent for repository-local instruction-doc review (read-only, no code edits):
+  `fleet-doc-steward` (frontmatter `execution_backend: claude`). The legacy slug is retained for
+  compatibility; it grants no fleet discovery or mutation authority.
 - Frontmatter `execution_backend` is the single declarative surface for a sub-agent's execution lane. Validate with `uv run python -m tools.agent_loader --mode=strict .claude/agents/<name>.md`.
 - A runtime backend override (per-turn deviation) must be recorded in `tasks/plan.md` or the active handoff note before dispatch, per `docs/decisions/role-policy.md`.
 - Deterministic enforcement (orchestrator-guard hook + MCP per-subagent whitelist) is out of ADR-09 scope. ADR-08 cancelled 2026-05-12; the enforcement layer is a separate future ADR. ADR-09 covers declarative surface only.
@@ -103,7 +106,8 @@ See CLAUDE.md "Role Policy (Template Profile)" and AGENTS.md `template:profile:r
 - **Model/effort routing (CLI-agnostic — ADR-67 priority schema)**: before ANY codex sub-agent call — Codex-main native `spawn_agent` OR Claude-main `mcp__codex__codex` — resolve the model + reasoning effort for the task's TDD category via `uv run mir policy resolve --category <cat>` and pass the returned `model` (and `config.model_reasoning_effort`). A null field means inherit the codex default. Values are home-server-owned (`sub-agent-policy.json` routing, `MIR_SUB_AGENT_POLICY` overlay). Advisory (ADR-63 tier) — hooks do not inject routing and codex→codex native calls cannot be hook-intercepted, so resolve-and-pass uniformly on both paths. `mir_executor … --dispatch` resolves the same routing internally.
 - **Claude-main → codex sub-agent (mcp, PRIMARY)**:
   - Read-only investigation/review: call `mcp__codex__codex` with `sandbox=read-only`; keep the prompt read-only and bounded.
-  - Cross-repo or mutating work that is not an in-repo code path: set the target `cwd` explicitly and use `sandbox=danger-full-access`; never use `workspace-write`.
+  - Work in another repository requires a current user instruction naming that single target and
+    scope; open a target-local session and obey that repository's contract.
   - Continuation: use `codex-reply` on the existing Codex MCP conversation instead of starting a new one.
 - **Codex-main native sub-agents (read-only breadth)**:
   - When the opened CLI is Codex, delegate read-only investigation, analysis, and extraction breadth to Codex native sub-agents.
@@ -116,24 +120,11 @@ See CLAUDE.md "Role Policy (Template Profile)" and AGENTS.md `template:profile:r
 - For delegated in-repo mutation, prefer `mir_executor … --dispatch` when worktree isolation or its merge gate is useful; bounded direct-main edits are valid. Raw `codex exec` remains banned.
 - The 600-second elapsed and 180-second inactivity observations report only; they never auto-kill, auto-fail, auto-retry, advance retry counters, or block finalization. Omitted timeout means continued execution; an explicit positive operator cap remains binding.
   - Availability failure: report the lane limitation and do not substitute raw exec; use another safe in-scope route when available.
-## Post-Dispatch Monitoring (ADR-60 R6)
+## Post-Dispatch Evidence
 
-For anomalous, long-running, or consequential MCP-backed work, run ADR-59 agent-check when its
-evidence materially helps acceptance. Raw `codex exec` remains banned:
-
-```
-MIR_AGENT_CHECK_CHANGE_ID=<change_id> uv run python -m tools.stall_watchdog.cli agent-check
-```
-
-It aggregates the codex-exec event log (`tasks/codex-exec-events.jsonl`), the JobRegistry
-(`tasks/jobs.db`), evidence integrity for the change, and the sub-agent transcript pool, emitting
-advisory HANG / SPINNING / DURATION_ANOMALY / PLAN_MD_EDIT verdicts (recommendation = ESCALATE_HUMAN).
-
-- **Observe-only (boundary B).** The control_plane main (human-in-the-loop) READS the verdicts and
-  decides; the check never auto-kills, retries, or escalates.
-- Relevant verdicts inform human judgment; pre-existing or unrelated findings are noted and do not
-  block acceptance.
-- This operationalizes "the orchestration utilizes sub-agents AND monitors them" (ADR-60 R6).
+Inspect the current repository's job, transcript, and verification artifacts only when relevant.
+Mir Yoke provides no daemon, cross-workspace scanner, notification channel, or automatic
+escalation service.
 
 ## Post-completion
 1. Record only the evidence and durable state the task actually needs.

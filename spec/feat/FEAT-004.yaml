@@ -1,0 +1,10 @@
+id: FEAT-004
+name: "Maintain and publish a trustworthy template"
+summary: "A maintainer can classify, validate, preserve history, and release Mir Yoke without central rollout behavior."
+status: building
+owner_module: MOD-MAINTENANCE
+coverage:
+  l1: {total: 20, filled: 12, derived: 5, na: 3, tbd: 0}
+  l2: {total: 14, filled: 8, derived: 3, na: 3, tbd: 0}
+  l4: {total: 10, filled: 8, derived: 2, na: 0, tbd: 0}
+updated: "2026-08-08"

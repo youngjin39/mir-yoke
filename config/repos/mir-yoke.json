@@ -4,18 +4,17 @@
   "display_name": "Mir Yoke (public template)",
   "registry_path": ".",
   "profile_slug": "mir-yoke",
-  "repository_type": "template_transitional",
-  "rollout_class": "partial_migrate",
-  "overlay_archetype": "template_transitional",
+  "repository_type": "public_harness_template",
+  "adoption_mode": "explicit_local",
+  "overlay_archetype": "public_template",
   "status": "active",
-  "management_template_id": "template_transitional",
-  "management_mode": "bounded-managed",
+  "management_template_id": "public_template",
+  "management_mode": "self-maintained-template",
   "profile_source": {
-    "kind": "live-profile",
-    "path": ".mir/repo-profile.toml"
+    "kind": "example-profile",
+    "path": "config/repos/mir-yoke.json"
   },
   "managed_domains": [
-    "central_ownership_contract",
     "repository_overlay",
     "generation_verification_pipeline",
     "operating_contract",
@@ -23,12 +22,6 @@
     "harness_format",
     "agent_management"
   ],
-  "fleet_management": {
-    "active_target": true,
-    "control_repo": false,
-    "runtime_contract_exception": false,
-    "diet_mode": "normal"
-  },
   "exception_review": {
     "requires_repo_specific_runtime_review": false,
     "protected_categories": [
@@ -37,11 +30,11 @@
   },
   "evidence_trace": {
     "source_documents": [
-      ".mir/repo-profile.toml"
+      "docs/decisions/adr-78-public-template-identity-and-non-authority.md"
     ],
     "open_questions": [],
     "assumptions": [
-      "Private fleet paths and implementation-only policy remain outside the public template."
+      "Consumer repositories own their local policy and may selectively adopt template assets."
     ]
   },
   "notes": [
@@ -52,7 +45,6 @@
     "executor-agent",
     "codex-final-reviewer",
     "quality-agent",
-    "fleet-doc-steward",
     "cwe-auditor",
     "dep-auditor",
     "ui-reviewer",
@@ -85,6 +77,6 @@
     "remove": []
   },
   "orchestration_profile": "standard",
-  "last_reviewed_at": "2026-07-15",
-  "rationale": "Public template self-profile aligned to the catalog v3.8 proportional baseline."
+  "last_reviewed_at": "2026-08-08",
+  "rationale": "ADR-78 public-template self-profile with no fleet target or provider runtime authority."
 }

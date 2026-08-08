@@ -1,0 +1,7 @@
+id: MOD-ADOPTION
+responsibility: "Provide separate greenfield creation and existing-repository reference paths."
+provided:
+  - {name: "GreenfieldAdoption", operations: ["validate request", "materialize starter", "report writes"]}
+  - {name: "ExistingRepositoryAssessment", operations: ["inspect local authority", "classify references", "write receipt after explicit apply"]}
+required: ["MOD-CONTRACT.ProductBoundary"]
+stability: {fan_in: 1, fan_out: 1, i: 0.5}

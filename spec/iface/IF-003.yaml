@@ -1,0 +1,12 @@
+id: IF-003
+name: "Template maintenance and release interface"
+role: "Validate one fixed change set and publish one public release."
+spec: "Maintainer command and CI interface confined to the Mir Yoke repository and public release target."
+version: "1.0"
+compatibility: "Validator output additions are backward compatible; changed required checks require a minor release note."
+quality: {performance: "No fixed duration; all required checks complete before a verdict.", availability: "Local validation runs without notification services.", reliability: "One fixed candidate produces one complete report.", security: "Credentials never enter tracked output and no fleet notification occurs."}
+items:
+  - {id: IT-009, name: ChangeSet, io: I, kind: data, type: "Git tree", format: "fixed commit or working-tree inventory", unit: "candidate", range: "one candidate", precision: "complete tracked file set", tolerance: "zero moving inputs during verdict"}
+  - {id: IT-010, name: ValidationReport, io: O, kind: data, type: "object", format: "JSON check records", unit: "check result", range: "one row per required check", precision: "exact command and status", tolerance: "zero skipped required checks"}
+  - {id: IT-011, name: ReleaseCandidate, io: I, kind: command, type: "object", format: "version, commit, changelog, migration, validation report", unit: "candidate", range: "one semantic version and commit", precision: "exact commit", tolerance: "zero mutable version mappings"}
+  - {id: IT-012, name: ReleaseResult, io: O, kind: event, type: "object", format: "status, version, commit, public location", unit: "release", range: "published|failed|cancelled", precision: "exact public commit", tolerance: "zero consumer side effects"}

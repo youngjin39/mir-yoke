@@ -1,0 +1,10 @@
+id: FEAT-001
+name: "Understand the public template boundary"
+summary: "A public user can identify what Mir Yoke is, what it is not, and who owns adopted results."
+status: done
+owner_module: MOD-CONTRACT
+coverage:
+  l1: {total: 20, filled: 12, derived: 4, na: 4, tbd: 0}
+  l2: {total: 7, filled: 3, derived: 2, na: 2, tbd: 0}
+  l4: {total: 10, filled: 8, derived: 2, na: 0, tbd: 0}
+updated: "2026-08-08"

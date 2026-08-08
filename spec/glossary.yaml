@@ -1,0 +1,17 @@
+terms:
+  - term: "Mir Yoke"
+    definition: "The independently maintained public repository-harness template and reference product."
+    aliases: ["public template", "template provider"]
+    forbidden: ["fleet manager", "agent runtime", "control plane service"]
+  - term: "consumer repository"
+    definition: "A repository whose owner explicitly adopts or adapts a Mir Yoke asset."
+    aliases: ["adopter", "target repository"]
+    forbidden: ["managed family"]
+  - term: "provenance hash"
+    definition: "A digest proving release, lock, receipt, cache, or time-of-check identity."
+    aliases: ["integrity hash"]
+    forbidden: ["compliance hash", "adoption hash", "fleet parity hash"]
+  - term: "historical"
+    definition: "Retained evidence that grants no current operating authority."
+    aliases: ["non-authoritative history"]
+    forbidden: ["current default"]

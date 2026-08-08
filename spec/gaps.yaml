@@ -1,0 +1,6 @@
+gaps:
+  - id: GAP-001
+    kind: GAP
+    refs: [QR-003, TASK-008]
+    need: "The owner must authorize a two-commit local sequence: commit the implementation, update protected .mir/capability-lock.json to that exact commit and its two changed agent hashes, then commit the lock. No push, tag, or release is implied."
+    blocking: true

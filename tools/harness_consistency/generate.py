@@ -19,6 +19,7 @@ _DIRECT_STATIC_INPUTS = (
     "context_path_references",
     "architecture_contract",
     "generated_marker_rerender",
+    "template_asset_classification",
 )
 _REMOVED_SYMBOL_KEYS = ("scan_dirs", "file_globs", "allowed_path_substrings")
 _HOOK_FILE_REACHABILITY_KEYS = (
@@ -66,19 +67,17 @@ def _repo_slug(repo_root: Path, profile: dict) -> str:
 
 def _build_repo_section(repo_root: Path, profile: dict) -> dict:
     repository_type = str(profile.get("repository_type", "unknown"))
-    fleet_manager = (repo_root / "config" / "repo-agent-management.json").exists()
+    role_by_type = {
+        "meta_harness": "control_plane",
+        "public_harness_template": "template_maintainer",
+    }
     return {
         "slug": _repo_slug(repo_root, profile),
         "repository_type": repository_type,
-        "role": (
-            "control_plane"
-            if repository_type == "meta_harness"
-            else "code_tdd_review_plane"
-        ),
-        "fleet_manager": fleet_manager,
+        "role": role_by_type.get(repository_type, "code_tdd_review_plane"),
         "enforcement": {
-            "tools_commit_gate": "deferred" if fleet_manager else "lint_test",
-            "tools_tdd_ledger": "keyed_composite" if fleet_manager else "changes_array",
+            "tools_commit_gate": "lint_test",
+            "tools_tdd_ledger": "changes_array",
         },
     }
 
@@ -141,25 +140,6 @@ def _build_rule_inputs(
     rule_inputs = {
         name: copy.deepcopy(source_inputs[name]) for name in _DIRECT_STATIC_INPUTS
     }
-    if "template_parity" in source_inputs:
-        tp = copy.deepcopy(source_inputs["template_parity"])
-        # B2 (ADR-54 §2 D2): decide template_repo per target:
-        # - template repo itself -> "." (self-referential, no abs path)
-        # - every other target  -> keep the source absolute path verbatim
-        #   so checker resolves against the real template, not the family root.
-        # Never inherit the source repo's exclude_paths for non-source targets.
-        _template_slug = "mir-yoke"
-        if target_slug == _template_slug:
-            tp["template_repo"] = "."
-        else:
-            # Keep source absolute path (already set by the source manifest)
-            pass  # tp["template_repo"] already present from deepcopy
-        # Remove source-specific exclude_paths for non-source targets
-        _source_is_mir = source_slug == "mir-harness"
-        _target_is_mir = target_slug == "mir-harness"
-        if _source_is_mir and not _target_is_mir:
-            tp.pop("exclude_paths", None)
-        rule_inputs["template_parity"] = tp
     rule_inputs["removed_symbol_references"] = _copy_selected(
         source_inputs["removed_symbol_references"],
         _REMOVED_SYMBOL_KEYS,

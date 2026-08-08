@@ -1,4 +1,4 @@
-"""Autonomous loop 6-trigger detectors (R27-T03)."""
+"""Repository-local continuation loop intervention detectors."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -6,12 +6,7 @@ from pathlib import Path
 
 import yaml
 
-from scripts.verify_self_stop import verify_self_stop
-
 RETRY_BUDGET_THRESHOLD = 5
-
-SE_META_FAMILIES = {"your-harness"}
-
 
 @dataclass
 class TriggerResult:
@@ -33,26 +28,6 @@ def trigger_retry_budget(task_state: dict) -> TriggerResult | None:
             trigger_id="retry_budget",
             reason=f"retry_count.total={total} >= threshold={RETRY_BUDGET_THRESHOLD}",
             should_request_approval=False,
-        )
-    return None
-
-
-def trigger_se_meta_self_stop(family: str, fleet_state_path: Path) -> TriggerResult | None:
-    """Fire when SE-meta family self-stop check returns BLOCK."""
-    if family not in SE_META_FAMILIES:
-        return None
-    result = verify_self_stop(
-        source_family=family,
-        phase=None,
-        ledger_path=fleet_state_path,
-        catalog_path=fleet_state_path,
-        override=False,
-    )
-    if result.decision.value == "BLOCK":
-        return TriggerResult(
-            trigger_id="se_meta_self_stop",
-            reason=f"verify_self_stop returned BLOCK for family={family}",
-            should_request_approval=True,
         )
     return None
 
@@ -101,24 +76,17 @@ def trigger_external_side_effect(
 def detect_all(
     task_state: dict,
     run_state: dict,
-    family: str = "your-harness",
     interrupt_flag: Path | None = None,
-    fleet_state_path: Path | None = None,
     circuit_state: dict | None = None,
     tool_name: str | None = None,
     side_effects_yaml: Path | None = None,
 ) -> list[TriggerResult]:
-    """Run all 6 trigger detectors and return list of fired TriggerResults."""
+    """Run repository-local trigger detectors and return fired results."""
     results: list[TriggerResult] = []
 
     t1 = trigger_retry_budget(task_state)
     if t1:
         results.append(t1)
-
-    if fleet_state_path is not None:
-        t2 = trigger_se_meta_self_stop(family, fleet_state_path)
-        if t2:
-            results.append(t2)
 
     if circuit_state is not None:
         t4 = trigger_circuit_breaker(circuit_state)
@@ -143,7 +111,7 @@ def main() -> int:
     import json
     import sys as _sys
 
-    parser = argparse.ArgumentParser(description="Autonomous loop 6-trigger detector CLI.")
+    parser = argparse.ArgumentParser(description="Repository-local loop trigger detector CLI.")
     parser.add_argument("--detect", action="store_true")
     parser.add_argument(
         # active_task.json retired (ADR-44 R21); retry_count now lives in run_state,
@@ -153,7 +121,6 @@ def main() -> int:
         default=Path("tasks/run_state.json"),
     )
     parser.add_argument("--run-state", type=Path, default=Path("tasks/run_state.json"))
-    parser.add_argument("--family", default="your-harness")
     args = parser.parse_args()
 
     if not args.detect:
@@ -163,7 +130,7 @@ def main() -> int:
     task_state = json.loads(args.task_state.read_text()) if args.task_state.exists() else {}
     run_state = json.loads(args.run_state.read_text()) if args.run_state.exists() else {}
 
-    results = detect_all(task_state, run_state, family=args.family)
+    results = detect_all(task_state, run_state)
     for r in results:
         print(
             f"[intervention-trigger WARN] trigger={r.trigger_id} reason={r.reason}",

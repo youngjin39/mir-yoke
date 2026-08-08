@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "mir-yoke/config/template-assets",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "classifications", "rules", "prohibited_active_paths"],
+  "properties": {
+    "$schema": {"type": "string"},
+    "schema_version": {"const": 1},
+    "classifications": {
+      "type": "array",
+      "uniqueItems": true,
+      "minItems": 5,
+      "maxItems": 5,
+      "items": {
+        "enum": [
+          "starter",
+          "reference",
+          "optional-consumer-tool",
+          "template-maintainer-tool",
+          "historical"
+        ]
+      }
+    },
+    "rules": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "classification", "include", "exclude", "reason"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+          "classification": {"$ref": "#/$defs/classification"},
+          "include": {"$ref": "#/$defs/patterns"},
+          "exclude": {"$ref": "#/$defs/patterns"},
+          "reason": {"type": "string", "minLength": 12}
+        }
+      }
+    },
+    "prohibited_active_paths": {"$ref": "#/$defs/patterns"}
+  },
+  "$defs": {
+    "classification": {
+      "enum": [
+        "starter",
+        "reference",
+        "optional-consumer-tool",
+        "template-maintainer-tool",
+        "historical"
+      ]
+    },
+    "patterns": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    }
+  }
+}

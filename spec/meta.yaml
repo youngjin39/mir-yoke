@@ -1,0 +1,16 @@
+mode: S
+mode_evidence: "Current owner requirements and an existing Mir Yoke source/ADR corpus were compared."
+domain: AI_SYSTEM
+domain_evidence: "The template supplies agent prompts, hooks, tool policies, skills, and context behavior; the provider itself has no runtime."
+system_boundary: "Mir Yoke authors, validates, versions, and publishes reusable harness files but starts no agent, daemon, target scan, or rollout."
+quality_model: "ISO/IEC 25010:2023"
+stakeholders:
+  - {who: public adopter, concerns: [clear purpose, safe selection, local ownership], views: [feat/, uc/, iface/]}
+  - {who: template maintainer, concerns: [classification, validation, release integrity], views: [mod/, tasks.yaml, checks.yaml]}
+  - {who: implementing agent, concerns: [exact changes, ordering, completion evidence], views: [graph.yaml, tasks.yaml]}
+external_entities: [public_evaluator, greenfield_owner, existing_repository_owner, template_maintainer]
+actors: [public_evaluator, greenfield_owner, existing_repository_owner, template_maintainer]
+authority_notes:
+  - "Owner confirmation and ADR-84 override historical central-fleet implementation evidence."
+  - "ADR-76 controls Mir Harness cross-repository authority."
+  - "ADR-83 is limited to opt-in public capability provenance by ADR-84."

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import shutil
 import subprocess
@@ -188,6 +189,7 @@ def test_profiles_are_canonical_and_have_distinct_inventories() -> None:
     assert config.resolve_profile("infra")[0] == "infra_runtime"
 
 
+# @spec QR-003
 def test_repository_lock_is_portable_and_matches_managed_trees() -> None:
     lock = json.loads((ROOT / ".mir" / "capability-lock.json").read_text(encoding="utf-8"))
     commit = lock["source"]["commit"]
@@ -202,6 +204,11 @@ def test_repository_lock_is_portable_and_matches_managed_trees() -> None:
     for metadata in lock["plugins"].values():
         assert _tree_digest(ROOT / metadata["path"]) == metadata["sha256"]
     for path, metadata in lock["agents"].items():
+        source_bytes = subprocess.check_output(
+            ["git", "show", f"{commit}:{path}"],
+            cwd=ROOT,
+        )
+        assert hashlib.sha256(source_bytes).hexdigest() == metadata["sha256"]
         assert _file_digest(ROOT / path) == metadata["sha256"]
 
 
@@ -314,6 +321,7 @@ def test_profile_materializes_only_its_selected_agent_pack(tmp_path: Path) -> No
     }
 
 
+# @spec CR-004 FR-005
 def test_check_is_read_only_for_project_and_capability_home(tmp_path: Path) -> None:
     project = make_project(tmp_path)
     capability_home = tmp_path / "capability-home"

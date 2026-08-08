@@ -18,6 +18,7 @@ import yaml
 
 from mir.core.engine.memory.distill import sanitize_fts_query
 
+from ._changes import changed_paths, snapshot_project
 from .bootstrap import _scan_content_candidates
 
 _SURFACE_KEYS = (
@@ -967,8 +968,10 @@ def _emit(ns: argparse.Namespace, report: dict[str, object]) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
+    # @spec CR-005 FR-002 FR-006 IR-002 QR-002
     ns = _parse(sys.argv[1:] if argv is None else argv)
     root = ns.project_root.expanduser().resolve()
+    before = snapshot_project(root)
     manifest_path = root / "config/bootstrap-adoption.json"
     errors: list[str] = []
     try:
@@ -979,6 +982,7 @@ def main(argv: list[str] | None = None) -> int:
             "status": "not_ready",
             "apply": ns.apply,
             "receipt_written": False,
+            "changed_paths": [],
             "errors": [str(exc)],
         }
         _emit(ns, report)
@@ -1126,5 +1130,14 @@ def main(argv: list[str] | None = None) -> int:
     report = dict(receipt)
     report["apply"] = ns.apply
     report["receipt_written"] = receipt_written
+    report["changed_paths"] = changed_paths(before, snapshot_project(root))
+    report["reference_assets"] = [
+        {
+            "asset": name,
+            "disposition": surface.get("disposition"),
+            "evidence_paths": surface.get("evidence_paths", []),
+        }
+        for name, surface in sorted(surfaces.items())
+    ]
     _emit(ns, report)
     return 0 if status == "ready" else 2

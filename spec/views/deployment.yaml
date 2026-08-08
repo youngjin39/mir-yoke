@@ -1,0 +1,20 @@
+nodes:
+  - id: NODE-001
+    name: "Template maintainer environment"
+    kind: "local workstation or repository CI"
+    artifacts: ["Mir Yoke source checkout", "validation report"]
+  - id: NODE-002
+    name: "Public Git host"
+    kind: "external distribution system"
+    artifacts: ["versioned source release", "license", "changelog", "migration notes"]
+  - id: NODE-003
+    name: "Consumer-owned repository"
+    kind: "external adoption environment"
+    artifacts: ["owner-selected starter or adapted reference assets", "machine-local receipt or lock"]
+communication_paths:
+  - {from: NODE-001, to: NODE-002, protocol: "authenticated Git publication", authority: "explicit maintainer release action"}
+  - {from: NODE-003, to: NODE-002, protocol: "public Git read", authority: "consumer-initiated retrieval"}
+constraints:
+  - "NODE-001 never initiates a connection to NODE-003 as Mir Yoke product behavior."
+  - "NODE-002 publishes artifacts but does not execute them in NODE-003."
+  - "NODE-003 owns every local mutation and verification result."

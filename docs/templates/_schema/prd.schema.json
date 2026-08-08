@@ -1,6 +1,6 @@
 {
   "$id": "mir/template/prd",
-  "$comment": "Mir P0-E.2 PRD template schema. Consumed by tools/profile_compiler/validators/template_doc.py. Required HARD sections: 3 Non-Goals, 4 Will-NOT-do, 9 Acceptance Criteria.",
+  "$comment": "Mir PRD template schema. Required HARD sections: 3 Non-Goals, 4 Will-NOT-do, 9 Acceptance Criteria.",
   "frontmatter_required": ["title", "type", "created", "status"],
   "frontmatter_type_value": "template-prd",
   "required_sections": [

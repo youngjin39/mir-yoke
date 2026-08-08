@@ -1,0 +1,23 @@
+provider_runtime:
+  components: []
+  reason: "Mir Yoke is a file-based public template provider and starts no execution unit."
+connectors: []
+shared_resources: []
+states: []
+external_execution_boundaries:
+  - name: "Template maintenance invocation"
+    owner: template_maintainer
+    trigger: "Explicit local command or repository CI event"
+    scope: "Mir Yoke checkout and public release target"
+    recovery: "The maintainer reruns validation from a fixed candidate; no daemon resumes work."
+  - name: "Consumer-local invocation"
+    owner: greenfield_owner_or_existing_repository_owner
+    trigger: "Explicit command inside one declared consumer root"
+    scope: "Consumer repository or allowed local capability cache"
+    recovery: "Failure preserves authored files and prior state; the owner chooses whether to retry."
+runtime_checks:
+  asynchronous_connectors: {verdict: na, reason: "No provider execution unit or connector exists."}
+  shared_resources: {verdict: na, reason: "No service-shared provider state exists."}
+  periodic_units: {verdict: na, reason: "No provider periodic job is allowed by CR-002."}
+  priorities: {verdict: na, reason: "No concurrent provider scheduler exists."}
+  state_recovery: {verdict: filled, basis: "Each external invocation has an owner and explicit recovery rule."}

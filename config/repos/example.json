@@ -2,20 +2,19 @@
   "$schema": "../repo-agent-management.schema.json#/$defs/repository",
   "slug": "example",
   "display_name": "Example Code App",
-  "registry_path": "/path/to/your/repo",
+  "registry_path": ".",
   "profile_slug": "example",
   "repository_type": "code_app",
-  "rollout_class": "immediate_migrate",
+  "adoption_mode": "explicit_local",
   "overlay_archetype": "code_app",
   "status": "active",
   "management_template_id": "code_app",
-  "management_mode": "harness-managed",
+  "management_mode": "self-maintained-template",
   "profile_source": {
     "kind": "example-profile",
     "path": "docs/examples/repositories/example/repo-profile.toml"
   },
   "managed_domains": [
-    "central_ownership_contract",
     "repository_overlay",
     "generation_verification_pipeline",
     "operating_contract",
@@ -23,12 +22,6 @@
     "harness_format",
     "agent_management"
   ],
-  "fleet_management": {
-    "active_target": true,
-    "control_repo": false,
-    "runtime_contract_exception": false,
-    "diet_mode": "normal"
-  },
   "exception_review": {
     "requires_repo_specific_runtime_review": false,
     "protected_categories": []
@@ -43,7 +36,7 @@
     ]
   },
   "notes": [
-    "Copy this file and rename for your repo, edit slug + display_name + registry_path.",
+    "Copy this file and rename for your repository, then edit its local identity.",
     "This example ships with all 12 catalog agents and 13 catalog skills active by default (matches the template-wide policy). Trim the lists below if a specific repo does not need a specialist or skill — empty 'skill_overrides.add' / 'agent_overrides.add_specialists' mean no additions beyond active_*."
   ],
   "active_agents": [
@@ -51,7 +44,6 @@
     "executor-agent",
     "codex-final-reviewer",
     "quality-agent",
-    "fleet-doc-steward",
     "cwe-auditor",
     "dep-auditor",
     "ui-reviewer",

@@ -1,110 +1,41 @@
 # Bluebricks
 
-Bluebricks is the development model used in this repository.
+Bluebricks describes bounded modules for work in this public template repository. Mir Yoke has no
+provider runtime; consumer-side CLIs and hooks remain inert until explicitly invoked or adopted.
 
-A bluebrick is a module-level blueprint unit.
-Multiple bluebricks are connected through composition and orchestration.
+## Current Product Bluebricks
 
-## Purpose
+### Contract
 
-The purpose of bluebricks is to help AI agents understand the repository as a system of bounded design units, not as a pile of files.
+Defines public-template identity, authority, non-goals, and adoption semantics.
+Full brick: `docs/bluebricks/contract.md`.
 
-## Bluebrick Template
+### Adoption
 
-```md
-# Bluebrick: <name>
+Separates greenfield creation from preservation-first existing-repository assessment.
+Full brick: `docs/bluebricks/adoption.md`.
 
-## Purpose
-What this bluebrick is responsible for.
+### Capability Provenance
 
-## Public Interface
-APIs, functions, classes, events, configs, or files exposed to other bluebricks.
+Provides explicit local status, check, sync, update, attestation, and finalization with
+integrity-only hashes. Full brick: `docs/bluebricks/capability.md`.
 
-## Internal Rules
-Implementation rules that must be preserved.
+### Maintenance
 
-## Non-Obvious Hazards
-Hidden patterns that can break build, runtime behavior, compatibility, or data.
+Classifies, validates, sanitizes, and prepares Mir Yoke release candidates.
+Full brick: `docs/bluebricks/maintenance.md`.
 
-## Dependencies
-What this bluebrick depends on.
+### History
 
-## Downstream Users
-What depends on this bluebrick.
-
-## Composition
-How this bluebrick is combined with others.
-
-## Orchestration
-Who calls this bluebrick, in what order, and under what conditions.
-
-## Validation
-How to test or verify changes.
-```
-
-## Current Core Bluebricks
+Separates current decision authority from retrievable centralization-era evidence.
+Full brick: `docs/bluebricks/history.md`.
 
 ## Proportional Validation Rule
 
-For non-trivial code changes, identify the affected bluebrick and run the smallest check that can
-fail for the changed behavior. Use the composite matrix in `tasks/tdd.json` only for broad,
-high-risk, release, restartable, or explicitly ledger-driven work. Irrelevant categories may be
-omitted for bounded changes; do not manufacture `not_applicable` entries as ceremony.
-
-### Bluebrick: Conductor
-
-**Responsibility:** Accept external task requests, classify ingress mode, preserve an audit trail, and hand normal-mode work to Engine without leaking transport-specific concerns into execution code.
-
-**Critical hazards:**
-- Do not bypass `ConductorReporter` by returning raw exceptions to the caller.
-- Do not turn `KeyboardInterrupt` or `SystemExit` into swallowed recoverable failures.
-
-Full brick: docs/bluebricks/conductor.md
-
----
-
-### Bluebrick: Engine
-
-**Responsibility:** Compile drafted intent into an executable job, enforce policy and isolation gates, run the worker/reviewer loop, and own the execution-time control plane.
-
-**Critical hazards:**
-- Do not skip `target_files` root confinement or SHA pin checks.
-- Do not move required tool or provider allowlist validation out of compile.
-
-Full brick: docs/bluebricks/engine.md
-
----
-
-### Bluebrick: Worker
-
-**Responsibility:** Provide runtime-specific execution adapters for Claude Code, Codex, and future CLIs while keeping the Engine-facing contract stable.
-
-**Critical hazards:**
-- Do not make `dispatch` async; the async boundary is intentionally one layer higher.
-- Do not leak secrets by widening the provider env allowlist casually.
-
-Full brick: docs/bluebricks/worker.md
-
----
-
-### Bluebrick: Harness Runtime
-
-**Responsibility:** Define the durable human/agent operating contract: startup context, skills, hooks, generated Codex mirrors, deny-list enforcement, and session continuity.
-
-**Critical hazards:**
-- Do not patch `AGENTS.md`, `.agents/`, or `.codex/` by hand.
-- Keep narrow destructive, credential, protected-scope, and raw-Codex safeguards effective.
-  Advisory workflow preferences do not require hook enforcement.
-
-Full brick: docs/bluebricks/harness-runtime.md
-
----
+For non-trivial changes, identify the affected bluebrick and run the smallest check that can fail.
+Use `tasks/tdd.json` for broad, high-risk, restartable, release, or explicitly ledger-driven work.
 
 ## Agent Rule
 
-Before making non-trivial code changes, identify the affected bluebrick and check:
-
-- hazards
-- dependencies
-- downstream users
-- validation method
+Before changing a bluebrick, identify its purpose, public interface, hazards, dependencies,
+downstream users, composition, orchestration, and validation method.

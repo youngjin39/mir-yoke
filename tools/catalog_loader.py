@@ -1,8 +1,8 @@
-"""ADR-15 v3.6 per-family catalog loader.
+"""Repository-local catalog loader.
 
 Reads config/repo-agent-management.json and config/repos/<slug>.json
 into a single aggregated dict compatible with the v3.5 single-file
-shape. Used by verifier, profile_compiler, and tests.
+shape. Used by repository-local verifiers and tests.
 """
 from __future__ import annotations
 

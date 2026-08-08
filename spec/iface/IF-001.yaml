@@ -1,0 +1,10 @@
+id: IF-001
+name: "Public template evaluation interface"
+role: "Expose immutable release identity, rights, changes, compatibility, and classified assets."
+spec: "Public Git repository and release metadata."
+version: "1.0"
+compatibility: "Breaking metadata or starter-contract changes require a major release and migration notes."
+quality: {performance: "No response-time claim; Git host delivery is external.", availability: "Local clones remain readable offline.", reliability: "A version resolves to one exact commit.", security: "Published content contains zero private-surface findings."}
+items:
+  - {id: IT-001, name: TemplateReleaseRequest, io: I, kind: command, type: "Git ref", format: "semantic version or exact commit", unit: "release ref", range: "one resolvable ref", precision: "exact", tolerance: "zero ambiguous refs"}
+  - {id: IT-002, name: TemplateReleaseInfo, io: O, kind: data, type: "object", format: "commit, version, license, changelog, compatibility, assets", unit: "release", range: "one immutable release record", precision: "exact commit", tolerance: "zero missing required fields"}

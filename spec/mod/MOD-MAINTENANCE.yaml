@@ -1,0 +1,6 @@
+id: MOD-MAINTENANCE
+responsibility: "Classify, validate, sanitize, and release the Mir Yoke public template."
+provided:
+  - {name: "TemplateValidation", operations: ["classify inventory", "validate identity", "validate public surface", "produce release report"]}
+required: ["MOD-CONTRACT.ProductBoundary", "MOD-ADOPTION.GreenfieldAdoption", "MOD-CAPABILITY.CapabilityLifecycle", "MOD-HISTORY.DecisionAuthority"]
+stability: {fan_in: 0, fan_out: 4, i: 1.0}

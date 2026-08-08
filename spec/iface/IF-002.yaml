@@ -1,0 +1,14 @@
+id: IF-002
+name: "Consumer-local adoption interface"
+role: "Accept explicit owner requests and report bounded local results."
+spec: "Repository-local command interface with no implicit target discovery."
+version: "1.0"
+compatibility: "Existing-repository dry-run and receipt-only apply semantics are stable within the major version."
+quality: {performance: "No fixed duration; every timeout is reported as failure.", availability: "Read-only status remains available without remote access.", reliability: "Failure preserves authored files and prior receipts.", security: "All paths remain under one declared root or allowed provider cache."}
+items:
+  - {id: IT-003, name: BootstrapRequest, io: I, kind: command, type: "object", format: "target, profile, purpose, stack, asset selection", unit: "request", range: "one greenfield target", precision: "exact target", tolerance: "zero implicit values"}
+  - {id: IT-004, name: BootstrapResult, io: O, kind: data, type: "object", format: "status, changed paths, verification", unit: "result", range: "one result", precision: "complete changed-path set", tolerance: "zero unreported writes"}
+  - {id: IT-005, name: AssessmentRequest, io: I, kind: command, type: "object", format: "target, preserve scope, selected references", unit: "request", range: "one existing repository", precision: "exact target", tolerance: "zero implicit apply"}
+  - {id: IT-006, name: ReferenceAssessment, io: O, kind: data, type: "array", format: "asset, disposition, evidence", unit: "asset record", range: "zero or more records", precision: "one disposition per asset", tolerance: "zero authored-file writes"}
+  - {id: IT-007, name: CapabilityRequest, io: I, kind: command, type: "object", format: "operation, source, lock, package selection", unit: "request", range: "one allowed operation", precision: "exact commit when mutating", tolerance: "zero implicit apply"}
+  - {id: IT-008, name: CapabilityResult, io: O, kind: data, type: "object", format: "operation, status, commit, tree hashes, state change", unit: "result", range: "one result", precision: "exact digests", tolerance: "zero undeclared state changes"}

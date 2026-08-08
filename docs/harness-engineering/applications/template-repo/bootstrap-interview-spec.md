@@ -80,7 +80,7 @@ python -m tools.profile_compiler.bootstrap --interactive
 python -m tools.profile_compiler.bootstrap \
   --family-slug recipe-tracker \
   --display-name "Recipe Tracker" \
-  --family-path /Users/.../recipe-tracker \
+  --family-path /path/to/recipe-tracker \
   --family-type SE-product \
   --purpose "recipe database + meal plan tracker" \
   --character desktop-app,personal-data,offline-first \
@@ -98,7 +98,7 @@ python -m tools.profile_compiler.bootstrap --manifest family-recipe-tracker.yaml
 # family-recipe-tracker.yaml
 family_slug: recipe-tracker
 display_name: Recipe Tracker
-family_path: /Users/.../recipe-tracker
+family_path: /path/to/recipe-tracker
 family_type: SE-product
 purpose: recipe database + meal plan tracker
 character:

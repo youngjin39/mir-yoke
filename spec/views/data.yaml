@@ -1,0 +1,34 @@
+stores:
+  - id: DS-001
+    name: "Versioned template repository"
+    kind: file
+    owner: MOD-MAINTENANCE
+    entities:
+      - name: "TemplateAsset"
+        key: "repository-relative path"
+        fields:
+          - {name: "classification", type: "enum", unit: "class", nullable: false}
+          - {name: "content", type: "bytes", unit: "file", nullable: false}
+        retention: "Current tracked state plus recoverable Git history; historical authority is labelled."
+      - name: "DecisionRecord"
+        key: "decision id"
+        fields:
+          - {name: "status", type: "enum", unit: "decision state", nullable: false}
+          - {name: "epoch", type: "enum", unit: "authority epoch", nullable: false}
+        retention: "Retained for the repository lifetime; supersession changes authority, not audit history."
+      - name: "ReleaseMetadata"
+        key: "semantic version"
+        fields:
+          - {name: "commit", type: "hex string", unit: "Git object", nullable: false}
+          - {name: "validation", type: "object", unit: "report", nullable: false}
+        retention: "Retained while the release remains published."
+    consistency: strong
+    migration: "Breaking starter or metadata changes require a major version and migration notes."
+lineage:
+  - output: "Public template release"
+    from: ["tracked template assets", "asset classifications", "current decisions", "validation report"]
+    transform: "UC-005 then UC-006"
+excluded_data:
+  - "Consumer repository content is not stored by Mir Yoke."
+  - "Fleet inventory, consumer adoption state, credentials, and private transports are not release inputs."
+  - "Machine-local provider caches and receipts are not public repository state."

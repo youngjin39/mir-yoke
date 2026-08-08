@@ -5,7 +5,7 @@ _MIR_PYTHON_LAUNCHER="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/_lib/r
 # (rate_limit / server_error / authentication_failed / etc.) to
 # tasks/sessions/stop-failure-<ISO8601>-<pid>-<rand>.log.
 # NEVER exits non-zero — StopFailure hook output is ignored per code.claude.com/docs.
-# Stall detection itself is owned by tools/stall_watchdog/ (ADR-06 §2).
+# This hook records local evidence only; the template ships no background monitor.
 
 set -u
 

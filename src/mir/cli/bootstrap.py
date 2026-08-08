@@ -25,6 +25,7 @@ from mir.core.engine.memory import store
 
 from . import context as context_cli
 from . import memory as memory_cli
+from ._changes import changed_paths, snapshot_project
 
 _PROFILE_CHOICES = ("code_app", "hybrid_pipeline", "infra_runtime", "content_workspace")
 _PROFILE_ALIASES = {"hybrid": "hybrid_pipeline", "infra": "infra_runtime"}
@@ -557,7 +558,6 @@ slug = "{slug}"
 display_name = "{slug.replace("-", " ").title()}"
 path = {root_value}
 repository_type = "starter_project"
-rollout_class = "bootstrap_only"
 overlay_archetype = "template_transitional"
 status = "active"
 purpose = {purpose_value}
@@ -1223,6 +1223,7 @@ def main(argv: list[str]) -> int:
     if not root.is_dir():
         print(f"project root is not a directory: {root}", file=sys.stderr)
         return 2
+    before = snapshot_project(root)
     try:
         slug = _normalise_slug(ns.slug or root.name)
     except ValueError as exc:
@@ -1564,7 +1565,14 @@ def main(argv: list[str]) -> int:
         },
         "errors": unique_errors,
     }
-    _atomic_write_json(receipt_path, receipt)
+    # @spec FR-001 FR-004 IR-002 QR-001
+    receipt["changed_paths"] = []
+    for _ in range(3):
+        _atomic_write_json(receipt_path, receipt)
+        observed = changed_paths(before, snapshot_project(root))
+        if observed == receipt["changed_paths"]:
+            break
+        receipt["changed_paths"] = observed
     _emit(ns, receipt)
     if complete or restart_required or allowed_incomplete:
         return 0
