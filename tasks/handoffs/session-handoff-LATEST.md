@@ -51,3 +51,13 @@
 - `.mir/capability-lock.json` remains `restart-required` because runtime activation was explicitly
   outside scope; this is not a provider-runtime requirement.
 - No tag or GitHub release was created.
+
+<!-- mir:runtime-snapshot:begin -->
+## Runtime Snapshot (Generated)
+
+### Active Plan Items
+- No open plan items.
+
+### Working Tree
+- Working tree clean.
+<!-- mir:runtime-snapshot:end -->
