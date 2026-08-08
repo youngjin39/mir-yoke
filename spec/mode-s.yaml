@@ -9,8 +9,7 @@ comparison:
     - {refs: [CR-006, IR-002], evidence: ["tests/test_public_template_surface.py", "src/mir/cli/_changes.py"], acceptance_match: high}
   req_minus_impl: []
   impl_minus_req: []
-  value_mismatch:
-    - {required: "locked agent hashes reproduce the managed agent files", observed: "two protected lock entries retain pre-ADR-78 hashes", authority: "QR-003 and the protected-path contract require owner direction"}
+  value_mismatch: []
 anchor_comparison:
   status: available
-  reason: "Changed implementation and contract tests carry graph-bound @spec anchors; GAP-001 records the remaining protected-lock mismatch."
+  reason: "Changed implementation and contract tests carry graph-bound @spec anchors; the protected lock reproduces the implementation commit and managed agent files."

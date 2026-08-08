@@ -157,5 +157,3 @@ edges:
   - [TASK-006, depends_on, TASK-005]
   - [TASK-007, depends_on, TASK-006]
   - [TASK-008, depends_on, TASK-007]
-  - [GAP-001, blocks, QR-003]
-  - [GAP-001, blocks, TASK-008]

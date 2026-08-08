@@ -873,7 +873,8 @@ def agent_surface_contract(project_root: Path, rule_inputs: dict) -> list[Findin
     """R17: declared-must-exist / registered-must-run for 6 agent surface classes.
 
     Sub-checks:
-    1. cited_paths:    backtick-quoted slashed paths in CLAUDE.md must exist on disk.
+    1. cited_paths:    backtick-quoted slashed paths in CLAUDE.md must exist on disk unless
+                       explicitly declared as generated after bootstrap.
     2. hook_scripts:   .sh/.py tokens in hook commands must exist; bare (no interpreter
                        prefix) scripts must also be executable.
     3. agents_front:   .claude/agents/*.md (excluding README*/INDEX*/RECOVERY*) must
@@ -891,6 +892,7 @@ def agent_surface_contract(project_root: Path, rule_inputs: dict) -> list[Findin
     claude_md_path = project_root / claude_md_rel
     if claude_md_path.exists():
         content = claude_md_path.read_text(encoding="utf-8")
+        generated_cited_paths = set(rule_inputs.get("generated_cited_paths", []))
         # Match backtick-quoted tokens that contain at least one slash and end in a
         # recognised extension. Exclude placeholders containing {}, <>, or a
         # leading slash (absolute paths are not project-relative citations).
@@ -909,6 +911,8 @@ def agent_surface_contract(project_root: Path, rule_inputs: dict) -> list[Findin
             if any(c in token for c in ("*", "?")):
                 continue
             if token.startswith("/"):
+                continue
+            if token in generated_cited_paths:
                 continue
             target = project_root / token
             if not target.exists():

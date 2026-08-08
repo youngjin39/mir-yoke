@@ -301,6 +301,7 @@
       ],
       "settings_files": [".claude/settings.json", ".claude/settings.local.json"],
       "agents_md": "AGENTS.md",
+      "generated_cited_paths": [".mir/repo-profile.toml"],
       "memory_marker": "mir:generated",
       "marker_surfaces": ["docs/memory-map.md", "tasks/lessons.md"],
       "mirror_heading": "## Outcome and completion"

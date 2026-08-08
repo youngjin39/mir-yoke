@@ -18,11 +18,11 @@
     },
     ".claude/agents/fleet-doc-steward.md": {
       "project_path": ".claude/agents/fleet-doc-steward.md",
-      "sha256": "225897f9b875fe240b3cd2937f2b0478d00b20982af5eba1ddbe22c5a6505c73"
+      "sha256": "fef26eadf5d92351773745bcd961a575d0550892bc584c3d30408430ae29c82e"
     },
     ".claude/agents/main-orchestrator.md": {
       "project_path": ".claude/agents/main-orchestrator.md",
-      "sha256": "3cb93612b4f19e25e721e79244bf57a26270fbe02f007cf21f6293491ac0bb8e"
+      "sha256": "24ae7e3cd023a9b9609223f6a427809075156df8ca8db2c1294cf6af69ae2a6b"
     },
     ".claude/agents/ontology-validator.md": {
       "project_path": ".claude/agents/ontology-validator.md",
@@ -65,14 +65,13 @@
   },
   "profile": "hybrid_pipeline",
   "registration": {
-    "finalized_at": "2026-08-07T09:02:16.764554+00:00",
-    "status": "active"
+    "status": "restart-required"
   },
   "schema_version": 1,
   "source": {
-    "commit": "2ac5044415df1196d5493d0b37d98945b4d59fac",
+    "commit": "26cf2a482a407681bc0e81bd1c37356c501c5ab5",
     "ref": "main",
     "url": "https://github.com/youngjin39/mir-yoke.git"
   },
-  "synced_at": "2026-08-07T06:22:00.735917+00:00"
+  "synced_at": "2026-08-08T11:29:01+00:00"
 }

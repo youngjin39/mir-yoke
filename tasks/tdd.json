@@ -3,7 +3,7 @@
   "changes": [
     {
       "id": "public-template-product-boundary-2026-08-08",
-      "record_status": "building",
+      "record_status": "complete",
       "scope": "Implement ADR-78 from the owner-approved ADR-84/MODE-S handoff: public template identity, repository-local explicit adoption, exhaustive artifact classification, integrity-only hashes, historical centralization evidence, and local release validation with no provider runtime or fleet authority.",
       "targets": [
         "docs/decisions/adr-78-public-template-identity-and-non-authority.md",
@@ -31,8 +31,8 @@
       "bluebrick": "Public Template Contract / Adoption / Capability Provenance / Maintenance / History",
       "categories": {
         "unit": {"status": "pass", "command": "uv run pytest -q tests/test_template_asset_classification.py tests/test_public_template_identity.py tests/test_spec_integrity.py", "notes": "Identity, classification, and 20-requirement graph integrity pass."},
-        "integration": {"status": "fail", "command": "uv run pytest -q tests/test_public_template_authority.py tests/test_existing_repository_adoption.py tests/test_capability_cli.py tests/test_capability_security.py", "notes": "All behavior checks pass except the protected capability lock's two commit-bound managed-agent hashes."},
-        "e2e": {"status": "fail", "command": "uv run python scripts/verify_release_readiness.py", "notes": "The clean materialized candidate preserves Git ancestry and stops only at the protected capability-lock hash mismatch."},
+        "integration": {"status": "pass", "command": "uv run pytest -q tests/test_public_template_authority.py tests/test_existing_repository_adoption.py tests/test_capability_cli.py tests/test_capability_security.py", "notes": "Repository-local authority, adoption preservation, provenance, rollback, and the commit-bound protected lock pass together."},
+        "e2e": {"status": "pass", "command": "uv run python scripts/verify_release_readiness.py", "notes": "The clean materialized candidate preserves Git ancestry and passes every release gate."},
         "browser": {"status": "not_applicable", "reason": "Mir Yoke has no browser or GUI product surface."},
         "edge": {"status": "pass", "command": "uv run pytest -q tests/test_template_asset_classification.py tests/test_public_template_authority.py tests/test_existing_repository_adoption.py", "notes": "Missing or duplicate classifications, implicit mutation, cross-root mutation, and failed adoption fail closed."},
         "architecture": {"status": "pass", "command": "uv run pytest -q tests/test_decision_authority.py tests/test_public_template_identity.py tests/test_public_template_surface.py tests/test_spec_integrity.py", "notes": "Current authority, provider non-runtime, historical routing, and graph bindings pass."},
@@ -40,8 +40,8 @@
         "load": {"status": "not_applicable", "reason": "All changed operations are bounded local commands or static validation."},
         "soak": {"status": "not_applicable", "reason": "ADR-78 explicitly removes provider daemons and persistent polling."},
         "security": {"status": "pass", "command": "uv run pytest -q tests/test_public_template_authority.py tests/test_capability_security.py tests/test_existing_repository_adoption.py", "notes": "Local-root confinement, preservation, provenance validation, and explicit apply pass."},
-        "compatibility": {"status": "fail", "command": "uv run pytest -q && uv run ruff check && uv run python scripts/verify_codex_sync.py", "notes": "Ruff and derivative checks pass; the 628-test suite has one protected-lock hash failure."},
-        "transaction_locking": {"status": "fail", "command": "uv run pytest -q tests/test_existing_repository_adoption.py tests/test_capability_cli.py tests/test_capability_security.py", "notes": "Atomic receipt and rollback behavior pass; the repository lock awaits authorization for an implementation commit and a protected lock-refresh commit."}
+        "compatibility": {"status": "pass", "command": "uv run pytest -q && uv run ruff check && uv run python scripts/verify_codex_sync.py", "notes": "All 629 tests, repository-wide Ruff, and generated derivative checks pass."},
+        "transaction_locking": {"status": "pass", "command": "uv run pytest -q tests/test_existing_repository_adoption.py tests/test_capability_cli.py tests/test_capability_security.py", "notes": "Atomic receipt and rollback behavior pass; the protected repository lock reproduces the implementation commit and managed agent files."}
       }
     },
     {

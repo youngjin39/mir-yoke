@@ -128,6 +128,8 @@ def main(argv: list[str] | None = None) -> int:
             command = [
                 "uv",
                 "run",
+                "--extra",
+                "dev",
                 "python",
                 "scripts/verify_release_readiness.py",
                 "--current-clean-tree",

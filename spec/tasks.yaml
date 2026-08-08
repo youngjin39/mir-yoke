@@ -38,5 +38,4 @@ tasks:
     goal: "Prove the completed template boundary from a clean clone with the focused contracts, full suite, lint, derivative, and sanitize checks."
     touches: ["tests/", "tools/harness_consistency/", ".github/workflows/validate.yml"]
     done_when: {command: "uv run python scripts/verify_release_readiness.py"}
-    status: blocked
-    blocked_by: GAP-001
+    status: done

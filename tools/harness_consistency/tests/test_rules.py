@@ -676,6 +676,30 @@ def test_r17_missing_cited_path(tmp_path):
     assert all(f.rule_id == "R17" for f in findings)
 
 
+def test_r17_generated_cited_path_may_be_absent_before_bootstrap(tmp_path):
+    """cited_paths: a declared post-bootstrap local file may be absent in a clean template."""
+    from tools.harness_consistency.rules import agent_surface_contract
+
+    root = tmp_path / "generated_citation"
+    root.mkdir()
+    _write_text_r17(root / "CLAUDE.md", "after bootstrap read `.mir/repo-profile.toml`")
+    rule_inputs = {
+        "claude_md": "CLAUDE.md",
+        "agents_dir": ".claude/agents",
+        "skills_dir": ".claude/skills",
+        "settings_files": [],
+        "agents_md": "AGENTS.md",
+        "generated_cited_paths": [".mir/repo-profile.toml"],
+        "memory_marker": "mir:generated",
+        "marker_surfaces": [],
+        "mirror_heading": "## Memory (DB-canonical",
+    }
+
+    findings = agent_surface_contract(root, rule_inputs)
+
+    assert [finding for finding in findings if "cited_paths" in finding.message] == []
+
+
 def test_r17_bare_filename_not_flagged(tmp_path):
     """cited_paths: bare filename without slash must NOT produce finding."""
     from tools.harness_consistency.rules import agent_surface_contract
