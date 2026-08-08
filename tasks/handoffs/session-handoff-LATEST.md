@@ -1,43 +1,53 @@
-# Session Handoff — Global Plugin Migration Gate
+# Session Handoff — Mir Yoke Public Template Boundary
 
 ## Completed Work
 
-- Added the pinned global provider lifecycle, dual-runtime installation evidence, collision checks,
-  consumer integrity, and fail-closed restart/finalization boundary.
-- Required runtime discovery observations to use the current runtime-exported session ID; the CLI
-  no longer accepts an operator-supplied session ID.
-- Labeled namespaced skill discovery honestly as an operator-observed runtime catalog rather than
-  a cryptographically authenticated runtime API.
-- Added provider-owned common-skill contract coverage for all thirteen portable skills.
-- Added ADR-76 and a validated `policy.activation_required_runtimes` boundary. Codex CLI/desktop
-  is required for activation; Claude installation and discovery remain visible but advisory.
+- Implemented ADR-78 and the recovered MODE-S dossier: 4 features, 20 requirements, 6 use cases,
+  8 tasks, and zero open gaps.
+- Established Mir Yoke as a public template and reference repository with no provider runtime or
+  standing consumer authority.
+- Removed active central-fleet parity, direct deployment, scanning, daemon, notification, and
+  cross-repository reconciliation surfaces; retained their rationale as historical evidence.
+- Published implementation commit `26cf2a4` and protected-lock commit `185ec4a` to `origin/main`.
+- Confirmed that local and remote Git each expose only the `main` branch.
 
-## Current Capability State
+## Decisions
 
-- Provider commit `2ac5044415df1196d5493d0b37d98945b4d59fac` is materialized with matching
-  active and consumer integrity.
-- Codex discovery is verified from the current restarted thread.
-- Claude discovery is missing and explicitly optional under ADR-76.
-- Registration is `active`, capability status reports `ready=true`, and the required runtime set
-  is `["codex-cli-desktop"]`.
+- ADR-78 is the highest current product decision; ADR-77 governs preservation-first adoption and
+  ADR-74 through ADR-76 retain only their narrowed local bootstrap and capability meanings.
+- Hashes prove integrity and provenance only. Adoption and mutation remain explicit, local, and
+  consumer-owned.
+- The protected capability lock intentionally pins implementation commit `26cf2a4`; no provider
+  runtime activation is part of the template product.
 
-## Next Action
+## Unresolved Issues
 
-- No activation action remains. A future Claude session may record an optional observation without
-  changing readiness.
-- Keep the required-runtime policy explicit and non-empty; changing it requires a new decision and
-  matching tests.
+- No implementation blocker or open MODE-S gap remains.
+- GitHub Actions results after the push were not inspected. This does not block repository closeout,
+  but a maintainer must confirm required remote checks before creating a tag or release.
 
-## Verification
+## Next Actions
 
-- Full suite: 693 passed, 1 skipped.
-- Ruff: clean.
-- Focused capability/provider suite: 47 passed.
-- Mini Harness fleet observer: 13 CLEAR, 1 RECOVERY, zero provider collisions; path absence is a
-  blocking incomplete inventory.
+- No active next action. Before a future tag or release, confirm GitHub Actions and select the
+  intended semantic version.
 
-## Residual Risk
+## Modified Files
 
-- Observed skill names are operator attestations; session identity and installed plugin hashes are
-  code-checked, but skill-catalog injection is not exposed through an authenticated runtime API.
-- Optional Claude failures do not block activation and must remain visible in status output.
+- Product authority: `README.md`, `CLAUDE.md`, `AGENTS.md`, `ARCHITECTURE.md`, and ADR-78/index.
+- Product boundaries: bootstrap/adoption/capability CLI, asset classification, release validation,
+  and removal of central-runtime surfaces.
+- Durable evidence: `spec/`, `tasks/plan.md`, `tasks/tdd.json`, `tasks/intent.json`, and this handoff.
+
+## Verification Results
+
+- Clean candidate readiness: `ready: true`; focused contracts 56 passed; full suite 629 passed.
+- Asset classification: 596 tracked candidates classified exactly once; zero prohibited paths.
+- Ruff, derivative parity, sanitization, links, schemas, harness consistency, and lock provenance
+  passed.
+- Remote verification: `origin/main` resolved to `185ec4a` after the implementation push.
+
+## Key Risks
+
+- `.mir/capability-lock.json` remains `restart-required` because runtime activation was explicitly
+  outside scope; this is not a provider-runtime requirement.
+- No tag or GitHub release was created.

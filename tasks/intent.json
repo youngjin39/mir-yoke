@@ -1,8 +1,14 @@
 {
-  "goal": "Implement the owner-approved public-template product boundary from Mir Harness ADR-84 and its MODE-S requirements without committing, pushing, tagging, or publishing.",
+  "goal": "Maintain Mir Yoke as the verified ADR-78 public template; no active implementation, publication, or branch-cleanup task remains.",
   "goal_type": "other",
   "scope": "local",
   "priority": "normal",
   "updated": "2026-08-08",
-  "history": []
+  "history": [
+    {
+      "goal": "Implement the owner-approved public-template product boundary from Mir Harness ADR-84 and its MODE-S requirements without committing, pushing, tagging, or publishing.",
+      "updated": "2026-08-08",
+      "status": "superseded"
+    }
+  ]
 }
