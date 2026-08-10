@@ -122,6 +122,27 @@ def test_should_return_no_findings_when_provider_owner_retains_development_tree(
     assert adopter_payload_boundary(tmp_path, _ADOPTER_BOUNDARY_INPUTS) == []
 
 
+def test_should_use_tracked_public_self_profile_when_local_profile_is_absent(
+    tmp_path: Path,
+) -> None:
+    _write_adopter_boundary(tmp_path)
+    self_profile = tmp_path / "config/repos/mir-yoke.json"
+    self_profile.parent.mkdir(parents=True)
+    self_profile.write_text(
+        json.dumps(
+            {
+                "slug": "mir-yoke",
+                "repository_type": "public_harness_template",
+            }
+        ),
+        encoding="utf-8",
+    )
+    (tmp_path / "src/mir").mkdir(parents=True)
+    (tmp_path / "tools/harness_consistency").mkdir(parents=True)
+
+    assert adopter_payload_boundary(tmp_path, _ADOPTER_BOUNDARY_INPUTS) == []
+
+
 def test_should_return_no_findings_when_adopter_payload_is_slim(tmp_path: Path) -> None:
     _write_adopter_boundary(tmp_path)
     _write_repo_profile(

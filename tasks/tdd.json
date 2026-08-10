@@ -3,7 +3,7 @@
   "changes": [
     {
       "id": "release-runtime-isolation-and-adopter-ownership-2026-08-10",
-      "record_status": "in_progress",
+      "record_status": "complete",
       "scope": "Close the full Mir Yoke release by isolating and pinning each adopter CLI runtime, requiring an explicit non-provider Git push boundary before ready, removing provider-only validator assets, and making retained starter locking portable across macOS, Linux, and WSL.",
       "targets": [
         "docs/decisions/adr-80-release-runtime-isolation-and-adopter-ownership.md",
@@ -35,7 +35,7 @@
       "categories": {
         "unit": {"status": "pass", "command": "uv run pytest -q tests/test_bootstrap_cli.py tests/test_runtime_manifest.py tests/test_template_asset_classification.py tests/test_loop_driver.py", "notes": "Coordinator, runtime closure, classification, URL/storage boundary, and recoverable lock cases pass."},
         "integration": {"status": "pass", "command": "uv run pytest -q tests/test_setup_wrappers.py tests/test_runtime_manifest.py tests/test_installed_cli.py tests/test_adopter_slim.py tests/test_greenfield_slim_integration.py tests/test_bootstrap_start_gate.py", "notes": "Exact-source setup, real uv launcher symlink shape, receipt reuse, slim, and startup closure verification pass."},
-        "e2e": {"status": "covered_existing", "command": "uv run pytest -q tests/test_release_readiness.py", "notes": "The clean-candidate gate structure passes; execution currently reaches only the commit-bound protected capability-lock mismatch, which closes in commit B."},
+        "e2e": {"status": "pass", "command": "uv run python scripts/verify_release_readiness.py", "notes": "The materialized clean candidate passes every configured release-readiness stage."},
         "browser": {"status": "not_applicable", "reason": "Mir Yoke has no browser or GUI release surface."},
         "edge": {"status": "pass", "command": "uv run pytest -q tests/test_setup_wrappers.py tests/test_bootstrap_cli.py tests/test_adopter_slim.py tests/test_loop_driver.py", "notes": "Default-port Git URLs, copied receipts, unsafe storage, platform rejection, symlink launchers, and stale lock holders are covered."},
         "architecture": {"status": "pass", "command": "uv run pytest -q tests/test_decision_authority.py tests/test_public_template_identity.py tests/test_spec_integrity.py", "notes": "ADR-80, the product boundary, task counts, and machine-readable adoption requirements agree."},
@@ -43,7 +43,7 @@
         "load": {"status": "not_applicable", "reason": "Bootstrap and release checks are bounded local commands."},
         "soak": {"status": "not_applicable", "reason": "No daemon or persistent process changes."},
         "security": {"status": "pass", "command": "uv run pytest -q tests/test_setup_wrappers.py tests/test_bootstrap_cli.py tests/test_adopter_slim.py", "notes": "Provider pushes, remote credentials, unavailable source identity, project-local storage, and provider markers fail closed."},
-        "compatibility": {"status": "covered_existing", "command": "uv run pytest -q -k 'not test_repository_lock_is_portable_and_matches_managed_trees' && uv run ruff check && uv run python scripts/verify_codex_sync.py", "notes": "696 non-lock tests pass; the excluded commit-bound protected capability-lock case closes in commit B."},
+        "compatibility": {"status": "pass", "command": "uv run pytest -q && uv run ruff check && uv run python scripts/verify_codex_sync.py", "notes": "The full regression, lint, and generated Claude/Codex parity checks pass with the commit-bound lock included."},
         "transaction_locking": {"status": "pass", "command": "uv run pytest -q tests/test_adopter_slim.py tests/test_loop_driver.py", "notes": "Slim recovery/rollback and portable PID lock acquisition, live exclusion, cleanup, and dead-holder recovery pass."}
       }
     },

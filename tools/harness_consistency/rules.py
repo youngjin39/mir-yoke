@@ -61,7 +61,26 @@ def template_asset_classification(project_root: Path, rule_inputs: dict) -> list
 # @spec FR-003
 def adopter_payload_boundary(project_root: Path, rule_inputs: dict) -> list[Finding]:
     try:
-        findings = payload_findings(project_root)
+        profile = None
+        local_profile = project_root / ".mir/repo-profile.toml"
+        if not local_profile.exists():
+            self_profile_path = project_root / "config/repos/mir-yoke.json"
+            try:
+                self_profile = json.loads(self_profile_path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                self_profile = None
+            if (
+                isinstance(self_profile, dict)
+                and self_profile.get("slug") == "mir-yoke"
+                and self_profile.get("repository_type") == "public_harness_template"
+            ):
+                profile = {
+                    "repo": {
+                        "slug": self_profile["slug"],
+                        "repository_type": self_profile["repository_type"],
+                    }
+                }
+        findings = payload_findings(project_root, profile=profile)
     except BoundaryError as exc:
         return [
             Finding(

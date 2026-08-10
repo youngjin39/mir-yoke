@@ -14,7 +14,7 @@
     },
     ".claude/agents/executor-agent.md": {
       "project_path": ".claude/agents/executor-agent.md",
-      "sha256": "b6dc1f7b2ac2b3c727fcb8a7c4882356533cb989bccc2590ebde7aaf5f3abd38"
+      "sha256": "0ecbab5e62ff2491c0f76d268d37e700c7dffb3c9c59335ea92dfe91fb8fa6f9"
     },
     ".claude/agents/fleet-doc-steward.md": {
       "project_path": ".claude/agents/fleet-doc-steward.md",
@@ -22,7 +22,7 @@
     },
     ".claude/agents/main-orchestrator.md": {
       "project_path": ".claude/agents/main-orchestrator.md",
-      "sha256": "24ae7e3cd023a9b9609223f6a427809075156df8ca8db2c1294cf6af69ae2a6b"
+      "sha256": "3325ae043a22712328597b75916728ae35c6dae50358c7630ad9f1a397f8dee1"
     },
     ".claude/agents/ontology-validator.md": {
       "project_path": ".claude/agents/ontology-validator.md",
@@ -60,7 +60,7 @@
     },
     "mir-core": {
       "path": "plugins/mir-core",
-      "sha256": "c106a083aa1684de0de5ba5a2f060662021f41064174d2bf1649df039774dd96"
+      "sha256": "e548d9b2464629b18f65254c132b4ef1ffbefec596d3d5d3fb14283228c8755c"
     }
   },
   "profile": "hybrid_pipeline",
@@ -69,9 +69,9 @@
   },
   "schema_version": 1,
   "source": {
-    "commit": "26cf2a482a407681bc0e81bd1c37356c501c5ab5",
+    "commit": "e9bcab935c2a50168c0c1023fa955e7f85d776cd",
     "ref": "main",
     "url": "https://github.com/youngjin39/mir-yoke.git"
   },
-  "synced_at": "2026-08-08T11:29:01+00:00"
+  "synced_at": "2026-08-10T02:53:09+00:00"
 }
