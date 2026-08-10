@@ -13,6 +13,14 @@
       "notes": "Main Codex instructions"
     },
     {
+      "source": "starter/CLAUDE.md",
+      "targets": ["starter/AGENTS.md"],
+      "change_scope": "content",
+      "sync_policy": "regenerate",
+      "owner": "project-maintainer",
+      "notes": "Path-scoped Codex instructions"
+    },
+    {
       "source": ".claude/agents/codex-final-reviewer.md",
       "targets": [".codex/agents/codex-final-reviewer.toml"],
       "change_scope": "content",

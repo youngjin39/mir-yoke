@@ -314,7 +314,7 @@ write_agents_md() {
 
 nested_claude_sources() {
   local root
-  for root in scripts src tests tools; do
+  for root in scripts src starter tests tools; do
     [ -d "$root" ] || continue
     find "$root" -type f -name CLAUDE.md -print
   done | LC_ALL=C sort
@@ -327,7 +327,11 @@ write_nested_agents_md() {
     target="${src%CLAUDE.md}AGENTS.md"
     mkdir -p "$OUTPUT_ROOT/$(dirname "$target")"
     {
-      echo "<!-- GENERATED FILE: edit $src and rerun scripts/generate_codex_derivatives.sh -->"
+      if [ "$src" = "starter/CLAUDE.md" ]; then
+        echo "<!-- Mir Yoke publication derivative. After adoption, this repository owns this file and HARNESS.md remains canonical. -->"
+      else
+        echo "<!-- GENERATED FILE: edit $src and rerun scripts/generate_codex_derivatives.sh -->"
+      fi
       echo
       body_without_frontmatter "$src" | sed 's/CLAUDE\.md/AGENTS.md/g'
     } > "$OUTPUT_ROOT/$target"

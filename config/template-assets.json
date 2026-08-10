@@ -10,6 +10,13 @@
   ],
   "rules": [
     {
+      "id": "minimal-starter",
+      "classification": "starter",
+      "include": ["starter/**"],
+      "exclude": [],
+      "reason": "The only supported consumer payload: a small agent-adapted documentation baseline."
+    },
+    {
       "id": "root-metadata",
       "classification": "reference",
       "include": [
@@ -27,8 +34,8 @@
       "reason": "Public identity, usage, rights, compatibility, and release reference material."
     },
     {
-      "id": "starter-payload",
-      "classification": "starter",
+      "id": "legacy-bootstrap-payload",
+      "classification": "reference",
       "include": [
         ".ai-harness/**",
         ".claude/**",
@@ -77,7 +84,7 @@
         ".claude/agents/template-sync-validator.md",
         ".codex/agents/template-sync-validator.toml"
       ],
-      "reason": "Files copied, composed, or initialized for a consumer-owned harness baseline."
+      "reason": "Legacy automated adopter payload retained as optional reference and maintainer regression material outside ADR-81 supported scope."
     },
     {
       "id": "public-references",
@@ -114,6 +121,7 @@
         "docs/decisions/adr-78-public-template-identity-and-non-authority.md",
         "docs/decisions/adr-79-agent-guided-platform-scope.md",
         "docs/decisions/adr-80-release-runtime-isolation-and-adopter-ownership.md",
+        "docs/decisions/adr-81-minimal-starter-support-boundary.md",
         "docs/decisions/role-policy.md"
       ],
       "exclude": [],
@@ -135,6 +143,7 @@
         "docs/decisions/adr-78-public-template-identity-and-non-authority.md",
         "docs/decisions/adr-79-agent-guided-platform-scope.md",
         "docs/decisions/adr-80-release-runtime-isolation-and-adopter-ownership.md",
+        "docs/decisions/adr-81-minimal-starter-support-boundary.md",
         "docs/decisions/role-policy.md"
       ],
       "reason": "Earlier decisions remain retrievable but are outside the current authority index."

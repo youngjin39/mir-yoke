@@ -13,7 +13,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 MANIFEST = ROOT / ".codex-sync" / "manifest.json"
-PATH_SCOPED_INSTRUCTION_ROOTS = ("scripts", "src", "tests", "tools")
+PATH_SCOPED_INSTRUCTION_ROOTS = ("scripts", "src", "starter", "tests", "tools")
 PLUGIN_SKILLS = {
     "mir-core": {
         "automation",
@@ -62,10 +62,16 @@ def validate_nested_instruction_derivatives(
             failures.append(
                 f"nested AGENTS derivative retains Claude-only path reference: {target_rel}"
             )
-        expected_marker = (
-            f"<!-- GENERATED FILE: edit {source_rel} and rerun "
-            "scripts/generate_codex_derivatives.sh -->"
-        )
+        if source_rel.as_posix() == "starter/CLAUDE.md":
+            expected_marker = (
+                "<!-- Mir Yoke publication derivative. After adoption, this "
+                "repository owns this file and HARNESS.md remains canonical. -->"
+            )
+        else:
+            expected_marker = (
+                f"<!-- GENERATED FILE: edit {source_rel} and rerun "
+                "scripts/generate_codex_derivatives.sh -->"
+            )
         if not target_text.startswith(expected_marker):
             failures.append(f"nested AGENTS source marker drifted: {target_rel}")
 

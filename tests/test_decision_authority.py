@@ -6,7 +6,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 IDENTITY_ADR = ROOT / "docs/decisions/adr-78-public-template-identity-and-non-authority.md"
-PLATFORM_ADR = ROOT / "docs/decisions/adr-79-agent-guided-platform-scope.md"
+MINIMAL_ADR = ROOT / "docs/decisions/adr-81-minimal-starter-support-boundary.md"
 
 
 def _frontmatter(path: Path) -> dict[str, object]:
@@ -26,14 +26,14 @@ def test_should_make_adr_78_the_current_product_decision_when_indexed() -> None:
 
 
 # @spec QR-001 QR-004
-def test_should_make_adr_79_the_narrowest_platform_decision_when_indexed() -> None:
-    metadata = _frontmatter(PLATFORM_ADR)
+def test_should_make_adr_81_the_narrowest_support_decision_when_indexed() -> None:
+    metadata = _frontmatter(MINIMAL_ADR)
     index = (ROOT / "docs/decisions/INDEX.md").read_text(encoding="utf-8")
 
     assert metadata["status"] == "accepted"
-    assert metadata["supported_automation"] == "macos-linux-wsl"
-    assert metadata["native_windows"] == "guidance-only"
-    assert index.index("ADR-79") < index.index("ADR-78")
+    assert metadata["supported_consumer_payload"] == "starter/"
+    assert metadata["required_runtime"] == "none"
+    assert index.index("ADR-81") < index.index("ADR-78")
 
 
 # @spec FR-008

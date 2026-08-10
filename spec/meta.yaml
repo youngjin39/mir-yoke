@@ -1,8 +1,10 @@
+status: superseded-reference
+superseded_by: ADR-81
 mode: S
 mode_evidence: "Current owner requirements and an existing Mir Yoke source/ADR corpus were compared."
 domain: AI_SYSTEM
 domain_evidence: "The template supplies agent prompts, hooks, tool policies, skills, and context behavior; the provider itself has no runtime."
-system_boundary: "Mir Yoke authors, validates, versions, and publishes reusable harness files but starts no agent, daemon, target scan, or rollout."
+system_boundary: "Historical specification snapshot for the pre-ADR-81 automated bootstrap and capability implementation; it is not the supported consumer contract."
 quality_model: "ISO/IEC 25010:2023"
 stakeholders:
   - {who: public adopter, concerns: [clear purpose, safe selection, local ownership], views: [feat/, uc/, iface/]}
@@ -11,6 +13,7 @@ stakeholders:
 external_entities: [public_evaluator, greenfield_owner, existing_repository_owner, template_maintainer]
 actors: [public_evaluator, greenfield_owner, existing_repository_owner, template_maintainer]
 authority_notes:
+  - "ADR-81 supersedes this tree as the public support contract; `starter/` is the only supported consumer payload."
   - "Owner confirmation and ADR-84 override historical central-fleet implementation evidence."
   - "Owner confirmation 2026-08-10 and ADR-79 narrow automated bootstrap to macOS, Linux, and WSL; native Windows is guidance-only."
   - "ADR-80 requires project-isolated exact-source CLI installation and rejects provider push URLs before greenfield mutation."

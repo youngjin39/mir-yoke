@@ -1,8 +1,10 @@
 spec_version: 1
-generated_from: ["Mir Yoke Git/ADR history through 99ab9d4", "Mir Harness ADR-84", "Mir Yoke ADR-78", "Mir Yoke ADR-79", "Mir Yoke ADR-80", "owner confirmations 2026-08-08 and 2026-08-10", "current implementation candidate"]
+status: superseded-reference
+superseded_by: ADR-81
+generated_from: ["Mir Yoke Git/ADR history through 99ab9d4", "Mir Harness ADR-84", "Mir Yoke ADR-78", "Mir Yoke ADR-79", "Mir Yoke ADR-80", "ADR-81 support-boundary reclassification", "owner confirmations 2026-08-08 and 2026-08-10"]
 mode: S
 domain: AI_SYSTEM
-scope: "Mir Yoke public template product boundary and implementation verification"
+scope: "Superseded advanced automation implementation snapshot; not the current supported consumer contract"
 counts:
   features: {total: 4, done: 4, building: 0, planned: 0, deprecated: 0}
   requirements: {total: 20, ready: 20, incomplete: 0, blocked: 0}

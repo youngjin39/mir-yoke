@@ -70,12 +70,15 @@ def test_should_return_nonstarter_classification_when_provider_sources_are_inspe
     manifest = load_manifest(ROOT / "config/template-assets.json")
     rules = {rule["id"]: rule for rule in manifest["rules"]}
 
-    starter_patterns = set(rules["starter-payload"]["include"])
+    starter_patterns = set(rules["minimal-starter"]["include"])
+    legacy_patterns = set(rules["legacy-bootstrap-payload"]["include"])
     optional_patterns = set(rules["optional-consumer-code"]["include"])
 
     assert {".agents/**", ".claude-plugin/**", "plugins/**"}.isdisjoint(
         starter_patterns
     )
+    assert rules["legacy-bootstrap-payload"]["classification"] == "reference"
+    assert "scripts/mir.sh" in legacy_patterns
     assert {".agents/**", ".claude-plugin/**", "plugins/**"} <= optional_patterns
 
 
@@ -106,9 +109,10 @@ def test_should_remove_provider_state_and_preserve_adopter_runtime_when_payload_
     assert dispositions["tests/test_bootstrap_cli.py"] == "remove"
     assert dispositions["tasks/plan.md"] == "remove"
     assert dispositions["config/repos/mir-yoke.json"] == "remove"
-    assert dispositions["scripts/mir.sh"] == "preserve"
-    assert dispositions["config/adopter-boundary.json"] == "preserve"
-    assert dispositions["config/cli-runtime-constraints.txt"] == "preserve"
+    assert dispositions["scripts/mir.sh"] == "remove"
+    assert dispositions["config/adopter-boundary.json"] == "remove"
+    assert dispositions["config/cli-runtime-constraints.txt"] == "remove"
+    assert dispositions["starter/HARNESS.md"] == "preserve"
     assert dispositions[".claude/agents/template-sync-validator.md"] == "remove"
     assert dispositions[".codex/agents/template-sync-validator.toml"] == "remove"
 

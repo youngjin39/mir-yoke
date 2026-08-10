@@ -1,7 +1,9 @@
 <!-- Derived projection. Update graph and node files first. -->
 
-# MIR YOKE SPEC STATE
-scope: Mir Yoke public template product boundary and implementation verification
+# MIR YOKE ADVANCED AUTOMATION SPEC SNAPSHOT
+status: superseded-reference
+superseded_by: ADR-81
+scope: pre-ADR-81 bootstrap, capability, and release implementation evidence
 features: 4 (done 4 / building 0 / planned 0 / deprecated 0)
 requirements: 20 (ready 20 / incomplete 0 / blocked 0)
 use cases: 6
@@ -16,13 +18,21 @@ mode: S · domain: AI_SYSTEM · updated: 2026-08-10
 3. Target feature and requirement shards plus matching `graph.yaml` edges
 4. `tasks.yaml`, `checks.yaml`, and `gaps.yaml` before closeout
 
-## Verification gate
+## Authority boundary
+
+- This tree is not the current supported consumer contract.
+- ADR-81 defines `starter/` as the only supported consumer payload.
+- Counts and completion states below preserve historical implementation evidence only.
+- No bootstrap, capability, memory, plugin, hook, spec, or receipt requirement in this snapshot is
+  a starter readiness requirement.
+
+## Historical verification record
 
 - READY: all requirements pass ARR-1 through ARR-8.
 - READY: L1, L2, L3, and L4 contain zero TBD cells.
 - READY: every requirement and use case is allocated and has a verification target.
 - READY: the protected capability lock is bound to the final implementation commit.
-- SCOPE: implementation changes Mir Yoke only; this dossier grants no cross-repository write.
+- SCOPE: this historical implementation changed Mir Yoke only and granted no cross-repository write.
 - READY: the clean-candidate release proof covers focused contracts, the full suite, lint,
   derivatives, sanitization, links, schemas, and asset classification.
 

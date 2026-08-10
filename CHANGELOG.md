@@ -10,6 +10,11 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ### Changed
 
+- Reduced the supported consumer product to the four Markdown files under `starter/`. The active
+  agent now inspects the target repository and adapts that baseline without a required installer,
+  plugin, hook, memory database, spec tree, sub-agent, receipt, or restart phase.
+- Reclassified the previous bootstrap/runtime surface as optional reference or maintainer material;
+  ADR-81 is now the narrowest public support decision.
 - Defined Mir Yoke as a public template and reference repository with no provider runtime or
   standing authority over consumer repositories.
 - Split greenfield bootstrap, preservation-first existing-repository assessment, and

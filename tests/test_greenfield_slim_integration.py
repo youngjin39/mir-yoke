@@ -1,14 +1,12 @@
 from __future__ import annotations
 
 import json
-import subprocess
-import sys
 from pathlib import Path
 
 import pytest
 
 from mir.cli import bootstrap as bootstrap_cli
-from mir.core.adoption.boundary import load_boundary, load_profile, payload_findings
+from mir.core.adoption.boundary import load_profile
 from mir.core.adoption.slim import apply_adopter_slim
 from scripts.verify_release_readiness import _materialize_candidate
 
@@ -55,7 +53,7 @@ def test_should_compile_external_catalog_for_each_adopter_profile(
     assert ".mir/capability-lock.json" in tracked_paths["harness_structure"]
 
 
-def test_should_leave_only_runnable_adopter_payload_when_release_candidate_is_slimmed(
+def test_should_leave_minimal_starter_and_project_owned_changes_when_candidate_is_slimmed(
     tmp_path: Path,
     capsys,
 ) -> None:
@@ -86,7 +84,7 @@ def test_should_leave_only_runnable_adopter_payload_when_release_candidate_is_sl
     assert phase1["status"] == "incomplete"
     profile = load_profile(candidate)
     assert profile["repo"]["repository_type"] == "code_app"
-    assert "Mir Yoke — Harness Template Contract" not in (
+    assert "Mir Yoke — Minimal Harness Template Contract" not in (
         candidate / "CLAUDE.md"
     ).read_text(encoding="utf-8")
     catalog = json.loads(
@@ -108,45 +106,21 @@ def test_should_leave_only_runnable_adopter_payload_when_release_candidate_is_sl
     )
 
     assert report["status"] == "applied"
-    assert payload_findings(
-        candidate,
-        boundary=load_boundary(candidate),
-        profile=load_profile(candidate),
-    ) == []
     assert not (candidate / "src/mir").exists()
     assert not (candidate / "plugins/mir-core").exists()
     assert not (candidate / "tools/harness_consistency").exists()
     assert not (candidate / "tests/test_adopter_slim.py").exists()
-    assert (candidate / "scripts/mir.sh").is_file()
+    assert not (candidate / "scripts/mir.sh").exists()
     assert not (candidate / ".mir/cli-runtime-lock.json").exists()
-    assert (candidate / "config/cli-runtime-constraints.txt").is_file()
+    assert not (candidate / "config/adopter-boundary.json").exists()
+    assert not (candidate / "config/cli-runtime-constraints.txt").exists()
     assert not (candidate / ".claude/agents/template-sync-validator.md").exists()
     assert not (candidate / ".codex/agents/template-sync-validator.toml").exists()
+    assert {
+        path.relative_to(candidate / "starter").as_posix()
+        for path in (candidate / "starter").rglob("*")
+        if path.is_file()
+    } == {"AGENTS.md", "CLAUDE.md", "HARNESS.md", "README.md"}
     assert (candidate / "tasks/plan.md").read_text(encoding="utf-8") == (
         "# Plan\n\nNo active work.\n"
     )
-
-    for script in (
-        "scripts/verify_codex_sync.py",
-        "scripts/verify_repo_agent_management.py",
-    ):
-        completed = subprocess.run(
-            [sys.executable, script],
-            cwd=candidate,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        assert completed.returncode == 0, completed.stdout + completed.stderr
-
-    tool_contract = subprocess.run(
-        [sys.executable, "tools/hooks/validate_tool_contract.py"],
-        cwd=candidate,
-        input=json.dumps({"tool_name": "Bash", "tool_input": {}}),
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    assert tool_contract.returncode == 2
-    assert "requires _mir_contract" in tool_contract.stderr
-    assert "ModuleNotFoundError" not in tool_contract.stderr

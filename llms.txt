@@ -1,29 +1,17 @@
-# Mir Yoke — agent-guided Claude Code + Codex harness-engineering template
+# Mir Yoke — minimal agent-guided harness starter
 
-## What this repo is
-A public template and reference baseline with no provider runtime or standing consumer authority.
-An AI agent reads the target repository's contract and current state, then adapts applicable
-controls. Automated greenfield bootstrap supports macOS, Linux, and WSL; native Windows is a
-zero-mutation guidance path to WSL or agent-guided reference adaptation.
+## Supported consumer payload
+- `starter/README.md` — preservation-first adoption guide
+- `starter/HARNESS.md` — canonical repository contract template
+- `starter/CLAUDE.md` — Claude entrypoint
+- `starter/AGENTS.md` — generated Codex entrypoint
 
-## Key docs
-- CLAUDE.md — primary instruction surface (coding rules, hook policy, role policy, language)
-- AGENTS.md — Codex-side counterpart (generated from CLAUDE.md)
-- ARCHITECTURE.md — runtime surfaces map
-- docs/decisions/ — ADRs (governance decisions, e.g. ADR-50 memory-DB, ADR-51 harness-consistency)
-- docs/harness-engineering/applications/design-process.md — design workflow (5-step gate)
-- docs/INDEX.md — doc navigation index
+The starter is documentation-only. It does not require a Mir CLI, installer, plugin, hook, memory
+database, spec tree, sub-agent, daemon, receipt, or platform-specific runtime.
 
-## Memory
-Canonical store: .mir/memory.db (SQLite + FTS5 + sqlite-vec)
-Query: uv run mir memory query <keyword>
-Projections (do not hand-edit): docs/memory-map.md, tasks/lessons.md
+## Maintainer checks
+- `uv run pytest tests/test_minimal_starter.py -q`
+- `uv run python scripts/verify_codex_sync.py`
+- `uv run ruff check`
 
-## Build / test
-uv run pytest          — full test suite (tools/ + tests/)
-uv run ruff check      — lint
-uv run mir --help      — CLI entrypoint
-
-## Session start
-Read tasks/plan.md cursor first. Run: uv run mir loop next --json
-One bounded step per pass through the Codex delegated lane.
+Everything outside `starter/` is optional reference, history, or maintainer material.
