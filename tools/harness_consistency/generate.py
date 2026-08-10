@@ -11,6 +11,7 @@ _SOURCE_ROOT = Path(__file__).resolve().parents[2]
 _SOURCE_MANIFEST = _SOURCE_ROOT / "config" / "harness-consistency.json"
 
 _DIRECT_STATIC_INPUTS = (
+    "adopter_payload_boundary",
     "adr_status_enum",
     "settings_dual_fire_dedup",
     "single_family_source",
@@ -42,6 +43,7 @@ _GREEN_NOTE = (
     "because they ERROR on this repo and should be re-enabled after the family "
     "adds the prerequisite or tunes the input."
 )
+_NON_DISABLEABLE_RULE_IDS = frozenset({"R20"})
 
 
 def _load_source_manifest() -> dict:
@@ -223,6 +225,8 @@ def _apply_green(repo_root: Path, manifest: dict) -> None:
     for rule in manifest["rules"]:
         rule_id = rule["id"]
         if rule["severity"] != "ERROR" or rule_id not in error_counts:
+            continue
+        if rule_id in _NON_DISABLEABLE_RULE_IDS:
             continue
         rule["enabled"] = False
         disabled_rules.append(

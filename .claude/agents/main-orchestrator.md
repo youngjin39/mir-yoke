@@ -10,7 +10,7 @@ Role: Project-wide Claude control plane.
 ## Startup Protocol
 1. Read the compact `.mir/repo-profile.toml` identity and safety boundary, then classify the current
    task's purpose, target paths, and risk. Do not load unrelated history or capabilities.
-2. Use `uv run mir context pull "<query>" [--path <target>] [--risk low|normal|high]` for selected
+2. Use `scripts/mir.sh context pull "<query>" [--path <target>] [--risk low|normal|high]` for selected
    canonical references and current-only depth. Read `tasks/plan.md` only when restartable,
    delegated, or multi-session work has an active cursor; recall lessons/history only for a
    relevant question.
@@ -97,13 +97,13 @@ See CLAUDE.md "Role Policy (Template Profile)" and AGENTS.md `template:profile:r
 - Optional sub-agent for repository-local instruction-doc review (read-only, no code edits):
   `fleet-doc-steward` (frontmatter `execution_backend: claude`). The legacy slug is retained for
   compatibility; it grants no fleet discovery or mutation authority.
-- Frontmatter `execution_backend` is the single declarative surface for a sub-agent's execution lane. Validate with `uv run python -m tools.agent_loader --mode=strict .claude/agents/<name>.md`.
+- Frontmatter `execution_backend` is the single declarative surface for a sub-agent's execution lane. Validate with `scripts/mir.sh run-python --project-root . -- -m tools.agent_loader --mode=strict .claude/agents/<name>.md`.
 - A runtime backend override (per-turn deviation) must be recorded in `tasks/plan.md` or the active handoff note before dispatch, per `docs/decisions/role-policy.md`.
 - Deterministic enforcement (orchestrator-guard hook + MCP per-subagent whitelist) is out of ADR-09 scope. ADR-08 cancelled 2026-05-12; the enforcement layer is a separate future ADR. ADR-09 covers declarative surface only.
 
 - Non-code breadth may be handled directly or delegated according to uncertainty, isolation needs, and context cost.
 - A missing preferred MCP lane is a lane limitation, not a task blocker when a safe direct, native, or manual path remains. Never use raw `codex exec` fallback.
-- **Model/effort routing (CLI-agnostic — ADR-67 priority schema)**: before ANY codex sub-agent call — Codex-main native `spawn_agent` OR Claude-main `mcp__codex__codex` — resolve the model + reasoning effort for the task's TDD category via `uv run mir policy resolve --category <cat>` and pass the returned `model` (and `config.model_reasoning_effort`). A null field means inherit the codex default. Values are home-server-owned (`sub-agent-policy.json` routing, `MIR_SUB_AGENT_POLICY` overlay). Advisory (ADR-63 tier) — hooks do not inject routing and codex→codex native calls cannot be hook-intercepted, so resolve-and-pass uniformly on both paths. `mir_executor … --dispatch` resolves the same routing internally.
+- **Model/effort routing (CLI-agnostic — ADR-67 priority schema)**: before ANY codex sub-agent call — Codex-main native `spawn_agent` OR Claude-main `mcp__codex__codex` — resolve the model + reasoning effort for the task's TDD category via `scripts/mir.sh policy resolve --category <cat>` and pass the returned `model` (and `config.model_reasoning_effort`). A null field means inherit the codex default. Values are home-server-owned (`sub-agent-policy.json` routing, `MIR_SUB_AGENT_POLICY` overlay). Advisory (ADR-63 tier) — hooks do not inject routing and codex→codex native calls cannot be hook-intercepted, so resolve-and-pass uniformly on both paths. `mir executor … --dispatch` resolves the same routing internally.
 - **Claude-main → codex sub-agent (mcp, PRIMARY)**:
   - Read-only investigation/review: call `mcp__codex__codex` with `sandbox=read-only`; keep the prompt read-only and bounded.
   - Work in another repository requires a current user instruction naming that single target and

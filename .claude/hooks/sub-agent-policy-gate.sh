@@ -89,5 +89,5 @@ if [ "${MIR_R3_FALLBACK:-0}" = "1" ]; then
   exit 0
 fi
 
-echo "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Route sub-agent work through Codex MCP: 'mcp__codex__codex' for read-only review/investigation or 'uv run python -m tools.mir_executor execute --background --dispatch ...' for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1; to change policy edit config/sub-agent-policy.json mode." >&2
+echo "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Route sub-agent work through Codex MCP: 'mcp__codex__codex' for read-only review/investigation or 'scripts/mir.sh executor execute --background --dispatch ...' for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1; to change policy edit config/sub-agent-policy.json mode." >&2
 exit 2

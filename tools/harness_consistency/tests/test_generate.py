@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 import jsonschema
+import pytest
 
 from tools.harness_consistency.cli import build_parser
 from tools.harness_consistency.generate import build_manifest
@@ -40,7 +41,22 @@ def test_build_manifest_real_repo_section_and_rules() -> None:
             "tools_tdd_ledger": "changes_array",
         },
     }
-    assert len(manifest["rules"]) == 17
+    assert len(manifest["rules"]) == 18
+    adopter_rule = next(
+        rule for rule in manifest["rules"] if rule["name"] == "adopter_payload_boundary"
+    )
+    assert adopter_rule == {
+        "id": "R20",
+        "name": "adopter_payload_boundary",
+        "severity": "ERROR",
+        "enabled": True,
+        "drift_class": 8,
+    }
+    assert manifest["rule_inputs"]["adopter_payload_boundary"][
+        "boundary_manifest_path"
+    ] == (
+        "config/adopter-boundary.json"
+    )
     # template source manifest has R3+R8 disabled
     assert manifest["_generated"]["repo_slug"] == "mir-yoke"
     assert "repo_root" not in manifest["_generated"]
@@ -161,6 +177,26 @@ def test_build_manifest_green_minimal_repo_disables_missing_prerequisites(
             "repository_type": "code_app",
         },
     )
+    repo_profile = tmp_path / ".mir/repo-profile.toml"
+    repo_profile.parent.mkdir(parents=True)
+    repo_profile.write_text(
+        '[repo]\nslug = "minimal"\nrepository_type = "starter_project"\n',
+        encoding="utf-8",
+    )
+    _write_json(
+        tmp_path / "config/adopter-boundary.json",
+        {
+            "schema_version": 1,
+            "provider_owners": [
+                {"slug": "mir-yoke", "repository_types": ["public_harness_template"]}
+            ],
+            "provider_markers": ["src/mir"],
+            "provider_text_markers": [],
+            "source_asset_manifest": "config/template-assets.json",
+            "payload_manifest": "config/adopter-payload.json",
+            "remove_classifications": ["template-maintainer-tool"],
+        },
+    )
 
     manifest = build_manifest(tmp_path, profile_path, green=True)
     result = run_with_manifest(tmp_path, manifest)
@@ -204,6 +240,7 @@ def test_generate_parser_accepts_green_flag() -> None:
 
 _STUB_SOURCE_INPUTS = {
     # _DIRECT_STATIC_INPUTS keys (all required by _build_rule_inputs)
+    "adopter_payload_boundary": {},
     "adr_status_enum": {},
     "settings_dual_fire_dedup": {},
     "single_family_source": {},
@@ -256,6 +293,57 @@ def test_build_rule_inputs_keeps_local_asset_manifest(tmp_path: Path) -> None:
     assert result["template_asset_classification"] == {
         "manifest_path": "config/template-assets.json"
     }
+
+
+def test_should_return_error_when_green_would_disable_adopter_boundary(
+    tmp_path: Path,
+) -> None:
+    from tools.harness_consistency.generate import _apply_green
+
+    profile = tmp_path / ".mir/repo-profile.toml"
+    profile.parent.mkdir(parents=True)
+    profile.write_text(
+        '[repo]\nslug = "sample-product"\nrepository_type = "starter_project"\n',
+        encoding="utf-8",
+    )
+    (tmp_path / "src/mir").mkdir(parents=True)
+    _write_json(
+        tmp_path / "config/adopter-boundary.json",
+        {
+            "schema_version": 1,
+            "provider_owners": [
+                {"slug": "mir-yoke", "repository_types": ["public_harness_template"]}
+            ],
+            "provider_markers": ["src/mir"],
+            "provider_text_markers": [],
+            "source_asset_manifest": "config/template-assets.json",
+            "payload_manifest": "config/adopter-payload.json",
+            "remove_classifications": ["template-maintainer-tool"],
+        },
+    )
+    manifest = {
+        "_generated": {"note": "test"},
+        "repo": {"slug": "sample-product"},
+        "rules": [
+            {
+                "id": "R20",
+                "name": "adopter_payload_boundary",
+                "severity": "ERROR",
+                "enabled": True,
+                "drift_class": 8,
+            }
+        ],
+        "rule_inputs": {
+            "adopter_payload_boundary": {
+                "boundary_manifest_path": "config/adopter-boundary.json",
+            }
+        },
+    }
+
+    with pytest.raises(RuntimeError, match="green manifest still fails"):
+        _apply_green(tmp_path, manifest)
+
+    assert manifest["rules"][0]["enabled"] is True
 
 
 def test_build_manifest_rule_inputs_contains_agent_surface_contract(

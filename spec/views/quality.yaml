@@ -1,9 +1,9 @@
 quality_bindings:
   - quality: QR-001
-    tactic: "One coordinator owns behavior and platform wrappers delegate to it."
-    sensitivity: "A wrapper that implements behavior independently breaks platform equivalence."
-    tradeoff: "Native Windows still requires documented Bash compatibility for Bash-based hooks."
-    measured_by: "Three-lane clean-environment bootstrap matrix and required-key comparison."
+    tactic: "One Unix coordinator owns supported automation; unsupported native Windows entrypoints fail before mutation and provide agent-guided next actions."
+    sensitivity: "A native-Windows path that invokes installation, bootstrap, or slim falsely expands the supported boundary."
+    tradeoff: "Native Windows users need WSL for automated greenfield bootstrap but may still use the repository as agent-guided reference material."
+    measured_by: "macOS/Linux clean-environment bootstrap evidence plus native-Windows zero-mutation rejection tests."
   - quality: QR-002
     tactic: "Existing-repository operations default to read-only and replace a receipt atomically only after all checks pass."
     sensitivity: "Any authored-file write or early receipt replacement breaks preservation."

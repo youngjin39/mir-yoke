@@ -20,7 +20,7 @@ normalize_path() {
 is_implementation_file() {
   local path="$1"
   case "$path" in
-    src/*|app/*|lib/*)
+    src/*|app/*|apps/*|packages/*|pipelines/*|infra/*|content/*|lib/*)
       ;;
     *)
       return 1

@@ -5,7 +5,7 @@ _MIR_PYTHON_LAUNCHER="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/_lib/r
 #
 # Reads JSON from stdin: {"prompt": "..."}
 # Skips: prompts < 40 chars; prompts starting with '/' (slash commands).
-# Emits: exactly one "[context-pull] Candidate retrieval: uv run mir context pull \"<terms>\""
+# Emits: exactly one "[context-pull] Candidate retrieval: scripts/mir.sh context pull \"<terms>\""
 #
 # tier: warn — advisory only, never blocks.
 _MIR_HOOK_TIER="warn"
@@ -65,4 +65,4 @@ if [ -z "$_TERMS" ]; then
   exit 0
 fi
 
-echo "[context-pull] Candidate retrieval: uv run mir context pull \"$_TERMS\""
+echo "[context-pull] Candidate retrieval: scripts/mir.sh context pull \"$_TERMS\""

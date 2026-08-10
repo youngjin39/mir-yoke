@@ -5,9 +5,9 @@ scope: Mir Yoke public template product boundary and implementation verification
 features: 4 (done 4 / building 0 / planned 0 / deprecated 0)
 requirements: 20 (ready 20 / incomplete 0 / blocked 0)
 use cases: 6
-tasks: 8 (done 8 / blocked 0)
+tasks: 10 (done 8 / doing 2 / blocked 0)
 gaps: 0 (blocking 0)
-mode: S · domain: AI_SYSTEM · updated: 2026-08-08
+mode: S · domain: AI_SYSTEM · updated: 2026-08-10
 
 ## Reading order
 
@@ -21,9 +21,9 @@ mode: S · domain: AI_SYSTEM · updated: 2026-08-08
 - READY: all requirements pass ARR-1 through ARR-8.
 - READY: L1, L2, L3, and L4 contain zero TBD cells.
 - READY: every requirement and use case is allocated and has a verification target.
-- READY: the protected capability lock reproduces the implementation commit and managed agents.
+- PENDING: refresh the protected capability lock from the final implementation commit.
 - SCOPE: implementation changes Mir Yoke only; this dossier grants no cross-repository write.
-- COMPLETE: the clean candidate release proof passes from preserved Git ancestry.
+- PENDING: run the clean candidate release proof after that commit-bound lock refresh.
 
 ## Notes
 

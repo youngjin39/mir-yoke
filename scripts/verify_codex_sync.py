@@ -8,6 +8,7 @@ import json
 import os
 import subprocess
 import tempfile
+import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -85,7 +86,21 @@ def _read_json(path: Path, failures: list[str]) -> dict[str, object] | None:
     return value
 
 
-def validate_plugin_skill_providers(failures: list[str], root: Path = ROOT) -> None:
+def is_product_adopter(root: Path = ROOT) -> bool:
+    """Return whether local plugin providers have been externalized by bootstrap."""
+    try:
+        profile = tomllib.loads(
+            (root / ".mir/repo-profile.toml").read_text(encoding="utf-8")
+        )
+    except (OSError, tomllib.TOMLDecodeError):
+        return False
+    repo = profile.get("repo")
+    return isinstance(repo, dict) and repo.get("overlay_archetype") == "product_adopter"
+
+
+def validate_plugin_skill_providers(
+    failures: list[str], root: Path = ROOT, *, require_local: bool = True
+) -> None:
     """Assert every common skill has exactly one dual-runtime plugin provider."""
     for legacy in (
         root / ".claude" / "skills",
@@ -94,6 +109,19 @@ def validate_plugin_skill_providers(failures: list[str], root: Path = ROOT) -> N
     ):
         if legacy.exists() or legacy.is_symlink():
             failures.append(f"legacy raw skill provider remains: {legacy.relative_to(root)}")
+
+    if not require_local:
+        for provider in (
+            *(root / "plugins" / name for name in PLUGIN_SKILLS),
+            root / ".claude-plugin" / "marketplace.json",
+            root / ".agents" / "plugins" / "marketplace.json",
+        ):
+            if provider.exists() or provider.is_symlink():
+                failures.append(
+                    f"product adopter retains local capability provider: "
+                    f"{provider.relative_to(root)}"
+                )
+        return
 
     seen: dict[str, str] = {}
     for plugin_name, expected_skills in PLUGIN_SKILLS.items():
@@ -183,7 +211,7 @@ def main() -> int:
             path = ROOT / target
             if not path.exists() and not path.is_symlink():
                 failures.append(f"missing target: {target}")
-    validate_plugin_skill_providers(failures)
+    validate_plugin_skill_providers(failures, require_local=not is_product_adopter())
     validate_portable_hook_copy(failures)
 
     agents_text = (ROOT / "AGENTS.md").read_text(encoding="utf-8")

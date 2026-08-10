@@ -7,7 +7,12 @@ from pathlib import Path
 import jsonschema
 import pytest
 
-from tools.template_assets import AssetManifestError, classify_tracked_files, load_manifest
+from tools.template_assets import (
+    AssetManifestError,
+    build_adopter_payload,
+    classify_tracked_files,
+    load_manifest,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -58,3 +63,69 @@ def test_should_match_asset_schema_when_public_manifest_is_loaded() -> None:
     schema = json.loads((ROOT / "config/template-assets.schema.json").read_text())
     manifest = json.loads((ROOT / "config/template-assets.json").read_text())
     jsonschema.validate(manifest, schema)
+
+
+# @spec FR-003
+def test_should_return_nonstarter_classification_when_provider_sources_are_inspected() -> None:
+    manifest = load_manifest(ROOT / "config/template-assets.json")
+    rules = {rule["id"]: rule for rule in manifest["rules"]}
+
+    starter_patterns = set(rules["starter-payload"]["include"])
+    optional_patterns = set(rules["optional-consumer-code"]["include"])
+
+    assert {".agents/**", ".claude-plugin/**", "plugins/**"}.isdisjoint(
+        starter_patterns
+    )
+    assert {".agents/**", ".claude-plugin/**", "plugins/**"} <= optional_patterns
+
+
+# @spec FR-001 FR-003
+def test_should_match_exact_adopter_payload_when_release_inventory_is_generated() -> None:
+    manifest = load_manifest(ROOT / "config/template-assets.json")
+    boundary = json.loads((ROOT / "config/adopter-boundary.json").read_text())
+    payload = json.loads((ROOT / "config/adopter-payload.json").read_text())
+
+    assert payload == build_adopter_payload(ROOT, manifest, boundary)
+    adr_79 = next(
+        item
+        for item in payload["files"]
+        if item["path"] == "docs/decisions/adr-79-agent-guided-platform-scope.md"
+    )
+    assert adr_79["classification"] == "reference"
+    assert adr_79["disposition"] == "remove"
+
+
+# @spec FR-001 FR-003
+def test_should_remove_provider_state_and_preserve_adopter_runtime_when_payload_is_built() -> None:
+    manifest = load_manifest(ROOT / "config/template-assets.json")
+    boundary = json.loads((ROOT / "config/adopter-boundary.json").read_text())
+    payload = build_adopter_payload(ROOT, manifest, boundary)
+    dispositions = {item["path"]: item["disposition"] for item in payload["files"]}
+
+    assert dispositions["src/mir/cli/bootstrap.py"] == "remove"
+    assert dispositions["tests/test_bootstrap_cli.py"] == "remove"
+    assert dispositions["tasks/plan.md"] == "remove"
+    assert dispositions["config/repos/mir-yoke.json"] == "remove"
+    assert dispositions["scripts/mir.sh"] == "preserve"
+    assert dispositions["config/adopter-boundary.json"] == "preserve"
+    assert dispositions["config/cli-runtime-constraints.txt"] == "preserve"
+    assert dispositions[".claude/agents/template-sync-validator.md"] == "remove"
+    assert dispositions[".codex/agents/template-sync-validator.toml"] == "remove"
+
+    classifications = {
+        item["path"]: item["classification"] for item in payload["files"]
+    }
+    assert classifications[".claude/agents/template-sync-validator.md"] == (
+        "template-maintainer-tool"
+    )
+    assert classifications[".codex/agents/template-sync-validator.toml"] == (
+        "template-maintainer-tool"
+    )
+
+    markers = set(boundary["provider_markers"])
+    assert ".claude/agents/template-sync-validator.md" in markers
+    assert ".codex/agents/template-sync-validator.toml" in markers
+
+    sources = json.loads((ROOT / "config/capability-sources.json").read_text())
+    for pack in sources["profiles"]["packs"].values():
+        assert ".claude/agents/template-sync-validator.md" not in pack["agents"]

@@ -1,5 +1,5 @@
 spec_version: 1
-generated_from: ["Mir Yoke Git/ADR history through 99ab9d4", "Mir Harness ADR-84", "Mir Yoke ADR-78", "owner confirmation 2026-08-08", "current implementation candidate"]
+generated_from: ["Mir Yoke Git/ADR history through 99ab9d4", "Mir Harness ADR-84", "Mir Yoke ADR-78", "Mir Yoke ADR-79", "Mir Yoke ADR-80", "owner confirmations 2026-08-08 and 2026-08-10", "current implementation candidate"]
 mode: S
 domain: AI_SYSTEM
 scope: "Mir Yoke public template product boundary and implementation verification"
@@ -9,7 +9,7 @@ counts:
   use_cases: 6
   interfaces: 3
   modules: 5
-  tasks: {total: 8, todo: 0, doing: 0, done: 8, blocked: 0}
+  tasks: {total: 10, todo: 0, doing: 2, done: 8, blocked: 0}
   gaps: {total: 0, blocking: 0}
 shards:
   feat: [FEAT-001.yaml, FEAT-002.yaml, FEAT-003.yaml, FEAT-004.yaml]
@@ -27,5 +27,5 @@ entry_points:
   coverage: coverage.yaml
   glossary: glossary.yaml
   unresolved: gaps.yaml
-  rationale: "../docs/decisions/adr-78-public-template-identity-and-non-authority.md"
+  rationale: "../docs/decisions/INDEX.md"
   comparison: mode-s.yaml

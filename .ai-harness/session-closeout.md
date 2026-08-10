@@ -19,5 +19,5 @@ Move detailed chronology, completed history, and low-value notes to logs or arch
 refreshes only the generated runtime snapshot inside the canonical handoff; the agent remains
 responsible for curating the sections above before closeout.
 
-When replacing the current goal, use `uv run python scripts/intent_store.py --goal "<goal>"
+When replacing the current goal, use `scripts/mir.sh run-python --project-root . -- scripts/intent_store.py --goal "<goal>"
 --updated <YYYY-MM-DD>` so the prior intent remains traceable instead of being overwritten.

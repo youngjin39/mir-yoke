@@ -9,25 +9,32 @@ subcommand module.
 from __future__ import annotations
 
 from collections.abc import Callable
+from importlib import import_module
 
-from . import bootstrap as _bootstrap
-from . import bootstrap_adoption as _bootstrap_adoption
-from . import capability as _capability
-from . import context as _context
-from . import loop as _loop
-from . import memory as _memory
-from . import migrate as _migrate
-from . import policy as _policy
+_SUBCOMMAND_MODULES = {
+    "bootstrap": "mir.cli.bootstrap",
+    "bootstrap-adoption": "mir.cli.bootstrap_adoption",
+    "capability": "mir.cli.capability",
+    "context": "mir.cli.context",
+    "executor": "tools.mir_executor.cli",
+    "loop": "mir.cli.loop",
+    "memory": "mir.cli.memory",
+    "migrate": "mir.cli.migrate",
+    "policy": "mir.cli.policy",
+    "run-python": "mir.cli.run_python",
+    "runtime-manifest": "mir.cli.runtime_manifest",
+}
 
-# Registry pattern (design §0): no hard-coded ladder in __main__.
-# New subcommand = 1 row here.
+
+def _lazy_handler(module_name: str) -> Callable[[list[str]], int]:
+    def run(argv: list[str]) -> int:
+        module = import_module(module_name)
+        return module.main(argv)
+
+    return run
+
+
 SUBCOMMANDS: dict[str, Callable[[list[str]], int]] = {
-    "bootstrap": _bootstrap.main,
-    "bootstrap-adoption": _bootstrap_adoption.main,
-    "capability": _capability.main,
-    "context": _context.main,
-    "loop": _loop.main,
-    "memory": _memory.main,
-    "migrate": _migrate.main,
-    "policy": _policy.main,
+    name: _lazy_handler(module_name)
+    for name, module_name in _SUBCOMMAND_MODULES.items()
 }

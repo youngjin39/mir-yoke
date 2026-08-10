@@ -1,19 +1,16 @@
 # Mir Yoke — Harness Template Contract
 
-Mir Yoke is a public template and reference repository. It is not an agent runtime and has no
-standing authority over consumers; adoption is an explicit, repository-local owner action.
+Mir Yoke is a public template, not an agent runtime, and has no standing authority; adoption is an explicit local action.
 
 ## Outcome and completion
 
-- Maintain a public, repository-agnostic Claude/Codex harness template that adopters can fit to
-  their own product without inheriting private fleet policy or unnecessary ceremony.
-- Finish when the requested template outcome works for a clean adopter, the smallest relevant
-  evidence passes, and changed scope, residual issues, and risks are explicit.
+- Maintain an agent-guided Claude/Codex harness template fitted to each repository without private fleet policy.
+- Finish when it works for a clean adopter and relevant evidence, scope, issues, and risks are clear.
 
 ## Sources
 
-- `mir bootstrap` owns cross-platform defaults; afterward `.mir/repo-profile.toml` owns identity,
-  paths, and boundaries. A ready receipt requires explicit identity and classified content.
+- `mir bootstrap` automates macOS, Linux, and WSL; afterward `.mir/repo-profile.toml` owns identity
+  and boundaries. Native Windows stops before mutation. Ready requires explicit identity/content.
 - For substantial work, run one task-scoped `uv run mir context pull "<query>"`; add path/risk or
   expand only for missing, stale, or conflicting evidence.
 - Ready projects require local SQLite+FTS5 and project-specific FTS hits. `.mir/memory.db` is local;
@@ -29,6 +26,10 @@ standing authority over consumers; adoption is an explicit, repository-local own
 - Get explicit direction before destructive actions, credential or secret access, external writes
   or messages, protected-scope mutation, or material scope expansion.
 - Keep the public surface generic and sanitized. Adopter-specific policy remains adopter-owned.
+- Treat shipped assets as a baseline for agent judgment, not a universal installer. Read the target
+  contract and state, select applicable controls, and ask before materially expanding scope.
+- A full checkout is provider source, not a product payload; R20 blocks product work. Phase 1
+  externalizes the CLI; only passing Phase 2 may slim and publish ready. Never delete manually.
 - Edit canonical sources first: `CLAUDE.md`, bootstrap/profile, `.claude/agents/`, and plugin skills.
   Regenerate `AGENTS.md` and `.codex/`; project skills use unique names.
 
@@ -39,9 +40,8 @@ standing authority over consumers; adoption is an explicit, repository-local own
 - Read `.ai-harness/bluebricks.md` only when architecture, delegation, or integration matters. Read
   `.ai-harness/session-closeout.md` only for explicit closeout.
 
-Commands: `uv run pytest`, `uv run ruff check`, `uv run mir bootstrap --help`,
-`uv run mir capability --help`, `uv run mir memory doctor --help`. Internal artifacts are English;
-user-facing language follows the adopter's convention.
+Commands: `uv run pytest`, `uv run ruff check`, `uv run mir bootstrap --help`, `uv run mir capability
+--help`, `uv run mir memory doctor --help`. Artifacts are English; user-facing language is local.
 
 ## Role policy (template summary)
 

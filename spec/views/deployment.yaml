@@ -18,3 +18,5 @@ constraints:
   - "NODE-001 never initiates a connection to NODE-003 as Mir Yoke product behavior."
   - "NODE-002 publishes artifacts but does not execute them in NODE-003."
   - "NODE-003 owns every local mutation and verification result."
+  - "Automated greenfield bootstrap in NODE-003 supports macOS, Linux, and WSL; native Windows receives zero-mutation guidance."
+  - "NODE-003 uses a project-specific external CLI runtime and no effective push URL may target the Mir Yoke provider."

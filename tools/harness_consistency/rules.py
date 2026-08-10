@@ -9,6 +9,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+from mir.core.adoption.boundary import BoundaryError, payload_findings
 from tools.harness_consistency.models import Finding
 from tools.template_assets import AssetManifestError, classify_tracked_files, load_manifest
 
@@ -55,6 +56,42 @@ def template_asset_classification(project_root: Path, rule_inputs: dict) -> list
             )
         ]
     return []
+
+
+# @spec FR-003
+def adopter_payload_boundary(project_root: Path, rule_inputs: dict) -> list[Finding]:
+    try:
+        findings = payload_findings(project_root)
+    except BoundaryError as exc:
+        return [
+            Finding(
+                rule_id="R20",
+                rule_name="adopter_payload_boundary",
+                severity="ERROR",
+                message=str(exc),
+                location=rule_inputs.get(
+                    "boundary_manifest_path", "config/adopter-boundary.json"
+                ),
+                drift_class=8,
+            )
+        ]
+
+    message = (
+        "product adopter retains a Mir Yoke provider or maintainer surface; stop product "
+        "work and complete greenfield Phase 2 finalize through the copied external CLI; "
+        "never remove provider paths manually"
+    )
+    return [
+        Finding(
+            rule_id="R20",
+            rule_name="adopter_payload_boundary",
+            severity="ERROR",
+            message=message,
+            location=finding["path"],
+            drift_class=8,
+        )
+        for finding in findings
+    ]
 
 
 def _frontmatter_values(path: Path) -> dict[str, list[str]]:
@@ -1171,6 +1208,7 @@ def agent_surface_contract(project_root: Path, rule_inputs: dict) -> list[Findin
 
 
 RULES = {
+    "adopter_payload_boundary": adopter_payload_boundary,
     "adr_artifact_present": adr_artifact_present,
     "adr_status_enum": adr_status_enum,
     "architecture_contract": architecture_contract,

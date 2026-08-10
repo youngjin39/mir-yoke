@@ -12,5 +12,7 @@ external_entities: [public_evaluator, greenfield_owner, existing_repository_owne
 actors: [public_evaluator, greenfield_owner, existing_repository_owner, template_maintainer]
 authority_notes:
   - "Owner confirmation and ADR-84 override historical central-fleet implementation evidence."
+  - "Owner confirmation 2026-08-10 and ADR-79 narrow automated bootstrap to macOS, Linux, and WSL; native Windows is guidance-only."
+  - "ADR-80 requires project-isolated exact-source CLI installation and rejects provider push URLs before greenfield mutation."
   - "ADR-76 controls Mir Harness cross-repository authority."
   - "ADR-83 is limited to opt-in public capability provenance by ADR-84."

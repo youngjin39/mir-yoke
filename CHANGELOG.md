@@ -16,6 +16,12 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
   integrity-only capability operations into explicit local boundaries with changed-path evidence.
 - Added a MODE-S specification tree, exhaustive asset classification, and clean-candidate release
   readiness validation.
+- Narrowed automated greenfield bootstrap support to macOS, Linux, and WSL. Native Windows now
+  stops before mutation and directs the operator to WSL or agent-guided reference adaptation.
+- Isolated every adopter CLI runtime by physical project root and exact source commit, constrained
+  production dependencies from the frozen lock, and bound the installed closure to the receipt.
+- Required product-owned Git push destinations before bootstrap, removed provider-only validator
+  assets from adopter profiles, and replaced non-portable loop locking with recoverable PID locks.
 
 ### Removed
 

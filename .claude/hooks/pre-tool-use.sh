@@ -469,7 +469,7 @@ fi
 
 # mir:tool-contract:begin
 # --- R20-T01: phase-4 §4 tool contract validation (gated by env) ---
-# The shared launcher selects the project venv or uses `uv run`.
+# The shared launcher uses the receipt-bound external Mir runtime after bootstrap.
 if [ "${MIR_TOOL_CONTRACT_REQUIRED:-0}" = "1" ]; then
     _MIR_TC_VALIDATOR="$PROJECT_DIR/tools/hooks/validate_tool_contract.py"
     if [ -f "$_MIR_TC_VALIDATOR" ]; then

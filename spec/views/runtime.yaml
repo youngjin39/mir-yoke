@@ -13,8 +13,8 @@ external_execution_boundaries:
   - name: "Consumer-local invocation"
     owner: greenfield_owner_or_existing_repository_owner
     trigger: "Explicit command inside one declared consumer root"
-    scope: "Consumer repository or allowed local capability cache"
-    recovery: "Failure preserves authored files and prior state; the owner chooses whether to retry."
+    scope: "Consumer repository or project-specific local CLI/capability cache; automated greenfield mutation only on macOS, Linux, or WSL"
+    recovery: "Unsupported native Windows or provider push ownership returns guidance before mutation; other failures preserve authored files and prior state, and the owner chooses whether to retry."
 runtime_checks:
   asynchronous_connectors: {verdict: na, reason: "No provider execution unit or connector exists."}
   shared_resources: {verdict: na, reason: "No service-shared provider state exists."}

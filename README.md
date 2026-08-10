@@ -1,43 +1,52 @@
 # Mir Yoke
 
-**A proportional, safety-first harness template for the Claude Code + Codex CLI pair.**
+**An agent-guided, proportional harness-engineering template for Claude Code + Codex CLI.**
 
 Mir Yoke is a public template and reference repository. It is not an agent runtime and has no
 standing authority over a repository that adopts or consults it. Every adoption is an explicit,
 repository-local owner choice.
+It is not a universal installer; the supported automated bootstrap boundary is macOS, Linux, and
+WSL, while the active agent adapts the baseline to the repository in front of it.
 
-A reusable starting point for teams who want their AI coding assistants to share one operating
-contract. Hooks block narrow deterministic hazards, while design, delegation, TDD, review, and
-verification scale with the changed boundary.
+A reusable baseline for teams who want their AI coding assistants to share one operating contract.
+The active agent reads the repository's current state and local instructions, then adapts only the
+applicable template assets. Hooks block narrow deterministic hazards, while design, delegation,
+TDD, review, and verification scale with the changed boundary.
 
 If you have ever asked an AI to "be careful" and watched it overwrite a config file anyway, this
 is the answer: replace politely-worded prompts with executable guards.
+
+> [!WARNING]
+> A full `git clone` of Mir Yoke is a provider/maintainer checkout, not a slim product repository.
+> Product bootstrap first installs a copied Mir CLI outside the repository. Only Phase 2 finalize,
+> after all readiness evidence passes, automatically quarantines the exact hash-matched provider
+> payload and re-verifies the external CLI. A failed check rolls the move back and cannot produce a
+> ready receipt. Do not implement product work during `restart_required` or while
+> `R20 adopter_payload_boundary` still reports provider markers.
 
 ---
 
 ## What this is
 
-A directory layout + hook scripts + rule documents you copy into a new (or existing) repository
-so that Claude Code and Codex CLI behave like team members under the same playbook.
+A directory layout + hook scripts + rule documents installed through an explicit greenfield or
+existing-repository adoption path so that Claude Code and Codex CLI share the same playbook.
 
 What you get out of the box:
 
-- **12-agent topology (recommended template set)** — main-orchestrator (Claude), executor-agent
-  (Codex), codex-final-reviewer (Codex), quality-agent (Claude), a repository-local instruction
-  advisor (legacy slug `fleet-doc-steward`),
-  plus 7 specialists active out of the box: CWE auditor, dependency auditor, UI reviewer,
-  pipeline validator, ontology validator, runtime-contract reviewer, template-sync validator.
-  Each agent declares its execution backend in frontmatter so the orchestrator knows exactly
-  which CLI subprocess to use. Trim per-repository by editing `active_agents` in
-  `config/repos/<slug>.json` when a project does not need a specialist.
+- **Profile-selected agent catalog** — each greenfield adopter retains only the agents declared by
+  its capability pack: 5 for content workspaces, 7 for code applications or infrastructure, and
+  11 for hybrid pipelines. The provider-only `template-sync-validator` remains available only to
+  Mir Yoke/public-template maintainers and is removed from every adopter payload. Each retained
+  agent declares its execution backend so the orchestrator can dispatch it consistently.
 - **13-skill library in three global plugins** — `mir-core` always supplies architecture,
   `spec-architect`, governance, memory, and verification; `mir-code` and `mir-content` add the
   profile-specific code or no-code capabilities. Namespaces prevent project/global duplication.
 - **Required portable memory** — every completed bootstrap proves a local SQLite+FTS5 index over
   tracked Markdown. Embeddings and vectors are optional; memory is not.
 - **External-first storage profile** — an optional shared storage root keeps uv cache, managed
-  Python, tools, and the global capability provider on the same external filesystem as project
-  `.venv` directories, while credentials stay in the user home.
+  Python downloads, and the global capability provider on the same external filesystem. Every
+  product receives its own CLI tool namespace and keeps its project environment local; credentials
+  stay in the user home.
 - **Pinned capability source** — a trusted Git URL plus exact commit and tree hashes let later
   agents check for skill/agent updates without silently activating mutable remote instructions.
 - **Per-repository JSON registry** — `config/repo-agent-management.json` catalogs agents and skills.
@@ -75,18 +84,36 @@ behaving like it did before.
 
 ---
 
-## Bootstrap into your project (agent-guided)
+## Bootstrap a new product (agent-guided)
 
-You do not configure this by hand. **Point an AI agent at the repo and let it set itself up for
-your purpose.** Clone, open Claude Code or Codex CLI in the folder, and say:
+Clone a pinned Mir Yoke release with its Git ancestry into the intended product repository, detach
+its push path from the provider, open it in Claude Code or Codex CLI, and say:
 
-> Read `BOOTSTRAP.md` and set up this repo as a **code_app** project for **"an internal billing API in Python"**.
+> Read `BOOTSTRAP.md` and bootstrap this repository as a **code_app** project for **"an internal
+> billing API in Python"**. Do not begin product implementation until Phase 2 finalize reports a
+> ready receipt and completes the adopter slim step.
 
-The agent follows [`BOOTSTRAP.md`](BOOTSTRAP.md): it selects a profile, runs the cross-platform
-coordinator, installs the pinned global plugins, builds the required memory index, and selects the
-project-local agent pack. After a runtime restart it performs the mandatory initial
+On macOS, Linux, or WSL, the agent follows [`BOOTSTRAP.md`](BOOTSTRAP.md): it inspects the target,
+selects a profile, runs the supported coordinator, installs a copied external CLI plus the pinned
+global plugins, rewrites only exact release-matched provider contracts/tasks into product-owned
+baselines, installs the exact provider commit with tracked production constraints under a
+project-specific external runtime, builds the required memory index, and selects the project-local
+agent pack. The machine-local receipt separately binds the installed executable
+digest. After a runtime restart it performs the
+mandatory initial
 `design` → `spec-architect` structure pass, records pinned non-empty spec evidence, and verifies a
-ready receipt.
+ready receipt. The last successful finalize action journals and moves the unchanged provider
+payload into an ignored recovery quarantine, proves the remaining adopter tree with that external
+CLI, and commits the transaction only after the ready receipt is durable.
+
+Before the first setup, the agent renames the cloned provider remote and disables its push URL (or
+uses a separately materialized local-only repository), then optionally adds the product-owned
+`origin`. Setup rejects any effective push URL that still targets Mir Yoke before host or repository
+mutation. It never changes Git remotes, commits, pushes, or rewrites history itself.
+
+Native Windows is not an automated bootstrap target. `setup.ps1` exits without changing the
+repository and directs the agent to WSL or to a manual, reference-only adaptation based on the
+target repository's own contract. Mir Yoke does not claim readiness for that manual route.
 
 Prefer to do it yourself? `BOOTSTRAP.md` has a manual checklist too, and the Quick start below is the
 5-minute mechanical path.
@@ -119,9 +146,10 @@ the `mcp__codex__codex` tool) additionally needs:
 
 1. **Codex CLI** installed and logged in (`codex` on `PATH`). Claude Code remains supported and
    is required only when the adopter chooses to use the Claude runtime.
-2. **Python 3.12+, Git, `uv`, and `jq`** for the CLI and hook JSON parsing — `uv run mir …`.
-3. **Bash** on macOS/Linux/WSL; native Windows uses `setup.ps1` but still requires Git Bash or WSL
-   Bash on `PATH` for hooks.
+2. **Python 3.12+, Git, `uv`, and `jq`** for setup and hook JSON parsing. Setup installs Mir as a
+   copied `uv tool`; afterward use `scripts/mir.sh` or `scripts/mir.ps1`.
+3. **Bash** on macOS/Linux/WSL. On Windows, run the supported path inside WSL; native PowerShell
+   bootstrap is guidance-only and makes no repository changes.
 4. **The `codex` MCP server wired** so the `mcp__codex__codex` tool exists. This template does NOT
    ship a `.mcp.json` (it would carry machine-specific paths). Copy the example and adjust:
 
@@ -156,52 +184,36 @@ prerequisite for team use.
 
 ---
 
-## Quick start (5 minutes)
+## Maintainer checkout smoke test
+
+The following checkout is suitable for evaluating or maintaining Mir Yoke itself. It is not a
+product-adopter result, and the setup command must not be used to bypass the template Profile or
+R20. Use the provider commands below only when the checkout will remain Mir Yoke itself. For a new
+product, follow the two-phase bootstrap; do not change the Profile by hand or start product work
+before its final slim result is ready.
 
 ```bash
-# 1. Clone or copy the template into your repo.
-git clone https://github.com/youngjin39/mir-yoke.git my-project
-cd my-project
+# 1. Clone the provider/maintainer source for evaluation.
+git clone https://github.com/youngjin39/mir-yoke.git mir-yoke
+cd mir-yoke
 
-# 2. Phase 1: install plugins and build the mandatory memory baseline.
-./setup.sh --profile code_app \
-  --purpose "Build a portable project service." \
-  --stack python --stack sqlite
+# 2. Validate the maintainer checkout without changing its Profile.
+uv sync
+uv run python -m tools.harness_consistency run
+uv run pytest -q tests/test_public_template_identity.py tests/test_template_asset_classification.py
 
-# 3. (Codex lane) wire the Codex MCP server.
+# 3. Optionally wire the Codex MCP server for Mir Yoke maintenance.
 cp .mcp.json.example .mcp.json   # then edit the codex command/CODEX_HOME
 
-# 4. Start a new Codex session, run mir-core:design then mir-core:spec-architect,
-#    and finalize with an honest operator observation bound to that session.
-./setup.sh --profile code_app --finalize --architecture-initialized
-
-# 5. Open the project in Claude Code.
+# 4. Open the maintainer checkout in Claude Code.
 claude .
 
-# 6. Or in Codex CLI.
+# 5. Or in Codex CLI.
 codex
 ```
 
-For a project cloned onto an external SSD, keep large shared payloads on that same volume:
-
-```bash
-./setup.sh --storage-root "/path/to/external-volume/.mir-runtime" --profile code_app \
-  --purpose "Build a portable project service." --stack python
-```
-
-The path is a host choice, not a value committed by the template. See `BOOTSTRAP.md` for persistent
-shell variables and the storage boundary.
-
-On native Windows use `.\setup.ps1 -Profile code_app -Purpose "Build a portable project service."
--Stack python,sqlite`, then finalize with `-Finalize
--ArchitectureInitialized`. Both wrappers call the same Python coordinator. It validates the harness,
-installs the pinned profile pack, indexes durable Markdown into SQLite+FTS5, and writes a machine-local
-receipt. There is no daemon or background service.
-
-`content_workspace` additionally scans for pre-existing text records and requires each discovered
-path to be classified with `--archive CLASSIFICATION=PATH`. The tracked onboarding manifest records
-paths and formats, and bootstrap proves each project-specific acceptance query returns the expected
-document from SQLite+FTS5 before readiness.
+Product bootstrap profiles, storage options, the WSL route for Windows hosts, the final automatic
+slim transaction, and existing-repository assessment are documented in `BOOTSTRAP.md`.
 
 ---
 
@@ -223,9 +235,12 @@ Use the smallest sufficient loop for the change:
 Recall memory on demand instead of re-reading everything:
 
 ```bash
-uv run mir memory query <keyword>     # full-text recall over .mir/memory.db
-uv run mir context pull "<query>"     # on-demand context (top-k snippets)
+./scripts/mir.sh memory query <keyword>     # full-text recall over .mir/memory.db
+./scripts/mir.sh context pull "<query>"     # on-demand context (top-k snippets)
 ```
+
+An already initialized repository may expose `.\scripts\mir.ps1` as a convenience launcher. Its
+presence does not make native Windows an automated bootstrap or ready-receipt platform.
 
 ---
 
@@ -325,7 +340,7 @@ python3 scripts/verify_repo_agent_management.py
 ├── CLAUDE.md                   # Claude Code workspace rules (orchestration, role policy, gates)
 ├── AGENTS.md                   # Codex CLI mirror — same rules, Codex-flavored
 ├── ARCHITECTURE.md             # component map — Conductor / Engine / Worker layers
-├── setup.sh / setup.ps1        # thin Unix and Windows bootstrap wrappers
+├── setup.sh / setup.ps1        # supported Unix bootstrap / native-Windows guidance
 ├── README.md                   # (this file)
 ├── LICENSE                     # MIT
 ├── CONTRIBUTING.md             # how to extend the template
@@ -468,7 +483,7 @@ codex call uses, per TDD category:
 Resolve a route from anywhere:
 
 ```bash
-uv run mir policy resolve --category architecture   # -> {"model": "...", "reasoning_effort": "..."}
+./scripts/mir.sh policy resolve --category architecture   # -> {"model": "...", "reasoning_effort": "..."}
 ```
 
 `mir_executor … --dispatch` resolves this internally. For **direct** codex calls — a Claude main's
@@ -606,7 +621,8 @@ Specifically, this template is the only one in the comparison table that:
 
 - You need a single-agent setup with no enforcement (use Claude Code default).
 - You want a managed multi-agent platform (use Archon, autoGPT family, etc.).
-- You need all hook execution to be native PowerShell; current hooks require Git Bash or WSL Bash.
+- You require native-Windows automation or a native-PowerShell ready receipt; use the supported WSL
+  route or another harness designed for that runtime.
 
 ---
 

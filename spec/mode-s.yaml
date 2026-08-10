@@ -4,7 +4,7 @@ comparison:
     - {refs: [CR-001, CR-002, CR-003, QR-004], evidence: ["README.md", "CLAUDE.md", "ARCHITECTURE.md", "docs/decisions/INDEX.md"], acceptance_match: high}
     - {refs: [CR-004, FR-005], evidence: ["docs/decisions/adr-74-portable-bootstrap-capability-sources-and-memory.md", "src/mir/core/capabilities/manager.py", "src/mir/cli/capability.py"], acceptance_match: high}
     - {refs: [CR-005, FR-002, FR-006, QR-002], evidence: ["docs/decisions/adr-77-existing-repository-bootstrap-adoption.md:17-82", "src/mir/cli/bootstrap_adoption.py"], acceptance_match: high}
-    - {refs: [FR-001, FR-004, QR-001], evidence: ["BOOTSTRAP.md", "src/mir/cli/bootstrap.py", "setup.sh", "setup.ps1"], acceptance_match: high}
+    - {refs: [FR-001, FR-004, QR-001], evidence: ["BOOTSTRAP.md", "docs/decisions/adr-79-agent-guided-platform-scope.md", "src/mir/cli/bootstrap.py", "setup.sh", "setup.ps1"], acceptance_match: high}
     - {refs: [FR-003, FR-007, FR-008, IR-001], evidence: ["config/template-assets.json", "tools/template_assets.py", "scripts/verify_release_readiness.py", "docs/history/centralization/README.md"], acceptance_match: high}
     - {refs: [CR-006, IR-002], evidence: ["tests/test_public_template_surface.py", "src/mir/cli/_changes.py"], acceptance_match: high}
   req_minus_impl: []

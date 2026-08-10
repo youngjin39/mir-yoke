@@ -2,14 +2,19 @@
 title: Portable Bootstrap, Capability Sources, and Required Memory
 status: accepted
 date: 2026-08-06
+amended_by: adr-79
 ---
 
 # ADR-74 — Portable Bootstrap, Capability Sources, and Required Memory
 
+> **2026-08-10 amendment:** ADR-79 narrows automated bootstrap support to macOS, Linux, and
+> WSL. Native Windows is a fail-fast guidance-only path and does not produce ready receipts.
+
 ## Context
 
-Mir Yoke is intended to start a new repository on macOS, Windows, or Linux with the same minimum
-agent harness. The current bootstrap only recommends memory initialization, materializes common
+The original proposal intended to start a new repository on macOS, Windows, or Linux with the same
+minimum agent harness. ADR-79 narrows that automated path to macOS, Linux, and WSL. The prior
+bootstrap only recommended memory initialization, materialized common
 skills inside each repository, relies on Bash, and does not retain a trusted Git provenance record
 for later skill or agent updates. Those properties allow a prose-first project to omit architecture
 skills, create duplicate user/repository skill names, and finish setup without working memory.
@@ -90,13 +95,16 @@ vector service is not implemented by this release and must not be inferred from 
 
 ### 4. One bootstrap implementation
 
-A Python bootstrap coordinator owns all behavior. `setup.sh` and `setup.ps1` are thin wrappers.
+A Python bootstrap coordinator owns supported automated behavior. `setup.sh` installs a copied
+`uv tool` outside the project on macOS, Linux, or WSL; the coordinator and post-bootstrap launchers
+therefore do not depend on repository-local provider source. `setup.ps1` is guidance-only and
+performs no bootstrap mutation.
 Profile selection is explicit; Phase 1 has no implicit profile and requires non-placeholder purpose
 and stack inputs. Python-based hooks use one project-environment launcher that selects `.venv` or
 `uv run` and never falls back to the host Python interpreter.
-On Windows, PowerShell is the native bootstrap entrypoint while Git Bash is a declared prerequisite
-for the existing hook runtime. A missing Bash runtime blocks readiness. Tracked runtime artifacts
-must contain no symlinks.
+On Windows, automated bootstrap runs through WSL and the Linux/Bash contract. Native PowerShell
+stops before mutation and directs the operator or AI agent to WSL or repository-local reference
+adaptation. Tracked runtime artifacts must contain no symlinks.
 The coordinator validates the selected `code_app`, `hybrid_pipeline`, `infra_runtime`, or
 `content_workspace` profile and proves these surfaces before writing a ready receipt:
 
@@ -119,10 +127,22 @@ outputs to the pinned capability commit. The evidence must account for four-laye
 zero open gaps, and record a passing full project review; a boolean attestation or merely non-empty
 files cannot produce a ready receipt.
 
-Phase two validates staged configuration/database/provider state,
-atomically replaces only generated outputs, and writes the receipt last. Existing authored
-configuration is preserved or reported as a conflict. Failed runs cannot leave a ready receipt,
-and newly registered global state is rolled back where the host CLI supports a bounded reversal.
+Phase one also replaces only release-hash-matched provider contract and task surfaces with a
+product-owned baseline. As narrowed by ADR-80, setup installs the exact HTTPS source commit from the
+tracked capability lock with tracked production constraints under a project-specific host runtime;
+the machine-local receipt binds that source identity and executable digest. Modified authored
+surfaces are never overwritten.
+
+Phase two validates staged configuration/database/provider state and atomically replaces only
+generated outputs. As its final mutation it reads the release-generated, SHA-256-bound adopter
+payload, rejects symlinked path components, journals every intended move, moves unchanged
+provider/maintainer assets into an ignored recovery quarantine, and rechecks capability readiness
+through the copied external CLI. Modified, concurrently changed, unsafe, or unlisted content
+inside a provider root blocks the transaction. Failed post-move checks or receipt publication
+restore every moved path; restart recovery resolves an interrupted journal. The journal is
+committed only after the ready receipt is durable. Existing authored configuration is preserved or
+reported as a conflict, and newly registered global state is rolled back where the host CLI
+supports a bounded reversal.
 
 SessionStart reports incomplete bootstrap state and the mutation hook blocks normal work until a
 ready receipt exists, while allowing setup, memory verification, and Phase 2 spec evidence. The
@@ -146,8 +166,8 @@ launcher links stay in the user home; moving complete Claude or Codex homes is o
 
 ## Rejected alternatives
 
-- User-directory symlinks as capability distribution: they are not portable to native Windows and
-  can target the wrong clone. A host-local storage entrypoint is allowed but never required.
+- User-directory symlinks as capability distribution: they can target the wrong clone and do not
+  form a portable automation contract. A host-local storage entrypoint is allowed but never required.
 - Same-name user and repository copies: Claude may shadow one while Codex may expose both.
 - Repository copies for all common skills: they drift independently and lose global provenance.
 - Automatic activation of the newest branch head: it executes mutable remote instructions without
@@ -157,8 +177,9 @@ launcher links stay in the user home; moving complete Claude or Codex homes is o
 
 ## Acceptance criteria
 
-1. Clean macOS, Windows PowerShell, and Linux runs call the same coordinator and create equivalent
-   ready receipts without relying on symlinks.
+1. Clean macOS and Linux runs call the same coordinator and create equivalent ready receipts without
+   relying on symlinks; WSL uses that Linux contract, while native PowerShell fails before mutation
+   with WSL or agent-guided reference instructions.
 2. Each selected common skill is loaded from exactly one namespaced plugin provider per runtime;
    `spec-architect` is present for every profile.
 3. Bootstrap without sqlite-vec or an embedding server produces a current, integrity-checked,
@@ -182,6 +203,9 @@ launcher links stay in the user home; moving complete Claude or Codex homes is o
 12. Missing or incomplete receipts block normal mutation; purpose/profile/stack, classified content
     onboarding, project-specific FTS hits, four-layer coverage, and zero open gaps are required by
     executable gates rather than documentation alone.
+13. Greenfield Phase 1 removes no provider file. Phase 2 publishes ready only after exact payload
+    hashes, external CLI isolation, transactional slim, post-slim capability readiness, and rollback
+    behavior are proven. Existing-repository adoption never performs this slim transaction.
 
 ## Consequences
 

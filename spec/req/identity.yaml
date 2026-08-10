@@ -1,14 +1,14 @@
 requirements:
   - id: CR-001
     type: constraint
-    statement: "Mir Yoke shall publish a repository-agnostic harness template and reference corpus under its public repository license."
-    origin: "Owner confirmation 2026-08-08; Mir Yoke README:3-17 and LICENSE."
+    statement: "Mir Yoke shall publish an agent-guided, repository-agnostic harness-engineering template and reference corpus under its public repository license, not a universal installer."
+    origin: "Owner confirmation 2026-08-08 and 2026-08-10; Mir Yoke README:3-17, ADR-79, and LICENSE."
     actor: public_evaluator
     trigger: "The public repository is opened."
     preconditions: ["The repository checkout contains its root contract and license."]
-    postconditions: ["The product is identified as a reusable public template."]
+    postconditions: ["The product is identified as a reusable public template whose assets are adapted by an agent against local state."]
     acceptance:
-      - {given: "a clean checkout", when: "the root contract is inspected", then: "the first product section identifies a public reusable template and reference repository"}
+      - {given: "a clean checkout", when: "the root contract is inspected", then: "the first product section identifies an agent-guided public template and reference repository rather than a universal installer"}
       - {given: "a release candidate without a public license or template identity", when: "identity validation runs", then: "validation fails before release"}
     data_contract: []
     data_contract_na: "Structural product constraint with no runtime input or output."
@@ -17,7 +17,7 @@ requirements:
     authority: system
     status: ready
     confidence: high
-    evidence: ["README.md:3", "README.md:14", "LICENSE:1"]
+    evidence: ["README.md:3", "README.md:14", "docs/decisions/adr-79-agent-guided-platform-scope.md:1", "LICENSE:1"]
 
   - id: CR-002
     type: constraint

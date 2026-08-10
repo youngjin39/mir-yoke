@@ -93,6 +93,19 @@ sys.stdout.write(result.get(key, ""))
 PY
 }
 
+agent_sources() {
+  if [ -f ".mir/repo-profile.toml" ] \
+    && grep -Eq '^overlay_archetype = "product_adopter"$' ".mir/repo-profile.toml" \
+    && command -v jq >/dev/null 2>&1 \
+    && jq -e '.catalog.agents | type == "object"' \
+      "config/repo-agent-management.json" >/dev/null 2>&1; then
+    jq -r '.catalog.agents[] | .source_path // empty' \
+      "config/repo-agent-management.json" | LC_ALL=C sort
+    return
+  fi
+  printf '%s\n' .claude/agents/*.md | LC_ALL=C sort
+}
+
 body_without_frontmatter() {
   local file="$1"
   awk '
@@ -480,7 +493,7 @@ write_manifest_json() {
       name="$(extract_frontmatter_field "$src" "name")"
       [ -n "$name" ] || continue
       append_mapping "$src" "[\".codex/agents/${name}.toml\"]" "content" "Generated custom agent"
-    done < <(printf '%s\n' .claude/agents/*.md | LC_ALL=C sort)
+    done < <(agent_sources)
 
     if [ -f ".claude/settings.local.json" ] || [ -f ".claude/settings.json" ] || [ -f ".mcp.json" ]; then
       append_mapping "__CONFIG_SOURCES__" '[".codex/config.toml"]' "config" "Semantic mapping from Claude permissions and MCP settings"
@@ -527,7 +540,7 @@ while IFS= read -r src; do
   name="$(extract_frontmatter_field "$src" "name")"
   [ -n "$name" ] || continue
   write_agent_toml "$src"
-done < <(printf '%s\n' .claude/agents/*.md | LC_ALL=C sort)
+done < <(agent_sources)
 
 write_manifest_json
 

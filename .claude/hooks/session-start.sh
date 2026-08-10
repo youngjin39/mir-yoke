@@ -37,7 +37,7 @@ if [ -f "$PROJECT_DIR/scripts/build_session_upfront_context.py" ]; then
 else
   echo "repository_profile: unavailable"
   echo "mandatory_safety: inspect repository-local instructions before mutation"
-  echo "Context depth on demand: uv run mir context pull \"<query>\" (--history for archived/expired)"
+  echo "Context depth on demand: scripts/mir.sh context pull \"<query>\" (--history for archived/expired)"
   echo ""
 fi
 

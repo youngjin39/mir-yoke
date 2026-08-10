@@ -1,12 +1,7 @@
 [preserve]
 paths = [
-  "docs/harness-engineering/**",
-  "docs/decisions/**",
   ".ai-harness/**",
-  "config/**",
-  "plugins/**",
-  ".claude-plugin/**",
-  ".agents/plugins/**"
+  "config/**"
 ]
 
 [claude_md_preserve]

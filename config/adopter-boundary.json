@@ -1,0 +1,48 @@
+{
+  "$schema": "./adopter-boundary.schema.json",
+  "schema_version": 1,
+  "provider_owners": [
+    {
+      "slug": "mir-yoke",
+      "repository_types": ["public_harness_template", "template_transitional"]
+    }
+  ],
+  "provider_markers": [
+    ".agents/plugins/marketplace.json",
+    ".claude-plugin/marketplace.json",
+    ".claude/agents/template-sync-validator.md",
+    ".codex/agents/template-sync-validator.toml",
+    ".github/workflows/release.yml",
+    "config/bluebrick-paths.json",
+    "config/template-assets.json",
+    "plugins/mir-code",
+    "plugins/mir-content",
+    "plugins/mir-core",
+    "src/mir",
+    "tests/test_template_asset_classification.py",
+    "tools/harness_consistency"
+  ],
+  "provider_text_markers": [
+    {
+      "path": "CLAUDE.md",
+      "contains": "# Mir Yoke — Harness Template Contract"
+    },
+    {
+      "path": ".ai-harness/bluebricks.md",
+      "contains": "public template repository"
+    },
+    {
+      "path": ".mir/boundary.md",
+      "contains": "# Boundary: Claude+Codex Harness Template"
+    }
+  ],
+  "ephemeral_globs": ["**/__pycache__/**", "**/*.pyc"],
+  "source_asset_manifest": "config/template-assets.json",
+  "payload_manifest": "config/adopter-payload.json",
+  "remove_classifications": [
+    "reference",
+    "optional-consumer-tool",
+    "template-maintainer-tool",
+    "historical"
+  ]
+}

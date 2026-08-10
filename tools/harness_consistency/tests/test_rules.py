@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 from tools.harness_consistency.rules import (
+    adopter_payload_boundary,
     adr_artifact_present,
     adr_status_enum,
     adr_supersession_graph,
@@ -34,6 +35,104 @@ def _manifest_inputs(rule_name: str) -> dict:
         (PROJECT_ROOT / "config" / "harness-consistency.json").read_text(encoding="utf-8")
     )
     return manifest["rule_inputs"][rule_name]
+
+
+def _write_repo_profile(path: Path, *, slug: str, repository_type: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        "[repo]\n"
+        f'slug = "{slug}"\n'
+        f'repository_type = "{repository_type}"\n',
+        encoding="utf-8",
+    )
+
+
+_ADOPTER_BOUNDARY_INPUTS = {"boundary_manifest_path": "config/adopter-boundary.json"}
+
+
+def _write_adopter_boundary(root: Path) -> None:
+    _write_json(
+        root / "config/adopter-boundary.json",
+        {
+            "schema_version": 1,
+            "provider_owners": [
+                {
+                    "slug": "mir-yoke",
+                    "repository_types": [
+                        "public_harness_template",
+                        "template_transitional",
+                    ],
+                }
+            ],
+            "provider_markers": [
+                ".agents/plugins/marketplace.json",
+                "src/mir",
+                "plugins/mir-core",
+                "tools/harness_consistency",
+                "tests/test_template_asset_classification.py",
+                "config/template-assets.json",
+            ],
+            "provider_text_markers": [],
+            "source_asset_manifest": "config/template-assets.json",
+            "payload_manifest": "config/adopter-payload.json",
+            "remove_classifications": ["template-maintainer-tool"],
+        },
+    )
+
+
+def test_should_return_blocking_findings_when_adopter_retains_provider_tree(
+    tmp_path: Path,
+) -> None:
+    _write_adopter_boundary(tmp_path)
+    _write_repo_profile(
+        tmp_path / ".mir/repo-profile.toml",
+        slug="sample-product",
+        repository_type="starter_project",
+    )
+    (tmp_path / "src/mir").mkdir(parents=True)
+    (tmp_path / "tools/harness_consistency").mkdir(parents=True)
+    marketplace = tmp_path / ".agents/plugins/marketplace.json"
+    marketplace.parent.mkdir(parents=True)
+    marketplace.write_text("{}\n", encoding="utf-8")
+
+    findings = adopter_payload_boundary(tmp_path, _ADOPTER_BOUNDARY_INPUTS)
+
+    assert [finding.location for finding in findings] == [
+        ".agents/plugins/marketplace.json",
+        "src/mir",
+        "tools/harness_consistency",
+    ]
+    assert all(finding.rule_id == "R20" for finding in findings)
+    assert all(finding.severity == "ERROR" for finding in findings)
+    assert all("complete greenfield Phase 2 finalize" in finding.message for finding in findings)
+
+
+def test_should_return_no_findings_when_provider_owner_retains_development_tree(
+    tmp_path: Path,
+) -> None:
+    _write_adopter_boundary(tmp_path)
+    _write_repo_profile(
+        tmp_path / ".mir/repo-profile.toml",
+        slug="mir-yoke",
+        repository_type="public_harness_template",
+    )
+    (tmp_path / "src/mir").mkdir(parents=True)
+    (tmp_path / "tools/harness_consistency").mkdir(parents=True)
+
+    assert adopter_payload_boundary(tmp_path, _ADOPTER_BOUNDARY_INPUTS) == []
+
+
+def test_should_return_no_findings_when_adopter_payload_is_slim(tmp_path: Path) -> None:
+    _write_adopter_boundary(tmp_path)
+    _write_repo_profile(
+        tmp_path / ".mir/repo-profile.toml",
+        slug="sample-product",
+        repository_type="starter_project",
+    )
+    (tmp_path / "apps").mkdir()
+    (tmp_path / ".ai-harness").mkdir()
+
+    assert adopter_payload_boundary(tmp_path, _ADOPTER_BOUNDARY_INPUTS) == []
 
 
 def test_adr_status_enum_reports_invalid_status(tmp_path: Path) -> None:

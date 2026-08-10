@@ -44,6 +44,48 @@ mir_bootstrap_gate_state() {
   status="$(jq -r '.status // "invalid"' "$receipt" 2>/dev/null || printf 'invalid')"
   local receipt_mode
   receipt_mode="$(jq -r '.mode // ""' "$receipt" 2>/dev/null)"
+  if [ "$status" = "restart_required" ]; then
+    local restart_cli restart_cli_hash restart_actual_cli_hash restart_runtime_root
+    local restart_manifest restart_manifest_hash restart_actual_manifest_hash
+    local restart_source_url restart_source_commit restart_constraints_hash
+    jq -e '
+      .cli.externalized == true and
+      (.cli.executable | type == "string" and length > 0) and
+      (.cli.sha256 | type == "string" and test("^[0-9a-f]{64}$")) and
+      (.cli.runtime_manifest | type == "string" and length > 0) and
+      (.cli.runtime_manifest_sha256 | type == "string" and test("^[0-9a-f]{64}$")) and
+      (.cli.source_url | type == "string" and length > 0) and
+      (.cli.source_commit | type == "string" and test("^[0-9a-f]{40,64}$")) and
+      (.cli.constraints_sha256 | type == "string" and test("^[0-9a-f]{64}$"))
+    ' "$receipt" >/dev/null 2>&1 || status=invalid
+    if [ "$status" = "restart_required" ]; then
+      restart_cli="$(jq -r '.cli.executable' "$receipt")"
+      restart_cli_hash="$(jq -r '.cli.sha256' "$receipt")"
+      restart_runtime_root="$(cd -- "$(dirname -- "$restart_cli")/.." 2>/dev/null && pwd -P || true)"
+      restart_manifest="$(jq -r '.cli.runtime_manifest' "$receipt")"
+      restart_manifest_hash="$(jq -r '.cli.runtime_manifest_sha256' "$receipt")"
+      restart_source_url="$(jq -r '.cli.source_url' "$receipt")"
+      restart_source_commit="$(jq -r '.cli.source_commit' "$receipt")"
+      restart_constraints_hash="$(jq -r '.cli.constraints_sha256' "$receipt")"
+      case "$restart_cli" in "$project_dir"|"$project_dir"/*) status=invalid ;; esac
+      [ -f "$restart_cli" ] && [ -x "$restart_cli" ] || status=invalid
+      restart_actual_cli_hash="$(_mir_bootstrap_sha256 "$restart_cli" 2>/dev/null || true)"
+      [ "$restart_actual_cli_hash" = "$restart_cli_hash" ] || status=invalid
+      [ -n "$restart_runtime_root" ] && \
+        [ "$restart_manifest" = "$restart_runtime_root/runtime-manifest.json" ] && \
+        [ -f "$restart_manifest" ] && [ ! -L "$restart_manifest" ] || status=invalid
+      restart_actual_manifest_hash="$(_mir_bootstrap_sha256 "$restart_manifest" 2>/dev/null || true)"
+      [ "$restart_actual_manifest_hash" = "$restart_manifest_hash" ] || status=invalid
+      if [ "$status" = "restart_required" ]; then
+        "$restart_cli" runtime-manifest verify \
+          --runtime-root "$restart_runtime_root" \
+          --manifest "$restart_manifest" \
+          --source-url "$restart_source_url" \
+          --source-commit "$restart_source_commit" \
+          --constraints-sha256 "$restart_constraints_hash" >/dev/null 2>&1 || status=invalid
+      fi
+    fi
+  fi
   if [ "$status" = "ready" ] && { [ "$receipt_mode" = "existing_repository_adoption" ] || [ -e "$project_dir/config/bootstrap-adoption.json" ]; }; then
     local manifest="$project_dir/config/bootstrap-adoption.json"
     local manifest_hash receipt_hash manifest_source receipt_source
@@ -92,6 +134,15 @@ EOF
     local output_rows output_path output_hash actual_hash
     jq -e '
       .capabilities.status == "ready" and
+      .cli.externalized == true and
+      (.cli.executable | type == "string" and length > 0) and
+      (.cli.sha256 | type == "string" and test("^[0-9a-f]{64}$")) and
+      (.cli.runtime_manifest | type == "string" and length > 0) and
+      (.cli.runtime_manifest_sha256 | type == "string" and test("^[0-9a-f]{64}$")) and
+      (.cli.source_url | type == "string" and length > 0) and
+      (.cli.source_commit | type == "string" and test("^[0-9a-f]{40,64}$")) and
+      (.cli.constraints_sha256 | type == "string" and test("^[0-9a-f]{64}$")) and
+      (.slim.status == "applied" or .slim.status == "already_slim") and
       .architecture_initialization.attested == true and
       (.architecture_initialization.evidence.output_hashes | type == "object") and
       (.architecture_initialization.evidence.output_hashes | length == 4) and
@@ -102,6 +153,63 @@ EOF
       all(.architecture_initialization.evidence.output_hashes[]; type == "string" and test("^[0-9a-f]{64}$"))
     ' "$receipt" >/dev/null 2>&1 || status=invalid
     if [ "$status" = "ready" ]; then
+      local cli_path cli_hash actual_cli_hash runtime_root runtime_manifest runtime_manifest_hash actual_manifest_hash runtime_source_url runtime_source_commit runtime_constraints_hash slim_status boundary marker_rows marker_path marker_text
+      cli_path="$(jq -r '.cli.executable // ""' "$receipt" 2>/dev/null)"
+      cli_hash="$(jq -r '.cli.sha256 // ""' "$receipt" 2>/dev/null)"
+      case "$cli_path" in
+        "$project_dir"|"$project_dir"/*) status=invalid ;;
+      esac
+      [ -n "$cli_path" ] && [ -f "$cli_path" ] && [ -x "$cli_path" ] || status=invalid
+      actual_cli_hash="$(_mir_bootstrap_sha256 "$cli_path" 2>/dev/null || true)"
+      [ -n "$actual_cli_hash" ] && [ "$actual_cli_hash" = "$cli_hash" ] || status=invalid
+      runtime_root="$(cd -- "$(dirname -- "$cli_path")/.." 2>/dev/null && pwd -P || true)"
+      runtime_manifest="$(jq -r '.cli.runtime_manifest // ""' "$receipt" 2>/dev/null)"
+      runtime_manifest_hash="$(jq -r '.cli.runtime_manifest_sha256 // ""' "$receipt" 2>/dev/null)"
+      runtime_source_url="$(jq -r '.cli.source_url // ""' "$receipt" 2>/dev/null)"
+      runtime_source_commit="$(jq -r '.cli.source_commit // ""' "$receipt" 2>/dev/null)"
+      runtime_constraints_hash="$(jq -r '.cli.constraints_sha256 // ""' "$receipt" 2>/dev/null)"
+      [ -n "$runtime_root" ] && [ "$runtime_manifest" = "$runtime_root/runtime-manifest.json" ] && \
+        [ -f "$runtime_manifest" ] && [ ! -L "$runtime_manifest" ] || status=invalid
+      actual_manifest_hash="$(_mir_bootstrap_sha256 "$runtime_manifest" 2>/dev/null || true)"
+      [ -n "$actual_manifest_hash" ] && [ "$actual_manifest_hash" = "$runtime_manifest_hash" ] || status=invalid
+      if [ "$status" = "ready" ]; then
+        "$cli_path" runtime-manifest verify \
+          --runtime-root "$runtime_root" \
+          --manifest "$runtime_manifest" \
+          --source-url "$runtime_source_url" \
+          --source-commit "$runtime_source_commit" \
+          --constraints-sha256 "$runtime_constraints_hash" >/dev/null 2>&1 || status=invalid
+      fi
+      [ ! -e "$project_dir/.mir/slim-transaction.json" ] && \
+        [ ! -e "$project_dir/.mir/slim.lock" ] || status=invalid
+      boundary="$project_dir/config/adopter-boundary.json"
+      [ -f "$boundary" ] && [ ! -L "$boundary" ] || status=invalid
+      if [ "$status" = "ready" ]; then
+        marker_rows="$(jq -r '.provider_markers[]?' "$boundary" 2>/dev/null)"
+        while IFS= read -r marker_path; do
+          [ -n "$marker_path" ] || continue
+          case "$marker_path" in /*|../*|*/../*|*/..) status=invalid; break ;; esac
+          if [ -e "$project_dir/$marker_path" ] || [ -L "$project_dir/$marker_path" ]; then
+            status=invalid
+            break
+          fi
+        done <<EOF
+$marker_rows
+EOF
+      fi
+      if [ "$status" = "ready" ]; then
+        while IFS=$'\t' read -r marker_path marker_text; do
+          [ -n "$marker_path" ] && [ -n "$marker_text" ] || continue
+          case "$marker_path" in /*|../*|*/../*|*/..) status=invalid; break ;; esac
+          if [ -f "$project_dir/$marker_path" ] && \
+             grep -Fq -- "$marker_text" "$project_dir/$marker_path"; then
+            status=invalid
+            break
+          fi
+        done <<EOF
+$(jq -r '.provider_text_markers[]? | [.path, .contains] | @tsv' "$boundary" 2>/dev/null)
+EOF
+      fi
       output_rows="$(jq -r '.architecture_initialization.evidence.output_hashes | to_entries[] | [.key, .value] | @tsv' "$receipt" 2>/dev/null)"
       while IFS=$'\t' read -r output_path output_hash; do
         [ -f "$project_dir/$output_path" ] && [ ! -L "$project_dir/$output_path" ] || {
@@ -131,9 +239,9 @@ mir_bootstrap_gate_instructions() {
   printf 'bootstrap_gate: required (state=%s)\n' "$state"
   printf 'normal_mutation: blocked until .mir/bootstrap-receipt.json has status=ready\n'
   if [ -f "$project_dir/config/bootstrap-adoption.json" ]; then
-    printf 'existing_repository: complete tracked adoption evidence, then run uv run mir bootstrap-adoption --apply\n'
+    printf 'existing_repository: complete tracked adoption evidence, then run scripts/mir.sh bootstrap-adoption --apply\n'
   else
-    printf 'phase_1: run setup.sh/setup.ps1 with --profile, --purpose, and --stack\n'
+    printf 'phase_1: run setup.sh with --profile, --purpose, and --stack (inside WSL on Windows hosts)\n'
     printf 'phase_2: restart, run mir-core:design then mir-core:spec-architect, write coverage/gap evidence, and finalize\n'
   fi
 }
@@ -344,6 +452,17 @@ mir_bootstrap_gate_enforce() {
   }
   local tool_name
   tool_name="$(printf '%s' "$payload" | jq -r '.tool_name // ""' 2>/dev/null)"
+  if [ "$state" = "invalid" ]; then
+    if [ "$tool_name" = "Bash" ]; then
+      local repair_command
+      repair_command="$(printf '%s' "$payload" | jq -r '.tool_input.command // ""')"
+      _mir_bootstrap_workdir_allowed "$payload" "$project_dir" && \
+        _mir_bootstrap_safe_single_command "$repair_command" "$project_dir" && \
+        _mir_bootstrap_uv_project_allowed "$repair_command" "$project_dir" && return 0
+    fi
+    printf '[BootstrapGate BLOCK] bootstrap is invalid; repair the receipt-bound runtime with setup.sh\n' >&2
+    return 2
+  fi
   case "$tool_name" in
     Bash)
       local command

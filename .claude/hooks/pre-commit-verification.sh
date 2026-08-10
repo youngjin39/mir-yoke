@@ -40,7 +40,7 @@ collect_changed_files() {
 is_code_path() {
   local path="$1"
   case "$path" in
-    src/*|tests/*|app/*|lib/*)
+    src/*|tests/*|app/*|apps/*|packages/*|pipelines/*|infra/*|content/*|lib/*)
       ;;
     tools/*)
       # The local manifest may explicitly defer tools/ checks. Without a manifest, tools/
@@ -64,7 +64,7 @@ is_code_path() {
 is_implementation_path() {
   local path="$1"
   case "$path" in
-    src/*|app/*|lib/*)
+    src/*|app/*|apps/*|packages/*|pipelines/*|infra/*|content/*|lib/*)
       ;;
     *)
       return 1
@@ -139,15 +139,13 @@ main() {
   done < <(collect_changed_files)
   changed_code_paths="${changed_code_paths# }"
 
-  local changed_py_under_src=""
+  local changed_python=""
   for path in $changed_code_paths; do
     case "$path" in
-      src/*.py|src/*/*.py|src/*/*/*.py)
-        changed_py_under_src="$changed_py_under_src $path"
-        ;;
+      *.py) changed_python="$changed_python $path" ;;
     esac
   done
-  changed_py_under_src="${changed_py_under_src# }"
+  changed_python="${changed_python# }"
 
   local changed_test_paths=""
   for path in $changed_code_paths; do
@@ -157,42 +155,39 @@ main() {
   done
   changed_test_paths="${changed_test_paths# }"
 
-  local default_lint default_typecheck default_test
-  if [ -n "$changed_code_paths" ]; then
-    default_lint="uv run ruff check $changed_code_paths"
+  local default_lint default_typecheck default_test default_build
+  if [ -f package.json ]; then
+    default_lint="npm run lint --if-present"
+    default_typecheck="npm run typecheck --if-present"
+    default_test="npm run test --if-present"
+    default_build="npm run build --if-present"
+  elif [ -f pyproject.toml ]; then
+    if [ -n "$changed_code_paths" ]; then
+      default_lint="uv run ruff check $changed_code_paths"
+    else
+      default_lint="uv run ruff check src tests"
+    fi
+    if [ -n "$changed_python" ]; then
+      default_typecheck="uv run mypy --follow-imports=silent $changed_python"
+    else
+      default_typecheck="echo skip-typecheck-no-python-changes"
+    fi
+    if [ -n "$changed_python" ] || [ -n "$changed_test_paths" ]; then
+      default_test="uv run pytest -q $changed_test_paths"
+    else
+      default_test="echo skip-test-no-python-changes"
+    fi
+    default_build=""
   else
-    default_lint="uv run ruff check src tests"
-  fi
-  if [ -n "$changed_py_under_src" ]; then
-    # --follow-imports=silent: report errors only in changed files; do not
-    # block on pre-existing tech debt in transitively imported modules.
-    default_typecheck="uv run mypy --follow-imports=silent $changed_py_under_src"
-  else
-    default_typecheck="echo skip-typecheck-no-src-py-changes"
-  fi
-  # Known-flaky test (claude_memory extralite path-with-space URI bug —
-  # see project_claude_memory_path_bug memory). Deselect at hook level so
-  # unrelated commits in repos with whitespace in their path are not blocked.
-  local known_flake_deselect
-  known_flake_deselect="--deselect tests/test_mir_mcp_server_live.py::test_live_round_trip_status_call"
-  # ADR-56 known pre-existing baseline — see docs/decisions/pre-commit-baseline-deselect-2026-06-13.md
-  # RESOLVED 2026-06-13: all 6 baseline tests fixed (corpus archive hygiene; native-memory
-  # capture-native command + live capture; template verifier per-phase granularity + sanitize
-  # allowlist + ADR-56 template stub). Baseline is now EMPTY — list only ever shrinks; any new
-  # entry requires an ADR/decision record.
-  local pre_existing_baseline_deselect
-  pre_existing_baseline_deselect=""
-  if [ -n "$changed_py_under_src" ]; then
-    default_test="uv run pytest -q $known_flake_deselect $pre_existing_baseline_deselect"
-  elif [ -n "$changed_test_paths" ]; then
-    default_test="uv run pytest -q $changed_test_paths"
-  else
-    default_test="echo skip-test-no-code-py-changes"
+    default_lint="echo skip-lint-no-product-command"
+    default_typecheck="echo skip-typecheck-no-product-command"
+    default_test="echo skip-test-no-product-command"
+    default_build=""
   fi
   lint_cmd="${MIR_PRE_COMMIT_LINT:-$default_lint}"
   typecheck_cmd="${MIR_PRE_COMMIT_TYPECHECK:-$default_typecheck}"
   test_cmd="${MIR_PRE_COMMIT_TEST:-$default_test}"
-  build_cmd="${MIR_PRE_COMMIT_BUILD:-}"
+  build_cmd="${MIR_PRE_COMMIT_BUILD:-$default_build}"
 
   local tdd_cmd idx
   idx=1

@@ -1,23 +1,24 @@
 requirements:
   - id: QR-001
     type: quality
-    statement: "A clean supported bootstrap path shall complete on macOS, native Windows PowerShell, and Linux using the same coordinator contract."
-    origin: "Mir Yoke ADR-74 acceptance criterion 1; owner public reuse goal."
+    statement: "A clean supported automated bootstrap path shall complete on macOS, Linux, and WSL using the same coordinator contract, while native Windows remains guidance-only and performs zero bootstrap mutation."
+    origin: "Mir Yoke ADR-79; owner platform-scope confirmation 2026-08-10."
     actor: greenfield_owner
     trigger: "A clean-platform bootstrap verification starts."
     preconditions: ["Documented platform prerequisites are installed."]
-    postconditions: ["All three platform lanes produce equivalent contract fields."]
+    postconditions: ["Supported Unix lanes produce equivalent contract fields; native Windows reports one safe next action and no changed path."]
     acceptance:
-      - {given: "clean supported macOS, Windows, and Linux environments", when: "the platform bootstrap matrix runs", then: "three lanes pass and emit the same required result keys"}
-      - {given: "a platform-specific wrapper bypassing the common coordinator", when: "wrapper parity validation runs", then: "validation fails"}
+      - {given: "clean supported macOS and Linux environments", when: "the platform bootstrap matrix runs", then: "both lanes pass and emit the same required result keys"}
+      - {given: "a WSL environment", when: "setup.sh runs", then: "the Linux coordinator contract applies without a native-Windows branch"}
+      - {given: "native Windows PowerShell or a direct native-Windows bootstrap call", when: "bootstrap is requested", then: "the operation stops before mutation and directs the operator to WSL or agent-guided reference adaptation"}
     data_contract:
-      - {name: "PlatformResult", direction: O, type: "object", format: "JSON", unit: "platform lane", range: "three supported lanes", nullable: false, default: "none", precision: "identical required keys", tolerance: "zero missing lanes"}
-    errors: [{condition: "a prerequisite or common coordinator is unavailable", behavior: "report the unsupported prerequisite and do not claim platform readiness"}]
+      - {name: "PlatformResult", direction: O, type: "object", format: "JSON or guidance error", unit: "platform lane", range: "supported Unix result or native-Windows guidance", nullable: false, default: "none", precision: "exact support disposition", tolerance: "zero unsupported readiness claims"}
+    errors: [{condition: "the platform is unsupported or a supported prerequisite is unavailable", behavior: "perform zero bootstrap mutation, report the disposition, and do not claim readiness"}]
     verification: e2e
     authority: platform
     status: ready
     confidence: high
-    evidence: ["setup.sh:1", "setup.ps1:1", "docs/decisions/adr-74-portable-bootstrap-capability-sources-and-memory.md:158"]
+    evidence: ["setup.sh:1", "setup.ps1:1", "src/mir/cli/bootstrap.py:1", "docs/decisions/adr-79-agent-guided-platform-scope.md:1"]
 
   - id: QR-002
     type: quality
@@ -61,14 +62,14 @@ requirements:
 
   - id: QR-004
     type: quality
-    statement: "The first product section of every root authority document shall state template identity and provider non-runtime authority without a central-fleet instruction."
-    origin: "Owner clarity requirement 2026-08-08; recovered README, CLAUDE, ARCHITECTURE mismatch."
+    statement: "The first product section of every root authority document shall state agent-guided template identity, provider non-runtime authority, and that Mir Yoke is not a universal installer, without a central-fleet instruction."
+    origin: "Owner clarity requirements 2026-08-08 and 2026-08-10; recovered README, CLAUDE, ARCHITECTURE mismatch; ADR-79."
     actor: public_evaluator
     trigger: "A root authority document is opened or validated."
     preconditions: ["README, CLAUDE, ARCHITECTURE, and the public decision index exist."]
-    postconditions: ["All four documents state one compatible product boundary."]
+    postconditions: ["All four documents state one compatible agent-guided, non-universal-installer product boundary."]
     acceptance:
-      - {given: "the four root authority documents", when: "identity consistency validation runs", then: "all four identify a template, deny provider runtime, and deny central-fleet authority"}
+      - {given: "the four root authority documents", when: "identity consistency validation runs", then: "all four identify an agent-guided template that is not a universal installer, deny provider runtime, and deny central-fleet authority"}
       - {given: "one current root document that calls Mir Yoke a fleet manager, runtime, or direct-apply source", when: "identity consistency validation runs", then: "validation fails and reports the document"}
     data_contract:
       - {name: "IdentityConsistencyReport", direction: O, type: "object", format: "document, required claims, forbidden claims", unit: "document result", range: "four document results", nullable: false, default: "none", precision: "one result per authority document", tolerance: "zero conflicting documents"}

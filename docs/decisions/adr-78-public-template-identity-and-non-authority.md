@@ -53,8 +53,11 @@ invokes them inside one declared local repository boundary.
 Two adoption paths are separate:
 
 1. `mir bootstrap` creates a greenfield baseline after explicit invocation for one project root.
+   Phase 1 installs a copied external CLI and removes nothing. Passing Phase 2 finalize performs
+   one hash-bound, rollback-capable slim transaction as its last mutation and writes ready last.
 2. `mir bootstrap-adoption` assesses an existing repository without writing by default. Its
-   explicit `--apply` form may write only the machine-local receipt after every check passes.
+   explicit `--apply` form may write only the machine-local receipt after every check passes and
+   never invokes greenfield slim.
 
 Every tracked release surface has exactly one disposition: `starter`, `reference`,
 `optional-consumer-tool`, `template-maintainer-tool`, or `historical`. Unclassified or multiply
@@ -101,7 +104,8 @@ and engineering prose remain available through the historical index and Git hist
 - Root identity tests require public-template, provider-non-runtime, and non-authority claims.
 - Asset validation maps every tracked candidate file to exactly one classification.
 - Adoption and capability tests prove read-only defaults, explicit apply, local-root confinement,
-  atomic receipts, rollback, and changed-path reporting.
+  external CLI isolation, hash-bound greenfield slim, atomic receipts, rollback, and changed-path
+  reporting.
 - Release readiness runs identity, authority, history, classification, sanitization, derivative,
   focused behavior, full test, and lint checks from a clean candidate tree.
 

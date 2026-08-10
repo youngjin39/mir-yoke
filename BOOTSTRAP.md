@@ -1,15 +1,56 @@
 # Bootstrap — turn this template into a project
 
-Mir Yoke starts code and non-code repositories with the same minimum harness. The first product
-request may be prose, fiction, analysis, infrastructure, or application code; project architecture
-and memory are initialized before normal work begins.
+Mir Yoke provides a minimum harness-engineering baseline for code and non-code repositories. The
+active AI agent first reads the target's current state and local contract, then adapts only the
+applicable template assets. The first product request may be prose, fiction, analysis,
+infrastructure, or application code; project architecture and memory are initialized before
+normal work begins.
+
+## Adopter payload boundary — blocking
+
+A raw Mir Yoke clone begins as provider and maintainer source. Greenfield bootstrap is responsible
+for converting that exact release tree into a slim product-adopter payload, but only as the last
+successful action of Phase 2 finalize. Phase 1 first installs a copied Mir CLI outside the project,
+writes the product Profile, rewrites exact release-matched provider contracts and task state,
+installs the exact commit from the tracked `.mir/capability-lock.json` under a project-specific
+runtime namespace, binds that source and executable in the machine-local receipt, installs
+capabilities, records a deterministic manifest of the installed Python runtime closure, and records
+`restart_required`; it removes nothing. Setup and startup reject dependency, executable-mode, or
+symlink drift even if the small launcher file itself is unchanged.
+
+Provider maintainers can inspect the pre-bootstrap boundary with:
+
+```bash
+uv run python -m tools.harness_consistency run
+```
+
+`R20 adopter_payload_boundary` is expected between greenfield Phase 1 and Phase 2. It remains a
+blocking error for product work. Do not delete paths manually: finalize uses the release's
+hash-bound adopter payload manifest, refuses modified or unlisted files inside provider roots,
+moves eligible files into an ignored recovery quarantine, and restores them if a concurrent path
+change, post-slim external CLI check, capability verification, or ready-receipt publication fails.
+An fsynced `.mir/slim-transaction.json` journal makes the next bootstrap restore or finish any
+interrupted finalization before starting another transaction.
+
+The safe states are:
+
+- a Mir Yoke maintainer checkout with the canonical `mir-yoke/public_harness_template` identity;
+- a product repository containing only its locally owned contract and explicitly selected adopter
+  assets; or
+- an existing repository being assessed read-only before any selected adoption.
+
+A product identity mixed with the full provider tree is not ready. A successful greenfield final
+receipt must record `slim.status` as `applied` or `already_slim`, identify the external CLI, and
+leave no configured provider marker. Existing-repository adoption remains a separate
+preservation-first path and never invokes this removal transaction.
 
 ## Prerequisites
 
 - Git, Python 3.12+, `uv`, and `jq` (hook JSON parsing).
 - Claude Code and Codex CLI on `PATH` for the supported dual-runtime ready state.
-- macOS/Linux/WSL: Bash. Native Windows: PowerShell plus Git Bash or WSL Bash on `PATH`, because
-  hook scripts use Bash.
+- macOS, Linux, or WSL with Bash for the supported automated bootstrap and ready receipt.
+- Native Windows is guidance-only. Run automation inside WSL, or let the agent use this repository
+  as a non-ready reference while preserving the target repository's own contract.
 - Authenticated Claude Code and Codex CLI sessions.
 
 Codex IDE extensions do not expose this plugin marketplace contract and are not part of the ready
@@ -29,12 +70,28 @@ Choose exactly one profile. Each profile receives `mir-core`, which contains `de
 
 ## Agent-guided setup
 
-Open the clone in Claude Code or Codex CLI and ask:
+Open the intended product repository in Claude Code or Codex CLI and ask:
 
-> Read `BOOTSTRAP.md` and initialize this repository as a `<profile>` project for `<purpose>`.
+> Read `BOOTSTRAP.md`, verify the adopter payload boundary, and initialize this repository as a
+> `<profile>` project for `<purpose>` without importing Mir Yoke provider or maintainer sources.
 
-The agent must confirm the slug, profile, purpose, and primary stack. It must not remove template
-history or enable a vector service without explicit approval.
+The agent must confirm the slug, profile, purpose, primary stack, and payload disposition. It must
+not remove dependency-coupled provider paths, import maintainer history, or enable a vector service
+without explicit approval.
+
+Before setup, detach the product's push path from the provider. Keep the provider as a fetch-only
+reference if useful, then optionally add the product-owned remote:
+
+```bash
+git remote rename origin mir-yoke-upstream
+git remote set-url --push mir-yoke-upstream DISABLED
+# Optional after creating the product repository on your Git host:
+git remote add origin <product-repository-url>
+```
+
+Setup checks every effective push URL before installing or writing anything. It never changes
+remotes, commits, pushes, or rewrites history for you. No `origin` means an explicit local-only
+baseline and is accepted until the owner adds a product remote.
 
 ### Phase 1 — install the pinned baseline
 
@@ -46,13 +103,15 @@ macOS, Linux, or WSL:
   --stack python --stack sqlite
 ```
 
-Native Windows PowerShell:
+Native Windows PowerShell does not bootstrap the repository:
 
 ```powershell
-.\setup.ps1 -Slug my-project -Profile code_app `
-  -Purpose "Build a portable project service." `
-  -Stack python,sqlite
+.\setup.ps1
 ```
+
+The command exits before mutation and directs you to open the repository in WSL. An agent may
+instead adapt individual controls as reference material after inspecting the target's existing
+instructions and boundaries, but that manual path does not produce a Mir Yoke `ready` receipt.
 
 `--profile` has no default. Phase 1 also requires a single-line, non-placeholder `--purpose` and
 at least one `--stack` value. Bootstrap writes those values into the canonical repository profile;
@@ -89,17 +148,14 @@ root on that same volume. On this Mac, for example:
   --stack python
 ```
 
-On another machine, choose that host's external volume instead of copying the Mac path. Native
-Windows example:
+On another machine, choose that host's external volume instead of copying the Mac path. On a
+Windows host, run the Linux command inside WSL and use a WSL-visible mount such as
+`/mnt/e/.mir-runtime`; native PowerShell is not a supported storage/bootstrap path.
 
-```powershell
-.\setup.ps1 -StorageRoot "E:\.mir-runtime" -Slug my-project -Profile code_app `
-  -Purpose "Build a portable project service." -Stack python
-```
-
-This keeps each repository's `.venv` and `.mir/memory.db` beside the project, while the shared uv
-cache, uv-managed Python installations, uv tool environments, and Mir global capability provider
-live under the external storage root. Bootstrap verifies that the cache root and project are on the
+This keeps each repository's `.venv` and `.mir/memory.db` beside the project. The uv cache,
+uv-managed Python installations, and Mir global capability provider are shared under the external
+storage root; each repository's uv tool and bin directories live under a distinct
+`mir/cli/<runtime-id>/` namespace. Bootstrap verifies that the cache root and project are on the
 same filesystem, allowing uv to use its native clone/link mode instead of duplicating full package
 files.
 
@@ -110,17 +166,22 @@ values in the host's shell or user environment:
 export MIR_STORAGE_ROOT="/path/to/external-volume/.mir-runtime"
 export UV_CACHE_DIR="$MIR_STORAGE_ROOT/uv/cache"
 export UV_PYTHON_INSTALL_DIR="$MIR_STORAGE_ROOT/uv/python"
-export UV_TOOL_DIR="$MIR_STORAGE_ROOT/uv/tools"
 export MIR_CAPABILITY_HOME="$MIR_STORAGE_ROOT/mir/capabilities"
 ```
+
+Do not set one shared `UV_TOOL_DIR` or `UV_TOOL_BIN_DIR`; `setup.sh` derives both from the canonical
+project path and locked provider source so one project cannot replace another project's Mir CLI.
 
 Use a stable volume name and APFS on macOS. Small launchers, runtime registry metadata, and
 credentials remain in the user home. Do not move the entire Claude or Codex home because those
 directories may contain credentials. A user-home symlink may be used as a machine-specific
 entrypoint, but the template never commits symlinks or uses them to distribute skills/plugins.
 
-The wrapper configures any requested storage root before it runs `uv sync`, then invokes the
-cross-platform Python coordinator. The coordinator:
+The supported Unix wrapper configures any requested storage root, installs Mir from the exact
+HTTPS commit in `.mir/capability-lock.json` into a copied, project-specific `uv tool` environment,
+applies the production pins in `config/cli-runtime-constraints.txt`, then invokes the Python
+coordinator through that external executable. It never installs dirty working-tree code.
+The coordinator:
 
 1. validates hooks, permissions, orchestration policy, local agent surfaces, and the selected pack;
 2. creates a required local SQLite+FTS5 memory index, onboards classified records, and proves that
@@ -186,13 +247,18 @@ After completing the two skills, attest and finalize:
 ./setup.sh --profile code_app --finalize --architecture-initialized
 ```
 
-```powershell
-.\setup.ps1 -Profile code_app -Finalize -ArchitectureInitialized
-```
+On Windows hosts, run the same `./setup.sh` finalize command inside WSL. Native PowerShell does not
+run Phase 2 and cannot publish a ready receipt.
 
 Finalize verifies the installed plugin paths and hashes reported by both CLIs, architecture
 coverage/gaps, the full-review result, project-specific memory search, output hashes, and the prior
-restart receipt. Only then may the receipt become `status: ready`.
+restart receipt. It then performs the adopter slim transaction as the final mutation: exact
+unchanged provider files are moved to `.mir/slim-quarantine/<transaction>/`, empty provider
+directories are pruned, the external CLI runs capability status from the resulting tree, and the
+ready receipt records the CLI and slim report. The durable journal is committed only after that
+receipt is atomically published; publication failure restores the moved files and preserves the
+prior receipt. On restart, an interrupted transaction is recovered before any new move. Only then
+may the receipt become `status: ready`.
 
 Until that ready receipt exists, SessionStart identifies the incomplete state and PreToolUse blocks
 normal mutations. Setup/adoption validation, read-only inspection, and scoped Phase 2 evidence
@@ -208,13 +274,13 @@ tracked `config/bootstrap-adoption.json` manifest described by
 `docs/templates/_schema/bootstrap-adoption.schema.json`, then check it without writing:
 
 ```bash
-uv run mir bootstrap-adoption --project-root . --json
+./scripts/mir.sh bootstrap-adoption --project-root . --json
 ```
 
 After the read-only report is ready, write only the machine-local receipt:
 
 ```bash
-uv run mir bootstrap-adoption --project-root . --apply --json
+./scripts/mir.sh bootstrap-adoption --project-root . --apply --json
 ```
 
 The manifest must name all seven surfaces. Use `repository_owned` for native mechanisms that pass
@@ -230,6 +296,10 @@ command parses those native files and requires their counts and results to match
 copying passing numbers into the manifest is not sufficient. Every review dimension records
 `status: pass`, one or more tracked `evidence_paths`, and a concrete `verification` observation;
 those paths must also be declared as Phase 2 evidence and are hash-bound into the receipt.
+
+If assessment finds Mir Yoke provider or maintainer markers in a product repository, classify the
+state as over-included and keep the assessment read-only. Do not continue product implementation or
+remove the markers until setup, CLI, hook, and import dependencies have been traced and externalized.
 
 The ready receipt is valid only while its source commit, manifest hash, complete declared evidence
 path set, and every evidence hash still match the working tree. Any drift closes the startup gate
@@ -259,8 +329,8 @@ not require an embedding server or `sqlite-vec`.
 Verify at any time:
 
 ```bash
-uv run mir memory doctor --project-root . --json
-uv run mir context pull "<query>"
+./scripts/mir.sh memory doctor --project-root . --json
+./scripts/mir.sh context pull "<query>"
 ```
 
 Vector modes in `harness_a.toml` are `off` (default), `optional`, and `required`. Enabling a model or
@@ -275,10 +345,10 @@ When requirements, agents, or skills change, the repository instructions require
 a read-only check before proposing an update:
 
 ```bash
-uv run mir capability status --project-root . --json   # local, no network mutation
-uv run mir capability check --project-root . --json    # remote comparison, read-only
-uv run mir capability update --project-root . --json   # proposed update, dry-run
-uv run mir capability update --project-root . --apply --json
+./scripts/mir.sh capability status --project-root . --json   # local, no network mutation
+./scripts/mir.sh capability check --project-root . --json    # remote comparison, read-only
+./scripts/mir.sh capability update --project-root . --json   # proposed update, dry-run
+./scripts/mir.sh capability update --project-root . --apply --json
 ```
 
 Only the final command changes the pin and active provider. It rejects credential-bearing URLs,
@@ -289,13 +359,16 @@ orchestration policy are never imported from the remote capability source.
 ## Completion checklist
 
 - `.mir/bootstrap-receipt.json` says `ready`.
-- `uv run mir memory doctor --project-root . --json` succeeds with indexed documents and an FTS
+- The receipt records an external `cli.executable` and `slim.status` is `applied` or
+  `already_slim`; no R20 provider marker remains.
+- `./scripts/mir.sh memory doctor --project-root . --json` succeeds with indexed documents and an FTS
   probe.
-- `uv run mir capability status --project-root . --json` says `ready: true` and reports both
+- `./scripts/mir.sh capability status --project-root . --json` says `ready: true` and reports both
   runtimes active at the pinned hashes.
 - `uv run python scripts/verify_repo_agent_management.py` succeeds.
 - `uv run python scripts/verify_codex_sync.py` succeeds.
 - There are no tracked symlinks.
-- On Windows, Git Bash/WSL Bash is present and the hook syntax smoke check succeeds.
+- On a Windows host, bootstrap and hook checks ran inside WSL; native PowerShell did not claim a
+  ready receipt.
 
 Do not commit or push unless the operator asks.

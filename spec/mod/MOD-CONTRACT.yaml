@@ -1,6 +1,6 @@
 id: MOD-CONTRACT
-responsibility: "Define Mir Yoke product identity, authority, non-goals, and adoption semantics."
+responsibility: "Define Mir Yoke as an agent-guided harness-engineering baseline, including authority, non-goals, platform scope, and adoption semantics."
 provided:
-  - {name: "ProductBoundary", operations: ["identify product", "resolve authority", "classify prohibited behavior"]}
+  - {name: "ProductBoundary", operations: ["identify product", "resolve authority", "classify platform support", "classify prohibited behavior"]}
 required: []
 stability: {fan_in: 4, fan_out: 0, i: 0.0}

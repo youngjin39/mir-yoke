@@ -4,8 +4,11 @@ from __future__ import annotations
 
 import argparse
 import fnmatch
+import hashlib
 import json
+import os
 import subprocess
+import tempfile
 from collections import Counter
 from pathlib import Path
 
@@ -54,16 +57,14 @@ def _candidate_files(root: Path) -> list[str]:
     return sorted(path for path in result.stdout.splitlines() if path and (root / path).is_file())
 
 
-# @spec FR-003
-def classify_tracked_files(root: Path, manifest: dict[str, object]) -> dict[str, object]:
+def classify_candidate_files(
+    root: Path, manifest: dict[str, object]
+) -> dict[str, str]:
     files = _candidate_files(root)
     rules = manifest["rules"]
-    prohibited_patterns = manifest["prohibited_active_paths"]
     classified: dict[str, str] = {}
     unclassified: list[str] = []
     duplicate: list[dict[str, object]] = []
-    prohibited = [path for path in files if _matches(path, prohibited_patterns)]
-
     for path in files:
         matches = [
             rule
@@ -76,26 +77,76 @@ def classify_tracked_files(root: Path, manifest: dict[str, object]) -> dict[str,
             duplicate.append({"path": path, "rules": [rule["id"] for rule in matches]})
         else:
             classified[path] = matches[0]["classification"]
+    if unclassified or duplicate:
+        raise AssetManifestError(
+            f"unclassified surfaces: {unclassified}; "
+            f"surfaces with multiple classifications: {duplicate}"
+        )
+    return classified
 
-    errors: list[str] = []
-    if unclassified:
-        errors.append(f"unclassified surfaces: {unclassified}")
-    if duplicate:
-        errors.append(f"surfaces with multiple classifications: {duplicate}")
+
+# @spec FR-003
+def classify_tracked_files(root: Path, manifest: dict[str, object]) -> dict[str, object]:
+    files = _candidate_files(root)
+    prohibited_patterns = manifest["prohibited_active_paths"]
+    classified = classify_candidate_files(root, manifest)
+    prohibited = [path for path in files if _matches(path, prohibited_patterns)]
     if prohibited:
-        errors.append(f"prohibited active surfaces: {prohibited}")
-    if errors:
-        raise AssetManifestError("; ".join(errors))
+        raise AssetManifestError(f"prohibited active surfaces: {prohibited}")
 
     counts = Counter(classified.values())
     return {
         "tracked_count": len(files),
         "classified_count": len(classified),
         "by_classification": dict(sorted(counts.items())),
-        "unclassified": unclassified,
-        "duplicate": duplicate,
+        "unclassified": [],
+        "duplicate": [],
         "prohibited": prohibited,
     }
+
+
+def build_adopter_payload(
+    root: Path,
+    manifest: dict[str, object],
+    boundary: dict[str, object],
+    *,
+    payload_path: str = "config/adopter-payload.json",
+) -> dict[str, object]:
+    remove = boundary.get("remove_classifications")
+    if not isinstance(remove, list) or not all(isinstance(item, str) for item in remove):
+        raise AssetManifestError("adopter boundary requires remove_classifications")
+    classified = classify_candidate_files(root, manifest)
+    files = []
+    for relative, classification in sorted(classified.items()):
+        if relative == payload_path:
+            continue
+        path = root / relative
+        files.append(
+            {
+                "path": relative,
+                "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+                "classification": classification,
+                "disposition": "remove" if classification in remove else "preserve",
+            }
+        )
+    return {
+        "$schema": "./adopter-payload.schema.json",
+        "schema_version": 1,
+        "generated_from": "config/template-assets.json",
+        "files": files,
+    }
+
+
+def _atomic_write_json(path: Path, payload: dict[str, object]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, temp_name = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
+    try:
+        os.close(descriptor)
+        temp_path = Path(temp_name)
+        temp_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+        os.replace(temp_path, path)
+    finally:
+        Path(temp_name).unlink(missing_ok=True)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -103,11 +154,28 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--project-root", type=Path, default=Path.cwd())
     parser.add_argument("--manifest", type=Path)
     parser.add_argument("--json", action="store_true", dest="as_json")
+    parser.add_argument("--write-adopter-payload", action="store_true")
     args = parser.parse_args(argv)
     root = args.project_root.resolve()
     manifest_path = args.manifest or root / "config/template-assets.json"
     try:
-        report = classify_tracked_files(root, load_manifest(manifest_path))
+        manifest = load_manifest(manifest_path)
+        report = classify_tracked_files(root, manifest)
+        if args.write_adopter_payload:
+            boundary_path = root / "config" / "adopter-boundary.json"
+            boundary = json.loads(boundary_path.read_text(encoding="utf-8"))
+            payload_path = root / str(
+                boundary.get("payload_manifest", "config/adopter-payload.json")
+            )
+            _atomic_write_json(
+                payload_path,
+                build_adopter_payload(
+                    root,
+                    manifest,
+                    boundary,
+                    payload_path=payload_path.relative_to(root).as_posix(),
+                ),
+            )
     except (AssetManifestError, jsonschema.ValidationError, OSError, ValueError) as exc:
         print(f"ERROR: {exc}")
         return 1

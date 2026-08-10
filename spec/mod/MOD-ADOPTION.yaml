@@ -1,7 +1,7 @@
 id: MOD-ADOPTION
-responsibility: "Provide separate greenfield creation and existing-repository reference paths."
+responsibility: "Provide source-controlled, runtime-isolated macOS/Linux/WSL greenfield creation, native-Windows zero-mutation guidance, and an existing-repository reference path."
 provided:
-  - {name: "GreenfieldAdoption", operations: ["validate request", "materialize starter", "report writes"]}
+  - {name: "GreenfieldAdoption", operations: ["validate supported platform", "validate non-provider Git push ownership", "resolve exact committed CLI source", "isolate project runtime", "return unsupported guidance", "validate request", "materialize starter", "report writes"]}
   - {name: "ExistingRepositoryAssessment", operations: ["inspect local authority", "classify references", "write receipt after explicit apply"]}
 required: ["MOD-CONTRACT.ProductBoundary"]
 stability: {fan_in: 1, fan_out: 1, i: 0.5}

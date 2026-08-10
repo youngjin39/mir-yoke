@@ -12,7 +12,16 @@ Classify, validate, sanitize, and prepare the public template for release.
 ## Rules and Hazards
 
 Every candidate file receives exactly one asset classification. A missing check is a release
-failure. Release validation operates on Mir Yoke only and sends no fleet notification.
+failure. Release validation operates on Mir Yoke only and sends no fleet notification. The
+`adopter_payload_boundary` rule permits the exact Mir Yoke provider owner and rejects configured
+provider/maintainer markers under a product Profile. The generated adopter payload binds every
+release candidate file to one disposition and SHA-256 digest; Phase 2 slim may move only unchanged
+entries classified for removal. Modified references are preserved as adopter-owned adaptations,
+while provider markers fail closed. Provider-only validators are maintainer assets and cannot enter
+an adopter pack. The tracked CLI constraints must equal a frozen production export of `uv.lock`.
+Portable-bootstrap CI executes the supported macOS and Linux Bash lanes. Contract tests separately
+prove WSL follows Linux and that native-Windows CLI, PowerShell, and Bash entrypoints stop before
+mutation; Mir Yoke does not claim a native-Windows ready-state CI lane.
 
 ## Dependencies and Validation
 

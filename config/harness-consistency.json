@@ -141,6 +141,13 @@
       "drift_class": 8
     },
     {
+      "id": "R20",
+      "name": "adopter_payload_boundary",
+      "severity": "ERROR",
+      "enabled": true,
+      "drift_class": 8
+    },
+    {
       "id": "R17",
       "name": "agent_surface_contract",
       "severity": "ERROR",
@@ -290,6 +297,9 @@
     },
     "template_asset_classification": {
       "manifest_path": "config/template-assets.json"
+    },
+    "adopter_payload_boundary": {
+      "boundary_manifest_path": "config/adopter-boundary.json"
     },
     "agent_surface_contract": {
       "claude_md": "CLAUDE.md",

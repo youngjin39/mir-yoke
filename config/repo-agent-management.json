@@ -467,7 +467,7 @@
         ]
       },
       "default_verification": [
-        "python3 scripts/verify_repo_agent_management.py"
+        "scripts/mir.sh run-python --project-root . -- scripts/verify_repo_agent_management.py"
       ],
       "default_agent_pack": {
         "orchestrator": "main-orchestrator",
@@ -542,7 +542,7 @@
         ]
       },
       "default_verification": [
-        "python3 scripts/verify_codex_sync.py"
+        "scripts/mir.sh run-python --project-root . -- scripts/verify_codex_sync.py"
       ],
       "default_agent_pack": {
         "orchestrator": "main-orchestrator",
@@ -607,7 +607,7 @@
         ]
       },
       "default_verification": [
-        "python3 scripts/verify_codex_sync.py"
+        "scripts/mir.sh run-python --project-root . -- scripts/verify_codex_sync.py"
       ],
       "default_agent_pack": {
         "orchestrator": "main-orchestrator",
@@ -673,7 +673,7 @@
         ]
       },
       "default_verification": [
-        "python3 scripts/verify_codex_sync.py"
+        "scripts/mir.sh run-python --project-root . -- scripts/verify_codex_sync.py"
       ],
       "default_agent_pack": {
         "orchestrator": "main-orchestrator",
@@ -739,7 +739,7 @@
         ]
       },
       "default_verification": [
-        "python3 scripts/verify_codex_sync.py"
+        "scripts/mir.sh run-python --project-root . -- scripts/verify_codex_sync.py"
       ],
       "default_agent_pack": {
         "orchestrator": "main-orchestrator",
@@ -800,7 +800,7 @@
         ]
       },
       "default_verification": [
-        "python3 scripts/verify_codex_sync.py"
+        "scripts/mir.sh run-python --project-root . -- scripts/verify_codex_sync.py"
       ],
       "default_agent_pack": {
         "orchestrator": "main-orchestrator",
@@ -869,8 +869,8 @@
         ]
       },
       "default_verification": [
-        "python3 scripts/verify_context_paths.py",
-        "python3 scripts/verify_codex_sync.py"
+        "scripts/mir.sh run-python --project-root . -- scripts/verify_context_paths.py",
+        "scripts/mir.sh run-python --project-root . -- scripts/verify_codex_sync.py"
       ],
       "default_agent_pack": {
         "orchestrator": "main-orchestrator",
@@ -939,8 +939,8 @@
         ]
       },
       "default_verification": [
-        "python3 scripts/verify_context_paths.py",
-        "python3 scripts/verify_codex_sync.py"
+        "scripts/mir.sh run-python --project-root . -- scripts/verify_context_paths.py",
+        "scripts/mir.sh run-python --project-root . -- scripts/verify_codex_sync.py"
       ],
       "default_agent_pack": {
         "orchestrator": "main-orchestrator",

@@ -28,6 +28,8 @@ def test_should_publish_one_non_runtime_template_identity_when_root_contracts_ar
             (ROOT / relative).read_text(encoding="utf-8").lower(),
         )
         assert all(token in body for token in required), relative
+        assert "agent-guided" in body, relative
+        assert "not a universal installer" in body, relative
 
 
 # @spec CR-003 QR-004

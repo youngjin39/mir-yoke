@@ -2,17 +2,19 @@
 
 ## Purpose
 
-Define Mir Yoke as a public template and reference repository with no provider runtime or standing
-consumer authority.
+Define Mir Yoke as an agent-guided public harness-engineering template and reference repository
+with no provider runtime or standing consumer authority.
 
 ## Public Interface
 
-`README.md`, `CLAUDE.md`, `ARCHITECTURE.md`, ADR-78, and the public decision index.
+`README.md`, `CLAUDE.md`, `ARCHITECTURE.md`, ADR-78, ADR-79, ADR-80, and the public decision index.
 
 ## Rules and Hazards
 
 Consumer repositories remain authoritative. Do not reintroduce target discovery, rollout,
-cross-repository writes, or hash conformance. Edit `CLAUDE.md` before generated `AGENTS.md`.
+cross-repository writes, or hash conformance. Template assets are a baseline the active agent fits
+to the target's current state, not a universal installer. Edit `CLAUDE.md` before generated
+`AGENTS.md`.
 
 ## Dependencies and Validation
 

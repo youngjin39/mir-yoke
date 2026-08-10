@@ -12,7 +12,7 @@
 | `PostCompact` | reserved | (none) |
 | `SessionStart` | yes | `.claude/hooks/session-start.sh` |
 | `UserPromptSubmit` | reserved | (none) |
-| `Stop` | reserved | (none) |
+| `Stop` | yes | `.claude/hooks/mir-stop.sh` |
 | `PermissionRequest` | yes | `.claude/hooks/pre-tool-use.sh` (same deny-list) |
 
 `SessionEnd`, `TaskCreated`, `TaskCompleted` are Claude Code-only and do not exist in Codex CLI.

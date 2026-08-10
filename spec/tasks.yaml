@@ -15,9 +15,9 @@ tasks:
     done_when: {command: "uv run pytest tests/test_template_asset_classification.py -q"}
     status: done
   - id: TASK-004
-    goal: "Separate greenfield creation from preservation-first existing-repository reference and receipt flows."
-    touches: ["README.md", "BOOTSTRAP.md", "src/mir/cli/bootstrap.py", "src/mir/cli/bootstrap_adoption.py", "tests/test_bootstrap_cli.py", "tests/test_existing_repository_adoption.py"]
-    done_when: {command: "uv run pytest tests/test_bootstrap_cli.py tests/test_existing_repository_adoption.py -q"}
+    goal: "Separate transactional slim greenfield creation from preservation-first existing-repository reference and receipt flows."
+    touches: ["README.md", "BOOTSTRAP.md", "setup.sh", "setup.ps1", "src/mir/cli/bootstrap.py", "src/mir/core/adoption/", "src/mir/cli/bootstrap_adoption.py", "tests/test_bootstrap_cli.py", "tests/test_adopter_slim.py", "tests/test_installed_cli.py", "tests/test_existing_repository_adoption.py"]
+    done_when: {command: "uv run pytest tests/test_bootstrap_cli.py tests/test_adopter_slim.py tests/test_installed_cli.py tests/test_existing_repository_adoption.py -q"}
     status: done
   - id: TASK-005
     goal: "Constrain capability and hash operations to explicit local provenance and integrity behavior."
@@ -34,8 +34,18 @@ tasks:
     touches: [".github/workflows/", "scripts/", "tests/test_public_template_surface.py", "tests/test_release_readiness.py"]
     done_when: {command: "uv run pytest tests/test_public_template_surface.py tests/test_release_readiness.py -q"}
     status: done
+  - id: TASK-009
+    goal: "Narrow automated greenfield bootstrap to macOS, Linux, and WSL, and make native Windows an agent-guided zero-mutation path."
+    touches: ["README.md", "CLAUDE.md", "BOOTSTRAP.md", "ARCHITECTURE.md", "setup.sh", "setup.ps1", "src/mir/cli/bootstrap.py", ".github/workflows/validate.yml", "spec/", "tests/test_bootstrap_cli.py", "tests/test_setup_wrappers.py"]
+    done_when: {command: "uv run pytest tests/test_decision_authority.py tests/test_public_template_identity.py tests/test_bootstrap_cli.py tests/test_setup_wrappers.py tests/test_spec_integrity.py -q"}
+    status: done
+  - id: TASK-010
+    goal: "Close release runtime isolation, exact-source installation, Git push ownership, provider-only asset exclusion, and portable starter locking."
+    touches: ["docs/decisions/adr-80-release-runtime-isolation-and-adopter-ownership.md", "setup.sh", "config/cli-runtime-constraints.txt", "src/mir/cli/bootstrap.py", "scripts/loop_driver.sh", "config/template-assets.json", "config/adopter-boundary.json", "config/capability-sources.json", "tests/test_setup_wrappers.py", "tests/test_bootstrap_cli.py", "tests/test_greenfield_slim_integration.py", "tests/test_loop_driver.py"]
+    done_when: {command: "uv run pytest tests/test_setup_wrappers.py tests/test_bootstrap_cli.py tests/test_greenfield_slim_integration.py tests/test_template_asset_classification.py tests/test_loop_driver.py -q"}
+    status: doing
   - id: TASK-008
     goal: "Prove the completed template boundary from a clean clone with the focused contracts, full suite, lint, derivative, and sanitize checks."
     touches: ["tests/", "tools/harness_consistency/", ".github/workflows/validate.yml"]
     done_when: {command: "uv run python scripts/verify_release_readiness.py"}
-    status: done
+    status: doing

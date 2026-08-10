@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.resources
 import json
 import os
 import re
@@ -87,6 +88,10 @@ _RESOLVED_PLACEHOLDER_COUNT_RE = re.compile(
     r'''["']?(?:tbd|todo)["']?\s*[:=]\s*0\b\s*,?''', re.I
 )
 _SOURCE_ROOT = Path(__file__).resolve().parents[3]
+_PACKAGED_CANONICAL = {
+    ".claude/hooks/_lib/bootstrap-gate.sh": "resources/hooks/bootstrap-gate.sh",
+    ".claude/hooks/_lib/run-python.sh": "resources/hooks/run-python.sh",
+}
 
 
 class AdoptionError(ValueError):
@@ -412,10 +417,16 @@ def _validate_bootstrap_gate(root: Path) -> tuple[list[str], dict[str, object]]:
 def _validate_canonical_applied_helper(
     root: Path, relative: str, *, label: str
 ) -> tuple[list[str], dict[str, object]]:
-    source_path = _SOURCE_ROOT / relative
     target_path = root / relative
     try:
-        source_bytes = source_path.read_bytes()
+        source_path = _SOURCE_ROOT / relative
+        if source_path.is_file():
+            source_bytes = source_path.read_bytes()
+        else:
+            resource = _PACKAGED_CANONICAL.get(relative)
+            if resource is None:
+                raise OSError(f"no packaged canonical resource for {relative}")
+            source_bytes = importlib.resources.files("mir").joinpath(resource).read_bytes()
     except OSError as exc:
         return [f"{label} canonical Mir Yoke source is unreadable: {relative}: {exc}"], {
             "status": "fail",
@@ -470,9 +481,19 @@ def _validate_python_launcher(root: Path) -> tuple[list[str], dict[str, object]]
         body = path.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError) as exc:
         return [f"managed Python launcher is missing or unreadable: {relative}: {exc}"], {}
-    for marker in (".venv/bin/python", ".venv/Scripts/python.exe", "uv run", "--project"):
+    for marker in (".venv/bin/python", ".venv/Scripts/python.exe"):
         if marker not in body:
             errors.append(f"managed Python launcher is missing required route {marker!r}")
+    has_uv_route = "uv run" in body and "--project" in body
+    has_external_route = all(
+        marker in body
+        for marker in ("bootstrap-receipt.json", "run-python", "--project-root")
+    )
+    if not (has_uv_route or has_external_route):
+        errors.append(
+            "managed Python launcher requires either a project uv route or an "
+            "external receipt-bound Mir route"
+        )
     if _has_raw_python(body.replace("uv run --project", "")):
         errors.append("managed Python launcher contains a host Python fallback")
 

@@ -18,12 +18,12 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.mir.core.engine.structured_error import (  # noqa: E402
+from mir.core.engine.structured_error import (  # noqa: E402
     ErrorType,
     StructuredError,
     emit_error_to_stderr,
 )
-from src.mir.core.engine.tool_contract import ContractViolation, ToolContract  # noqa: E402
+from mir.core.engine.tool_contract import ContractViolation, ToolContract  # noqa: E402
 
 CONTRACT_REQUIRED_TOOLS = {"Edit", "Write", "Bash"}
 

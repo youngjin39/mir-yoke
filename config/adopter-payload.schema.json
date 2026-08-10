@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "mir-yoke/config/adopter-payload",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "generated_from", "files"],
+  "properties": {
+    "$schema": {"type": "string"},
+    "schema_version": {"const": 1},
+    "generated_from": {"const": "config/template-assets.json"},
+    "files": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "sha256", "classification", "disposition"],
+        "properties": {
+          "path": {"type": "string", "minLength": 1},
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "classification": {
+            "enum": [
+              "starter",
+              "reference",
+              "optional-consumer-tool",
+              "template-maintainer-tool",
+              "historical"
+            ]
+          },
+          "disposition": {"enum": ["preserve", "remove"]}
+        }
+      }
+    }
+  }
+}

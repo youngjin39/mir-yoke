@@ -46,6 +46,16 @@ IMPLEMENTATION_SUFFIXES = (
     ".hpp",
     ".sql",
 )
+IMPLEMENTATION_ROOTS = (
+    "src/",
+    "app/",
+    "apps/",
+    "packages/",
+    "pipelines/",
+    "infra/",
+    "content/",
+    "lib/",
+)
 
 PREWRITE_ALLOWED = {"planned", "pass", "covered_existing", "not_applicable"}
 PRECOMMIT_ALLOWED = {"pass", "covered_existing", "not_applicable"}
@@ -93,7 +103,7 @@ def matches_target(target: str, rel_path: str) -> bool:
 
 
 def is_implementation_path(rel_path: str) -> bool:
-    if not rel_path.startswith(("src/", "app/", "lib/")):
+    if not rel_path.startswith(IMPLEMENTATION_ROOTS):
         return False
     return rel_path.endswith(IMPLEMENTATION_SUFFIXES)
 

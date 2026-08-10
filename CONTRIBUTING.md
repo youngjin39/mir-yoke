@@ -15,6 +15,9 @@ Thanks for the interest. This template's job is to stay small and copy-pasteable
 
 ## What we do not want
 
+- **Universal-OS installer scope.** Automated greenfield bootstrap supports macOS, Linux, and WSL.
+  Do not reintroduce native-Windows installation or ready-state claims without a new accepted
+  product-boundary decision and corresponding safety evidence.
 - **Project-specific runtime code.** This is a template, not a binary. Python modules, Rust crates, Node packages — all out of scope. If you want to ship code, fork and add it; don't push it back here.
 - **Unlabeled CLI-specific features.** Runtime differences belong behind explicit capability gates.
   The plugin baseline supports Claude Code and Codex CLI/desktop; Codex IDE extensions are not part

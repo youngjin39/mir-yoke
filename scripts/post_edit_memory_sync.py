@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
+import os
 import re
-import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -63,17 +64,96 @@ def main(argv: list[str]) -> int:
             file=sys.stderr,
         )
         return 1
-    uv = shutil.which("uv")
-    if uv is None:
-        print("[mir-memory] durable edit was not indexed: uv is unavailable", file=sys.stderr)
+    receipt_path = root / ".mir/bootstrap-receipt.json"
+    try:
+        receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+        cli = Path(
+            os.path.abspath(Path(receipt["cli"]["executable"]).expanduser())
+        )
+        resolved_cli = cli.resolve(strict=True)
+        expected_cli_hash = receipt["cli"]["sha256"]
+        runtime_manifest_raw = receipt["cli"].get("runtime_manifest")
+        runtime_manifest_hash = receipt["cli"].get("runtime_manifest_sha256")
+        resolved_cli.relative_to(root)
+    except ValueError:
+        pass
+    except (OSError, KeyError, TypeError, json.JSONDecodeError):
+        print(
+            "[mir-memory] durable edit was not indexed: external Mir CLI is unavailable",
+            file=sys.stderr,
+        )
         return 1
+    else:
+        print(
+            "[mir-memory] durable edit was not indexed: Mir CLI must be outside the project",
+            file=sys.stderr,
+        )
+        return 1
+    if not resolved_cli.is_file() or not os.access(cli, os.X_OK):
+        print(
+            "[mir-memory] durable edit was not indexed: Mir CLI is not executable",
+            file=sys.stderr,
+        )
+        return 1
+    if (
+        not isinstance(expected_cli_hash, str)
+        or hashlib.sha256(cli.read_bytes()).hexdigest() != expected_cli_hash
+    ):
+        print(
+            "[mir-memory] durable edit was not indexed: external Mir CLI hash changed",
+            file=sys.stderr,
+        )
+        return 1
+    if runtime_manifest_raw:
+        runtime_root = cli.parent.parent
+        runtime_manifest = Path(str(runtime_manifest_raw)).expanduser().resolve(
+            strict=False
+        )
+        if (
+            runtime_manifest != runtime_root / "runtime-manifest.json"
+            or not runtime_manifest.is_file()
+            or runtime_manifest.is_symlink()
+            or not isinstance(runtime_manifest_hash, str)
+            or hashlib.sha256(runtime_manifest.read_bytes()).hexdigest()
+            != runtime_manifest_hash
+        ):
+            print(
+                "[mir-memory] durable edit was not indexed: external Mir runtime changed",
+                file=sys.stderr,
+            )
+            return 1
+        verified = subprocess.run(
+            [
+                str(cli),
+                "runtime-manifest",
+                "verify",
+                "--runtime-root",
+                str(runtime_root),
+                "--manifest",
+                str(runtime_manifest),
+                "--source-url",
+                str(receipt["cli"].get("source_url", "")),
+                "--source-commit",
+                str(receipt["cli"].get("source_commit", "")),
+                "--constraints-sha256",
+                str(receipt["cli"].get("constraints_sha256", "")),
+            ],
+            cwd=root,
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            text=True,
+            timeout=25,
+            check=False,
+        )
+        if verified.returncode != 0:
+            print(
+                "[mir-memory] durable edit was not indexed: external Mir runtime changed",
+                file=sys.stderr,
+            )
+            return 1
     completed = subprocess.run(
         [
-            uv,
-            "run",
-            "--project",
-            str(root),
-            "mir",
+            str(cli),
             "context",
             "sync",
             "--db",

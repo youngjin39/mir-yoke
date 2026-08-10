@@ -1,6 +1,6 @@
 # Migration Guide
 
-This document records breaking changes between major versions of `mir-yoke`. Each entry covers migration steps for existing fleet adopters to upgrade.
+This document records breaking changes between major versions of `mir-yoke`. Each entry covers migration steps for existing adopters to upgrade.
 
 ## Format
 
@@ -21,10 +21,11 @@ Each section follows the pattern:
 
 ## Current Status
 
-No MAJOR releases yet. Current version: `0.4.0`. The `0.4.0` baseline raises
-the template to a verifier-clean applied-state reference without introducing a
-breaking migration step. Next MAJOR (`1.0.0`) will introduce the first
-breaking change and gain the first section in this file.
+No MAJOR releases yet. Current version: `0.8.0`.
+
+The current pre-1.0 platform contract supports automated greenfield bootstrap on macOS, Linux, and
+WSL. Native-Windows callers must move automation into WSL or use Mir Yoke as agent-guided reference
+material; `setup.ps1` no longer installs or finalizes and exits without repository mutation.
 
 ## See Also
 

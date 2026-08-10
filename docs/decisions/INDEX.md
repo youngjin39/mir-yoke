@@ -1,26 +1,32 @@
 ---
 title: Public Harness Decision Index
 status: accepted
-updated: 2026-08-08
+updated: 2026-08-10
 ---
 
 # Public Harness Decision Index
 
 Mir Yoke is a public template and reference repository. It has no provider runtime and no standing
-authority over consumer repositories. Later, narrower decisions control when older prose conflicts.
+authority over consumer repositories. It is an agent-guided baseline, not a universal installer.
+Later, narrower decisions control when older prose conflicts.
 
 ## Current Authority
 
-1. [ADR-78](adr-78-public-template-identity-and-non-authority.md) defines the product identity,
+1. [ADR-80](adr-80-release-runtime-isolation-and-adopter-ownership.md) closes the release contract
+   for project-isolated pinned CLI runtimes, Git push ownership, provider-only assets, and portable
+   retained automation.
+2. [ADR-79](adr-79-agent-guided-platform-scope.md) narrows automated bootstrap to macOS, Linux,
+   and WSL, and defines native Windows as a fail-fast guidance-only path.
+3. [ADR-78](adr-78-public-template-identity-and-non-authority.md) defines the product identity,
    non-authority boundary, asset classifications, and local-only adoption model.
-2. [ADR-77](adr-77-existing-repository-bootstrap-adoption.md) defines preservation-first reference
+4. [ADR-77](adr-77-existing-repository-bootstrap-adoption.md) defines preservation-first reference
    assessment and the receipt-only explicit apply path for an existing repository.
-3. [ADR-76](adr-76-codex-required-plugin-activation.md) narrows local capability activation proof.
-4. [ADR-75](adr-75-global-plugin-migration-gate.md) applies only to explicit local-host provider
+5. [ADR-76](adr-76-codex-required-plugin-activation.md) narrows local capability activation proof.
+6. [ADR-75](adr-75-global-plugin-migration-gate.md) applies only to explicit local-host provider
    collision and discovery safety, as narrowed by ADR-78.
-5. [ADR-74](adr-74-portable-bootstrap-capability-sources-and-memory.md) defines greenfield portable
-   bootstrap and integrity-only capability provenance, as narrowed by ADR-78.
-6. [ADR-73](adr-73-proportional-guidance-first-harness.md) defines proportional local work,
+7. [ADR-74](adr-74-portable-bootstrap-capability-sources-and-memory.md) defines greenfield portable
+   bootstrap and integrity-only capability provenance, as narrowed by ADR-78 and ADR-79.
+8. [ADR-73](adr-73-proportional-guidance-first-harness.md) defines proportional local work,
    delegation, review, and verification.
 
 The [role policy](role-policy.md) is a consumer-side starter contract. A consumer owns its local

@@ -38,7 +38,7 @@ deterministic merge gate — it NEVER touches the main worktree. This is the `sc
 precedent; the worktree supplies cwd, so the explicit repo-root working-directory flag is dropped.
 
 ```bash
-uv run python -m tools.mir_executor execute --background --dispatch \
+scripts/mir.sh executor execute --background --dispatch \
   --change-id <tdd_change_id> \
   --category <tdd_category> \
   --repo-root . \

@@ -39,7 +39,15 @@ build-backend = "hatchling.build"
 packages = ["src/mir"]
 
 [tool.hatch.build.targets.wheel.force-include]
-"src/mir/core/engine/memory/migrations" = "mir/core/engine/memory/migrations"
+"tools/autonomous_loop" = "tools/autonomous_loop"
+"tools/agent_loader" = "tools/agent_loader"
+"tools/catalog_loader.py" = "tools/catalog_loader.py"
+"tools/hooks" = "tools/hooks"
+"tools/mir_executor" = "tools/mir_executor"
+"tools/plan_archive" = "tools/plan_archive"
+"tools/run_orchestrator" = "tools/run_orchestrator"
+".claude/hooks/_lib/bootstrap-gate.sh" = "mir/resources/hooks/bootstrap-gate.sh"
+".claude/hooks/_lib/run-python.sh" = "mir/resources/hooks/run-python.sh"
 
 [tool.pytest.ini_options]
 # Reclaim pytest scratch immediately. The default retention keeps three full runs,

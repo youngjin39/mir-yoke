@@ -5,15 +5,23 @@ requirements:
     origin: "Owner confirmation 2026-08-08; Mir Yoke README:73-87; ADR-74 context."
     actor: greenfield_owner
     trigger: "The owner submits a greenfield bootstrap request."
-    preconditions: ["The target is declared greenfield and required identity inputs are present."]
+    preconditions: ["The target is declared greenfield, required identity inputs are present, no effective Git push URL targets Mir Yoke, and automated bootstrap runs on macOS, Linux, or WSL."]
     postconditions: ["The new repository contains a locally owned starter baseline and verification result."]
     acceptance:
       - {given: "one empty target and valid identity inputs", when: "greenfield bootstrap runs", then: "one target receives the selected starter baseline"}
+      - {given: "a native-Windows invocation", when: "greenfield bootstrap is requested", then: "the entrypoint stops before mutation and guides the owner to WSL or agent-guided reference adaptation"}
       - {given: "an existing authored root contract", when: "greenfield bootstrap runs", then: "the operation stops before replacing that file"}
+      - {given: "two product roots using one external storage root", when: "setup installs their CLI runtimes", then: "each root receives a distinct runtime namespace and neither install replaces the other"}
+      - {given: "an installed dependency, executable mode, or runtime symlink changes after setup", when: "receipt reuse or the startup gate verifies the runtime manifest", then: "the runtime is rejected even when the launcher hash is unchanged"}
+      - {given: "a provider push URL or dirty provider checkout", when: "setup begins", then: "the provider push URL is rejected before mutation and installation uses only the exact tracked source commit with tracked production constraints"}
+      - {given: "a product Profile, resolved product contract, ready Phase 2 evidence, and an external pinned Mir CLI", when: "bootstrap finalization succeeds", then: "the last step journals and quarantines unchanged provider assets, preserves product-owned files, verifies the external CLI after removal, durably records the slim result, and commits the transaction"}
     data_contract:
       - {name: "BootstrapRequest", direction: I, type: "object", format: "profile, purpose, stack, target", unit: "request", range: "one target and non-empty identity", nullable: false, default: "none", precision: "exact", tolerance: "zero implicit profiles"}
       - {name: "BootstrapResult", direction: O, type: "object", format: "status, created paths, verification", unit: "result", range: "ready|restart_required|conflict|failed", nullable: false, default: "failed", precision: "exact", tolerance: "zero unreported writes"}
-    errors: [{condition: "identity is missing or authored root content exists", behavior: "return conflict without replacement"}]
+    errors:
+      - {condition: "identity is missing or authored root content exists", behavior: "return conflict without replacement"}
+      - {condition: "the automated request runs on native Windows or another unsupported platform", behavior: "return guidance before parsing project inputs, installing tools, or writing any path"}
+      - {condition: "a provider push remote exists, the external CLI is project-local, the Git-bound release controls changed, a payload path is unsafe or changes concurrently, a provider marker contains changed content, post-removal verification fails, or the ready receipt cannot publish", behavior: "do not publish ready; reject before mutation or restore every moved file before returning failure, with interrupted journals recovered on the next run"}
     verification: e2e
     authority: feature
     status: ready
@@ -51,9 +59,11 @@ requirements:
     acceptance:
       - {given: "a complete tracked inventory", when: "classification validation runs", then: "every product surface has one starter, reference, optional-consumer-tool, template-maintainer-tool, or historical value"}
       - {given: "an absent or duplicate classification", when: "classification validation runs", then: "validation fails and reports the path"}
+      - {given: "a product Profile retaining configured provider or maintainer markers", when: "repository consistency validation runs", then: "validation fails with one R20 finding per retained marker"}
+      - {given: "an adopter profile", when: "its payload and agent catalog are compiled", then: "provider-only validators are classified for removal and absent from every adopter pack"}
     data_contract:
       - {name: "ArtifactClassification", direction: O, type: "enum", format: "starter|reference|optional-consumer-tool|template-maintainer-tool|historical", unit: "classification", range: "exactly one value per surface", nullable: false, default: "none", precision: "exact", tolerance: "zero unclassified surfaces"}
-    errors: [{condition: "a surface matches zero or multiple classes", behavior: "fail release validation"}]
+    errors: [{condition: "a surface matches zero or multiple classes, or a product Profile retains provider/maintainer markers", behavior: "fail the relevant release or adopter-boundary validation"}]
     verification: integration
     authority: platform
     status: ready
@@ -62,15 +72,18 @@ requirements:
 
   - id: FR-004
     type: functional
-    statement: "Mir Yoke shall execute bootstrap behavior only after an owner explicitly invokes it for one declared consumer root."
-    origin: "ADR-84 sections 4.1-4.3; Mir Yoke bootstrap CLI."
+    statement: "Mir Yoke shall execute automated bootstrap behavior only after an owner explicitly invokes it for one declared consumer root on macOS, Linux, or WSL."
+    origin: "ADR-79; ADR-84 sections 4.1-4.3; Mir Yoke bootstrap CLI."
     actor: greenfield_owner
     trigger: "The owner invokes bootstrap."
-    preconditions: ["One target root and explicit bootstrap inputs are supplied."]
+    preconditions: ["One target root and explicit bootstrap inputs are supplied on a supported automated platform."]
     postconditions: ["Only the declared root and allowed local provider state may change."]
     acceptance:
       - {given: "one declared target and explicit inputs", when: "bootstrap is invoked", then: "the operation reports every write within the allowed boundary"}
       - {given: "no explicit invocation or more than one target", when: "bootstrap entry is evaluated", then: "zero bootstrap writes occur"}
+      - {given: "native Windows", when: "setup.ps1, setup.sh under a native-Windows Bash, or mir bootstrap is invoked", then: "zero bootstrap writes occur and one WSL or reference-adaptation next action is reported"}
+      - {given: "any effective Git push URL targeting Mir Yoke", when: "setup or the coordinator is invoked", then: "zero bootstrap writes occur and remote-handoff guidance is reported"}
+      - {given: "an external storage root resolves inside the product or contains unresolved parent traversal", when: "setup begins", then: "zero directories are created and setup reports that runtime storage must remain outside the project"}
     data_contract:
       - {name: "InvocationConsent", direction: I, type: "boolean", format: "explicit command invocation", unit: "consent", range: "true", nullable: false, default: "false", precision: "exact", tolerance: "zero inferred consent"}
     errors: [{condition: "consent or target identity is invalid", behavior: "return failure before writing"}]
@@ -125,7 +138,7 @@ requirements:
   - id: FR-007
     type: functional
     statement: "Before release, a Mir Yoke maintainer shall validate identity, classification, public sanitization, derivative consistency, links, schemas, and the selected test suite."
-    origin: "ADR-84 verification; current Mir Yoke validation and sanitize surfaces."
+    origin: "ADR-80; ADR-84 verification; current Mir Yoke validation and sanitize surfaces."
     actor: template_maintainer
     trigger: "A release candidate is prepared."
     preconditions: ["The candidate commit and tracked inventory are fixed for the run."]
@@ -133,6 +146,7 @@ requirements:
     acceptance:
       - {given: "a release candidate satisfying all contracts", when: "release validation runs", then: "the report contains all required checks with pass status"}
       - {given: "one required check fails or is skipped without an approved reason", when: "release validation runs", then: "release readiness is false"}
+      - {given: "a supported macOS or Linux lane", when: "portable starter checks run", then: "the loop driver locks without flock and the tracked CLI constraints equal the frozen production lock export"}
     data_contract:
       - {name: "ValidationReport", direction: O, type: "object", format: "JSON", unit: "check result", range: "one row per required check", nullable: false, default: "none", precision: "exact command and exit status", tolerance: "zero failed required checks"}
     errors: [{condition: "a required validator cannot execute", behavior: "mark release not ready and report the validator"}]

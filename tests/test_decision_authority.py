@@ -5,7 +5,8 @@ from pathlib import Path
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
-ADR = ROOT / "docs/decisions/adr-78-public-template-identity-and-non-authority.md"
+IDENTITY_ADR = ROOT / "docs/decisions/adr-78-public-template-identity-and-non-authority.md"
+PLATFORM_ADR = ROOT / "docs/decisions/adr-79-agent-guided-platform-scope.md"
 
 
 def _frontmatter(path: Path) -> dict[str, object]:
@@ -14,7 +15,7 @@ def _frontmatter(path: Path) -> dict[str, object]:
 
 # @spec CR-001 CR-003 FR-008 QR-004
 def test_should_make_adr_78_the_current_product_decision_when_indexed() -> None:
-    metadata = _frontmatter(ADR)
+    metadata = _frontmatter(IDENTITY_ADR)
     index = (ROOT / "docs/decisions/INDEX.md").read_text(encoding="utf-8")
 
     assert metadata["status"] == "accepted"
@@ -22,6 +23,17 @@ def test_should_make_adr_78_the_current_product_decision_when_indexed() -> None:
     assert metadata["provider_runtime"] == "none"
     assert metadata["standing_consumer_authority"] == "none"
     assert index.index("ADR-78") < index.index("ADR-77")
+
+
+# @spec QR-001 QR-004
+def test_should_make_adr_79_the_narrowest_platform_decision_when_indexed() -> None:
+    metadata = _frontmatter(PLATFORM_ADR)
+    index = (ROOT / "docs/decisions/INDEX.md").read_text(encoding="utf-8")
+
+    assert metadata["status"] == "accepted"
+    assert metadata["supported_automation"] == "macos-linux-wsl"
+    assert metadata["native_windows"] == "guidance-only"
+    assert index.index("ADR-79") < index.index("ADR-78")
 
 
 # @spec FR-008

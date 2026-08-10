@@ -1,0 +1,3703 @@
+{
+  "$schema": "./adopter-payload.schema.json",
+  "schema_version": 1,
+  "generated_from": "config/template-assets.json",
+  "files": [
+    {
+      "path": ".agents/plugins/marketplace.json",
+      "sha256": "f197d6b54d85d9274859d6915b9500284b9f04d11951f1ac950b1ce8db053650",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": ".ai-harness/bluebricks.md",
+      "sha256": "df664e3b853b20385aafaa9702c7df77b79c071a9605bef48155ea8fbdaf46ac",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".ai-harness/common-ai-rules.md",
+      "sha256": "c0697243d03750d49a4a7a1b57d5ee6ba542fe85b9381808e1303b00d341b81c",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".ai-harness/deny-list.yaml",
+      "sha256": "5f7b69aa6aaa3127ebab3a2f20fce0d2197972519d503b5902bab0bfa383f298",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".ai-harness/development-ai-rules.md",
+      "sha256": "1c8aee0bad3b87abc69a0ae84f2125feb4d48a873711a3afb96befb20d783194",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".ai-harness/failure-patterns.md",
+      "sha256": "02488f8799fe79e441c1d4467bd088afc4a1ef154f7dc6a9062c65a01708866e",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".ai-harness/session-closeout.md",
+      "sha256": "b22843d9101c65d7887f4454054cfd753f555efae9655a9df185f2287edfe833",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".ai-harness/tdd-matrix.md",
+      "sha256": "d831458c271c286854df9cbbba37447ca6693be628ea97b9c1deecbda7213d7b",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".claude-plugin/marketplace.json",
+      "sha256": "f382ef568cc4657d95eb14d40645421833ffd4b0c2da30ea9b8028c9edb1ed32",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": ".claude/agents/README.md",
+      "sha256": "5fc546776370897e7f993afea0d54e7de046499f9723d76967be9cb32b48570c",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".claude/agents/codex-final-reviewer.md",
+      "sha256": "9e7de3201cb66bdc33444c4fe4102f37058d8c8839ac4e050005683c1cf9c4ce",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".claude/agents/cwe-auditor.md",
+      "sha256": "b76afb67fd1766f996c67a1b480be7e4deb2c36b472502bc27d270966b2b5838",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".claude/agents/dep-auditor.md",
+      "sha256": "448a5843ca7cc6274d614adcb854abeee530f174005ac00433388ba2564dbce0",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".claude/agents/executor-agent.md",
+      "sha256": "0ecbab5e62ff2491c0f76d268d37e700c7dffb3c9c59335ea92dfe91fb8fa6f9",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".claude/agents/fleet-doc-steward.md",
+      "sha256": "fef26eadf5d92351773745bcd961a575d0550892bc584c3d30408430ae29c82e",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".claude/agents/main-orchestrator.md",
+      "sha256": "3325ae043a22712328597b75916728ae35c6dae50358c7630ad9f1a397f8dee1",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".claude/agents/ontology-validator.md",
+      "sha256": "bdadf432c5f478f8e11b82c08c974bff0194a9351ceab84cf48427c4b92e0f2d",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".claude/agents/pipeline-validator.md",
+      "sha256": "aff5b7328a39f19c7a01b9a6388887fde0adef17b0b55eb687c194235489cf90",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".claude/agents/quality-agent.md",
+      "sha256": "579fc339b4b3f7bc10170325925b22a333ac1a394da8320b57b370e9d98bc82a",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".claude/agents/runtime-contract-reviewer.md",
+      "sha256": "056960c98f48dca25f110d68e785a8240a2c7d4a7ae99cba623349661d14398f",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".claude/agents/template-sync-validator.md",
+      "sha256": "1b3c26ca6fef24df8dd6d3d99e14429bf36f046d887fd9002146ef2a04518114",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": ".claude/agents/ui-reviewer.md",
+      "sha256": "f9663406ce8e6fda5504f1c7d0552a1c4723983baf846a8824d32d7743c70efe",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".claude/commands/analyze-design.md",
+      "sha256": "b7e47422f62b82162eb1690ebcbf2ce22384ac2df6a2ca79644a117505d2415e",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".claude/commands/audit-design-fit.md",
+      "sha256": "a58bf3330cd86cd99f8baff885dbcb14a45dad6415277e4961d876a0a96a9627",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".claude/commands/develop-from-design.md",
+      "sha256": "9973ab79916674748c325f0d6ef437a08f3e308540b4f2c3dc0882b485583bcd",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".claude/commands/review-code.md",
+      "sha256": "8006dc69d5877d443633889893aba19022bba8dc2f33a6bb9335bb69e0229710",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".claude/commands/role-split-pipeline.md",
+      "sha256": "b599deb04671b9e621ca94a05f5cb951c8336dc1347eb9ff30fa2f7932515003",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".claude/commands/verify-against-spec.md",
+      "sha256": "f809a6bc0a844b10ab48e43f080903ed6b54f2b4a0ef64c6ccd7ffedfeeb438a",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".claude/hooks/_lib/bootstrap-gate.sh",
+      "sha256": "e86a4e924e4f2e8d8bc084c4c985982fd45367a4de1b9217c4b2608f84b6ec0f",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".claude/hooks/_lib/invocation_log.sh",
+      "sha256": "de4848f86225c8b087aa8cd51eeea753d00a852356eb734ed46d8d377208ae70",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".claude/hooks/_lib/run-python.sh",
+      "sha256": "b472a484b79c414e800ac953b3192889bc57a6a973c0ececdb9adbfa8a9e3d01",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".claude/hooks/_lib/tier_dispatch.sh",
+      "sha256": "a44bffd977f75c34194572f74d0be2da86c8e4aefd9995485ef0baa6c8de5fa8",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".claude/hooks/lib/code-path-config.py",
+      "sha256": "7e8260b862fb417570e881f3fd553617b690424468000eda9c748744c625e890",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".claude/hooks/mir-stop.sh",
+      "sha256": "ec285cb5eab97c62e6f26063ce0f1a9cc16a490da0dd9cc002449b0760720910",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".claude/hooks/post-edit-check.sh",
+      "sha256": "0e89129d9bc57e3e8706d4b26e29eaf3afcce97f3a43c62a3b25ad03e31773cb",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".claude/hooks/post-edit-self-ingest.sh",
+      "sha256": "550c4f754ddcc53978d30d790a95012f4a9e0299cd1c2b7822fd19f1402e12c3",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".claude/hooks/pre-commit-verification.sh",
+      "sha256": "14e17a3676f7784174fec180b9a6fa025353659c483753603bf81fe1c4881ca2",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".claude/hooks/pre-compact.sh",
+      "sha256": "9791b7b6b56589f508d180132dac11cf7918cb387ef5e4e4a3a130913c497e26",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".claude/hooks/pre-merge-gate.sh",
+      "sha256": "42c46fb14405ff52cc52ae1b24c20872b60341e6a723337da0c3d9e044044ac8",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".claude/hooks/pre-tool-use.sh",
+      "sha256": "831121fd4714ad8f6cc1a838f739034c657e2d3f5b7b34846d7ab958346321f4",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".claude/hooks/session-end.sh",
+      "sha256": "baa24d6c09b992fe07bcc3ecf945847cd0099f3ce878917038ab796a6d890ebd",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".claude/hooks/session-start.sh",
+      "sha256": "88efa4d1ced955a6879e3b1ce04f31d6f811b9db9d5be1953040bae90546adb8",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".claude/hooks/stop-failure-audit.sh",
+      "sha256": "2e5e59ea5409e4e497e238bb0d414e4278d1b36d456bfd338b18df737be48db5",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".claude/hooks/sub-agent-policy-gate.sh",
+      "sha256": "4a6ce8386c336ef6af8091e7015052257fe9b1100b5a19d5bd1186efcddad4d1",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".claude/hooks/tdd-guard.sh",
+      "sha256": "8240fda73a4d4421c21fcf804a2429fceace16aa8dcf2ab7b0d71c93e2b6a936",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".claude/hooks/tdd-matrix-guard.py",
+      "sha256": "22b475352a8995f101311cb9e92eff4f3f9979af8e2205dd155b71d884c0ca44",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".claude/hooks/tdd-task-completed.sh",
+      "sha256": "e08c7de44bb7b9d1305d3e2af7b8ebba3b38d19dc6ab99994440027969993d51",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".claude/hooks/tdd-task-created.sh",
+      "sha256": "cc55d945e5cdbbb2aaa5d6c3f98a6e4fb2b0b2dbbe78e57840a2b88ba37583fa",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".claude/hooks/user-prompt-submit.sh",
+      "sha256": "81fd71e2af1028e79a6d39578f9ebb0f5f555e83646378251d76a1950d68ff3a",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".claude/settings.json",
+      "sha256": "e6e007ec49ba09edd1bb74da669173b0dbec2b9e125e1df4c99e45ed780e67e3",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".codex-sync/manifest.json",
+      "sha256": "6dbaa94e65a1e6f2ea528ba4c88b429b836a76cec0f8ba003b41e9f739a490f6",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".codex/README.md",
+      "sha256": "13fd8fb22d6b88d72db87dbd06b78c99754b5aa3b4ccced3fc37fe09ab2c4f93",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".codex/agents/codex-final-reviewer.toml",
+      "sha256": "d9f7d5a69461a377849b518e6331bd3851c06f85c4e6714bb8c89b16e86a9aa2",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".codex/agents/cwe-auditor.toml",
+      "sha256": "340b8469c92fa56e49cc2b5ff6e14be197379d57f8dd268d82a00771ac192318",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".codex/agents/dep-auditor.toml",
+      "sha256": "897a578b70670edb826bbbcee4afefbe0ed08c4ab564ba90db59da1dfa06097d",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".codex/agents/executor-agent.toml",
+      "sha256": "8bf41e83fc8d80ffed85f795fb31c1042fab8d5f68e47e71d1c585f9d265e9e5",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".codex/agents/fleet-doc-steward.toml",
+      "sha256": "bc4ecc800955526c0c8e751c44b6baf6935bb0500cd5f4c1777ff9d28b200ad0",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".codex/agents/main-orchestrator.toml",
+      "sha256": "2433fbd56faabb0324260494c1ac40550385751755fa895764fa9fac4dc7ce23",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".codex/agents/ontology-validator.toml",
+      "sha256": "c97ac6df8983e1361131d629677bccaeb74cca7350093d8a3235451ab002e9a6",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".codex/agents/pipeline-validator.toml",
+      "sha256": "41bdb8fd7ea945ddac4fb12547c4319035bb8f9246eb5848aff713f50270b2d5",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".codex/agents/quality-agent.toml",
+      "sha256": "6f313d7058d1ba144c846d2d559a67332e8a317a5da3135b5ee82dab670975af",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".codex/agents/runtime-contract-reviewer.toml",
+      "sha256": "2dc9832116cf90495e0752f4227cf59779e3e824c19b7cd8fb1bbbfa3d34892d",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".codex/agents/template-sync-validator.toml",
+      "sha256": "7e0b792add177e9c8d29b4a101396bc2598b2ea1853fb894a4b3740930e29aa1",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": ".codex/agents/ui-reviewer.toml",
+      "sha256": "984f15fdb877d63379660d94309399386c9feff2578e92a5c2ecb0f19f96b116",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".codex/config.toml",
+      "sha256": "2e0625c65c76b091aee8bb58dfe07f0e73130aef14174315b8cf277bf20f7eaa",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".codex/hooks.json",
+      "sha256": "0bbe518bf511d711ca56125a0b966c755c56fb283eb47e4cf2dfa75a8aa79f69",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".codex/hooks/lib/code-path-config.py",
+      "sha256": "7e8260b862fb417570e881f3fd553617b690424468000eda9c748744c625e890",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".github/workflows/release.yml",
+      "sha256": "7432455aad9c8919225e63f4189cbccdf01615be9b05b5c9cddbc87f7867b8c3",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": ".github/workflows/validate.yml",
+      "sha256": "6f383c7e85c8a46aa1577327f579d2944f2b7dc82d92bd4463560f8f0538eeda",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": ".gitignore",
+      "sha256": "93cb60244278e0366eb35399d53fb33fde287939d11bc73e39750282b6ba8904",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".mcp.json.example",
+      "sha256": "78da9175e1ff4f061bf82c7bbf09bf8dff8de9508f9b3b05e259048a2340817f",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".mir-preserve.toml",
+      "sha256": "24e3fa789027fb857e64c89f31af75eed5ed6fc93c4801ceaa847aa0e81545c2",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".mir/boundary.md",
+      "sha256": "2ba402ff4f685e7f8a6123c17931eb681e7a7d8583739362d856a9da62a57162",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": ".mir/capability-lock.json",
+      "sha256": "a94a097e64957e2217f2a9183038be36383349340413b0ae78e67bfb3bf11806",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "d9d0d629bf44cb4f19f3b68198778fc7e05592ce4edb6a4ffbb6d83b35c308f0",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": "ARCHITECTURE.md",
+      "sha256": "9003fed719ce40c0d9df94b1dd61c049a799cb56ecad02bd1afd755b149fff08",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "BOOTSTRAP.md",
+      "sha256": "f91df5c60c8cb8ff7997e6d87671b89bb77db874024090edd7a9bc4f753052bb",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "sha256": "094711a49ee9034d0e4312420d9126f910e47cffa4961b3d3ca77b3511675675",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "CLAUDE.md",
+      "sha256": "bdfd631326ad09bea16628d0f4f5970965ad465c529315075e2ae7b1d8c87693",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": "CONTRIBUTING.md",
+      "sha256": "0ed35054ed43df6dfacf55b29f16ec34b687a1a009ec155735c12f99e91e08a0",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "LICENSE",
+      "sha256": "c33fcb70ac637174b3fa5e1f4a216cdcfe1c7446536b3676e51107f22db8ebc8",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "MIGRATION.md",
+      "sha256": "757b47747507e4c28909b2203db4dcfdc071fb3910245079a404d18eb56371c2",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "README.md",
+      "sha256": "f082d4c70236038d701c561e5b39aa1d94824487446464a30256c29ed0f06002",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "VERSION",
+      "sha256": "a66780da23103beaf12432b418508966b31a2a3a787f9468a5b6cdaa8667c1ef",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "app/.gitkeep",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": "config/adopter-boundary.json",
+      "sha256": "92d5c607235048f81fd8448faef9124b2345313de3b7f86d06b1280ca57c359a",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": "config/adopter-boundary.schema.json",
+      "sha256": "b294a35d6e62b718c40a1bfda25a4ff66caa8521e40b19302c2a56d13cf9b534",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": "config/adopter-payload.schema.json",
+      "sha256": "0dd438fd11607e70b0cc8e03969e30b8619470e9675f78f8ddc7732d9b6f2080",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": "config/bluebrick-paths.json",
+      "sha256": "8566d1ab7ab7d7e2882b7fcfc1f8db32af5b9d457c1ab688befc5c2addb1392a",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "config/capability-sources.json",
+      "sha256": "7bdcd85c69a1fc9286f1f8d0b155640324599eb6130c3dc3da818d7c5f55172b",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": "config/cli-runtime-constraints.txt",
+      "sha256": "a24b792c07cac224c411703df98bee117bdaf93423722662216a5a1f010a4438",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": "config/doc-size-guard.json",
+      "sha256": "d7c424f3f24c1d9f2391212714355821d951164b6bce6590e0c3bf982bdd0514",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": "config/harness-consistency.json",
+      "sha256": "e51f50b2121073736b6e69bc3b8dfed8a3ad4c734a9a846a14bbd57e805a10f4",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "config/harness-consistency.schema.json",
+      "sha256": "cbabf25ab620f79b313b82286020290183ed2dca71c0493819cb6cc27a47eb8f",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "config/repo-agent-management.json",
+      "sha256": "9cb07be0724d82b7fce47256d3b2656a0352dc5a96634d28c50f99a42d0c6f52",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": "config/repo-agent-management.schema.json",
+      "sha256": "824c3cbbd012311f9a25b93c2b5b18ceca2c29d1482050f561b1f09cd5072610",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": "config/repos/.gitkeep",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "config/repos/example.json",
+      "sha256": "af0a033c3d95447b50676585f32db0d7f9264ae41e4004d8fad6ef9901005200",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "config/repos/mir-yoke.json",
+      "sha256": "6cc895518138efb9d34628090eee6f219fbd1e89f2638c0ded4bc90eaf24a6a3",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "config/sub-agent-policy.json",
+      "sha256": "a8b61c2a3fc08ded335d439b5f12c1c3a58769d5560db1ad327531114eca081d",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": "config/template-assets.json",
+      "sha256": "8ff63ab9110a1f8d75f9c77b892a80420277ed99c8af629cb7cd268be6a1a41a",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "config/template-assets.schema.json",
+      "sha256": "fd142a1a583827ed64f5d5cb318b464203c46b3b603fb5874618e5f7f2cf9696",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/architecture/.gitkeep",
+      "sha256": "8943e8e8e777288fc374875e048be5ac7be54d7288a31d034509e5e0cb715c14",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/architecture/embedding-index-lifecycle-shape.md",
+      "sha256": "68698735cc1e3e726c382e94fb2b4a4e4f217c800e8c72f85fb2ea1efccc4332",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/bluebricks/adoption.md",
+      "sha256": "ea0b5b0326ae72d550f190d289e6d57065dabe296cac31dafe21e30ac3b2a8c3",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/bluebricks/capability.md",
+      "sha256": "0f0d5acf9bee5c9fbc1a1d16aecb5325b6f5734f79674a92835fcab879fa7ff2",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/bluebricks/contract.md",
+      "sha256": "3e82ec302412e1cce34d6c6c6dedbea3f3ab7cc4491878cd504569617fe4aa97",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/bluebricks/history.md",
+      "sha256": "ce8964795289d556fc100349730ebdd4f945130a7f6559382b3af690a7e7de3f",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/bluebricks/maintenance.md",
+      "sha256": "3f6e0d43adeee82cb9724efc7d6d9443970a36fd83f9ff3f09d39600d65f098c",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/.gitkeep",
+      "sha256": "d8dea4d149f73ec67f7b048b930e78a6edc089e94728cf2746569256d862916f",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/INDEX.md",
+      "sha256": "12b66326ed43feea369dae9af9bf025867273195c1d5a69e73c0061222f5c49b",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-01-external-store.md",
+      "sha256": "e2c2368a304385eec5c72b7f5ab36692fdbf05ee23e5d6dba2a759eaf3b992fa",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-02-skill-preserve-manifest.md",
+      "sha256": "ab2a22dc0fdd4aeaa722ef379b66ce17196c6793fc5be32384b4941779e99dd5",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-03-phase-gate-policy.md",
+      "sha256": "1eb8599ac78bdcd350413567e326e72c6690c360c088b1d4ffcf785a92f0eafa",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-04-claude-md-preserve.md",
+      "sha256": "ff29c7f656237f4b2b0d4369f9afa73d414c22892b62197257185180586b9552",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-05-mir-self-llmwiki.md",
+      "sha256": "167717689a5dd74b6e500a90b5dd2961518e952bae60b1a884f8868363318b5a",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-06-stall-detection-2026-05-11.md",
+      "sha256": "e0cc5c51f08f7c112515e5610298b969121d1de5e84df655d3cd57218ee110cc",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-07-review-gate-2026-05-11.md",
+      "sha256": "9a2bdf43b88cbb6ffbb36e1808d8d43c5a56c44efff298c775b16a0699e1baff",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-08-agent-routing-2026-05-12.md",
+      "sha256": "960c2c810858395a722c2b1a3db3693ad0d1c596999aa8b4533a39d2bd9b7362",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-09-execution-backend-frontmatter.md",
+      "sha256": "a48646090e8c8c776d4b8caf810714d5e241c84d3196ea76e2e8e86d1f82a687",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-10-fleet-governance-advisory-2026-05-18.md",
+      "sha256": "33d8607a6b7b49f4481a0a9a8f9e27f3bb06137223abc2fbdcc2af9e92c266b3",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-11-fleet-inventory-catalog-axis-extension-2026-05-19.md",
+      "sha256": "3552dcce0298debf4b3c246f9c625d08123239cc001f8fb9cde7688966b25c49",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-12-prompt-cache-reshape-lane-2026-05-19.md",
+      "sha256": "1bc0173ac7a5c8e3acab99bf570a30ecafe157679a7267fa303a6b11fd65dae5",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-13-harness-generator-bootstrap-2026-05-19.md",
+      "sha256": "41e2f02a5397696d09df32d84f0e2e4609971f1bcb51e78f2154bd4aad276e4a",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-14-sqlite-memory-python-native-2026-05-19.md",
+      "sha256": "70d82bfe212f9cecb66f60f5bdd1074c899af1b2b052261641449853b7cc1c4a",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-15-catalog-multi-agent-skill.md",
+      "sha256": "2897e11544c5f5cf740fcaa12df9b47cef4d31f1e90f942c26229871ecac522c",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-16-specialist-deployment-2026-05-21.md",
+      "sha256": "ba50568ceb7333dae91a0433dd42465042eb2f15c71f952df4ff9cd1a1790b50",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-17-orchestrator-context-routing-2026-05-21.md",
+      "sha256": "65211aa2fbb233fae5594e2d8f5be28e763e753bc18eb394db4ec1e678eb4ad4",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-18-orchestrator-runtime-guard.md",
+      "sha256": "a32e2760ff8c73d11c8311cfa5154fc89bf1c61a9b37295ac6d3fb0121857a61",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-19-workflow-preset-json-encoding-2026-05-22.md",
+      "sha256": "752ea38a53df950ed9acf64d99f3ce3d7ad06e9e24d79659768342a564fe733b",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-20-per-family-execution-backend-schema-2026-05-22.md",
+      "sha256": "8c221aa67779be6b8c1c6ad85ea59c4833c1681611b158788ca8cbfc40f1ff58",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-21-family-type-schema-2026-05-23.md",
+      "sha256": "715254a14b243e4a0a295e26458824cb251ed37a47cd8a9b6045c9e69ad3399e",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-22-sealed-family-policy-2026-05-23.md",
+      "sha256": "1e9321d292457011b9d3e6b28f9b5e80687d0c4c70cf2d19af2e68e76ef6ee5b",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-23-active-family-dogfooding-exception-2026-05-23.md",
+      "sha256": "c47f149f04a4d2db57e88e558f7ff213a7221147fa09bf4834ff65b08bdc4d20",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-25-fleet-catalog-2026-05-23.md",
+      "sha256": "12e9d5f69238841848408218dba9399a1ef5c31d11f5b810265ed3b191171b2c",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-26-rollout-share-pipeline-2026-05-23.md",
+      "sha256": "60b97c91b04d01a4834fe27c5d323f7c7e4977198c4d0767f5523c8cbd9e0a5d",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-27-back-propagation-2026-05-23.md",
+      "sha256": "00f2b1868157f717bd3739a5b8565d7fb0c52af13920d05b25f68ae292fcb9f1",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-33-design-complete-gate-hook-2026-05-23.md",
+      "sha256": "be27430bf5c56bad1f0997a6c7946adce7da8ab37f9ea460c70dd2455e91afb8",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-39-template-applied-state-charter-2026-05-23.md",
+      "sha256": "52df6b6e1d394ad42f3fb330cb87f4140f04cbfe9dcce1ce0338c8f6b3a49cf3",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-40-mir-template-maintainer-charter-2026-05-23.md",
+      "sha256": "a5c0a9c8b4360ed4ff19c1d98d41f3f65fcbaba42d04a22e6c8ed931abb5b0ed",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-41-verify-self-stop-hook-2026-05-23.md",
+      "sha256": "6ebb61ed65d9157314a84de6898f651141ae66bd3b9756140febecb9c96a0cba",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-42-verify-template-applied-state-2026-05-23.md",
+      "sha256": "dc42f00b5670f20a123531f74d20093b595e8a583e2ca3b924119c673d78bf58",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-43-fleet-phase-4-rollout-deferral-2026-05-24.md",
+      "sha256": "d0836de0e3ebf4fafbbaf23efbae45fe8068cbcb0d5ddce0410df315bcb7e49c",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-44-13-state-sm-migration-2026-05-24.md",
+      "sha256": "718da6c3981eac3e3045251a5cc6af9b705d29d14d8d65f89c93aa8a76ad5e20",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-45-error-taxonomy-unification-2026-05-24.md",
+      "sha256": "88aab6b18c406454e803f7ca2608994cd96c5a10b48ace3a7282a75130addead",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-46-phase-4-enforce-flip-rollout-2026-05-24.md",
+      "sha256": "0831ef8172bb865afe86ceb824a4f9bb87915366ef610d28a89bcab9e4d2ac65",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-47-orchestration-dispatch-brief-and-tiered-gates-2026-05-28.md",
+      "sha256": "c7528b74131562f4a79a2b260aecb9a8235b09462689512ac491f28ed7042897",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-48-central-fleet-management-and-direct-apply-2026-05-28.md",
+      "sha256": "60cec0d44348b65360f5548d49520a879df68a878b30a269fad433c82f3ec141",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-49-opus-4-8-alignment-and-model-tier-routing-2026-05-30.md",
+      "sha256": "ab62fa5c2f8a8c906555d44e9d64520f765ea2c8a63979c275e14d565c66f3cd",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-50-memory-db-canonical-md-projection-2026-05-31.md",
+      "sha256": "7e3db5517d3bddf9204cca61fa96382b9ef7e2959c43bfffe720836f2da641ef",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-51-harness-self-consistency-verification-2026-06-04.md",
+      "sha256": "19dbd12bb55f83ba8e59899e963ff80ed39679802213cd7b35a2005ca69c4308",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-52-fleet-admin-elevation-and-cross-repo-write-model-2026-06-05.md",
+      "sha256": "837d4af18b4d994416e8a992f0034ceb6056561014f6bc9a5d3bfeb35f7c0aa6",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-53-context-assembly-current-only-retrieval-2026-06-05.md",
+      "sha256": "09fb5eb22eb64b119f3716959effdd0946045bae41b4c97fc60e2df68aafa8a2",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-54-template-anchored-fleet-parity-manifest-2026-06-06.md",
+      "sha256": "10767507093390f91ffad4a3ac23d9dba16e292494a232ca6be7387a57777020",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-55-native-memory-db-projection-2026-06-08.md",
+      "sha256": "8328e1e640b6def83c86f6a4725cbd10361823605c6ba1bd68b4e30bdaa5f3bf",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-56-symmetric-main-parity.md",
+      "sha256": "a58ecb69f7424de1d0f7b9bb7846a73cf0e3cae63c4bd7db3d5f57fc1a357a01",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-57-callgraph-mcp-borrow-scaffold.md",
+      "sha256": "08cd7643995ea93aa1de27b8c25f01c1c2c6f2ab28b81fcb0dce953e248b036d",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-58-ouroboros-borrow-adoption.md",
+      "sha256": "e4257eb3abcce4c20b9c48a3978b2afd21a6d991e772dcfe3bed396a28ad0734",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-59-agent-execution-monitoring.md",
+      "sha256": "1031a4051912b59d5d6779f26be22a08190c58f58c74e1bbc84497ed180485c6",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-60-claude-orchestrator-codex-subagent-execution.md",
+      "sha256": "88c6c9bf10c2bee9b2c266f130f2167ec3314b5c7035615de79d757bf1db8661",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-61-cli-agnostic-meta-harness.md",
+      "sha256": "21e2c5b1cc75f1f6bbce07484e31fa57e0e1a063b8fe0b6a52f5f97751941af8",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-65-sub-agent-routing-sandbox.md",
+      "sha256": "bb58ed3e1d95e091a31e78a566cc49f5fa70e840fb7e2051ddaf672bc1e2faf1",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-69-codex-exec-ban-mcp-only.md",
+      "sha256": "b344bd330337636783be1ab22db4bfe238cb836c886d7068c122312f91c056b4",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-72-dispatch-resilience.md",
+      "sha256": "73b1e781f28dc6ab36761d4f21e070c8cc6e599c31b5a7f36fda528434778ca8",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-73-proportional-guidance-first-harness.md",
+      "sha256": "f01d3bc64fe07b3182b3f6b87cbadbce15b31a5bb9f13226b08fa77dd5067c03",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-74-portable-bootstrap-capability-sources-and-memory.md",
+      "sha256": "fe7b23a92ee53a4e9c2acbd221913da419a63b4471f9a1dbb93300dd8f4d401a",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-75-global-plugin-migration-gate.md",
+      "sha256": "0aa0eba4bd93f650b518fb35846b07a58fd5a165dc670250e568788fe56015e7",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-76-codex-required-plugin-activation.md",
+      "sha256": "cd436f89670f41d62bd33062b06d20b517daa495b20969f584a4834e7be2e7dd",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-77-existing-repository-bootstrap-adoption.md",
+      "sha256": "deb7ac85802f863b9d347ffa344f7d4e2241576c2aab4581165c3b4206e2ae9f",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-78-public-template-identity-and-non-authority.md",
+      "sha256": "26d278242fc8d76f5109341095601e5db25f9990b64576bfc8be87dc77cf61ac",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-79-agent-guided-platform-scope.md",
+      "sha256": "a3fd4af4011ac66605068bc8ade853afb3c7f4902366426a5c14f69b5fd61c10",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-80-release-runtime-isolation-and-adopter-ownership.md",
+      "sha256": "7b12c60703540a17213777570d6ddb4bdb5383ccd336bc4ab83c4468413551b4",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/role-policy.md",
+      "sha256": "56ddaec07ce07a678f0f7f789f23161d8ef879571d2b42cda9d75e3270010429",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/governance/fleet-observation.md",
+      "sha256": "73a838f94f6989ecc1c0bcf56acb97cde9563fc9142893c8757ab9354f8a5d3c",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/governance/principles.md",
+      "sha256": "b7d985b0222edb1a26869a7c31de200483d86465867e3c4063c27d64c3bc7291",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/README.md",
+      "sha256": "9b79a04c78feff1bcbb2fe4e61eff8360b18fb076d8e49825053944c4aee828c",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/active-agents-enforcement-gap-2026-06-03.md",
+      "sha256": "45182ac232fd569320784dd4c4efdc0401cca632691b23255da95c02154ee320",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/appendix-a-sources.md",
+      "sha256": "6fb2b1207bcc59d3edcb2a586f6636610db59a2e0cdbed8c23de43e621316e61",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/applications/README.md",
+      "sha256": "f22f3df94b58ee7930684acd1812daa43fdac2776d7822ba1b876709833dc865",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/applications/autonomous-execution.md",
+      "sha256": "217a32f592473ecfa9cd9e928a65abcfeb28c016ff6993aae83815488500572b",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/applications/design-process.md",
+      "sha256": "bddee4efae3612dc3466c0e8eb90aa0da091414a04e25813d811d8cc7125deb9",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/applications/dispatchbrief-defaults-2026-05-28.md",
+      "sha256": "2f63f18ec850e57babb86c88f2016595242c8b27dd13ef30a58a7569445b9618",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/applications/dispatchbrief-rollout-playbook-2026-05-28.md",
+      "sha256": "94420294197f5c89814536310d3eb490e154260d0c6602c0d785057d6d4fe2df",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/applications/example-harness/README.md",
+      "sha256": "60bd61672e8e8745349367e59db6805c7d3b5e053dec5302cd44e1f4bddf21a2",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/applications/example-harness/cron-runbook.md",
+      "sha256": "3a12b734d0d98eea373fc8faa50f796be9f87a263799f2a6bdaeae4745064330",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/applications/example-harness/mcp-gateway-runbook.md",
+      "sha256": "b227cdcb5a2fdca1ee4b39cf5b1b272c45e41c02109787f862dde40bd37d5d4b",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/applications/example-harness/phase-0-application.md",
+      "sha256": "47664d30ec3078a302fc165ab7d51dfdb84e01abfcda362b665a795398a3ce17",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/applications/example-harness/phase-1-application.md",
+      "sha256": "39ecc6fe5eb2608076c8da92c821beda697e11e8b2ec935cbf8486d3476913b1",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/applications/example-harness/phase-10-application.md",
+      "sha256": "d996916372e50d69e0682f211f792d8fbec22f3c8d072ac46d70d781949151fc",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/applications/example-harness/phase-11-application.md",
+      "sha256": "e529d061d73e0ee8482c24910e6e9537872d20c4879d7aac9acf81a023cff48a",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/applications/example-harness/phase-12-application.md",
+      "sha256": "f54129cc78d3025838237583541f78b4565099b2f7e9038a41de8f850383fa7d",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/applications/example-harness/phase-13-application.md",
+      "sha256": "df8c297f112e7b5fd457361f60932407edf86515c99a5361f1b75b880e2bcfcb",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/applications/example-harness/phase-14-application.md",
+      "sha256": "501ebd2d5c256751d04f078c75bb65be11dbcb37c806875cf4f45e83225a6149",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/applications/example-harness/phase-2-application.md",
+      "sha256": "35b7b4c7460cfdea39dd4ecbcf3c098f4985492d656652373085431c85173869",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/applications/example-harness/phase-3-application.md",
+      "sha256": "36748c9280cd808a57173ed112029fe0a669f969f954d2dad6ad641a600a0bbf",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/applications/example-harness/phase-4-5tier-execution-units.md",
+      "sha256": "e020fab885ad85226e037c3535b6a3023568af73a148491020127ab1700ac7cf",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/applications/example-harness/phase-4-application.md",
+      "sha256": "bdab9ca2856a260e7c37be8ed4334c8eadfcb59269d6d93bdb43194f9a31b81d",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/applications/example-harness/phase-4-approval-discord-delegation.md",
+      "sha256": "d4a9ed7b7f2b7ce4ece429ee7e1273eeff7b36c501745080f58cb08666bdcc5d",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/applications/example-harness/phase-5-application.md",
+      "sha256": "921be18b197c26f91df79e54e7d39a7847e000749b510be114cbdb6208e9c233",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/applications/example-harness/phase-6-application.md",
+      "sha256": "4c9061dc26a4e0c3cb1487b56ac554d11ae00b2990ee37d88ae407ad0e0870f8",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/applications/example-harness/phase-7-application.md",
+      "sha256": "33ce363e793b4088c5aaf94a2359eda430458a7c059199dc14c4fcca3c05bd34",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/applications/example-harness/phase-8-application.md",
+      "sha256": "70b1373c963b7b9d1ff15ec02ffaa914eef62cb5f1d4252fee0d587567c06de5",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/applications/example-harness/phase-9-application.md",
+      "sha256": "dc9af1b129594bac6328ac0f0da8568339d2ae7c505ca4efe109f685b6b20628",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/applications/exceptions.md",
+      "sha256": "1ec19fe3b7f15c109f1d800ce2401842ee6f81de9573bfbf3b14a419abb19baa",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/applications/external-repo-operational-verification-phase.md",
+      "sha256": "f48c83f5c69e411a53c77a48853a839ce5460c83b5e1629975cbc8d5d3ef46a5",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/applications/families-overview.md",
+      "sha256": "4b66c85820e05413db400d06277dc1624baf8f6be8a575ff6305661784e7d4ee",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/applications/family-type-adoption-runbooks.md",
+      "sha256": "ccadcd40eb295e6c053e6aabf1284808cf7178548b30cd473c3aa1851579e44b",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/applications/feature-matrix.md",
+      "sha256": "e0abd0bf36d0256b4fcf55570e07f4d1f8b8d143a107b3292c826243eb6aec03",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/applications/fleet-catalog.md",
+      "sha256": "33613278afb902f89c2f0a3d101c52cab24938bcc891ec50198dd9d9bc45a59b",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/applications/fleet-rollout-report-contract-2026-05-28.md",
+      "sha256": "d7ff3cf16bfc97e79824c4472be12da07539b4bd2a7a052bf291425b25d66b76",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/applications/harness-review-criteria.md",
+      "sha256": "1ba241f836aec4be5592bf89e142fa76d661aea24d7fe20854064c002716da97",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/applications/incident-response.md",
+      "sha256": "5b8ae52298638c531c28f095c01d670db2883611d39bead43c76fa7b9717998c",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/applications/security-baseline.md",
+      "sha256": "994bd97131ef3f1824ea9ea60262ebb85fac20f8a1fcae4c8554b392a1bdda4b",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/applications/share-back-runbook.md",
+      "sha256": "eb5983c1b8a86fb44afa226f6ff986e7001796d4e99e26b7261c1581c1818c3c",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/applications/template-cherrypick.md",
+      "sha256": "2c652296b36fb25e591dc03ba746ac879d3617fc0887a69ea8e691ad8485ecc5",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/applications/template-repo/bootstrap-day-0.md",
+      "sha256": "cd122500b54e6ca1363c228c7c3b696c26c8dd5025f23b8992fc9ca87d1c169c",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/applications/template-repo/bootstrap-interview-spec.md",
+      "sha256": "07d9b89008c96fcbd9d264d4e89e49c9e9bfe85a4263b01264d7caf2a1eb7dae",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/applications/template-repo/ci.md",
+      "sha256": "fc5ed73a11842ac6a6cbc7790a50f34cf2a9dde9cbfe70f107b775aadbba3892",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/applications/template-repo/current-state.md",
+      "sha256": "5b33731dec7e28300687a6172a65c9ddaf8020f43be8dff10bf7f36d9d7a9475",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/applications/template-repo/sanitize-glossary.md",
+      "sha256": "49e7783ad1766fc7c485418e4c501979f3b0fc02a1ec06ba1c991c750fda1016",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/applications/template-repo/upgrade-runbook.md",
+      "sha256": "9fb354a904d5f35e91ea626999c10876da0f83d0368f9cf40869e3f012cf6a40",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/applications/template-repo/versioning.md",
+      "sha256": "c6120e72e0dab423d219c66696551a14e3da6bb8057843c90f0f619fda3a3ce9",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/context-surface-reduction-fleet-design-2026-06-03.md",
+      "sha256": "fc71e2068301427271cda6d8883d2d6cb2d304384b39ff244c2998537407953a",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/graph-engineering-structuring.md",
+      "sha256": "ce896231591a5c4681c869dc4f45e0ebdf3999f2b815924d8e4ee3c56e3c6d1d",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/mir-roles.md",
+      "sha256": "beec9ef64d738e563f47faeeb989ae6d742c921ea13f9cf1027696de4050b902",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/phase-0-baseline.md",
+      "sha256": "a24289fd410e5848e70ba00c0c60008c74c5ab01de36d5129ae615f59a33a12b",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/phase-0-foundations.md",
+      "sha256": "01db9f57a75686eaaf5ccd16d945ff32a168498b211905cab789bdd624467029",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/phase-1-baseline.md",
+      "sha256": "e73aa147db578d6752584a4223241235567191ddca3f2310253c7e50af9ac507",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/phase-1-start-harness.md",
+      "sha256": "9458254eea686ca29360d9485cce735df87b587aba4283b28007c2eef3f52115",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/phase-10-baseline.md",
+      "sha256": "ceefe1eb81113e9376a4d1c029bfc501896e4aac48dd3a3ad7ddf857184484ca",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/phase-10-rollout-pipeline.md",
+      "sha256": "3c163d43b4b583889f672dbdbcc8e7b14b9333dde2d81949485912032582238b",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/phase-11-back-propagation.md",
+      "sha256": "45779446f48449a7415d7d75867bb0784888d92c04ef0007d76d2341df572f3d",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/phase-11-baseline.md",
+      "sha256": "b0251c3dfa5d0156e91d9a56c0474b45c404ed56c3f53661fd11277b6481d1a2",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/phase-12-baseline.md",
+      "sha256": "577d8251fca3cbeb2a64eac189b52f95a6bc40e14be5b1ab93ffa015c1147008",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/phase-12-template-lifecycle.md",
+      "sha256": "66873e59e7db9c6800bfa7ecc7c970c42effbaf0195de66048bcd0b189903222",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/phase-13-applied-state-closure.md",
+      "sha256": "1e389f10853bc76d92724b542eeaf7d21be3ea0973c6a34370d261b357910b84",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/phase-13-baseline.md",
+      "sha256": "893c9c5ad13fcd76b7db50b415cb63b9994c434f3bcd71235c84a6ef132b594a",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/phase-14-baseline.md",
+      "sha256": "4959f3057f43f493f6f948ae7fc7edf8dc256e7c9d71059485ffa5770c9aaff7",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/phase-14-completion-consistency.md",
+      "sha256": "a5deabe232b94eec9272eb8cb5719f04b6f2b57a7e687459d321a3aa60532b86",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/phase-2-baseline.md",
+      "sha256": "81c5f0d54d3188414ad5911d04ebae0944892773414c59690b5d878b9a63d0c5",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/phase-2-enforcement.md",
+      "sha256": "0573495261d53bbd6d6bc3b352c9d99669f5cb95507de34cf31dd4f9a801b9f1",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/phase-3-baseline.md",
+      "sha256": "743f03751524bc68d7566f7e7bf0d62a012778ac22b6ac1fe0440c1311ca0b9e",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/phase-3-memory-context.md",
+      "sha256": "ea012732e3f95b8837ac1df5254e47473ff855c736ca8d20522a7f27f9898aa9",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/phase-4-baseline.md",
+      "sha256": "f4804d47f77583a790ebed836d77b27adbac99e704d1f60aff155dafdd8a3ff0",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/phase-4-state-machine.md",
+      "sha256": "3515b12ba9d9d817aaeffd04e4579a221f430e86e9402a21a9556ee4edca6650",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/phase-5-baseline.md",
+      "sha256": "32ffea8229c0cfdfe4e912b21b060d997c4d2a6979b5a5490372f0677f46fca8",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/phase-5-subagents.md",
+      "sha256": "f25a9a306c2b02095053cb7a33d4ea275e2283247452db4bf8f58c23d9022031",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/phase-6-baseline.md",
+      "sha256": "ccabadb3dba26b5ddf4676d96123dd9926b741b5a1c8652e82ddca715e77836b",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/phase-6-observability.md",
+      "sha256": "6be741fc57c7c4e8cad1877bd861849d2ada8a97318c38cb423062991e0ffee5",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/phase-7-baseline.md",
+      "sha256": "06a7cb63e828ee2382a9f9a0b73ee377a6edf42e9b9ede2cdc0531d75b4a477b",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/phase-7-fleet-expansion.md",
+      "sha256": "05b240134dc6038971b97e03317b3884f42737f4c1f7a02befde2752d72e019e",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/phase-8-baseline.md",
+      "sha256": "66a041ef117cdbafbfa5a277835a36e499faa6f1e12b6f401e1a15c7f7c80efa",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/phase-8-garbage-collection.md",
+      "sha256": "c698dbeeb6fa085aa8012572c486aea47302e3d64b9b94c4486abd26682228a1",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/phase-9-baseline.md",
+      "sha256": "8d8dc74b2673c19ec1fd841a5880ba47d44053e4c6397ffa7b202674ebd3fa0e",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/harness-engineering/phase-9-fleet-catalog.md",
+      "sha256": "8df301aaad9e030d2127689dd15e80ccc57c1333b17ea07f7a0e150aa81752b8",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/history/centralization/README.md",
+      "sha256": "cab8dc062100199c1834adb07edcd338c98efe527994eece892b9504e442f208",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/memory-map.md",
+      "sha256": "759b45794c04675e535bd2dd5b2d2e2193e6f5cbf0d313841327c8adc5c4ccec",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": "docs/operations/embedding-lifecycle-operations.md",
+      "sha256": "be22f6b0efea79ee34c2bc93a9a00f90f16d0526991aa9aa71934deb20b66706",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/operations/global-plugin-migration.md",
+      "sha256": "969bd10b2f3f7d6be92eb7ce10b21b5a94ee3c3ca699d2299a12b54191cff15d",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/operations/preservation-first-reconciliation.md",
+      "sha256": "09a5dd3e787367743586220b7f19d45bacfa69910e1ba70baa367a96d9985bad",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/patterns/.gitkeep",
+      "sha256": "0b64d5e8250255798ed5594e47f473f13cc4669a68eba9f3fdd4e8ecb4aa4604",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/patterns/INDEX.md",
+      "sha256": "0c246890a0c945a9133105f26fbb4b500d2b799438ec0c370deaa5858f23405b",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/patterns/README.md",
+      "sha256": "ab70f9e0ccd381cfd83853c91a0853bce8160c98a4e80464bbebaae19d2e9ccb",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/patterns/app-product-flutter.md",
+      "sha256": "acf90d4d9ec15d8199566508d468d610fc8db5d8bb76677adc0f928c7b5e5182",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/patterns/bounded-review-plane.md",
+      "sha256": "bfc3132a12ff2f3aca5e14dc3869f9ecdaa0cbf7607d5f2f241e58f2d40d5ebf",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/patterns/content-workspace.md",
+      "sha256": "33a37cf8d3dd1c4095d6a24d76fcff4cac3c45f176b52721fad2ec7459259a35",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/references/.gitkeep",
+      "sha256": "ea04926b4fb55085f10bdb69bd49a9ec7c9f6dc4dc8ae8cf9e1e9aafabb8148f",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/templates/_schema/adr.schema.json",
+      "sha256": "a661a36613c4eed3e2b09c30114f44b950f8002b67c6e8da3e58cdbc414b8f14",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/templates/_schema/agent_frontmatter.schema.json",
+      "sha256": "66f17ebfe6cc02d3ff04573b2fef4c3beca0674af20d110c4597999a75f98150",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/templates/_schema/approval.schema.json",
+      "sha256": "e0a98900c6faf694430fcd0b3c6c209a1eff42451dd9f462cc9ea12866e5b62e",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/templates/_schema/arch.schema.json",
+      "sha256": "0ca48d96c0d39cd4432dd5d0bd6905b9fac96113aef0f0aaeea8ae0cd8e01dde",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/templates/_schema/bootstrap-adoption.schema.json",
+      "sha256": "4d22d49137f8acadb2c011bdee682a8cff8129f6cee4fe390268202ca35a2b5c",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/templates/_schema/design_doc.schema.json",
+      "sha256": "16e3aaf3cffeec9f0bed45240eacfba72fe53ba96ca4aff1c6717fd288d298f3",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/templates/_schema/family_config.schema.json",
+      "sha256": "81ded6819abcd98e82a4dd9524b22f195d30fa9fa0b677c0bad590c8470a499b",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/templates/_schema/fleet_harness_state.schema.json",
+      "sha256": "67cd0cbbf5b9f6bc60a6089d551583f3be9a80f650e9adbb1b899cfce6f1681d",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/templates/_schema/memory_entry.schema.json",
+      "sha256": "edb9579e0c42b96c86303b22175b402b1a941591863ac613bde3e1ad64b57cf7",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/templates/_schema/mir_agent_self_health.schema.json",
+      "sha256": "aedea973646bca6245d98436ba5a0e26948e09fc7f05ad97437d1d1cde39aee2",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/templates/_schema/phase.schema.json",
+      "sha256": "f972dd0957d4ce8bac0d390c90e5ec04507d83ab346790e8ce85e769a759550b",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/templates/_schema/prd.schema.json",
+      "sha256": "b7eafcc3df64a84bc6bfb2837cd777d7b30dd572ea59ef27c3f7da33332e1994",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/templates/_schema/report_contract.schema.json",
+      "sha256": "f6047b8c5328b2d5fc86621552752d5ba8d1be58b6ead64b54e6b2dae7c8a535",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/templates/_schema/review-rounds.schema.json",
+      "sha256": "58ea7a20f98f778751babeffaff7374d7385ebce36b984643c2cdf8a5c469a30",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/templates/_schema/run_state.schema.json",
+      "sha256": "1db2a01c10d2d3969c95653236b2079032e9bd7920799ded96f722f5230d6203",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/templates/_schema/s4_input.schema.json",
+      "sha256": "912bc171970b75e343d3f05bfc1343bda2243b6d1e8dccc709c51b85a3000cfc",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/templates/_schema/skill.schema.json",
+      "sha256": "c8f07b5737491f652950f26b6d9bc8be5b9c56dcab0d15f9d85c28083b3118ca",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/templates/_schema/task_state.schema.json",
+      "sha256": "6fa35b002eb710b8887c6f8bc54f4b10c2740de2dbcf501b359c705f30ba69c0",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/templates/_schema/tdd.schema.json",
+      "sha256": "2ff9d0e89ec7a07aeee2b060ef7f02e7e4eee837139c69032d0dd33063eba249",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/templates/_schema/tool_event.schema.json",
+      "sha256": "4ee3526702795a8157435b936d640a26edb8bce0795e4af137f9e672a5311fc9",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/templates/repo-profile.template.toml",
+      "sha256": "94c79b2851b6e94801e7628f444bc8f202fc3c6cff4e158dc9cbfc6641b73332",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "examples/README.md",
+      "sha256": "7e001295ee9359c3306f36ec4d75ccf7943a80441a8e2aab02aa93af5f0b5f43",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "examples/add-feature/README.md",
+      "sha256": "4d3eaddc3065bdeb814cd7b264a30c39db24cbdf9a8b23f9519ed047b42f6b7b",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "examples/fix-bug/README.md",
+      "sha256": "c7e44b944b7133f10476a97368761612609e1726fd0d73e6f736d6969dd51374",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "examples/harness/README.md",
+      "sha256": "44cc52d98e37ba276b0c54ad92e26972c5e1fa7b91e285927924ae92f62c756c",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "examples/harness/catalog.json",
+      "sha256": "fb122cb3f2667beee8e85561fe6d3e2554cb8c67e517e390fecfd7f84f468135",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "examples/harness/catalog.schema.json",
+      "sha256": "2595c1b8e4da8046ab5b6ed6702283a40442a9396eba89e953b7b3ea6be08dcd",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "examples/harness/ffmpeg-media/README.md",
+      "sha256": "0ff5d946236d7b0e90c7d8d51f679c6ea83dfb5e196aed8fcff53ef23598628c",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "examples/harness/ffmpeg-media/harness/config/ffmpeg-defaults.json",
+      "sha256": "bf3e11a96fe068c8eb7a48d6dc7d69e67f91b76800a0c38431d9d22978f5a282",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "examples/harness/ffmpeg-media/harness/schemas/render-config.schema.json",
+      "sha256": "a6062623966296f40a817efa9736b4a1a75096557bb292c26122762c17bd51c3",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "examples/harness/ffmpeg-media/manifest.toml",
+      "sha256": "a928db1584d173d9436b676e1a4bd8ce858c26dc5ddf90a15c1b2a5c75e6193e",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "examples/harness/flutter-app-pack/README.md",
+      "sha256": "ab4eab60fc0eefa2920f0e223c639b3125219561d9bdac10c990baaceb9aedc3",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "examples/harness/flutter-app-pack/harness/skills/flutter-build/SKILL.md",
+      "sha256": "56d74cec1243615f87c4e1bd2e850a192b4060b49b300c71d930d99567673da3",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "examples/harness/flutter-app-pack/harness/skills/flutter-hive/SKILL.md",
+      "sha256": "cb7655b853c113e1aa002bc5306c0b424b1dfa187362ecec97e2b5adb85b589f",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "examples/harness/flutter-app-pack/harness/skills/flutter-perf/SKILL.md",
+      "sha256": "1380b8c92147be4100b1017cc4990eab5114e94feed3cc5793e51b5b253254a9",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "examples/harness/flutter-app-pack/harness/skills/flutter-security/SKILL.md",
+      "sha256": "377ea08c05c451d193fd1cd02da7bbef0518c080999fdf437ccf42886a8fcc4c",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "examples/harness/flutter-app-pack/harness/skills/flutter-test/SKILL.md",
+      "sha256": "3e427d9fa2d8a2e805e33f9570710d3a656ee8290fec485945f8eb75a2fa090f",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "examples/harness/flutter-app-pack/manifest.toml",
+      "sha256": "2ed99162faa4ee8c6efb462fe51ecd05198ab910f9d9e18a10871aa2d4ee996c",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "examples/harness/graph-knowledge/README.md",
+      "sha256": "0367cc21a40cebcf88cc876999a87543bbe09c54cd4588897b955c62ff2ae9c9",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "examples/harness/graph-knowledge/harness/skills/graphify/SKILL.md",
+      "sha256": "df5514480161dc3db6cf7dec97556a37de721d46eb071ed4fd60178463b03f50",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "examples/harness/graph-knowledge/harness/skills/think/SKILL.md",
+      "sha256": "5188f30640d1beaf16527f94d2fdc0a2be3fc731d411a648ae68033b24f45786",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "examples/harness/graph-knowledge/manifest.toml",
+      "sha256": "f875cb1ef652849ba9d51507d857cc75de930a57ce66693e77cfea0310fbc64e",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "examples/harness/market-strategy/README.md",
+      "sha256": "a857e6d804ba8d6473cec957b58a8af3ebcf174d6116e6d8d14c6e5b39c84c4a",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "examples/harness/market-strategy/harness/docs/perspectives.md",
+      "sha256": "c905affbf16e6dea3cecfe0dbeed9db48fd5b1d865882c05307e4d22222b3b13",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "examples/harness/market-strategy/harness/skills/assumption-challenge/SKILL.md",
+      "sha256": "1d5e24dda15e5a85f7701205aa0574f3d3840a2d96ed30f6f8c48dafe25a505e",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "examples/harness/market-strategy/harness/skills/c-level/SKILL.md",
+      "sha256": "bb291be32186f85283d9d3a5722f661e4093c9d0b53b5656708515fc1ed0165c",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "examples/harness/market-strategy/harness/skills/discovery-package/SKILL.md",
+      "sha256": "6517d58808011dea7be3c174bda5d934de58bdd1a0c47c2f26b2cb926f969128",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "examples/harness/market-strategy/harness/skills/gtm-plan/SKILL.md",
+      "sha256": "e082ef863bbddc9bdc98be4dd908f44f56640c5a21e6a3e7c530dd46379cdab8",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "examples/harness/market-strategy/harness/skills/market-intel/SKILL.md",
+      "sha256": "086b40fae370b628f257754cdb0514c0d28ee153143c62c7ac6f26987f0928a3",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "examples/harness/market-strategy/harness/skills/market-research/SKILL.md",
+      "sha256": "8c854938e8b78ec816c7be1610ad1c07acda6ad15e60daea3934822219159843",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "examples/harness/market-strategy/harness/skills/positioning/SKILL.md",
+      "sha256": "4ce26bcfc00fc39208f4b7dd27cf5cc083f7f2dc3e958d982fc6c10c6236df14",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "examples/harness/market-strategy/harness/skills/target-definition/SKILL.md",
+      "sha256": "ae86bae23f515ed90cf42b6afd971c50f0d047ab14fbee913c67c2d2a394e448",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "examples/harness/market-strategy/manifest.toml",
+      "sha256": "e09b8070a06c69471e2c7bfac8a9f2dec50736b8d7478c7a9e51a1ff4a4058d1",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "examples/harness/ops-self-evolution/README.md",
+      "sha256": "f950fcf0d8d02b6d92897c4316782ecda5ba190b6ea63db498d9880ba60ac9ca",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "examples/harness/ops-self-evolution/harness/skills/execution-governance/SKILL.md",
+      "sha256": "740e298906cbd3fe243899fdb8f809c047483f370003aaaa35d0382abf8d1a08",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "examples/harness/ops-self-evolution/harness/skills/self-evolution/SKILL.md",
+      "sha256": "f9a3aa4e4fcfebaf6bd015a81e321dfff06ed3244bc667e3f524813aee40d7fe",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "examples/harness/ops-self-evolution/manifest.toml",
+      "sha256": "62a75eee7aa21eb4c6cd445842d83412cd2935fd3343ee0c6c9b7b9bc03096f4",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "examples/harness/video-gen/README.md",
+      "sha256": "896b8deb6c4c90f9023fe9bdd336a794140ab4e043e10e95bba7aeecca4d3661",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "examples/harness/video-gen/harness/config/comfyui-gen.json",
+      "sha256": "42ebc7d108444218afe9aa595f8df78b190d8682fb21f0b7dfd101b4a0434d0f",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "examples/harness/video-gen/harness/config/comfyui-wan-i2v.workflow.json",
+      "sha256": "b6ddae5bde6ee93993845a73cc3d8dbe68fcd39cf40c2bae7b04a8efd1a9a84d",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "examples/harness/video-gen/harness/schemas/comfyui-gen.schema.json",
+      "sha256": "d6d0cfadfd707f2ffd5a2fad5af9abe933c890933937a35fd9d61a08937d6bb6",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "examples/harness/video-gen/manifest.toml",
+      "sha256": "5956b4a50a011e3202d21b196082760eb1ed08f7b6fa021695ef43111b77d21b",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "examples/multi-round-review/README.md",
+      "sha256": "f84f3db0fdf7746957fb1f9aeecacb28aba13b9468df6d2ece8fed499ef0fc91",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "examples/refactor/README.md",
+      "sha256": "34bd329c47b40acf0c854dfdd549ac0dc22303bab893881c6686bba65de410b4",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "global-rules/AGENTS.global.md",
+      "sha256": "0a41a6b277f23947aa34af2c3ed99bfa15532ae9a8ae75ef3058ffae6650bf59",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": "global-rules/CLAUDE.global.md",
+      "sha256": "90b40c4611d3b06061529dd5e29a4631f48db5a70247753f8e7f12e377320a75",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": "global-rules/README.md",
+      "sha256": "5c3709a24129ff5e098a7068ae92ea670414b4d095f91f78114c63389ad71096",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": "harness_a.toml.example",
+      "sha256": "a30d41364254cee74a6ad0fc8b6eb6cd37023bc35027bc55cf81557ef15e4794",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": "lib/.gitkeep",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": "llms.txt",
+      "sha256": "70668d86a351514cac78412406cdac280350fd61311147e864c32ca7a15a870f",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "plugins/mir-code/.claude-plugin/plugin.json",
+      "sha256": "02b40ed524d39e7852296180a92e825819030ae98d98851efcd09d3d92157d4b",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "plugins/mir-code/.codex-plugin/plugin.json",
+      "sha256": "35548617e3bf8aca53a23a3511cd2545bff4d889d825fee088b82cae39b573d5",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "plugins/mir-code/skills/bluebricks/SKILL.md",
+      "sha256": "9b8d4ade347f14c00a04011546244a83827614bcbdc1458ff1d5092526023a21",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "plugins/mir-code/skills/code-review/SKILL.md",
+      "sha256": "a586fea673fbfe4ae9e844eb4dacaefa2412f01007412f84dea4d4ec7df48bfe",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "plugins/mir-code/skills/testing/SKILL.md",
+      "sha256": "beef69c908c2c517a8cd16b789f1c635e5e778676c87757565d7e772418b8432",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "plugins/mir-content/.claude-plugin/plugin.json",
+      "sha256": "1104096dacc1b02f4266a548a78fb1d600bff8502b29f29b8e212c31d8866eb8",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "plugins/mir-content/.codex-plugin/plugin.json",
+      "sha256": "50558219d8b8143012197241684b0a0d182b1f8fbe3a473dc32060fe7fee8818",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "plugins/mir-content/skills/knowledge/SKILL.md",
+      "sha256": "975b42c88b814102084bb0d3ce51cd23796c839d78b1bb29cb82999c72b83036",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "plugins/mir-content/skills/ui-design/SKILL.md",
+      "sha256": "e45178f6d8f36cff4999697a6f79ed33e36358fa6e45bacb6c249f4c48a80ec2",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "plugins/mir-core/.claude-plugin/plugin.json",
+      "sha256": "3bf3918e7a036a02b384a95bced089606117d751461941e64bc7365ffa908029",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "plugins/mir-core/.codex-plugin/plugin.json",
+      "sha256": "4697ffad99a65d8f199b0119fc04bc7393f721538c87fab48364b2c63d2858f0",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "plugins/mir-core/skills/automation/SKILL.md",
+      "sha256": "e08e6fde8b7e62104f75e23b54e72185fd76970ea0acc9800b69bb4a2fa0941e",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "plugins/mir-core/skills/commit/SKILL.md",
+      "sha256": "a37b0e2914d93a1fa770e2d30c948683ce74f2e26f96fde3c519adace546103d",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "plugins/mir-core/skills/design/SKILL.md",
+      "sha256": "357ac5f4a29d5a46ce3b76806a46c972bbf155046f61eecbd86582fa0df13b0f",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "plugins/mir-core/skills/efficiency/SKILL.md",
+      "sha256": "fc001ac2fbf85f2ef4002e3e7e725cdb1307f243cc52935d0e08eebbb362cfde",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "plugins/mir-core/skills/governance/SKILL.md",
+      "sha256": "aa6b210283c2cddf9414d5a2a6deecce687bb2e32289c6b593804ca35ee5fc78",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "plugins/mir-core/skills/memory-gc/SKILL.md",
+      "sha256": "45f497268d234747aff04ee3f4833c769b2f33f99b61e4f984ebe407cdfd840e",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "plugins/mir-core/skills/spec-architect/SKILL.md",
+      "sha256": "3e0c304e58fae08e45ac76e0f02db3de6f7897f744922d6bceb0b7bf0c4b1ab2",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "plugins/mir-core/skills/spec-architect/references/00-completeness.md",
+      "sha256": "6b2f608f6fceb0080448b86432d5c3fefcbb005e973b81e8ec0a7d93e62f6b7c",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "plugins/mir-core/skills/spec-architect/references/01-methodology.md",
+      "sha256": "9eb3ad07438e3b44e43bbc1800f616fc5d13c52fe9c5f77eb20002286bb05060",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "plugins/mir-core/skills/spec-architect/references/02-ai-ready-gate.md",
+      "sha256": "512428dcbdaea7e5f3b9b2b447ff318a1556a1682928771d61b037aff4aa0f52",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "plugins/mir-core/skills/spec-architect/references/03-reverse-recovery.md",
+      "sha256": "2993a541964457c14732242c8e1c0b4b761b19c4e7a6877aeeab07c7931a658b",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "plugins/mir-core/skills/spec-architect/references/04-artifacts.md",
+      "sha256": "f5aff22de3a5d2afd6240faf010aa4ec5d97a292c39b94cf5e5d2bf18c1116fb",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "plugins/mir-core/skills/spec-architect/references/05-views.md",
+      "sha256": "938185e2fe1139aedfb820851f2a4dfb2ffc68755fb0146483677002bfbe644b",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "plugins/mir-core/skills/verify/SKILL.md",
+      "sha256": "0f8daf124e1bcaef4ab3ec37dcd59393a6b27826aee957ac26fdc3a514a48a14",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "pyproject.toml",
+      "sha256": "9260c41a8c9cce26675365de856936b7874ef5b49867854ec18e6c331bbf13b1",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "scripts/build_session_upfront_context.py",
+      "sha256": "70f5b5a455c42a73ac820b5c2a8a5575e7ce75a006a27e84b270875e784c466d",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": "scripts/codex-shim.sh",
+      "sha256": "13222b626209c7fdb4ca51fc513150bb3ada9698c138b917515a72c1f2967701",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": "scripts/extract_changelog_entry.py",
+      "sha256": "c76a63fa3681649de9c57f4bc61dacdffe86d8aae23d36e501288704b23c93ef",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "scripts/generate_codex_derivatives.sh",
+      "sha256": "2ac30b309286e622ec58e3d79a3e35fa8789928e86240869625a73b69b1b4d75",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": "scripts/intent_store.py",
+      "sha256": "a2ab203c2ea991e7a99f4d29391167bc0456ddae247f4466f1f79c3e1557a42c",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": "scripts/loop_driver.sh",
+      "sha256": "3d3838064516e6fb35b87f9bf49fcb6102a912fdced25ae30711dc812ed87f7d",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": "scripts/mir.ps1",
+      "sha256": "b552ea3cb150f67dcd376723de66b4baaf925b57d14901ebd3777f255bf0c43a",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": "scripts/mir.sh",
+      "sha256": "bedadabbfa6800a16b33b854fa6293405d9d620d59bcbf8aa13da35f4a416223",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": "scripts/post_edit_memory_sync.py",
+      "sha256": "30a935a6e01804f48f4fe1721d1d73f6cdd2be6fbe6acdfad149f9e1a17cdbcc",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": "scripts/verify_codex_sync.py",
+      "sha256": "aa026958d848d112f7829e9e9100eb95979d5c034bda1bee25667b70d0f474d2",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": "scripts/verify_context_paths.py",
+      "sha256": "be61328718f5e67c48f470250b229aaaeb66505119efc985bbfd38a31ca77e46",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": "scripts/verify_plugin_cli_activation.py",
+      "sha256": "028000feb3608da9a70575f3ca5c3ec380ad68459f248750e4a5cb7ca2c84bb0",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "scripts/verify_release_readiness.py",
+      "sha256": "9166706e153bc262da6d21261216f078b9da3a4f550af67c0bb50855deefc590",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "scripts/verify_repo_agent_management.py",
+      "sha256": "ebb5f0dd7db5e77f1d16e397daba039b800df0e070626f314bfb7aae85e05b3d",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": "setup.ps1",
+      "sha256": "40cd3f3146704249f1b8cb7509ded4186aef7db19c2da8b993da48c84ca092fa",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": "setup.sh",
+      "sha256": "515720abfa631ab0928f6d1179e73a740c5dc0de936346f2bb7422186ba26071",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": "spec/STATE.md",
+      "sha256": "76f0ffc859f090bd257dc1617c2fc7c7e5ef02b321109efaa0d8ee1b7dc8d659",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "spec/checks.yaml",
+      "sha256": "499e720dc4a3803b98655ef39486a2eb3e38a9943a7ee0502eb30d4487e0f19e",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "spec/concepts/artifact-classification.yaml",
+      "sha256": "e202fda93485856d195b191c888449933028541c26393386afefba861f4cc7da",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "spec/concepts/authority-boundary.yaml",
+      "sha256": "4bbba12ecf978b63dc6dae6de43ded8d073f61d50eb8b850e68a6e10a6fec279",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "spec/coverage.yaml",
+      "sha256": "42bfbfca0d66ad4cf9d7f4b1ea3e2a2e084328cee8693ea6f066171b02e83aaa",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "spec/feat/FEAT-001.yaml",
+      "sha256": "cc309ab3c065bfc259ee2a518176812d4be3cc035556d4de2e9c0e3c60c02f54",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "spec/feat/FEAT-002.yaml",
+      "sha256": "c0c1ce7ef6fc4e3193f39695f248f54570999f302a7e9f07b886dcc72c4d1ba8",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "spec/feat/FEAT-003.yaml",
+      "sha256": "6ae60a69802380f009db0bdb4592cd9eaba137c1282670596f4f996cbb038b48",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "spec/feat/FEAT-004.yaml",
+      "sha256": "8532ea2e3fb88a3eba660a97bc4a8f5d0145421c750a0b85049640c8f0107969",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "spec/gaps.yaml",
+      "sha256": "69ae29a8c82d0412859407fc59f23024d78026dd7c583223d22b29c0e6bf51a6",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "spec/glossary.yaml",
+      "sha256": "02f77d1b88313b5cc75cbf2358d0b8cc75c877addeb695527e97e9f059226156",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "spec/graph.yaml",
+      "sha256": "4ed777dc3c7c6804e38027faa099225add492e6eccac5f3fc47b0e5b1ee258df",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "spec/iface/IF-001.yaml",
+      "sha256": "88922913ea78fbda6f0b46093e7ef58b430f35a2c7f0d6f1bcc6ec4864f4937e",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "spec/iface/IF-002.yaml",
+      "sha256": "b8edb483b1b9393f2af56674cabeddcbf91a953e9928ecbd625213c038ffc0e7",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "spec/iface/IF-003.yaml",
+      "sha256": "3c9861afda829d46f59b1e4b8675e9bff2e6571f34f028538ce1d62202d84571",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "spec/index.yaml",
+      "sha256": "602d58a31a4afb35906063f03f0dc985c9bc76493c5862c26dbfeae33ceb5a0e",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "spec/meta.yaml",
+      "sha256": "cbd47b5a92a7b660b3872be3d21cba294048e799cfa73760063deb257b43e3c0",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "spec/mod/MOD-ADOPTION.yaml",
+      "sha256": "4d0fbdbedc9a89ca5d65d3b610d5b480ef4ea68ac69c6e159ab8651318f164f9",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "spec/mod/MOD-CAPABILITY.yaml",
+      "sha256": "1e64e4b846879b66dc983c0290694e91afb27266d422b769980977ccc779353b",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "spec/mod/MOD-CONTRACT.yaml",
+      "sha256": "05e55b13b4865fa7599b04292be6641644196ca6642824523f7c639b4e91856b",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "spec/mod/MOD-HISTORY.yaml",
+      "sha256": "abd1d64612792e1bc80aec18191d80864f38aa5296cf5bc70658cd417dca4565",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "spec/mod/MOD-MAINTENANCE.yaml",
+      "sha256": "a9cacc8893b44c3582568071118d2fcb43b9410608396b52c11db495e9a9c6d0",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "spec/mode-s.yaml",
+      "sha256": "c9318eb22da15cbbca63556c3e2b11090f214910fb003fb0724dc4257ab95093",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "spec/req/adoption.yaml",
+      "sha256": "ddba50e2ed4b315ff1d01c6c308b00ba7e6e5e7119cf5106dda8e9eec32e3353",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "spec/req/identity.yaml",
+      "sha256": "f0cf5faefa8cf034e26e709dd77fb495f4a243cf5401a3ae11996fbb8e1c457f",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "spec/req/quality.yaml",
+      "sha256": "bc7425fe054afc9e771f2d645bff4414b00b818b686ac03475b585ce05fe2a3e",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "spec/tasks.yaml",
+      "sha256": "3378bb022ce1bcef8539996f483cf5278c0e2f580fd091e6ec5326564fefefea",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "spec/uc/UC-001.yaml",
+      "sha256": "1b4188fda8d9b529a0d2748aeb0754e9db48546a5236fe71e40eb172c32a2225",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "spec/uc/UC-002.yaml",
+      "sha256": "eb80a2aca7d356757b8ad73cc73a6482fba3ecdd4e710cc616263a8aca82a219",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "spec/uc/UC-003.yaml",
+      "sha256": "989eab828bbef0fbe0583410b6208666b32448e380158e98f7e585a8a74ce951",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "spec/uc/UC-004.yaml",
+      "sha256": "9e1e0574d21465f8c5f796a9ac5b349dc35b170d082553712bd77f546e33cb4c",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "spec/uc/UC-005.yaml",
+      "sha256": "2c0656e6e8d0d67090fef203cf5042aa3a0572ddf4af461677ad64226f4528b1",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "spec/uc/UC-006.yaml",
+      "sha256": "24f93402b56ae7e929035febc6fd980a86f6012c673a84b47aa41338b0f8af70",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "spec/views/data.yaml",
+      "sha256": "1351a9055e0a277be7fe6cf793cd0557579c6ba3480884afe17297c39ed81370",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "spec/views/deployment.yaml",
+      "sha256": "58553d6a5b779ce6f2b2c319b9c004c0a01c6bd285377209bb401daeca520bc6",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "spec/views/features.md",
+      "sha256": "190a9ab56b61ca675f7974859874a002507a815d3800e3da48f335a4a6cf96fe",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "spec/views/quality.yaml",
+      "sha256": "83e6d0e9e1bda218d25130c8dbcea26f0f12b4a751866e0720424588b9097569",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "spec/views/runtime.yaml",
+      "sha256": "1a14f40fd74a8202b3cfa5b566e360d7ec89df46fccc76f6470b5e3b0376d207",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/__main__.py",
+      "sha256": "64dd9785a48e6955e30df6825c5e7e93eca388b27f79a8c2d5660100a74155c4",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/cli/__init__.py",
+      "sha256": "aa5e0cfacbae9ad4978c3dc64e48c3b00533afc9d319534ec018d488248b7d0e",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/cli/__main__.py",
+      "sha256": "3a18487e1337abe7ed5db9c297e1ff3cac5793135db13bc891d06aa0257caa12",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/cli/_changes.py",
+      "sha256": "8e67b7d2f244b40bdfbc90098629bff3e5256d44fbe219fba0899ee4414bfe08",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/cli/_common.py",
+      "sha256": "a45f448bbe05103a44234ff4762ff6e1b21521e90206bbab655297f841d83ca3",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/cli/bootstrap.py",
+      "sha256": "1519c5a32896d5d8c7cd75a2942b59c78f53aa593043d2526d013e7ae12fee4f",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/cli/bootstrap_adoption.py",
+      "sha256": "4698556e9847608719f8301c621ea8191290334af3189eba2ee1ead58cbab4a6",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/cli/capability.py",
+      "sha256": "ef8d3e73cf0db715f225edd04809525bee0c24d78a07b4c231ec386bb1ba1480",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/cli/context.py",
+      "sha256": "8aea1fecf8dc2b187ade172e2c266e0c49cb163496d4060b9cb166db770ca4f9",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/cli/loop.py",
+      "sha256": "063f62b3bbc1db02537bf8f1689b3cbf4cc6a8d0f68c1bd739e1f1f7729c8a11",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/cli/memory.py",
+      "sha256": "d4a5dd34c4fdd3a8865f4d410ce1f8638367eb091b870fd142f3e35312a62674",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/cli/migrate.py",
+      "sha256": "d199a94146a8a8898c7637d83225444f136697afddfadbc36cd56e456e17c5f7",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/cli/policy.py",
+      "sha256": "7247fa728678fbd614711f452e5d80af2ba5ee2cf562c401441483da12276ff0",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/cli/run_python.py",
+      "sha256": "a7f14b4e2e68a80356b5dc9c6b5555ef07b172729bfba66b561aad376af15832",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/cli/runtime_manifest.py",
+      "sha256": "f0f2644bf57a7599dd2bedb0ca2d1b3b28144c1f52ef418b607aac4ec743d8d1",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/adoption/__init__.py",
+      "sha256": "2ecd0a02f6997522df5dd681cd28d591d84ec0cf30298ddf5eaa62437c57cbc1",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/adoption/boundary.py",
+      "sha256": "73b669935678ce8e4c0896d5d9fe36be325ed37bfa70d75f23a62216b7c89224",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/adoption/runtime.py",
+      "sha256": "8b002b3f600273fb3d5c4567d34003986306de97fbe4dc6a7414fc959976dbb3",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/adoption/slim.py",
+      "sha256": "c9629cb05bcfcc6c56e6ec8f64f8fe61ee3c536510b37150e45df414d05c6913",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/capabilities/__init__.py",
+      "sha256": "930bfe02d97de3c7df1e8b433d6d81e4cd9d0cf29eb673688612068e6e77b775",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/capabilities/config.py",
+      "sha256": "efef2f6bf1ee13d45d9acb5fb85052e7a258034190402d27a2a1480a2babc6fc",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/capabilities/manager.py",
+      "sha256": "9c76d241c14fc43bea566e3081dd21d5f780c891ff12f10a4ea94ab24447e0d2",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/conductor/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/conductor/dispatch_brief.py",
+      "sha256": "8171f3ea0f41a84adcde60858d80a1c156a1ecb23ac58602275e0eff7edc80af",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/config/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/config/defaults.py",
+      "sha256": "c21fd8948ca52e298a698bca6cf41bdcc408a179b884976bc7557d84b2773cc3",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/config/loader.py",
+      "sha256": "a4c49bbd6965e8d13cef4a25715488f3d02b92cf3b5643df2691596c1a9ed73f",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/context/profile_task_context.py",
+      "sha256": "d98faea8347a68f618453f4d9d2b070ad32b0235a3f0bac0dd38253271af9521",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/contracts/__init__.py",
+      "sha256": "50a4e6f5b59097abdc1ccde0147a136f7f58d0486a4dfa59154613519a9af334",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/contracts/agent_profile.py",
+      "sha256": "50ab66c2126c92d582c3657428935c24f67e73c64bccdfacdb4cf88ebc53d9c2",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/contracts/compiled_job.py",
+      "sha256": "e48fdb8f85f7f5865f59335a4fc27cae7f72f25753cd112bb382bc3227a5a3c1",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/contracts/conductor_mode.py",
+      "sha256": "2ac698592eeb75e39f7a2d0f7dd6ce3d200c2cf5e89107bd6a80f712fd7cf39e",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/contracts/discord_event.py",
+      "sha256": "16a4a36aa51ffe5d152d4d084056febe83a2e3e221087922002cf08b5ce1b81d",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/contracts/dispatch_brief.py",
+      "sha256": "4261212c8df5177646513775d92c286abb6dd1afb3000a1b1254cd1cac4e22fa",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/contracts/gate.py",
+      "sha256": "4ae01945461cbefce5298a7b78142868f93b0d18eb22a9b59b5e3a9b01a176c9",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/contracts/provider_result.py",
+      "sha256": "591b5453c1a5cfd27c01a36e63302fc0606c01663d5bb6294836e865190c8163",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/contracts/route_decision.py",
+      "sha256": "94c677d5fb89b35d713f2aa94bbdee2becc455cae9377de586b557c436668b68",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/contracts/task_spec.py",
+      "sha256": "42dcb707446e8eaca901f9ef51449d46adcd5615cda648cb0576ee1a14c34fc6",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/crypto/__init__.py",
+      "sha256": "4e807d9cadd9184515d3a58483b2a795a2f3cacc6ff567d6595002c4a6bfa37c",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/crypto/canonical.py",
+      "sha256": "b8a4c8003a78ba9452c3b3661028d099b308e059aadca4490f7dd621c1d9aa55",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/engine/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/engine/async_adapter.py",
+      "sha256": "59ba143dfcd6a23c8f501a1f28a13b613feecb4fc67c33bf111a81061c68202f",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/engine/audit_log.py",
+      "sha256": "c8e7667cf69b2395b8b2d0dc516a00f4f0521e5354a2d35d82b6631c299f738b",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/engine/instance_id.py",
+      "sha256": "4323b29cdae8b49d613fa082ba9d757fa46716a533900e8d391fd016695006af",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/engine/interrupt_handler.py",
+      "sha256": "b4ad6d2c4143bac5e9aae8773a9de5fae61958730e9aa03e1c41b97138c68ba7",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/engine/memory/__init__.py",
+      "sha256": "5c1edc96f52bb9636bc87a20a48384ea5b247d5cf58395de2fe9e80f030ce6f0",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/engine/memory/backends/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/engine/memory/backends/omlx_http.py",
+      "sha256": "87dae44944a59b70e8ed17a086aad9b952dd1c63feb610575bf620b62535c5cc",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/engine/memory/distill.py",
+      "sha256": "b5081e712396d69ae21bf6c06e444ba969ff47a9eaac87136ca572f6c7751c18",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/engine/memory/external_store.py",
+      "sha256": "5afd7cfd0c644f65782aa05e0508b0edb27527d76674b9f28ae3e436b30974ca",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/engine/memory/migrations/001_initial.sql",
+      "sha256": "e2745613cca0303b586a9380c73c9df8ffd64333bb1d95273d446357afb160ba",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/engine/memory/migrations/002_metaswarm_fields.sql",
+      "sha256": "ab74bc037de898af8f8f36576a743f5f6a2a00cb3274f720f2f24b5fe0faf376",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/engine/memory/migrations/003_mir_additions.sql",
+      "sha256": "e85cb9941f55e0048c65ddd3298753b5592dc3d576ecc93e907de6822e467109",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/engine/memory/migrations/004_indexes_and_search.sql",
+      "sha256": "33a20cf0c096b4afb9f4a2365706445ac01bfd1c619d2025a3ec9dadca449df7",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/engine/memory/migrations/014_canonicalize_predicates.sql",
+      "sha256": "04595822432f6577eabf5afb91a2e7bfa6de45ed35b10d3b66b5da777c89a80f",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/engine/memory/migrations/015_external_store.sql",
+      "sha256": "03c2a8a4925645d894108e843f102425ca37331ee8155dbfd60aa00000546dfb",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/engine/memory/migrations/016_mir_sign_nonces.sql",
+      "sha256": "e5b59d8ccac0b4fd43a5d759eca7d87e01b515e06cae626c482e25cede551e3c",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/engine/memory/migrations/017_adr53_context_metadata.sql",
+      "sha256": "898733fe9e9ac23d91924cfee501aa8d0a1dec94ded9863eb8765c96cd63215a",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/engine/memory/migrations/__init__.py",
+      "sha256": "6e5199e5245be55873248bb9646f1906afc0544e341f23fab64e07793e310ca0",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/engine/memory/predicates.py",
+      "sha256": "2554a5ab3497be08f576628ac9712af01c353143baa1b6ea75c1bb79c29aaa1f",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/engine/memory/sanitize.py",
+      "sha256": "b1e4a875cddccf75d4cfc8766896799d8fdfd1cb29e354d8d10dde447ad64c2f",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/engine/memory/store.py",
+      "sha256": "c4a6e0d5e789abd636bfd4c38e1495a99f267d76ceca7afaebf7efc1ce05c850",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/engine/memory/vector_index.py",
+      "sha256": "a127b520ca2cc7f8e35fb42a563957c40e1c1a764674807f9a2e826a0e88d5ef",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/engine/structured_error.py",
+      "sha256": "785618c43af87afeccda18fbc31a3b381304ac93e3e708b37df0944935c7f4de",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/engine/tool_contract.py",
+      "sha256": "26aa75cc28ead60edc79f6fb54c32aa4cf04f4d9378a3a734c58b69c70418b20",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/registry/__init__.py",
+      "sha256": "fa314e8b06a3a5413d33718665d2a1d90f53ba73dc72d775a69e8ce47269b688",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/registry/agents.py",
+      "sha256": "82761adaa8c27b2dce517084e58a12dcc593f87e97b5f7415a40cd7cfabe7bb8",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/registry/base.py",
+      "sha256": "f618af36bb500cd966d0e2aea61ed74573a3ae5c4338945115df33ca13a13b24",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/registry/embedding_backends.py",
+      "sha256": "775c3ff97f5dfd943e81149caddf05935e3a423bf2e67ee78d38b1272185b6e9",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/registry/providers.py",
+      "sha256": "8c22f0a9822cd0cb88f7900c6e832b0f43283305fa9b47769898d021158cca68",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/registry/skills.py",
+      "sha256": "605ce11acd2c7429cff4031b433597709f11f3f9471eb22394307920c646f49a",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tasks/change_log.md",
+      "sha256": "a4d6661f4d4c9d98b69696f5bed546e580522720c79045c1539f16d9cb842d8d",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "tasks/checklist.md",
+      "sha256": "dbcbc500242c710ea7616513aa5ca488fcf960fab1f011fc84a55b1cdd97bf81",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "tasks/handoffs/session-handoff-LATEST.md",
+      "sha256": "3e1d205c0532bd0a1a8a37333523805e4a655f86b5c39142ff20ba67e2f7d138",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "tasks/intent.json",
+      "sha256": "42a533b1b1da70a1200168f0c5c452902e9ac1a1a40efcacdb0fbb34b9fe7729",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "tasks/lessons.md",
+      "sha256": "a9fd540aabe8b84f347e438a1433dee853cbb6ceb6aea297f33624a8ed6cc984",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "tasks/log/.gitkeep",
+      "sha256": "7d22dbc97f3728cb3a592465db99bdf1b078256978c89e1f96b8fa722b0dfe51",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "tasks/log/dispatch-log.jsonl",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "tasks/plan.md",
+      "sha256": "827bae8c76bc306ce00f8b1161b5f0d73181ee88a186fea434a5998bbacc709c",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "tasks/reports/claude-codex-harness_harness_rollout_2026-05-28.md",
+      "sha256": "92cfc2536a015046836f52232eefc8ca268c754ac1675972bd3e85514c70ac9f",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "tasks/sessions/.gitkeep",
+      "sha256": "d373e5b8e7f6fef4db8aa9520b48b36fc5852059a8c1c3c0542f27edcefe8060",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "tasks/tdd.json",
+      "sha256": "a2e8c64a9ca6fe55dc142a286c77a92cc5eea827c15caca31cedeb33fd1b40ac",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "template_protected_paths.yaml",
+      "sha256": "7b0ae0f3b752a70e9879630c379ddd398476112bea291f19f241227547d52820",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": "tests/test_adopter_slim.py",
+      "sha256": "e446ad99ca23277acd0d6b508644de8c17366baaef5450cd14ae68245ccdeada",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tests/test_adr53_phase1_schema.py",
+      "sha256": "d54c9c9d17a76ae421e2208fd4fbd8fa04291a94c6f952319110e45f82ab735f",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tests/test_adr53_phase2_population.py",
+      "sha256": "76d3038a07da84cc9a0eee713667933b93dd6e51a04cb4b483f408dca3eef228",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tests/test_adr53_phase3a_search.py",
+      "sha256": "6e076ebcd989fc529395e1a5d6663308898ad069d0bdad96a4bc38580d808459",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tests/test_adr53_phase3b_context_cli.py",
+      "sha256": "f84fb79d721efc2354ec655f1c4a2e1c10dbe1c355732fa1f08f1ca35743d55f",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tests/test_autonomous_loop.py",
+      "sha256": "25a4a22ead86f05a94420365136b33ead49134ebf01176ea30d0a27214bf5ce2",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tests/test_bootstrap_adoption_cli.py",
+      "sha256": "61716619e06ae1809823cdaa8d6c97777a7d64f7b6ed9d57fdbcfba23f9f5dd5",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tests/test_bootstrap_cli.py",
+      "sha256": "1857118cf75cf0551176edb9526795b3204134200cabb348685031c5749b830d",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tests/test_bootstrap_skill_contract.py",
+      "sha256": "057025c1e7873db3083fdcf1e7cded39c0fa072870f2ccda513370ebec70a3ba",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tests/test_bootstrap_start_gate.py",
+      "sha256": "633a1d8f8a0102e2a922e58991a74c73fd4202c758d0f63fd9efb58fba543d40",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tests/test_capability_cli.py",
+      "sha256": "1794e167c0e77923569e04637aced147102637461d23a30e69a7180728ad4941",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tests/test_capability_security.py",
+      "sha256": "6f46964228ae76efcd3e177cd18d0db1bcbb6cca12359df22dce4d8dfa31bd65",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tests/test_closeout_hooks.py",
+      "sha256": "75775ed661c6c02f94814b0f2f92614a0f036ecd6c269b830385c31cec47c388",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tests/test_codex_derivation_script.py",
+      "sha256": "ddcbbdb6af75c8527dfd527208c48d402eca1c793f3fd936cb954e71e8c02652",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tests/test_common_skill_contracts.py",
+      "sha256": "d4de0b0bd0916454781a3651dbd84dbac3d07dd2b472edd5368b3c9c725ba305",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tests/test_decision_authority.py",
+      "sha256": "abec4125c5fa8df633b40f049cf3800d3eac234a22ceb3cd0ae4658599f78487",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tests/test_existing_repository_adoption.py",
+      "sha256": "7834b147b9157142391dfeaf3c8779adef0620b07d34af10a88e91931b69c382",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tests/test_greenfield_slim_integration.py",
+      "sha256": "cda5f92b2efdf5da21ba8444d136cbc9c228bc4a1dbadf9aa9256cadca89d25b",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tests/test_harness_consistency.py",
+      "sha256": "ad7cf61e6bbe6d6db6fc092f41f9ad8edb8ce270e24eb35fd7f36fe0aeb37ad3",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tests/test_hook_executability.py",
+      "sha256": "fa34aacaa8d7d4fdc47512293dbd809c579fc4b1a510616e797e3cd25573b1d0",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tests/test_installed_cli.py",
+      "sha256": "aa24f797fc118401b68ff10713d5e5c9a99830de3a03795d698d78c458474605",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tests/test_intent_store.py",
+      "sha256": "e9e37fb5fd5fd5bb3973a587351e0c14c5dcb50fab6becb3c1b8d28d4526ce0f",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tests/test_link_integrity.py",
+      "sha256": "78b0eb639441ae7008c173fbc02ec574111117885a900f445462e18862a6a744",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tests/test_loop_cli.py",
+      "sha256": "c3190f75b3ae3d369c3f566d9078c3d4f1ff50f2489962c75e888de65bcde6d5",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tests/test_loop_driver.py",
+      "sha256": "21a4aaa2effdbe83b4c64a9389a61ce4e38d3a5813234cf41c5202f0c8af9551",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tests/test_memory_doctor.py",
+      "sha256": "333cc1e8a74936f166664a8405267e5b09197a0ffb2794b2a4189153ed7e01ba",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tests/test_migrations.py",
+      "sha256": "b661c8bcc911ad679e7500c9f4784aad683a3b575486a2da946295626376f17f",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tests/test_no_korean_in_user_facing.py",
+      "sha256": "d089f569f907fdffa3fa8f0c202a8616ea6c5452f023ef575306fe80b84d66d6",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tests/test_phase_doc_completeness.py",
+      "sha256": "5f8b78f672641dfddc27466180ac2fd8dee13c7237e1ad4aee373889c31222fa",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tests/test_plugin_skill_packages.py",
+      "sha256": "a76dab0fb81b30d92c4d4cb3ea728f11b37e34a9fb4beacf74b278923209ce69",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tests/test_post_edit_memory_sync.py",
+      "sha256": "9bdff83711209d8b7d628e0a80962bbfa6696d716c794b38b410f8501e6d337e",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tests/test_public_template_authority.py",
+      "sha256": "2f62f7fdccdf6bad8e733d24ec9024d64885b1594724151b505693cc3b2a87fe",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tests/test_public_template_identity.py",
+      "sha256": "ad23df50585591a06d7b4274a1dabbd95ace87bca308def3aca08b20c7335628",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tests/test_public_template_surface.py",
+      "sha256": "411644fd02bddbfff882f2144a35c6e3294bd6cd3ef93d3da7ac78f6242550fc",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tests/test_release_metadata.py",
+      "sha256": "4b246686c5a47fd710199897d1813c63f41c290b1ea04d06f9f406aaa79d63f4",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tests/test_release_readiness.py",
+      "sha256": "47573b45be96c25a5b2909b3dd85643fc9ae2cfc224dcbfae71d2fdbe7388e45",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tests/test_run_python_cli.py",
+      "sha256": "15ea8f347cb16ed575da36a286f4b85c82dc6967ede709ada9171a1dee9e7c01",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tests/test_runtime_manifest.py",
+      "sha256": "b3d64e3efdad979a15ba081a24dfca4bb7f33470e036eed417ff97246ffd5945",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tests/test_schema_validity.py",
+      "sha256": "9a36866be298cb7bef508fc9ad0f2da9b43345d7b01a3cd24931c6071f55a9e2",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tests/test_session_upfront_context.py",
+      "sha256": "9c8dc734ad77a595b293b1114ad24b2d3835114ea193d679c791bc6a36b3afaa",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tests/test_setup_profile.py",
+      "sha256": "d006d7d760a68c65b2d245a2491e8c91e678e1b4b5da121d8952f0bffee7cad3",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tests/test_setup_wrappers.py",
+      "sha256": "5d648d15d6b45dd887ed43e618cac1d8deb45b7de1686d2bfa3a1044c33d2ee7",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tests/test_spec_integrity.py",
+      "sha256": "479847d0293f9fc2cb75af7447dc763af2513f92cfdd79ed8c7576c99d6efa39",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tests/test_template_asset_classification.py",
+      "sha256": "36d961104901709f55605ac25c065baabdce6772659fbd4a5c17932c9acd7d87",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tests/write_bootstrap_evidence_fixture.py",
+      "sha256": "84b98d6cd19099e8e6ff7f8ed7574c93a25fef7153336fb68b5c3476725e3292",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/agent_loader/__init__.py",
+      "sha256": "45aa74fdc73c73a291dc9da187b1cc260eb6b3d7a31009c1f405229d976fef89",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": "tools/agent_loader/__main__.py",
+      "sha256": "b370542fd0ced246b6a99a4fccd0b8168d4ce09affc8d01bd9db133db05bfe44",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": "tools/agent_loader/cli.py",
+      "sha256": "5a4ce9932ab0a9f7e6ef462e87343c4b5ce00c22eaee55576c1c5639986f29b3",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": "tools/agent_loader/loader.py",
+      "sha256": "f7f92f9e7ec8b55bfb7346ba402fd19c01ac5baaabaa0949ca2ddbc16473401a",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": "tools/autonomous_loop/__init__.py",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/autonomous_loop/external_side_effects.yaml",
+      "sha256": "265260128cd9f907985de9c38fea7fd65d04cad0816db937f8fb2a0b60619888",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/autonomous_loop/loop.py",
+      "sha256": "9f868c0f6ce5e5702ea21d51164bd54ff380486fde4d60cdc5c8b334ebc1dc1a",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/catalog_loader.py",
+      "sha256": "5705fea31a6c0f99587bd51bf758ef911af1bd29426b0775cb89b3bfeba809be",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": "tools/harness_consistency/__init__.py",
+      "sha256": "aecf07978f16c423da541dbef62c36cf2e6a93988bf00208bba1e9b7ac229106",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/harness_consistency/__main__.py",
+      "sha256": "34cd1b22f88efaabd5b35256026b3414315558a81f4b159604298432529a2cc0",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/harness_consistency/cli.py",
+      "sha256": "e64d5e4658646813f4150e1d644b0aab46760d839a7fb91350fa7f92fcac4fee",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/harness_consistency/generate.py",
+      "sha256": "baca1f82a7427cf13bfc9b2dea1740ff17cb849d7ab121221bec5f91c9fc7e3c",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/harness_consistency/models.py",
+      "sha256": "1a0054dd85e6e59b544109706be9e154c382978b9e69e685ba189914806b4b18",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/harness_consistency/rules.py",
+      "sha256": "fa0d1055e16c12f24062819903a1a71fab715cceac4c75e119bd42828804b2e5",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/harness_consistency/runner.py",
+      "sha256": "fdacf61772b84aabcb4aae4c8312a37089590687788a478859c6d157e1f895c9",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/harness_consistency/tests/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/harness_consistency/tests/test_generate.py",
+      "sha256": "58b10c4e05c0d8c7df4abdd54726feff0cab4d752ca82d959513b94283fbb6c8",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/harness_consistency/tests/test_rules.py",
+      "sha256": "d4d9bd202f68e0073efeaa00c44da100337200b2c26ef28476ed64370f604d38",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/harness_contract/__init__.py",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/harness_contract/__main__.py",
+      "sha256": "379f0567a836bd8277efcc345df0b3587a172863a07c695c0daaa17cf87febdd",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/harness_contract/cli.py",
+      "sha256": "bdd1461e3a0c8ae64ba3cab84ca380e3c55825849b3a9d6fbbfc5e7c2415be5a",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/harness_contract/detector.py",
+      "sha256": "16c3819a6a15963a5bac85f1855f5514dd9d6da1a938b6dc8ec2edaf709ae517",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/harness_contract/extractor.py",
+      "sha256": "93ccaffa2fe189bde838e9bfe7f633b4209068d75db5f2a970492af2610a2e5d",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/harness_contract/instrumenter.py",
+      "sha256": "044ecd5e53c5795e29bdec6f4d673e221636be3e03d492d30730cd83978df004",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/hooks/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": "tools/hooks/validate_tool_contract.py",
+      "sha256": "915d93dfccab1b15b25c9c263e3b142a5d70bf7c01efcfd256fab834e484eee7",
+      "classification": "starter",
+      "disposition": "preserve"
+    },
+    {
+      "path": "tools/mir_executor/__init__.py",
+      "sha256": "83b6955cf874dd9502b7614bf26a7a5689b0135c29e6666ad98d21a947d67dec",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/mir_executor/__main__.py",
+      "sha256": "307406dfc75676443b890b6f2afe45d670cf1f6b2b7a222b2a312a95ba043af7",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/mir_executor/cli.py",
+      "sha256": "78d47a105246fe3c04d68a2a11e0f198cad08bfe047c7d5a9358132fdeb27ede",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/mir_executor/codex_mcp_client.py",
+      "sha256": "2c570dc4c339f4bfcce335d85da1ab6599eb4e5d5307f6bb126cd09c91fe2b3c",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/mir_executor/dispatch.py",
+      "sha256": "853ca2e07822e4ba18b830c55a0c8346caceda92bcafed388bc842e49d9feadc",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/mir_executor/executor.py",
+      "sha256": "3d094d1911de2d2f4b674841656737cd540ec8949fd3fd1ce1c12fc7deceb049",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/mir_executor/jobs.py",
+      "sha256": "f68a705e6217d3a118f4ea058538422c7157792a505c2aedda0a7b0b9516e3f4",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/mir_executor/policy.py",
+      "sha256": "a6760cf758bb9bf90643d18b9e62a3694e6ad5517372dcb374688eda2810d6a2",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/mir_executor/sweep.py",
+      "sha256": "b51e7e7cf6a464bd541104f0f57610b8653fc3b984c63195f8b21dc0296ccf62",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/mir_executor/tests/__init__.py",
+      "sha256": "2231d15749360cdc2f16b10779b9ac5e206f9884c4f274149ec474ee1f6d5645",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/mir_executor/tests/conftest.py",
+      "sha256": "5562d152dc7a765a44a2ad8fb3c1e62d4cd92023e63701f4b994e6ab59ff5959",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/mir_executor/tests/test_cli.py",
+      "sha256": "04df19dfeecd47a5c39a637ba3d4662a04f022b1d64bc953d60acea7b62820cf",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/mir_executor/tests/test_codex_main_guard.py",
+      "sha256": "2c48f7aa2a6fbbdfceff4a852baac7704d523759bac7a032a8d4529c65c0c71e",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/mir_executor/tests/test_codex_mcp_client.py",
+      "sha256": "f9c4408fde3ca452c343e9e47fcc3603226699a0195f579722d4b7b4ebff69f3",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/mir_executor/tests/test_codex_shim.py",
+      "sha256": "6a2bfd37c00c1bbaf7c47cfaf128d4905402a544d4b3b618da9eec6469b4e92e",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/mir_executor/tests/test_degraded.py",
+      "sha256": "617f52ac3ec5c3d7244f61ce651e40ab36c9b18d4f289d55874bb7ad42deb229",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/mir_executor/tests/test_dispatch.py",
+      "sha256": "64403ec37377d7018c4b267225e39d6f1f34092e43dd8508d82e41244d5a3d85",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/mir_executor/tests/test_executor.py",
+      "sha256": "8a41cf3ccc71324ba4df0fd2a9883c3a95a5afd152feb21ee546e75d2b3e4b49",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/mir_executor/tests/test_executor_async.py",
+      "sha256": "c7d0095548ab009271e388f3c34560452013cd7f17732fa799f61911d3fd2109",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/mir_executor/tests/test_jobs.py",
+      "sha256": "1bbbba13a19e1a7d8726c0dd94ccf54c8d3a9d514107ba6c557b2fb754b94c38",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/mir_executor/tests/test_policy.py",
+      "sha256": "18a3fe3f31cac5ae9b24c60235f833bca27d8622327157339bb7e41ecab747c6",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/mir_executor/tests/test_sweep.py",
+      "sha256": "03a377544787e4e35bb14457707f71d7baed715bab49e229e74ee0bd86d57e7a",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/mir_executor/tests/test_worktree.py",
+      "sha256": "ec175a9ed705ab9e424394728565b371fd53b16ecda80cddcffd3122f7f354a0",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/mir_executor/worktree.py",
+      "sha256": "444e973475ef92b46cca599b20fd39525b76bfb49ae4bff343aa2deecf6fe13e",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/plan_archive/__init__.py",
+      "sha256": "2f4d7d3386caa9eab3bf9b2d01166317ee8a81b9facbbdb0e478d3f1e17f500c",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/plan_archive/__main__.py",
+      "sha256": "b454e2d29fbb9fb25e1d3972e97db8c5739c4454ef5be1c3cca100dba981cfee",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/plan_archive/archiver.py",
+      "sha256": "6d1e0d5a9c0985a64199936a02a86f7f9ebe68ef397c284c9b3747a5528cb878",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/plan_archive/cli.py",
+      "sha256": "24cefdecac43125d188b95d16b4cdc588172b2181e14be8fcb177029070043bd",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/plan_archive/tests/__init__.py",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/plan_archive/tests/test_plan_archive.py",
+      "sha256": "0d5c3cff48a57f3b9cf090570ae3cbf1e5ad9e90f033e26f1e0b9855a394ec93",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/run_orchestrator/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/run_orchestrator/approval_gate.py",
+      "sha256": "1d28491343f1d1037dca474e452a53b373af8498d676265801dd1f9f43749fe7",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/run_orchestrator/run_orchestrator.py",
+      "sha256": "c7d53b9ffda2d539d08aa919b79df2b4e83fc8d4ac35ba1927b0caf63e23ceff",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/run_orchestrator/state_machine.py",
+      "sha256": "d7e8fb908d2b4e20eef4e5df94f394438131044beefc5590be35640c134482c6",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/tdd_archive/__init__.py",
+      "sha256": "c96a44d541f7c0a4d832bfe38c6683e0b5844a9a3c042d6a9dcd49c11c233753",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/tdd_archive/__main__.py",
+      "sha256": "d8564c32110a387b8c17de3d4f8e824eab3fcfe72124be2b8524ad8ce7714db8",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/tdd_archive/cli.py",
+      "sha256": "a74a28711c663e3e33656112631ca13632b0726f6820a7a8d8783640c0995362",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/tdd_archive/compactor.py",
+      "sha256": "1f9a53014499c261e2703c31161c49387ff6399a1af3083048fe8136f4699240",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/tdd_archive/tests/__init__.py",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/tdd_archive/tests/test_tdd_archive.py",
+      "sha256": "a1647a3034de861261cdb5a0057e97cc5f9eb4e5f1e1a9e1a5a0cc98f58fa10c",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tools/template_assets.py",
+      "sha256": "5702423c96dc129bdc41d4554c3d41881a3041be2f26046b2f31127bf60a25a8",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "uv.lock",
+      "sha256": "57191f8465e9a5aa5453ec8222b04e746cebba74939b0aa41c00a23de1cd8fbd",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    }
+  ]
+}

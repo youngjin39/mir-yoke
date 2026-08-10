@@ -599,11 +599,53 @@ def test_hash_bound_greenfield_ready_receipt_releases_normal_mutation(
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(f"verified: {relative}\n", encoding="utf-8")
         output_hashes[relative] = hashlib.sha256(path.read_bytes()).hexdigest()
+    runtime_root = tmp_path.parent / f"{tmp_path.name}-runtime"
+    external_cli = runtime_root / "bin/mir"
+    dependency = runtime_root / "tools/dependency.py"
+    external_cli.parent.mkdir(parents=True)
+    dependency.parent.mkdir(parents=True)
+    dependency.write_text("VALUE = 1\n", encoding="utf-8")
+    external_cli.write_text(
+        "#!/bin/sh\n"
+        'if [ "$1 $2" = "runtime-manifest verify" ]; then '
+        f"grep -q 'VALUE = 1' '{dependency}'; exit $?; fi\n"
+        "exit 0\n",
+        encoding="utf-8",
+    )
+    external_cli.chmod(0o755)
+    runtime_manifest = runtime_root / "runtime-manifest.json"
+    runtime_manifest.write_text('{"schema_version":1}\n', encoding="utf-8")
+    (tmp_path / "config").mkdir()
+    (tmp_path / "config/adopter-boundary.json").write_text(
+        json.dumps(
+            {
+                "provider_markers": ["src/mir"],
+                "provider_text_markers": [
+                    {"path": "CLAUDE.md", "contains": "provider contract"}
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    (tmp_path / "CLAUDE.md").write_text("# Product contract\n", encoding="utf-8")
     (tmp_path / ".mir").mkdir()
     (tmp_path / ".mir/bootstrap-receipt.json").write_text(
         json.dumps(
             {
                 "status": "ready",
+                "cli": {
+                    "externalized": True,
+                    "executable": str(external_cli),
+                    "sha256": hashlib.sha256(external_cli.read_bytes()).hexdigest(),
+                    "runtime_manifest": str(runtime_manifest),
+                    "runtime_manifest_sha256": hashlib.sha256(
+                        runtime_manifest.read_bytes()
+                    ).hexdigest(),
+                    "source_url": "https://github.com/example/mir-yoke.git",
+                    "source_commit": "a" * 40,
+                    "constraints_sha256": "b" * 64,
+                },
+                "slim": {"status": "applied", "transaction_id": "a" * 32},
                 "capabilities": {"status": "ready"},
                 "architecture_initialization": {
                     "attested": True,
@@ -620,6 +662,77 @@ def test_hash_bound_greenfield_ready_receipt_releases_normal_mutation(
         {"tool_name": "Write", "tool_input": {"file_path": "notes.txt"}},
     )
     assert completed.returncode == 0, completed.stderr
+
+    dependency.write_text("VALUE = 2\n", encoding="utf-8")
+    changed_dependency = _run_pretool(
+        tmp_path,
+        {"tool_name": "Write", "tool_input": {"file_path": "notes.txt"}},
+    )
+    assert changed_dependency.returncode == 2
+    dependency.write_text("VALUE = 1\n", encoding="utf-8")
+
+    external_cli.write_text("#!/bin/sh\nexit 1\n", encoding="utf-8")
+    changed_cli = _run_pretool(
+        tmp_path,
+        {"tool_name": "Write", "tool_input": {"file_path": "notes.txt"}},
+    )
+    assert changed_cli.returncode == 2
+
+
+def test_restart_required_receipt_blocks_phase2_when_runtime_closure_drifts(
+    tmp_path: Path,
+) -> None:
+    runtime_root = tmp_path.parent / f"{tmp_path.name}-restart-runtime"
+    cli = runtime_root / "bin/mir"
+    dependency = runtime_root / "tools/dependency.py"
+    cli.parent.mkdir(parents=True)
+    dependency.parent.mkdir(parents=True)
+    dependency.write_text("VALUE = 1\n", encoding="utf-8")
+    cli.write_text(
+        "#!/bin/sh\n"
+        'if [ "$1 $2" = "runtime-manifest verify" ]; then '
+        f"grep -q 'VALUE = 1' '{dependency}'; exit $?; fi\n"
+        "exit 0\n",
+        encoding="utf-8",
+    )
+    cli.chmod(0o755)
+    manifest = runtime_root / "runtime-manifest.json"
+    manifest.write_text('{"schema_version":1}\n', encoding="utf-8")
+    (tmp_path / ".mir").mkdir()
+    (tmp_path / ".mir/bootstrap-receipt.json").write_text(
+        json.dumps(
+            {
+                "status": "restart_required",
+                "cli": {
+                    "externalized": True,
+                    "executable": str(cli),
+                    "sha256": hashlib.sha256(cli.read_bytes()).hexdigest(),
+                    "runtime_manifest": str(manifest),
+                    "runtime_manifest_sha256": hashlib.sha256(
+                        manifest.read_bytes()
+                    ).hexdigest(),
+                    "source_url": "https://github.com/example/mir-yoke.git",
+                    "source_commit": "a" * 40,
+                    "constraints_sha256": "b" * 64,
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    allowed = _run_pretool(
+        tmp_path,
+        {"tool_name": "Write", "tool_input": {"file_path": "spec/STATE.md"}},
+    )
+    assert allowed.returncode == 0, allowed.stderr
+
+    dependency.write_text("VALUE = 2\n", encoding="utf-8")
+    blocked = _run_pretool(
+        tmp_path,
+        {"tool_name": "Write", "tool_input": {"file_path": "spec/STATE.md"}},
+    )
+    assert blocked.returncode == 2
+    assert "bootstrap is invalid" in blocked.stderr
 
 
 def test_session_start_requires_bootstrap_without_running_python(tmp_path: Path) -> None:
@@ -639,6 +752,9 @@ def test_session_start_requires_bootstrap_without_running_python(tmp_path: Path)
     assert completed.returncode == 0, completed.stderr
     assert "bootstrap_gate: required (state=missing)" in completed.stdout
     assert "normal_mutation: blocked" in completed.stdout
+    assert "run setup.sh with --profile" in completed.stdout
+    assert "inside WSL on Windows hosts" in completed.stdout
+    assert "setup.sh/setup.ps1" not in completed.stdout
 
 
 def test_session_start_routes_existing_repository_to_adoption(tmp_path: Path) -> None:
@@ -658,7 +774,7 @@ def test_session_start_routes_existing_repository_to_adoption(tmp_path: Path) ->
     )
 
     assert completed.returncode == 0, completed.stderr
-    assert "uv run mir bootstrap-adoption --apply" in completed.stdout
+    assert "scripts/mir.sh bootstrap-adoption --apply" in completed.stdout
     assert "run setup.sh/setup.ps1" not in completed.stdout
 
 
@@ -667,7 +783,8 @@ def test_hooks_use_only_the_managed_python_launcher() -> None:
     assert launcher.is_file()
     assert os.access(launcher, os.X_OK)
     assert ".venv/bin/python" in launcher.read_text(encoding="utf-8")
-    assert "uv run --project" in launcher.read_text(encoding="utf-8")
+    assert "bootstrap-receipt.json" in launcher.read_text(encoding="utf-8")
+    assert "run-python" in launcher.read_text(encoding="utf-8")
     for hook in HOOKS.rglob("*.sh"):
         if hook == launcher:
             continue

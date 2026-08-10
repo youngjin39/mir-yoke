@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib.util
 import json
 from pathlib import Path
 
@@ -42,3 +43,41 @@ def test_should_never_infer_authority_from_a_local_catalog() -> None:
 
     assert "_MIR_FLEET_MANAGER" not in hook
     assert "repo-agent-management.json" not in hook
+
+
+def test_product_commit_gate_recognizes_adopter_paths_and_commands() -> None:
+    hook = (ROOT / ".claude/hooks/pre-commit-verification.sh").read_text(
+        encoding="utf-8"
+    )
+
+    assert "apps/*" in hook
+    assert "packages/*" in hook
+    assert "npm run test --if-present" in hook
+    assert "npm run typecheck --if-present" in hook
+    assert "test_mir_mcp_server_live.py" not in hook
+
+
+def test_should_require_tdd_evidence_when_adopter_product_roots_change(
+    tmp_path: Path,
+) -> None:
+    module_path = ROOT / ".claude/hooks/tdd-matrix-guard.py"
+    spec = importlib.util.spec_from_file_location("mir_tdd_matrix_guard", module_path)
+    assert spec is not None and spec.loader is not None
+    guard = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(guard)
+
+    tasks = tmp_path / "tasks"
+    tasks.mkdir()
+    (tasks / "tdd.json").write_text(
+        json.dumps({"version": 1, "changes": []}), encoding="utf-8"
+    )
+    changed = tmp_path / "changed-files.txt"
+    shell_guard = (ROOT / ".claude/hooks/tdd-guard.sh").read_text(encoding="utf-8")
+
+    for product_path in ("apps/web/main.ts", "packages/core/index.ts"):
+        changed.write_text(product_path + "\n", encoding="utf-8")
+        assert guard.is_implementation_path(product_path)
+        assert guard.precommit(tmp_path, changed) == 2
+
+    assert "apps/*" in shell_guard
+    assert "packages/*" in shell_guard

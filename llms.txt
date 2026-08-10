@@ -1,9 +1,10 @@
-# your-harness Harness — opinionated Claude Code + Codex starter / meta-harness
+# Mir Yoke — agent-guided Claude Code + Codex harness-engineering template
 
 ## What this repo is
-A governance harness for Claude Code + Codex CLI workflows. Deterministic-gate enforcement,
-single-cursor continuation loop, TDD ledger, fleet management tooling. Human-in-the-loop;
-no autonomous self-continuation.
+A public template and reference baseline with no provider runtime or standing consumer authority.
+An AI agent reads the target repository's contract and current state, then adapts applicable
+controls. Automated greenfield bootstrap supports macOS, Linux, and WSL; native Windows is a
+zero-mutation guidance path to WSL or agent-guided reference adaptation.
 
 ## Key docs
 - CLAUDE.md — primary instruction surface (coding rules, hook policy, role policy, language)
