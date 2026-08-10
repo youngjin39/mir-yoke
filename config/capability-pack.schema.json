@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "mir-yoke/config/capability-pack",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "id", "version", "product_role", "support_level",
+    "execution_state", "description", "dependencies", "source_paths",
+    "adoption_assets", "compatibility", "verification", "local_state_paths"
+  ],
+  "properties": {
+    "$schema": {"type": "string"},
+    "schema_version": {"const": 1},
+    "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+    "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:[A-Za-z0-9.-]+)?$"},
+    "product_role": {"const": "pack"},
+    "support_level": {"enum": ["stable", "preview", "reference"]},
+    "execution_state": {"const": "opt-in"},
+    "description": {"type": "string", "minLength": 20},
+    "dependencies": {"$ref": "#/$defs/paths"},
+    "source_paths": {"$ref": "#/$defs/nonEmptyPaths"},
+    "adoption_assets": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["source", "target"],
+        "properties": {
+          "source": {"$ref": "#/$defs/relativePath"},
+          "target": {"$ref": "#/$defs/relativePath"}
+        }
+      }
+    },
+    "compatibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["platforms", "runtimes"],
+      "properties": {
+        "platforms": {"$ref": "#/$defs/nonEmptyPaths"},
+        "runtimes": {"$ref": "#/$defs/nonEmptyPaths"}
+      }
+    },
+    "verification": {"$ref": "#/$defs/nonEmptyPaths"},
+    "local_state_paths": {"$ref": "#/$defs/paths"}
+  },
+  "$defs": {
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
+    },
+    "paths": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "nonEmptyPaths": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    }
+  }
+}

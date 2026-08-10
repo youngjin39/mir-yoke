@@ -1,7 +1,7 @@
 [project]
 name = "mir-harness"
-version = "0.8.0"
-description = "mir-yoke — public template for Claude Code + Codex teams"
+version = "0.9.0"
+description = "Mir Yoke — local project harness with a minimal core and optional capability packs"
 readme = "README.md"
 license = {file = "LICENSE"}
 requires-python = ">=3.12"
@@ -27,6 +27,7 @@ dev = [
 
 [project.scripts]
 mir = "mir.cli.__main__:main"
+yoke = "mir.cli.yoke:main"
 
 [project.entry-points."mir.embedding_backends"]
 omlx_http = "mir.core.engine.memory.backends.omlx_http:OmlxHttpBackend"

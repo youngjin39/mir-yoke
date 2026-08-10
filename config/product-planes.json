@@ -1,0 +1,58 @@
+{
+  "$schema": "./product-planes.schema.json",
+  "schema_version": 1,
+  "planes": {
+    "source": {
+      "owner": "mir-yoke-maintainer",
+      "roots": ["starter", "packs", "profiles", "plugins", "src", "tools", "scripts", "docs"],
+      "pack_manifest_glob": "packs/*/pack.json"
+    },
+    "distribution": {
+      "output_root": "dist",
+      "tracked": false,
+      "core_source": "starter",
+      "sidecars": ["manifest.json", "SHA256SUMS", "provenance.json"]
+    },
+    "project": {
+      "canonical_contract": "HARNESS.md",
+      "optional_policy": "config/harness-policy.toml",
+      "ownership": "consumer-repository"
+    },
+    "local": {
+      "root": ".mir",
+      "tracked": false,
+      "state": ".mir/local-state.json",
+      "receipts": ".mir/yoke-receipts",
+      "provider_store": "providers/<content-digest>"
+    }
+  },
+  "asset_axes": {
+    "starter": {"product_role": "core", "support_level": "stable", "execution_state": "inert"},
+    "reference": {"product_role": "reference", "support_level": "reference", "execution_state": "inert"},
+    "optional-consumer-tool": {"product_role": "pack", "support_level": "preview", "execution_state": "opt-in"},
+    "template-maintainer-tool": {"product_role": "maintainer", "support_level": "stable", "execution_state": "active-maintainer"},
+    "historical": {"product_role": "history", "support_level": "historical", "execution_state": "inert"}
+  },
+  "execution_overrides": [
+    {
+      "paths": [
+        ".claude/settings.json",
+        ".claude/hooks/**",
+        ".codex/config.toml",
+        ".codex/hooks.json",
+        ".codex/hooks/**"
+      ],
+      "product_role": "maintainer",
+      "support_level": "preview",
+      "execution_state": "active-maintainer",
+      "reason": "These retained runtime settings and hooks execute only in an explicitly opened maintainer checkout and are never composed by default."
+    },
+    {
+      "paths": ["packs/*/payload/**"],
+      "product_role": "pack",
+      "support_level": "preview",
+      "execution_state": "opt-in",
+      "reason": "Pack payloads remain inert until a repository owner explicitly composes and applies them."
+    }
+  ]
+}

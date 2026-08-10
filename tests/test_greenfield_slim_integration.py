@@ -87,6 +87,9 @@ def test_should_leave_minimal_starter_and_project_owned_changes_when_candidate_i
     assert "Mir Yoke — Minimal Harness Template Contract" not in (
         candidate / "CLAUDE.md"
     ).read_text(encoding="utf-8")
+    assert "Mir Yoke — Local Harness Platform Contract" not in (
+        candidate / "CLAUDE.md"
+    ).read_text(encoding="utf-8")
     catalog = json.loads(
         (candidate / "config/repo-agent-management.json").read_text(encoding="utf-8")
     )

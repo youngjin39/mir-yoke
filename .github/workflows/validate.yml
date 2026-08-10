@@ -6,6 +6,32 @@ on:
   push:
     branches: [main]
 jobs:
+  starter_contract:
+    name: starter and composable distribution contract
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - name: Install uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+      - name: Sync test environment
+        run: uv sync --extra dev --frozen
+      - name: Run core and composition contracts
+        run: >-
+          uv run pytest -q
+          tests/test_minimal_starter.py
+          tests/test_product_planes.py
+          tests/test_distribution_builder.py
+          tests/test_yoke_composer.py
+          tests/test_yoke_cli.py
+          tests/test_safety_pack.py
+          tests/test_template_asset_classification.py
+          tests/test_release_metadata.py
+      - name: Verify generated derivatives
+        run: uv run python scripts/verify_codex_sync.py
+      - name: Lint product-plane implementation
+        run: uv run ruff check src/mir/core/distribution src/mir/cli/yoke.py
   schema:
     runs-on: ubuntu-latest
     steps:
@@ -37,8 +63,9 @@ jobs:
         with: { python-version: '3.11' }
       - run: pip install pytest
       - run: python tests/test_phase_doc_completeness.py
-  portable_bootstrap:
-    name: portable bootstrap (${{ matrix.os }})
+  platform_regression:
+    name: preserved platform regression (${{ matrix.os }})
+    if: ${{ github.event_name == 'workflow_dispatch' }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false

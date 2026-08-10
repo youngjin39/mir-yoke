@@ -1,0 +1,7 @@
+schema_version = 1
+enabled = true
+database = ".mir/memory.db"
+ingest_mode = "incremental"
+debounce_seconds = 2
+ordinary_failure = "warn"
+release_failure = "block"

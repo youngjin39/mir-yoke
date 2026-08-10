@@ -19,6 +19,13 @@ def test_should_include_every_required_gate_when_release_script_is_inspected() -
     assert '"dev"' in body
     assert '["git", "init"' not in body
     for token in (
+        "test_minimal_starter.py",
+        "test_product_planes.py",
+        "test_distribution_builder.py",
+        "test_yoke_composer.py",
+        "test_yoke_cli.py",
+        "test_safety_pack.py",
+        "test_release_metadata.py",
         "test_public_template_identity.py",
         "test_template_asset_classification.py",
         "test_public_template_authority.py",

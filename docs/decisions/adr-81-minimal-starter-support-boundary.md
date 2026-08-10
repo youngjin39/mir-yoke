@@ -23,9 +23,11 @@ the repository's current state, and let it adapt only the material that is usefu
 
 ## 2. Decision
 
-`starter/` is the only supported consumer payload. It contains four Markdown files: one canonical
-repository contract, two thin Claude/Codex entrypoints, and one adoption guide. The starter has no
-runtime, installer, platform-specific execution path, or standing authority.
+`starter/` is the only supported consumer payload in the minimum contract. It contains four
+Markdown files: one canonical repository contract, two thin Claude/Codex entrypoints, and one
+adoption guide. The starter has no runtime, installer, platform-specific execution path, or
+standing authority. ADR-82 later clarifies that this means the only required and default payload;
+declared optional capability packs can carry separate support levels without expanding the core.
 
 The supported workflow is agent-guided:
 
@@ -37,8 +39,9 @@ The supported workflow is agent-guided:
 
 The starter does not require Mir CLI installation, plugins, hooks, a memory database, a spec tree,
 sub-agents, receipts, restart phases, or clone-and-slim behavior. Such assets may remain in Mir Yoke
-as maintainer code or optional reference material, but they are outside the supported consumer
-contract and receive no compatibility promise.
+as maintainer code or optional reference material. ADR-82 gives only declared pack payloads an
+explicit support level; undeclared retained source remains outside the consumer compatibility
+promise.
 
 ## 3. Consequences
 

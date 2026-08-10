@@ -52,15 +52,15 @@
   "plugins": {
     "mir-code": {
       "path": "plugins/mir-code",
-      "sha256": "d42308e5aec3742c72fe8b6abd08fe76de8859c8f6fbc937210de76ea5916756"
+      "sha256": "db2c3d00dd921bf238b079a8992b20eb0e961ec65bfcc364298b3801ba1c6138"
     },
     "mir-content": {
       "path": "plugins/mir-content",
-      "sha256": "2d867cee61ba11bca6dceb6ba7431dc857e70e221f6ef8c22d24e5ab1e4d0a8c"
+      "sha256": "25bc0e0b88451f0fed15ae2401f0c622e7c78a47c1a12c5996f59e8cc7df4963"
     },
     "mir-core": {
       "path": "plugins/mir-core",
-      "sha256": "e548d9b2464629b18f65254c132b4ef1ffbefec596d3d5d3fb14283228c8755c"
+      "sha256": "e9135c6b05381c62ac31085bcac32d476e6c9caf9c808a406adbdc4cbe5ebb16"
     }
   },
   "profile": "hybrid_pipeline",

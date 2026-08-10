@@ -23,6 +23,7 @@ _SUBCOMMAND_MODULES = {
     "policy": "mir.cli.policy",
     "run-python": "mir.cli.run_python",
     "runtime-manifest": "mir.cli.runtime_manifest",
+    "yoke": "mir.cli.yoke",
 }
 
 

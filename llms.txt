@@ -1,6 +1,6 @@
-# Mir Yoke — minimal agent-guided harness starter
+# Mir Yoke — local project-harness platform
 
-## Supported consumer payload
+## Required default consumer payload
 - `starter/README.md` — preservation-first adoption guide
 - `starter/HARNESS.md` — canonical repository contract template
 - `starter/CLAUDE.md` — Claude entrypoint
@@ -9,9 +9,19 @@
 The starter is documentation-only. It does not require a Mir CLI, installer, plugin, hook, memory
 database, spec tree, sub-agent, daemon, receipt, or platform-specific runtime.
 
+## Optional capability packs
+- `safety` — stable repository-bound deterministic checks
+- `memory` — preview local SQLite/FTS context
+- `collaboration` — preview runtime-neutral roles and executor guidance
+- `assurance` — preview specification and verification evidence
+
+Profiles are advisory. Use `yoke plan` before `yoke apply`; conflicts are never overwritten.
+
 ## Maintainer checks
 - `uv run pytest tests/test_minimal_starter.py -q`
+- `uv run pytest tests/test_product_planes.py tests/test_distribution_builder.py tests/test_yoke_composer.py -q`
 - `uv run python scripts/verify_codex_sync.py`
 - `uv run ruff check`
 
-Everything outside `starter/` is optional reference, history, or maintainer material.
+Existing bootstrap, memory, plugin, hook, executor, and spec implementations are preserved as
+optional pack source and maintainer regression material.

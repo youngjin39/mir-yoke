@@ -21,7 +21,11 @@ Each section follows the pattern:
 
 ## Current Status
 
-No MAJOR releases yet. Current version: `0.8.0`.
+No MAJOR releases yet. Current version: `0.9.0`.
+
+Version 0.9 keeps the complete 0.8 platform source available while adding a smaller default core,
+explicit optional capability packs, deterministic distribution artifacts, and preservation-first
+composition. Existing adopters do not need to remove or rewrite their installed platform.
 
 The current pre-1.0 platform contract supports automated greenfield bootstrap on macOS, Linux, and
 WSL. Native-Windows callers must move automation into WSL or use Mir Yoke as agent-guided reference

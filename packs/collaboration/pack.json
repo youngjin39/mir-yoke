@@ -1,0 +1,28 @@
+{
+  "$schema": "../../config/capability-pack.schema.json",
+  "schema_version": 1,
+  "id": "collaboration",
+  "version": "0.9.0",
+  "product_role": "pack",
+  "support_level": "preview",
+  "execution_state": "opt-in",
+  "description": "Runtime-neutral agent roles, bounded delegation, worktree execution, and explicit handoff evidence.",
+  "dependencies": [],
+  "source_paths": [
+    "src/mir/cli/capability.py",
+    "tools/mir_executor/**/*.py",
+    "src/mir/core/conductor/*.py",
+    ".claude/agents/*.md",
+    ".codex/agents/*.toml"
+  ],
+  "adoption_assets": [
+    {"source": "packs/collaboration/payload/COLLABORATION.md", "target": "docs/harness/collaboration.md"},
+    {"source": "packs/collaboration/payload/config/agent-roles.json", "target": "config/agent-roles.json"}
+  ],
+  "compatibility": {
+    "platforms": ["macos", "linux", "windows-wsl"],
+    "runtimes": ["claude-code", "codex-cli", "codex-desktop"]
+  },
+  "verification": ["uv run pytest -q tools/mir_executor/tests tests/test_agent_loader.py tests/test_codex_agent_generation.py"],
+  "local_state_paths": [".mir/executor", "tasks/handoffs"]
+}

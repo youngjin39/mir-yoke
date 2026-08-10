@@ -34,6 +34,33 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
   notification, and central profile-compilation surfaces; their design history remains indexed as
   non-authoritative evidence.
 
+## [0.9.0] — 2026-08-10 — Composable product planes
+
+### Added
+
+- Added explicit source, distribution, project, and local planes with schema-validated metadata.
+- Added stable safety and preview memory, collaboration, and assurance capability packs plus
+  advisory `minimal`, `code`, `content`, `collaboration`, and `assured` profiles.
+- Added deterministic core and pack archives, checksums, an artifact manifest, and SLSA-shaped
+  provenance for release workflows.
+- Added the `yoke` CLI for read-only composition planning, conflict-safe transactional apply, and
+  content-addressed multi-version provider installation.
+
+### Changed
+
+- Defined the four-file starter as the only required and default consumer payload while retaining
+  the existing bootstrap, memory, executor, plugin, hook, and spec implementations as declared
+  optional pack sources.
+- Separated repository-owned project policy from ignored machine-local state and receipts.
+- Split lightweight starter validation from the preserved platform regression workflow.
+
+### Security
+
+- Added a small runtime-neutral safety pack with tool-specific path extraction and post-change
+  credential scanning without carrying historical family or fleet policy into consumer payloads.
+- Composition refuses overwrite conflicts, symlink escapes, provider-source targets, changed
+  plans, and changed providers, and rolls back files created by a failed transaction.
+
 ## [0.8.0] — 2026-08-06 — Portable project bootstrap
 
 ### Added

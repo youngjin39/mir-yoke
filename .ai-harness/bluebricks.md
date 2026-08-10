@@ -12,10 +12,20 @@ Full brick: `docs/bluebricks/contract.md`.
 
 ### Adoption
 
-Separates greenfield creation from preservation-first existing-repository assessment.
+Separates manual core adoption, preservation-first composition, and retained legacy bootstrap.
 Full brick: `docs/bluebricks/adoption.md`.
 
-### Capability Provenance
+### Distribution
+
+Builds deterministic core and capability-pack archives with manifest, checksums, and provenance.
+Full brick: `docs/bluebricks/distribution.md`.
+
+### Composition
+
+Resolves advisory profiles, plans without mutation, applies only conflict-free new files, and pins
+content-addressed providers. Full brick: `docs/bluebricks/composition.md`.
+
+### Retained Capability Provenance
 
 Provides explicit local status, check, sync, update, attestation, and finalization with
 integrity-only hashes. Full brick: `docs/bluebricks/capability.md`.

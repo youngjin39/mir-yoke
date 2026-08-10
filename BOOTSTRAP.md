@@ -1,8 +1,8 @@
 # Agent-Guided Starter Adoption
 
-This is a guidance checklist, not an executable installer. `starter/` is the only supported
-consumer payload. The supported starter workflow does not require or perform automated bootstrap.
-Retained executable experiments are reference and maintainer material outside this support claim.
+The minimum path is a guidance checklist, not an executable installer. `starter/` is the only
+required and default consumer payload. Optional `yoke` composition is a separate owner-invoked
+path; it does not make advanced capability a prerequisite. Mir Yoke is not a universal installer.
 
 ## 1. Inspect before mutation
 
@@ -55,11 +55,24 @@ The adoption is complete when:
 - the target's smallest relevant verification passes; and
 - the final diff contains only the selected harness files.
 
-## Optional extensions
+## 5. Optional composition
 
-The supported starter does not require a memory database, plugin, hook, specification tree,
-sub-agent, multi-agent routing, receipt, or Mir CLI. Add one only when a concrete problem justifies
-its cost, and make the resulting implementation repository-owned.
+The starter does not require a memory database, plugin, hook, specification tree, sub-agent,
+multi-agent routing, receipt, or Mir CLI. Add one only when a concrete problem justifies its cost.
+The stable `safety` pack and preview `memory`, `collaboration`, and `assurance` packs expose those
+choices without changing the core.
 
-The full checkout retains implementations and history for reference. They have no consumer
-compatibility guarantee under ADR-81.
+For an explicit target outside the Mir Yoke source checkout:
+
+```bash
+uv run yoke plan ../target --profile minimal --pack safety \
+  --output /tmp/mir-yoke-plan.json --json
+uv run yoke apply ../target --plan /tmp/mir-yoke-plan.json --json
+```
+
+Review every conflict in the plan. Apply will not resolve or overwrite it. On success the composed
+files belong to the target; only `.mir/local-state.json` and `.mir/yoke-receipts/` remain local.
+
+The retained pre-0.9 `setup.sh`, bootstrap, memory, plugin, executor, and slim paths remain available
+for existing users and regression testing. They are not removed, but new projects should prefer
+manual core adoption or distribution/composition so they do not inherit provider history.

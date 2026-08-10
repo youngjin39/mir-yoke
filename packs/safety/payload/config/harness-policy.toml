@@ -1,0 +1,12 @@
+schema_version = 1
+owner = "consumer-repository"
+
+[paths]
+protected = [".git/**", ".env*", "secrets/**", "credentials/**"]
+
+[execution]
+selected_packs = ["safety"]
+conflict_policy = "owner-resolution-required"
+
+[verification]
+commands = ["python3 .claude/hooks/mir-safety.py"]

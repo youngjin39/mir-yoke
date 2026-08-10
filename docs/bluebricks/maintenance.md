@@ -19,8 +19,10 @@ release candidate file to one disposition and SHA-256 digest; Phase 2 slim may m
 entries classified for removal. Modified references are preserved as adopter-owned adaptations,
 while provider markers fail closed. Provider-only validators are maintainer assets and cannot enter
 an adopter pack. The tracked CLI constraints must equal a frozen production export of `uv.lock`.
-Portable-bootstrap CI executes the supported macOS and Linux Bash lanes. Contract tests separately
-prove WSL follows Linux and that native-Windows CLI, PowerShell, and Bash entrypoints stop before
+The normal CI lane validates the core, planes, packs, deterministic distribution, composition,
+derivatives, classification, and release metadata. The complete portable-bootstrap regression is
+preserved as an explicit workflow-dispatch job. Its macOS and Linux Bash lanes separately prove
+WSL follows Linux and that native-Windows CLI, PowerShell, and Bash entrypoints stop before
 mutation; Mir Yoke does not claim a native-Windows ready-state CI lane.
 
 ## Dependencies and Validation

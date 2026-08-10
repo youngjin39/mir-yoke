@@ -25,7 +25,7 @@
   "provider_text_markers": [
     {
       "path": "CLAUDE.md",
-      "contains": "# Mir Yoke — Minimal Harness Template Contract"
+      "contains": "# Mir Yoke — Local Harness Platform Contract"
     },
     {
       "path": ".ai-harness/bluebricks.md",

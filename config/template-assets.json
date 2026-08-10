@@ -14,7 +14,7 @@
       "classification": "starter",
       "include": ["starter/**"],
       "exclude": [],
-      "reason": "The only supported consumer payload: a small agent-adapted documentation baseline."
+      "reason": "The only required default consumer payload: a small agent-adapted documentation baseline."
     },
     {
       "id": "root-metadata",
@@ -98,6 +98,7 @@
         "docs/references/**",
         "docs/templates/**",
         "examples/**",
+        "profiles/**",
         "spec/**",
         "config/bluebrick-paths.json",
         "config/repos/**",
@@ -122,6 +123,7 @@
         "docs/decisions/adr-79-agent-guided-platform-scope.md",
         "docs/decisions/adr-80-release-runtime-isolation-and-adopter-ownership.md",
         "docs/decisions/adr-81-minimal-starter-support-boundary.md",
+        "docs/decisions/adr-82-product-planes-capability-packs-and-composition.md",
         "docs/decisions/role-policy.md"
       ],
       "exclude": [],
@@ -144,6 +146,7 @@
         "docs/decisions/adr-79-agent-guided-platform-scope.md",
         "docs/decisions/adr-80-release-runtime-isolation-and-adopter-ownership.md",
         "docs/decisions/adr-81-minimal-starter-support-boundary.md",
+        "docs/decisions/adr-82-product-planes-capability-packs-and-composition.md",
         "docs/decisions/role-policy.md"
       ],
       "reason": "Earlier decisions remain retrievable but are outside the current authority index."
@@ -161,6 +164,7 @@
       "include": [
         ".agents/**",
         ".claude-plugin/**",
+        "packs/**",
         "plugins/**",
         "scripts/**",
         "src/**",
@@ -198,6 +202,9 @@
         ".codex/agents/template-sync-validator.toml",
         "config/harness-consistency.json",
         "config/harness-consistency.schema.json",
+        "config/capability-pack.schema.json",
+        "config/product-planes.json",
+        "config/product-planes.schema.json",
         "config/template-assets.json",
         "config/template-assets.schema.json",
         "pyproject.toml",

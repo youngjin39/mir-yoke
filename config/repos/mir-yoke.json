@@ -1,7 +1,7 @@
 {
   "$schema": "../repo-agent-management.schema.json#/$defs/repository",
   "slug": "mir-yoke",
-  "display_name": "Mir Yoke (public template)",
+  "display_name": "Mir Yoke (public local harness platform)",
   "registry_path": ".",
   "profile_slug": "mir-yoke",
   "repository_type": "public_harness_template",
@@ -30,7 +30,8 @@
   },
   "evidence_trace": {
     "source_documents": [
-      "docs/decisions/adr-78-public-template-identity-and-non-authority.md"
+      "docs/decisions/adr-78-public-template-identity-and-non-authority.md",
+      "docs/decisions/adr-82-product-planes-capability-packs-and-composition.md"
     ],
     "open_questions": [],
     "assumptions": [
@@ -38,7 +39,7 @@
     ]
   },
   "notes": [
-    "Sanitized self-profile used by public harness-consistency generation and verification."
+    "Sanitized self-profile for the minimum core, optional pack catalog, and maintainer verification."
   ],
   "active_agents": [
     "main-orchestrator",
@@ -77,6 +78,6 @@
     "remove": []
   },
   "orchestration_profile": "standard",
-  "last_reviewed_at": "2026-08-08",
-  "rationale": "ADR-78 public-template self-profile with no fleet target or provider runtime authority."
+  "last_reviewed_at": "2026-08-10",
+  "rationale": "ADR-78 and ADR-82 public local-harness self-profile with no fleet target or provider runtime authority."
 }

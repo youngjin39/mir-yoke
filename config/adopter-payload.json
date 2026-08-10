@@ -11,7 +11,7 @@
     },
     {
       "path": ".ai-harness/bluebricks.md",
-      "sha256": "df664e3b853b20385aafaa9702c7df77b79c071a9605bef48155ea8fbdaf46ac",
+      "sha256": "ec20122fcbe790812ceda8b01d2cfab81161627600e006b357bd5ca90d4bf2a1",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -53,7 +53,7 @@
     },
     {
       "path": ".claude-plugin/marketplace.json",
-      "sha256": "f382ef568cc4657d95eb14d40645421833ffd4b0c2da30ea9b8028c9edb1ed32",
+      "sha256": "8411576758ecdf60a9097d551e16dae1cf07a305a4f21fb85f653cbba5483ea2",
       "classification": "optional-consumer-tool",
       "disposition": "remove"
     },
@@ -407,19 +407,19 @@
     },
     {
       "path": ".github/workflows/release.yml",
-      "sha256": "7432455aad9c8919225e63f4189cbccdf01615be9b05b5c9cddbc87f7867b8c3",
+      "sha256": "42d1afbd9574ff5e752716c64ee8eddeacad5fcf4f7ab6b415b28d8982858141",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     },
     {
       "path": ".github/workflows/validate.yml",
-      "sha256": "6f383c7e85c8a46aa1577327f579d2944f2b7dc82d92bd4463560f8f0538eeda",
+      "sha256": "2a7c080563ef1711a2ec1a897b548df68ecf4ddb8063f70bb4396dace9560cb7",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     },
     {
       "path": ".gitignore",
-      "sha256": "93cb60244278e0366eb35399d53fb33fde287939d11bc73e39750282b6ba8904",
+      "sha256": "2fb49b8d56cc9f77cacda1e460689324c641427516413387b247d513ffdd8a80",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -443,43 +443,43 @@
     },
     {
       "path": ".mir/capability-lock.json",
-      "sha256": "7c94e64ad7b9db56b90b138bcb58ad1c19b5118bff8eb73ee74169586a004659",
+      "sha256": "92fecb0f1346f1acd617b7269bd387c40b76535b14dd9de35559be16102ecc92",
       "classification": "reference",
       "disposition": "remove"
     },
     {
       "path": "AGENTS.md",
-      "sha256": "67865bc26d842c0edca5edca9365a80dd9ab8c4e117ae300c0c49e7d460870d3",
+      "sha256": "8b76f3d9b468b9c31a10cb11ef5a09e9e2f0a909be35bba1bf30d313d47ba75b",
       "classification": "reference",
       "disposition": "remove"
     },
     {
       "path": "ARCHITECTURE.md",
-      "sha256": "e907d2eb73bbadbafa33c9f108d38a197a9e454c378fe05ebc57fa29321db62c",
+      "sha256": "afcea3a8ec72e7f1253b7cfa5ab9af50b13c33dd4d239a122c00fe87545d5c73",
       "classification": "reference",
       "disposition": "remove"
     },
     {
       "path": "BOOTSTRAP.md",
-      "sha256": "e66a5f55943e9532fefcf78c96940f056c475aaaca106193725056c05a629b3c",
+      "sha256": "f2c39482e6c877044f591ccb8e4cda8d174812488454845dac156613726bfe12",
       "classification": "reference",
       "disposition": "remove"
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "02705d6b6be2e086fd6b7e22a3ea6e4c79fa5a9f8f828456cb667ae4753c9b05",
+      "sha256": "1a27bd2478f4af83f4be4a8c69aa0251a4d1e76fef981f08471b5470472efb6d",
       "classification": "reference",
       "disposition": "remove"
     },
     {
       "path": "CLAUDE.md",
-      "sha256": "b312e0abb028911332e8f4448e920490c01e1003c07cfb44ce8c24bcc55998d3",
+      "sha256": "c6f203963664e68fdb252796976b0736e4565dcb19534cafbf20509619793bd9",
       "classification": "reference",
       "disposition": "remove"
     },
     {
       "path": "CONTRIBUTING.md",
-      "sha256": "0ed35054ed43df6dfacf55b29f16ec34b687a1a009ec155735c12f99e91e08a0",
+      "sha256": "54bfe49ffbbd468d9f44d9b1e59657d6b1b9a7992e4e3ebfb9ed310096b0c616",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -491,19 +491,19 @@
     },
     {
       "path": "MIGRATION.md",
-      "sha256": "757b47747507e4c28909b2203db4dcfdc071fb3910245079a404d18eb56371c2",
+      "sha256": "dbfed70408e873d46bc87608c9ed37a646ad56c710cc5e102b0f94ca69ab8df4",
       "classification": "reference",
       "disposition": "remove"
     },
     {
       "path": "README.md",
-      "sha256": "ca6e430fb83b8a392fe276dee508e71bd29c21f3d0d8c7feb0776d3efacacb00",
+      "sha256": "0621841d379c2ae8fe020f1cc83ea80b3fe16df45ca82fb07727b74c870538f4",
       "classification": "reference",
       "disposition": "remove"
     },
     {
       "path": "VERSION",
-      "sha256": "a66780da23103beaf12432b418508966b31a2a3a787f9468a5b6cdaa8667c1ef",
+      "sha256": "9d8c94f1ad3ea96b1e2ac4914fda4cb93c76b4a3e0d8cc6dd8976d6c0b227d15",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -515,7 +515,7 @@
     },
     {
       "path": "config/adopter-boundary.json",
-      "sha256": "5e3b6868973461887f4fbb7bc3da08930da6b341b69f5e00eba8320474306b04",
+      "sha256": "6a65fbefdffaf87efde5df8105e9e6740e81d6de1d8304925289e14ddb6b85fb",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -535,6 +535,12 @@
       "path": "config/bluebrick-paths.json",
       "sha256": "8566d1ab7ab7d7e2882b7fcfc1f8db32af5b9d457c1ab688befc5c2addb1392a",
       "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "config/capability-pack.schema.json",
+      "sha256": "a00d246fa2533179b5947e1d5859b26d82b02a5ec362ad4fd6ba82e941378dec",
+      "classification": "template-maintainer-tool",
       "disposition": "remove"
     },
     {
@@ -568,6 +574,18 @@
       "disposition": "remove"
     },
     {
+      "path": "config/product-planes.json",
+      "sha256": "df0bf369860c6849b976f79d417a38bdf72ae28b2c67a28d07cb0ffb5629412b",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "config/product-planes.schema.json",
+      "sha256": "807d76e534680c05bb759eda1b8764100d7b284d75112ea1d85dd934384eb973",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
       "path": "config/repo-agent-management.json",
       "sha256": "9cb07be0724d82b7fce47256d3b2656a0352dc5a96634d28c50f99a42d0c6f52",
       "classification": "reference",
@@ -593,7 +611,7 @@
     },
     {
       "path": "config/repos/mir-yoke.json",
-      "sha256": "6cc895518138efb9d34628090eee6f219fbd1e89f2638c0ded4bc90eaf24a6a3",
+      "sha256": "3abb5c755d90eba4df510865919f1c474004f314ae20e0005761a4c54d4f8c7b",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -605,7 +623,7 @@
     },
     {
       "path": "config/template-assets.json",
-      "sha256": "70f298c3d82da9745bfc23ad18f48d0006dbda2b498fe439af3df9437922949d",
+      "sha256": "38bb569bf13ce9e721882ee0ad07ef30fd75fe34dd89d7931af5d0ed60e63f2d",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     },
@@ -629,7 +647,7 @@
     },
     {
       "path": "docs/bluebricks/adoption.md",
-      "sha256": "ea0b5b0326ae72d550f190d289e6d57065dabe296cac31dafe21e30ac3b2a8c3",
+      "sha256": "f696e03e913145158b109cd1c8abbeb18f8f072efa8a8fa065039785bddbc3bc",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -640,8 +658,20 @@
       "disposition": "remove"
     },
     {
+      "path": "docs/bluebricks/composition.md",
+      "sha256": "3e3d93b87ae132ea8bdd9840c6a5e337cc0f78a9bf97ac1f742c3fe4343637d1",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
       "path": "docs/bluebricks/contract.md",
       "sha256": "3e82ec302412e1cce34d6c6c6dedbea3f3ab7cc4491878cd504569617fe4aa97",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/bluebricks/distribution.md",
+      "sha256": "f0cc252e5798a31b24ba245a21706f8c4a967afaaf4b8b81bfec41bdad769719",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -653,7 +683,7 @@
     },
     {
       "path": "docs/bluebricks/maintenance.md",
-      "sha256": "3f6e0d43adeee82cb9724efc7d6d9443970a36fd83f9ff3f09d39600d65f098c",
+      "sha256": "c1fe421f468c9dc62dfb3d1c6d0c99e3192cf83cd1ed7217394099d6fb69c720",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -665,7 +695,7 @@
     },
     {
       "path": "docs/decisions/INDEX.md",
-      "sha256": "3050986fe1c1511eef08111a9f697db368ef20f02342bef7b05cb7c6c9760ba5",
+      "sha256": "ddf721193a22ec1b08578f790df8391e205e8a7da78177687207849fd4e3af2c",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -1037,7 +1067,13 @@
     },
     {
       "path": "docs/decisions/adr-81-minimal-starter-support-boundary.md",
-      "sha256": "e648e832fa4115f4a40b281d847a6e59166571e28e8aec85243931d0e987873d",
+      "sha256": "eee9235be3974d0f006bb505756683d68133bf179b89cee05cb6bace5c46fe75",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-82-product-planes-capability-packs-and-composition.md",
+      "sha256": "30dbeaece11b70307f01ee5e01aaae61c16100a8aa177d6809629109f278323f",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -2027,19 +2063,127 @@
     },
     {
       "path": "llms.txt",
-      "sha256": "b509328012a6ebc7d7c5937d07bd251010e8b265fe39120a7a195be44e969310",
+      "sha256": "2e80692d4708badf45fced6463e0ea64c7b0682d022d10ef201db8460d17dab7",
       "classification": "reference",
       "disposition": "remove"
     },
     {
+      "path": "packs/assurance/README.md",
+      "sha256": "7646c58bd42cfcba8d8af08bfdbb9f162ee19b37613e9a3e8ff04701cb09c6ed",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "packs/assurance/pack.json",
+      "sha256": "e270e9ccaf86795127bd9167789712169077d95c47933f235e1fb93db72ab72f",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "packs/assurance/payload/ASSURANCE.md",
+      "sha256": "95df90f11dc40ebb6585431c82876051b6c3334f86c8d49515286d57ecf6bf82",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "packs/assurance/payload/config/assurance.toml",
+      "sha256": "cec4801bf0b01d6a1bfef967b633bdf6a62035e8144bfca10885063baf510853",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "packs/collaboration/README.md",
+      "sha256": "4b3d7535215921bc901ab7706c3f9caf3483a8b5896961d4817d6229055ccfe9",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "packs/collaboration/pack.json",
+      "sha256": "05c114a1f54570d9e7a0567ef5d7054bb4e0f1a3c0f27d611ba1a5890f73c904",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "packs/collaboration/payload/COLLABORATION.md",
+      "sha256": "dc73aea46b1408332d34ec2144e4062c838466d71f9b4d17da248dc01d6a1188",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "packs/collaboration/payload/config/agent-roles.json",
+      "sha256": "ae5a4cdf8ccaa7ba1027cd8c67976e603be1f9937520df16e56bad660075773d",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "packs/memory/README.md",
+      "sha256": "c2cd74906979b9e8fc3a34a40d344caf5c74356c03ae1bdb13bb89ed333193ef",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "packs/memory/pack.json",
+      "sha256": "aa0b9bd3605fbc237102133fd91c0ed41cd02e9621c50b825028f3ead00dd092",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "packs/memory/payload/MEMORY.md",
+      "sha256": "d064cf07e04e074a4f799e832aeaa8739842723d68d943bc24a0252c1e4f7ed5",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "packs/memory/payload/config/memory.toml",
+      "sha256": "2ba47cb59afe654c0825b300ea14b74cad9317eb05141c37f0aeead8b4f9e5c8",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "packs/safety/README.md",
+      "sha256": "cddd85ef25b88b637f5b92ee484ed308de957f50c89f1b5710ed0376bce58c1d",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "packs/safety/pack.json",
+      "sha256": "27114fc4ff93a25723bf50c22fdc5c1c451e73f00f12bcedaaf3636a1dcd87b7",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "packs/safety/payload/.claude/hooks/mir-safety.py",
+      "sha256": "85e228dca814f78657eedb76953df8db0e26d9cef36cebb1ab5a2716b4578007",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "packs/safety/payload/.claude/settings.safety.example.json",
+      "sha256": "b65aab42ebe3995d469cd61f1c6ad864f4df8d60242b976ec8d4dc6af6e91a26",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "packs/safety/payload/SAFETY.md",
+      "sha256": "22da506e80c359964814425a9674dc239ebe05c585781daf7bc5bcb8898b32ee",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "packs/safety/payload/config/harness-policy.toml",
+      "sha256": "11b4cb2de03cc9b9b6196af5a9404eaee9457d8ec460eb6c6858f1954c54aada",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
       "path": "plugins/mir-code/.claude-plugin/plugin.json",
-      "sha256": "02b40ed524d39e7852296180a92e825819030ae98d98851efcd09d3d92157d4b",
+      "sha256": "024f7f6ca8a3d2b9b75a535d6899af7af4f028bf9d286a465c92f0bc998c0803",
       "classification": "optional-consumer-tool",
       "disposition": "remove"
     },
     {
       "path": "plugins/mir-code/.codex-plugin/plugin.json",
-      "sha256": "35548617e3bf8aca53a23a3511cd2545bff4d889d825fee088b82cae39b573d5",
+      "sha256": "b7fb336b94a18c2ddef59a7190c999b32e37590bf952c07da78d2099e4f4b60f",
       "classification": "optional-consumer-tool",
       "disposition": "remove"
     },
@@ -2063,13 +2207,13 @@
     },
     {
       "path": "plugins/mir-content/.claude-plugin/plugin.json",
-      "sha256": "1104096dacc1b02f4266a548a78fb1d600bff8502b29f29b8e212c31d8866eb8",
+      "sha256": "6eebdf6b57c88a5d0959175ca64b3ce3b86552ef50f20978f5ea8e978e84ce50",
       "classification": "optional-consumer-tool",
       "disposition": "remove"
     },
     {
       "path": "plugins/mir-content/.codex-plugin/plugin.json",
-      "sha256": "50558219d8b8143012197241684b0a0d182b1f8fbe3a473dc32060fe7fee8818",
+      "sha256": "a385ffc42ad64beca27dbf1d3d6f10fb771a42e22504384f7adeda5a415c6c2a",
       "classification": "optional-consumer-tool",
       "disposition": "remove"
     },
@@ -2087,13 +2231,13 @@
     },
     {
       "path": "plugins/mir-core/.claude-plugin/plugin.json",
-      "sha256": "3bf3918e7a036a02b384a95bced089606117d751461941e64bc7365ffa908029",
+      "sha256": "00ad8921bb08694e3447a0d55027b54a62569f4acbfa5035665d60ab01be2ebe",
       "classification": "optional-consumer-tool",
       "disposition": "remove"
     },
     {
       "path": "plugins/mir-core/.codex-plugin/plugin.json",
-      "sha256": "4697ffad99a65d8f199b0119fc04bc7393f721538c87fab48364b2c63d2858f0",
+      "sha256": "cfd1966a7e03449aba66b38c305f9a453efeb97234afaee7ac9c085f8e6afc4f",
       "classification": "optional-consumer-tool",
       "disposition": "remove"
     },
@@ -2182,8 +2326,38 @@
       "disposition": "remove"
     },
     {
+      "path": "profiles/assured.toml",
+      "sha256": "af7d2c5503cec220218fb6ad34e8eae2622b915cc0b3e37249aa4527f2d08e71",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "profiles/code.toml",
+      "sha256": "0c45203cced491bde53fd972f837f5a9a58b8de75cb3d5761a59fb644def2969",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "profiles/collaboration.toml",
+      "sha256": "9f933f135749d939f9cfbe9e6a0f7fb63feedc2641c5b9f9def1dd444343a782",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "profiles/content.toml",
+      "sha256": "72f5335f9568d5cc652d0252c84d7eef11aa24d24548e47fa10b4185f9a7f813",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "profiles/minimal.toml",
+      "sha256": "1eb3879875db8608da1201cec6cfddab040884e338551d874126a1b9c31f10c1",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
       "path": "pyproject.toml",
-      "sha256": "9260c41a8c9cce26675365de856936b7874ef5b49867854ec18e6c331bbf13b1",
+      "sha256": "195d435fd3cd5c18f1fc24770249a54709f7d29b289b3171c4521e742dbdf73f",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     },
@@ -2243,7 +2417,7 @@
     },
     {
       "path": "scripts/verify_codex_sync.py",
-      "sha256": "286546b0d6ba36951785a7c95dca3fec6b6c55560face751dd9407b7b1cabbe4",
+      "sha256": "7f90dbd79189fe2d79b856d88bce0da6a52182f9187e7741d3e395456e833e12",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -2261,7 +2435,7 @@
     },
     {
       "path": "scripts/verify_release_readiness.py",
-      "sha256": "9166706e153bc262da6d21261216f078b9da3a4f550af67c0bb50855deefc590",
+      "sha256": "7d7826eea3e3ce9c6a9b7de9211dd548b76c2d2df8aef5b28c0aec609f265b98",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     },
@@ -2531,7 +2705,7 @@
     },
     {
       "path": "src/mir/cli/__init__.py",
-      "sha256": "aa5e0cfacbae9ad4978c3dc64e48c3b00533afc9d319534ec018d488248b7d0e",
+      "sha256": "6a1bdca124a5f93083acd5780aa5d05b90164888801afd9d86fc0d555ed08a14",
       "classification": "optional-consumer-tool",
       "disposition": "remove"
     },
@@ -2610,6 +2784,12 @@
     {
       "path": "src/mir/cli/runtime_manifest.py",
       "sha256": "f0f2644bf57a7599dd2bedb0ca2d1b3b28144c1f52ef418b607aac4ec743d8d1",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/cli/yoke.py",
+      "sha256": "e264c26fbfb0cb6d1e056acaade759ee26a7b48e61c3ee553ecae6755f837b20",
       "classification": "optional-consumer-tool",
       "disposition": "remove"
     },
@@ -2766,6 +2946,30 @@
     {
       "path": "src/mir/core/crypto/canonical.py",
       "sha256": "b8a4c8003a78ba9452c3b3661028d099b308e059aadca4490f7dd621c1d9aa55",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/distribution/__init__.py",
+      "sha256": "68ca6ea30d37cb8794679c9986606ab9f2582065bfa83fe1be0659bddc980e45",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/distribution/builder.py",
+      "sha256": "b488af05123eef19af3b1edc642f08f947808ad03dc3f26eb30610a1f90a5ee0",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/distribution/catalog.py",
+      "sha256": "0293789c8ff2c6e82249c790ef148a04218a11b37496ed6f1e390c4aa1675027",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/distribution/composer.py",
+      "sha256": "a0d61a630c8bdbea75d3cd2189ce7290bd3d210bfdf81bc58dc99083b162def4",
       "classification": "optional-consumer-tool",
       "disposition": "remove"
     },
@@ -2975,7 +3179,7 @@
     },
     {
       "path": "starter/README.md",
-      "sha256": "e7ec775655973410263db7a3e32d99cdb6f83a5eab2170cf5859bcbf34dfe13f",
+      "sha256": "3a02192feec388c69eaade26a4c6c314a0f9f27c7955271878deeb71433d9fb0",
       "classification": "starter",
       "disposition": "preserve"
     },
@@ -3041,7 +3245,7 @@
     },
     {
       "path": "tasks/tdd.json",
-      "sha256": "24d88a05e65d4d9df408395e5e6965051f453a40b1e5bb83db4c0314131c2e3a",
+      "sha256": "0b11a9898155614400ab0d96ff28e1f00e31f376ed665559a027ba5240116869",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -3143,7 +3347,13 @@
     },
     {
       "path": "tests/test_decision_authority.py",
-      "sha256": "dd99190391eb9f6d0a309fbfd5174c57234ce519e8fb759fe681f9dd97e8433c",
+      "sha256": "1fbf3626457cfb2afa3c0aab80e8e812e3784f270dbd8fed3fdf0443ed3646a2",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tests/test_distribution_builder.py",
+      "sha256": "62fdda45c9299193eea02256a63fb0e5c1c32025c55056391e3f6c272b517c14",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     },
@@ -3155,7 +3365,7 @@
     },
     {
       "path": "tests/test_greenfield_slim_integration.py",
-      "sha256": "4feeaaf35f3a3dc9278298fd9558cdcb207db3137ae5d21cbe85182b27ccc6e2",
+      "sha256": "9d6c6207e5865aaf85863fb810384d243f5b984285417b289d1a5fc63894d16f",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     },
@@ -3215,7 +3425,7 @@
     },
     {
       "path": "tests/test_minimal_starter.py",
-      "sha256": "5d1ce6494365dd8c6ba6cb17eb19191e495b81a0c64d7c18e858e5b8abe783ea",
+      "sha256": "f286512788090f6572cebe7cf15025d8d6dc44e9ec7c847241e8b68973e136f1",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     },
@@ -3233,13 +3443,19 @@
     },
     {
       "path": "tests/test_plugin_skill_packages.py",
-      "sha256": "a76dab0fb81b30d92c4d4cb3ea728f11b37e34a9fb4beacf74b278923209ce69",
+      "sha256": "eb29a1c591089c0e0b25637ee0ae1734eeb2a45bae74e47d2518b68a161ca038",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     },
     {
       "path": "tests/test_post_edit_memory_sync.py",
       "sha256": "9bdff83711209d8b7d628e0a80962bbfa6696d716c794b38b410f8501e6d337e",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tests/test_product_planes.py",
+      "sha256": "b1b69fe78c8e49ff092b08685b02256a82ca9633adf49f672b8ffe79ced0236f",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     },
@@ -3269,7 +3485,7 @@
     },
     {
       "path": "tests/test_release_readiness.py",
-      "sha256": "47573b45be96c25a5b2909b3dd85643fc9ae2cfc224dcbfae71d2fdbe7388e45",
+      "sha256": "ca2fac552c635761e9d126200f8fcc343327b75aa639a0af25b7ca0b11c61aa4",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     },
@@ -3282,6 +3498,12 @@
     {
       "path": "tests/test_runtime_manifest.py",
       "sha256": "b3d64e3efdad979a15ba081a24dfca4bb7f33470e036eed417ff97246ffd5945",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tests/test_safety_pack.py",
+      "sha256": "57b8d4f4c08d7aa925cdadfbc840ef0e442cd7d41c26c688333fa0e6d8c3b90b",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     },
@@ -3318,6 +3540,18 @@
     {
       "path": "tests/test_template_asset_classification.py",
       "sha256": "be857ba9740443b8700b8b72a13d07a8443981b19e0fcfc0757f4cd91ec94f55",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tests/test_yoke_cli.py",
+      "sha256": "1c47365eca3ad0c106d5f67986ec942ad8500e6ef316d4efdcad379d221e77a7",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tests/test_yoke_composer.py",
+      "sha256": "b71bde7bccd192e54992807c450257a4f1f8b1e095aff751cc8f6fb37fbc5513",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     },
@@ -3731,7 +3965,7 @@
     },
     {
       "path": "uv.lock",
-      "sha256": "57191f8465e9a5aa5453ec8222b04e746cebba74939b0aa41c00a23de1cd8fbd",
+      "sha256": "ff6ef44800ece8eeb7935ab06beea3d507953605360ead8bfa227dd71a0b4f5b",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     }

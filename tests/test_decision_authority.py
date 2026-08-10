@@ -7,6 +7,7 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 IDENTITY_ADR = ROOT / "docs/decisions/adr-78-public-template-identity-and-non-authority.md"
 MINIMAL_ADR = ROOT / "docs/decisions/adr-81-minimal-starter-support-boundary.md"
+PLANES_ADR = ROOT / "docs/decisions/adr-82-product-planes-capability-packs-and-composition.md"
 
 
 def _frontmatter(path: Path) -> dict[str, object]:
@@ -34,6 +35,15 @@ def test_should_make_adr_81_the_narrowest_support_decision_when_indexed() -> Non
     assert metadata["supported_consumer_payload"] == "starter/"
     assert metadata["required_runtime"] == "none"
     assert index.index("ADR-81") < index.index("ADR-78")
+
+
+def test_should_make_adr_82_the_current_composition_decision_when_indexed() -> None:
+    metadata = _frontmatter(PLANES_ADR)
+    index = (ROOT / "docs/decisions/INDEX.md").read_text(encoding="utf-8")
+
+    assert metadata["status"] == "accepted"
+    assert metadata["amends"] == ["adr-81"]
+    assert index.index("ADR-82") < index.index("ADR-81")
 
 
 # @spec FR-008

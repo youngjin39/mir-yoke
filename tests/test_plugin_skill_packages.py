@@ -35,12 +35,13 @@ def test_common_skills_have_one_namespaced_provider() -> None:
 
 
 def test_dual_runtime_manifests_share_one_skill_tree() -> None:
+    version = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
     for plugin_name in PLUGIN_SKILLS:
         plugin_root = ROOT / "plugins" / plugin_name
         claude = _json(plugin_root / ".claude-plugin" / "plugin.json")
         codex = _json(plugin_root / ".codex-plugin" / "plugin.json")
         assert claude["name"] == codex["name"] == plugin_name
-        assert claude["version"] == codex["version"] == "0.8.0"
+        assert claude["version"] == codex["version"] == version
         assert codex["skills"] == "./skills/"
         assert isinstance(codex["interface"]["defaultPrompt"], list)
         assert 1 <= len(codex["interface"]["defaultPrompt"]) <= 3
@@ -101,7 +102,7 @@ def test_plugin_packages_are_self_contained_in_isolated_copy(tmp_path: Path) -> 
 
 def test_manifest_versions_match_repository_release() -> None:
     version = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
-    assert version == "0.8.0"
+    assert version == "0.9.0"
     for plugin_name in PLUGIN_SKILLS:
         plugin_root = ROOT / "plugins" / plugin_name
         assert _json(plugin_root / ".claude-plugin" / "plugin.json")["version"] == version

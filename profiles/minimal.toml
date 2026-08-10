@@ -1,0 +1,10 @@
+schema_version = 1
+name = "minimal"
+description = "Four-file core only."
+
+[composition]
+default_packs = []
+recommended_packs = []
+
+[policy]
+mandatory = false
