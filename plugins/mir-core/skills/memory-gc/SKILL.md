@@ -1,26 +1,18 @@
 ---
 name: memory-gc
-description: "Run GC scan on memory facts: mark expired entries (valid_to < today). User-triggered only — never auto-fire."
-context: fork
+description: "Inspect an explicitly configured repository memory store for expired facts and apply garbage collection only after a user-approved dry run. User-triggered only; never run automatically."
 ---
 
-# memory-gc
+# Memory GC
 
-Scan the the memory database for facts whose `valid_to` date has passed and mark them `expired`.
+1. Locate the repository-owned memory schema, command, and expiry field. Do not assume a database,
+   file path, CLI, or `valid_to` convention.
+2. If the repository declares no compatible memory GC interface, report that the operation is not
+   configured and stop without mutation.
+3. Run the repository's declared dry-run command and report the exact candidates and count.
+4. Apply expiration only after the user explicitly approves that result and only through the
+   repository-owned command or documented transaction.
+5. Re-run the dry run and integrity check after apply; report the changed count and failures.
 
-## Usage
-
-Dry-run (default — no changes):
-```
-mir memory gc
-```
-
-Confirm mode (applies changes):
-```
-mir memory gc --apply
-```
-
-## Safety
-- Default is always dry-run.
-- Run apply mode only after the user explicitly requests memory mutation and reviews the dry-run count.
-- Facts without `valid_to` are never expired by GC.
+Never invent a memory command, edit an unknown store directly, expire records without the declared
+date semantics, or treat missing configuration as successful GC.

@@ -108,6 +108,11 @@ def validate_plugin_skill_providers(
     failures: list[str], root: Path = ROOT, *, require_local: bool = True
 ) -> None:
     """Assert every common skill has exactly one dual-runtime plugin provider."""
+    try:
+        expected_version = (root / "VERSION").read_text(encoding="utf-8").strip()
+    except OSError:
+        failures.append("missing repository VERSION")
+        expected_version = ""
     for legacy in (
         root / ".claude" / "skills",
         root / ".agents" / "skills",
@@ -129,11 +134,6 @@ def validate_plugin_skill_providers(
                 )
         return
 
-    try:
-        release_version = (root / "VERSION").read_text(encoding="utf-8").strip()
-    except OSError:
-        failures.append("repository VERSION is unreadable")
-        return
     seen: dict[str, str] = {}
     for plugin_name, expected_skills in PLUGIN_SKILLS.items():
         plugin_root = root / "plugins" / plugin_name
@@ -146,7 +146,7 @@ def validate_plugin_skill_providers(
             manifests[runtime] = payload
             if payload.get("name") != plugin_name:
                 failures.append(f"{runtime} plugin name mismatch: {plugin_name}")
-            if payload.get("version") != release_version:
+            if payload.get("version") != expected_version:
                 failures.append(f"{runtime} plugin version mismatch: {plugin_name}")
         if len(manifests) == 2:
             for field in ("name", "version", "description", "repository", "license"):

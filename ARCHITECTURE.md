@@ -1,72 +1,65 @@
-# Mir Yoke Product Plane Architecture
+# Mir Yoke Supported-Surface Architecture
 
 ## Product boundary
 
-Mir Yoke is a public, template-backed, agent-guided local project-harness platform and reference
-implementation, not a universal installer. It has no provider runtime and no standing authority over consumer
-repositories. `starter/` is the only required and default consumer payload. Capability packs are
-explicit opt-ins with independent support levels.
+Mir Yoke is a public template, agent-guided recipe, portable plugin provider, and reference corpus.
+It is not a universal installer, target composer, runtime, service, or control plane. It has no
+provider runtime and no standing authority over consumer repositories.
 
-The required payload is four Markdown files. It starts no agent, service, hook, target scan,
-scheduler, or background process and does not require a CLI, plugin, memory database, spec system,
-sub-agent, receipt, or platform-specific runtime.
+`starter/` is the only supported consumer payload. The Project Agent Kit recipe is guidance read by
+the target's active AI; it never becomes a provider-side target writer.
 
-## Product planes
+## Supported flows
 
-```text
-Source Plane -> Distribution Plane -> explicit plan -> Project Plane
-                                             \-> Local Plane receipts and provider pins
-```
+### Minimal adoption
 
-- **Source Plane** contains maintainer source, the preserved platform, tests, schemas, packs,
-  profiles, release tooling, and decisions.
-- **Distribution Plane** contains ignored deterministic core and pack archives plus checksums,
-  manifest, and provenance.
-- **Project Plane** contains consumer-owned contracts, optional tracked policy, and selected pack
-  payloads.
-- **Local Plane** contains ignored receipts, caches, memory databases, and content-addressed
-  provider installations.
+1. The active AI inspects an existing target and its instructions without mutation.
+2. It identifies purpose, paths, authority, protected surfaces, and real checks.
+3. It merges, renames, or skips Starter material without overwriting repository-owned work.
+4. It verifies the local diff with the target's own checks.
 
-`config/product-planes.json` is the machine-readable boundary. Asset classification, support level,
-and execution state are separate axes: a retained maintainer hook can be active in this checkout
-without being part of the default consumer payload.
+### New Project Agent Kit
 
-## Supported flow
+1. The target AI proves one explicit target is empty and outside an existing Git worktree.
+2. It reads the published recipe and Mir Yoke revision as read-only reference.
+3. It creates project-owned intent, harness, runtime entrypoints, reviewer sources, generated Codex
+   parity, a machine-readable toolchain foundation, and real lint/build/test verification.
+4. It initializes Git locally only after verification, installs the tracked pre-commit hook, and
+   creates one verified initial commit.
+5. It stops before product planning or implementation.
 
-1. The active AI agent inspects the target repository and existing instructions without mutation.
-2. It identifies local purpose, paths, authority, safety boundaries, and verification commands.
-3. It adapts, merges, renames, or skips each starter file without overwriting repository-owned work.
-4. It runs the target repository's own smallest relevant checks and reviews the final diff.
-
-Manual adoption remains contextual composition. Automated composition uses an explicit read-only
-plan followed by a separate transactional apply. Both paths preserve target ownership.
+The target agent owns every write. Mir Yoke stores no target path, plan, receipt, or adopter state.
 
 ## Modules
 
-- **Starter contract** — `starter/HARNESS.md` contains the generic operating contract.
-- **Runtime bridges** — `starter/CLAUDE.md` and generated `starter/AGENTS.md` route two common agent
-  clients to that one contract.
-- **Adoption guide** — `starter/README.md` and `BOOTSTRAP.md` explain preservation-first adaptation.
-- **Pack catalog** — `packs/*/pack.json` declares source, adoption assets, compatibility, state, and
-  pack-scoped verification.
-- **Profiles** — `profiles/*.toml` provides non-mandatory composition defaults and recommendations.
-- **Distribution** — `src/mir/core/distribution/` builds artifacts, installs immutable providers,
-  and implements plan/apply without overwrites.
-- **Preserved platform** — existing source, tools, plugins, hooks, specs, and tests remain the source
-  and regression evidence for optional packs.
+- **Starter** — `starter/` provides the four-file minimum contract.
+- **Recipe** — `recipes/project-agent-kit/` defines the greenfield user journey and gates.
+- **Plugin provider** — `plugins/` and marketplace manifests publish optional host capabilities.
+- **Maintenance** — tests, classification, sanitization, generated checks, and the clean-room
+  observer validate Mir Yoke without becoming a target installer.
+- **Reference corpus** — retained source, tools, examples, specifications, and history remain
+  inspectable without consumer support claims.
 
-Dependencies point from pack manifests to preserved sources and from profiles to packs. Optional
-machinery cannot become a starter prerequisite without a new explicit support-boundary decision.
+Dependencies point from the recipe to Starter concepts and portable plugin interfaces. No plugin,
+maintainer CLI, reference implementation, or historical decision can become a target prerequisite
+by presence alone.
+
+## Source of truth and generation
+
+Mir Yoke authors its root contract in `CLAUDE.md` and regenerates `AGENTS.md` and Codex surfaces.
+The Project Agent Kit establishes an equivalent one-way Claude-to-Codex generator inside each new
+target for repository-unique reviewer surfaces. Generated files are checked, never hand-edited.
 
 ## Data and deployment
 
-The core stores no runtime data and has no deployment topology. Distribution artifacts are
-deterministic archives identified by SHA-256. A provider installation lives at
-`providers/<content-digest>`; there is no host-global active alias. Project policy is tracked only
-when selected, while `.mir/local-state.json`, `.mir/yoke-receipts/`, and databases remain local.
+The Starter and recipe store no provider runtime data and have no deployment topology. Optional
+plugins are installed into an agent host. Generated targets are independent repositories; source
+revision is provenance only, and template version lag is not drift.
 
 ## Verification
 
-`tests/test_minimal_starter.py` pins the four-file boundary. Product-plane, distribution, composer,
-safety, classification, semantic adapter, and release-readiness tests cover optional behavior.
-Existing platform regression checks remain available and are not replaced by the core gate.
+`tests/test_project_agent_kit.py` pins prompt routing, target ownership, reviewer, pre-commit, Git,
+and no-composer boundaries. `tests/test_minimal_starter.py` pins the four-file core. Plugin tests,
+classification, sanitization, generated parity, Ruff, and the full regression protect shared and
+release-sensitive surfaces. The tag gate additionally requires separately observed Claude and Codex
+target bundles with sanitized public evidence.

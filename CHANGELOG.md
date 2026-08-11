@@ -6,60 +6,35 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are kept for historical reference. All future entries use the `## [vN.M.X] — YYYY-MM-DD — title` format.
 
-## [Unreleased] — Public template product boundary
-
-### Changed
-
-- Reduced the supported consumer product to the four Markdown files under `starter/`. The active
-  agent now inspects the target repository and adapts that baseline without a required installer,
-  plugin, hook, memory database, spec tree, sub-agent, receipt, or restart phase.
-- Reclassified the previous bootstrap/runtime surface as optional reference or maintainer material;
-  ADR-81 is now the narrowest public support decision.
-- Defined Mir Yoke as a public template and reference repository with no provider runtime or
-  standing authority over consumer repositories.
-- Split greenfield bootstrap, preservation-first existing-repository assessment, and
-  integrity-only capability operations into explicit local boundaries with changed-path evidence.
-- Added a MODE-S specification tree, exhaustive asset classification, and clean-candidate release
-  readiness validation.
-- Narrowed automated greenfield bootstrap support to macOS, Linux, and WSL. Native Windows now
-  stops before mutation and directs the operator to WSL or agent-guided reference adaptation.
-- Isolated every adopter CLI runtime by physical project root and exact source commit, constrained
-  production dependencies from the frozen lock, and bound the installed closure to the receipt.
-- Required product-owned Git push destinations before bootstrap, removed provider-only validator
-  assets from adopter profiles, and replaced non-portable loop locking with recoverable PID locks.
-
-### Removed
-
-- Removed active fleet parity, direct deployment, cross-workspace scanning, watchdog, cron,
-  notification, and central profile-compilation surfaces; their design history remains indexed as
-  non-authoritative evidence.
-
-## [0.9.0] — 2026-08-10 — Composable product planes
+## [0.9.0] — 2026-08-11 — Project Agent Kit boundary
 
 ### Added
 
-- Added explicit source, distribution, project, and local planes with schema-validated metadata.
-- Added stable safety and preview memory, collaboration, and assurance capability packs plus
-  advisory `minimal`, `code`, `content`, `collaboration`, and `assured` profiles.
-- Added deterministic core and pack archives, checksums, an artifact manifest, and SLSA-shaped
-  provenance for release workflows.
-- Added the `yoke` CLI for read-only composition planning, conflict-safe transactional apply, and
-  content-addressed multi-version provider installation.
+- Added the supported `recipes/project-agent-kit/` user journey. One short purpose prompt now routes
+  the target agent to a project brief, local harness, repository-unique read-only reviewer, real
+  lint/build/test Git hook, and verified initial commit before development planning.
+- Added ADR-83 and contract tests for the Starter, recipe, portable plugin provider, reference
+  corpus, Git boundary, and clean-room release evidence.
+- Added a two-phase clean-room observer and release validator that recompute target bundles, declared
+  commands, original Git/hook state, provider/outside snapshots, and sanitized runtime transcripts.
 
 ### Changed
 
-- Defined the four-file starter as the only required and default consumer payload while retaining
-  the existing bootstrap, memory, executor, plugin, hook, and spec implementations as declared
-  optional pack sources.
-- Separated repository-owned project policy from ignored machine-local state and receipts.
-- Split lightweight starter validation from the preserved platform regression workflow.
+- Kept `starter/` as the only consumer payload while making the Project Agent Kit a separate
+  supported guidance surface.
+- Generalized common plugins so they do not require Mir CLI, `.ai-harness`, fleet phases, a shared
+  wiki, a particular browser command, or a fixed Starter-compliance count.
+- Restricted optional consumer tooling to namespaced plugins and marketplace metadata. Retained
+  bootstrap, CLI, hook, memory, executor, spec, and test code is reference or maintainer evidence.
+- Replaced the platform bootstrap CI path with supported-surface and isolated-plugin validation.
 
-### Security
+### Removed
 
-- Added a small runtime-neutral safety pack with tool-specific path extraction and post-change
-  credential scanning without carrying historical family or fleet policy into consumer payloads.
-- Composition refuses overwrite conflicts, symlink escapes, provider-source targets, changed
-  plans, and changed providers, and rolls back files created by a failed transaction.
+- Removed active product planes, capability packs, advisory profiles, distribution archives,
+  provider installation, target plan/apply composition, receipts, and the `mir` and `yoke` console
+  entrypoints. Git history preserves their implementation evidence.
+- Removed provider-side greenfield bootstrap from the current new-project contract. Existing 0.8
+  users remain pinned and receive no automatic migration.
 
 ## [0.8.0] — 2026-08-06 — Portable project bootstrap
 

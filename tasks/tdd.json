@@ -2,6 +2,46 @@
   "version": 1,
   "changes": [
     {
+      "id": "project-agent-kit-recipe-2026-08-11",
+      "record_status": "planned",
+      "scope": "Publish a supported agent-guided Project Agent Kit recipe that turns one short purpose prompt into a repository-owned Claude and Codex harness, project-specific read-only code reviewer, real lint/build/test Git pre-commit gate, and verified initial commit without product implementation or provider-side target mutation.",
+      "targets": [
+        "README.md",
+        "CLAUDE.md",
+        "ARCHITECTURE.md",
+        "BOOTSTRAP.md",
+        "recipes/project-agent-kit/",
+        "docs/decisions/adr-83-project-agent-kit-recipe-and-supported-surfaces.md",
+        "docs/decisions/INDEX.md",
+        "config/template-assets.json",
+        "scripts/observe_project_agent_kit.py",
+        "scripts/verify_project_agent_kit_evidence.py",
+        "release-evidence/project-agent-kit/fixture/",
+        "plugins/",
+        "tests/test_project_agent_kit.py",
+        "tests/test_project_agent_kit_release_evidence.py",
+        "tests/test_minimal_starter.py",
+        "tests/test_plugin_skill_packages.py",
+        "tests/test_common_skill_contracts.py"
+      ],
+      "design_ref": "docs/decisions/adr-83-project-agent-kit-recipe-and-supported-surfaces.md",
+      "bluebrick": "Contract / Agent-Guided Adoption / Portable Plugin Provider / Maintenance",
+      "categories": {
+        "unit": {"status": "pass", "command": "uv run pytest -q tests/test_project_agent_kit.py tests/test_minimal_starter.py", "notes": "Recipe contents, short prompt routing, four-file starter, Git hook contract, and completion boundary passed."},
+        "integration": {"status": "pass", "command": "uv run pytest -q tests/test_project_agent_kit.py tests/test_project_agent_kit_release_evidence.py tests/test_minimal_starter.py tests/test_public_template_identity.py tests/test_decision_authority.py tests/test_public_template_surface.py tests/test_plugin_skill_packages.py tests/test_common_skill_contracts.py tests/test_capability_security.py tests/test_schema_validity.py tests/test_spec_integrity.py", "notes": "The observer-backed supported-surface, identity, security, schema, and historical-spec contract set passed 92 tests."},
+        "e2e": {"status": "planned", "command": "clean-room Claude and Codex runs in separate empty temporary directories", "notes": "A release claim requires both runtimes to complete the same short-prompt bootstrap with a clean initial commit."},
+        "browser": {"status": "not_applicable", "reason": "Mir Yoke and the Project Agent Kit recipe have no browser or GUI surface."},
+        "edge": {"status": "pass", "command": "uv run pytest -q tests/test_project_agent_kit.py tests/test_project_agent_kit_release_evidence.py", "notes": "Existing Git roots, non-empty targets, missing identity or toolchain, placeholders, no-op commands, provider writes, remote/push, purpose loss, invalid reviewers, product probes, parity drift, unsafe local Git config, and sensitive logs fail closed."},
+        "architecture": {"status": "pass", "command": "uv run pytest -q tests/test_project_agent_kit.py tests/test_decision_authority.py tests/test_public_template_identity.py", "notes": "Starter, recipe, plugin provider, reference corpus, target ownership, and no-composer boundaries agree."},
+        "availability": {"status": "not_applicable", "reason": "The recipe starts no service, daemon, scheduler, or persistent provider runtime."},
+        "load": {"status": "not_applicable", "reason": "Bootstrap work is bounded to one explicit target repository and its selected local checks."},
+        "soak": {"status": "not_applicable", "reason": "No long-running process or recurring fleet operation is introduced."},
+        "security": {"status": "pass", "command": "uv run pytest -q tests/test_project_agent_kit.py tests/test_project_agent_kit_release_evidence.py tests/test_capability_security.py tests/test_public_template_surface.py", "notes": "Read-only provider access, pre-execution validation, minimal offline environment, target/evidence isolation, reviewer write denial, bounded outside hashes, sensitive-log rejection, Git-policy preservation, and no remote/push behavior passed."},
+        "compatibility": {"status": "pass", "command": "uv run pytest -q --deselect=tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees && uv run ruff check && uv run python scripts/verify_codex_sync.py", "notes": "The full non-protected regression passed 741 tests; Ruff and generated parity pass. The one protected lock digest test awaits the approved commit/rebind sequence."},
+        "transaction_locking": {"status": "pass", "command": "uv run pytest -q tests/test_project_agent_kit_release_evidence.py", "notes": "Observer-backed targets prove preflight-before-write, pre-Git verification, init then direct hook, one hook-verified commit, no remote, clean final state, provider/outside preservation, and evidence-root isolation. Actual dual-runtime runs remain the release e2e gate."}
+      }
+    },
+    {
       "id": "product-planes-composable-distribution-2026-08-10",
       "record_status": "complete",
       "scope": "Preserve the complete Mir Yoke platform while introducing explicit source, distribution, project, and local planes; orthogonal capability packs and advisory profiles; reproducible release bundles; and a read-only-plan, explicit-apply composer with content-addressed multi-version providers.",

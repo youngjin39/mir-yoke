@@ -16,8 +16,8 @@ tasks:
     status: done
   - id: TASK-004
     goal: "Separate transactional slim greenfield creation from preservation-first existing-repository reference and receipt flows."
-    touches: ["README.md", "BOOTSTRAP.md", "setup.sh", "setup.ps1", "src/mir/cli/bootstrap.py", "src/mir/core/adoption/", "src/mir/cli/bootstrap_adoption.py", "tests/test_bootstrap_cli.py", "tests/test_adopter_slim.py", "tests/test_installed_cli.py", "tests/test_existing_repository_adoption.py"]
-    done_when: {command: "uv run pytest tests/test_bootstrap_cli.py tests/test_adopter_slim.py tests/test_installed_cli.py tests/test_existing_repository_adoption.py -q"}
+    touches: ["README.md", "BOOTSTRAP.md", "setup.sh", "setup.ps1", "src/mir/cli/bootstrap.py", "src/mir/core/adoption/", "src/mir/cli/bootstrap_adoption.py", "tests/test_bootstrap_cli.py", "tests/test_adopter_slim.py", "tests/test_existing_repository_adoption.py", "tests/test_project_agent_kit.py"]
+    done_when: {command: "uv run pytest tests/test_bootstrap_cli.py tests/test_adopter_slim.py tests/test_existing_repository_adoption.py tests/test_project_agent_kit.py::test_should_not_publish_a_legacy_target_writing_console_entrypoint -q"}
     status: done
   - id: TASK-005
     goal: "Constrain capability and hash operations to explicit local provenance and integrity behavior."

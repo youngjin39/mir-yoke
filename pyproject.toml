@@ -1,7 +1,7 @@
 [project]
 name = "mir-harness"
 version = "0.9.0"
-description = "Mir Yoke — local project harness with a minimal core and optional capability packs"
+description = "mir-yoke — minimal starter and Project Agent Kit recipe for Claude and Codex"
 readme = "README.md"
 license = {file = "LICENSE"}
 requires-python = ">=3.12"
@@ -24,10 +24,6 @@ dev = [
     "pytest-asyncio>=0.24",
     "ruff>=0.7",
 ]
-
-[project.scripts]
-mir = "mir.cli.__main__:main"
-yoke = "mir.cli.yoke:main"
 
 [project.entry-points."mir.embedding_backends"]
 omlx_http = "mir.core.engine.memory.backends.omlx_http:OmlxHttpBackend"

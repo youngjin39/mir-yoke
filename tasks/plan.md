@@ -1,19 +1,23 @@
 # Plan
 
-## P3 — Public-template product boundary (2026-08-08) — COMPLETE
+## P4 — Project Agent Kit supported flow (2026-08-11) — READY FOR OWNER APPROVAL
 
-Authorization: the owner authorized implementation, the protected-lock commit sequence, push, final
-status reconciliation, and `main`-only Git cleanup. Tagging and release creation remain out of scope.
+Authorization: the owner approved implementation of the revised design in Mir Yoke. Commit, push,
+tag, release, provider activation, protected capability-lock mutation, and consumer-repository
+writes remain outside this task.
 
-- P3.1 DONE — accepted ADR-78 and made it the current product authority.
-- P3.2 DONE — aligned root contracts and classified all 596 release-candidate files exactly once.
-- P3.3 DONE — separated greenfield bootstrap, preservation-first adoption, and integrity-only local
-  capability operations.
-- P3.4 DONE — removed active central-fleet runtime and mutation surfaces while preserving history.
-- P3.5 DONE — passed clean-clone readiness, 629 tests, lint, derivatives, sanitization, schemas,
-  links, consistency, and protected-lock provenance.
-- P3.6 DONE — pushed `26cf2a4..185ec4a` to `origin/main` and confirmed local and remote branch
-  topology contains only `main`.
+- P4.1 DONE — recorded the Project Agent Kit TDD contract and observed the expected failures.
+- P4.2 DONE — selectively reversed the ADR-82 platform/composer expansion while preserving Git
+  history, the protected capability lock, and generated-file ownership.
+- P4.3 DONE — implemented ADR-83, the short prompt, recipe, portable plugin contract, classification,
+  generated parity, and state alignment.
+- P4.4 DONE — implemented the recipe-owned target schema plus a two-phase clean-room observer that
+  binds purpose and provider revision, statically validates the target before execution, runs real
+  checks in a credential-free target-local environment, mutation-probes every foundation/generated
+  surface, preserves Git policy, and publishes sanitized content-bound evidence.
+- P4.5 DONE — independent re-review found no fix-now blocker; the regenerated candidate passed 741
+  tests with only the protected capability-lock test intentionally deselected, plus Ruff, derivative
+  parity, diff inspection, asset classification, and actual dual-CLI plugin activation.
 
-No open plan item remains. Earlier completed phases are recorded in `CHANGELOG.md`, the decision
-index, `tasks/tdd.json`, and Git history.
+Release-time Claude and Codex clean-room runs remain unevaluated until a publishable revision exists;
+static tests do not substitute for that evidence.

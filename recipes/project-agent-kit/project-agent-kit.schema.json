@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/youngjin39/mir-yoke/blob/main/recipes/project-agent-kit/project-agent-kit.schema.json",
+  "title": "Project Agent Kit Target Contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "project_slug", "intent", "provider", "foundation", "generation", "commands"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "project_slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "intent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["purpose", "purpose_sha256", "rendered_prompt_sha256"],
+      "properties": {
+        "purpose": {"type": "string", "minLength": 1},
+        "purpose_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "rendered_prompt_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "provider": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["url", "revision"],
+      "properties": {
+        "url": {"const": "https://github.com/youngjin39/mir-yoke"},
+        "revision": {"type": "string", "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$"}
+      }
+    },
+    "foundation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["manifest", "lockfile", "compile_targets", "smoke_tests"],
+      "properties": {
+        "manifest": {"$ref": "#/$defs/relativePath"},
+        "lockfile": {"$ref": "#/$defs/relativePath"},
+        "compile_targets": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": {"$ref": "#/$defs/relativePath"}
+        },
+        "smoke_tests": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": {"$ref": "#/$defs/relativePath"}
+        }
+      }
+    },
+    "generation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["canonical", "generated"],
+      "properties": {
+        "canonical": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {"$ref": "#/$defs/relativePath"}
+        },
+        "generated": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {"$ref": "#/$defs/relativePath"}
+        }
+      }
+    },
+    "commands": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["generated_parity", "lint", "build", "test"],
+      "properties": {
+        "generated_parity": {
+          "oneOf": [
+            {"const": ["python3", "scripts/generate_agent_derivatives.py", "--check"]},
+            {"const": ["python", "scripts/generate_agent_derivatives.py", "--check"]},
+            {"const": ["uv", "run", "python", "scripts/generate_agent_derivatives.py", "--check"]}
+          ]
+        },
+        "lint": {"const": ["scripts/verify.sh", "lint"]},
+        "build": {"const": ["scripts/verify.sh", "build"]},
+        "test": {"const": ["scripts/verify.sh", "test"]}
+      }
+    }
+  },
+  "$defs": {
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\u0000]+$"
+    }
+  }
+}

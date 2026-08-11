@@ -7,7 +7,7 @@ with no provider runtime or standing consumer authority.
 
 ## Public Interface
 
-`README.md`, `CLAUDE.md`, `ARCHITECTURE.md`, ADR-78, ADR-79, ADR-80, and the public decision index.
+`README.md`, `CLAUDE.md`, `ARCHITECTURE.md`, ADR-83, ADR-81, and the public decision index.
 
 ## Rules and Hazards
 

@@ -1,37 +1,31 @@
 # Migration Guide
 
-This document records breaking changes between major versions of `mir-yoke`. Each entry covers migration steps for existing adopters to upgrade.
+## 0.9.0 from 0.8.x
 
-## Format
+### Product boundary
 
-Each section follows the pattern:
+- `starter/` remains the only supported consumer payload.
+- New empty repositories may use the supported `recipes/project-agent-kit/` guidance flow.
+- Common plugins remain optional host capabilities and are portable outside the Mir Yoke checkout.
+- Provider-side bootstrap, copied CLI, memory readiness, product planes, capability packs,
+  composition, receipts, and clone-and-slim are no longer active new-project paths.
+- The 0.9 package exposes no `mir` or `yoke` console entrypoint. Retained Python modules are
+  reference and regression corpus without a public CLI compatibility promise.
 
-```markdown
-## v<N+1>.0.0 ← v<N>.x.y
+### Existing 0.8 adopters
 
-### Breaking changes
-- (list of breaking changes)
+Existing users stay pinned to their chosen 0.8 workflow. Mir Yoke performs no automatic migration,
+state deletion, repository rewrite, or target update. Adopt the 0.9 local contract only through an
+owner-reviewed repository change.
 
-### Migration steps (per family)
-1. (concrete commands or edits)
+### New projects
+
+Open one empty target and use the short prompt from `README.md`. The agent creates and verifies a
+project-owned foundation, one initial commit, and then stops before development planning.
 
 ### Rollback
-- (procedure to revert if migration fails)
-```
 
-## Current Status
+Discard an uncommitted 0.9 adaptation in the target or restore the target's own prior commit. Mir
+Yoke stores no target receipt or external state that needs rollback.
 
-No MAJOR releases yet. Current version: `0.9.0`.
-
-Version 0.9 keeps the complete 0.8 platform source available while adding a smaller default core,
-explicit optional capability packs, deterministic distribution artifacts, and preservation-first
-composition. Existing adopters do not need to remove or rewrite their installed platform.
-
-The current pre-1.0 platform contract supports automated greenfield bootstrap on macOS, Linux, and
-WSL. Native-Windows callers must move automation into WSL or use Mir Yoke as agent-guided reference
-material; `setup.ps1` no longer installs or finalizes and exits without repository mutation.
-
-## See Also
-
-- [`CHANGELOG.md`](CHANGELOG.md) — non-breaking change log (PATCH/MINOR)
-- [`VERSION`](VERSION) — current semver
+Current version: `0.9.0`. See `CHANGELOG.md` for release details.

@@ -1,4 +1,4 @@
-"""Prove ADR-78 release readiness from a clean candidate Git tree."""
+"""Prove ADR-83 static readiness from a clean candidate Git tree."""
 
 from __future__ import annotations
 
@@ -21,27 +21,15 @@ CHECKS = (
             "run",
             "pytest",
             "-q",
+            "tests/test_project_agent_kit.py",
+            "tests/test_project_agent_kit_release_evidence.py",
             "tests/test_minimal_starter.py",
-            "tests/test_product_planes.py",
-            "tests/test_distribution_builder.py",
-            "tests/test_yoke_composer.py",
-            "tests/test_yoke_cli.py",
-            "tests/test_safety_pack.py",
-            "tests/test_release_metadata.py",
             "tests/test_public_template_identity.py",
             "tests/test_template_asset_classification.py",
-            "tests/test_public_template_authority.py",
             "tests/test_decision_authority.py",
-            "tests/test_existing_repository_adoption.py",
             "tests/test_public_template_surface.py",
-            "tests/test_spec_integrity.py",
-            "tests/test_setup_wrappers.py",
-            "tests/test_runtime_manifest.py",
-            "tests/test_bootstrap_cli.py",
-            "tests/test_adopter_slim.py",
-            "tests/test_greenfield_slim_integration.py",
-            "tests/test_loop_driver.py",
-            "tests/test_capability_cli.py",
+            "tests/test_plugin_skill_packages.py",
+            "tests/test_common_skill_contracts.py",
             "tests/test_capability_security.py",
         ),
     ),
@@ -52,6 +40,10 @@ CHECKS = (
     ("schemas", ("uv", "run", "python", "tests/test_schema_validity.py")),
     ("full-tests", ("uv", "run", "pytest", "-q")),
     ("lint", ("uv", "run", "ruff", "check")),
+)
+EVIDENCE_CHECK = (
+    "project-agent-kit-clean-room-evidence",
+    ("uv", "run", "python", "scripts/verify_project_agent_kit_evidence.py"),
 )
 
 
@@ -77,6 +69,13 @@ def _materialize_candidate(source: Path, target: Path) -> None:
         target_path = target / relative
         if target_path.is_file() or target_path.is_symlink():
             target_path.unlink()
+            parent = target_path.parent
+            while parent != target:
+                try:
+                    parent.rmdir()
+                except OSError:
+                    break
+                parent = parent.parent
     for relative in sorted(desired):
         source_path = source / relative
         target_path = target / relative
@@ -106,9 +105,12 @@ def _materialize_candidate(source: Path, target: Path) -> None:
 def run_checks(
     root: Path,
     runner: Callable[..., subprocess.CompletedProcess[str]] = subprocess.run,
+    *,
+    require_evidence: bool = False,
 ) -> list[dict[str, object]]:
     results: list[dict[str, object]] = []
-    for name, command in CHECKS:
+    checks = CHECKS + ((EVIDENCE_CHECK,) if require_evidence else ())
+    for name, command in checks:
         completed = runner(command, cwd=root, check=False, text=True)
         results.append({"name": name, "command": list(command), "exit_code": completed.returncode})
         if completed.returncode != 0:
@@ -132,6 +134,7 @@ def _verify_clean_tree(root: Path) -> None:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="verify_release_readiness.py")
     parser.add_argument("--current-clean-tree", action="store_true")
+    parser.add_argument("--require-project-agent-kit-evidence", action="store_true")
     args = parser.parse_args(argv)
 
     if not args.current_clean_tree:
@@ -147,15 +150,18 @@ def main(argv: list[str] | None = None) -> int:
                 "scripts/verify_release_readiness.py",
                 "--current-clean-tree",
             ]
+            if args.require_project_agent_kit_evidence:
+                command.append("--require-project-agent-kit-evidence")
             return subprocess.run(command, cwd=candidate, check=False).returncode
 
     try:
         _verify_clean_tree(ROOT)
-        results = run_checks(ROOT)
+        results = run_checks(ROOT, require_evidence=args.require_project_agent_kit_evidence)
     except (OSError, RuntimeError, subprocess.SubprocessError) as exc:
         print(f"release readiness: ERROR: {exc}", file=sys.stderr)
         return 1
-    ready = len(results) == len(CHECKS) and all(row["exit_code"] == 0 for row in results)
+    expected_count = len(CHECKS) + int(args.require_project_agent_kit_evidence)
+    ready = len(results) == expected_count and all(row["exit_code"] == 0 for row in results)
     print(json.dumps({"ready": ready, "checks": results}, indent=2))
     return 0 if ready else 1
 

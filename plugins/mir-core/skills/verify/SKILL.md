@@ -14,7 +14,8 @@ description: "Evidence-based verification (verification gate, spec compliance, s
 ## Absorbed legacy skills
 - verification — Evidence-based verification + 7-stage gate. No unverified completion.
 - verify-against-spec — Verify implementation against design/requirements/purpose via multi-axis sub-agents.
-- self-audit — Starter compliance self-check. Validates CLAUDE.md sections, .claude/ components, docs/ structure, and tasks/ files against the 21-element baseline.
+- self-audit — Repository-contract self-check. Validates only the instructions, generated surfaces,
+  structure, and evidence the current repository actually declares.
 - review-code — Review written code via independent sub-agents (multi-layer, bias-free).
 
 ## Evidence-claim discipline (central directive 2026-07-25)

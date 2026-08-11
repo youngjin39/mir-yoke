@@ -1,123 +1,83 @@
 # Mir Yoke
 
-**A local project-harness platform with a minimal agent-guided core and optional capability packs.**
+**A minimal starter, agent-guided Project Agent Kit recipe, and portable skill provider.**
 
-Mir Yoke is a public template-backed local harness platform and reference implementation, not an
-agent runtime, hosted service, or control plane. It is not a universal installer and has no
-standing authority over a repository that uses it. The active AI agent first reads the target
-repository's current state and local instructions, then adapts only the useful baseline.
+Mir Yoke is a public template and reference repository, not an agent runtime, service, or control
+plane. It is not a universal installer and has no standing authority over a repository that reads
+or adopts its material. The active AI agent owns the target session, inspects the real target, and
+writes only under the user's target-specific authorization.
 
-## Supported product
+## Supported surfaces
 
-[`starter/`](starter/) is the only required and default consumer payload. It contains four Markdown
-files:
+### Minimal Starter
 
-- `HARNESS.md` — the repository-owned operating contract;
-- `CLAUDE.md` — a thin Claude entrypoint;
-- `AGENTS.md` — the generated Codex entrypoint; and
-- `README.md` — the adoption guide.
+[`starter/`](starter/) is the only supported consumer payload. It contains exactly four Markdown
+files: a repository-owned `HARNESS.md`, thin `CLAUDE.md` and `AGENTS.md` entrypoints, and an adoption
+guide. It does not require a Mir CLI, installer, plugin, hook, memory database, specification tree,
+sub-agent, daemon, receipt, restart, or platform-specific runtime.
 
-The core does not require a Mir CLI, installer, plugin, hook, memory database, specification tree,
-sub-agent, daemon, service, receipt, restart phase, or operating-system-specific runtime.
+### Project Agent Kit Recipe
 
-Optional features are declared under [`packs/`](packs/) with explicit compatibility, support, and
-verification metadata. `safety` is stable; `memory`, `collaboration`, and `assurance` are preview.
-The implementations already present under `src/`, `tools/`, `plugins/`, `.claude/`, `.codex/`, and
-`spec/` remain available as those packs' source and regression corpus. Their presence never makes
-them a project requirement.
+[`recipes/project-agent-kit/`](recipes/project-agent-kit/) is a supported agent-guided recipe for a
+new empty target. It does not copy a fixed payload. The target's AI uses Mir Yoke as read-only
+reference and creates a purpose-specific project brief, harness, Claude/Codex reviewer, real
+lint/build/test Git hook, and verified initial commit. Product planning and implementation remain a
+later request.
 
-## Start a project
+### Portable Plugins and Reference Corpus
 
-Open the target repository with the AI agent you intend to use and give it this instruction:
+[`plugins/`](plugins/) publishes optional, namespaced host capabilities for Claude and Codex. A
+plugin is installed explicitly in the agent host; it is not copied into a target or treated as a
+readiness requirement. The remaining source, tools, examples, specifications, and history are
+reference or maintainer evidence without an adopter compatibility promise.
 
-> Inspect this repository's current state and existing instructions. Use Mir Yoke's `starter/`
-> directory as reference material. Preserve repository-owned content, adapt only the missing
-> harness rules, replace every placeholder with observed facts or an explicit owner decision, and
-> run the repository's own smallest relevant verification. Do not install optional Mir Yoke
-> machinery or begin product work until the harness diff is reviewed.
+## Start a new project
 
-For an empty repository, the four starter files can become root files after their placeholders are
-filled. For an existing repository, the agent must merge only missing rules; a recursive copy over
-local `CLAUDE.md`, `AGENTS.md`, or equivalent instructions is not supported.
+Open one explicit empty directory with Claude or Codex and send this short prompt:
 
-See [`BOOTSTRAP.md`](BOOTSTRAP.md) for the assessment checklist.
+```text
+[Prepared project purpose and goals]
 
-## What the agent adapts
+Harness: https://github.com/youngjin39/mir-yoke
 
-The agent derives a small local contract from evidence already present in the target:
-
-- project purpose and observable completion;
-- implementation, documentation, generated, and protected paths;
-- repository-owned authority and actions that still need approval;
-- the smallest real build, test, lint, or inspection commands; and
-- whether any additional harness mechanism is justified by actual risk.
-
-If a fact cannot be observed and materially affects the result, the agent asks the owner. It does
-not infer product policy from Mir Yoke examples or force a missing mechanism into the project.
-
-## Optional capability packs
-
-Profiles under [`profiles/`](profiles/) are advisory presets. They never make recommended packs
-mandatory:
-
-| Profile | Default | Recommended when justified |
-|---|---|---|
-| `minimal` | core only | none |
-| `code` | core + safety | collaboration, assurance |
-| `content` | core only | memory |
-| `collaboration` | core + safety | collaboration, memory |
-| `assured` | core + safety | memory, collaboration, assurance |
-
-The local `yoke` CLI can inspect and compose an explicit target. Planning never writes to the
-target; apply refuses conflicts rather than replacing repository-owned files:
-
-```bash
-uv run yoke plan ../my-project --profile code --output /tmp/mir-plan.json --json
-uv run yoke apply ../my-project --plan /tmp/mir-plan.json --json
+Build and verify the project-specific harness and Project Agent Kit first.
+Initialize a new Git repository and create the verified initial commit.
+Do not start product planning or implementation yet.
 ```
 
-For manual adoption or when no pack is justified, keep using the four-file flow above. When a pack
-is justified:
+The detailed execution contract lives in the recipe, not in the prompt. The agent must finish with
+`READY_FOR_DEVELOPMENT_PLANNING`, one clean local commit, and no remote or push. If the target is not
+empty or is already inside a Git worktree, use the preservation-first Starter flow instead.
 
-1. begin with the four-file starter;
-2. identify a concrete recurring failure or risk;
-3. select the smallest relevant stable or preview pack;
-4. adapt it to the target's local contract; and
-5. verify and own it in that repository.
+## Use the minimal Starter
 
-Mir Yoke does not discover consumers, measure their drift, update them, start their agents, or
-commit, push, publish, or message on their behalf. Machine-local receipts and provider pins are
-ignored; repository policy and composed files are owned by the consumer.
+For an existing repository, tell the active agent to inspect current instructions, use `starter/`
+as reference, merge only missing rules, replace placeholders with observed facts or owner decisions,
+and run the target's own smallest relevant verification. Never recursively copy Mir Yoke over
+repository-owned instructions.
 
-## Distribution
+## Trust boundary
 
-Maintainers build a Git-independent core archive and one archive per pack. The build is
-deterministic and emits `manifest.json`, `SHA256SUMS`, and `provenance.json`:
-
-```bash
-uv run yoke build --output-dir dist --json
-uv run yoke provider install --provider-home ~/.mir-yoke --json
-```
-
-Providers are stored by content digest, so different projects can pin different versions without
-a host-global active-version conflict.
+Mir Yoke never discovers consumers, mutates a target, installs into a target, measures drift,
+updates adopters, starts agents, configures Git remotes, commits, pushes, publishes, or messages on
+their behalf. The Project Agent Kit's local Git actions happen only because the user's prompt grants
+the target agent that bounded authority.
 
 ## Maintainer checkout
 
-This full repository is the source and evidence corpus used to maintain the public starter. It is
-not meant to be transformed into a product repository.
+This full repository maintains the starter, recipe, plugins, and reference corpus. It is not a new
+project payload.
 
 ```bash
 uv sync
-uv run pytest tests/test_minimal_starter.py tests/test_product_planes.py \
-  tests/test_distribution_builder.py tests/test_yoke_composer.py tests/test_safety_pack.py -q
+uv run pytest -q tests/test_project_agent_kit.py tests/test_minimal_starter.py \
+  tests/test_public_template_identity.py tests/test_template_asset_classification.py
 uv run python scripts/verify_codex_sync.py
 uv run ruff check
 ```
 
-Release and historical implementation details remain available under `docs/`, `spec/`, `src/`,
-`tools/`, and Git history. ADR-82 is the current product-plane and composition decision; ADR-81
-continues to own the minimum starter boundary.
+ADR-83 owns the current supported-surface and Project Agent Kit boundary. ADR-81 continues to own
+the four-file minimum Starter.
 
 ## License
 

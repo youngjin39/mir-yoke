@@ -7,8 +7,11 @@ import shutil
 import subprocess
 from pathlib import Path
 
+import pytest
+
 from mir.core.capabilities.manager import _validate_plugin
 from scripts.verify_codex_sync import PLUGIN_SKILLS, validate_plugin_skill_providers
+from scripts.verify_plugin_cli_activation import _validate_installed_path
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -35,13 +38,12 @@ def test_common_skills_have_one_namespaced_provider() -> None:
 
 
 def test_dual_runtime_manifests_share_one_skill_tree() -> None:
-    version = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
     for plugin_name in PLUGIN_SKILLS:
         plugin_root = ROOT / "plugins" / plugin_name
         claude = _json(plugin_root / ".claude-plugin" / "plugin.json")
         codex = _json(plugin_root / ".codex-plugin" / "plugin.json")
         assert claude["name"] == codex["name"] == plugin_name
-        assert claude["version"] == codex["version"] == version
+        assert claude["version"] == codex["version"] == "0.9.0"
         assert codex["skills"] == "./skills/"
         assert isinstance(codex["interface"]["defaultPrompt"], list)
         assert 1 <= len(codex["interface"]["defaultPrompt"]) <= 3
@@ -98,6 +100,27 @@ def test_plugin_packages_are_self_contained_in_isolated_copy(tmp_path: Path) -> 
         text = "\n".join(path.read_text() for path in isolated.rglob("*.md"))
         assert "archive/skills/" not in text
         assert "memory_gc_runner.py" not in text
+
+
+def test_activation_path_must_be_a_real_copy_inside_the_runtime_home(
+    tmp_path: Path,
+) -> None:
+    runtime_home = tmp_path / "runtime-home"
+    installed = runtime_home / "plugins" / "mir-core"
+    installed.mkdir(parents=True)
+    (installed / "plugin.json").write_text("{}\n", encoding="utf-8")
+
+    assert _validate_installed_path(installed, runtime_home) == installed.resolve()
+
+    outside = tmp_path / "provider-copy" / "mir-core"
+    outside.mkdir(parents=True)
+    with pytest.raises(RuntimeError, match="outside the isolated runtime home"):
+        _validate_installed_path(outside, runtime_home)
+
+    linked = runtime_home / "plugins" / "linked"
+    linked.symlink_to(outside, target_is_directory=True)
+    with pytest.raises(RuntimeError, match="symlinked installed path"):
+        _validate_installed_path(linked, runtime_home)
 
 
 def test_manifest_versions_match_repository_release() -> None:

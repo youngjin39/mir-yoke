@@ -5,67 +5,30 @@ on:
     branches: [main]
   push:
     branches: [main]
+
 jobs:
-  starter_contract:
-    name: starter and composable distribution contract
+  supported_contracts:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: { python-version: '3.12' }
-      - name: Install uv
-        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
-      - name: Sync test environment
-        run: uv sync --extra dev --frozen
-      - name: Run core and composition contracts
-        run: >-
+        with: {python-version: '3.12'}
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
+      - run: uv sync --extra dev --frozen
+      - run: >-
           uv run pytest -q
+          tests/test_project_agent_kit.py
           tests/test_minimal_starter.py
-          tests/test_product_planes.py
-          tests/test_distribution_builder.py
-          tests/test_yoke_composer.py
-          tests/test_yoke_cli.py
-          tests/test_safety_pack.py
+          tests/test_public_template_identity.py
+          tests/test_decision_authority.py
           tests/test_template_asset_classification.py
-          tests/test_release_metadata.py
-      - name: Verify generated derivatives
-        run: uv run python scripts/verify_codex_sync.py
-      - name: Lint product-plane implementation
-        run: uv run ruff check src/mir/core/distribution src/mir/cli/yoke.py
-  schema:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with: { python-version: '3.11' }
-      - run: pip install jsonschema
-      - run: python tests/test_schema_validity.py
-  link_check:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: python tests/test_link_integrity.py
-  hook_exec:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: python tests/test_hook_executability.py
-  sanitize:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: python tests/test_no_korean_in_user_facing.py
-  phase_doc_check:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with: { python-version: '3.11' }
-      - run: pip install pytest
-      - run: python tests/test_phase_doc_completeness.py
-  platform_regression:
-    name: preserved platform regression (${{ matrix.os }})
-    if: ${{ github.event_name == 'workflow_dispatch' }}
+          tests/test_plugin_skill_packages.py
+          tests/test_common_skill_contracts.py
+      - run: uv run python scripts/verify_codex_sync.py
+      - run: uv run ruff check
+
+  portable_plugins:
+    name: portable plugins (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -74,52 +37,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: { python-version: '3.12' }
-      - name: Install uv
-        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
-      - name: Sync test environment
-        run: uv sync --extra dev --frozen
-      - name: Install pinned agent runtimes
-        run: >-
+        with: {python-version: '3.12'}
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
+      - run: uv sync --extra dev --frozen
+      - run: >-
           npm install --global
           @anthropic-ai/claude-code@2.1.223
           @openai/codex@0.146.1
-      - name: Run portable contract tests
-        run: >-
+      - run: >-
           uv run pytest -q
           tests/test_plugin_skill_packages.py
-          tests/test_capability_cli.py
-          tests/test_capability_security.py
-          tests/test_memory_doctor.py
-          tests/test_bootstrap_cli.py
-          tests/test_setup_wrappers.py
-          tests/test_runtime_manifest.py
-          tests/test_loop_driver.py
-      - name: Verify real isolated plugin activation
-        run: uv run python scripts/verify_plugin_cli_activation.py
-      - name: Detach product push path from provider
-        run: >-
-          git remote rename origin mir-yoke-upstream &&
-          git remote set-url --push mir-yoke-upstream DISABLED
-      - name: Bootstrap phase 1
-        run: >-
-          ./setup.sh --profile content_workspace
-          --purpose "Validate the portable content workspace bootstrap contract."
-          --stack markdown --stack sqlite --json
-      - name: Prepare deterministic architecture evidence fixture
-        run: uv run python tests/write_bootstrap_evidence_fixture.py
-      - name: Finalize ready bootstrap
-        run: >-
-          ./setup.sh --profile content_workspace --finalize
-          --architecture-initialized --json
-      - name: Assert ready receipt
-        run: >-
-          uv run python -c
-          "import json,pathlib; p=json.loads(pathlib.Path('.mir/bootstrap-receipt.json').read_text()); assert p['status']=='ready', p"
-      - name: Prove memory readiness
-        run: ./scripts/mir.sh memory doctor --project-root . --json
-      - name: Smoke the Bash hook runtime
-        shell: bash
-        env:
-          CLAUDE_PROJECT_DIR: ${{ github.workspace }}
-        run: bash .claude/hooks/session-start.sh >/dev/null
+          tests/test_common_skill_contracts.py
+      - run: uv run python scripts/verify_plugin_cli_activation.py
+
+  static_public_checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: pip install jsonschema pytest
+      - run: python tests/test_schema_validity.py
+      - run: python tests/test_link_integrity.py
+      - run: python tests/test_hook_executability.py
+      - run: python tests/test_no_korean_in_user_facing.py
+      - run: python tests/test_phase_doc_completeness.py

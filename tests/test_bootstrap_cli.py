@@ -759,7 +759,7 @@ def test_bootstrap_source_has_no_symlink_dependency():
         assert not (root / relative).is_symlink()
 
 
-def test_public_cli_registers_bootstrap_and_capability() -> None:
+def test_legacy_cli_registry_is_importable_but_has_no_public_module_entrypoint() -> None:
     assert {"bootstrap", "capability"} <= set(SUBCOMMANDS)
     for command in ("bootstrap", "capability"):
         completed = subprocess.run(
@@ -768,7 +768,8 @@ def test_public_cli_registers_bootstrap_and_capability() -> None:
             capture_output=True,
             text=True,
         )
-        assert completed.returncode == 0, completed.stderr
+        assert completed.returncode == 2
+        assert "exposes no public CLI" in completed.stderr
 
 
 def test_capability_install_requires_restart_before_ready(tmp_path, capsys):

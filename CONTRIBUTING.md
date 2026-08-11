@@ -1,59 +1,44 @@
-# Contributing to mir-yoke
+# Contributing to Mir Yoke
 
-Thanks for the interest. Mir Yoke keeps its required core small while preserving higher-assurance
-capabilities behind explicit pack boundaries. Contributions must keep those two concerns distinct.
+Mir Yoke maintains a small Starter, one explicit Project Agent Kit user journey, portable plugins,
+and retrievable reference evidence. Keep those boundaries clear.
 
-## What we want
+## Useful contributions
 
-- **Core contract improvements.** Keep `starter/` to its four Markdown files and preserve its
-  runtime-independent, agent-guided adoption path.
-- **Capability pack improvements.** Update `packs/<id>/pack.json`, its payload, declared retained
-  source, support level, compatibility, and focused verification together.
-- **New deny-list patterns.** Add evidence-backed patterns to `.ai-harness/deny-list.yaml` and keep
-  runtime-neutral consumer checks in the safety-pack payload.
-- **New common skills.** Trigger-loaded Markdown bodies under
-  `plugins/<provider>/skills/<name>/SKILL.md`. Each skill must be self-contained inside its plugin,
-  have a clear responsibility, and list precise triggers. Project-only examples may use a uniquely
-  named repository-local skill; do not duplicate a common plugin skill name.
-- **Examples.** Real workflows under `examples/`. Show the prompt, the hook output, and the resulting tasks/tdd.json entry.
-- **Hook and composer tests.** Test synthetic tool payloads, target conflicts, transaction rollback,
-  and provider digest changes under `tests/`.
-- **Documentation that explains *why*.** Every gate exists to prevent a specific failure mode. If you can name the failure mode in one sentence, the doc gets clearer.
+- **Starter or recipe evidence.** Add a concrete target scenario and the smallest contract test that
+  catches a real adoption failure.
+- **Portable common skills.** Author under `plugins/<provider>/skills/<name>/SKILL.md`. A common
+  skill must load from its own package and cannot require Mir CLI or repository-local files.
+- **Project-specific examples.** Use a repository-unique skill or agent slug; never shadow a common
+  plugin provider.
+- **Narrow safety patterns.** Document the exact destructive or credential-bearing shape being
+  prevented and include a synthetic test.
+- **Explanations with a failure mode.** State why a gate exists and how its evidence proves the
+  affected behavior.
 
-## What we do not want
+## Out of scope
 
-- **Universal mandatory installation.** The core must not require a CLI, plugin, hook, memory,
-  specification lattice, restart, or operating-system-specific bootstrap.
-- **Unclassified runtime code.** Runtime code belongs to a declared optional pack or a documented
-  maintainer-only surface with focused tests; it never silently expands the core.
-- **Unlabeled CLI-specific features.** Runtime differences belong behind explicit capability gates.
-  The plugin baseline supports Claude Code and Codex CLI/desktop; Codex IDE extensions are not part
-  of the current plugin readiness claim.
-- **Secret-bearing examples.** Even a fake-looking AWS key in a sample config is going to trip somebody's leak scanner. Use obviously-bogus literals like `EXAMPLE_KEY_DO_NOT_USE`.
-- **Destructive legacy cleanup.** Existing bootstrap, memory, executor, plugin, hook, and spec paths
-  are preserved until an explicit migration and deprecation decision authorizes removal.
-- **Provider authority.** Do not add target discovery, background rollout, Git mutation, or external
-  release actions to local composition.
+- Provider-side target discovery, installers, composers, receipts, rollout, or drift enforcement.
+- Fixed project payloads, product code, or stack-specific application templates inside Mir Yoke.
+- Secret-bearing examples or environment-specific credentials.
+- Runtime claims that are not labeled and tested for both Claude and Codex.
+- No-op verification that treats placeholders, missing tools, or skipped commands as passes.
 
 ## Workflow
 
-1. Fork the repo.
-2. Branch from `main`. Use a descriptive name: `add-rust-deny-patterns`, `skill/refactor-helper`, `docs/why-tdd-matrix`.
-3. Make your change. Run the smallest core, pack, distribution, or preserved-platform tests that can
-   fail for the affected behavior.
-4. Open a PR. Describe the failure mode you are guarding against (for deny-list / hook PRs) or the workflow you are documenting (for skill / example PRs).
-5. Squash on merge. The history is meant to be readable end-to-end.
+1. Branch from `main` with a descriptive name.
+2. Change canonical sources before generated derivatives.
+3. Run the smallest affected test, generated parity, and broader checks required by the changed
+   support boundary.
+4. For a one-prompt reproducibility claim, use `scripts/observe_project_agent_kit.py prepare` before
+   each separate Claude and Codex clean-room run, then use its `collect` command to write the bounded
+   evidence under `release-evidence/project-agent-kit/<version>/`. The observer recomputes the target
+   Git state and real checks, and redacts private paths and credential-like values from the public
+   transcript. Run `uv run python scripts/verify_project_agent_kit_evidence.py`; a release tag fails
+   without both valid runtime records.
+5. Open a PR that names the guarded failure mode and remaining compatibility risk.
 
-## Versioning
+Mir Yoke follows Semantic Versioning. Breaking a Starter, recipe, plugin, or generated-surface
+contract requires an explicit decision and migration note.
 
-The repository uses Semantic Versioning. Keep `VERSION`, `pyproject.toml`, plugin manifests,
-`CHANGELOG.md`, deterministic artifact names, and the release tag aligned. A release candidate must
-pass clean-candidate readiness before a tag or GitHub Release is created.
-
-## Code of conduct
-
-Be direct. Be kind. Skip the LinkedIn voice.
-
-## License
-
-By contributing you agree that your contributions will be licensed under the MIT License (see LICENSE).
+Contributions are licensed under the MIT License.

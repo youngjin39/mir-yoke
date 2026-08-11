@@ -10,7 +10,9 @@ context: fork
 1. Detect test framework (package.json scripts, config files).
 2. Identify the smallest existing check that can fail for the changed behavior.
 3. Choose direct or delegated execution according to isolation and context value.
-4. Use `tasks/tdd.json` and the full category matrix only when breadth, risk, release, or restartability warrants it.
+4. When `tasks/tdd.json` is already repository-owned, use it and the full category matrix only when
+   breadth, risk, release, or restartability warrants it. Otherwise use the repository's existing
+   ledger, if any.
 5. Reuse existing coverage; add or extend tests only when the changed behavior lacks evidence.
 6. Follow local test patterns and add only meaningful edge or boundary cases.
 7. Run the selected commands. On failure, inspect the cause before deciding whether to fix, change approach, or return control.

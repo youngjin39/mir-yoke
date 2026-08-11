@@ -52,7 +52,7 @@ def test_public_contract_names_the_minimal_support_boundary() -> None:
     ).lower()
 
     assert "starter/" in root_docs
-    assert "only required and default consumer payload" in root_docs
+    assert "only supported consumer payload" in root_docs
     assert "does not require" in root_docs
     for optional in ("memory database", "plugin", "hook", "sub-agent"):
         assert optional in root_docs
@@ -68,7 +68,7 @@ def test_asset_manifest_classifies_the_minimal_starter() -> None:
         "include": ["starter/**"],
         "exclude": [],
         "reason": (
-            "The only required default consumer payload: a small agent-adapted "
+            "The only supported consumer payload: a small agent-adapted "
             "documentation baseline."
         ),
     }

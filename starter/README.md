@@ -1,8 +1,7 @@
 # Mir Yoke Minimal Starter
 
-This directory is the only required and default consumer payload in Mir Yoke. It is intentionally
-a small, documentation-only baseline that an AI agent adapts to the repository it has actually
-opened. Optional capability packs are selected separately and never change this minimum contract.
+This directory is the only supported consumer payload in Mir Yoke. It is intentionally a small,
+documentation-only baseline that an AI agent adapts to the repository it has actually opened.
 
 ## Use it
 

@@ -9,6 +9,12 @@ DESIGN_SKILL = ROOT / "plugins" / "mir-core" / "skills" / "design" / "SKILL.md"
 SPEC_SKILL = ROOT / "plugins" / "mir-core" / "skills" / "spec-architect"
 
 
+def _read_skill(plugin: str, skill: str) -> str:
+    return (ROOT / "plugins" / plugin / "skills" / skill / "SKILL.md").read_text(
+        encoding="utf-8"
+    )
+
+
 def _read_spec(relative: str) -> str:
     return (SPEC_SKILL / relative).read_text(encoding="utf-8")
 
@@ -88,3 +94,40 @@ def test_spec_gaps_to_graph_mapping_is_defined() -> None:
 
     assert "`gaps.yaml` items and the graph" in artifacts
     assert "No edge" in artifacts
+
+
+def test_portable_skills_do_not_require_mir_yoke_repository_state() -> None:
+    bluebricks = _read_skill("mir-code", "bluebricks")
+    governance = _read_skill("mir-core", "governance")
+    memory_gc = _read_skill("mir-core", "memory-gc")
+    knowledge = _read_skill("mir-content", "knowledge")
+    automation = _read_skill("mir-core", "automation")
+    verify = _read_skill("mir-core", "verify")
+
+    assert "when present and relevant" in bluebricks
+    assert "their absence is valid" in bluebricks
+    assert "already owns `tasks/tdd.json`" in bluebricks
+    assert "already repository-owned" in _read_skill("mir-code", "testing")
+    assert "R20" not in governance
+    assert "Phase 2" not in governance
+    assert "mir memory gc" not in memory_gc
+    normalized_knowledge = " ".join(knowledge.lower().split())
+    assert "do not assume a shared service" in normalized_knowledge
+    assert "agent-browser CLI" not in automation
+    assert "21-element baseline" not in verify
+
+
+def test_all_portable_skills_omit_provider_migration_milestones() -> None:
+    forbidden = (
+        "P15-I",
+        "R20",
+        "Phase 2",
+        "21-element baseline",
+        "mir memory gc",
+        "agent-browser CLI",
+    )
+
+    for skill_path in sorted((ROOT / "plugins").glob("*/skills/*/SKILL.md")):
+        text = skill_path.read_text(encoding="utf-8")
+        for marker in forbidden:
+            assert marker not in text, f"{skill_path.relative_to(ROOT)}: {marker}"

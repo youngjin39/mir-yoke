@@ -12,13 +12,12 @@ description: "Proportional guidance for code writing, analysis, debugging, refac
 
 Do not use this skill for pure writing, research, summaries, or other non-code tasks.
 
-## Required Reads
-Before non-trivial code work, read:
-- `.ai-harness/development-ai-rules.md`
-- `.ai-harness/bluebricks.md`
-- `.ai-harness/tdd-matrix.md`
-- `.ai-harness/deny-list.yaml`
-- `.ai-harness/failure-patterns.md` when repeated mistakes or hazards may matter
+## Repository Context
+
+Read the repository's own instruction, architecture, test, deny-list, and failure-pattern documents
+when present and relevant. Common locations include `.ai-harness/`, `docs/`, and nested instruction
+files, but their absence is valid and never a reason to invent or install a local harness. Follow the
+actual repository contract instead of assuming Mir Yoke's maintainer layout.
 
 ## Workflow
 1. Define the exact task boundary.
@@ -28,7 +27,9 @@ Before non-trivial code work, read:
 5. Decide whether direct execution or delegation is cheaper and safer for this scope.
 6. Follow the Ponytail ladder before adding code: remove unnecessary work, reuse project code, use built-ins, justify a dependency, and write minimum custom code last.
 7. For non-trivial logic, run the smallest check that can fail for the changed behavior.
-8. Use `tasks/tdd.json` and the full matrix only for broad, high-risk, release, restartable, or explicitly ledger-driven work.
+8. When the repository already owns `tasks/tdd.json`, use it and the full matrix only for broad,
+   high-risk, release, restartable, or explicitly ledger-driven work. Otherwise use the
+   repository's existing ledger, if any.
 9. Record a newly discovered hazard only when it is reusable and non-obvious.
 
 ## Bluebrick Checklist
@@ -67,7 +68,9 @@ Do not use sub-agent for:
 - small diff review
 
 ## Safe Modification Rules
-- Apply the Code Structure Principles in `.ai-harness/development-ai-rules.md`: nested-conditional objectification, no hardcoding, modularization, transaction-boundary analysis, SSOT. Report out-of-boundary violations instead of rewriting them.
+- Apply repository-declared structure principles when present. Otherwise preserve existing module
+  boundaries, avoid unexplained hardcoding, identify transaction boundaries, and keep one source of
+  truth. Report out-of-boundary violations instead of rewriting them.
 - Preserve architecture boundaries.
 - Do not silently expand scope.
 - Do not edit generated files unless generation is the task.

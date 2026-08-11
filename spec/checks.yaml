@@ -8,8 +8,8 @@ checks:
     command: "uv run pytest tests/test_public_template_identity.py::test_provider_has_no_runtime -q"
     on_fail: "Classify the detected surface as optional-consumer or historical before continuing."
   - id: CHK-003
-    rule: "Greenfield slim is isolated external-CLI, exact-source, Git-owner-controlled, hash-bound, transactional, and last; automated bootstrap is macOS/Linux/WSL-only; native Windows stops without mutation; existing-repository adoption remains preservation-first."
-    command: "uv run pytest tests/test_public_template_authority.py tests/test_bootstrap_cli.py tests/test_setup_wrappers.py tests/test_runtime_manifest.py tests/test_adopter_slim.py tests/test_greenfield_slim_integration.py tests/test_installed_cli.py tests/test_existing_repository_adoption.py tests/test_loop_driver.py -q"
+    rule: "Historical greenfield and adoption paths remain regression-tested as retained reference, while the current release publishes no target-writing console entrypoint."
+    command: "uv run pytest tests/test_public_template_authority.py tests/test_bootstrap_cli.py tests/test_setup_wrappers.py tests/test_runtime_manifest.py tests/test_adopter_slim.py tests/test_greenfield_slim_integration.py tests/test_existing_repository_adoption.py tests/test_loop_driver.py tests/test_project_agent_kit.py::test_should_not_publish_a_legacy_target_writing_console_entrypoint -q"
     on_fail: "Preserve or restore target state and stop before claiming adoption safety."
   - id: CHK-004
     rule: "Every active product surface has exactly one artifact classification."

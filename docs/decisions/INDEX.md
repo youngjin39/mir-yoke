@@ -1,38 +1,36 @@
 ---
 title: Public Harness Decision Index
 status: accepted
-updated: 2026-08-10
+updated: 2026-08-11
 ---
 
 # Public Harness Decision Index
 
-Mir Yoke is a public template and reference repository. It has no provider runtime and no standing
-authority over consumer repositories. It is an agent-guided baseline, not a universal installer.
-`starter/` is the only required and default consumer payload and does not require advanced
-automation. Declared capability packs are optional and carry their own support level.
+Mir Yoke is a public template, supported agent-guided recipe, optional plugin provider, and
+reference corpus. It has no provider runtime and no standing authority over consumer repositories.
+It is not a universal installer. `starter/` remains the only supported consumer payload.
 
 ## Current Authority
 
-1. [ADR-82](adr-82-product-planes-capability-packs-and-composition.md) defines the four product
-   planes, optional capability packs, advisory profiles, deterministic distribution, and
-   preservation-first composition while retaining the existing platform.
-2. [ADR-81](adr-81-minimal-starter-support-boundary.md) defines `starter/` as the only required
-   default payload and removes advanced automation from the minimum readiness contract.
-3. [ADR-78](adr-78-public-template-identity-and-non-authority.md) defines the public-template
-   identity and repository-local authority boundary.
+1. [ADR-83](adr-83-project-agent-kit-recipe-and-supported-surfaces.md) defines the Starter,
+   Project Agent Kit recipe, portable plugin provider, and reference corpus boundaries. It
+   supersedes ADR-82.
+2. [ADR-81](adr-81-minimal-starter-support-boundary.md) defines `starter/` as the only supported
+   consumer payload and removes advanced machinery from minimum readiness.
+3. [ADR-78](adr-78-public-template-identity-and-non-authority.md) defines public-template identity
+   and repository-local authority.
 4. [ADR-73](adr-73-proportional-guidance-first-harness.md) defines proportional local work,
    delegation, review, and verification.
 
-The [role policy](role-policy.md) is optional advanced reference material. It is not part of the
-four-file starter; a consumer owns any locally adopted role or delegation policy.
+The Project Agent Kit recipe is supported guidance, not a second payload. It authorizes no provider
+write; the active target agent acts only under the current user's explicit target prompt.
 
-ADR-74 through ADR-77, ADR-79, and ADR-80 describe retained advanced bootstrap mechanics. ADR-81
-removes them from the minimum contract; ADR-82 maps their implementation into explicit optional
-packs without making the old full bootstrap path a default.
+ADR-74 through ADR-77, ADR-79, ADR-80, and ADR-82 describe retained or superseded bootstrap and
+composition experiments. They remain retrievable evidence without current consumer authority.
 
 ## Historical Decisions
 
-Central rollout, back-propagation, direct-apply, fleet catalog, template parity, watchdog, and
-deployment decisions are non-authoritative history. Start at
-[`docs/history/centralization`](../history/centralization/README.md); the original ADR files remain
-here so links and Git history stay intact.
+Central rollout, target mutation, superseded composition experiments, back-propagation, fleet
+catalog, template parity, watchdog, and deployment decisions are non-authoritative history. Start at
+[`docs/history/centralization`](../history/centralization/README.md); Git history preserves removed
+implementation details.

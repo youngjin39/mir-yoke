@@ -19,4 +19,5 @@ description: "Proportional UI/UX design guidance for flows, wireframes, componen
 3. Implement or hand off the bounded result and run the smallest relevant UI/accessibility check.
 
 ## Status
-This skill is the canonical entry point. Legacy slugs remain dispatchable until P15-I archive completes.
+This skill is the canonical entry point. Repository-specific UI rules and aliases remain local to
+the repository that owns them.

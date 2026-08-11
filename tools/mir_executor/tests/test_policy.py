@@ -3,13 +3,11 @@
 from __future__ import annotations
 
 import json
-import os
 import pathlib
-import subprocess
-import sys
 
 import pytest
 
+from mir.cli import policy as policy_cli
 from tools.mir_executor import cli
 from tools.mir_executor.policy import POLICY_ENV_VAR, load_sub_agent_policy
 
@@ -668,6 +666,7 @@ def test_policy_runtime_options_cli_flags_override_prefer_route(
 def test_policy_resolve_cli_subcommand_prints_json(
     tmp_path: pathlib.Path,
     monkeypatch,
+    capsys,
 ) -> None:
     monkeypatch.delenv(POLICY_ENV_VAR, raising=False)
     _write_policy(
@@ -685,39 +684,22 @@ def test_policy_resolve_cli_subcommand_prints_json(
             },
         },
     )
-    env = os.environ.copy()
-    env.pop(POLICY_ENV_VAR, None)
-    repo_root = pathlib.Path(__file__).resolve().parents[3]
-    pythonpath = os.pathsep.join(
-        [
-            str(repo_root / "src"),
-            str(repo_root),
-            env.get("PYTHONPATH", ""),
-        ]
+    assert (
+        policy_cli.main(
+            [
+                "resolve",
+                "--category",
+                "unit",
+                "--repo-root",
+                str(tmp_path),
+            ]
+        )
+        == 0
     )
-    env["PYTHONPATH"] = pythonpath
+    captured = capsys.readouterr()
 
-    result = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "mir",
-            "policy",
-            "resolve",
-            "--category",
-            "unit",
-            "--repo-root",
-            str(tmp_path),
-        ],
-        capture_output=True,
-        text=True,
-        env=env,
-        check=False,
-    )
-
-    assert result.returncode == 0, result.stderr
-    assert json.loads(result.stdout) == {
+    assert json.loads(captured.out) == {
         "model": "cli-policy-model",
         "reasoning_effort": "low",
     }
-    assert result.stderr == ""
+    assert captured.err == ""

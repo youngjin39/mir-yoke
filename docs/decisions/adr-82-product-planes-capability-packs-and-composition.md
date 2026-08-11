@@ -2,12 +2,16 @@
 title: Product Planes, Capability Packs, and Preservation-First Composition
 type: template-adr
 created: 2026-08-10
-status: accepted
+status: superseded
 amends: [adr-81]
+superseded_by: [adr-83]
 schema: docs/templates/_schema/adr.schema.json
 ---
 
 # ADR-82 — Product Planes, Capability Packs, and Preservation-First Composition
+
+> Superseded by ADR-83. Removed paths named below remain available in Git history and are not part
+> of the active supported surface.
 
 ## 1. Context
 
@@ -133,5 +137,5 @@ because it changes the default and distribution boundary while preserving the im
 
 - [ADR-81](adr-81-minimal-starter-support-boundary.md)
 - [ADR-80](adr-80-release-runtime-isolation-and-adopter-ownership.md)
-- [`config/product-planes.json`](../../config/product-planes.json)
-- [`config/capability-pack.schema.json`](../../config/capability-pack.schema.json)
+- Historical `config/product-planes.json` (removed from the active tree)
+- Historical `config/capability-pack.schema.json` (removed from the active tree)

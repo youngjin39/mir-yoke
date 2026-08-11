@@ -72,14 +72,18 @@ def test_should_return_nonstarter_classification_when_provider_sources_are_inspe
 
     starter_patterns = set(rules["minimal-starter"]["include"])
     legacy_patterns = set(rules["legacy-bootstrap-payload"]["include"])
-    optional_patterns = set(rules["optional-consumer-code"]["include"])
+    optional_patterns = set(rules["portable-plugin-provider"]["include"])
 
-    assert {".agents/**", ".claude-plugin/**", "plugins/**"}.isdisjoint(
+    assert {".agents/plugins/**", ".claude-plugin/**", "plugins/**"}.isdisjoint(
         starter_patterns
     )
     assert rules["legacy-bootstrap-payload"]["classification"] == "reference"
-    assert "scripts/mir.sh" in legacy_patterns
-    assert {".agents/**", ".claude-plugin/**", "plugins/**"} <= optional_patterns
+    assert "setup.sh" in legacy_patterns
+    assert optional_patterns == {
+        ".agents/plugins/**",
+        ".claude-plugin/**",
+        "plugins/**",
+    }
 
 
 # @spec FR-001 FR-003

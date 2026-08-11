@@ -1,7 +1,7 @@
 {
   "$schema": "../repo-agent-management.schema.json#/$defs/repository",
   "slug": "mir-yoke",
-  "display_name": "Mir Yoke (public local harness platform)",
+  "display_name": "Mir Yoke (public template)",
   "registry_path": ".",
   "profile_slug": "mir-yoke",
   "repository_type": "public_harness_template",
@@ -30,8 +30,8 @@
   },
   "evidence_trace": {
     "source_documents": [
-      "docs/decisions/adr-78-public-template-identity-and-non-authority.md",
-      "docs/decisions/adr-82-product-planes-capability-packs-and-composition.md"
+      "docs/decisions/adr-83-project-agent-kit-recipe-and-supported-surfaces.md",
+      "docs/decisions/adr-81-minimal-starter-support-boundary.md"
     ],
     "open_questions": [],
     "assumptions": [
@@ -39,7 +39,7 @@
     ]
   },
   "notes": [
-    "Sanitized self-profile for the minimum core, optional pack catalog, and maintainer verification."
+    "Sanitized self-profile used by public harness-consistency generation and verification."
   ],
   "active_agents": [
     "main-orchestrator",
@@ -78,6 +78,6 @@
     "remove": []
   },
   "orchestration_profile": "standard",
-  "last_reviewed_at": "2026-08-10",
-  "rationale": "ADR-78 and ADR-82 public local-harness self-profile with no fleet target or provider runtime authority."
+  "last_reviewed_at": "2026-08-11",
+  "rationale": "ADR-83 public Starter, Project Agent Kit recipe, portable plugin, and reference-corpus self-profile with no target or provider runtime authority."
 }

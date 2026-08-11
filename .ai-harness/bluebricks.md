@@ -1,34 +1,24 @@
 # Bluebricks
 
-Bluebricks describes bounded modules for work in this public template repository. Mir Yoke has no
-provider runtime; consumer-side CLIs and hooks remain inert until explicitly invoked or adopted.
+Bluebricks describes bounded modules for this public template repository. Mir Yoke has no provider
+runtime and never receives standing authority over a target.
 
 ## Current Product Bluebricks
 
 ### Contract
 
-Defines public-template identity, authority, non-goals, and adoption semantics.
+Defines public identity, supported surfaces, authority, and non-goals.
 Full brick: `docs/bluebricks/contract.md`.
 
-### Adoption
+### Agent-Guided Adoption
 
-Separates manual core adoption, preservation-first composition, and retained legacy bootstrap.
-Full brick: `docs/bluebricks/adoption.md`.
+Separates preservation-first Starter adaptation from the explicit empty-target Project Agent Kit
+recipe. Full brick: `docs/bluebricks/adoption.md`.
 
-### Distribution
+### Portable Plugin Provider
 
-Builds deterministic core and capability-pack archives with manifest, checksums, and provenance.
-Full brick: `docs/bluebricks/distribution.md`.
-
-### Composition
-
-Resolves advisory profiles, plans without mutation, applies only conflict-free new files, and pins
-content-addressed providers. Full brick: `docs/bluebricks/composition.md`.
-
-### Retained Capability Provenance
-
-Provides explicit local status, check, sync, update, attestation, and finalization with
-integrity-only hashes. Full brick: `docs/bluebricks/capability.md`.
+Publishes namespaced host capabilities that load from their own package and never become target
+readiness requirements. Full brick: `docs/bluebricks/capability.md`.
 
 ### Maintenance
 
@@ -37,7 +27,7 @@ Full brick: `docs/bluebricks/maintenance.md`.
 
 ### History
 
-Separates current decision authority from retrievable centralization-era evidence.
+Separates current authority from retrievable bootstrap, composition, and centralization evidence.
 Full brick: `docs/bluebricks/history.md`.
 
 ## Proportional Validation Rule

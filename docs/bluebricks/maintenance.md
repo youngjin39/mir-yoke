@@ -2,7 +2,8 @@
 
 ## Purpose
 
-Classify, validate, sanitize, and prepare the public template for release.
+Classify, validate, sanitize, and prepare the Starter, Project Agent Kit recipe, portable plugins,
+and reference corpus for release.
 
 ## Public Interface
 
@@ -11,21 +12,17 @@ Classify, validate, sanitize, and prepare the public template for release.
 
 ## Rules and Hazards
 
-Every candidate file receives exactly one asset classification. A missing check is a release
-failure. Release validation operates on Mir Yoke only and sends no fleet notification. The
-`adopter_payload_boundary` rule permits the exact Mir Yoke provider owner and rejects configured
-provider/maintainer markers under a product Profile. The generated adopter payload binds every
-release candidate file to one disposition and SHA-256 digest; Phase 2 slim may move only unchanged
-entries classified for removal. Modified references are preserved as adopter-owned adaptations,
-while provider markers fail closed. Provider-only validators are maintainer assets and cannot enter
-an adopter pack. The tracked CLI constraints must equal a frozen production export of `uv.lock`.
-The normal CI lane validates the core, planes, packs, deterministic distribution, composition,
-derivatives, classification, and release metadata. The complete portable-bootstrap regression is
-preserved as an explicit workflow-dispatch job. Its macOS and Linux Bash lanes separately prove
-WSL follows Linux and that native-Windows CLI, PowerShell, and Bash entrypoints stop before
-mutation; Mir Yoke does not claim a native-Windows ready-state CI lane.
+Every candidate file receives exactly one classification. `starter/` is the only consumer payload.
+Only plugin packages and marketplace metadata may be optional consumer tools. The recipe is
+reference guidance and never a copied payload. Source, CLI, hook, bootstrap, spec, and executor code
+remain maintainer or reference material.
+
+A missing check is a release failure. Static tests prove the contract; one-prompt reproducibility
+requires separate clean-room Claude and Codex runs against empty targets. Release validation changes
+no consumer, remote, fleet, notification, provider activation, or protected capability lock.
 
 ## Dependencies and Validation
 
-Depends on all bluebricks. Validate with asset classification, public surface, full tests, lint,
+Depends on all current bluebricks. Validate with recipe and Starter contracts, exhaustive asset
+classification, plugin isolation, public identity, sanitization, generated parity, full tests, Ruff,
 and clean candidate-tree readiness.

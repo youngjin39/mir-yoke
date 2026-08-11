@@ -1,10 +1,7 @@
-"""CLI entry points — `python -m mir …` dispatcher.
+"""Retained-reference command registry.
 
-The public template exposes memory, bootstrap, existing-repository adoption,
-capability, policy, and loop operations through this registry.
-
-Subcommand registration is the only job here; real work lives under each
-subcommand module.
+Mir Yoke 0.9 publishes no public CLI entrypoint. These lazy handlers preserve the
+historical implementation corpus for maintainers and direct internal tests only.
 """
 from __future__ import annotations
 
@@ -23,7 +20,6 @@ _SUBCOMMAND_MODULES = {
     "policy": "mir.cli.policy",
     "run-python": "mir.cli.run_python",
     "runtime-manifest": "mir.cli.runtime_manifest",
-    "yoke": "mir.cli.yoke",
 }
 
 

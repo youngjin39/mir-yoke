@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
   "name": "mir-yoke",
-  "description": "Portable Mir harness capability packs for Claude Code and Codex.",
+  "description": "Portable Mir harness skills for Claude Code and Codex.",
   "owner": {
     "name": "Harness Contributors"
   },

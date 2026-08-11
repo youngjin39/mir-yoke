@@ -11,7 +11,7 @@ The public decision index and `docs/history/centralization/`.
 
 ## Rules and Hazards
 
-Do not delete ADR evidence. Current readers follow ADR-78 first; historical executable recovery
+Do not delete ADR evidence. Current readers follow ADR-83 first; historical executable recovery
 uses Git history, not active payload copies.
 
 ## Dependencies and Validation

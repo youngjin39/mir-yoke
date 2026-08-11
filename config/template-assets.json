@@ -14,7 +14,7 @@
       "classification": "starter",
       "include": ["starter/**"],
       "exclude": [],
-      "reason": "The only required default consumer payload: a small agent-adapted documentation baseline."
+      "reason": "The only supported consumer payload: a small agent-adapted documentation baseline."
     },
     {
       "id": "root-metadata",
@@ -32,6 +32,13 @@
       ],
       "exclude": [],
       "reason": "Public identity, usage, rights, compatibility, and release reference material."
+    },
+    {
+      "id": "project-agent-kit-recipe",
+      "classification": "reference",
+      "include": ["recipes/**"],
+      "exclude": [],
+      "reason": "Supported agent-guided procedure read as reference by the target agent and never copied as a consumer payload."
     },
     {
       "id": "legacy-bootstrap-payload",
@@ -64,21 +71,7 @@
         "lib/**",
         "setup.ps1",
         "setup.sh",
-        "scripts/build_session_upfront_context.py",
-        "scripts/codex-shim.sh",
-        "scripts/generate_codex_derivatives.sh",
-        "scripts/intent_store.py",
-        "scripts/loop_driver.sh",
-        "scripts/mir.ps1",
-        "scripts/mir.sh",
-        "scripts/post_edit_memory_sync.py",
-        "scripts/verify_codex_sync.py",
-        "scripts/verify_context_paths.py",
-        "scripts/verify_repo_agent_management.py",
-        "template_protected_paths.yaml",
-        "tools/agent_loader/**",
-        "tools/catalog_loader.py",
-        "tools/hooks/**"
+        "template_protected_paths.yaml"
       ],
       "exclude": [
         ".claude/agents/template-sync-validator.md",
@@ -98,10 +91,9 @@
         "docs/references/**",
         "docs/templates/**",
         "examples/**",
-        "profiles/**",
-        "spec/**",
         "config/bluebrick-paths.json",
         "config/repos/**",
+        "spec/**",
         "tasks/**"
       ],
       "exclude": [],
@@ -123,7 +115,7 @@
         "docs/decisions/adr-79-agent-guided-platform-scope.md",
         "docs/decisions/adr-80-release-runtime-isolation-and-adopter-ownership.md",
         "docs/decisions/adr-81-minimal-starter-support-boundary.md",
-        "docs/decisions/adr-82-product-planes-capability-packs-and-composition.md",
+        "docs/decisions/adr-83-project-agent-kit-recipe-and-supported-surfaces.md",
         "docs/decisions/role-policy.md"
       ],
       "exclude": [],
@@ -146,7 +138,7 @@
         "docs/decisions/adr-79-agent-guided-platform-scope.md",
         "docs/decisions/adr-80-release-runtime-isolation-and-adopter-ownership.md",
         "docs/decisions/adr-81-minimal-starter-support-boundary.md",
-        "docs/decisions/adr-82-product-planes-capability-packs-and-composition.md",
+        "docs/decisions/adr-83-project-agent-kit-recipe-and-supported-surfaces.md",
         "docs/decisions/role-policy.md"
       ],
       "reason": "Earlier decisions remain retrievable but are outside the current authority index."
@@ -159,39 +151,41 @@
       "reason": "Centralization-era engineering and governance prose retained for audit only."
     },
     {
-      "id": "optional-consumer-code",
+      "id": "portable-plugin-provider",
       "classification": "optional-consumer-tool",
       "include": [
-        ".agents/**",
+        ".agents/plugins/**",
         ".claude-plugin/**",
-        "packs/**",
-        "plugins/**",
+        "plugins/**"
+      ],
+      "exclude": [],
+      "reason": "Explicitly installed, namespaced host capabilities and their marketplace metadata; none belong to a target payload."
+    },
+    {
+      "id": "project-agent-kit-release-evidence",
+      "classification": "template-maintainer-tool",
+      "include": ["release-evidence/project-agent-kit/**"],
+      "exclude": [],
+      "reason": "Concrete rendered prompt fixture and runtime-produced clean-room release evidence for the supported Project Agent Kit claim."
+    },
+    {
+      "id": "retained-platform-corpus",
+      "classification": "reference",
+      "include": [
         "scripts/**",
         "src/**",
         "tools/**"
       ],
       "exclude": [
         "scripts/extract_changelog_entry.py",
-        "scripts/generate_codex_derivatives.sh",
-        "scripts/build_session_upfront_context.py",
-        "scripts/codex-shim.sh",
-        "scripts/intent_store.py",
-        "scripts/loop_driver.sh",
-        "scripts/mir.ps1",
-        "scripts/mir.sh",
-        "scripts/post_edit_memory_sync.py",
-        "scripts/verify_codex_sync.py",
-        "scripts/verify_context_paths.py",
+        "scripts/observe_project_agent_kit.py",
         "scripts/verify_plugin_cli_activation.py",
+        "scripts/verify_project_agent_kit_evidence.py",
         "scripts/verify_release_readiness.py",
-        "scripts/verify_repo_agent_management.py",
-        "tools/agent_loader/**",
-        "tools/catalog_loader.py",
-        "tools/hooks/**",
         "tools/harness_consistency/**",
         "tools/template_assets.py"
       ],
-      "reason": "Explicitly invoked provider packages, local CLI, hook support, memory, and execution helpers; none belong to the default adopter payload."
+      "reason": "Retained bootstrap, CLI, hook, memory, agent, and executor implementation used as inspectable prior art without consumer compatibility."
     },
     {
       "id": "maintainer-tools",
@@ -202,14 +196,13 @@
         ".codex/agents/template-sync-validator.toml",
         "config/harness-consistency.json",
         "config/harness-consistency.schema.json",
-        "config/capability-pack.schema.json",
-        "config/product-planes.json",
-        "config/product-planes.schema.json",
         "config/template-assets.json",
         "config/template-assets.schema.json",
         "pyproject.toml",
         "scripts/extract_changelog_entry.py",
+        "scripts/observe_project_agent_kit.py",
         "scripts/verify_plugin_cli_activation.py",
+        "scripts/verify_project_agent_kit_evidence.py",
         "scripts/verify_release_readiness.py",
         "tests/**",
         "tools/harness_consistency/**",

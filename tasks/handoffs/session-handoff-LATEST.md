@@ -1,56 +1,73 @@
-# Session Handoff — Mir Yoke Public Template Boundary
+# Session Handoff — Project Agent Kit 0.9 Candidate
 
 ## Completed Work
 
-- Implemented ADR-78 and the recovered MODE-S dossier: 4 features, 20 requirements, 6 use cases,
-  8 tasks, and zero open gaps.
-- Established Mir Yoke as a public template and reference repository with no provider runtime or
-  standing consumer authority.
-- Removed active central-fleet parity, direct deployment, scanning, daemon, notification, and
-  cross-repository reconciliation surfaces; retained their rationale as historical evidence.
-- Published implementation commit `26cf2a4` and protected-lock commit `185ec4a` to `origin/main`.
-- Confirmed that local and remote Git each expose only the `main` branch.
+- Implemented ADR-83 as a 0.9 candidate: four-file Starter, separate Project Agent Kit recipe,
+  portable plugin provider, and retained reference corpus.
+- Added the short-prompt route, purpose-preserving project brief, repository-unique read-only
+  reviewer, Claude-to-Codex generation contract, real lint/build/test hook, and verified one-commit
+  Git boundary before development planning.
+- Added a public target-contract schema and a two-phase clean-room observer. The observer binds the
+  concrete purpose and provider revision, validates before execution, uses a credential-free
+  target-local environment, mutation-probes parity/lint/build/test/manifest/lock inputs, preserves
+  Git identity and signing policy, content-hashes bounded outside state, and sanitizes public logs.
+- Removed active product planes, capability packs, profiles, distribution/composer code, and the
+  `yoke` CLI while retaining superseded ADR-82 and Git history as audit evidence.
+- Generalized common plugins so repository-local Mir files and services are optional context rather
+  than hidden prerequisites.
 
 ## Decisions
 
-- ADR-78 is the highest current product decision; ADR-77 governs preservation-first adoption and
-  ADR-74 through ADR-76 retain only their narrowed local bootstrap and capability meanings.
-- Hashes prove integrity and provenance only. Adoption and mutation remain explicit, local, and
-  consumer-owned.
-- The protected capability lock intentionally pins implementation commit `26cf2a4`; no provider
-  runtime activation is part of the template product.
+- ADR-83 is current authority; ADR-81 continues to own the four-file minimum Starter and ADR-82 is
+  superseded history.
+- Mir Yoke is read-only reference. The target agent owns all Project Agent Kit writes under the
+  current user's explicit target authorization.
+- Clean-room Claude and Codex runs are release-claim gates, not substitutes for target ownership.
 
-## Unresolved Issues
+## Approval State
 
-- No implementation blocker or open MODE-S gap remains.
-- GitHub Actions results after the push were not inspected. This does not block repository closeout,
-  but a maintainer must confirm required remote checks before creating a tag or release.
+- Independent final re-review found no fix-now blocker and classified the implementation as an
+  approval candidate.
+- `.mir/capability-lock.json` is protected and intentionally not rebound before an approved commit;
+  its tree-digest test is the only expected local regression failure.
+- Claude and Codex clean-room empty-target runs remain unevaluated until a publishable revision
+  exists. No commit, push, tag, release, or consumer write has occurred.
 
 ## Next Actions
 
-- No active next action. Before a future tag or release, confirm GitHub Actions and select the
-  intended semantic version.
+- Obtain owner approval for the implementation commit and protected lock-rebind sequence.
+- After explicit commit approval, create the implementation commit, rebind the protected capability
+  lock to that commit, verify, and create the separate lock commit.
+- Before a 0.9 release claim, run the same short prompt independently in clean Claude and Codex
+  empty targets and verify one clean initial commit in each.
 
 ## Modified Files
 
-- Product authority: `README.md`, `CLAUDE.md`, `AGENTS.md`, `ARCHITECTURE.md`, and ADR-78/index.
-- Product boundaries: bootstrap/adoption/capability CLI, asset classification, release validation,
-  and removal of central-runtime surfaces.
-- Durable evidence: `spec/`, `tasks/plan.md`, `tasks/tdd.json`, `tasks/intent.json`, and this handoff.
+- Product authority: root contracts, ADR-83/index, ADR-81 amendment, and superseded ADR-82 metadata.
+- Supported guidance: `recipes/project-agent-kit/` and four-file `starter/`.
+- Provider boundary: portable common plugin skills and Claude/Codex marketplace versions.
+- Maintenance: classification, release checks, generated derivatives, focused contract tests, and
+  removal of active composition artifacts.
+- Durable state: profile, intent, plan, TDD ledger, and this handoff.
 
 ## Verification Results
 
-- Clean candidate readiness: `ready: true`; focused contracts 56 passed; full suite 629 passed.
-- Asset classification: 596 tracked candidates classified exactly once; zero prohibited paths.
-- Ruff, derivative parity, sanitization, links, schemas, harness consistency, and lock provenance
-  passed.
-- Remote verification: `origin/main` resolved to `185ec4a` after the implementation push.
+- Focused observer, schema, supported-surface, identity, security, and spec contracts: 92 passed.
+- Regenerated asset classification covers 635 candidate files exactly once with zero unclassified,
+  duplicate, or prohibited paths.
+- Full regression passed 741 tests with only the protected capability-lock digest test intentionally
+  deselected pending the approval-gated commit/rebind sequence.
+- Actual isolated Claude and Codex plugin installation/activation passed with identical package
+  digests. Ruff, diff whitespace, and Claude/Codex derivative parity pass.
 
 ## Key Risks
 
-- `.mir/capability-lock.json` remains `restart-required` because runtime activation was explicitly
-  outside scope; this is not a provider-runtime requirement.
-- No tag or GitHub release was created.
+- The protected capability lock still describes the pre-candidate plugin trees until the approved
+  two-commit rebind sequence.
+- Observer-backed synthetic tests prove the evidence mechanism, not one-prompt reproducibility;
+  actual Claude and Codex clean-room runs remain a release gate.
+- The repository contains a large intentional inverse diff because active ADR-82 composition was
+  removed. Review deleted paths before approval.
 
 <!-- mir:runtime-snapshot:begin -->
 ## Runtime Snapshot (Generated)
@@ -59,5 +76,5 @@
 - No open plan items.
 
 ### Working Tree
-- Working tree clean.
+- Working tree dirty (88 paths; inspect git status --short).
 <!-- mir:runtime-snapshot:end -->

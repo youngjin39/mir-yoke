@@ -35,10 +35,13 @@ mode: S · domain: AI_SYSTEM · updated: 2026-08-10
 - SCOPE: this historical implementation changed Mir Yoke only and granted no cross-repository write.
 - READY: the clean-candidate release proof covers focused contracts, the full suite, lint,
   derivatives, sanitization, links, schemas, and asset classification.
+- HISTORY: the 0.8 installed-CLI proof remains in Git history. ADR-83 removed that public
+  entrypoint; the current tree instead verifies that no target-writing console script is published.
 
 ## Notes
 
 - Mir Yoke has no provider runtime. Runtime and data views explicitly record this boundary.
 - Existing `template-repo/*.md` runbooks are historical unless this spec links them.
 - Root Mir Harness `spec/` is intentionally unaffected.
-- Graph-bound tests and implementation anchors are present for the changed product boundary.
+- Graph-bound tests and implementation anchors that remain current are present for the historical
+  product boundary.
