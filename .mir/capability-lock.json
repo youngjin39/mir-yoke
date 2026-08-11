@@ -52,15 +52,15 @@
   "plugins": {
     "mir-code": {
       "path": "plugins/mir-code",
-      "sha256": "db2c3d00dd921bf238b079a8992b20eb0e961ec65bfcc364298b3801ba1c6138"
+      "sha256": "651ce33feaa77f69da92b6e879ee1c36950137828f1ec6599a3be1156f346657"
     },
     "mir-content": {
       "path": "plugins/mir-content",
-      "sha256": "25bc0e0b88451f0fed15ae2401f0c622e7c78a47c1a12c5996f59e8cc7df4963"
+      "sha256": "661669cc578151b17346d1ae457873b10a3af2809773e115dc8634ee6cfaf7b2"
     },
     "mir-core": {
       "path": "plugins/mir-core",
-      "sha256": "e9135c6b05381c62ac31085bcac32d476e6c9caf9c808a406adbdc4cbe5ebb16"
+      "sha256": "832a0f161e65dd46761659cdbc2d79f6f2e2c2b6d276e0036f2d214daa7938bf"
     }
   },
   "profile": "hybrid_pipeline",
@@ -69,9 +69,9 @@
   },
   "schema_version": 1,
   "source": {
-    "commit": "e9bcab935c2a50168c0c1023fa955e7f85d776cd",
+    "commit": "410b08a87b998fce0aaa0f8d4388a0c585854cc8",
     "ref": "main",
     "url": "https://github.com/youngjin39/mir-yoke.git"
   },
-  "synced_at": "2026-08-10T02:53:09+00:00"
+  "synced_at": "2026-08-11T10:27:27.380510+00:00"
 }
