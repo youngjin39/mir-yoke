@@ -497,7 +497,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "d0fd33ab0c868d1fcafb16edb276c2a4031cb7e8885127ce910b770d8737427b",
+      "sha256": "8efd3841405ade5724dec3a8ec09abdeb36ac1bea58633c556d7c6846549cddb",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -2201,7 +2201,7 @@
     },
     {
       "path": "recipes/project-agent-kit/README.md",
-      "sha256": "733849b7dba352d7ce14c5de14948e7577c7fff15111a6ecb2250c0e341d7ccd",
+      "sha256": "20fedcc61b89363f6c1225d50cc62f811e4111c542cc7dd4264117d3bacba742",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -2213,7 +2213,7 @@
     },
     {
       "path": "recipes/project-agent-kit/prompt.txt",
-      "sha256": "5b8b04e3954c31072d81711add716838bb99cebc64f62aa21d2a13f7bab69b92",
+      "sha256": "0c924c645acb399fdb3ef7ab59d58b49f39339cc1bde19798137b21864a96cd0",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -2441,7 +2441,7 @@
     },
     {
       "path": "release-evidence/project-agent-kit/fixture/rendered-prompt.txt",
-      "sha256": "007dc0f80405069f28a5d1b1921c7bc65f6b31492965fc17e87f4142b0bd24c1",
+      "sha256": "33ee5b22fa13571d278fb709dfd5810da82ecd825e175ab2888d411aa5418158",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     },
@@ -3551,7 +3551,7 @@
     },
     {
       "path": "tests/test_project_agent_kit.py",
-      "sha256": "26bfc4ee621a0643e4959d950a1974a1d3ccb544e73ee4dcfbc96ccdbf5a2d44",
+      "sha256": "71460b0fafc5ef43793c756a067664d55a87d1ceebe563ca32f8caa32287cb9c",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     },

@@ -20,9 +20,9 @@ def test_should_route_one_short_prompt_to_the_project_agent_kit_recipe() -> None
     for line in (
         "[Prepared project purpose and goals]",
         "Harness: https://github.com/youngjin39/mir-yoke",
-        "Build and verify the project-specific harness and Project Agent Kit first.",
+        "Complete and verify the project-specific harness and Project Agent Kit first.",
         "Initialize a new Git repository and create the verified initial commit.",
-        "Do not start product planning or implementation yet.",
+        "Do not start development planning or product implementation yet.",
     ):
         assert line in readme
 
@@ -37,6 +37,16 @@ def test_should_define_the_recipe_as_guidance_not_a_consumer_payload() -> None:
     assert "`yoke plan`" in recipe
     assert "`yoke apply`" in recipe
     assert "READY_FOR_DEVELOPMENT_PLANNING" in recipe
+
+
+def test_should_require_concrete_purpose_before_writing() -> None:
+    readme = _read("README.md")
+    recipe = _read("recipes/project-agent-kit/README.md")
+    normalized_recipe = " ".join(recipe.split())
+
+    assert "Replace the bracketed first line with concrete project purpose and goals" in readme
+    assert "the bracketed placeholder in `prompt.txt` cannot remain" in normalized_recipe
+    assert "stop before writing and ask for it" in normalized_recipe
 
 
 def test_should_require_a_project_owned_brief_harness_and_dual_runtime_reviewer() -> None:

@@ -11,11 +11,12 @@ discover other repositories, or run `yoke plan` or `yoke apply`.
 
 ## Required input
 
-The prompt supplies the project purpose and goals. Derive observable success conditions, users,
-non-goals, and constraints from that material. If the product stack is absent, select the smallest
-conventional stack that can satisfy the stated purpose and record the choice as an assumption. Stop
-before mutation when a consequential product decision cannot be derived or the required toolchain
-is unavailable.
+The same request must supply concrete project purpose and goals; the bracketed placeholder in
+`prompt.txt` cannot remain. If that material is absent from both the request and target, stop before
+writing and ask for it. Derive observable success conditions, users, non-goals, and constraints from
+that material. If the product stack is absent, select the smallest conventional stack that can
+satisfy the stated purpose and record the choice as an assumption. Stop before mutation when a
+consequential product decision cannot be derived or the required toolchain is unavailable.
 
 Record the exact Mir Yoke URL and observed release tag or commit in
 `docs/harness-bootstrap.md`. This is provenance only; the target does not track template drift.

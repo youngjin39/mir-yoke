@@ -60,15 +60,17 @@ Open one explicit empty directory with Claude or Codex and send this short promp
 
 Harness: https://github.com/youngjin39/mir-yoke
 
-Build and verify the project-specific harness and Project Agent Kit first.
+Complete and verify the project-specific harness and Project Agent Kit first.
 Initialize a new Git repository and create the verified initial commit.
-Do not start product planning or implementation yet.
+Do not start development planning or product implementation yet.
 ```
 
-The detailed execution contract lives in the recipe, not in the prompt. The agent must finish with
-`READY_FOR_DEVELOPMENT_PLANNING`, a verified project-owned harness and memory baseline, one clean
-local commit, and no remote or push. If the target is not empty or is already inside a Git worktree,
-use the preservation-first Starter flow instead.
+Replace the bracketed first line with concrete project purpose and goals, or include that material
+elsewhere in the same request. Without it, the prompt is incomplete and the agent must ask before
+writing. The detailed execution contract lives in the recipe, not in the prompt. The agent must
+finish with `READY_FOR_DEVELOPMENT_PLANNING`, a verified project-owned harness and memory baseline,
+one clean local commit, and no remote or push. If the target is not empty or is already inside a Git
+worktree, use the preservation-first Starter flow instead.
 
 ## Use the minimal Starter
 

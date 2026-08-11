@@ -12,6 +12,6 @@ Constraints:
 
 Harness: https://github.com/youngjin39/mir-yoke
 
-Build and verify the project-specific harness and Project Agent Kit first.
+Complete and verify the project-specific harness and Project Agent Kit first.
 Initialize a new Git repository and create the verified initial commit.
-Do not start product planning or implementation yet.
+Do not start development planning or product implementation yet.
