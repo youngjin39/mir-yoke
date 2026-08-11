@@ -1,10 +1,10 @@
 status: superseded-reference
-superseded_by: ADR-81
+superseded_by: ADR-83
 mode: S
 mode_evidence: "Current owner requirements and an existing Mir Yoke source/ADR corpus were compared."
 domain: AI_SYSTEM
 domain_evidence: "The template supplies agent prompts, hooks, tool policies, skills, and context behavior; the provider itself has no runtime."
-system_boundary: "Historical specification snapshot for the pre-ADR-81 automated bootstrap and capability implementation; it is not the supported consumer contract."
+system_boundary: "Historical detailed specification for the v0.8 automation implementation; ADR-83 defines the current layered public contract."
 quality_model: "ISO/IEC 25010:2023"
 stakeholders:
   - {who: public adopter, concerns: [clear purpose, safe selection, local ownership], views: [feat/, uc/, iface/]}
@@ -13,9 +13,11 @@ stakeholders:
 external_entities: [public_evaluator, greenfield_owner, existing_repository_owner, template_maintainer]
 actors: [public_evaluator, greenfield_owner, existing_repository_owner, template_maintainer]
 authority_notes:
-  - "ADR-81 supersedes this tree as the public support contract; `starter/` is the only supported consumer payload."
+  - "The ADR-83 owner amendment supersedes this tree as the public support contract; ADR-81 still owns the four-file Starter compatibility layer."
+  - "The standard Project Agent Kit owns a bounded common harness and required local memory but copies no Mir CLI source."
+  - "ADR-74, ADR-79, and ADR-80 govern the explicitly invoked optional installed v0.8-compatible CLI; installation grants no target authority."
+  - "ADR-82 composition files are inert references and expose no active yoke command."
   - "Owner confirmation and ADR-84 override historical central-fleet implementation evidence."
   - "Owner confirmation 2026-08-10 and ADR-79 narrow automated bootstrap to macOS, Linux, and WSL; native Windows is guidance-only."
   - "ADR-80 requires project-isolated exact-source CLI installation and rejects provider push URLs before greenfield mutation."
   - "ADR-76 controls Mir Harness cross-repository authority."
-  - "ADR-83 is limited to opt-in public capability provenance by ADR-84."

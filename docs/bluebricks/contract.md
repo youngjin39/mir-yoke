@@ -2,19 +2,20 @@
 
 ## Purpose
 
-Define Mir Yoke as an agent-guided public harness-engineering template and reference repository
-with no provider runtime or standing consumer authority.
+Define Mir Yoke's three layers: four-file Starter compatibility, the standard Project Agent Kit,
+and the optional installed v0.8-compatible `mir` CLI, all with no provider runtime or standing
+consumer authority.
 
 ## Public Interface
 
-`README.md`, `CLAUDE.md`, `ARCHITECTURE.md`, ADR-83, ADR-81, and the public decision index.
+`README.md`, `CLAUDE.md`, `ARCHITECTURE.md`, ADR-83, ADR-81, ADR-74, and the public decision index.
 
 ## Rules and Hazards
 
-Consumer repositories remain authoritative. Do not reintroduce target discovery, rollout,
-cross-repository writes, or hash conformance. Template assets are a baseline the active agent fits
-to the target's current state, not a universal installer. Edit `CLAUDE.md` before generated
-`AGENTS.md`.
+Consumer repositories remain authoritative. Installing the CLI or preserving reference files does
+not authorize target discovery, rollout, cross-repository writes, or hash conformance. The standard
+Kit creates project-owned harness and memory files but copies no Mir runtime source. Edit
+`CLAUDE.md` before generated `AGENTS.md`.
 
 ## Dependencies and Validation
 

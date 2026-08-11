@@ -1,4 +1,4 @@
-"""Reject the retired public Mir module CLI."""
+"""``python -m mir <subcommand> ...`` delegates to the public Mir CLI."""
 from __future__ import annotations
 
 from mir.cli.__main__ import main

@@ -10,6 +10,9 @@ MINIMAL_ADR = ROOT / "docs/decisions/adr-81-minimal-starter-support-boundary.md"
 PROJECT_AGENT_KIT_ADR = (
     ROOT / "docs/decisions/adr-83-project-agent-kit-recipe-and-supported-surfaces.md"
 )
+COMPOSITION_ADR = (
+    ROOT / "docs/decisions/adr-82-product-planes-capability-packs-and-composition.md"
+)
 
 
 def _frontmatter(path: Path) -> dict[str, object]:
@@ -42,10 +45,26 @@ def test_should_make_adr_81_the_narrowest_support_decision_when_indexed() -> Non
 def test_should_make_adr_83_the_current_supported_surface_decision() -> None:
     metadata = _frontmatter(PROJECT_AGENT_KIT_ADR)
     index = (ROOT / "docs/decisions/INDEX.md").read_text(encoding="utf-8")
+    body = PROJECT_AGENT_KIT_ADR.read_text(encoding="utf-8")
 
     assert metadata["status"] == "accepted"
+    assert metadata["amended"] == __import__("datetime").date(2026, 8, 11)
     assert metadata["supersedes"] == ["adr-82"]
+    assert "2026-08-11 Owner Amendment" in body
+    assert "required SQLite+FTS5 memory" in body
+    assert "must not copy the full Mir package or CLI source" in body
+    assert "post-release owner acceptance" in body
     assert index.index("ADR-83") < index.index("ADR-81")
+
+
+def test_should_preserve_adr_82_only_as_an_inert_reference() -> None:
+    metadata = _frontmatter(COMPOSITION_ADR)
+    body = COMPOSITION_ADR.read_text(encoding="utf-8")
+
+    assert metadata["status"] == "superseded"
+    assert metadata["superseded_by"] == ["adr-83"]
+    assert "reference-templates/advanced-composition/" in body
+    assert "do not expose an active `yoke` command" in body
 
 
 # @spec FR-008

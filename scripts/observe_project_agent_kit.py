@@ -325,6 +325,80 @@ def _mutation_probe(
     return observation
 
 
+def _run_common_harness_cycle(
+    target: Path,
+    contract: dict[str, Any],
+    replacements: dict[str, str],
+    environment: dict[str, str],
+) -> dict[str, object]:
+    common_harness = _mapping(contract, "common_harness")
+    commands = _mapping(common_harness, "commands")
+    observations: dict[str, object] = {}
+    for name in ("memory_init", "memory_sync", "memory_doctor", "context_pull"):
+        argv = commands.get(name)
+        if not isinstance(argv, list) or not all(isinstance(item, str) for item in argv):
+            raise ValueError(f"common harness command {name} is invalid")
+        observation = _run_observed(target, argv, replacements, environment)
+        observations[name] = observation
+        if observation["exit_code"] != 0:
+            raise ValueError(f"common harness command failed: {name}")
+
+    paths = _mapping(common_harness, "paths")
+    database = target / str(paths["database"])
+    if not database.is_file():
+        raise ValueError("common harness commands did not create the memory database")
+    doctor = _mapping(observations, "memory_doctor")
+    try:
+        doctor_payload = json.loads(str(doctor["stdout"]))
+    except (KeyError, json.JSONDecodeError) as exc:
+        raise ValueError("memory doctor did not emit valid JSON evidence") from exc
+    if not isinstance(doctor_payload, dict) or doctor_payload.get("status") != "ready":
+        raise ValueError("memory doctor did not report ready")
+    purpose = _mapping(contract, "intent")["purpose"]
+    context = _mapping(observations, "context_pull")
+    normalized_purpose = " ".join(str(purpose).split())
+    normalized_context = " ".join(str(context.get("stdout", "")).split())
+    if normalized_purpose not in normalized_context:
+        raise ValueError("context pull did not recover the project purpose from memory")
+    return observations
+
+
+def _probe_hook_requires_memory(
+    target: Path,
+    contract: dict[str, Any],
+    replacements: dict[str, str],
+    environment: dict[str, str],
+) -> dict[str, object]:
+    common_harness = _mapping(contract, "common_harness")
+    paths = _mapping(common_harness, "paths")
+    database = target / str(paths["database"])
+    hook_log = target / ".git" / "project-agent-kit-pre-commit.log"
+    hook_log_before = hook_log.read_bytes()
+    moved: list[tuple[Path, Path]] = []
+    for suffix in ("", "-wal", "-shm"):
+        source = Path(f"{database}{suffix}")
+        if source.exists():
+            hidden = source.with_name(f".{source.name}.observer-missing")
+            source.rename(hidden)
+            moved.append((source, hidden))
+    try:
+        hook_environment = {**environment, "PROJECT_AGENT_KIT_HOOK_PHASE": "direct"}
+        observation = _run_observed(
+            target,
+            [str(paths["memory_sync_hook"])],
+            replacements,
+            hook_environment,
+        )
+    finally:
+        hook_log.write_bytes(hook_log_before)
+        for source, hidden in reversed(moved):
+            hidden.rename(source)
+    observation["mutation"] = f"missing:{paths['database']}"
+    if observation["exit_code"] == 0:
+        raise ValueError("pre-commit hook succeeded without the required memory database")
+    return observation
+
+
 def _tracked_paths(target: Path) -> set[str]:
     return set(_run_git(target, "ls-files").splitlines())
 
@@ -435,6 +509,46 @@ def collect(
     }
     _verify_target_checkout(target, static_evidence)
 
+    common_paths = _mapping(_mapping(contract, "common_harness"), "paths")
+    memory_database = target / str(common_paths["database"])
+    if not memory_database.is_file():
+        raise ValueError("target did not create the required memory database before observation")
+    target_replacements = {
+        str(target): "<TARGET_ROOT>",
+        str(ROOT): "<PROVIDER_ROOT>",
+        str(state_dir): "<OBSERVER_STATE>",
+        str(Path.home()): "<HOME>",
+        **{
+            str(path): f"<OUTSIDE_{index}>"
+            for index, path in enumerate(outside_paths, start=1)
+        },
+    }
+    target_environment = _execution_environment(target)
+    common_initial = _run_common_harness_cycle(
+        target,
+        contract,
+        target_replacements,
+        target_environment,
+    )
+    missing_database_hook = _probe_hook_requires_memory(
+        target,
+        contract,
+        target_replacements,
+        target_environment,
+    )
+    for suffix in ("", "-wal", "-shm"):
+        candidate = Path(f"{memory_database}{suffix}")
+        if candidate.exists():
+            candidate.unlink()
+    common_rehydrated = _run_common_harness_cycle(
+        target,
+        contract,
+        target_replacements,
+        target_environment,
+    )
+    if _run_git(target, "status", "--porcelain"):
+        raise ValueError("common harness verification changed the tracked target worktree")
+
     commands = _mapping(contract, "commands")
     observed_commands: dict[str, object] = {}
     observed_probes: dict[str, object] = {}
@@ -539,9 +653,17 @@ def collect(
 
     observer_hash = _sha256(ROOT / "scripts/observe_project_agent_kit.py")
     verification = {
-        "schema_version": 3,
+        "schema_version": 4,
         "observer_sha256": observer_hash,
         "commands": observed_commands,
+        "common_harness": {
+            "database_existed_before": True,
+            "initial": common_initial,
+            "missing_database_hook": missing_database_hook,
+            "database_deleted": True,
+            "rehydrated": common_rehydrated,
+            "database_recreated": memory_database.is_file(),
+        },
         "mutation_probes": observed_probes,
         "git": {
             "status_porcelain": "",

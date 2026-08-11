@@ -16,25 +16,30 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 - Added ADR-83 and contract tests for the Starter, recipe, portable plugin provider, reference
   corpus, Git boundary, and clean-room release evidence.
 - Added a two-phase clean-room observer and release validator that recompute target bundles, declared
-  commands, original Git/hook state, provider/outside snapshots, and sanitized runtime transcripts.
+  commands, original Git/hook state, provider/outside snapshots, and sanitized runtime transcripts
+  for owner-run post-release acceptance.
 
 ### Changed
 
 - Kept `starter/` as the only consumer payload while making the Project Agent Kit a separate
-  supported guidance surface.
+  supported guidance surface with a project-owned common harness and required SQLite+FTS5 memory.
+- Restored the public v0.8 `mir` command surface as an optional installed v0.9 tool. Installation
+  grants no target authority, and the standard Project Agent Kit never copies its source.
 - Generalized common plugins so they do not require Mir CLI, `.ai-harness`, fleet phases, a shared
   wiki, a particular browser command, or a fixed Starter-compliance count.
-- Restricted optional consumer tooling to namespaced plugins and marketplace metadata. Retained
-  bootstrap, CLI, hook, memory, executor, spec, and test code is reference or maintainer evidence.
+- Kept namespaced plugins optional and separated the installed CLI from generated target files.
+- Moved release-time dual-runtime clean-room evidence out of the tag gate. Repository validation
+  publishes the GitHub Release first; the owner performs external generated-repository acceptance
+  afterward with the verifier still available.
 - Replaced the platform bootstrap CI path with supported-surface and isolated-plugin validation.
 
 ### Removed
 
-- Removed active product planes, capability packs, advisory profiles, distribution archives,
-  provider installation, target plan/apply composition, receipts, and the `mir` and `yoke` console
-  entrypoints. Git history preserves their implementation evidence.
-- Removed provider-side greenfield bootstrap from the current new-project contract. Existing 0.8
-  users remain pinned and receive no automatic migration.
+- Removed active product planes, capability packs, advisory profiles, distribution archives, and
+  target-writing `yoke` plan/apply composition. Their files are preserved only as inert reference
+  templates.
+- Removed provider-side greenfield bootstrap from the standard new-project contract. Owners may
+  still select the restored installed `mir bootstrap` path explicitly.
 
 ## [0.8.0] — 2026-08-06 — Portable project bootstrap
 

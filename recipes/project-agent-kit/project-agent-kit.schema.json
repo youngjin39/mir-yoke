@@ -4,9 +4,9 @@
   "title": "Project Agent Kit Target Contract",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "project_slug", "intent", "provider", "foundation", "generation", "commands"],
+  "required": ["schema_version", "project_slug", "intent", "provider", "common_harness", "foundation", "generation", "commands"],
   "properties": {
-    "schema_version": {"const": 1},
+    "schema_version": {"const": 2},
     "project_slug": {
       "type": "string",
       "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
@@ -14,9 +14,14 @@
     "intent": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["purpose", "purpose_sha256", "rendered_prompt_sha256"],
+      "required": ["purpose", "context_probe", "purpose_sha256", "rendered_prompt_sha256"],
       "properties": {
         "purpose": {"type": "string", "minLength": 1},
+        "context_probe": {
+          "type": "string",
+          "minLength": 3,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]*$"
+        },
         "purpose_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
         "rendered_prompt_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
       }
@@ -28,6 +33,52 @@
       "properties": {
         "url": {"const": "https://github.com/youngjin39/mir-yoke"},
         "revision": {"type": "string", "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$"}
+      }
+    },
+    "common_harness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["paths", "commands"],
+      "properties": {
+        "paths": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["config", "database", "handoff", "mir_wrapper", "memory_sync_wrapper", "memory_sync_hook"],
+          "properties": {
+            "config": {"const": "harness_a.toml"},
+            "database": {"const": ".mir/memory.db"},
+            "handoff": {"const": "tasks/handoffs/session-handoff-LATEST.md"},
+            "mir_wrapper": {"const": "scripts/mir.sh"},
+            "memory_sync_wrapper": {"const": "scripts/memory-sync.sh"},
+            "memory_sync_hook": {"const": ".githooks/pre-commit"}
+          }
+        },
+        "commands": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["memory_init", "memory_sync", "memory_doctor", "context_pull"],
+          "properties": {
+            "memory_init": {"const": ["scripts/mir.sh", "migrate", "up", "--db", ".mir/memory.db"]},
+            "memory_sync": {"const": ["scripts/memory-sync.sh"]},
+            "memory_doctor": {"const": ["scripts/mir.sh", "memory", "doctor", "--project-root", ".", "--json"]},
+            "context_pull": {
+              "type": "array",
+              "prefixItems": [
+                {"const": "scripts/mir.sh"},
+                {"const": "context"},
+                {"const": "pull"},
+                {"type": "string", "minLength": 3},
+                {"const": "--db"},
+                {"const": ".mir/memory.db"},
+                {"const": "--project-root"},
+                {"const": "."}
+              ],
+              "items": false,
+              "minItems": 8,
+              "maxItems": 8
+            }
+          }
+        }
       }
     },
     "foundation": {

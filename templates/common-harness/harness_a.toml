@@ -1,0 +1,20 @@
+# Project-owned portable memory and context baseline.
+
+[memory]
+enabled = true
+required = true
+backend = "sqlite_fts5"
+db_path = ".mir/memory.db"
+vector_mode = "off"
+plugin_mode = "disabled"
+recall_policy = "progressive"
+
+[memory.embedding]
+enabled = false
+required = false
+
+[[memory.external_archives]]
+slug = "project-harness"
+root = "."
+mode = "indexed"
+glob_include = ["PROJECT.md", "HARNESS.md", "docs/**/*.md", "tasks/**/*.md"]

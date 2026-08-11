@@ -1,10 +1,15 @@
 {
-  "goal": "Implement ADR-83 so one short project-purpose prompt produces a verified project-owned Claude and Codex Agent Kit, then stops before development planning.",
+  "goal": "Release v0.9.0 with the v0.8 public harness CLI restored, a standard Project Agent Kit that includes bounded common harness and required memory, and superseded complex composition preserved as inert references without copying the Mir runtime into generated projects.",
   "goal_type": "implementation",
-  "scope": "mir-yoke supported surfaces only; no commit, push, tag, release, provider activation, protected lock mutation, or consumer write",
+  "scope": "Mir Yoke implementation, contracts, regressions, protected lock rebind, intentional commits, SSH push to main, v0.9.0 tag, and tag-triggered GitHub Release; external generated-repository acceptance remains owner-run after release",
   "priority": "high",
   "updated": "2026-08-11",
   "history": [
+    {
+      "goal": "Implement ADR-83 so one short project-purpose prompt produces a verified project-owned Claude and Codex Agent Kit, then stops before development planning.",
+      "updated": "2026-08-11",
+      "status": "superseded"
+    },
     {
       "goal": "Maintain Mir Yoke as the verified ADR-78 public template; no active implementation, publication, or branch-cleanup task remains.",
       "updated": "2026-08-08",

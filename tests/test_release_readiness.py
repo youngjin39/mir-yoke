@@ -28,6 +28,8 @@ def test_should_include_every_required_gate_when_release_script_is_inspected() -
         "test_plugin_skill_packages.py",
         "test_common_skill_contracts.py",
         "test_capability_security.py",
+        "test_installed_cli.py",
+        "tools/mir_executor/tests/test_policy.py",
         "verify_codex_sync.py",
         "verify_project_agent_kit_evidence.py",
         "test_no_korean_in_user_facing.py",
@@ -37,7 +39,21 @@ def test_should_include_every_required_gate_when_release_script_is_inspected() -
         assert token in body
 
 
-def test_tag_workflow_requires_actual_project_agent_kit_evidence() -> None:
+def test_tag_workflow_publishes_release_after_repository_validation() -> None:
     workflow = (ROOT / ".github/workflows/release.yml").read_text(encoding="utf-8")
 
-    assert "--require-project-agent-kit-evidence" in workflow
+    assert "contents: write" in workflow
+    assert "group: release-${{ github.ref }}" in workflow
+    assert "cancel-in-progress: false" in workflow
+    assert "verify_release_readiness.py --current-clean-tree" in workflow
+    assert "--require-project-agent-kit-evidence" not in workflow
+    assert "git push" not in workflow
+    assert workflow.index("verify_release_readiness.py") < workflow.index("gh release create")
+    for token in (
+        "gh release view",
+        "gh release create",
+        "--verify-tag",
+        "--generate-notes",
+        "startsWith(github.ref, 'refs/tags/v')",
+    ):
+        assert token in workflow

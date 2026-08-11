@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -190,6 +191,24 @@ def _refresh_artifact_hash(run_root: Path, artifact: str, field: str) -> dict[st
     return payload
 
 
+def _write_test_uvx(target: Path) -> Path:
+    bin_dir = target / ".harness-runtime" / "bin"
+    bin_dir.mkdir(parents=True, exist_ok=True)
+    uvx = bin_dir / "uvx"
+    uvx.write_text(
+        "#!/bin/sh\n"
+        "set -eu\n"
+        "if [ \"${1:-}\" = --from ]; then shift 2; fi\n"
+        "[ \"${1:-}\" = mir ] || exit 2\n"
+        "shift\n"
+        f'export PYTHONPATH="{ROOT / "src"}:{ROOT}"\n'
+        f'exec "{sys.executable}" -m mir "$@"\n',
+        encoding="utf-8",
+    )
+    uvx.chmod(0o755)
+    return bin_dir
+
+
 def _build_valid_target(target: Path, invalid_case: str | None = None) -> None:
     slug = "sample"
     _, purpose_sha256, rendered_prompt_sha256, _ = content_hashes(ROOT)
@@ -198,16 +217,55 @@ def _build_valid_target(target: Path, invalid_case: str | None = None) -> None:
     ).read_text(encoding="utf-8").strip()
     _git(target, "init", "-q", "-b", "main")
     contract = {
-        "schema_version": 1,
+        "schema_version": 2,
         "project_slug": slug,
         "intent": {
             "purpose": purpose,
+            "context_probe": "Markdown",
             "purpose_sha256": purpose_sha256,
             "rendered_prompt_sha256": rendered_prompt_sha256,
         },
         "provider": {
             "url": "https://github.com/youngjin39/mir-yoke",
             "revision": _git(ROOT, "rev-parse", "HEAD"),
+        },
+        "common_harness": {
+            "paths": {
+                "config": "harness_a.toml",
+                "database": ".mir/memory.db",
+                "handoff": "tasks/handoffs/session-handoff-LATEST.md",
+                "mir_wrapper": "scripts/mir.sh",
+                "memory_sync_wrapper": "scripts/memory-sync.sh",
+                "memory_sync_hook": ".githooks/pre-commit",
+            },
+            "commands": {
+                "memory_init": [
+                    "scripts/mir.sh",
+                    "migrate",
+                    "up",
+                    "--db",
+                    ".mir/memory.db",
+                ],
+                "memory_sync": ["scripts/memory-sync.sh"],
+                "memory_doctor": [
+                    "scripts/mir.sh",
+                    "memory",
+                    "doctor",
+                    "--project-root",
+                    ".",
+                    "--json",
+                ],
+                "context_pull": [
+                    "scripts/mir.sh",
+                    "context",
+                    "pull",
+                    "Markdown",
+                    "--db",
+                    ".mir/memory.db",
+                    "--project-root",
+                    ".",
+                ],
+            },
         },
         "foundation": {
             "manifest": "pyproject.toml",
@@ -283,13 +341,38 @@ def _build_valid_target(target: Path, invalid_case: str | None = None) -> None:
         "CLAUDE.md": "Read and follow HARNESS.md.\n",
         "AGENTS.md": "Read and follow HARNESS.md.\n",
         "README.md": "# Sample project foundation\n",
-        ".gitignore": ".cache/\n.harness-runtime/\n__pycache__/\n*.pyc\n",
+        ".gitignore": ".cache/\n.harness-runtime/\n.mir/\n__pycache__/\n*.pyc\n",
         "docs/harness-bootstrap.md": (
             "# Bootstrap provenance\n\n"
             "Source: https://github.com/youngjin39/mir-yoke\n"
             f"Revision: {_git(ROOT, 'rev-parse', 'HEAD')}\n"
         ),
         "harness/project-agent-kit.json": json.dumps(contract, indent=2) + "\n",
+        "harness_a.toml": (
+            "[memory]\n"
+            "enabled = true\n"
+            "required = true\n"
+            'backend = "sqlite_fts5"\n'
+            'db_path = ".mir/memory.db"\n'
+            'vector_mode = "off"\n'
+            'plugin_mode = "disabled"\n'
+            'recall_policy = "progressive"\n\n'
+            "[memory.embedding]\n"
+            "enabled = false\n"
+            "required = false\n\n"
+            "[[memory.external_archives]]\n"
+            'slug = "project-harness"\n'
+            'root = "."\n'
+            'mode = "indexed"\n'
+            'glob_include = ["PROJECT.md", "HARNESS.md", "docs/**/*.md", '
+            '"tasks/**/*.md"]\n'
+        ),
+        "tasks/handoffs/session-handoff-LATEST.md": (
+            "# Session Handoff\n\n"
+            "Product planning and implementation have not started. Wait for a later request.\n\n"
+            "Use context_pull before substantial work. The ignored database is rebuilt with "
+            "memory_init, memory_sync, and memory_doctor.\n"
+        ),
         "pyproject.toml": "[project]\nname = \"sample-foundation\"\nversion = \"0.0.0\"\n",
         "uv.lock": "version = 1\nrevision = 1\nrequires-python = \">=3.11\"\n",
         "src/harness_probe.py": "def harness_probe() -> str:\n    return \"ready\"\n",
@@ -343,12 +426,39 @@ def _build_valid_target(target: Path, invalid_case: str | None = None) -> None:
             "  *) exit 2 ;;\n"
             "esac\n"
         ),
+        "scripts/mir.sh": (
+            "#!/bin/sh\n"
+            "set -eu\n"
+            "root=$(CDPATH= cd -- \"$(dirname -- \"$0\")/..\" && pwd)\n"
+            "runtime=\"$root/.mir/runtime\"\n"
+            "mkdir -p \"$runtime/home\" \"$runtime/cache\" \"$runtime/data\" "
+            "\"$runtime/tmp\" \"$runtime/uv\"\n"
+            "export HOME=\"$runtime/home\"\n"
+            "export XDG_CACHE_HOME=\"$runtime/cache\"\n"
+            "export XDG_CONFIG_HOME=\"$runtime/config\"\n"
+            "export XDG_DATA_HOME=\"$runtime/data\"\n"
+            "export TMPDIR=\"$runtime/tmp\"\n"
+            "export UV_CACHE_DIR=\"$runtime/uv/cache\"\n"
+            "export UV_TOOL_DIR=\"$runtime/uv/tools\"\n"
+            "export UV_PYTHON_INSTALL_DIR=\"$runtime/uv/python\"\n"
+            f'exec uvx --from "git+https://github.com/youngjin39/mir-yoke@'
+            f'{_git(ROOT, "rev-parse", "HEAD")}" mir "$@"\n'
+        ),
+        "scripts/memory-sync.sh": (
+            "#!/bin/sh\n"
+            "set -eu\n"
+            "root=$(CDPATH= cd -- \"$(dirname -- \"$0\")/..\" && pwd)\n"
+            "cd \"$root\"\n"
+            "if [ ! -f .mir/memory.db ]; then exit 2; fi\n"
+            "exec scripts/mir.sh context sync --db .mir/memory.db --project-root .\n"
+        ),
         ".githooks/pre-commit": (
             "#!/bin/sh\n"
             "set -eu\n"
             "phase=${PROJECT_AGENT_KIT_HOOK_PHASE:-commit}\n"
             "case \"$phase\" in direct|commit) ;; *) exit 2 ;; esac\n"
             "root=$(git rev-parse --show-toplevel)\n"
+            "\"$root/scripts/memory-sync.sh\"\n"
             "\"$root/scripts/verify.sh\"\n"
             "log=$(git rev-parse --git-path project-agent-kit-pre-commit.log)\n"
             "printf '%s:0\\n' \"$phase\" >> \"$log\"\n"
@@ -399,18 +509,47 @@ def _build_valid_target(target: Path, invalid_case: str | None = None) -> None:
             "def harness_probe() -> str:\n"
             "    return \"ready\"\n"
         )
+    elif invalid_case == "conditional-memory-hook":
+        files[".githooks/pre-commit"] = files[".githooks/pre-commit"].replace(
+            '"$root/scripts/memory-sync.sh"\n',
+            'if [ -f "$root/.mir/memory.db" ]; then '
+            '"$root/scripts/memory-sync.sh"; fi\n',
+        )
+    elif invalid_case == "guarded-memory-hook":
+        files[".githooks/pre-commit"] = files[".githooks/pre-commit"].replace(
+            '"$root/scripts/memory-sync.sh"\n',
+            '[ ! -f "$root/.mir/memory.db" ] || "$root/scripts/memory-sync.sh"\n',
+        )
     for relative, body in files.items():
         path = target / relative
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(body, encoding="utf-8")
     for relative in (
         "scripts/generate_agent_derivatives.py",
+        "scripts/memory-sync.sh",
+        "scripts/mir.sh",
         "scripts/verify.sh",
         ".githooks/pre-commit",
     ):
         (target / relative).chmod(0o755)
     _git(target, "config", "core.hooksPath", ".githooks")
     direct_environment = os.environ.copy()
+    runtime_bin = _write_test_uvx(target)
+    direct_environment["PATH"] = f"{runtime_bin}{os.pathsep}{direct_environment['PATH']}"
+    common_commands = contract["common_harness"]["commands"]
+    assert isinstance(common_commands, dict)
+    for name in ("memory_init", "memory_sync", "memory_doctor", "context_pull"):
+        command = common_commands[name]
+        assert isinstance(command, list)
+        completed = subprocess.run(
+            command,
+            cwd=target,
+            env=direct_environment,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        assert completed.returncode == 0, (name, completed.stdout, completed.stderr)
     direct_environment["PROJECT_AGENT_KIT_HOOK_PHASE"] = "direct"
     subprocess.run(
         [".githooks/pre-commit"],
@@ -428,6 +567,7 @@ def _build_valid_target(target: Path, invalid_case: str | None = None) -> None:
             "GIT_COMMITTER_EMAIL": "evidence@invalid",
         }
     )
+    environment["PATH"] = f"{runtime_bin}{os.pathsep}{environment['PATH']}"
     subprocess.run(
         ["git", "commit", "-q", "-m", "chore(harness): bootstrap project agent kit"],
         cwd=target,
@@ -436,7 +576,11 @@ def _build_valid_target(target: Path, invalid_case: str | None = None) -> None:
     )
 
 
-def _write_run_evidence(workspace: Path, runtime: str) -> Path:
+def _write_run_evidence(
+    workspace: Path,
+    runtime: str,
+    invalid_case: str | None = None,
+) -> Path:
     evidence_root = workspace / "evidence"
     target = workspace / f"target-{runtime}"
     target.mkdir(parents=True)
@@ -449,10 +593,13 @@ def _write_run_evidence(workspace: Path, runtime: str) -> Path:
         encoding="utf-8",
     )
     previous_global = os.environ.get("GIT_CONFIG_GLOBAL")
+    previous_path = os.environ.get("PATH", "")
     os.environ["GIT_CONFIG_GLOBAL"] = str(global_config)
     try:
         prepare(target, state_dir, [outside])
-        _build_valid_target(target)
+        _build_valid_target(target, invalid_case)
+        runtime_bin = target / ".harness-runtime" / "bin"
+        os.environ["PATH"] = f"{runtime_bin}{os.pathsep}{previous_path}"
         runtime_log = state_dir / "runtime-source.log"
         runtime_log.write_text(
             f"{runtime} completed the clean-room run\nREADY_FOR_DEVELOPMENT_PLANNING\n",
@@ -467,6 +614,7 @@ def _write_run_evidence(workspace: Path, runtime: str) -> Path:
             runtime_log,
         )
     finally:
+        os.environ["PATH"] = previous_path
         if previous_global is None:
             os.environ.pop("GIT_CONFIG_GLOBAL", None)
         else:
@@ -484,6 +632,7 @@ def _write_run_evidence(workspace: Path, runtime: str) -> Path:
         "purpose-loss",
         "provider-revision",
         "product-in-probe",
+        "conditional-memory-hook",
     ),
 )
 def test_release_evidence_rejects_an_invalid_bundled_kit(
@@ -536,6 +685,33 @@ def test_release_evidence_rejects_unobserved_git_configuration(tmp_path: Path) -
         )
         with pytest.raises(ValueError):
             _verify_run_artifacts(run_root, payload, ROOT)
+
+
+def test_release_evidence_rejects_missing_memory_rehydration_observation(
+    tmp_path: Path,
+) -> None:
+    evidence_root = _write_run_evidence(tmp_path, "claude")
+    run_root = evidence_root / "claude"
+    verification_path = run_root / "verification.json"
+    verification = json.loads(verification_path.read_text(encoding="utf-8"))
+    del verification["common_harness"]["rehydrated"]
+    verification_path.write_text(json.dumps(verification), encoding="utf-8")
+    payload = _refresh_artifact_hash(
+        run_root,
+        "verification.json",
+        "verification_log_sha256",
+    )
+
+    with pytest.raises(ValueError):
+        _verify_run_artifacts(run_root, payload, ROOT)
+
+
+def test_observer_rejects_a_hook_that_skips_missing_memory(tmp_path: Path) -> None:
+    with pytest.raises(
+        ValueError,
+        match="pre-commit hook succeeded without the required memory database",
+    ):
+        _write_run_evidence(tmp_path, "claude", "guarded-memory-hook")
 
 
 def test_release_evidence_rejects_sensitive_runtime_transcript(tmp_path: Path) -> None:

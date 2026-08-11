@@ -52,7 +52,7 @@ def test_public_contract_names_the_minimal_support_boundary() -> None:
     ).lower()
 
     assert "starter/" in root_docs
-    assert "only supported consumer payload" in root_docs
+    assert "four-file compatibility" in root_docs
     assert "does not require" in root_docs
     for optional in ("memory database", "plugin", "hook", "sub-agent"):
         assert optional in root_docs
@@ -80,6 +80,6 @@ def test_advanced_automation_spec_is_a_superseded_reference() -> None:
     features = (ROOT / "spec/views/features.md").read_text(encoding="utf-8")
 
     assert index["status"] == "superseded-reference"
-    assert index["superseded_by"] == "ADR-81"
-    assert "not the current supported consumer contract" in state
+    assert index["superseded_by"] == "ADR-83"
+    assert "current three-layer contract" in state
     assert "Superseded reference snapshot" in features

@@ -2,8 +2,49 @@
   "version": 1,
   "changes": [
     {
+      "id": "restore-core-harness-engineering-2026-08-11",
+      "record_status": "complete",
+      "scope": "Restore the complete v0.8 public mir CLI, installation, bootstrap, memory, capability, context, execution, hook, and verification surface while retaining the Project Agent Kit as the simple greenfield default, requiring a bounded project-owned common harness and memory component, preserving superseded composition machinery as non-default reference templates, and never copying the full Mir CLI into generated repositories.",
+      "targets": [
+        "pyproject.toml",
+        "src/mir/cli/",
+        "recipes/project-agent-kit/",
+        "reference-templates/advanced-composition/",
+        "README.md",
+        "ARCHITECTURE.md",
+        "BOOTSTRAP.md",
+        "MIGRATION.md",
+        "docs/decisions/adr-83-project-agent-kit-recipe-and-supported-surfaces.md",
+        "docs/decisions/adr-82-product-planes-capability-packs-and-composition.md",
+        "spec/",
+        "config/template-assets.json",
+        "tests/test_installed_cli.py",
+        "tests/test_bootstrap_cli.py",
+        "tests/test_greenfield_slim_integration.py",
+        "tests/test_project_agent_kit.py",
+        "tests/test_project_agent_kit_release_evidence.py",
+        "tests/test_advanced_reference_templates.py"
+      ],
+      "design_ref": "docs/decisions/adr-83-project-agent-kit-recipe-and-supported-surfaces.md",
+      "bluebrick": "Public CLI / Bootstrap / Common Harness / Memory / Project Agent Kit / Reference Templates / Release",
+      "categories": {
+        "unit": {"status": "pass", "command": "uv run pytest -q tests/test_bootstrap_cli.py tests/test_common_harness_template.py tests/test_project_agent_kit.py tests/test_advanced_reference_templates.py", "notes": "The restored dispatcher, bounded target memory contract, four-file common template, and exact 33-file reference inventory pass."},
+        "integration": {"status": "pass", "command": "uv run pytest -q tests/test_installed_cli.py tests/test_bootstrap_cli.py tests/test_greenfield_slim_integration.py tests/test_project_agent_kit.py tests/test_project_agent_kit_release_evidence.py", "notes": "Installed CLI, explicit bootstrap, slim compatibility, and agent-guided greenfield paths coexist without copied provider runtime code."},
+        "e2e": {"status": "pass", "command": "uv run python scripts/verify_release_readiness.py", "notes": "The materialized clean release candidate passed all nine gates, including 759 full-suite tests. Repeat from the final clean tree after the implementation and lock commits; owner-operated external generated-repository acceptance follows release."},
+        "browser": {"status": "not_applicable", "reason": "Mir Yoke has no browser or GUI product surface."},
+        "edge": {"status": "pass", "command": "uv run pytest -q tests/test_bootstrap_cli.py tests/test_project_agent_kit_release_evidence.py tests/test_capability_security.py", "notes": "Fail-closed target, path, Git, credential, rehydration, and rollback boundaries pass."},
+        "architecture": {"status": "pass", "command": "uv run pytest -q tests/test_decision_authority.py tests/test_public_template_identity.py tests/test_advanced_reference_templates.py", "notes": "The four-file minimum, common Project Agent Kit, installed CLI, and inert advanced reference boundary agree."},
+        "availability": {"status": "not_applicable", "reason": "The restored commands and generated foundation start no required persistent service."},
+        "load": {"status": "not_applicable", "reason": "Bootstrap and project creation are bounded local operations."},
+        "soak": {"status": "not_applicable", "reason": "No daemon or scheduler is introduced."},
+        "security": {"status": "pass", "command": "uv run pytest -q tests/test_capability_security.py tests/test_bootstrap_cli.py tests/test_project_agent_kit_release_evidence.py", "notes": "Explicit CLI invocation and target-agent authority remain separate; pinned wrappers, local state, no-copy, and reviewer boundaries pass."},
+        "compatibility": {"status": "pass", "command": "uv run pytest -q", "notes": "The complete materialized release-candidate regression passes with 759 tests. The restored public CLI/bootstrap suite runs on both Ubuntu and macOS in CI."},
+        "transaction_locking": {"status": "planned", "command": "uv run pytest -q tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees", "notes": "The protected lock will be rebound only after the verified implementation commit, in a separate lock commit."}
+      }
+    },
+    {
       "id": "project-agent-kit-recipe-2026-08-11",
-      "record_status": "planned",
+      "record_status": "complete",
       "scope": "Publish a supported agent-guided Project Agent Kit recipe that turns one short purpose prompt into a repository-owned Claude and Codex harness, project-specific read-only code reviewer, real lint/build/test Git pre-commit gate, and verified initial commit without product implementation or provider-side target mutation.",
       "targets": [
         "README.md",
@@ -29,7 +70,7 @@
       "categories": {
         "unit": {"status": "pass", "command": "uv run pytest -q tests/test_project_agent_kit.py tests/test_minimal_starter.py", "notes": "Recipe contents, short prompt routing, four-file starter, Git hook contract, and completion boundary passed."},
         "integration": {"status": "pass", "command": "uv run pytest -q tests/test_project_agent_kit.py tests/test_project_agent_kit_release_evidence.py tests/test_minimal_starter.py tests/test_public_template_identity.py tests/test_decision_authority.py tests/test_public_template_surface.py tests/test_plugin_skill_packages.py tests/test_common_skill_contracts.py tests/test_capability_security.py tests/test_schema_validity.py tests/test_spec_integrity.py", "notes": "The observer-backed supported-surface, identity, security, schema, and historical-spec contract set passed 92 tests."},
-        "e2e": {"status": "planned", "command": "clean-room Claude and Codex runs in separate empty temporary directories", "notes": "A release claim requires both runtimes to complete the same short-prompt bootstrap with a clean initial commit."},
+        "e2e": {"status": "planned", "command": "owner-run post-release Claude and Codex acceptance in separate empty targets", "notes": "The owner deferred real runtime acceptance until a target is supplied after release; v0.9.0 does not claim that dynamic proof."},
         "browser": {"status": "not_applicable", "reason": "Mir Yoke and the Project Agent Kit recipe have no browser or GUI surface."},
         "edge": {"status": "pass", "command": "uv run pytest -q tests/test_project_agent_kit.py tests/test_project_agent_kit_release_evidence.py", "notes": "Existing Git roots, non-empty targets, missing identity or toolchain, placeholders, no-op commands, provider writes, remote/push, purpose loss, invalid reviewers, product probes, parity drift, unsafe local Git config, and sensitive logs fail closed."},
         "architecture": {"status": "pass", "command": "uv run pytest -q tests/test_project_agent_kit.py tests/test_decision_authority.py tests/test_public_template_identity.py", "notes": "Starter, recipe, plugin provider, reference corpus, target ownership, and no-composer boundaries agree."},
@@ -37,8 +78,8 @@
         "load": {"status": "not_applicable", "reason": "Bootstrap work is bounded to one explicit target repository and its selected local checks."},
         "soak": {"status": "not_applicable", "reason": "No long-running process or recurring fleet operation is introduced."},
         "security": {"status": "pass", "command": "uv run pytest -q tests/test_project_agent_kit.py tests/test_project_agent_kit_release_evidence.py tests/test_capability_security.py tests/test_public_template_surface.py", "notes": "Read-only provider access, pre-execution validation, minimal offline environment, target/evidence isolation, reviewer write denial, bounded outside hashes, sensitive-log rejection, Git-policy preservation, and no remote/push behavior passed."},
-        "compatibility": {"status": "pass", "command": "uv run pytest -q --deselect=tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees && uv run ruff check && uv run python scripts/verify_codex_sync.py", "notes": "The full non-protected regression passed 741 tests; Ruff and generated parity pass. The one protected lock digest test awaits the approved commit/rebind sequence."},
-        "transaction_locking": {"status": "pass", "command": "uv run pytest -q tests/test_project_agent_kit_release_evidence.py", "notes": "Observer-backed targets prove preflight-before-write, pre-Git verification, init then direct hook, one hook-verified commit, no remote, clean final state, provider/outside preservation, and evidence-root isolation. Actual dual-runtime runs remain the release e2e gate."}
+        "compatibility": {"status": "pass", "command": "uv run pytest -q tests/test_project_agent_kit.py tests/test_project_agent_kit_release_evidence.py tests/test_common_harness_template.py", "notes": "The schema-v2 Kit, bounded common harness, evidence mechanism, and original reviewer/hook foundation pass together."},
+        "transaction_locking": {"status": "pass", "command": "uv run pytest -q tests/test_project_agent_kit_release_evidence.py", "notes": "Observer-backed targets prove preflight-before-write, pre-Git verification, init then direct hook, one hook-verified commit, no remote, clean final state, provider/outside preservation, and evidence-root isolation; owner runtime acceptance is post-release."}
       }
     },
     {

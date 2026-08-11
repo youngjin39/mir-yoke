@@ -1,35 +1,55 @@
 # Mir Yoke
 
-**A minimal starter, agent-guided Project Agent Kit recipe, and portable skill provider.**
+**A four-file compatibility starter, standard Project Agent Kit, and optional public Mir CLI.**
 
 Mir Yoke is a public template and reference repository, not an agent runtime, service, or control
 plane. It is not a universal installer and has no standing authority over a repository that reads
 or adopts its material. The active AI agent owns the target session, inspects the real target, and
 writes only under the user's target-specific authorization.
 
-## Supported surfaces
+## Supported layers
 
-### Minimal Starter
+### 1. Minimal Starter compatibility
 
-[`starter/`](starter/) is the only supported consumer payload. It contains exactly four Markdown
+[`starter/`](starter/) is the only fixed consumer payload. It contains exactly four Markdown
 files: a repository-owned `HARNESS.md`, thin `CLAUDE.md` and `AGENTS.md` entrypoints, and an adoption
 guide. It does not require a Mir CLI, installer, plugin, hook, memory database, specification tree,
 sub-agent, daemon, receipt, restart, or platform-specific runtime.
 
-### Project Agent Kit Recipe
+### 2. Standard Project Agent Kit
 
 [`recipes/project-agent-kit/`](recipes/project-agent-kit/) is a supported agent-guided recipe for a
 new empty target. It does not copy a fixed payload. The target's AI uses Mir Yoke as read-only
-reference and creates a purpose-specific project brief, harness, Claude/Codex reviewer, real
-lint/build/test Git hook, and verified initial commit. Product planning and implementation remain a
-later request.
+reference and creates a purpose-specific project brief, project-owned common harness, required
+local SQLite+FTS5 memory, Claude/Codex reviewer, real lint/build/test Git hook, and verified initial
+commit. A thin project-owned wrapper executes the exact recorded Mir revision while keeping runtime
+state below ignored `.mir/`; it copies no Mir CLI implementation or provider Git history. Product
+planning and implementation remain a later request.
 
-### Portable Plugins and Reference Corpus
+### 3. Optional installed `mir` CLI
+
+The v0.9 package restores the public v0.8 `mir` command surface for owners who explicitly choose
+the automated bootstrap, memory, capability, context, execution, hook, or verification workflows.
+Install it outside a target checkout from an immutable release:
+
+```bash
+uv tool install --force --link-mode copy \
+  "git+https://github.com/youngjin39/mir-yoke.git@v0.9.0"
+mir --help
+```
+
+Installation grants no repository authority. A state-changing command may act only after the user
+names the target and operation; read-only inspection remains read-only, and the Project Agent Kit
+does not depend on this host-global installation or vendor its source.
+
+### Optional plugins and inert references
 
 [`plugins/`](plugins/) publishes optional, namespaced host capabilities for Claude and Codex. A
 plugin is installed explicitly in the agent host; it is not copied into a target or treated as a
-readiness requirement. The remaining source, tools, examples, specifications, and history are
-reference or maintainer evidence without an adopter compatibility promise.
+readiness requirement. Superseded ADR-82 composition files are preserved under
+`reference-templates/advanced-composition/` as non-default, non-executable design references; Mir
+Yoke publishes no active `yoke` composer. The remaining source, tools, examples, specifications,
+and history are reference or maintainer evidence without an adopter compatibility promise.
 
 ## Start a new project
 
@@ -46,8 +66,9 @@ Do not start product planning or implementation yet.
 ```
 
 The detailed execution contract lives in the recipe, not in the prompt. The agent must finish with
-`READY_FOR_DEVELOPMENT_PLANNING`, one clean local commit, and no remote or push. If the target is not
-empty or is already inside a Git worktree, use the preservation-first Starter flow instead.
+`READY_FOR_DEVELOPMENT_PLANNING`, a verified project-owned harness and memory baseline, one clean
+local commit, and no remote or push. If the target is not empty or is already inside a Git worktree,
+use the preservation-first Starter flow instead.
 
 ## Use the minimal Starter
 
@@ -58,10 +79,12 @@ repository-owned instructions.
 
 ## Trust boundary
 
-Mir Yoke never discovers consumers, mutates a target, installs into a target, measures drift,
-updates adopters, starts agents, configures Git remotes, commits, pushes, publishes, or messages on
-their behalf. The Project Agent Kit's local Git actions happen only because the user's prompt grants
-the target agent that bounded authority.
+Mir Yoke has no standing behavior that discovers consumers, mutates targets, measures drift,
+updates adopters, starts agents, configures Git remotes, commits, pushes, publishes, or sends
+messages on their behalf. The Project Agent Kit's local Git actions happen only because the user's
+prompt grants the target agent that bounded authority. The optional `mir` CLI acts only when the
+user separately invokes it for an explicit target and operation; installing it creates no standing
+authority.
 
 ## Maintainer checkout
 
@@ -77,7 +100,8 @@ uv run ruff check
 ```
 
 ADR-83 owns the current supported-surface and Project Agent Kit boundary. ADR-81 continues to own
-the four-file minimum Starter.
+the four-file minimum Starter, while ADR-74 governs the explicitly invoked CLI and required-memory
+implementation retained from v0.8.
 
 ## License
 

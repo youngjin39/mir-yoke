@@ -759,17 +759,24 @@ def test_bootstrap_source_has_no_symlink_dependency():
         assert not (root / relative).is_symlink()
 
 
-def test_legacy_cli_registry_is_importable_but_has_no_public_module_entrypoint() -> None:
+def test_public_cli_dispatches_to_the_restored_command_registry() -> None:
+    assert "yoke" not in SUBCOMMANDS
     assert {"bootstrap", "capability"} <= set(SUBCOMMANDS)
+    root = Path(__file__).resolve().parents[1]
+    env = os.environ.copy()
+    env["PYTHONPATH"] = os.pathsep.join(
+        (str(root / "src"), str(root), env.get("PYTHONPATH", ""))
+    )
     for command in ("bootstrap", "capability"):
         completed = subprocess.run(
             [sys.executable, "-m", "mir", command, "--help"],
             check=False,
             capture_output=True,
             text=True,
+            env=env,
         )
-        assert completed.returncode == 2
-        assert "exposes no public CLI" in completed.stderr
+        assert completed.returncode == 0, completed.stderr
+        assert "usage:" in completed.stdout.lower()
 
 
 def test_capability_install_requires_restart_before_ready(tmp_path, capsys):

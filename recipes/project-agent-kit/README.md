@@ -53,10 +53,26 @@ Create only the foundation needed to make the future planning session reliable:
 - `harness/project-agent-kit.json` — an instance of
   [`project-agent-kit.schema.json`](project-agent-kit.schema.json) recording the exact purpose and
   rendered-prompt hashes, observed provider revision, project slug, toolchain manifest, lockfile,
-  domain-neutral compile probe, smoke test, canonical/generated reviewer paths, and verification
-  argv used by the observer; and
+  domain-neutral compile probe, smoke test, a unique `context_probe` token taken from the purpose,
+  canonical/generated reviewer paths, common harness
+  paths and commands, and verification argv used by the observer;
+- the bounded common harness adapted from `templates/common-harness/`: `harness_a.toml`, the
+  canonical handoff, a project-owned thin memory-sync wrapper, and `scripts/mir.sh` rendered with
+  the exact observed Mir Yoke revision; and
 - the smallest toolchain manifest, lockfile, domain-neutral compile target, and smoke test needed
   for real lint, build, and test commands.
+
+The target must never copy `src/mir/`, `tools/`, or `plugins/`. `scripts/mir.sh` invokes the exact
+external provider revision and confines its home, caches, tools, Python installs, and temporary
+files below ignored `.mir/runtime/`. Add `.mir/` to `.gitignore`; `.mir/memory.db` is a local index,
+never a tracked source of truth.
+
+Before the first commit, run the exact `common_harness.commands` in manifest order:
+`memory_init`, `memory_sync`, `memory_doctor`, then `context_pull`. Doctor must report ready and the
+pull must use `intent.context_probe` to recover the full project purpose from the indexed
+`PROJECT.md`, `HARNESS.md`, `docs/`, and `tasks/` archive. Delete the
+database once, rerun those four commands, and prove the same ready state so the ignored database is
+rehydratable from tracked sources.
 
 Do not create a development plan, API, UI, domain model, product feature, credential, deployment,
 remote, or release configuration. Every placeholder must be resolved before verification.
@@ -72,7 +88,8 @@ shadow their common slugs.
 
 Follow [`verification.md`](verification.md). Create `scripts/verify.sh` with real, fail-fast
 `lint`, `build`, and `test` steps. Create the tracked `.githooks/pre-commit`, set its executable bit,
-and configure `core.hooksPath=.githooks` after Git initialization. The hook records a successful
+invoke `scripts/memory-sync.sh` before the project checks, and configure `core.hooksPath=.githooks`
+after Git initialization. The hook records a successful
 direct run as `direct:0` and the automatic initial commit invocation as `commit:0` in
 `.git/project-agent-kit-pre-commit.log`; no other marker is valid.
 
@@ -92,7 +109,8 @@ weaken Git policy.
 
 ## Completion
 
-Report the target root, Mir Yoke revision, created surfaces, exact verification commands and exit
-status, initial commit hash, assumptions, and open product decisions. Finish with
+Report the target root, Mir Yoke revision, created surfaces, exact verification and common-harness
+commands with exit status, memory rehydration result, initial commit hash, assumptions, and open
+product decisions. Finish with
 `READY_FOR_DEVELOPMENT_PLANNING` only when every required gate passed. Product planning and
 implementation begin in a later user request.

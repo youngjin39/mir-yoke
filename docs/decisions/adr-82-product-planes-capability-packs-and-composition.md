@@ -10,8 +10,9 @@ schema: docs/templates/_schema/adr.schema.json
 
 # ADR-82 — Product Planes, Capability Packs, and Preservation-First Composition
 
-> Superseded by ADR-83. Removed paths named below remain available in Git history and are not part
-> of the active supported surface.
+> Superseded by ADR-83. Selected files named below are preserved under
+> `reference-templates/advanced-composition/` for inspection in addition to Git history. They are
+> inert, non-default references and do not expose an active `yoke` command or adoption path.
 
 ## 1. Context
 
@@ -137,5 +138,6 @@ because it changes the default and distribution boundary while preserving the im
 
 - [ADR-81](adr-81-minimal-starter-support-boundary.md)
 - [ADR-80](adr-80-release-runtime-isolation-and-adopter-ownership.md)
-- Historical `config/product-planes.json` (removed from the active tree)
-- Historical `config/capability-pack.schema.json` (removed from the active tree)
+- `reference-templates/advanced-composition/` (preserved, inert source snapshot)
+- Historical `config/product-planes.json` and `config/capability-pack.schema.json` within that
+  reference namespace

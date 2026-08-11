@@ -27,6 +27,41 @@ jobs:
       - run: uv run python scripts/verify_codex_sync.py
       - run: uv run ruff check
 
+  public_cli:
+    name: public Mir CLI regression (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
+      - run: uv sync --extra dev --frozen
+      - run: >-
+          uv run pytest -q
+          tests/test_installed_cli.py
+          tests/test_bootstrap_cli.py
+          tests/test_bootstrap_adoption_cli.py
+          tests/test_existing_repository_adoption.py
+          tests/test_greenfield_slim_integration.py
+          tests/test_setup_wrappers.py
+          tests/test_adr53_phase1_schema.py
+          tests/test_adr53_phase2_population.py
+          tests/test_adr53_phase3a_search.py
+          tests/test_adr53_phase3b_context_cli.py
+          tests/test_memory_doctor.py
+          tests/test_migrations.py
+          tests/test_loop_cli.py
+          tests/test_loop_driver.py
+          tests/test_capability_cli.py
+          tests/test_capability_security.py
+          tests/test_run_python_cli.py
+          tests/test_runtime_manifest.py
+          tools/mir_executor/tests
+
   portable_plugins:
     name: portable plugins (${{ matrix.os }})
     runs-on: ${{ matrix.os }}

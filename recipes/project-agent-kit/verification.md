@@ -18,8 +18,9 @@ must not encode an API, UI, domain model, or product feature.
 
 ## Git hook
 
-Track `.githooks/pre-commit` and make it executable. It resolves the repository root and invokes
-`scripts/verify.sh` without bypass flags or environment-specific absolute paths. After
+Track `.githooks/pre-commit` and make it executable. It resolves the repository root, invokes the
+thin `scripts/memory-sync.sh`, then invokes `scripts/verify.sh` without bypass flags or
+environment-specific absolute paths. After
 `git init -b main`, set the local repository configuration to `core.hooksPath=.githooks` and verify
 that exact value.
 
@@ -31,6 +32,13 @@ prove it runs again during the initial commit. The final marker contains exactly
 
 ## Completion checks
 
+- `harness_a.toml`, `scripts/mir.sh`, `scripts/memory-sync.sh`, and
+  `tasks/handoffs/session-handoff-LATEST.md` match the exact `common_harness.paths` contract;
+- the tracked tree contains no `src/mir/`, `tools/`, `plugins/`, or `.mir/memory.db` path;
+- `.mir/` is ignored, the exact-revision external Mir wrapper confines all runtime state below it,
+  and deleting the database followed by `memory_init`, `memory_sync`, `memory_doctor`, and
+  `context_pull` reconstructs a ready index and recovers the project purpose through the declared
+  `intent.context_probe` token from tracked archives;
 - no unresolved template placeholder or Mir Yoke product identity remains in target-owned files,
   except the exact source URL and revision provenance in `docs/harness-bootstrap.md` and the
   machine-readable `harness/project-agent-kit.json` provider field;
@@ -57,9 +65,9 @@ uses a credential-free environment with target-local home/cache/temp directories
 manager flags. It content-hashes each declared outside directory and requires a preconfigured
 publishable Git identity; it never changes the identity or signing policy.
 
-Mir Yoke maintainers may claim one-prompt reproducibility only after the same published prompt
-completes clean-room runs in separate empty directories under both Claude and Codex. Static contract
-tests do not replace those release-time runs. Use `scripts/observe_project_agent_kit.py` to store each
-run under `release-evidence/project-agent-kit/<version>/{claude,codex}/`. The release validator binds
-the concrete rendered prompt to its template and the four recipe contracts, recomputes the observed
-Git bundle and logs, and rejects any failed or missing invariant.
+The owner performs the same published prompt in separate empty directories under Claude and Codex
+as post-release acceptance. Those runs are not a tag or release prerequisite, and static contract
+tests do not replace their acceptance value. Use `scripts/observe_project_agent_kit.py` to store each
+optional run under `release-evidence/project-agent-kit/<version>/{claude,codex}/`. When supplied, the
+validator binds the concrete rendered prompt to its template and recipe contracts, recomputes the
+observed Git bundle and logs, and rejects any failed or missing invariant.

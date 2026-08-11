@@ -27,6 +27,10 @@ RECIPE_PATHS = (
     Path("recipes/project-agent-kit/reviewer.md"),
     Path("recipes/project-agent-kit/verification.md"),
     Path("recipes/project-agent-kit/project-agent-kit.schema.json"),
+    Path("templates/common-harness/harness_a.toml"),
+    Path("templates/common-harness/scripts/mir.sh"),
+    Path("templates/common-harness/scripts/memory-sync.sh"),
+    Path("templates/common-harness/tasks/handoffs/session-handoff-LATEST.md"),
 )
 TARGET_SCHEMA_PATH = Path("recipes/project-agent-kit/project-agent-kit.schema.json")
 RUNTIMES = ("claude", "codex")
@@ -53,9 +57,13 @@ BASE_TARGET_FILES = {
     "README.md",
     ".gitignore",
     "docs/harness-bootstrap.md",
+    "harness_a.toml",
     TARGET_CONTRACT_PATH.as_posix(),
     "scripts/generate_agent_derivatives.py",
+    "scripts/memory-sync.sh",
+    "scripts/mir.sh",
     "scripts/verify.sh",
+    "tasks/handoffs/session-handoff-LATEST.md",
     ".githooks/pre-commit",
 }
 EXPECTED_TARGET_COMMANDS = {
@@ -63,6 +71,27 @@ EXPECTED_TARGET_COMMANDS = {
     "build": ["scripts/verify.sh", "build"],
     "test": ["scripts/verify.sh", "test"],
 }
+EXPECTED_COMMON_HARNESS_PATHS = {
+    "config": "harness_a.toml",
+    "database": ".mir/memory.db",
+    "handoff": "tasks/handoffs/session-handoff-LATEST.md",
+    "mir_wrapper": "scripts/mir.sh",
+    "memory_sync_wrapper": "scripts/memory-sync.sh",
+    "memory_sync_hook": ".githooks/pre-commit",
+}
+EXPECTED_COMMON_HARNESS_COMMANDS = {
+    "memory_init": ["scripts/mir.sh", "migrate", "up", "--db", ".mir/memory.db"],
+    "memory_sync": ["scripts/memory-sync.sh"],
+    "memory_doctor": [
+        "scripts/mir.sh",
+        "memory",
+        "doctor",
+        "--project-root",
+        ".",
+        "--json",
+    ],
+}
+FORBIDDEN_RUNTIME_PREFIXES = ("src/mir/", "tools/", "plugins/")
 ALLOWED_TARGET_LOCAL_GIT_KEYS = {
     "core.repositoryformatversion",
     "core.filemode",
@@ -176,8 +205,38 @@ def _target_contract(target: Path, source_root: Path = ROOT) -> dict[str, Any]:
         "purpose_sha256",
         hashlib.sha256(purpose.strip().encode()).hexdigest(),
     )
+    context_probe = intent.get("context_probe")
+    if (
+        not isinstance(context_probe, str)
+        or len(context_probe) < 3
+        or context_probe.casefold() not in purpose.casefold()
+    ):
+        raise ValueError("target contract context_probe must be a purpose-owned search token")
     provider = _mapping(payload, "provider")
     _require_exact(provider, "url", "https://github.com/youngjin39/mir-yoke")
+
+    common_harness = _mapping(payload, "common_harness")
+    common_paths = _mapping(common_harness, "paths")
+    common_commands = _mapping(common_harness, "commands")
+    for name, expected in EXPECTED_COMMON_HARNESS_PATHS.items():
+        _require_exact(common_paths, name, expected)
+        _relative_file(expected, f"common_harness.paths.{name}")
+    for name, expected in EXPECTED_COMMON_HARNESS_COMMANDS.items():
+        _require_exact(common_commands, name, expected)
+    _require_exact(
+        common_commands,
+        "context_pull",
+        [
+            "scripts/mir.sh",
+            "context",
+            "pull",
+            context_probe,
+            "--db",
+            ".mir/memory.db",
+            "--project-root",
+            ".",
+        ],
+    )
 
     foundation = _mapping(payload, "foundation")
     manifest = _relative_file(foundation.get("manifest"), "foundation.manifest")
@@ -302,6 +361,121 @@ def _frontmatter(text: str, label: str) -> tuple[dict[str, str], str]:
     return header, body
 
 
+def _verify_common_harness(
+    target: Path,
+    contract: dict[str, Any],
+    tracked: set[str],
+) -> None:
+    common_harness = _mapping(contract, "common_harness")
+    paths = _mapping(common_harness, "paths")
+    provider = _mapping(contract, "provider")
+    tracked_paths = {
+        relative for name, relative in paths.items() if name != "database"
+    }
+    missing = sorted(tracked_paths - tracked)
+    if missing:
+        raise ValueError(f"bundled common harness is missing tracked files: {missing}")
+    database = paths["database"]
+    if database in tracked:
+        raise ValueError("local memory database must never be tracked")
+    forbidden = sorted(
+        relative
+        for relative in tracked
+        if relative.startswith(FORBIDDEN_RUNTIME_PREFIXES)
+    )
+    if forbidden:
+        raise ValueError(f"bundled target copies provider runtime source: {forbidden}")
+
+    gitignore = (target / ".gitignore").read_text(encoding="utf-8").splitlines()
+    if ".mir/" not in gitignore:
+        raise ValueError("target must ignore the complete .mir runtime directory")
+    for name in ("mir_wrapper", "memory_sync_wrapper", "memory_sync_hook"):
+        if not (target / paths[name]).stat().st_mode & 0o111:
+            raise ValueError(f"common harness executable bit is missing: {paths[name]}")
+
+    config = tomllib.loads((target / paths["config"]).read_text(encoding="utf-8"))
+    memory = config.get("memory")
+    if not isinstance(memory, dict):
+        raise ValueError("harness_a.toml must contain the required memory configuration")
+    expected_memory = {
+        "enabled": True,
+        "required": True,
+        "backend": "sqlite_fts5",
+        "db_path": database,
+        "vector_mode": "off",
+    }
+    for name, expected in expected_memory.items():
+        _require_exact(memory, name, expected)
+    archives = memory.get("external_archives")
+    if archives != [
+        {
+            "slug": "project-harness",
+            "root": ".",
+            "mode": "indexed",
+            "glob_include": [
+                "PROJECT.md",
+                "HARNESS.md",
+                "docs/**/*.md",
+                "tasks/**/*.md",
+            ],
+        }
+    ]:
+        raise ValueError("common harness archives must rehydrate from tracked project context")
+    durable_sources = {
+        "PROJECT.md",
+        "HARNESS.md",
+        "docs/harness-bootstrap.md",
+        paths["handoff"],
+    }
+    if not durable_sources <= tracked:
+        raise ValueError("common harness lacks the tracked sources needed for rehydration")
+
+    wrapper = (target / paths["mir_wrapper"]).read_text(encoding="utf-8")
+    exact_source = f"git+{provider['url']}@{provider['revision']}"
+    required_wrapper_markers = (
+        f'uvx --from "{exact_source}" mir "$@"',
+        '.mir/runtime',
+        "export HOME=",
+        "export XDG_CACHE_HOME=",
+        "export XDG_CONFIG_HOME=",
+        "export XDG_DATA_HOME=",
+        "export TMPDIR=",
+        "export UV_CACHE_DIR=",
+        "export UV_TOOL_DIR=",
+        "export UV_PYTHON_INSTALL_DIR=",
+    )
+    if not all(marker in wrapper for marker in required_wrapper_markers):
+        raise ValueError("Mir wrapper must pin the provider and confine all runtime state")
+    forbidden_wrapper_markers = ("file://", "--project", "src/mir", "tools/", "plugins/")
+    if any(marker in wrapper for marker in forbidden_wrapper_markers):
+        raise ValueError("Mir wrapper must use only the pinned external provider")
+
+    sync_wrapper = (target / paths["memory_sync_wrapper"]).read_text(encoding="utf-8")
+    for marker in (
+        ".mir/memory.db",
+        "scripts/mir.sh context sync --db .mir/memory.db --project-root .",
+    ):
+        if marker not in sync_wrapper:
+            raise ValueError(f"memory sync wrapper lacks required marker: {marker}")
+    handoff = " ".join(
+        (target / paths["handoff"]).read_text(encoding="utf-8").split()
+    )
+    for marker in (
+        "Product planning and implementation have not started",
+        "context_pull",
+        "memory_init",
+        "memory_sync",
+        "memory_doctor",
+    ):
+        if marker not in handoff:
+            raise ValueError(f"common harness handoff lacks required marker: {marker}")
+    hook = (target / paths["memory_sync_hook"]).read_text(encoding="utf-8")
+    if paths["memory_sync_wrapper"] not in hook:
+        raise ValueError("pre-commit hook must invoke the project-owned memory sync wrapper")
+    if re.search(r"(?s)if\s+.*memory\.db.*memory-sync", hook):
+        raise ValueError("pre-commit hook must not skip memory sync when the database is absent")
+
+
 def _verify_target_checkout(target: Path, payload: dict[str, Any]) -> None:
     result = _mapping(payload, "result")
     observation = _mapping(payload, "observation")
@@ -335,6 +509,7 @@ def _verify_target_checkout(target: Path, payload: dict[str, Any]) -> None:
     symlinks = sorted(relative for relative in tracked if (target / relative).is_symlink())
     if symlinks:
         raise ValueError(f"bundled target contains tracked symlinks: {symlinks}")
+    _verify_common_harness(target, contract, tracked)
 
     purpose = intent["purpose"].strip()
     project = (target / "PROJECT.md").read_text(encoding="utf-8")
@@ -507,6 +682,7 @@ def _verify_target_checkout(target: Path, payload: dict[str, Any]) -> None:
         if relative not in {
             "docs/harness-bootstrap.md",
             TARGET_CONTRACT_PATH.as_posix(),
+            _mapping(_mapping(contract, "common_harness"), "paths")["mir_wrapper"],
         } and re.search(
             r"(?i)mir[ -]yoke|youngjin39/mir-yoke", text
         ):
@@ -563,7 +739,7 @@ def _verify_run_artifacts(
     verification_text = (run_root / "verification.json").read_text(encoding="utf-8")
     reject_sensitive_text(verification_text, "verification record")
     verification = json.loads(verification_text)
-    if not isinstance(verification, dict) or verification.get("schema_version") != 3:
+    if not isinstance(verification, dict) or verification.get("schema_version") != 4:
         raise ValueError("verification.json has an unsupported schema")
     _require_exact(
         verification,
@@ -575,6 +751,21 @@ def _verify_run_artifacts(
         raise ValueError("verification.json commands must be an object")
     if set(commands) != {"generated_parity", "lint", "build", "test"}:
         raise ValueError("verification.json must contain exactly the four observed commands")
+    common_observation = _mapping(verification, "common_harness")
+    _require_exact(common_observation, "database_existed_before", True)
+    _require_exact(common_observation, "database_deleted", True)
+    _require_exact(common_observation, "database_recreated", True)
+    missing_database_hook = _mapping(common_observation, "missing_database_hook")
+    _require_exact(missing_database_hook, "argv", [".githooks/pre-commit"])
+    hook_exit_code = missing_database_hook.get("exit_code")
+    if not isinstance(hook_exit_code, int) or hook_exit_code == 0:
+        raise ValueError("observed pre-commit hook did not fail without the memory database")
+    _require_exact(missing_database_hook, "mutation", "missing:.mir/memory.db")
+    for stream in ("stdout", "stderr"):
+        value = missing_database_hook.get(stream)
+        if not isinstance(value, str):
+            raise ValueError(f"common harness missing_database_hook.{stream} must be text")
+        reject_sensitive_text(value, f"common harness missing_database_hook.{stream}")
     probes = verification.get("mutation_probes")
     expected_probe_names = {
         "parity_skill_source",
@@ -627,6 +818,44 @@ def _verify_run_artifacts(
         _verify_target_checkout(target, payload)
         contract_commands = _mapping(_target_contract(target), "commands")
         contract = _target_contract(target)
+        common_commands = _mapping(_mapping(contract, "common_harness"), "commands")
+        intent = _mapping(contract, "intent")
+        for phase in ("initial", "rehydrated"):
+            phase_observations = _mapping(common_observation, phase)
+            expected_names = {
+                "memory_init",
+                "memory_sync",
+                "memory_doctor",
+                "context_pull",
+            }
+            if set(phase_observations) != expected_names:
+                raise ValueError(f"common harness {phase} observation is incomplete")
+            for name in sorted(expected_names):
+                observation = _mapping(phase_observations, name)
+                _require_exact(observation, "argv", common_commands[name])
+                _require_exact(observation, "exit_code", 0)
+                for stream in ("stdout", "stderr"):
+                    value = observation.get(stream)
+                    if not isinstance(value, str):
+                        raise ValueError(
+                            f"common harness {phase}.{name}.{stream} must be text"
+                        )
+                    reject_sensitive_text(value, f"common harness {phase}.{name}.{stream}")
+            try:
+                doctor_payload = json.loads(
+                    str(_mapping(phase_observations, "memory_doctor")["stdout"])
+                )
+            except (KeyError, json.JSONDecodeError) as exc:
+                raise ValueError("observed memory doctor output is not valid JSON") from exc
+            if not isinstance(doctor_payload, dict) or doctor_payload.get("status") != "ready":
+                raise ValueError("observed memory doctor did not report ready")
+            context_stdout = str(
+                _mapping(phase_observations, "context_pull").get("stdout", "")
+            )
+            normalized_purpose = " ".join(str(intent["purpose"]).split())
+            normalized_context = " ".join(context_stdout.split())
+            if normalized_purpose not in normalized_context:
+                raise ValueError("observed context pull did not recover project purpose")
         foundation = _mapping(contract, "foundation")
         generation = _mapping(contract, "generation")
         for name in ("generated_parity", "lint", "build", "test"):

@@ -33,6 +33,17 @@ CHECKS = (
             "tests/test_capability_security.py",
         ),
     ),
+    (
+        "public-cli",
+        (
+            "uv",
+            "run",
+            "pytest",
+            "-q",
+            "tests/test_installed_cli.py",
+            "tools/mir_executor/tests/test_policy.py",
+        ),
+    ),
     ("asset-classification", ("uv", "run", "python", "-m", "tools.template_assets", "--json")),
     ("derivatives", ("uv", "run", "python", "scripts/verify_codex_sync.py")),
     ("sanitization", ("uv", "run", "python", "tests/test_no_korean_in_user_facing.py")),

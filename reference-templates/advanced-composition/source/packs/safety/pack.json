@@ -1,0 +1,30 @@
+{
+  "$schema": "../../config/capability-pack.schema.json",
+  "schema_version": 1,
+  "id": "safety",
+  "version": "0.9.0",
+  "product_role": "pack",
+  "support_level": "stable",
+  "execution_state": "opt-in",
+  "description": "Deterministic repository-bound path, destructive-command, and credential-text checks with normalized tool adapters.",
+  "dependencies": [],
+  "source_paths": [
+    ".ai-harness/deny-list.yaml",
+    ".claude/hooks/pre-tool-use.sh",
+    ".claude/hooks/post-edit-check.sh",
+    "tools/hooks/**/*.py",
+    "src/mir/core/engine/tool_contract.py"
+  ],
+  "adoption_assets": [
+    {"source": "packs/safety/payload/.claude/hooks/mir-safety.py", "target": ".claude/hooks/mir-safety.py"},
+    {"source": "packs/safety/payload/.claude/settings.safety.example.json", "target": ".claude/settings.safety.example.json"},
+    {"source": "packs/safety/payload/SAFETY.md", "target": "docs/harness/safety.md"},
+    {"source": "packs/safety/payload/config/harness-policy.toml", "target": "config/harness-policy.toml"}
+  ],
+  "compatibility": {
+    "platforms": ["macos", "linux", "windows-python"],
+    "runtimes": ["claude-code", "manual-adapter"]
+  },
+  "verification": ["uv run pytest -q tests/test_safety_pack.py"],
+  "local_state_paths": []
+}

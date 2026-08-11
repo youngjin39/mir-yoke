@@ -1,13 +1,14 @@
-# Mir Yoke — Starter, Recipe, and Plugin Provider Contract
+# Mir Yoke — Starter, Project Agent Kit, and Optional CLI Contract
 
-Mir Yoke is a public, agent-guided template and reference repository, not an agent runtime. It is
-not a universal installer and has no standing authority over consumer repositories. `starter/` is
-the only supported consumer payload; the Project Agent Kit is a separate supported guidance recipe.
+Mir Yoke is a public agent-guided template and reference repository, not an agent runtime and not a universal installer;
+it has no standing authority over consumer repositories.
+`starter/` is the four-file compatibility payload, the Project Agent Kit is the standard greenfield
+recipe, and the installed `mir` CLI acts only on the user's explicit target and operation.
 
 ## Outcome and completion
 
-- Maintain the four-file documentation-only Starter, the Project Agent Kit recipe, portable
-  namespaced plugins, and the retrievable reference corpus.
+- Maintain the four-file Starter, the Project Agent Kit with common harness and required memory,
+  the optional public `mir` CLI, namespaced plugins, and retrievable reference corpus.
 - Finish when the affected supported-surface contracts, generated parity, and smallest relevant
   checks pass.
 
@@ -15,9 +16,9 @@ the only supported consumer payload; the Project Agent Kit is a separate support
 
 - `starter/HARNESS.md` is the canonical minimum consumer contract template.
 - `recipes/project-agent-kit/` owns the one-prompt empty-target bootstrap procedure.
+- `src/mir/cli/` owns the optional installed v0.8-compatible command surface; the Kit never copies it.
 - `plugins/*/skills/*` owns common portable skill bodies.
-- `docs/decisions/adr-83-project-agent-kit-recipe-and-supported-surfaces.md` owns current product
-  authority; ADR-81 owns the minimum Starter.
+- ADR-83 owns current product authority; ADR-81 owns the minimum Starter.
 - `config/template-assets.json` classifies the full maintainer checkout.
 - `.mir/repo-profile.toml` owns this maintainer repository's local boundaries when present.
 
@@ -27,12 +28,15 @@ the only supported consumer payload; the Project Agent Kit is a separate support
 - Get explicit direction before destructive actions, credentials, external writes, protected scope,
   commits, pushes, releases, or material scope expansion.
 - Preserve unrelated local changes and keep public material generic, English, and sanitized.
-- Consumer repositories own every adapted or generated result. Mir Yoke never discovers or mutates
-  them and provides no target-writing composer.
+- Consumers own every result. Mir Yoke never discovers them, grants standing write authority, or
+  provides an active `yoke` composer; installing `mir` does not expand authority.
 - The Project Agent Kit recipe may describe target-local Git initialization and one commit only when
   the user's target prompt explicitly grants that authority.
-- Common plugins must load from their own package. Repository-local files and Mir CLI commands are
-  optional context, never hidden plugin prerequisites.
+- The Kit creates bounded project-owned files and SQLite+FTS5 memory. Its thin `scripts/mir.sh`
+  executes the exact provider revision with runtime state below ignored `.mir/`, without vendoring
+  the package or requiring a host-global installation.
+- Common plugins load from their packages and are not hidden prerequisites; local specializations
+  must not shadow their slugs. ADR-82 files are inert reference templates only.
 - Edit canonical sources first and regenerate `AGENTS.md`, nested `AGENTS.md`, and `.codex/`.
 
 ## Execution and evidence
@@ -41,6 +45,7 @@ the only supported consumer payload; the Project Agent Kit is a separate support
 - Run the smallest check that can fail for changed behavior.
 - For Starter or recipe changes, run
   `uv run pytest -q tests/test_project_agent_kit.py tests/test_minimal_starter.py`.
+- For CLI changes, include `tests/test_installed_cli.py` and the affected command regression.
 - For plugin changes, run isolated package and common-contract tests.
 - Use broader tests only when affected maintainer code or release coupling requires them.
 
@@ -48,7 +53,3 @@ Commands: `uv run pytest`, `uv run ruff check`, `uv run python scripts/verify_co
 Artifacts are English; user-facing language follows the user.
 
 ## Role policy (template summary)
-
-- The opened Claude or Codex session owns final scope and verification for this repository.
-- Delegation is optional and proportional, never a direct-work gate.
-- A consumer agent reads the actual target and adapts the smallest sufficient supported flow.

@@ -11,6 +11,10 @@ schema: docs/templates/_schema/adr.schema.json
 
 # ADR-81 — Minimal Starter Support Boundary
 
+> **2026-08-11 clarification:** The four-file Starter remains the runtime-free compatibility layer.
+> ADR-83's standard Project Agent Kit and optional installed CLI are separate layers and do not add
+> files or readiness requirements to `starter/`.
+
 ## 1. Context
 
 Mir Yoke correctly removed central fleet authority, but its greenfield path still required a large
@@ -40,10 +44,15 @@ sub-agents, receipts, restart phases, or clone-and-slim behavior. Such assets ma
 as maintainer code or optional reference material, but they are outside the supported consumer
 contract and receive no compatibility promise.
 
-ADR-83 adds a separate supported Project Agent Kit recipe for an explicit empty target. The recipe
-is guidance followed by the target's active AI, not a second payload and not an expansion of Starter
-readiness. It may generate project-owned reviewer and Git-hook surfaces only when the user requests
-that greenfield outcome.
+As clarified by ADR-83, the separately installed v0.8-compatible `mir` CLI now has its own public
+compatibility contract. That support does not add the CLI, its receipts, or its memory gates to the
+Starter payload or readiness criteria.
+
+ADR-83 adds a separate standard Project Agent Kit recipe for an explicit empty target. The recipe is
+guidance followed by the target's active AI, not a second payload and not an expansion of Starter
+readiness. It generates a project-owned common harness, required local memory, reviewer, and
+Git-hook surfaces only when the user requests that greenfield outcome. The separately installed
+`mir` CLI remains optional.
 
 ## 3. Consequences
 

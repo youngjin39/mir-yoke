@@ -59,6 +59,45 @@ def test_should_require_a_project_owned_brief_harness_and_dual_runtime_reviewer(
         assert requirement in reviewer
 
 
+def test_should_require_the_bounded_common_harness_and_memory_commands() -> None:
+    recipe = _read("recipes/project-agent-kit/README.md")
+    verification = _read("recipes/project-agent-kit/verification.md")
+    schema = json.loads(_read("recipes/project-agent-kit/project-agent-kit.schema.json"))
+
+    assert schema["properties"]["schema_version"] == {"const": 2}
+    assert "context_probe" in schema["properties"]["intent"]["required"]
+    common = schema["properties"]["common_harness"]
+    paths = common["properties"]["paths"]["properties"]
+    commands = common["properties"]["commands"]["properties"]
+    assert {name: value["const"] for name, value in paths.items()} == {
+        "config": "harness_a.toml",
+        "database": ".mir/memory.db",
+        "handoff": "tasks/handoffs/session-handoff-LATEST.md",
+        "mir_wrapper": "scripts/mir.sh",
+        "memory_sync_wrapper": "scripts/memory-sync.sh",
+        "memory_sync_hook": ".githooks/pre-commit",
+    }
+    assert set(commands) == {
+        "memory_init",
+        "memory_sync",
+        "memory_doctor",
+        "context_pull",
+    }
+    combined = f"{recipe}\n{verification}"
+    for requirement in (
+        "templates/common-harness/",
+        "scripts/memory-sync.sh",
+        ".mir/memory.db",
+        "rehydratable",
+        "`src/mir/`, `tools/`, or `plugins/`",
+        "memory_init",
+        "memory_sync",
+        "memory_doctor",
+        "context_pull",
+    ):
+        assert requirement in combined
+
+
 def test_should_require_a_real_git_pre_commit_gate_and_verified_initial_commit() -> None:
     recipe = _read("recipes/project-agent-kit/README.md")
     verification = _read("recipes/project-agent-kit/verification.md")
@@ -97,12 +136,14 @@ def test_should_require_a_real_git_pre_commit_gate_and_verified_initial_commit()
     )
 
 
-def test_should_not_publish_a_legacy_target_writing_console_entrypoint() -> None:
+def test_should_publish_optional_mir_without_the_legacy_yoke_composer() -> None:
     project = tomllib.loads(_read("pyproject.toml"))["project"]
     module_entrypoint = _read("src/mir/cli/__main__.py")
+    command_registry = _read("src/mir/cli/__init__.py")
 
-    assert "scripts" not in project
-    assert "exposes no public CLI" in module_entrypoint
+    assert project["scripts"] == {"mir": "mir.cli.__main__:main"}
+    assert "Public ``mir`` command dispatcher" in module_entrypoint
+    assert '"yoke"' not in command_registry
 
 
 def test_should_keep_the_default_starter_small_and_remove_active_composition() -> None:
@@ -152,7 +193,7 @@ def test_should_keep_the_default_starter_small_and_remove_active_composition() -
         assert unsupported not in active_docs
 
 
-def test_should_limit_optional_consumer_tools_to_marketplaces_and_plugins() -> None:
+def test_should_limit_optional_consumer_tools_to_plugins_and_installed_cli() -> None:
     manifest = json.loads(_read("config/template-assets.json"))
     optional_patterns = {
         pattern
@@ -165,6 +206,14 @@ def test_should_limit_optional_consumer_tools_to_marketplaces_and_plugins() -> N
         ".agents/plugins/**",
         ".claude-plugin/**",
         "plugins/**",
+        "src/**",
+        "tools/agent_loader/**",
+        "tools/autonomous_loop/**",
+        "tools/catalog_loader.py",
+        "tools/hooks/**",
+        "tools/mir_executor/**",
+        "tools/plan_archive/**",
+        "tools/run_orchestrator/**",
     }
 
 

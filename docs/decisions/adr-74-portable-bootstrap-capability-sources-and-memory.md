@@ -2,13 +2,18 @@
 title: Portable Bootstrap, Capability Sources, and Required Memory
 status: accepted
 date: 2026-08-06
-amended_by: adr-79
+amended_by: [adr-79, adr-83]
 ---
 
 # ADR-74 — Portable Bootstrap, Capability Sources, and Required Memory
 
 > **2026-08-10 amendment:** ADR-79 narrows automated bootstrap support to macOS, Linux, and
 > WSL. Native Windows is a fail-fast guidance-only path and does not produce ready receipts.
+
+> **2026-08-11 scope clarification:** ADR-83 restores this v0.8 `mir` automation as an optional
+> installed public CLI and reuses the required SQLite+FTS5 memory principle in the standard Project
+> Agent Kit. The Kit creates a bounded project-owned harness and memory component; it does not copy
+> the Mir package or CLI source. Neither installation nor file presence grants mutation authority.
 
 ## Context
 

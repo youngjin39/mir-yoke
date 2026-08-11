@@ -1,8 +1,4 @@
-"""Retained-reference command registry.
-
-Mir Yoke 0.9 publishes no public CLI entrypoint. These lazy handlers preserve the
-historical implementation corpus for maintainers and direct internal tests only.
-"""
+"""Lazy command registry for the optional public Mir operator CLI."""
 from __future__ import annotations
 
 from collections.abc import Callable

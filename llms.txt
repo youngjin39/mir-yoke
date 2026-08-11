@@ -2,7 +2,8 @@
 
 ## Start here
 - `README.md` — supported surfaces and the short new-project prompt
-- `recipes/project-agent-kit/README.md` — full empty-target Project Agent Kit procedure
+- `BOOTSTRAP.md` — choose Minimal Starter, standard Project Agent Kit, or optional installed CLI
+- `recipes/project-agent-kit/README.md` — standard empty-target Project Agent Kit procedure
 - `recipes/project-agent-kit/reviewer.md` — repository-unique review skill and agent contract
 - `recipes/project-agent-kit/verification.md` — real checks, Git hook, and initial-commit gates
 
@@ -15,12 +16,18 @@
 ## Authority
 - `docs/decisions/adr-83-project-agent-kit-recipe-and-supported-surfaces.md`
 - `docs/decisions/adr-81-minimal-starter-support-boundary.md`
+- `docs/decisions/adr-74-portable-bootstrap-capability-sources-and-memory.md`
 - `docs/decisions/INDEX.md`
+
+## Optional automation and references
+- `mir --help` — installed v0.8-compatible operator commands; explicit invocation required
+- `reference-templates/advanced-composition/` — inert ADR-82 files; no active `yoke` command
 
 ## Maintainer checks
 - `uv run pytest -q tests/test_project_agent_kit.py tests/test_minimal_starter.py`
 - `uv run python scripts/verify_codex_sync.py`
 - `uv run ruff check`
 
-Everything outside the Starter is guidance, optional host capability, reference, history, or
-maintainer material. Mir Yoke never writes a target repository.
+The Starter is the only fixed payload. The Project Agent Kit creates project-owned files under the
+target agent's explicit authority. The installed CLI is optional and acts only when separately
+invoked for a named scope; path presence alone authorizes nothing.

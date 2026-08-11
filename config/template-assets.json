@@ -41,6 +41,20 @@
       "reason": "Supported agent-guided procedure read as reference by the target agent and never copied as a consumer payload."
     },
     {
+      "id": "common-harness-template",
+      "classification": "reference",
+      "include": ["templates/common-harness/**"],
+      "exclude": [],
+      "reason": "Bounded common harness and memory sources selectively adapted by the target agent without copying the Mir runtime."
+    },
+    {
+      "id": "advanced-composition-reference",
+      "classification": "reference",
+      "include": ["reference-templates/**"],
+      "exclude": [],
+      "reason": "Inactive ADR-82 composition source preserved at original relative paths for selective inspection and adaptation."
+    },
+    {
       "id": "legacy-bootstrap-payload",
       "classification": "reference",
       "include": [
@@ -162,6 +176,22 @@
       "reason": "Explicitly installed, namespaced host capabilities and their marketplace metadata; none belong to a target payload."
     },
     {
+      "id": "optional-public-mir-cli",
+      "classification": "optional-consumer-tool",
+      "include": [
+        "src/**",
+        "tools/agent_loader/**",
+        "tools/autonomous_loop/**",
+        "tools/catalog_loader.py",
+        "tools/hooks/**",
+        "tools/mir_executor/**",
+        "tools/plan_archive/**",
+        "tools/run_orchestrator/**"
+      ],
+      "exclude": [],
+      "reason": "Supported installed v0.8-compatible Mir operator CLI and wheel-bundled runtime resources; never copied into a target payload."
+    },
+    {
       "id": "project-agent-kit-release-evidence",
       "classification": "template-maintainer-tool",
       "include": ["release-evidence/project-agent-kit/**"],
@@ -173,7 +203,6 @@
       "classification": "reference",
       "include": [
         "scripts/**",
-        "src/**",
         "tools/**"
       ],
       "exclude": [
@@ -182,10 +211,17 @@
         "scripts/verify_plugin_cli_activation.py",
         "scripts/verify_project_agent_kit_evidence.py",
         "scripts/verify_release_readiness.py",
+        "tools/agent_loader/**",
+        "tools/autonomous_loop/**",
+        "tools/catalog_loader.py",
         "tools/harness_consistency/**",
+        "tools/hooks/**",
+        "tools/mir_executor/**",
+        "tools/plan_archive/**",
+        "tools/run_orchestrator/**",
         "tools/template_assets.py"
       ],
-      "reason": "Retained bootstrap, CLI, hook, memory, agent, and executor implementation used as inspectable prior art without consumer compatibility."
+      "reason": "Retained non-package scripts and tooling used as inspectable prior art without consumer compatibility."
     },
     {
       "id": "maintainer-tools",
