@@ -1,46 +1,62 @@
-# Session Handoff — Core Harness Restoration 0.9 Candidate
+# Session Handoff — Mir Yoke v0.9.0 Closed
 
-## Current state
+## Completed Work
 
-- The optional public v0.8-compatible `mir` dispatcher and isolated installed-package proof are
-  restored with 11 commands; the ADR-82 `yoke` composer remains inactive.
-- The standard Project Agent Kit now requires a bounded common harness, pinned thin CLI wrapper,
-  SQLite+FTS5 memory configuration, sync wrapper, and resumable handoff. Generated repositories may
-  not track `.mir/memory.db`, `src/mir`, provider tools, plugins, or provider Git history.
-- The four-file Minimal Starter remains the compatibility minimum.
-- The 33 ADR-82 composition files are byte-preserved under
-  `reference-templates/advanced-composition/` as inert, remove-on-adoption references.
-- ADR-83 has an owner amendment; contracts, spec metadata, CI, release readiness, classification,
-  and Claude/Codex derivatives describe the three-layer boundary.
-- The evidence observer now runs the complete memory lifecycle twice, deletes and recreates the
-  ignored database, recovers the exact normalized project purpose, and behaviorally proves the
-  pre-commit hook fails when required memory is absent.
-- Public CLI/bootstrap regression runs on both Ubuntu and macOS in CI.
+- Restored and released the optional v0.8-compatible public `mir` CLI while keeping the removed
+  ADR-82 `yoke` composer inactive.
+- Made the standard Project Agent Kit include a project-owned common harness, rehydratable
+  SQLite+FTS5 memory, project-specific reviewer, real lint/build/test hook, and one verified initial
+  commit without copying Mir runtime source.
+- Preserved the 33 superseded composition files as inert references and kept the four-file Minimal
+  Starter unchanged.
+- Clarified the canonical short prompt in `409d09e`: concrete purpose and goals are required, and
+  development planning plus product implementation remain outside bootstrap.
+- Removed all merged agent branches locally and remotely; `main` is the only branch.
 
-## Verification
+## Decisions
 
-- Restored CLI, bootstrap/adoption, memory/context, capability, executor, loop, migration, runtime,
-  and Project Agent Kit regression set: 525 passed.
-- Behavioral common-harness evidence, restored CLI reachability, contract, and decision regression:
-  77 passed.
-- Complete materialized release-candidate regression: 759 passed. Repository-wide Ruff, schemas,
-  links, public-text
-  sanitization, generated derivatives, and diff whitespace all pass.
-- Asset classification covers 676 candidate files exactly once with zero missing, duplicate, or
-  prohibited paths.
-- Independent final restoration review reports READY with zero blocking items.
+- `v0.9.0` remains an immutable published tag. Later `main` documentation and prompt refinements do
+  not rewrite that release.
+- The provider is read-only guidance for Project Agent Kit creation. Generated repositories own
+  their harness and memory sources and never copy `src/mir/`, provider tools, plugins, or Git
+  history.
+- Detailed completion history remains in `tasks/tdd.json`, ADRs, Git history, and the GitHub Release;
+  active state stays limited to resume-critical facts.
 
-## Release boundary
+## Unresolved Issues
 
-- Implementation commit `e5abfad` is complete. The protected lock in the release commit is bound to
-  full implementation revision `e5abfadce84be0107395a12509a256b144a2d29a`.
-- The owner authorized the implementation commit, protected capability-lock rebind in a separate
-  commit, SSH push to `main`, annotated `v0.9.0` tag, and GitHub Release publication.
-- Separate Claude and Codex generated-repository executions are post-release owner acceptance. This
-  release does not claim that runtime evidence, and the tag workflow does not require it.
-- Final clean-tree readiness passed with 759 tests. Release commit `1d17358`, remote `main`, and the
-  annotated `v0.9.0` tag were verified over SSH.
-- GitHub Release `v0.9.0` was published as a non-draft, non-prerelease release on 2026-08-11:
-  <https://github.com/youngjin39/mir-yoke/releases/tag/v0.9.0>.
-- No repository-side release work remains. The owner-run external generated-repository acceptance is
-  the next independent consumer check.
+- No repository-side blocker remains.
+- Real Claude and Codex runs in separate empty target repositories are unevaluated owner-run
+  post-release acceptance. A target has not been supplied, so no runtime success claim is made.
+- This worktree has no `.mir/memory.db` or bootstrap receipt. `mir context pull` and the pinned
+  `scripts/mir.sh` intent wrapper were unavailable; the repository-owned intent-store script was
+  run directly through `uv` instead.
+
+## Next Actions
+
+- No active repository action. End the session.
+- Optional manual action: when the owner supplies a target, run the short prompt with Claude and
+  Codex and record observed acceptance without changing the `v0.9.0` claim.
+- Optional release decision: publish a future patch release only if the owner wants the post-tag
+  prompt wording pinned in a release rather than consumed from default `main`.
+
+## Modified Files
+
+- Prompt contract and evidence: `README.md`, `recipes/project-agent-kit/`,
+  `release-evidence/project-agent-kit/fixture/`, `config/adopter-payload.json`, and focused tests.
+- Closeout state: `tasks/intent.json`, `tasks/plan.md`, `tasks/checklist.md`, `tasks/tdd.json`,
+  `tasks/change_log.md`, and this canonical handoff.
+
+## Verification Results
+
+- Prompt, Project Agent Kit evidence, classification, release-readiness contract, identity, and
+  decision tests: 56 passed.
+- Prompt test Ruff and diff whitespace checks: passed.
+- Published release inspection: `v0.9.0` is non-draft and non-prerelease.
+- Git inspection: SSH origin; local and remote branch inventories contain only `main`.
+
+## Key Risks
+
+- `v0.9.0` predates the clarified prompt commit. The behavior is available on default `main`, while
+  consumers pinning the tag receive the earlier semantically similar wording.
+- External Claude/Codex acceptance remains unverified until the owner provides target repositories.
