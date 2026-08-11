@@ -28,9 +28,10 @@
 - No repository-side blocker remains.
 - Real Claude and Codex runs in separate empty target repositories are unevaluated owner-run
   post-release acceptance. A target has not been supplied, so no runtime success claim is made.
-- This worktree has no `.mir/memory.db` or bootstrap receipt. `mir context pull` and the pinned
-  `scripts/mir.sh` intent wrapper were unavailable; the repository-owned intent-store script was
-  run directly through `uv` instead.
+- The temporary restore worktree initially lacked `.mir/memory.db` and a bootstrap receipt, so its
+  context pull and pinned `scripts/mir.sh` intent wrapper were unavailable; the repository-owned
+  intent-store script ran directly through `uv`. After returning to the canonical worktree, context
+  pull succeeded in FTS5-only mode. The bootstrap receipt remains absent.
 
 ## Next Actions
 
@@ -61,6 +62,8 @@
 - `v0.9.0` predates the clarified prompt commit. The behavior is available on default `main`, while
   consumers pinning the tag receive the earlier semantically similar wording.
 - External Claude/Codex acceptance remains unverified until the owner provides target repositories.
+- Final context pull reported profile freshness `review_required` because the selected handoff and
+  plan changed after the stored profile baseline; no external memory archives are configured.
 
 <!-- mir:runtime-snapshot:begin -->
 ## Runtime Snapshot (Generated)
