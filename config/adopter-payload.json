@@ -3263,7 +3263,7 @@
     },
     {
       "path": "tasks/handoffs/session-handoff-LATEST.md",
-      "sha256": "e32389a29988dcccd2fe563f15941fdb8dfbc6ff16ed0a5f6118e8ce7a10d111",
+      "sha256": "23964ac08275e96b5776adf0a508350635b2032f62781f3ec18437c646d3e37b",
       "classification": "reference",
       "disposition": "remove"
     },

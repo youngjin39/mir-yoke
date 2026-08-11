@@ -51,6 +51,7 @@
 
 - Prompt, Project Agent Kit evidence, classification, release-readiness contract, identity, and
   decision tests: 56 passed.
+- Intent-store and closeout-hook contracts: 6 passed.
 - Prompt test Ruff and diff whitespace checks: passed.
 - Published release inspection: `v0.9.0` is non-draft and non-prerelease.
 - Git inspection: SSH origin; local and remote branch inventories contain only `main`.
@@ -60,3 +61,13 @@
 - `v0.9.0` predates the clarified prompt commit. The behavior is available on default `main`, while
   consumers pinning the tag receive the earlier semantically similar wording.
 - External Claude/Codex acceptance remains unverified until the owner provides target repositories.
+
+<!-- mir:runtime-snapshot:begin -->
+## Runtime Snapshot (Generated)
+
+### Active Plan Items
+- No open plan items.
+
+### Working Tree
+- Working tree clean.
+<!-- mir:runtime-snapshot:end -->
