@@ -39,7 +39,7 @@
         "soak": {"status": "not_applicable", "reason": "No daemon or scheduler is introduced."},
         "security": {"status": "pass", "command": "uv run pytest -q tests/test_capability_security.py tests/test_bootstrap_cli.py tests/test_project_agent_kit_release_evidence.py", "notes": "Explicit CLI invocation and target-agent authority remain separate; pinned wrappers, local state, no-copy, and reviewer boundaries pass."},
         "compatibility": {"status": "pass", "command": "uv run pytest -q", "notes": "The complete materialized release-candidate regression passes with 759 tests. The restored public CLI/bootstrap suite runs on both Ubuntu and macOS in CI."},
-        "transaction_locking": {"status": "planned", "command": "uv run pytest -q tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees", "notes": "The protected lock will be rebound only after the verified implementation commit, in a separate lock commit."}
+        "transaction_locking": {"status": "pass", "command": "uv run pytest -q tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees", "notes": "The protected lock is rebound in a separate release commit to verified implementation revision e5abfadce84be0107395a12509a256b144a2d29a."}
       }
     },
     {

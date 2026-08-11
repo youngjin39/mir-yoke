@@ -32,10 +32,11 @@
 
 ## Release boundary
 
+- Implementation commit `e5abfad` is complete. The protected lock in the release commit is bound to
+  full implementation revision `e5abfadce84be0107395a12509a256b144a2d29a`.
 - The owner authorized the implementation commit, protected capability-lock rebind in a separate
   commit, SSH push to `main`, annotated `v0.9.0` tag, and tag-triggered GitHub Release.
 - Separate Claude and Codex generated-repository executions are post-release owner acceptance. This
   release does not claim that runtime evidence, and the tag workflow does not require it.
-- Next: close the independent re-review, commit implementation, rebind the lock, run the clean
-  candidate gate, push `main` and the annotated tag over SSH, then verify remote state and the
-  tag-triggered GitHub Release.
+- Next: commit the rebound lock and release state, run the final clean-tree gate, push `main` and the
+  annotated tag over SSH, then verify remote state and the tag-triggered GitHub Release.

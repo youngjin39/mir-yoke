@@ -18,7 +18,8 @@ prerequisite.
   reference-template namespace with inventory and classification gates.
 - P5.5 DONE — aligned ADR-83, README, architecture, bootstrap, migration, specifications, generated
   derivatives, release policy, and durable task state with the three supported layers.
-- P5.6 ACTIVE — focused/full regressions, independent review, and materialized clean-candidate
-  readiness pass; create the implementation commit, rebind the capability lock in a separate
-  commit, and repeat readiness from the final clean tree.
-- P5.7 PENDING — push the verified commits to `main` over SSH and push the `v0.9.0` annotated tag.
+- P5.6 DONE — implementation commit `e5abfad` records the restored surface; focused/full
+  regressions, independent review, and materialized clean-candidate readiness pass; the protected
+  capability lock is rebound to that implementation in the separate release commit.
+- P5.7 ACTIVE — repeat readiness from the final clean tree, push the verified commits to `main` over
+  SSH, push the `v0.9.0` annotated tag, and confirm the tag-triggered GitHub Release.
