@@ -12,5 +12,5 @@
 - [x] Make the standard Project Agent Kit require bounded common harness and SQLite+FTS5 memory while
   keeping the Minimal Starter at four files and excluding copied provider runtime source.
 - [x] Preserve the 33-file ADR-82 composition implementation under inert reference templates.
-- [ ] Create the implementation and capability-lock commits, push `main` and `v0.9.0` over SSH, and
-  allow the verified tag workflow to publish the GitHub Release.
+- [x] Create the implementation and capability-lock commits, push `main` and `v0.9.0` over SSH, and
+  publish the verified GitHub Release.

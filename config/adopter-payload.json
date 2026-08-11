@@ -3257,13 +3257,13 @@
     },
     {
       "path": "tasks/checklist.md",
-      "sha256": "f407f240f0ec570495942730b87b2faa935563875e564f241d1d5f3260cc9aeb",
+      "sha256": "f40ff2b0aa2e3b019915ef3748e0d2dacc2e48b26a3b56c1a761d4ec56271960",
       "classification": "reference",
       "disposition": "remove"
     },
     {
       "path": "tasks/handoffs/session-handoff-LATEST.md",
-      "sha256": "ebcb44947737ac351d3e5e2dff53850ec111fc647d6389bb871f893c30b0ae32",
+      "sha256": "5fad34447c67458136d1b1f3c5fbdc3db487a241605a99ab13bf26d7428d170e",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -3293,7 +3293,7 @@
     },
     {
       "path": "tasks/plan.md",
-      "sha256": "d4fbca278d1e4c2044cbe41b30c54034dfb973b1e5f029365b4db68ad65ba598",
+      "sha256": "9d709721f98676ca214862d9c3e239aa5a447701208127cfea000c4da500d641",
       "classification": "reference",
       "disposition": "remove"
     },

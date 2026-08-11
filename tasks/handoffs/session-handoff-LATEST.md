@@ -35,8 +35,12 @@
 - Implementation commit `e5abfad` is complete. The protected lock in the release commit is bound to
   full implementation revision `e5abfadce84be0107395a12509a256b144a2d29a`.
 - The owner authorized the implementation commit, protected capability-lock rebind in a separate
-  commit, SSH push to `main`, annotated `v0.9.0` tag, and tag-triggered GitHub Release.
+  commit, SSH push to `main`, annotated `v0.9.0` tag, and GitHub Release publication.
 - Separate Claude and Codex generated-repository executions are post-release owner acceptance. This
   release does not claim that runtime evidence, and the tag workflow does not require it.
-- Next: commit the rebound lock and release state, run the final clean-tree gate, push `main` and the
-  annotated tag over SSH, then verify remote state and the tag-triggered GitHub Release.
+- Final clean-tree readiness passed with 759 tests. Release commit `1d17358`, remote `main`, and the
+  annotated `v0.9.0` tag were verified over SSH.
+- GitHub Release `v0.9.0` was published as a non-draft, non-prerelease release on 2026-08-11:
+  <https://github.com/youngjin39/mir-yoke/releases/tag/v0.9.0>.
+- No repository-side release work remains. The owner-run external generated-repository acceptance is
+  the next independent consumer check.

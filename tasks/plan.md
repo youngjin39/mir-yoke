@@ -1,6 +1,6 @@
 # Plan
 
-## P5 — Restore core harness engineering and release v0.9.0 (2026-08-11) — ACTIVE
+## P5 — Restore core harness engineering and release v0.9.0 (2026-08-11) — DONE
 
 Authorization: the owner approved implementation, capability-lock rebinding, intentional commits,
 SSH push to `main`, and the `v0.9.0` tag. The owner will run the external generated-repository
@@ -21,5 +21,5 @@ prerequisite.
 - P5.6 DONE — implementation commit `e5abfad` records the restored surface; focused/full
   regressions, independent review, and materialized clean-candidate readiness pass; the protected
   capability lock is rebound to that implementation in the separate release commit.
-- P5.7 ACTIVE — repeat readiness from the final clean tree, push the verified commits to `main` over
-  SSH, push the `v0.9.0` annotated tag, and confirm the tag-triggered GitHub Release.
+- P5.7 DONE — final clean-tree readiness passed with 759 tests; verified commits and the annotated
+  `v0.9.0` tag were pushed over SSH; GitHub Release `v0.9.0` was published on 2026-08-11.
