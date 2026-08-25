@@ -31,6 +31,40 @@ def _run_pretool(project: Path, payload: dict[str, object]) -> subprocess.Comple
     )
 
 
+def _git(project: Path, *args: str) -> str:
+    completed = subprocess.run(
+        ["git", *args],
+        cwd=project,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return completed.stdout.strip()
+
+
+def _commit(project: Path, message: str = "test") -> str:
+    env = os.environ.copy()
+    env.update(
+        {
+            "GIT_AUTHOR_NAME": "Mir Test",
+            "GIT_AUTHOR_EMAIL": "mir-test@example.invalid",
+            "GIT_COMMITTER_NAME": "Mir Test",
+            "GIT_COMMITTER_EMAIL": "mir-test@example.invalid",
+        }
+    )
+    subprocess.run(["git", "add", "."], cwd=project, check=True, env=env)
+    subprocess.run(["git", "commit", "-qm", message], cwd=project, check=True, env=env)
+    return _git(project, "rev-parse", "HEAD")
+
+
+def _adoption_manifest(project: Path, source_commit: str) -> None:
+    (project / "config").mkdir(parents=True, exist_ok=True)
+    (project / "config/bootstrap-adoption.json").write_text(
+        json.dumps({"mir_yoke_source_commit": source_commit}) + "\n",
+        encoding="utf-8",
+    )
+
+
 def test_missing_receipt_blocks_normal_mutation(tmp_path: Path) -> None:
     completed = _run_pretool(
         tmp_path,
@@ -65,33 +99,13 @@ def test_missing_receipt_allows_setup_and_bootstrap_commands(tmp_path: Path) -> 
     trusted_yoke = tmp_path / "Trusted Yoke"
     (trusted_yoke / ".mir").mkdir(parents=True)
     (trusted_yoke / ".mir/repo-profile.toml").write_text(
-        '[repo]\nrepository_type = "public_harness_template"\n', encoding="utf-8"
-    )
-    subprocess.run(["git", "init", "-q"], cwd=trusted_yoke, check=True)
-    subprocess.run(["git", "add", ".mir/repo-profile.toml"], cwd=trusted_yoke, check=True)
-    env = os.environ.copy()
-    env.update(
-        {
-            "GIT_AUTHOR_NAME": "Mir Test",
-            "GIT_AUTHOR_EMAIL": "mir-test@example.invalid",
-            "GIT_COMMITTER_NAME": "Mir Test",
-            "GIT_COMMITTER_EMAIL": "mir-test@example.invalid",
-        }
-    )
-    subprocess.run(["git", "commit", "-qm", "test"], cwd=trusted_yoke, check=True, env=env)
-    source_commit = subprocess.run(
-        ["git", "rev-parse", "HEAD"],
-        cwd=trusted_yoke,
-        check=True,
-        capture_output=True,
-        text=True,
-    ).stdout.strip()
-    project = tmp_path / "quoted-project"
-    (project / "config").mkdir(parents=True)
-    (project / "config/bootstrap-adoption.json").write_text(
-        json.dumps({"mir_yoke_source_commit": source_commit}) + "\n",
+        '[repo]\nslug = "mir-yoke"\nrepository_type = "public_harness_template"\n',
         encoding="utf-8",
     )
+    _git(trusted_yoke, "init", "-q")
+    source_commit = _commit(trusted_yoke)
+    project = tmp_path / "quoted-project"
+    _adoption_manifest(project, source_commit)
     local_adoption = _run_pretool(
         project,
         {
@@ -128,6 +142,278 @@ def test_missing_receipt_allows_setup_and_bootstrap_commands(tmp_path: Path) -> 
         },
     )
     assert dirty_source.returncode == 2
+
+
+def test_adoption_recovery_allows_only_pinned_official_detached_worktree(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "provider source"
+    source.mkdir()
+    _git(source, "init", "-q")
+    (source / "pyproject.toml").write_text(
+        f"[project]\nname = 'mir-yoke-{tmp_path.name}'\n", encoding="utf-8"
+    )
+    source_commit = _commit(source)
+    _git(source, "remote", "add", "origin", "https://github.com/youngjin39/mir-yoke.git")
+    (source / "untracked-provider-note.txt").write_text("dirty\n", encoding="utf-8")
+    hook_sentinel = tmp_path / "post-checkout-ran"
+    post_checkout = source / ".git/hooks/post-checkout"
+    post_checkout.write_text(f"#!/bin/sh\ntouch '{hook_sentinel}'\n", encoding="utf-8")
+    post_checkout.chmod(0o755)
+
+    project = tmp_path / "adopter"
+    _adoption_manifest(project, source_commit)
+    (project / ".mir").mkdir()
+    (project / ".mir/bootstrap-receipt.json").write_text(
+        '{"status":"invalid"}\n', encoding="utf-8"
+    )
+    temp_root = Path(os.environ.get("TMPDIR", "/tmp")).resolve()
+    target = temp_root / f"mir-yoke-bootstrap-{source_commit[:12]}"
+    command = (
+        "git --no-replace-objects --no-lazy-fetch "
+        "-c core.hooksPath=/dev/null -c core.fsmonitor=false "
+        f'-c core.attributesFile=/dev/null -C "{source}" '
+        f'worktree add --detach "{target}" {source_commit}'
+    )
+
+    allowed = _run_pretool(
+        project, {"tool_name": "Bash", "tool_input": {"command": command}}
+    )
+    assert allowed.returncode == 0, allowed.stderr
+
+    _git(
+        source,
+        "--no-replace-objects",
+        "--no-lazy-fetch",
+        "-c",
+        "core.hooksPath=/dev/null",
+        "-c",
+        "core.fsmonitor=false",
+        "-c",
+        "core.attributesFile=/dev/null",
+        "worktree",
+        "add",
+        "--detach",
+        str(target),
+        source_commit,
+    )
+    assert not hook_sentinel.exists()
+    assert not (target / ".mir/repo-profile.toml").exists()
+
+    (target / ".mir").mkdir()
+    profile = target / ".mir/repo-profile.toml"
+    profile.write_text('[repo]\nslug = "wrong"\n', encoding="utf-8")
+    malformed_profile = _run_pretool(
+        project,
+        {
+            "tool_name": "Bash",
+            "tool_input": {
+                "command": (
+                    f'uv run --project "{target}" '
+                    "mir bootstrap-adoption --project-root . --apply --json"
+                )
+            },
+        },
+    )
+    assert malformed_profile.returncode == 2
+    profile.unlink()
+    profile.symlink_to(target / "pyproject.toml")
+    symlink_profile = _run_pretool(
+        project,
+        {
+            "tool_name": "Bash",
+            "tool_input": {
+                "command": (
+                    f'uv run --project "{target}" '
+                    "mir bootstrap-adoption --project-root . --apply --json"
+                )
+            },
+        },
+    )
+    assert symlink_profile.returncode == 2
+    profile.unlink()
+
+    adoption = _run_pretool(
+        project,
+        {
+            "tool_name": "Bash",
+            "tool_input": {
+                "command": (
+                    f'uv run --project "{target}" '
+                    "mir bootstrap-adoption --project-root . --apply --json"
+                )
+            },
+        },
+    )
+    assert adoption.returncode == 0, adoption.stderr
+    _git(source, "worktree", "remove", "--force", str(target))
+
+    (source / "pyproject.toml").write_text(
+        "[project]\nname = 'replacement-commit'\n", encoding="utf-8"
+    )
+    replacement_commit = _commit(source, "replacement")
+    _git(source, "replace", source_commit, replacement_commit)
+    replacement_safe = _run_pretool(
+        project, {"tool_name": "Bash", "tool_input": {"command": command}}
+    )
+    assert replacement_safe.returncode == 0, replacement_safe.stderr
+    _git(
+        source,
+        "--no-replace-objects",
+        "--no-lazy-fetch",
+        "-c",
+        "core.hooksPath=/dev/null",
+        "-c",
+        "core.fsmonitor=false",
+        "-c",
+        "core.attributesFile=/dev/null",
+        "worktree",
+        "add",
+        "--detach",
+        str(target),
+        source_commit,
+    )
+    assert "replacement-commit" not in (target / "pyproject.toml").read_text(
+        encoding="utf-8"
+    )
+    _git(source, "worktree", "remove", "--force", str(target))
+    _git(source, "replace", "-d", source_commit)
+
+    wrong_target = temp_root / "other-bootstrap-target"
+    untrusted = tmp_path / "untrusted"
+    subprocess.run(["git", "clone", "-q", str(source), str(untrusted)], check=True)
+    _git(untrusted, "remote", "set-url", "origin", "https://example.invalid/mir-yoke.git")
+
+    rejected_commands = (
+        command.replace(str(target), str(wrong_target)),
+        command.replace(source_commit, "b" * 40),
+        command.replace("worktree add --detach", "worktree add --detach --force"),
+        command.replace("worktree add --detach", "worktree add --force --detach"),
+        command.replace(str(source), str(untrusted)),
+        f'git -C "{source}" worktree add --detach "{target}" {source_commit}',
+        command.replace(f'"{source}"', str(source)),
+        command.replace(f'"{target}"', str(target)),
+        (
+            f'git -C "{source}; touch {tmp_path / "injected"}" '
+            f'worktree add --detach "{target}" {source_commit}'
+        ),
+        f'git -C "{source}" worktree add --detach "{target}" {source_commit}; touch injected',
+    )
+    for rejected_command in rejected_commands:
+        completed = _run_pretool(
+            project,
+            {"tool_name": "Bash", "tool_input": {"command": rejected_command}},
+        )
+        assert completed.returncode == 2, rejected_command
+
+    source_alias = tmp_path / "provider-alias"
+    source_alias.symlink_to(source, target_is_directory=True)
+    aliased_source = _run_pretool(
+        project,
+        {
+            "tool_name": "Bash",
+            "tool_input": {"command": command.replace(str(source), str(source_alias))},
+        },
+    )
+    assert aliased_source.returncode == 2
+    source_alias.unlink()
+
+    temp_alias = tmp_path / "temp-alias"
+    temp_alias.symlink_to(temp_root, target_is_directory=True)
+    aliased_target = _run_pretool(
+        project,
+        {
+            "tool_name": "Bash",
+            "tool_input": {
+                "command": command.replace(
+                    str(target), str(temp_alias / target.name)
+                )
+            },
+        },
+    )
+    assert aliased_target.returncode == 2
+    temp_alias.unlink()
+
+    for key, value in (
+        ("filter.hostile.smudge", "touch hostile-filter"),
+        ("core.fsmonitor", "touch hostile-fsmonitor"),
+        ("core.attributesFile", str(tmp_path / "hostile-attributes")),
+    ):
+        _git(source, "config", key, value)
+        unsafe_config = _run_pretool(
+            project, {"tool_name": "Bash", "tool_input": {"command": command}}
+        )
+        assert unsafe_config.returncode == 2, key
+        _git(source, "config", "--unset", key)
+
+    info_attributes = source / ".git/info/attributes"
+    info_attributes.write_text("* filter=hostile\n", encoding="utf-8")
+    unsafe_attributes = _run_pretool(
+        project, {"tool_name": "Bash", "tool_input": {"command": command}}
+    )
+    assert unsafe_attributes.returncode == 2
+    info_attributes.unlink()
+
+    target.mkdir()
+    existing = _run_pretool(
+        project, {"tool_name": "Bash", "tool_input": {"command": command}}
+    )
+    assert existing.returncode == 2
+    target.rmdir()
+
+    target.symlink_to(tmp_path, target_is_directory=True)
+    symlink = _run_pretool(
+        project, {"tool_name": "Bash", "tool_input": {"command": command}}
+    )
+    assert symlink.returncode == 2
+    target.unlink()
+
+    _git(source, "config", "remote.origin.promisor", "true")
+    _git(source, "config", "remote.origin.partialclonefilter", "blob:none")
+    object_relative = _git(
+        source,
+        "rev-parse",
+        "--git-path",
+        f"objects/{source_commit[:2]}/{source_commit[2:]}",
+    )
+    object_path = Path(object_relative)
+    if not object_path.is_absolute():
+        object_path = source / object_path
+    object_path.unlink()
+    missing_promisor_object = _run_pretool(
+        project, {"tool_name": "Bash", "tool_input": {"command": command}}
+    )
+    assert missing_promisor_object.returncode == 2
+
+    status_source = tmp_path / "status-failure-source"
+    status_source.mkdir()
+    _git(status_source, "init", "-q")
+    (status_source / "pyproject.toml").write_text(
+        "[project]\nname = 'status-failure'\n", encoding="utf-8"
+    )
+    status_commit = _commit(status_source)
+    _git(
+        status_source,
+        "remote",
+        "add",
+        "origin",
+        "https://github.com/youngjin39/mir-yoke.git",
+    )
+    _adoption_manifest(project, status_commit)
+    (status_source / ".git/index").write_bytes(b"corrupt-index")
+    failed_status = _run_pretool(
+        project,
+        {
+            "tool_name": "Bash",
+            "tool_input": {
+                "command": (
+                    f'uv run --project "{status_source}" '
+                    "mir bootstrap-adoption --project-root . --apply --json"
+                )
+            },
+        },
+    )
+    assert failed_status.returncode == 2
 
 
 def test_bootstrap_commands_are_mode_aware(tmp_path: Path) -> None:

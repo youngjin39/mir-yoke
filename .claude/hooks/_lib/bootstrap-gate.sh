@@ -11,6 +11,46 @@ _mir_bootstrap_sha256() {
   fi
 }
 
+_mir_bootstrap_has_official_origin() {
+  local repository="$1"
+  local origin
+  origin="$(git --no-replace-objects --no-lazy-fetch -C "$repository" \
+    remote get-url origin 2>/dev/null || true)"
+  case "$origin" in
+    https://github.com/youngjin39/mir-yoke.git|git@github.com:youngjin39/mir-yoke.git)
+      return 0
+      ;;
+  esac
+  return 1
+}
+
+_mir_bootstrap_is_provider_source() {
+  local repository="$1"
+  local profile="$repository/.mir/repo-profile.toml"
+  if [ -e "$profile" ] || [ -L "$profile" ]; then
+    [ -f "$profile" ] && [ ! -L "$profile" ] && \
+      grep -Eq '^[[:space:]]*slug[[:space:]]*=[[:space:]]*"mir-yoke"' "$profile" && \
+      grep -Eq '^[[:space:]]*repository_type[[:space:]]*=[[:space:]]*"public_harness_template"' "$profile"
+    return
+  fi
+  _mir_bootstrap_has_official_origin "$repository"
+}
+
+_mir_bootstrap_has_unsafe_git_extensions() {
+  local repository="$1"
+  local common_dir attributes
+  if git --no-replace-objects --no-lazy-fetch -C "$repository" config --get-regexp \
+    '^(filter\..*\.(clean|smudge|process|required)|core\.(hooksPath|fsmonitor|attributesFile))$' \
+    >/dev/null 2>&1; then
+    return 0
+  fi
+  common_dir="$(git --no-replace-objects --no-lazy-fetch -C "$repository" \
+    rev-parse --git-common-dir 2>/dev/null)" || return 0
+  case "$common_dir" in /*) ;; *) common_dir="$repository/$common_dir" ;; esac
+  attributes="$common_dir/info/attributes"
+  [ -e "$attributes" ] || [ -L "$attributes" ]
+}
+
 mir_bootstrap_gate_state() {
   local project_dir="${1:-${CLAUDE_PROJECT_DIR:-.}}"
   local profile="$project_dir/.mir/repo-profile.toml"
@@ -19,14 +59,10 @@ mir_bootstrap_gate_state() {
   if [ -f "$profile" ] && [ ! -L "$profile" ] && \
      grep -Eq '^[[:space:]]*slug[[:space:]]*=[[:space:]]*"mir-yoke"' "$profile" && \
      grep -Eq '^[[:space:]]*repository_type[[:space:]]*=[[:space:]]*"public_harness_template"' "$profile"; then
-    local template_origin
-    template_origin="$(git -C "$project_dir" remote get-url origin 2>/dev/null || true)"
-    case "$template_origin" in
-      https://github.com/youngjin39/mir-yoke.git|git@github.com:youngjin39/mir-yoke.git)
-        printf 'template_maintainer\n'
-        return 0
-        ;;
-    esac
+    if _mir_bootstrap_has_official_origin "$project_dir"; then
+      printf 'template_maintainer\n'
+      return 0
+    fi
   fi
   if [ ! -f "$receipt" ]; then
     printf 'missing\n'
@@ -335,6 +371,43 @@ _mir_bootstrap_git_add_allowed() {
   [ -f "$project_dir/$path" ] && [ ! -L "$project_dir/$path" ]
 }
 
+_mir_bootstrap_worktree_add_allowed() {
+  local command="$1"
+  local project_dir="${2:-${CLAUDE_PROJECT_DIR:-.}}"
+  local pattern source_root target_root commit expected_commit source_real manifest
+  local target_parent target_parent_real target_name temp_root
+  pattern='^[[:space:]]*git[[:space:]]+--no-replace-objects[[:space:]]+--no-lazy-fetch[[:space:]]+-c[[:space:]]+core\.hooksPath=/dev/null[[:space:]]+-c[[:space:]]+core\.fsmonitor=false[[:space:]]+-c[[:space:]]+core\.attributesFile=/dev/null[[:space:]]+-C[[:space:]]+"([^"]+)"[[:space:]]+worktree[[:space:]]+add[[:space:]]+--detach[[:space:]]+"([^"]+)"[[:space:]]+([0-9a-f]{40})[[:space:]]*$'
+  printf '%s\n' "$command" | grep -Eq "$pattern" || return 1
+  source_root="$(printf '%s\n' "$command" | sed -E "s@$pattern@\\1@")"
+  target_root="$(printf '%s\n' "$command" | sed -E "s@$pattern@\\2@")"
+  commit="$(printf '%s\n' "$command" | sed -E "s@$pattern@\\3@")"
+  case "$source_root$target_root" in
+    *'$'*|*'\'*|*'!'*) return 1 ;;
+  esac
+  case "$source_root" in /*) ;; *) return 1 ;; esac
+  [ -d "$source_root" ] && [ ! -L "$source_root" ] || return 1
+  source_real="$(cd -- "$source_root" 2>/dev/null && pwd -P)" || return 1
+  [ "$source_root" = "$source_real" ] || return 1
+  _mir_bootstrap_has_official_origin "$source_root" || return 1
+  _mir_bootstrap_has_unsafe_git_extensions "$source_root" && return 1
+  manifest="$project_dir/config/bootstrap-adoption.json"
+  [ -f "$manifest" ] && [ ! -L "$manifest" ] || return 1
+  expected_commit="$(jq -r '.mir_yoke_source_commit // ""' "$manifest" 2>/dev/null)"
+  [ "$commit" = "$expected_commit" ] || return 1
+  git --no-replace-objects --no-lazy-fetch -C "$source_root" \
+    cat-file -e "$commit^{commit}" 2>/dev/null || return 1
+
+  temp_root="$(cd -- "${TMPDIR:-/tmp}" 2>/dev/null && pwd -P)" || return 1
+  target_parent="${target_root%/*}"
+  target_name="${target_root##*/}"
+  [ -d "$target_parent" ] && [ ! -L "$target_parent" ] || return 1
+  target_parent_real="$(cd -- "$target_parent" 2>/dev/null && pwd -P)" || return 1
+  [ "$target_parent_real" = "$temp_root" ] || return 1
+  [ "$target_root" = "$target_parent_real/$target_name" ] || return 1
+  [ "$target_name" = "mir-yoke-bootstrap-${commit%${commit#????????????}}" ] || return 1
+  [ ! -e "$target_root" ] && [ ! -L "$target_root" ]
+}
+
 _mir_bootstrap_safe_single_command() {
   local command="$1"
   local project_dir="${2:-${CLAUDE_PROJECT_DIR:-.}}"
@@ -378,6 +451,9 @@ _mir_bootstrap_safe_single_command() {
   if _mir_bootstrap_git_add_allowed "$command" "$project_dir"; then
     return 0
   fi
+  if _mir_bootstrap_worktree_add_allowed "$command" "$project_dir"; then
+    return 0
+  fi
   if printf '%s\n' "$command" | grep -Eq \
     '^[[:space:]]*git[[:space:]]+diff([[:space:]].*)?[[:space:]]*$'; then
     case "$command" in
@@ -402,7 +478,7 @@ _mir_bootstrap_safe_single_command() {
 _mir_bootstrap_uv_project_allowed() {
   local command="$1"
   local project_dir="${2:-${CLAUDE_PROJECT_DIR:-.}}"
-  local trimmed rest source_root expected_commit actual_commit
+  local trimmed rest source_root expected_commit actual_commit status_output
   trimmed="${command#"${command%%[![:space:]]*}"}"
   case "$trimmed" in
     "uv run --project "*) rest="${trimmed#"uv run --project "}" ;;
@@ -419,14 +495,20 @@ _mir_bootstrap_uv_project_allowed() {
       ;;
     *) source_root="${rest%%[[:space:]]*}" ;;
   esac
-  [ -n "$source_root" ] && [ -d "$source_root" ] || return 1
-  grep -Eq '^[[:space:]]*repository_type[[:space:]]*=[[:space:]]*"public_harness_template"' \
-    "$source_root/.mir/repo-profile.toml" 2>/dev/null || return 1
+  [ -n "$source_root" ] && [ -d "$source_root" ] && [ ! -L "$source_root" ] || return 1
+  [ "$source_root" = "$(cd -- "$source_root" 2>/dev/null && pwd -P)" ] || return 1
+  _mir_bootstrap_is_provider_source "$source_root" || return 1
+  _mir_bootstrap_has_unsafe_git_extensions "$source_root" && return 1
   expected_commit="$(jq -r '.mir_yoke_source_commit // ""' "$project_dir/config/bootstrap-adoption.json" 2>/dev/null)"
   [ -n "$expected_commit" ] || return 1
-  actual_commit="$(git -C "$source_root" rev-parse HEAD 2>/dev/null)" || return 1
+  actual_commit="$(git --no-replace-objects --no-lazy-fetch -C "$source_root" \
+    rev-parse HEAD 2>/dev/null)" || return 1
   [ "$actual_commit" = "$expected_commit" ] || return 1
-  [ -z "$(git -C "$source_root" status --porcelain --untracked-files=normal 2>/dev/null)" ]
+  status_output="$(git --no-replace-objects --no-lazy-fetch \
+    -c core.hooksPath=/dev/null -c core.fsmonitor=false \
+    -c core.attributesFile=/dev/null -C "$source_root" \
+    status --porcelain --untracked-files=normal 2>/dev/null)" || return 1
+  [ -z "$status_output" ]
 }
 
 _mir_bootstrap_workdir_allowed() {

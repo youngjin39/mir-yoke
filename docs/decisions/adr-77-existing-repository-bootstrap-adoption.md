@@ -60,6 +60,20 @@ is incomplete because an allowed spec file can contain executable test code and 
 cache options can write outside the evidence boundary. It never permits deletion of the adoption
 manifest as a scoped evidence edit.
 
+An invalid receipt must not deadlock its own repair. The active agent may prepare a clean provider
+source with one exact `git worktree add --detach` form. The gate derives the only accepted commit
+from the tracked adoption manifest, requires that object to exist in a repository whose `origin`
+is the exact official Mir Yoke URL, confines the absent target to the resolved owner temporary
+directory, and derives its basename from the first twelve commit characters. The resulting clean
+detached checkout is accepted by official-origin identity even though the maintainer-only
+`.mir/repo-profile.toml` is intentionally ignored and therefore absent. This recovery does not
+permit fetch, force, branch mutation, arbitrary target selection, dirty adoption execution, or
+compound shell commands. Checkout hooks, fsmonitor, and global attributes are disabled on the
+exact worktree command; effective filter drivers, hook/fsmonitor/attributes configuration, and
+Git common-directory attributes fail closed before checkout. Replacement objects and lazy fetches
+are disabled for object validation, checkout, HEAD validation, and clean-source inspection. The
+agent—not the operator—executes the recovery.
+
 ## Consequences
 
 The portable manifest and evidence remain repository-owned and should be committed. The receipt
@@ -80,3 +94,5 @@ technical debt in every regenerated receipt.
    its shell allowlist accepts only complete single-command grammar.
 6. Applied or repository-owned Phase 2 claims equal the parsed native coverage, AI-ready, gaps,
    and review evidence rather than trusting duplicated manifest counts.
+7. An invalid receipt permits an agent-run, official-origin, manifest-pinned detached recovery
+   worktree while rejecting every unpinned, unconstrained, existing, symlinked, or compound form.

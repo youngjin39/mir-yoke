@@ -48,6 +48,14 @@ The installed CLI exposes no active `yoke` composer. Superseded composition sour
 `reference-templates/advanced-composition/` are read-only design references and cannot be treated
 as commands, payloads, or readiness requirements.
 
+If an existing-repository adoption receipt becomes invalid, the active agent owns recovery. The
+gate permits only a deterministic detached worktree for the manifest-pinned commit from the exact
+official Mir Yoke `origin`, placed under the owner temporary directory with a commit-derived name.
+Checkout hooks, fsmonitor, and global attributes are disabled for that operation, while effective
+filter drivers, external attributes, replacement refs, lazy object fetching, force flags, alternate
+targets, dirty adoption sources, and shell composition fail closed. The agent then runs
+`bootstrap-adoption` from the clean checkout; the operator is not asked to prepare it manually.
+
 ## Unsupported target state
 
 Do not run the Project Agent Kit flow when the target contains files, is inside another Git

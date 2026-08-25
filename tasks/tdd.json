@@ -2,6 +2,32 @@
   "version": 1,
   "changes": [
     {
+      "id": "bootstrap-gate-agent-recovery-2026-08-25",
+      "record_status": "complete",
+      "scope": "Remove the existing-repository bootstrap recovery deadlock by allowing an agent to create only a deterministic detached worktree for the manifest-pinned Mir Yoke commit, while preserving fail-closed rejection of arbitrary Git commands, untrusted remotes, path escapes, dirty adoption sources, and command injection.",
+      "targets": [
+        ".claude/hooks/_lib/bootstrap-gate.sh",
+        "tests/test_bootstrap_start_gate.py",
+        "BOOTSTRAP.md",
+        "docs/decisions/adr-77-existing-repository-bootstrap-adoption.md",
+        "tasks/tdd.json"
+      ],
+      "categories": {
+        "unit": {"status": "pass", "command": "uv run pytest -q tests/test_bootstrap_start_gate.py", "notes": "19 passed; exact bounded worktree allowlist and source identity validation are covered."},
+        "integration": {"status": "pass", "command": "uv run pytest -q tests/test_bootstrap_start_gate.py tests/test_bootstrap_adoption_cli.py tests/test_bootstrap_cli.py", "notes": "75 passed; hook recovery, adoption, and greenfield bootstrap remain compatible."},
+        "e2e": {"status": "pass", "command": "uv run pytest -q tests/test_bootstrap_start_gate.py -k recovery", "notes": "1 passed; an invalid receipt permits agent-run clean provider preparation and adoption authorization."},
+        "browser": {"status": "not_applicable", "reason": "No browser or UI surface changes."},
+        "edge": {"status": "pass", "command": "uv run pytest -q tests/test_bootstrap_start_gate.py -k recovery", "notes": "Wrong commits, targets, remotes, flags, aliases, extensions, replacement objects, lazy fetches, symlinks, and shell metacharacters are rejected."},
+        "architecture": {"status": "pass", "command": "uv run pytest -q tests/test_bootstrap_start_gate.py tests/test_bootstrap_adoption_cli.py tests/test_bootstrap_cli.py && uv run python scripts/verify_codex_sync.py", "notes": "75 tests and generated parity pass; recovery stays provider-owned and target-local without standing authority."},
+        "availability": {"status": "pass", "command": "uv run pytest -q tests/test_bootstrap_start_gate.py -k recovery", "notes": "The invalid-receipt path no longer deadlocks deterministic preparation of a clean pinned source."},
+        "load": {"status": "not_applicable", "reason": "Recovery is a bounded operator action outside throughput-sensitive paths."},
+        "soak": {"status": "not_applicable", "reason": "No daemon or persistent loop is added."},
+        "security": {"status": "pass", "command": "uv run pytest -q tests/test_bootstrap_start_gate.py -k recovery", "notes": "Origin, commit, target confinement, extension neutralization, object identity, clean source, and injection rejection pass."},
+        "compatibility": {"status": "pass", "command": "uv run pytest -q tests/test_bootstrap_start_gate.py tests/test_bootstrap_adoption_cli.py tests/test_bootstrap_cli.py tests/test_installed_cli.py tests/test_hook_executability.py tests/test_common_harness_template.py", "notes": "97 passed across bootstrap, installed CLI, executable hook, and common harness contracts."},
+        "transaction_locking": {"status": "not_applicable", "reason": "The hook authorizes one Git worktree transaction but does not implement concurrent state mutation."}
+      }
+    },
+    {
       "id": "restore-core-harness-engineering-2026-08-11",
       "record_status": "complete",
       "scope": "Restore the complete v0.8 public mir CLI, installation, bootstrap, memory, capability, context, execution, hook, and verification surface while retaining the Project Agent Kit as the simple greenfield default, requiring a bounded project-owned common harness and memory component, preserving superseded composition machinery as non-default reference templates, and never copying the full Mir CLI into generated repositories.",
