@@ -1,6 +1,6 @@
 # Codex CLI side
 
-`hooks.json` mirrors `.claude/settings.json` for the 8 hook events Codex CLI supports.
+`hooks.json` mirrors `.claude/settings.json` for the 7 shared hook events Codex CLI supports.
 
 ## Events
 
@@ -9,9 +9,8 @@
 | `PreToolUse` | yes | `.claude/hooks/pre-tool-use.sh` |
 | `PostToolUse` | yes | `.claude/hooks/post-edit-check.sh` |
 | `PreCompact` | yes | `.claude/hooks/pre-compact.sh` |
-| `PostCompact` | reserved | (none) |
-| `SessionStart` | yes | `.claude/hooks/session-start.sh` |
-| `UserPromptSubmit` | reserved | (none) |
+| `PostCompact` | yes | `.claude/hooks/post-compact.sh` |
+| `SessionStart` | yes | `.claude/hooks/session-start.sh`; compact-only recovery uses `.claude/hooks/compact-resume.sh` |
 | `Stop` | yes | `.claude/hooks/mir-stop.sh` |
 | `PermissionRequest` | yes | `.claude/hooks/pre-tool-use.sh` (same deny-list) |
 
@@ -29,4 +28,7 @@ Codex CLI hooks receive the same JSON wire format on stdin that Claude Code uses
 
 ## Customization
 
-Edit `hooks.json` directly. Re-running setup.sh does not overwrite it.
+Edit `config/project-hooks.json`, then run `scripts/generate_codex_derivatives.sh`. The generator
+renders both `.claude/settings.json` and `.codex/hooks.json`; do not edit either generated hook
+registration file directly. Generated commands resolve the repository root, so hook execution does
+not depend on the runtime's current working directory.

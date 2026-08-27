@@ -5,7 +5,7 @@
 #   - Mir-specific manifest path (.codex-sync/manifest.json — same)
 #   - Common skills are plugin-owned and never generated as repo-local copies.
 #   - Agent TOML mirrors are generated from .claude/agents source.
-#   - write_hooks_json() SKIPPED (repository-owned P0-G hooks.json preserved byte-for-byte)
+#   - Claude and Codex hooks render from config/project-hooks.json.
 #   - codex_hooks = true added to [features] in write_config_toml
 
 set -euo pipefail
@@ -219,9 +219,9 @@ emit_agent_sections_for_codex() {
         "## Complex Tasks (pipeline)"
         "## Codex Backend Dispatch Self-Check (ADR-18 §S2 Layer 1)"
         "## Active Agent Resolution (pre-dispatch)"
-        "## Specialist Scope-Pattern Routing (ADR-17 §S2 P17-B)"
+        "## Specialist Scope-Pattern Routing (catalog routing ADR)"
         "## Sub-agent dispatch policy"
-        "## Post-Dispatch Monitoring (ADR-60 R6)"
+        "## Post-Dispatch Evidence"
         "## Post-completion"
         "## Feedback → Learning"
         "## Reporting"
@@ -400,9 +400,16 @@ write_config_toml() {
   } > "$OUTPUT_ROOT/.codex/config.toml"
 }
 
-# write_hooks_json is skipped: .codex/hooks.json is a reviewed repository-owned P0-G artifact.
-# Keep it behaviorally aligned with .claude/settings.json when either hook surface changes.
-# BORROWED-FROM modification: claude-starter calls write_hooks_json() here; Mir does not.
+write_hook_configs() {
+  local renderer="templates/common-harness/scripts/render-hook-configs.py"
+  local definition="config/project-hooks.json"
+  if [ ! -f "$renderer" ] || [ ! -f "$definition" ]; then
+    return 0
+  fi
+  uv run python "$renderer" \
+    --definition "$definition" \
+    --output-root "$OUTPUT_ROOT"
+}
 
 write_agent_toml() {
   local src="$1"
@@ -503,6 +510,10 @@ write_manifest_json() {
       append_mapping "__CONFIG_SOURCES__" '[".codex/config.toml"]' "config" "Semantic mapping from Claude permissions and MCP settings"
     fi
 
+    if [ -f "config/project-hooks.json" ] && [ -f "templates/common-harness/scripts/render-hook-configs.py" ]; then
+      append_mapping "config/project-hooks.json" '[".claude/settings.json", ".codex/hooks.json"]' "config" "Generated dual-runtime hook registrations"
+    fi
+
     append_mapping ".claude/hooks/lib" '[".codex/hooks/lib"]' "directory" "Portable Codex hook library copy"
 
     echo
@@ -529,6 +540,7 @@ write_manifest_json() {
 write_agents_md
 write_nested_agents_md
 write_config_toml
+write_hook_configs
 
 # Remove legacy raw skill providers. Common skills now live only under plugins/*/skills.
 rm -rf -- "$OUTPUT_ROOT/.agents/skills"
@@ -552,7 +564,7 @@ echo "Generated Codex derivatives:"
 echo "  $OUTPUT_ROOT/AGENTS.md"
 echo "  $OUTPUT_ROOT/{scripts,src,tests,tools}/**/AGENTS.md"
 echo "  $OUTPUT_ROOT/.codex/config.toml"
-echo "  $OUTPUT_ROOT/.codex/hooks.json (PRESERVED — P0-G artifact, not regenerated)"
+echo "  $OUTPUT_ROOT/{.claude/settings.json,.codex/hooks.json} (generated from config/project-hooks.json)"
 echo "  $OUTPUT_ROOT/.codex/agents/*.toml"
 echo "  $OUTPUT_ROOT/.codex/hooks/lib (portable directory copy)"
 echo "  $OUTPUT_ROOT/.agents/skills (REMOVED — common skills are plugin-owned)"

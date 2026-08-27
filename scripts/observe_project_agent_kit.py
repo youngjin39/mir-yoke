@@ -334,7 +334,14 @@ def _run_common_harness_cycle(
     common_harness = _mapping(contract, "common_harness")
     commands = _mapping(common_harness, "commands")
     observations: dict[str, object] = {}
-    for name in ("memory_init", "memory_sync", "memory_doctor", "context_pull"):
+    for name in (
+        "hook_render",
+        "hook_parity",
+        "memory_init",
+        "memory_sync",
+        "memory_doctor",
+        "context_pull",
+    ):
         argv = commands.get(name)
         if not isinstance(argv, list) or not all(isinstance(item, str) for item in argv):
             raise ValueError(f"common harness command {name} is invalid")

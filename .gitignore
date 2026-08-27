@@ -51,6 +51,7 @@ out/
 .mir/slim-quarantine/
 .mir/slim-transaction.json
 .mir/slim.lock
+.mir/runtime/
 
 # Operator-specific profile — created by setup.sh, filled in by repo owner
 .mir/repo-profile.toml

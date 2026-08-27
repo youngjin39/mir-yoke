@@ -15,9 +15,16 @@ def test_should_provide_only_the_bounded_common_harness_sources() -> None:
     }
 
     assert files == {
+        ".claude/hooks/_lib/invocation_log.sh",
+        ".claude/hooks/_lib/run-python.sh",
+        ".claude/hooks/compact-resume.sh",
+        ".claude/hooks/post-compact.sh",
+        ".claude/hooks/pre-compact.sh",
+        "harness/project-hooks.json",
         "harness_a.toml",
         "scripts/memory-sync.sh",
         "scripts/mir.sh",
+        "scripts/render-hook-configs.py",
         "tasks/handoffs/session-handoff-LATEST.md",
     }
     assert not any(path.startswith(("src/mir/", "tools/", "plugins/")) for path in files)
@@ -77,3 +84,34 @@ def test_should_leave_a_cold_resume_handoff_before_product_planning() -> None:
     assert "memory_init" in handoff
     assert "memory_sync" in handoff
     assert "memory_doctor" in handoff
+
+
+def test_should_ship_one_portable_compact_hook_definition_and_renderer() -> None:
+    import json
+
+    hooks = json.loads(
+        (TEMPLATE / "harness" / "project-hooks.json").read_text(encoding="utf-8")
+    )
+    events = hooks["events"]
+
+    assert set(events) == {"PreCompact", "PostCompact", "SessionStart"}
+    assert events["SessionStart"][0]["matcher"] == "^compact$"
+    assert events["SessionStart"][0]["hooks"][0]["script"] == (
+        ".claude/hooks/compact-resume.sh"
+    )
+    renderer = (TEMPLATE / "scripts" / "render-hook-configs.py").read_text(
+        encoding="utf-8"
+    )
+    assert "harness/project-hooks.json" in renderer
+    assert ".claude/settings.json" in renderer
+    assert ".codex/hooks.json" in renderer
+
+
+def test_should_keep_maintainer_and_consumer_compact_behaviors_in_parity() -> None:
+    for relative in (
+        ".claude/hooks/_lib/invocation_log.sh",
+        ".claude/hooks/pre-compact.sh",
+        ".claude/hooks/post-compact.sh",
+        ".claude/hooks/compact-resume.sh",
+    ):
+        assert (ROOT / relative).read_bytes() == (TEMPLATE / relative).read_bytes()

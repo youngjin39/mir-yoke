@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "codex_notes": [
+    "GENERATED FILE: edit harness/project-hooks.json and run the declared hook_render command."
+  ],
+  "events": {
+    "PreCompact": [
+      {
+        "runtimes": ["claude", "codex"],
+        "hooks": [
+          {
+            "script": ".claude/hooks/pre-compact.sh",
+            "timeout": 60,
+            "statusMessage": "Project PreCompact checkpoint"
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "runtimes": ["claude", "codex"],
+        "hooks": [
+          {
+            "script": ".claude/hooks/post-compact.sh",
+            "timeout": 60,
+            "statusMessage": "Project PostCompact validation"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "^compact$",
+        "runtimes": ["claude", "codex"],
+        "hooks": [
+          {
+            "script": ".claude/hooks/compact-resume.sh",
+            "timeout": 30,
+            "statusMessage": "Project compact resume context"
+          }
+        ]
+      }
+    ]
+  }
+}

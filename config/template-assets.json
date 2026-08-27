@@ -42,10 +42,10 @@
     },
     {
       "id": "common-harness-template",
-      "classification": "reference",
+      "classification": "optional-consumer-tool",
       "include": ["templates/common-harness/**"],
       "exclude": [],
-      "reason": "Bounded common harness and memory sources selectively adapted by the target agent without copying the Mir runtime."
+      "reason": "Bounded Project Agent Kit sources explicitly adapted into a consumer-owned target without copying the Mir runtime."
     },
     {
       "id": "advanced-composition-reference",
@@ -232,6 +232,7 @@
         ".codex/agents/template-sync-validator.toml",
         "config/harness-consistency.json",
         "config/harness-consistency.schema.json",
+        "config/project-hooks.json",
         "config/template-assets.json",
         "config/template-assets.schema.json",
         "pyproject.toml",

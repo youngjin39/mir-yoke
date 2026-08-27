@@ -39,36 +39,11 @@
     ]
   },
   "notes": [
-    "Sanitized self-profile used by public harness-consistency generation and verification."
+    "Sanitized self-profile used by public harness-consistency generation and verification.",
+    "Maintainers may open an ordinary agent-assisted editing session, but Mir Yoke itself declares no repository product/runtime agents, skills, or orchestration."
   ],
-  "active_agents": [
-    "main-orchestrator",
-    "executor-agent",
-    "codex-final-reviewer",
-    "quality-agent",
-    "cwe-auditor",
-    "dep-auditor",
-    "ui-reviewer",
-    "pipeline-validator",
-    "ontology-validator",
-    "runtime-contract-reviewer",
-    "template-sync-validator"
-  ],
-  "active_skills": [
-    "design",
-    "spec-architect",
-    "verify",
-    "code-review",
-    "testing",
-    "ui-design",
-    "governance",
-    "knowledge",
-    "memory-gc",
-    "automation",
-    "efficiency",
-    "bluebricks",
-    "commit"
-  ],
+  "active_agents": [],
+  "active_skills": [],
   "agent_overrides": {
     "add_specialists": [],
     "remove_specialists": []
@@ -77,7 +52,7 @@
     "add": [],
     "remove": []
   },
-  "orchestration_profile": "standard",
-  "last_reviewed_at": "2026-08-11",
-  "rationale": "ADR-83 public Starter, Project Agent Kit recipe, portable plugin, and reference-corpus self-profile with no target or provider runtime authority."
+  "orchestration_profile": "none",
+  "last_reviewed_at": "2026-08-27",
+  "rationale": "ADR-83 public Starter, Project Agent Kit recipe, portable plugin, and reference-corpus self-profile. Mir Yoke publishes inert assets and declares no repository runtime agent or orchestration authority."
 }

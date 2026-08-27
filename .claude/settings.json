@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/pre-tool-use.sh",
+            "command": "bash \"${CLAUDE_PROJECT_DIR}/.claude/hooks/pre-tool-use.sh\"",
             "timeout": 30,
             "statusMessage": "Harness L2 PreToolUse"
           }
@@ -19,13 +19,13 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/post-edit-check.sh",
+            "command": "bash \"${CLAUDE_PROJECT_DIR}/.claude/hooks/post-edit-check.sh\"",
             "timeout": 30,
             "statusMessage": "Harness post-edit check"
           },
           {
             "type": "command",
-            "command": "bash .claude/hooks/post-edit-self-ingest.sh",
+            "command": "bash \"${CLAUDE_PROJECT_DIR}/.claude/hooks/post-edit-self-ingest.sh\"",
             "timeout": 30,
             "statusMessage": "ADR-05 self-ingest"
           }
@@ -38,7 +38,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/pre-tool-use.sh",
+            "command": "bash \"${CLAUDE_PROJECT_DIR}/.claude/hooks/pre-tool-use.sh\"",
             "timeout": 30,
             "statusMessage": "Harness L2 PermissionRequest"
           }
@@ -50,9 +50,20 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/session-start.sh",
+            "command": "bash \"${CLAUDE_PROJECT_DIR}/.claude/hooks/session-start.sh\"",
             "timeout": 30,
             "statusMessage": "Harness session-start"
+          }
+        ]
+      },
+      {
+        "matcher": "^compact$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PROJECT_DIR}/.claude/hooks/compact-resume.sh\"",
+            "timeout": 30,
+            "statusMessage": "Harness compact resume context"
           }
         ]
       }
@@ -62,7 +73,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/session-end.sh",
+            "command": "bash \"${CLAUDE_PROJECT_DIR}/.claude/hooks/session-end.sh\"",
             "timeout": 60,
             "statusMessage": "Harness canonical closeout"
           }
@@ -74,7 +85,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/user-prompt-submit.sh",
+            "command": "bash \"${CLAUDE_PROJECT_DIR}/.claude/hooks/user-prompt-submit.sh\"",
             "timeout": 30,
             "statusMessage": "Harness context-pull directive"
           }
@@ -86,7 +97,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/mir-stop.sh",
+            "command": "bash \"${CLAUDE_PROJECT_DIR}/.claude/hooks/mir-stop.sh\"",
             "timeout": 30,
             "statusMessage": "Harness Stop audit"
           }
@@ -98,7 +109,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/stop-failure-audit.sh",
+            "command": "bash \"${CLAUDE_PROJECT_DIR}/.claude/hooks/stop-failure-audit.sh\"",
             "timeout": 30,
             "statusMessage": "Harness StopFailure audit"
           }
@@ -110,9 +121,21 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/pre-compact.sh",
+            "command": "bash \"${CLAUDE_PROJECT_DIR}/.claude/hooks/pre-compact.sh\"",
             "timeout": 60,
             "statusMessage": "Harness PreCompact checkpoint"
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PROJECT_DIR}/.claude/hooks/post-compact.sh\"",
+            "timeout": 60,
+            "statusMessage": "Harness PostCompact validation"
           }
         ]
       }

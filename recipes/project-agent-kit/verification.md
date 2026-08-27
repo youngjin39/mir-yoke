@@ -32,8 +32,9 @@ prove it runs again during the initial commit. The final marker contains exactly
 
 ## Completion checks
 
-- `harness_a.toml`, `scripts/mir.sh`, `scripts/memory-sync.sh`, and
-  `tasks/handoffs/session-handoff-LATEST.md` match the exact `common_harness.paths` contract;
+- `harness_a.toml`, `scripts/mir.sh`, `scripts/memory-sync.sh`, the compact lifecycle sources,
+  both generated hook configurations, and `tasks/handoffs/session-handoff-LATEST.md` match the
+  exact `common_harness.paths` contract;
 - the tracked tree contains no `src/mir/`, `tools/`, `plugins/`, or `.mir/memory.db` path;
 - `.mir/` is ignored, the exact-revision external Mir wrapper confines all runtime state below it,
   and deleting the database followed by `memory_init`, `memory_sync`, `memory_doctor`, and
@@ -43,6 +44,16 @@ prove it runs again during the initial commit. The final marker contains exactly
   except the exact source URL and revision provenance in `docs/harness-bootstrap.md` and the
   machine-readable `harness/project-agent-kit.json` provider field;
 - the Claude-to-Codex generator is idempotent and its parity check passes;
+- `harness/project-hooks.json` is the one compact lifecycle registration source;
+  `hook_render` produces exact Claude and Codex registrations and `hook_parity` passes;
+- representative Claude and Codex compact commands execute from a nested working directory inside
+  a Git root whose path contains spaces, while supplying the same root as `CLAUDE_PROJECT_DIR`;
+- synthetic manual and automatic PreCompact/PostCompact payloads preserve curated handoff content,
+  refresh one generated snapshot, validate fail-open, and record ignored local invocation evidence;
+- SessionStart(source=compact) injects only the canonical handoff as labeled, UTF-8-safe context
+  bounded to 8192 bytes; startup, resume, and clear inject no compact recovery context;
+- hook execution is deterministic and network-free; PostCompact validates and warns but never
+  reconstructs intent, and runtime evidence remains below ignored `.mir/runtime/`;
 - `harness/project-agent-kit.json` validates against the recipe-owned schema and binds the exact
   purpose and rendered prompt to one manifest, lockfile, domain-neutral compile probe, smoke test,
   both canonical/generated reviewer surfaces, and argv lists for parity, lint, build, and test;

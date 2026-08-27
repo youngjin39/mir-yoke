@@ -2,6 +2,41 @@
   "version": 1,
   "changes": [
     {
+      "id": "portable-compact-lifecycle-2026-08-28",
+      "record_status": "complete",
+      "scope": "Add one project-owned compact lifecycle definition for Claude and Codex, atomically preserve the canonical handoff before compaction, validate it after compaction, inject bounded recovery context only for compact resume, and include the same portable behavior in the Project Agent Kit common harness.",
+      "targets": [
+        "config/project-hooks.json",
+        ".claude/hooks/pre-compact.sh",
+        ".claude/hooks/post-compact.sh",
+        ".claude/hooks/compact-resume.sh",
+        ".claude/settings.json",
+        ".codex/hooks.json",
+        "templates/common-harness/",
+        "recipes/project-agent-kit/",
+        "scripts/observe_project_agent_kit.py",
+        "scripts/verify_project_agent_kit_evidence.py",
+        "tests/test_compact_lifecycle_hooks.py",
+        "tests/test_common_harness_template.py",
+        "tests/test_project_agent_kit_release_evidence.py"
+      ],
+      "bluebrick": "Compact lifecycle / Generated hook parity / Project Agent Kit common harness",
+      "categories": {
+        "unit": {"status": "pass", "command": "uv run pytest -q tests/test_compact_lifecycle_hooks.py tests/test_closeout_hooks.py", "notes": "PreCompact, PostCompact, compact-resume, atomic replacement, fail-open behavior, and ignored invocation evidence pass."},
+        "integration": {"status": "pass", "command": "uv run pytest -q tests/test_common_harness_template.py tests/test_project_agent_kit.py tests/test_project_agent_kit_release_evidence.py tests/test_codex_derivation_script.py", "notes": "Maintainer hooks, generated runtime registrations, common harness rendering, schema, observer, and verifier contracts pass together."},
+        "e2e": {"status": "pass", "command": "uv run python scripts/verify_release_readiness.py", "notes": "A materialized clean candidate passes supported-surface, CLI, asset, derivative, sanitization, link, schema, full-test, and lint gates. Owner-run example repositories remain optional post-release acceptance."},
+        "browser": {"status": "not_applicable", "reason": "No browser or GUI surface changes."},
+        "edge": {"status": "pass", "command": "uv run pytest -q tests/test_compact_lifecycle_hooks.py tests/test_project_agent_kit_release_evidence.py", "notes": "Unbalanced markers, malformed payloads, missing handoffs, oversized context, nested working directories, spaces, and mutation probes are covered."},
+        "architecture": {"status": "pass", "command": "uv run python scripts/verify_codex_sync.py", "notes": "Canonical project hook definitions and generated Claude/Codex registrations remain synchronized."},
+        "availability": {"status": "not_applicable", "reason": "Hooks are bounded lifecycle callbacks and add no daemon or service."},
+        "load": {"status": "not_applicable", "reason": "Compact lifecycle work is bounded to one repository session."},
+        "soak": {"status": "not_applicable", "reason": "No persistent process or scheduler is introduced."},
+        "security": {"status": "pass", "command": "uv run pytest -q tests/test_compact_lifecycle_hooks.py tests/test_public_template_identity.py tests/test_project_agent_kit_release_evidence.py", "notes": "Runtime evidence stays ignored, recovery context is bounded, hooks resolve the target root, and public-template non-authority remains intact."},
+        "compatibility": {"status": "pass", "command": "uv run pytest -q", "notes": "The materialized candidate full suite passes with 774 tests on the audited worktree."},
+        "transaction_locking": {"status": "pass", "command": "uv run pytest -q tests/test_compact_lifecycle_hooks.py", "notes": "Canonical handoff refresh uses same-directory temporary files and atomic replacement without adding a shared lock service."}
+      }
+    },
+    {
       "id": "bootstrap-gate-agent-recovery-2026-08-25",
       "record_status": "complete",
       "scope": "Remove the existing-repository bootstrap recovery deadlock by allowing an agent to create only a deterministic detached worktree for the manifest-pinned Mir Yoke commit, while preserving fail-closed rejection of arbitrary Git commands, untrusted remotes, path escapes, dirty adoption sources, and command injection.",

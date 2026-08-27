@@ -217,7 +217,7 @@ def _build_valid_target(target: Path, invalid_case: str | None = None) -> None:
     ).read_text(encoding="utf-8").strip()
     _git(target, "init", "-q", "-b", "main")
     contract = {
-        "schema_version": 2,
+        "schema_version": 3,
         "project_slug": slug,
         "intent": {
             "purpose": purpose,
@@ -237,6 +237,16 @@ def _build_valid_target(target: Path, invalid_case: str | None = None) -> None:
                 "mir_wrapper": "scripts/mir.sh",
                 "memory_sync_wrapper": "scripts/memory-sync.sh",
                 "memory_sync_hook": ".githooks/pre-commit",
+                "lifecycle_sources": [
+                    "harness/project-hooks.json",
+                    "scripts/render-hook-configs.py",
+                    ".claude/hooks/_lib/invocation_log.sh",
+                    ".claude/hooks/_lib/run-python.sh",
+                    ".claude/hooks/pre-compact.sh",
+                    ".claude/hooks/post-compact.sh",
+                    ".claude/hooks/compact-resume.sh",
+                ],
+                "generated_hooks": [".claude/settings.json", ".codex/hooks.json"],
             },
             "commands": {
                 "memory_init": [
@@ -264,6 +274,23 @@ def _build_valid_target(target: Path, invalid_case: str | None = None) -> None:
                     ".mir/memory.db",
                     "--project-root",
                     ".",
+                ],
+                "hook_render": [
+                    "scripts/mir.sh",
+                    "run-python",
+                    "--project-root",
+                    ".",
+                    "--",
+                    "scripts/render-hook-configs.py",
+                ],
+                "hook_parity": [
+                    "scripts/mir.sh",
+                    "run-python",
+                    "--project-root",
+                    ".",
+                    "--",
+                    "scripts/render-hook-configs.py",
+                    "--check",
                 ],
             },
         },
@@ -336,6 +363,9 @@ def _build_valid_target(target: Path, invalid_case: str | None = None) -> None:
             "## Authority\nThe current user owns repository writes.\n\n"
             "## Protected paths\nCredentials and generated files are protected.\n\n"
             "## Generated paths\nCodex reviewer surfaces are generated.\n\n"
+            "## Work style\nAt the start of each fresh session, before substantial work, run "
+            "one task-scoped `scripts/mir.sh context pull \"<task query>\" --db "
+            ".mir/memory.db --project-root .` using the actual task purpose.\n\n"
             "## Verification\nRun `scripts/verify.sh` before changes.\n"
         ),
         "CLAUDE.md": "Read and follow HARNESS.md.\n",
@@ -470,6 +500,18 @@ def _build_valid_target(target: Path, invalid_case: str | None = None) -> None:
     files[".agents/skills/sample-code-review/SKILL.md"] = files[
         ".claude/skills/sample-code-review/SKILL.md"
     ]
+    for relative in (
+        "harness/project-hooks.json",
+        "scripts/render-hook-configs.py",
+        ".claude/hooks/_lib/invocation_log.sh",
+        ".claude/hooks/_lib/run-python.sh",
+        ".claude/hooks/pre-compact.sh",
+        ".claude/hooks/post-compact.sh",
+        ".claude/hooks/compact-resume.sh",
+    ):
+        files[relative] = (ROOT / "templates" / "common-harness" / relative).read_text(
+            encoding="utf-8"
+        )
     if invalid_case == "noop-verifier":
         files["scripts/verify.sh"] = (
             "#!/bin/sh\n# lint build test placeholder with enough padding for inspection\n"
@@ -520,6 +562,13 @@ def _build_valid_target(target: Path, invalid_case: str | None = None) -> None:
             '"$root/scripts/memory-sync.sh"\n',
             '[ ! -f "$root/.mir/memory.db" ] || "$root/scripts/memory-sync.sh"\n',
         )
+    elif invalid_case == "missing-fresh-session-context":
+        files["HARNESS.md"] = files["HARNESS.md"].replace(
+            "## Work style\nAt the start of each fresh session, before substantial work, run "
+            "one task-scoped `scripts/mir.sh context pull \"<task query>\" --db "
+            ".mir/memory.db --project-root .` using the actual task purpose.\n\n",
+            "",
+        )
     for relative, body in files.items():
         path = target / relative
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -528,8 +577,14 @@ def _build_valid_target(target: Path, invalid_case: str | None = None) -> None:
         "scripts/generate_agent_derivatives.py",
         "scripts/memory-sync.sh",
         "scripts/mir.sh",
+        "scripts/render-hook-configs.py",
         "scripts/verify.sh",
         ".githooks/pre-commit",
+        ".claude/hooks/_lib/invocation_log.sh",
+        ".claude/hooks/_lib/run-python.sh",
+        ".claude/hooks/pre-compact.sh",
+        ".claude/hooks/post-compact.sh",
+        ".claude/hooks/compact-resume.sh",
     ):
         (target / relative).chmod(0o755)
     _git(target, "config", "core.hooksPath", ".githooks")
@@ -538,7 +593,14 @@ def _build_valid_target(target: Path, invalid_case: str | None = None) -> None:
     direct_environment["PATH"] = f"{runtime_bin}{os.pathsep}{direct_environment['PATH']}"
     common_commands = contract["common_harness"]["commands"]
     assert isinstance(common_commands, dict)
-    for name in ("memory_init", "memory_sync", "memory_doctor", "context_pull"):
+    for name in (
+        "hook_render",
+        "hook_parity",
+        "memory_init",
+        "memory_sync",
+        "memory_doctor",
+        "context_pull",
+    ):
         command = common_commands[name]
         assert isinstance(command, list)
         completed = subprocess.run(
@@ -633,6 +695,7 @@ def _write_run_evidence(
         "provider-revision",
         "product-in-probe",
         "conditional-memory-hook",
+        "missing-fresh-session-context",
     ),
 )
 def test_release_evidence_rejects_an_invalid_bundled_kit(

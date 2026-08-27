@@ -1,16 +1,17 @@
 {
-  "//": [
+  "schema_version": 1,
+  "codex_notes": [
     "GENERATED FILE: edit config/project-hooks.json and run scripts/generate_codex_derivatives.sh.",
     "Claude-only events omitted here: SessionEnd, UserPromptSubmit, StopFailure."
   ],
-  "hooks": {
+  "events": {
     "PreToolUse": [
       {
         "matcher": "^(Bash|apply_patch|Edit|Write)$",
+        "runtimes": ["claude", "codex"],
         "hooks": [
           {
-            "type": "command",
-            "command": "project_root=\"$(git rev-parse --show-toplevel)\" && CLAUDE_PROJECT_DIR=\"$project_root\" bash \"$project_root/.claude/hooks/pre-tool-use.sh\"",
+            "script": ".claude/hooks/pre-tool-use.sh",
             "timeout": 30,
             "statusMessage": "Harness L2 PreToolUse"
           }
@@ -20,16 +21,15 @@
     "PostToolUse": [
       {
         "matcher": "^(Bash|apply_patch|Edit|Write)$",
+        "runtimes": ["claude", "codex"],
         "hooks": [
           {
-            "type": "command",
-            "command": "project_root=\"$(git rev-parse --show-toplevel)\" && CLAUDE_PROJECT_DIR=\"$project_root\" bash \"$project_root/.claude/hooks/post-edit-check.sh\"",
+            "script": ".claude/hooks/post-edit-check.sh",
             "timeout": 30,
             "statusMessage": "Harness post-edit check"
           },
           {
-            "type": "command",
-            "command": "project_root=\"$(git rev-parse --show-toplevel)\" && CLAUDE_PROJECT_DIR=\"$project_root\" bash \"$project_root/.claude/hooks/post-edit-self-ingest.sh\"",
+            "script": ".claude/hooks/post-edit-self-ingest.sh",
             "timeout": 30,
             "statusMessage": "ADR-05 self-ingest"
           }
@@ -39,10 +39,10 @@
     "PermissionRequest": [
       {
         "matcher": "^(Bash|apply_patch|Edit|Write)$",
+        "runtimes": ["claude", "codex"],
         "hooks": [
           {
-            "type": "command",
-            "command": "project_root=\"$(git rev-parse --show-toplevel)\" && CLAUDE_PROJECT_DIR=\"$project_root\" bash \"$project_root/.claude/hooks/pre-tool-use.sh\"",
+            "script": ".claude/hooks/pre-tool-use.sh",
             "timeout": 30,
             "statusMessage": "Harness L2 PermissionRequest"
           }
@@ -51,10 +51,10 @@
     ],
     "SessionStart": [
       {
+        "runtimes": ["claude", "codex"],
         "hooks": [
           {
-            "type": "command",
-            "command": "project_root=\"$(git rev-parse --show-toplevel)\" && CLAUDE_PROJECT_DIR=\"$project_root\" bash \"$project_root/.claude/hooks/session-start.sh\"",
+            "script": ".claude/hooks/session-start.sh",
             "timeout": 30,
             "statusMessage": "Harness session-start"
           }
@@ -62,34 +62,70 @@
       },
       {
         "matcher": "^compact$",
+        "runtimes": ["claude", "codex"],
         "hooks": [
           {
-            "type": "command",
-            "command": "project_root=\"$(git rev-parse --show-toplevel)\" && CLAUDE_PROJECT_DIR=\"$project_root\" bash \"$project_root/.claude/hooks/compact-resume.sh\"",
+            "script": ".claude/hooks/compact-resume.sh",
             "timeout": 30,
             "statusMessage": "Harness compact resume context"
           }
         ]
       }
     ],
-    "Stop": [
+    "SessionEnd": [
       {
+        "runtimes": ["claude"],
         "hooks": [
           {
-            "type": "command",
-            "command": "project_root=\"$(git rev-parse --show-toplevel)\" && CLAUDE_PROJECT_DIR=\"$project_root\" bash \"$project_root/.claude/hooks/mir-stop.sh\"",
+            "script": ".claude/hooks/session-end.sh",
+            "timeout": 60,
+            "statusMessage": "Harness canonical closeout"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "runtimes": ["claude"],
+        "hooks": [
+          {
+            "script": ".claude/hooks/user-prompt-submit.sh",
+            "timeout": 30,
+            "statusMessage": "Harness context-pull directive"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "runtimes": ["claude", "codex"],
+        "hooks": [
+          {
+            "script": ".claude/hooks/mir-stop.sh",
             "timeout": 30,
             "statusMessage": "Harness Stop audit"
           }
         ]
       }
     ],
-    "PreCompact": [
+    "StopFailure": [
       {
+        "runtimes": ["claude"],
         "hooks": [
           {
-            "type": "command",
-            "command": "project_root=\"$(git rev-parse --show-toplevel)\" && CLAUDE_PROJECT_DIR=\"$project_root\" bash \"$project_root/.claude/hooks/pre-compact.sh\"",
+            "script": ".claude/hooks/stop-failure-audit.sh",
+            "timeout": 30,
+            "statusMessage": "Harness StopFailure audit"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "runtimes": ["claude", "codex"],
+        "hooks": [
+          {
+            "script": ".claude/hooks/pre-compact.sh",
             "timeout": 60,
             "statusMessage": "Harness PreCompact checkpoint"
           }
@@ -98,10 +134,10 @@
     ],
     "PostCompact": [
       {
+        "runtimes": ["claude", "codex"],
         "hooks": [
           {
-            "type": "command",
-            "command": "project_root=\"$(git rev-parse --show-toplevel)\" && CLAUDE_PROJECT_DIR=\"$project_root\" bash \"$project_root/.claude/hooks/post-compact.sh\"",
+            "script": ".claude/hooks/post-compact.sh",
             "timeout": 60,
             "statusMessage": "Harness PostCompact validation"
           }

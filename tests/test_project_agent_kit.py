@@ -74,7 +74,7 @@ def test_should_require_the_bounded_common_harness_and_memory_commands() -> None
     verification = _read("recipes/project-agent-kit/verification.md")
     schema = json.loads(_read("recipes/project-agent-kit/project-agent-kit.schema.json"))
 
-    assert schema["properties"]["schema_version"] == {"const": 2}
+    assert schema["properties"]["schema_version"] == {"const": 3}
     assert "context_probe" in schema["properties"]["intent"]["required"]
     common = schema["properties"]["common_harness"]
     paths = common["properties"]["paths"]["properties"]
@@ -86,12 +86,24 @@ def test_should_require_the_bounded_common_harness_and_memory_commands() -> None
         "mir_wrapper": "scripts/mir.sh",
         "memory_sync_wrapper": "scripts/memory-sync.sh",
         "memory_sync_hook": ".githooks/pre-commit",
+        "lifecycle_sources": [
+            "harness/project-hooks.json",
+            "scripts/render-hook-configs.py",
+            ".claude/hooks/_lib/invocation_log.sh",
+            ".claude/hooks/_lib/run-python.sh",
+            ".claude/hooks/pre-compact.sh",
+            ".claude/hooks/post-compact.sh",
+            ".claude/hooks/compact-resume.sh",
+        ],
+        "generated_hooks": [".claude/settings.json", ".codex/hooks.json"],
     }
     assert set(commands) == {
         "memory_init",
         "memory_sync",
         "memory_doctor",
         "context_pull",
+        "hook_render",
+        "hook_parity",
     }
     combined = f"{recipe}\n{verification}"
     for requirement in (
@@ -104,8 +116,29 @@ def test_should_require_the_bounded_common_harness_and_memory_commands() -> None
         "memory_sync",
         "memory_doctor",
         "context_pull",
+        "PreCompact",
+        "PostCompact",
+        "SessionStart(source=compact)",
+        "hook_render",
+        "hook_parity",
+        "nested working directory",
+        "path containing spaces",
     ):
         assert requirement in combined
+
+
+def test_should_require_task_scoped_context_pull_at_each_fresh_session() -> None:
+    recipe = _read("recipes/project-agent-kit/README.md")
+    normalized = " ".join(recipe.split())
+
+    assert "fresh session" in normalized
+    assert "task-scoped" in normalized
+    assert "Generated `HARNESS.md`" in normalized
+    assert (
+        '`scripts/mir.sh context pull "<task query>" --db .mir/memory.db '
+        "--project-root .`"
+    ) in normalized
+    assert "must not reuse `intent.context_probe`" in normalized
 
 
 def test_should_require_a_real_git_pre_commit_gate_and_verified_initial_commit() -> None:
@@ -203,7 +236,7 @@ def test_should_keep_the_default_starter_small_and_remove_active_composition() -
         assert unsupported not in active_docs
 
 
-def test_should_limit_optional_consumer_tools_to_plugins_and_installed_cli() -> None:
+def test_should_limit_optional_consumer_tools_to_explicit_adoption_surfaces() -> None:
     manifest = json.loads(_read("config/template-assets.json"))
     optional_patterns = {
         pattern
@@ -216,6 +249,7 @@ def test_should_limit_optional_consumer_tools_to_plugins_and_installed_cli() -> 
         ".agents/plugins/**",
         ".claude-plugin/**",
         "plugins/**",
+        "templates/common-harness/**",
         "src/**",
         "tools/agent_loader/**",
         "tools/autonomous_loop/**",

@@ -6,6 +6,22 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are kept for historical reference. All future entries use the `## [vN.M.X] — YYYY-MM-DD — title` format.
 
+## [Unreleased]
+
+### Added
+
+- Added one canonical hook definition and deterministic Claude/Codex renderers for PreCompact,
+  PostCompact, and compact-resume lifecycle handling.
+- Added the same bounded compact lifecycle to the Project Agent Kit common harness, including
+  atomic handoff refresh, ignored runtime evidence, and nested-working-directory coverage.
+
+### Changed
+
+- Kept generated Claude and Codex hook registrations synchronized from project-owned JSON sources
+  instead of maintaining runtime configurations independently.
+- Extended Project Agent Kit schema and evidence validation so compact lifecycle behavior is
+  verified without making owner-run Claude/Codex example repositories a release prerequisite.
+
 ## [0.9.0] — 2026-08-11 — Project Agent Kit boundary
 
 ### Added

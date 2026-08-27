@@ -30,6 +30,13 @@ RECIPE_PATHS = (
     Path("templates/common-harness/harness_a.toml"),
     Path("templates/common-harness/scripts/mir.sh"),
     Path("templates/common-harness/scripts/memory-sync.sh"),
+    Path("templates/common-harness/scripts/render-hook-configs.py"),
+    Path("templates/common-harness/harness/project-hooks.json"),
+    Path("templates/common-harness/.claude/hooks/_lib/invocation_log.sh"),
+    Path("templates/common-harness/.claude/hooks/_lib/run-python.sh"),
+    Path("templates/common-harness/.claude/hooks/pre-compact.sh"),
+    Path("templates/common-harness/.claude/hooks/post-compact.sh"),
+    Path("templates/common-harness/.claude/hooks/compact-resume.sh"),
     Path("templates/common-harness/tasks/handoffs/session-handoff-LATEST.md"),
 )
 TARGET_SCHEMA_PATH = Path("recipes/project-agent-kit/project-agent-kit.schema.json")
@@ -62,7 +69,16 @@ BASE_TARGET_FILES = {
     "scripts/generate_agent_derivatives.py",
     "scripts/memory-sync.sh",
     "scripts/mir.sh",
+    "scripts/render-hook-configs.py",
     "scripts/verify.sh",
+    "harness/project-hooks.json",
+    ".claude/hooks/_lib/invocation_log.sh",
+    ".claude/hooks/_lib/run-python.sh",
+    ".claude/hooks/pre-compact.sh",
+    ".claude/hooks/post-compact.sh",
+    ".claude/hooks/compact-resume.sh",
+    ".claude/settings.json",
+    ".codex/hooks.json",
     "tasks/handoffs/session-handoff-LATEST.md",
     ".githooks/pre-commit",
 }
@@ -71,6 +87,10 @@ EXPECTED_TARGET_COMMANDS = {
     "build": ["scripts/verify.sh", "build"],
     "test": ["scripts/verify.sh", "test"],
 }
+FRESH_SESSION_CONTEXT_COMMAND = (
+    'scripts/mir.sh context pull "<task query>" '
+    "--db .mir/memory.db --project-root ."
+)
 EXPECTED_COMMON_HARNESS_PATHS = {
     "config": "harness_a.toml",
     "database": ".mir/memory.db",
@@ -78,6 +98,16 @@ EXPECTED_COMMON_HARNESS_PATHS = {
     "mir_wrapper": "scripts/mir.sh",
     "memory_sync_wrapper": "scripts/memory-sync.sh",
     "memory_sync_hook": ".githooks/pre-commit",
+    "lifecycle_sources": [
+        "harness/project-hooks.json",
+        "scripts/render-hook-configs.py",
+        ".claude/hooks/_lib/invocation_log.sh",
+        ".claude/hooks/_lib/run-python.sh",
+        ".claude/hooks/pre-compact.sh",
+        ".claude/hooks/post-compact.sh",
+        ".claude/hooks/compact-resume.sh",
+    ],
+    "generated_hooks": [".claude/settings.json", ".codex/hooks.json"],
 }
 EXPECTED_COMMON_HARNESS_COMMANDS = {
     "memory_init": ["scripts/mir.sh", "migrate", "up", "--db", ".mir/memory.db"],
@@ -89,6 +119,23 @@ EXPECTED_COMMON_HARNESS_COMMANDS = {
         "--project-root",
         ".",
         "--json",
+    ],
+    "hook_render": [
+        "scripts/mir.sh",
+        "run-python",
+        "--project-root",
+        ".",
+        "--",
+        "scripts/render-hook-configs.py",
+    ],
+    "hook_parity": [
+        "scripts/mir.sh",
+        "run-python",
+        "--project-root",
+        ".",
+        "--",
+        "scripts/render-hook-configs.py",
+        "--check",
     ],
 }
 FORBIDDEN_RUNTIME_PREFIXES = ("src/mir/", "tools/", "plugins/")
@@ -220,7 +267,11 @@ def _target_contract(target: Path, source_root: Path = ROOT) -> dict[str, Any]:
     common_commands = _mapping(common_harness, "commands")
     for name, expected in EXPECTED_COMMON_HARNESS_PATHS.items():
         _require_exact(common_paths, name, expected)
-        _relative_file(expected, f"common_harness.paths.{name}")
+        if isinstance(expected, list):
+            for index, relative in enumerate(expected):
+                _relative_file(relative, f"common_harness.paths.{name}[{index}]")
+        else:
+            _relative_file(expected, f"common_harness.paths.{name}")
     for name, expected in EXPECTED_COMMON_HARNESS_COMMANDS.items():
         _require_exact(common_commands, name, expected)
     _require_exact(
@@ -369,9 +420,14 @@ def _verify_common_harness(
     common_harness = _mapping(contract, "common_harness")
     paths = _mapping(common_harness, "paths")
     provider = _mapping(contract, "provider")
-    tracked_paths = {
-        relative for name, relative in paths.items() if name != "database"
-    }
+    tracked_paths: set[str] = set()
+    for name, value in paths.items():
+        if name == "database":
+            continue
+        if isinstance(value, list):
+            tracked_paths.update(str(relative) for relative in value)
+        else:
+            tracked_paths.add(str(value))
     missing = sorted(tracked_paths - tracked)
     if missing:
         raise ValueError(f"bundled common harness is missing tracked files: {missing}")
@@ -389,9 +445,15 @@ def _verify_common_harness(
     gitignore = (target / ".gitignore").read_text(encoding="utf-8").splitlines()
     if ".mir/" not in gitignore:
         raise ValueError("target must ignore the complete .mir runtime directory")
-    for name in ("mir_wrapper", "memory_sync_wrapper", "memory_sync_hook"):
-        if not (target / paths[name]).stat().st_mode & 0o111:
-            raise ValueError(f"common harness executable bit is missing: {paths[name]}")
+    executable_paths = {
+        str(paths["mir_wrapper"]),
+        str(paths["memory_sync_wrapper"]),
+        str(paths["memory_sync_hook"]),
+        *(relative for relative in paths["lifecycle_sources"] if relative.endswith((".sh", ".py"))),
+    }
+    for relative in executable_paths:
+        if not (target / relative).stat().st_mode & 0o111:
+            raise ValueError(f"common harness executable bit is missing: {relative}")
 
     config = tomllib.loads((target / paths["config"]).read_text(encoding="utf-8"))
     memory = config.get("memory")
@@ -475,6 +537,15 @@ def _verify_common_harness(
     if re.search(r"(?s)if\s+.*memory\.db.*memory-sync", hook):
         raise ValueError("pre-commit hook must not skip memory sync when the database is absent")
 
+    definition = json.loads(
+        (target / paths["lifecycle_sources"][0]).read_text(encoding="utf-8")
+    )
+    if set(definition.get("events", {})) != {"PreCompact", "PostCompact", "SessionStart"}:
+        raise ValueError("compact lifecycle definition must declare the exact supported events")
+    compact_groups = definition["events"]["SessionStart"]
+    if len(compact_groups) != 1 or compact_groups[0].get("matcher") != "^compact$":
+        raise ValueError("compact resume must be limited to SessionStart(source=compact)")
+
 
 def _verify_target_checkout(target: Path, payload: dict[str, Any]) -> None:
     result = _mapping(payload, "result")
@@ -526,9 +597,26 @@ def _verify_target_checkout(target: Path, payload: dict[str, Any]) -> None:
         if section.lower() not in project.lower():
             raise ValueError(f"PROJECT.md lacks required section: {section}")
     harness = (target / "HARNESS.md").read_text(encoding="utf-8")
-    for section in ("Outcome", "Authority", "Protected", "Generated", "Verification"):
+    for section in (
+        "Outcome",
+        "Authority",
+        "Protected",
+        "Generated",
+        "Work style",
+        "Verification",
+    ):
         if section.lower() not in harness.lower():
             raise ValueError(f"HARNESS.md lacks required contract section: {section}")
+    normalized_harness = " ".join(harness.split())
+    for fragment in (
+        "fresh session",
+        "task-scoped",
+        FRESH_SESSION_CONTEXT_COMMAND,
+    ):
+        if fragment not in normalized_harness:
+            raise ValueError(
+                "HARNESS.md lacks the required fresh-session task-scoped context pull"
+            )
     for entrypoint in ("CLAUDE.md", "AGENTS.md"):
         text = (target / entrypoint).read_text(encoding="utf-8")
         if "HARNESS.md" not in text or len(text) > 500:
@@ -823,6 +911,8 @@ def _verify_run_artifacts(
         for phase in ("initial", "rehydrated"):
             phase_observations = _mapping(common_observation, phase)
             expected_names = {
+                "hook_render",
+                "hook_parity",
                 "memory_init",
                 "memory_sync",
                 "memory_doctor",

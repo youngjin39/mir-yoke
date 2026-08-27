@@ -77,6 +77,27 @@ This is prompt-level guidance. Verifier R11 audits post-hoc.
 
 
 
+## Specialist Scope-Pattern Routing (catalog routing ADR)
+
+When dispatching a `role: specialist` agent (cwe-auditor, dep-auditor, ui-reviewer, pipeline-validator, ontology-validator, runtime-contract-reviewer, template-sync-validator):
+
+1. Look up the agent's `scope_patterns` in cached `catalog.agents[<slug>].scope_patterns`. If the field is absent → default `["**/*"]` (no filtering, current behaviour).
+2. Check the current repository profile's
+   `agent_overrides.scope_patterns_overrides[<slug>]` when present. It is a **full replacement** of
+   the catalog default, not a merge.
+3. Filter the changed-file set against the effective patterns using `fnmatch.fnmatch(filepath_str, pattern)` semantics (NOT `pathlib.Path.match` — empirically `Path.match('**/*.py')` returns False for root-level files; fnmatch handles flat paths correctly).
+4. If the filtered set is **empty** → skip the specialist's dispatch entirely. Log:
+   ```
+   {"ts":"...","agent_slug":"<slug>","routed_via":"skipped_empty_scope","purpose":"specialist_dispatch","task_id":"<id>","filtered_files":0}
+   ```
+5. Otherwise dispatch with the filtered file list as the specialist's fork context. Log:
+   ```
+   {"ts":"...","agent_slug":"<slug>","routed_via":"<codex_cli|claude_session>","purpose":"specialist_dispatch","task_id":"<id>","filtered_files":<N>}
+   ```
+6. Universal-tier (`role: control_plane`, `role: execution`, `role: review`, `role: governance`) agents are **NOT filtered** — they always see the full changed-file set.
+
+This routing applies only to specialists. The scope-pattern filter is the dispatch-time mechanism identified as the missing piece for token efficiency.
+
 
 ## Sub-agent dispatch policy
 
@@ -112,6 +133,12 @@ See CLAUDE.md "Role Policy (Template Profile)" and AGENTS.md `template:profile:r
 - For delegated in-repo mutation, prefer `mir_executor … --dispatch` when worktree isolation or its merge gate is useful; bounded direct-main edits are valid. Raw `codex exec` remains banned.
 - The 600-second elapsed and 180-second inactivity observations report only; they never auto-kill, auto-fail, auto-retry, advance retry counters, or block finalization. Omitted timeout means continued execution; an explicit positive operator cap remains binding.
   - Availability failure: report the lane limitation and do not substitute raw exec; use another safe in-scope route when available.
+
+## Post-Dispatch Evidence
+
+Inspect the current repository's job, transcript, and verification artifacts only when relevant.
+Mir Yoke provides no daemon, cross-workspace scanner, notification channel, or automatic
+escalation service.
 
 
 ## Post-completion

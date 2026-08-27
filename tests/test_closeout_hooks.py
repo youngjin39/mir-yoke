@@ -73,4 +73,6 @@ def test_claude_settings_wires_session_end_to_canonical_closeout() -> None:
         for group in settings["hooks"]["SessionEnd"]
         for hook in group["hooks"]
     ]
-    assert commands == ["bash .claude/hooks/session-end.sh"]
+    assert commands == [
+        'bash "${CLAUDE_PROJECT_DIR}/.claude/hooks/session-end.sh"'
+    ]

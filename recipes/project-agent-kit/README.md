@@ -59,9 +59,16 @@ Create only the foundation needed to make the future planning session reliable:
   paths and commands, and verification argv used by the observer;
 - the bounded common harness adapted from `templates/common-harness/`: `harness_a.toml`, the
   canonical handoff, a project-owned thin memory-sync wrapper, and `scripts/mir.sh` rendered with
-  the exact observed Mir Yoke revision; and
+  the exact observed Mir Yoke revision; the canonical `harness/project-hooks.json`, its portable
+  renderer and Python launcher, and the project-owned PreCompact, PostCompact, and
+  SessionStart(source=compact) scripts; and
 - the smallest toolchain manifest, lockfile, domain-neutral compile target, and smoke test needed
   for real lint, build, and test commands.
+
+Generated `HARNESS.md` must require one task-scoped
+`scripts/mir.sh context pull "<task query>" --db .mir/memory.db --project-root .` at the start of
+each fresh session before substantial work. The query must describe the actual task and must not
+reuse `intent.context_probe`, which exists only to prove bootstrap retrieval.
 
 The target must never copy `src/mir/`, `tools/`, or `plugins/`. `scripts/mir.sh` invokes the exact
 external provider revision and confines its home, caches, tools, Python installs, and temporary
@@ -69,10 +76,13 @@ files below ignored `.mir/runtime/`. Add `.mir/` to `.gitignore`; `.mir/memory.d
 never a tracked source of truth.
 
 Before the first commit, run the exact `common_harness.commands` in manifest order:
-`memory_init`, `memory_sync`, `memory_doctor`, then `context_pull`. Doctor must report ready and the
+`hook_render`, `hook_parity`, `memory_init`, `memory_sync`, `memory_doctor`, then `context_pull`.
+The hook renderer must produce both `.claude/settings.json` and `.codex/hooks.json` from the one
+canonical definition. Rendered commands must resolve the project root, including when the runtime
+starts a hook from a nested working directory or a path containing spaces. Doctor must report ready and the
 pull must use `intent.context_probe` to recover the full project purpose from the indexed
 `PROJECT.md`, `HARNESS.md`, `docs/`, and `tasks/` archive. Delete the
-database once, rerun those four commands, and prove the same ready state so the ignored database is
+database once, rerun those six commands, and prove the same ready state so the ignored database is
 rehydratable from tracked sources.
 
 Do not create a development plan, API, UI, domain model, product feature, credential, deployment,
@@ -82,7 +92,9 @@ remote, or release configuration. Every placeholder must be resolved before veri
 
 Follow [`reviewer.md`](reviewer.md). Create one repository-unique code-review skill and one
 read-only reviewer agent. Keep Claude sources canonical, generate the Codex surfaces, and provide an
-idempotent parity check. Common Mir plugin skills remain optional host capabilities; do not copy or
+idempotent reviewer parity check. Hook registrations are a separate dual-runtime generated surface:
+edit `harness/project-hooks.json`, run `hook_render`, and prove `hook_parity`; never hand-edit the
+generated hook JSON. Common Mir plugin skills remain optional host capabilities; do not copy or
 shadow their common slugs.
 
 ## Phase 4 — Verification and Git boundary

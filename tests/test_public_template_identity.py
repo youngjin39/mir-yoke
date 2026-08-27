@@ -57,8 +57,28 @@ def test_should_disable_fleet_identity_when_public_configuration_is_loaded() -> 
             profile = tomllib.load(stream)
         assert profile["repo"]["path"] == "."
         assert profile["repo"]["repository_type"] == "public_harness_template"
+        assert profile["repo"]["rollout_class"] == "repository_owned"
         assert profile["repo"]["overlay_archetype"] == "public_template"
+        assert re.fullmatch(r"[0-9a-f]{40}", profile["repo"]["profile_base_commit"])
+        assert "T" in profile["repo"]["profile_verified_at"]
         assert profile["boundaries"]["live_runtime"] == []
+
+
+def test_should_not_declare_repository_runtime_agents_or_orchestration() -> None:
+    repository = json.loads(
+        (ROOT / "config/repos/mir-yoke.json").read_text(encoding="utf-8")
+    )
+    schema = json.loads(
+        (ROOT / "config/repo-agent-management.schema.json").read_text(encoding="utf-8")
+    )
+
+    assert repository["active_agents"] == []
+    assert repository["active_skills"] == []
+    assert repository["orchestration_profile"] == "none"
+    orchestration = schema["$defs"]["repository"]["properties"][
+        "orchestration_profile"
+    ]
+    assert "none" in orchestration["enum"]
 
 
 # @spec CR-002

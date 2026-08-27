@@ -89,6 +89,14 @@ def test_generator_skips_non_agent_markdown_and_empty_targets(tmp_path: Path) ->
     }
     assert generated_agents == source_agents
 
+    generated_orchestrator = (
+        tmp_path / ".codex" / "agents" / "main-orchestrator.toml"
+    ).read_text(encoding="utf-8")
+    assert "## Specialist Scope-Pattern Routing (catalog routing ADR)" in generated_orchestrator
+    assert '"filtered_files":0' in generated_orchestrator
+    assert "## Post-Dispatch Evidence" in generated_orchestrator
+    assert "Mir Yoke provides no daemon" in generated_orchestrator
+
     spec_architect_reference = (
         ROOT
         / "plugins"

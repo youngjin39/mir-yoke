@@ -676,8 +676,10 @@
           "enum": [
             "standard",
             "bounded",
-            "minimal"
-          ]
+            "minimal",
+            "none"
+          ],
+          "description": "Repository orchestration posture. none is required for inert template/reference repositories that publish agent or skill assets without operating them."
         },
         "hook_policy": {
           "type": "object",

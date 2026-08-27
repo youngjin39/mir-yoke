@@ -125,6 +125,14 @@
       "notes": "Semantic mapping from Claude permissions and MCP settings"
     },
     {
+      "source": "config/project-hooks.json",
+      "targets": [".claude/settings.json", ".codex/hooks.json"],
+      "change_scope": "config",
+      "sync_policy": "regenerate",
+      "owner": "project-maintainer",
+      "notes": "Generated dual-runtime hook registrations"
+    },
+    {
       "source": ".claude/hooks/lib",
       "targets": [".codex/hooks/lib"],
       "change_scope": "directory",

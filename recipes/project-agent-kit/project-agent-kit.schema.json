@@ -6,7 +6,7 @@
   "additionalProperties": false,
   "required": ["schema_version", "project_slug", "intent", "provider", "common_harness", "foundation", "generation", "commands"],
   "properties": {
-    "schema_version": {"const": 2},
+    "schema_version": {"const": 3},
     "project_slug": {
       "type": "string",
       "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
@@ -43,20 +43,34 @@
         "paths": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["config", "database", "handoff", "mir_wrapper", "memory_sync_wrapper", "memory_sync_hook"],
+          "required": ["config", "database", "handoff", "mir_wrapper", "memory_sync_wrapper", "memory_sync_hook", "lifecycle_sources", "generated_hooks"],
           "properties": {
             "config": {"const": "harness_a.toml"},
             "database": {"const": ".mir/memory.db"},
             "handoff": {"const": "tasks/handoffs/session-handoff-LATEST.md"},
             "mir_wrapper": {"const": "scripts/mir.sh"},
             "memory_sync_wrapper": {"const": "scripts/memory-sync.sh"},
-            "memory_sync_hook": {"const": ".githooks/pre-commit"}
+            "memory_sync_hook": {"const": ".githooks/pre-commit"},
+            "lifecycle_sources": {
+              "const": [
+                "harness/project-hooks.json",
+                "scripts/render-hook-configs.py",
+                ".claude/hooks/_lib/invocation_log.sh",
+                ".claude/hooks/_lib/run-python.sh",
+                ".claude/hooks/pre-compact.sh",
+                ".claude/hooks/post-compact.sh",
+                ".claude/hooks/compact-resume.sh"
+              ]
+            },
+            "generated_hooks": {
+              "const": [".claude/settings.json", ".codex/hooks.json"]
+            }
           }
         },
         "commands": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["memory_init", "memory_sync", "memory_doctor", "context_pull"],
+          "required": ["memory_init", "memory_sync", "memory_doctor", "context_pull", "hook_render", "hook_parity"],
           "properties": {
             "memory_init": {"const": ["scripts/mir.sh", "migrate", "up", "--db", ".mir/memory.db"]},
             "memory_sync": {"const": ["scripts/memory-sync.sh"]},
@@ -76,6 +90,27 @@
               "items": false,
               "minItems": 8,
               "maxItems": 8
+            },
+            "hook_render": {
+              "const": [
+                "scripts/mir.sh",
+                "run-python",
+                "--project-root",
+                ".",
+                "--",
+                "scripts/render-hook-configs.py"
+              ]
+            },
+            "hook_parity": {
+              "const": [
+                "scripts/mir.sh",
+                "run-python",
+                "--project-root",
+                ".",
+                "--",
+                "scripts/render-hook-configs.py",
+                "--check"
+              ]
             }
           }
         }
