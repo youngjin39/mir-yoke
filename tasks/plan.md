@@ -1,19 +1,19 @@
 # Plan
 
-## Current status — CLOSED (2026-08-11)
+## Current status — CLOSED (2026-08-28)
 
-- [x] Release the restored v0.8-compatible public harness surface, bounded common Project Agent Kit,
-  required memory baseline, and inert advanced references as `v0.9.0`.
-- [x] Clarify the canonical short project-start prompt and require concrete purpose and goals before
-  repository writes (`409d09e`).
-- [x] Reconcile the canonical intent, checklist, TDD evidence, change log, and handoff with the
-  released and pushed repository state.
-- [x] Remove merged agent branches locally and remotely so `main` is the only branch.
+- [x] Publish the portable compact lifecycle on `main` in `a0768ce`, with one canonical hook
+  definition and generated Claude/Codex registrations.
+- [x] Add the same bounded lifecycle to the Project Agent Kit common harness without copying the Mir
+  runtime or making owner-run example repositories a release prerequisite.
+- [x] Bind the protected capability lock to the committed implementation and reconcile the canonical
+  intent, checklist, TDD evidence, change log, profile, and handoff.
+- [x] Verify that local and remote branch inventories contain only `main`.
 
 No active repository work remains. Detailed implementation and test history stays in
 `tasks/tdd.json`, the ADRs, Git history, and the published release rather than this active plan.
 
-## Optional owner acceptance
+## Optional owner work
 
 When the owner supplies a target, run the published prompt once with Claude and once with Codex in
 separate empty repositories. This is post-release acceptance, not an open repository task or a

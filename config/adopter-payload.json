@@ -455,7 +455,7 @@
     },
     {
       "path": ".mir/capability-lock.json",
-      "sha256": "b1ca34271f5858748a730bd5f9d042219a47a591a573e66c536ce11da9015d2a",
+      "sha256": "253d0318623516fc3e9879068c26a1585811f26f3fc8b2b0040f927e5b04848f",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -3275,19 +3275,19 @@
     },
     {
       "path": "tasks/change_log.md",
-      "sha256": "89fbcd78ad0ea4125671690a8df9b8ff810f0c0786ded16da8209a237ea1cefa",
+      "sha256": "90d75e6ebceba7604523e2ab3c9f37dee9ba08925f273504e41a29f6ee7b83d1",
       "classification": "reference",
       "disposition": "remove"
     },
     {
       "path": "tasks/checklist.md",
-      "sha256": "28a086f1a8cfd356798db978596e98bb92705e884856c8218e1641d886981a36",
+      "sha256": "8191c23a915aa872bc747847d6faecd37edd0396025cd55c0aa78e60b0b746d0",
       "classification": "reference",
       "disposition": "remove"
     },
     {
       "path": "tasks/handoffs/session-handoff-LATEST.md",
-      "sha256": "764779cf8643a4604bae37e836b8a53c145299f3137e9755903b230ed5bb82b7",
+      "sha256": "0baf25775340112661443c4e1c22a9378cf73ebcc254a8aa4718537beea00ac8",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -3317,7 +3317,7 @@
     },
     {
       "path": "tasks/plan.md",
-      "sha256": "ff2f086fc55f14158a45814352d24e7a5c6b1acd26c33d609195b5a2eb8d485e",
+      "sha256": "cb79e40bfed4eb013d04f5318862a292044f20fb2f624173e6ad50ad242fc46d",
       "classification": "reference",
       "disposition": "remove"
     },

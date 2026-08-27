@@ -40,10 +40,6 @@
       "project_path": ".claude/agents/runtime-contract-reviewer.md",
       "sha256": "056960c98f48dca25f110d68e785a8240a2c7d4a7ae99cba623349661d14398f"
     },
-    ".claude/agents/template-sync-validator.md": {
-      "project_path": ".claude/agents/template-sync-validator.md",
-      "sha256": "1b3c26ca6fef24df8dd6d3d99e14429bf36f046d887fd9002146ef2a04518114"
-    },
     ".claude/agents/ui-reviewer.md": {
       "project_path": ".claude/agents/ui-reviewer.md",
       "sha256": "f9663406ce8e6fda5504f1c7d0552a1c4723983baf846a8824d32d7743c70efe"
@@ -69,9 +65,9 @@
   },
   "schema_version": 1,
   "source": {
-    "commit": "e5abfadce84be0107395a12509a256b144a2d29a",
+    "commit": "a0768ce3259e1cf9f03c3a519c01a46bc7a29425",
     "ref": "main",
     "url": "https://github.com/youngjin39/mir-yoke.git"
   },
-  "synced_at": "2026-08-11T12:12:42.068163+00:00"
+  "synced_at": "2026-08-27T16:08:00+00:00"
 }

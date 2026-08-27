@@ -1,0 +1,9 @@
+{
+  "history": [
+    {
+      "goal": "Implement ADR-83 so one short project-purpose prompt produces a verified project-owned Claude and Codex Agent Kit, then stops before development planning.",
+      "updated": "2026-08-11",
+      "status": "superseded"
+    }
+  ]
+}
