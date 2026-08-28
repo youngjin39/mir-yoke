@@ -1,4 +1,4 @@
-# Session Handoff — Harness Upgrade Ready to Publish
+# Session Handoff — Harness Upgrade Complete
 
 ## Completed Work
 
@@ -33,8 +33,9 @@
 
 ## Next Actions
 
-- Commit and push the verified `main` change to `origin/main`; the owner authorized this action.
-- Do not tag, publish a release, edit the protected capability lock, or run external acceptance.
+- No active repository action remains.
+- Owner-run Claude/Codex empty-target acceptance and actual sqlite-vec acceptance remain optional;
+  run them only when explicitly requested with a suitable target or environment.
 
 ## Modified Files
 
@@ -59,14 +60,14 @@
 - `v0.9.0` predates both compact lifecycle and ADR-84; no release claim was changed.
 - Actual sqlite-vec runtime acceptance and external Claude/Codex generated-target acceptance remain
   unverified optional follow-ups.
-- The worktree contains the completed verified change; commit and push are pending.
+- The implementation is published on `origin/main`; no tag or release was created.
 
 <!-- mir:runtime-snapshot:begin -->
 ## Runtime Snapshot (Generated)
 
 ### Active Plan Items
-- Commit the verified change to `main` and push it to `origin/main`.
+- No open plan items.
 
 ### Working Tree
-- Working tree dirty (54 paths; inspect git status --short).
+- Working tree clean.
 <!-- mir:runtime-snapshot:end -->

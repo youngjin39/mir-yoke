@@ -18,4 +18,4 @@
 - [x] Curate the canonical intent, plan, checklist, TDD ledger, change log, profile, and handoff
   without a competing summary.
 - [x] Confirm SSH `origin` and that local and remote refs contain only `main`.
-- [ ] Commit and push the verified clean candidate, then confirm a clean synchronized worktree.
+- [x] Commit and push the verified clean candidate, then confirm a clean synchronized worktree.

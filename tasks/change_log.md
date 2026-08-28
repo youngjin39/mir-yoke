@@ -5,7 +5,7 @@ One bullet per non-trivial change. Newest at the top.
 - 2026-08-29: migrated generated Codex permission ownership to operator-selected profiles, rejected
   legacy/profile mixing, bound vector writes to a persisted encoder fingerprint, preserved fact
   subject/provenance, quarantined credential-shaped facts, and passed clean-candidate readiness
-  with 797 tests.
+  with 797 tests; published the implementation to `origin/main` at `d3693b8`.
 - 2026-08-28: added ADR-84 and the current harness engineering upgrade guide without expanding the
   Starter, Project Agent Kit, optional CLI, plugin, or consumer-authority boundaries.
 - 2026-08-28: corrected current-only fact/document retrieval, semantic history classification,

@@ -1,6 +1,6 @@
 # Plan
 
-## Current status — READY TO PUBLISH (2026-08-29)
+## Current status — CLOSED (2026-08-29)
 
 - [x] Audit the current Starter, Project Agent Kit, optional CLI, plugins, agents, skills, hooks,
   context retrieval, memory, embeddings, generated parity, governance, and release checks.
@@ -15,13 +15,14 @@
   subject/provenance and quarantine instruction-like or credential-shaped values.
 - [x] Regenerate derivatives, run focused and full verification, complete independent review, and
   reconcile final repository state.
-- [ ] Commit the verified change to `main` and push it to `origin/main`.
+- [x] Commit the verified change to `main` and push it to `origin/main`.
 
 Scope is Mir Yoke only. The owner authorized commit and push after verification. Do not edit the
 protected capability lock, tag, publish a release, or modify consumer repositories.
 
-No active repository implementation remains. The final clean-candidate readiness gate passed with
-797 tests and all static checks. One authorized publication action remains.
+No active repository implementation or publication action remains. The final clean-candidate
+readiness gate passed with 797 tests and all static checks; local `main` and `origin/main` are
+synchronized.
 
 ## Deferred owner work
 
