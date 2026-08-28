@@ -120,7 +120,9 @@ remains the complete recovery record.
 - A canonical maintainer observer proves the target was initially empty, runs the declared checks,
   mutation-probes every declared foundation and generated surface, records the original local Git
   and hook state, rejects product files, and publishes only sanitized bounded evidence.
-- Optional consumer classification includes only marketplace metadata and `plugins/*`.
+- Optional consumer classification covers explicitly selected plugin packages, the installed CLI,
+  and bounded common-harness adaptation sources; none becomes a default payload or implicit
+  readiness requirement.
 - Active contracts contain no product-plane, capability-pack, or `yoke plan/apply` path.
 - Plugin packages load from an isolated copy without Mir CLI or repository-local harness files.
 - The tag gate runs repository release readiness and publishes the GitHub Release without claiming

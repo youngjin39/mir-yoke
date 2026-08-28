@@ -20,7 +20,7 @@ recipe, and the installed `mir` CLI acts only on the user's explicit target and 
 - `recipes/project-agent-kit/` owns the one-prompt empty-target bootstrap procedure.
 - `src/mir/cli/` owns the optional installed v0.8-compatible command surface; the Kit never copies it.
 - `plugins/*/skills/*` owns common portable skill bodies.
-- ADR-83 owns current product authority; ADR-81 owns the minimum Starter.
+- ADR-83 owns product authority; ADR-84 owns current upgrade guidance; ADR-81 owns the Starter.
 - `config/template-assets.json` classifies the full maintainer checkout.
 - `.mir/repo-profile.toml` owns this maintainer repository's local boundaries when present.
 

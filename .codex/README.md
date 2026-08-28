@@ -1,34 +1,36 @@
-# Codex CLI side
+<!-- GENERATED FILE: edit config/project-hooks.json or scripts/generate_codex_derivatives.sh and regenerate. -->
 
-`hooks.json` mirrors `.claude/settings.json` for the 7 shared hook events Codex CLI supports.
+# Codex runtime
 
-## Events
+`.codex/hooks.json` is generated from `config/project-hooks.json`. The same definition renders
+Claude and Codex registrations, while runtime-specific events and timeout limits remain explicit.
 
-| Event | Active | Script |
-|---|---|---|
-| `PreToolUse` | yes | `.claude/hooks/pre-tool-use.sh` |
-| `PostToolUse` | yes | `.claude/hooks/post-edit-check.sh` |
-| `PreCompact` | yes | `.claude/hooks/pre-compact.sh` |
-| `PostCompact` | yes | `.claude/hooks/post-compact.sh` |
-| `SessionStart` | yes | `.claude/hooks/session-start.sh`; compact-only recovery uses `.claude/hooks/compact-resume.sh` |
-| `Stop` | yes | `.claude/hooks/mir-stop.sh` |
-| `PermissionRequest` | yes | `.claude/hooks/pre-tool-use.sh` (same deny-list) |
+## Trust boundary
 
-`SessionEnd`, `TaskCreated`, `TaskCompleted` are Claude Code-only and do not exist in Codex CLI.
-On an explicit Codex closeout, run `.claude/hooks/session-end.sh` to refresh the same canonical
-`tasks/handoffs/session-handoff-LATEST.md` used by Claude.
+Project-local Codex configuration loads only after the project is trusted. Non-managed hooks also
+require review of their current hash before they run. Use `/hooks` to inspect sources and trust or
+disable each hook. Until both trust steps are complete, hook-based safety and continuity behavior is
+inactive; repository instructions and explicit verification remain authoritative.
 
-## Auth and credentials
+## Permission boundary
 
-Codex CLI authenticates separately. Files under `.codex/` like `auth.json` or `credentials.json` should never be committed; the `.gitignore` excludes them.
+The generated root configuration does not select `sandbox_mode`, `sandbox_workspace_write`, or
+`default_permissions`. Legacy sandbox settings and permission profiles do not compose, so the
+operator's user-level or managed configuration remains authoritative. Write-capable generated
+agents inherit that selection; mechanically read-only reviewers retain `sandbox_mode = "read-only"`.
+
+## Maintained events
+
+`PreToolUse`, `PermissionRequest`, `PostToolUse`, `SessionStart`, `PreCompact`,
+`PostCompact`, `Stop`, and `SessionEnd` are generated for Codex. Maintainer `SessionEnd`
+uses Codex's three-second limit. `UserPromptSubmit` and `StopFailure` remain Claude-only by
+repository policy; the compact-only Project Agent Kit template intentionally ships only its compact
+lifecycle.
 
 ## Wire format
 
-Codex CLI hooks receive the same JSON wire format on stdin that Claude Code uses. The hook scripts here parse `tool_name`, `tool_input.command`, `tool_input.file_path`, and `tool_input.path` — Codex's `apply_patch` tool puts the file in `tool_input.path`.
+Shared adapters parse `tool_name` and `tool_input`. Current Codex `apply_patch` sends the
+unified patch in `tool_input.command`; maintained adapters accept that field first and retain older
+`input`, `patch`, and `content` fallbacks for compatible runtimes.
 
-## Customization
-
-Edit `config/project-hooks.json`, then run `scripts/generate_codex_derivatives.sh`. The generator
-renders both `.claude/settings.json` and `.codex/hooks.json`; do not edit either generated hook
-registration file directly. Generated commands resolve the repository root, so hook execution does
-not depend on the runtime's current working directory.
+Regenerate with `scripts/generate_codex_derivatives.sh`. Do not edit generated Codex files directly.

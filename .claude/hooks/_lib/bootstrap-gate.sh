@@ -565,7 +565,7 @@ mir_bootstrap_gate_enforce() {
       ;;
     apply_patch|ApplyPatch)
       local patch
-      patch="$(printf '%s' "$payload" | jq -r '.tool_input.input // .tool_input.patch // .tool_input.content // ""')"
+      patch="$(printf '%s' "$payload" | jq -r '.tool_input.command // .tool_input.input // .tool_input.patch // .tool_input.content // ""')"
       _mir_bootstrap_patch_paths_allowed "$patch" "$project_dir" && return 0
       ;;
   esac

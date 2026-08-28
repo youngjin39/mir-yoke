@@ -38,7 +38,7 @@ def relevant_paths(payload: dict[str, object], root: Path) -> tuple[str, ...]:
     if not isinstance(tool_input, dict):
         return ()
     raw_paths: list[object] = [tool_input.get("file_path"), tool_input.get("path")]
-    for field in ("patch", "input", "content"):
+    for field in ("command", "patch", "input", "content"):
         body = tool_input.get(field)
         if isinstance(body, str):
             raw_paths.extend(_PATCH_PATH.findall(body))

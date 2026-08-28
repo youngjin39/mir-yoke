@@ -1,7 +1,7 @@
 # GENERATED FILE: edit .claude/agents/fleet-doc-steward.md and rerun scripts/generate_codex_derivatives.sh
 name = "fleet-doc-steward"
 description = "Read-only repository instruction-document advisor. The legacy slug is retained for compatibility.\n\nExamples:\n- user: \"Review this repository's CLAUDE.md\"\n- user: \"Check AGENTS.md generation consistency\"\n- user: \"Tighten local instruction boundaries\""
-sandbox_mode = "danger-full-access"
+sandbox_mode = "read-only"
 developer_instructions = """
 Use `AGENTS.md` as the shared repository contract.
 Apply only the agent-specific behavior below; do not restate the root contract.

@@ -39,8 +39,10 @@ from mir.core.engine.memory.vector_index import (
 DEFAULT_CHUNK_SIZE = 800
 DEFAULT_CHUNK_OVERLAP = 100
 DEFAULT_EMBED_DIM = 1024
-CURRENT_METADATA_VERSION = "4"  # v4: logical subroot + task-history metadata backfill
+CURRENT_METADATA_VERSION = "5"  # v5: ADR-84 semantic history classification
 _ARCHIVE_METADATA_VERSION_PREFIX = "schema_metadata_version:archive:"
+_ARCHIVE_CONTENT_REINDEX_PREFIX = "force_content_reindex:archive:"
+_EMBEDDING_FINGERPRINT_KEY = "external_embedding_fingerprint"
 
 
 # --- Errors ------------------------------------------------------------
@@ -75,6 +77,17 @@ class ScanResult:
     reindexed: int
     unchanged: int
     failed: tuple[tuple[str, str], ...] = ()  # (relpath, reason) per file
+
+
+@dataclass(frozen=True)
+class VectorReindexResult:
+    """Result of an explicit missing-vector backfill for one archive."""
+
+    indexed: int
+    eligible: int
+    reindexed: int
+    unchanged: int
+    failed: tuple[tuple[str, str], ...] = ()
 
 
 @dataclass(frozen=True)
@@ -195,6 +208,7 @@ _TASK_HISTORY_RE = re.compile(
     r"^tasks/(?:handoffs|sessions|dispatch|runner|archive)(?:/|$)"
     r"|^tasks/plan[-_]archive(?:[-/._]|$)"
 )
+_HISTORICAL_STATUSES = frozenset({"superseded", "deprecated", "rejected", "archived", "historical"})
 
 
 def _logical_metadata_path(archive_root: str, rel: str) -> str:
@@ -338,6 +352,7 @@ class _ArchiveRow:
     mode: str
     glob_include: tuple[str, ...]
     glob_exclude: tuple[str, ...]
+    historical_glob: tuple[str, ...]
     chunk_size: int
     chunk_overlap: int
 
@@ -423,6 +438,7 @@ class ExternalStore:
         mode: str,
         glob_include: tuple[str, ...] = (),
         glob_exclude: tuple[str, ...] = (),
+        historical_glob: tuple[str, ...] = (),
         chunk_size: int = DEFAULT_CHUNK_SIZE,
         chunk_overlap: int = DEFAULT_CHUNK_OVERLAP,
         owner: str,
@@ -430,18 +446,27 @@ class ExternalStore:
         """Insert or update an archive row. Returns archive_id."""
         if mode not in ("indexed", "immutable"):
             raise ValueError(f"invalid mode {mode!r}")
+        glob_include_value = ",".join(glob_include) if glob_include else None
+        glob_exclude_value = ",".join(glob_exclude) if glob_exclude else None
+        historical_glob_value = ",".join(historical_glob) if historical_glob else None
+        prior = self._conn.conn.execute(
+            "SELECT root_path, glob_include, glob_exclude, historical_glob, "
+            "chunk_size, chunk_overlap FROM external_archives WHERE slug = ?",
+            (slug,),
+        ).fetchone()
         now = datetime.now(UTC).isoformat()
         cur = self._conn.conn.execute(
             """
             INSERT INTO external_archives
-              (slug, root_path, mode, glob_include, glob_exclude,
+              (slug, root_path, mode, glob_include, glob_exclude, historical_glob,
                chunk_size, chunk_overlap, owner, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(slug) DO UPDATE SET
               root_path = excluded.root_path,
               mode = excluded.mode,
               glob_include = excluded.glob_include,
               glob_exclude = excluded.glob_exclude,
+              historical_glob = excluded.historical_glob,
               chunk_size = excluded.chunk_size,
               chunk_overlap = excluded.chunk_overlap,
               owner = excluded.owner
@@ -451,8 +476,9 @@ class ExternalStore:
                 slug,
                 root_path,
                 mode,
-                ",".join(glob_include) if glob_include else None,
-                ",".join(glob_exclude) if glob_exclude else None,
+                glob_include_value,
+                glob_exclude_value,
+                historical_glob_value,
                 chunk_size,
                 chunk_overlap,
                 owner,
@@ -460,12 +486,36 @@ class ExternalStore:
             ),
         )
         row = cur.fetchone()
+        if prior is not None:
+            archive_id = row[0]
+            prior_content_shape = (prior[0], prior[1], prior[2], prior[4], prior[5])
+            new_content_shape = (
+                root_path,
+                glob_include_value,
+                glob_exclude_value,
+                chunk_size,
+                chunk_overlap,
+            )
+            if prior_content_shape != new_content_shape:
+                self._conn.conn.execute(
+                    "INSERT OR REPLACE INTO external_store_meta(key, value) VALUES (?, '1')",
+                    (f"{_ARCHIVE_CONTENT_REINDEX_PREFIX}{archive_id}",),
+                )
+                self._conn.conn.execute(
+                    "DELETE FROM external_store_meta WHERE key = ?",
+                    (f"{_ARCHIVE_METADATA_VERSION_PREFIX}{archive_id}",),
+                )
+            elif prior[3] != historical_glob_value:
+                self._conn.conn.execute(
+                    "DELETE FROM external_store_meta WHERE key = ?",
+                    (f"{_ARCHIVE_METADATA_VERSION_PREFIX}{archive_id}",),
+                )
         self._conn.conn.commit()
         return row[0]
 
     def _fetch_archive(self, archive_id: int) -> _ArchiveRow:
         row = self._conn.conn.execute(
-            "SELECT id, slug, root_path, mode, glob_include, glob_exclude, "
+            "SELECT id, slug, root_path, mode, glob_include, glob_exclude, historical_glob, "
             "chunk_size, chunk_overlap "
             "FROM external_archives WHERE id = ?",
             (archive_id,),
@@ -479,8 +529,9 @@ class ExternalStore:
             mode=row[3],
             glob_include=_compile_globs(row[4]),
             glob_exclude=_compile_globs(row[5]),
-            chunk_size=row[6],
-            chunk_overlap=row[7],
+            historical_glob=_compile_globs(row[6]),
+            chunk_size=row[7],
+            chunk_overlap=row[8],
         )
 
     # ---- scan ----
@@ -490,6 +541,7 @@ class ExternalStore:
         archive_id: int,
         *,
         embed_fn=None,
+        encoder_fingerprint: str | None = None,
         embed_batch_size: int | None = None,
     ) -> ScanResult:
         """Sync ``external_documents/chunks/fts/vec`` with the filesystem.
@@ -497,9 +549,13 @@ class ExternalStore:
         ``embed_fn(list[str]) -> list[list[float]]`` is called per file
         (batched per its chunks). If ``None``, vector index is skipped
         (FTS5-only mode). If the connection lacks vec_available, vector
-        writes are silently skipped per TB1 graceful-degradation rule.
+        writes are silently skipped per TB1 graceful-degradation rule. Every
+        vector-writing run must supply the complete ``encoder_fingerprint``;
+        the shared table refuses a different fingerprint while vectors exist.
         """
         archive = self._fetch_archive(archive_id)
+        if embed_fn is not None and self._conn.vec_available:
+            self._ensure_encoder_fingerprint(encoder_fingerprint)
         root = Path(archive.root_path)
         current_fs = set(_walk_archive(root, archive.glob_include, archive.glob_exclude))
 
@@ -518,6 +574,14 @@ class ExternalStore:
             "SELECT value FROM external_store_meta WHERE key = ?",
             (archive_metadata_key,),
         ).fetchone()
+        content_reindex_key = f"{_ARCHIVE_CONTENT_REINDEX_PREFIX}{archive_id}"
+        force_content_reindex = (
+            self._conn.conn.execute(
+                "SELECT 1 FROM external_store_meta WHERE key = ?",
+                (content_reindex_key,),
+            ).fetchone()
+            is not None
+        )
         if db_set:
             forced_rescan = _archive_ver is None or _int_ver(_archive_ver[0]) < _int_ver(
                 CURRENT_METADATA_VERSION
@@ -557,6 +621,7 @@ class ExternalStore:
                     embed_fn=embed_fn,
                     embed_batch_size=embed_batch_size,
                     forced=forced_rescan,
+                    force_content=force_content_reindex,
                 )
                 if changed:
                     reindexed += 1
@@ -569,6 +634,10 @@ class ExternalStore:
             self._conn.conn.execute(
                 "INSERT OR REPLACE INTO external_store_meta(key, value) VALUES (?, ?)",
                 (archive_metadata_key, CURRENT_METADATA_VERSION),
+            )
+            self._conn.conn.execute(
+                "DELETE FROM external_store_meta WHERE key = ?",
+                (content_reindex_key,),
             )
         else:
             self._conn.conn.execute(
@@ -612,6 +681,129 @@ class ExternalStore:
             failed=tuple(failed),
         )
 
+    def vector_coverage(self, archive_id: int) -> tuple[int, int]:
+        """Return ``(indexed, eligible)`` stored chunks for one archive."""
+        eligible = self._conn.conn.execute(
+            "SELECT COUNT(*) FROM external_chunks c "
+            "JOIN external_documents d ON d.id = c.document_id "
+            "WHERE d.archive_id = ?",
+            (archive_id,),
+        ).fetchone()[0]
+        if not self._conn.vec_available:
+            return 0, eligible
+        indexed = self._conn.conn.execute(
+            "SELECT COUNT(*) FROM external_chunks_vec v "
+            "JOIN external_chunks c ON c.id = v.rowid "
+            "JOIN external_documents d ON d.id = c.document_id "
+            "WHERE d.archive_id = ?",
+            (archive_id,),
+        ).fetchone()[0]
+        return indexed, eligible
+
+    def reindex_missing_vectors(
+        self,
+        archive_id: int,
+        *,
+        embed_fn,
+        encoder_fingerprint: str,
+    ) -> VectorReindexResult:
+        """Replace only documents lacking complete vector coverage.
+
+        This is deliberately separate from :meth:`scan`: enabling vectors must
+        not make an ordinary archive sync mutate an established FTS-only index.
+        Each document is replaced in its own transaction, so successful work is
+        durable when a later embedding call fails and a rerun resumes safely.
+        """
+        if embed_fn is None:
+            raise ExternalStoreError("missing-vector reindex requires an embedding function")
+        if not self._conn.vec_available:
+            raise ExternalStoreError("missing-vector reindex requires sqlite-vec")
+        archive = self._fetch_archive(archive_id)
+        self._ensure_encoder_fingerprint(encoder_fingerprint)
+        rows = self._conn.conn.execute(
+            "SELECT d.id, d.relative_path, d.file_hash, d.vec_indexed_at, "
+            "COUNT(c.id), COUNT(v.rowid) "
+            "FROM external_documents d "
+            "LEFT JOIN external_chunks c ON c.document_id = d.id "
+            "LEFT JOIN external_chunks_vec v ON v.rowid = c.id "
+            "WHERE d.archive_id = ? "
+            "GROUP BY d.id ORDER BY d.relative_path",
+            (archive_id,),
+        ).fetchall()
+        reindexed = unchanged = 0
+        failed: list[tuple[str, str]] = []
+        for doc_id, rel, file_hash, vec_indexed_at, chunk_count, vector_count in rows:
+            if chunk_count == 0 or (chunk_count == vector_count and vec_indexed_at is not None):
+                unchanged += 1
+                continue
+            try:
+                self._replace_document_vectors(
+                    archive,
+                    doc_id=doc_id,
+                    rel=rel,
+                    expected_hash=file_hash,
+                    embed_fn=embed_fn,
+                )
+                reindexed += 1
+            except Exception as exc:
+                failed.append((rel, str(exc)))
+        indexed, eligible = self.vector_coverage(archive_id)
+        return VectorReindexResult(
+            indexed=indexed,
+            eligible=eligible,
+            reindexed=reindexed,
+            unchanged=unchanged,
+            failed=tuple(failed),
+        )
+
+    def _ensure_encoder_fingerprint(self, encoder_fingerprint: str | None) -> None:
+        """Bind the shared vector table to one complete encoder fingerprint."""
+        requested = (encoder_fingerprint or "").strip()
+        if not requested:
+            raise ExternalStoreError("vector indexing requires an encoder fingerprint")
+        row = self._conn.conn.execute(
+            "SELECT value FROM external_store_meta WHERE key = ?",
+            (_EMBEDDING_FINGERPRINT_KEY,),
+        ).fetchone()
+        stored = row[0] if row is not None else None
+        vector_count = self._conn.conn.execute(
+            "SELECT COUNT(*) FROM external_chunks_vec"
+        ).fetchone()[0]
+        if stored == requested:
+            return
+        if vector_count:
+            self._validate_encoder_fingerprint(requested)
+        self._conn.conn.execute(
+            "INSERT OR REPLACE INTO external_store_meta(key, value) VALUES (?, ?)",
+            (_EMBEDDING_FINGERPRINT_KEY, requested),
+        )
+        self._conn.conn.commit()
+
+    def _validate_encoder_fingerprint(self, encoder_fingerprint: str | None) -> None:
+        """Refuse hybrid retrieval when query and stored vectors may differ."""
+        vector_count = self._conn.conn.execute(
+            "SELECT COUNT(*) FROM external_chunks_vec"
+        ).fetchone()[0]
+        if not vector_count:
+            return
+        requested = (encoder_fingerprint or "").strip()
+        if not requested:
+            raise ExternalStoreError("vector retrieval requires an encoder fingerprint")
+        row = self._conn.conn.execute(
+            "SELECT value FROM external_store_meta WHERE key = ?",
+            (_EMBEDDING_FINGERPRINT_KEY,),
+        ).fetchone()
+        if row is None:
+            raise ExternalStoreError(
+                "existing vectors have no recorded encoder fingerprint; "
+                "build a fresh or versioned index"
+            )
+        if row[0] != requested:
+            raise ExternalStoreError(
+                "encoder fingerprint differs from the active vector index; "
+                "build a fresh or versioned index"
+            )
+
     # ---- internals ----
 
     def _read_file(self, archive: _ArchiveRow, rel: str) -> tuple[str, str, int]:
@@ -631,6 +823,41 @@ class ExternalStore:
         except UnicodeDecodeError as e:
             raise ExternalStoreError(f"{rel}: not utf-8 ({e})") from e
         return text, file_hash, len(data)
+
+    def _document_metadata(
+        self, archive: _ArchiveRow, rel: str, text: str
+    ) -> tuple[str, str | None, str | None, str, str | None, str | None]:
+        """Derive document metadata without changing content-owned rows."""
+        source_slug = "your-harness"
+        logical_rel = _logical_metadata_path(archive.root_path, rel)
+        doc_category = _derive_doc_category(logical_rel)
+        layer = _derive_layer(logical_rel)
+        title, frontmatter_json = _extract_title_and_frontmatter(text)
+        frontmatter: dict[str, object] = {}
+        if frontmatter_json:
+            try:
+                frontmatter = json.loads(frontmatter_json)
+            except json.JSONDecodeError:
+                pass
+        normalized_status = str(frontmatter.get("status", "")).strip().lower()
+        normalized_source = str(frontmatter.get("source", "")).strip().lower()
+        configured_history = _matches_regex_any(
+            logical_rel, _compile_pattern_set(archive.historical_glob)
+        )
+        is_historical = (
+            doc_category == "archive"
+            or normalized_status in _HISTORICAL_STATUSES
+            or normalized_source == "mirrored-summary"
+            or configured_history
+        )
+        return (
+            source_slug,
+            doc_category,
+            layer,
+            ("expired" if is_historical else "active"),
+            title,
+            frontmatter_json,
+        )
 
     def _cascade_delete_document(self, archive_id: int, rel: str) -> None:
         conn = self._conn.conn
@@ -679,14 +906,14 @@ class ExternalStore:
 
         conn = self._conn.conn
         with conn:
-            source_slug = "your-harness"
-            logical_rel = _logical_metadata_path(archive.root_path, rel)
-            doc_category = _derive_doc_category(logical_rel)
-            layer = _derive_layer(logical_rel)
-            title, frontmatter_json = _extract_title_and_frontmatter(text)
-            # ADR-53 D4: path-derived status — archive paths are 'expired' so default
-            # retrieval excludes them; include_history=True still reaches them.
-            doc_status = "expired" if doc_category == "archive" else "active"
+            (
+                source_slug,
+                doc_category,
+                layer,
+                doc_status,
+                title,
+                frontmatter_json,
+            ) = self._document_metadata(archive, rel, text)
             cur = conn.execute(
                 "INSERT INTO external_documents "
                 "(archive_id, relative_path, file_hash, byte_len, vec_indexed_at, "
@@ -726,6 +953,7 @@ class ExternalStore:
         embed_fn,
         embed_batch_size: int | None = None,
         forced: bool = False,
+        force_content: bool = False,
     ) -> bool:
         text, file_hash, byte_len = self._read_file(archive, rel)
         conn = self._conn.conn
@@ -739,8 +967,34 @@ class ExternalStore:
             self._index_file(archive, rel, embed_fn=embed_fn)
             return True
         doc_id, old_hash = row
-        if old_hash == file_hash and not forced:
-            return False
+        if old_hash == file_hash and not force_content:
+            if not forced:
+                return False
+            (
+                source_slug,
+                doc_category,
+                layer,
+                doc_status,
+                title,
+                frontmatter_json,
+            ) = self._document_metadata(archive, rel, text)
+            # Metadata version upgrades must not churn FTS/vector rows or chunk
+            # identities when the source bytes have not changed.
+            with conn:
+                conn.execute(
+                    "UPDATE external_documents SET source_slug = ?, doc_category = ?, "
+                    "layer = ?, status = ?, title = ?, frontmatter_json = ? WHERE id = ?",
+                    (
+                        source_slug,
+                        doc_category,
+                        layer,
+                        doc_status,
+                        title,
+                        frontmatter_json,
+                        doc_id,
+                    ),
+                )
+            return True
 
         chunks = _chunk_text(
             text,
@@ -759,13 +1013,14 @@ class ExternalStore:
             for cid in old_ids:
                 self._delete_chunk_rowid(cid)
             conn.execute("DELETE FROM external_chunks WHERE document_id = ?", (doc_id,))
-            source_slug = "your-harness"
-            logical_rel = _logical_metadata_path(archive.root_path, rel)
-            doc_category = _derive_doc_category(logical_rel)
-            layer = _derive_layer(logical_rel)
-            title, frontmatter_json = _extract_title_and_frontmatter(text)
-            # ADR-53 D4: path-derived status — archive paths are 'expired'.
-            doc_status = "expired" if doc_category == "archive" else "active"
+            (
+                source_slug,
+                doc_category,
+                layer,
+                doc_status,
+                title,
+                frontmatter_json,
+            ) = self._document_metadata(archive, rel, text)
             conn.execute(
                 "UPDATE external_documents "
                 "SET file_hash = ?, byte_len = ?, vec_indexed_at = ?, "
@@ -794,6 +1049,39 @@ class ExternalStore:
                 embed_batch_size=embed_batch_size,
             )
         return True
+
+    def _replace_document_vectors(
+        self,
+        archive: _ArchiveRow,
+        *,
+        doc_id: int,
+        rel: str,
+        expected_hash: str,
+        embed_fn,
+    ) -> None:
+        """Replace one document's chunk rows and vectors atomically."""
+        text, file_hash, _ = self._read_file(archive, rel)
+        if file_hash != expected_hash:
+            raise ExternalStoreError(
+                "source changed; run 'mir context sync' before vector backfill"
+            )
+        chunks = _chunk_text(text, size=archive.chunk_size, overlap=archive.chunk_overlap)
+        conn = self._conn.conn
+        with conn:
+            old_ids = [
+                row[0]
+                for row in conn.execute(
+                    "SELECT id FROM external_chunks WHERE document_id = ?", (doc_id,)
+                ).fetchall()
+            ]
+            for chunk_id in old_ids:
+                self._delete_chunk_rowid(chunk_id)
+            conn.execute("DELETE FROM external_chunks WHERE document_id = ?", (doc_id,))
+            self._insert_chunks(doc_id, chunks, embed_fn=embed_fn)
+            conn.execute(
+                "UPDATE external_documents SET vec_indexed_at = ? WHERE id = ?",
+                (datetime.now(UTC).isoformat(), doc_id),
+            )
 
     def _insert_chunks(
         self,
@@ -854,6 +1142,7 @@ class ExternalStore:
         archive_slugs: tuple[str, ...] | None = None,
         path_scopes: tuple[str, ...] | None = None,
         embed_fn=None,
+        encoder_fingerprint: str | None = None,
         include_history: bool = False,
     ) -> list[ExternalHit]:
         """Hybrid search across registered archives.
@@ -869,6 +1158,9 @@ class ExternalStore:
         Only chunk metadata (path + byte range + score) is returned —
         the caller re-reads the file to get body text (ADR 1 §2.2).
         """
+        if embed_fn is not None and self._conn.vec_available:
+            self._validate_encoder_fingerprint(encoder_fingerprint)
+
         # wave 2 SM6 — move the archive_slugs filter forward to the RRF input stage.
         # Previously this collected all vec_hits + fts_rows, ran RRF, and applied a
         # trailing slug filter after SELECT; rowids that should be excluded could
@@ -1074,5 +1366,6 @@ __all__ = (
     "ExternalStore",
     "ExternalStoreError",
     "ScanResult",
+    "VectorReindexResult",
     "ensure_external_vec_table",
 )

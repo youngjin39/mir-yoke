@@ -14,6 +14,10 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
   PostCompact, and compact-resume lifecycle handling.
 - Added the same bounded compact lifecycle to the Project Agent Kit common harness, including
   atomic handoff refresh, ignored runtime evidence, and nested-working-directory coverage.
+- Added a current, reference-only harness engineering upgrade guide for repository governance,
+  context and token efficiency, memory, embeddings, agents, skills, hooks, and runtime parity.
+- Added bounded active-fact retrieval, repository-declared historical document globs, and explicit
+  `mir context sync --reindex-missing-vectors` coverage and resume behavior.
 
 ### Changed
 
@@ -21,6 +25,26 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
   instead of maintaining runtime configurations independently.
 - Extended Project Agent Kit schema and evidence validation so compact lifecycle behavior is
   verified without making owner-run Claude/Codex example repositories a release prerequisite.
+- Changed generated Codex roots and write-capable agents to inherit the operator-selected
+  permission policy, retained read-only reviewer sandboxes, rejected legacy/profile mixing during
+  bootstrap, and replaced deprecated hook and concurrency aliases with current keys.
+- Made semantic history reclassification metadata-only so unchanged chunk, FTS, vector, and
+  vector-timestamp state is preserved.
+- Limited the current optional vector table to its actual 1024-dimensional contract; other
+  dimensions now fail before indexing.
+- Bound vector writes and resumable backfill to one persisted complete encoder fingerprint.
+
+### Fixed
+
+- Fixed shared hook adapters so current Codex `apply_patch` payloads in
+  `tool_input.command` receive path safety, post-edit inspection, and durable-memory sync.
+- Fixed default `context pull` so active durable facts are available even when no document
+  archive is registered, while inactive facts and documents remain behind `--history`.
+- Preserved fact subject/provenance identifiers, quarantined instruction-like and
+  credential-shaped memory facts before context rendering, and redacted detected credential values
+  from post-edit hook output.
+- Added bounded Codex `SessionEnd` generation and documented project and hook trust as
+  prerequisites for hook-based behavior.
 
 ## [0.9.0] — 2026-08-11 — Project Agent Kit boundary
 

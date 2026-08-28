@@ -173,6 +173,63 @@ def test_search_fts_only_honors_status_filter(tmp_path):
         c.conn.close()
 
 
+def test_search_default_excludes_semantic_historical_documents(tmp_path):
+    c = store.connect(tmp_path / "memory.db", load_vec=False)
+    try:
+        store.apply_migrations(c.conn)
+        es = ExternalStore(c)
+        root = tmp_path / "archive"
+        _write(root, "current.md", "vector lifecycle current guidance")
+        _write(
+            root,
+            "old.md",
+            "---\nstatus: superseded\n---\nvector lifecycle old guidance",
+        )
+        _write(
+            root,
+            "mirror.md",
+            "---\nsource: mirrored-summary\n---\nvector lifecycle mirrored guidance",
+        )
+        archive_id = es.register(
+            slug="test-archive",
+            root_path=str(root),
+            mode="indexed",
+            owner="family:x",
+            glob_include=("**/*.md",),
+        )
+        es.scan(archive_id, embed_fn=None)
+
+        assert {hit.relative_path for hit in es.search("vector lifecycle", k=10)} == {"current.md"}
+        assert {
+            hit.relative_path for hit in es.search("vector lifecycle", k=10, include_history=True)
+        } == {"current.md", "old.md", "mirror.md"}
+    finally:
+        c.conn.close()
+
+
+def test_search_default_excludes_repository_logical_historical_glob(tmp_path):
+    c = store.connect(tmp_path / "memory.db", load_vec=False)
+    try:
+        store.apply_migrations(c.conn)
+        es = ExternalStore(c)
+        root = tmp_path / "docs"
+        _write(root, "current.md", "harness policy current guidance")
+        _write(root, "harness-engineering/old.md", "harness policy historical guidance")
+        archive_id = es.register(
+            slug="test-docs",
+            root_path=str(root),
+            mode="indexed",
+            owner="family:x",
+            glob_include=("**/*.md",),
+            historical_glob=("docs/harness-engineering/**",),
+        )
+        es.scan(archive_id, embed_fn=None)
+
+        assert [hit.relative_path for hit in es.search("harness policy", k=10)] == ["current.md"]
+    finally:
+        c.conn.close()
+
+
 def test_search_archive_slugs_with_include_history_combo(tmp_path):
     """archive_slugs scoping applies even when include_history=True.
 

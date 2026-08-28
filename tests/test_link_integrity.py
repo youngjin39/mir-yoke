@@ -1,17 +1,23 @@
 """Test that all markdown internal links resolve to existing files."""
 import re
+import subprocess
 from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_all_links_resolve():
-    md_files = list(Path("docs").rglob("*.md")) if Path("docs").exists() else []
-    if Path("applications").exists():
-        md_files += list(Path("applications").rglob("*.md"))
+    tracked_and_candidate = subprocess.check_output(
+        ["git", "ls-files", "--cached", "--others", "--exclude-standard"],
+        cwd=ROOT,
+        text=True,
+    ).splitlines()
+    md_files = [ROOT / relative for relative in tracked_and_candidate if relative.endswith(".md")]
 
     pattern = re.compile(r'\[.*?\]\(([^)]+)\)')
     broken = []
     for md in md_files:
-        content = md.read_text()
+        content = md.read_text(encoding="utf-8")
         for match in pattern.finditer(content):
             link = match.group(1).split("#")[0].strip()
             if not link:
@@ -20,7 +26,7 @@ def test_all_links_resolve():
                 continue
             target = (md.parent / link).resolve()
             if not target.exists():
-                broken.append((str(md), link))
+                broken.append((str(md.relative_to(ROOT)), link))
     assert not broken, f"Broken links: {broken[:10]}"
 
 

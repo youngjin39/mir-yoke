@@ -6,7 +6,10 @@ Drop additional agent personas here as `<agent-name>.md`. Each file should decla
 - when the dispatcher should call it
 - the output contract (what shape the result must take)
 
-The starter ships with 12 agent personas and 11 built-in skills. Add personas only when a workflow needs a persistent role across multiple skills (e.g., a "security reviewer" that always runs after `code-review`).
+This maintainer checkout carries an optional agent pack; the four-file Starter carries none.
+Portable skills are distributed separately through namespaced plugins. Add a persona only when a
+workflow needs persistent role isolation across multiple skills, and prefer dynamic model selection
+unless the repository records a justified role-specific pin.
 
 ## Example skeleton
 

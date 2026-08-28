@@ -53,10 +53,13 @@ process and exposes no `yoke` composer.
 - **Optional CLI** — `src/mir/` supplies the installed v0.8-compatible operator surface without
   becoming a Project Agent Kit payload.
 - **Plugin provider** — `plugins/` and marketplace manifests publish optional host capabilities.
+- **Upgrade guide** — `docs/operations/harness-engineering-upgrade.md` routes existing repositories
+  through selective, target-owned harness improvements without creating another payload.
 - **Maintenance** — tests, classification, sanitization, generated checks, and the clean-room
   observer validate Mir Yoke without becoming a target installer.
 - **Reference corpus** — retained source, tools, examples, specifications, history, and the inert
-  ADR-82 advanced-composition templates remain inspectable without active-command claims.
+  ADR-82 advanced-composition templates remain inspectable without active-command claims. The
+  centralization-era harness phase corpus is historical and not current operational guidance.
 
 Dependencies point from the recipe to Starter concepts and its project-owned common harness and
 memory contract. No plugin, installed CLI, reference implementation, or historical decision can

@@ -139,7 +139,7 @@ TOOL_NAME="$(extract_json '.tool_name')" || block "Malformed PreToolUse payload 
 if [ -n "${MIR_CODEX_SESSION_ID:-}" ]; then
   case "$TOOL_NAME" in
     apply_patch|ApplyPatch)
-      _r5_patch="$(extract_json '.tool_input.input // .tool_input.patch // .tool_input.content // .tool_input' 2>/dev/null || echo "")"
+      _r5_patch="$(extract_json '.tool_input.command // .tool_input.input // .tool_input.patch // .tool_input.content // .tool_input' 2>/dev/null || echo "")"
       if printf '%s' "$_r5_patch" | grep -qE '(^|[^[:alnum:]_./-])tasks/plan\.md([^[:alnum:]_]|$)'; then
         block "ADR-60 R5: a sub-agent/codex context must not edit the main control-plane cursor tasks/plan.md via apply_patch — the control_plane main owns it (report your result via your final message + the JobRegistry, never plan.md)"
       fi
@@ -424,7 +424,7 @@ if [ "$_mir_tool_name" = "Edit" ] || [ "$_mir_tool_name" = "Write" ]; then
     fi
 fi
 if [ "$_mir_tool_name" = "apply_patch" ] || [ "$_mir_tool_name" = "ApplyPatch" ]; then
-    _mir_patch="$(printf '%s' "$_mir_payload" | "$_MIR_PYTHON_LAUNCHER" -c 'import sys,json; d=json.loads(sys.stdin.read()); i=d.get("tool_input",{}); print(i.get("input") or i.get("patch") or i.get("content") or "")' 2>/dev/null || echo "")"
+    _mir_patch="$(printf '%s' "$_mir_payload" | "$_MIR_PYTHON_LAUNCHER" -c 'import sys,json; d=json.loads(sys.stdin.read()); i=d.get("tool_input",{}); print(i.get("command") or i.get("input") or i.get("patch") or i.get("content") or "")' 2>/dev/null || echo "")"
     while IFS= read -r _mir_patch_path; do
         [ -n "$_mir_patch_path" ] || continue
         _mir_patch_safety_reason="$(_mir_patch_path_safety_reason "$_mir_patch_path")"

@@ -19,13 +19,13 @@ recall_policy = "progressive"
 enabled = false
 required = false
 # OPTIONAL vector-search backend. Without it the engine runs FTS5 keyword-only
-# (fully functional). Chunks indexed without vectors are NOT auto-backfilled —
-# enabling this later requires a re-index, so enable at bootstrap when possible.
+# (fully functional). Chunks indexed without vectors are NOT auto-backfilled.
+# After explicitly enabling this backend, use
+# `mir context sync --reindex-missing-vectors` to fill missing vectors only.
 # The agent must ASK before installing any server or model (BOOTSTRAP.md Step 2 f).
 # Any OpenAI-compatible /v1/embeddings server works ("omlx_http" is historical).
-# The model below is a RECOMMENDATION, not a restriction: any embedding model
-# works when `dim` matches its output and vectors return L2-normalized (both
-# validated at call time; mismatches fail closed).
+# The model below is a recommendation. The current public vector table accepts
+# 1024-dimensional, L2-normalized output only; another `dim` fails before indexing.
 # Never reuse a vector DB produced by a different runtime/quantization — the
 # same model name under a different runtime is a different encoder fingerprint.
 #
@@ -33,6 +33,7 @@ required = false
 # backend = "omlx_http"
 # base_url = "http://127.0.0.1:8001/v1"
 # model = "bge-m3-mlx-fp16"
+# fingerprint = "bge-m3@revision|omlx|fp16|1024|l2|pooling=provider|instructions=none"
 # dim = 1024
 # timeout_sec = 10
 #
@@ -51,6 +52,8 @@ slug = "your-harness-docs"
 root = "docs"
 mode = "indexed"
 glob_include = ["**/*.md"]
+# Repository-logical paths that are historical even if their frontmatter is active.
+historical_glob = ["docs/history/**"]
 
 [[memory.external_archives]]
 slug = "your-harness-tasks"

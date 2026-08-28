@@ -31,7 +31,10 @@ def test_all_hooks_executable():
 
 
 def _run_pre_tool_use(
-    command: str, project_dir: Path
+    command: str,
+    project_dir: Path,
+    *,
+    payload: dict[str, object] | None = None,
 ) -> subprocess.CompletedProcess[str]:
     script = ROOT / ".claude" / "hooks" / "pre-tool-use.sh"
     manifest = project_dir / "config/bootstrap-adoption.json"
@@ -77,7 +80,9 @@ def _run_pre_tool_use(
     env["CLAUDE_PROJECT_DIR"] = str(project_dir)
     return subprocess.run(
         ["/bin/bash", str(script)],
-        input=json.dumps({"tool_name": "Bash", "tool_input": {"command": command}}),
+        input=json.dumps(
+            payload or {"tool_name": "Bash", "tool_input": {"command": command}}
+        ),
         text=True,
         capture_output=True,
         check=False,
@@ -125,6 +130,55 @@ def test_pre_tool_use_allows_raw_codex_text_outside_command_position(
     result = _run_pre_tool_use(command, tmp_path)
 
     assert result.returncode == 0
+
+
+def test_pre_tool_use_blocks_secret_path_from_codex_apply_patch_command(
+    tmp_path: Path,
+) -> None:
+    patch = """*** Begin Patch
+*** Update File: .env
+@@
+-OLD=value
++NEW=value
+*** End Patch
+"""
+
+    result = _run_pre_tool_use(
+        "",
+        tmp_path,
+        payload={"tool_name": "apply_patch", "tool_input": {"command": patch}},
+    )
+
+    assert result.returncode == 2
+    assert "secret or credential file" in result.stderr
+
+
+def test_post_edit_check_scans_codex_apply_patch_command(tmp_path: Path) -> None:
+    path = tmp_path / "docs" / "notes.md"
+    path.parent.mkdir(parents=True)
+    path.write_text("token=sk-abcdefghijklmnopqrstuvwxyz123456\n", encoding="utf-8")
+    patch = """*** Begin Patch
+*** Update File: docs/notes.md
+*** End Patch
+"""
+    env = {**os.environ, "CLAUDE_PROJECT_DIR": str(tmp_path)}
+
+    result = subprocess.run(
+        ["/bin/bash", str(ROOT / ".claude/hooks/post-edit-check.sh")],
+        input=json.dumps(
+            {"tool_name": "apply_patch", "tool_input": {"command": patch}}
+        ),
+        text=True,
+        capture_output=True,
+        check=False,
+        cwd=ROOT,
+        env=env,
+    )
+
+    assert result.returncode == 0
+    assert "Possible credential/API key" in result.stdout
+    assert "docs/notes.md" in result.stdout
+    assert "sk-abcdefghijklmnopqrstuvwxyz123456" not in result.stdout
 
 
 if __name__ == "__main__":

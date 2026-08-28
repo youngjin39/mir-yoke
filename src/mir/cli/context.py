@@ -13,19 +13,59 @@ import argparse
 import hashlib
 import json
 import re
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 from mir.core.config.loader import ConfigLoadError, load_config, resolve_archive_root
 from mir.core.context.profile_task_context import build_profile_task_context
 from mir.core.engine.memory import store
-from mir.core.engine.memory.external_store import ExternalStore
+from mir.core.engine.memory.external_store import ExternalStore, ExternalStoreError
 
 from ._common import default_db_path
 
 _SNIPPET_BUDGET_BYTES = 6144  # 6 KB total per pull
+_FACT_BUDGET_BYTES = 2048
+_FACT_TRUNC_SUFFIX = "…[truncated]"
+_UNSAFE_FACT_PATTERNS = (
+    re.compile(
+        r"\b(?:ignore|disregard|override)\b.{0,80}"
+        r"\b(?:all|any|previous|prior|earlier|above|system|developer)\b.{0,40}"
+        r"\b(?:instructions?|directions?|rules?|guidance)\b",
+        re.IGNORECASE | re.DOTALL,
+    ),
+    re.compile(
+        r"\b(?:you\s+must|must|immediately|now)\b.{0,60}"
+        r"\b(?:execute|run|invoke|call)\b.{0,40}"
+        r"\b(?:tools?|commands?|shell|bash|terminal)\b",
+        re.IGNORECASE | re.DOTALL,
+    ),
+    re.compile(
+        r"\b(?:reveal|print|exfiltrate)\b.{0,80}"
+        r"\b(?:system prompt|credentials?|secrets?)\b",
+        re.IGNORECASE | re.DOTALL,
+    ),
+    re.compile(r"<\s*/?\s*(?:system|assistant|developer|tool)\b", re.IGNORECASE),
+    re.compile(r"\bsk-[A-Za-z0-9_-]{20,}\b"),
+    re.compile(r"\b(?:ghp|gho)_[A-Za-z0-9]{36}\b"),
+    re.compile(r"\bAIza[A-Za-z0-9_-]{35}\b"),
+    re.compile(r"\bxoxb-[0-9A-Za-z-]{20,}\b"),
+    re.compile(r"\bAKIA[A-Z0-9]{16}\b"),
+    re.compile(r"\baws_secret_access_key\s*=\s*\S+", re.IGNORECASE),
+    re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----"),
+)
 _NEAR_DUP_SHINGLE_N = 8
 _NEAR_DUP_JACCARD_THRESHOLD = 0.85
+
+
+@dataclass(frozen=True)
+class _FactRow:
+    id: int
+    status: str
+    subject: str
+    predicate: str
+    object: str
+    source_content_ids: tuple[int, ...]
 
 
 # ---------------------------------------------------------------------------
@@ -47,6 +87,154 @@ def _jaccard(a: set[str], b: set[str]) -> float:
     inter = len(a & b)
     union = len(a | b)
     return inter / union if union else 0.0
+
+
+def _truncate_utf8(text: str, max_bytes: int, suffix: str = _FACT_TRUNC_SUFFIX) -> str:
+    """Truncate *text* at a UTF-8 boundary and retain an explicit suffix."""
+    encoded_suffix = suffix.encode("utf-8")
+    if max_bytes < len(encoded_suffix):
+        return ""
+    encoded = text.encode("utf-8")
+    if len(encoded) <= max_bytes:
+        return text
+    return encoded[: max_bytes - len(encoded_suffix)].decode("utf-8", errors="ignore") + suffix
+
+
+def _search_facts(
+    conn, query: str, *, limit: int, include_history: bool
+) -> list[_FactRow]:
+    """Fetch fact rows with an explicit final tie-break for stable rendering."""
+    from mir.core.engine.memory.distill import sanitize_fts_query
+
+    status_clause = "" if include_history else "AND f.status = 'active'"
+    rows = conn.execute(
+        f"""
+            SELECT f.id, f.status,
+                   COALESCE(subject.slug, subject.canonical_name, 'unknown-subject'),
+                   f.predicate,
+                   COALESCE(f.object_literal, object_entity.slug, ''),
+                   COALESCE(
+                     (SELECT GROUP_CONCAT(DISTINCT p.content_item_id)
+                        FROM provenance p
+                       WHERE p.fact_id = f.id AND p.content_item_id IS NOT NULL),
+                     CAST(f.created_from AS TEXT),
+                     ''
+                   )
+              FROM facts_fts s JOIN facts f ON f.id = s.rowid
+              LEFT JOIN entities subject ON subject.id = f.subject_entity_id
+              LEFT JOIN entities object_entity ON object_entity.id = f.object_entity_id
+             WHERE facts_fts MATCH ? {status_clause}
+             ORDER BY bm25(facts_fts), f.id ASC
+             LIMIT ?
+        """,
+        (sanitize_fts_query(query), limit),
+    ).fetchall()
+    return [
+        _FactRow(
+            id=row[0],
+            status=row[1],
+            subject=row[2],
+            predicate=row[3],
+            object=row[4],
+            source_content_ids=tuple(
+                int(value) for value in row[5].split(",") if value
+            ),
+        )
+        for row in rows
+    ]
+
+
+def _quarantine_instruction_like_facts(
+    facts: list[_FactRow],
+) -> tuple[list[_FactRow], list[int]]:
+    """Keep retrieved memory as data by omitting obvious instruction injection."""
+    safe: list[_FactRow] = []
+    blocked: list[int] = []
+    for fact in facts:
+        body = f"{fact.subject} {fact.predicate} {fact.object}"
+        if any(pattern.search(body) for pattern in _UNSAFE_FACT_PATTERNS):
+            blocked.append(fact.id)
+        else:
+            safe.append(fact)
+    return safe, blocked
+
+
+def _fact_prefix(fact: _FactRow) -> str:
+    sources = ",".join(str(value) for value in fact.source_content_ids) or "unknown"
+    return (
+        f"[fact] #{fact.id} [{fact.status}] {fact.subject} {fact.predicate} "
+        f"[sources:{sources}] "
+    )
+
+
+def _render_fact_rows(facts: list[_FactRow]) -> list[_FactRow]:
+    """Bound human fact lines to the ADR-84 2 KiB output budget."""
+    rendered: list[_FactRow] = []
+    remaining = _FACT_BUDGET_BYTES
+    for fact in facts:
+        line = f"{_fact_prefix(fact)}{fact.object}"
+        line_bytes = len(line.encode("utf-8"))
+        separator = 1 if rendered else 0
+        if line_bytes + separator <= remaining:
+            rendered.append(fact)
+            remaining -= line_bytes + separator
+            continue
+        if remaining <= separator:
+            break
+        prefix = _fact_prefix(fact)
+        object_budget = remaining - separator - len(prefix.encode("utf-8"))
+        if object_budget >= len(_FACT_TRUNC_SUFFIX.encode("utf-8")):
+            rendered.append(
+                _FactRow(
+                    id=fact.id,
+                    status=fact.status,
+                    subject=fact.subject,
+                    predicate=fact.predicate,
+                    object=_truncate_utf8(fact.object, object_budget),
+                    source_content_ids=fact.source_content_ids,
+                )
+            )
+        break
+    return rendered
+
+
+def _json_fact_rows(facts: list[_FactRow]) -> list[dict[str, Any]]:
+    """Bound the JSON ``facts`` value itself to 2 KiB without invalid UTF-8."""
+    out: list[dict[str, Any]] = []
+    for fact in facts:
+        candidate = {
+            "id": fact.id,
+            "status": fact.status,
+            "subject": fact.subject,
+            "predicate": fact.predicate,
+            "object": fact.object,
+            "source_content_ids": list(fact.source_content_ids),
+        }
+        if (
+            len(json.dumps([*out, candidate], ensure_ascii=False).encode("utf-8"))
+            <= _FACT_BUDGET_BYTES
+        ):
+            out.append(candidate)
+            continue
+        # Keep one explicitly truncated final fact when its fixed fields fit.
+        low, high = 0, len(fact.object.encode("utf-8"))
+        best: dict[str, Any] | None = None
+        while low <= high:
+            mid = (low + high) // 2
+            trial = dict(candidate)
+            trial["object"] = _truncate_utf8(fact.object, mid)
+            if (
+                len(json.dumps([*out, trial], ensure_ascii=False).encode("utf-8"))
+                <= _FACT_BUDGET_BYTES
+            ):
+                best = trial
+                low = mid + 1
+            else:
+                high = mid - 1
+        if best is not None and _FACT_TRUNC_SUFFIX in best["object"]:
+            out.append(best)
+        break
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -181,7 +369,16 @@ def _do_pull(
 
     es = ExternalStore(conn)
 
-    # Check archives exist
+    safe_facts, quarantined_fact_ids = _quarantine_instruction_like_facts(
+        _search_facts(conn.conn, query, limit=k, include_history=include_history)
+    )
+    if quarantined_fact_ids:
+        rendered_ids = ",".join(str(fact_id) for fact_id in quarantined_fact_ids)
+        notices.append(f"[unsafe-memory] unsafe fact(s) omitted: {rendered_ids}")
+    fact_rows = _render_fact_rows(safe_facts)
+
+    # Check archives exist. Facts are independent durable context, so this is
+    # deliberately after fact retrieval rather than an early empty-result exit.
     archive_rows = conn.conn.execute(
         "SELECT id, slug FROM external_archives ORDER BY id"
     ).fetchall()
@@ -198,15 +395,19 @@ def _do_pull(
                         "degraded": degraded,
                         "notices": notices,
                         "repository_context": profile_context,
-                        "facts": [],
+                        "facts": _json_fact_rows(fact_rows),
                         "chunks": [],
-                    }
+                    },
+                    ensure_ascii=False,
                 )
             )
         else:
             for line in _profile_context_lines(profile_context):
                 print(line)
-            print(msg)
+            for fact in fact_rows:
+                print(f"{_fact_prefix(fact)}{fact.object}")
+            for notice in notices:
+                print(notice)
         return 0
 
     # Try search; on embed exception retry FTS-only
@@ -217,6 +418,9 @@ def _do_pull(
             k=k,
             path_scopes=path_scopes,
             embed_fn=embed_fn,
+            encoder_fingerprint=(
+                cfg.memory.embedding.fingerprint if embed_fn is not None else None
+            ),
             include_history=include_history,
         )
     except Exception:
@@ -304,35 +508,12 @@ def _do_pull(
             budget_collapsed.append((hit, truncated))
     collapsed = budget_collapsed
 
-    # Fetch facts if --history
-    fact_rows: list[tuple[int, str, str, str]] = []
-    if include_history:
-        from mir.core.engine.memory.distill import fts_search
-
-        raw_facts = fts_search(conn.conn, query, limit=k, include_history=True)
-        if raw_facts:
-            fact_ids = [fid for fid, _, _ in raw_facts]
-            placeholders = ",".join("?" * len(fact_ids))
-            status_map = {
-                int(fid): status
-                for fid, status in conn.conn.execute(
-                    f"SELECT id, status FROM facts WHERE id IN ({placeholders})",
-                    fact_ids,
-                ).fetchall()
-            }
-            for fid, predicate, obj in raw_facts:
-                status = status_map.get(fid, "unknown")
-                fact_rows.append((fid, status, predicate, obj))
-
     if output_json:
         out = {
             "degraded": degraded,
             "notices": notices,
             "repository_context": profile_context,
-            "facts": [
-                {"id": fid, "status": status, "predicate": pred, "object": obj}
-                for fid, status, pred, obj in fact_rows
-            ],
+            "facts": _json_fact_rows(fact_rows),
             "chunks": [
                 {
                     "archive_slug": hit.archive_slug,
@@ -346,7 +527,7 @@ def _do_pull(
                 for hit, snippet in collapsed
             ],
         }
-        print(json.dumps(out))
+        print(json.dumps(out, ensure_ascii=False))
         return 0
 
     # Human output
@@ -356,8 +537,8 @@ def _do_pull(
         print(n)
 
     # Facts first (--history)
-    for fid, status, pred, obj in fact_rows:
-        print(f"[fact] #{fid} [{status}] {pred} {obj}")
+    for fact in fact_rows:
+        print(f"{_fact_prefix(fact)}{fact.object}")
 
     if not collapsed and not fact_rows:
         pass  # no output (empty is valid)
@@ -383,25 +564,62 @@ def _do_sync(ns: argparse.Namespace, conn, cfg, project_root: Path) -> int:
     """Execute sync logic. Returns exit code (1 if any failures)."""
     es = ExternalStore(conn)
     # D8: register archives from harness_a.toml config if not yet in DB
-    existing_slugs: set[str] = {
-        row[0] for row in conn.conn.execute("SELECT slug FROM external_archives").fetchall()
-    }
     if hasattr(cfg, "memory") and hasattr(cfg.memory, "external_archives"):
         for arch in cfg.memory.external_archives:
-            if arch.slug not in existing_slugs:
-                es.register(
-                    slug=arch.slug,
-                    root_path=str(resolve_archive_root(project_root, arch)),
-                    mode=arch.mode,
-                    glob_include=tuple(arch.glob_include) if arch.glob_include else ("**/*.md",),
-                    owner="family:your-harness",
-                )
+            es.register(
+                slug=arch.slug,
+                root_path=str(resolve_archive_root(project_root, arch)),
+                mode=arch.mode,
+                glob_include=tuple(arch.glob_include) if arch.glob_include else ("**/*.md",),
+                glob_exclude=tuple(arch.glob_exclude),
+                historical_glob=tuple(arch.historical_glob),
+                chunk_size=arch.chunk_size,
+                chunk_overlap=arch.chunk_overlap,
+                owner="family:your-harness",
+            )
     archive_rows = conn.conn.execute(
         "SELECT id, slug FROM external_archives ORDER BY id"
     ).fetchall()
     if not archive_rows:
         print("no archives configured")
         return 0
+
+    if ns.reindex_missing_vectors:
+        if not cfg.memory.embedding.enabled:
+            print("missing-vector reindex requires memory.embedding.enabled=true")
+            return 2
+        if not conn.vec_available:
+            print("missing-vector reindex requires sqlite-vec")
+            return 2
+        try:
+            embed_fn = _build_embed_fn(cfg)
+        except Exception as exc:
+            print(f"missing-vector reindex embedding backend unavailable: {exc}")
+            return 1
+        if embed_fn is None:
+            print("missing-vector reindex requires an embedding backend")
+            return 2
+        any_failed = False
+        for archive_id, slug in archive_rows:
+            try:
+                result = es.reindex_missing_vectors(
+                    archive_id,
+                    embed_fn=embed_fn,
+                    encoder_fingerprint=cfg.memory.embedding.fingerprint,
+                )
+            except ExternalStoreError as exc:
+                any_failed = True
+                print(f"{slug}: vector reindex refused: {exc}")
+                continue
+            print(
+                f"{slug}: vector_coverage={result.indexed}/{result.eligible} "
+                f"reindexed={result.reindexed} unchanged={result.unchanged}"
+            )
+            if result.failed:
+                any_failed = True
+                for rel, reason in result.failed:
+                    print(f"  [failed] {rel}: {reason}")
+        return 1 if any_failed else 0
 
     embed_fn = None
     try:
@@ -414,7 +632,18 @@ def _do_sync(ns: argparse.Namespace, conn, cfg, project_root: Path) -> int:
 
     any_failed = False
     for archive_id, slug in archive_rows:
-        result = es.scan(archive_id, embed_fn=embed_fn)
+        try:
+            result = es.scan(
+                archive_id,
+                embed_fn=embed_fn,
+                encoder_fingerprint=(
+                    cfg.memory.embedding.fingerprint if embed_fn is not None else None
+                ),
+            )
+        except ExternalStoreError as exc:
+            any_failed = True
+            print(f"{slug}: vector indexing refused: {exc}")
+            continue
         if result.failed and embed_fn is not None and cfg.memory.vector_mode == "optional":
             print(f"[degraded] {slug}: vector indexing failed — retrying FTS-only")
             result = es.scan(archive_id, embed_fn=None)
@@ -476,6 +705,12 @@ def _parse(argv: list[str]) -> argparse.Namespace:
     pl.add_argument("--project-root", type=Path, default=None, dest="project_root")
 
     sy = sub.add_parser("sync", help="ADR-53 D2: scan all configured archives")
+    sy.add_argument(
+        "--reindex-missing-vectors",
+        action="store_true",
+        default=False,
+        help="explicitly backfill missing vector rows; never falls back to FTS-only",
+    )
     sy.add_argument("--db", type=Path, default=None)
     sy.add_argument("--project-root", type=Path, default=None, dest="project_root")
 

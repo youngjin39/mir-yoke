@@ -53,13 +53,15 @@ def test_017_applies_and_columns_exist(tmp_path: Path):
     try:
         applied = store.apply_migrations(c.conn)
         assert "017" in applied, f"017 not in applied: {applied}"
-        assert store.schema_version(c.conn) == "017"
+        assert store.schema_version(c.conn) == "018"
 
         cols = _table_columns(c.conn, "external_documents")
         assert "status" in cols, "status column missing from external_documents"
         assert "source_slug" in cols, "source_slug column missing"
         assert "doc_category" in cols, "doc_category column missing"
         assert "layer" in cols, "layer column missing"
+        archive_cols = _table_columns(c.conn, "external_archives")
+        assert "historical_glob" in archive_cols
     finally:
         c.conn.close()
 

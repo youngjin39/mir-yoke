@@ -16,11 +16,14 @@ payload.
 1. [ADR-83](adr-83-project-agent-kit-recipe-and-supported-surfaces.md), including the 2026-08-11
    owner amendment, defines the Minimal Starter, standard Project Agent Kit, optional installed
    `mir` CLI, plugin, and inert-reference boundaries. It supersedes ADR-82.
-2. [ADR-81](adr-81-minimal-starter-support-boundary.md) defines `starter/` as the only supported
+2. [ADR-84](adr-84-harness-upgrade-guidance-and-runtime-hygiene.md) defines current,
+   reference-only harness upgrades and the context, memory, embedding, hook, and generated-runtime
+   hygiene boundary.
+3. [ADR-81](adr-81-minimal-starter-support-boundary.md) defines `starter/` as the only supported
    consumer payload and removes advanced machinery from minimum readiness.
-3. [ADR-78](adr-78-public-template-identity-and-non-authority.md) defines public-template identity
+4. [ADR-78](adr-78-public-template-identity-and-non-authority.md) defines public-template identity
    and repository-local authority.
-4. [ADR-73](adr-73-proportional-guidance-first-harness.md) defines proportional local work,
+5. [ADR-73](adr-73-proportional-guidance-first-harness.md) defines proportional local work,
    delegation, review, and verification.
 
 The Project Agent Kit recipe is supported guidance, not a second fixed payload. It creates a

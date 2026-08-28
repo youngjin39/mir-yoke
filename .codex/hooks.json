@@ -1,7 +1,7 @@
 {
   "//": [
     "GENERATED FILE: edit config/project-hooks.json and run scripts/generate_codex_derivatives.sh.",
-    "Claude-only events omitted here: SessionEnd, UserPromptSubmit, StopFailure."
+    "Runtime-specific events omitted here: UserPromptSubmit and StopFailure remain Claude-only by policy."
   ],
   "hooks": {
     "PreToolUse": [
@@ -68,6 +68,18 @@
             "command": "project_root=\"$(git rev-parse --show-toplevel)\" && CLAUDE_PROJECT_DIR=\"$project_root\" bash \"$project_root/.claude/hooks/compact-resume.sh\"",
             "timeout": 30,
             "statusMessage": "Harness compact resume context"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "project_root=\"$(git rev-parse --show-toplevel)\" && CLAUDE_PROJECT_DIR=\"$project_root\" bash \"$project_root/.claude/hooks/session-end.sh\"",
+            "timeout": 3,
+            "statusMessage": "Harness canonical closeout"
           }
         ]
       }

@@ -6,7 +6,7 @@
 #   - Common skills are plugin-owned and never generated as repo-local copies.
 #   - Agent TOML mirrors are generated from .claude/agents source.
 #   - Claude and Codex hooks render from config/project-hooks.json.
-#   - codex_hooks = true added to [features] in write_config_toml
+#   - hooks = true added to [features] in write_config_toml
 
 set -euo pipefail
 shopt -s nullglob
@@ -283,7 +283,7 @@ replacements = {
     "  - `PreToolUse` enforces path safety before edits/commands.": "  - [Claude] `PreToolUse` enforces path safety before edits/commands. [Codex] Apply the same blocked-intent rules through the instruction contract and verifier-backed drift checks.",
     "  - `TddGuard` enforces the test-first rule for edits to existing implementation files when related tests are detectable.": "  - [Claude] `TddGuard` enforces the test-first rule for edits to existing implementation files when related tests are detectable. [Codex] Apply the same test-first rule through the instruction contract and verifier-backed drift checks.",
     "  - `PostToolUse` inspects edits for debug leftovers and credential leaks.": "  - [Claude] `PostToolUse` inspects edits for debug leftovers and credential leaks. [Codex] Treat the same review as mandatory manual post-edit work.",
-    "  - `SessionEnd` saves the latest session snapshot for continuity. This preserves state, not proof of completion.": "  - [Claude] `SessionEnd` saves the latest session snapshot for continuity. This preserves state, not proof of completion. [Codex] At session end, manually create a session snapshot in `tasks/sessions/` mirroring the SessionEnd contract.",
+    "  - `SessionEnd` saves the latest session snapshot for continuity. This preserves state, not proof of completion.": "  - [Claude] `SessionEnd` saves the latest session snapshot for continuity. This preserves state, not proof of completion. [Codex] The generated trusted SessionEnd hook refreshes the same canonical handoff within the Codex timeout.",
 }
 for old, new in replacements.items():
     text = text.replace(old, new)
@@ -372,19 +372,15 @@ write_config_toml() {
     echo "# GENERATED FILE: edit Claude source files and rerun scripts/generate_codex_derivatives.sh"
     echo
     echo "approval_policy = \"$approval_policy\""
-    echo 'sandbox_mode = "danger-full-access"'
     echo 'web_search = "cached"'
     echo 'personality = "pragmatic"'
     echo 'project_doc_max_bytes = 32768'
     echo
     echo '[agents]'
-    echo 'max_threads = 6'
+    echo 'max_concurrent_threads_per_session = 6'
     echo 'max_depth = 1'
     echo
     echo '[features]'
-    # Keep both keys during the transition window: some local verifiers still assert
-    # `codex_hooks = true`, while newer Codex builds prefer `hooks = true`.
-    echo 'codex_hooks = true'
     echo 'hooks = true'
     echo 'multi_agent = true'
     echo 'shell_snapshot = true'
@@ -398,6 +394,47 @@ write_config_toml() {
       ' .mcp.json
     fi
   } > "$OUTPUT_ROOT/.codex/config.toml"
+}
+
+write_codex_readme() {
+  cat > "$OUTPUT_ROOT/.codex/README.md" <<'EOF'
+<!-- GENERATED FILE: edit config/project-hooks.json or scripts/generate_codex_derivatives.sh and regenerate. -->
+
+# Codex runtime
+
+`.codex/hooks.json` is generated from `config/project-hooks.json`. The same definition renders
+Claude and Codex registrations, while runtime-specific events and timeout limits remain explicit.
+
+## Trust boundary
+
+Project-local Codex configuration loads only after the project is trusted. Non-managed hooks also
+require review of their current hash before they run. Use `/hooks` to inspect sources and trust or
+disable each hook. Until both trust steps are complete, hook-based safety and continuity behavior is
+inactive; repository instructions and explicit verification remain authoritative.
+
+## Permission boundary
+
+The generated root configuration does not select `sandbox_mode`, `sandbox_workspace_write`, or
+`default_permissions`. Legacy sandbox settings and permission profiles do not compose, so the
+operator's user-level or managed configuration remains authoritative. Write-capable generated
+agents inherit that selection; mechanically read-only reviewers retain `sandbox_mode = "read-only"`.
+
+## Maintained events
+
+`PreToolUse`, `PermissionRequest`, `PostToolUse`, `SessionStart`, `PreCompact`,
+`PostCompact`, `Stop`, and `SessionEnd` are generated for Codex. Maintainer `SessionEnd`
+uses Codex's three-second limit. `UserPromptSubmit` and `StopFailure` remain Claude-only by
+repository policy; the compact-only Project Agent Kit template intentionally ships only its compact
+lifecycle.
+
+## Wire format
+
+Shared adapters parse `tool_name` and `tool_input`. Current Codex `apply_patch` sends the
+unified patch in `tool_input.command`; maintained adapters accept that field first and retain older
+`input`, `patch`, and `content` fallbacks for compatible runtimes.
+
+Regenerate with `scripts/generate_codex_derivatives.sh`. Do not edit generated Codex files directly.
+EOF
 }
 
 write_hook_configs() {
@@ -417,7 +454,11 @@ write_agent_toml() {
   name="$(extract_frontmatter_field "$src" "name")"
   [ -n "$name" ] || return 0  # skip non-agent sources (e.g. README.md: no name frontmatter)
   description="$(extract_frontmatter_field "$src" "description")"
-  developer_instructions="$(emit_agent_sections_for_codex "$src" "$name" | escape_toml_multiline)"
+  developer_instructions="$(
+    emit_agent_sections_for_codex "$src" "$name" \
+      | sed 's/max_threads=6/max_concurrent_threads_per_session=6/g' \
+      | escape_toml_multiline
+  )"
   disallowed_tools="$(extract_frontmatter_field "$src" "disallowedTools")"
   # ADR-09 round 3 fix: do NOT emit execution_backend to .codex/agents/*.toml.
   # Codex CLI has a strict TOML schema (Rust serde, no #[serde(unknown_fields)])
@@ -425,7 +466,7 @@ write_agent_toml() {
   # which causes Codex to discard the entire agent role. execution_backend is
   # Claude-side dispatch metadata and lives only in .claude/agents/*.md frontmatter.
   out="$OUTPUT_ROOT/.codex/agents/${name}.toml"
-  sandbox_mode="danger-full-access"
+  sandbox_mode=""
   # ADR-09 round 4 — Lens B W3: read-only agents (those declaring
   # `disallowedTools: Write, Edit` in frontmatter) get a `read-only` Codex
   # sandbox so the sandbox enforces the same intent as the disallowedTools hint.
@@ -434,7 +475,7 @@ write_agent_toml() {
       sandbox_mode="read-only"
       ;;
   esac
-  if [ "$name" = "quality-agent" ]; then
+  if [ "$name" = "quality-agent" ] || [ "$name" = "fleet-doc-steward" ]; then
     sandbox_mode="read-only"
   fi
 
@@ -442,7 +483,9 @@ write_agent_toml() {
     echo "# GENERATED FILE: edit $src and rerun scripts/generate_codex_derivatives.sh"
     echo "name = \"$name\""
     echo "description = \"$description\""
-    echo "sandbox_mode = \"$sandbox_mode\""
+    if [ -n "$sandbox_mode" ]; then
+      echo "sandbox_mode = \"$sandbox_mode\""
+    fi
     echo 'developer_instructions = """'
     echo "Use \`AGENTS.md\` as the shared repository contract."
     echo "Apply only the agent-specific behavior below; do not restate the root contract."
@@ -514,6 +557,8 @@ write_manifest_json() {
       append_mapping "config/project-hooks.json" '[".claude/settings.json", ".codex/hooks.json"]' "config" "Generated dual-runtime hook registrations"
     fi
 
+    append_mapping "scripts/generate_codex_derivatives.sh" '[".codex/README.md"]' "content" "Generated Codex runtime and hook-trust guide"
+
     append_mapping ".claude/hooks/lib" '[".codex/hooks/lib"]' "directory" "Portable Codex hook library copy"
 
     echo
@@ -540,6 +585,7 @@ write_manifest_json() {
 write_agents_md
 write_nested_agents_md
 write_config_toml
+write_codex_readme
 write_hook_configs
 
 # Remove legacy raw skill providers. Common skills now live only under plugins/*/skills.
@@ -564,6 +610,7 @@ echo "Generated Codex derivatives:"
 echo "  $OUTPUT_ROOT/AGENTS.md"
 echo "  $OUTPUT_ROOT/{scripts,src,tests,tools}/**/AGENTS.md"
 echo "  $OUTPUT_ROOT/.codex/config.toml"
+echo "  $OUTPUT_ROOT/.codex/README.md"
 echo "  $OUTPUT_ROOT/{.claude/settings.json,.codex/hooks.json} (generated from config/project-hooks.json)"
 echo "  $OUTPUT_ROOT/.codex/agents/*.toml"
 echo "  $OUTPUT_ROOT/.codex/hooks/lib (portable directory copy)"

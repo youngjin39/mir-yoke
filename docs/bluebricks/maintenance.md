@@ -13,9 +13,11 @@ portable plugins, and inert reference corpus for release.
 ## Rules and Hazards
 
 Every candidate file receives exactly one classification. `starter/` is the only fixed payload.
-Only plugin packages and marketplace metadata may be optional consumer tools. The recipe is
-guidance and never a copied payload. Installed CLI source remains provider code; generated targets
-must not vendor it. ADR-82 files remain inert under their reference namespace with no active `yoke`.
+Optional consumer tools include namespaced plugin packages, the separately installed CLI, and the
+bounded common-harness sources adapted by the Project Agent Kit. Classification never makes them a
+default payload or readiness requirement. The recipe is guidance and never a copied payload.
+Installed CLI source remains provider code; generated targets must not vendor it. ADR-82 files
+remain inert under their reference namespace with no active `yoke`.
 
 A missing repository check is a release failure. Tag validation publishes a GitHub Release only
 after repository readiness passes. It does not claim an actual generated-repository runtime run.

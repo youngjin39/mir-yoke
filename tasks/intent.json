@@ -1,10 +1,15 @@
 {
-  "goal": "Complete and publish the portable compact lifecycle and close repository state; keep owner-run Project Agent Kit examples optional.",
+  "goal": "Improve Mir Yoke as an initial-project template and current harness-engineering upgrade reference, including context, memory, embeddings, hooks, and Claude/Codex parity.",
   "goal_type": "maintenance",
-  "scope": "Preserve the released v0.9.0 baseline and current main contract; external generated-repository acceptance remains an optional owner-run post-release check",
+  "scope": "Mir Yoke only; preserve the three-layer product boundary, protected capability lock, and immutable v0.9.0 tag; commit and push the verified main branch, but do not tag, release, or mutate consumers",
   "priority": "normal",
-  "updated": "2026-08-28",
+  "updated": "2026-08-29",
   "history": [
+    {
+      "goal": "Complete and publish the portable compact lifecycle and close repository state; keep owner-run Project Agent Kit examples optional.",
+      "updated": "2026-08-28",
+      "status": "superseded"
+    },
     {
       "goal": "Maintain Mir Yoke as the verified ADR-78 public template; no active implementation, publication, or branch-cleanup task remains.",
       "updated": "2026-08-08",

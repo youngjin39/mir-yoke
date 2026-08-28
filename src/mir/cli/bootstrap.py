@@ -1543,10 +1543,25 @@ def _validate_surfaces(root: Path) -> tuple[list[str], dict]:
             pass
     codex_config = root / ".codex" / "config.toml"
     if codex_config.is_file():
-        config_text = codex_config.read_text(encoding="utf-8")
-        for field in ("approval_policy", "sandbox_mode"):
-            if not re.search(rf"(?m)^{field}\s*=", config_text):
-                errors.append(f".codex/config.toml is missing {field}")
+        try:
+            codex_payload = tomllib.loads(codex_config.read_text(encoding="utf-8"))
+        except (OSError, tomllib.TOMLDecodeError) as exc:
+            errors.append(f"invalid TOML surface {codex_config}: {exc}")
+        else:
+            if "approval_policy" not in codex_payload:
+                errors.append(".codex/config.toml is missing approval_policy")
+            has_legacy_sandbox = any(
+                field in codex_payload
+                for field in ("sandbox_mode", "sandbox_workspace_write")
+            )
+            has_permission_profile = any(
+                field in codex_payload
+                for field in ("default_permissions", "permissions")
+            )
+            if has_legacy_sandbox and has_permission_profile:
+                errors.append(
+                    ".codex/config.toml mixes legacy sandbox settings with permission profiles"
+                )
 
     hook_runtime = {
         "kind": "bash",

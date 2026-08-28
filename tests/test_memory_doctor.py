@@ -87,6 +87,68 @@ def test_doctor_returns_two_for_malformed_config(tmp_path, capsys):
     assert "harness_a.toml" in report["errors"][0]
 
 
+def test_doctor_rejects_non_1024_embedding_dimension(tmp_path, capsys):
+    (tmp_path / "harness_a.toml").write_text(
+        """[memory]
+enabled = true
+required = true
+vector_mode = "optional"
+
+[memory.embedding]
+enabled = true
+required = false
+dim = 768
+""",
+        encoding="utf-8",
+    )
+
+    assert memory_cli.main(["doctor", "--project-root", str(tmp_path), "--json"]) == 2
+    report = json.loads(capsys.readouterr().out)
+    assert "1024" in report["errors"][0]
+
+
+def test_doctor_requires_encoder_fingerprint_when_embedding_is_enabled(
+    tmp_path, capsys
+):
+    (tmp_path / "harness_a.toml").write_text(
+        """[memory]
+enabled = true
+required = true
+vector_mode = "optional"
+
+[memory.embedding]
+enabled = true
+required = false
+dim = 1024
+""",
+        encoding="utf-8",
+    )
+
+    assert memory_cli.main(["doctor", "--project-root", str(tmp_path), "--json"]) == 2
+    report = json.loads(capsys.readouterr().out)
+    assert "fingerprint" in report["errors"][0]
+
+
+def test_doctor_rejects_invalid_historical_glob(tmp_path, capsys):
+    (tmp_path / "harness_a.toml").write_text(
+        """[memory]
+enabled = true
+required = true
+vector_mode = "off"
+
+[[memory.external_archives]]
+slug = "docs"
+root = "docs"
+historical_glob = ["["]
+""",
+        encoding="utf-8",
+    )
+
+    assert memory_cli.main(["doctor", "--project-root", str(tmp_path), "--json"]) == 2
+    report = json.loads(capsys.readouterr().out)
+    assert "invalid glob" in report["errors"][0]
+
+
 def test_doctor_rejects_overlapping_archives(tmp_path, capsys):
     (tmp_path / "harness_a.toml").write_text(
         """[memory]
@@ -185,7 +247,8 @@ def test_required_vector_mode_blocks_fts_only_index(tmp_path, capsys):
         config = config_path.read_text(encoding="utf-8")
         config = config.replace('vector_mode = "off"', 'vector_mode = "required"')
         config = config.replace(
-            "enabled = false\nrequired = false", "enabled = true\nrequired = true"
+            "enabled = false\nrequired = false",
+            'enabled = true\nrequired = true\nfingerprint = "test-encoder-v1"',
         )
         config_path.write_text(config, encoding="utf-8")
 
@@ -193,10 +256,7 @@ def test_required_vector_mode_blocks_fts_only_index(tmp_path, capsys):
             "mir.core.engine.memory.backends.omlx_http.from_config",
             side_effect=RuntimeError("embedding endpoint unavailable"),
         ):
-            assert (
-                memory_cli.main(["doctor", "--project-root", str(tmp_path), "--json"])
-                == 1
-            )
+            assert memory_cli.main(["doctor", "--project-root", str(tmp_path), "--json"]) == 1
     report = json.loads(capsys.readouterr().out)
     assert report["vector"]["documents_missing_vectors"] >= 1
     assert any("no vector index evidence" in error for error in report["errors"])
@@ -207,7 +267,10 @@ def test_optional_embedding_failure_retries_fts_only_sync(tmp_path, capsys):
     config_path = tmp_path / "harness_a.toml"
     config = config_path.read_text(encoding="utf-8")
     config = config.replace('vector_mode = "off"', 'vector_mode = "optional"')
-    config = config.replace("enabled = false", "enabled = true", 1)
+    config = config.replace(
+        "enabled = false\nrequired = false",
+        'enabled = true\nrequired = false\nfingerprint = "test-encoder-v1"',
+    )
     config_path.write_text(config, encoding="utf-8")
     db_path = tmp_path / ".mir" / "memory.db"
     connection = store.connect(db_path)
@@ -221,7 +284,14 @@ def test_optional_embedding_failure_retries_fts_only_sync(tmp_path, capsys):
 
     original_scan = ExternalStore.scan
 
-    def fail_vector_scan(self, archive_id, *, embed_fn=None, embed_batch_size=None):
+    def fail_vector_scan(
+        self,
+        archive_id,
+        *,
+        embed_fn=None,
+        encoder_fingerprint=None,
+        embed_batch_size=None,
+    ):
         if embed_fn is not None:
             return ScanResult(
                 inserted=0,
@@ -246,3 +316,11 @@ def test_optional_embedding_failure_retries_fts_only_sync(tmp_path, capsys):
     assert "retrying FTS-only" in output
     with sqlite3.connect(db_path) as raw:
         assert raw.execute("SELECT COUNT(*) FROM external_chunks").fetchone()[0] >= 1
+
+
+def test_context_sync_missing_vector_backfill_requires_embedding_and_vec(tmp_path, capsys):
+    db_path = _ready_project(tmp_path)
+    capsys.readouterr()
+
+    assert context_cli.main(["sync", "--reindex-missing-vectors", "--db", str(db_path)]) == 2
+    assert "embedding" in capsys.readouterr().out.lower()

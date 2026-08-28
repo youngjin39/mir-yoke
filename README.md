@@ -30,7 +30,9 @@ planning and implementation remain a later request.
 
 The v0.9 package restores the public v0.8 `mir` command surface for owners who explicitly choose
 the automated bootstrap, memory, capability, context, execution, hook, or verification workflows.
-Install it outside a target checkout from an immutable release:
+The [explicit automation guide](BOOTSTRAP.md#explicit-automation-optional-installed-cli) defines
+its target, consent, and verification boundary. Install it outside a target checkout from an
+immutable release:
 
 ```bash
 uv tool install --force --link-mode copy \
@@ -50,6 +52,17 @@ readiness requirement. Superseded ADR-82 composition files are preserved under
 `reference-templates/advanced-composition/` as non-default, non-executable design references; Mir
 Yoke publishes no active `yoke` composer. The remaining source, tools, examples, specifications,
 and history are reference or maintainer evidence without an adopter compatibility promise.
+
+## Improve an existing harness
+
+Use the [Harness Engineering Upgrade Guide](docs/operations/harness-engineering-upgrade.md) to
+assess repository governance, context and token efficiency, memory, embeddings, agents, skills,
+hooks, and Claude/Codex generated parity. It is reference-only: inspect the target, select only the
+missing capability, edit target-owned sources, and verify with the target's checks.
+
+The older `docs/harness-engineering/` phase corpus preserves centralization-era design history. It
+may name removed tools and is not current operational guidance. Start from ADR-83, ADR-84, current
+bluebricks, and the upgrade guide; open historical material only for a specific provenance question.
 
 ## Start a new project
 
@@ -101,9 +114,9 @@ uv run python scripts/verify_codex_sync.py
 uv run ruff check
 ```
 
-ADR-83 owns the current supported-surface and Project Agent Kit boundary. ADR-81 continues to own
-the four-file minimum Starter, while ADR-74 governs the explicitly invoked CLI and required-memory
-implementation retained from v0.8.
+ADR-83 owns the supported-surface and Project Agent Kit boundary. ADR-84 owns the current harness
+upgrade and runtime-hygiene guidance. ADR-81 continues to own the four-file minimum Starter, while
+ADR-74 governs the explicitly invoked CLI and required-memory implementation retained from v0.8.
 
 ## License
 

@@ -133,6 +133,14 @@
       "notes": "Generated dual-runtime hook registrations"
     },
     {
+      "source": "scripts/generate_codex_derivatives.sh",
+      "targets": [".codex/README.md"],
+      "change_scope": "content",
+      "sync_policy": "regenerate",
+      "owner": "project-maintainer",
+      "notes": "Generated Codex runtime and hook-trust guide"
+    },
+    {
       "source": ".claude/hooks/lib",
       "targets": [".codex/hooks/lib"],
       "change_scope": "directory",

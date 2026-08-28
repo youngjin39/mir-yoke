@@ -32,6 +32,7 @@ class EmbeddingConfig(BaseModel):
     backend: Literal["omlx_http"] = "omlx_http"
     base_url: str = D.DEFAULT_EMBEDDING_BASE_URL
     model: str = D.DEFAULT_EMBEDDING_MODEL
+    fingerprint: str = ""
     dim: int = Field(default=D.DEFAULT_EMBEDDING_DIM, gt=0)
     timeout_sec: int = Field(default=D.DEFAULT_EMBEDDING_TIMEOUT_SEC, gt=0)
     norm_tolerance: float = Field(default=D.DEFAULT_EMBEDDING_NORM_TOLERANCE, gt=0)
@@ -42,6 +43,14 @@ class EmbeddingConfig(BaseModel):
     def _required_is_enabled(self) -> EmbeddingConfig:
         if self.required and not self.enabled:
             raise ValueError("memory.embedding.required=true requires enabled=true")
+        if self.dim != D.DEFAULT_EMBEDDING_DIM:
+            raise ValueError(
+                "memory.embedding.dim must be 1024 until versioned vector tables exist"
+            )
+        if self.enabled and not self.fingerprint.strip():
+            raise ValueError(
+                "memory.embedding.fingerprint is required when embedding is enabled"
+            )
         return self
 
 
@@ -53,6 +62,7 @@ class ExternalArchiveConfig(BaseModel):
     mode: Literal["indexed", "immutable"] = "indexed"
     glob_include: tuple[str, ...] = ("**/*.md",)
     glob_exclude: tuple[str, ...] = ()
+    historical_glob: tuple[str, ...] = ()
     chunk_size: int = Field(default=800, ge=50, le=8192)
     chunk_overlap: int = Field(default=100, ge=0, lt=8192)
 
@@ -64,6 +74,19 @@ class ExternalArchiveConfig(BaseModel):
             raise ValueError(f"archive {self.slug!r} root must not be empty")
         if self.chunk_overlap >= self.chunk_size:
             raise ValueError(f"archive {self.slug!r} chunk_overlap must be smaller than chunk_size")
+        from mir.core.engine.memory.external_store import _compile_pattern_set
+
+        for field_name, patterns in (
+            ("glob_include", self.glob_include),
+            ("glob_exclude", self.glob_exclude),
+            ("historical_glob", self.historical_glob),
+        ):
+            try:
+                _compile_pattern_set(patterns)
+            except re.error as exc:
+                raise ValueError(
+                    f"archive {self.slug!r} {field_name} contains an invalid glob: {exc}"
+                ) from exc
         return self
 
 

@@ -97,6 +97,38 @@ def test_generator_skips_non_agent_markdown_and_empty_targets(tmp_path: Path) ->
     assert "## Post-Dispatch Evidence" in generated_orchestrator
     assert "Mir Yoke provides no daemon" in generated_orchestrator
 
+    config = tomllib.loads((tmp_path / ".codex" / "config.toml").read_text())
+    assert "sandbox_mode" not in config
+    assert "sandbox_workspace_write" not in config
+    assert "default_permissions" not in config
+    assert config["agents"]["max_concurrent_threads_per_session"] == 6
+    assert "max_threads" not in config["agents"]
+    assert config["features"]["hooks"] is True
+    assert "codex_hooks" not in config["features"]
+    executor = tomllib.loads(
+        (tmp_path / ".codex" / "agents" / "executor-agent.toml").read_text()
+    )
+    reviewer = tomllib.loads(
+        (tmp_path / ".codex" / "agents" / "codex-final-reviewer.toml").read_text()
+    )
+    governance_reviewer = tomllib.loads(
+        (tmp_path / ".codex" / "agents" / "fleet-doc-steward.toml").read_text()
+    )
+    assert "sandbox_mode" not in executor
+    assert reviewer["sandbox_mode"] == "read-only"
+    assert governance_reviewer["sandbox_mode"] == "read-only"
+
+    codex_readme = (tmp_path / ".codex" / "README.md").read_text(encoding="utf-8")
+    assert "Use `/hooks`" in codex_readme
+    assert "tool_input.command" in codex_readme
+    assert "does not select `sandbox_mode`" in codex_readme
+    assert "mechanically read-only reviewers" in codex_readme
+    assert any(
+        mapping["source"] == "scripts/generate_codex_derivatives.sh"
+        and mapping["targets"] == [".codex/README.md"]
+        for mapping in mappings
+    )
+
     spec_architect_reference = (
         ROOT
         / "plugins"

@@ -1,15 +1,21 @@
 # Checklist
 
-- [x] Restore the optional public v0.8 `mir` CLI and bootstrap regressions without reactivating the
-  removed `yoke` composer.
-- [x] Keep the four-file Minimal Starter and require bounded common harness plus rehydratable memory
-  in the standard Project Agent Kit without copying provider runtime source.
-- [x] Preserve the superseded ADR-82 composition implementation as inert reference templates.
-- [x] Publish and verify `v0.9.0`; keep the release tag immutable after publication.
-- [x] Clarify the short start prompt and bind its rendered fixture and adopter-payload hashes.
+- [x] Publish a current, reference-only harness upgrade guide without promoting historical fleet
+  material or expanding the Starter payload.
+- [x] Include bounded active facts in default context and keep historical facts and documents behind
+  `--history`.
+- [x] Provide explicit missing-vector backfill, honest vector coverage, and fail-loud dimension
+  support while retaining SQLite+FTS5 as the default baseline.
+- [x] Normalize current Codex patch hook input and generate least-privilege, current-key Codex
+  configuration with bounded maintainer `SessionEnd` parity.
+- [x] Let operator permission profiles govern root and write-capable Codex execution while keeping
+  review-only agents mechanically read-only; reject legacy/profile mixing during bootstrap.
+- [x] Require and persist a complete encoder fingerprint for vector writes and resumable backfill.
+- [x] Render fact subject/provenance and omit instruction-like or credential-shaped facts by id.
+- [x] Regenerate every derived surface and pass focused, full, and independent final verification.
 - [x] Add one portable PreCompact, PostCompact, and compact-resume lifecycle for the maintainer and
   Project Agent Kit, with generated Claude/Codex hook parity.
 - [x] Curate the canonical intent, plan, checklist, TDD ledger, change log, profile, and handoff
   without a competing summary.
-- [x] Confirm SSH `origin`, local and remote `main`, a clean final tree, and no remaining non-main
-  branch.
+- [x] Confirm SSH `origin` and that local and remote refs contain only `main`.
+- [ ] Commit and push the verified clean candidate, then confirm a clean synchronized worktree.

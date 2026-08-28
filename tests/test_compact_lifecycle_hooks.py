@@ -19,6 +19,8 @@ def _run_hook(
     name: str,
     project_dir: Path,
     payload: dict[str, object],
+    *,
+    timeout: float | None = None,
 ) -> subprocess.CompletedProcess[str]:
     env = os.environ.copy()
     env["CLAUDE_PROJECT_DIR"] = str(project_dir)
@@ -30,6 +32,7 @@ def _run_hook(
         input=json.dumps(payload),
         capture_output=True,
         text=True,
+        timeout=timeout,
         check=False,
     )
 
@@ -174,6 +177,55 @@ def test_should_render_exact_claude_and_codex_hooks_from_one_definition(
         assert ".claude/hooks/compact-resume.sh" in compact_groups[0]["hooks"][0][
             "command"
         ]
+    assert claude["hooks"]["SessionEnd"][0]["hooks"][0]["timeout"] == 60
+    assert codex["hooks"]["SessionEnd"][0]["hooks"][0]["timeout"] == 3
+
+
+def test_should_reject_boolean_hook_timeouts(tmp_path: Path) -> None:
+    renderer = ROOT / "templates" / "common-harness" / "scripts" / "render-hook-configs.py"
+    base = json.loads((ROOT / "config" / "project-hooks.json").read_text())
+
+    for field, value in (("timeout", True), ("timeout_overrides", {"codex": False})):
+        definition = json.loads(json.dumps(base))
+        definition["events"]["SessionEnd"][0]["hooks"][0][field] = value
+        definition_path = tmp_path / f"{field}.json"
+        definition_path.write_text(json.dumps(definition), encoding="utf-8")
+        completed = subprocess.run(
+            [
+                sys.executable,
+                str(renderer),
+                "--definition",
+                str(definition_path),
+                "--output-root",
+                str(tmp_path / field),
+            ],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+        assert completed.returncode == 1
+        assert "positive integer" in completed.stdout
+
+
+def test_should_complete_session_end_within_codex_timeout(tmp_path: Path) -> None:
+    project = tmp_path / "project with spaces"
+    handoff = project / "tasks" / "handoffs" / "session-handoff-LATEST.md"
+    handoff.parent.mkdir(parents=True)
+    handoff.write_text("# Session Handoff\n", encoding="utf-8")
+    subprocess.run(["git", "init", "-q"], cwd=project, check=True)
+
+    completed = _run_hook(
+        "session-end.sh",
+        project,
+        {"reason": "other"},
+        timeout=3,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    assert completed.stdout
+    assert "<!-- mir:runtime-snapshot:begin -->" in handoff.read_text(encoding="utf-8")
 
 
 def test_should_execute_rendered_compact_commands_from_nested_git_directory(

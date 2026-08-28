@@ -57,6 +57,7 @@ def _render_group(group: dict[str, Any], runtime: str) -> dict[str, Any] | None:
     for hook in hooks:
         script = hook.get("script")
         timeout = hook.get("timeout")
+        timeout_overrides = hook.get("timeout_overrides", {})
         status = hook.get("statusMessage")
         script_path = PurePosixPath(script) if isinstance(script, str) else None
         if (
@@ -66,15 +67,22 @@ def _render_group(group: dict[str, Any], runtime: str) -> dict[str, Any] | None:
             or ".." in script_path.parts
         ):
             raise HookDefinitionError("hook script must be below .claude/hooks/")
-        if not isinstance(timeout, int) or timeout <= 0:
+        if type(timeout) is not int or timeout <= 0:
             raise HookDefinitionError("hook timeout must be a positive integer")
+        if not isinstance(timeout_overrides, dict) or not set(timeout_overrides) <= RUNTIMES:
+            raise HookDefinitionError("hook timeout_overrides must use supported runtime keys")
+        if not all(
+            type(value) is int and value > 0 for value in timeout_overrides.values()
+        ):
+            raise HookDefinitionError("hook timeout override must be a positive integer")
         if not isinstance(status, str) or not status:
             raise HookDefinitionError("hook statusMessage must be non-empty")
+        runtime_timeout = timeout_overrides.get(runtime, timeout)
         rendered_hooks.append(
             {
                 "type": "command",
                 "command": _command(script, runtime),
-                "timeout": timeout,
+                "timeout": runtime_timeout,
                 "statusMessage": status,
             }
         )

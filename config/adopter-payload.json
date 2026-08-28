@@ -59,7 +59,7 @@
     },
     {
       "path": ".claude/agents/README.md",
-      "sha256": "5fc546776370897e7f993afea0d54e7de046499f9723d76967be9cb32b48570c",
+      "sha256": "8bf2787a50cc7a5cfe374e930055cc82ec457acca8f284fc4f39aaa96ac40cab",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -173,7 +173,7 @@
     },
     {
       "path": ".claude/hooks/_lib/bootstrap-gate.sh",
-      "sha256": "101d9ca369755987e38278bda2d6d6520c620f77d076f9408f1663581893091b",
+      "sha256": "1bd9464688d707f0d7a5435b680c5e6d4a004ecc2edab9d1975f75d517ee99fc",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -221,7 +221,7 @@
     },
     {
       "path": ".claude/hooks/post-edit-check.sh",
-      "sha256": "0e89129d9bc57e3e8706d4b26e29eaf3afcce97f3a43c62a3b25ad03e31773cb",
+      "sha256": "73bdbc2790f8fa092e2019651c1b8e1a7ae5b721c5e1559d71eea5f8dd6ad623",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -251,7 +251,7 @@
     },
     {
       "path": ".claude/hooks/pre-tool-use.sh",
-      "sha256": "831121fd4714ad8f6cc1a838f739034c657e2d3f5b7b34846d7ab958346321f4",
+      "sha256": "95a030df296922b535c6bcb5e2f47027187cbdffba87f6378d2f9bc3b5bd4dfd",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -317,13 +317,13 @@
     },
     {
       "path": ".codex-sync/manifest.json",
-      "sha256": "0b6ba3166f52ba9a11a8f3a8cede88702aa1f6015f90bb5bbeb3dac8320f66db",
+      "sha256": "cc70a88f870504b3bf30a53338dea0bd968d21e27adcc89e22a4ccc0076f14aa",
       "classification": "reference",
       "disposition": "remove"
     },
     {
       "path": ".codex/README.md",
-      "sha256": "2753c8c296d0f96ae02c8d75fabef68f0e6c89dbd15afa267bcc3208aea80486",
+      "sha256": "ed6fec01fbfb3354258f29ab1c5dd42360e5e57c4d12c67c6de8b94a3723456b",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -347,19 +347,19 @@
     },
     {
       "path": ".codex/agents/executor-agent.toml",
-      "sha256": "8bf41e83fc8d80ffed85f795fb31c1042fab8d5f68e47e71d1c585f9d265e9e5",
+      "sha256": "8352abe36aa918b7e7604e28872b8f28e6d18446e173a64c2bbd61f7493653f8",
       "classification": "reference",
       "disposition": "remove"
     },
     {
       "path": ".codex/agents/fleet-doc-steward.toml",
-      "sha256": "bc4ecc800955526c0c8e751c44b6baf6935bb0500cd5f4c1777ff9d28b200ad0",
+      "sha256": "bef39acf43ac61eac21e1ce86e090c67cd12970d33c46d1e7c0175454abf4e39",
       "classification": "reference",
       "disposition": "remove"
     },
     {
       "path": ".codex/agents/main-orchestrator.toml",
-      "sha256": "ab6ff8bdfcca0fff8fa459400144303719b030f31edfb52e3c7bbcc63cebf425",
+      "sha256": "361215853b0ca2da9296c76302bb2c152d7885a6f2bcd017d628cceed8937afa",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -401,13 +401,13 @@
     },
     {
       "path": ".codex/config.toml",
-      "sha256": "2e0625c65c76b091aee8bb58dfe07f0e73130aef14174315b8cf277bf20f7eaa",
+      "sha256": "69db9672e2c573e2a9ccccb53ee59956e416350bcca9b55ac086c055352f35f3",
       "classification": "reference",
       "disposition": "remove"
     },
     {
       "path": ".codex/hooks.json",
-      "sha256": "4f9e3e8164585e82aeaa2da505f13060a7d1eb3cdbb534901fb7e961ae78aea0",
+      "sha256": "19c997a5b254edd773f7c8575aedac85a0c12a80ba3c11841399ade5aee31b89",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -461,13 +461,13 @@
     },
     {
       "path": "AGENTS.md",
-      "sha256": "4d6d52d4f2b82c1fea6864d98e113f5221739ba1ed0773dab85ec0084b5fd7b4",
+      "sha256": "14ecbb8e6e74df7668fd915e895a6657d95ed85b20ed0481233cf147950bfc7f",
       "classification": "reference",
       "disposition": "remove"
     },
     {
       "path": "ARCHITECTURE.md",
-      "sha256": "0122651364b4ff15966935b93dbab42e2097e74f0342464293f736089f1c9b17",
+      "sha256": "2c910aa52c6b585d5a8692199d40b9d39430aabeda619eb2acd38ab5c9edf934",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -479,13 +479,13 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "0e795d1b025b625bd8249b59dce7e42d5de311f40260fb8e298b65ad127fb062",
+      "sha256": "d9f9f0d195e899d482b45c087f44b5a3f58196fe6952d801dd22d1c7e15e9655",
       "classification": "reference",
       "disposition": "remove"
     },
     {
       "path": "CLAUDE.md",
-      "sha256": "085563ba2140568e070d34d2127678996a9545e403616c1647a2381e844abf01",
+      "sha256": "5dc8ffd40de679b186596cdcd193122dc636d30b72c6084d423ec2399837f17a",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -509,7 +509,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "8efd3841405ade5724dec3a8ec09abdeb36ac1bea58633c556d7c6846549cddb",
+      "sha256": "84e254f0f79af6be875aa18ea03b18a12333fd73ceed25a9a91e5eb6b64fcdbc",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -581,7 +581,7 @@
     },
     {
       "path": "config/project-hooks.json",
-      "sha256": "32a7e94a11c2937fc054217f3e60d08d271a38af1c7f7d2afc6e8cf32a46c376",
+      "sha256": "800a4b89f4a50e4ea047881e4c0477fe99664282bd31b22d5f7c6c8389910cd8",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     },
@@ -623,7 +623,7 @@
     },
     {
       "path": "config/template-assets.json",
-      "sha256": "a1862243c75527740610b77a73d42ed80a2cacd1f9e160b32c46109079a2b29a",
+      "sha256": "00a63cdf8f79842890a0e69a809e69f1b39bc7ae7dbb9ddaac1ef91fd9d2c281",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     },
@@ -671,7 +671,7 @@
     },
     {
       "path": "docs/bluebricks/maintenance.md",
-      "sha256": "c503631c8a2bdc1d1bd4b6463b6f7a203ae002074d279f502769b50a98f47294",
+      "sha256": "26ad31e08657a24213faf8e6db5ecbf21cfe97cd165b50c06b0b22cb2f99c1d6",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -683,7 +683,7 @@
     },
     {
       "path": "docs/decisions/INDEX.md",
-      "sha256": "cd0b55bd57ba8be44999d3cc49a2d67c9f135e52703c7dff02ec28d6ddb83561",
+      "sha256": "125c1a2971d4712b5f56a1f1922982df3c2a63e2f1f0ef2eac4bcc5084ece660",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -1067,7 +1067,13 @@
     },
     {
       "path": "docs/decisions/adr-83-project-agent-kit-recipe-and-supported-surfaces.md",
-      "sha256": "bfa0d2b3bbfaae2a1ef320057ca596693df5a55c8342fada2447c2c84c289a77",
+      "sha256": "9ebbbddaeb4d659c7742711a9e5808f360e4d0226765b522e5e571d881587974",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-84-harness-upgrade-guidance-and-runtime-hygiene.md",
+      "sha256": "4831cbd58aa57385853be8e48b7d244abd95c4c90c97f14b4e9a9f9ba3d75551",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -1583,13 +1589,19 @@
     },
     {
       "path": "docs/operations/embedding-lifecycle-operations.md",
-      "sha256": "be22f6b0efea79ee34c2bc93a9a00f90f16d0526991aa9aa71934deb20b66706",
+      "sha256": "1765de3f0148fb5eca19307919cbe09015102eb5b06786170790d46834ab41ed",
       "classification": "reference",
       "disposition": "remove"
     },
     {
       "path": "docs/operations/global-plugin-migration.md",
       "sha256": "969bd10b2f3f7d6be92eb7ce10b21b5a94ee3c3ca699d2299a12b54191cff15d",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/operations/harness-engineering-upgrade.md",
+      "sha256": "cd4006ff5f12125b127d97971829093ba36a2e6e41437fe8b129a309d5a59987",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -2045,7 +2057,7 @@
     },
     {
       "path": "harness_a.toml.example",
-      "sha256": "a30d41364254cee74a6ad0fc8b6eb6cd37023bc35027bc55cf81557ef15e4794",
+      "sha256": "8e35eebe6860926afeddc9fd5249586c8d18e7f4fe9c94312b0ab994eff5e21d",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -2483,7 +2495,7 @@
     },
     {
       "path": "scripts/generate_codex_derivatives.sh",
-      "sha256": "e275c81df472d7bb4002b0214a9605e03ce5b00ac86b1f5cf963045b141cdf17",
+      "sha256": "183b6c343bd3539e2efa005336f521e1f8615b2850352cd9b4aa95e3073bbc0c",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -2519,7 +2531,7 @@
     },
     {
       "path": "scripts/post_edit_memory_sync.py",
-      "sha256": "30a935a6e01804f48f4fe1721d1d73f6cdd2be6fbe6acdfad149f9e1a17cdbcc",
+      "sha256": "f3753b6d9e22e0cebea816b1cd4e7b0320122dce06095346973e7a44560ac222",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -2843,7 +2855,7 @@
     },
     {
       "path": "src/mir/cli/bootstrap.py",
-      "sha256": "1519c5a32896d5d8c7cd75a2942b59c78f53aa593043d2526d013e7ae12fee4f",
+      "sha256": "f9e2dad386fa8b7e0698b4e96f197f0627047338aad70a3afd7739958fbc0094",
       "classification": "optional-consumer-tool",
       "disposition": "remove"
     },
@@ -2861,7 +2873,7 @@
     },
     {
       "path": "src/mir/cli/context.py",
-      "sha256": "8aea1fecf8dc2b187ade172e2c266e0c49cb163496d4060b9cb166db770ca4f9",
+      "sha256": "14df5975bce6bba47aa684fd85870f3f74d00773ecb19324c499814457554967",
       "classification": "optional-consumer-tool",
       "disposition": "remove"
     },
@@ -2975,7 +2987,7 @@
     },
     {
       "path": "src/mir/core/config/loader.py",
-      "sha256": "a4c49bbd6965e8d13cef4a25715488f3d02b92cf3b5643df2691596c1a9ed73f",
+      "sha256": "e5343d560ffdb4a9d07b0c77fb173b3e347d1641a0ca539f94474f89ca160368",
       "classification": "optional-consumer-tool",
       "disposition": "remove"
     },
@@ -3113,7 +3125,7 @@
     },
     {
       "path": "src/mir/core/engine/memory/external_store.py",
-      "sha256": "5afd7cfd0c644f65782aa05e0508b0edb27527d76674b9f28ae3e436b30974ca",
+      "sha256": "a9f1956f32573ef014b63dea6bd3b2acbfe04b9a60d48fa14259c7d974cc523b",
       "classification": "optional-consumer-tool",
       "disposition": "remove"
     },
@@ -3162,6 +3174,12 @@
     {
       "path": "src/mir/core/engine/memory/migrations/017_adr53_context_metadata.sql",
       "sha256": "898733fe9e9ac23d91924cfee501aa8d0a1dec94ded9863eb8765c96cd63215a",
+      "classification": "optional-consumer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "src/mir/core/engine/memory/migrations/018_external_archive_history_globs.sql",
+      "sha256": "f88b2e1bfe900444127ab90c7d53210b31f707d2f8b21c589cd51218fde7212a",
       "classification": "optional-consumer-tool",
       "disposition": "remove"
     },
@@ -3275,25 +3293,25 @@
     },
     {
       "path": "tasks/change_log.md",
-      "sha256": "90d75e6ebceba7604523e2ab3c9f37dee9ba08925f273504e41a29f6ee7b83d1",
+      "sha256": "899cb5c70c54d7f02ff8b46c97c23aa000f07012223c7d148bf24b0e85e2ca91",
       "classification": "reference",
       "disposition": "remove"
     },
     {
       "path": "tasks/checklist.md",
-      "sha256": "8191c23a915aa872bc747847d6faecd37edd0396025cd55c0aa78e60b0b746d0",
+      "sha256": "aa0af56afc1d20f51278c9914ba830d34d203730972d86080b61ca4ae146f35f",
       "classification": "reference",
       "disposition": "remove"
     },
     {
       "path": "tasks/handoffs/session-handoff-LATEST.md",
-      "sha256": "0baf25775340112661443c4e1c22a9378cf73ebcc254a8aa4718537beea00ac8",
+      "sha256": "912889a2293eadd94d82de28ddc07c4b6fdcfa44e9e904848928620a0ca1d98b",
       "classification": "reference",
       "disposition": "remove"
     },
     {
       "path": "tasks/intent.json",
-      "sha256": "1b944f2f4e32c7c6d9dd51f474d62355691d9dee5b6f29f94e87378c529aca68",
+      "sha256": "2fe933c66f8298f74234b4ef0ac3587e919944eca7e85ba5c46ea8171f424c1a",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -3317,7 +3335,7 @@
     },
     {
       "path": "tasks/plan.md",
-      "sha256": "cb79e40bfed4eb013d04f5318862a292044f20fb2f624173e6ad50ad242fc46d",
+      "sha256": "1f5f4ca158396f80dc34eb1cf5fc4fdc2e0537dfce5a2b5661f06c8d66697006",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -3335,7 +3353,7 @@
     },
     {
       "path": "tasks/tdd.json",
-      "sha256": "52dbef4cb605f7d836cbb7c78f9945dd206848e26011aa90a5db1c25c31c00db",
+      "sha256": "c9fb97702d03961703d2b33c15b39d74714d77ca64b18f746c48a25a2e2b94b4",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -3401,7 +3419,7 @@
     },
     {
       "path": "templates/common-harness/scripts/render-hook-configs.py",
-      "sha256": "0e70e848a8ff5052fbcfdf3aeb36b0ea7fed2c33b0afcd1ba0a2d71db0d44cfe",
+      "sha256": "13e50cc6d76939379b58397a72b8c95280c7a5d49aa058077fe417364b31d31c",
       "classification": "optional-consumer-tool",
       "disposition": "remove"
     },
@@ -3419,25 +3437,25 @@
     },
     {
       "path": "tests/test_adr53_phase1_schema.py",
-      "sha256": "d54c9c9d17a76ae421e2208fd4fbd8fa04291a94c6f952319110e45f82ab735f",
+      "sha256": "37976788052d31028bed886e82be8cd270b56b52d52ff2121e6b98469e733de5",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     },
     {
       "path": "tests/test_adr53_phase2_population.py",
-      "sha256": "76d3038a07da84cc9a0eee713667933b93dd6e51a04cb4b483f408dca3eef228",
+      "sha256": "7475b89721acd1524d3406da33d5bde0e6d40d925541358b5729774e047ceea1",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     },
     {
       "path": "tests/test_adr53_phase3a_search.py",
-      "sha256": "6e076ebcd989fc529395e1a5d6663308898ad069d0bdad96a4bc38580d808459",
+      "sha256": "642f855d2c4ed922a32dfff2ad2007bf913e864c9edef7df9eb91ab80e636135",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     },
     {
       "path": "tests/test_adr53_phase3b_context_cli.py",
-      "sha256": "f84fb79d721efc2354ec655f1c4a2e1c10dbe1c355732fa1f08f1ca35743d55f",
+      "sha256": "3f8c6e3c110f690c34a63f0a80fb3f64d44a41d50f88ee66ca918e5d531cbc87",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     },
@@ -3461,7 +3479,7 @@
     },
     {
       "path": "tests/test_bootstrap_cli.py",
-      "sha256": "0553dd6d85bf67eb02d46fadb6c182c4ad9b383cbbd572a9cc7161a0f66aadd3",
+      "sha256": "d451de88be94a1317750bc2906aad85e138f3c79ba53af260875a1e2ac419f26",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     },
@@ -3497,7 +3515,7 @@
     },
     {
       "path": "tests/test_codex_derivation_script.py",
-      "sha256": "de70b94d07d1750af3b31db430aea299d3d7adf019197d5a763e9888c390abee",
+      "sha256": "43c15c8a99f47041689c1c6cb893212bc2e8d1c73b206a209ba1c1e724224530",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     },
@@ -3515,13 +3533,13 @@
     },
     {
       "path": "tests/test_compact_lifecycle_hooks.py",
-      "sha256": "7ef6020669bbdb7641f34a4e210b77274006ab5bfb20b40066df9e82e2a2f3d6",
+      "sha256": "a1ff6ee0c9a205401b1e9ffaf8968ebbc36987e5ae4e19edc210656a0172765d",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     },
     {
       "path": "tests/test_decision_authority.py",
-      "sha256": "819beb1915029e73fe905bce1cbccbcf01f18ffaa4de7d0ca64c0b9ae006386e",
+      "sha256": "bebe4074f8b32f243c3197febf3b159a5906bd965810b28da6b966a2d714c08e",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     },
@@ -3545,7 +3563,7 @@
     },
     {
       "path": "tests/test_hook_executability.py",
-      "sha256": "fa34aacaa8d7d4fdc47512293dbd809c579fc4b1a510616e797e3cd25573b1d0",
+      "sha256": "4d6b00932ca6f3552b689f07c330edafcebabf9ee089c7a466a7ae5955f12b7d",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     },
@@ -3563,7 +3581,7 @@
     },
     {
       "path": "tests/test_link_integrity.py",
-      "sha256": "78b0eb639441ae7008c173fbc02ec574111117885a900f445462e18862a6a744",
+      "sha256": "acfc8a0d0c0d792d9c52d44a92cbc5e94a503e35eb92b4682c59691a593b5ba8",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     },
@@ -3581,13 +3599,13 @@
     },
     {
       "path": "tests/test_memory_doctor.py",
-      "sha256": "333cc1e8a74936f166664a8405267e5b09197a0ffb2794b2a4189153ed7e01ba",
+      "sha256": "6a9588d4ddd74d0480ea5bcee12cc696ced40fdfe8d7078ce70e7db02c12e06e",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     },
     {
       "path": "tests/test_migrations.py",
-      "sha256": "b661c8bcc911ad679e7500c9f4784aad683a3b575486a2da946295626376f17f",
+      "sha256": "5cb7009886b6be6d0710498ab6abaa2d4e8d913b6c9cc12d0cd5dd93474ed8a2",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     },
@@ -3617,7 +3635,7 @@
     },
     {
       "path": "tests/test_post_edit_memory_sync.py",
-      "sha256": "9bdff83711209d8b7d628e0a80962bbfa6696d716c794b38b410f8501e6d337e",
+      "sha256": "982f95dbc790c7d8b785feb7017cc3e6a5c9ee2adb88552eb0aa00d79b4a3672",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     },
@@ -3707,7 +3725,7 @@
     },
     {
       "path": "tests/test_template_asset_classification.py",
-      "sha256": "44768e2dfce7d92e295db4e170671b9c595acfbcb7d2d271f29c9954d464373d",
+      "sha256": "4101f3d30f2b59b92518948966ae3751927f5992a69c5086f9bf8de552cf4587",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     },

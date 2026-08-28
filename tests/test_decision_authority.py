@@ -10,6 +10,9 @@ MINIMAL_ADR = ROOT / "docs/decisions/adr-81-minimal-starter-support-boundary.md"
 PROJECT_AGENT_KIT_ADR = (
     ROOT / "docs/decisions/adr-83-project-agent-kit-recipe-and-supported-surfaces.md"
 )
+UPGRADE_ADR = (
+    ROOT / "docs/decisions/adr-84-harness-upgrade-guidance-and-runtime-hygiene.md"
+)
 COMPOSITION_ADR = (
     ROOT / "docs/decisions/adr-82-product-planes-capability-packs-and-composition.md"
 )
@@ -55,6 +58,17 @@ def test_should_make_adr_83_the_current_supported_surface_decision() -> None:
     assert "must not copy the full Mir package or CLI source" in body
     assert "post-release owner acceptance" in body
     assert index.index("ADR-83") < index.index("ADR-81")
+
+
+def test_should_make_adr_84_the_current_upgrade_guidance_decision() -> None:
+    metadata = _frontmatter(UPGRADE_ADR)
+    index = (ROOT / "docs/decisions/INDEX.md").read_text(encoding="utf-8")
+    guide = ROOT / "docs/operations/harness-engineering-upgrade.md"
+
+    assert metadata["status"] == "accepted"
+    assert metadata["amends"] == ["adr-74", "adr-83"]
+    assert guide.is_file()
+    assert index.index("ADR-84") < index.index("ADR-81")
 
 
 def test_should_preserve_adr_82_only_as_an_inert_reference() -> None:

@@ -85,6 +85,12 @@ def test_should_return_nonstarter_classification_when_provider_sources_are_inspe
         "plugins/**",
     }
 
+    current = rules["current-decisions"]
+    historical = rules["historical-decisions"]
+    adr_84 = "docs/decisions/adr-84-harness-upgrade-guidance-and-runtime-hygiene.md"
+    assert adr_84 in current["include"]
+    assert adr_84 in historical["exclude"]
+
 
 # @spec FR-001 FR-003
 def test_should_match_exact_adopter_payload_when_release_inventory_is_generated() -> None:

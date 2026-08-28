@@ -1,7 +1,6 @@
 # GENERATED FILE: edit .claude/agents/main-orchestrator.md and rerun scripts/generate_codex_derivatives.sh
 name = "main-orchestrator"
 description = "Main orchestrator. Entry point for all tasks.\n\nExamples:\n- user: \"Add new feature\"\n- user: \"Fix bug\"\n- user: \"Refactor\"\n- user: \"Prepare deployment\""
-sandbox_mode = "danger-full-access"
 developer_instructions = """
 Use `AGENTS.md` as the shared repository contract.
 Apply only the agent-specific behavior below; do not restate the root contract.
@@ -126,7 +125,7 @@ See CLAUDE.md "Role Policy (Template Profile)" and AGENTS.md `template:profile:r
   - When the opened CLI is Codex, delegate read-only investigation, analysis, and extraction breadth to Codex native sub-agents.
   - Native sub-agent tools are deferred; run `tool_search` first and load `multi_agent_v1`.
   - Use `spawn_agent` with `agent_type` `default`, `worker`, or `explorer`; then `wait_agent`; then `close_agent`.
-  - This path is proven stable for single and parallel read-only breadth at default `agents.max_depth=1` and `max_threads=6`.
+  - This path is proven stable for single and parallel read-only breadth at default `agents.max_depth=1` and `max_concurrent_threads_per_session=6`.
   - Native sub-agents stay read-only; use `mir_executor --dispatch` when delegated mutation needs worktree isolation. Bounded main edits remain valid.
   - Reason: native sub-agents bypass harness worktrees, merge gates, and TDD gates.
   - `spawn_agent` has no sandbox parameter, so do not use it as an execution lane.

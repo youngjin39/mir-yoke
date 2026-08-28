@@ -2,7 +2,7 @@
   "schema_version": 1,
   "codex_notes": [
     "GENERATED FILE: edit config/project-hooks.json and run scripts/generate_codex_derivatives.sh.",
-    "Claude-only events omitted here: SessionEnd, UserPromptSubmit, StopFailure."
+    "Runtime-specific events omitted here: UserPromptSubmit and StopFailure remain Claude-only by policy."
   ],
   "events": {
     "PreToolUse": [
@@ -74,11 +74,12 @@
     ],
     "SessionEnd": [
       {
-        "runtimes": ["claude"],
+        "runtimes": ["claude", "codex"],
         "hooks": [
           {
             "script": ".claude/hooks/session-end.sh",
             "timeout": 60,
+            "timeout_overrides": {"codex": 3},
             "statusMessage": "Harness canonical closeout"
           }
         ]

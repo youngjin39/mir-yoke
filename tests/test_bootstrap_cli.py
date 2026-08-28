@@ -42,7 +42,7 @@ def _make_harness_surfaces(root: Path) -> None:
     _write(root / ".claude" / "settings.json", '{"hooks":{"SessionStart":[]}}\n')
     _write(
         root / ".codex" / "config.toml",
-        'approval_policy = "on-request"\nsandbox_mode = "workspace-write"\n',
+        'approval_policy = "on-request"\n',
     )
     _write(root / ".codex" / "hooks.json", "{}\n")
     _write(root / ".ai-harness" / "deny-list.yaml", "deny: []\n")
@@ -92,6 +92,25 @@ def _make_harness_surfaces(root: Path) -> None:
     subprocess.run(["git", "config", "user.name", "Test"], cwd=root, check=True)
     subprocess.run(["git", "add", "."], cwd=root, check=True)
     subprocess.run(["git", "commit", "-qm", "fixture"], cwd=root, check=True)
+
+
+def test_should_reject_mixed_codex_permission_configuration(tmp_path):
+    _make_harness_surfaces(tmp_path)
+    _write(
+        tmp_path / ".codex" / "config.toml",
+        'approval_policy = "on-request"\n'
+        'sandbox_mode = "workspace-write"\n'
+        'default_permissions = "project-edit"\n'
+        '[permissions.project-edit]\n'
+        'extends = ":workspace"\n',
+    )
+
+    errors, _ = bootstrap_cli._validate_surfaces(tmp_path)
+
+    assert (
+        ".codex/config.toml mixes legacy sandbox settings with permission profiles"
+        in errors
+    )
 
 
 def _bootstrap(root: Path, *extra: str) -> int:

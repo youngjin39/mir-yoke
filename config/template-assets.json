@@ -129,6 +129,7 @@
         "docs/decisions/adr-79-agent-guided-platform-scope.md",
         "docs/decisions/adr-80-release-runtime-isolation-and-adopter-ownership.md",
         "docs/decisions/adr-81-minimal-starter-support-boundary.md",
+        "docs/decisions/adr-84-harness-upgrade-guidance-and-runtime-hygiene.md",
         "docs/decisions/adr-83-project-agent-kit-recipe-and-supported-surfaces.md",
         "docs/decisions/role-policy.md"
       ],
@@ -152,6 +153,7 @@
         "docs/decisions/adr-79-agent-guided-platform-scope.md",
         "docs/decisions/adr-80-release-runtime-isolation-and-adopter-ownership.md",
         "docs/decisions/adr-81-minimal-starter-support-boundary.md",
+        "docs/decisions/adr-84-harness-upgrade-guidance-and-runtime-hygiene.md",
         "docs/decisions/adr-83-project-agent-kit-recipe-and-supported-surfaces.md",
         "docs/decisions/role-policy.md"
       ],

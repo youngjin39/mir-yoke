@@ -18,9 +18,19 @@ def test_apply_migrations_is_idempotent(tmp_path: Path):
     try:
         first = store.apply_migrations(c.conn)
         second = store.apply_migrations(c.conn)
-        assert sorted(first) == ["001", "002", "003", "004", "014", "015", "016", "017"]
+        assert sorted(first) == [
+            "001",
+            "002",
+            "003",
+            "004",
+            "014",
+            "015",
+            "016",
+            "017",
+            "018",
+        ]
         assert second == []
-        assert store.schema_version(c.conn) == "017"
+        assert store.schema_version(c.conn) == "018"
     finally:
         c.conn.close()
 

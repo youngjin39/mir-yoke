@@ -35,14 +35,31 @@ doing it for you.
 ### R1 — Enable on a fresh environment
 1. Probe the endpoint (any OpenAI-compatible `/v1/embeddings` server).
 2. Get explicit user consent before installing any server or model.
-3. Validate with one test call: response dimension equals configured `dim`,
-   L2 norm ~= 1.0 (the engine rejects both mismatches, fail-closed).
+3. Validate with one test call: the response dimension must be 1024 and the
+   L2 norm must be approximately 1.0. The current physical vector table
+   supports 1024 dimensions only; another configured dimension fails before
+   indexing.
 4. Fill `[memory.embedding]` in `harness_a.toml`, then `mir context sync`.
+   `fingerprint` is required when embeddings are enabled and must encode the complete identity
+   above, not only the model name.
 
 ### R2 — Enable late (embedding arrived after content)
 Chunks indexed without vectors are **not auto-backfilled**. After enabling,
-force a re-index of existing content and verify vector coverage reaches 100%
-of eligible chunks before trusting hybrid retrieval.
+ensure sqlite-vec is available, then run:
+
+```sh
+mir context sync --reindex-missing-vectors
+```
+
+This explicit operation never falls back to FTS. It reports
+`vector_coverage=indexed/eligible` per archive, leaves fully covered documents
+untouched, and replaces each missing document in its own SQLite transaction.
+If a later document fails, fix the backend and rerun the command; successful
+documents remain covered. The shared vector table persists the active encoder fingerprint and
+rejects a different fingerprint before another vector is written or used for hybrid retrieval.
+Verify coverage reaches 100% of eligible chunks
+before trusting hybrid retrieval. Ordinary `mir context sync` does not
+backfill vectors.
 
 ### R3 — Model or runtime change
 A new model — or the same model under a new runtime or quantization — is a
@@ -67,7 +84,7 @@ different fingerprint.
 
 | Gate | Expectation |
 |---|---|
-| Test call | dimension == `dim`, L2 norm ~= 1.0 |
+| Test call | dimension == 1024, L2 norm ~= 1.0 |
 | Backfill coverage | 100% of eligible chunks |
 | Shadow agreement | same model: ~= 1.0; new model: ranking overlap (RRF), never raw distances |
 | FTS fallback | search still returns results with embedding disabled |
@@ -81,8 +98,6 @@ asked; the fleet reads evidence, it never executes here.
 
 ## Tooling
 
-Implement the shape directly, or adopt a lifecycle manager. The template
-operator's fleet maintains `mir-embedding-lifecycle` (versioned sidecar
-indexes, resumable jobs, shadow evaluation, atomic cutover/rollback,
-read-only MCP); its public release is a separate decision — until then,
-treat it as reference precedent rather than a dependency.
+The current CLI supports baseline SQLite+FTS5 indexing and the explicit
+missing-vector backfill above. Versioned sidecar indexes, automatic model
+migration, and destructive vector rebuilds are not current CLI behavior.
