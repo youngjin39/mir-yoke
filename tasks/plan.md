@@ -1,6 +1,6 @@
 # Plan
 
-## Current status — ACTIVE (2026-08-29)
+## Current status — CLOSED (2026-08-30)
 
 - [x] Confirm global/project precedence and record the boundary in ADR-85.
 - [x] Add failing regressions for project-policy inheritance, runtime-neutral agent contracts,
@@ -10,14 +10,14 @@
   after the final evidence record.
 - [x] Run focused tests, derivative verification, repository governance checks, Ruff, Bash syntax,
   and independent design-vs-code review.
-- [ ] Reconcile `.mir/capability-lock.json` after an authorized implementation commit, then rerun
+- [x] Reconcile `.mir/capability-lock.json` after an authorized implementation commit, then rerun
   the lock regression.
 
-Scope is Mir Yoke only. The current request authorizes the approved source and protected-lock
-design, but it does not authorize a Git commit or push. The capability lock cannot truthfully bind
-uncommitted agent bytes because its regression reads the selected Git commit object.
+Scope is Mir Yoke only. The owner authorized the implementation commit, protected lock
+reconciliation, and push to `origin/main`. Do not tag, publish a release, or modify consumer
+repositories.
 
-Do not tag, publish a release, or modify consumer repositories.
+No active implementation action remains after the lock and final checks pass.
 
 ## Deferred owner work
 

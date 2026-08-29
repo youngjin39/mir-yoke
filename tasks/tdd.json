@@ -3,7 +3,7 @@
   "changes": [
     {
       "id": "global-policy-inheritance-agent-contracts-2026-08-29",
-      "record_status": "in_progress",
+      "record_status": "complete",
       "scope": "Make generated Codex configuration inherit operator-owned approval and native-agent routing policy, modernize current agent collaboration contracts, derive read-only sandboxing from source metadata, preserve Claude model frontmatter while keeping Codex agents unpinned, and document external skill registry migration.",
       "targets": [
         "docs/decisions/adr-85-global-policy-inheritance-and-agent-contracts.md",
@@ -35,7 +35,7 @@
         "soak": {"status": "not_applicable", "reason": "No persistent process is introduced."},
         "security": {"status": "pass", "command": "uv run pytest -q tests/test_codex_derivation_script.py tests/test_bootstrap_cli.py tests/test_public_template_identity.py", "notes": "Operator policy ownership, read-only metadata, and public non-authority pass."},
         "compatibility": {"status": "pass", "command": "uv run pytest -q -k 'not test_repository_lock_is_portable_and_matches_managed_trees'", "notes": "799 passed and one commit-bound capability-lock test was intentionally deselected."},
-        "transaction_locking": {"status": "planned", "command": "uv run pytest -q tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees", "notes": "Requires an authorized implementation commit before the protected lock can bind the three changed agent source objects."}
+        "transaction_locking": {"status": "pass", "command": "uv run pytest -q tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees", "notes": "The protected lock binds the three changed agent source objects to implementation commit 90bb4f62270b3746e5a57e22c83ea3104c1ff357."}
       }
     },
     {

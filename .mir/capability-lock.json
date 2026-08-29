@@ -14,15 +14,15 @@
     },
     ".claude/agents/executor-agent.md": {
       "project_path": ".claude/agents/executor-agent.md",
-      "sha256": "0ecbab5e62ff2491c0f76d268d37e700c7dffb3c9c59335ea92dfe91fb8fa6f9"
+      "sha256": "13d39e15f9f2154f395308f8626e2f6a4399be7dc77ecf75233d253487efb698"
     },
     ".claude/agents/fleet-doc-steward.md": {
       "project_path": ".claude/agents/fleet-doc-steward.md",
-      "sha256": "fef26eadf5d92351773745bcd961a575d0550892bc584c3d30408430ae29c82e"
+      "sha256": "500a2d79c8f9597481a995b2de17b296128297e5520bcee3aa9040048922f2e9"
     },
     ".claude/agents/main-orchestrator.md": {
       "project_path": ".claude/agents/main-orchestrator.md",
-      "sha256": "3325ae043a22712328597b75916728ae35c6dae50358c7630ad9f1a397f8dee1"
+      "sha256": "8285dab537ed41849b80cbed41f5e0baf2b59e39fce40382a5564e9f989b03d8"
     },
     ".claude/agents/ontology-validator.md": {
       "project_path": ".claude/agents/ontology-validator.md",
@@ -65,9 +65,9 @@
   },
   "schema_version": 1,
   "source": {
-    "commit": "a0768ce3259e1cf9f03c3a519c01a46bc7a29425",
+    "commit": "90bb4f62270b3746e5a57e22c83ea3104c1ff357",
     "ref": "main",
     "url": "https://github.com/youngjin39/mir-yoke.git"
   },
-  "synced_at": "2026-08-27T16:08:00+00:00"
+  "synced_at": "2026-08-29T15:45:09+00:00"
 }

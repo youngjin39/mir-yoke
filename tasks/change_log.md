@@ -5,8 +5,8 @@ One bullet per non-trivial change. Newest at the top.
 - 2026-08-30: made generated Codex configuration inherit operator-owned approval and native-agent
   routing policy, modernized host-neutral agent contracts, derived the fleet documentation
   advisor's read-only sandbox from frontmatter, preserved Claude model fields while keeping Codex
-  agents unpinned, and documented external skill registry migration; all non-lock tests pass and
-  capability-lock reconciliation awaits an authorized implementation commit.
+  agents unpinned, and documented external skill registry migration; implementation commit
+  `90bb4f6` is lock-bound and all repository checks pass.
 - 2026-08-29: migrated generated Codex permission ownership to operator-selected profiles, rejected
   legacy/profile mixing, bound vector writes to a persisted encoder fingerprint, preserved fact
   subject/provenance, quarantined credential-shaped facts, and passed clean-candidate readiness

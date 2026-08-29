@@ -1,7 +1,7 @@
 {
   "goal": "Make Mir Yoke inherit operator-owned Codex policy, modernize its cross-runtime agent contracts, and document external skill registry migration without changing Claude model pins.",
   "goal_type": "maintenance",
-  "scope": "Mir Yoke only; update canonical generator, three locked agent sources, current ADR and operations guidance, generated derivatives, and focused tests. Reconcile the protected capability lock only against a committed source revision; no commit, push, tag, release, or consumer mutation is authorized in this task.",
+  "scope": "Mir Yoke only; update canonical generator, three locked agent sources, current ADR and operations guidance, generated derivatives, and focused tests; bind the protected capability lock to the implementation commit and push the verified commits to origin/main. No tag, release, or consumer mutation is authorized.",
   "priority": "normal",
   "updated": "2026-08-30",
   "history": [
