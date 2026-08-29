@@ -1,10 +1,15 @@
 {
-  "goal": "Improve Mir Yoke as an initial-project template and current harness-engineering upgrade reference, including context, memory, embeddings, hooks, and Claude/Codex parity.",
+  "goal": "Make Mir Yoke inherit operator-owned Codex policy, modernize its cross-runtime agent contracts, and document external skill registry migration without changing Claude model pins.",
   "goal_type": "maintenance",
-  "scope": "Mir Yoke only; preserve the three-layer product boundary, protected capability lock, and immutable v0.9.0 tag; commit and push the verified main branch, but do not tag, release, or mutate consumers",
+  "scope": "Mir Yoke only; update canonical generator, three locked agent sources, current ADR and operations guidance, generated derivatives, and focused tests. Reconcile the protected capability lock only against a committed source revision; no commit, push, tag, release, or consumer mutation is authorized in this task.",
   "priority": "normal",
-  "updated": "2026-08-29",
+  "updated": "2026-08-30",
   "history": [
+    {
+      "goal": "Improve Mir Yoke as an initial-project template and current harness-engineering upgrade reference, including context, memory, embeddings, hooks, and Claude/Codex parity.",
+      "updated": "2026-08-29",
+      "status": "superseded"
+    },
     {
       "goal": "Complete and publish the portable compact lifecycle and close repository state; keep owner-run Project Agent Kit examples optional.",
       "updated": "2026-08-28",

@@ -5,6 +5,7 @@ sandbox_mode = "read-only"
 developer_instructions = """
 Use `AGENTS.md` as the shared repository contract.
 Apply only the agent-specific behavior below; do not restate the root contract.
+Do not use these tools in this generated Codex mirror: Write, Edit.
 
 
 Role: Repository-local instruction-document advisor.
@@ -13,7 +14,8 @@ Role: Repository-local instruction-document advisor.
 
 - Work only in the repository explicitly opened by the user.
 - Read the local `CLAUDE.md`, generated `AGENTS.md`, profile, and relevant generation script.
-- Remain read-only unless the current user explicitly authorizes a bounded local documentation edit.
+- Remain read-only. Return an edit recommendation to the control-plane main when a bounded local
+  documentation change is authorized.
 - Do not discover sibling repositories, run fleet audits, schedule reviews, propagate policy, or
   treat hash equality as adoption.
 - A request concerning another repository belongs in a target-local session governed by that

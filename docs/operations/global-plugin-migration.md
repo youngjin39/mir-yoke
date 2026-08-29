@@ -32,12 +32,19 @@ Choose exactly one disposition in the affected repository:
 
 | Disposition | Use when | Required local outcome |
 | --- | --- | --- |
-| `adopt_global` | The raw skill is common capability that the pinned plugin should own. | Preserve a recoverable baseline, remove both runtime mirrors through the repository's canonical generation path, and prove no stale references remain. |
+| `adopt_global` | The raw skill is common capability that the pinned plugin should own. | Preserve a recoverable baseline, remove both runtime mirrors through the repository's canonical generation path, mark legacy registry entries `external`/`external` or remove them when runtime discovery is authoritative, and prove no stale references remain. |
 | `rename_local` | The raw skill contains repository-specific behavior that must remain. | Rename it to a repository-unique slug, update instructions/agents/generators, regenerate mirrors, and run the repository's smallest skill checks. |
 | `local_authority_exception` | The repository is the authoritative source or cannot yet be reconciled safely. | Keep the provider disabled for the host. Record the blocker; do not claim the repository or host ready. |
 
 Perform this work through each repository's own agent and authority contract. Re-run `status` until
 `collisions` is empty for every root and all selected skill surfaces are clean.
+
+Do not restore `.claude/skills/<slug>` or `.agents/skills/<slug>` merely because a legacy registry
+verifier still expects a local path. Update the repository's canonical agent-management registry
+so plugin-supplied skills use `status: external` and `source_path: external`, or remove those rows
+when the registry schema treats runtime discovery as authoritative. Regenerate derivatives and run
+the repository-local verifier, such as `uv run python scripts/verify_repo_agent_management.py`,
+before claiming the migration complete.
 
 ## 3. Activate one pinned provider
 

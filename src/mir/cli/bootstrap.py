@@ -1548,8 +1548,6 @@ def _validate_surfaces(root: Path) -> tuple[list[str], dict]:
         except (OSError, tomllib.TOMLDecodeError) as exc:
             errors.append(f"invalid TOML surface {codex_config}: {exc}")
         else:
-            if "approval_policy" not in codex_payload:
-                errors.append(".codex/config.toml is missing approval_policy")
             has_legacy_sandbox = any(
                 field in codex_payload
                 for field in ("sandbox_mode", "sandbox_workspace_write")

@@ -117,12 +117,12 @@
       "notes": "Generated custom agent"
     },
     {
-      "source": ".claude/settings.json",
+      "source": "scripts/generate_codex_derivatives.sh",
       "targets": [".codex/config.toml"],
       "change_scope": "config",
       "sync_policy": "regenerate",
       "owner": "project-maintainer",
-      "notes": "Semantic mapping from Claude permissions and MCP settings"
+      "notes": "Generated project-owned Codex options and optional MCP settings"
     },
     {
       "source": "config/project-hooks.json",

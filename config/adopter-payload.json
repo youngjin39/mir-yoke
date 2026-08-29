@@ -83,19 +83,19 @@
     },
     {
       "path": ".claude/agents/executor-agent.md",
-      "sha256": "0ecbab5e62ff2491c0f76d268d37e700c7dffb3c9c59335ea92dfe91fb8fa6f9",
+      "sha256": "13d39e15f9f2154f395308f8626e2f6a4399be7dc77ecf75233d253487efb698",
       "classification": "reference",
       "disposition": "remove"
     },
     {
       "path": ".claude/agents/fleet-doc-steward.md",
-      "sha256": "fef26eadf5d92351773745bcd961a575d0550892bc584c3d30408430ae29c82e",
+      "sha256": "500a2d79c8f9597481a995b2de17b296128297e5520bcee3aa9040048922f2e9",
       "classification": "reference",
       "disposition": "remove"
     },
     {
       "path": ".claude/agents/main-orchestrator.md",
-      "sha256": "3325ae043a22712328597b75916728ae35c6dae50358c7630ad9f1a397f8dee1",
+      "sha256": "8285dab537ed41849b80cbed41f5e0baf2b59e39fce40382a5564e9f989b03d8",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -317,13 +317,13 @@
     },
     {
       "path": ".codex-sync/manifest.json",
-      "sha256": "cc70a88f870504b3bf30a53338dea0bd968d21e27adcc89e22a4ccc0076f14aa",
+      "sha256": "fedd411d6e81808b296c6517eda46777f761d1bdef950986b6b28083cfc3ccbc",
       "classification": "reference",
       "disposition": "remove"
     },
     {
       "path": ".codex/README.md",
-      "sha256": "ed6fec01fbfb3354258f29ab1c5dd42360e5e57c4d12c67c6de8b94a3723456b",
+      "sha256": "58816f4ecbff87640dbfd19c1b6940ae9d19ae1f003523a1064aa0f93b70fb4d",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -347,19 +347,19 @@
     },
     {
       "path": ".codex/agents/executor-agent.toml",
-      "sha256": "8352abe36aa918b7e7604e28872b8f28e6d18446e173a64c2bbd61f7493653f8",
+      "sha256": "e8050a48e9a7d747b9eca9cf0c817abb78b055bf7f82be245ee99264d073c5d1",
       "classification": "reference",
       "disposition": "remove"
     },
     {
       "path": ".codex/agents/fleet-doc-steward.toml",
-      "sha256": "bef39acf43ac61eac21e1ce86e090c67cd12970d33c46d1e7c0175454abf4e39",
+      "sha256": "1631d393deff80c8b16fb6f04f1f34f0c00251c9e1a32d53b93075074fd862a8",
       "classification": "reference",
       "disposition": "remove"
     },
     {
       "path": ".codex/agents/main-orchestrator.toml",
-      "sha256": "361215853b0ca2da9296c76302bb2c152d7885a6f2bcd017d628cceed8937afa",
+      "sha256": "a47e3ec65a06084a12703f3cb2b1923b008900323c5b99b61840349a6fe70674",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -401,7 +401,7 @@
     },
     {
       "path": ".codex/config.toml",
-      "sha256": "69db9672e2c573e2a9ccccb53ee59956e416350bcca9b55ac086c055352f35f3",
+      "sha256": "6c387d71b68ffb31092edfc97b3f05a5c8ed82686d6d0c8da67c91dea49ef049",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -461,7 +461,7 @@
     },
     {
       "path": "AGENTS.md",
-      "sha256": "14ecbb8e6e74df7668fd915e895a6657d95ed85b20ed0481233cf147950bfc7f",
+      "sha256": "f5a2f2159e1b86f68beda32609c87fbd15ffd76ad230e3eb633d2922d5ffd732",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -485,7 +485,7 @@
     },
     {
       "path": "CLAUDE.md",
-      "sha256": "5dc8ffd40de679b186596cdcd193122dc636d30b72c6084d423ec2399837f17a",
+      "sha256": "adc73345cd4312711b540fedfa012b8fc73c7ffc20755a4cb2e8ca467e466303",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -623,7 +623,7 @@
     },
     {
       "path": "config/template-assets.json",
-      "sha256": "00a63cdf8f79842890a0e69a809e69f1b39bc7ae7dbb9ddaac1ef91fd9d2c281",
+      "sha256": "a4dab43a5ec55d9bce8e6b5102c2daf5ef3778bc74b8aa8e0d60604c1a16289f",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     },
@@ -683,7 +683,7 @@
     },
     {
       "path": "docs/decisions/INDEX.md",
-      "sha256": "125c1a2971d4712b5f56a1f1922982df3c2a63e2f1f0ef2eac4bcc5084ece660",
+      "sha256": "9b98bcb9fb1337c555d3ec163033766ef73fece27acef3b95f8723a63c84de2c",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -1073,7 +1073,13 @@
     },
     {
       "path": "docs/decisions/adr-84-harness-upgrade-guidance-and-runtime-hygiene.md",
-      "sha256": "4831cbd58aa57385853be8e48b7d244abd95c4c90c97f14b4e9a9f9ba3d75551",
+      "sha256": "91dd06db9bac34d96a6bbca3f7ddeda02165dfc24300ac58298b632ac3969b7f",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-85-global-policy-inheritance-and-agent-contracts.md",
+      "sha256": "005c66efd759ca242c6846c018f7ce42af9ae7564012fd9a42da70df0c16353d",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -1595,13 +1601,13 @@
     },
     {
       "path": "docs/operations/global-plugin-migration.md",
-      "sha256": "969bd10b2f3f7d6be92eb7ce10b21b5a94ee3c3ca699d2299a12b54191cff15d",
+      "sha256": "fbd468410fd48f9c21245b5b5dcbaf7e54b917c9ee4dfe57d24b45279083602a",
       "classification": "reference",
       "disposition": "remove"
     },
     {
       "path": "docs/operations/harness-engineering-upgrade.md",
-      "sha256": "cd4006ff5f12125b127d97971829093ba36a2e6e41437fe8b129a309d5a59987",
+      "sha256": "f17ae2be6843aa2c1ec20415b605b669ddad106d141076c2db46dcb61dcad852",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -2495,7 +2501,7 @@
     },
     {
       "path": "scripts/generate_codex_derivatives.sh",
-      "sha256": "183b6c343bd3539e2efa005336f521e1f8615b2850352cd9b4aa95e3073bbc0c",
+      "sha256": "e1dea627afaaeeb5e4509620bf1e72881578f722dac86dea042eb3a8293caa9b",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -2855,7 +2861,7 @@
     },
     {
       "path": "src/mir/cli/bootstrap.py",
-      "sha256": "f9e2dad386fa8b7e0698b4e96f197f0627047338aad70a3afd7739958fbc0094",
+      "sha256": "5333e05f7b6c98cc41863bd4ccc399839a1a1a1f96f9db4600bdda155a0eaeb8",
       "classification": "optional-consumer-tool",
       "disposition": "remove"
     },
@@ -3293,7 +3299,7 @@
     },
     {
       "path": "tasks/change_log.md",
-      "sha256": "092a1ab5cff3f0585c26bb05a842b353acce286a433a6298289ebf48030f5445",
+      "sha256": "2735804567dd09f6d1e3ac2e4fed9024de57172f8c7c4d7940b0e2424ddb1a5f",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -3311,7 +3317,7 @@
     },
     {
       "path": "tasks/intent.json",
-      "sha256": "2fe933c66f8298f74234b4ef0ac3587e919944eca7e85ba5c46ea8171f424c1a",
+      "sha256": "8c11e1fe04eb44e319a8688028c8cabe9a1ace2db9cb1226723baa70235831b3",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -3335,7 +3341,7 @@
     },
     {
       "path": "tasks/plan.md",
-      "sha256": "f96953e6968f2868d8003560f9ba1615506ac09c606a87187032b7ab78745164",
+      "sha256": "ae3091e541ca2cc93aebd2ff072deb0e3b0667fe3d0dae08c8e52bd93082f4fe",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -3353,7 +3359,7 @@
     },
     {
       "path": "tasks/tdd.json",
-      "sha256": "c9fb97702d03961703d2b33c15b39d74714d77ca64b18f746c48a25a2e2b94b4",
+      "sha256": "7c7114ca44e2a8cc718d50b64b506adc679ec63200abfdd61be271353e61affa",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -3479,7 +3485,7 @@
     },
     {
       "path": "tests/test_bootstrap_cli.py",
-      "sha256": "d451de88be94a1317750bc2906aad85e138f3c79ba53af260875a1e2ac419f26",
+      "sha256": "714064c03038b7d423aba4215bc14fdc35812ca624ae58b4ea0c9b7c53f471e7",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     },
@@ -3515,7 +3521,7 @@
     },
     {
       "path": "tests/test_codex_derivation_script.py",
-      "sha256": "43c15c8a99f47041689c1c6cb893212bc2e8d1c73b206a209ba1c1e724224530",
+      "sha256": "e7995f45489b03edfd3e0ae131ae59dc1bef08a9da2baa94daf3eea6a2800491",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     },
@@ -3539,7 +3545,7 @@
     },
     {
       "path": "tests/test_decision_authority.py",
-      "sha256": "bebe4074f8b32f243c3197febf3b159a5906bd965810b28da6b966a2d714c08e",
+      "sha256": "2665809e4233ab72cec9d6680c588573b5d285ebc7afa1621674824201ed5dfb",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     },
@@ -3725,7 +3731,7 @@
     },
     {
       "path": "tests/test_template_asset_classification.py",
-      "sha256": "4101f3d30f2b59b92518948966ae3751927f5992a69c5086f9bf8de552cf4587",
+      "sha256": "b6cfd0b0ae362b7fdbba53aafae744715633cf9cb80f123e8264d950c2ae3982",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     },

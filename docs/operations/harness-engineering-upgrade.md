@@ -111,13 +111,14 @@ migration strategy. See [Embedding Lifecycle Operations](embedding-lifecycle-ope
 
 #### Runtime permissions
 
-Keep repository instructions separate from operator permissions. A portable repository should not
-generate either legacy `sandbox_mode` settings or a `default_permissions` profile selection in its
-root Codex configuration. Those mechanisms do not compose, and the operator's user-level or
-managed configuration owns the filesystem and network boundary. A repository may still make a
-review-only custom agent mechanically read-only; write-capable agents should inherit the selected
-operator policy. Treat macOS Files & Folders or removable-volume approval as a separate operating
-system boundary that Codex configuration cannot grant. See the current
+Keep repository instructions separate from operator policy. A portable repository should not
+generate `approval_policy`, legacy `sandbox_mode` settings, a `default_permissions` profile, or
+native-agent routing defaults in its root Codex configuration. The operator's user-level or
+managed configuration owns approval, filesystem and network boundaries, default sub-agent routes,
+concurrency, and collaboration enablement. A repository may still make a review-only custom agent
+mechanically read-only; write-capable agents should inherit the selected operator policy. Treat
+macOS Files & Folders or removable-volume approval as a separate operating system boundary that
+Codex configuration cannot grant. See the current
 [Codex permissions documentation](https://learn.chatgpt.com/docs/permissions).
 
 #### Agents
@@ -145,6 +146,13 @@ Keep always-needed facts in repository instructions.
 - Put large supporting material in references and load it only after the skill triggers.
 - Package reusable multi-skill sets as namespaced plugins.
 - Avoid a local skill with the same slug as an enabled common plugin.
+
+When an existing repository moves a common skill from `.claude/skills` or `.agents/skills` to a
+plugin, reconcile its local registry instead of recreating the removed directory. Mark the skill
+as externally supplied with `status: external` and `source_path: external`, or remove the registry
+entry when the repository discovers runtime capabilities directly. Then run the repository's own
+agent-management verifier. Follow the complete inventory, collision, activation, and rollback
+procedure in [Global Plugin Migration](global-plugin-migration.md).
 
 Mir Yoke's portable set is intentionally limited to three plugins and thirteen skills. The
 `design`, `governance`, `efficiency`, `bluebricks`, `testing`, `code-review`, and

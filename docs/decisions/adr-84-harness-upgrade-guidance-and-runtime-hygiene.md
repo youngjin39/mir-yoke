@@ -101,8 +101,10 @@ Generated root configuration will omit `sandbox_mode`, `sandbox_workspace_write`
 `default_permissions`, because legacy sandbox settings and permission profiles do not compose and
 a public template must not override the operator's user-level or managed selection. Write-capable
 generated agents will inherit that selection. Mechanically read-only roles retain
-`sandbox_mode = "read-only"`. Generated configuration will use the current `features.hooks` key and
-the current concurrency key.
+`sandbox_mode = "read-only"`. ADR-85 supersedes the concurrency portion of this decision: generated
+project configuration omits the root `[agents]` table and `features.multi_agent`, leaving native
+agent routing and enablement to operator-owned policy while retaining the current `features.hooks`
+key.
 
 The maintainer `SessionEnd` hook will be generated for Codex with a three-second runtime timeout
 override while Claude retains its existing timeout. A regression will prove the maintained closeout
@@ -145,8 +147,9 @@ will recommend dynamic model selection unless a repository records a justified r
 - Shared Claude/Codex hooks inspect the current Codex patch wire format.
 - Generated root and write-capable Codex agent configuration defer to the operator-selected
   permission policy; mechanically read-only roles remain explicitly read-only. Generated
-  configuration uses `agents.max_concurrent_threads_per_session` and `features.hooks` only;
-  deprecated sandbox/profile mixing, `max_threads`, and `features.codex_hooks` aliases are absent.
+  configuration uses `features.hooks` but, as amended by ADR-85, omits project-owned approval and
+  native-agent routing defaults; deprecated sandbox/profile mixing, `max_threads`, and
+  `features.codex_hooks` aliases are absent.
 
 ## 5. Out of scope
 

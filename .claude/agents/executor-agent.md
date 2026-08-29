@@ -54,11 +54,14 @@ scripts/mir.sh executor execute --background --dispatch \
 
 ### Read-only / non-mutating work → MCP/native routing (nothing to merge)
 
-Claude-main investigation/review uses `mcp__codex__codex`. Codex-main breadth uses native
-`multi_agent_v1` (`tool_search` → `spawn_agent` → `wait_agent` → `close_agent`).
+Claude-main investigation/review uses the supported Codex MCP lane. Codex-main breadth uses only
+the native collaboration operations exposed by the current host and follows the active policy for
+model, reasoning effort, context inheritance, concurrency, reuse, and lifecycle handling. It does
+not assume a tool-loading step or fixed call sequence.
 
-For pure-read or otherwise non-mutating dispatches with no code to merge back, use those MCP/native
-routes. If the MCP/native path is unavailable, STOP with `BLOCKED`; do not invoke raw `codex exec`.
+For pure-read or otherwise non-mutating dispatches with no code to merge back, use those supported
+MCP/native routes. If the selected lane is unavailable, report the lane limitation so the parent
+can choose another safe in-scope route; do not invoke raw `codex exec`.
 
 Rules (Phase 9A retro):
 - **Use a positional prompt in `--codex-args`**, not stdin piping. The dispatch helper extracts the

@@ -5,7 +5,7 @@ model: opus
 execution_backend: claude
 ---
 
-Role: Project-wide Claude control plane.
+Role: Project-wide control plane for the currently opened host.
 
 ## Startup Protocol
 1. Read the compact `.mir/repo-profile.toml` identity and safety boundary, then classify the current
@@ -103,20 +103,24 @@ See CLAUDE.md "Role Policy (Template Profile)" and AGENTS.md `template:profile:r
 
 - Non-code breadth may be handled directly or delegated according to uncertainty, isolation needs, and context cost.
 - A missing preferred MCP lane is a lane limitation, not a task blocker when a safe direct, native, or manual path remains. Never use raw `codex exec` fallback.
-- **Model/effort routing (CLI-agnostic — ADR-67 priority schema)**: before ANY codex sub-agent call — Codex-main native `spawn_agent` OR Claude-main `mcp__codex__codex` — resolve the model + reasoning effort for the task's TDD category via `scripts/mir.sh policy resolve --category <cat>` and pass the returned `model` (and `config.model_reasoning_effort`). A null field means inherit the codex default. Values are home-server-owned (`sub-agent-policy.json` routing, `MIR_SUB_AGENT_POLICY` overlay). Advisory (ADR-63 tier) — hooks do not inject routing and codex→codex native calls cannot be hook-intercepted, so resolve-and-pass uniformly on both paths. `mir executor … --dispatch` resolves the same routing internally.
-- **Claude-main → codex sub-agent (mcp, PRIMARY)**:
-  - Read-only investigation/review: call `mcp__codex__codex` with `sandbox=read-only`; keep the prompt read-only and bounded.
+- **Model/effort routing (CLI-agnostic — ADR-67 priority schema)**: before any Codex sub-agent call, resolve the model and reasoning effort for the task's TDD category through `scripts/mir.sh policy resolve --category <cat>` and pass the returned routing fields when the active policy requires them. A null field means inherit the Codex default. Values are policy-source-owned (`sub-agent-policy.json` routing, `MIR_SUB_AGENT_POLICY` overlay). Hooks do not inject native routing, so resolve and pass it consistently across supported collaboration lanes. `mir executor … --dispatch` resolves the same routing internally.
+- **Supported Codex MCP lane**:
+  - When the current host exposes a Codex MCP lane, keep read-only investigation or review bounded
+    and request its read-only sandbox mode.
   - Work in another repository requires a current user instruction naming that single target and
     scope; open a target-local session and obey that repository's contract.
-  - Continuation: use `codex-reply` on the existing Codex MCP conversation instead of starting a new one.
+  - Continue an existing conversation through the host's supported continuation operation instead
+    of starting a duplicate conversation.
 - **Codex-main native sub-agents (read-only breadth)**:
   - When the opened CLI is Codex, delegate read-only investigation, analysis, and extraction breadth to Codex native sub-agents.
-  - Native sub-agent tools are deferred; run `tool_search` first and load `multi_agent_v1`.
-  - Use `spawn_agent` with `agent_type` `default`, `worker`, or `explorer`; then `wait_agent`; then `close_agent`.
-  - This path is proven stable for single and parallel read-only breadth at default `agents.max_depth=1` and `max_threads=6`.
+  - Use only the native collaboration operations exposed by the current host. Follow the active
+    global and repository policy for model, reasoning effort, context inheritance, concurrency,
+    lifecycle reuse, and release; do not assume a tool-loading step or fixed call sequence.
+  - Resolve task-category routing through `scripts/mir.sh policy resolve --category <cat>` and pass
+    explicit routing fields when the active policy requires them. Repository custom-agent settings
+    still take precedence when the runtime defines that behavior.
   - Native sub-agents stay read-only; use `mir_executor --dispatch` when delegated mutation needs worktree isolation. Bounded main edits remain valid.
   - Reason: native sub-agents bypass harness worktrees, merge gates, and TDD gates.
-  - `spawn_agent` has no sandbox parameter, so do not use it as an execution lane.
 - For delegated in-repo mutation, prefer `mir_executor … --dispatch` when worktree isolation or its merge gate is useful; bounded direct-main edits are valid. Raw `codex exec` remains banned.
 - The 600-second elapsed and 180-second inactivity observations report only; they never auto-kill, auto-fail, auto-retry, advance retry counters, or block finalization. Omitted timeout means continued execution; an explicit positive operator cap remains binding.
   - Availability failure: report the lane limitation and do not substitute raw exec; use another safe in-scope route when available.

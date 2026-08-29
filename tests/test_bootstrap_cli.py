@@ -42,7 +42,7 @@ def _make_harness_surfaces(root: Path) -> None:
     _write(root / ".claude" / "settings.json", '{"hooks":{"SessionStart":[]}}\n')
     _write(
         root / ".codex" / "config.toml",
-        'approval_policy = "on-request"\n',
+        'web_search = "cached"\n',
     )
     _write(root / ".codex" / "hooks.json", "{}\n")
     _write(root / ".ai-harness" / "deny-list.yaml", "deny: []\n")
@@ -111,6 +111,14 @@ def test_should_reject_mixed_codex_permission_configuration(tmp_path):
         ".codex/config.toml mixes legacy sandbox settings with permission profiles"
         in errors
     )
+
+
+def test_should_accept_codex_config_without_project_approval_policy(tmp_path):
+    _make_harness_surfaces(tmp_path)
+
+    errors, _ = bootstrap_cli._validate_surfaces(tmp_path)
+
+    assert ".codex/config.toml is missing approval_policy" not in errors
 
 
 def _bootstrap(root: Path, *extra: str) -> int:

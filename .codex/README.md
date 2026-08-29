@@ -14,10 +14,12 @@ inactive; repository instructions and explicit verification remain authoritative
 
 ## Permission boundary
 
-The generated root configuration does not select `sandbox_mode`, `sandbox_workspace_write`, or
-`default_permissions`. Legacy sandbox settings and permission profiles do not compose, so the
-operator's user-level or managed configuration remains authoritative. Write-capable generated
-agents inherit that selection; mechanically read-only reviewers retain `sandbox_mode = "read-only"`.
+The generated root configuration does not select `approval_policy`.
+It does not select `sandbox_mode`, `sandbox_workspace_write`, `default_permissions`, or agent routing defaults.
+Operator-owned user or managed configuration remains authoritative for approval, permissions,
+default sub-agent models and effort, concurrency, and native collaboration enablement.
+Write-capable generated agents inherit that selection; mechanically read-only reviewers retain
+`sandbox_mode = "read-only"`.
 
 ## Maintained events
 

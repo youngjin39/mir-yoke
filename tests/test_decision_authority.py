@@ -13,6 +13,9 @@ PROJECT_AGENT_KIT_ADR = (
 UPGRADE_ADR = (
     ROOT / "docs/decisions/adr-84-harness-upgrade-guidance-and-runtime-hygiene.md"
 )
+GLOBAL_POLICY_ADR = (
+    ROOT / "docs/decisions/adr-85-global-policy-inheritance-and-agent-contracts.md"
+)
 COMPOSITION_ADR = (
     ROOT / "docs/decisions/adr-82-product-planes-capability-packs-and-composition.md"
 )
@@ -69,6 +72,20 @@ def test_should_make_adr_84_the_current_upgrade_guidance_decision() -> None:
     assert metadata["amends"] == ["adr-74", "adr-83"]
     assert guide.is_file()
     assert index.index("ADR-84") < index.index("ADR-81")
+
+
+def test_should_make_adr_85_the_current_runtime_policy_decision() -> None:
+    metadata = _frontmatter(GLOBAL_POLICY_ADR)
+    index = (ROOT / "docs/decisions/INDEX.md").read_text(encoding="utf-8")
+    body = GLOBAL_POLICY_ADR.read_text(encoding="utf-8")
+    amended = UPGRADE_ADR.read_text(encoding="utf-8")
+
+    assert metadata["status"] == "accepted"
+    assert metadata["amends"] == ["adr-09", "adr-84"]
+    assert "operator-owned global policy" in body
+    assert "Claude model frontmatter" in body
+    assert "ADR-85 supersedes" in amended
+    assert index.index("ADR-85") < index.index("ADR-84")
 
 
 def test_should_preserve_adr_82_only_as_an_inert_reference() -> None:

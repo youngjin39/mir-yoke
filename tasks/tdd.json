@@ -2,6 +2,43 @@
   "version": 1,
   "changes": [
     {
+      "id": "global-policy-inheritance-agent-contracts-2026-08-29",
+      "record_status": "in_progress",
+      "scope": "Make generated Codex configuration inherit operator-owned approval and native-agent routing policy, modernize current agent collaboration contracts, derive read-only sandboxing from source metadata, preserve Claude model frontmatter while keeping Codex agents unpinned, and document external skill registry migration.",
+      "targets": [
+        "docs/decisions/adr-85-global-policy-inheritance-and-agent-contracts.md",
+        "docs/decisions/INDEX.md",
+        "scripts/generate_codex_derivatives.sh",
+        "src/mir/cli/bootstrap.py",
+        ".claude/agents/main-orchestrator.md",
+        ".claude/agents/executor-agent.md",
+        ".claude/agents/fleet-doc-steward.md",
+        "docs/operations/global-plugin-migration.md",
+        "docs/operations/harness-engineering-upgrade.md",
+        "tests/test_codex_derivation_script.py",
+        "tests/test_bootstrap_cli.py",
+        "tests/test_decision_authority.py",
+        "tests/test_template_asset_classification.py",
+        ".mir/capability-lock.json"
+      ],
+      "design_ref": "docs/decisions/adr-85-global-policy-inheritance-and-agent-contracts.md",
+      "bluebrick": "Generated Codex policy / Agent contracts / External skill migration",
+      "categories": {
+        "unit": {"status": "pass", "command": "uv run pytest -q tests/test_codex_derivation_script.py tests/test_bootstrap_cli.py tests/test_decision_authority.py tests/test_template_asset_classification.py", "notes": "53 passed across the canonical generator, validation, source metadata, and current decision boundary."},
+        "integration": {"status": "pass", "command": "uv run pytest -q tests/test_codex_derivation_script.py tests/test_greenfield_slim_integration.py", "notes": "11 passed across generated parity and external skill registries; the commit-bound lock remains a separate category."},
+        "e2e": {"status": "pass", "command": "uv run python scripts/verify_codex_sync.py", "notes": "A clean temporary derivation matches every maintained Codex output."},
+        "browser": {"status": "not_applicable", "reason": "No browser or GUI surface changes."},
+        "edge": {"status": "pass", "command": "uv run pytest -q tests/test_codex_derivation_script.py -k 'not_infer_read_only or skips_non_agent'", "notes": "A legacy slug cannot grant read-only sandboxing and optional project settings stay absent."},
+        "architecture": {"status": "pass", "command": "uv run pytest -q tests/test_decision_authority.py tests/test_public_template_identity.py tests/test_template_asset_classification.py", "notes": "ADR-85 remains inside the public-template authority and asset boundary; ADR-84 records the amendment."},
+        "availability": {"status": "not_applicable", "reason": "No daemon, scheduler, or standing service changes."},
+        "load": {"status": "not_applicable", "reason": "The change removes fixed native-agent concurrency instead of adding a throughput surface."},
+        "soak": {"status": "not_applicable", "reason": "No persistent process is introduced."},
+        "security": {"status": "pass", "command": "uv run pytest -q tests/test_codex_derivation_script.py tests/test_bootstrap_cli.py tests/test_public_template_identity.py", "notes": "Operator policy ownership, read-only metadata, and public non-authority pass."},
+        "compatibility": {"status": "pass", "command": "uv run pytest -q -k 'not test_repository_lock_is_portable_and_matches_managed_trees'", "notes": "799 passed and one commit-bound capability-lock test was intentionally deselected."},
+        "transaction_locking": {"status": "planned", "command": "uv run pytest -q tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees", "notes": "Requires an authorized implementation commit before the protected lock can bind the three changed agent source objects."}
+      }
+    },
+    {
       "id": "harness-upgrade-runtime-hygiene-2026-08-28",
       "record_status": "complete",
       "scope": "Add a current harness-upgrade guide and correct context, memory, fingerprint-bound embedding, hook-input, operator-owned Codex permissions, and runtime parity gaps without expanding the Starter, reactivating provider-side composition, or touching the protected capability lock.",

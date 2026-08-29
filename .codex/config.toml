@@ -1,17 +1,11 @@
-# GENERATED FILE: edit Claude source files and rerun scripts/generate_codex_derivatives.sh
+# GENERATED FILE: edit scripts/generate_codex_derivatives.sh or .mcp.json and rerun the generator
 
-approval_policy = "on-request"
 web_search = "cached"
 personality = "pragmatic"
 project_doc_max_bytes = 32768
 
-[agents]
-max_concurrent_threads_per_session = 6
-max_depth = 1
-
 [features]
 hooks = true
-multi_agent = true
 shell_snapshot = true
 personality = true
 

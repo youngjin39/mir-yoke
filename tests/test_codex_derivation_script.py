@@ -88,6 +88,9 @@ def test_generator_skips_non_agent_markdown_and_empty_targets(tmp_path: Path) ->
         if path.name != "README.md"
     }
     assert generated_agents == source_agents
+    for source_path in (ROOT / ".claude" / "agents").glob("*.md"):
+        if source_path.name != "README.md":
+            assert "\nmodel: " in source_path.read_text(encoding="utf-8")
 
     generated_orchestrator = (
         tmp_path / ".codex" / "agents" / "main-orchestrator.toml"
@@ -98,12 +101,17 @@ def test_generator_skips_non_agent_markdown_and_empty_targets(tmp_path: Path) ->
     assert "Mir Yoke provides no daemon" in generated_orchestrator
 
     config = tomllib.loads((tmp_path / ".codex" / "config.toml").read_text())
+    config_text = (tmp_path / ".codex" / "config.toml").read_text(encoding="utf-8")
+    assert config_text.startswith(
+        "# GENERATED FILE: edit scripts/generate_codex_derivatives.sh or .mcp.json"
+    )
+    assert "approval_policy" not in config
     assert "sandbox_mode" not in config
     assert "sandbox_workspace_write" not in config
     assert "default_permissions" not in config
-    assert config["agents"]["max_concurrent_threads_per_session"] == 6
-    assert "max_threads" not in config["agents"]
+    assert "agents" not in config
     assert config["features"]["hooks"] is True
+    assert "multi_agent" not in config["features"]
     assert "codex_hooks" not in config["features"]
     executor = tomllib.loads(
         (tmp_path / ".codex" / "agents" / "executor-agent.toml").read_text()
@@ -117,11 +125,33 @@ def test_generator_skips_non_agent_markdown_and_empty_targets(tmp_path: Path) ->
     assert "sandbox_mode" not in executor
     assert reviewer["sandbox_mode"] == "read-only"
     assert governance_reviewer["sandbox_mode"] == "read-only"
+    for agent_path in (tmp_path / ".codex" / "agents").glob("*.toml"):
+        agent = tomllib.loads(agent_path.read_text(encoding="utf-8"))
+        assert "model" not in agent
+        assert "model_reasoning_effort" not in agent
+
+    generated_executor = (
+        tmp_path / ".codex" / "agents" / "executor-agent.toml"
+    ).read_text(encoding="utf-8")
+    for stale_contract in (
+        "tool_search",
+        "multi_agent_v1",
+        "max_threads=6",
+        "agents.max_depth",
+        "Project-wide Claude control plane",
+        "mcp__codex__codex",
+        "codex-reply",
+        "spawn_agent",
+    ):
+        assert stale_contract not in generated_orchestrator
+        assert stale_contract not in generated_executor
 
     codex_readme = (tmp_path / ".codex" / "README.md").read_text(encoding="utf-8")
     assert "Use `/hooks`" in codex_readme
     assert "tool_input.command" in codex_readme
     assert "does not select `sandbox_mode`" in codex_readme
+    assert "does not select `approval_policy`" in codex_readme
+    assert "agent routing defaults" in codex_readme
     assert "mechanically read-only reviewers" in codex_readme
     assert any(
         mapping["source"] == "scripts/generate_codex_derivatives.sh"
@@ -179,6 +209,40 @@ def test_generator_derives_path_scoped_agents_and_manifest_entry(tmp_path: Path)
         and mapping["notes"] == "Path-scoped Codex instructions"
         for mapping in manifest["mappings"]
     )
+
+
+def test_should_not_infer_read_only_sandbox_from_agent_name(tmp_path: Path) -> None:
+    fixture = tmp_path / "fixture"
+    scripts_dir = fixture / "scripts"
+    agent_dir = fixture / ".claude" / "agents"
+    scripts_dir.mkdir(parents=True)
+    agent_dir.mkdir(parents=True)
+    shutil.copy2(ROOT / "scripts" / "generate_codex_derivatives.sh", scripts_dir)
+    (fixture / "CLAUDE.md").write_text("# Fixture\n", encoding="utf-8")
+    (agent_dir / "fleet-doc-steward.md").write_text(
+        "---\n"
+        "name: fleet-doc-steward\n"
+        "description: Name-only fixture\n"
+        "---\n\n"
+        "Remain within the supplied scope.\n",
+        encoding="utf-8",
+    )
+
+    completed = subprocess.run(
+        ["/bin/bash", "scripts/generate_codex_derivatives.sh"],
+        cwd=fixture,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    generated = tomllib.loads(
+        (fixture / ".codex" / "agents" / "fleet-doc-steward.toml").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert "sandbox_mode" not in generated
 
 
 def test_verifier_rejects_nested_agents_drift(tmp_path: Path) -> None:

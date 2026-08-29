@@ -339,50 +339,15 @@ write_nested_agents_md() {
 }
 
 write_config_toml() {
-  local approval_policy="on-request"
-  local settings_source=""
-  if [ -f ".claude/settings.local.json" ]; then
-    settings_source=".claude/settings.local.json"
-  elif [ -f ".claude/settings.json" ]; then
-    settings_source=".claude/settings.json"
-  fi
-  if [ -n "$settings_source" ]; then
-    local mode
-    mode="$(jq -r '.permissions.defaultMode // empty' "$settings_source" 2>/dev/null || true)"
-    if [ "$mode" = "bypassPermissions" ]; then
-      approval_policy="never"
-    else
-      local broad_allow
-      broad_allow="$(jq -r '
-        (.permissions.allow // []) as $paths
-        | (
-            ($paths | index("Bash(*)") != null) and
-            ($paths | index("Read(*)") != null) and
-            ($paths | index("Write(*)") != null) and
-            ($paths | index("Edit(*)") != null)
-          )
-      ' "$settings_source" 2>/dev/null || true)"
-      if [ "$broad_allow" = "true" ]; then
-        approval_policy="never"
-      fi
-    fi
-  fi
-
   {
-    echo "# GENERATED FILE: edit Claude source files and rerun scripts/generate_codex_derivatives.sh"
+    echo "# GENERATED FILE: edit scripts/generate_codex_derivatives.sh or .mcp.json and rerun the generator"
     echo
-    echo "approval_policy = \"$approval_policy\""
     echo 'web_search = "cached"'
     echo 'personality = "pragmatic"'
     echo 'project_doc_max_bytes = 32768'
     echo
-    echo '[agents]'
-    echo 'max_concurrent_threads_per_session = 6'
-    echo 'max_depth = 1'
-    echo
     echo '[features]'
     echo 'hooks = true'
-    echo 'multi_agent = true'
     echo 'shell_snapshot = true'
     echo 'personality = true'
     echo
@@ -414,10 +379,12 @@ inactive; repository instructions and explicit verification remain authoritative
 
 ## Permission boundary
 
-The generated root configuration does not select `sandbox_mode`, `sandbox_workspace_write`, or
-`default_permissions`. Legacy sandbox settings and permission profiles do not compose, so the
-operator's user-level or managed configuration remains authoritative. Write-capable generated
-agents inherit that selection; mechanically read-only reviewers retain `sandbox_mode = "read-only"`.
+The generated root configuration does not select `approval_policy`.
+It does not select `sandbox_mode`, `sandbox_workspace_write`, `default_permissions`, or agent routing defaults.
+Operator-owned user or managed configuration remains authoritative for approval, permissions,
+default sub-agent models and effort, concurrency, and native collaboration enablement.
+Write-capable generated agents inherit that selection; mechanically read-only reviewers retain
+`sandbox_mode = "read-only"`.
 
 ## Maintained events
 
@@ -456,7 +423,6 @@ write_agent_toml() {
   description="$(extract_frontmatter_field "$src" "description")"
   developer_instructions="$(
     emit_agent_sections_for_codex "$src" "$name" \
-      | sed 's/max_threads=6/max_concurrent_threads_per_session=6/g' \
       | escape_toml_multiline
   )"
   disallowed_tools="$(extract_frontmatter_field "$src" "disallowedTools")"
@@ -475,10 +441,6 @@ write_agent_toml() {
       sandbox_mode="read-only"
       ;;
   esac
-  if [ "$name" = "quality-agent" ] || [ "$name" = "fleet-doc-steward" ]; then
-    sandbox_mode="read-only"
-  fi
-
   {
     echo "# GENERATED FILE: edit $src and rerun scripts/generate_codex_derivatives.sh"
     echo "name = \"$name\""
@@ -549,9 +511,7 @@ write_manifest_json() {
       append_mapping "$src" "[\".codex/agents/${name}.toml\"]" "content" "Generated custom agent"
     done < <(agent_sources)
 
-    if [ -f ".claude/settings.local.json" ] || [ -f ".claude/settings.json" ] || [ -f ".mcp.json" ]; then
-      append_mapping "__CONFIG_SOURCES__" '[".codex/config.toml"]' "config" "Semantic mapping from Claude permissions and MCP settings"
-    fi
+    append_mapping "__CONFIG_SOURCES__" '[".codex/config.toml"]' "config" "Generated project-owned Codex options and optional MCP settings"
 
     if [ -f "config/project-hooks.json" ] && [ -f "templates/common-harness/scripts/render-hook-configs.py" ]; then
       append_mapping "config/project-hooks.json" '[".claude/settings.json", ".codex/hooks.json"]' "config" "Generated dual-runtime hook registrations"
@@ -566,17 +526,9 @@ write_manifest_json() {
     echo '}'
   } > "$tmp"
 
-  local config_source_label=""
-  local label_sep=""
-  if [ -f ".claude/settings.local.json" ]; then
-    config_source_label="${config_source_label}${label_sep}.claude\\/settings.local.json"
-    label_sep=" + "
-  elif [ -f ".claude/settings.json" ]; then
-    config_source_label="${config_source_label}${label_sep}.claude\\/settings.json"
-    label_sep=" + "
-  fi
+  local config_source_label="scripts\\/generate_codex_derivatives.sh"
   if [ -f ".mcp.json" ]; then
-    config_source_label="${config_source_label}${label_sep}.mcp.json"
+    config_source_label="${config_source_label} + .mcp.json"
   fi
   perl -0pi -e "s/\"source\": \"__CONFIG_SOURCES__\"/\"source\": \"$config_source_label\"/g" "$tmp"
   mv "$tmp" "$OUTPUT_ROOT/.codex-sync/manifest.json"
