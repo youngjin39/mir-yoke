@@ -4,10 +4,7 @@ Historical completion detail remains in `tasks/tdd.json` and `tasks/change_log.m
 
 ## Current
 
-- [x] **Protected:** Obtain explicit authorization to reconcile
-  `.mir/capability-lock.json` against the implementation commit.
-- [ ] **Publication:** After lock authorization, commit implementation, update and verify the lock,
-  commit the state reconciliation, and push `main`.
+No open repository action remains after the final state commit and authorized `origin/main` push.
 
 ## Recent Completed
 
@@ -16,3 +13,5 @@ Historical completion detail remains in `tasks/tdd.json` and `tasks/change_log.m
   (2026-08-30).
 - [x] Refreshed adopter payload and TDD evidence; passed full lock-excluded and independent review
   (2026-08-30).
+- [x] Bound the protected capability lock to implementation commit `3018f5c` and passed all 803
+  repository tests (2026-08-30).

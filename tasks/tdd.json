@@ -3,8 +3,8 @@
   "changes": [
     {
       "id": "adr85-reviewer-contract-exact-readonly-2026-08-30",
-      "record_status": "current-in-progress",
-      "scope": "Replace the remaining host-specific Codex reviewer wording, require exact comma-delimited Write and Edit tokens for generated read-only sandboxes, fail closed on invalid patterned frontmatter, and cover all generated agents without changing Claude model pins or the protected capability lock.",
+      "record_status": "complete",
+      "scope": "Replace the remaining host-specific Codex reviewer wording, require exact comma-delimited Write and Edit tokens for generated read-only sandboxes, fail closed on invalid patterned frontmatter, cover all generated agents without changing Claude model pins, and bind the protected capability lock to the implementation commit.",
       "targets": [
         ".claude/agents/codex-final-reviewer.md",
         ".claude/agents/pipeline-validator.md",
@@ -21,7 +21,7 @@
       "categories": {
         "unit": {"status": "pass", "command": "uv run pytest -q tests/test_codex_derivation_script.py", "notes": "9 passed; exact Write/Edit tokens, batch fail-closed validation, invalid patterned frontmatter, near-match tool names, and stale contracts across every generated agent are covered."},
         "integration": {"status": "pass", "command": "uv run python scripts/verify_codex_sync.py", "notes": "Canonical agent sources and generated Codex mirrors match after regeneration."},
-        "e2e": {"status": "pass", "command": "uv run python -m tools.template_assets --json && uv run pytest -q tests/test_template_asset_classification.py::test_should_match_exact_adopter_payload_when_release_inventory_is_generated", "notes": "All 692 tracked assets are classified and the refreshed adopter payload exactly matches the generated inventory without a commit-bound lock claim."},
+        "e2e": {"status": "pass", "command": "uv run python -m tools.template_assets --json && uv run pytest -q tests/test_template_asset_classification.py::test_should_match_exact_adopter_payload_when_release_inventory_is_generated", "notes": "All 692 tracked assets are classified and the refreshed adopter payload exactly matches the lock-bound generated inventory."},
         "browser": {"status": "not_applicable", "reason": "No browser or GUI surface changes."},
         "edge": {"status": "pass", "command": "uv run pytest -q tests/test_codex_derivation_script.py -k 'exact_write_and_edit or invalid_patterned'", "notes": "Writer/Edit and Write/NotebookEdit near matches do not select a read-only sandbox; invalid patterned name/tool metadata fails before agent output."},
         "architecture": {"status": "pass", "command": "uv run python scripts/verify_codex_sync.py", "notes": "ADR-85 host-neutral delegation and source-derived sandboxing are synchronized."},
@@ -29,8 +29,8 @@
         "load": {"status": "not_applicable", "reason": "Generation remains bounded repository maintenance."},
         "soak": {"status": "not_applicable", "reason": "No persistent process is introduced."},
         "security": {"status": "pass", "command": "uv run pytest -q tests/test_codex_derivation_script.py", "notes": "Read-only sandbox assignment depends on exact source capabilities; all sources validate before output replacement, so malformed patterned metadata cannot leave partial or silently widened agent mirrors."},
-        "compatibility": {"status": "pass", "command": "uv run pytest -q -k 'not test_repository_lock_is_portable_and_matches_managed_trees'", "notes": "802 passed and the intentionally pending commit-bound capability-lock regression was deselected."},
-        "transaction_locking": {"status": "planned", "command": "uv run pytest -q tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees", "notes": "Authorization is recorded. Bind the protected lock to the implementation commit object, then rerun this regression before publication."}
+        "compatibility": {"status": "pass", "command": "uv run pytest -q", "notes": "803 tests passed with the protected capability lock included."},
+        "transaction_locking": {"status": "pass", "command": "uv run pytest -q tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees", "notes": "The protected lock binds the changed canonical agent objects to implementation commit 3018f5c63d610f06d3195a2e409f3bdb0cdd311f."}
       }
     },
     {

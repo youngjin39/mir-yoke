@@ -1,6 +1,6 @@
 # Plan
 
-## Current status — PUBLICATION AUTHORIZED (2026-08-30)
+## Current status — CLOSED (2026-08-30)
 
 - [x] Confirm global/project precedence and record the boundary in ADR-85.
 - [x] Replace the remaining host-specific reviewer contracts with ADR-85 runtime-neutral wording.
@@ -10,14 +10,14 @@
 - [x] Add regressions for near-match tool names and stale contracts across all generated agents.
 - [x] Regenerate `.codex/` and `.codex-sync/manifest.json`, refresh the adopter payload, and run
   focused and broad verification.
-- [ ] After authorization and an implementation commit, reconcile and retest the protected lock.
+- [x] After authorization and an implementation commit, reconcile and retest the protected lock.
 
 Scope is Mir Yoke only. The owner authorized the implementation commit, protected capability-lock
 reconciliation, final state commit, and push to `origin/main`. Do not tag, publish a release, or
 modify consumer repositories. The lock must bind the implementation commit object.
 
-Implementation is verified. Publication proceeds only after the commit-bound lock and full suite
-pass.
+Implementation commit `3018f5c` is lock-bound and the full suite passes. No active repository action
+remains after the final state commit and authorized `origin/main` push.
 
 ## Deferred owner work
 

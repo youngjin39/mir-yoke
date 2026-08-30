@@ -1,7 +1,7 @@
 {
   "goal": "Correct the remaining ADR-85 Codex reviewer wording and make read-only sandbox generation exact and fail-closed without changing Claude model pins.",
   "goal_type": "maintenance",
-  "scope": "Mir Yoke only; update two canonical read-only Codex agents, the canonical generator, generated derivatives, adopter payloads, focused tests, and task state; commit the implementation, bind the protected capability lock to that commit, run full verification, commit final state, and push origin/main. No tag, release, or consumer repository mutation is authorized.",
+  "scope": "Mir Yoke only; correct two canonical read-only Codex agents and the generator, bind the protected capability lock to implementation commit 3018f5c, pass full verification, record final state, and publish the authorized commits to origin/main. No tag, release, or consumer repository mutation is authorized.",
   "priority": "normal",
   "updated": "2026-08-30",
   "history": [
