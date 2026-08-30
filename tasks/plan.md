@@ -1,23 +1,18 @@
 # Plan
 
-## Current status — CLOSED (2026-08-30)
+## Current status — ADR-86 CLOSED (2026-08-30)
 
-- [x] Confirm global/project precedence and record the boundary in ADR-85.
-- [x] Replace the remaining host-specific reviewer contracts with ADR-85 runtime-neutral wording.
-  This wording supersedes the host-specific contract without changing Claude model pins.
-- [x] Require exact comma-delimited `Write` and `Edit` tokens for generated read-only sandboxes.
-- [x] Fail closed before agent generation when patterned frontmatter fields are invalid.
-- [x] Add regressions for near-match tool names and stale contracts across all generated agents.
-- [x] Regenerate `.codex/` and `.codex-sync/manifest.json`, refresh the adopter payload, and run
-  focused and broad verification.
-- [x] After authorization and an implementation commit, reconcile and retest the protected lock.
+- [x] Designate Mir Harness as Mir Yoke's repository-maintenance manager in ADR-86 and root policy.
+- [x] Track the portable maintainer Profile and remove `.mir/capability-lock.json` from its
+  protected paths without changing adopter-generated Profile protection.
+- [x] Set the maintainer registry to `harness-managed` while preserving non-runtime and consumer
+  non-authority contracts.
+- [x] Regenerate derivatives and adopter payload; pass the full 803-test suite.
 
-Scope is Mir Yoke only. The owner authorized the implementation commit, protected capability-lock
-reconciliation, final state commit, and push to `origin/main`. Do not tag, publish a release, or
-modify consumer repositories. The lock must bind the implementation commit object.
+Scope is Mir Yoke maintenance governance only. This instruction authorizes the scoped commit and
+`origin/main` push; tags, releases, and consumer-repository changes remain unauthorized.
 
-Implementation commit `3018f5c` is lock-bound and the full suite passes. No active repository action
-remains after the final state commit and authorized `origin/main` push.
+No active implementation action remains.
 
 ## Deferred owner work
 

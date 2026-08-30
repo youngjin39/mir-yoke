@@ -49,19 +49,20 @@ def test_should_disable_fleet_identity_when_public_configuration_is_loaded() -> 
     assert "fleet_manager" not in consistency["repo"]
     assert repository["repository_type"] == "public_harness_template"
     assert repository["adoption_mode"] == "explicit_local"
-    assert repository["management_mode"] == "self-maintained-template"
+    assert repository["management_mode"] == "harness-managed"
+    assert "may modify Yoke directly" in (ROOT / "CLAUDE.md").read_text(encoding="utf-8")
     assert "fleet_management" not in repository
     local_profile = ROOT / ".mir/repo-profile.toml"
-    if local_profile.exists():
-        with local_profile.open("rb") as stream:
-            profile = tomllib.load(stream)
-        assert profile["repo"]["path"] == "."
-        assert profile["repo"]["repository_type"] == "public_harness_template"
-        assert profile["repo"]["rollout_class"] == "repository_owned"
-        assert profile["repo"]["overlay_archetype"] == "public_template"
-        assert re.fullmatch(r"[0-9a-f]{40}", profile["repo"]["profile_base_commit"])
-        assert "T" in profile["repo"]["profile_verified_at"]
-        assert profile["boundaries"]["live_runtime"] == []
+    with local_profile.open("rb") as stream:
+        profile = tomllib.load(stream)
+    assert profile["repo"]["path"] == "."
+    assert profile["repo"]["repository_type"] == "public_harness_template"
+    assert profile["repo"]["rollout_class"] == "repository_owned"
+    assert profile["repo"]["overlay_archetype"] == "public_template"
+    assert re.fullmatch(r"[0-9a-f]{40}", profile["repo"]["profile_base_commit"])
+    assert "T" in profile["repo"]["profile_verified_at"]
+    assert profile["boundaries"]["live_runtime"] == []
+    assert ".mir/capability-lock.json" not in profile["paths"]["protected_paths"]
 
 
 def test_should_not_declare_repository_runtime_agents_or_orchestration() -> None:

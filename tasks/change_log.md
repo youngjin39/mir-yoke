@@ -2,6 +2,9 @@
 
 One bullet per non-trivial change. Newest at the top.
 
+- 2026-08-30: accepted ADR-86, assigned Mir Harness as repository-maintenance manager, tracked the
+  portable maintainer Profile without capability-lock protection, preserved adopter lock protection,
+  regenerated derivatives and payload, and passed all 803 tests.
 - 2026-08-30: replaced the remaining host-specific Codex reviewer contracts, made generated
   read-only sandbox classification require exact `Write` and `Edit` tool tokens, rejected invalid
   patterned frontmatter before agent output, refreshed the adopter payload and derivatives, and

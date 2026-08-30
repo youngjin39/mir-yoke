@@ -431,7 +431,7 @@
     },
     {
       "path": ".gitignore",
-      "sha256": "16282784f4960fac475ae9b547404928e61a6480f24e821175c4e8c266e56490",
+      "sha256": "1878555f9a93a10ad470f25efef7273aecf23b4c2cf315600b9cdd20c88b3b20",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -460,8 +460,14 @@
       "disposition": "remove"
     },
     {
+      "path": ".mir/repo-profile.toml",
+      "sha256": "705fa6e8b4d090bbd87ecf244361ac78533b2e3860db2c6baeb7e8f58185e983",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
       "path": "AGENTS.md",
-      "sha256": "f5a2f2159e1b86f68beda32609c87fbd15ffd76ad230e3eb633d2922d5ffd732",
+      "sha256": "bce29f62de9e5e15b7ac6691fc657deb66cc9960f629c5f6e65e1b16b34fb809",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -485,7 +491,7 @@
     },
     {
       "path": "CLAUDE.md",
-      "sha256": "adc73345cd4312711b540fedfa012b8fc73c7ffc20755a4cb2e8ca467e466303",
+      "sha256": "9a91581fa1394eb8141a6a78a0a90b144fd793c694d6b0e32f6434c39c7f05a1",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -611,7 +617,7 @@
     },
     {
       "path": "config/repos/mir-yoke.json",
-      "sha256": "1499f67a9731582d290e7d5985a99dd71ed6567bfa42dd06a893bfdbda4caca0",
+      "sha256": "8a3f9f47dd1c90759a4e5799302865fc544510a1e9a837ba7b32c41aa5436a38",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -623,7 +629,7 @@
     },
     {
       "path": "config/template-assets.json",
-      "sha256": "a4dab43a5ec55d9bce8e6b5102c2daf5ef3778bc74b8aa8e0d60604c1a16289f",
+      "sha256": "972ef287f3500a6ccb498c49cf49752013dfef0bdb25f574f0e202725e6abf0e",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     },
@@ -683,7 +689,7 @@
     },
     {
       "path": "docs/decisions/INDEX.md",
-      "sha256": "9b98bcb9fb1337c555d3ec163033766ef73fece27acef3b95f8723a63c84de2c",
+      "sha256": "8e2820a06dd61f54d74a79a2626e45605ab01ccfde792b3dbf35dc6631de9997",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -1080,6 +1086,12 @@
     {
       "path": "docs/decisions/adr-85-global-policy-inheritance-and-agent-contracts.md",
       "sha256": "005c66efd759ca242c6846c018f7ce42af9ae7564012fd9a42da70df0c16353d",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/decisions/adr-86-mir-harness-managed-repository-maintenance.md",
+      "sha256": "a40e0a8e56b9d8aff2e8fc07c0fda2eaa7882051a955d83704384dd6b6ce9d5b",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -3299,13 +3311,13 @@
     },
     {
       "path": "tasks/change_log.md",
-      "sha256": "6c275472338695d1869c584365dc3c496c2f520eac4e373a57d266ac23a99726",
+      "sha256": "6a59cbe16ef194b7c23bae6415fe2cf03476418eec45b1b2292db52a89572dbe",
       "classification": "reference",
       "disposition": "remove"
     },
     {
       "path": "tasks/checklist.md",
-      "sha256": "c6aec5581d7d8a2a8b62a14fb8a1b4d239c61a559e8f38d149e56fcc0463655c",
+      "sha256": "891f061cd264767ee51c3dd91484b5189dc8598d3b08d879af3aca0c840fe55c",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -3341,7 +3353,7 @@
     },
     {
       "path": "tasks/plan.md",
-      "sha256": "b09693a7cba725bdf8da64be88fdb2ccfe90959bc152e0a5fbdfe013d757aa97",
+      "sha256": "57848b6c2486d666c5c37a9197e8ff0ca4e68a314049ec6ce483a36e739db3f2",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -3359,7 +3371,7 @@
     },
     {
       "path": "tasks/tdd.json",
-      "sha256": "937c621cb71a5564ac0a76e0d202c2d4907517d8159c974baa2e215cd374bce9",
+      "sha256": "710ddee93c1166eaf1d7d13c98b0c37775527dd02a55063f0c83981e3b13346e",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -3665,7 +3677,7 @@
     },
     {
       "path": "tests/test_public_template_identity.py",
-      "sha256": "27b572d0bf47b0eb33a3ca119af9c5a0fe94ce41317aa9fc81fd9fb0047d00cc",
+      "sha256": "ba2644d080c6428f68658af737e520d85df4bbf58e032264d7b9657369595f5d",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     },

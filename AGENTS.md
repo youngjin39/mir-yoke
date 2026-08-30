@@ -20,15 +20,15 @@ recipe, and the installed `mir` CLI acts only on the user's explicit target and 
 - `recipes/project-agent-kit/` owns the one-prompt empty-target bootstrap procedure.
 - `src/mir/cli/` owns the optional installed v0.8-compatible command surface; the Kit never copies it.
 - `plugins/*/skills/*` owns common portable skill bodies.
-- ADR-83 owns product authority; ADR-84 upgrade guidance; ADR-85 global-policy and agent contracts; ADR-81 the Starter.
+- ADR-83 owns product authority; ADR-84 upgrade guidance; ADR-85 agent contracts; ADR-86 Harness maintenance management; ADR-81 the Starter.
 - `config/template-assets.json` classifies the full maintainer checkout.
 - `.mir/repo-profile.toml` owns this maintainer repository's local boundaries when present.
 
 ## Authority and safety
 
-- Read, review, and status requests are non-mutating; change requests authorize only named scope.
-- Get explicit direction before destructive actions, credentials, external writes, protected scope,
-  commits, pushes, releases, or material scope expansion.
+- Mir Harness may modify Yoke directly from this Git root without prompt handoff or per-file approval; `.mir/capability-lock.json` is managed rather than protected.
+- Get explicit direction before destructive actions, credentials, consumer writes, commits, pushes,
+  tags, releases, or material scope expansion.
 - Preserve unrelated local changes and keep public material generic, English, and sanitized.
 - Consumers own every result. Mir Yoke never discovers them, grants standing write authority, or
   provides an active `yoke` composer; installing `mir` does not expand authority.

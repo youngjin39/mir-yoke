@@ -9,7 +9,7 @@
   "overlay_archetype": "public_template",
   "status": "active",
   "management_template_id": "public_template",
-  "management_mode": "self-maintained-template",
+  "management_mode": "harness-managed",
   "profile_source": {
     "kind": "example-profile",
     "path": "config/repos/mir-yoke.json"
@@ -31,7 +31,8 @@
   "evidence_trace": {
     "source_documents": [
       "docs/decisions/adr-83-project-agent-kit-recipe-and-supported-surfaces.md",
-      "docs/decisions/adr-81-minimal-starter-support-boundary.md"
+      "docs/decisions/adr-81-minimal-starter-support-boundary.md",
+      "docs/decisions/adr-86-mir-harness-managed-repository-maintenance.md"
     ],
     "open_questions": [],
     "assumptions": [
@@ -40,7 +41,8 @@
   },
   "notes": [
     "Sanitized self-profile used by public harness-consistency generation and verification.",
-    "Maintainers may open an ordinary agent-assisted editing session, but Mir Yoke itself declares no repository product/runtime agents, skills, or orchestration."
+    "Mir Harness may directly modify this repository from the Yoke Git root without a target-prompt handoff or per-file approval; Mir Yoke itself declares no repository product/runtime agents, skills, or orchestration.",
+    "Commit, push, tag, release, and consumer-repository changes still require current explicit user authority."
   ],
   "active_agents": [],
   "active_skills": [],
@@ -54,5 +56,5 @@
   },
   "orchestration_profile": "none",
   "last_reviewed_at": "2026-08-27",
-  "rationale": "ADR-83 public Starter, Project Agent Kit recipe, portable plugin, and reference-corpus self-profile. Mir Yoke publishes inert assets and declares no repository runtime agent or orchestration authority."
+  "rationale": "ADR-83 public Starter, Project Agent Kit recipe, portable plugin, and reference-corpus profile managed by Mir Harness. Mir Yoke publishes inert assets and declares no repository runtime agent or orchestration authority."
 }

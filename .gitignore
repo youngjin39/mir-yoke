@@ -53,5 +53,6 @@ out/
 .mir/slim.lock
 .mir/runtime/
 
-# Operator-specific profile — created by setup.sh, filled in by repo owner
+# Mir Yoke tracks its portable maintainer Profile; setup may replace it in a product-owned checkout.
 .mir/repo-profile.toml
+!.mir/repo-profile.toml

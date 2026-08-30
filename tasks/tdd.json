@@ -2,6 +2,28 @@
   "version": 1,
   "changes": [
     {
+      "id": "adr86-mir-harness-managed-maintenance-2026-08-30",
+      "record_status": "complete",
+      "scope": "Designate Mir Harness as the Mir Yoke repository-maintenance manager, remove capability-lock protection only from the tracked maintainer Profile, and retain consumer and publication authority boundaries.",
+      "targets": ["CLAUDE.md", ".mir/repo-profile.toml", "config/repos/mir-yoke.json", "docs/decisions/adr-86-mir-harness-managed-repository-maintenance.md", "tests/test_public_template_identity.py", "generated derivatives", "config/adopter-payload.json"],
+      "design_ref": "docs/decisions/adr-86-mir-harness-managed-repository-maintenance.md",
+      "bluebrick": "Repository maintenance authority / Portable maintainer Profile / Capability lock",
+      "categories": {
+        "unit": {"status": "pass", "command": "uv run pytest -q tests/test_public_template_identity.py tests/test_template_asset_classification.py", "notes": "Harness-managed identity, unprotected maintainer lock, asset classification, and exact payload pass."},
+        "integration": {"status": "pass", "command": "uv run python scripts/verify_codex_sync.py && uv run python -m tools.template_assets", "notes": "Canonical and generated contracts and public asset inventory agree."},
+        "e2e": {"status": "pass", "command": "uv run pytest -q", "notes": "All 803 repository tests pass."},
+        "browser": {"status": "not_applicable", "reason": "No browser surface changes."},
+        "edge": {"status": "pass", "command": "uv run pytest -q tests/test_setup_profile.py tests/test_public_template_identity.py", "notes": "The maintainer lock is unprotected while adopter-generated Profiles retain lock protection."},
+        "architecture": {"status": "pass", "command": "ADR-86 and root-contract assertions", "notes": "Yoke remains a non-runtime public template with no consumer authority."},
+        "availability": {"status": "not_applicable", "reason": "No service changes."},
+        "load": {"status": "not_applicable", "reason": "No throughput changes."},
+        "soak": {"status": "not_applicable", "reason": "No persistent process is introduced."},
+        "security": {"status": "pass", "command": "uv run pytest -q tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees", "notes": "The lock remains commit-bound and exact; secrets and consumer locks remain protected."},
+        "compatibility": {"status": "pass", "command": "uv run pytest -q", "notes": "803 tests pass with no consumer bootstrap regression."},
+        "transaction_locking": {"status": "pass", "command": "capability-lock exact-object regression", "notes": "Removing protected-path classification does not weaken lock integrity."}
+      }
+    },
+    {
       "id": "adr85-reviewer-contract-exact-readonly-2026-08-30",
       "record_status": "complete",
       "scope": "Replace the remaining host-specific Codex reviewer wording, require exact comma-delimited Write and Edit tokens for generated read-only sandboxes, fail closed on invalid patterned frontmatter, cover all generated agents without changing Claude model pins, and bind the protected capability lock to the implementation commit.",

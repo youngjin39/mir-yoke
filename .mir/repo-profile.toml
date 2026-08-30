@@ -1,0 +1,68 @@
+# Canonical portable maintainer identity for the Mir Yoke repository.
+
+[repo]
+slug = "mir-yoke"
+display_name = "Mir Yoke"
+path = "."
+repository_type = "public_harness_template"
+rollout_class = "repository_owned"
+overlay_archetype = "public_template"
+status = "active"
+purpose = "Publish a minimal Starter, an agent-guided Project Agent Kit recipe, and portable Claude and Codex skills."
+technology_stack = ["python", "uv", "toml", "json", "powershell", "bash"]
+profile_base_commit = "c19f51077065bd3e71a39f971f4c6c76d89dc39e"
+profile_verified_at = "2026-08-30T11:38:04+09:00"
+
+[ownership]
+main_role = "control_plane"
+delegated_execution = "codex_first"
+main_agent_contract = "shared_parity"
+codex_backend_role = "code_tdd_review_plane"
+codex_default_enabled = true
+allow_role_override = true
+override_requires_record = true
+
+[paths]
+code_paths = ["tools/", "src/", "scripts/"]
+non_code_paths = ["docs/", "recipes/", ".ai-harness/", "README.md", "CLAUDE.md", "AGENTS.md"]
+protected_paths = [".env", ".env.*", "secrets/**", ".mir/memory.db*"]
+generated_paths = ["AGENTS.md", "**/AGENTS.md", ".codex/**", ".codex-sync/manifest.json", "docs/memory-map.md", "tasks/lessons.md"]
+architecture_refs = ["ARCHITECTURE.md", "docs/decisions/"]
+configuration_paths = ["pyproject.toml", "config/", "plugins/", ".claude-plugin/", ".agents/plugins/"]
+verification_paths = ["tests/", "scripts/verify_context_paths.py", "scripts/verify_codex_sync.py", "tools/harness_consistency/"]
+workflow_refs = ["CLAUDE.md", ".ai-harness/", ".claude/", "tasks/intent.json", "tasks/plan.md", "tasks/handoffs/session-handoff-LATEST.md"]
+exception_refs = [".mir/boundary.md", ".mir-preserve.toml"]
+
+[preserve]
+skills = []
+claude_sections = []
+agent_memory_paths = [".mir/memory.db"]
+commands = []
+extra_docs = []
+
+[boundaries]
+live_runtime = []
+secrets = [".env", ".env.*", "secrets/**"]
+data_sensitivity = "low"
+release_window = "anytime"
+external_services = []
+
+[execution]
+delegated_execution_contract = "subagents_codex_first"
+delegation_required_tasks = ["supported_surface_or_project_agent_kit_contract_change", "release_review"]
+delegation_recommended_tasks = ["tools_or_src_implementation", "tests", "independent_review"]
+main_direct_tasks = ["placeholder_or_profile_check", "small_documentation_change", "final_publish_judgment"]
+codex_allowed_modes = ["code", "review", "tdd"]
+codex_blocked_modes = []
+review_scope = ["tools/", "src/", "scripts/", "tests/"]
+tdd_scope = ["tools/", "src/", "scripts/"]
+non_code_profile = "common_ai_only"
+
+[gates]
+requires_phase_gate = false
+requires_secrets_vault = false
+requires_dynamic_egress = false
+requires_release_window = false
+requires_external_store = false
+requires_memory_store = false
+requires_global_capabilities = false
