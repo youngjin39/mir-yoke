@@ -2,6 +2,10 @@
 
 One bullet per non-trivial change. Newest at the top.
 
+- 2026-08-30: replaced the remaining host-specific Codex reviewer contracts, made generated
+  read-only sandbox classification require exact `Write` and `Edit` tool tokens, rejected invalid
+  patterned frontmatter before agent output, refreshed the adopter payload and derivatives, and
+  recorded authorization to bind the protected capability lock after the implementation commit.
 - 2026-08-30: made generated Codex configuration inherit operator-owned approval and native-agent
   routing policy, modernized host-neutral agent contracts, derived the fleet documentation
   advisor's read-only sandbox from frontmatter, preserved Claude model fields while keeping Codex

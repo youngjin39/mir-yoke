@@ -1,73 +1,61 @@
-# Session Handoff — Harness Upgrade Complete
+# Session Handoff — ADR-85 Agent Contract Publication Pending
+
+- Date: 2026-08-30
+- Status: implementation verified; implementation commit, protected lock reconciliation, final
+  verification, state commit, and push are authorized.
+- Branch: local and remote `main` only. `HEAD` and `origin/main` are both `e65be8e` after
+  `fetch --prune`.
 
 ## Completed Work
 
-- Added ADR-84 and a current, reference-only harness engineering upgrade guide covering governance,
-  context/token efficiency, memory, embeddings, agents, skills, hooks, and Claude/Codex parity.
-- Corrected default active-fact retrieval, semantic document history, repository-declared history
-  globs, metadata-only reclassification, explicit missing-vector backfill, and dimension honesty.
-- Normalized current Codex patch input across safety, post-edit, and memory adapters; generated
-  operator-owned Codex permissions and bounded SessionEnd parity; documented hook trust.
-- Bound vector writes and resumable backfill to one persisted complete encoder fingerprint;
-  retained fact subject/provenance and quarantined credential-shaped values.
-- Preserved the four-file Starter, Project Agent Kit ownership, optional CLI/plugins, historical
-  boundary, protected capability lock, and immutable `v0.9.0` tag.
+- Replaced the remaining host-specific reviewer and pipeline-validator dispatch contracts with
+  ADR-85 runtime-neutral wording and regenerated their Codex mirrors.
+- Required exact comma-delimited `Write` and `Edit` tokens for generated read-only sandboxes.
+- Added batch fail-closed validation for patterned `name` and `disallowedTools` metadata before
+  any derivative output is created or replaced; invalid later sources cannot leave partial TOMLs.
+- Expanded regressions for valid quoted/reversed/extra-token forms, invalid metadata, near matches,
+  stale contracts, and preserved output on failure.
+- Made TDD E2E evidence run the exact adopter-payload comparison and refreshed the payload.
 
-## Decisions
+## Current Decisions
 
-- The three supported layers remain the Minimal Starter, the standard Project Agent Kit recipe, and
-  the separately selected installed CLI. The upgrade guide is reference, not another payload.
-- SQLite+FTS5 stays required and vector mode stays off by default. The current vector table supports
-  1024 dimensions; missing-vector backfill is not a model migration.
-- Retrieved memory is untrusted data. Instruction-like facts are omitted with id-only notices.
-- Generated Codex roots and write-capable agents inherit the operator-selected permission policy;
-  mechanically read-only roles stay read-only.
-- Capability-lock-bound Claude model pins were not changed because the lock is protected.
+- Claude model frontmatter remains unchanged; generated Codex agents stay dynamically routed.
+- The protected capability lock must bind a committed Git object. It is not updated from an
+  uncommitted worktree.
+- No tag, release, consumer mutation, or external rollout is part of this maintenance change.
 
-## Unresolved Issues
+## Unresolved Issues and Next Actions
 
-- No repository-side blocker remains.
-- Real sqlite-vec was unavailable locally. Backfill atomicity and resume were verified with the same
-  rowid contract, while actual vec0 acceptance remains covered by the optional environment path.
-- Owner-run Claude and Codex empty-target acceptance remains optional and unevaluated.
-
-## Next Actions
-
-- No active repository action remains.
-- Owner-run Claude/Codex empty-target acceptance and actual sqlite-vec acceptance remain optional;
-  run them only when explicitly requested with a suitable target or environment.
-
-## Modified Files
-
-- Product guidance and authority docs, current bluebricks, changelog, and asset classification.
-- Context/memory/embedding CLI and store, migration 018, examples, operations guide, and regressions.
-- Bootstrap permission validation, generated Codex permission inheritance, and hook timeout typing.
-- Canonical hook adapters/config, Codex generator and derived surfaces, agent-pack guidance, and
-  repository-wide link coverage.
-- Plan, intent, checklist, TDD ledger, change log, and this canonical handoff.
+1. Commit the verified implementation, bind `.mir/capability-lock.json` to that commit, rerun the
+   lock and full regressions, commit the final state, and push `main`.
+2. Owner-run Claude/Codex empty-target acceptance and real sqlite-vec acceptance remain optional and
+   unevaluated; run them only with an explicit target or suitable environment.
 
 ## Verification Results
 
-- Clean-candidate release readiness: `ready=true`.
-- Focused contracts: 105 passed; installed CLI/policy: 27 passed; full suite: 797 passed.
-- All 691 tracked candidate files classify exactly once with zero prohibited or duplicate paths.
-- Ruff, schemas, sanitization, links, generated derivative parity, shell syntax, and
-  `git diff --check` passed.
-- Independent final publication review: `READY`, blocking findings = 0.
+- Lock-excluded full suite: `802 passed, 1 deselected`.
+- Final generator and exact-payload focused suite: `10 passed`.
+- Generated parity, 692/692 asset classification, adopter-payload equality, Ruff, Bash syntax, JSON,
+  and `git diff --check`: passed.
+- Independent post-fix review: `READY`, blocking findings = 0.
+- Capability lock SHA-256 remains
+  `bb69f9a3e374182b0a10d3deb9693c52a25746783eae5c58ebe12c8ceef2c746`.
+- No staged files; no commit or push was performed.
 
-## Key Risks
+## Risks and Manual Boundaries
 
-- `v0.9.0` predates both compact lifecycle and ADR-84; no release claim was changed.
-- Actual sqlite-vec runtime acceptance and external Claude/Codex generated-target acceptance remain
-  unverified optional follow-ups.
-- The implementation is published on `origin/main`; no tag or release was created.
+- Publishing only the implementation without lock reconciliation would leave the repository's
+  commit-bound lock regression failing, so no intermediate commit was created.
+- The current worktree contains only the 13 maintenance and state files recorded here and no untracked
+  files.
+- No protected file, secret, consumer repository, tag, or release was changed.
 
 <!-- mir:runtime-snapshot:begin -->
 ## Runtime Snapshot (Generated)
 
 ### Active Plan Items
-- No open plan items.
+- After authorization and an implementation commit, reconcile and retest the protected lock.
 
 ### Working Tree
-- Working tree clean.
+- Working tree dirty (13 paths; inspect git status --short).
 <!-- mir:runtime-snapshot:end -->

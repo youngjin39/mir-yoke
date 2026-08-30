@@ -1,23 +1,23 @@
 # Plan
 
-## Current status — CLOSED (2026-08-30)
+## Current status — PUBLICATION AUTHORIZED (2026-08-30)
 
 - [x] Confirm global/project precedence and record the boundary in ADR-85.
-- [x] Add failing regressions for project-policy inheritance, runtime-neutral agent contracts,
-  source-driven read-only roles, Codex unpinned agents, and ADR classification.
-- [x] Update canonical generation, agent, bootstrap-validation, and migration guidance sources.
-- [x] Regenerate `AGENTS.md`, `.codex/`, and `.codex-sync/manifest.json; refresh the adopter payload
-  after the final evidence record.
-- [x] Run focused tests, derivative verification, repository governance checks, Ruff, Bash syntax,
-  and independent design-vs-code review.
-- [x] Reconcile `.mir/capability-lock.json` after an authorized implementation commit, then rerun
-  the lock regression.
+- [x] Replace the remaining host-specific reviewer contracts with ADR-85 runtime-neutral wording.
+  This wording supersedes the host-specific contract without changing Claude model pins.
+- [x] Require exact comma-delimited `Write` and `Edit` tokens for generated read-only sandboxes.
+- [x] Fail closed before agent generation when patterned frontmatter fields are invalid.
+- [x] Add regressions for near-match tool names and stale contracts across all generated agents.
+- [x] Regenerate `.codex/` and `.codex-sync/manifest.json`, refresh the adopter payload, and run
+  focused and broad verification.
+- [ ] After authorization and an implementation commit, reconcile and retest the protected lock.
 
-Scope is Mir Yoke only. The owner authorized the implementation commit, protected lock
-reconciliation, and push to `origin/main`. Do not tag, publish a release, or modify consumer
-repositories.
+Scope is Mir Yoke only. The owner authorized the implementation commit, protected capability-lock
+reconciliation, final state commit, and push to `origin/main`. Do not tag, publish a release, or
+modify consumer repositories. The lock must bind the implementation commit object.
 
-No active implementation action remains after the lock and final checks pass.
+Implementation is verified. Publication proceeds only after the commit-bound lock and full suite
+pass.
 
 ## Deferred owner work
 

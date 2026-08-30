@@ -1,10 +1,15 @@
 {
-  "goal": "Make Mir Yoke inherit operator-owned Codex policy, modernize its cross-runtime agent contracts, and document external skill registry migration without changing Claude model pins.",
+  "goal": "Correct the remaining ADR-85 Codex reviewer wording and make read-only sandbox generation exact and fail-closed without changing Claude model pins.",
   "goal_type": "maintenance",
-  "scope": "Mir Yoke only; update canonical generator, three locked agent sources, current ADR and operations guidance, generated derivatives, and focused tests; bind the protected capability lock to the implementation commit and push the verified commits to origin/main. No tag, release, or consumer mutation is authorized.",
+  "scope": "Mir Yoke only; update two canonical read-only Codex agents, the canonical generator, generated derivatives, adopter payloads, focused tests, and task state; commit the implementation, bind the protected capability lock to that commit, run full verification, commit final state, and push origin/main. No tag, release, or consumer repository mutation is authorized.",
   "priority": "normal",
   "updated": "2026-08-30",
   "history": [
+    {
+      "goal": "Make Mir Yoke inherit operator-owned Codex policy, modernize its cross-runtime agent contracts, and document external skill registry migration without changing Claude model pins.",
+      "updated": "2026-08-30",
+      "status": "superseded"
+    },
     {
       "goal": "Improve Mir Yoke as an initial-project template and current harness-engineering upgrade reference, including context, memory, embeddings, hooks, and Claude/Codex parity.",
       "updated": "2026-08-29",

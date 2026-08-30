@@ -130,9 +130,10 @@ def test_generator_skips_non_agent_markdown_and_empty_targets(tmp_path: Path) ->
         assert "model" not in agent
         assert "model_reasoning_effort" not in agent
 
-    generated_executor = (
-        tmp_path / ".codex" / "agents" / "executor-agent.toml"
-    ).read_text(encoding="utf-8")
+    generated_agent_texts = {
+        agent_path.name: agent_path.read_text(encoding="utf-8")
+        for agent_path in (tmp_path / ".codex" / "agents").glob("*.toml")
+    }
     for stale_contract in (
         "tool_search",
         "multi_agent_v1",
@@ -143,8 +144,10 @@ def test_generator_skips_non_agent_markdown_and_empty_targets(tmp_path: Path) ->
         "codex-reply",
         "spawn_agent",
     ):
-        assert stale_contract not in generated_orchestrator
-        assert stale_contract not in generated_executor
+        assert all(
+            stale_contract not in agent_text
+            for agent_text in generated_agent_texts.values()
+        ), stale_contract
 
     codex_readme = (tmp_path / ".codex" / "README.md").read_text(encoding="utf-8")
     assert "Use `/hooks`" in codex_readme
@@ -243,6 +246,150 @@ def test_should_not_infer_read_only_sandbox_from_agent_name(tmp_path: Path) -> N
         )
     )
     assert "sandbox_mode" not in generated
+
+
+def test_generator_requires_exact_write_and_edit_tokens_for_read_only_sandbox(
+    tmp_path: Path,
+) -> None:
+    fixture = tmp_path / "fixture"
+    scripts_dir = fixture / "scripts"
+    agent_dir = fixture / ".claude" / "agents"
+    scripts_dir.mkdir(parents=True)
+    agent_dir.mkdir(parents=True)
+    shutil.copy2(ROOT / "scripts" / "generate_codex_derivatives.sh", scripts_dir)
+    (fixture / "CLAUDE.md").write_text("# Fixture\n", encoding="utf-8")
+    for name, disallowed_tools in (
+        ("writer-edit", "Writer, Edit"),
+        ("write-notebook-edit", "Write, NotebookEdit"),
+        ("quoted-edit-write", '"Edit, Bash, Write"'),
+    ):
+        (agent_dir / f"{name}.md").write_text(
+            "---\n"
+            f"name: {name}\n"
+            "description: Exact-token fixture\n"
+            f"disallowedTools: {disallowed_tools}\n"
+            "---\n\n"
+            "Remain within the supplied scope.\n",
+            encoding="utf-8",
+        )
+
+    completed = subprocess.run(
+        ["/bin/bash", "scripts/generate_codex_derivatives.sh"],
+        cwd=fixture,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    for name in ("writer-edit", "write-notebook-edit", "quoted-edit-write"):
+        generated = tomllib.loads(
+            (fixture / ".codex" / "agents" / f"{name}.toml").read_text(
+                encoding="utf-8"
+            )
+        )
+        if name == "quoted-edit-write":
+            assert generated["sandbox_mode"] == "read-only"
+        else:
+            assert "sandbox_mode" not in generated
+
+
+def test_generator_rejects_invalid_patterned_frontmatter_before_agent_output(
+    tmp_path: Path,
+) -> None:
+    cases = (
+        (
+            "single-quoted-tools",
+            "name: single-quoted-tools\n"
+            "description: Invalid tools fixture\n"
+            "disallowedTools: 'Write, Edit'\n",
+            "disallowedTools",
+        ),
+        (
+            "commented-tools",
+            "name: commented-tools\n"
+            "description: Invalid tools fixture\n"
+            "disallowedTools: Write, Edit # read only\n",
+            "disallowedTools",
+        ),
+        (
+            "single-quoted-name",
+            "name: 'single-quoted-name'\n"
+            "description: Invalid name fixture\n",
+            "name",
+        ),
+    )
+    for fixture_name, frontmatter, invalid_field in cases:
+        fixture = tmp_path / fixture_name
+        scripts_dir = fixture / "scripts"
+        agent_dir = fixture / ".claude" / "agents"
+        scripts_dir.mkdir(parents=True)
+        agent_dir.mkdir(parents=True)
+        shutil.copy2(ROOT / "scripts" / "generate_codex_derivatives.sh", scripts_dir)
+        (fixture / "CLAUDE.md").write_text("# Fixture\n", encoding="utf-8")
+        (agent_dir / f"{fixture_name}.md").write_text(
+            f"---\n{frontmatter}---\n\nRemain within the supplied scope.\n",
+            encoding="utf-8",
+        )
+
+        completed = subprocess.run(
+            ["/bin/bash", "scripts/generate_codex_derivatives.sh"],
+            cwd=fixture,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+        assert completed.returncode != 0
+        assert f"invalid {invalid_field} frontmatter value" in completed.stderr
+        assert not any((fixture / ".codex" / "agents").glob("*.toml"))
+
+
+def test_generator_validates_all_agent_sources_before_replacing_agent_output(
+    tmp_path: Path,
+) -> None:
+    fixture = tmp_path / "fixture"
+    scripts_dir = fixture / "scripts"
+    agent_dir = fixture / ".claude" / "agents"
+    output_agent_dir = fixture / ".codex" / "agents"
+    scripts_dir.mkdir(parents=True)
+    agent_dir.mkdir(parents=True)
+    output_agent_dir.mkdir(parents=True)
+    shutil.copy2(ROOT / "scripts" / "generate_codex_derivatives.sh", scripts_dir)
+    (fixture / "CLAUDE.md").write_text("# Fixture\n", encoding="utf-8")
+    (agent_dir / "a-valid.md").write_text(
+        "---\n"
+        "name: a-valid\n"
+        "description: Valid fixture\n"
+        "disallowedTools: Write, Edit\n"
+        "---\n\n"
+        "Remain within the supplied scope.\n",
+        encoding="utf-8",
+    )
+    (agent_dir / "z-invalid.md").write_text(
+        "---\n"
+        "name: z-invalid\n"
+        "description: Invalid fixture\n"
+        "disallowedTools: 'Write, Edit'\n"
+        "---\n\n"
+        "Remain within the supplied scope.\n",
+        encoding="utf-8",
+    )
+    preserved = output_agent_dir / "preserved.toml"
+    preserved.write_text('name = "preserved"\n', encoding="utf-8")
+
+    completed = subprocess.run(
+        ["/bin/bash", "scripts/generate_codex_derivatives.sh"],
+        cwd=fixture,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode != 0
+    assert "invalid disallowedTools frontmatter value" in completed.stderr
+    assert preserved.read_text(encoding="utf-8") == 'name = "preserved"\n'
+    assert not (output_agent_dir / "a-valid.toml").exists()
 
 
 def test_verifier_rejects_nested_agents_drift(tmp_path: Path) -> None:

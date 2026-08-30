@@ -27,13 +27,6 @@ if [ ! -f "CLAUDE.md" ]; then
   exit 1
 fi
 
-mkdir -p "$OUTPUT_ROOT/.codex/agents" "$OUTPUT_ROOT/.codex/hooks" "$OUTPUT_ROOT/.codex-sync"
-mkdir -p "$OUTPUT_ROOT/.claude/hooks/lib"
-
-# Keep the Codex hook library portable on Windows: generate a real directory copy.
-rm -rf -- "$OUTPUT_ROOT/.codex/hooks/lib"
-cp -R ".claude/hooks/lib" "$OUTPUT_ROOT/.codex/hooks/lib"
-
 extract_frontmatter_field() {
   local file="$1"
   local key="$2"
@@ -89,7 +82,17 @@ for line in block.split("\n"):
     else:
         result[parsed_key] = strip_quotes(value_part)
 
-sys.stdout.write(result.get(key, ""))
+value = result.get(key, "")
+patterns = {
+    "name": re.compile(r"^[a-z][a-z0-9-]*$"),
+    "disallowedTools": re.compile(r"^[A-Z][A-Za-z]+(?:,\s*[A-Z][A-Za-z]+)*$"),
+}
+pattern = patterns.get(key)
+if value and pattern is not None and pattern.fullmatch(value) is None:
+    print(f"ERROR: {path}: invalid {key} frontmatter value", file=sys.stderr)
+    raise SystemExit(2)
+
+sys.stdout.write(value)
 PY
 }
 
@@ -105,6 +108,25 @@ agent_sources() {
   fi
   printf '%s\n' .claude/agents/*.md | LC_ALL=C sort
 }
+
+validate_agent_frontmatter_sources() {
+  local src
+  while IFS= read -r src; do
+    [ -n "$src" ] || continue
+    extract_frontmatter_field "$src" "name" >/dev/null
+    extract_frontmatter_field "$src" "disallowedTools" >/dev/null
+  done < <(agent_sources)
+}
+
+# Fail before creating or replacing any derivative when patterned agent metadata is invalid.
+validate_agent_frontmatter_sources
+
+mkdir -p "$OUTPUT_ROOT/.codex/agents" "$OUTPUT_ROOT/.codex/hooks" "$OUTPUT_ROOT/.codex-sync"
+mkdir -p "$OUTPUT_ROOT/.claude/hooks/lib"
+
+# Keep the Codex hook library portable on Windows: generate a real directory copy.
+rm -rf -- "$OUTPUT_ROOT/.codex/hooks/lib"
+cp -R ".claude/hooks/lib" "$OUTPUT_ROOT/.codex/hooks/lib"
 
 body_without_frontmatter() {
   local file="$1"
@@ -417,7 +439,7 @@ write_hook_configs() {
 
 write_agent_toml() {
   local src="$1"
-  local name description developer_instructions out sandbox_mode disallowed_tools
+  local name description developer_instructions out sandbox_mode disallowed_tools normalized_disallowed_tools
   name="$(extract_frontmatter_field "$src" "name")"
   [ -n "$name" ] || return 0  # skip non-agent sources (e.g. README.md: no name frontmatter)
   description="$(extract_frontmatter_field "$src" "description")"
@@ -433,12 +455,15 @@ write_agent_toml() {
   # Claude-side dispatch metadata and lives only in .claude/agents/*.md frontmatter.
   out="$OUTPUT_ROOT/.codex/agents/${name}.toml"
   sandbox_mode=""
-  # ADR-09 round 4 — Lens B W3: read-only agents (those declaring
-  # `disallowedTools: Write, Edit` in frontmatter) get a `read-only` Codex
-  # sandbox so the sandbox enforces the same intent as the disallowedTools hint.
-  case "$disallowed_tools" in
-    *Write*Edit*|*Edit*Write*)
-      sandbox_mode="read-only"
+  # ADR-85: read-only agents that declare both exact comma-delimited `Write`
+  # and `Edit` tokens get a `read-only` Codex sandbox. Tool-name substrings
+  # such as `Writer` and `NotebookEdit` do not grant read-only sandboxing.
+  normalized_disallowed_tools="${disallowed_tools//[[:space:]]/}"
+  case ",$normalized_disallowed_tools," in
+    *,Write,*)
+      case ",$normalized_disallowed_tools," in
+        *,Edit,*) sandbox_mode="read-only" ;;
+      esac
       ;;
   esac
   {

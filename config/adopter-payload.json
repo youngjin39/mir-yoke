@@ -65,7 +65,7 @@
     },
     {
       "path": ".claude/agents/codex-final-reviewer.md",
-      "sha256": "9e7de3201cb66bdc33444c4fe4102f37058d8c8839ac4e050005683c1cf9c4ce",
+      "sha256": "f6954a532f3d6dd61b071bc8927c926295a661d3cac07d6e6b987f4613be6970",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -107,7 +107,7 @@
     },
     {
       "path": ".claude/agents/pipeline-validator.md",
-      "sha256": "aff5b7328a39f19c7a01b9a6388887fde0adef17b0b55eb687c194235489cf90",
+      "sha256": "a7cf3f5b94d9215b54301e286f4cfc16959589f113f6c240c5ba664fb25cfec1",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -329,7 +329,7 @@
     },
     {
       "path": ".codex/agents/codex-final-reviewer.toml",
-      "sha256": "d9f7d5a69461a377849b518e6331bd3851c06f85c4e6714bb8c89b16e86a9aa2",
+      "sha256": "83ed0552edeaf8e70e0493f1edabc84a77b4cad20d86ca22b5c1d34855f518c7",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -371,7 +371,7 @@
     },
     {
       "path": ".codex/agents/pipeline-validator.toml",
-      "sha256": "41bdb8fd7ea945ddac4fb12547c4319035bb8f9246eb5848aff713f50270b2d5",
+      "sha256": "d01dbb8a46a5a6a018a02d897f117bbea60ace78750c10080e14f3f41e2453b0",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -2501,7 +2501,7 @@
     },
     {
       "path": "scripts/generate_codex_derivatives.sh",
-      "sha256": "e1dea627afaaeeb5e4509620bf1e72881578f722dac86dea042eb3a8293caa9b",
+      "sha256": "ccbbcd15897598c6181d451128298cc5401736de4a09f9d7661a85e2615179ae",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -3299,25 +3299,25 @@
     },
     {
       "path": "tasks/change_log.md",
-      "sha256": "d2cf532af6a0420ddae11c0c4adcb762f10408738af00166eb0d71c8773a2380",
+      "sha256": "7c132cf657a73617a9650416e7caad3b62ed3b661c14746e047ec9d985003681",
       "classification": "reference",
       "disposition": "remove"
     },
     {
       "path": "tasks/checklist.md",
-      "sha256": "14cd6ee3ba89fa2b82589631d59e3d498e56c56734642491855d74abc321bc82",
+      "sha256": "e124102735849f93f58152f9113f5a69e970965a07f165887f53318b6a159cd6",
       "classification": "reference",
       "disposition": "remove"
     },
     {
       "path": "tasks/handoffs/session-handoff-LATEST.md",
-      "sha256": "58bdf63afbfb78da9f757dd66af43737c2b09577e25dd98f43f6c2a8dde4f0e2",
+      "sha256": "47d4b8da20cd4a32238f85850e1dbf4c963bae5709ca3afe617ed46a74024e6c",
       "classification": "reference",
       "disposition": "remove"
     },
     {
       "path": "tasks/intent.json",
-      "sha256": "859809ef69f434380df4161a9de6a06ecb236854e967165fb55df51f6f8a60a8",
+      "sha256": "4cc5ca70fe6d3c19b8d26e9e34dfca6013d063ae9c6a116013f987aa40786790",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -3341,7 +3341,7 @@
     },
     {
       "path": "tasks/plan.md",
-      "sha256": "aef105ba5bb06b8b1f21653a9d451e1f9a09c42da42711eb4c7cbf655404a340",
+      "sha256": "e05aef9ff5b4e6a202e1253e94358c871db79c9730ea3191f6f5110b6a96966e",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -3359,7 +3359,7 @@
     },
     {
       "path": "tasks/tdd.json",
-      "sha256": "11abeac7995ad5fe9975e20f1d69a696b50fafbc46665e72539bfca1ad6cbd2a",
+      "sha256": "43605c5816b0a8ce330c65ee11b9b8cc91ac7bf18dd61503a27b99ef32c90196",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -3521,7 +3521,7 @@
     },
     {
       "path": "tests/test_codex_derivation_script.py",
-      "sha256": "e7995f45489b03edfd3e0ae131ae59dc1bef08a9da2baa94daf3eea6a2800491",
+      "sha256": "40f5c78235ea5617f2088aae4bbed9fbfc67ffb567a21905aceec7b8481b7a81",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     },
