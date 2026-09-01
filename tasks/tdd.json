@@ -2,6 +2,25 @@
   "version": 1,
   "changes": [
     {
+      "id": "adr87-deny-list-enforcement-recovery-2026-09-01",
+      "record_status": "complete",
+      "scope": "Restore deny-list enforcement, make the destructive-command guards position-independent and POSIX-portable, add a secrets/ directory check, and remove the broken F9 sealed-family push guard.",
+      "targets": [".claude/hooks/pre-tool-use.sh", ".ai-harness/deny-list.yaml", "tests/test_deny_list.py", "docs/decisions/adr-87-deny-list-enforcement-recovery.md", "docs/decisions/INDEX.md", "docs/harness-engineering/applications/harness-review-criteria.md", "config/template-assets.json", "config/adopter-payload.json"],
+      "design_ref": "docs/decisions/adr-87-deny-list-enforcement-recovery.md",
+      "bluebrick": "Hook enforcement / Deny-list configuration / Guard portability",
+      "categories": {
+        "unit": {"status": "pass", "command": "uv run pytest -q tests/test_deny_list.py", "notes": "16 tests, written before the fix and failing 10 of 15 against the unmodified hooks. This is the regression anchor the repository previously lacked."},
+        "integration": {"status": "pass", "command": "uv run pytest -q tests/test_deny_list.py tests/test_hook_executability.py", "notes": "New enforcement holds without weakening the existing hardcoded guards. CI wiring into .github/workflows/validate.yml is deferred to a follow-up: the maintainer OAuth token lacks the workflow scope, so it cannot be pushed with this change. Until then the deny-list test runs locally only and the POSIX-portability claim is unverified on the macOS runner."},
+        "e2e": {"status": "pass", "command": "uv run pytest -q", "notes": "Full repository suite."},
+        "browser": {"status": "not_applicable", "reason": "No browser surface changes."},
+        "edge": {"status": "pass", "command": "uv run pytest -q tests/test_deny_list.py", "notes": "Flag-after-refspec force push, separator and absolute-path sudo, secrets/ directory writes, and the non-POSIX escape ban. Also pins that branches merely containing main/master/release stay allowed."},
+        "architecture": {"status": "pass", "command": "ADR-87 plus the .mir/boundary.md design-phase requirement", "notes": "The design record precedes the .ai-harness rule change. F9 removal is consistent with ADR-22 being a reference stub and with mir-harness having already deleted the guard."},
+        "availability": {"status": "not_applicable", "reason": "No service changes."},
+        "load": {"status": "not_applicable", "reason": "No throughput changes."},
+        "soak": {"status": "not_applicable", "reason": "No persistent process is introduced."}
+      }
+    },
+    {
       "id": "adr86-mir-harness-managed-maintenance-2026-08-30",
       "record_status": "complete",
       "scope": "Designate Mir Harness as the Mir Yoke repository-maintenance manager, remove capability-lock protection only from the tracked maintainer Profile, and retain consumer and publication authority boundaries.",

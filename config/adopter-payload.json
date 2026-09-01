@@ -23,7 +23,7 @@
     },
     {
       "path": ".ai-harness/deny-list.yaml",
-      "sha256": "5f7b69aa6aaa3127ebab3a2f20fce0d2197972519d503b5902bab0bfa383f298",
+      "sha256": "8770cc06b5bc1c20d63d50b558ebf3df721ca3413c1223ef7684f6219fe353ba",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -251,7 +251,7 @@
     },
     {
       "path": ".claude/hooks/pre-tool-use.sh",
-      "sha256": "95a030df296922b535c6bcb5e2f47027187cbdffba87f6378d2f9bc3b5bd4dfd",
+      "sha256": "d3a308d26a9417f72f421190ecbda4a1b565657c08c2f8146b940209a6b9578e",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -629,7 +629,7 @@
     },
     {
       "path": "config/template-assets.json",
-      "sha256": "972ef287f3500a6ccb498c49cf49752013dfef0bdb25f574f0e202725e6abf0e",
+      "sha256": "3593fa9d05f7baef861cd6ab95ce5286959d65981eff9e7a381cec49d70c3b49",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     },
@@ -689,7 +689,7 @@
     },
     {
       "path": "docs/decisions/INDEX.md",
-      "sha256": "8e2820a06dd61f54d74a79a2626e45605ab01ccfde792b3dbf35dc6631de9997",
+      "sha256": "42de3231276a345e58fd0e79fbe9f84a4ae5ab6fc312923ce8c59a9fcfe3c80d",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -1096,6 +1096,12 @@
       "disposition": "remove"
     },
     {
+      "path": "docs/decisions/adr-87-deny-list-enforcement-recovery.md",
+      "sha256": "49a04ca8070eb9c5a966f294b39e7c0060e7d5b09d7014202646a3cc2a3c2f67",
+      "classification": "reference",
+      "disposition": "remove"
+    },
+    {
       "path": "docs/decisions/role-policy.md",
       "sha256": "56ddaec07ce07a678f0f7f789f23161d8ef879571d2b42cda9d75e3270010429",
       "classification": "reference",
@@ -1325,7 +1331,7 @@
     },
     {
       "path": "docs/harness-engineering/applications/harness-review-criteria.md",
-      "sha256": "1ba241f836aec4be5592bf89e142fa76d661aea24d7fe20854064c002716da97",
+      "sha256": "a59fccec084b830dc6fe4d0e0a0934d29ef5296e88a12afbca0737900105b2d7",
       "classification": "historical",
       "disposition": "remove"
     },
@@ -3371,7 +3377,7 @@
     },
     {
       "path": "tasks/tdd.json",
-      "sha256": "710ddee93c1166eaf1d7d13c98b0c37775527dd02a55063f0c83981e3b13346e",
+      "sha256": "58e4f24559d2ee9e60944039f56be278ff7b4a794ed86a89e7583175536a54a1",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -3558,6 +3564,12 @@
     {
       "path": "tests/test_decision_authority.py",
       "sha256": "2665809e4233ab72cec9d6680c588573b5d285ebc7afa1621674824201ed5dfb",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
+      "path": "tests/test_deny_list.py",
+      "sha256": "a83fd89de939fc2eaf2b14953f6bf7f8ad434619c43d0872ff68bfc7456d308f",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     },

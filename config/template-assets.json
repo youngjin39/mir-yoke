@@ -131,6 +131,7 @@
         "docs/decisions/adr-81-minimal-starter-support-boundary.md",
         "docs/decisions/adr-85-global-policy-inheritance-and-agent-contracts.md",
         "docs/decisions/adr-86-mir-harness-managed-repository-maintenance.md",
+        "docs/decisions/adr-87-deny-list-enforcement-recovery.md",
         "docs/decisions/adr-84-harness-upgrade-guidance-and-runtime-hygiene.md",
         "docs/decisions/adr-83-project-agent-kit-recipe-and-supported-surfaces.md",
         "docs/decisions/role-policy.md"
@@ -157,6 +158,7 @@
         "docs/decisions/adr-81-minimal-starter-support-boundary.md",
         "docs/decisions/adr-85-global-policy-inheritance-and-agent-contracts.md",
         "docs/decisions/adr-86-mir-harness-managed-repository-maintenance.md",
+        "docs/decisions/adr-87-deny-list-enforcement-recovery.md",
         "docs/decisions/adr-84-harness-upgrade-guidance-and-runtime-hygiene.md",
         "docs/decisions/adr-83-project-agent-kit-recipe-and-supported-surfaces.md",
         "docs/decisions/role-policy.md"
