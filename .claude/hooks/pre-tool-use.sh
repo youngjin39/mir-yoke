@@ -63,8 +63,13 @@ emit_deny_patterns() {
   awk '
     function trim_field(line) {
       sub(/^[^:]+:[[:space:]]*/, "", line)
+      # ADR-87: strip either YAML quote style. Stripping only the double quote
+      # left every single-quoted pattern with a literal leading apostrophe, which
+      # silently made all of them unmatchable.
       gsub(/^"/, "", line)
       gsub(/"$/, "", line)
+      gsub(/^\047/, "", line)
+      gsub(/\047$/, "", line)
       return line
     }
     function emit_row() {
@@ -106,6 +111,16 @@ apply_deny_list() {
     [ -n "$pattern" ] || continue
     local regex="$pattern"
     regex="${regex//\\\\/\\}"
+    # ADR-87: a pattern grep cannot compile used to fail open -- grep exited
+    # non-zero, which read as "no match" and silently allowed the command. Treat
+    # it as a configuration error and refuse the call instead. grep exits 0 for a
+    # match, 1 for no match, and greater than 1 only for a real error, so an
+    # empty subject separates "does not compile" from "does not match".
+    local compile_rc=0
+    printf '' | grep -qE "$regex" 2>/dev/null || compile_rc=$?
+    if [ "$compile_rc" -gt 1 ]; then
+      block "deny-list[$id] is not a usable POSIX regex; fix .ai-harness/deny-list.yaml"
+    fi
     if printf '%s' "$subject" | grep -qE "$regex"; then
       if [ "$severity" = "block" ]; then
         # tier: block (deny-list security enforcement)
