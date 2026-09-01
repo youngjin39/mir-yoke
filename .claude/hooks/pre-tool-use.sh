@@ -279,39 +279,55 @@ raise SystemExit(1)
   apply_deny_list "$CMD" "bash"
 fi
 
-# --- Write/Edit path guards ---
-if [ "$TOOL_NAME" = "Write" ] || [ "$TOOL_NAME" = "Edit" ]; then
-  FP="$(extract_json '.tool_input.file_path // .tool_input.path')" || block "Malformed PreToolUse payload for filter: .tool_input.file_path // .tool_input.path"
-  [ -z "$FP" ] && block "Empty file path payload"
+# --- Path guards ---
+# ADR-87 follow-up. Two defects, both measured against the shipped hook:
+#   * The guards below were reachable only from Write/Edit, so Codex's
+#     apply_patch and NotebookEdit walked past every one of them -- including the
+#     hardcoded secret-basename block.
+#   * The deny-list subject was "$TOOL_NAME $FP", so a `^` in a path pattern
+#     anchored on the tool name and could never match the path.
+#     `protected-secrets-dir` is `(^|/)secrets/`, which meant a bare
+#     `secrets/prod.yaml` was allowed while `./secrets/prod.yaml` was blocked.
+# Screening one bare path at a time fixes both, and keeps every guard in one
+# place so a new edit-shaped tool cannot silently miss a subset.
+screen_path_target() {
+  local fp="$1"
+  [ -n "$fp" ] || return 0
 
   # 1. Outside project root
-  case "$FP" in
+  case "$fp" in
     /etc/*|/System/*|/Library/*|/usr/*|/bin/*|/sbin/*|/var/*|/private/*)
-      block "Write outside project root: $FP"
+      block "Write outside project root: $fp"
       ;;
   esac
   # 2. Secret/env files
-  case "$(basename "$FP")" in
+  case "$(basename "$fp")" in
     .env|.env.*|credentials|credentials.*|id_rsa|id_ed25519|*.pem|*.key|*.p12)
-      block "Write to secret/credential file: $FP"
+      block "Write to secret/credential file: $fp"
       ;;
   esac
   # 3. Git internal state
-  if echo "$FP" | grep -qE '(^|/)\.git/(config|hooks/|refs/|objects/)'; then
-    block "Write to git internal state: $FP"
+  if echo "$fp" | grep -qE '(^|/)\.git/(config|hooks/|refs/|objects/)'; then
+    block "Write to git internal state: $fp"
   fi
   # ADR-60 R5: a sub-agent / codex-delegated context must NOT write the MAIN control-plane
   # cursor tasks/plan.md (the control_plane main owns it). Defense-in-depth behind the R4
   # worktree isolation. Detect the delegated context via MIR_CODEX_SESSION_ID.
   # The main (MIR_CODEX_SESSION_ID unset) is allowed.
   if [ -n "${MIR_CODEX_SESSION_ID:-}" ]; then
-    case "$FP" in
+    case "$fp" in
       tasks/plan.md|*/tasks/plan.md)
         block "ADR-60 R5: a sub-agent/codex context must not edit the main control-plane cursor tasks/plan.md — the control_plane main owns it (report your result via your final message + the JobRegistry, never plan.md)"
         ;;
     esac
   fi
-  apply_deny_list "$TOOL_NAME $FP" "path"
+  apply_deny_list "$fp" "path"
+}
+
+if [ "$TOOL_NAME" = "Write" ] || [ "$TOOL_NAME" = "Edit" ] || [ "$TOOL_NAME" = "NotebookEdit" ]; then
+  FP="$(extract_json '.tool_input.file_path // .tool_input.path // .tool_input.notebook_path')" || block "Malformed PreToolUse payload for filter: .tool_input.file_path // .tool_input.path // .tool_input.notebook_path"
+  [ -z "$FP" ] && block "Empty file path payload"
+  screen_path_target "$FP"
 fi
 
 # mir:bluebrick-advisory:begin
@@ -458,6 +474,10 @@ if [ "$_mir_tool_name" = "apply_patch" ] || [ "$_mir_tool_name" = "ApplyPatch" ]
             echo "[PreToolUse BLOCK] $_mir_patch_safety_reason: $_mir_patch_path" >&2
             exit 2
         fi
+        # ADR-87 follow-up: the safety reason above covers outside-root, git internals
+        # and secret basenames, but not the deny-list. A patch could therefore add
+        # secrets/prod.yaml, which protected-secrets-dir exists to stop.
+        apply_deny_list "$_mir_patch_path" "path"
         if [ "$(_mir_path_matches_code_path "$_mir_patch_path")" = "yes" ] && [ -z "${MIR_CODEX_SESSION_ID:-}" ] && [ "${MIR_CODEX_MAIN:-0}" != "1" ]; then
             echo "[mir ADVISORY] code-path patch on $_mir_patch_path: consider the delegated lane when isolation, review independence, or parallelism justifies its cost; bounded direct-main edits are allowed." >&2
         fi

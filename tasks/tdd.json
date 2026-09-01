@@ -2,6 +2,28 @@
   "version": 1,
   "changes": [
     {
+      "id": "adr87-path-screening-followup-2026-09-01",
+      "record_status": "complete",
+      "scope": "Screen deny-list path rules against the bare path so an anchored pattern can match, route NotebookEdit through the path guards, and apply the deny-list to apply_patch target paths.",
+      "targets": [".claude/hooks/pre-tool-use.sh", "tests/test_deny_list.py", "docs/decisions/adr-87-deny-list-enforcement-recovery.md", "config/adopter-payload.json"],
+      "design_ref": "docs/decisions/adr-87-deny-list-enforcement-recovery.md",
+      "bluebrick": "Hook enforcement / Deny-list configuration / Guard portability",
+      "categories": {
+        "unit": {"status": "pass", "command": "uv run pytest -q tests/test_deny_list.py", "notes": "6 tests added and watched fail first: bare relative secrets/ path, the probe-rule anchor regression, apply_patch, and NotebookEdit. 4 failed before the fix, 22 pass after."},
+        "integration": {"status": "pass", "command": "uv run pytest -q tests/test_deny_list.py tests/test_hook_executability.py", "notes": "39 passed. test_pre_tool_use_blocks_secret_path_from_codex_apply_patch_command caught a first attempt that added a second patch-path loop and shadowed the existing _mir_patch_path_safety_reason message; the fix instead adds apply_deny_list to the existing loop, so no message changes."},
+        "e2e": {"status": "pass", "command": "uv run pytest -q", "notes": "Full repository suite."},
+        "browser": {"status": "not_applicable", "reason": "No browser surface changes."},
+        "edge": {"status": "pass", "command": "uv run pytest -q tests/test_deny_list.py", "notes": "Relative, ./-prefixed, nested and absolute secrets/ paths; an anchored probe rule that fails for exactly one reason; a patch header adding .env and secrets/prod.yaml; NotebookEdit notebook_path."},
+        "architecture": {"status": "pass", "command": "ADR-87 sections 4, 6, 7 and 8 plus the .mir/boundary.md TDD-ledger requirement", "notes": "No .ai-harness/ rule changes, so no new design phase is required. Path guards consolidate into one screen_path_target function rather than being duplicated per tool. ADR-87 text corrected in the same change to match what the branch actually ships."},
+        "availability": {"status": "not_applicable", "reason": "No service changes."},
+        "load": {"status": "not_applicable", "reason": "No throughput changes."},
+        "soak": {"status": "not_applicable", "reason": "No persistent process is introduced."},
+        "security": {"status": "pass", "command": "uv run python /tmp/probe_yoke_hook.py", "notes": "Independent probe written from ADR-87 prose rather than from the test file: 14 of 17 cases matched before the fix, 15 of 17 after. The two remaining mismatches are the documented +refspec gap and a probe expectation that read the pre-fix chmod severity."},
+        "compatibility": {"status": "pass", "command": "uv run pytest -q tests/test_hook_executability.py", "notes": "Existing hardcoded guards and their exact block messages are unchanged."},
+        "transaction_locking": {"status": "not_applicable", "reason": "No concurrent writer, database transaction, or lock boundary is changed."}
+      }
+    },
+    {
       "id": "adr87-deny-list-enforcement-recovery-2026-09-01",
       "record_status": "complete",
       "scope": "Restore deny-list enforcement, make the destructive-command guards position-independent and POSIX-portable, add a secrets/ directory check, and remove the broken F9 sealed-family push guard.",

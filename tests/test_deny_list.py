@@ -113,6 +113,11 @@ def _run(project: Path, payload: dict) -> subprocess.CompletedProcess:
     )
 
 
+def _install_deny_list(project: Path, body: str) -> None:
+    """Replace the project's deny-list with a probe rule set."""
+    (project / ".ai-harness" / "deny-list.yaml").write_text(body, encoding="utf-8")
+
+
 def _bash(project: Path, command: str) -> subprocess.CompletedProcess:
     return _run(
         project,
@@ -227,6 +232,110 @@ def test_secrets_directory_writes_are_blocked(tmp_path: Path, file_path: str) ->
     assert result.returncode == 2, (
         f"write to {file_path} must be blocked; got rc={result.returncode} "
         f"stderr={result.stderr.strip()!r}"
+    )
+    assert "deny-list[protected-secrets-dir]" in result.stderr, (
+        "the deny-list rule must be the thing that reports it -- rc=2 alone can "
+        f"come from any other guard; stderr={result.stderr.strip()!r}"
+    )
+
+
+@pytest.mark.parametrize(
+    "file_path",
+    ["secrets/prod.yaml", "./secrets/prod.yaml", "config/secrets/tokens.json"],
+)
+def test_secrets_directory_writes_are_blocked_for_relative_paths(
+    tmp_path: Path, file_path: str
+) -> None:
+    """A repo-relative path is the spelling an agent writes most often.
+
+    The absolute-path cases above passed while `secrets/prod.yaml` was allowed,
+    because the subject handed to the path rules carried a `$TOOL_NAME ` prefix
+    and `(^|/)secrets/` could only match on the `/`.
+    """
+    project = _make_project(tmp_path)
+    result = _write(project, file_path)
+    assert result.returncode == 2, (
+        f"write to {file_path} must be blocked; got rc={result.returncode} "
+        f"stderr={result.stderr.strip()!r}"
+    )
+    assert "deny-list[protected-secrets-dir]" in result.stderr, (
+        f"stderr={result.stderr.strip()!r}"
+    )
+
+
+def test_path_deny_list_anchors_at_the_path(tmp_path: Path) -> None:
+    """`^` in a path pattern must anchor at the path itself.
+
+    Uses a probe rule rather than a shipped one so this fails for exactly one
+    reason: the subject passed to the path rules is not the bare path.
+    """
+    project = _make_project(tmp_path)
+    _install_deny_list(
+        project,
+        "- id: probe-anchor\n"
+        "  pattern: '^probe/'\n"
+        "  severity: block\n"
+        '  reason: "probe rule"\n',
+    )
+    result = _write(project, "probe/file.txt")
+    assert "deny-list[probe-anchor]" in result.stderr, (
+        "an anchored path pattern never matched, so the subject is not the bare "
+        f"path; rc={result.returncode} stderr={result.stderr.strip()!r}"
+    )
+
+
+def test_apply_patch_target_paths_are_screened(tmp_path: Path) -> None:
+    """apply_patch had a path screen, but it never consulted the deny-list.
+
+    `_mir_patch_path_safety_reason` already covered outside-root, `.git`
+    internals and secret basenames -- which is why the `.env` case below passed
+    before this change -- but a patch adding `secrets/prod.yaml` was allowed,
+    because `protected-secrets-dir` lives only in the deny-list.
+    """
+    project = _make_project(tmp_path)
+    patch = (
+        "*** Begin Patch\n"
+        "*** Add File: secrets/prod.yaml\n"
+        "+token: x\n"
+        "*** End Patch\n"
+    )
+    result = _run(
+        project,
+        {"tool_name": "apply_patch", "cwd": str(project), "tool_input": {"command": patch}},
+    )
+    assert "deny-list[protected-secrets-dir]" in result.stderr, (
+        f"rc={result.returncode} stderr={result.stderr.strip()!r}"
+    )
+
+    env_patch = (
+        "*** Begin Patch\n*** Add File: .env\n+TOKEN=x\n*** End Patch\n"
+    )
+    env_result = _run(
+        project,
+        {
+            "tool_name": "apply_patch",
+            "cwd": str(project),
+            "tool_input": {"command": env_patch},
+        },
+    )
+    assert env_result.returncode == 2, (
+        f"a patch that adds .env must be blocked; stderr={env_result.stderr.strip()!r}"
+    )
+
+
+def test_notebook_edit_path_is_screened(tmp_path: Path) -> None:
+    """NotebookEdit carries its target in `notebook_path` and reached no guard."""
+    project = _make_project(tmp_path)
+    result = _run(
+        project,
+        {
+            "tool_name": "NotebookEdit",
+            "cwd": str(project),
+            "tool_input": {"notebook_path": "secrets/analysis.ipynb"},
+        },
+    )
+    assert "deny-list[protected-secrets-dir]" in result.stderr, (
+        f"rc={result.returncode} stderr={result.stderr.strip()!r}"
     )
 
 
