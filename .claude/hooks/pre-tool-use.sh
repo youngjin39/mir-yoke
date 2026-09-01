@@ -184,8 +184,15 @@ if [ "$TOOL_NAME" = "Bash" ]; then
   #    matched on a word boundary because the previous unanchored
   #    (main|master|release) also blocked `maintenance`, `remaster`, and
   #    `my-release-notes`.
-  if echo "$CMD" | grep -qE 'git[[:space:]]+push([[:space:]]+[^[:space:]]+)*[[:space:]]+(-f|--force|--force-with-lease)([[:space:]]|$)' \
-    && echo "$CMD" | grep -qE '(^|[[:space:]/])(main|master|release)([[:space:]]|$)'; then
+  #    A leading `+` on the refspec forces the update with no flag at all, so
+  #    `git push origin +main` is a third spelling of the same act. It is matched
+  #    as an alternative in the same position as the flags rather than by a bare
+  #    `[[:space:]][+]` anywhere in the command: keeping the "after push" anchor
+  #    is what stops `rm -f x && git push origin main` from blocking on the
+  #    unrelated `-f`. `[+]` is spelled as a bracket expression because `\+` is
+  #    undefined in POSIX ERE.
+  if echo "$CMD" | grep -qE 'git[[:space:]]+push([[:space:]]+[^[:space:]]+)*[[:space:]]+((-f|--force|--force-with-lease)([[:space:]]|$)|[+])' \
+    && echo "$CMD" | grep -qE '(^|[[:space:]/+])(main|master|release)([[:space:]]|$)'; then
     block "Force push to protected branch: $CMD"
   fi
   # 3. Hook bypass flags

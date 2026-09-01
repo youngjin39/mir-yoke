@@ -358,6 +358,44 @@ def test_deny_list_only_rules_report_their_own_id(tmp_path: Path) -> None:
         )
 
 
+def test_plus_refspec_force_push_to_protected_branch_is_blocked(tmp_path: Path) -> None:
+    """A leading `+` on the refspec forces the update with no flag at all.
+
+    `git push origin +main` rewrites remote history exactly as
+    `git push --force origin main` does, but guard 2 tested only for
+    `-f`/`--force*` and so allowed it.
+    """
+    project = _make_project(tmp_path)
+    for command in (
+        "git push origin +main",
+        "git push origin +master",
+        "git push origin +refs/heads/main",
+    ):
+        result = _bash(project, command)
+        assert result.returncode == 2, (
+            f"{command!r} must be blocked; got rc={result.returncode} "
+            f"stderr={result.stderr.strip()!r}"
+        )
+        assert "grep:" not in result.stderr, result.stderr
+
+
+def test_plus_refspec_on_an_unprotected_branch_is_allowed(tmp_path: Path) -> None:
+    """Force-pushing your own topic branch stays ordinary work.
+
+    Guards the `+` clause against becoming a blanket ban on the `+` syntax.
+    """
+    project = _make_project(tmp_path)
+    for command in (
+        "git push origin +feature/login",
+        "git push origin +refs/heads/feature/login",
+    ):
+        result = _bash(project, command)
+        assert result.returncode == 0, (
+            f"{command!r} must be allowed; got rc={result.returncode} "
+            f"stderr={result.stderr.strip()!r}"
+        )
+
+
 def test_sudo_is_blocked_regardless_of_position(tmp_path: Path) -> None:
     """`(^| )sudo( |$)` misses a shell separator and an absolute path."""
     project = _make_project(tmp_path)

@@ -2,6 +2,28 @@
   "version": 1,
   "changes": [
     {
+      "id": "adr87-plus-refspec-force-push-2026-09-01",
+      "record_status": "complete",
+      "scope": "Block a protected-branch force push spelled as a leading + on the refspec, which forces the update with no flag at all.",
+      "targets": [".claude/hooks/pre-tool-use.sh", "tests/test_deny_list.py", "docs/decisions/adr-87-deny-list-enforcement-recovery.md", "config/adopter-payload.json"],
+      "design_ref": "docs/decisions/adr-87-deny-list-enforcement-recovery.md",
+      "bluebrick": "Hook enforcement / Guard portability",
+      "categories": {
+        "unit": {"status": "pass", "command": "uv run pytest -q tests/test_deny_list.py -k plus_refspec", "notes": "2 tests added and watched fail first: the blocking case failed on `git push origin +main` (rc=0), the over-blocking guard passed from the start by construction."},
+        "integration": {"status": "pass", "command": "uv run pytest -q tests/test_deny_list.py tests/test_hook_executability.py", "notes": "41 passed. The documented maintenance / remaster / my-release-notes allowances still hold."},
+        "e2e": {"status": "pass", "command": "uv run pytest -q", "notes": "Full repository suite."},
+        "browser": {"status": "not_applicable", "reason": "No browser surface changes."},
+        "edge": {"status": "pass", "command": "uv run pytest -q tests/test_deny_list.py -k plus_refspec", "notes": "+main, +master, +refs/heads/main block; +feature/login and +refs/heads/feature/login stay allowed, so the + syntax is not banned wholesale."},
+        "architecture": {"status": "pass", "command": "ADR-87 sections 4, 7 and 8", "notes": "The + alternative sits in the same position as the flags rather than matching a bare whitespace-plus anywhere. Dropping that anchor, as mir-harness did, makes `rm -f x && git push origin main` block on the unrelated -f; measured allowed here. Four adjacent spellings remain allowed and are recorded in section 7 rather than fixed silently: release/1.0, main/sub, --force-with-lease=<refspec>, --force-if-includes."},
+        "availability": {"status": "not_applicable", "reason": "No service changes."},
+        "load": {"status": "not_applicable", "reason": "No throughput changes."},
+        "soak": {"status": "not_applicable", "reason": "No persistent process is introduced."},
+        "security": {"status": "pass", "command": "ad-hoc probe of the shipped hook, 12 force-push spellings", "notes": "8 of 8 in-scope expectations matched, including the two over-blocking guards. The 4 out-of-scope spellings were measured as allowed and documented, not left unmeasured."},
+        "compatibility": {"status": "pass", "command": "uv run pytest -q tests/test_hook_executability.py", "notes": "Existing guard messages unchanged; the block reason is still `Force push to protected branch`."},
+        "transaction_locking": {"status": "not_applicable", "reason": "No concurrent writer, database transaction, or lock boundary is changed."}
+      }
+    },
+    {
       "id": "adr87-path-screening-followup-2026-09-01",
       "record_status": "complete",
       "scope": "Screen deny-list path rules against the bare path so an anchored pattern can match, route NotebookEdit through the path guards, and apply the deny-list to apply_patch target paths.",

@@ -59,7 +59,11 @@ The root cause of all of this is that no test asserted a deny-list rule fires.
 Read single-quoted and double-quoted pattern values. Treat an unusable pattern as a configuration
 error and fail closed for that invocation rather than silently allowing the command. Rewrite the
 shipped patterns and the hardcoded guards so they do not depend on flag position, and express
-whitespace and word boundaries with POSIX classes instead of `\s` and `\b`. Add a directory-prefix
+whitespace and word boundaries with POSIX classes instead of `\s` and `\b`. Treat a leading `+` on the
+refspec as a third spelling of force intent, matched in the same position as the flags rather than
+anywhere in the command: keeping the "after `push`" anchor is what stops
+`rm -f x && git push origin main` from blocking on an unrelated `-f`. Spell it `[+]`, because `\+` is
+undefined in POSIX ERE. Add a directory-prefix
 check for `secrets/`, which a `basename` test cannot cover. Remove the F9 sealed-family guard: its
 regex is broken, its paths are the maintainer's private layout and meaningless to adopters, and
 ADR-22 in this repository is a reference stub that imposes no hook requirement. Correct the stale
@@ -134,10 +138,14 @@ corrections:
 - The rule id `git-push-force-main` no longer exists. An adopter who referenced that id in their own
   tooling or documentation must move to `git-push-force`, and should note that the id is now `warn`
   while the blocking decision lives in hook guard 2.
-- A leading `+` on a refspec forces an update with no flag, and guard 2 still tests only for
-  `-f`/`--force*`, so `git push origin +main` remains allowed here. `mir-harness` covers this case,
-  which leaves the control repository stricter than this template on that one shape until it is
-  ported.
+- Guard 2 still allows four measured spellings of a protected-branch force push, because the branch
+  match requires whitespace or end-of-string after the name and the flag list is literal:
+  `git push origin release/1.0 --force`, `git push origin main/sub --force`,
+  `git push origin main --force-with-lease=main`, and `git push origin main --force-if-includes`.
+  A release branch under `release/` is a common naming convention, so the first of these is the one
+  most likely to matter in practice. Fixing them means widening the trailing boundary to include `/`
+  and generalising the flag match, and is deliberately left to a separate change so that the
+  `maintenance` / `remaster` / `my-release-notes` allowances stay under test while it happens.
 
 ## 8. Out-of-Scope — HARD
 
@@ -146,7 +154,8 @@ corrections:
   §4 are in scope precisely because the old values described protection the patterns never delivered.
 - Re-enabling GitHub Actions and wiring `tests/test_deny_list.py` into `validate.yml`. Both are
   required for the CI claim in §6 and neither is a change to this repository's code.
-- Covering the `+refspec` force-push spelling, recorded as a known gap in §7.
+- Generalising guard 2's branch boundary and flag list beyond the spellings named in §4. The four
+  that remain allowed are recorded in §7.
 - The `mir-harness` control repository's own copy of these guards, which shares the position-dependent
   force-push and `sudo` weaknesses but has a working deny-list parser and no F9 guard. It shares both
   path-screening defects corrected here: the same `"$TOOL_NAME $FP"` deny-list subject, and a patch
