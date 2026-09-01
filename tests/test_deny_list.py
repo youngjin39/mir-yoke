@@ -172,6 +172,20 @@ def test_declared_severities_are_known(tmp_path: Path) -> None:
         )
 
 
+def test_deny_list_only_rules_still_ship() -> None:
+    """These three shapes have no hardcoded-guard fallback.
+
+    If one is renamed or dropped, the protection disappears with it and no other
+    test would notice, which is exactly how the original regression survived.
+    """
+    shipped = {rule["id"] for rule in _parse_rules()}
+    missing = [rule_id for rule_id in DENY_LIST_ONLY if rule_id not in shipped]
+    assert not missing, (
+        f"deny-list-only rules disappeared: {missing}. These have no hardcoded "
+        "guard, so removing them removes the protection entirely."
+    )
+
+
 @pytest.mark.parametrize(
     ("rule_id", "command"),
     [
@@ -179,11 +193,12 @@ def test_declared_severities_are_known(tmp_path: Path) -> None:
         ("rm-rf-home", "rm -rf $HOME"),
         ("dd-of-device", "dd if=/dev/zero of=/dev/nvme0n1"),
         ("skip-pre-commit-hooks", "git commit -m x --no-verify"),
-        ("git-push-force-main", "git push --force origin main"),
-        # The flag-after-refspec spellings are the reason ADR-87 rewrites these
-        # patterns: they were allowed while the canonical spelling was blocked.
-        ("git-push-force-main", "git push origin main --force"),
-        ("git-push-force-main", "git push origin main -f"),
+        # Blocked by hook guard 2, which ANDs "force flag" with "protected
+        # branch". The flag-after-refspec spellings are the reason ADR-87 rewrites
+        # it: they were allowed while the canonical spelling was blocked.
+        ("guard-force-push-protected", "git push --force origin main"),
+        ("guard-force-push-protected", "git push origin main --force"),
+        ("guard-force-push-protected", "git push origin main -f"),
     ],
 )
 def test_block_severity_commands_are_blocked(

@@ -23,10 +23,15 @@
   severity: block
   reason: "rm -rf $HOME wipes user data"
 
-- id: git-push-force-main
+- id: git-push-force
+  # Warn, not block. Guard 2 in pre-tool-use.sh blocks a force push that also
+  # names a protected branch; force-pushing your own topic branch after a rebase
+  # is ordinary work and this template does not optimize for maximal restriction.
+  # A single POSIX ERE cannot express "force flag AND protected branch" in either
+  # argument order, so the two-condition test stays in the hook.
   pattern: 'git[[:space:]]+push([[:space:]]+[^[:space:]]+)*[[:space:]]+(--force|--force-with-lease|-f)([[:space:]]|$)'
-  severity: block
-  reason: "force push overwrites shared history; push without the force flag or ask the user"
+  severity: warn
+  reason: "force push rewrites remote history — confirm the target branch is yours"
 
 - id: git-reset-hard-origin
   pattern: 'git[[:space:]]+reset[[:space:]]+--hard[[:space:]]+(origin|upstream)/(main|master)([[:space:]]|$)'

@@ -177,8 +177,15 @@ if [ "$TOOL_NAME" = "Bash" ]; then
   if echo "$CMD" | grep -qE 'rm[[:space:]]+(-[rRfF]+[[:space:]]+)+(/|~|\$HOME|\*|\.|\.\./)'; then
     block "Destructive rm pattern: $CMD"
   fi
-  # 2. Force push to protected branches
-  if echo "$CMD" | grep -qE 'git[[:space:]]+push[[:space:]]+(-f|--force)[^|]*(main|master|release)'; then
+  # 2. Force push to protected branches.
+  #    ADR-87: the flag may appear anywhere after `push`, so do not require it
+  #    immediately after the subcommand -- `git push origin main --force` used to
+  #    slip while `git push --force origin main` was blocked. The branch name is
+  #    matched on a word boundary because the previous unanchored
+  #    (main|master|release) also blocked `maintenance`, `remaster`, and
+  #    `my-release-notes`.
+  if echo "$CMD" | grep -qE 'git[[:space:]]+push([[:space:]]+[^[:space:]]+)*[[:space:]]+(-f|--force|--force-with-lease)([[:space:]]|$)' \
+    && echo "$CMD" | grep -qE '(^|[[:space:]/])(main|master|release)([[:space:]]|$)'; then
     block "Force push to protected branch: $CMD"
   fi
   # 3. Hook bypass flags
@@ -193,8 +200,11 @@ if [ "$TOOL_NAME" = "Bash" ]; then
   if echo "$CMD" | grep -qE '(curl|wget)[^|]*\|[[:space:]]*(bash|sh|zsh|python)'; then
     block "Piped remote install: $CMD"
   fi
-  # 6. sudo in any form
-  if echo "$CMD" | grep -qE '(^|[[:space:]])sudo([[:space:]]|$)'; then
+  # 6. sudo in any form.
+  #    ADR-87: the previous (^| )sudo( |$) required a space or line start before
+  #    the word, so `echo x;sudo rm -rf /var` and `/usr/bin/sudo ...` both slipped.
+  #    Accept any shell separator and any path prefix ending in a slash.
+  if echo "$CMD" | grep -qE '(^|[[:space:];&|(`]|/)sudo([[:space:]]|$)'; then
     block "sudo requires user confirmation, not this hook: $CMD"
   fi
   # 7. Raw Codex subprocess routing is forbidden. Use a small, non-executing
@@ -259,12 +269,13 @@ raise SystemExit(1)
       fi
     fi
   fi
-  # F9. Sealed-family external push guard (sealed-repo policy 2026-05-23)
-  if echo "$CMD" | grep -qE 'git[[:space:]]+push'; then
-    if echo "$CMD" | grep -qE '(<your-home>/Router_Control|<your-home>/Project|<your-harness-path>'; then
-      block "sealed-family external push requires explicit user override (sealed-repo policy 2026-05-23)"
-    fi
-  fi
+  # ADR-87 removed the F9 sealed-family push guard. Its regex carried
+  # unsubstituted sanitization placeholders and an unclosed group, so grep aborted
+  # with "Unmatched ( or \(" on every `git push` and the guard failed open. The
+  # paths it named are the maintainer's private layout and are meaningless to an
+  # adopter, ADR-22 in this repository is a reference stub that imposes no hook
+  # requirement, and mir-harness deleted the guard already. A repository that
+  # needs sealed-path protection should express it through its own Profile.
   apply_deny_list "$CMD" "bash"
 fi
 
