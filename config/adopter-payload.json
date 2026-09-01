@@ -466,6 +466,12 @@
       "disposition": "remove"
     },
     {
+      "path": ".python-version",
+      "sha256": "7b55f8e67b5623c4bef3fa691288da9437d79d3aba156de48d481db32ac7d16d",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
       "path": "AGENTS.md",
       "sha256": "bce29f62de9e5e15b7ac6691fc657deb66cc9960f629c5f6e65e1b16b34fb809",
       "classification": "reference",
@@ -629,7 +635,7 @@
     },
     {
       "path": "config/template-assets.json",
-      "sha256": "3593fa9d05f7baef861cd6ab95ce5286959d65981eff9e7a381cec49d70c3b49",
+      "sha256": "ab4f4b4e559c9dd8c41703a6145a762e9938457ec8cbe750b3f319a761ec2fd9",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     },
@@ -1097,7 +1103,7 @@
     },
     {
       "path": "docs/decisions/adr-87-deny-list-enforcement-recovery.md",
-      "sha256": "be8773a8824468f5770528d2a4330195f668caad48a8a7bebd4cc3b9923808ba",
+      "sha256": "bb24f815cce7ec2c5613dc62e355746e5fdaf88df446884161dca118a8408c98",
       "classification": "reference",
       "disposition": "remove"
     },

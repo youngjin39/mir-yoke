@@ -238,6 +238,7 @@
         ".github/**",
         ".claude/agents/template-sync-validator.md",
         ".codex/agents/template-sync-validator.toml",
+        ".python-version",
         "config/harness-consistency.json",
         "config/harness-consistency.schema.json",
         "config/project-hooks.json",

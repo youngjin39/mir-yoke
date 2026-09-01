@@ -153,7 +153,11 @@ corrections:
   `git push origin release/1.0 --force`, `git push origin main/sub --force`,
   `git push origin main --force-with-lease=main`, and `git push origin main --force-if-includes`.
   A release branch under `release/` is a common naming convention, so the first of these is the one
-  most likely to matter in practice. Fixing them means widening the trailing boundary to include `/`
+  most likely to matter in practice. They are not equally quiet: `release/1.0 --force` and
+  `main/sub --force` still emit `[PreToolUse WARN] deny-list[git-push-force]`, because that rule
+  matches force intent without needing the branch name, while the two `--force-*` spellings are
+  entirely silent — `=` and the `-if-includes` suffix both break the rule's trailing boundary as well
+  as the guard's. Fixing them means widening the trailing boundary to include `/`
   and generalising the flag match, and is deliberately left to a separate change so that the
   `maintenance` / `remaster` / `my-release-notes` allowances stay under test while it happens.
 
@@ -166,10 +170,13 @@ corrections:
   required for the CI claim in §6 and neither is a change to this repository's code.
 - Generalising guard 2's branch boundary and flag list beyond the spellings named in §4. The four
   that remain allowed are recorded in §7.
-- The `mir-harness` control repository's own copy of these guards, which shares the position-dependent
-  force-push and `sudo` weaknesses but has a working deny-list parser and no F9 guard. It shares both
-  path-screening defects corrected here: the same `"$TOOL_NAME $FP"` deny-list subject, and a patch
-  screen that never consults the deny-list.
+- The `mir-harness` control repository's own copy of these guards. **Scoped to `mir-harness` `main` at
+  `571b8b1c`, measured 2026-09-01:** it shares the position-dependent force-push and `sudo` weaknesses
+  and both path-screening defects corrected here — the same `"$TOOL_NAME $FP"` deny-list subject and a
+  patch screen that never consults the deny-list — while having a working deny-list parser and no F9
+  guard. That statement is dated deliberately: open pull requests there already fix the subject and
+  both guards, so it describes the commit named and not the repository's future state. What is not
+  proposed there is the patch-screen gap, which its owner has recorded as an accepted known gap.
 - Distribution-name and console-script collisions between this repository and `mir-harness`.
 
 ## 9. Verification
@@ -183,5 +190,11 @@ corrections:
   `test_secrets_directory_writes_are_blocked` built `str(project / file_path)`, so relative paths
   were absent from the test space entirely and the hole survived a green suite.
 - `uv run pytest -q tests/test_hook_executability.py` — existing hardcoded guards still hold.
-- `uv run pytest -q` — full repository suite.
+- `uv run pytest -q` — full repository suite. Record `uv run python -V` beside the count. This
+  repository had no `.python-version` and `requires-python` is `>=3.12` with no upper bound, so a fresh
+  `uv sync` picked whichever CPython was newest on the machine while `validate.yml` pins 3.12 — the
+  local suite and CI were not necessarily running the same interpreter, and an existing `.venv` is
+  reused across branch checkouts, so the version could be decided by when the venv happened to be
+  created. `.python-version` now pins 3.12 to match CI. This change was measured on both: **829 passed
+  / 0 failed on CPython 3.14.7 and on 3.12.14.**
 - `uv run python -m tools.template_assets --write-adopter-payload` — adopter payload digests match.
