@@ -2,6 +2,28 @@
   "version": 1,
   "changes": [
     {
+      "id": "adr87-force-push-separator-scope-2026-09-01",
+      "record_status": "complete",
+      "scope": "Confine both halves of the force-push guard to the push's own argument list so a protected branch name or a flag belonging to another command in a compound command cannot combine into a false block.",
+      "targets": [".claude/hooks/pre-tool-use.sh", "tests/test_deny_list.py", "docs/decisions/adr-87-deny-list-enforcement-recovery.md", "config/adopter-payload.json"],
+      "design_ref": "docs/decisions/adr-87-deny-list-enforcement-recovery.md",
+      "bluebrick": "Hook enforcement / Guard portability",
+      "categories": {
+        "unit": {"status": "pass", "command": "uv run pytest -q tests/test_deny_list.py -k 'separator or within_a_compound'", "notes": "2 tests added and watched fail first. The false-positive test failed on `git push --force origin dev && echo main`; the companion test pinning that compound commands still block passed from the start, which is the point of having both."},
+        "integration": {"status": "pass", "command": "uv run pytest -q tests/test_deny_list.py tests/test_hook_executability.py", "notes": "43 passed."},
+        "e2e": {"status": "pass", "command": "uv run pytest -q", "notes": "Full repository suite."},
+        "browser": {"status": "not_applicable", "reason": "No browser surface changes."},
+        "edge": {"status": "pass", "command": "uv run pytest -q tests/test_deny_list.py", "notes": "Separator forms with &&, ; and a flag before the push; the mirror cases where a compound command really does force-push a protected branch still block."},
+        "architecture": {"status": "pass", "command": "ADR-87 sections 4 and 7", "notes": "Three of the four false positives were introduced by this branch, not inherited: making the flag position-independent let the whole-line branch grep pair with a flag anywhere in the push. `git push --force origin dev && echo main` was blocked as far back as upstream e9e58bc. Recorded in section 7 as a correction, since no protected branch is force-pushed in any of them."},
+        "availability": {"status": "not_applicable", "reason": "No service changes."},
+        "load": {"status": "not_applicable", "reason": "No throughput changes."},
+        "soak": {"status": "not_applicable", "reason": "No persistent process is introduced."},
+        "security": {"status": "pass", "command": "ad-hoc 28-case matrix probed against both HEAD and the main hook", "notes": "28/28 as specified: 12 block, 16 allow. Zero new false positives against main and zero new bypasses beyond the four documented word-boundary and separator corrections. The rule learned here, from a peer session that shipped the same false positive: a widening change needs the allowed side probed as hard as the blocked side, and a first cycle with nine red bypass cases and zero red false-positive cases is the warning sign."},
+        "compatibility": {"status": "pass", "command": "uv run pytest -q tests/test_hook_executability.py", "notes": "Guard message unchanged."},
+        "transaction_locking": {"status": "not_applicable", "reason": "No concurrent writer, database transaction, or lock boundary is changed."}
+      }
+    },
+    {
       "id": "adr87-plus-refspec-force-push-2026-09-01",
       "record_status": "complete",
       "scope": "Block a protected-branch force push spelled as a leading + on the refspec, which forces the update with no flag at all.",

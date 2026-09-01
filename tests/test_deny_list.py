@@ -396,6 +396,50 @@ def test_plus_refspec_on_an_unprotected_branch_is_allowed(tmp_path: Path) -> Non
         )
 
 
+def test_force_push_guard_stops_at_a_command_separator(tmp_path: Path) -> None:
+    """Guard 2 tests two conditions with two greps, and both scanned the whole line.
+
+    So a protected branch name anywhere on the line combined with a force flag
+    anywhere else to block ordinary work. Making the flag position-independent
+    widened this: `git push origin dev --force && echo main` blocks on `main` in
+    an unrelated `echo`. Both halves must be confined to the push's own argument
+    list, which ends at the first `;`, `&` or `|`.
+    """
+    project = _make_project(tmp_path)
+    for command in (
+        "git push --force origin dev && echo main",
+        "git push origin dev --force && echo main",
+        "git push origin +dev && echo main",
+        "echo main && git push --force origin dev",
+        "git push origin dev --force; echo release",
+        "rm -f scratch && git push origin main",
+        "git push origin main && echo done",
+    ):
+        result = _bash(project, command)
+        assert result.returncode == 0, (
+            f"{command!r} must be allowed -- no force push to a protected branch "
+            f"happens here; got rc={result.returncode} "
+            f"stderr={result.stderr.strip()!r}"
+        )
+
+
+def test_force_push_guard_still_blocks_within_a_compound_command(
+    tmp_path: Path,
+) -> None:
+    """Confining the match to the push's arguments must not create a bypass."""
+    project = _make_project(tmp_path)
+    for command in (
+        "echo start && git push --force origin main",
+        "echo start; git push origin main --force",
+        "echo start && git push origin +main",
+    ):
+        result = _bash(project, command)
+        assert result.returncode == 2, (
+            f"{command!r} must be blocked; got rc={result.returncode} "
+            f"stderr={result.stderr.strip()!r}"
+        )
+
+
 def test_sudo_is_blocked_regardless_of_position(tmp_path: Path) -> None:
     """`(^| )sudo( |$)` misses a shell separator and an absolute path."""
     project = _make_project(tmp_path)

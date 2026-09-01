@@ -191,8 +191,15 @@ if [ "$TOOL_NAME" = "Bash" ]; then
   #    is what stops `rm -f x && git push origin main` from blocking on the
   #    unrelated `-f`. `[+]` is spelled as a bracket expression because `\+` is
   #    undefined in POSIX ERE.
-  if echo "$CMD" | grep -qE 'git[[:space:]]+push([[:space:]]+[^[:space:]]+)*[[:space:]]+((-f|--force|--force-with-lease)([[:space:]]|$)|[+])' \
-    && echo "$CMD" | grep -qE '(^|[[:space:]/+])(main|master|release)([[:space:]]|$)'; then
+  #    Both halves are confined to the push's own argument list. A token class
+  #    that excludes `;`, `&` and `|` cannot cross a command separator, so a
+  #    protected branch name in an unrelated `echo` and a flag belonging to a
+  #    different command are both out of reach. Without this the branch grep
+  #    scanned the whole line, and `git push origin dev --force && echo main`
+  #    blocked on the `main` in the echo.
+  _mir_push_args='git[[:space:]]+push([[:space:]]+[^[:space:];&|]+)*[[:space:]]+'
+  if echo "$CMD" | grep -qE "${_mir_push_args}((-f|--force|--force-with-lease)([[:space:]]|[;&|]|\$)|[+])" \
+    && echo "$CMD" | grep -qE "${_mir_push_args}[+]?([^[:space:];&|]*/)?(main|master|release)([[:space:]]|[;&|]|\$)"; then
     block "Force push to protected branch: $CMD"
   fi
   # 3. Hook bypass flags

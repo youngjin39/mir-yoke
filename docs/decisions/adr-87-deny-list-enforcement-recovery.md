@@ -61,9 +61,14 @@ error and fail closed for that invocation rather than silently allowing the comm
 shipped patterns and the hardcoded guards so they do not depend on flag position, and express
 whitespace and word boundaries with POSIX classes instead of `\s` and `\b`. Treat a leading `+` on the
 refspec as a third spelling of force intent, matched in the same position as the flags rather than
-anywhere in the command: keeping the "after `push`" anchor is what stops
-`rm -f x && git push origin main` from blocking on an unrelated `-f`. Spell it `[+]`, because `\+` is
-undefined in POSIX ERE. Add a directory-prefix
+anywhere in the command. Spell it `[+]`, because `\+` is undefined in POSIX ERE.
+
+Confine both halves of guard 2 to the push's own argument list, using a token class that excludes
+`;`, `&` and `|` so the match cannot cross a command separator. Widening a guard by removing a
+positional constraint has to be measured on the allowed side as carefully as on the blocked side: the
+two greps each scanned the whole line, so making the flag position-independent turned
+`git push origin dev --force && echo main` into a block on the `main` in an unrelated `echo`, and
+`rm -f scratch && git push origin main` was one edit away from the same fate. Add a directory-prefix
 check for `secrets/`, which a `basename` test cannot cover. Remove the F9 sealed-family guard: its
 regex is broken, its paths are the maintainer's private layout and meaningless to adopters, and
 ADR-22 in this repository is a reference stub that imposes no hook requirement. Correct the stale
@@ -128,9 +133,14 @@ corrections:
   until it is fixed. This is deliberate, and the new test validates every shipped pattern so the
   failure surfaces in CI rather than during a session.
 - Tightening the branch match to word boundaries changes behaviour for branches such as
-  `maintenance` and `my-release-notes`, which the previous unanchored `(main|master|release)` match
-  blocked by accident. This is a correction, but adopters relying on the accident will see those
-  pushes allowed.
+  `maintenance`, `remaster` and `my-release-notes`, which the previous unanchored
+  `(main|master|release)` match blocked by accident. This is a correction, but adopters relying on the
+  accident will see those pushes allowed.
+- Confining guard 2 to the push's own arguments likewise stops blocking compound commands that never
+  force-pushed a protected branch, such as `git push --force origin dev && echo main`. That was
+  blocked before this change because the branch grep read the whole line. Four such shapes were
+  measured against `main`: this one plus the `;`-separated form, the flag-after-refspec form and the
+  `+dev` form, the last three of which this change would otherwise have introduced.
 - Adopters who copied the inert deny-list now get real enforcement. A `secrets/` directory that was
   previously writable becomes read-only to the agent.
 - `chmod -R 777` and `curl … | bash` now block rather than warn. Both were declared `warn` while

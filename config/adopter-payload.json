@@ -251,7 +251,7 @@
     },
     {
       "path": ".claude/hooks/pre-tool-use.sh",
-      "sha256": "8290ef40fe0b761a9316f26b14a331924410ab6b53577304daf74e40f86c1188",
+      "sha256": "691f3b6112313453f7093636a01645afc7deab1a8acc024f2841ab2888ca414c",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -1097,7 +1097,7 @@
     },
     {
       "path": "docs/decisions/adr-87-deny-list-enforcement-recovery.md",
-      "sha256": "f58b31731b9a0e54248dff2a7d9daf099952cde9a21651fdaa8bcf51f66522d4",
+      "sha256": "be8773a8824468f5770528d2a4330195f668caad48a8a7bebd4cc3b9923808ba",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -3377,7 +3377,7 @@
     },
     {
       "path": "tasks/tdd.json",
-      "sha256": "481ae4410a41f5a0aeb1645263c24610443b36aee68498cce8df3d270d0c0bf7",
+      "sha256": "77fca0303928da2ea5d3b6cd04222f13df86b4d4a7fe80e868f409bfb8e5d795",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -3569,7 +3569,7 @@
     },
     {
       "path": "tests/test_deny_list.py",
-      "sha256": "12c035d1800313d7458b7520d6cba9dc0988ff941fc162def20a825f008938ec",
+      "sha256": "374d1469651636210c5144b80b6af758a4274fd3f4defdddc348cc5836d282cc",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     },
