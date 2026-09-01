@@ -251,7 +251,7 @@
     },
     {
       "path": ".claude/hooks/pre-tool-use.sh",
-      "sha256": "691f3b6112313453f7093636a01645afc7deab1a8acc024f2841ab2888ca414c",
+      "sha256": "64ce5282ef272045563ba7db533c2309fa27b477be54a542a7906be6d9bfe32c",
       "classification": "reference",
       "disposition": "remove"
     },

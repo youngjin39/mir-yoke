@@ -144,6 +144,30 @@ apply_deny_list() {
 
 require_jq
 TOOL_NAME="$(extract_json '.tool_name')" || block "Malformed PreToolUse payload for filter: .tool_name"
+HOOK_CWD="$(extract_json '.cwd' 2>/dev/null || true)"
+[ -n "$HOOK_CWD" ] || HOOK_CWD="$PROJECT_DIR"
+
+resolve_project_relative_path() {
+  "$_MIR_PYTHON_LAUNCHER" - "$PROJECT_DIR" "$HOOK_CWD" "$1" <<'PY'
+import os
+from pathlib import Path
+import sys
+
+project_dir, hook_cwd, raw_path = sys.argv[1:]
+root = Path(project_dir).resolve()
+base = Path(hook_cwd).expanduser()
+if not base.is_absolute():
+    base = root / base
+candidate = Path(os.path.expanduser(raw_path))
+if not candidate.is_absolute():
+    candidate = base / candidate
+resolved = candidate.resolve(strict=False)
+try:
+    print(resolved.relative_to(root).as_posix())
+except ValueError:
+    raise SystemExit(0)
+PY
+}
 
 # ADR-60 R5 (Phase-3 enforcement parity): the Write/Edit R5 block below only
 # covers Write/Edit. Codex's primary edit tool is apply_patch, and Bash can
@@ -307,13 +331,17 @@ fi
 screen_path_target() {
   local fp="$1"
   [ -n "$fp" ] || return 0
+  local relative_fp
+  relative_fp="$(resolve_project_relative_path "$fp")"
 
   # 1. Outside project root
-  case "$fp" in
-    /etc/*|/System/*|/Library/*|/usr/*|/bin/*|/sbin/*|/var/*|/private/*)
-      block "Write outside project root: $fp"
-      ;;
-  esac
+  if [ -z "$relative_fp" ]; then
+    case "$fp" in
+      /etc/*|/System/*|/Library/*|/usr/*|/bin/*|/sbin/*|/var/*|/private/*)
+        block "Write outside project root: $fp"
+        ;;
+    esac
+  fi
   # 2. Secret/env files
   case "$(basename "$fp")" in
     .env|.env.*|credentials|credentials.*|id_rsa|id_ed25519|*.pem|*.key|*.p12)
@@ -335,7 +363,7 @@ screen_path_target() {
         ;;
     esac
   fi
-  apply_deny_list "$fp" "path"
+  apply_deny_list "${relative_fp:-$fp}" "path"
 }
 
 if [ "$TOOL_NAME" = "Write" ] || [ "$TOOL_NAME" = "Edit" ] || [ "$TOOL_NAME" = "NotebookEdit" ]; then
