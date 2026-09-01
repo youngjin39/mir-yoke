@@ -1,47 +1,60 @@
-# Patterns the pre-tool-use hook screens. severity: block | warn.
+# Patterns the pre-tool-use hook screens. severity: block | warn | suggest.
 # Each rule needs an `id`, a `pattern` (regex), a `severity`, and a `reason`.
 #
 # `subject` is either the bash command (when tool_name == Bash) or the
 # tool_input.file_path (when tool_name in Edit/Write/apply_patch). One file
 # blocks one shape — keep entries narrow and well-named.
+#
+# ADR-87 constraints, enforced by tests/test_deny_list.py:
+#   * The hook matches with `grep -E`, so patterns must be POSIX ERE. Do not use
+#     \s or \b — they are GNU extensions and this template runs on macOS CI too.
+#     Use [[:space:]] and an explicit boundary such as ([[:space:]]|/|$).
+#   * Do not assume argument order. `git push origin main --force` is as real as
+#     `git push --force origin main`.
+#   * A pattern that does not compile now blocks the call instead of allowing it.
 
 - id: rm-rf-root
-  pattern: 'rm\s+(-[rRfF]+\s+)+/(\s|$)'
+  pattern: 'rm[[:space:]]+(-[rRfF]+[[:space:]]+)+/([[:space:]]|$)'
   severity: block
   reason: "rm -rf / is almost never intentional"
 
 - id: rm-rf-home
-  pattern: 'rm\s+(-[rRfF]+\s+)+\$HOME(\s|/|$)'
+  pattern: 'rm[[:space:]]+(-[rRfF]+[[:space:]]+)+\$HOME([[:space:]]|/|$)'
   severity: block
   reason: "rm -rf $HOME wipes user data"
 
-- id: git-push-force-main
-  pattern: 'git\s+push\s+(--force|-f)\s+.*\b(main|master)\b'
-  severity: block
-  reason: "force push to main/master overwrites shared history"
+- id: git-push-force
+  # Warn, not block. Guard 2 in pre-tool-use.sh blocks a force push that also
+  # names a protected branch; force-pushing your own topic branch after a rebase
+  # is ordinary work and this template does not optimize for maximal restriction.
+  # A single POSIX ERE cannot express "force flag AND protected branch" in either
+  # argument order, so the two-condition test stays in the hook.
+  pattern: 'git[[:space:]]+push([[:space:]]+[^[:space:]]+)*[[:space:]]+(--force|--force-with-lease|-f)([[:space:]]|$)'
+  severity: warn
+  reason: "force push rewrites remote history — confirm the target branch is yours"
 
 - id: git-reset-hard-origin
-  pattern: 'git\s+reset\s+--hard\s+(origin|upstream)/(main|master)'
+  pattern: 'git[[:space:]]+reset[[:space:]]+--hard[[:space:]]+(origin|upstream)/(main|master)([[:space:]]|$)'
   severity: warn
   reason: "discards all local commits silently — confirm intent"
 
 - id: chmod-777-recursive
-  pattern: 'chmod\s+-R\s+777'
-  severity: warn
-  reason: "recursive 777 is rarely intentional"
+  pattern: 'chmod[[:space:]]+(-[a-zA-Z]*R[a-zA-Z]*[[:space:]]+)+777'
+  severity: block
+  reason: "recursive 777 grants world-write to a whole tree"
 
 - id: curl-pipe-shell
-  pattern: 'curl\s+[^|]*\|\s*(bash|sh|zsh)'
-  severity: warn
+  pattern: '(curl|wget)[^|]*\|[[:space:]]*(bash|sh|zsh|python[0-9.]*)([[:space:]]|$)'
+  severity: block
   reason: "downloading and executing remote shell scripts is high-risk"
 
 - id: dd-of-device
-  pattern: 'dd\s+.*of=/dev/(sd[a-z]|nvme[0-9]n[0-9]|disk[0-9])'
+  pattern: 'dd[[:space:]]+.*of=/dev/(sd[a-z]|nvme[0-9]+n[0-9]+|disk[0-9]+|vd[a-z]|hd[a-z])'
   severity: block
   reason: "dd to a block device can destroy the disk"
 
 - id: protected-env
-  pattern: '^\.env(\.[a-zA-Z0-9_-]+)?$'
+  pattern: '(^|/)\.env(\.[a-zA-Z0-9_-]+)?$'
   severity: block
   reason: ".env should never be edited via the agent — load from secrets manager instead"
 
@@ -61,6 +74,6 @@
   reason: "AWS credentials live here — out of scope for agent edits"
 
 - id: skip-pre-commit-hooks
-  pattern: 'git\s+commit.*--no-verify'
+  pattern: 'git[[:space:]]+commit.*(--no-verify|--no-gpg-sign)([[:space:]]|$)'
   severity: block
   reason: "--no-verify defeats the entire harness; resolve hook failures instead"

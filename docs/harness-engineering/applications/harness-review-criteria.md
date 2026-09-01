@@ -61,7 +61,7 @@ Three parts: **A. Structure-review criteria** (how to audit one repo), **B. Impr
 ### B3. Repo/fleet write safety
 - the source repo code paths (tools/, src/, scripts/): delegated Codex lane only (hook-enforced).
 - Other family repos: Bash channel only, fleet-admin elevation recorded in tasks/plan.md BEFORE write (target_repos/surfaces/reason/verification), local commit per repo, NO push without explicit user approval.
-- Sealed-5: untouched without user override; external push now hard-BLOCKED by pre-tool-use guard (F9).
+- Sealed-5: untouched without user override. The F9 pre-tool-use guard that once claimed to hard-BLOCK external push was removed by ADR-87: its regex kept unsubstituted sanitization placeholders and an unclosed group, so it failed open on every `git push` and never blocked anything. Sealed-path protection belongs in the target repository's own Profile, not in a template hook naming the maintainer's private paths.
 - Fleet apply scripts: dry-run first, per-repo verification (`bash -n`, live-run bounds, label checks), auto-rollback on verification failure, idempotency proven by re-run.
 
 ### B4. Pre-push checklist (every repo, every push)

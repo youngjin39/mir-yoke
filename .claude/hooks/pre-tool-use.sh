@@ -63,8 +63,13 @@ emit_deny_patterns() {
   awk '
     function trim_field(line) {
       sub(/^[^:]+:[[:space:]]*/, "", line)
+      # ADR-87: strip either YAML quote style. Stripping only the double quote
+      # left every single-quoted pattern with a literal leading apostrophe, which
+      # silently made all of them unmatchable.
       gsub(/^"/, "", line)
       gsub(/"$/, "", line)
+      gsub(/^\047/, "", line)
+      gsub(/\047$/, "", line)
       return line
     }
     function emit_row() {
@@ -106,6 +111,16 @@ apply_deny_list() {
     [ -n "$pattern" ] || continue
     local regex="$pattern"
     regex="${regex//\\\\/\\}"
+    # ADR-87: a pattern grep cannot compile used to fail open -- grep exited
+    # non-zero, which read as "no match" and silently allowed the command. Treat
+    # it as a configuration error and refuse the call instead. grep exits 0 for a
+    # match, 1 for no match, and greater than 1 only for a real error, so an
+    # empty subject separates "does not compile" from "does not match".
+    local compile_rc=0
+    printf '' | grep -qE "$regex" 2>/dev/null || compile_rc=$?
+    if [ "$compile_rc" -gt 1 ]; then
+      block "deny-list[$id] is not a usable POSIX regex; fix .ai-harness/deny-list.yaml"
+    fi
     if printf '%s' "$subject" | grep -qE "$regex"; then
       if [ "$severity" = "block" ]; then
         # tier: block (deny-list security enforcement)
@@ -129,6 +144,30 @@ apply_deny_list() {
 
 require_jq
 TOOL_NAME="$(extract_json '.tool_name')" || block "Malformed PreToolUse payload for filter: .tool_name"
+HOOK_CWD="$(extract_json '.cwd' 2>/dev/null || true)"
+[ -n "$HOOK_CWD" ] || HOOK_CWD="$PROJECT_DIR"
+
+resolve_project_relative_path() {
+  "$_MIR_PYTHON_LAUNCHER" - "$PROJECT_DIR" "$HOOK_CWD" "$1" <<'PY'
+import os
+from pathlib import Path
+import sys
+
+project_dir, hook_cwd, raw_path = sys.argv[1:]
+root = Path(project_dir).resolve()
+base = Path(hook_cwd).expanduser()
+if not base.is_absolute():
+    base = root / base
+candidate = Path(os.path.expanduser(raw_path))
+if not candidate.is_absolute():
+    candidate = base / candidate
+resolved = candidate.resolve(strict=False)
+try:
+    print(resolved.relative_to(root).as_posix())
+except ValueError:
+    raise SystemExit(0)
+PY
+}
 
 # ADR-60 R5 (Phase-3 enforcement parity): the Write/Edit R5 block below only
 # covers Write/Edit. Codex's primary edit tool is apply_patch, and Bash can
@@ -162,8 +201,29 @@ if [ "$TOOL_NAME" = "Bash" ]; then
   if echo "$CMD" | grep -qE 'rm[[:space:]]+(-[rRfF]+[[:space:]]+)+(/|~|\$HOME|\*|\.|\.\./)'; then
     block "Destructive rm pattern: $CMD"
   fi
-  # 2. Force push to protected branches
-  if echo "$CMD" | grep -qE 'git[[:space:]]+push[[:space:]]+(-f|--force)[^|]*(main|master|release)'; then
+  # 2. Force push to protected branches.
+  #    ADR-87: the flag may appear anywhere after `push`, so do not require it
+  #    immediately after the subcommand -- `git push origin main --force` used to
+  #    slip while `git push --force origin main` was blocked. The branch name is
+  #    matched on a word boundary because the previous unanchored
+  #    (main|master|release) also blocked `maintenance`, `remaster`, and
+  #    `my-release-notes`.
+  #    A leading `+` on the refspec forces the update with no flag at all, so
+  #    `git push origin +main` is a third spelling of the same act. It is matched
+  #    as an alternative in the same position as the flags rather than by a bare
+  #    `[[:space:]][+]` anywhere in the command: keeping the "after push" anchor
+  #    is what stops `rm -f x && git push origin main` from blocking on the
+  #    unrelated `-f`. `[+]` is spelled as a bracket expression because `\+` is
+  #    undefined in POSIX ERE.
+  #    Both halves are confined to the push's own argument list. A token class
+  #    that excludes `;`, `&` and `|` cannot cross a command separator, so a
+  #    protected branch name in an unrelated `echo` and a flag belonging to a
+  #    different command are both out of reach. Without this the branch grep
+  #    scanned the whole line, and `git push origin dev --force && echo main`
+  #    blocked on the `main` in the echo.
+  _mir_push_args='git[[:space:]]+push([[:space:]]+[^[:space:];&|]+)*[[:space:]]+'
+  if echo "$CMD" | grep -qE "${_mir_push_args}((-f|--force|--force-with-lease)([[:space:]]|[;&|]|\$)|[+])" \
+    && echo "$CMD" | grep -qE "${_mir_push_args}[+]?([^[:space:];&|]*/)?(main|master|release)([[:space:]]|[;&|]|\$)"; then
     block "Force push to protected branch: $CMD"
   fi
   # 3. Hook bypass flags
@@ -178,8 +238,11 @@ if [ "$TOOL_NAME" = "Bash" ]; then
   if echo "$CMD" | grep -qE '(curl|wget)[^|]*\|[[:space:]]*(bash|sh|zsh|python)'; then
     block "Piped remote install: $CMD"
   fi
-  # 6. sudo in any form
-  if echo "$CMD" | grep -qE '(^|[[:space:]])sudo([[:space:]]|$)'; then
+  # 6. sudo in any form.
+  #    ADR-87: the previous (^| )sudo( |$) required a space or line start before
+  #    the word, so `echo x;sudo rm -rf /var` and `/usr/bin/sudo ...` both slipped.
+  #    Accept any shell separator and any path prefix ending in a slash.
+  if echo "$CMD" | grep -qE '(^|[[:space:];&|(`]|/)sudo([[:space:]]|$)'; then
     block "sudo requires user confirmation, not this hook: $CMD"
   fi
   # 7. Raw Codex subprocess routing is forbidden. Use a small, non-executing
@@ -244,48 +307,69 @@ raise SystemExit(1)
       fi
     fi
   fi
-  # F9. Sealed-family external push guard (sealed-repo policy 2026-05-23)
-  if echo "$CMD" | grep -qE 'git[[:space:]]+push'; then
-    if echo "$CMD" | grep -qE '(<your-home>/Router_Control|<your-home>/Project|<your-harness-path>'; then
-      block "sealed-family external push requires explicit user override (sealed-repo policy 2026-05-23)"
-    fi
-  fi
+  # ADR-87 removed the F9 sealed-family push guard. Its regex carried
+  # unsubstituted sanitization placeholders and an unclosed group, so grep aborted
+  # with "Unmatched ( or \(" on every `git push` and the guard failed open. The
+  # paths it named are the maintainer's private layout and are meaningless to an
+  # adopter, ADR-22 in this repository is a reference stub that imposes no hook
+  # requirement, and mir-harness deleted the guard already. A repository that
+  # needs sealed-path protection should express it through its own Profile.
   apply_deny_list "$CMD" "bash"
 fi
 
-# --- Write/Edit path guards ---
-if [ "$TOOL_NAME" = "Write" ] || [ "$TOOL_NAME" = "Edit" ]; then
-  FP="$(extract_json '.tool_input.file_path // .tool_input.path')" || block "Malformed PreToolUse payload for filter: .tool_input.file_path // .tool_input.path"
-  [ -z "$FP" ] && block "Empty file path payload"
+# --- Path guards ---
+# ADR-87 follow-up. Two defects, both measured against the shipped hook:
+#   * The guards below were reachable only from Write/Edit, so Codex's
+#     apply_patch and NotebookEdit walked past every one of them -- including the
+#     hardcoded secret-basename block.
+#   * The deny-list subject was "$TOOL_NAME $FP", so a `^` in a path pattern
+#     anchored on the tool name and could never match the path.
+#     `protected-secrets-dir` is `(^|/)secrets/`, which meant a bare
+#     `secrets/prod.yaml` was allowed while `./secrets/prod.yaml` was blocked.
+# Screening one bare path at a time fixes both, and keeps every guard in one
+# place so a new edit-shaped tool cannot silently miss a subset.
+screen_path_target() {
+  local fp="$1"
+  [ -n "$fp" ] || return 0
+  local relative_fp
+  relative_fp="$(resolve_project_relative_path "$fp")"
 
   # 1. Outside project root
-  case "$FP" in
-    /etc/*|/System/*|/Library/*|/usr/*|/bin/*|/sbin/*|/var/*|/private/*)
-      block "Write outside project root: $FP"
-      ;;
-  esac
+  if [ -z "$relative_fp" ]; then
+    case "$fp" in
+      /etc/*|/System/*|/Library/*|/usr/*|/bin/*|/sbin/*|/var/*|/private/*)
+        block "Write outside project root: $fp"
+        ;;
+    esac
+  fi
   # 2. Secret/env files
-  case "$(basename "$FP")" in
+  case "$(basename "$fp")" in
     .env|.env.*|credentials|credentials.*|id_rsa|id_ed25519|*.pem|*.key|*.p12)
-      block "Write to secret/credential file: $FP"
+      block "Write to secret/credential file: $fp"
       ;;
   esac
   # 3. Git internal state
-  if echo "$FP" | grep -qE '(^|/)\.git/(config|hooks/|refs/|objects/)'; then
-    block "Write to git internal state: $FP"
+  if echo "$fp" | grep -qE '(^|/)\.git/(config|hooks/|refs/|objects/)'; then
+    block "Write to git internal state: $fp"
   fi
   # ADR-60 R5: a sub-agent / codex-delegated context must NOT write the MAIN control-plane
   # cursor tasks/plan.md (the control_plane main owns it). Defense-in-depth behind the R4
   # worktree isolation. Detect the delegated context via MIR_CODEX_SESSION_ID.
   # The main (MIR_CODEX_SESSION_ID unset) is allowed.
   if [ -n "${MIR_CODEX_SESSION_ID:-}" ]; then
-    case "$FP" in
+    case "$fp" in
       tasks/plan.md|*/tasks/plan.md)
         block "ADR-60 R5: a sub-agent/codex context must not edit the main control-plane cursor tasks/plan.md — the control_plane main owns it (report your result via your final message + the JobRegistry, never plan.md)"
         ;;
     esac
   fi
-  apply_deny_list "$TOOL_NAME $FP" "path"
+  apply_deny_list "${relative_fp:-$fp}" "path"
+}
+
+if [ "$TOOL_NAME" = "Write" ] || [ "$TOOL_NAME" = "Edit" ] || [ "$TOOL_NAME" = "NotebookEdit" ]; then
+  FP="$(extract_json '.tool_input.file_path // .tool_input.path // .tool_input.notebook_path')" || block "Malformed PreToolUse payload for filter: .tool_input.file_path // .tool_input.path // .tool_input.notebook_path"
+  [ -z "$FP" ] && block "Empty file path payload"
+  screen_path_target "$FP"
 fi
 
 # mir:bluebrick-advisory:begin
@@ -432,6 +516,10 @@ if [ "$_mir_tool_name" = "apply_patch" ] || [ "$_mir_tool_name" = "ApplyPatch" ]
             echo "[PreToolUse BLOCK] $_mir_patch_safety_reason: $_mir_patch_path" >&2
             exit 2
         fi
+        # ADR-87 follow-up: the safety reason above covers outside-root, git internals
+        # and secret basenames, but not the deny-list. A patch could therefore add
+        # secrets/prod.yaml, which protected-secrets-dir exists to stop.
+        apply_deny_list "$_mir_patch_path" "path"
         if [ "$(_mir_path_matches_code_path "$_mir_patch_path")" = "yes" ] && [ -z "${MIR_CODEX_SESSION_ID:-}" ] && [ "${MIR_CODEX_MAIN:-0}" != "1" ]; then
             echo "[mir ADVISORY] code-path patch on $_mir_patch_path: consider the delegated lane when isolation, review independence, or parallelism justifies its cost; bounded direct-main edits are allowed." >&2
         fi
