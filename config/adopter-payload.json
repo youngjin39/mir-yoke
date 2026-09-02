@@ -1241,7 +1241,7 @@
     },
     {
       "path": "docs/decisions/role-policy.md",
-      "sha256": "56ddaec07ce07a678f0f7f789f23161d8ef879571d2b42cda9d75e3270010429",
+      "sha256": "debdb29ff948c8dbb447c097bc56add72238bd8178e36ab7126f5378759d7b40",
       "classification": "reference",
       "disposition": "remove"
     },
