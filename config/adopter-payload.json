@@ -173,7 +173,7 @@
     },
     {
       "path": ".claude/hooks/_lib/bootstrap-gate.sh",
-      "sha256": "1bd9464688d707f0d7a5435b680c5e6d4a004ecc2edab9d1975f75d517ee99fc",
+      "sha256": "f7870025280f6bbc11f269d1ddc29de04ae75a622a56e506813290d666c1a2fc",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -3521,7 +3521,7 @@
     },
     {
       "path": "tests/test_bootstrap_start_gate.py",
-      "sha256": "f64868ab6aa1d6b9417db5de4a5b951b3be6c4d9fc5ba7c3a8ce3a6160d5f4f0",
+      "sha256": "d8881c3acdad6166756e331d619ce2ae08296a3a03f3744f989b3585aaff41f1",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     },
