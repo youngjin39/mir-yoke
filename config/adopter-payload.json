@@ -491,7 +491,7 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "562e7d87e46ba382f148abdfbfcf14a9122e3f75d204776ecb2fe2e24226823a",
+      "sha256": "08dd4d49c6871c049724f74cfa52a8424bb772cc005010f38494c843fd050be2",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -3791,7 +3791,7 @@
     },
     {
       "path": "tests/test_no_korean_in_user_facing.py",
-      "sha256": "7c17bc44c9d984f9b20bc1c7f6ababb06b4139611ee5e6089a194d8e2dd84074",
+      "sha256": "efac46080bb47aba6243f203cee736fc5d9a03c82a46fdd12b71cad4061c2dda",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     },

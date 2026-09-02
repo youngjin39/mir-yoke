@@ -52,6 +52,15 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
   exists to remove is itself a disclosure — and one missed substitution in a
   `families-overview.md` description field is generalized. These edits change the current tree
   only; the strings remain in this repository's Git history.
+- Extended the `sanitization` gate to credential shapes and to every text file it can reach. It had
+  been catching the identifier that leaked while missing the shapes that outrank it — a platform
+  webhook URL and a bot token are matchable from form alone, so no secret is named to detect them.
+  Its file list is now a skip list of binary and generated suffixes instead of a fixed allow list,
+  which had left 19 tracked files unscanned including two PowerShell scripts, a `.jsonl` log, and the
+  two `.example` configurations — the same class of file the leaked identifier came from. Enumeration
+  now uses `git ls-files`, matching the sibling surface contract so the two gates agree on what the
+  public surface is. Proven end to end rather than asserted: a synthetic credential in a
+  `.toml.example` file makes the gate exit 1, and removing it returns exit 0.
 - Widened the release gate step named `sanitization` past its single Hangul check, and redacted the
   five strings it had been unable to see: a platform channel id in an approval example, and four
   unsubstituted private repository slugs in a schema description and three application documents.
