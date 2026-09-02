@@ -2,7 +2,7 @@
 adr: 48
 status: archived
 updated: 2026-09-02
-mirrors: mir-harness-private:docs/_archive/decisions/adr-48-central-fleet-management-and-direct-apply-2026-05-28-historical.md
+mirrors: <source-harness-repo>:docs/_archive/decisions/adr-48-central-fleet-management-and-direct-apply-2026-05-28-historical.md
 ---
 
 # ADR-48 — Central Fleet Management and Direct Apply (archived)

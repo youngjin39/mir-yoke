@@ -2,7 +2,7 @@
 adr: 10
 status: archived
 source: mirrored-summary
-mirrors: mir-harness-private:docs/_archive/decisions/adr-10-fleet-governance-advisory-2026-05-18-historical.md
+mirrors: <source-harness-repo>:docs/_archive/decisions/adr-10-fleet-governance-advisory-2026-05-18-historical.md
 updated: 2026-09-02
 ---
 

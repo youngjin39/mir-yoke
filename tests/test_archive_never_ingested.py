@@ -32,11 +32,15 @@ def test_matcher_refuses_the_archive_tree_under_any_whitelist() -> None:
 
 def test_matcher_still_admits_live_docs() -> None:
     assert (
-        distill._matches_whitelist("docs/decisions/adr-01-external-store.md", distill.DEFAULT_WHITELIST)
+        distill._matches_whitelist(
+            "docs/decisions/adr-01-external-store.md", distill.DEFAULT_WHITELIST
+        )
         is True
     )
     assert (
-        distill._matches_whitelist("docs/harness-engineering/overview.md", distill.DEFAULT_WHITELIST)
+        distill._matches_whitelist(
+            "docs/harness-engineering/overview.md", distill.DEFAULT_WHITELIST
+        )
         is True
     )
 

@@ -5,7 +5,7 @@ date: 2026-06-06
 amended: 2026-09-02
 source: sanitized-template-summary
 amended_by: [adr-73]
-mirrors: mir-harness-private:docs/_archive/decisions/adr-54-template-anchored-fleet-parity-manifest-2026-06-06-historical.md
+mirrors: <source-harness-repo>:docs/_archive/decisions/adr-54-template-anchored-fleet-parity-manifest-2026-06-06-historical.md
 ---
 
 # ADR-54 — Template-Anchored Fleet Parity Manifest (archived)

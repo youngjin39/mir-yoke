@@ -2,7 +2,7 @@
 adr: 5
 status: superseded
 source: mirrored-summary
-mirrors: mir-harness-private:docs/_archive/decisions/adr-05-mir-self-llmwiki-historical.md
+mirrors: <source-harness-repo>:docs/_archive/decisions/adr-05-mir-self-llmwiki-historical.md
 updated: 2026-09-02
 ---
 

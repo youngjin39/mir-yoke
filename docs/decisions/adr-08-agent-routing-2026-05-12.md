@@ -2,7 +2,7 @@
 adr: 8
 status: rejected
 source: mirrored-summary
-mirrors: mir-harness-private:docs/_archive/decisions/adr-08-agent-routing-2026-05-12-historical.md
+mirrors: <source-harness-repo>:docs/_archive/decisions/adr-08-agent-routing-2026-05-12-historical.md
 updated: 2026-09-02
 ---
 

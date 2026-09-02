@@ -2,7 +2,7 @@
 adr: 23
 status: superseded
 source: mirrored-summary
-mirrors: mir-harness-private:docs/_archive/decisions/adr-23-active-family-dogfooding-exception-2026-05-23-historical.md
+mirrors: <source-harness-repo>:docs/_archive/decisions/adr-23-active-family-dogfooding-exception-2026-05-23-historical.md
 updated: 2026-09-02
 ---
 

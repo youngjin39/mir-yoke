@@ -2,7 +2,7 @@
 adr: 43
 status: superseded
 source: mirrored-summary
-mirrors: mir-harness-private:docs/_archive/decisions/adr-43-fleet-phase-4-rollout-deferral-2026-05-24-historical.md
+mirrors: <source-harness-repo>:docs/_archive/decisions/adr-43-fleet-phase-4-rollout-deferral-2026-05-24-historical.md
 updated: 2026-09-02
 ---
 

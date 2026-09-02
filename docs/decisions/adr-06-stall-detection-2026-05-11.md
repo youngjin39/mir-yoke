@@ -2,7 +2,7 @@
 adr: 6
 status: superseded
 source: mirrored-summary
-mirrors: mir-harness-private:docs/_archive/decisions/adr-06-stall-detection-2026-05-11-historical.md
+mirrors: <source-harness-repo>:docs/_archive/decisions/adr-06-stall-detection-2026-05-11-historical.md
 updated: 2026-09-02
 ---
 

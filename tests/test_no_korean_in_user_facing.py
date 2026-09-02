@@ -120,7 +120,10 @@ def test_no_platform_channel_ids_in_template():
 # from shape alone, so the "do not list the secrets" constraint does not stand in the
 # way — nothing below encodes a real value.
 CREDENTIAL_SHAPES = (
-    ("platform webhook URL", re.compile(r"discord(?:app)?\.com/api/webhooks/[0-9]{15,}/[\w-]{20,}")),
+    (
+        "platform webhook URL",
+        re.compile(r"discord(?:app)?\.com/api/webhooks/[0-9]{15,}/[\w-]{20,}"),
+    ),
     ("bot token", re.compile(r"\b[MNO][A-Za-z0-9_-]{23}\.[A-Za-z0-9_-]{6}\.[A-Za-z0-9_-]{27}\b")),
 )
 

@@ -2,7 +2,7 @@
 adr: 52
 status: superseded
 source: mirrored-summary
-mirrors: mir-harness-private:docs/_archive/decisions/adr-52-fleet-admin-elevation-and-cross-repo-write-model-2026-06-05-historical.md
+mirrors: <source-harness-repo>:docs/_archive/decisions/adr-52-fleet-admin-elevation-and-cross-repo-write-model-2026-06-05-historical.md
 updated: 2026-09-02
 ---
 

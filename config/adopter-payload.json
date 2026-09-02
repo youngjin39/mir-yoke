@@ -1301,25 +1301,25 @@
     },
     {
       "path": "docs/decisions/adr-05-mir-self-llmwiki.md",
-      "sha256": "a1a78532758957a4055701fd2e02c7e984cb7f07b02d5e3baccbe0c8f7b471b2",
+      "sha256": "f20e704d152ebb61a05d88879cf93b8713381f955bab266a0e7a48e0221ecc25",
       "classification": "historical",
       "disposition": "remove"
     },
     {
       "path": "docs/decisions/adr-06-stall-detection-2026-05-11.md",
-      "sha256": "5c1812e5ec54fe34bae41a17067e2f31d0fba0a1f80e063e017710c0b302e6b7",
+      "sha256": "d3cfa412269d20c11ad59a65ad419697d9d38deb21edf3cf559b8d49e406a6d5",
       "classification": "historical",
       "disposition": "remove"
     },
     {
       "path": "docs/decisions/adr-07-review-gate-2026-05-11.md",
-      "sha256": "1eb523e86492d20aa485e62789a2ff16c96fc6ce64b497281c37111b8af173be",
+      "sha256": "f33a3664fc1fd900433729b68e8063ff9bec1e7f6b6fd19a109e8092f58e42e9",
       "classification": "historical",
       "disposition": "remove"
     },
     {
       "path": "docs/decisions/adr-08-agent-routing-2026-05-12.md",
-      "sha256": "ba3b62075fa18b786dc7d50ba7dbf2d231d8f0d6a69a12cdf55b7720a16bf00b",
+      "sha256": "de3e4b4bc7f9c6f0fd02bf7d0bd09115ffdb13eac60465f5bfc85735b7e07f45",
       "classification": "historical",
       "disposition": "remove"
     },
@@ -1331,7 +1331,7 @@
     },
     {
       "path": "docs/decisions/adr-10-fleet-governance-advisory-2026-05-18.md",
-      "sha256": "cd3def24c44e91098c096042b054b382845144f5dfc1b91f5cc6b244e0b6bd49",
+      "sha256": "5ce20069ab6085811176760ba23c415794554bbd3840f8c92e21e061c2474f6c",
       "classification": "historical",
       "disposition": "remove"
     },
@@ -1343,7 +1343,7 @@
     },
     {
       "path": "docs/decisions/adr-12-prompt-cache-reshape-lane-2026-05-19.md",
-      "sha256": "cd19409eb86b6718b8e1fbc801d6a0759de2c4ca8cc738b26cd767736ae40bec",
+      "sha256": "4a0f9283154d8a9964b3b0c571e93f9fa42ec6f0e93f40b37d04c75f570915fb",
       "classification": "historical",
       "disposition": "remove"
     },
@@ -1367,7 +1367,7 @@
     },
     {
       "path": "docs/decisions/adr-16-specialist-deployment-2026-05-21.md",
-      "sha256": "daf14cb4ffc64cc281acb8c2ff848a299f006221e69e92c56e2fd16fc4f5e84f",
+      "sha256": "20fe116f6564f1e263d38642ced1b8b87ed15403adf47e2065828b57b5156ba6",
       "classification": "historical",
       "disposition": "remove"
     },
@@ -1409,31 +1409,31 @@
     },
     {
       "path": "docs/decisions/adr-23-active-family-dogfooding-exception-2026-05-23.md",
-      "sha256": "9fe44e16b7a21f128c0e92b3d62a7d0ad4898323934514144b496c0d3970e9d5",
+      "sha256": "bef4f1c8b86687e3222583b964e10905dca83c4602d211033a6a98870f4e9c30",
       "classification": "historical",
       "disposition": "remove"
     },
     {
       "path": "docs/decisions/adr-25-fleet-catalog-2026-05-23.md",
-      "sha256": "0fe24afa5618a3cba9852a78a7a1f8263c1dd2e65ad0f430f7aaf11376177fe2",
+      "sha256": "c3527092b6f6d82709d61f0d71217cbbe48cada3268f7f729e3f558e18648d9d",
       "classification": "historical",
       "disposition": "remove"
     },
     {
       "path": "docs/decisions/adr-26-rollout-share-pipeline-2026-05-23.md",
-      "sha256": "d526e82ea70554c3a0ec85c978e3453bd627a72b40a805e76530645960f65b6a",
+      "sha256": "6bb7aeb22f4c91a2ae58d1b4e43b2dc5b3b8bbe0058823461aedd8f13948f261",
       "classification": "historical",
       "disposition": "remove"
     },
     {
       "path": "docs/decisions/adr-27-back-propagation-2026-05-23.md",
-      "sha256": "2a10945409dd2e0912aeb6fafed53b8cb0a042180b753ef06041c355c2a01f20",
+      "sha256": "c7d8e85ceafd0af24d5d6a277b5e44531abf55520d9f2d5322c5477e0be74511",
       "classification": "historical",
       "disposition": "remove"
     },
     {
       "path": "docs/decisions/adr-33-design-complete-gate-hook-2026-05-23.md",
-      "sha256": "ae804684bfcb5219a389247b0939382a732e1bbec3cdd8bdedc97b668b225f46",
+      "sha256": "633c7fb4ce74f25fabea14c1f181f127a04594a236ff93f50f1b75b667f79344",
       "classification": "historical",
       "disposition": "remove"
     },
@@ -1445,25 +1445,25 @@
     },
     {
       "path": "docs/decisions/adr-40-mir-template-maintainer-charter-2026-05-23.md",
-      "sha256": "f34ebdbfd47c9c2252e6bb0ffbbcb9737075a60da0e561b91a1ba6fa3ae3c993",
+      "sha256": "ad985c168e3c38dd5e0d5ef75a6f772034a1229a91c672c7814a39ca1cfef8b3",
       "classification": "historical",
       "disposition": "remove"
     },
     {
       "path": "docs/decisions/adr-41-verify-self-stop-hook-2026-05-23.md",
-      "sha256": "4d589e276a45bc078de5fa0b3aa1cea0cff9a81591bb9206f19f6ed0d5b6b336",
+      "sha256": "eb22d45f2a8fe6a74d59c52309c6012c8b7bc6a1ddc0bdd86e86a15ad287c373",
       "classification": "historical",
       "disposition": "remove"
     },
     {
       "path": "docs/decisions/adr-42-verify-template-applied-state-2026-05-23.md",
-      "sha256": "04676e922128717f6d152dfc2132d663ca8c002a46a8a06be03bafe2a5c08659",
+      "sha256": "7c7b7b806c25c5261ae380b6f18643e2c32424aee11920dd85254b32bbd8f68c",
       "classification": "historical",
       "disposition": "remove"
     },
     {
       "path": "docs/decisions/adr-43-fleet-phase-4-rollout-deferral-2026-05-24.md",
-      "sha256": "d94e50f74fc7ed22e75784f7baad061f56322dfa7e74e9df415fddeaa080e5b4",
+      "sha256": "1cb62a9c6f052b10116b26029156fcaf7def4cf27691d55d857c437ff55aaf89",
       "classification": "historical",
       "disposition": "remove"
     },
@@ -1493,7 +1493,7 @@
     },
     {
       "path": "docs/decisions/adr-48-central-fleet-management-and-direct-apply-2026-05-28.md",
-      "sha256": "2930a792bc6ad51d9285a9fa90cfdf28eb25597a3d9d8916d7be5eaa94d2fc48",
+      "sha256": "e1ef55a2441fffda66dbb4e055e1f25cd379ae17d33f5b5a60ea0b9d623318b5",
       "classification": "historical",
       "disposition": "remove"
     },
@@ -1517,7 +1517,7 @@
     },
     {
       "path": "docs/decisions/adr-52-fleet-admin-elevation-and-cross-repo-write-model-2026-06-05.md",
-      "sha256": "2a321b41e41af35319aff7a3820c4334131a68a577d48c088fd8fc3cd7d71e6d",
+      "sha256": "59fc195e0ddde09c6df011ae06f9fe524a0515e3126f043c25c04ccac10cbfcb",
       "classification": "historical",
       "disposition": "remove"
     },
@@ -1529,7 +1529,7 @@
     },
     {
       "path": "docs/decisions/adr-54-template-anchored-fleet-parity-manifest-2026-06-06.md",
-      "sha256": "c98dcfac09e7105fea1b71ec9e2972374051e972bebd2d5839e1196451669669",
+      "sha256": "12a75be679104cabe71fe46f41afe88a46045934c6dbe6ab2fa9e76455c4465c",
       "classification": "historical",
       "disposition": "remove"
     },
@@ -4073,7 +4073,7 @@
     },
     {
       "path": "tests/test_archive_never_ingested.py",
-      "sha256": "ccba849953f597c93a7c6c3b0391a2193dd71e53a967a6b01d4fa7747d8693d8",
+      "sha256": "969483e32aec0fad7fbad4bf85d238a447df065bd1f69a172061fdcfb973575b",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     },
@@ -4235,7 +4235,7 @@
     },
     {
       "path": "tests/test_no_korean_in_user_facing.py",
-      "sha256": "efac46080bb47aba6243f203cee736fc5d9a03c82a46fdd12b71cad4061c2dda",
+      "sha256": "de2c98b17c479ff90609273116f5285ea81a57c98aba5ee50bc3318ddd268b4b",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     },

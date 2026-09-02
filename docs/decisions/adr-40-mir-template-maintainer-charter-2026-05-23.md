@@ -2,7 +2,7 @@
 adr: 40
 status: superseded
 source: mirrored-summary
-mirrors: mir-harness-private:docs/_archive/decisions/adr-40-mir-template-maintainer-charter-2026-05-23-historical.md
+mirrors: <source-harness-repo>:docs/_archive/decisions/adr-40-mir-template-maintainer-charter-2026-05-23-historical.md
 updated: 2026-09-02
 ---
 
