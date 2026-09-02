@@ -173,7 +173,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": ".claude/hooks/_lib/bootstrap-gate.sh",
-      "sha256": "df74291e9119c5e17a62a2f59e365d94070a915a4df516a867b26dbd55db0821"
+      "sha256": "3b6d824476623f6617d3c878b392eabf9bb77a72f17d8cfe7013e2e2374de824"
     },
     {
       "classification": "reference",
@@ -185,7 +185,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": ".claude/hooks/_lib/run-python.sh",
-      "sha256": "b472a484b79c414e800ac953b3192889bc57a6a973c0ececdb9adbfa8a9e3d01"
+      "sha256": "39420540cc96c04a2abaadc252610da3c5260bdad44bfa43f255e71a9fdc67f3"
     },
     {
       "classification": "reference",
@@ -4103,7 +4103,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_bootstrap_start_gate.py",
-      "sha256": "a36ccc201a095b0a9b980c3205e8a21d7dd5325d4c364ca99b292d4196532891"
+      "sha256": "43b0191d96f125649ff06d2e1dc03d82d32597949f56fd752dac1839cac85c88"
     },
     {
       "classification": "template-maintainer-tool",

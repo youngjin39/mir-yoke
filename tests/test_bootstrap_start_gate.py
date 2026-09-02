@@ -1212,6 +1212,88 @@ def test_rg_rejects_both_pre_and_pre_glob(tmp_path: Path) -> None:
         assert result.returncode == 2, command
 
 
+def test_worktree_add_accepts_the_persistent_provider_root(tmp_path: Path) -> None:
+    """A pin under $TMPDIR is destroyed by OS cleanup, so the durable root is allowed too.
+
+    /private/tmp/mir-yoke-bootstrap-99ab9d4d disappeared that way and took with it the
+    only recovery path of every repository pinned to that commit. The use side never
+    constrained the location, so permitting only a volatile parent here is what pushed
+    the pin into the volatile place. Every other requirement still applies.
+    """
+    source = tmp_path / "provider source"
+    source.mkdir()
+    _git(source, "init", "-q")
+    (source / "pyproject.toml").write_text(
+        "[project]\nname = 'mir-yoke-provider'\n", encoding="utf-8"
+    )
+    source_commit = _commit(source)
+    _git(source, "remote", "add", "origin", "https://github.com/youngjin39/mir-yoke.git")
+
+    project = tmp_path / "adopter"
+    _adoption_manifest(project, source_commit)
+    (project / ".mir").mkdir()
+    (project / ".mir/bootstrap-receipt.json").write_text(
+        '{"status":"invalid"}\n', encoding="utf-8"
+    )
+
+    home = tmp_path / "home"
+    providers = home / ".mir/providers"
+    providers.mkdir(parents=True)
+
+    def _run(target: Path) -> subprocess.CompletedProcess[str]:
+        hooks = _copy_hooks(project)
+        env = os.environ.copy()
+        env["CLAUDE_PROJECT_DIR"] = str(project)
+        env["HOME"] = str(home)
+        command = (
+            "git --no-replace-objects --no-lazy-fetch "
+            "-c core.hooksPath=/dev/null -c core.fsmonitor=false "
+            f'-c core.attributesFile=/dev/null -C "{source}" '
+            f'worktree add --detach "{target}" {source_commit}'
+        )
+        return subprocess.run(
+            ["bash", str(hooks / "pre-tool-use.sh")],
+            input=json.dumps({"tool_name": "Bash", "tool_input": {"command": command}}),
+            capture_output=True,
+            text=True,
+            check=False,
+            env=env,
+        )
+
+    durable = _run(providers / f"mir-yoke-bootstrap-{source_commit[:12]}")
+    assert durable.returncode == 0, durable.stderr
+
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    assert _run(elsewhere / f"mir-yoke-bootstrap-{source_commit[:12]}").returncode == 2
+
+
+def test_launcher_names_a_recovery_this_gate_permits(tmp_path: Path) -> None:
+    """_mir_bootstrap_safe_single_command refuses ./setup.sh once a manifest exists.
+
+    Naming it there hands the operator a command this gate blocks, which is the defect
+    class fd2328e removed from the gate messages; it survived in the launcher.
+    """
+    launcher = HOOKS / "_lib" / "run-python.sh"
+    env = {"CLAUDE_PROJECT_DIR": str(tmp_path), "PATH": "/usr/bin:/bin"}
+
+    greenfield = subprocess.run(
+        [str(launcher), "-c", "pass"], capture_output=True, text=True, check=False, env=env
+    )
+    assert greenfield.returncode == 127
+    assert "run setup.sh first" in greenfield.stderr
+
+    (tmp_path / "config").mkdir()
+    (tmp_path / "config/bootstrap-adoption.json").write_text("{}\n", encoding="utf-8")
+
+    adoption = subprocess.run(
+        [str(launcher), "-c", "pass"], capture_output=True, text=True, check=False, env=env
+    )
+    assert adoption.returncode == 127
+    assert "uv sync" in adoption.stderr
+    assert "./setup.sh is refused" in adoption.stderr
+
+
 def test_hooks_use_only_the_managed_python_launcher() -> None:
     launcher = HOOKS / "_lib" / "run-python.sh"
     assert launcher.is_file()

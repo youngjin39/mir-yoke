@@ -12,6 +12,25 @@ _mir_sha256_file() {
   fi
 }
 
+# The start gate refuses ./setup.sh whenever config/bootstrap-adoption.json exists, so
+# naming it in an adoption repository sends the operator at a command that cannot run.
+# Name the recovery that the gate actually permits there.
+_mir_receipt_recovery_hint() {
+  if [ -f "$PROJECT_DIR/config/bootstrap-adoption.json" ]; then
+    printf 'reissue the receipt with uv run --project <provider worktree> mir bootstrap-adoption --apply'
+  else
+    printf 'rerun setup.sh (inside WSL on Windows hosts)'
+  fi
+}
+
+_mir_interpreter_recovery_hint() {
+  if [ -f "$PROJECT_DIR/config/bootstrap-adoption.json" ]; then
+    printf 'create the project environment (uv sync); ./setup.sh is refused while config/bootstrap-adoption.json exists'
+  else
+    printf 'run setup.sh first (inside WSL on Windows hosts)'
+  fi
+}
+
 _MIR_RECEIPT="$PROJECT_DIR/.mir/bootstrap-receipt.json"
 if command -v jq >/dev/null 2>&1 && [ -f "$_MIR_RECEIPT" ]; then
   if jq -e '.cli | type == "object"' "$_MIR_RECEIPT" >/dev/null 2>&1; then
@@ -35,13 +54,13 @@ if command -v jq >/dev/null 2>&1 && [ -f "$_MIR_RECEIPT" ]; then
              --source-commit "$(jq -r '.cli.source_commit // empty' "$_MIR_RECEIPT")" \
              --constraints-sha256 "$(jq -r '.cli.constraints_sha256 // empty' "$_MIR_RECEIPT")" \
              >/dev/null 2>&1; then
-          printf '[mir hook] receipt-bound external Mir runtime is invalid; rerun setup.sh (inside WSL on Windows hosts)\n' >&2
+          printf '[mir hook] receipt-bound external Mir runtime is invalid; %s\n' "$(_mir_receipt_recovery_hint)" >&2
           exit 127
         fi
       fi
       exec "$_MIR_EXTERNAL_CLI" run-python --project-root "$PROJECT_DIR" -- "$@"
     fi
-    printf '[mir hook] receipt-bound external Mir Python is invalid; rerun setup.sh (inside WSL on Windows hosts)\n' >&2
+    printf '[mir hook] receipt-bound external Mir Python is invalid; %s\n' "$(_mir_receipt_recovery_hint)" >&2
     exit 127
   fi
 fi
@@ -60,5 +79,5 @@ if command -v uv >/dev/null 2>&1; then
   exec uv run --project "$PROJECT_DIR" python "$@"
 fi
 
-printf '[mir hook] external Mir Python unavailable; run setup.sh first (inside WSL on Windows hosts)\n' >&2
+printf '[mir hook] external Mir Python unavailable; %s\n' "$(_mir_interpreter_recovery_hint)" >&2
 exit 127

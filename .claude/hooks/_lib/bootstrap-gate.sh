@@ -381,7 +381,7 @@ _mir_bootstrap_worktree_add_allowed() {
   local command="$1"
   local project_dir="${2:-${CLAUDE_PROJECT_DIR:-.}}"
   local pattern source_root target_root commit expected_commit source_real manifest
-  local target_parent target_parent_real target_name temp_root
+  local target_parent target_parent_real target_name temp_root provider_root
   pattern='^[[:space:]]*git[[:space:]]+--no-replace-objects[[:space:]]+--no-lazy-fetch[[:space:]]+-c[[:space:]]+core\.hooksPath=/dev/null[[:space:]]+-c[[:space:]]+core\.fsmonitor=false[[:space:]]+-c[[:space:]]+core\.attributesFile=/dev/null[[:space:]]+-C[[:space:]]+"([^"]+)"[[:space:]]+worktree[[:space:]]+add[[:space:]]+--detach[[:space:]]+"([^"]+)"[[:space:]]+([0-9a-f]{40})[[:space:]]*$'
   printf '%s\n' "$command" | grep -Eq "$pattern" || return 1
   source_root="$(printf '%s\n' "$command" | sed -E "s@$pattern@\\1@")"
@@ -403,12 +403,26 @@ _mir_bootstrap_worktree_add_allowed() {
   git --no-replace-objects --no-lazy-fetch -C "$source_root" \
     cat-file -e "$commit^{commit}" 2>/dev/null || return 1
 
-  temp_root="$(cd -- "${TMPDIR:-/tmp}" 2>/dev/null && pwd -P)" || return 1
+  # Two parents are allowed. $TMPDIR keeps the original shape working, and the
+  # persistent provider root exists because a pin under $TMPDIR is destroyed by OS
+  # cleanup: /private/tmp/mir-yoke-bootstrap-99ab9d4d disappeared that way and took
+  # the only recovery path of every repository pinned to that commit with it. The
+  # use side (_mir_bootstrap_uv_project_allowed) never constrained the location, so
+  # allowing only a volatile parent here forced the pin into the volatile place.
+  temp_root="$(cd -- "${TMPDIR:-/tmp}" 2>/dev/null && pwd -P || true)"
+  provider_root="$(cd -- "${HOME:-/nonexistent}/.mir/providers" 2>/dev/null && pwd -P || true)"
   target_parent="${target_root%/*}"
   target_name="${target_root##*/}"
   [ -d "$target_parent" ] && [ ! -L "$target_parent" ] || return 1
   target_parent_real="$(cd -- "$target_parent" 2>/dev/null && pwd -P)" || return 1
-  [ "$target_parent_real" = "$temp_root" ] || return 1
+  [ -n "$target_parent_real" ] || return 1
+  if [ -n "$temp_root" ] && [ "$target_parent_real" = "$temp_root" ]; then
+    :
+  elif [ -n "$provider_root" ] && [ "$target_parent_real" = "$provider_root" ]; then
+    :
+  else
+    return 1
+  fi
   [ "$target_root" = "$target_parent_real/$target_name" ] || return 1
   [ "$target_name" = "mir-yoke-bootstrap-${commit%${commit#????????????}}" ] || return 1
   [ ! -e "$target_root" ] && [ ! -L "$target_root" ]
