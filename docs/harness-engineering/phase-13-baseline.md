@@ -1,29 +1,12 @@
 ---
-phase: 13
-title: Applied-State Closure
-status: applied-baseline
+status: superseded
+date: 2026-05-28
+updated: 2026-09-02
+scope: historical phase-13 baseline stub pointer
 ---
 
-# Phase 13 — Applied-State Closure
+# Phase 13 — Applied-State Closure — Historical Pointer
 
-> Purpose: define the public template claim boundary for applied-state wording.
+This stub asserted that the public template carried the phase-13 artifacts defining the applied-state claim boundary, deferred all repository-specific execution evidence to a separate control repository, and was careful to claim only a wording boundary rather than full adoption of any runtime or rollout artifact. Authority now sits with ADR-83 (the product boundary: the four-file starter, the Project Agent Kit recipe, and the optional installed CLI are the only adoption layers), ADR-84 (upgrade guidance, which already classifies this whole directory as history), ADR-85 (agent contracts), ADR-86 (Mir Harness maintains this repository) and ADR-81 (the Starter); fleet rollout, drift enforcement, central direct-apply, daemons and notifications are cancelled and named only to forbid their return, and the current replacement guide is `docs/operations/harness-engineering-upgrade.md`.
 
-## 0.5 Design Goals
-
-- Keep the public template aligned with the your-harness baseline for phase 13.
-- Provide a reusable reference artifact for new and existing family repositories.
-- Preserve an English-only, public-safe baseline that can be verified automatically.
-
-## Scope
-
-This template phase document is a public baseline stub. Detailed repository-specific execution evidence remains in the control repository.
-
-## Exit Criterion
-
-- The template contains the public-facing artifacts required for this phase.
-- Automated verification can detect the presence of this phase document.
-- No Korean or private-family content appears in this phase baseline.
-
-## Applied State
-
-This phase defines the applied-state wording boundary only. It does not claim that any family repository has fully adopted every related runtime or rollout artifact.
+A new session must not execute the historical procedure. The complete original is preserved in [the archive](../_archive/harness-engineering/phase-13-baseline-2026-05-28-historical.md).

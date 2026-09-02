@@ -1,54 +1,14 @@
 ---
-status: snapshot-live
+status: superseded
 date: 2026-07-15
-scope: public template startup context, dual-CLI parity, and closeout state
-template_commit: 72882eb6de4fa815abcc6c5a0256efcd9053fb8d
-template_version: 0.7.1
-verifier_overall: pass
-verifier_major: 0
-verifier_minor: 0
-phase_docs_present: 13
-phase_docs_required: 13
-schema_present: 19
-schema_required: 19
+updated: 2026-09-02
+scope: historical template state snapshot pointer
 ---
 
-# Mir Yoke Current State — 0.7.1
+# Public Template Current State — Historical Pointer
 
-## Current baseline
+The former document was a live status snapshot of this repository pinned to one past release. Its frontmatter carried a content commit hash, a version string, an overall verifier verdict with major and minor finding counts, and present-versus-required counts for phase documents and schemas. The body described the startup source and its generated derivatives, the shared main-agent contract, and the single-handoff closeout rule; then it published a measured-evidence table of byte sizes for the root instructions and prompt input, a session-start output size, several check verdicts and a regression pass count; then residual review items covering pre-existing lint findings and a projection check that warns on a local ignored database; then a next release action naming the commit to publish. Every number in it describes that one superseded revision and none has been re-measured since.
 
-- The public template is repository-agnostic and sanitized. Private fleet topology, paths, and
-  operator records remain outside the public contract.
-- `CLAUDE.md` is the compact startup source; `AGENTS.md`, `.codex/`, and `.agents/` are generated.
-- Claude and Codex share the opened-Main contract. Codex-first is a delegated-lane preference, not
-  a direct-work gate.
-- `.mir/repo-profile.toml` owns detailed identity and boundary values.
-- Closeout updates one `tasks/handoffs/session-handoff-LATEST.md`; it does not create timestamped
-  session summaries.
+Current state is read from this repository itself — its version file, its changelog, and a fresh run of the smallest relevant checks — rather than from a pinned snapshot, and no byte count or verdict in a document should be trusted as live. Current authority is ADR-83 (the four-file starter, the Project Agent Kit recipe and the optional installed CLI are the only adoption layers), ADR-84 (upgrade guidance; it already classifies this whole directory as history), ADR-85 (agent contracts), ADR-86 (Mir Harness maintains this repository) and ADR-81 (the Starter). Fleet rollout, hash conformance, direct deployment, drift enforcement and notification behaviour are cancelled and named only to forbid their return. The current replacement guide is `docs/operations/harness-engineering-upgrade.md`.
 
-## Measured evidence
-
-| Check | Result |
-|---|---|
-| Root startup instructions | 7,735 bytes total (`CLAUDE.md` 3,740; `AGENTS.md` 3,995) |
-| Codex prompt-input JSON | 22,963 bytes with all 12 repository skills discovered |
-| SessionStart stdout | 491 bytes |
-| Codex derivatives | pass |
-| Context paths | pass, 6 files / 68 references |
-| Registry and catalog | pass |
-| Public applied-state checks 1–8 | pass, no findings |
-| Full regression | 564 passed, 1 skipped |
-
-## Residual review items
-
-- Whole-repository Ruff still reports 47 pre-existing findings in untouched legacy surfaces;
-  changed Python scopes pass Ruff.
-- A local ignored `.mir/memory.db` can make the R11 generated-memory projection check warn. A clean
-  public clone has no canonical DB until the adopter initializes it, so the check skips there.
-- Root instruction and generator surfaces are repository-fit rollout metadata, not blanket
-  verbatim parity inputs for downstream repositories.
-
-## Next release action
-
-- Publish the parity metadata commit anchored to content commit `72882eb`; tag only if the release
-  process requires a tag.
+A new session must not execute the historical procedure. The complete original is preserved in [the archive](../../../_archive/harness-engineering/applications/template-repo/current-state-2026-07-15-historical.md).

@@ -1,29 +1,12 @@
 ---
-phase: 14
-title: Completion Consistency
-status: applied-baseline
+status: superseded
+date: 2026-05-28
+updated: 2026-09-02
+scope: historical completion-consistency baseline stub pointer
 ---
 
-# Phase 14 — Completion Consistency
+# Phase 14 — Completion Consistency — Historical Pointer
 
-> Purpose: keep template completion wording from being misread as full the source repo or fleet completion.
+This file was the public baseline stub for phase 14 of the harness-engineering ladder. It carried an `applied-baseline` status, restated three template design goals, and asserted that template completion wording must not be read as full source-repository or fleet completion — while deferring every piece of real execution evidence to a separate control repository that this repository cannot see. That ladder no longer governs anything here: the current authority is ADR-83 (product boundary — the four-file starter, the Project Agent Kit recipe, and the optional installed CLI are the only adoption layers), ADR-84 (upgrade guidance, which already classifies this whole directory as history), ADR-85 (agent contracts), ADR-86 (Mir Harness maintains this repository), and ADR-81 (the Starter). Fleet rollout, drift enforcement, central direct-apply, daemons and notifications are cancelled and are named here only to forbid their return; the current replacement guide is `docs/operations/harness-engineering-upgrade.md`.
 
-## 0.5 Design Goals
-
-- Keep the public template aligned with the your-harness baseline for phase 14.
-- Provide a reusable reference artifact for new and existing family repositories.
-- Preserve an English-only, public-safe baseline that can be verified automatically.
-
-## Scope
-
-This template phase document is a public baseline stub. Detailed repository-specific execution evidence remains in the control repository.
-
-## Exit Criterion
-
-- The template contains the public-facing artifacts required for this phase.
-- Automated verification can detect the presence of this phase document.
-- No Korean or private-family content appears in this phase baseline.
-
-## Applied State
-
-This phase defines completion-meaning boundaries only. It does not upgrade template-baseline pass into fleet readiness or full control-repository completion.
+A new session must not execute the historical procedure. The complete original is preserved in [the archive](../_archive/harness-engineering/phase-14-baseline-2026-05-28-historical.md).

@@ -1,60 +1,14 @@
 ---
-phase: 13
-title: Applied-State Closure Application
-status: done
-family: your-harness (SE-meta)
-blueprint: ../../phase-13-applied-state-closure.md
-depends_on: [phase-9-application.md, phase-10-application.md, phase-11-application.md, phase-12-application.md]
+status: superseded
+date: 2026-06-13
+updated: 2026-09-02
+scope: historical applied-state closure application pointer
 ---
 
-# Phase 13 — Applied-State Closure Application (example-harness)
+# Phase 13 — Applied-State Closure Application — Historical Pointer
 
-## 1. Blueprint Reference
+The former document was a per-phase application ledger entry that declared the applied-state closure problem closed for a reference harness family: it reconciled a self-baseline done/block verdict, a control-plane state file, a public template snapshot and a dedicated closure verifier so that all four reported one identical verdict, and it recorded that external families never rolled this phase out directly. None of that machinery exists here — the blueprint, the state file and the closure and self-stop verifier scripts are absent, and the applied-state verifier ADR it depended on is itself archived.
 
-[`../../phase-13-applied-state-closure.md`](../../phase-13-applied-state-closure.md) full. Key sections: §2 closure targets, §3 exact goals, §4 inspection order, §7 exit criteria.
+Nothing now tracks per-phase applied state for anyone but this repository, and no ledger row grants a verdict over another repository. Current authority is ADR-83 (the four-file starter, the Project Agent Kit recipe and the optional installed CLI are the only adoption layers), ADR-84 (upgrade guidance; it already classifies this whole directory as history), ADR-85 (agent contracts), ADR-86 (Mir Harness maintains this repository) and ADR-81 (the Starter). Fleet rollout, hash conformance, direct deployment, drift enforcement and notification behaviour are cancelled and named only to forbid their return. The current replacement guide is `docs/operations/harness-engineering-upgrade.md`.
 
-**Design goals (3-axis)**:
-- Axis I: Connect the done/block verdict in the your-harness self-baseline to evidence.
-- Axis II: Align the public template applied-state claim with charter, verifier, and physical snapshot.
-- Axis III: Maintain honest numbers at both reference points that external families use.
-
-## 2. Current State (Pre-measure)
-
-| Item | Blueprint | your-harness State |
-|---|---|---|
-| your-harness-self ledger vs catalog row | §2-1 | ✅ aligned — phase-13 ledger/app/catalog verdict synchronized |
-| `verify_self_stop.py` gate | §2-1 | ✅ available — closure uses `verify_applied_state_closure.py` as single entry point |
-| template row vs physical snapshot | §2-2 | ✅ aligned — catalog claim now matches physical pass verdict |
-| ADR-39 applied-state charter | §2-2 | ✅ accepted |
-| ADR-42 verifier spec / script | §2-2 | ✅ available — template verifier result consumed by closure runner |
-| dedicated closure runbook | §4 | ✅ closure runner added |
-
-## 3. Operational State
-
-| Surface | Status | Detail |
-|---|---|---|
-| `applications/your-harness-self/README.md` ledger | done | phase-13 row marked done with closure date |
-| `config/fleet-harness-state.json` `phase-13` | adopted | `your-harness` + template closure verdict recorded |
-| `scripts/verify_self_stop.py` | available | your-harness-self share gate decision tool |
-| `scripts/verify_template_applied_state.py` | available | template applied-state verifier |
-| `applications/template-repo/current-state.md` | available | live snapshot refreshed to 2026-05-25 |
-| dedicated closure command | available | `scripts/verify_applied_state_closure.py` |
-
-**Honest summary**: phase-13 is now closed with stronger semantics. The template physical baseline actually rose to verifier `pass/applied`, and the catalog, snapshot, and verifier all point to the same verdict.
-
-## 4. Activation Gap
-
-| Gap | Required action |
-|---|---|
-| template physical completion | closed in the current workspace baseline |
-
-## 5. Exit Criterion
-
-Per blueprint §7:
-1. ✅ your-harness ledger and catalog row phase-13 verdict semantics match.
-2. ✅ phase-13 closure evidence recorded via snapshot + verifier + catalog reconcile.
-3. ✅ Single verdict path for template applied-state exists (`verify_applied_state_closure.py`).
-4. ✅ Conflict between template catalog row and physical snapshot removed.
-5. ✅ External families do not directly roll out this phase (`n_a`).
-
-**Done gate**: satisfied. The template physical completion backlog is also resolved in the current workspace baseline.
+A new session must not execute the historical procedure. The complete original is preserved in [the archive](../../../_archive/harness-engineering/applications/example-harness/phase-13-application-2026-06-13-historical.md).

@@ -1,29 +1,12 @@
 ---
-phase: 4
-title: State Machine
-status: applied-baseline
+status: superseded
+date: 2026-05-28
+updated: 2026-09-02
+scope: historical state machine baseline pointer
 ---
 
-# Phase 4 — State Machine
+# Phase 4 — State Machine — Historical Pointer
 
-> Purpose: Provide the state-machine and structured runtime contract baseline.
+This file was the public baseline stub for phase 4 of the harness-engineering ladder. It carried an `applied-baseline` status, claimed to provide the state-machine and structured runtime contract baseline for family repositories, and deferred every piece of real execution evidence to a separate control repository that this repository cannot see. That ladder no longer governs anything here: the current authority is ADR-83 (product boundary — the four-file starter, the Project Agent Kit recipe, and the optional installed CLI are the only adoption layers), ADR-84 (upgrade guidance, which already classifies this whole directory as history), ADR-85 (agent contracts), ADR-86 (Mir Harness maintains this repository), and ADR-81 (the Starter). Fleet rollout, drift enforcement, central direct-apply, daemons and notifications are cancelled and are named here only to forbid their return; the current replacement guide is `docs/operations/harness-engineering-upgrade.md`.
 
-## 0.5 Design Goals
-
-- Keep the public template aligned with the your-harness baseline for phase 4.
-- Provide a reusable reference artifact for new and existing family repositories.
-- Preserve an English-only, public-safe baseline that can be verified automatically.
-
-## Scope
-
-This template phase document is a public baseline stub. Detailed repository-specific execution evidence remains in the control repository.
-
-## Exit Criterion
-
-- The template contains the public-facing artifacts required for this phase.
-- Automated verification can detect the presence of this phase document.
-- No Korean or private-family content appears in this phase baseline.
-
-## Applied State
-
-This phase is applied at the template-baseline level. Family repositories may still opt in selectively based on their own rollout profile.
+A new session must not execute the historical procedure. The complete original is preserved in [the archive](../_archive/harness-engineering/phase-4-baseline-2026-05-28-historical.md).
