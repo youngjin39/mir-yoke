@@ -578,6 +578,7 @@ slug = "{slug}-content"
 root = "."
 mode = "indexed"
 glob_include = {globs}
+glob_exclude = ["docs/_archive/**"]
 '''
     return header + f'''
 
@@ -586,6 +587,7 @@ slug = "{slug}-docs"
 root = "docs"
 mode = "indexed"
 glob_include = ["**/*.md"]
+glob_exclude = ["_archive/**"]
 
 [[memory.external_archives]]
 slug = "{slug}-tasks"

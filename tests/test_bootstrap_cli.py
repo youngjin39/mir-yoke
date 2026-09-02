@@ -1112,3 +1112,33 @@ def test_sync_failure_after_preflight_preserves_live_db(tmp_path, capsys):
 
     assert sha256(db_path.read_bytes()).hexdigest() == db_hash
     assert projection_path.read_text(encoding="utf-8") == projection
+
+
+def test_generated_memory_config_excludes_the_docs_archive() -> None:
+    """The generator is a third emitter of harness_a.toml, and it needs the exclusion too.
+
+    The template at templates/common-harness/harness_a.toml is pinned by
+    test_common_harness_template, but `mir bootstrap` writes this text whenever
+    harness_a.toml is absent — which is every new project. Without the exclusion
+    those projects index their own docs/_archive/ as current material.
+    """
+    text = bootstrap_cli._memory_config_text("demo", "default", None)
+    parsed = tomllib.loads(text)
+    archives = {a["slug"]: a for a in parsed["memory"]["external_archives"]}
+
+    # root is "docs", so the pattern is root-relative.
+    assert archives["demo-docs"].get("glob_exclude") == ["_archive/**"]
+
+
+def test_generated_content_workspace_config_excludes_the_docs_archive() -> None:
+    """Same requirement, different spelling: this profile roots at "." instead.
+
+    The two spellings are not interchangeable — a root-relative pattern under a
+    "." root would not match, and vice versa.
+    """
+    onboarding: dict[str, object] = {"archives": []}
+    text = bootstrap_cli._memory_config_text("demo", "content_workspace", onboarding)
+    parsed = tomllib.loads(text)
+    archives = {a["slug"]: a for a in parsed["memory"]["external_archives"]}
+
+    assert archives["demo-content"].get("glob_exclude") == ["docs/_archive/**"]

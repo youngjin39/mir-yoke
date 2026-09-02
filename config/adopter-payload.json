@@ -3017,7 +3017,7 @@
     },
     {
       "path": "src/mir/cli/bootstrap.py",
-      "sha256": "5333e05f7b6c98cc41863bd4ccc399839a1a1a1f96f9db4600bdda155a0eaeb8",
+      "sha256": "117f6887d00fb03d34f72c0856eb98ebe383df3cb493aa1996ecc1d9118c6aba",
       "classification": "optional-consumer-tool",
       "disposition": "remove"
     },
@@ -3647,7 +3647,7 @@
     },
     {
       "path": "tests/test_bootstrap_cli.py",
-      "sha256": "714064c03038b7d423aba4215bc14fdc35812ca624ae58b4ea0c9b7c53f471e7",
+      "sha256": "2321e09846e2bd08913be1e9d3aa2996a46d9c3aa8e0b6fbb9e13c5ae0d859e2",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     },
