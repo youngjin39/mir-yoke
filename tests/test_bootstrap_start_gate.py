@@ -810,6 +810,67 @@ def test_adoption_ready_receipt_binds_manifest_source_and_evidence(tmp_path: Pat
     assert stale_manifest.returncode == 2
 
 
+def test_invalid_adoption_receipt_names_the_only_permitted_recovery_command(
+    tmp_path: Path,
+) -> None:
+    """The gate permits one repair command; the block message must name that one.
+
+    Evidence-hash drift in an adoption repository is the real lockout shape, and
+    _mir_bootstrap_safe_single_command refuses ./setup.sh whenever
+    config/bootstrap-adoption.json exists. Naming setup.sh there sends the
+    operator at a command this gate blocks.
+    """
+    manifest = tmp_path / "config" / "bootstrap-adoption.json"
+    evidence = tmp_path / "spec" / "evidence.yaml"
+    manifest.parent.mkdir()
+    evidence.parent.mkdir()
+    manifest.write_text(
+        json.dumps(
+            {
+                "mir_yoke_source_commit": "a" * 40,
+                "surfaces": {
+                    "phase2_spec": {"evidence_paths": ["spec/evidence.yaml"]}
+                },
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    evidence.write_text("verified: true\n", encoding="utf-8")
+    (tmp_path / ".mir").mkdir()
+    (tmp_path / ".mir" / "bootstrap-receipt.json").write_text(
+        json.dumps(
+            {
+                "status": "ready",
+                "source": {"mir_yoke_commit": "a" * 40},
+                "manifest": {
+                    "sha256": hashlib.sha256(manifest.read_bytes()).hexdigest()
+                },
+                "evidence": [
+                    {
+                        "path": "spec/evidence.yaml",
+                        "sha256": hashlib.sha256(evidence.read_bytes()).hexdigest(),
+                    }
+                ],
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    evidence.write_text("verified: false\n", encoding="utf-8")
+
+    blocked = _run_pretool(
+        tmp_path,
+        {"tool_name": "Write", "tool_input": {"file_path": "notes.txt"}},
+    )
+
+    assert blocked.returncode == 2
+    assert "bootstrap is invalid" in blocked.stderr
+    assert "uv run --project" in blocked.stderr
+    assert "mir bootstrap-adoption --apply" in blocked.stderr
+    assert "setup.sh" not in blocked.stderr
+
+
 def test_ready_receipt_requires_the_complete_declared_evidence_set(tmp_path: Path) -> None:
     manifest = tmp_path / "config/bootstrap-adoption.json"
     evidence = tmp_path / "spec/evidence.yaml"
@@ -1060,7 +1121,9 @@ def test_session_start_routes_existing_repository_to_adoption(tmp_path: Path) ->
     )
 
     assert completed.returncode == 0, completed.stderr
-    assert "scripts/mir.sh bootstrap-adoption --apply" in completed.stdout
+    assert "recovery_command: uv run --project" in completed.stdout
+    assert "mir bootstrap-adoption --apply" in completed.stdout
+    assert "scripts/mir.sh" not in completed.stdout
     assert "run setup.sh/setup.ps1" not in completed.stdout
 
 

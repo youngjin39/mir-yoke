@@ -275,7 +275,13 @@ mir_bootstrap_gate_instructions() {
   printf 'bootstrap_gate: required (state=%s)\n' "$state"
   printf 'normal_mutation: blocked until .mir/bootstrap-receipt.json has status=ready\n'
   if [ -f "$project_dir/config/bootstrap-adoption.json" ]; then
-    printf 'existing_repository: complete tracked adoption evidence, then run scripts/mir.sh bootstrap-adoption --apply\n'
+    local pinned_commit
+    pinned_commit="$(jq -r '.mir_yoke_source_commit // ""' \
+      "$project_dir/config/bootstrap-adoption.json" 2>/dev/null)"
+    printf 'existing_repository: complete tracked adoption evidence, then reissue the receipt\n'
+    printf 'recovery_command: uv run --project <provider worktree> mir bootstrap-adoption --apply\n'
+    printf 'recovery_source: detached provider worktree at %s, with a clean tree\n' \
+      "${pinned_commit:-the mir_yoke_source_commit in config/bootstrap-adoption.json}"
   else
     printf 'phase_1: run setup.sh with --profile, --purpose, and --stack (inside WSL on Windows hosts)\n'
     printf 'phase_2: restart, run mir-core:design then mir-core:spec-architect, write coverage/gap evidence, and finalize\n'
@@ -542,7 +548,11 @@ mir_bootstrap_gate_enforce() {
         _mir_bootstrap_safe_single_command "$repair_command" "$project_dir" && \
         _mir_bootstrap_uv_project_allowed "$repair_command" "$project_dir" && return 0
     fi
-    printf '[BootstrapGate BLOCK] bootstrap is invalid; repair the receipt-bound runtime with setup.sh\n' >&2
+    if [ -f "$project_dir/config/bootstrap-adoption.json" ]; then
+      printf '[BootstrapGate BLOCK] bootstrap is invalid; reissue the receipt with uv run --project <provider worktree> mir bootstrap-adoption --apply\n' >&2
+    else
+      printf '[BootstrapGate BLOCK] bootstrap is invalid; repair the receipt-bound runtime with setup.sh\n' >&2
+    fi
     return 2
   fi
   case "$tool_name" in
