@@ -10,9 +10,9 @@ blueprint: ../../phase-2-enforcement.md
 
 ## 1. Blueprint Reference
 
-[`../../phase-2-enforcement.md`](../../phase-2-enforcement.md) in full. In particular §3 four enforcement bindings, §4 three intensity levels, §5 Circuit Breaker.
+[`../../phase-2-enforcement.md`](../../../../harness-engineering/phase-2-enforcement.md) in full. In particular §3 four enforcement bindings, §4 three intensity levels, §5 Circuit Breaker.
 
-**Related reinforcement docs**: When writing ADR-22 (retry_budget) for this phase, apply the 5-step + iteration requirement from [`../design-process.md`](../design-process.md). The retry_budget quantitative value is directly related to the termination condition of the autonomous response loop in [`../autonomous-execution.md`](../autonomous-execution.md) §4.
+**Related reinforcement docs**: When writing ADR-22 (retry_budget) for this phase, apply the 5-step + iteration requirement from [`../design-process.md`](../../../../harness-engineering/applications/design-process.md). The retry_budget quantitative value is directly related to the termination condition of the autonomous response loop in [`../autonomous-execution.md`](../../../../harness-engineering/applications/autonomous-execution.md) §4.
 
 ## 2. Current State (Pre-measurement)
 
@@ -96,4 +96,4 @@ If your-harness's Circuit Breaker blocks its own work, that is a self-stop. Ther
 
 ## 9. Next Steps
 
-Parallel-eligible: [Phase 3 Memory & Context](phase-3-application.md) or [Phase 4 State Machine](phase-4-application.md).
+Parallel-eligible: [Phase 3 Memory & Context](phase-3-application-2026-06-13-historical.md) or [Phase 4 State Machine](phase-4-application-2026-06-13-historical.md).

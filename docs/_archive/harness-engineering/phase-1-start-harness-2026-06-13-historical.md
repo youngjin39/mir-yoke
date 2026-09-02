@@ -11,7 +11,7 @@ depends_on: phase-0-foundations
 
 ## 0.5 Design Goals (R9 anchor)
 
-> Connection of this phase to the [3-axis fleet goals](applications/fleet-catalog.md). When adding new phases or cherry-picking for a family, the `design` skill (R9-T11) mandates `design_goals` as required input.
+> Connection of this phase to the [3-axis fleet goals](../../harness-engineering/applications/fleet-catalog.md). When adding new phases or cherry-picking for a family, the `design` skill (R9-T11) mandates `design_goals` as required input.
 
 **3-axis contribution**:
 - **Axis I (your-harness strengthening)**: Automatic 5-element estimation + risk_level automatic determination hook in main-orchestrator
@@ -160,7 +160,7 @@ Any of the following means routing failure. Immediately reclassify or ask the us
 
 ### 10-1. Prompt Cache Impact (R7-A-W4 added)
 
-The 5-element declaration and `required_reads` order in this phase determines the cache hit rate for [Phase 3 §6 Cache Stability](phase-3-memory-context.md). Therefore the following obligations at the start-harness stage:
+The 5-element declaration and `required_reads` order in this phase determines the cache hit rate for [Phase 3 §6 Cache Stability](phase-3-memory-context-2026-06-13-historical.md). Therefore the following obligations at the start-harness stage:
 
 - **required_reads order fixed** -- Same task_type reads in the same order. Changing order → entire prompt prefix changes → cache miss.
 - **5-element declaration stable** -- Position risk_level / route_to / report_contract value changes at the tail of task_state so they do not appear in the prefix.
@@ -176,4 +176,4 @@ Machine verification hook definition:
 
 ## 12. Next Step
 
-Proceed to [Phase 2 -- Enforcement](phase-2-enforcement.md).
+Proceed to [Phase 2 -- Enforcement](phase-2-enforcement-2026-06-13-historical.md).

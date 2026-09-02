@@ -21,7 +21,7 @@ audience: your-harness operators + external family adopters
 
 ## 2. Prompt Injection Defense
 
-Details in [`../phase-2-enforcement.md`](../phase-2-enforcement.md) §3-4. This section is a cross-cutting summary.
+Details in [`../phase-2-enforcement.md`](../../../harness-engineering/phase-2-enforcement.md) §3-4. This section is a cross-cutting summary.
 
 ### Application Surface Matrix
 
@@ -36,7 +36,7 @@ Details in [`../phase-2-enforcement.md`](../phase-2-enforcement.md) §3-4. This 
 | Memory SoT | – | ○ | enforced (coupled with §5) |
 
 ### Block Patterns
-See regex list in [`../phase-2-enforcement.md`](../phase-2-enforcement.md) §3-4.
+See regex list in [`../phase-2-enforcement.md`](../../../harness-engineering/phase-2-enforcement.md) §3-4.
 
 ### Meaning of the Discord Exemption
 
@@ -121,9 +121,9 @@ External input → memory SoT → next session's LLM input. A time-delayed form 
 
 ### Defense
 
-1. **Source annotation on memory entries** (`owner` / `sot` fields in [`../templates/_schema/memory_entry.schema.json`](../../templates/_schema/memory_entry.schema.json))
+1. **Source annotation on memory entries** (`owner` / `sot` fields in [`../templates/_schema/memory_entry.schema.json`](../../../templates/_schema/memory_entry.schema.json))
 2. **External-source memory in separate namespace** — `external/` prefix is an **operational convention** (not a formal schema field). Future schema addition of `source` or `namespace` field under consideration — ADR candidate 32 (R4-R1 new).
-3. **Re-fire prompt injection validator on memory injection** (apply patterns from [`../phase-2-enforcement.md`](../phase-2-enforcement.md) §3-4 to the memory inject path)
+3. **Re-fire prompt injection validator on memory injection** (apply patterns from [`../phase-2-enforcement.md`](../../../harness-engineering/phase-2-enforcement.md) §3-4 to the memory inject path)
 4. **Use `status: deprecated`** — immediately deprecate suspicious entries
 5. **Lifetime field** (`valid_until`) — 30-day default for external-source memory
 
@@ -150,7 +150,7 @@ When agent A's output flows into agent B as input, if A outputs malicious instru
 
 ### Handoff Contract Reinforcement (R4 new recommendation)
 
-Add the following fields to the handoff contract in [`../phase-5-subagents.md`](../phase-5-subagents.md) §4:
+Add the following fields to the handoff contract in [`../phase-5-subagents.md`](../../../harness-engineering/phase-5-subagents.md) §4:
 
 ```yaml
 handoff:
@@ -166,7 +166,7 @@ Low-trust input does not flow directly as instruction to to_agent but is **wrapp
 
 ### Security Aspect of Worker Isolation
 
-The Worker Isolation 4-step in [`../phase-5-subagents.md`](../phase-5-subagents.md) §5 provides both self-evaluation avoidance and security benefits:
+The Worker Isolation 4-step in [`../phase-5-subagents.md`](../../../harness-engineering/phase-5-subagents.md) §5 provides both self-evaluation avoidance and security benefits:
 - Code written by Claude is verified by Codex → higher likelihood of catching malicious code Claude inadvertently writes
 - Code written by Codex is merge-judged by Claude → higher likelihood of catching code Codex writes under external OSS influence
 
@@ -178,9 +178,9 @@ A security violation in your-harness = SE-meta self-stop. Automatic verification
 - Memory poisoning detected → isolate affected entries + user notification + temporarily halt all family autonomous operations
 - Supply chain threat (dependency package vuln) detected → temporarily disable enabled_phases for affected phases
 
-## 8. External Family Propagation Matrix (security surface axis — sub-view of [`exceptions.md`](exceptions.md) §3)
+## 8. External Family Propagation Matrix (security surface axis — sub-view of [`exceptions.md`](exceptions-2026-05-22-historical.md) §3)
 
-**SoT relationship** (R5-R1 explicit): This table is a **sub-view of the [`exceptions.md`](exceptions.md) §3 per-phase matrix reorganized along the security surface axis**. exceptions.md §3 is the source of truth; §8 here provides only the cross-cutting view. In case of conflict, exceptions.md §3 takes precedence.
+**SoT relationship** (R5-R1 explicit): This table is a **sub-view of the [`exceptions.md`](exceptions-2026-05-22-historical.md) §3 per-phase matrix reorganized along the security surface axis**. exceptions.md §3 is the source of truth; §8 here provides only the cross-cutting view. In case of conflict, exceptions.md §3 takes precedence.
 
 | Surface | SE-meta (your-harness) | code_app | SE-product | hybrid_pipeline | content_app |
 |---|---|---|---|---|---|

@@ -13,9 +13,9 @@ priority: P4
 
 ## 1. Blueprint Reference
 
-[`../../phase-7-fleet-expansion.md`](../../phase-7-fleet-expansion.md) full. Key sections: §1 6-Type classification, §3 SE-Meta Self-Stop, §6 migration procedure 8-step, §7 Strictness differentiation.
+[`../../phase-7-fleet-expansion.md`](../../../../harness-engineering/phase-7-fleet-expansion.md) full. Key sections: §1 6-Type classification, §3 SE-Meta Self-Stop, §6 migration procedure 8-step, §7 Strictness differentiation.
 
-**Related Supplementary Documents**: [`../template-cherrypick.md`](../template-cherrypick.md) — this phase is the infrastructure layer for the cherry-pick model. The 5-layer cherry-pick (Phase/Skill/Agent/Hook/Config) + your-harness reference sync policy runs in this phase.
+**Related Supplementary Documents**: [`../template-cherrypick.md`](../../../../harness-engineering/applications/template-cherrypick.md) — this phase is the infrastructure layer for the cherry-pick model. The 5-layer cherry-pick (Phase/Skill/Agent/Hook/Config) + your-harness reference sync policy runs in this phase.
 
 ## 2. Current State (pre-measurement)
 
@@ -41,7 +41,7 @@ priority: P4
 |---|---|---|---|
 | 7-1 | 6-Type classification naming ADR (`adr-26-6-type-classification-2026-MM-DD.md`) | – | 2h |
 | 7-2 | Add `family_type: SE-meta \| code_app \| SE-product \| hybrid_pipeline \| content_app \| template` field to `config/repos/<family>.json` | 7-1 | 2h |
-| 7-3 | Fleet families `family_type` backfill — apply [`../../phase-7-fleet-expansion.md`](../../phase-7-fleet-expansion.md) §5 matrix | 7-2 | 1h |
+| 7-3 | Fleet families `family_type` backfill — apply [`../../phase-7-fleet-expansion.md`](../../../../harness-engineering/phase-7-fleet-expansion.md) §5 matrix | 7-2 | 1h |
 | 7-4 | Inheritance graph schema introduction — `inherits_from` field + `scripts/verify_repo_agent_management.py` advisory | 7-2 | 3h |
 | 7-5 | `enabled_phases` field consumer verifier — read each family's opt-in strictness in management verification | 7-3 | 2h |
 | 7-6 | SE-meta self-stop automation — advisory verification that your-harness's same phase is done when `enabled_phases` is enforced or doc-strict applied, with future block promotion | 7-5 | 4h |
@@ -64,7 +64,7 @@ priority: P4
 Blueprint §12 Exit Criterion: "SE-meta dogfooding 1 pass (all Phase 0~6 decisions applied to your-harness with no self-stop condition violations). New family 1 migration 8-step completed + fleet_observe advisory 1 week with no warnings."
 
 Verification methods:
-1. your-harness Phase 0~6 application complete → all entries in this ledger [`README.md`](README.md) marked `done`
+1. your-harness Phase 0~6 application complete → all entries in this ledger [`README.md`](README-2026-05-22-historical.md) marked `done`
 2. Automatic verification that families registered in `enabled_phases` as enforced (or doc-strict) have the corresponding phase done in the your-harness self ledger
 3. Full-fleet direct apply complete: all active / sealed / bootstrap-only / skip-migrate targets reflect the parity contract in actual repo source and are verified by repo-local or central verifier
 4. `uv run python scripts/verify_repo_agent_management.py` warning for phase-7 self-stop BLOCK should disappear
@@ -107,4 +107,4 @@ Is family rollout blocked if your-harness's phase is not done? → After work �
 
 ## 9. Next Steps
 
-Proceed to [Phase 8 Garbage Collection](phase-8-application.md).
+Proceed to [Phase 8 Garbage Collection](phase-8-application-2026-06-13-historical.md).

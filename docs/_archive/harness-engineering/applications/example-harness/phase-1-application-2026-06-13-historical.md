@@ -10,9 +10,9 @@ blueprint: ../../phase-1-start-harness.md
 
 ## 1. Blueprint Reference
 
-[`../../phase-1-start-harness.md`](../../phase-1-start-harness.md) in full. In particular §3 five-element declaration, §4 classification decision rules, §7 routing failure conditions.
+[`../../phase-1-start-harness.md`](../../../../harness-engineering/phase-1-start-harness.md) in full. In particular §3 five-element declaration, §4 classification decision rules, §7 routing failure conditions.
 
-**Related reinforcement docs**: When writing ADR-21 (risk-level taxonomy) for this phase, apply the 5-step + 2~3 iteration requirement from [`../design-process.md`](../design-process.md).
+**Related reinforcement docs**: When writing ADR-21 (risk-level taxonomy) for this phase, apply the 5-step + 2~3 iteration requirement from [`../design-process.md`](../../../../harness-engineering/applications/design-process.md).
 
 ## 2. Current State (Pre-measurement)
 
@@ -64,7 +64,7 @@ Verification method:
 | hybrid_pipeline family (example-content etc.) | warn — only `risk_level` required, rest advisory |
 | SE-product personal family (example-personal etc.) | off — start-harness itself not applied (personal context, automation not appropriate) |
 
-Consistent with [`../exceptions.md`](../exceptions.md) §3 Phase 1 row.
+Consistent with [`../exceptions.md`](../../../../harness-engineering/applications/exceptions.md) §3 Phase 1 row.
 
 **Specific exceptions**:
 - Family A's main-orchestrator already has its own five-element variant (e.g., uses `category` instead of `task_type`) → your-harness's five-element names are not forced. Only your-harness catalog mapping is required.
@@ -86,4 +86,4 @@ Does your-harness's circuit breaker block itself when its own hook's failure cas
 
 ## 9. Next Steps
 
-Proceed to [Phase 2 Application](phase-2-application.md).
+Proceed to [Phase 2 Application](phase-2-application-2026-06-13-historical.md).

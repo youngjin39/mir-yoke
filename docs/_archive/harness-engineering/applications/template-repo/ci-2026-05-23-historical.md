@@ -291,4 +291,4 @@ python tools/template_health.py --check-drift   # drift from your-harness
 
 ## 8. Next Steps
 
-[`upgrade-runbook.md`](upgrade-runbook.md) — template upgrade procedure from the family (receiving) side.
+[`upgrade-runbook.md`](upgrade-runbook-2026-05-23-historical.md) — template upgrade procedure from the family (receiving) side.

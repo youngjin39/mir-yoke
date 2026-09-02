@@ -7,7 +7,7 @@ scope: phase-0..12 rollout + phase-13 closure + phase-14 completion-consistency 
 
 # example-harness Self-Dogfooding — Phase-0..12 Rollout + Phase-13 Closure + Phase-14 Completion-Consistency Ledger
 
-> **Purpose**: Apply the rollout phases `phase-0..12` from [`../../`](../../README.md) sequentially to example-harness itself, verify applied-state closure with `phase-13`, then separately track remaining rollout/backlog completion consistency in `phase-14`. Pre-validation before external family rollout.
+> **Purpose**: Apply the rollout phases `phase-0..12` from [`../../`](README-2026-05-22-historical.md) sequentially to example-harness itself, verify applied-state closure with `phase-13`, then separately track remaining rollout/backlog completion consistency in `phase-14`. Pre-validation before external family rollout.
 
 ## 1. Dependency Flow
 
@@ -35,21 +35,21 @@ Application status per phase. Update this table as progress is made.
 
 | Phase | Application Design | Status | Exit Criterion Pass | self-stop check | Completion Date |
 |---|---|---|---|---|---|
-| 0 | [phase-0-application](phase-0-application.md) | done | pass | pass | 2026-05-25 |
-| 1 | [phase-1-application](phase-1-application.md) | done | pass | pass | 2026-05-25 |
-| 2 | [phase-2-application](phase-2-application.md) | done | pass | pass | 2026-05-25 |
-| 3 | [phase-3-application](phase-3-application.md) | done | pass | pass | 2026-05-25 |
-| 4 | [phase-4-application](phase-4-application.md) | done | pass | pass | 2026-05-25 |
-| 5 | [phase-5-application](phase-5-application.md) | done | pass | pass | 2026-05-25 |
-| 6 | [phase-6-application](phase-6-application.md) | done | pass | pass | 2026-05-25 |
-| 7 | [phase-7-application](phase-7-application.md) | done | pass | pass | 2026-05-29 |
-| 8 | [phase-8-application](phase-8-application.md) | done | pass | pass | 2026-05-29 |
+| 0 | [phase-0-application](phase-0-application-2026-06-13-historical.md) | done | pass | pass | 2026-05-25 |
+| 1 | [phase-1-application](phase-1-application-2026-06-13-historical.md) | done | pass | pass | 2026-05-25 |
+| 2 | [phase-2-application](phase-2-application-2026-06-13-historical.md) | done | pass | pass | 2026-05-25 |
+| 3 | [phase-3-application](phase-3-application-2026-06-13-historical.md) | done | pass | pass | 2026-05-25 |
+| 4 | [phase-4-application](phase-4-application-2026-06-13-historical.md) | done | pass | pass | 2026-05-25 |
+| 5 | [phase-5-application](phase-5-application-2026-06-13-historical.md) | done | pass | pass | 2026-05-25 |
+| 6 | [phase-6-application](phase-6-application-2026-06-13-historical.md) | done | pass | pass | 2026-05-25 |
+| 7 | [phase-7-application](phase-7-application-2026-06-13-historical.md) | done | pass | pass | 2026-05-29 |
+| 8 | [phase-8-application](phase-8-application-2026-06-13-historical.md) | done | pass | pass | 2026-05-29 |
 | 9 (newly added R9) | phase-9-application.md | done | pass | pass | 2026-05-25 |
 | 10 (newly added R9) | phase-10-application.md | done | pass | pass | 2026-05-25 |
 | 11 (newly added R9) | phase-11-application.md | done | pass | pass | 2026-05-25 |
 | 12 (newly added R10) | phase-12-application.md | done | pass | pass | 2026-05-25 |
 | 13 (newly added R30) | phase-13-application.md | done | pass | pass | 2026-05-25 |
-| 14 (completion-consistency lane) | [phase-14-application](phase-14-application.md) | done | pass | pass | 2026-05-29 |
+| 14 (completion-consistency lane) | [phase-14-application](phase-14-application-2026-06-13-historical.md) | done | pass | pass | 2026-05-29 |
 
 ### Operational Evidence — Phase 9/10/11/12 (R11 tools land baseline)
 
@@ -84,7 +84,7 @@ Status code definitions:
 - `blocked` — dependency phase incomplete or external block
 - `reverted` — reverted after application (reason required)
 
-This ledger is the source of truth per [mir-roles.md §6 SoT reconciliation rule](../../mir-roles.md). If this ledger conflicts with the JSON `your-harness` row, this ledger takes precedence.
+This ledger is the source of truth per [mir-roles.md §6 SoT reconciliation rule](../../../../harness-engineering/mir-roles.md). If this ledger conflicts with the JSON `your-harness` row, this ledger takes precedence.
 
 **Self-stop obligation vs active family alignment (ADR-23)**: Initially, pending/partial phases conflicted with the active family matrix, but the 2026-05-29 closeout promoted phase-7/8 to `done`, resolving that self-stop advisory blocker.
 
@@ -137,9 +137,9 @@ The following 3 supplementary documents must be referenced alongside this ledger
 
 | Supplementary Document | When to Reference |
 |---|---|
-| [`../design-process.md`](../design-process.md) | During application design and ADR writing for all phases (5-step + iteration required) |
-| [`../autonomous-execution.md`](../autonomous-execution.md) | When activating autonomous operation after Phase 4 and 6 application |
-| [`../template-cherrypick.md`](../template-cherrypick.md) | During Phase 7 application for external family cherry-pick mechanism |
+| [`../design-process.md`](../../../../harness-engineering/applications/design-process.md) | During application design and ADR writing for all phases (5-step + iteration required) |
+| [`../autonomous-execution.md`](../../../../harness-engineering/applications/autonomous-execution.md) | When activating autonomous operation after Phase 4 and 6 application |
+| [`../template-cherrypick.md`](../../../../harness-engineering/applications/template-cherrypick.md) | During Phase 7 application for external family cherry-pick mechanism |
 
 ## 7. Changelog
 

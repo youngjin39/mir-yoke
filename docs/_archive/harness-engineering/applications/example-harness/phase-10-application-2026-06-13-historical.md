@@ -11,7 +11,7 @@ depends_on: [phase-9-application.md]
 
 ## 1. Blueprint Reference
 
-[`../../phase-10-rollout-pipeline.md`](../../phase-10-rollout-pipeline.md) full. Key sections: §1 3-stage pipeline overview, §2 Stage 1 (your-harness land + stability), §3 Stage 2 (template baseline update + sanitize), §4 Stage 3 (fleet opt-in), §5 greenfield bootstrap.
+[`../../phase-10-rollout-pipeline.md`](../../../../harness-engineering/phase-10-rollout-pipeline.md) full. Key sections: §1 3-stage pipeline overview, §2 Stage 1 (your-harness land + stability), §3 Stage 2 (template baseline update + sanitize), §4 Stage 3 (fleet opt-in), §5 greenfield bootstrap.
 
 **Design goals (3-axis)**:
 - Axis I: Stage 1 exit criteria + promote trigger codified.

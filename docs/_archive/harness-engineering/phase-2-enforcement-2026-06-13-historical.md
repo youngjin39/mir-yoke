@@ -220,4 +220,4 @@ Regression tests verify all three: pre-edit block, post-edit failure fire, deny-
 
 ## 12. Next Step
 
-Parallel options: [Phase 3 -- Memory & Context](phase-3-memory-context.md) or [Phase 4 -- State Machine](phase-4-state-machine.md).
+Parallel options: [Phase 3 -- Memory & Context](phase-3-memory-context-2026-06-13-historical.md) or [Phase 4 -- State Machine](../../harness-engineering/phase-4-state-machine.md).

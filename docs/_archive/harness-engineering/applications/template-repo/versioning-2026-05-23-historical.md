@@ -18,8 +18,8 @@ priority: R10-T02 newly established (ADR-40 §Versioning Policy operational guid
 - **Axis III (Fleet central management + back-propagation)**: per-family `adopted_version` field maps 1:1 against this doc's semver → version-lag detection (phase-12 §2) enabled
 
 **Inter-phase contract**:
-- **Input** (consumed): [phase-10 stage 2 promote](../../phase-10-rollout-pipeline.md) (your-harness land + sanitize result)
-- **Output** (produced): template VERSION + CHANGELOG entry + (when applicable) MIGRATION section → [phase-12 §3 upgrade migration](../../phase-12-template-lifecycle.md) + fleet notification
+- **Input** (consumed): [phase-10 stage 2 promote](../../../../harness-engineering/phase-10-rollout-pipeline.md) (your-harness land + sanitize result)
+- **Output** (produced): template VERSION + CHANGELOG entry + (when applicable) MIGRATION section → [phase-12 §3 upgrade migration](../../../../harness-engineering/phase-12-template-lifecycle.md) + fleet notification
 
 ## 1. 3 Artifacts (within template repo)
 
@@ -153,8 +153,8 @@ json.dump(state, open('config/fleet-harness-state.json', 'w'), indent=2, ensure_
 - ADR-39 (Applied-State Charter — defines version baseline)
 - phase-12-template-lifecycle.md §2 (version-lag detector spec — consumer of version)
 - phase-10 §3-3 (your-harness → template promote — version bump trigger)
-- [`ci.md`](ci.md) (template CI auto-validates version bumps)
-- [`upgrade-runbook.md`](upgrade-runbook.md) (family-side version upgrade procedure)
+- [`ci.md`](ci-2026-05-23-historical.md) (template CI auto-validates version bumps)
+- [`upgrade-runbook.md`](upgrade-runbook-2026-05-23-historical.md) (family-side version upgrade procedure)
 
 ## 6. R10 / R11 Separation
 
@@ -177,7 +177,7 @@ json.dump(state, open('config/fleet-harness-state.json', 'w'), indent=2, ensure_
 | Bump procedure doc | **this R10-T02 land** |
 | Automation script | **not yet** (R11) |
 
-**R10-R3-T07 correction (2026-05-23)**: prior row "CHANGELOG.md absent (R11)" claim was false — template has an actual CHANGELOG.md (`<your-harness-path>/git_public/template-harness/CHANGELOG.md`). However the format violates KeepAChangelog standard (date-format `## 2026.05.2`), so R10-R4 hand-promote must rewrite to KeepAChangelog format. This correction resolves R10-R2 audit Slice B BLOCKING #7 (doc author never grep'd template repo). Details: [`current-state.md §2 Versioning Artifacts`](current-state.md).
+**R10-R3-T07 correction (2026-05-23)**: prior row "CHANGELOG.md absent (R11)" claim was false — template has an actual CHANGELOG.md (`<your-harness-path>/git_public/template-harness/CHANGELOG.md`). However the format violates KeepAChangelog standard (date-format `## 2026.05.2`), so R10-R4 hand-promote must rewrite to KeepAChangelog format. This correction resolves R10-R2 audit Slice B BLOCKING #7 (doc author never grep'd template repo). Details: [`current-state.md §2 Versioning Artifacts`](current-state-2026-07-15-historical.md).
 
 ## 8. Exit Criterion
 
@@ -191,4 +191,4 @@ This doc is done when:
 
 ## 9. Next Steps
 
-[`ci.md`](ci.md) — template repo CI auto-validates version bumps (PR-stage validate).
+[`ci.md`](ci-2026-05-23-historical.md) — template repo CI auto-validates version bumps (PR-stage validate).

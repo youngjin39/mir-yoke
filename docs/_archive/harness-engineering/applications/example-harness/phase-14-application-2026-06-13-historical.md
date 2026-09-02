@@ -11,12 +11,12 @@ depends_on: [phase-13-application.md, phase-7-application.md, phase-8-applicatio
 
 ## 1. Blueprint Reference
 
-Primary blueprint: [`../../phase-14-completion-consistency.md`](../../phase-14-completion-consistency.md).
+Primary blueprint: [`../../phase-14-completion-consistency.md`](../../../../harness-engineering/phase-14-completion-consistency.md).
 
 Direct context sources:
-- [`phase-13-application.md`](phase-13-application.md)
-- [`../../phase-13-applied-state-closure.md`](../../phase-13-applied-state-closure.md)
-- [`../template-repo/current-state.md`](../template-repo/current-state.md)
+- [`phase-13-application.md`](phase-13-application-2026-06-13-historical.md)
+- [`../../phase-13-applied-state-closure.md`](../../../../harness-engineering/phase-13-applied-state-closure.md)
+- [`../template-repo/current-state.md`](../../../../harness-engineering/applications/template-repo/current-state.md)
 
 This lane is not a rollback of phase-13. It exists to track stronger completion semantics and your-harness rollout/backlog that remain after phase-13 closed the template applied-state truth-alignment problem.
 

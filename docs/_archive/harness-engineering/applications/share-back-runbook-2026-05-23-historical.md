@@ -18,8 +18,8 @@ priority: R10-T11 new (resolves Slice D Scenario 4 BLOCKING)
 - **Axis III (fleet central management / back-propagation)**: Observable operating guide for 5 sync directions (phase-11 §4) — not enforced, opt-in
 
 **Inter-phase contract**:
-- **Input** (consumed): [phase-11 §1 3-node hub diagram](../phase-11-back-propagation.md) + [phase-11 §2 detector spec](../phase-11-back-propagation.md) + [phase-11 §3 Triage 4](../phase-11-back-propagation.md)
-- **Output** (provided): family-by-family share decision history + your-harness Role B's template promote queue → [phase-10 stage 3](../phase-10-rollout-pipeline.md) trigger
+- **Input** (consumed): [phase-11 §1 3-node hub diagram](../../../harness-engineering/phase-11-back-propagation.md) + [phase-11 §2 detector spec](../../../harness-engineering/phase-11-back-propagation.md) + [phase-11 §3 Triage 4](../../../harness-engineering/phase-11-back-propagation.md)
+- **Output** (provided): family-by-family share decision history + your-harness Role B's template promote queue → [phase-10 stage 3](../../../harness-engineering/phase-10-rollout-pipeline.md) trigger
 
 ## 1. End-to-End Flow (6 steps)
 
@@ -179,7 +179,7 @@ When a family creates a new skill of their own (not in your-harness reference):
 
 **Contradiction resolved**: The rule in `template-cherrypick.md:96` "add only from your-harness reference" applies at the **cherry-pick time point** (family adding a your-harness reference skill to their enabled skill set). Family-private skill creation is separate — it can only enter your-harness reference through the share-back path in this §4.
 
-→ `template-cherrypick.md` body updated ([R10-T12 — template-cherrypick.md §4-2-bis](template-cherrypick.md)): "add only from your-harness reference / new family-private skills can be added only after being registered in your-harness reference through share-back".
+→ `template-cherrypick.md` body updated ([R10-T12 — template-cherrypick.md §4-2-bis](template-cherrypick-2026-05-23-historical.md)): "add only from your-harness reference / new family-private skills can be added only after being registered in your-harness reference through share-back".
 
 ## 5. hybrid_pipeline → SE-meta Compatibility Matrix vs Triage "absorb to your-harness" Contradiction Resolution
 
@@ -187,7 +187,7 @@ R9 audit (Slice D Scenario 4 finding #3) contradiction:
 - `phase-9 §5-2` compatibility matrix: hybrid_pipeline → SE-meta = ✗ (auto skip)
 - `phase-11 §3-1` Triage: "absorb to your-harness" is a valid decision
 
-**Resolution** ([R10-T13 — phase-9 §5-2 footnote](../phase-9-fleet-catalog.md)):
+**Resolution** ([R10-T13 — phase-9 §5-2 footnote](../../../harness-engineering/phase-9-fleet-catalog.md)):
 - Compatibility matrix ✗ = **only blocks auto recommendation** (Step 4 dispatch auto skip)
 - **User explicit override** can fire "absorb to your-harness" — Step 3 Triage user decision takes precedence over compatibility matrix
 - That is:

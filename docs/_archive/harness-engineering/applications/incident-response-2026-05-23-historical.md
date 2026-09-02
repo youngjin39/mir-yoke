@@ -7,7 +7,7 @@ audience: your-harness operators (your-harness self + fleet families)
 
 # Incident Response Runbook
 
-> **Purpose**: Standard response procedure for incidents occurring during autonomous operation and fleet family rollout. **Pre-condition (DETECT) → 4-phase response (CONTAIN → ERADICATE → RECOVER → POSTMORTEM)**. DETECT is the pre-trigger phase handled by the 6 user-intervention triggers (R8 supplement) in [`autonomous-execution.md`](autonomous-execution.md) §6. This document defines the 4-phase response that follows.
+> **Purpose**: Standard response procedure for incidents occurring during autonomous operation and fleet family rollout. **Pre-condition (DETECT) → 4-phase response (CONTAIN → ERADICATE → RECOVER → POSTMORTEM)**. DETECT is the pre-trigger phase handled by the 6 user-intervention triggers (R8 supplement) in [`autonomous-execution.md`](autonomous-execution-2026-05-20-historical.md) §6. This document defines the 4-phase response that follows.
 
 ## 1. Definitions
 
@@ -38,10 +38,10 @@ RECOVER (return to normal state + verification)
 POSTMORTEM (record / feedback / prevention)
 ```
 
-DETECT is the pre-trigger phase handled by [`autonomous-execution.md`](autonomous-execution.md) §6. The 4-phase response in §2 follows that. Standard procedure for each phase.
+DETECT is the pre-trigger phase handled by [`autonomous-execution.md`](autonomous-execution-2026-05-20-historical.md) §6. The 4-phase response in §2 follows that. Standard procedure for each phase.
 
 ### 2-1. DETECT
-The 6 triggers (R8 supplement) in [`autonomous-execution.md`](autonomous-execution.md) §6 constitute the detect phase.
+The 6 triggers (R8 supplement) in [`autonomous-execution.md`](autonomous-execution-2026-05-20-historical.md) §6 constitute the detect phase.
 
 - retry_budget exceeded → BLOCKED
 - SE-meta self-stop violation → INTERRUPTED
@@ -65,14 +65,14 @@ Standard actions:
 5. Confirm scope of impact — your-harness only? family A only? family A+B?
 
 For family contamination, additionally:
-- Activate cross-pollination safeguard ([`template-cherrypick.md`](template-cherrypick.md) §9)
+- Activate cross-pollination safeguard ([`template-cherrypick.md`](template-cherrypick-2026-05-23-historical.md) §9)
 - Temporarily disable `enabled_phases` for affected families
 
 ### 2-3. ERADICATE
-**Goal**: Remove root cause. "System fix" not "prompt fix" ([`../phase-6-observability.md`](../phase-6-observability.md) §1).
+**Goal**: Remove root cause. "System fix" not "prompt fix" ([`../phase-6-observability.md`](../../../harness-engineering/phase-6-observability.md) §1).
 
 Standard actions:
-1. Read structured_error ([`../phase-4-state-machine.md`](../phase-4-state-machine.md) §5) type / recoverable / details_ref carefully
+1. Read structured_error ([`../phase-4-state-machine.md`](../../../harness-engineering/phase-4-state-machine.md) §5) type / recoverable / details_ref carefully
 2. Review the preceding N events in fleet_observe advisory log
 3. Classify root cause:
    - Hook gap → reinforce Phase 2 enforcement
@@ -80,7 +80,7 @@ Standard actions:
    - Tool contract violation → Phase 4 schema reinforcement
    - Prompt injection → reinforce Phase 2 §3-4 validator
 4. Write hot-fix or ADR
-5. Apply mandatory [`design-process.md`](design-process.md) 5-step to the fix
+5. Apply mandatory [`design-process.md`](design-process-2026-05-20-historical.md) 5-step to the fix
 
 ### 2-4. RECOVER
 **Goal**: Return to normal state + verification.
@@ -141,9 +141,9 @@ affected: your-harness | family-X | family-X+Y | fleet-wide
 ```
 
 #### Feedback Obligations
-- Action item hook/script changes → new enforcement in [`../phase-2-enforcement.md`](../phase-2-enforcement.md)
-- Test cases → regression test pool in [`../phase-6-observability.md`](../phase-6-observability.md) §9a evaluation harness
-- Memory entry → `incident` type ([`../templates/_schema/memory_entry.schema.json`](../../templates/_schema/memory_entry.schema.json) R4 addition)
+- Action item hook/script changes → new enforcement in [`../phase-2-enforcement.md`](../../../harness-engineering/phase-2-enforcement.md)
+- Test cases → regression test pool in [`../phase-6-observability.md`](../../../harness-engineering/phase-6-observability.md) §9a evaluation harness
+- Memory entry → `incident` type ([`../templates/_schema/memory_entry.schema.json`](../../../templates/_schema/memory_entry.schema.json) R4 addition)
 
 ## 3. Severity Classification
 

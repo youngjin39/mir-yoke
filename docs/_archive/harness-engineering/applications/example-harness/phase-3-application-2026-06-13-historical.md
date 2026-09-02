@@ -10,9 +10,9 @@ blueprint: ../../phase-3-memory-context.md
 
 ## 1. Blueprint Reference
 
-[`../../phase-3-memory-context.md`](../../phase-3-memory-context.md) full. Key sections: §4 memory lifetime fields, §7 `/compact` criteria, §8 Sliding Window Prompt, §11 memory update cadence.
+[`../../phase-3-memory-context.md`](../../../../harness-engineering/phase-3-memory-context.md) full. Key sections: §4 memory lifetime fields, §7 `/compact` criteria, §8 Sliding Window Prompt, §11 memory update cadence.
 
-**Related Supplementary Documents**: When writing ADR-23 (memory-lifetime) for this phase, apply the 5-step + iteration requirement from [`../design-process.md`](../design-process.md).
+**Related Supplementary Documents**: When writing ADR-23 (memory-lifetime) for this phase, apply the 5-step + iteration requirement from [`../design-process.md`](../../../../harness-engineering/applications/design-process.md).
 
 ## 2. Current State (pre-measurement)
 
@@ -71,7 +71,7 @@ Verification methods:
 | Family memory contains PII | sliding window PII redact mandatory (special handling for personal SE-product family) |
 | Family CLAUDE.md already exceeds 200 lines | warn — diet cadence reminder, no hard block |
 
-[`../exceptions.md`](../exceptions.md) §3 Phase 3 row: all types enforced (memory has the strongest controls).
+[`../exceptions.md`](../../../../harness-engineering/applications/exceptions.md) §3 Phase 3 row: all types enforced (memory has the strongest controls).
 
 **Specific Exceptions**:
 - `example-infra` (code_app) → memory lifetime fields enforced
@@ -96,4 +96,4 @@ Do your-harness existing memory entries (35+ entries in MEMORY.md) all remain `a
 
 ## 9. Next Steps
 
-Proceed to [Phase 4 State Machine](phase-4-application.md).
+Proceed to [Phase 4 State Machine](phase-4-application-2026-06-13-historical.md).

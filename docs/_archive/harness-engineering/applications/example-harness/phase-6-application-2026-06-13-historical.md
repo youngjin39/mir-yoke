@@ -10,9 +10,9 @@ blueprint: ../../phase-6-observability.md
 
 ## 1. Blueprint Reference
 
-[`../../phase-6-observability.md`](../../phase-6-observability.md) full. Key sections: §2 12 metrics, §3 measure→fix→automate cadence, §9 report_contract.
+[`../../phase-6-observability.md`](../../../../harness-engineering/phase-6-observability.md) full. Key sections: §2 12 metrics, §3 measure→fix→automate cadence, §9 report_contract.
 
-**Related Supplementary Documents**: [`../autonomous-execution.md`](../autonomous-execution.md) — the autonomous reply loop uses measurement results from this phase as input. The retry_budget quantification + report_contract standardization in this phase is required for autonomous operation termination condition verification.
+**Related Supplementary Documents**: [`../autonomous-execution.md`](../../../../harness-engineering/applications/autonomous-execution.md) — the autonomous reply loop uses measurement results from this phase as input. The retry_budget quantification + report_contract standardization in this phase is required for autonomous operation termination condition verification.
 
 ## 2. Current State (pre-measurement)
 
@@ -68,7 +68,7 @@ Verification methods:
 | report_contract conflicts with family default reporting format | family contract can be additionally registered (`docs/templates/_schema/report.<family>.schema.json`) |
 | Family LLM calls go through external SaaS (Langfuse etc.) | parallel with your-harness measurement allowed, but SoT is your-harness measurement |
 
-[`../exceptions.md`](../exceptions.md) §3 Phase 6 row: all types enforced.
+[`../exceptions.md`](../../../../harness-engineering/applications/exceptions.md) §3 Phase 6 row: all types enforced.
 
 **Specific Exceptions**:
 - All families → same enforced as your-harness
@@ -91,4 +91,4 @@ If report_contract blocks your-harness normal output, self-stop. Therefore §3-2
 
 ## 9. Next Steps
 
-Proceed to [Phase 7 Fleet Expansion](phase-7-application.md).
+Proceed to [Phase 7 Fleet Expansion](phase-7-application-2026-06-13-historical.md).

@@ -12,7 +12,7 @@ date: 2026-05-23
 
 ## 0.5 Design Goals (R9 anchor)
 
-> This phase connects to the [3-axis fleet goals](applications/fleet-catalog.md). When adding a new phase or cherry-picking from a family, the `design` skill (R9-T11) requires the `design_goals` field as mandatory input.
+> This phase connects to the [3-axis fleet goals](../../harness-engineering/applications/fleet-catalog.md). When adding a new phase or cherry-picking from a family, the `design` skill (R9-T11) requires the `design_goals` field as mandatory input.
 
 **3-axis contribution**:
 - **Axis I (self-harness hardening)**: family innovation absorbed into self-harness becomes input for self-harness strengthening

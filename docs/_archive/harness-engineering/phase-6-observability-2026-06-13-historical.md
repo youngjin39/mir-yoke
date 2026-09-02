@@ -101,7 +101,7 @@ Loop exit conditions:
 | Giant Tool Outputs | Single tool result > 10k tokens | head/tail/grep cap, page splitting |
 | Poor Cache Utilization | Cache miss on same reads | Do not modify CLAUDE.md mid-session |
 | Duplicate Tools | Multiple registrations of same-function tools | Tool catalog cleanup |
-| Subagent Overuse | Spawns per task > N | Review [Phase 5](phase-5-subagents.md) section 2 usage conditions |
+| Subagent Overuse | Spawns per task > N | Review [Phase 5](phase-5-subagents-2026-06-13-historical.md) section 2 usage conditions |
 
 ## 6. Observability Tool Candidates
 
@@ -135,9 +135,9 @@ Each axis absorbs a subset of the 12 metrics from section 2.
 Patterns discovered in the fix stage feed back into:
 
 - Recurring failures -> add to `failure-patterns.md` -> memory SoT
-- Repeated hook evasion -> strengthen enforcement ([Phase 2](phase-2-enforcement.md))
-- Context bloat -> CLAUDE.md diet cadence ([Phase 3 section 11](phase-3-memory-context.md))
-- Unused component detection -> [Phase 8 Garbage Collection](phase-8-garbage-collection.md)
+- Repeated hook evasion -> strengthen enforcement ([Phase 2](phase-2-enforcement-2026-06-13-historical.md))
+- Context bloat -> CLAUDE.md diet cadence ([Phase 3 section 11](phase-3-memory-context-2026-06-13-historical.md))
+- Unused component detection -> [Phase 8 Garbage Collection](phase-8-garbage-collection-2026-06-13-historical.md)
 
 ## 9. Report Contract
 
@@ -213,4 +213,4 @@ At least 5 of the 12 metrics (context / tool call / repeated read / giant output
 
 ## 13. Next Step
 
-[Phase 7 -- Fleet Expansion](phase-7-fleet-expansion.md)
+[Phase 7 -- Fleet Expansion](phase-7-fleet-expansion-2026-06-13-historical.md)

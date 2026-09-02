@@ -10,9 +10,9 @@ blueprint: ../../phase-8-garbage-collection.md
 
 ## 1. Blueprint Reference
 
-[`../../phase-8-garbage-collection.md`](../../phase-8-garbage-collection.md) full. Key sections: §3 Cadence, §4 Archive Lifecycle, §5 CLAUDE.md diet, §6 memory lifetime cleanup.
+[`../../phase-8-garbage-collection.md`](../../../../harness-engineering/phase-8-garbage-collection.md) full. Key sections: §3 Cadence, §4 Archive Lifecycle, §5 CLAUDE.md diet, §6 memory lifetime cleanup.
 
-**Related Supplementary Documents**: When writing the ADR candidate 38 (GC-lifecycle, R9 renumbered: previous ADR-27 = R9 newly added Back-Propagation conflict) for this phase, apply the 5-step + iteration requirement from [`../design-process.md`](../design-process.md).
+**Related Supplementary Documents**: When writing the ADR candidate 38 (GC-lifecycle, R9 renumbered: previous ADR-27 = R9 newly added Back-Propagation conflict) for this phase, apply the 5-step + iteration requirement from [`../design-process.md`](../../../../harness-engineering/applications/design-process.md).
 
 ## 2. Current State (pre-measurement)
 
@@ -74,7 +74,7 @@ Verification methods:
 | Family uses own GC | your-harness detector inactive, but catalog alignment enforced only |
 | Family refuses CLAUDE.md diet cadence | warn cadence reminder, no forced block (personal SE-product family) |
 
-[`../exceptions.md`](../exceptions.md) §3 Phase 8 row consistent.
+[`../exceptions.md`](../../../../harness-engineering/applications/exceptions.md) §3 Phase 8 row consistent.
 
 **Specific Exceptions**:
 - `example-infra` (code_app) → entirely enforced
@@ -101,9 +101,9 @@ Can false-negative-tester detect false negatives in your-harness hooks? → ✓ 
 
 ## 9. Conclusion
 
-When this phase reaches done, all entries in the [`example-harness/README.md`](README.md) ledger table are done. SE-meta dogfooding complete. Next work:
+When this phase reaches done, all entries in the [`example-harness/README.md`](README-2026-05-22-historical.md) ledger table are done. SE-meta dogfooding complete. Next work:
 
 - **other-families/** directory creation (application design for each fleet family)
 - **prompt-templates/** directory creation (LLM prompts for each phase)
 
-This work proceeds per [`../README.md`](../README.md) §8 S3 onwards, upon explicit user instruction.
+This work proceeds per [`../README.md`](../../../../harness-engineering/applications/README.md) §8 S3 onwards, upon explicit user instruction.

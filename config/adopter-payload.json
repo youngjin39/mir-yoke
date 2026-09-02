@@ -779,7 +779,7 @@
     },
     {
       "path": "docs/_archive/harness-engineering/README-2026-05-22-historical.md",
-      "sha256": "9b79a04c78feff1bcbb2fe4e61eff8360b18fb076d8e49825053944c4aee828c",
+      "sha256": "31b337bf9abf4ae2698aff45ea5391fe71f7e8193fbb13aded29240881f7ee47",
       "classification": "historical",
       "disposition": "remove"
     },
@@ -821,7 +821,7 @@
     },
     {
       "path": "docs/_archive/harness-engineering/applications/example-harness/README-2026-05-22-historical.md",
-      "sha256": "60bd61672e8e8745349367e59db6805c7d3b5e053dec5302cd44e1f4bddf21a2",
+      "sha256": "bd37fa1eee7bb8877d010a157a07b53e314d806965488632b28fd2c31327af71",
       "classification": "historical",
       "disposition": "remove"
     },
@@ -839,91 +839,91 @@
     },
     {
       "path": "docs/_archive/harness-engineering/applications/example-harness/phase-0-application-2026-06-13-historical.md",
-      "sha256": "47664d30ec3078a302fc165ab7d51dfdb84e01abfcda362b665a795398a3ce17",
+      "sha256": "464fe34d80324fc8d01aea799254aeb79e5775ca1b50a8458625de76b097aba3",
       "classification": "historical",
       "disposition": "remove"
     },
     {
       "path": "docs/_archive/harness-engineering/applications/example-harness/phase-1-application-2026-06-13-historical.md",
-      "sha256": "39ecc6fe5eb2608076c8da92c821beda697e11e8b2ec935cbf8486d3476913b1",
+      "sha256": "fd5f6f48de1b224842b77e6653b40c03f2df77dfc5c92308dd0429f120fd8c6d",
       "classification": "historical",
       "disposition": "remove"
     },
     {
       "path": "docs/_archive/harness-engineering/applications/example-harness/phase-10-application-2026-06-13-historical.md",
-      "sha256": "d996916372e50d69e0682f211f792d8fbec22f3c8d072ac46d70d781949151fc",
+      "sha256": "220e920d235b5f8ad4d81eb94312aa8982e29d6cbd6157643ca38ede7d221df5",
       "classification": "historical",
       "disposition": "remove"
     },
     {
       "path": "docs/_archive/harness-engineering/applications/example-harness/phase-11-application-2026-06-13-historical.md",
-      "sha256": "e529d061d73e0ee8482c24910e6e9537872d20c4879d7aac9acf81a023cff48a",
+      "sha256": "2d1d6f5095ddc33666cbc2d15f2d40c1e5b60a0ff28aaaa095dfec59327f806a",
       "classification": "historical",
       "disposition": "remove"
     },
     {
       "path": "docs/_archive/harness-engineering/applications/example-harness/phase-12-application-2026-06-13-historical.md",
-      "sha256": "f54129cc78d3025838237583541f78b4565099b2f7e9038a41de8f850383fa7d",
+      "sha256": "2225bc17f7c4266875a1753c22ebd291d59f028fb4b8ce4004969f9081892d8b",
       "classification": "historical",
       "disposition": "remove"
     },
     {
       "path": "docs/_archive/harness-engineering/applications/example-harness/phase-13-application-2026-06-13-historical.md",
-      "sha256": "df8c297f112e7b5fd457361f60932407edf86515c99a5361f1b75b880e2bcfcb",
+      "sha256": "dc1d8a33ec1825a507062aae06fe584eb3e1bcfd71a290775b429e0fbe4ae03c",
       "classification": "historical",
       "disposition": "remove"
     },
     {
       "path": "docs/_archive/harness-engineering/applications/example-harness/phase-14-application-2026-06-13-historical.md",
-      "sha256": "501ebd2d5c256751d04f078c75bb65be11dbcb37c806875cf4f45e83225a6149",
+      "sha256": "70d2c76aa136978084bc1ee153528d93c06a2e5cc21bf5796dd0dfa6b140b29d",
       "classification": "historical",
       "disposition": "remove"
     },
     {
       "path": "docs/_archive/harness-engineering/applications/example-harness/phase-2-application-2026-06-13-historical.md",
-      "sha256": "35b7b4c7460cfdea39dd4ecbcf3c098f4985492d656652373085431c85173869",
+      "sha256": "96d521a693881d273db09c8b6dafa6415e14c47addad20df184d0feb1178a058",
       "classification": "historical",
       "disposition": "remove"
     },
     {
       "path": "docs/_archive/harness-engineering/applications/example-harness/phase-3-application-2026-06-13-historical.md",
-      "sha256": "36748c9280cd808a57173ed112029fe0a669f969f954d2dad6ad641a600a0bbf",
+      "sha256": "a1972ba0dc27eb5d17056f2ab87fc33755c21f6cfee3c9fe142281483bea4657",
       "classification": "historical",
       "disposition": "remove"
     },
     {
       "path": "docs/_archive/harness-engineering/applications/example-harness/phase-4-application-2026-06-13-historical.md",
-      "sha256": "bdab9ca2856a260e7c37be8ed4334c8eadfcb59269d6d93bdb43194f9a31b81d",
+      "sha256": "10d34a63eaaa853057be7021bcc1b22aded3223172688783725050a683a8535b",
       "classification": "historical",
       "disposition": "remove"
     },
     {
       "path": "docs/_archive/harness-engineering/applications/example-harness/phase-5-application-2026-06-13-historical.md",
-      "sha256": "921be18b197c26f91df79e54e7d39a7847e000749b510be114cbdb6208e9c233",
+      "sha256": "fe3bbad87530ce9a0ccf283e49ca54b716a4ac893ac162c297a30dbd4b1675d4",
       "classification": "historical",
       "disposition": "remove"
     },
     {
       "path": "docs/_archive/harness-engineering/applications/example-harness/phase-6-application-2026-06-13-historical.md",
-      "sha256": "4c9061dc26a4e0c3cb1487b56ac554d11ae00b2990ee37d88ae407ad0e0870f8",
+      "sha256": "1f9d6d74b6efc8f90f0df7b13dce01f6a0c3e5878b1b82dcd55fdaad5d29621e",
       "classification": "historical",
       "disposition": "remove"
     },
     {
       "path": "docs/_archive/harness-engineering/applications/example-harness/phase-7-application-2026-06-13-historical.md",
-      "sha256": "33ce363e793b4088c5aaf94a2359eda430458a7c059199dc14c4fcca3c05bd34",
+      "sha256": "85233e926dd6413b8f980a94aad2578e3a4fae0a9f7ef0e0b68b33147ed1b453",
       "classification": "historical",
       "disposition": "remove"
     },
     {
       "path": "docs/_archive/harness-engineering/applications/example-harness/phase-8-application-2026-06-13-historical.md",
-      "sha256": "70b1373c963b7b9d1ff15ec02ffaa914eef62cb5f1d4252fee0d587567c06de5",
+      "sha256": "c96e4da943078d31c7b835f238c5d27490271a33d51b114864db218372ab9fe3",
       "classification": "historical",
       "disposition": "remove"
     },
     {
       "path": "docs/_archive/harness-engineering/applications/example-harness/phase-9-application-2026-06-13-historical.md",
-      "sha256": "dc9af1b129594bac6328ac0f0da8568339d2ae7c505ca4efe109f685b6b20628",
+      "sha256": "5fbc7194d61c35cfde1f3d795cef101bf9257a8d4073ec0ce6e3ba9f9b11939a",
       "classification": "historical",
       "disposition": "remove"
     },
@@ -977,25 +977,25 @@
     },
     {
       "path": "docs/_archive/harness-engineering/applications/incident-response-2026-05-23-historical.md",
-      "sha256": "b3c9f8ac494203fd7301098141cd84fa47689083171906563302d3ff9c7f4a1e",
+      "sha256": "4bba37cd6407410d5ee871f928044bcaacca3c16294e771c0ba2213fb5f3b7ca",
       "classification": "historical",
       "disposition": "remove"
     },
     {
       "path": "docs/_archive/harness-engineering/applications/security-baseline-2026-05-23-historical.md",
-      "sha256": "994bd97131ef3f1824ea9ea60262ebb85fac20f8a1fcae4c8554b392a1bdda4b",
+      "sha256": "1fec7f8daf5939d7680a30cc3fee535c710e1d47780a057e83e3315a925fa0ad",
       "classification": "historical",
       "disposition": "remove"
     },
     {
       "path": "docs/_archive/harness-engineering/applications/share-back-runbook-2026-05-23-historical.md",
-      "sha256": "eb5983c1b8a86fb44afa226f6ff986e7001796d4e99e26b7261c1581c1818c3c",
+      "sha256": "4a3a1fcdbbb7781bd10e6b17fb5aa0c709794fdb06358c5f191065a261274db8",
       "classification": "historical",
       "disposition": "remove"
     },
     {
       "path": "docs/_archive/harness-engineering/applications/template-cherrypick-2026-05-23-historical.md",
-      "sha256": "4fe967e84bfac378e96ab9d3f8d51b196c27a1280dae2d4b52027853a41e5b0d",
+      "sha256": "b2d68e78c1f5d0baeeaccbdd6e65bfb772fa5b582ac3cb1a3f48685da516cb23",
       "classification": "historical",
       "disposition": "remove"
     },
@@ -1013,7 +1013,7 @@
     },
     {
       "path": "docs/_archive/harness-engineering/applications/template-repo/ci-2026-05-23-historical.md",
-      "sha256": "fc5ed73a11842ac6a6cbc7790a50f34cf2a9dde9cbfe70f107b775aadbba3892",
+      "sha256": "ce0dd756e34adaf14f6aef188109978f2bb78f4a739f4dbffcff14d207e79858",
       "classification": "historical",
       "disposition": "remove"
     },
@@ -1025,13 +1025,13 @@
     },
     {
       "path": "docs/_archive/harness-engineering/applications/template-repo/upgrade-runbook-2026-05-23-historical.md",
-      "sha256": "9fb354a904d5f35e91ea626999c10876da0f83d0368f9cf40869e3f012cf6a40",
+      "sha256": "41a80f00c0905ca4399f2f05affca528cd682da88911140c6e46eb0b870c2b5c",
       "classification": "historical",
       "disposition": "remove"
     },
     {
       "path": "docs/_archive/harness-engineering/applications/template-repo/versioning-2026-05-23-historical.md",
-      "sha256": "c6120e72e0dab423d219c66696551a14e3da6bb8057843c90f0f619fda3a3ce9",
+      "sha256": "758a24e42dcddf8b036b520cf40cc2dd61bccc6f57084d6dac1f5054570e0dc6",
       "classification": "historical",
       "disposition": "remove"
     },
@@ -1043,7 +1043,7 @@
     },
     {
       "path": "docs/_archive/harness-engineering/mir-roles-2026-05-23-historical.md",
-      "sha256": "beec9ef64d738e563f47faeeb989ae6d742c921ea13f9cf1027696de4050b902",
+      "sha256": "bc8cbdba2fb7a3a7be4cb6902fc9f0f8105b9f394b13401699d4f3917f1e68fb",
       "classification": "historical",
       "disposition": "remove"
     },
@@ -1055,7 +1055,7 @@
     },
     {
       "path": "docs/_archive/harness-engineering/phase-0-foundations-2026-06-13-historical.md",
-      "sha256": "01db9f57a75686eaaf5ccd16d945ff32a168498b211905cab789bdd624467029",
+      "sha256": "9a6436c74da0a035392336b479a488fb1c2fd4b5bce609b291eed3899ed38555",
       "classification": "historical",
       "disposition": "remove"
     },
@@ -1067,7 +1067,7 @@
     },
     {
       "path": "docs/_archive/harness-engineering/phase-1-start-harness-2026-06-13-historical.md",
-      "sha256": "9458254eea686ca29360d9485cce735df87b587aba4283b28007c2eef3f52115",
+      "sha256": "77d2f71aaade6a1811e2b96bc9ec2cf25371f26ea5ac34a9893d4f06b3d17f81",
       "classification": "historical",
       "disposition": "remove"
     },
@@ -1079,13 +1079,13 @@
     },
     {
       "path": "docs/_archive/harness-engineering/phase-10-rollout-pipeline-2026-05-23-historical.md",
-      "sha256": "3c163d43b4b583889f672dbdbcc8e7b14b9333dde2d81949485912032582238b",
+      "sha256": "5447131a2df7777acf36f4071c2826c19cdc4e8a450b452ef41cbbae6d2aacc5",
       "classification": "historical",
       "disposition": "remove"
     },
     {
       "path": "docs/_archive/harness-engineering/phase-11-back-propagation-2026-05-23-historical.md",
-      "sha256": "45779446f48449a7415d7d75867bb0784888d92c04ef0007d76d2341df572f3d",
+      "sha256": "2494e31cd958d0042702f2ebac9094620327d94b081d6f529a2108585174509d",
       "classification": "historical",
       "disposition": "remove"
     },
@@ -1103,7 +1103,7 @@
     },
     {
       "path": "docs/_archive/harness-engineering/phase-12-template-lifecycle-2026-05-23-historical.md",
-      "sha256": "66873e59e7db9c6800bfa7ecc7c970c42effbaf0195de66048bcd0b189903222",
+      "sha256": "8dceafe2ac083b6e8db58d54c2edeccc8105ac6a6e73347db8232b24e80cc7fd",
       "classification": "historical",
       "disposition": "remove"
     },
@@ -1139,7 +1139,7 @@
     },
     {
       "path": "docs/_archive/harness-engineering/phase-2-enforcement-2026-06-13-historical.md",
-      "sha256": "0573495261d53bbd6d6bc3b352c9d99669f5cb95507de34cf31dd4f9a801b9f1",
+      "sha256": "c0a23ae65cdf89c86479db5147dd2e15115626095469c6d36584502188d1344f",
       "classification": "historical",
       "disposition": "remove"
     },
@@ -1151,7 +1151,7 @@
     },
     {
       "path": "docs/_archive/harness-engineering/phase-3-memory-context-2026-06-13-historical.md",
-      "sha256": "ea012732e3f95b8837ac1df5254e47473ff855c736ca8d20522a7f27f9898aa9",
+      "sha256": "43fa5d2685d8a0ba20525b297eace9f550d9d60fc19f9147eb39a5000dbb22e3",
       "classification": "historical",
       "disposition": "remove"
     },
@@ -1169,7 +1169,7 @@
     },
     {
       "path": "docs/_archive/harness-engineering/phase-5-subagents-2026-06-13-historical.md",
-      "sha256": "f25a9a306c2b02095053cb7a33d4ea275e2283247452db4bf8f58c23d9022031",
+      "sha256": "6003017d7d99ec4aabbc7ef691148b48f9bf749d74328472f0b7b5ed1b57d147",
       "classification": "historical",
       "disposition": "remove"
     },
@@ -1181,7 +1181,7 @@
     },
     {
       "path": "docs/_archive/harness-engineering/phase-6-observability-2026-06-13-historical.md",
-      "sha256": "6be741fc57c7c4e8cad1877bd861849d2ada8a97318c38cb423062991e0ffee5",
+      "sha256": "f5d5249d3b479af9460032e2ab5cd06358d4711ae83c0fa33237f6ff693501d2",
       "classification": "historical",
       "disposition": "remove"
     },
@@ -1193,7 +1193,7 @@
     },
     {
       "path": "docs/_archive/harness-engineering/phase-7-fleet-expansion-2026-06-13-historical.md",
-      "sha256": "05b240134dc6038971b97e03317b3884f42737f4c1f7a02befde2752d72e019e",
+      "sha256": "25c52acb516d1f80ef228402918dc6a5d0be62caa6272047548a028792cd6270",
       "classification": "historical",
       "disposition": "remove"
     },
@@ -1205,7 +1205,7 @@
     },
     {
       "path": "docs/_archive/harness-engineering/phase-8-garbage-collection-2026-06-13-historical.md",
-      "sha256": "c698dbeeb6fa085aa8012572c486aea47302e3d64b9b94c4486abd26682228a1",
+      "sha256": "efbe8bb7d16091c7b9efe3fa30c11aaf4e8b51455ee4c63e61d549ab6464c9e6",
       "classification": "historical",
       "disposition": "remove"
     },
@@ -1217,7 +1217,7 @@
     },
     {
       "path": "docs/_archive/harness-engineering/phase-9-fleet-catalog-2026-05-23-historical.md",
-      "sha256": "8df301aaad9e030d2127689dd15e80ccc57c1333b17ea07f7a0e150aa81752b8",
+      "sha256": "6024ac47ef2f2191830b8571989c90e075b7c4317e87b8967c1857bc42f26f0f",
       "classification": "historical",
       "disposition": "remove"
     },
@@ -4241,7 +4241,7 @@
     },
     {
       "path": "tests/test_phase_doc_completeness.py",
-      "sha256": "5f8b78f672641dfddc27466180ac2fd8dee13c7237e1ad4aee373889c31222fa",
+      "sha256": "d7557a52aea8bd25e849223446bc027d5603c27be8eaef1cb0834094be43dc62",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     },

@@ -13,9 +13,9 @@ priority: P9 (nearly complete)
 
 ## 1. Blueprint Reference
 
-[`../../phase-5-subagents.md`](../../phase-5-subagents.md) full.
+[`../../phase-5-subagents.md`](../../../../harness-engineering/phase-5-subagents.md) full.
 
-**Related Supplementary Documents**: [`../design-process.md`](../design-process.md) §5 subagent matrix + §6-2 role-split patterns integrate directly with this phase's resource cap and fork_context policy. The default cap for this phase = 4, and only when design parallel analysis and independent verification must be maintained simultaneously does the `temporary_cap` mechanism raise it to 6 (design-process §5 end).
+**Related Supplementary Documents**: [`../design-process.md`](../../../../harness-engineering/applications/design-process.md) §5 subagent matrix + §6-2 role-split patterns integrate directly with this phase's resource cap and fork_context policy. The default cap for this phase = 4, and only when design parallel analysis and independent verification must be maintained simultaneously does the `temporary_cap` mechanism raise it to 6 (design-process §5 end).
 
 ## 2. Current State (pre-measurement)
 
@@ -35,7 +35,7 @@ priority: P9 (nearly complete)
 
 | Step | Work | Dependency | Estimate |
 |---|---|---|---|
-| 5-1 | Audit existing handoff contracts against [`../../phase-5-subagents.md`](../../phase-5-subagents.md) §4 checklist — supplement missing fields (time/token budget) | – | 2h |
+| 5-1 | Audit existing handoff contracts against [`../../phase-5-subagents.md`](../../../../harness-engineering/phase-5-subagents.md) §4 checklist — supplement missing fields (time/token budget) | – | 2h |
 | 5-2 | fork_context policy alignment verification — confirm each agent's fork_context setting matches §6 table | – | 1h |
 | 5-3 | Resource cap = 4 baseline alignment — align concurrent spawn policy and advisory recording rules with `CLAUDE.md`/runbook | – | 2h |
 
@@ -67,7 +67,7 @@ Verification methods:
 | content_app | off — personal/content tasks: user is reviewer |
 | Family has own review framework | your-harness codex-final-reviewer not enforced, but advisory verification that review lane is a separate lane |
 
-[`../exceptions.md`](../exceptions.md) §3 Phase 5 row consistent.
+[`../exceptions.md`](../../../../harness-engineering/applications/exceptions.md) §3 Phase 5 row consistent.
 
 **Specific Exceptions**:
 - `example-infra` → same as your-harness
@@ -91,4 +91,4 @@ your-harness itself already operates with Worker Isolation. Minimal new applicat
 
 ## 9. Next Steps
 
-Proceed to [Phase 6 Observability](phase-6-application.md).
+Proceed to [Phase 6 Observability](phase-6-application-2026-06-13-historical.md).

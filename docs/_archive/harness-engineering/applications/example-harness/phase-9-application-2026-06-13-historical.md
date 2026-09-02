@@ -11,7 +11,7 @@ depends_on: [phase-7-application.md]
 
 ## 1. Blueprint Reference
 
-[`../../phase-9-fleet-catalog.md`](../../phase-9-fleet-catalog.md) full. Key sections: §1 dual-storage separation, §2 fleet-harness-state.json schema, §3 fleet families adoption matrix, §5 share catalog (opt-in, not enforced), §11 exit criterion.
+[`../../phase-9-fleet-catalog.md`](../../../../harness-engineering/phase-9-fleet-catalog.md) full. Key sections: §1 dual-storage separation, §2 fleet-harness-state.json schema, §3 fleet families adoption matrix, §5 share catalog (opt-in, not enforced), §11 exit criterion.
 
 **Design goals (3-axis)**:
 - Axis I: your-harness adoption state in single catalog (SoT for fleet families).

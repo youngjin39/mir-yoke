@@ -11,7 +11,7 @@ depends_on: [phase-9-application.md, phase-10-application.md]
 
 ## 1. Blueprint Reference
 
-[`../../phase-11-back-propagation.md`](../../phase-11-back-propagation.md) full. Key sections: §1 3-way share-back flow, §2 Innovation detection (`harness_drift.py`), §3 Innovation triage (4 decisions), §4 5 sync directions, §5 template sync runbook.
+[`../../phase-11-back-propagation.md`](../../../../harness-engineering/phase-11-back-propagation.md) full. Key sections: §1 3-way share-back flow, §2 Innovation detection (`harness_drift.py`), §3 Innovation triage (4 decisions), §4 5 sync directions, §5 template sync runbook.
 
 **Design goals (3-axis)**:
 - Axis I: Family innovation absorbed to your-harness (user review required — not automatic).

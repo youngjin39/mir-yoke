@@ -11,7 +11,7 @@ depends_on: [phase-9-application.md, phase-10-application.md]
 
 ## 1. Blueprint Reference
 
-[`../../phase-12-template-lifecycle.md`](../../phase-12-template-lifecycle.md) full. Key sections: §1 4 lifecycle stages (CREATE/MAINTAIN/DEPRECATE/SUNSET), §2 version-lag detection, §3 upgrade migration runbook (PATCH/MINOR/MAJOR), §4 hand-off protocol, §5 template CI/pre-commit.
+[`../../phase-12-template-lifecycle.md`](../../../../harness-engineering/phase-12-template-lifecycle.md) full. Key sections: §1 4 lifecycle stages (CREATE/MAINTAIN/DEPRECATE/SUNSET), §2 version-lag detection, §3 upgrade migration runbook (PATCH/MINOR/MAJOR), §4 hand-off protocol, §5 template CI/pre-commit.
 
 **Design goals (3-axis)**:
 - Axis I: your-harness-as-agent (Role B) template lifecycle automation.

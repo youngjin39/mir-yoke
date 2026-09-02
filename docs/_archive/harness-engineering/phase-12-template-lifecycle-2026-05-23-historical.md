@@ -18,8 +18,8 @@ date: 2026-05-23
 - **Axis III (fleet central management)**: track `adopted_version` for N families + version-lag detection + upgrade orchestration
 
 **Inter-phase contract**:
-- **Input** (consumes): [phase-9](phase-9-fleet-catalog.md) (catalog per-family `adopted_version`) + [phase-10](phase-10-rollout-pipeline.md) (3-stage promote) + [roles doc §3 Role B](mir-roles.md)
-- **Output** (provides): template version bump decision + upgrade migration runbook + sunset/hand-off procedure -> [phase-11](phase-11-back-propagation.md) (drift detector 6th kind `version_lag`) + Discord notification
+- **Input** (consumes): [phase-9](phase-9-fleet-catalog-2026-05-23-historical.md) (catalog per-family `adopted_version`) + [phase-10](phase-10-rollout-pipeline-2026-05-23-historical.md) (3-stage promote) + [roles doc §3 Role B](mir-roles-2026-05-23-historical.md)
+- **Output** (provides): template version bump decision + upgrade migration runbook + sunset/hand-off procedure -> [phase-11](phase-11-back-propagation-2026-05-23-historical.md) (drift detector 6th kind `version_lag`) + Discord notification
 
 ## 1. Template 4 Lifecycle Stages
 
@@ -39,7 +39,7 @@ Owner of each stage = central harness as agent (Role B). Stages requiring operat
 ### 1-2. MAINTAIN -- Normal version bump
 - PATCH (`vN.M.X+1`): drift fix, doc typo, broken link, dependency security patch
 - MINOR (`vN.M+1.0`): new phase / hook / skill, backwards-compatible extension
-- Detailed procedure: [`applications/template-repo/versioning.md`](applications/template-repo/versioning.md)
+- Detailed procedure: [`applications/template-repo/versioning.md`](../../harness-engineering/applications/template-repo/versioning.md)
 
 ### 1-3. DEPRECATE -- phase / hook / skill sunset
 - Central harness as agent (Role B) decides deprecation of a phase / hook / skill

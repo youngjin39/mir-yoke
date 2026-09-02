@@ -10,7 +10,7 @@ status: consolidated-v1
 
 ## 0.5 Design Goals (R9 anchor)
 
-> Connection of this phase to the [3-axis fleet goals](applications/fleet-catalog.md). When adding new phases or cherry-picking for a family, the `design` skill (R9-T11) mandates `design_goals` as required input.
+> Connection of this phase to the [3-axis fleet goals](../../harness-engineering/applications/fleet-catalog.md). When adding new phases or cherry-picking for a family, the `design` skill (R9-T11) mandates `design_goals` as required input.
 
 **3-axis contribution**:
 - **Axis I (your-harness strengthening)**: Fix 4 pillars, 5 layers, HOW NOT, 9 terminology as sticky baseline for all phases in your-harness
@@ -98,7 +98,7 @@ Patterns **prohibited** across this entire consolidated document:
 
 ## 8. Decisions vs Sunset
 
-The following are decision values assumed by all phases in this consolidated document. For comparison with sunset options, see [Appendix A §2](appendix-a-sources.md).
+The following are decision values assumed by all phases in this consolidated document. For comparison with sunset options, see [Appendix A §2](appendix-a-sources-2026-06-13-historical.md).
 
 | Item | Decision value | Sunset option |
 |---|---|---|
@@ -115,7 +115,7 @@ The following are decision values assumed by all phases in this consolidated doc
 - **harness** — Bundle of control plane code + rules + hooks. Not a tool belt the AI carries, but an exoskeleton that constrains the AI
 - **executor lane / review lane** — Separate execution paths for code writing/testing vs verification/review
 - **phase** (conceptual) — The phases in this consolidated document (§2 table)
-- **phase** (implementation) — The P0-F ~ P14 ledger in `tasks/phase.json`. The two meanings are different ([Appendix A §3](appendix-a-sources.md))
+- **phase** (implementation) — The P0-F ~ P14 ledger in `tasks/phase.json`. The two meanings are different ([Appendix A §3](appendix-a-sources-2026-06-13-historical.md))
 
 ## 10. Application Status
 
@@ -134,4 +134,4 @@ Terminology from §9 and decision table from §8 agreed with user. Ready to crea
 
 ## 12. Next Step
 
-Proceed to [Phase 1 — Start Harness](phase-1-start-harness.md).
+Proceed to [Phase 1 — Start Harness](phase-1-start-harness-2026-06-13-historical.md).

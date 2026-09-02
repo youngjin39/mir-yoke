@@ -233,4 +233,4 @@ memory-map.md / global / personal SoT separation complete. CLAUDE.md recommended
 
 ## 14. Next Step
 
-[Phase 4 -- State Machine](phase-4-state-machine.md)
+[Phase 4 -- State Machine](../../harness-engineering/phase-4-state-machine.md)

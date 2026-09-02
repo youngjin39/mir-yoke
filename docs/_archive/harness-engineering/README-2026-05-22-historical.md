@@ -17,32 +17,32 @@ Each phase assumes the completion of the previous phase. If introducing a new fa
 
 | # | Phase | One-line definition | Entry Condition |
 |---|---|---|---|
-| 0 | [Foundations](phase-0-foundations.md) | Philosophy·principles·terminology fixed | (start) |
-| 1 | [Start Harness](phase-1-start-harness.md) | Task classification·routing·5-element declaration | Phase 0 consensus |
-| 2 | [Enforcement](phase-2-enforcement.md) | hook/script/validator + intensity levels | Phase 1 routing operational |
-| 3 | [Memory & Context](phase-3-memory-context.md) | SoT + selective injection + lifetime fields | Phase 1 read procedure established |
-| 4 | [State Machine](phase-4-state-machine.md) | 13-state SM + 5 JSON schemas + retry budget | Phase 2 enforcement active |
-| 5 | [Subagents](phase-5-subagents.md) | Worker Isolation + Claude+Codex 4-step | Phase 4 state tracking possible |
-| 6 | [Observability](phase-6-observability.md) | 8 metrics + autonomous reply loop | Phase 4 event logging |
-| 7 | [Fleet Expansion](phase-7-fleet-expansion.md) | 6-Type classification + dogfooding + N families | Phase 0~6 self-harness verified |
-| 8 | [Garbage Collection](phase-8-garbage-collection.md) | Unused detect + diet cadence | Phase 7 fleet stable |
-| 9 (R9 newly added) | [Fleet Catalog](phase-9-fleet-catalog.md) | N family × phase-0..12 adoption matrix + drift + share catalog (enforcement: X, phase-13 closure lane excluded) | Phase 7 family_type labeling |
-| 10 (R9 newly added) | [Rollout / Share Pipeline](phase-10-rollout-pipeline.md) | 3-stage your-harness→template→fleet (opt-in) + greenfield bootstrap | Phase 9 catalog + Phase 7 |
-| 11 (R9 newly added) | [Back-Propagation](phase-11-back-propagation.md) | family innovation → your-harness catalog → other family autonomous share (enforcement: X) | Phase 9 + Phase 10 |
-| 12 (R10 newly added) | [Template Lifecycle](phase-12-template-lifecycle.md) | template version-lag + upgrade migration + sunset / hand-off | Phase 9~11 + harness-roles.md |
-| 13 (R30 newly added) | [Applied-State Closure](phase-13-applied-state-closure.md) | public template applied-state verdict and catalog/snapshot/verifier truth source closure | Phase 9~12 + example-harness ledger + ADR-39/42 |
-| 14 (R31 newly added) | [Completion Consistency](phase-14-completion-consistency.md) | `your-harness` backlog and template completion claim stronger consistency closure | Phase 13 + example-harness ledger + template applied verdict |
+| 0 | [Foundations](phase-0-foundations-2026-06-13-historical.md) | Philosophy·principles·terminology fixed | (start) |
+| 1 | [Start Harness](phase-1-start-harness-2026-06-13-historical.md) | Task classification·routing·5-element declaration | Phase 0 consensus |
+| 2 | [Enforcement](phase-2-enforcement-2026-06-13-historical.md) | hook/script/validator + intensity levels | Phase 1 routing operational |
+| 3 | [Memory & Context](phase-3-memory-context-2026-06-13-historical.md) | SoT + selective injection + lifetime fields | Phase 1 read procedure established |
+| 4 | [State Machine](../../harness-engineering/phase-4-state-machine.md) | 13-state SM + 5 JSON schemas + retry budget | Phase 2 enforcement active |
+| 5 | [Subagents](phase-5-subagents-2026-06-13-historical.md) | Worker Isolation + Claude+Codex 4-step | Phase 4 state tracking possible |
+| 6 | [Observability](phase-6-observability-2026-06-13-historical.md) | 8 metrics + autonomous reply loop | Phase 4 event logging |
+| 7 | [Fleet Expansion](phase-7-fleet-expansion-2026-06-13-historical.md) | 6-Type classification + dogfooding + N families | Phase 0~6 self-harness verified |
+| 8 | [Garbage Collection](phase-8-garbage-collection-2026-06-13-historical.md) | Unused detect + diet cadence | Phase 7 fleet stable |
+| 9 (R9 newly added) | [Fleet Catalog](phase-9-fleet-catalog-2026-05-23-historical.md) | N family × phase-0..12 adoption matrix + drift + share catalog (enforcement: X, phase-13 closure lane excluded) | Phase 7 family_type labeling |
+| 10 (R9 newly added) | [Rollout / Share Pipeline](phase-10-rollout-pipeline-2026-05-23-historical.md) | 3-stage your-harness→template→fleet (opt-in) + greenfield bootstrap | Phase 9 catalog + Phase 7 |
+| 11 (R9 newly added) | [Back-Propagation](phase-11-back-propagation-2026-05-23-historical.md) | family innovation → your-harness catalog → other family autonomous share (enforcement: X) | Phase 9 + Phase 10 |
+| 12 (R10 newly added) | [Template Lifecycle](phase-12-template-lifecycle-2026-05-23-historical.md) | template version-lag + upgrade migration + sunset / hand-off | Phase 9~11 + harness-roles.md |
+| 13 (R30 newly added) | [Applied-State Closure](phase-13-applied-state-closure-2026-05-25-historical.md) | public template applied-state verdict and catalog/snapshot/verifier truth source closure | Phase 9~12 + example-harness ledger + ADR-39/42 |
+| 14 (R31 newly added) | [Completion Consistency](phase-14-completion-consistency-2026-05-27-historical.md) | `your-harness` backlog and template completion claim stronger consistency closure | Phase 13 + example-harness ledger + template applied verdict |
 | 15 (potential, R7-C-I3) | Security & Compliance (not yet created) | 5 surface integration + CWE pattern detection + audit trail | Phase separation obligation evaluation — ADR candidate 32 |
 
 ### Appendix — Harness Roles (R10 newly added)
 
-- [`harness-roles.md`](mir-roles.md) — Dual-role (Role A Per-Family Tracker / Role B Template Maintainer) separation + identity disambiguation + SoT reconciliation rule.
+- [`harness-roles.md`](mir-roles-2026-05-23-historical.md) — Dual-role (Role A Per-Family Tracker / Role B Template Maintainer) separation + identity disambiguation + SoT reconciliation rule.
 
 ### Appendix — Graph Engineering Structuring (2026-07-20 added)
 
-- [`graph-engineering-structuring.md`](graph-engineering-structuring.md) — structuring contract for fixed multi-step flows: promotion criteria, six structure requirements (stages / transitions / state / per-stage verification / resume / run record), and the L0–L3 maturity ladder.
+- [`graph-engineering-structuring.md`](../../harness-engineering/graph-engineering-structuring.md) — structuring contract for fixed multi-step flows: promotion criteria, six structure requirements (stages / transitions / state / per-stage verification / resume / run record), and the L0–L3 maturity ladder.
 
-**R9 update (2026-05-23)**: This consolidated document expanded from 9 phases → 12 rollout phases. R9's 3 newly added phases (9 Fleet Catalog / 10 Rollout Share Pipeline / 11 Back-Propagation) are the core of **Axis III (Fleet Central Management·Back-Propagation)** — the 3-axis goal fleet-wide application path. The `§0.5 "Design Goals"` anchor in all phases aligns with the [`mir-core:design` skill](../../plugins/mir-core/skills/design/SKILL.md) R9-T11 mandate.
+**R9 update (2026-05-23)**: This consolidated document expanded from 9 phases → 12 rollout phases. R9's 3 newly added phases (9 Fleet Catalog / 10 Rollout Share Pipeline / 11 Back-Propagation) are the core of **Axis III (Fleet Central Management·Back-Propagation)** — the 3-axis goal fleet-wide application path. The `§0.5 "Design Goals"` anchor in all phases aligns with the [`mir-core:design` skill](../../../plugins/mir-core/skills/design/SKILL.md) R9-T11 mandate.
 
 **R30 update (2026-05-25)**: Rather than directly adding `phase-13` to the per-family rollout system, a separate closure lane was introduced for `your-harness`/template verdict truth-alignment. Therefore the total conceptual phases are 14, but the general family rollout target continues to be `phase-0..12`.
 
@@ -71,11 +71,11 @@ The main body of phase-0~8 covers only the "normal progress" flow. If a phase fa
 
 | Situation | Primary path | Secondary path |
 |---|---|---|
-| Verification failure during phase application | [`applications/incident-response.md`](applications/incident-response.md) §2 4-phase Response | Record `blocked` in the relevant phase's §"Application Status" table + update [`applications/example-harness/README.md`](applications/example-harness/README.md) §2 ledger |
-| 6 triggers fire during autonomous operation (R8 reinforced) | [`applications/autonomous-execution.md`](applications/autonomous-execution.md) §6 6 triggers → user intervention | [`applications/incident-response.md`](applications/incident-response.md) DETECT pre-condition |
-| Problems within 1 week of external family rollout | [`applications/exceptions.md`](applications/exceptions.md) §6 Revert procedure | example-harness ledger row `reverted` status code |
-| 5 security surfaces fire | [`applications/security-baseline.md`](applications/security-baseline.md) | [`applications/incident-response.md`](applications/incident-response.md) §2 CONTAIN |
-| General phase rollback | [Phase 4 §7 interrupt atomicity 4 means](phase-4-state-machine.md) (CANCELLING → ROLLBACK → INTERRUPTED) | git worktree recovery |
+| Verification failure during phase application | [`applications/incident-response.md`](../../harness-engineering/applications/incident-response.md) §2 4-phase Response | Record `blocked` in the relevant phase's §"Application Status" table + update [`applications/example-harness/README.md`](README-2026-05-22-historical.md) §2 ledger |
+| 6 triggers fire during autonomous operation (R8 reinforced) | [`applications/autonomous-execution.md`](../../harness-engineering/applications/autonomous-execution.md) §6 6 triggers → user intervention | [`applications/incident-response.md`](../../harness-engineering/applications/incident-response.md) DETECT pre-condition |
+| Problems within 1 week of external family rollout | [`applications/exceptions.md`](../../harness-engineering/applications/exceptions.md) §6 Revert procedure | example-harness ledger row `reverted` status code |
+| 5 security surfaces fire | [`applications/security-baseline.md`](../../harness-engineering/applications/security-baseline.md) | [`applications/incident-response.md`](../../harness-engineering/applications/incident-response.md) §2 CONTAIN |
+| General phase rollback | [Phase 4 §7 interrupt atomicity 4 means](../../harness-engineering/phase-4-state-machine.md) (CANCELLING → ROLLBACK → INTERRUPTED) | git worktree recovery |
 
 The keywords "rollback / incident / revert" are not recorded in the phase body, but this §2-rollback is the single entry point.
 
@@ -83,12 +83,12 @@ The keywords "rollback / incident / revert" are not recorded in the phase body, 
 
 When **feature-based** entry is needed rather than phase-based:
 
-- **[`applications/feature-matrix.md`](applications/feature-matrix.md)** — User 14 features × 9 phase integrated matrix + dependency graph + land status + depth evaluation. If "where to find what" is unclear, read this matrix first.
+- **[`applications/feature-matrix.md`](../../harness-engineering/applications/feature-matrix.md)** — User 14 features × 9 phase integrated matrix + dependency graph + land status + depth evaluation. If "where to find what" is unclear, read this matrix first.
 
 ## 3. Supporting Materials
 
-- [Appendix A — Source Mapping·Sunset Items·Conflict Resolution](appendix-a-sources.md): Track which section of each conceptual phase the original 16 documents were absorbed into, what ideas were sunset, and how conflicting criteria were resolved.
-- [`applications/feature-matrix.md`](applications/feature-matrix.md) — 14 feature SoT mapping (see §2a above).
+- [Appendix A — Source Mapping·Sunset Items·Conflict Resolution](appendix-a-sources-2026-06-13-historical.md): Track which section of each conceptual phase the original 16 documents were absorbed into, what ideas were sunset, and how conflicting criteria were resolved.
+- [`applications/feature-matrix.md`](../../harness-engineering/applications/feature-matrix.md) — 14 feature SoT mapping (see §2a above).
 
 ## 4. Document Writing Principles
 
@@ -101,7 +101,7 @@ When **feature-based** entry is needed rather than phase-based:
 ## 5. Relationship with the Harness Codebase
 
 - This directory is a **consolidated reference**. ADRs / actual operational decisions are placed in `docs/decisions/`.
-- Phase definitions do not correspond 1:1 to the phase numbers in `tasks/phase.json`. The phases in this document are **harness engineering conceptual stages**, and P0-F~P14 in `tasks/phase.json` are **harness implementation stages**. The two axes are mapped in [Appendix A §3](appendix-a-sources.md).
+- Phase definitions do not correspond 1:1 to the phase numbers in `tasks/phase.json`. The phases in this document are **harness engineering conceptual stages**, and P0-F~P14 in `tasks/phase.json` are **harness implementation stages**. The two axes are mapped in [Appendix A §3](appendix-a-sources-2026-06-13-historical.md).
 - `.mir/repo-profile.toml` owns detailed boundaries and `CLAUDE.md` owns shared startup
   invariants. `AGENTS.md` is generated; this directory is supplementary context.
 

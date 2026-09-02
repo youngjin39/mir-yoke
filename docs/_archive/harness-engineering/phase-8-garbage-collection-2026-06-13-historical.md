@@ -88,7 +88,7 @@ Monthly cadence.
 
 ## 6. Memory Lifetime Cleanup
 
-Uses the lifetime fields from [Phase 3 section 4](phase-3-memory-context.md).
+Uses the lifetime fields from [Phase 3 section 4](phase-3-memory-context-2026-06-13-historical.md).
 
 **Dependency note**: This section functions only after Phase 3 lifetime field schema (`memory_entry.schema.json`) + code store implementation is landed. If Phase 3 is not landed, this section is entirely inactive. Therefore Phase 8 entry prerequisite = Phase 3 done.
 
@@ -169,6 +169,6 @@ Automatic items in section 3 cadence (per-commit linter / per-phase catalog cons
 
 ## 14. Conclusion
 
-When this phase completes, all 4 pillars from [Phase 0](phase-0-foundations.md) are operational. When a new family is introduced, restart from Phase 0.
+When this phase completes, all 4 pillars from [Phase 0](phase-0-foundations-2026-06-13-historical.md) are operational. When a new family is introduced, restart from Phase 0.
 
-Appendix: [Appendix A -- Source Mapping, Deprecated Items, Contradiction Resolution](appendix-a-sources.md)
+Appendix: [Appendix A -- Source Mapping, Deprecated Items, Contradiction Resolution](appendix-a-sources-2026-06-13-historical.md)

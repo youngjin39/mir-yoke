@@ -191,4 +191,4 @@ This phase is judged done when:
 
 ## 11. Next Step
 
-[Phase 10 -- Rollout Pipeline](phase-10-rollout-pipeline.md). Phase 9 (catalog) handles state tracking; Phase 10 defines the pipeline for state transitions (self-harness -> template -> fleet).
+[Phase 10 -- Rollout Pipeline](phase-10-rollout-pipeline-2026-05-23-historical.md). Phase 9 (catalog) handles state tracking; Phase 10 defines the pipeline for state transitions (self-harness -> template -> fleet).

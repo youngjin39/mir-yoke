@@ -10,9 +10,9 @@ blueprint: ../../phase-0-foundations.md
 
 ## 1. Blueprint Reference
 
-[`../../phase-0-foundations.md`](../../phase-0-foundations.md) in full. In particular §2 four pillars, §3 five layers, §4 HOW NOT, §8 decision vs. shelved table.
+[`../../phase-0-foundations.md`](../../../../harness-engineering/phase-0-foundations.md) in full. In particular §2 four pillars, §3 five layers, §4 HOW NOT, §8 decision vs. shelved table.
 
-**Related reinforcement docs**: When updating the decision vs. shelved table for this phase, apply the 5-step + iteration requirement from [`../design-process.md`](../design-process.md).
+**Related reinforcement docs**: When updating the decision vs. shelved table for this phase, apply the 5-step + iteration requirement from [`../design-process.md`](../../../../harness-engineering/applications/design-process.md).
 
 ## 2. Current State (Pre-measurement)
 
@@ -36,7 +36,7 @@ blueprint: ../../phase-0-foundations.md
 | 0-2 | Add Compass principle explicitly to §1 introduction of `CLAUDE.md` or `memory-map.md` | 0-1 | 30m |
 | 0-3 | Update `example-harness/README.md` ledger table to `phase 0 = done` | 0-2 | 10m |
 
-Each step applies the Worker Isolation from [Phase 5 Subagents](../../phase-5-subagents.md) — Claude writes, Codex verifies.
+Each step applies the Worker Isolation from [Phase 5 Subagents](../../../../harness-engineering/phase-5-subagents.md) — Claude writes, Codex verifies.
 
 ## 4. Files to Change
 
@@ -64,7 +64,7 @@ Verification method:
 | Require five-layer specification in external family CLAUDE.md | warn (cadence reminder only) |
 | External family uses a different term system | allowed (only your-harness 6-Type classification must be compatible) |
 
-[`../exceptions.md`](../exceptions.md) §3 matrix Phase 0 row: all types **doc-strict** (R4 term update, previously advisory-strict). No hook implementation at this stage + docs/terms/decision-agreement scope, so blocking is not possible — only consistency verification + user confirm on changes.
+[`../exceptions.md`](../../../../harness-engineering/applications/exceptions.md) §3 matrix Phase 0 row: all types **doc-strict** (R4 term update, previously advisory-strict). No hook implementation at this stage + docs/terms/decision-agreement scope, so blocking is not possible — only consistency verification + user confirm on changes.
 
 ## 7. SE-meta Self-Stop Check
 
@@ -82,4 +82,4 @@ Has your-harness explicitly stated five-layer separation in its own CLAUDE.md? �
 
 ## 9. Next Steps
 
-Proceed to [Phase 1 Application](phase-1-application.md).
+Proceed to [Phase 1 Application](phase-1-application-2026-06-13-historical.md).

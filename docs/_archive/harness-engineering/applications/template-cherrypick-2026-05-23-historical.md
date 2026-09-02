@@ -27,10 +27,10 @@ Families can freely select from all 5 layers.
 
 | Blueprint | Application to this document |
 |---|---|
-| [Phase 7 §8 Cross-pollination](../phase-7-fleet-expansion.md) | L2/L3 cross-pollination catalog |
-| [Phase 7 §9 Public Template Sync](../phase-7-fleet-expansion.md) | template-harness public template |
-| [Phase 3 §10 @import splitting](../phase-3-memory-context.md) | L5 config snippet partial inclusion |
-| [`exceptions.md`](exceptions.md) §3 strictness matrix | L1 phase strictness defaults |
+| [Phase 7 §8 Cross-pollination](../../../harness-engineering/phase-7-fleet-expansion.md) | L2/L3 cross-pollination catalog |
+| [Phase 7 §9 Public Template Sync](../../../harness-engineering/phase-7-fleet-expansion.md) | template-harness public template |
+| [Phase 3 §10 @import splitting](../../../harness-engineering/phase-3-memory-context.md) | L5 config snippet partial inclusion |
+| [`exceptions.md`](exceptions-2026-05-22-historical.md) §3 strictness matrix | L1 phase strictness defaults |
 | ADR-13 harness-generator-bootstrap | bootstrap.py automates cherry-pick |
 
 ## 3. Central Template (your-harness reference impl)
@@ -53,7 +53,7 @@ If your-harness cannot maintain the reference, cherry-pick itself becomes imposs
 
 ### 4-1. L1 Phase cherry-pick
 
-`enabled_phases` field in family JSON ([exceptions.md §5](exceptions.md)).
+`enabled_phases` field in family JSON ([exceptions.md §5](exceptions-2026-05-22-historical.md)).
 
 ```yaml
 # config/repos/example-infra.json (code_app example)
@@ -71,7 +71,7 @@ enabled_phases:
   # phases 3, 5, 6, 8 not selected (not applied)
 ```
 
-**Valid strictness values** ([`exceptions.md`](exceptions.md) §3 basis): `doc-strict` (Phase 0 only) / `enforced` (Phase 1+) / `warn` / `off`. All `strict` written before R5 were cleaned up in R5-R1.
+**Valid strictness values** ([`exceptions.md`](exceptions-2026-05-22-historical.md) §3 basis): `doc-strict` (Phase 0 only) / `enforced` (Phase 1+) / `warn` / `off`. All `strict` written before R5 were cleaned up in R5-R1.
 
 Unselected phases have hooks not applied. Selected phases have their strictness applied.
 
@@ -112,7 +112,7 @@ R9 audit (Slice C BLOCKING #5 + Slice D Scenario 4) found a contradiction:
 1. Family self-writes `.claude/skills/<new-skill>/SKILL.md` (no your-harness approval required)
 2. your-harness Role A detects via daily scan (`harness_drift.py` R11)
 3. Registers in catalog `innovations[]` as `share_status: candidate`
-4. Triage 4 decision ([phase-11 §3-1](../phase-11-back-propagation.md), [share-back-runbook §1](share-back-runbook.md)):
+4. Triage 4 decision ([phase-11 §3-1](../../../harness-engineering/phase-11-back-propagation.md), [share-back-runbook §1](share-back-runbook-2026-05-23-historical.md)):
    - **absorb to your-harness**: Add to your-harness reference → other families can cherry-pick (enters "add" path in this §4-2)
    - **promote to template directly**: Add directly to template (skip your-harness absorption)
    - **share to fleet**: Share recommendation to compatible families (after user decision, then cherry-pick)
@@ -193,8 +193,8 @@ If a family operator registers an off phase in enabled_phases ignoring this tabl
 
 | Step | Work |
 |---|---|
-| CP-1 | Confirm family type ([exceptions.md §4](exceptions.md) classify) |
-| CP-2 | Look up type-specific default strictness in [exceptions.md §3](exceptions.md) matrix |
+| CP-1 | Confirm family type ([exceptions.md §4](exceptions-2026-05-22-historical.md) classify) |
+| CP-2 | Look up type-specific default strictness in [exceptions.md §3](exceptions-2026-05-22-historical.md) matrix |
 | CP-3 | Identify items to override from default (reflecting family characteristics) |
 | CP-4 | 5-layer cherry-pick decision — phase / skill / agent / hook / config units |
 | CP-5 | Specify `enabled_phases` + `skill_overrides` + `add_specialists` + `hooks_enabled` in family JSON |
@@ -205,7 +205,7 @@ If a family operator registers an off phase in enabled_phases ignoring this tabl
 How families keep up when your-harness reference changes.
 
 ### Automatic Propagation (mandatory — opt-in exceptions)
-- L4 Hook security fixes (deny-list new patterns, vulnerability fixes) → **forced sync** for all families (security priority, exception to opt-in default in [`exceptions.md`](exceptions.md) §2 principle 2)
+- L4 Hook security fixes (deny-list new patterns, vulnerability fixes) → **forced sync** for all families (security priority, exception to opt-in default in [`exceptions.md`](exceptions-2026-05-22-historical.md) §2 principle 2)
 - SE-meta self-stop violation detected → immediate notification to family
 
 **Forced sync execution mechanism**:
@@ -269,7 +269,7 @@ Separating the two meanings of the user-stated "external modification allowed":
 ### 10-1. Family self-modification rights (forward — your-harness → family)
 - After new family onboarding, family operators have rights to **self-modify hooks / skills / agents in their own repo**
 - Even after registering `enabled_phases`, families can freely edit `add_specialists` / `skill_overrides` / `hooks_enabled` in family JSON
-- 1-week revert window ([`exceptions.md`](exceptions.md) §6) — immediately removable with one word from user after application
+- 1-week revert window ([`exceptions.md`](exceptions-2026-05-22-historical.md) §6) — immediately removable with one word from user after application
 - Exception: security patches (§6 automatic propagation) — strict sync
 
 ### 10-2. your-harness reverse-pollination (backward — family → your-harness)
@@ -290,7 +290,7 @@ This document is directly related to the self-stop condition.
 
 Automatic verification:
 - Check that your-harness reference (§3 table above) is complete on every commit
-- Verify your-harness hooks work as intended on your-harness itself using false-negative-tester ([Phase 8 §8](../phase-8-garbage-collection.md))
+- Verify your-harness hooks work as intended on your-harness itself using false-negative-tester ([Phase 8 §8](../../../harness-engineering/phase-8-garbage-collection.md))
 
 ## 12. Change History
 

@@ -206,7 +206,7 @@ This phase is done when:
 
 ## 9. Next Step
 
-[Phase 11 -- Back-Propagation](phase-11-back-propagation.md). Phase 10 (forward share) is self-harness -> fleet; Phase 11 (back-propagation) is family innovation -> self-harness -> other family share (reverse direction).
+[Phase 11 -- Back-Propagation](phase-11-back-propagation-2026-05-23-historical.md). Phase 10 (forward share) is self-harness -> fleet; Phase 11 (back-propagation) is family innovation -> self-harness -> other family share (reverse direction).
 
 ## 10. DispatchBrief Propagation Note
 

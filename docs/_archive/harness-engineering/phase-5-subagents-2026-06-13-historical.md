@@ -39,7 +39,7 @@ Subagents are not a feature to use because they look impressive. Use them only f
 | research-subagent | Supplemental research and comparative analysis | Organized fact pack |
 | test-subagent | Collect test results and summarize failures | Failure pattern summary |
 
-Additional family-specific roles are defined according to the classification in [Phase 7 Fleet Expansion](phase-7-fleet-expansion.md) section 4.
+Additional family-specific roles are defined according to the classification in [Phase 7 Fleet Expansion](phase-7-fleet-expansion-2026-06-13-historical.md) section 4.
 
 ## 4. Handoff Contract
 
@@ -110,7 +110,7 @@ When the same session performs both writing and verification, it is bound by the
 
 ## 10. Introduction Timing
 
-- Not immediately after Phase 1, but after [Phase 4 State Machine](phase-4-state-machine.md) is running
+- Not immediately after Phase 1, but after [Phase 4 State Machine](../../harness-engineering/phase-4-state-machine.md) is running
 - Reason: without state tracking, increasing subagents makes progress tracking impossible
 
 ## 11. Application Status
@@ -133,4 +133,4 @@ One code task completes the Worker Isolation 4-step (Claude plan -> Codex write 
 
 ## 13. Next Step
 
-[Phase 6 -- Observability](phase-6-observability.md)
+[Phase 6 -- Observability](phase-6-observability-2026-06-13-historical.md)

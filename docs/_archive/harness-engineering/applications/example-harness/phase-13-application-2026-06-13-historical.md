@@ -11,7 +11,7 @@ depends_on: [phase-9-application.md, phase-10-application.md, phase-11-applicati
 
 ## 1. Blueprint Reference
 
-[`../../phase-13-applied-state-closure.md`](../../phase-13-applied-state-closure.md) full. Key sections: §2 closure targets, §3 exact goals, §4 inspection order, §7 exit criteria.
+[`../../phase-13-applied-state-closure.md`](../../../../harness-engineering/phase-13-applied-state-closure.md) full. Key sections: §2 closure targets, §3 exact goals, §4 inspection order, §7 exit criteria.
 
 **Design goals (3-axis)**:
 - Axis I: Connect the done/block verdict in the your-harness self-baseline to evidence.

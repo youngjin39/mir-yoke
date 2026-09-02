@@ -150,11 +150,11 @@ Per the sealed family policy (ADR-22):
 - MINOR: default = decline, user-explicit opt-in required
 - MAJOR: user-explicit review + migration decision. External git push block for sealed families applies.
 
-This sealed policy aligns with [ADR-22](../../../decisions/adr-22-sealed-family-policy-2026-05-23.md).
+This sealed policy aligns with [ADR-22](../../../../decisions/adr-22-sealed-family-policy-2026-05-23.md).
 
 ## 7. SE-meta Self-Stop Application
 
-Aligned with [mir-roles.md §6 SoT reconciliation](../../mir-roles.md) + [ADR-41 verify_self_stop hook](../../../decisions/adr-41-verify-self-stop-hook-2026-05-23.md).
+Aligned with [mir-roles.md §6 SoT reconciliation](../../../../harness-engineering/mir-roles.md) + [ADR-41 verify_self_stop hook](../../../../decisions/adr-41-verify-self-stop-hook-2026-05-23.md).
 
 - your-harness-as-agent (Role B) fires `verify_self_stop.py` before recommending template's new capability to a family
 - If your-harness's own `phase adoption.status != adopted` for that phase, recommendation is BLOCKED
@@ -191,4 +191,4 @@ Aligned with [mir-roles.md §6 SoT reconciliation](../../mir-roles.md) + [ADR-41
 
 ## 11. Next Steps
 
-[`bootstrap-day-0.md`](bootstrap-day-0.md) — greenfield family first 24-hour / 7-day operational guide.
+[`bootstrap-day-0.md`](bootstrap-day-0-2026-05-23-historical.md) — greenfield family first 24-hour / 7-day operational guide.

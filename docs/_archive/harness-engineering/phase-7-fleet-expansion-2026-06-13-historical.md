@@ -138,7 +138,7 @@ Cross-family asset sharing catalog.
 - Family-specific add_specialists / skill_overrides -> per-family JSON
 - On change, fleet_observe checks catalog consistency
 
-[Phase 8 GC](phase-8-garbage-collection.md) detects unused cross-pollinated assets.
+[Phase 8 GC](phase-8-garbage-collection-2026-06-13-historical.md) detects unused cross-pollinated assets.
 
 ## 9. Public Template Sync
 
@@ -179,4 +179,4 @@ SE-meta dogfooding 1 pass complete (all Phase 0-6 values applied to your harness
 
 ## 13. Next Step
 
-[Phase 8 -- Garbage Collection](phase-8-garbage-collection.md)
+[Phase 8 -- Garbage Collection](phase-8-garbage-collection-2026-06-13-historical.md)

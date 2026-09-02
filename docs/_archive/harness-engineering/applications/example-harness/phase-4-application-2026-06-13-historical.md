@@ -37,11 +37,11 @@ r21_deferred:
 
 ## 1. Blueprint Reference
 
-[`../../phase-4-state-machine.md`](../../phase-4-state-machine.md) full. Key sections: §1 13-State SM, §3 JSON schema 5 types, §4 tool contract mandatory fields, §6 retry budget, §7 interrupt atomicity.
+[`../../phase-4-state-machine.md`](../../../../harness-engineering/phase-4-state-machine.md) full. Key sections: §1 13-State SM, §3 JSON schema 5 types, §4 tool contract mandatory fields, §6 retry budget, §7 interrupt atomicity.
 
 **Related Supplementary Documents**:
-- [`../autonomous-execution.md`](../autonomous-execution.md) — this phase is the SM foundation for autonomous operation. Once the 13-State SM is complete, the autonomous reply loop can run.
-- [`../design-process.md`](../design-process.md) — apply the 5-step + iteration requirement when writing ADR-24 for this phase.
+- [`../autonomous-execution.md`](../../../../harness-engineering/applications/autonomous-execution.md) — this phase is the SM foundation for autonomous operation. Once the 13-State SM is complete, the autonomous reply loop can run.
+- [`../design-process.md`](../../../../harness-engineering/applications/design-process.md) — apply the 5-step + iteration requirement when writing ADR-24 for this phase.
 
 ## 2. Current State (closeout snapshot)
 
@@ -122,7 +122,7 @@ Verification methods:
 | SE-product | off — personal workspace repositories: minimal state tracking recommended only |
 | Family uses its own SM | your-harness schema not enforced, but `run_state` equivalent field mapping is mandatory |
 
-[`../exceptions.md`](../exceptions.md) §3 Phase 4 row consistent.
+[`../exceptions.md`](../../../../harness-engineering/applications/exceptions.md) §3 Phase 4 row consistent.
 
 **Specific Exceptions**:
 - `example-infra` (code_app) → same enforced as your-harness, infra work requires strong tracking
@@ -148,4 +148,4 @@ Can your-harness apply the 13-State SM to itself? → After work ✓ yes. But (a
 
 ## 9. Next Steps
 
-Proceed to [Phase 5 Subagents](phase-5-application.md) (can run in parallel: Phase 6).
+Proceed to [Phase 5 Subagents](phase-5-application-2026-06-13-historical.md) (can run in parallel: Phase 6).

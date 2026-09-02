@@ -20,8 +20,8 @@ priority: Resolves single-entity design flaw from prior audit
 - **Axis III (Fleet central management)**: Role A tracks all fleet families / Role B maintains template — catalog/runbook separation per lane
 
 **Inter-phase contract**:
-- **Input (consumed)**: [phase-9 fleet-catalog](phase-9-fleet-catalog.md) (state cache) + [phase-7 fleet-expansion](phase-7-fleet-expansion.md) (family_type classification) + user refinement
-- **Output (provided)**: Role A operational SLA + Role B maintenance charter + identity disambiguation rule → [phase-12 template-lifecycle](phase-12-template-lifecycle.md) + ADR-39 + ADR-40
+- **Input (consumed)**: [phase-9 fleet-catalog](phase-9-fleet-catalog-2026-05-23-historical.md) (state cache) + [phase-7 fleet-expansion](phase-7-fleet-expansion-2026-06-13-historical.md) (family_type classification) + user refinement
+- **Output (provided)**: Role A operational SLA + Role B maintenance charter + identity disambiguation rule → [phase-12 template-lifecycle](phase-12-template-lifecycle-2026-05-23-historical.md) + ADR-39 + ADR-40
 
 ## 1. Two Roles, One Agent
 
@@ -101,7 +101,7 @@ The harness agent performs **two job lanes** simultaneously.
 
 VERSION file: `mir-yoke/VERSION` (single line semver). Git tag: `v<semver>`. CHANGELOG entry required.
 
-See [`applications/template-repo/versioning.md`](applications/template-repo/versioning.md) for details.
+See [`applications/template-repo/versioning.md`](../../harness-engineering/applications/template-repo/versioning.md) for details.
 
 ### 3-4. Health Check Coverage
 - **Internal link integrity**: resolve validation for `@import` and markdown link references
@@ -118,7 +118,7 @@ See [`applications/template-repo/versioning.md`](applications/template-repo/vers
 | Template repo broken (push failure, branch protection violation) | Alert + user review |
 | Sanitize verifier fail | Abort promote, sanitize fix round |
 | Dependency CVE | Priority patch + version bump (PATCH) + fleet notify |
-| Template repo archive / rename / fork | [phase-12 template-lifecycle](phase-12-template-lifecycle.md) §sunset procedure fires |
+| Template repo archive / rename / fork | [phase-12 template-lifecycle](phase-12-template-lifecycle-2026-05-23-historical.md) §sunset procedure fires |
 | Agent down | Role B degraded — template frozen in last-known-good state, user manual maintenance possible. `role_b_runner.py` is an independent process. Role A and Role B lifecycle are separate. |
 
 ## 4. Role A vs Role B — Interface
@@ -190,7 +190,7 @@ Resolves a known SoT conflict found in a prior audit:
 
 → SE-meta self-stop runtime guarantee.
 
-This §6 cross-references [`applications/fleet-catalog.md §1-bis`](applications/fleet-catalog.md).
+This §6 cross-references [`applications/fleet-catalog.md §1-bis`](../../harness-engineering/applications/fleet-catalog.md).
 
 ## 7. Apply State
 
@@ -231,6 +231,6 @@ This doc is done when:
 
 ## 10. Next steps
 
-- [phase-12 — Template Lifecycle](phase-12-template-lifecycle.md) — Role B lifecycle (sunset + upgrade migration)
+- [phase-12 — Template Lifecycle](phase-12-template-lifecycle-2026-05-23-historical.md) — Role B lifecycle (sunset + upgrade migration)
 - [`applications/template-repo/`](applications/template-repo/) 4 files — Role B operational runbooks
-- [`applications/fleet-catalog.md §1-bis`](applications/fleet-catalog.md) — SoT reconciliation rule measurement
+- [`applications/fleet-catalog.md §1-bis`](../../harness-engineering/applications/fleet-catalog.md) — SoT reconciliation rule measurement
