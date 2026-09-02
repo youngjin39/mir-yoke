@@ -1127,6 +1127,91 @@ def test_session_start_routes_existing_repository_to_adoption(tmp_path: Path) ->
     assert "run setup.sh/setup.ps1" not in completed.stdout
 
 
+def test_invalid_adoption_receipt_keeps_declared_evidence_repair_reachable(
+    tmp_path: Path,
+) -> None:
+    """Evidence drift is the lockout cause, so its repair must stay reachable.
+
+    A greenfield repository has no repository-local recovery path and stays hard
+    blocked. An adoption repository is invalid because a declared evidence file
+    drifted, and refusing edits to that same file leaves no tool able to restore
+    it: the gate then blocks the only action that could make it valid again.
+    """
+    manifest = tmp_path / "config" / "bootstrap-adoption.json"
+    evidence = tmp_path / "spec" / "evidence.yaml"
+    manifest.parent.mkdir()
+    evidence.parent.mkdir()
+    manifest.write_text(
+        json.dumps(
+            {
+                "mir_yoke_source_commit": "a" * 40,
+                "surfaces": {"phase2_spec": {"evidence_paths": ["spec/evidence.yaml"]}},
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    evidence.write_text("verified: true\n", encoding="utf-8")
+    receipt = {
+        "status": "ready",
+        "source": {"mir_yoke_commit": "a" * 40},
+        "manifest": {"sha256": hashlib.sha256(manifest.read_bytes()).hexdigest()},
+        "evidence": [
+            {
+                "path": "spec/evidence.yaml",
+                "sha256": hashlib.sha256(evidence.read_bytes()).hexdigest(),
+            }
+        ],
+    }
+    (tmp_path / ".mir").mkdir()
+    (tmp_path / ".mir" / "bootstrap-receipt.json").write_text(
+        json.dumps(receipt) + "\n", encoding="utf-8"
+    )
+
+    evidence.write_text("verified: false\n", encoding="utf-8")
+
+    repair = _run_pretool(
+        tmp_path,
+        {"tool_name": "Write", "tool_input": {"file_path": "spec/evidence.yaml"}},
+    )
+    assert repair.returncode == 0, repair.stderr
+
+    unrelated = _run_pretool(
+        tmp_path,
+        {"tool_name": "Write", "tool_input": {"file_path": "notes.txt"}},
+    )
+    assert unrelated.returncode == 2
+    assert "bootstrap is invalid" in unrelated.stderr
+    assert "mir bootstrap-adoption --apply" in unrelated.stderr
+
+
+def test_git_add_rejects_a_single_backslash_in_the_path(tmp_path: Path) -> None:
+    """One backslash must be refused, not only two.
+
+    The metacharacter screen was written as a pattern matching two literal
+    backslashes, so a single-backslash path reached _mir_bootstrap_allowed_path,
+    which rewrites backslashes to slashes. That authorized spec/evidence.yaml
+    while git would have operated on the different file spec\\evidence.yaml.
+    """
+    (tmp_path / "spec\\evidence.yaml").write_text("verified: true\n", encoding="utf-8")
+
+    blocked = _run_pretool(
+        tmp_path,
+        {"tool_name": "Bash", "tool_input": {"command": "git add -- spec\\evidence.yaml"}},
+    )
+
+    assert blocked.returncode == 2
+
+
+def test_rg_rejects_both_pre_and_pre_glob(tmp_path: Path) -> None:
+    """``--pre`` runs an arbitrary preprocessor, so both spellings stay refused."""
+    for command in ("rg --pre cat pattern", "rg --pre-glob *.md pattern"):
+        result = _run_pretool(
+            tmp_path, {"tool_name": "Bash", "tool_input": {"command": command}}
+        )
+        assert result.returncode == 2, command
+
+
 def test_hooks_use_only_the_managed_python_launcher() -> None:
     launcher = HOOKS / "_lib" / "run-python.sh"
     assert launcher.is_file()
