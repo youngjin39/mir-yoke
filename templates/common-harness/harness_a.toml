@@ -18,3 +18,4 @@ slug = "project-harness"
 root = "."
 mode = "indexed"
 glob_include = ["PROJECT.md", "HARNESS.md", "docs/**/*.md", "tasks/**/*.md"]
+glob_exclude = ["docs/_archive/**"]   # retired records stay out of the index

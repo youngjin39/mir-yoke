@@ -61,10 +61,10 @@ Auto-substitute the source harness repo family-specific terms with the template'
 | `<your-project>-as-agent` | `your-harness-agent` | agent reference |
 | your harness (localized display form) | `your harness` | Korean → English + generic |
 | `<your-project>` (standalone noun) | `your-harness` | careful — overlap risk |
-| `youngjin39` (user GitHub) | `<template-owner>` | remove personal identity |
-| `MaJu` | (removed) | personal identity |
-| `LG Electronics` | (removed) | personal identity |
-| `Seoul` | (removed) | personal identity |
+| the maintainer GitHub handle | `<template-owner>` | remove personal identity |
+| a personal display name | (removed) | personal identity |
+| a current employer name | (removed) | personal identity |
+| a city of residence | (removed) | personal identity |
 
 ### 3-2. Path Substitution
 | the source harness repo path | Template generic |
@@ -76,7 +76,9 @@ Auto-substitute the source harness repo family-specific terms with the template'
 
 ### 3-3. Family Reference Substitution
 the source harness repo references to other families (used as examples only):
-- the 14 family slugs (grownote / hermes / home-hub / memory-keeper / minesweeper / mir-harness / musinsa-brand / my-life / quietleaf / shortmoviedirector / stockdirector / storydirector / write-score / mir-yoke)
+- the 14 source-repo family slugs, twelve of which name private repositories and are therefore not
+  enumerated here — a substitution table that lists the strings it exists to remove is itself a
+  disclosure. Read the current set from the source repo's own `config/repos/*.json`.
 - in the template: all replaced with `<example-family>` or distinct example family names (`example-product`, `example-code-app`, `example-meta`, `example-hybrid`, `example-content`)
 - generalize every reference outside user quotes / examples
 
@@ -116,7 +118,9 @@ def test_no_mir_self_paths():
     # asserts 0 occurrences of the the source harness repo absolute path pattern
 
 def test_no_personal_identity():
-    # asserts 0 occurrences of "youngjin39", "MaJu", "LG Electronics", "Seoul"
+    # asserts 0 occurrences of the maintainer handle, personal display name,
+    # employer name, and city of residence (the literals live only in the
+    # source repo's own checked list, never in this public template)
 
 def test_no_family_specific_names():
     # asserts 0 family-name references (except example / quote regions)

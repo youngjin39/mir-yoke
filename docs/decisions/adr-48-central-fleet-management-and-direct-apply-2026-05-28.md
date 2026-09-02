@@ -1,24 +1,13 @@
 ---
-status: accepted
+adr: 48
+status: archived
+updated: 2026-09-02
+mirrors: <source-harness-repo>:docs/_archive/decisions/adr-48-central-fleet-management-and-direct-apply-2026-05-28-historical.md
 ---
 
-# ADR-48 — Central Fleet Management and Direct Apply
+# ADR-48 — Central Fleet Management and Direct Apply (archived)
 
-## Decision
+This decision recorded central fleet state and a direct-apply path into target repositories. Mir Harness archived its counterpart: ADR-76 retired universal direct apply, central launchers, hash contracts and deployment authority, and Mir Yoke holds no standing consumer write authority under ADR-78.
 
-The public template documents the source harness as the central manager for active managed repositories and uses direct apply as the default rollout model, with explicit exception handling.
-
-- Active managed repositories should receive minimum viable harness patches directly from the control repository.
-- Public-template sync remains sanitized and user-directed.
-- Sealed, suspended, or runtime-contract-exception repositories are not generic direct-apply targets.
-
-## Why
-
-This keeps the template aligned with the managed-fleet operating model without forcing unsafe bulk changes.
-
-## Consequence
-
-Template consumers inherit:
-- a central-manager mental model
-- explicit exception lanes
-- rollout documentation that separates standard direct apply from advisory or track-only repositories
+The full record is preserved at
+`docs/_archive/decisions/adr-48-central-fleet-management-and-direct-apply-2026-05-28-historical.md`.

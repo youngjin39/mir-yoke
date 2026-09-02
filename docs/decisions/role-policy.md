@@ -1,5 +1,6 @@
 ---
 title: Main-Agent Parity / Delegated Execution Role Policy
+status: accepted
 keywords: [claude, codex, role-policy, orchestration, tdd, review, override]
 related: []
 created: 2026-05-02

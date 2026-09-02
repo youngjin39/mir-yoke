@@ -1,30 +1,12 @@
 ---
-phase: 10
-title: Rollout / Share Pipeline
-status: applied-baseline
+status: superseded
+date: 2026-05-28
+updated: 2026-09-02
+scope: historical phase-10 baseline stub pointer
 ---
 
-# Phase 10 — Rollout / Share Pipeline
+# Phase 10 — Rollout / Share Pipeline — Historical Pointer
 
-> Purpose: Describe the source repo to template to fleet promotion and direct-apply management for active repositories.
+This stub asserted that the public template carried the phase-10 source-to-template-to-fleet promotion artifacts, exposed tiny, normal and heavy triage defaults with a dispatch brief, and allowed actively managed repositories to adopt stricter central direct-apply rollout rules locally while deferring execution evidence to a separate control repository. Authority now sits with ADR-83 (the product boundary: the four-file starter, the Project Agent Kit recipe, and the optional installed CLI are the only adoption layers), ADR-84 (upgrade guidance, which already classifies this whole directory as history), ADR-85 (agent contracts), ADR-86 (Mir Harness maintains this repository) and ADR-81 (the Starter); fleet rollout, drift enforcement, central direct-apply, daemons and notifications are cancelled and named only to forbid their return, and the current replacement guide is `docs/operations/harness-engineering-upgrade.md`.
 
-## 0.5 Design Goals
-
-- Keep the public template aligned with the your-harness baseline for phase 10.
-- Provide a reusable reference artifact for new and existing family repositories.
-- Preserve an English-only, public-safe baseline that can be verified automatically.
-- Keep tiny, normal, and heavy triage plus DispatchBrief defaults visible without forcing heavyweight process on tiny maintenance work.
-
-## Scope
-
-This template phase document is a public baseline stub. Detailed repository-specific execution evidence remains in the control repository, while active managed repositories can apply stricter direct-apply rollout rules locally.
-
-## Exit Criterion
-
-- The template contains the public-facing artifacts required for this phase.
-- Automated verification can detect the presence of this phase document.
-- No Korean or private-family content appears in this phase baseline.
-
-## Applied State
-
-This phase is applied at the template-baseline level. Active managed repositories may adopt stricter direct-apply rules, while public clones can start from the lighter advisory baseline.
+A new session must not execute the historical procedure. The complete original is preserved in [the archive](../_archive/harness-engineering/phase-10-baseline-2026-05-28-historical.md).

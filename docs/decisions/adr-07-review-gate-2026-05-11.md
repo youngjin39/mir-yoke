@@ -1,21 +1,14 @@
 ---
-adr: 07
-status: accepted
+adr: 7
+status: superseded
 source: mirrored-summary
+mirrors: <source-harness-repo>:docs/_archive/decisions/adr-07-review-gate-2026-05-11-historical.md
+updated: 2026-09-02
 ---
 
-# ADR-07 — Review Gate
+# ADR-07 — Review Gate (superseded)
 
-## Context
+Mir Harness retired this decision; its counterpart there is superseded rather than current. This number stays mapped so the public reference catalog remains complete, and repository-specific operational detail continues to live in Mir Harness.
 
-The public template needs a stable reference record for ADR-07 so applied-state verification can confirm the baseline catalog is complete.
-
-## Decision
-
-The template preserves a concise, English-only reference stub for this ADR number. Detailed execution history remains in the mir-harness control repository.
-
-## Consequences
-
-- The template keeps a stable ADR number map.
-- Public consumers can verify baseline completeness.
-- Repository-specific operational detail stays in mir-harness.
+The full record is preserved at
+`docs/_archive/decisions/adr-07-review-gate-2026-05-11-historical.md`.

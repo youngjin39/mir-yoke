@@ -45,6 +45,42 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
   from post-edit hook output.
 - Added bounded Codex `SessionEnd` generation and documented project and hook trust as
   prerequisites for hook-based behavior.
+- Redacted maintainer-identity strings and private repository slugs that were still present in
+  this public repository, and corrected the 0.5.0 sanitize-gate note that had claimed the
+  substitution table used placeholder forms on both sides. `sanitize-glossary.md` now names the
+  class of each removed string instead of the literal — a table that enumerates the strings it
+  exists to remove is itself a disclosure — and one missed substitution in a
+  `families-overview.md` description field is generalized. These edits change the current tree
+  only; the strings remain in this repository's Git history.
+- Generalized the attribution comment in `scripts/generate_codex_derivatives.sh` to name the upstream
+  license without naming a retired repository. The line had carried a deleted family slug and a
+  distribution namespace in the `placeholder (real-slug)` shape that the harness failure-pattern
+  ledger names as a leak mechanism, and an earlier commit message in this branch defended keeping it
+  on the incorrect premise that the namespace belonged to a third party. The Apache-2.0 notice is
+  preserved; only the private identifiers are gone.
+- Extended the `sanitization` gate to credential shapes and to every text file it can reach. It had
+  been catching the identifier that leaked while missing the shapes that outrank it — a platform
+  webhook URL and a bot token are matchable from form alone, so no secret is named to detect them.
+  Its file list is now a skip list of binary and generated suffixes instead of a fixed allow list,
+  which had left 19 tracked files unscanned including two PowerShell scripts, a `.jsonl` log, and the
+  two `.example` configurations — the same class of file the leaked identifier came from. Enumeration
+  now uses `git ls-files`, matching the sibling surface contract so the two gates agree on what the
+  public surface is. Proven end to end rather than asserted: a synthetic credential in a
+  `.toml.example` file makes the gate exit 1, and removing it returns exit 0.
+- Widened the release gate step named `sanitization` past its single Hangul check, and redacted the
+  five strings it had been unable to see: a platform channel id in an approval example, and four
+  unsubstituted private repository slugs in a schema description and three application documents.
+  The new checks are pattern-based — a detector in a public repository that listed the private
+  strings it looks for would be the disclosure it exists to prevent, which is why the Hangul range
+  in that file is already built from code points rather than literals. Both new checks are also
+  called from the module's `__main__`, because the gate runs the file as a script and a test absent
+  from that block does not run in the gate. The Apache-2.0 attribution line in
+  `scripts/generate_codex_derivatives.sh` is deliberately untouched: it credits an upstream project,
+  and stripping attribution is not sanitization.
+- Added the archive exclusion to the `harness_a.toml` that `mir bootstrap` generates, so a new
+  project no longer indexes its own `docs/_archive/` as current material. The template and the
+  maintainer configuration already carried it; the generator, which is what every new project
+  actually receives, did not.
 
 ## [0.9.0] — 2026-08-11 — Project Agent Kit boundary
 
@@ -222,6 +258,14 @@ a post-clone setup checklist, and all missing harness components.
 All content under `docs/harness-engineering/` passes the sanitize gate (0 sensitive
 hits), including `applications/template-repo/sanitize-glossary.md`, whose mapping
 table uses placeholder forms (e.g. `/path/to/project/`) on both sides.
+
+> **Correction (2026-09-02):** the sentence above was not true when written. The
+> substitution table's left column held the literal maintainer identity strings and
+> fourteen real repository slugs, not placeholder forms, and one
+> `families-overview.md` description field kept a real slug. Both are redacted in
+> the current tree; see the Unreleased entry. Left in place rather than rewritten,
+> because a released note that silently becomes correct hides that the gate reported
+> a pass it had not earned.
 
 ## [0.4.0] — 2026-05-25 — Applied-state baseline completion
 

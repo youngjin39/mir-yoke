@@ -1,21 +1,14 @@
 ---
-adr: 08
-status: accepted
+adr: 8
+status: rejected
 source: mirrored-summary
+mirrors: <source-harness-repo>:docs/_archive/decisions/adr-08-agent-routing-2026-05-12-historical.md
+updated: 2026-09-02
 ---
 
-# ADR-08 — Agent Routing
+# ADR-08 — Agent Routing (rejected)
 
-## Context
+Mir Harness cancelled this decision; its counterpart there is recorded as cancelled and rejected, never adopted. This number stays mapped so the public reference catalog remains complete, and repository-specific operational detail continues to live in Mir Harness.
 
-The public template needs a stable reference record for ADR-08 so applied-state verification can confirm the baseline catalog is complete.
-
-## Decision
-
-The template preserves a concise, English-only reference stub for this ADR number. Detailed execution history remains in the mir-harness control repository.
-
-## Consequences
-
-- The template keeps a stable ADR number map.
-- Public consumers can verify baseline completeness.
-- Repository-specific operational detail stays in mir-harness.
+The full record is preserved at
+`docs/_archive/decisions/adr-08-agent-routing-2026-05-12-historical.md`.

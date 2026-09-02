@@ -34,6 +34,10 @@ def test_should_expose_no_private_absolute_path_when_public_surfaces_are_scanned
     forbidden = (
         "/" + "Volumes/",
         "/" + "Users/",
+        # Linux counterpart of the macOS home prefix above: work on this template
+        # also happens on Linux boxes, and an absolute path there names the account
+        # just as precisely.
+        "/" + "home/",
         "09." + "Mini_Harness",
         "T7 " + "Shield",
     )

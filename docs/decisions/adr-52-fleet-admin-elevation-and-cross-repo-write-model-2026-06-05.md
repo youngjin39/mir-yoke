@@ -1,21 +1,14 @@
 ---
 adr: 52
-status: accepted
+status: superseded
 source: mirrored-summary
+mirrors: <source-harness-repo>:docs/_archive/decisions/adr-52-fleet-admin-elevation-and-cross-repo-write-model-2026-06-05-historical.md
+updated: 2026-09-02
 ---
 
-# ADR-52 — Fleet-Admin Elevation and Cross-Repo Write Model
+# ADR-52 — Fleet-Admin Elevation and Cross-Repo Write Model (superseded)
 
-## Context
+Mir Harness retired this decision; its counterpart there is superseded rather than current. This number stays mapped so the public reference catalog remains complete, and repository-specific operational detail continues to live in Mir Harness.
 
-The public template needs a stable reference record for ADR-52 so applied-state verification can confirm the baseline catalog is complete.
-
-## Decision
-
-ADR-52 pins the cross-repository write model: editor tools stay confined to the active session root, and cross-repository writes occur through the shell channel with a recorded elevation and audit entry per write. The template preserves a concise, English-only reference stub for this ADR number. Detailed execution history remains in the mir-harness control repository.
-
-## Consequences
-
-- The template keeps a stable ADR number map.
-- Public consumers can verify baseline completeness.
-- Repository-specific operational detail stays in mir-harness.
+The full record is preserved at
+`docs/_archive/decisions/adr-52-fleet-admin-elevation-and-cross-repo-write-model-2026-06-05-historical.md`.

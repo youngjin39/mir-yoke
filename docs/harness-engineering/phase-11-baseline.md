@@ -1,29 +1,12 @@
 ---
-phase: 11
-title: Back-Propagation
-status: applied-baseline
+status: superseded
+date: 2026-05-28
+updated: 2026-09-02
+scope: historical phase-11 baseline stub pointer
 ---
 
-# Phase 11 — Back-Propagation
+# Phase 11 — Back-Propagation — Historical Pointer
 
-> Purpose: Describe innovation detection and share-back through the control repository.
+This stub asserted that the public template carried the phase-11 innovation-detection and share-back artifacts routed through a control repository, deferred all repository-specific execution evidence to that same control repository, and reported itself applied at template-baseline level for selective opt-in. Authority now sits with ADR-83 (the product boundary: the four-file starter, the Project Agent Kit recipe, and the optional installed CLI are the only adoption layers), ADR-84 (upgrade guidance, which already classifies this whole directory as history), ADR-85 (agent contracts), ADR-86 (Mir Harness maintains this repository) and ADR-81 (the Starter); fleet rollout, drift enforcement, central direct-apply, daemons and notifications are cancelled and named only to forbid their return, and the current replacement guide is `docs/operations/harness-engineering-upgrade.md`.
 
-## 0.5 Design Goals
-
-- Keep the public template aligned with the your-harness baseline for phase 11.
-- Provide a reusable reference artifact for new and existing family repositories.
-- Preserve an English-only, public-safe baseline that can be verified automatically.
-
-## Scope
-
-This template phase document is a public baseline stub. Detailed repository-specific execution evidence remains in the control repository.
-
-## Exit Criterion
-
-- The template contains the public-facing artifacts required for this phase.
-- Automated verification can detect the presence of this phase document.
-- No Korean or private-family content appears in this phase baseline.
-
-## Applied State
-
-This phase is applied at the template-baseline level. Family repositories may still opt in selectively based on their own rollout profile.
+A new session must not execute the historical procedure. The complete original is preserved in [the archive](../_archive/harness-engineering/phase-11-baseline-2026-05-28-historical.md).
