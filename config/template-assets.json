@@ -142,7 +142,7 @@
     {
       "id": "historical-decisions",
       "classification": "historical",
-      "include": ["docs/decisions/**"],
+      "include": ["docs/_archive/**", "docs/decisions/**"],
       "exclude": [
         "docs/decisions/INDEX.md",
         "docs/decisions/adr-69-codex-exec-ban-mcp-only.md",

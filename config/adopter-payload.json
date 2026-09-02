@@ -635,7 +635,7 @@
     },
     {
       "path": "config/template-assets.json",
-      "sha256": "ab4f4b4e559c9dd8c41703a6145a762e9938457ec8cbe750b3f319a761ec2fd9",
+      "sha256": "7008c7306fbef4a22c85b7cff84dd1412e829e6ff7833b4ef5dde2203ace7e7d",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     },
@@ -1685,7 +1685,7 @@
     },
     {
       "path": "docs/templates/_schema/adr.schema.json",
-      "sha256": "a661a36613c4eed3e2b09c30114f44b950f8002b67c6e8da3e58cdbc414b8f14",
+      "sha256": "e28998d21d18e4d364baa5ab59211acad63a458235c652e14851c09bed0028a5",
       "classification": "reference",
       "disposition": "remove"
     },
