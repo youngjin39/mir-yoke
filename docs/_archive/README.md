@@ -1,14 +1,23 @@
 # docs/_archive — Cold Historical Records
 
-This subtree holds decision records that are no longer current authority. It exists
-so the live `docs/` tree carries only what governs today, while the full text of a
-retired decision stays retrievable in version control.
+This subtree holds records that are no longer current authority — retired
+decisions and retired engineering documents. It exists so the live `docs/` tree
+carries only what governs today, while the full text of a retired record stays
+retrievable in version control.
 
 ## What is here
 
-- `decisions/` — retired decision records, one file per archived document, named
-  `<original-slug>-historical.md`. Every entry is reachable from a compact pointer
-  that stays at the document's original path under `docs/decisions/`.
+Measured 2026-09-03: 94 archived documents.
+
+- `decisions/` — 20 retired decision records.
+- `harness-engineering/` — 74 retired engineering documents: phase specifications,
+  application runbooks, and the template-repo guides, mirroring their original
+  layout under `docs/harness-engineering/`.
+
+Every file is named `<original-slug>-historical.md`, and every one is reachable
+from a compact pointer left at the document's original live path — under
+`docs/decisions/` for the first group and `docs/harness-engineering/**` for the
+second.
 
 ## Why a pointer stays behind
 
@@ -32,7 +41,8 @@ claimed to be current.
 - **Not consumer payload**: `config/template-assets.json` classifies this tree as
   `historical`, which `config/adopter-boundary.json` lists in
   `remove_classifications`. Adopters never receive it.
-- **Ledger-tracked**: `INDEX.md` records one append-only row per archived item.
+- **Ledger-tracked**: `INDEX.md` records one append-only row per archived item,
+  and it is complete — 94 rows for 94 documents, verified in both directions.
 
 Do not add new working documents here. Write them under the live `docs/` tree;
 they arrive here only once retired and recorded in the ledger.
