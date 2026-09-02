@@ -3281,7 +3281,7 @@
     },
     {
       "path": "src/mir/core/engine/memory/distill.py",
-      "sha256": "b5081e712396d69ae21bf6c06e444ba969ff47a9eaac87136ca572f6c7751c18",
+      "sha256": "a0fd544d7a9c1ae70daf724b333395c3cdb039fb4fc01b0beefebedaa688c0ee",
       "classification": "optional-consumer-tool",
       "disposition": "remove"
     },
@@ -3563,7 +3563,7 @@
     },
     {
       "path": "templates/common-harness/harness_a.toml",
-      "sha256": "693738f25f96116722e11bca5799d49e174fc483019bd9042ff96c97a9d980d0",
+      "sha256": "8b1a29b2a2163ccfe44c8f5649041a0e88807c7b2a7333db785996f5b39e9b37",
       "classification": "optional-consumer-tool",
       "disposition": "remove"
     },
@@ -3628,6 +3628,12 @@
       "disposition": "remove"
     },
     {
+      "path": "tests/test_archive_never_ingested.py",
+      "sha256": "ccba849953f597c93a7c6c3b0391a2193dd71e53a967a6b01d4fa7747d8693d8",
+      "classification": "template-maintainer-tool",
+      "disposition": "remove"
+    },
+    {
       "path": "tests/test_autonomous_loop.py",
       "sha256": "25a4a22ead86f05a94420365136b33ead49134ebf01176ea30d0a27214bf5ce2",
       "classification": "template-maintainer-tool",
@@ -3683,7 +3689,7 @@
     },
     {
       "path": "tests/test_common_harness_template.py",
-      "sha256": "855598182258a7bb0637bdf8939a73e8a9404816378b0a0bd3c2601930a9c840",
+      "sha256": "033f3d36f79a2d9aecab0ed0c9afbaa69fae30c8456a27ee9a6614547987c69d",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     },

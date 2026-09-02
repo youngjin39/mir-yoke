@@ -49,6 +49,10 @@ def test_should_define_a_rehydratable_project_local_memory_index() -> None:
                 "docs/**/*.md",
                 "tasks/**/*.md",
             ],
+            # docs/**/*.md subsumes docs/_archive/**, so the template has to
+            # exclude the archive or every project built from it indexes its own
+            # retired records as current authority.
+            "glob_exclude": ["docs/_archive/**"],
         }
     ]
 

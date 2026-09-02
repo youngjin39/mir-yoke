@@ -56,6 +56,8 @@ class IngestResult:
     tell *why* a call returned without writing:
 
     * ``""`` — not a no-op (real ingest, ``no_op=False``)
+    * ``"archive"`` — path is under a ``NEVER_INGEST_PREFIXES`` tree; refused
+      regardless of the whitelist, so it is not a whitelist miss
     * ``"whitelist"`` — path did not match the whitelist
     * ``"unchanged"`` — file_hash already in ``content_items``
     * ``"empty_frontmatter"`` — frontmatter block missing or unparseable
@@ -192,6 +194,16 @@ DEFAULT_WHITELIST: tuple[str, ...] = (
     "docs/decisions/adr-*.md",
     "docs/**/*.md",
 )
+
+# Trees that are never ingested, whatever the caller's whitelist says. The
+# archive holds retired decisions; ingesting them puts a superseded record back
+# into context as current authority, which is the whole reason it was archived.
+#
+# A prefix rather than a glob, deliberately: this module matches with ``fnmatch``,
+# where ``docs/_archive/**/*.md`` requires a slash after ``_archive/`` and so fails
+# to exclude ``docs/_archive/README.md`` and ``INDEX.md`` — the two files at the
+# tree root. A prefix has no depth to get wrong.
+NEVER_INGEST_PREFIXES: tuple[str, ...] = ("docs/_archive/",)
 _FRONTMATTER_RE = re.compile(r"\A---\r?\n(.*?)\r?\n---\r?\n", re.DOTALL)
 _INLINE_LIST_RE = re.compile(r"^\[(.*)\]$")
 _LINK_RE = re.compile(r"docs/[A-Za-z0-9_./-]+\.md")
@@ -252,7 +264,13 @@ def _adr_slug(path: Path) -> str:
     return path.stem
 
 
+def _is_never_ingested(rel_path: str) -> bool:
+    return rel_path.startswith(NEVER_INGEST_PREFIXES)
+
+
 def _matches_whitelist(rel_path: str, globs: tuple[str, ...]) -> bool:
+    if _is_never_ingested(rel_path):
+        return False
     return any(fnmatch.fnmatch(rel_path, g) for g in globs)
 
 
@@ -463,6 +481,8 @@ def ingest_markdown_file(
         rel = str(path.resolve().relative_to(root.resolve()))
     except ValueError:
         rel = str(path)
+    if _is_never_ingested(rel):
+        return IngestResult(0, 0, 0, "", True, "archive")
     if not _matches_whitelist(rel, whitelist_globs):
         return IngestResult(0, 0, 0, "", True, "whitelist")
 
