@@ -45,6 +45,17 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
   from post-edit hook output.
 - Added bounded Codex `SessionEnd` generation and documented project and hook trust as
   prerequisites for hook-based behavior.
+- Redacted maintainer-identity strings and private repository slugs that were still present in
+  this public repository, and corrected the 0.5.0 sanitize-gate note that had claimed the
+  substitution table used placeholder forms on both sides. `sanitize-glossary.md` now names the
+  class of each removed string instead of the literal — a table that enumerates the strings it
+  exists to remove is itself a disclosure — and one missed substitution in a
+  `families-overview.md` description field is generalized. These edits change the current tree
+  only; the strings remain in this repository's Git history.
+- Added the archive exclusion to the `harness_a.toml` that `mir bootstrap` generates, so a new
+  project no longer indexes its own `docs/_archive/` as current material. The template and the
+  maintainer configuration already carried it; the generator, which is what every new project
+  actually receives, did not.
 
 ## [0.9.0] — 2026-08-11 — Project Agent Kit boundary
 
@@ -222,6 +233,14 @@ a post-clone setup checklist, and all missing harness components.
 All content under `docs/harness-engineering/` passes the sanitize gate (0 sensitive
 hits), including `applications/template-repo/sanitize-glossary.md`, whose mapping
 table uses placeholder forms (e.g. `/path/to/project/`) on both sides.
+
+> **Correction (2026-09-02):** the sentence above was not true when written. The
+> substitution table's left column held the literal maintainer identity strings and
+> fourteen real repository slugs, not placeholder forms, and one
+> `families-overview.md` description field kept a real slug. Both are redacted in
+> the current tree; see the Unreleased entry. Left in place rather than rewritten,
+> because a released note that silently becomes correct hides that the gate reported
+> a pass it had not earned.
 
 ## [0.4.0] — 2026-05-25 — Applied-state baseline completion
 

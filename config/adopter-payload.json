@@ -491,7 +491,7 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "d9f9f0d195e899d482b45c087f44b5a3f58196fe6952d801dd22d1c7e15e9655",
+      "sha256": "af192b9a8e493d30d482a8b4525a6db32b66ad100f345340c3f138635bbc2af9",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -1439,7 +1439,7 @@
     },
     {
       "path": "docs/harness-engineering/applications/families-overview.md",
-      "sha256": "4b66c85820e05413db400d06277dc1624baf8f6be8a575ff6305661784e7d4ee",
+      "sha256": "d2ddd53d3ad3a1afed4e3dcb2844d9ec9b46220983659da467cef7284b9b808e",
       "classification": "historical",
       "disposition": "remove"
     },
@@ -1523,7 +1523,7 @@
     },
     {
       "path": "docs/harness-engineering/applications/template-repo/sanitize-glossary.md",
-      "sha256": "49e7783ad1766fc7c485418e4c501979f3b0fc02a1ec06ba1c991c750fda1016",
+      "sha256": "c21ad05b9da1e6963480769790b07b30efa10a33041f21913b3128ce8968120f",
       "classification": "historical",
       "disposition": "remove"
     },

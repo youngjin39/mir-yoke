@@ -92,7 +92,7 @@ audience: your-harness operators + external adopters
 | Path | `<family-repo-path>/example-infra` |
 | Active phases | 0–9 |
 | Baseline AI score | 61 |
-| Description | Infrastructure/home-hub application. Phase C — higher blast radius; infra-adjacent runtime. |
+| Description | Infrastructure application. Phase C — higher blast radius; infra-adjacent runtime. |
 
 ### example-service-a
 
