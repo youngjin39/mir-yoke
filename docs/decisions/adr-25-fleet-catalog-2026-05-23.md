@@ -1,21 +1,14 @@
 ---
 adr: 25
-status: accepted
+status: archived
 source: mirrored-summary
+mirrors: mir-harness-private:docs/_archive/decisions/adr-25-fleet-catalog-2026-05-23-historical.md
+updated: 2026-09-02
 ---
 
-# ADR-25 — Fleet Catalog
+# ADR-25 — Fleet Catalog (archived)
 
-## Context
+Mir Harness retired this decision; its counterpart there is archived rather than current. This number stays mapped so the public reference catalog remains complete, and repository-specific operational detail continues to live in Mir Harness.
 
-The public template needs a stable reference record for ADR-25 so applied-state verification can confirm the baseline catalog is complete.
-
-## Decision
-
-The template preserves a concise, English-only reference stub for this ADR number. Detailed execution history remains in the mir-harness control repository.
-
-## Consequences
-
-- The template keeps a stable ADR number map.
-- Public consumers can verify baseline completeness.
-- Repository-specific operational detail stays in mir-harness.
+The full record is preserved at
+`docs/_archive/decisions/adr-25-fleet-catalog-2026-05-23-historical.md`.

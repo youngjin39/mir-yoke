@@ -1,21 +1,14 @@
 ---
-adr: 05
-status: accepted
+adr: 5
+status: superseded
 source: mirrored-summary
+mirrors: mir-harness-private:docs/_archive/decisions/adr-05-mir-self-llmwiki-historical.md
+updated: 2026-09-02
 ---
 
-# ADR-05 — Source-repo LLM Wiki
+# ADR-05 — Source-repo LLM Wiki (superseded)
 
-## Context
+Mir Harness retired this decision; its counterpart there is superseded rather than current. This number stays mapped so the public reference catalog remains complete, and repository-specific operational detail continues to live in Mir Harness.
 
-The public template needs a stable reference record for ADR-05 so applied-state verification can confirm the baseline catalog is complete.
-
-## Decision
-
-The template preserves a concise, English-only reference stub for this ADR number. Detailed execution history remains in the mir-harness control repository.
-
-## Consequences
-
-- The template keeps a stable ADR number map.
-- Public consumers can verify baseline completeness.
-- Repository-specific operational detail stays in mir-harness.
+The full record is preserved at
+`docs/_archive/decisions/adr-05-mir-self-llmwiki-historical.md`.

@@ -646,6 +646,138 @@
       "disposition": "remove"
     },
     {
+      "path": "docs/_archive/INDEX.md",
+      "sha256": "5946a4001691ee87bacf49fa1e858e73cb2743ef84875583d842845d945bb534",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/_archive/README.md",
+      "sha256": "020a9239939b3a7c258a3280e6ca5fde28dc0605c52f6e2ba13db25d87ed08e0",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/_archive/decisions/adr-05-mir-self-llmwiki-historical.md",
+      "sha256": "167717689a5dd74b6e500a90b5dd2961518e952bae60b1a884f8868363318b5a",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/_archive/decisions/adr-06-stall-detection-2026-05-11-historical.md",
+      "sha256": "e0cc5c51f08f7c112515e5610298b969121d1de5e84df655d3cd57218ee110cc",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/_archive/decisions/adr-07-review-gate-2026-05-11-historical.md",
+      "sha256": "9a2bdf43b88cbb6ffbb36e1808d8d43c5a56c44efff298c775b16a0699e1baff",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/_archive/decisions/adr-08-agent-routing-2026-05-12-historical.md",
+      "sha256": "960c2c810858395a722c2b1a3db3693ad0d1c596999aa8b4533a39d2bd9b7362",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/_archive/decisions/adr-10-fleet-governance-advisory-2026-05-18-historical.md",
+      "sha256": "33d8607a6b7b49f4481a0a9a8f9e27f3bb06137223abc2fbdcc2af9e92c266b3",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/_archive/decisions/adr-12-prompt-cache-reshape-lane-2026-05-19-historical.md",
+      "sha256": "1bc0173ac7a5c8e3acab99bf570a30ecafe157679a7267fa303a6b11fd65dae5",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/_archive/decisions/adr-16-specialist-deployment-2026-05-21-historical.md",
+      "sha256": "ba50568ceb7333dae91a0433dd42465042eb2f15c71f952df4ff9cd1a1790b50",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/_archive/decisions/adr-23-active-family-dogfooding-exception-2026-05-23-historical.md",
+      "sha256": "c47f149f04a4d2db57e88e558f7ff213a7221147fa09bf4834ff65b08bdc4d20",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/_archive/decisions/adr-25-fleet-catalog-2026-05-23-historical.md",
+      "sha256": "12e9d5f69238841848408218dba9399a1ef5c31d11f5b810265ed3b191171b2c",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/_archive/decisions/adr-26-rollout-share-pipeline-2026-05-23-historical.md",
+      "sha256": "60b97c91b04d01a4834fe27c5d323f7c7e4977198c4d0767f5523c8cbd9e0a5d",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/_archive/decisions/adr-27-back-propagation-2026-05-23-historical.md",
+      "sha256": "00f2b1868157f717bd3739a5b8565d7fb0c52af13920d05b25f68ae292fcb9f1",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/_archive/decisions/adr-33-design-complete-gate-hook-2026-05-23-historical.md",
+      "sha256": "be27430bf5c56bad1f0997a6c7946adce7da8ab37f9ea460c70dd2455e91afb8",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/_archive/decisions/adr-40-mir-template-maintainer-charter-2026-05-23-historical.md",
+      "sha256": "a5c0a9c8b4360ed4ff19c1d98d41f3f65fcbaba42d04a22e6c8ed931abb5b0ed",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/_archive/decisions/adr-41-verify-self-stop-hook-2026-05-23-historical.md",
+      "sha256": "6ebb61ed65d9157314a84de6898f651141ae66bd3b9756140febecb9c96a0cba",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/_archive/decisions/adr-42-verify-template-applied-state-2026-05-23-historical.md",
+      "sha256": "dc42f00b5670f20a123531f74d20093b595e8a583e2ca3b924119c673d78bf58",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/_archive/decisions/adr-43-fleet-phase-4-rollout-deferral-2026-05-24-historical.md",
+      "sha256": "d0836de0e3ebf4fafbbaf23efbae45fe8068cbcb0d5ddce0410df315bcb7e49c",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/_archive/decisions/adr-48-central-fleet-management-and-direct-apply-2026-05-28-historical.md",
+      "sha256": "60cec0d44348b65360f5548d49520a879df68a878b30a269fad433c82f3ec141",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/_archive/decisions/adr-52-fleet-admin-elevation-and-cross-repo-write-model-2026-06-05-historical.md",
+      "sha256": "837d4af18b4d994416e8a992f0034ceb6056561014f6bc9a5d3bfeb35f7c0aa6",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/_archive/decisions/adr-54-template-anchored-fleet-parity-manifest-2026-06-06-historical.md",
+      "sha256": "10767507093390f91ffad4a3ac23d9dba16e292494a232ca6be7387a57777020",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
+      "path": "docs/_archive/decisions/adr-82-product-planes-capability-packs-and-composition-historical.md",
+      "sha256": "c479c99e926a2860a4b5a7898d10ecb2f1aef7e754bc0691e4f0b78b51b5e839",
+      "classification": "historical",
+      "disposition": "remove"
+    },
+    {
       "path": "docs/architecture/.gitkeep",
       "sha256": "8943e8e8e777288fc374875e048be5ac7be54d7288a31d034509e5e0cb715c14",
       "classification": "reference",
@@ -725,25 +857,25 @@
     },
     {
       "path": "docs/decisions/adr-05-mir-self-llmwiki.md",
-      "sha256": "167717689a5dd74b6e500a90b5dd2961518e952bae60b1a884f8868363318b5a",
+      "sha256": "a1a78532758957a4055701fd2e02c7e984cb7f07b02d5e3baccbe0c8f7b471b2",
       "classification": "historical",
       "disposition": "remove"
     },
     {
       "path": "docs/decisions/adr-06-stall-detection-2026-05-11.md",
-      "sha256": "e0cc5c51f08f7c112515e5610298b969121d1de5e84df655d3cd57218ee110cc",
+      "sha256": "5c1812e5ec54fe34bae41a17067e2f31d0fba0a1f80e063e017710c0b302e6b7",
       "classification": "historical",
       "disposition": "remove"
     },
     {
       "path": "docs/decisions/adr-07-review-gate-2026-05-11.md",
-      "sha256": "9a2bdf43b88cbb6ffbb36e1808d8d43c5a56c44efff298c775b16a0699e1baff",
+      "sha256": "1eb523e86492d20aa485e62789a2ff16c96fc6ce64b497281c37111b8af173be",
       "classification": "historical",
       "disposition": "remove"
     },
     {
       "path": "docs/decisions/adr-08-agent-routing-2026-05-12.md",
-      "sha256": "960c2c810858395a722c2b1a3db3693ad0d1c596999aa8b4533a39d2bd9b7362",
+      "sha256": "ba3b62075fa18b786dc7d50ba7dbf2d231d8f0d6a69a12cdf55b7720a16bf00b",
       "classification": "historical",
       "disposition": "remove"
     },
@@ -755,7 +887,7 @@
     },
     {
       "path": "docs/decisions/adr-10-fleet-governance-advisory-2026-05-18.md",
-      "sha256": "33d8607a6b7b49f4481a0a9a8f9e27f3bb06137223abc2fbdcc2af9e92c266b3",
+      "sha256": "cd3def24c44e91098c096042b054b382845144f5dfc1b91f5cc6b244e0b6bd49",
       "classification": "historical",
       "disposition": "remove"
     },
@@ -767,7 +899,7 @@
     },
     {
       "path": "docs/decisions/adr-12-prompt-cache-reshape-lane-2026-05-19.md",
-      "sha256": "1bc0173ac7a5c8e3acab99bf570a30ecafe157679a7267fa303a6b11fd65dae5",
+      "sha256": "cd19409eb86b6718b8e1fbc801d6a0759de2c4ca8cc738b26cd767736ae40bec",
       "classification": "historical",
       "disposition": "remove"
     },
@@ -791,7 +923,7 @@
     },
     {
       "path": "docs/decisions/adr-16-specialist-deployment-2026-05-21.md",
-      "sha256": "ba50568ceb7333dae91a0433dd42465042eb2f15c71f952df4ff9cd1a1790b50",
+      "sha256": "daf14cb4ffc64cc281acb8c2ff848a299f006221e69e92c56e2fd16fc4f5e84f",
       "classification": "historical",
       "disposition": "remove"
     },
@@ -833,31 +965,31 @@
     },
     {
       "path": "docs/decisions/adr-23-active-family-dogfooding-exception-2026-05-23.md",
-      "sha256": "c47f149f04a4d2db57e88e558f7ff213a7221147fa09bf4834ff65b08bdc4d20",
+      "sha256": "9fe44e16b7a21f128c0e92b3d62a7d0ad4898323934514144b496c0d3970e9d5",
       "classification": "historical",
       "disposition": "remove"
     },
     {
       "path": "docs/decisions/adr-25-fleet-catalog-2026-05-23.md",
-      "sha256": "12e9d5f69238841848408218dba9399a1ef5c31d11f5b810265ed3b191171b2c",
+      "sha256": "0fe24afa5618a3cba9852a78a7a1f8263c1dd2e65ad0f430f7aaf11376177fe2",
       "classification": "historical",
       "disposition": "remove"
     },
     {
       "path": "docs/decisions/adr-26-rollout-share-pipeline-2026-05-23.md",
-      "sha256": "60b97c91b04d01a4834fe27c5d323f7c7e4977198c4d0767f5523c8cbd9e0a5d",
+      "sha256": "d526e82ea70554c3a0ec85c978e3453bd627a72b40a805e76530645960f65b6a",
       "classification": "historical",
       "disposition": "remove"
     },
     {
       "path": "docs/decisions/adr-27-back-propagation-2026-05-23.md",
-      "sha256": "00f2b1868157f717bd3739a5b8565d7fb0c52af13920d05b25f68ae292fcb9f1",
+      "sha256": "2a10945409dd2e0912aeb6fafed53b8cb0a042180b753ef06041c355c2a01f20",
       "classification": "historical",
       "disposition": "remove"
     },
     {
       "path": "docs/decisions/adr-33-design-complete-gate-hook-2026-05-23.md",
-      "sha256": "be27430bf5c56bad1f0997a6c7946adce7da8ab37f9ea460c70dd2455e91afb8",
+      "sha256": "ae804684bfcb5219a389247b0939382a732e1bbec3cdd8bdedc97b668b225f46",
       "classification": "historical",
       "disposition": "remove"
     },
@@ -869,25 +1001,25 @@
     },
     {
       "path": "docs/decisions/adr-40-mir-template-maintainer-charter-2026-05-23.md",
-      "sha256": "a5c0a9c8b4360ed4ff19c1d98d41f3f65fcbaba42d04a22e6c8ed931abb5b0ed",
+      "sha256": "f34ebdbfd47c9c2252e6bb0ffbbcb9737075a60da0e561b91a1ba6fa3ae3c993",
       "classification": "historical",
       "disposition": "remove"
     },
     {
       "path": "docs/decisions/adr-41-verify-self-stop-hook-2026-05-23.md",
-      "sha256": "6ebb61ed65d9157314a84de6898f651141ae66bd3b9756140febecb9c96a0cba",
+      "sha256": "4d589e276a45bc078de5fa0b3aa1cea0cff9a81591bb9206f19f6ed0d5b6b336",
       "classification": "historical",
       "disposition": "remove"
     },
     {
       "path": "docs/decisions/adr-42-verify-template-applied-state-2026-05-23.md",
-      "sha256": "dc42f00b5670f20a123531f74d20093b595e8a583e2ca3b924119c673d78bf58",
+      "sha256": "04676e922128717f6d152dfc2132d663ca8c002a46a8a06be03bafe2a5c08659",
       "classification": "historical",
       "disposition": "remove"
     },
     {
       "path": "docs/decisions/adr-43-fleet-phase-4-rollout-deferral-2026-05-24.md",
-      "sha256": "d0836de0e3ebf4fafbbaf23efbae45fe8068cbcb0d5ddce0410df315bcb7e49c",
+      "sha256": "d94e50f74fc7ed22e75784f7baad061f56322dfa7e74e9df415fddeaa080e5b4",
       "classification": "historical",
       "disposition": "remove"
     },
@@ -917,7 +1049,7 @@
     },
     {
       "path": "docs/decisions/adr-48-central-fleet-management-and-direct-apply-2026-05-28.md",
-      "sha256": "60cec0d44348b65360f5548d49520a879df68a878b30a269fad433c82f3ec141",
+      "sha256": "2930a792bc6ad51d9285a9fa90cfdf28eb25597a3d9d8916d7be5eaa94d2fc48",
       "classification": "historical",
       "disposition": "remove"
     },
@@ -941,7 +1073,7 @@
     },
     {
       "path": "docs/decisions/adr-52-fleet-admin-elevation-and-cross-repo-write-model-2026-06-05.md",
-      "sha256": "837d4af18b4d994416e8a992f0034ceb6056561014f6bc9a5d3bfeb35f7c0aa6",
+      "sha256": "2a321b41e41af35319aff7a3820c4334131a68a577d48c088fd8fc3cd7d71e6d",
       "classification": "historical",
       "disposition": "remove"
     },
@@ -953,7 +1085,7 @@
     },
     {
       "path": "docs/decisions/adr-54-template-anchored-fleet-parity-manifest-2026-06-06.md",
-      "sha256": "10767507093390f91ffad4a3ac23d9dba16e292494a232ca6be7387a57777020",
+      "sha256": "c98dcfac09e7105fea1b71ec9e2972374051e972bebd2d5839e1196451669669",
       "classification": "historical",
       "disposition": "remove"
     },
@@ -1073,7 +1205,7 @@
     },
     {
       "path": "docs/decisions/adr-82-product-planes-capability-packs-and-composition.md",
-      "sha256": "ba44208153f32d0628b4eab5ee436c458a5e4d4f4d29d1b190773f2155eba22e",
+      "sha256": "3f02b10036d4fa4556b9ceed47531bcc7f43e3191e64fdcffdcbc6390a4d806a",
       "classification": "historical",
       "disposition": "remove"
     },
