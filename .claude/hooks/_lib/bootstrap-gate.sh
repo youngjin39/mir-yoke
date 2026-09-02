@@ -369,7 +369,7 @@ _mir_bootstrap_git_add_allowed() {
     \'*\') path="${path#\'}"; path="${path%\'}" ;;
   esac
   case "$path" in
-    :*|*'*'*|*'?'*|*'['*|*']'*|*'{'*|*'}'*|*'$'*|*'~'*|*'\\'*|*'!'*|*'('*|*')'*)
+    :*|*'*'*|*'?'*|*'['*|*']'*|*'{'*|*'}'*|*'$'*|*'~'*|*'\'*|*'!'*|*'('*|*')'*)
       return 1
       ;;
   esac
@@ -474,7 +474,7 @@ _mir_bootstrap_safe_single_command() {
   if printf '%s\n' "$command" | grep -Eq \
     '^[[:space:]]*rg([[:space:]].*)?[[:space:]]*$'; then
     case "$command" in
-      *--pre*|*--pre-glob*) return 1 ;;
+      *--pre*) return 1 ;;
     esac
     return 0
   fi
@@ -540,7 +540,12 @@ mir_bootstrap_gate_enforce() {
   }
   local tool_name
   tool_name="$(printf '%s' "$payload" | jq -r '.tool_name // ""' 2>/dev/null)"
-  if [ "$state" = "invalid" ]; then
+  # An invalid receipt in a greenfield repository has no repository-local recovery
+  # path, so it stays hard-blocked. An adoption repository is invalid precisely
+  # because a declared evidence file drifted, and the recovery is to restore that
+  # file and reissue the receipt: keep its declared-evidence edits reachable by
+  # falling through to the normal path screening below.
+  if [ "$state" = "invalid" ] && [ ! -f "$project_dir/config/bootstrap-adoption.json" ]; then
     if [ "$tool_name" = "Bash" ]; then
       local repair_command
       repair_command="$(printf '%s' "$payload" | jq -r '.tool_input.command // ""')"
@@ -548,11 +553,7 @@ mir_bootstrap_gate_enforce() {
         _mir_bootstrap_safe_single_command "$repair_command" "$project_dir" && \
         _mir_bootstrap_uv_project_allowed "$repair_command" "$project_dir" && return 0
     fi
-    if [ -f "$project_dir/config/bootstrap-adoption.json" ]; then
-      printf '[BootstrapGate BLOCK] bootstrap is invalid; reissue the receipt with uv run --project <provider worktree> mir bootstrap-adoption --apply\n' >&2
-    else
-      printf '[BootstrapGate BLOCK] bootstrap is invalid; repair the receipt-bound runtime with setup.sh\n' >&2
-    fi
+    printf '[BootstrapGate BLOCK] bootstrap is invalid; repair the receipt-bound runtime with setup.sh\n' >&2
     return 2
   fi
   case "$tool_name" in
@@ -581,5 +582,8 @@ mir_bootstrap_gate_enforce() {
   esac
   printf '[BootstrapGate BLOCK] bootstrap is %s; normal work must wait for Phase 2 ready receipt\n' "$state" >&2
   printf '[BootstrapGate BLOCK] only setup/adoption, memory/spec verification, and declared evidence edits are allowed\n' >&2
+  if [ "$state" = "invalid" ] && [ -f "$project_dir/config/bootstrap-adoption.json" ]; then
+    printf '[BootstrapGate BLOCK] restore the drifted declared evidence, then reissue with uv run --project <provider worktree> mir bootstrap-adoption --apply\n' >&2
+  fi
   return 2
 }
