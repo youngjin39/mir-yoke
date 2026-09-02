@@ -1,6 +1,6 @@
 #!/bin/bash
 # Derived from the Mir harness reference implementation.
-# Attribution: claude-starter (yojini/claude-starter, Apache-2.0)
+# Attribution: upstream starter template (Apache-2.0)
 # Modifications:
 #   - Mir-specific manifest path (.codex-sync/manifest.json — same)
 #   - Common skills are plugin-owned and never generated as repo-local copies.

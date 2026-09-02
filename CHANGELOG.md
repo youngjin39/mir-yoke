@@ -52,6 +52,12 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
   exists to remove is itself a disclosure — and one missed substitution in a
   `families-overview.md` description field is generalized. These edits change the current tree
   only; the strings remain in this repository's Git history.
+- Generalized the attribution comment in `scripts/generate_codex_derivatives.sh` to name the upstream
+  license without naming a retired repository. The line had carried a deleted family slug and a
+  distribution namespace in the `placeholder (real-slug)` shape that the harness failure-pattern
+  ledger names as a leak mechanism, and an earlier commit message in this branch defended keeping it
+  on the incorrect premise that the namespace belonged to a third party. The Apache-2.0 notice is
+  preserved; only the private identifiers are gone.
 - Extended the `sanitization` gate to credential shapes and to every text file it can reach. It had
   been catching the identifier that leaked while missing the shapes that outrank it — a platform
   webhook URL and a bot token are matchable from form alone, so no secret is named to detect them.

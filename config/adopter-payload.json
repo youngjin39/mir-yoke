@@ -491,7 +491,7 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "08dd4d49c6871c049724f74cfa52a8424bb772cc005010f38494c843fd050be2",
+      "sha256": "d4776e072328ab74b21b9f8de50f6187dd9bd5a744432432a43b91645674a13d",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -2657,7 +2657,7 @@
     },
     {
       "path": "scripts/generate_codex_derivatives.sh",
-      "sha256": "ccbbcd15897598c6181d451128298cc5401736de4a09f9d7661a85e2615179ae",
+      "sha256": "e9e947818b53cd604eb7467c2fc492401ff0ec393c0f06598f2605dacb3d09b5",
       "classification": "reference",
       "disposition": "remove"
     },
