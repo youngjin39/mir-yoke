@@ -32,7 +32,7 @@ Excluded from this phase:
 
 - `your-harness` — self host, already handled by separate example-harness application docs
 - `template-harness` — public template, structural verification only
-- `claude-starter` — sealed reference template, not the next active external target
+- `example-starter` — sealed reference template, not the next active external target
 
 ## 2. Decision
 

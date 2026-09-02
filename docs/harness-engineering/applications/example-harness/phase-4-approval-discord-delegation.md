@@ -61,7 +61,7 @@ record to `tasks/approvals/{approval_id}.json` matching
   "risk_level": "high",
   "auto_policy": "user_required",
   "requested_at": "2026-05-24T...",
-  "discord_chat_id": "1494369577524662333",
+  "discord_chat_id": "<your-discord-channel-id>",
   "discord_message_id_request": "1507..."
 }
 ```

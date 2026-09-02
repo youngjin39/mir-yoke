@@ -162,7 +162,7 @@ The §3 table applied uniformly across family types — making "5-min CONTAIN" o
 
 | family_type | SLA Application | Reason |
 |---|---|---|
-| SE-meta (your-harness, template-harness, claude-starter) | **§3 table as-is** + auto escalate to critical when your-harness itself is affected | self-stop obligation (phase-7 §3) |
+| SE-meta (your-harness, template-harness, example-starter) | **§3 table as-is** + auto escalate to critical when your-harness itself is affected | self-stop obligation (phase-7 §3) |
 | code_app (example-infra, example-service) | §3 table + high when multi-family pollination risk exists | shared infrastructure impact |
 | SE-product (example-notes, example-game, example-app, example-brand) | §3 table as-is | potential user data impact |
 | hybrid_pipeline (example-content, example-story, example-video, example-stock) | CONTAIN SLA 2x extended (creative work protection — interrupt burden is high) | Content work flow protection |

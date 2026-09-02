@@ -179,7 +179,7 @@ When cherry-picking, the effective phases differ by family_type. For personal SE
 
 | family_type | Effective phases (meaningful to register in enabled_phases) | Ineffective phases (advisory only when registered) |
 |---|---|---|
-| SE-meta (your-harness, template-harness, claude-starter) | 0 through all | (none) |
+| SE-meta (your-harness, template-harness, example-starter) | 0 through all | (none) |
 | code_app (example-infra, example-service) | 0 through all | (none) |
 | SE-product (example-notes, example-game, example-app, example-brand) | 0, 1, 2, 3, 6, 7, 8 enforced | Phase 4/5 = warn |
 | hybrid_pipeline (example-content, example-story, example-video, example-stock) | 0, 3, 6, 7, 8 enforced | Phase 1/2 (code path) = warn, Phase 4/5 = warn |

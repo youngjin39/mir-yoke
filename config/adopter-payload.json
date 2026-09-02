@@ -491,7 +491,7 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "af192b9a8e493d30d482a8b4525a6db32b66ad100f345340c3f138635bbc2af9",
+      "sha256": "562e7d87e46ba382f148abdfbfcf14a9122e3f75d204776ecb2fe2e24226823a",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -1391,7 +1391,7 @@
     },
     {
       "path": "docs/harness-engineering/applications/example-harness/phase-4-approval-discord-delegation.md",
-      "sha256": "d4a9ed7b7f2b7ce4ece429ee7e1273eeff7b36c501745080f58cb08666bdcc5d",
+      "sha256": "eb62033e110fdbcef6e87e0d2ac6be2f379b7e241d59df284ecb0821c21e0ef2",
       "classification": "historical",
       "disposition": "remove"
     },
@@ -1433,7 +1433,7 @@
     },
     {
       "path": "docs/harness-engineering/applications/external-repo-operational-verification-phase.md",
-      "sha256": "f48c83f5c69e411a53c77a48853a839ce5460c83b5e1629975cbc8d5d3ef46a5",
+      "sha256": "2eca0769051a0578b8af621de0ac89f33e0baef1cfe15e5abba348f63c36f021",
       "classification": "historical",
       "disposition": "remove"
     },
@@ -1475,7 +1475,7 @@
     },
     {
       "path": "docs/harness-engineering/applications/incident-response.md",
-      "sha256": "5b8ae52298638c531c28f095c01d670db2883611d39bead43c76fa7b9717998c",
+      "sha256": "b3c9f8ac494203fd7301098141cd84fa47689083171906563302d3ff9c7f4a1e",
       "classification": "historical",
       "disposition": "remove"
     },
@@ -1493,7 +1493,7 @@
     },
     {
       "path": "docs/harness-engineering/applications/template-cherrypick.md",
-      "sha256": "2c652296b36fb25e591dc03ba746ac879d3617fc0887a69ea8e691ad8485ecc5",
+      "sha256": "4fe967e84bfac378e96ab9d3f8d51b196c27a1280dae2d4b52027853a41e5b0d",
       "classification": "historical",
       "disposition": "remove"
     },
@@ -1907,7 +1907,7 @@
     },
     {
       "path": "docs/templates/_schema/s4_input.schema.json",
-      "sha256": "912bc171970b75e343d3f05bfc1343bda2243b6d1e8dccc709c51b85a3000cfc",
+      "sha256": "e44868be80c0f23d8345e748d6cb7044960f52f804e20a9609c6690376528a09",
       "classification": "reference",
       "disposition": "remove"
     },
@@ -3791,7 +3791,7 @@
     },
     {
       "path": "tests/test_no_korean_in_user_facing.py",
-      "sha256": "d089f569f907fdffa3fa8f0c202a8616ea6c5452f023ef575306fe80b84d66d6",
+      "sha256": "7c17bc44c9d984f9b20bc1c7f6ababb06b4139611ee5e6089a194d8e2dd84074",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     },
@@ -3839,7 +3839,7 @@
     },
     {
       "path": "tests/test_public_template_surface.py",
-      "sha256": "411644fd02bddbfff882f2144a35c6e3294bd6cd3ef93d3da7ac78f6242550fc",
+      "sha256": "eefb8b7f0310aa14c35d2eaa7c203011c96e32e57677dde84fd51a37b4d042e0",
       "classification": "template-maintainer-tool",
       "disposition": "remove"
     },

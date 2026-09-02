@@ -23,7 +23,7 @@
     },
     "source_family_slug": {
       "type": ["string", "null"],
-      "description": "ADR-11 §S3' optional — for fleet-internal transplant, the donor family slug (e.g., career-transition). Must match a slug in config/repo-agent-management.json. Omitted for external OSS imports.",
+      "description": "ADR-11 §S3' optional — for fleet-internal transplant, the donor family slug (e.g., example-family). Must match a slug in config/repo-agent-management.json. Omitted for external OSS imports.",
       "pattern": "^[a-z][a-z0-9-]*$"
     },
     "target_archetypes": {

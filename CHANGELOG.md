@@ -52,6 +52,16 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
   exists to remove is itself a disclosure — and one missed substitution in a
   `families-overview.md` description field is generalized. These edits change the current tree
   only; the strings remain in this repository's Git history.
+- Widened the release gate step named `sanitization` past its single Hangul check, and redacted the
+  five strings it had been unable to see: a platform channel id in an approval example, and four
+  unsubstituted private repository slugs in a schema description and three application documents.
+  The new checks are pattern-based — a detector in a public repository that listed the private
+  strings it looks for would be the disclosure it exists to prevent, which is why the Hangul range
+  in that file is already built from code points rather than literals. Both new checks are also
+  called from the module's `__main__`, because the gate runs the file as a script and a test absent
+  from that block does not run in the gate. The Apache-2.0 attribution line in
+  `scripts/generate_codex_derivatives.sh` is deliberately untouched: it credits an upstream project,
+  and stripping attribution is not sanitization.
 - Added the archive exclusion to the `harness_a.toml` that `mir bootstrap` generates, so a new
   project no longer indexes its own `docs/_archive/` as current material. The template and the
   maintainer configuration already carried it; the generator, which is what every new project
