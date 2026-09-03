@@ -4,6 +4,7 @@ type: template-adr
 created: 2026-08-29
 status: accepted
 amends: [adr-09, adr-84]
+amended_by: [adr-88, adr-89]
 schema: docs/templates/_schema/adr.schema.json
 ---
 
@@ -54,7 +55,10 @@ exception is intentionally authored.
 
 ### 2.4 Externally supplied skills
 
-Mir Yoke continues to publish common skills only through namespaced plugins. Existing repository
+Mir Yoke continues to publish common role skills through three skills-only namespaced plugins.
+ADR-90 separately admits the exact read-only lifecycle hook package; ADR-88 still requires a
+separately named and reviewed package for any other hook or MCP supply.
+Existing repository
 registries that still describe those skills as local must mark them `external` with an `external`
 source path, or remove the entries when their schema discovers runtime capabilities directly.
 Maintainers must not recreate raw local skill directories merely to satisfy an obsolete registry.

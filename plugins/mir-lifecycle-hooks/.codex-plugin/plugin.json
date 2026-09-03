@@ -1,0 +1,25 @@
+{
+  "name": "mir-lifecycle-hooks",
+  "version": "0.9.0",
+  "description": "Portable, read-only session continuity guidance for Claude Code and Codex.",
+  "author": {
+    "name": "Harness Contributors",
+    "url": "https://github.com/youngjin39"
+  },
+  "homepage": "https://github.com/youngjin39/mir-yoke",
+  "repository": "https://github.com/youngjin39/mir-yoke",
+  "license": "MIT",
+  "keywords": ["lifecycle", "continuity", "session"],
+  "skills": "./skills/",
+  "hooks": "./hooks/hooks.json",
+  "interface": {
+    "displayName": "Mir Lifecycle Hooks",
+    "shortDescription": "Shared read-only session continuity context.",
+    "longDescription": "Mir Lifecycle Hooks provides bounded, target-independent lifecycle continuity context and one supporting skill.",
+    "developerName": "Harness Contributors",
+    "category": "Developer Tools",
+    "capabilities": ["Lifecycle", "Continuity"],
+    "websiteURL": "https://github.com/youngjin39/mir-yoke",
+    "defaultPrompt": ["Apply the runtime continuity guidance to this session."]
+  }
+}

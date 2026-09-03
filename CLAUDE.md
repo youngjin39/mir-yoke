@@ -1,13 +1,12 @@
 # Mir Yoke — Starter, Project Agent Kit, and Optional CLI Contract
 
-Mir Yoke is a public agent-guided template and reference repository, not an agent runtime and not a universal installer;
-it has no standing authority over consumer repositories.
-`starter/` is the four-file compatibility payload, the Project Agent Kit is the standard greenfield
-recipe, and the installed `mir` CLI acts only on the user's explicit target and operation.
+Mir Yoke is a public agent-guided template, not an agent runtime and not a universal installer; it
+has no standing authority over consumers. `starter/` is the four-file payload; the Project Agent Kit
+is the greenfield recipe; installed `mir` acts only on an explicit target and operation.
 
 ## Outcome and completion
 
-- Maintain the four-file Starter, the Project Agent Kit with common harness and required memory,
+- Maintain the four-file Starter, the Project Agent Kit with harness and required memory,
   the optional public `mir` CLI, namespaced plugins, and retrievable reference corpus.
 - Finish when the affected supported-surface contracts, generated parity, and smallest relevant
   checks pass.
@@ -17,14 +16,15 @@ recipe, and the installed `mir` CLI acts only on the user's explicit target and 
 - `starter/HARNESS.md` is the canonical minimum consumer contract template.
 - `recipes/project-agent-kit/` owns the one-prompt empty-target bootstrap procedure.
 - `src/mir/cli/` owns the optional installed v0.8-compatible command surface; the Kit never copies it.
-- `plugins/*/skills/*` owns common portable skill bodies.
-- ADR-83 owns product authority; ADR-84 upgrade guidance; ADR-85 agent contracts; ADR-86 Harness maintenance management; ADR-81 the Starter.
+- `plugins/` owns common skills and the exact read-only global hook;
+  `config/capability-sources.json` owns commit-pinned runtime selection.
+- ADRs 81, 83-86, and 88-90 own the current product and capability boundaries.
 - `config/template-assets.json` classifies the full maintainer checkout.
 - `.mir/repo-profile.toml` owns this maintainer repository's local boundaries when present.
 
 ## Authority and safety
 
-- Mir Harness may modify Yoke directly from this Git root without prompt handoff or per-file approval; `.mir/capability-lock.json` is managed rather than protected.
+- Mir Harness may modify Yoke directly; `.mir/capability-lock.json` is managed, not protected.
 - Get explicit direction before destructive actions, credentials, consumer writes, commits, pushes,
   tags, releases, or material scope expansion.
 - Preserve unrelated local changes and keep public material generic, English, and sanitized.
@@ -35,8 +35,9 @@ recipe, and the installed `mir` CLI acts only on the user's explicit target and 
 - The Kit creates bounded project-owned files and SQLite+FTS5 memory. Its thin `scripts/mir.sh`
   executes the exact provider revision with runtime state below ignored `.mir/`, without vendoring
   the package or requiring a host-global installation.
-- Common plugins load from their packages and are not hidden prerequisites; local specializations
-  must not shadow their slugs. ADR-82 files are inert reference templates only.
+- Plugins are optional; local skills must not shadow them, and ADR-82 stays inert. Agents and Claude
+  commands use project sync or the user-runtime installer; Codex uses generated agents and mapped
+  skills. ADR-90 admits only the global continuity hook; coupled hooks and MCP stay target-local.
 - Edit canonical sources first and regenerate `AGENTS.md`, nested `AGENTS.md`, and `.codex/`.
 
 ## Execution and evidence
@@ -49,7 +50,6 @@ recipe, and the installed `mir` CLI acts only on the user's explicit target and 
 - For plugin changes, run isolated package and common-contract tests.
 - Use broader tests only when affected maintainer code or release coupling requires them.
 
-Commands: `uv run pytest`, `uv run ruff check`, `uv run python scripts/verify_codex_sync.py`.
-Artifacts are English; user-facing language follows the user.
+Commands: `uv run pytest`, `uv run ruff check`, `uv run python scripts/verify_codex_sync.py`. Artifacts are English; user-facing language follows the user.
 
 ## Role policy (template summary)

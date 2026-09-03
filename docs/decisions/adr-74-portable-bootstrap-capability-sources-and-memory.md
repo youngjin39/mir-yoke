@@ -2,7 +2,7 @@
 title: Portable Bootstrap, Capability Sources, and Required Memory
 status: accepted
 date: 2026-08-06
-amended_by: [adr-79, adr-83]
+amended_by: [adr-79, adr-83, adr-88, adr-89]
 ---
 
 # ADR-74 — Portable Bootstrap, Capability Sources, and Required Memory
@@ -14,6 +14,13 @@ amended_by: [adr-79, adr-83]
 > installed public CLI and reuses the required SQLite+FTS5 memory principle in the standard Project
 > Agent Kit. The Kit creates a bounded project-owned harness and memory component; it does not copy
 > the Mir package or CLI source. Neither installation nor file presence grants mutation authority.
+
+> **2026-09-04 active-component amendment:** ADR-90 admits one separately named, exact
+> `skills-hooks` package with kind-specific validation and fresh digest acknowledgement. The three
+> role packages remain skills-only, and MCP remains reserved and rejected.
+
+> **2026-09-03 managed-surface amendment:** ADR-89 adds schema-3 command selection and explicit
+> project-local hook and MCP integration records while keeping the ADR-88 active-package gate closed.
 
 ## Context
 
@@ -66,8 +73,10 @@ The capability command has distinct operations:
 - `update --apply`: explicitly accept, lock, and activate a verified candidate.
 
 Git is invoked without a shell. Credential-bearing URLs, traversal, absolute paths, symlinks,
-submodules, and capabilities outside the declared plugin/agent allowlist are rejected. Remote
-hooks, executable scripts, MCP servers, and permissions are never imported by capability sync.
+submodules, and capabilities outside the declared plugin/agent allowlist are rejected. Current
+capability sync admits skills-only packages and the exact read-only `skills-hooks` package. It
+rejects generic hooks, other executable scripts, MCP servers, and permissions. ADR-88 defines the
+additional supply-chain controls required before another active package kind may be admitted.
 Allowlisted agent Markdown may be updated only through explicit apply when its local content still
 matches the prior lock; local divergence blocks replacement and is reported for manual merge or a
 project-specific rename.

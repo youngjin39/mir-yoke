@@ -32,7 +32,7 @@ def test_common_skills_have_one_namespaced_provider() -> None:
             assert skill not in providers
             providers[skill] = plugin_name
 
-    assert len(providers) == 13
+    assert len(providers) == 14
     assert not (ROOT / ".claude" / "skills").exists()
     assert not (ROOT / ".agents" / "skills").exists()
 
@@ -48,10 +48,60 @@ def test_dual_runtime_manifests_share_one_skill_tree() -> None:
         assert isinstance(codex["interface"]["defaultPrompt"], list)
         assert 1 <= len(codex["interface"]["defaultPrompt"]) <= 3
         assert "interface" not in claude
+        forbidden = ("mcpServers", "apps", "scripts", "agents", "commands")
+        if plugin_name == "mir-lifecycle-hooks":
+            assert claude["hooks"] == codex["hooks"] == "./hooks/hooks.json"
+        else:
+            forbidden = ("hooks", *forbidden)
+        for field in forbidden:
+            assert field not in claude
+            assert field not in codex
         assert len(list(plugin_root.glob("skills/*/SKILL.md"))) == len(
             PLUGIN_SKILLS[plugin_name]
         )
         assert not any(path.is_symlink() for path in plugin_root.rglob("*"))
+
+
+def test_lifecycle_hook_plugin_uses_one_exact_shared_hook_file() -> None:
+    plugin_root = ROOT / "plugins" / "mir-lifecycle-hooks"
+    claude = _json(plugin_root / ".claude-plugin" / "plugin.json")
+    codex = _json(plugin_root / ".codex-plugin" / "plugin.json")
+    hooks = _json(plugin_root / "hooks" / "hooks.json")
+
+    assert claude["name"] == codex["name"] == "mir-lifecycle-hooks"
+    assert claude["hooks"] == codex["hooks"] == "./hooks/hooks.json"
+    assert codex["skills"] == "./skills/"
+    assert hooks == {
+        "hooks": {
+            "SessionStart": [
+                {
+                    "hooks": [
+                        {
+                            "type": "command",
+                            "command": (
+                                'python3 "${CLAUDE_PLUGIN_ROOT}/hooks/'
+                                "runtime_continuity.py\""
+                            ),
+                            "timeout": 2,
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+    handler = plugin_root / "hooks" / "runtime_continuity.py"
+    assert handler.stat().st_mode & 0o111 == 0
+    assert len(handler.read_bytes()) <= 512
+    assert _validate_plugin(plugin_root, "mir-lifecycle-hooks", package_kind="skills-hooks")
+    completed = subprocess.run(
+        ["python3", str(handler)], capture_output=True, text=True, check=True
+    )
+    assert completed.stderr == ""
+    assert completed.stdout == (
+        "Mir lifecycle continuity: preserve the active task intent and verify state "
+        "before continuing.\n"
+    )
+    assert len(completed.stdout.encode("utf-8")) <= 512
 
 
 def test_marketplaces_publish_identical_plugin_names() -> None:
@@ -96,7 +146,8 @@ def test_plugin_packages_are_self_contained_in_isolated_copy(tmp_path: Path) -> 
     for plugin_name in PLUGIN_SKILLS:
         isolated = tmp_path / plugin_name
         shutil.copytree(ROOT / "plugins" / plugin_name, isolated)
-        assert _validate_plugin(isolated, plugin_name)
+        kind = "skills-hooks" if plugin_name == "mir-lifecycle-hooks" else "skills"
+        assert _validate_plugin(isolated, plugin_name, package_kind=kind)
         text = "\n".join(path.read_text() for path in isolated.rglob("*.md"))
         assert "archive/skills/" not in text
         assert "memory_gc_runner.py" not in text

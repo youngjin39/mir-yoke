@@ -1,5 +1,54 @@
 # Migration Guide
 
+## Unreleased capability-source schema 4
+
+The tracked `config/capability-sources.json` now uses `schema_version: 4`, retaining the explicit
+`package_kind: skills` for the three role plugins and admitting the exact `skills-hooks` shape for
+`mir-lifecycle-hooks`. The canonical `plugin_component_policy` and exact active-package digest
+acknowledgement prevent other executable shapes from entering through the new kind.
+It adds a command allowlist that maps each Claude command source to the existing Codex plugin skill
+that absorbs the same workflow, plus explicit target-local hook and MCP integration records.
+Schema-1 and schema-2 capability sources remain readable and select no managed commands or active
+hook package. Copy the schema-4 fields from the current template before expecting command or hook
+delivery from a newer capability manager.
+The existing plugin and skill inventories do not change.
+Schema-1 locks remain readable, but their active provider is revalidated under the current
+skills-only manifest and marketplace rules. After adopting the schema-4 source, explicit
+`update --apply` adds package kinds and
+marketplace digests to a schema-2 lock and receipt. Schema-2 records require those bindings and the
+receipt's complete materialized-plugin inventory. Schema-2 provider registry state separately binds
+the selected installed set used for rollback.
+
+Do not translate a local enforcement hook or MCP configuration into a plugin entry.
+`mir-lifecycle-hooks` contains only the admitted target-independent `SessionStart` reminder. Keep
+repository-coupled registrations local unless a later decision introduces and verifies an adapter.
+No MCP server is registered or implemented, so do not publish an empty MCP plugin from the inert
+`.mcp.json.example`.
+
+The first explicit schema-4 `update --apply` copies and digest-locks selected
+`.claude/commands/*.md` alongside
+selected agent sources. A project-owned command that differs from its prior lock or the exact
+incoming source is not overwritten. Codex receives no generated command file; it uses the mapped
+namespaced plugin skill.
+
+Agents and Claude commands can alternatively be installed outside every repository:
+
+```bash
+python3 scripts/install_user_runtime_agents.py \
+  --claude-home /absolute/claude-config-root \
+  --codex-home /absolute/codex-home
+```
+
+The first run is a dry run. Add `--apply` only after reviewing the planned paths. The installer
+refuses symlinked homes and unmanaged divergence and writes a SHA-256 receipt. Project-local agent
+and command files continue to take precedence.
+
+Schema-4 readiness requires current schema-2 state evidence. `sync` remains pinned to the existing
+lock and reports that an update is required when that old commit lacks a newly selected package.
+If multiple repositories register the
+same provider commit, the host-active plugin set is their union; each project lock remains its own
+subset. A failed apply restores that prior union and removes candidate-only plugins.
+
 ## 0.9.0 from 0.8.x
 
 ### Product boundary

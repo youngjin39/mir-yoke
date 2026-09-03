@@ -1,18 +1,80 @@
 # Plan
 
-## Current status — ADR-86 CLOSED (2026-08-30)
+## Current status — role-plugin and common-hook publication ready (2026-09-04)
 
-- [x] Designate Mir Harness as Mir Yoke's repository-maintenance manager in ADR-86 and root policy.
-- [x] Track the portable maintainer Profile and remove `.mir/capability-lock.json` from its
-  protected paths without changing adopter-generated Profile protection.
-- [x] Set the maintainer registry to `harness-managed` while preserving non-runtime and consumer
-  non-authority contracts.
-- [x] Regenerate derivatives and adopter payload; pass the full 803-test suite.
+- [x] Record the operator's packaging rule: common workflows formerly copied into repositories are
+  grouped into Yoke-owned, role-oriented plugins and selected by repository Profile.
+- [x] Accept ADR-90, which reserves a separately named `mir-lifecycle-hooks` package while keeping
+  target-specific policy, protected paths, and writes repository-owned.
+- [x] Publish `mir-lifecycle-hooks` with one shared, read-only `SessionStart` handler and supporting
+  skill; admit only its exact schema-4 shape and acknowledged digest.
+- [x] Add a separate dry-run-first installer for Yoke-authored Claude/Codex agents and Claude
+  commands, with explicit homes, divergence protection, and file-digest receipts.
+- [x] Audit MCP runtime and repository state: neither Claude nor Codex has a registered server, and
+  Yoke implements no MCP server; `.mcp.json.example` is inactive consumer guidance only.
+- [x] Record the future `mir-mcp` admission boundary without publishing an empty or misleading MCP
+  plugin.
+- [x] Prepare the Codex feature-request comment for the existing agent-plugin issue and a separate
+  command-alias issue without duplicating upstream issue `#18308`.
+- [x] Submit the Yoke use case to the open plugin-agent request `#18308`. Do not open the command
+  alias issue because three prior requests were closed as intentionally replaced by skills.
+- [x] Regenerate declared asset projections; run focused, full, derivative, lint, asset, and
+  isolated real-CLI verification gates. The user-runtime installer has 14 passing safety tests;
+  the full repository suite has 961 passing tests. Host application follows the publication
+  commit.
+- [ ] Commit and push Yoke `main`, then activate and verify the published surfaces in the current
+  Claude and Codex user homes without changing consumer repositories.
 
-Scope is Mir Yoke maintenance governance only. This instruction authorizes the scoped commit and
-`origin/main` push; tags, releases, and consumer-repository changes remain unauthorized.
+Consumer repository mutation remains prohibited. The current operator instruction authorizes Yoke
+commit/push and user-level activation; it does not authorize a PR, workflow, tag, or release.
 
-No active implementation action remains.
+## Completed prerequisite — ADR-89
+
+- [x] Preserve and re-verify the completed ADR-88 supply-chain hardening.
+- [x] Confirm isolated Claude and Codex installations expose the same three Yoke plugin trees from
+  a working directory outside the provider checkout.
+- [x] Record one explicit five-surface management contract for agents, skills, hooks, MCP servers,
+  and commands without treating every surface as a plugin component.
+- [x] Extend the commit-pinned capability sync so selected Claude commands are copied and locked
+  like agents while Codex resolves the same workflow intent through the mapped plugin skill.
+- [x] Strengthen the real-CLI probe to prove host-level recognition from two independent consumer
+  working directories and verify installed skill inventories.
+- [x] Update ADRs and current documentation, regenerate declared derivatives, and run focused and
+  full verification plus independent review.
+
+ADR-88 remains binding: the three role plugins stay skills-only, the exact `skills-hooks` package is
+admitted under ADR-90, and MCP remains rejected. Central management means one Yoke-owned contract
+with runtime-native delivery, not one undifferentiated plugin format. Status output distinguishes
+the global plugin hook from repository-coupled generated hooks.
+
+ADR-89 is now accepted and implemented. The schema-4 contract exposes all five surfaces, command
+sync is digest-bound, host activation preserves the union of registered consumers, and rollback,
+interruption, symlink, schema-downgrade, and concurrent-apply regressions are covered. The current
+operator instruction authorizes commit, publication, and user-level host activation; only
+consumer-repository mutation remains outside this delivery scope.
+
+## Completed prerequisite — ADR-88
+
+- [x] Classify the interrupted three-path worktree state and preserve valid generated output.
+- [x] Remove host-specific tracked plugin activation from the public maintainer checkout.
+- [x] Add an accepted decision for passive versus active plugin components and runtime boundaries.
+- [x] Make capability-source declarations and validation fail closed for undeclared hooks or MCP.
+- [x] Add focused regressions, regenerate declared projections, and run the affected/full gates.
+- [x] Record verified completion without committing, pushing, tagging, releasing, reinstalling host
+  plugins, or modifying a consumer repository.
+- [x] Close final-review gaps for manifest permissions, schema-1 revalidation, and marketplace
+  inventory/digest provenance; rerun all gates and obtain a clean independent verdict.
+- [x] Close version-validation, receipt-downgrade, and rollback activation-scope findings; rerun
+  all gates and obtain a clean independent verdict.
+
+Independent final and CWE reviews returned PASS after the last rollback schema cross-check.
+
+The current user instruction authorizes direct Mir Yoke edits, commit and push to `main`, and
+user-level plugin/agent/command activation. It does not authorize a PR, workflow, tag, release, or
+consumer-repository changes.
+
+The three role plugins remain skills-only. ADR-90 admits only the separately named, exact read-only
+hook package; no MCP behavior is invented without a concrete server requirement.
 
 ## Deferred owner work
 

@@ -52,7 +52,18 @@ process and exposes no `yoke` composer.
 - **Recipe** — `recipes/project-agent-kit/` defines the greenfield user journey and gates.
 - **Optional CLI** — `src/mir/` supplies the installed v0.8-compatible operator surface without
   becoming a Project Agent Kit payload.
-- **Plugin provider** — `plugins/` and marketplace manifests publish optional host capabilities.
+- **Plugin provider** — `plugins/` and marketplace manifests publish three role-oriented,
+  skills-only packages plus the exact read-only `mir-lifecycle-hooks` package. All four are shared
+  by Claude and Codex. Project-coupled hooks still require repository-owned adapters. No MCP server
+  or MCP plugin currently exists.
+- **Capability management** — `config/capability-sources.json` selects commit-pinned plugins,
+  project agent sources, Claude command sources with Codex skill equivalents, and target-local hook
+  and MCP integration boundaries. Explicit sync copies and locks only selected agents and commands;
+  it never copies target hook or MCP policy.
+- **User runtime distribution** — `scripts/install_user_runtime_agents.py` separately installs the
+  reviewed agent and Claude-command allowlists into explicitly named user homes. It defaults to a
+  dry run, refuses unmanaged divergence, and records exact source and target digests. Repository
+  definitions retain precedence.
 - **Upgrade guide** — `docs/operations/harness-engineering-upgrade.md` routes existing repositories
   through selective, target-owned harness improvements without creating another payload.
 - **Maintenance** — tests, classification, sanitization, generated checks, and the clean-room
@@ -68,6 +79,10 @@ become a target prerequisite by presence alone.
 ## Source of truth and generation
 
 Mir Yoke authors its root contract in `CLAUDE.md` and regenerates `AGENTS.md` and Codex surfaces.
+Agents use Claude Markdown as their source and generated Codex TOML as their projection. They may
+be delivered as project files by capability sync or as separate user-level files by the explicit
+runtime installer. Claude commands use the same two delivery scopes, while Codex resolves each
+mapped workflow through an existing namespaced plugin skill instead of a duplicate command wrapper.
 The Project Agent Kit establishes an equivalent one-way Claude-to-Codex generator inside each new
 target for repository-unique reviewer surfaces. Generated files are checked, never hand-edited.
 
@@ -84,6 +99,7 @@ repositories; source revision is provenance only, and template version lag is no
 memory, reviewer, pre-commit, Git, and no-composer boundaries. `tests/test_minimal_starter.py` pins
 the four-file core, and `tests/test_installed_cli.py` proves the CLI runs outside the source tree.
 Plugin tests, classification, sanitization, generated parity, Ruff, and the full regression protect
-shared and release-sensitive surfaces. Tag validation does not claim a generated-repository runtime
+shared and release-sensitive surfaces. The real-CLI plugin probe also validates identical installed
+plugin and skill digests from two non-provider working directories. Tag validation does not claim a generated-repository runtime
 run; after publication, the owner performs separate Claude and Codex acceptance and may validate
 the resulting bounded evidence with the retained verifier.

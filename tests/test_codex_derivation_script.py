@@ -422,6 +422,14 @@ def test_verifier_rejects_legacy_raw_skill_provider(tmp_path: Path) -> None:
     assert "legacy raw skill provider remains: .agents/skills" in failures
 
 
+def test_should_validate_all_yoke_managed_runtime_surfaces() -> None:
+    failures: list[str] = []
+
+    verify_codex_sync.validate_managed_capability_surfaces(failures)
+
+    assert failures == []
+
+
 def test_generator_emits_real_portable_hook_library(tmp_path: Path) -> None:
     env = {**os.environ, "CODEX_DERIVATION_OUTPUT_ROOT": str(tmp_path)}
     completed = subprocess.run(

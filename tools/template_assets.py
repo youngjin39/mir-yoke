@@ -143,7 +143,9 @@ def _atomic_write_json(path: Path, payload: dict[str, object]) -> None:
     try:
         os.close(descriptor)
         temp_path = Path(temp_name)
-        temp_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+        temp_path.write_text(
+            json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        )
         os.replace(temp_path, path)
     finally:
         Path(temp_name).unlink(missing_ok=True)

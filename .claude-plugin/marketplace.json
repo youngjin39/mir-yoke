@@ -29,6 +29,14 @@
       "version": "0.9.0",
       "author": {"name": "Harness Contributors"},
       "category": "Productivity"
+    },
+    {
+      "name": "mir-lifecycle-hooks",
+      "source": "./plugins/mir-lifecycle-hooks",
+      "description": "Read-only session continuity hook and guidance.",
+      "version": "0.9.0",
+      "author": {"name": "Harness Contributors"},
+      "category": "Development"
     }
   ]
 }

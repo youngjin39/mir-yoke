@@ -2,9 +2,14 @@
 title: Global Plugin Migration Gate for Existing Repositories
 status: accepted
 date: 2026-08-07
+amended_by: [adr-89]
 ---
 
 # ADR-75 — Global Plugin Migration Gate for Existing Repositories
+
+> **2026-09-03 discovery amendment:** ADR-89 requires the real-CLI acceptance probe to verify the
+> configured plugin and skill digests from two independent consumer working directories after the
+> provider checkout becomes unavailable.
 
 ## Context
 

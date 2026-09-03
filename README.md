@@ -48,7 +48,26 @@ does not depend on this host-global installation or vendor its source.
 
 [`plugins/`](plugins/) publishes optional, namespaced host capabilities for Claude and Codex. A
 plugin is installed explicitly in the agent host; it is not copied into a target or treated as a
-readiness requirement. Superseded ADR-82 composition files are preserved under
+readiness requirement. Three role plugins group the common workflows formerly copied into
+repositories: core, code, and content. A fourth `mir-lifecycle-hooks` plugin supplies the same
+read-only `SessionStart` continuity reminder and supporting skill to Claude and Codex. Its exact
+handler digest is acknowledged by schema 4, and it has no repository, file, environment, or network
+access. [ADR-90](docs/decisions/adr-90-role-plugins-and-common-hooks.md) keeps all project-coupled
+hooks behind repository-owned adapters. Yoke has no registered or implemented MCP server, so
+`.mcp.json.example` remains inactive guidance instead of an empty MCP plugin.
+Codex still requires the operator to review and trust the current hook hash in a fresh session;
+installing or enabling the plugin alone does not prove hook execution.
+The real-CLI probe installs all four packages into isolated Claude and Codex homes and verifies
+identical plugin, skill, and hook inventories from two independent consumer working directories.
+[ADR-89](docs/decisions/adr-89-dual-runtime-capability-management.md) defines the wider central
+management contract: explicit project sync supplies selected Claude agent and command sources, the
+generator projects agents to Codex, existing plugin skills absorb Codex command intent, and
+target-owned hook and MCP configuration remains separate from global plugin installation. For a
+host-wide, repository-neutral setup, `scripts/install_user_runtime_agents.py` installs the union of
+Profile-selected agents and Claude commands into explicit user configuration roots; it is dry-run by
+default, records file digests, and never edits a consumer repository. Yoke-only allowlist entries are
+excluded, and project-local definitions still win.
+Superseded ADR-82 composition files are preserved under
 `reference-templates/advanced-composition/` as non-default, non-executable design references; Mir
 Yoke publishes no active `yoke` composer. The remaining source, tools, examples, specifications,
 and history are reference or maintainer evidence without an adopter compatibility promise.
@@ -111,6 +130,7 @@ uv sync
 uv run pytest -q tests/test_project_agent_kit.py tests/test_minimal_starter.py \
   tests/test_public_template_identity.py tests/test_template_asset_classification.py
 uv run python scripts/verify_codex_sync.py
+uv run python scripts/verify_plugin_cli_activation.py
 uv run ruff check
 ```
 

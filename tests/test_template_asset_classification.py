@@ -89,10 +89,19 @@ def test_should_return_nonstarter_classification_when_provider_sources_are_inspe
     historical = rules["historical-decisions"]
     adr_84 = "docs/decisions/adr-84-harness-upgrade-guidance-and-runtime-hygiene.md"
     adr_85 = "docs/decisions/adr-85-global-policy-inheritance-and-agent-contracts.md"
+    adr_88 = "docs/decisions/adr-88-active-plugin-component-admission.md"
+    adr_89 = "docs/decisions/adr-89-dual-runtime-capability-management.md"
+    adr_90 = "docs/decisions/adr-90-role-plugins-and-common-hooks.md"
     assert adr_84 in current["include"]
     assert adr_84 in historical["exclude"]
     assert adr_85 in current["include"]
     assert adr_85 in historical["exclude"]
+    assert adr_88 in current["include"]
+    assert adr_88 in historical["exclude"]
+    assert adr_89 in current["include"]
+    assert adr_89 in historical["exclude"]
+    assert adr_90 in current["include"]
+    assert adr_90 in historical["exclude"]
 
 
 # @spec FR-001 FR-003

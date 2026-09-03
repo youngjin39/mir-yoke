@@ -16,6 +16,12 @@ UPGRADE_ADR = (
 GLOBAL_POLICY_ADR = (
     ROOT / "docs/decisions/adr-85-global-policy-inheritance-and-agent-contracts.md"
 )
+ACTIVE_PLUGIN_ADR = (
+    ROOT / "docs/decisions/adr-88-active-plugin-component-admission.md"
+)
+ROLE_PLUGIN_ADR = (
+    ROOT / "docs/decisions/adr-90-role-plugins-and-common-hooks.md"
+)
 COMPOSITION_ADR = (
     ROOT / "docs/decisions/adr-82-product-planes-capability-packs-and-composition.md"
 )
@@ -86,6 +92,39 @@ def test_should_make_adr_85_the_current_runtime_policy_decision() -> None:
     assert "Claude model frontmatter" in body
     assert "ADR-85 supersedes" in amended
     assert index.index("ADR-85") < index.index("ADR-84")
+
+
+def test_should_make_adr_88_the_active_plugin_supply_boundary() -> None:
+    metadata = _frontmatter(ACTIVE_PLUGIN_ADR)
+    index = (ROOT / "docs/decisions/INDEX.md").read_text(encoding="utf-8")
+    body = ACTIVE_PLUGIN_ADR.read_text(encoding="utf-8")
+
+    assert metadata["status"] == "accepted"
+    assert metadata["amends"] == ["adr-74", "adr-75", "adr-76", "adr-83", "adr-85"]
+    assert "Any digest change invalidates the" in body
+    assert "Target-local `config/project-hooks.json`" in body
+    assert "`.mcp.json` remain the project integration sources" in body
+    assert index.index("ADR-88") < index.index("ADR-87")
+
+
+def test_should_make_adr_90_the_role_plugin_and_common_hook_authority() -> None:
+    metadata = _frontmatter(ROLE_PLUGIN_ADR)
+    index = (ROOT / "docs/decisions/INDEX.md").read_text(encoding="utf-8")
+    body = ROLE_PLUGIN_ADR.read_text(encoding="utf-8")
+    issue_draft = (
+        ROOT / "docs/operations/codex-plugin-agents-commands-feature-request.md"
+    ).read_text(encoding="utf-8")
+
+    assert metadata["status"] == "accepted"
+    assert metadata["amends"] == ["adr-88", "adr-89"]
+    assert "previously copied into each repository" in body
+    assert "mir-lifecycle-hooks" in body
+    assert "does not mean that plugin hooks were removed" in body
+    assert "Neither host currently has an MCP server registered" in body
+    assert "https://github.com/openai/codex/issues/18308" in issue_draft
+    assert "issuecomment-5527444139" in issue_draft
+    assert "namespaced command aliases" in issue_draft
+    assert index.index("ADR-90") < index.index("ADR-89")
 
 
 def test_should_preserve_adr_82_only_as_an_inert_reference() -> None:

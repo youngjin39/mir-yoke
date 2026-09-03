@@ -44,6 +44,12 @@ def _parser() -> argparse.ArgumentParser:
         default=[],
         help="operator-observed namespaced skill from the current runtime catalog",
     )
+    attest.add_argument(
+        "--observed-hook",
+        action="append",
+        default=[],
+        help="operator-observed namespaced hook from the current runtime session",
+    )
     attest.add_argument("--apply", action="store_true")
     return parser
 
@@ -90,6 +96,7 @@ def main(argv: list[str] | None = None) -> int:
             result = manager.attest(
                 namespace.runtime,
                 namespace.observed_skill,
+                namespace.observed_hook,
                 apply=namespace.apply,
             )
         else:  # pragma: no cover - argparse owns the command choices

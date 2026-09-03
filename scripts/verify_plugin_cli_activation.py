@@ -14,7 +14,30 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-PLUGIN_NAMES = ("mir-core", "mir-code", "mir-content")
+
+
+def _plugin_inventory() -> dict[str, tuple[str, ...]]:
+    payload = json.loads(
+        (ROOT / "config" / "capability-sources.json").read_text(encoding="utf-8")
+    )
+    plugins = payload.get("plugins")
+    if not isinstance(plugins, dict) or not plugins:
+        raise RuntimeError("capability source has no plugin inventory")
+    inventory: dict[str, tuple[str, ...]] = {}
+    for name, metadata in plugins.items():
+        if not isinstance(name, str) or not isinstance(metadata, dict):
+            raise RuntimeError("capability source plugin inventory is invalid")
+        skills = metadata.get("skills")
+        if not isinstance(skills, list) or not all(
+            isinstance(skill, str) for skill in skills
+        ):
+            raise RuntimeError(f"capability source skill inventory is invalid: {name}")
+        inventory[name] = tuple(skills)
+    return inventory
+
+
+PLUGIN_SKILLS = _plugin_inventory()
+PLUGIN_NAMES = tuple(sorted(PLUGIN_SKILLS))
 
 
 def _run(argv: list[str], environment: dict[str, str], cwd: Path) -> str:
@@ -106,9 +129,11 @@ def main() -> int:
         environment["CODEX_HOME"] = str(temp / "codex")
         (temp / "home").mkdir()
         (temp / "codex").mkdir()
-        isolated_cwd = temp / "empty-cwd"
-        isolated_cwd.mkdir()
-        environment["PWD"] = str(isolated_cwd)
+        consumer_roots = (temp / "consumer-a", temp / "consumer-b")
+        for consumer_root in consumer_roots:
+            consumer_root.mkdir()
+        install_cwd = consumer_roots[0]
+        environment["PWD"] = str(install_cwd)
         provider = temp / "provider-copy"
         shutil.copytree(ROOT / ".claude-plugin", provider / ".claude-plugin")
         (provider / ".agents" / "plugins").mkdir(parents=True)
@@ -157,80 +182,92 @@ raise SystemExit(0)
         _run(
             [claude, "plugin", "marketplace", "add", str(provider), "--scope", "user"],
             environment,
-            isolated_cwd,
+            install_cwd,
         )
         _run(
             [codex, "plugin", "marketplace", "add", marketplace_source, "--json"],
             environment,
-            isolated_cwd,
+            install_cwd,
         )
         for plugin in PLUGIN_NAMES:
             _run(
                 [claude, "plugin", "install", f"{plugin}@mir-yoke", "--scope", "user"],
                 environment,
-                isolated_cwd,
+                install_cwd,
             )
             _run(
                 [codex, "plugin", "add", f"{plugin}@mir-yoke", "--json"],
                 environment,
-                isolated_cwd,
+                install_cwd,
             )
 
         provider.rename(temp / "provider-unavailable")
-        inventories = {
-            "claude": _entries(
-                json.loads(
-                    _run(
-                        [claude, "plugin", "list", "--json"],
-                        environment,
-                        isolated_cwd,
-                    )
-                )
-            ),
-            "codex": _entries(
-                json.loads(
-                    _run(
-                        [codex, "plugin", "list", "--json"],
-                        environment,
-                        isolated_cwd,
-                    )
-                )
-            ),
-        }
         runtime_homes = {"claude": temp / "home", "codex": temp / "codex"}
-        verified: dict[str, dict[str, str]] = {}
-        for runtime, entries in inventories.items():
-            runtime_result: dict[str, str] = {}
-            for plugin in PLUGIN_NAMES:
-                matches = [entry for entry in entries if _name(entry) == plugin]
-                if len(matches) != 1 or matches[0].get("enabled") is not True:
-                    raise RuntimeError(f"{runtime} did not report exactly one enabled {plugin}")
-                installed = _path(matches[0])
-                if installed is None:
-                    raise RuntimeError(f"{runtime} did not report a usable path for {plugin}")
-                installed = _validate_installed_path(installed, runtime_homes[runtime])
-                actual = _tree_digest(installed)
-                if actual != expected[plugin]:
-                    source = temp / "provider-unavailable" / "plugins" / plugin
-                    source_files = {
-                        path.relative_to(source).as_posix()
-                        for path in source.rglob("*")
-                        if path.is_file()
-                    }
-                    installed_files = {
-                        path.relative_to(installed).as_posix()
-                        for path in installed.rglob("*")
-                        if path.is_file()
-                    }
-                    raise RuntimeError(
-                        f"{runtime} installed digest mismatch for {plugin}; "
-                        f"path={installed}; missing={sorted(source_files - installed_files)}; "
-                        f"extra={sorted(installed_files - source_files)}"
+        verified: dict[str, dict[str, dict[str, str]]] = {}
+        for consumer_root in consumer_roots:
+            consumer_result: dict[str, dict[str, str]] = {}
+            for runtime, executable in (("claude", claude), ("codex", codex)):
+                entries = _entries(
+                    json.loads(
+                        _run(
+                            [executable, "plugin", "list", "--json"],
+                            environment,
+                            consumer_root,
+                        )
                     )
-                runtime_result[plugin] = actual
-            verified[runtime] = runtime_result
+                )
+                runtime_result: dict[str, str] = {}
+                for plugin in PLUGIN_NAMES:
+                    matches = [entry for entry in entries if _name(entry) == plugin]
+                    if len(matches) != 1 or matches[0].get("enabled") is not True:
+                        raise RuntimeError(
+                            f"{runtime} did not report exactly one enabled {plugin}"
+                        )
+                    installed = _path(matches[0])
+                    if installed is None:
+                        raise RuntimeError(
+                            f"{runtime} did not report a usable path for {plugin}"
+                        )
+                    installed = _validate_installed_path(
+                        installed, runtime_homes[runtime]
+                    )
+                    actual = _tree_digest(installed)
+                    if actual != expected[plugin]:
+                        source = temp / "provider-unavailable" / "plugins" / plugin
+                        source_files = {
+                            path.relative_to(source).as_posix()
+                            for path in source.rglob("*")
+                            if path.is_file()
+                        }
+                        installed_files = {
+                            path.relative_to(installed).as_posix()
+                            for path in installed.rglob("*")
+                            if path.is_file()
+                        }
+                        raise RuntimeError(
+                            f"{runtime} installed digest mismatch for {plugin}; "
+                            f"path={installed}; "
+                            f"missing={sorted(source_files - installed_files)}; "
+                            f"extra={sorted(installed_files - source_files)}"
+                        )
+                    actual_skills = {
+                        path.parent.name
+                        for path in (installed / "skills").glob("*/SKILL.md")
+                    }
+                    if actual_skills != set(PLUGIN_SKILLS[plugin]):
+                        raise RuntimeError(
+                            f"{runtime} installed skill inventory mismatch for {plugin}"
+                        )
+                    runtime_result[plugin] = actual
+                consumer_result[runtime] = runtime_result
+            verified[consumer_root.name] = consumer_result
 
-    print(json.dumps({"status": "ok", "verified": verified}, sort_keys=True))
+    print(
+        json.dumps(
+            {"status": "ok", "consumer_count": len(consumer_roots), "verified": verified},
+            sort_keys=True,
+        )
+    )
     return 0
 
 

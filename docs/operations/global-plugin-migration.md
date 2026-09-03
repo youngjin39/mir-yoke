@@ -10,6 +10,12 @@ Use this runbook before the first Mir global-plugin activation on a user account
 repositories with `.claude/skills` or `.agents/skills`. It implements ADR-75. It never authorizes a
 cross-repository write, deletion, commit, or push.
 
+The published packages group common work by role (`mir-core`, `mir-code`, and `mir-content`). Do not
+copy their common skill bodies back into repositories. ADR-90's `mir-lifecycle-hooks` is the fourth
+current package and contains only one acknowledged, read-only `SessionStart` reminder plus its
+supporting skill. Repository-coupled hooks remain local. The current MCP inventory is empty, so
+there is no `mir-mcp` package to install.
+
 ## 1. Establish the host inventory
 
 Start from an operator-owned registry of repositories that may be opened by the same Claude or
@@ -57,11 +63,14 @@ uv run mir capability sync --project-root /absolute/canary --apply --json
 
 `check` is remote but read-only. `sync --apply` pins the exact Git commit, materializes one provider
 under `MIR_CAPABILITY_HOME`, registers the canary, and installs the selected plugins through the
-supported host CLIs. Codex installation evidence is valid only when the `mir-yoke` marketplace and
+supported host CLIs. Schema-4 sync also copies the selected Claude agent and command sources into
+the canary, records their digests, and regenerates Codex agents. A differing project-owned file
+blocks overwrite; Codex command intent comes from the mapped plugin skill rather than a copied
+command file. Codex installation evidence is valid only when the `mir-yoke` marketplace and
 enabled plugin entries persist in `CODEX_HOME/config.toml` and the installed cache trees match the
 lock. The marketplace source tree alone is not installation evidence. Stop if a runtime listed in
 `policy.activation_required_runtimes` cannot provide installation evidence. The current policy
-requires Codex only; Claude failures remain visible advisory evidence.
+requires both Claude and Codex.
 
 Explicit `--capability-home` and `MIR_CAPABILITY_HOME` remain authoritative. If neither is present
 in a bridge session with a temporary `HOME`, the manager may recover the external provider only
@@ -70,22 +79,26 @@ Git source and materialized root. Persist the storage environment on hosts witho
 
 ## 4. Restart and prove activation
 
-Start a new Codex session. Inspect its runtime-provided skill catalog—not the provider files—and
-attest every selected namespaced skill. Repeat `--observed-skill` for each name actually present,
+Start new Claude and Codex sessions. Review the hook trust prompt, inspect each runtime-provided
+catalog rather than the provider files, and attest every selected namespaced skill. Repeat
+`--observed-skill` for each name actually present,
 for example:
 
 ```bash
 uv run mir capability attest --project-root /absolute/canary \
   --runtime codex-cli-desktop \
   --observed-skill mir-core:design --observed-skill mir-core:spec-architect \
+  --observed-hook mir-lifecycle-hooks:SessionStart \
   --apply --json
 ```
 
-Claude operators may run the same command from a restarted Claude session with
-`--runtime claude-code`, but that receipt is optional under the current policy. Each command
+Claude operators run the same command from a restarted Claude session with
+`--runtime claude-code`; both receipts are required under the current policy. Each command
 requires its current runtime to export the session ID and has no operator-supplied session-ID
-override. The skill list is still an operator observation: do not derive it from files or from
-`plugin list`; absence from the required Codex catalog is a failed acceptance test.
+override. Skills and hooks are operator observations: do not derive them from files or from
+`plugin list`. Record `mir-lifecycle-hooks:SessionStart` only after the current hook definition was
+reviewed, trusted, and its fixed continuity output was observed in that restarted runtime. Install
+and enable state alone cannot satisfy this gate.
 
 After the required Codex attestation succeeds, run:
 
@@ -97,11 +110,30 @@ uv run mir capability status --project-root /absolute/canary --json
 
 Ready means every runtime named by `policy.activation_required_runtimes` exposes exactly one
 enabled plugin per selected name, every required installed tree matches the lock digest, the
-required runtime has a complete discovery receipt, and the canary has no standalone collisions.
-Optional runtime failures remain in status output. Register each additional clean repository with
-`sync --apply`; the one-version consumer registry refuses a divergent digest.
+required runtime has complete skill and hook discovery receipts, and the canary has no standalone
+collisions.
+Register each additional clean repository with `sync --apply`; the one-version consumer registry
+refuses a divergent digest.
 
-## 5. Rollback
+## 5. Optional user-level agents and commands
+
+When the operator wants the reviewed common agents available from every working directory without
+editing consumer repositories, use the separate user-runtime installer. Supply both runtime homes
+explicitly because bridge sessions may not share one `HOME`:
+
+```bash
+python3 scripts/install_user_runtime_agents.py \
+  --claude-home /absolute/claude-config-root \
+  --codex-home /absolute/codex-home
+```
+
+Review the dry-run JSON, then repeat with `--apply`. The installer copies only the union of tracked
+Profile selections, refuses symlinked paths and unmanaged divergence, removes only unchanged files
+that its prior receipt still owns, and records source and target SHA-256 values. Claude receives
+agents and commands; Codex receives generated agents and uses the installed plugin skills for
+command intent. Yoke-only allowlist entries stay local, and project-local files take precedence.
+
+## 6. Rollback
 
 If runtime proof fails, keep the project receipt incomplete. Disable or uninstall the Mir plugins
 with the same host runtime managers that installed them, and verify they no longer appear enabled.

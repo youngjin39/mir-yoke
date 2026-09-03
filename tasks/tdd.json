@@ -2,6 +2,72 @@
   "version": 1,
   "changes": [
     {
+      "id": "adr90-role-plugins-common-hooks-2026-09-03",
+      "record_status": "in_progress",
+      "scope": "Publish and deploy the separately named common lifecycle hook package for both runtimes, preserve repository-owned policy, distribute agents and commands through a separate digest-bound user-runtime path, document the absent MCP-server state, and submit the Codex plugin-agent feature request.",
+      "targets": ["plugins/mir-lifecycle-hooks", ".agents/plugins/marketplace.json", ".claude-plugin/marketplace.json", "config/capability-sources.json", "config/repo-agent-management.json", "src/mir/core/capabilities/config.py", "src/mir/core/capabilities/manager.py", "scripts/install_user_runtime_agents.py", "scripts/verify_plugin_cli_activation.py", "tests/", "docs/decisions/adr-90-role-plugins-and-common-hooks.md", "docs/operations/", "tasks/"],
+      "design_ref": "docs/decisions/adr-90-role-plugins-and-common-hooks.md",
+      "bluebrick": "Role capability plugins / Common hook engine / Active package admission",
+      "categories": {
+        "unit": {"status": "pass", "command": "uv run pytest -q tests/test_plugin_skill_packages.py tests/test_capability_security.py tests/test_capability_cli.py tests/test_user_runtime_agent_command_install.py", "notes": "The package, supply-chain, capability, and separate user-runtime installer regressions pass; the installer itself has 14 safety and transaction tests."},
+        "integration": {"status": "pass", "command": "uv run python scripts/verify_codex_sync.py && uv run python scripts/verify_plugin_cli_activation.py", "notes": "Generated derivatives agree; isolated Claude and Codex homes install the same four packages and expose them from two consumer directories after the provider checkout is unavailable."},
+        "e2e": {"status": "pass", "command": "uv run pytest -q", "notes": "961 tests pass in 168.52 seconds."},
+        "browser": {"status": "not_applicable", "reason": "No browser or GUI surface changes."},
+        "edge": {"status": "pass", "command": "uv run pytest -q tests/test_capability_security.py tests/test_user_runtime_agent_command_install.py", "notes": "Stale hook digests, undeclared hook files, symlinked targets, unmanaged divergence, and ambiguous runtime homes fail closed. Both runtime MCP registries remain empty."},
+        "architecture": {"status": "pass", "command": "uv run pytest -q tests/test_decision_authority.py tests/test_template_asset_classification.py tests/test_greenfield_slim_integration.py", "notes": "ADR-90 is current, the external catalog includes runtime-continuity for every profile, and all 805 candidate files are classified."},
+        "availability": {"status": "not_applicable", "reason": "No standing service is introduced; no MCP server exists."},
+        "load": {"status": "not_applicable", "reason": "The SessionStart handler emits one fixed 94-byte stdout line, including its trailing newline, and starts no persistent work."},
+        "soak": {"status": "not_applicable", "reason": "No persistent process is introduced."},
+        "security": {"status": "pass", "command": "uv run pytest -q tests/test_capability_security.py tests/test_plugin_skill_packages.py tests/test_user_runtime_agent_command_install.py", "notes": "Only the exact read-only skills-hooks shape is admitted; MCP, target access, executable modes, undeclared hook files, stale acknowledgements, and unsafe user-home writes remain rejected."},
+        "compatibility": {"status": "pass", "command": "uv run pytest -q tests/test_capability_security.py -k 'previous_public_schema1 or schema1_capability or legacy_consumers or partial_or_invented_legacy or schema4_sync_requires_update or schema2_sources or legacy_and_bound_marketplace' && uv run ruff check . && uv run python -m tools.template_assets --json", "notes": "Schema-1 and schema-2 sources remain readable, valid legacy consumers enroll sequentially, invalid legacy states fail closed, and schema-4 sync directs old locks to update. Ruff passes and all 805 candidate files are classified."},
+        "transaction_locking": {"status": "pass", "command": "uv run pytest -q tests/test_capability_cli.py tests/test_user_runtime_agent_command_install.py", "notes": "Capability registration retains guarded rollback; user-runtime delivery prevalidates both homes, snapshots both roots and receipts, replaces files atomically, and rolls both runtimes back on failure."}
+      }
+    },
+    {
+      "id": "adr89-dual-runtime-capability-management-2026-09-03",
+      "record_status": "complete",
+      "scope": "Make Yoke's cross-repository provider contract explicitly manage agents, plugin skills, project-local hooks, optional MCP servers, and Claude commands with Codex skill equivalents while preserving ADR-88 active-package admission.",
+      "targets": [".mir/repo-profile.toml", "CLAUDE.md", "AGENTS.md", "README.md", "ARCHITECTURE.md", "CHANGELOG.md", "MIGRATION.md", "config/capability-sources.json", "config/repo-agent-management.json", "config/template-assets.json", "config/adopter-payload.json", "src/mir/core/capabilities/config.py", "src/mir/core/capabilities/manager.py", "scripts/verify_codex_sync.py", "scripts/verify_plugin_cli_activation.py", "tests/test_capability_cli.py", "tests/test_capability_security.py", "tests/test_plugin_skill_packages.py", "tests/test_codex_derivation_script.py", "tests/test_decision_authority.py", "tests/test_template_asset_classification.py", "docs/decisions/adr-89-dual-runtime-capability-management.md", "docs/decisions/adr-88-active-plugin-component-admission.md", "docs/decisions/adr-74-portable-bootstrap-capability-sources-and-memory.md", "docs/decisions/adr-75-global-plugin-migration-gate.md", "docs/decisions/adr-85-global-policy-inheritance-and-agent-contracts.md", "docs/decisions/INDEX.md", "docs/operations/global-plugin-migration.md", "tasks/intent.json", "tasks/plan.md", "tasks/handoffs/session-handoff-LATEST.md"],
+      "design_ref": "docs/decisions/adr-89-dual-runtime-capability-management.md",
+      "bluebrick": "Capability provider / Managed runtime projections / Cross-repository discovery",
+      "categories": {
+        "unit": {"status": "pass", "command": "uv run pytest -q tests/test_capability_security.py tests/test_capability_cli.py tests/test_plugin_skill_packages.py", "notes": "Schema-3 commands, project integrations, enrolled consumer state, exact dual-runtime readiness policy, legacy compatibility, divergence, symlink, downgrade, interruption, rollback, and package admission regressions pass."},
+        "integration": {"status": "pass", "command": "uv run pytest -q tests/test_capability_cli.py", "notes": "Command materialization and locking, enrolled canonical on-disk consumer-authenticated global union activation, fail-fast concurrent sync with retry, exact rollback, and runtime probes pass."},
+        "e2e": {"status": "pass", "command": "uv run pytest -q", "notes": "922 tests passed in 153.32 seconds on Python 3.12.13 after the completed independent review and closeout payload refresh."},
+        "browser": {"status": "not_applicable", "reason": "No browser or GUI surface changes."},
+        "edge": {"status": "pass", "command": "uv run pytest -q tests/test_capability_security.py", "notes": "Unsafe command paths and mappings, target-local integration drift, schema downgrade, singleton runtime gates, command symlinks, malformed or unbound consumers, and symlinked or replaced project, Codex, capability-home, derivative, or cache roots fail closed."},
+        "architecture": {"status": "pass", "command": "uv run pytest -q tests/test_decision_authority.py tests/test_template_asset_classification.py tests/test_codex_derivation_script.py", "notes": "ADR-89 authority, current decision classification, generated agents, command-to-skill mappings, hook targets, and MCP references agree. Fresh independent final review returned PASS."},
+        "availability": {"status": "not_applicable", "reason": "No standing service is introduced; the MCP entry remains an inactive project-local example."},
+        "load": {"status": "not_applicable", "reason": "No throughput-sensitive runtime path changes."},
+        "soak": {"status": "not_applicable", "reason": "No persistent process is introduced."},
+        "security": {"status": "pass", "command": "uv run pytest -q tests/test_capability_security.py tests/test_plugin_skill_packages.py", "notes": "Active hook/MCP package admission remains closed; hidden Codex enablement, unbound or partially enrolled consumers, union inflation including rollback, state downgrade, symlink redirection, and root replacement are rejected. The enrollment ledger is written and revalidated at exact mode 0600. Fresh CWE review returned PASS with zero findings."},
+        "compatibility": {"status": "pass", "command": "uv run python scripts/verify_codex_sync.py && uv run python scripts/verify_plugin_cli_activation.py", "notes": "Generated surfaces match canonical sources; isolated Claude and Codex homes discover the same three exact plugin and skill inventories from two independent consumer directories after provider removal; both runtimes are required for READY."},
+        "transaction_locking": {"status": "pass", "command": "uv run pytest -q tests/test_capability_cli.py", "notes": "Registry reads, binding ledger, snapshots, consumer-union calculation, publication, rollback, attestation writes, and activation finalization occur under one identity-checked apply guard; rejected concurrency retries safely and stale or redirected roots cannot overwrite fresh state."}
+      }
+    },
+    {
+      "id": "adr88-active-plugin-supply-chain-2026-09-03",
+      "record_status": "complete",
+      "scope": "Complete the interrupted host-specific plugin cleanup and make the Yoke capability supply chain explicitly skills-only until a separately named hook or MCP package has a dedicated validator and fresh digest acknowledgement.",
+      "targets": ["config/capability-sources.json", "config/adopter-payload.json", "src/mir/core/capabilities/config.py", "src/mir/core/capabilities/manager.py", "tools/template_assets.py", "tests/test_capability_security.py", "tests/test_capability_cli.py", "tests/test_plugin_skill_packages.py", "docs/decisions/adr-88-active-plugin-component-admission.md", "docs/decisions/INDEX.md", "docs/decisions/adr-74-portable-bootstrap-capability-sources-and-memory.md", "docs/decisions/adr-85-global-policy-inheritance-and-agent-contracts.md", "README.md", "ARCHITECTURE.md", ".claude/settings.json", ".codex/hooks.json", "tasks/intent.json", "tasks/plan.md", "tasks/handoffs/session-handoff-LATEST.md"],
+      "design_ref": "docs/decisions/adr-88-active-plugin-component-admission.md",
+      "bluebrick": "Capability provider / Active component admission / Runtime-local integration",
+      "categories": {
+        "unit": {"status": "pass", "command": "uv run pytest -q tests/test_capability_security.py tests/test_plugin_skill_packages.py tests/test_capability_cli.py tests/test_decision_authority.py tests/test_template_asset_classification.py", "notes": "97 passed. The initial 14 expected failures established the package-kind gates; independent-review reproductions anchored manifest, marketplace, version, schema, receipt, registry, and rollback checks."},
+        "integration": {"status": "pass", "command": "uv run pytest -q tests/test_capability_cli.py", "notes": "Capability sync preserves the three skills-only plugin inventories and newly written locks record package_kind: skills."},
+        "e2e": {"status": "pass", "command": "uv run pytest -q", "notes": "884 passed in the final implementation run on Python 3.12.13."},
+        "browser": {"status": "not_applicable", "reason": "No browser or GUI surface changes."},
+        "edge": {"status": "pass", "command": "uv run pytest -q tests/test_capability_security.py tests/test_plugin_skill_packages.py", "notes": "Missing, unknown, reserved, mixed, and manifest-injected active components fail closed."},
+        "architecture": {"status": "pass", "command": "uv run pytest -q tests/test_decision_authority.py tests/test_template_asset_classification.py tests/test_advanced_reference_templates.py", "notes": "21 decision, classification, and payload tests pass; independent final review returned PASS after all rollback and compatibility repairs."},
+        "availability": {"status": "not_applicable", "reason": "No standing service or runtime endpoint is added."},
+        "load": {"status": "not_applicable", "reason": "No throughput-sensitive runtime path changes."},
+        "soak": {"status": "not_applicable", "reason": "No persistent process is introduced."},
+        "security": {"status": "pass", "command": "uv run pytest -q tests/test_capability_security.py tests/test_plugin_skill_packages.py tests/test_capability_cli.py", "notes": "83 passed. Independent CWE review returned PASS with zero remaining warnings after receipt/registry/schema and rollback prevalidation were closed."},
+        "compatibility": {"status": "pass", "command": "plugin validator for mir-core, mir-code, and mir-content; uv run python scripts/verify_codex_sync.py", "notes": "All three isolated plugin packages and generated Claude/Codex derivatives pass; the selected plugin and skill inventories are unchanged, and the schema-1/schema-2 compatibility matrix passes."},
+        "transaction_locking": {"status": "pass", "command": "uv run pytest -q tests/test_capability_cli.py", "notes": "Marketplace and selected/materialized digests join atomic schema-2 lock, registry, and receipt publication; rollback revalidates restored provider state before runtime commands."}
+      }
+    },
+    {
       "id": "adr87-force-push-separator-scope-2026-09-01",
       "record_status": "complete",
       "scope": "Confine both halves of the force-push guard to the push's own argument list so a protected branch name or a flag belonging to another command in a compound command cannot combine into a false block.",

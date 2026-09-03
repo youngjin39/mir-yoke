@@ -27,6 +27,7 @@ PLUGIN_SKILLS = {
     },
     "mir-code": {"bluebricks", "code-review", "testing"},
     "mir-content": {"knowledge", "ui-design"},
+    "mir-lifecycle-hooks": {"runtime-continuity"},
 }
 
 
@@ -181,6 +182,88 @@ def validate_plugin_skill_providers(
             failures.append("Codex marketplace plugin inventory drift")
 
 
+def validate_managed_capability_surfaces(
+    failures: list[str], root: Path = ROOT
+) -> None:
+    """Verify the five Yoke-managed surfaces and runtime-native projections."""
+    capability = _read_json(root / "config" / "capability-sources.json", failures)
+    catalog = _read_json(root / "config" / "repo-agent-management.json", failures)
+    if capability is None or catalog is None:
+        return
+    if capability.get("schema_version") != 4:
+        failures.append("capability source does not declare the five-surface schema")
+        return
+
+    agents = capability.get("agents")
+    allowlist = agents.get("allowlist") if isinstance(agents, dict) else None
+    if not isinstance(allowlist, list):
+        failures.append("managed agent allowlist is invalid")
+    else:
+        expected_agents = {
+            path.relative_to(root).as_posix()
+            for path in (root / ".claude" / "agents").glob("*.md")
+            if path.name != "README.md"
+        }
+        if set(allowlist) != expected_agents:
+            failures.append("managed agent inventory drift")
+        for source in allowlist:
+            if not isinstance(source, str):
+                failures.append("managed agent path is invalid")
+                continue
+            target = root / ".codex" / "agents" / f"{Path(source).stem}.toml"
+            if not target.is_file():
+                failures.append(f"missing Codex agent projection: {target.relative_to(root)}")
+
+    commands = capability.get("commands")
+    command_map = commands.get("allowlist") if isinstance(commands, dict) else None
+    catalog_value = catalog.get("catalog")
+    catalog_skills = (
+        catalog_value.get("skills", {}) if isinstance(catalog_value, dict) else {}
+    )
+    if not isinstance(command_map, dict) or not isinstance(catalog_skills, dict):
+        failures.append("managed command catalog is invalid")
+    else:
+        actual_commands = {
+            path.relative_to(root).as_posix()
+            for path in (root / ".claude" / "commands").glob("*.md")
+        }
+        if set(command_map) != actual_commands:
+            failures.append("managed Claude command inventory drift")
+        for source, skill in command_map.items():
+            skill_slug = skill.split(":", 1)[1] if isinstance(skill, str) and ":" in skill else None
+            metadata = catalog_skills.get(skill_slug)
+            absorbs = metadata.get("absorbs") if isinstance(metadata, dict) else None
+            if not isinstance(source, str) or not isinstance(absorbs, list):
+                failures.append(f"invalid Codex command skill mapping: {source}")
+            elif Path(source).stem not in absorbs:
+                failures.append(
+                    f"Codex skill does not absorb managed command: {source} -> {skill}"
+                )
+
+    integrations = capability.get("project_integrations")
+    if not isinstance(integrations, dict):
+        failures.append("managed project integrations are invalid")
+        return
+    for name in ("hooks", "mcp_servers"):
+        metadata = integrations.get(name)
+        if not isinstance(metadata, dict):
+            failures.append(f"missing managed integration: {name}")
+            continue
+        target_keys = (
+            ("claude_target", "codex_target")
+            if name == "hooks"
+            else ("codex_target",)
+        )
+        for key in target_keys:
+            target = metadata.get(key)
+            if not isinstance(target, str) or not (root / target).exists():
+                failures.append(f"missing {name} {key}: {target}")
+        source_key = "source" if name == "hooks" else "reference"
+        source = metadata.get(source_key)
+        if not isinstance(source, str) or not (root / source).is_file():
+            failures.append(f"missing {name} {source_key}: {source}")
+
+
 def _directory_digest(root: Path) -> str | None:
     if root.is_symlink() or not root.is_dir():
         return None
@@ -223,6 +306,8 @@ def main() -> int:
             if not path.exists() and not path.is_symlink():
                 failures.append(f"missing target: {target}")
     validate_plugin_skill_providers(failures, require_local=not is_product_adopter())
+    if not is_product_adopter():
+        validate_managed_capability_surfaces(failures)
     validate_portable_hook_copy(failures)
 
     agents_text = (ROOT / "AGENTS.md").read_text(encoding="utf-8")

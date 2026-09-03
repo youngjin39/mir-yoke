@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 4,
   "source": {
     "url": "https://github.com/youngjin39/mir-yoke.git",
     "ref": "main"
@@ -7,16 +7,36 @@
   "plugins": {
     "mir-core": {
       "path": "plugins/mir-core",
+      "package_kind": "skills",
       "skills": ["automation", "commit", "design", "efficiency", "governance", "memory-gc", "spec-architect", "verify"]
     },
     "mir-code": {
       "path": "plugins/mir-code",
+      "package_kind": "skills",
       "skills": ["bluebricks", "code-review", "testing"]
     },
     "mir-content": {
       "path": "plugins/mir-content",
+      "package_kind": "skills",
       "skills": ["knowledge", "ui-design"]
+    },
+    "mir-lifecycle-hooks": {
+      "path": "plugins/mir-lifecycle-hooks",
+      "package_kind": "skills-hooks",
+      "skills": ["runtime-continuity"],
+      "hooks": ["SessionStart"]
     }
+  },
+  "plugin_component_policy": {
+    "admitted_package_kinds": ["skills", "skills-hooks"],
+    "reserved_active_package_kinds": ["mcp"],
+    "active_package_shape": "separate-named-package",
+    "active_package_admission": "dedicated-validator-and-fresh-digest-acknowledgement",
+    "project_integration": "target-local-only",
+    "forbidden_provider_components": ["agents", "commands", "apps", "scripts", "permissions", "runtime-policy"]
+  },
+  "active_package_digest_acknowledgements": {
+    "mir-lifecycle-hooks": "ffca6f22cd0c7449a4480d31b8bd62454cb3fbdb37acd58aaf188ba82b64593b"
   },
   "profiles": {
     "aliases": {
@@ -29,7 +49,15 @@
     },
     "packs": {
       "code_app": {
-        "plugins": ["mir-core", "mir-code"],
+        "plugins": ["mir-core", "mir-code", "mir-lifecycle-hooks"],
+        "commands": [
+          ".claude/commands/analyze-design.md",
+          ".claude/commands/audit-design-fit.md",
+          ".claude/commands/develop-from-design.md",
+          ".claude/commands/review-code.md",
+          ".claude/commands/role-split-pipeline.md",
+          ".claude/commands/verify-against-spec.md"
+        ],
         "agents": [
           ".claude/agents/main-orchestrator.md",
           ".claude/agents/executor-agent.md",
@@ -41,7 +69,15 @@
         ]
       },
       "hybrid_pipeline": {
-        "plugins": ["mir-core", "mir-code", "mir-content"],
+        "plugins": ["mir-core", "mir-code", "mir-content", "mir-lifecycle-hooks"],
+        "commands": [
+          ".claude/commands/analyze-design.md",
+          ".claude/commands/audit-design-fit.md",
+          ".claude/commands/develop-from-design.md",
+          ".claude/commands/review-code.md",
+          ".claude/commands/role-split-pipeline.md",
+          ".claude/commands/verify-against-spec.md"
+        ],
         "agents": [
           ".claude/agents/main-orchestrator.md",
           ".claude/agents/executor-agent.md",
@@ -57,7 +93,15 @@
         ]
       },
       "infra_runtime": {
-        "plugins": ["mir-core", "mir-code"],
+        "plugins": ["mir-core", "mir-code", "mir-lifecycle-hooks"],
+        "commands": [
+          ".claude/commands/analyze-design.md",
+          ".claude/commands/audit-design-fit.md",
+          ".claude/commands/develop-from-design.md",
+          ".claude/commands/review-code.md",
+          ".claude/commands/role-split-pipeline.md",
+          ".claude/commands/verify-against-spec.md"
+        ],
         "agents": [
           ".claude/agents/main-orchestrator.md",
           ".claude/agents/executor-agent.md",
@@ -69,7 +113,15 @@
         ]
       },
       "content_workspace": {
-        "plugins": ["mir-core", "mir-content"],
+        "plugins": ["mir-core", "mir-content", "mir-lifecycle-hooks"],
+        "commands": [
+          ".claude/commands/analyze-design.md",
+          ".claude/commands/audit-design-fit.md",
+          ".claude/commands/develop-from-design.md",
+          ".claude/commands/review-code.md",
+          ".claude/commands/role-split-pipeline.md",
+          ".claude/commands/verify-against-spec.md"
+        ],
         "agents": [
           ".claude/agents/main-orchestrator.md",
           ".claude/agents/fleet-doc-steward.md",
@@ -96,6 +148,33 @@
       ".claude/agents/ui-reviewer.md"
     ]
   },
+  "commands": {
+    "delivery": "claude-project-file-codex-plugin-skill",
+    "allowlist": {
+      ".claude/commands/analyze-design.md": "mir-core:design",
+      ".claude/commands/audit-design-fit.md": "mir-core:design",
+      ".claude/commands/develop-from-design.md": "mir-core:design",
+      ".claude/commands/review-code.md": "mir-core:verify",
+      ".claude/commands/role-split-pipeline.md": "mir-core:design",
+      ".claude/commands/verify-against-spec.md": "mir-core:verify"
+    }
+  },
+  "project_integrations": {
+    "hooks": {
+      "source": "config/project-hooks.json",
+      "claude_target": ".claude/settings.json",
+      "codex_target": ".codex/hooks.json",
+      "delivery": "target-local-generated",
+      "plugin_package_kind": "reserved"
+    },
+    "mcp_servers": {
+      "activation_source": ".mcp.json",
+      "reference": ".mcp.json.example",
+      "codex_target": ".codex/config.toml",
+      "delivery": "target-local-opt-in-generated",
+      "plugin_package_kind": "reserved"
+    }
+  },
   "required_project_paths": [
     "CLAUDE.md",
     "AGENTS.md",
@@ -103,6 +182,10 @@
     "tasks",
     "config",
     ".claude/agents",
+    "config/project-hooks.json",
+    ".claude/settings.json",
+    ".codex/hooks.json",
+    ".codex/config.toml",
     "scripts/generate_codex_derivatives.sh"
   ],
   "runtime_support": {
@@ -112,10 +195,10 @@
     }
   },
   "policy": {
-    "check_trigger": "requirements-agents-or-skills-change",
+    "check_trigger": "requirements-agents-skills-or-commands-change",
     "check_mode": "read-only",
     "activation": "explicit-apply",
-    "activation_required_runtimes": ["codex-cli-desktop"],
+    "activation_required_runtimes": ["claude-code", "codex-cli-desktop"],
     "one_global_active_version": true,
     "remote_executable_content": "reject",
     "host_registration": "explicit-sync-apply",

@@ -10,6 +10,16 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ### Added
 
+- Added the dual-runtime `mir-lifecycle-hooks` plugin with one exact, read-only `SessionStart`
+  reminder and the `runtime-continuity` skill.
+- Added a dry-run-first user-runtime installer for centrally authored Claude/Codex agents and
+  Claude commands, with explicit homes, divergence protection, and digest receipts.
+- Added submission-ready Codex upstream text for namespaced plugin agents and command aliases,
+  linked to the existing agent-plugin request instead of opening a duplicate.
+- Added schema-3 dual-runtime capability management for commit-pinned Claude commands, Codex skill
+  mappings, and explicit target-local hook and MCP integration ownership.
+- Extended the real-CLI plugin probe to verify configured plugin and skill inventories from two
+  independent consumer working directories in isolated Claude and Codex homes.
 - Added one canonical hook definition and deterministic Claude/Codex renderers for PreCompact,
   PostCompact, and compact-resume lifecycle handling.
 - Added the same bounded compact lifecycle to the Project Agent Kit common harness, including
@@ -21,6 +31,27 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ### Changed
 
+- Opened only the schema-4 `skills-hooks` package shape after proving Codex 0.152.1 accepts hook
+  plugins; exact handler bytes, hook inventory, and package digest are now required before runtime
+  registration. MCP admission remains closed because neither runtime has a registered Yoke server.
+- Made agents, skills, hooks, MCP servers, and commands explicit Yoke-managed surface classes while
+  preserving runtime-native delivery and ADR-88's closed active-package admission gate.
+- Made capability-source package classes explicit and skills-only. Hook and MCP kinds now remain
+  fail-closed until separately named packages implement kind-specific validation and fresh digest
+  acknowledgement under ADR-88.
+- Constrained skills-only manifests to runtime-specific key allowlists, revalidated legacy locked
+  trees under current policy, and bound validated local-only marketplace inventories into new locks
+  and active-provider receipts before runtime registration.
+- Validated plugin versions before installation and separated selected installed plugins from the
+  all-materialized digest inventory so receipt downgrade and rollback cannot expand activation.
+- Versioned new capability locks and active receipts as schema 2 so removal of their marketplace
+  or materialized-plugin bindings fails closed while genuine schema-1 consumers remain readable.
+- Bound the schema-2 receipt's selected installed set to independent registry state and validate it
+  against materialized digests before rollback, preventing receipt-only activation expansion.
+- Revalidate restored marketplace semantics, marketplace digests, and every materialized plugin
+  before rollback registration, so rejected provider state never reaches a host command.
+- Cross-check rollback receipt schema against the restored lock and registry, preventing a
+  receipt-only downgrade from bypassing the schema-2 selected-set binding.
 - Kept generated Claude and Codex hook registrations synchronized from project-owned JSON sources
   instead of maintaining runtime configurations independently.
 - Extended Project Agent Kit schema and evidence validation so compact lifecycle behavior is
@@ -45,6 +76,26 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
   from post-edit hook output.
 - Added bounded Codex `SessionEnd` generation and documented project and hook trust as
   prerequisites for hook-based behavior.
+- Rejected symlinked or non-canonical managed targets before overwrite, required declared hook
+  projections for readiness, and bound schema-3 sources to current schema-2 state evidence.
+- Made host activation equal the union of registered consumer selections, rejected unexpected
+  enabled Yoke plugins, and restored the exact prior union after a failed profile update.
+- Moved registry snapshots and validation under the apply guard and restored local/runtime state
+  for catchable process interruptions.
+- Recompute the active plugin union from every same-commit consumer during status validation and
+  require exact registry, receipt, materialized digest, and current project-lock agreement.
+- Reject hidden extra Codex plugin enablement, symlinked `.mir` lock redirection, and stale
+  attestation or finalization writes by using complete persistent-set checks and one apply guard.
+- Revalidate the complete consumer union before rollback commands, reject project derivative roots
+  with symlinked ancestors, and confine verified Codex cache paths to a symlink-free runtime home.
+- Bind every schema-2 registry consumer to its canonical on-disk project lock, validate exact nested
+  generation and cleanup targets, and retain an initialization-time Codex-home containment anchor.
+- Enroll schema-3 consumers with a 256-bit binding across the project lock, registry, and mode-0600
+  provider ledger, and pin project/Codex roots by device and inode against replacement races.
+- Reject partial consumer enrollment instead of silently issuing a new binding, verify the ledger's
+  regular-file 0600 mode on every read, and require both Claude and Codex for activation readiness.
+- Make the schema-3 dual-runtime list exact and pin the capability-home root by canonical identity,
+  device, and inode before guards, state access, rollback, or runtime registration.
 - Redacted maintainer-identity strings and private repository slugs that were still present in
   this public repository, and corrected the 0.5.0 sanitize-gate note that had claimed the
   substitution table used placeholder forms on both sides. `sanitize-glossary.md` now names the

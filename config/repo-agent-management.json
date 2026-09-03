@@ -1,7 +1,7 @@
 {
   "version": 2,
   "catalog_revision": "v4.0",
-  "purpose": "Repository-local agent and skill catalog for selectively composing the public Claude+Codex harness template.",
+  "purpose": "Repository-local role and skill catalog used by the Yoke capability contract for agent selection and Claude-command-to-Codex-skill mapping.",
   "repositories_dir": "config/repos",
   "catalog": {
     "review_cadence": "monthly_user_directed",
@@ -365,6 +365,13 @@
         "scope": "meta_harness",
         "status": "active",
         "source_path": "plugins/mir-core/skills/memory-gc/"
+      },
+      "runtime-continuity": {
+        "category": "automation",
+        "absorbs": [],
+        "scope": "universal",
+        "status": "active",
+        "source_path": "plugins/mir-lifecycle-hooks/skills/runtime-continuity/"
       }
     }
   },
