@@ -1,6 +1,6 @@
 # Plan
 
-## Current status — role-plugin and common-hook publication ready (2026-09-04)
+## Current status — role-plugin and common-hook delivery complete (2026-09-04)
 
 - [x] Record the operator's packaging rule: common workflows formerly copied into repositories are
   grouped into Yoke-owned, role-oriented plugins and selected by repository Profile.
@@ -19,11 +19,16 @@
 - [x] Submit the Yoke use case to the open plugin-agent request `#18308`. Do not open the command
   alias issue because three prior requests were closed as intentionally replaced by skills.
 - [x] Regenerate declared asset projections; run focused, full, derivative, lint, asset, and
-  isolated real-CLI verification gates. The user-runtime installer has 14 passing safety tests;
-  the full repository suite has 961 passing tests. Host application follows the publication
-  commit.
-- [ ] Commit and push Yoke `main`, then activate and verify the published surfaces in the current
+  isolated real-CLI verification gates. The user-runtime installer has 14 passing safety tests.
+- [x] Commit and push Yoke `main`, then activate and verify the published surfaces in the current
   Claude and Codex user homes without changing consumer repositories.
+
+The four plugins are enabled in both runtimes and visible from all 14 registered repository roots.
+The separate installer projects 11 agents into both runtimes and six commands into Claude; Codex
+resolves those command intents through the corresponding plugin skills. Fresh Claude and Codex
+sessions observed the exact 14-skill catalog and the trusted common `SessionStart` hook, so the
+capability state is active and READY. The final closeout commit and remote-parity check are part of
+this same completed delivery record.
 
 Consumer repository mutation remains prohibited. The current operator instruction authorizes Yoke
 commit/push and user-level activation; it does not authorize a PR, workflow, tag, or release.

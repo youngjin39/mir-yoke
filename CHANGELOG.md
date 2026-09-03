@@ -67,6 +67,15 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ### Fixed
 
+- Used each host's default `hooks/hooks.json` discovery instead of also declaring the conventional
+  path in plugin manifests, preventing Claude from loading the common hook twice while preserving
+  stable Codex hook discovery.
+- Preserved Yoke-only provider agents during capability updates by classifying them separately
+  from the Profile-selected cross-runtime agent union.
+- Migrated the existing global capability state through the compatible schema path, activated all
+  four packages in Claude and Codex, and recorded fresh skill-catalog and trusted-hook attestations
+  before marking the provider READY.
+
 - Fixed shared hook adapters so current Codex `apply_patch` payloads in
   `tool_input.command` receive path safety, post-edit inspection, and durable-memory sync.
 - Fixed default `context pull` so active durable facts are available even when no document
