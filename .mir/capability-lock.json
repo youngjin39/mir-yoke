@@ -105,7 +105,7 @@
     "mir-lifecycle-hooks": {
       "package_kind": "skills-hooks",
       "path": "plugins/mir-lifecycle-hooks",
-      "sha256": "fd7127b526610e0bb11599fdebad85eb53f30b9727e5b2de40d87d94080da5b5"
+      "sha256": "6756941db554ea1d0545d81c29b488a0a1465f8d08f030448486c7bdd511d896"
     }
   },
   "profile": "hybrid_pipeline",
@@ -114,9 +114,9 @@
   },
   "schema_version": 2,
   "source": {
-    "commit": "937528206b993cd1b4b5a95f4918941231a6ade4",
+    "commit": "e1307bbb8bd527e31d1a0756379d04707906847d",
     "ref": "main",
     "url": "https://github.com/youngjin39/mir-yoke.git"
   },
-  "synced_at": "2026-09-03T16:49:51.759029+00:00"
+  "synced_at": "2026-09-03T17:07:54.405524+00:00"
 }

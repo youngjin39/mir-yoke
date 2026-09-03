@@ -455,7 +455,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": ".mir/capability-lock.json",
-      "sha256": "532e69f46c5d20bbfc327c655764593ae2f29a11ff45dca6d074e876e322f010"
+      "sha256": "b7cf7106ed090faefa02a5ed2d5e0a793a311219048dd020c0407c270154c904"
     },
     {
       "classification": "reference",
@@ -563,7 +563,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "config/capability-sources.json",
-      "sha256": "830d542f38e648938b2c5a38d5aff3bf67a0de56d3751937e77f23c9947f1053"
+      "sha256": "fab88e2abd1072457654cec306d42a46ca19b6b3d1794c7d1673a4c266da9663"
     },
     {
       "classification": "reference",
@@ -1697,7 +1697,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "docs/decisions/adr-90-role-plugins-and-common-hooks.md",
-      "sha256": "4a970a35fc0990c05ce1a2f0b16ed1851cdea37c20e7b842e4e5a4c1db03fbaf"
+      "sha256": "c64f3efdaac883aa162656a336697f32e43cff84a8450d2a3e96f289225e9fb0"
     },
     {
       "classification": "reference",
@@ -2225,7 +2225,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "docs/operations/global-plugin-migration.md",
-      "sha256": "8622e6aeb4169b76c493d0135bb4bc5f6139a1dd3919c7e11bbef0557f58ab82"
+      "sha256": "24df5db6d2dead99a40c69ed689535dfeb5aaf84433cd63f5f190e1eb4e9f5dd"
     },
     {
       "classification": "reference",
@@ -2861,7 +2861,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "plugins/mir-lifecycle-hooks/.codex-plugin/plugin.json",
-      "sha256": "4ea99cfea436480b40b55969d3188df804bfad6b03a6663bcc3e233ccefd13ee"
+      "sha256": "de7e05241dfe1e297906c0349637c8a2a93b6e0cb2e808f69148e0b8a5b22cd6"
     },
     {
       "classification": "optional-consumer-tool",
@@ -3617,13 +3617,13 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "src/mir/core/capabilities/config.py",
-      "sha256": "13c3af822bddaca52e93942c34ec721b9ba0e0e5ddd2434214520e2f9637e53d"
+      "sha256": "59472973939249bfdc899c2512e19c6ec1dbdd37164805ee333e00a07543a767"
     },
     {
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "src/mir/core/capabilities/manager.py",
-      "sha256": "b3c3d49955e635345d3332c27b614e98f433cf962e52c32e0c58fb1512e3f0aa"
+      "sha256": "b0737c974ba84017f6e5bba184f7878f52efdd45a081115e01c4a1fa489e9b8e"
     },
     {
       "classification": "optional-consumer-tool",
@@ -4169,13 +4169,13 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_capability_cli.py",
-      "sha256": "b5761f8a6c76f00dfda4d693592b962e03fa35fc7d57329d0f50626e6c3da44d"
+      "sha256": "e9a2e6be7080dbbb915bf71756311044b4657d1a3b95bc5bcd917f89d910aa20"
     },
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_capability_security.py",
-      "sha256": "78b474d54bec5a3a1fe5cf629a337b34a8464039c66fef6dea245a2518730ca9"
+      "sha256": "57e0086cb900af00449691689d8c180ab38bfeebb87400019ef1dd49d36498a1"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4307,7 +4307,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_plugin_skill_packages.py",
-      "sha256": "a79bd1cd0e03f2473b157ec58575aca7fa13bbde833e9f56045eb2e0946945fd"
+      "sha256": "f9b5bcd78e994fa9c929017efb9d1e08e9c2b8d004adecf30fb4402ac8392507"
     },
     {
       "classification": "template-maintainer-tool",
