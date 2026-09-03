@@ -81,6 +81,7 @@ def use_schema2_capability_source(project: Path) -> None:
     payload.pop("active_package_digest_acknowledgements")
     payload.pop("commands")
     payload.pop("project_integrations")
+    payload["agents"].pop("provider_local")
     for pack in payload["profiles"]["packs"].values():
         pack.pop("commands")
         pack["plugins"].remove("mir-lifecycle-hooks")
@@ -461,10 +462,13 @@ def test_profile_materializes_only_its_selected_agent_pack(tmp_path: Path) -> No
     manager.sync("content_workspace", apply=True)
 
     selected = set(manager.config.packs["content_workspace"].agents)
+    preserved = set(manager.config.provider_local_agents)
     for source_path in manager.config.agents:
-        assert (project / source_path).exists() is (source_path in selected)
+        assert (project / source_path).exists() is (
+            source_path in selected or source_path in preserved
+        )
     assert {path.stem for path in (project / ".codex" / "agents").glob("*.toml")} == {
-        Path(source_path).stem for source_path in selected
+        Path(source_path).stem for source_path in selected | preserved
     }
 
 

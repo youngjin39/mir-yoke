@@ -121,6 +121,9 @@ comment and issue drafts live in
   real server is selected, implemented, registered, and verified.
 - Agents and command sources continue through ADR-89's generated project projections while the
   upstream feature gaps remain open.
+- `agents.provider_local` names Yoke-only agent sources that no distributable Profile selects.
+  Capability sync preserves them and the user-runtime installer excludes them;
+  `template-sync-validator` is the current sole member.
 
 ## 4. Rejected Alternatives
 

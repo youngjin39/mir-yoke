@@ -120,6 +120,7 @@ class CapabilityConfig:
     aliases: dict[str, str]
     packs: dict[str, CapabilityPack]
     agents: tuple[str, ...]
+    provider_local_agents: tuple[str, ...]
     commands: dict[str, str]
     project_integrations: dict[str, object]
     required_project_paths: tuple[str, ...]
@@ -284,7 +285,16 @@ def load_capability_config(path: Path) -> CapabilityConfig:
         )
 
     agents_raw = raw.get("agents")
-    if not isinstance(agents_raw, dict) or not isinstance(agents_raw.get("allowlist"), list):
+    expected_agent_keys = (
+        {"allowlist", "provider_local"}
+        if source_schema_version == 4
+        else {"allowlist"}
+    )
+    if (
+        not isinstance(agents_raw, dict)
+        or set(agents_raw) != expected_agent_keys
+        or not isinstance(agents_raw.get("allowlist"), list)
+    ):
         raise CapabilityConfigError("agents.allowlist must be an array")
     agents: list[str] = []
     for agent_path in agents_raw["allowlist"]:
@@ -295,6 +305,22 @@ def load_capability_config(path: Path) -> CapabilityConfig:
         agents.append(value)
     if len(set(agents)) != len(agents):
         raise CapabilityConfigError("agents.allowlist contains duplicates")
+    provider_local_agents: list[str] = []
+    if source_schema_version == 4:
+        provider_local_raw = agents_raw["provider_local"]
+        if not isinstance(provider_local_raw, list):
+            raise CapabilityConfigError("agents.provider_local must be an array")
+        provider_local_agents = [
+            validate_relative_path(path, prefix=".claude")
+            for path in provider_local_raw
+        ]
+        if (
+            len(set(provider_local_agents)) != len(provider_local_agents)
+            or not set(provider_local_agents).issubset(agents)
+        ):
+            raise CapabilityConfigError(
+                "agents.provider_local must be a unique subset of agents.allowlist"
+            )
 
     commands: dict[str, str] = {}
     if source_schema_version >= 3:
@@ -394,6 +420,14 @@ def load_capability_config(path: Path) -> CapabilityConfig:
             raise CapabilityConfigError(f"profile {name!r} duplicates another inventory")
         inventories.add(inventory)
         packs[name] = CapabilityPack(*inventory)
+    if any(
+        provider_local in pack.agents
+        for provider_local in provider_local_agents
+        for pack in packs.values()
+    ):
+        raise CapabilityConfigError(
+            "agents.provider_local entries cannot belong to a distributable profile"
+        )
 
     required_raw = raw.get("required_project_paths")
     if not isinstance(required_raw, list) or not required_raw:
@@ -465,6 +499,7 @@ def load_capability_config(path: Path) -> CapabilityConfig:
         aliases=aliases,
         packs=packs,
         agents=tuple(agents),
+        provider_local_agents=tuple(provider_local_agents),
         commands=commands,
         project_integrations=(
             _PROJECT_INTEGRATIONS if source_schema_version >= 3 else {}

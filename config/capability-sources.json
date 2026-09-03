@@ -146,6 +146,9 @@
       ".claude/agents/runtime-contract-reviewer.md",
       ".claude/agents/template-sync-validator.md",
       ".claude/agents/ui-reviewer.md"
+    ],
+    "provider_local": [
+      ".claude/agents/template-sync-validator.md"
     ]
   },
   "commands": {

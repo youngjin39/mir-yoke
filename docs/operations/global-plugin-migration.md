@@ -132,6 +132,8 @@ Profile selections, refuses symlinked paths and unmanaged divergence, removes on
 that its prior receipt still owns, and records source and target SHA-256 values. Claude receives
 agents and commands; Codex receives generated agents and uses the installed plugin skills for
 command intent. Yoke-only allowlist entries stay local, and project-local files take precedence.
+The capability source records those repository-only agents under `agents.provider_local`, so a
+provider update preserves them without adding them to the user-runtime union.
 
 ## 6. Rollback
 

@@ -2176,6 +2176,18 @@ class CapabilityManager:
             old_digest = old.get("sha256") if isinstance(old, dict) else None
             target = self._project_target(path)
             if path not in selected:
+                if path in self.config.provider_local_agents:
+                    if not target.exists() and not target.is_symlink():
+                        changes[path] = "absent"
+                    elif (
+                        target.is_file()
+                        and not target.is_symlink()
+                        and _file_digest(target) == digest
+                    ):
+                        changes[path] = "provider-local"
+                    else:
+                        changes[path] = "provider-local-diverged"
+                    continue
                 if not target.exists() and not target.is_symlink():
                     changes[path] = "absent"
                 elif (
@@ -2449,7 +2461,11 @@ class CapabilityManager:
                             self._project_target(source_path),
                             (checkout / source_path).read_bytes(),
                         )
-                    for source_path in set(self.config.agents) - set(selected_agents):
+                    for source_path in (
+                        set(self.config.agents)
+                        - set(selected_agents)
+                        - set(self.config.provider_local_agents)
+                    ):
                         self._project_target(source_path).unlink(missing_ok=True)
                     for source_path in selected_commands:
                         _atomic_write_bytes(

@@ -40,6 +40,7 @@ def use_schema2_capability_source(project: Path) -> None:
     payload.pop("active_package_digest_acknowledgements")
     payload.pop("commands")
     payload.pop("project_integrations")
+    payload["agents"].pop("provider_local")
     for pack in payload["profiles"]["packs"].values():
         pack.pop("commands")
         pack["plugins"].remove("mir-lifecycle-hooks")
@@ -62,6 +63,7 @@ def schema1_capability_source_payload() -> dict[str, object]:
     current.pop("active_package_digest_acknowledgements")
     current.pop("commands")
     current.pop("project_integrations")
+    current["agents"].pop("provider_local")
     for pack in current["profiles"]["packs"].values():
         pack["plugins"] = [
             name for name in pack["plugins"] if name in legacy_plugins
@@ -393,10 +395,35 @@ def test_capability_source_declares_the_reviewed_active_hook_package() -> None:
 
     assert config.plugin_kinds["mir-lifecycle-hooks"] == "skills-hooks"
     assert config.plugin_hooks == {"mir-lifecycle-hooks": ("SessionStart",)}
+    assert config.provider_local_agents == (
+        ".claude/agents/template-sync-validator.md",
+    )
     assert config.component_policy["admitted_package_kinds"] == ["skills", "skills-hooks"]
     assert config.component_policy["reserved_active_package_kinds"] == ["mcp"]
     acknowledgement = config.active_digest_acknowledgements["mir-lifecycle-hooks"]
     assert acknowledgement == _tree_digest(ROOT / "plugins" / "mir-lifecycle-hooks")
+
+
+@pytest.mark.parametrize("mutation", ["missing", "selected", "unknown"])
+def test_provider_local_agents_are_explicit_and_not_distributed(
+    tmp_path: Path, mutation: str
+) -> None:
+    def mutate(value: dict[str, object]) -> None:
+        if mutation == "missing":
+            value["agents"].pop("provider_local")
+        elif mutation == "selected":
+            value["agents"]["provider_local"] = [
+                value["profiles"]["packs"]["code_app"]["agents"][0]
+            ]
+        else:
+            value["agents"]["provider_local"] = [
+                ".claude/agents/not-declared.md"
+            ]
+
+    path = mutated_config(tmp_path, mutate)
+
+    with pytest.raises(CapabilityConfigError, match="provider_local|allowlist"):
+        load_capability_config(path)
 
 
 @pytest.mark.parametrize("kind", [None, "hooks", "mcp", "mixed", "agents"])
@@ -703,6 +730,7 @@ def test_should_keep_schema2_sources_readable_without_managed_commands(
         value.pop("active_package_digest_acknowledgements")
         value.pop("commands")
         value.pop("project_integrations")
+        value["agents"].pop("provider_local")
         for pack in value["profiles"]["packs"].values():
             pack.pop("commands")
             pack["plugins"].remove("mir-lifecycle-hooks")
