@@ -470,6 +470,20 @@ def test_active_hook_package_rejects_undeclared_hook_files(tmp_path: Path) -> No
         _validate_plugin(plugin, "mir-lifecycle-hooks", package_kind="skills-hooks")
 
 
+def test_active_hook_package_rejects_duplicate_claude_hook_registration(
+    tmp_path: Path,
+) -> None:
+    plugin = tmp_path / "mir-lifecycle-hooks"
+    shutil.copytree(ROOT / "plugins" / "mir-lifecycle-hooks", plugin)
+    manifest = plugin / ".claude-plugin" / "plugin.json"
+    payload = json.loads(manifest.read_text(encoding="utf-8"))
+    payload["hooks"] = "./hooks/hooks.json"
+    manifest.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(CapabilityError, match="manifest keys rejected"):
+        _validate_plugin(plugin, "mir-lifecycle-hooks", package_kind="skills-hooks")
+
+
 @pytest.mark.parametrize("runtime", ["claude", "codex"])
 def test_active_hook_package_rejects_undeclared_manifest_files(
     tmp_path: Path, runtime: str

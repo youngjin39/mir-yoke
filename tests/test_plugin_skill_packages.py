@@ -50,7 +50,8 @@ def test_dual_runtime_manifests_share_one_skill_tree() -> None:
         assert "interface" not in claude
         forbidden = ("mcpServers", "apps", "scripts", "agents", "commands")
         if plugin_name == "mir-lifecycle-hooks":
-            assert claude["hooks"] == codex["hooks"] == "./hooks/hooks.json"
+            assert "hooks" not in claude
+            assert codex["hooks"] == "./hooks/hooks.json"
         else:
             forbidden = ("hooks", *forbidden)
         for field in forbidden:
@@ -69,7 +70,8 @@ def test_lifecycle_hook_plugin_uses_one_exact_shared_hook_file() -> None:
     hooks = _json(plugin_root / "hooks" / "hooks.json")
 
     assert claude["name"] == codex["name"] == "mir-lifecycle-hooks"
-    assert claude["hooks"] == codex["hooks"] == "./hooks/hooks.json"
+    assert "hooks" not in claude
+    assert codex["hooks"] == "./hooks/hooks.json"
     assert codex["skills"] == "./skills/"
     assert hooks == {
         "hooks": {

@@ -10,6 +10,5 @@
   "homepage": "https://github.com/youngjin39/mir-yoke",
   "repository": "https://github.com/youngjin39/mir-yoke",
   "license": "MIT",
-  "keywords": ["lifecycle", "continuity", "session"],
-  "hooks": "./hooks/hooks.json"
+  "keywords": ["lifecycle", "continuity", "session"]
 }

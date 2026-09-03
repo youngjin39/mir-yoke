@@ -51,7 +51,7 @@ _CODEX_SKILL_MANIFEST_KEYS = {
     "skills",
     "version",
 }
-_CLAUDE_HOOK_MANIFEST_KEYS = _CLAUDE_SKILL_MANIFEST_KEYS | {"hooks"}
+_CLAUDE_HOOK_MANIFEST_KEYS = _CLAUDE_SKILL_MANIFEST_KEYS
 _CODEX_HOOK_MANIFEST_KEYS = _CODEX_SKILL_MANIFEST_KEYS | {"hooks"}
 _HOOKS_PATH = "./hooks/hooks.json"
 _HOOKS_SCHEMA = {
@@ -472,7 +472,7 @@ def _validate_plugin(plugin_root: Path, expected_name: str, *, package_kind: str
         hook_entries = {path.name for path in (plugin_root / "hooks").iterdir()}
         if hook_entries != {"hooks.json", "runtime_continuity.py"}:
             raise CapabilityError(f"shared hook content rejected in {expected_name}")
-        if any(manifest.get("hooks") != _HOOKS_PATH for manifest in manifests):
+        if "hooks" in manifests[0] or manifests[1].get("hooks") != _HOOKS_PATH:
             raise CapabilityError(f"shared hook path drift for {expected_name}")
         hooks = _read_json(plugin_root / "hooks" / "hooks.json")
         if hooks != _HOOKS_SCHEMA:
