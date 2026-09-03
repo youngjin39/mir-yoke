@@ -57,8 +57,8 @@ is required when the component changes runtime authority, as hooks and MCP serve
 
 `mir-lifecycle-hooks` is a separately named fourth package and is selected by every Yoke Profile.
 It contains one shared `SessionStart` hook and the supporting `runtime-continuity` skill. The same
-Claude auto-discovers the standard `hooks/hooks.json`, so its manifest must not repeat that path;
-the Codex manifest declares the path explicitly. The non-executable Python handler emits
+Both hosts auto-discover the standard `hooks/hooks.json`, so neither manifest repeats that path.
+The non-executable Python handler emits
 one fixed, bounded continuity reminder and performs no file, environment, network, subprocess, or
 repository access.
 
