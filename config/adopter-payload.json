@@ -455,7 +455,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": ".mir/capability-lock.json",
-      "sha256": "1c980f2ab5ed64f3188688261b510ec39c2681d2817bbb4391549c9512acdf35"
+      "sha256": "532e69f46c5d20bbfc327c655764593ae2f29a11ff45dca6d074e876e322f010"
     },
     {
       "classification": "reference",
@@ -563,7 +563,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "config/capability-sources.json",
-      "sha256": "53e80594bc546ecd378cd9e8f603cc282c89b81af3a6abfac352d7b34c001e5c"
+      "sha256": "830d542f38e648938b2c5a38d5aff3bf67a0de56d3751937e77f23c9947f1053"
     },
     {
       "classification": "reference",
@@ -1697,7 +1697,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "docs/decisions/adr-90-role-plugins-and-common-hooks.md",
-      "sha256": "fc7932396deb0c2fa68216e64a81cda89249a8bd1ed9573ca183d9e9fcf27fcb"
+      "sha256": "4a970a35fc0990c05ce1a2f0b16ed1851cdea37c20e7b842e4e5a4c1db03fbaf"
     },
     {
       "classification": "reference",
@@ -2855,7 +2855,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "plugins/mir-lifecycle-hooks/.claude-plugin/plugin.json",
-      "sha256": "734ab6171d02ebe9bb52dd79e4495fc507585b2d83c17773b9622994781efffa"
+      "sha256": "b95aee30d3d0c54dac527ce8c1c2d357f0b797f20cec6ff1086d56e92ef81499"
     },
     {
       "classification": "optional-consumer-tool",
@@ -3623,7 +3623,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "src/mir/core/capabilities/manager.py",
-      "sha256": "684035b9255b4ab217530bd79643759ab1e35e1e15c5b0ce7d1c3691a60ee12b"
+      "sha256": "b3c3d49955e635345d3332c27b614e98f433cf962e52c32e0c58fb1512e3f0aa"
     },
     {
       "classification": "optional-consumer-tool",
@@ -3971,7 +3971,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/handoffs/session-handoff-LATEST.md",
-      "sha256": "4d9c9076959584223ae3afc8abd87851f6d05bb8f8108a0ffeb5c362986bb4d6"
+      "sha256": "6bb711a5196c84b8e8d5ecbcdd5ab63f5c5057f659cfc4eca4fbb0d878a7a1f7"
     },
     {
       "classification": "reference",
@@ -4175,7 +4175,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_capability_security.py",
-      "sha256": "4a9b682c596a5b32d28e5201fb967538834fd14f457b9f40813358d77433c772"
+      "sha256": "78b474d54bec5a3a1fe5cf629a337b34a8464039c66fef6dea245a2518730ca9"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4307,7 +4307,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_plugin_skill_packages.py",
-      "sha256": "c1349975aa48e1fe1ebbf7e7d06bae6a5411206ea76fbb39ba820a397eac0acd"
+      "sha256": "a79bd1cd0e03f2473b157ec58575aca7fa13bbde833e9f56045eb2e0946945fd"
     },
     {
       "classification": "template-maintainer-tool",

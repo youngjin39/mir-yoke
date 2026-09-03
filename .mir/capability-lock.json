@@ -45,29 +45,78 @@
       "sha256": "f9663406ce8e6fda5504f1c7d0552a1c4723983baf846a8824d32d7743c70efe"
     }
   },
+  "commands": {
+    ".claude/commands/analyze-design.md": {
+      "codex_skill": "mir-core:design",
+      "project_path": ".claude/commands/analyze-design.md",
+      "sha256": "b7e47422f62b82162eb1690ebcbf2ce22384ac2df6a2ca79644a117505d2415e"
+    },
+    ".claude/commands/audit-design-fit.md": {
+      "codex_skill": "mir-core:design",
+      "project_path": ".claude/commands/audit-design-fit.md",
+      "sha256": "a58bf3330cd86cd99f8baff885dbcb14a45dad6415277e4961d876a0a96a9627"
+    },
+    ".claude/commands/develop-from-design.md": {
+      "codex_skill": "mir-core:design",
+      "project_path": ".claude/commands/develop-from-design.md",
+      "sha256": "9973ab79916674748c325f0d6ef437a08f3e308540b4f2c3dc0882b485583bcd"
+    },
+    ".claude/commands/review-code.md": {
+      "codex_skill": "mir-core:verify",
+      "project_path": ".claude/commands/review-code.md",
+      "sha256": "8006dc69d5877d443633889893aba19022bba8dc2f33a6bb9335bb69e0229710"
+    },
+    ".claude/commands/role-split-pipeline.md": {
+      "codex_skill": "mir-core:design",
+      "project_path": ".claude/commands/role-split-pipeline.md",
+      "sha256": "b599deb04671b9e621ca94a05f5cb951c8336dc1347eb9ff30fa2f7932515003"
+    },
+    ".claude/commands/verify-against-spec.md": {
+      "codex_skill": "mir-core:verify",
+      "project_path": ".claude/commands/verify-against-spec.md",
+      "sha256": "f809a6bc0a844b10ab48e43f080903ed6b54f2b4a0ef64c6ccd7ffedfeeb438a"
+    }
+  },
+  "consumer_binding": "3abb1807ddf400533ec38da0e02a85b1b80eabc26f97eb2e04e0cc79c8e563dc",
+  "marketplaces": {
+    ".agents/plugins/marketplace.json": {
+      "sha256": "56b047474551913d6734e85c60a3f25d4944f55d28b7a2110495f9175f52ed07"
+    },
+    ".claude-plugin/marketplace.json": {
+      "sha256": "47da5aa95a30a30401b348fce9491d660610de9e7e1a15246a47a00e4399a31a"
+    }
+  },
   "plugins": {
     "mir-code": {
+      "package_kind": "skills",
       "path": "plugins/mir-code",
       "sha256": "651ce33feaa77f69da92b6e879ee1c36950137828f1ec6599a3be1156f346657"
     },
     "mir-content": {
+      "package_kind": "skills",
       "path": "plugins/mir-content",
       "sha256": "661669cc578151b17346d1ae457873b10a3af2809773e115dc8634ee6cfaf7b2"
     },
     "mir-core": {
+      "package_kind": "skills",
       "path": "plugins/mir-core",
       "sha256": "832a0f161e65dd46761659cdbc2d79f6f2e2c2b6d276e0036f2d214daa7938bf"
+    },
+    "mir-lifecycle-hooks": {
+      "package_kind": "skills-hooks",
+      "path": "plugins/mir-lifecycle-hooks",
+      "sha256": "fd7127b526610e0bb11599fdebad85eb53f30b9727e5b2de40d87d94080da5b5"
     }
   },
   "profile": "hybrid_pipeline",
   "registration": {
     "status": "restart-required"
   },
-  "schema_version": 1,
+  "schema_version": 2,
   "source": {
-    "commit": "3018f5c63d610f06d3195a2e409f3bdb0cdd311f",
+    "commit": "937528206b993cd1b4b5a95f4918941231a6ade4",
     "ref": "main",
     "url": "https://github.com/youngjin39/mir-yoke.git"
   },
-  "synced_at": "2026-08-30T02:19:45+00:00"
+  "synced_at": "2026-09-03T16:49:51.759029+00:00"
 }

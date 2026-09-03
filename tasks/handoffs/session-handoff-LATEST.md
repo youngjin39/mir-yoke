@@ -74,8 +74,8 @@ Consumer repositories must remain untouched throughout this sequence.
 ## Runtime Snapshot (Generated)
 
 ### Active Plan Items
-- Publish and activate the verified role-plugin and user-runtime surfaces.
+- Commit and push Yoke `main`, then activate and verify the published surfaces in the current
 
 ### Working Tree
-- Working tree contains the verified ADR-88 through ADR-90 implementation pending publication.
+- Working tree dirty (1 paths; inspect git status --short).
 <!-- mir:runtime-snapshot:end -->
