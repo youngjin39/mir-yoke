@@ -67,6 +67,20 @@ host-wide, repository-neutral setup, `scripts/install_user_runtime_agents.py` in
 Profile-selected agents and Claude commands into explicit user configuration roots; it is dry-run by
 default, records file digests, and never edits a consumer repository. Yoke-only allowlist entries are
 excluded, and project-local definitions still win.
+
+### Platform use
+
+macOS is the primary central-provider and release-evidence lane. Linux and WSL are separate
+compatibility lanes; they use their own runtime homes, caches, trust decisions, receipts, and
+storage, and their failure does not invalidate a proven macOS provider. Native Windows is not an
+automatic Yoke installation lane. A Windows project may give an AI agent the Git repository as a
+versioned example, then let that agent select and adapt the needed plugin, skill, agent, command
+intent, hook semantics, and structure under the target's own policy and checks.
+
+Cloning or pulling Yoke never installs user-scoped capabilities by itself. The
+[Windows and WSL Reference Adaptation](docs/operations/windows-wsl-reference-adaptation.md) guide
+lists the non-portable assumptions and provides a bounded prompt for a Windows project agent.
+
 Superseded ADR-82 composition files are preserved under
 `reference-templates/advanced-composition/` as non-default, non-executable design references; Mir
 Yoke publishes no active `yoke` composer. The remaining source, tools, examples, specifications,
@@ -137,6 +151,8 @@ uv run ruff check
 ADR-83 owns the supported-surface and Project Agent Kit boundary. ADR-84 owns the current harness
 upgrade and runtime-hygiene guidance. ADR-81 continues to own the four-file minimum Starter, while
 ADR-74 governs the explicitly invoked CLI and required-memory implementation retained from v0.8.
+ADR-79 separates the primary macOS lane, Linux/WSL compatibility lanes, and native Windows
+reference adaptation.
 
 ## License
 

@@ -16,6 +16,11 @@ current package and contains only one acknowledged, read-only `SessionStart` rem
 supporting skill. Repository-coupled hooks remain local. The current MCP inventory is empty, so
 there is no `mir-mcp` package to install.
 
+This runbook describes the primary macOS host flow. Linux and WSL are separate compatibility lanes
+with separate user homes and receipts. Native Windows must not execute these commands as a claimed
+ready-state installation; use `docs/operations/windows-wsl-reference-adaptation.md` so the target's
+AI agent can select and adapt the required structure without changing the macOS provider.
+
 ## 1. Establish the host inventory
 
 Start from an operator-owned registry of repositories that may be opened by the same Claude or

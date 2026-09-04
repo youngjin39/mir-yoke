@@ -473,7 +473,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "AGENTS.md",
-      "sha256": "83048388f7f3cc68dfff6292252538c6e980276918304ec16931fa0da1d87888"
+      "sha256": "6f2d9de8a0d98bdf00c1c1e2ba4d2f96558fe268cc1a5f43dbe525c3382b848f"
     },
     {
       "classification": "reference",
@@ -497,7 +497,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "CLAUDE.md",
-      "sha256": "78107c1fe6fa2875aafa1653001f37d67f0e40a186bc94218ea67bcb0978c5bf"
+      "sha256": "49ff4a8c3396b603c02466b4c0af4003f149942b7142da7237fc2e3f1a9417ed"
     },
     {
       "classification": "reference",
@@ -521,7 +521,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "README.md",
-      "sha256": "35093719bdfba512bc7a95f5b6b198037a9752ec92259ebe86937ae81b8db3f8"
+      "sha256": "73c446806af10cbf32a2f3e76b99ef293023bdd888508ef95943c99c6afed208"
     },
     {
       "classification": "reference",
@@ -1271,7 +1271,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "docs/decisions/INDEX.md",
-      "sha256": "e5c9d672524058968d07b11ecb1b81f680f7851331da2ea0faff7cc5e4d42765"
+      "sha256": "6cd6b3d8b9b98f58309612cd97f7d158d4da4f379211e1c23d968657f1516740"
     },
     {
       "classification": "historical",
@@ -1631,7 +1631,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "docs/decisions/adr-79-agent-guided-platform-scope.md",
-      "sha256": "a3fd4af4011ac66605068bc8ade853afb3c7f4902366426a5c14f69b5fd61c10"
+      "sha256": "f002c532960ab37e090e8fac964315c6039fe59242569cc018119f30df64b572"
     },
     {
       "classification": "reference",
@@ -2225,7 +2225,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "docs/operations/global-plugin-migration.md",
-      "sha256": "4aa4d9919c3f055e39cd7d71f7ac5722e72545644fcc4d7acc013104a029fdba"
+      "sha256": "476d347da2eba26fe37e3a3af8dcb3c848843a9bec6027f13719f55c51db130e"
     },
     {
       "classification": "reference",
@@ -2238,6 +2238,12 @@
       "disposition": "remove",
       "path": "docs/operations/preservation-first-reconciliation.md",
       "sha256": "09a5dd3e787367743586220b7f19d45bacfa69910e1ba70baa367a96d9985bad"
+    },
+    {
+      "classification": "reference",
+      "disposition": "remove",
+      "path": "docs/operations/windows-wsl-reference-adaptation.md",
+      "sha256": "e3d8632fadc9e0e4c108c80a25d1ddf60d6701aa603fe03f1e836fdcc1a701d6"
     },
     {
       "classification": "reference",
@@ -4211,7 +4217,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_decision_authority.py",
-      "sha256": "98db880892a6b7294164a33f18dd93197d5bf24abfc77e327563bc5a4e0403e9"
+      "sha256": "acaa40719231412a3e93d05ca4567bcb92536150335d0c6c6efa0fd3219c60fc"
     },
     {
       "classification": "template-maintainer-tool",

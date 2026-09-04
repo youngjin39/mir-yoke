@@ -18,7 +18,7 @@ is the greenfield recipe; installed `mir` acts only on an explicit target and op
 - `src/mir/cli/` owns the optional installed v0.8-compatible command surface; the Kit never copies it.
 - `plugins/` owns common skills and the exact read-only global hook;
   `config/capability-sources.json` owns commit-pinned runtime selection.
-- ADRs 81, 83-86, and 88-90 own the current product and capability boundaries.
+- ADR-79 owns the primary macOS, Linux/WSL compatibility, and native Windows reference-adaptation lanes; ADRs 81, 83-86, and 88-90 own the current product and capability boundaries.
 - `config/template-assets.json` classifies the full maintainer checkout.
 - `.mir/repo-profile.toml` owns this maintainer repository's local boundaries when present.
 

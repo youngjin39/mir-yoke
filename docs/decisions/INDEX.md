@@ -33,21 +33,24 @@ payload.
 7. [ADR-83](adr-83-project-agent-kit-recipe-and-supported-surfaces.md), including the 2026-08-11
    owner amendment, defines the Minimal Starter, standard Project Agent Kit, optional installed
    `mir` CLI, plugin, and inert-reference boundaries. It supersedes ADR-82.
-8. [ADR-84](adr-84-harness-upgrade-guidance-and-runtime-hygiene.md) defines current,
+8. [ADR-79](adr-79-agent-guided-platform-scope.md), including the 2026-09-04 owner amendment,
+   makes macOS the primary operational lane, isolates Linux/WSL compatibility evidence, and makes
+   native Windows an AI-guided reference-adaptation lane.
+9. [ADR-84](adr-84-harness-upgrade-guidance-and-runtime-hygiene.md) defines current,
    reference-only harness upgrades and the context, memory, embedding, hook, and generated-runtime
    hygiene boundary.
-9. [ADR-81](adr-81-minimal-starter-support-boundary.md) defines `starter/` as the only supported
+10. [ADR-81](adr-81-minimal-starter-support-boundary.md) defines `starter/` as the only supported
    consumer payload and removes advanced machinery from minimum readiness.
-10. [ADR-78](adr-78-public-template-identity-and-non-authority.md) defines public-template identity
+11. [ADR-78](adr-78-public-template-identity-and-non-authority.md) defines public-template identity
    and repository-local authority.
-11. [ADR-73](adr-73-proportional-guidance-first-harness.md) defines proportional local work,
+12. [ADR-73](adr-73-proportional-guidance-first-harness.md) defines proportional local work,
    delegation, review, and verification.
 
 The Project Agent Kit recipe is supported guidance, not a second fixed payload. It creates a
 project-owned common harness and required memory without copying Mir CLI source. The installed CLI
 is separately opt-in and gains authority only from the user's explicit target and operation.
 
-ADR-74, ADR-77, ADR-79, and ADR-80 govern the restored optional v0.8-compatible CLI behavior under
+ADR-74, ADR-77, and ADR-80 govern the restored optional v0.8-compatible CLI behavior under
 ADR-83's authority boundary. ADR-82 remains superseded; its selected files are preserved as inert
 advanced-composition references, not active `yoke` commands.
 

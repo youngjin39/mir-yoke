@@ -16,6 +16,7 @@ UPGRADE_ADR = (
 GLOBAL_POLICY_ADR = (
     ROOT / "docs/decisions/adr-85-global-policy-inheritance-and-agent-contracts.md"
 )
+PLATFORM_ADR = ROOT / "docs/decisions/adr-79-agent-guided-platform-scope.md"
 ACTIVE_PLUGIN_ADR = (
     ROOT / "docs/decisions/adr-88-active-plugin-component-admission.md"
 )
@@ -92,6 +93,27 @@ def test_should_make_adr_85_the_current_runtime_policy_decision() -> None:
     assert "Claude model frontmatter" in body
     assert "ADR-85 supersedes" in amended
     assert index.index("ADR-85") < index.index("ADR-84")
+
+
+def test_should_separate_primary_compatibility_and_windows_reference_lanes() -> None:
+    metadata = _frontmatter(PLATFORM_ADR)
+    body = PLATFORM_ADR.read_text(encoding="utf-8")
+    index = (ROOT / "docs/decisions/INDEX.md").read_text(encoding="utf-8")
+    guide = (
+        ROOT / "docs/operations/windows-wsl-reference-adaptation.md"
+    ).read_text(encoding="utf-8")
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+
+    assert metadata["status"] == "accepted"
+    assert metadata["amended"] == __import__("datetime").date(2026, 9, 4)
+    assert metadata["primary_automation"] == "macos"
+    assert metadata["compatibility_lanes"] == ["linux", "wsl"]
+    assert metadata["native_windows"] == "reference-adaptation-only"
+    assert "failure does not invalidate a proven macOS" in body
+    assert "A Git clone proves only that reference sources are available" in guide
+    assert "Do not run Yoke" in guide
+    assert "Cloning or pulling Yoke never installs" in readme
+    assert index.index("ADR-79") < index.index("ADR-78")
 
 
 def test_should_make_adr_88_the_active_plugin_supply_boundary() -> None:
