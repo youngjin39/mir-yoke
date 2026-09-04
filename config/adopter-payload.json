@@ -1691,7 +1691,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "docs/decisions/adr-89-dual-runtime-capability-management.md",
-      "sha256": "7af3f91ad1f97d80c03153ab4cc1470ddf06e739b33091fca0784e8216059187"
+      "sha256": "8cff2c79a98c04eb8b0fab959be2859f2c53fb5176be2f70b9e40eccd8cf48ec"
     },
     {
       "classification": "reference",
@@ -2225,7 +2225,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "docs/operations/global-plugin-migration.md",
-      "sha256": "24df5db6d2dead99a40c69ed689535dfeb5aaf84433cd63f5f190e1eb4e9f5dd"
+      "sha256": "4aa4d9919c3f055e39cd7d71f7ac5722e72545644fcc4d7acc013104a029fdba"
     },
     {
       "classification": "reference",
@@ -3623,7 +3623,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "src/mir/core/capabilities/manager.py",
-      "sha256": "b0737c974ba84017f6e5bba184f7878f52efdd45a081115e01c4a1fa489e9b8e"
+      "sha256": "995ec95eddcacc8321e05f01b3c15ba2e83e61b14a0a13d3021b1dffbbf309f6"
     },
     {
       "classification": "optional-consumer-tool",
@@ -4169,7 +4169,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_capability_cli.py",
-      "sha256": "e9a2e6be7080dbbb915bf71756311044b4657d1a3b95bc5bcd917f89d910aa20"
+      "sha256": "4d62d8eadd00d6ca685db8df9342e5d8c0b87b146f9172038ab2f71ee0e04b49"
     },
     {
       "classification": "template-maintainer-tool",

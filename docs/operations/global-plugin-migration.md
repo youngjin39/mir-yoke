@@ -63,8 +63,12 @@ uv run mir capability sync --project-root /absolute/canary --apply --json
 
 `check` is remote but read-only. `sync --apply` pins the exact Git commit, materializes one provider
 under `MIR_CAPABILITY_HOME`, registers the canary, and installs the selected plugins through the
-supported host CLIs. Schema-4 sync also copies the selected Claude agent and command sources into
-the canary, records their digests, and regenerates Codex agents. A differing project-owned file
+supported host CLIs at user scope. Consumer repositories must contain no project- or local-scope
+`mir-yoke` plugin registration and no `enabledPlugins` or `extraKnownMarketplaces` override for
+these packages. Remove such legacy entries only after confirming the user-scope provider is active;
+otherwise a project entry can override central activation. Schema-4 sync also copies the selected
+Claude agent and command sources into the canary, records their digests, and regenerates Codex
+agents. A differing project-owned file
 blocks overwrite; Codex command intent comes from the mapped plugin skill rather than a copied
 command file. Codex installation evidence is valid only when the `mir-yoke` marketplace and
 enabled plugin entries persist in `CODEX_HOME/config.toml` and the installed cache trees match the
@@ -109,9 +113,9 @@ uv run mir capability status --project-root /absolute/canary --json
 ```
 
 Ready means every runtime named by `policy.activation_required_runtimes` exposes exactly one
-enabled plugin per selected name, every required installed tree matches the lock digest, the
-required runtime has complete skill and hook discovery receipts, and the canary has no standalone
-collisions.
+enabled plugin per selected name, Claude reports that copy at `scope: user`, every required installed
+tree matches the lock digest, the required runtime has complete skill and hook discovery receipts,
+and the canary has no standalone collisions.
 Register each additional clean repository with `sync --apply`; the one-version consumer registry
 refuses a divergent digest.
 

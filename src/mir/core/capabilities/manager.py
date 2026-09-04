@@ -1969,6 +1969,9 @@ class CapabilityManager:
                 continue
             entry = matches[0]
             enabled = entry.get("enabled") is True or entry.get("status") == "enabled"
+            claude_scope_mismatch = (
+                executable == "claude" and entry.get("scope") != "user"
+            )
             if executable == "codex":
                 persistence_error = self._codex_persistence_error(codex_config, name)
                 installed_path, cache_error = self._codex_cache_path(entry, name)
@@ -1979,6 +1982,13 @@ class CapabilityManager:
                 path_error = None if installed_path is not None else "installed-path-missing"
             if not enabled:
                 evidence[name] = {"status": "disabled"}
+                verified = False
+            elif claude_scope_mismatch:
+                evidence[name] = {
+                    "status": "scope-mismatch",
+                    "actual_scope": entry.get("scope"),
+                    "expected_scope": "user",
+                }
                 verified = False
             elif path_error is not None or installed_path is None:
                 evidence[name] = {"status": path_error or "installed-path-missing"}

@@ -55,6 +55,11 @@ continues to use plugin skills for command intent. Project-local files retain pr
 ### 2.2 Cross-repository plugin discovery
 
 Skill plugins remain host-installed, namespaced, and independent of a consumer working directory.
+Activation is exclusively user-scoped: consumer repositories carry neither Claude project/local
+plugin records nor `enabledPlugins`/`extraKnownMarketplaces` overrides for Mir Yoke. Runtime
+evidence must reject a Claude package reported at any scope other than `user`; multiple matching
+records already fail the exact-one check. Codex uses its host configuration because it has no
+repository-scoped plugin installation mode.
 The real-CLI verifier installs the configured Yoke marketplace into isolated Claude and Codex homes,
 removes access to the provider checkout, and checks two distinct consumer working directories. Each
 runtime must report one enabled installed copy of every configured plugin, the installed tree digest
@@ -142,6 +147,8 @@ redirect global control files.
 - Agents and Claude commands can also be installed at user scope without modifying consumer
   repositories; their receipt remains separate from plugin activation.
 - Plugin skills are proven usable outside the provider checkout for both CLIs.
+- Claude activation evidence proves the single matching package is user-scoped, so a legacy
+  project/local record cannot satisfy readiness.
 - Hook and MCP ownership is visible. The exact read-only hook package is admitted; every other
   executable or network-bearing plugin shape remains fail-closed until separately designed and
   acknowledged.

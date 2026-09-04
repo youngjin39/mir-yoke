@@ -164,6 +164,9 @@ def runtime_runner(active: Path, codex_home: Path):
             for plugin in sorted((active / "plugins").iterdir())
             if plugin.name in installed[executable]
         ]
+        if executable == "claude":
+            for entry in entries:
+                entry["scope"] = "user"
         payload: object = entries if executable == "claude" else {"installed": entries}
         return subprocess.CompletedProcess(args, 0, json.dumps(payload), "")
 
@@ -966,6 +969,46 @@ def test_claude_plugin_id_is_normalized_for_runtime_evidence(tmp_path: Path) -> 
 
     attest_both_runtimes(manager)
     assert manager.finalize()["ready_to_finalize"] is True
+
+
+def test_claude_project_scoped_plugin_cannot_satisfy_central_activation(
+    tmp_path: Path,
+) -> None:
+    project = make_project(tmp_path)
+    capability_home = tmp_path / "capability-home"
+    codex_home = tmp_path / "codex-home"
+    base_runner = runtime_runner(capability_home / "active", codex_home)
+    listed_scope = {"value": "user"}
+
+    def scoped_runner(args: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        listed = base_runner(args, **kwargs)
+        if Path(args[0]).name != "claude" or args[1:3] != ["plugin", "list"]:
+            return listed
+        entries = json.loads(listed.stdout)
+        for entry in entries:
+            entry["scope"] = listed_scope["value"]
+        return subprocess.CompletedProcess(args, 0, json.dumps(entries), "")
+
+    manager = CapabilityManager(
+        project,
+        capability_home=capability_home,
+        user_home=tmp_path / "user",
+        codex_home=codex_home,
+        git=CopyGit(),
+        command_runner=scoped_runner,
+        which=lambda executable: f"/fake/{executable}",
+    )
+    manager.sync("content_workspace", apply=True)
+
+    listed_scope["value"] = "project"
+    activation = manager.finalize()["activation"]
+
+    assert activation["status"] == "cli-evidence-missing"
+    assert activation["runtimes"]["claude-code"]["verified"] is False
+    assert {
+        evidence["status"]
+        for evidence in activation["runtimes"]["claude-code"]["plugins"].values()
+    } == {"scope-mismatch"}
 
 
 def test_codex_source_path_without_persistent_install_is_rejected(tmp_path: Path) -> None:
