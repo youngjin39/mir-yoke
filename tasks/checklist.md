@@ -4,10 +4,12 @@ Historical completion detail remains in `tasks/tdd.json` and `tasks/change_log.m
 
 ## Current
 
-No open repository action remains after the 2026-09-05 maintenance audit, installer transaction,
-and continuity-snapshot repairs. The final full suite passed 974 tests and clean-candidate release
-readiness passed every gate. The authorized maintainer may now commit and push this Yoke-only update
-to `origin/main`.
+No open implementation action remains after the 2026-09-05 maintenance audit, installer
+transaction, and continuity-snapshot repairs. Implementation commit
+`dcff8d155ecb996b2a0dc014a293775fd05f5f06` is published on local `main` and `origin/main`; the
+final full suite passed 974 tests and clean-candidate release readiness passed every gate. This
+closeout records that observed delivery. Before a later session begins new work,
+verify local and remote `main` resolve to the intended same revision.
 
 ## Recent Completed
 

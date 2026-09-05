@@ -1,6 +1,6 @@
 # Plan
 
-## Current status — maintainer audit complete (2026-09-05)
+## Current status — audit and implementation delivery complete (2026-09-05)
 
 - [x] Record the current audit in `tasks/intent.json`, archive superseded cursor history, and keep
   the active cursor as the authority for this review.
@@ -20,6 +20,11 @@ The audit repaired the user-runtime installer and shared continuation snapshot. 
 plugin, platform, lock, Profile, or generated-parity defect. ADR-79 remains unchanged: macOS is the
 primary operational and release-evidence lane; Linux and WSL are separate compatibility lanes;
 native Windows is reference adaptation only.
+
+Implementation commit `dcff8d155ecb996b2a0dc014a293775fd05f5f06` is verified at both local
+`main` and `origin/main`. This closeout records the observed implementation delivery. Before further Yoke work, compare
+`git rev-parse HEAD` with `git ls-remote origin refs/heads/main` to verify the latest local and
+remote revisions.
 
 ## Completed prerequisite — role-plugin and common-hook delivery (2026-09-04)
 

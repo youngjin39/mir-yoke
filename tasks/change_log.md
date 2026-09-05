@@ -2,6 +2,8 @@
 
 One bullet per non-trivial change. Newest at the top.
 
+- 2026-09-05: published the verified implementation as
+  `dcff8d155ecb996b2a0dc014a293775fd05f5f06` on local `main` and `origin/main`.
 - 2026-09-05: made the user-runtime installer reject lexical and physical runtime-home overlap,
   including case-insensitive macOS aliases and physical ancestors, before it writes a receipt or
   payload. Its transaction now rolls back on process interrupts before reraising the original

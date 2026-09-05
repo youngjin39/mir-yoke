@@ -1,7 +1,8 @@
 # Session Handoff — Yoke Maintainer Audit
 
 - Date: 2026-09-05
-- Status: complete and ready for the authorized Yoke-only commit and push to `main`.
+- Status: audit and implementation delivery complete at
+  `dcff8d155ecb996b2a0dc014a293775fd05f5f06`; this closeout records the observed delivery.
 - Authority: `tasks/intent.json` is the active audit cursor. The operator authorized this Yoke
   review and direct main delivery. Do not mutate user runtimes, consumer repositories, protected
   memory, credentials, external accounts, releases, or tags.
@@ -26,6 +27,8 @@ use one ordered matcher for unchecked Markdown plus incomplete `in progress`, `i
 
 ## Evidence and next step
 
+- Implementation commit `dcff8d155ecb996b2a0dc014a293775fd05f5f06` was verified at both local
+  `main` and `origin/main` after publication.
 - The final full suite passed 974 tests in 162.78 seconds with exit code 0. Its authoritative log is
   `/tmp/mir-yoke-final-pytest.log`.
 - Focused plugin, capability, installer, derivative, asset, decision, and classification checks
@@ -41,7 +44,9 @@ use one ordered matcher for unchecked Markdown plus incomplete `in progress`, `i
   cursor/history, plan, checklist, handoff, change log, and generated adopter payload. No
   user-runtime installation or consumer write occurred.
 
-Commit these Yoke-only changes, then push `main`; no further repository repair is pending.
+No further repository repair is pending. Before the next session begins new work, compare
+`git rev-parse HEAD` with `git ls-remote origin refs/heads/main` to verify the latest local and
+remote revisions. The generated snapshot below records the checkpoint before closeout delivery.
 
 <!-- mir:runtime-snapshot:begin -->
 ## Runtime Snapshot (Generated)
