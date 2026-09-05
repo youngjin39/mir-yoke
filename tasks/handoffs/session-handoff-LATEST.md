@@ -1,76 +1,47 @@
-# Session Handoff — Yoke Role Plugins and Global Runtime Delivery
+# Session Handoff — Yoke Maintainer Audit
 
-- Date: 2026-09-04
-- Status: complete. Provider publication, global installation, runtime trust, attestation, and
-  direct delivery to `origin/main` are complete.
-- Branch: `main`.
-- Authority: the operator authorized direct Yoke edits, user-level activation, commit, and push to
-  `main`. Consumer-repository mutation, PRs, workflows, tags, and releases remained excluded.
+- Date: 2026-09-05
+- Status: complete and ready for the authorized Yoke-only commit and push to `main`.
+- Authority: `tasks/intent.json` is the active audit cursor. The operator authorized this Yoke
+  review and direct main delivery. Do not mutate user runtimes, consumer repositories, protected
+  memory, credentials, external accounts, releases, or tags.
 
 ## Current Decision
 
-Yoke is the sole authoring source for common role workflows. `mir-core`, `mir-code`, and
-`mir-content` are skills-only plugins. `mir-lifecycle-hooks` is the separately named
-`skills-hooks` plugin containing the shared read-only `SessionStart` handler and its
-`runtime-continuity` skill. Agents and Claude commands are separate from plugins: the digest-bound
-installer projects the Profile-selected agent union into both user runtimes and projects Claude
-commands into Claude only. Codex resolves the same command intent through plugin skills.
+The supported capability contract remains healthy. The four optional role plugins have one shared
+skill provider each, and `mir-lifecycle-hooks` alone supplies the exact, read-only shared
+`SessionStart` handler. Project hooks and MCP configuration remain target-local. The user-runtime
+installer and capability manager reject symlinked or replaced homes and paths, unmanaged collisions,
+diverged managed files, unsafe caches, and incomplete rollback states. The installer now rejects
+lexical and physical Claude/Codex home overlap, including a case-insensitive macOS alias or a
+physical ancestor. It rolls back on a process interrupt before reraising that original interrupt.
 
-Repository-coupled hooks remain generated from each repository's Profile and adapter. The common
-plugin hook never reads repository files, environment values, credentials, or runtime input; it
-performs no writes, subprocesses, or network access and emits one fixed 94-byte line. Status output
-separates this global hook from repository-coupled generated hooks.
+ADR-79 remains binding: macOS is the primary provider and release-evidence lane; Linux and WSL are
+separate compatibility lanes; native Windows is a target-owned reference-adaptation lane. No
+platform-runtime, plugin, lock, Profile, or generated-parity defect remained after review. The
+audit repaired one continuation defect: `PreCompact` had recognized only unchecked Markdown items,
+so it could falsely report no active work for formal `Step N:` cursors. Both shipped hook copies now
+use one ordered matcher for unchecked Markdown plus incomplete `in progress`, `in_progress`,
+`pending`, `blocked`, `active`, `running`, and `todo` step states; completed steps are excluded.
 
-No MCP plugin exists. Both runtime MCP registries were empty when audited and Yoke implements no
-server. MCP remains reserved until a concrete server and the ADR-88 admission, digest, rollback,
-and real-client gates exist.
+## Evidence and next step
 
-## Delivered Surfaces
+- The final full suite passed 974 tests in 162.78 seconds with exit code 0. Its authoritative log is
+  `/tmp/mir-yoke-final-pytest.log`.
+- Focused plugin, capability, installer, derivative, asset, decision, and classification checks
+  passed. The installer-specific suite has 19 passing tests, including physical macOS alias and
+  process-interrupt rollback coverage. `uv run python scripts/verify_codex_sync.py`,
+  `uv run python -m tools.template_assets --json`, and `uv run ruff check` also passed.
+- `uv run python scripts/verify_release_readiness.py` passed every clean-candidate gate with exit
+  code 0; its authoritative log is `/tmp/mir-yoke-final-release-readiness.log`.
+- The first full run correctly failed two stale `config/adopter-payload.json` hash tests after the
+  audit cursor changed. Regenerating the payload fixed the derived-state drift; the final full run
+  passed.
+- Changed files are the installer and its regression, two shipped pre-compact hooks and regression,
+  cursor/history, plan, checklist, handoff, change log, and generated adopter payload. No
+  user-runtime installation or consumer write occurred.
 
-- Both marketplaces publish the same four Profile-selectable packages from the Yoke tree.
-- Capability-source schema 4 admits only the exact `skills` and acknowledged `skills-hooks`
-  shapes; MCP and undeclared active content fail closed.
-- The global provider migrated from its valid legacy state and now reports `active`, exact provider
-  integrity, verified discovery for both required runtimes, and `ready: true`.
-- Claude and Codex each expose the exact 14 namespaced Yoke skills. Both executed the trusted
-  `mir-lifecycle-hooks:SessionStart` handler in fresh runtime sessions.
-- The four plugins are enabled and visible from all 14 registered repository roots without any
-  consumer-repository edits.
-- The separate installer placed 11 Profile-selected agents in the actual and bridge Claude homes
-  and in the shared Codex home. It placed six commands in each Claude home; Codex intentionally
-  has no copied command files and uses the mapped skills instead.
-- Provider-local `template-sync-validator` remains in Yoke and is intentionally excluded from all
-  global runtime homes.
-- The Codex plugin-agent use case is recorded at
-  `https://github.com/openai/codex/issues/18308#issuecomment-5527444139`. No duplicate command issue
-  was opened because Codex maps reusable command intent to skills.
-
-## Runtime Evidence
-
-- Codex session `01a06838-1d44-7f50-b0bc-53c4ad08f525` displayed all 14 skills, showed the
-  lifecycle hook as trusted, and received its exact fixed SessionStart output.
-- Claude session `A3F9F6E8-1462-4448-A3B2-6B9AA8949B73` loaded all four plugins and logged the
-  exact successful SessionStart output before the subsequent model request encountered a revoked
-  OAuth token. The authentication failure does not invalidate plugin discovery or hook execution;
-  renewing the user's Claude credential is an external account action.
-- Finalization accepted both independent new-session attestations and changed the registration
-  state from `restart-required` to `active`.
-
-## Verification
-
-- Focused capability, supply-chain, installer, architecture, compatibility, and transaction tests
-  pass, including the 14 user-runtime installer safety tests.
-- Ruff, Codex derivative verification, plugin validation, template-asset classification, and the
-  isolated real-CLI activation probe pass.
-- The full suite passes 966 tests in 178.68 seconds. Independent final re-review returned READY
-  with no actionable findings.
-- The protected memory database, secrets, and consumer repositories were not modified.
-
-## Remaining Operator Boundary
-
-Claude's model API currently returns an OAuth revocation error. Reauthentication is the only
-remaining external account action; Yoke's Claude plugin and hook loading were already proven before
-that request failed, so it is not an open repository delivery item.
+Commit these Yoke-only changes, then push `main`; no further repository repair is pending.
 
 <!-- mir:runtime-snapshot:begin -->
 ## Runtime Snapshot (Generated)

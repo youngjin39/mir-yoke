@@ -2,6 +2,21 @@
 
 One bullet per non-trivial change. Newest at the top.
 
+- 2026-09-05: made the user-runtime installer reject lexical and physical runtime-home overlap,
+  including case-insensitive macOS aliases and physical ancestors, before it writes a receipt or
+  payload. Its transaction now rolls back on process interrupts before reraising the original
+  `KeyboardInterrupt` or `SystemExit`. Final verification passed 974 tests, and clean-candidate
+  release readiness passed every gate.
+- 2026-09-05: repaired the maintainer and Project Agent Kit `PreCompact` hooks so the generated
+  handoff snapshot keeps ordered Markdown tasks and formal incomplete `Step N:` cursors. The shared
+  single-pass matcher accepts `in progress`, `in_progress`, `pending`, `blocked`, `active`,
+  `running`, and `todo`, while excluding completed steps.
+- 2026-09-05: recorded the current Yoke maintenance audit in the canonical intent cursor, archived
+  superseded cursor history, and regenerated the adopter payload so its asset hashes remain exact.
+  The first full run exposed the expected stale-payload detection after that cursor write
+  (`test_should_remove_reference_snapshot_when_adopter_payload_is_built` and
+  `test_should_match_exact_adopter_payload_when_release_inventory_is_generated`); regeneration
+  restored the derived-state contract.
 - 2026-08-30: accepted ADR-86, assigned Mir Harness as repository-maintenance manager, tracked the
   portable maintainer Profile without capability-lock protection, preserved adopter lock protection,
   regenerated derivatives and payload, and passed all 803 tests.

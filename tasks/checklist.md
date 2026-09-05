@@ -4,7 +4,10 @@ Historical completion detail remains in `tasks/tdd.json` and `tasks/change_log.m
 
 ## Current
 
-No open repository action remains after the final state commit and authorized `origin/main` push.
+No open repository action remains after the 2026-09-05 maintenance audit, installer transaction,
+and continuity-snapshot repairs. The final full suite passed 974 tests and clean-candidate release
+readiness passed every gate. The authorized maintainer may now commit and push this Yoke-only update
+to `origin/main`.
 
 ## Recent Completed
 

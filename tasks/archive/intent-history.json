@@ -4,6 +4,41 @@
       "goal": "Implement ADR-83 so one short project-purpose prompt produces a verified project-owned Claude and Codex Agent Kit, then stops before development planning.",
       "updated": "2026-08-11",
       "status": "superseded"
+    },
+    {
+      "goal": "Make Mir Yoke the central, dual-runtime capability provider: expose plugin skills across repositories and manage agents, skills, hooks, MCP servers, and commands through explicit runtime-native projections without weakening the active-component supply-chain gate.",
+      "updated": "2026-09-03",
+      "status": "superseded"
+    },
+    {
+      "goal": "Complete the interrupted Yoke plugin-state cleanup and redesign the capability supply chain so future plugin hooks or MCP servers require explicit, digest-bound active-component admission.",
+      "updated": "2026-09-03",
+      "status": "superseded"
+    },
+    {
+      "goal": "Correct the remaining ADR-85 Codex reviewer wording and make read-only sandbox generation exact and fail-closed without changing Claude model pins.",
+      "updated": "2026-08-30",
+      "status": "superseded"
+    },
+    {
+      "goal": "Make Mir Yoke inherit operator-owned Codex policy, modernize its cross-runtime agent contracts, and document external skill registry migration without changing Claude model pins.",
+      "updated": "2026-08-30",
+      "status": "superseded"
+    },
+    {
+      "goal": "Improve Mir Yoke as an initial-project template and current harness-engineering upgrade reference, including context, memory, embeddings, hooks, and Claude/Codex parity.",
+      "updated": "2026-08-29",
+      "status": "superseded"
+    },
+    {
+      "goal": "Complete and publish the portable compact lifecycle and close repository state; keep owner-run Project Agent Kit examples optional.",
+      "updated": "2026-08-28",
+      "status": "superseded"
+    },
+    {
+      "goal": "Maintain Mir Yoke as the verified ADR-78 public template; no active implementation, publication, or branch-cleanup task remains.",
+      "updated": "2026-08-08",
+      "status": "superseded"
     }
   ]
 }

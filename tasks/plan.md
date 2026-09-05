@@ -1,6 +1,27 @@
 # Plan
 
-## Current status — role-plugin and common-hook delivery complete (2026-09-04)
+## Current status — maintainer audit complete (2026-09-05)
+
+- [x] Record the current audit in `tasks/intent.json`, archive superseded cursor history, and keep
+  the active cursor as the authority for this review.
+- [x] Confirm the four role-plugin manifests, inventories, shared lifecycle contract, capability
+  source, managed lock, Claude/Codex generated parity, platform-lane documentation, and exhaustive
+  asset classification remain aligned.
+- [x] Inspect plugin and user-runtime installation boundaries for symlinks, collisions, divergence,
+  home replacement, and rollback. Repair lexical and physical runtime-home overlap rejection and
+  make process interrupts run transactional rollback before propagating the original interrupt.
+- [x] Repair the maintainer and Project Agent Kit `PreCompact` hooks so one ordered matcher retains
+  incomplete Markdown and formal `Step N:` plan cursors while excluding complete steps.
+- [x] Regenerate `config/adopter-payload.json` after cursor and evidence-log changes, then rerun
+  static gates, focused contract tests, and the full suite (974 passed); clean-candidate release
+  readiness passed every gate.
+
+The audit repaired the user-runtime installer and shared continuation snapshot. It found no remaining
+plugin, platform, lock, Profile, or generated-parity defect. ADR-79 remains unchanged: macOS is the
+primary operational and release-evidence lane; Linux and WSL are separate compatibility lanes;
+native Windows is reference adaptation only.
+
+## Completed prerequisite — role-plugin and common-hook delivery (2026-09-04)
 
 - [x] Record the operator's packaging rule: common workflows formerly copied into repositories are
   grouped into Yoke-owned, role-oriented plugins and selected by repository Profile.

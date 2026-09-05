@@ -229,8 +229,66 @@ def test_normalized_home_aliases_are_rejected_before_receipt_calculation(
     result, _, stderr = run_installer(monkeypatch, capsys, claude_home, codex_home_alias)
 
     assert result != 0
-    assert "must be different paths" in stderr
+    assert "must not overlap" in stderr
     assert not claude_home.exists()
+
+
+@pytest.mark.parametrize(
+    ("claude_relative", "codex_relative"),
+    (("runtime", "runtime/codex"), ("runtime/claude", "runtime")),
+)
+def test_overlapping_runtime_homes_are_rejected_before_receipt_calculation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    claude_relative: str,
+    codex_relative: str,
+) -> None:
+    claude_home = tmp_path / claude_relative
+    codex_home = tmp_path / codex_relative
+
+    result, _, stderr = run_installer(monkeypatch, capsys, claude_home, codex_home)
+
+    assert result != 0
+    assert "must not overlap" in stderr
+    assert not (tmp_path / "runtime").exists()
+
+
+def test_runtime_homes_with_the_same_physical_identity_overlap() -> None:
+    module = installer_module()
+    claude_home = module.HomeIdentity(
+        Path("/runtime/ClaudeHome"), Path("/runtime/ClaudeHome"), 7, 9
+    )
+    codex_home = module.HomeIdentity(
+        Path("/runtime/claudehome"), Path("/runtime/claudehome"), 7, 9
+    )
+
+    assert module.runtime_homes_overlap(claude_home, codex_home)
+
+
+def test_case_insensitive_ancestor_aliases_are_rejected_without_created_home_residue(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    probe = tmp_path / "CaseProbe"
+    alias = tmp_path / "caseprobe"
+    probe.mkdir()
+    supported = alias.exists() and probe.samefile(alias)
+    probe.rmdir()
+    if not supported:
+        pytest.skip("filesystem is case-sensitive")
+
+    module = minimal_provider(tmp_path)
+    claude_home = tmp_path / "CaseHome" / "a" / "claude"
+    codex_home = tmp_path / "casehome"
+
+    result, _, stderr = run_installer(
+        monkeypatch, capsys, claude_home, codex_home, "--apply", module=module
+    )
+
+    assert result != 0
+    assert "must not overlap" in stderr
+    assert not (tmp_path / "CaseHome").exists()
+    assert not (tmp_path / "casehome").exists()
 
 
 def write_provider_config(
@@ -436,3 +494,28 @@ def test_first_apply_failure_removes_created_homes_and_allows_retry(
         monkeypatch, capsys, claude_home, codex_home, "--apply", module=module
     )
     assert retried == 0, retry_error
+
+
+def test_interrupt_during_apply_rolls_back_created_homes_and_reraises(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    module = minimal_provider(tmp_path)
+    claude_home = tmp_path / "claude-home"
+    codex_home = tmp_path / "codex-home"
+    original_atomic_write = module.atomic_write
+    calls = 0
+
+    def interrupt_on_second_write(identity, relative, content):
+        nonlocal calls
+        calls += 1
+        if calls == 2:
+            raise KeyboardInterrupt()
+        original_atomic_write(identity, relative, content)
+
+    monkeypatch.setattr(module, "atomic_write", interrupt_on_second_write)
+
+    with pytest.raises(KeyboardInterrupt):
+        run_installer(monkeypatch, capsys, claude_home, codex_home, "--apply", module=module)
+
+    assert not claude_home.exists()
+    assert not codex_home.exists()

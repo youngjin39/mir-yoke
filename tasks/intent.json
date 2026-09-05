@@ -1,45 +1,10 @@
 {
-  "goal": "Complete and deploy Yoke-owned role plugins so Claude and Codex load the same common skills and read-only lifecycle hook globally, while agents and commands use a separate digest-bound user-runtime distribution path and repository-local definitions retain precedence.",
+  "goal": "Audit and minimally repair Mir Yoke supported surfaces: plugin configuration and contract alignment, Claude/Codex generated parity, platform continuity documentation, installer and lock references, asset classification, current Profile and documentation consistency, and concrete runtime defects. Preserve the ADR-79 macOS-primary and Linux/WSL-compatible posture, with native Windows as a reference-adaptation lane; do not install into user runtimes or consumer repositories. Record evidence, run focused and full verification, and prepare the maintainer-owned result for direct main commit and push.",
   "goal_type": "maintenance",
-  "scope": "Implement and publish the separately named mir-lifecycle-hooks package in Mir Yoke, admit only its exact read-only SessionStart shape through schema 4 and a reviewed digest, and add a separate dry-run-first installer for user-level Claude/Codex agents and Claude commands. Install the four plugins and separate runtime files globally without mutating consumer repositories. Preserve target-owned Profiles, protection rules, hooks, agents, commands, and dirty work. No MCP plugin is created because no Yoke MCP server exists. Commit and push Yoke main directly; do not create a PR, workflow, tag, or release.",
+  "scope": "Review and minimally repair the Yoke-owned plugin, capability, Claude/Codex generation, platform-reference, documentation, Profile, and release-gate surfaces. Run static, focused, and full checks; preserve target ownership, current platform lanes, managed lock semantics, and all unrelated work. Do not mutate user runtimes, consumer repositories, protected memory, credentials, or external services. The maintainer may commit and push the resulting Yoke main change directly after review.",
   "priority": "normal",
-  "updated": "2026-09-04",
+  "updated": "2026-09-05",
   "history": [
-    {
-      "goal": "Make Mir Yoke the central, dual-runtime capability provider: expose plugin skills across repositories and manage agents, skills, hooks, MCP servers, and commands through explicit runtime-native projections without weakening the active-component supply-chain gate.",
-      "updated": "2026-09-03",
-      "status": "superseded"
-    },
-    {
-      "goal": "Complete the interrupted Yoke plugin-state cleanup and redesign the capability supply chain so future plugin hooks or MCP servers require explicit, digest-bound active-component admission.",
-      "updated": "2026-09-03",
-      "status": "superseded"
-    },
-    {
-      "goal": "Correct the remaining ADR-85 Codex reviewer wording and make read-only sandbox generation exact and fail-closed without changing Claude model pins.",
-      "updated": "2026-08-30",
-      "status": "superseded"
-    },
-    {
-      "goal": "Make Mir Yoke inherit operator-owned Codex policy, modernize its cross-runtime agent contracts, and document external skill registry migration without changing Claude model pins.",
-      "updated": "2026-08-30",
-      "status": "superseded"
-    },
-    {
-      "goal": "Improve Mir Yoke as an initial-project template and current harness-engineering upgrade reference, including context, memory, embeddings, hooks, and Claude/Codex parity.",
-      "updated": "2026-08-29",
-      "status": "superseded"
-    },
-    {
-      "goal": "Complete and publish the portable compact lifecycle and close repository state; keep owner-run Project Agent Kit examples optional.",
-      "updated": "2026-08-28",
-      "status": "superseded"
-    },
-    {
-      "goal": "Maintain Mir Yoke as the verified ADR-78 public template; no active implementation, publication, or branch-cleanup task remains.",
-      "updated": "2026-08-08",
-      "status": "superseded"
-    },
     {
       "goal": "Release v0.9.0 with the v0.8 public harness CLI restored, a standard Project Agent Kit that includes bounded common harness and required memory, and superseded complex composition preserved as inert references without copying the Mir runtime into generated projects.",
       "updated": "2026-08-11",
@@ -48,6 +13,11 @@
     {
       "goal": "Maintain the released Mir Yoke v0.9.0 baseline with the clarified Project Agent Kit prompt; no active repository work remains, and owner-run Claude/Codex acceptance is optional post-release follow-up when a target is supplied.",
       "updated": "2026-08-11",
+      "status": "superseded"
+    },
+    {
+      "goal": "Complete and deploy Yoke-owned role plugins so Claude and Codex load the same common skills and read-only lifecycle hook globally, while agents and commands use a separate digest-bound user-runtime distribution path and repository-local definitions retain precedence.",
+      "updated": "2026-09-04",
       "status": "superseded"
     }
   ]

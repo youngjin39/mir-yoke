@@ -88,7 +88,7 @@ trap _mir_pre_compact_on_exit EXIT
   echo ""
   echo "### Active Plan Items"
   if [ -f "$PROJECT_DIR/tasks/plan.md" ]; then
-    PLAN_ITEMS=$(grep -E '^- \[ \]' "$PROJECT_DIR/tasks/plan.md" 2>/dev/null | head -10 | sed 's/^- \[ \] /- /')
+    PLAN_ITEMS=$(grep -Ei '^- \[ \]|^Step [0-9]+:[[:space:]]*(in[[:space:]_-]*progress|pending|blocked|active|running|todo)([[:space:]]|$)' "$PROJECT_DIR/tasks/plan.md" 2>/dev/null | head -10 | sed 's/^- \[ \] /- /; s/^Step /- Step /')
     if [ -n "$PLAN_ITEMS" ]; then
       printf '%s\n' "$PLAN_ITEMS"
     else

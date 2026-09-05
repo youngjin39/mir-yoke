@@ -239,7 +239,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": ".claude/hooks/pre-compact.sh",
-      "sha256": "8d661e56574089387a2eda0984cf2a0d1f183babcb9c8d6414f7a691a7b72ce6"
+      "sha256": "852b0f50a28293f13806bfbd69cc3a9203620b6aee8581fb68abbce4a6ca9488"
     },
     {
       "classification": "reference",
@@ -3167,7 +3167,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "scripts/install_user_runtime_agents.py",
-      "sha256": "61785b59f8e25f34743969350f859fc36ad2eb60a38105c5a51daac48c355dca"
+      "sha256": "f1e88dbce842d7aa9590874d2bb925f7a5a30de6348b5754144ba1a3cc8de98e"
     },
     {
       "classification": "reference",
@@ -3959,31 +3959,31 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/archive/intent-history.json",
-      "sha256": "4e753772bdb6348954928e6cffe23309566ea62a719d10d2725253440cdea26b"
+      "sha256": "2563f35ddd6ae217fe5077346702eabd26edfcddcc31ef7d5c7a8e158d25a3c7"
     },
     {
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/change_log.md",
-      "sha256": "6a59cbe16ef194b7c23bae6415fe2cf03476418eec45b1b2292db52a89572dbe"
+      "sha256": "6ac98818bff6f9ef26855cbdf775244b1dd8974fc28818bf39c99004991c892e"
     },
     {
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/checklist.md",
-      "sha256": "891f061cd264767ee51c3dd91484b5189dc8598d3b08d879af3aca0c840fe55c"
+      "sha256": "54f042dff956739be4a3d47e8218d2b85843a0f3eefc385b3e2eeb26addb17a2"
     },
     {
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/handoffs/session-handoff-LATEST.md",
-      "sha256": "63bea6695c9dec8a51b8981f8a49fc58cc4af1b6ea5f14061d272bd7c5aa821e"
+      "sha256": "3aa74d7020639585dc9c0c7d9e523bae0d91d13d58e62350c625e156f7db7f37"
     },
     {
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/intent.json",
-      "sha256": "2cf140a3af848ea6b7a219c40f31fbda74fb2947245e29f864a76697d3accf49"
+      "sha256": "2362d116a131a0969bdee46dbf2414e172d7f0f3be3739303221c2755fb7a2aa"
     },
     {
       "classification": "reference",
@@ -4007,7 +4007,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/plan.md",
-      "sha256": "9179751db4750dea0dcf878cef6652efb9af635afbf62661bac741d13f86277a"
+      "sha256": "3919b8d909fca39a804ec7f47169cf2ab97288acae3b0b85c4ac5b7f075df9e5"
     },
     {
       "classification": "reference",
@@ -4061,7 +4061,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "templates/common-harness/.claude/hooks/pre-compact.sh",
-      "sha256": "8d661e56574089387a2eda0984cf2a0d1f183babcb9c8d6414f7a691a7b72ce6"
+      "sha256": "852b0f50a28293f13806bfbd69cc3a9203620b6aee8581fb68abbce4a6ca9488"
     },
     {
       "classification": "optional-consumer-tool",
@@ -4211,7 +4211,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_compact_lifecycle_hooks.py",
-      "sha256": "a1ff6ee0c9a205401b1e9ffaf8968ebbc36987e5ae4e19edc210656a0172765d"
+      "sha256": "1b11dc13b5cfa2bb59f08825887b580b140553dfca9230c79c8dd05edf5ed8f3"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4415,7 +4415,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_user_runtime_agent_command_install.py",
-      "sha256": "2ae3168314471fea285bd878316b50ead538d87aa23106335590ab727f43b497"
+      "sha256": "549faaf4a1c4910e7742863c37a33d6b2794cc2bba752307eb7772ea4c84138d"
     },
     {
       "classification": "template-maintainer-tool",

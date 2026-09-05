@@ -220,6 +220,42 @@ def capture_home_identity(home: Path) -> HomeIdentity:
     return HomeIdentity(home, canonical_path, details.st_dev, details.st_ino)
 
 
+def runtime_homes_overlap(claude_home: HomeIdentity, codex_home: HomeIdentity) -> bool:
+    """Return whether two checked runtime homes share a directory or ancestor."""
+    identities = (
+        (claude_home.device, claude_home.inode),
+        (codex_home.device, codex_home.inode),
+    )
+    if identities[0] == identities[1]:
+        return True
+    for child, ancestor in ((claude_home, codex_home), (codex_home, claude_home)):
+        for parent in child.path.parents:
+            try:
+                details = parent.lstat()
+            except OSError:
+                continue
+            if (details.st_dev, details.st_ino) == (ancestor.device, ancestor.inode):
+                return True
+    return False
+
+
+def missing_directories(path: Path) -> tuple[Path, ...]:
+    """Return the path's not-yet-created directory chain, deepest first."""
+    missing: list[Path] = []
+    current = path
+    while not current.exists():
+        missing.append(current)
+        current = current.parent
+    return tuple(missing)
+
+
+def remove_created_directories(directories: tuple[Path, ...]) -> None:
+    """Remove an empty, newly created directory chain after overlap preflight failure."""
+    for directory in sorted(directories, key=lambda path: len(path.parts), reverse=True):
+        if directory.exists():
+            directory.rmdir()
+
+
 def verified_target(identity: HomeIdentity, relative: Path) -> Path:
     try:
         details = identity.path.lstat()
@@ -423,7 +459,7 @@ def apply_transaction(plans: tuple[RuntimePlan, ...]) -> None:
     try:
         for plan in plans:
             apply_plan(plan)
-    except Exception as error:
+    except BaseException as error:
         rollback_errors: list[str] = []
         for plan in reversed(plans):
             try:
@@ -436,6 +472,8 @@ def apply_transaction(plans: tuple[RuntimePlan, ...]) -> None:
             raise SyncError(
                 f"apply failed; rollback incomplete: {error}; {'; '.join(rollback_errors)}"
             ) from error
+        if not isinstance(error, Exception):
+            raise
         raise SyncError(f"apply failed; rollback complete: {error}") from error
 
 
@@ -497,8 +535,12 @@ def main(argv: list[str] | None = None) -> int:
     try:
         claude_home = require_safe_home(arguments.claude_home)
         codex_home = require_safe_home(arguments.codex_home)
-        if claude_home == codex_home:
-            raise SyncError("--claude-home and --codex-home must be different paths")
+        if (
+            claude_home == codex_home
+            or claude_home in codex_home.parents
+            or codex_home in claude_home.parents
+        ):
+            raise SyncError("--claude-home and --codex-home must not overlap")
         commit = source_commit()
         claude_files, codex_files = load_sources()
         claude_receipt, stale_claude = validate_targets(claude_home, "claude", claude_files)
@@ -523,11 +565,16 @@ def main(argv: list[str] | None = None) -> int:
         if arguments.apply:
             claude_exists = claude_home.exists()
             codex_exists = codex_home.exists()
+            claude_missing = missing_directories(claude_home)
+            codex_missing = missing_directories(codex_home)
             try:
                 claude_home.mkdir(parents=True, exist_ok=True)
                 codex_home.mkdir(parents=True, exist_ok=True)
                 claude_identity = capture_home_identity(claude_home)
                 codex_identity = capture_home_identity(codex_home)
+                if runtime_homes_overlap(claude_identity, codex_identity):
+                    remove_created_directories((*claude_missing, *codex_missing))
+                    raise SyncError("--claude-home and --codex-home must not overlap")
                 plans = (
                     RuntimePlan(
                         claude_identity,

@@ -70,6 +70,37 @@ def test_should_checkpoint_curated_handoff_once_when_precompact_runs(
     ]
 
 
+def test_should_include_ordered_incomplete_plan_cursors_in_precompact_snapshot(
+    tmp_path: Path,
+) -> None:
+    project = tmp_path / "project"
+    handoff = project / "tasks" / "handoffs" / "session-handoff-LATEST.md"
+    handoff.parent.mkdir(parents=True)
+    (project / "tasks" / "plan.md").write_text(
+        "# Plan\n\n"
+        "- [ ] Preserve the markdown task order.\n"
+        "Step 2: pending | validate the portable hook contract\n"
+        "Step 3: blocked | wait for the dependency\n"
+        "Step 4: complete | omit this completed step\n",
+        encoding="utf-8",
+    )
+
+    completed = _run_hook("pre-compact.sh", project, {"trigger": "auto"})
+
+    assert completed.returncode == 0, completed.stderr
+    snapshot = handoff.read_text(encoding="utf-8")
+    active_items = snapshot.split("### Active Plan Items\n", 1)[1].split(
+        "\n### Working Tree", 1
+    )[0]
+    assert active_items.splitlines() == [
+        "- Preserve the markdown task order.",
+        "- Step 2: pending | validate the portable hook contract",
+        "- Step 3: blocked | wait for the dependency",
+    ]
+    assert "Step 4: complete" not in snapshot
+    assert "- No open plan items." not in snapshot
+
+
 @pytest.mark.parametrize("trigger", ["manual", "auto"])
 def test_should_validate_checkpoint_without_blocking_when_postcompact_runs(
     tmp_path: Path, trigger: str
