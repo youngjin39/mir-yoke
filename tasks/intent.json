@@ -1,15 +1,10 @@
 {
-  "goal": "Repair Mir Yoke central capability status and multi-consumer update architecture: make global provider health readable without a consumer-local configuration or enrollment, separate consumer-local integration state, and permit atomic provider version migration across registered consumers while preserving non-requesting consumer files and locks as pending local integration. Preserve capability trust, digest, identity, secret, path, runtime, and activation checks; update ADR-89, current documentation, tests, and generated adopter payload without user-runtime or consumer writes.",
+  "goal": "Align Mir Yoke as the Harness-managed central capability supply system for independently owned repositories: make the primary purpose, management authority, supported adoption channels, consumer ownership boundaries, ADR precedence, maintainer Profile, operating documentation, contract tests, generated derivatives, and adopter payload consistent without changing interfaces, profile enums, runtime installations, consumer repositories, protected memory, credentials, or external services.",
   "goal_type": "maintenance",
-  "scope": "Repair Yoke-owned central capability status and multi-consumer provider updates. Preserve host provider trust, source and digest binding, runtime activation, path and identity checks, legacy compatibility, and consumer ownership. Do not mutate live user runtimes, consumer repositories, protected memory, credentials, or external services. Update ADR-89, current migration guidance, tests, task evidence, and generated adopter payload; prepare the bounded Yoke result for authorized delivery after verification.",
+  "scope": "Align only Yoke-owned purpose, management, supported-surface, and consumer-ownership documentation and metadata. Preserve the accepted capability repair, current source/digest/runtime boundaries, supported Starter/Project Agent Kit/optional CLI interfaces, and public_harness_template classification. Do not mutate live user runtimes, consumer repositories, protected memory, credentials, external services, code, schemas, or delivery state. Update canonical derivatives, task evidence, focused contract tests, and the generated adopter payload; prepare the bounded Yoke result for authorized delivery after verification.",
   "priority": "normal",
   "updated": "2026-09-06",
   "history": [
-    {
-      "goal": "Maintain the released Mir Yoke v0.9.0 baseline with the clarified Project Agent Kit prompt; no active repository work remains, and owner-run Claude/Codex acceptance is optional post-release follow-up when a target is supplied.",
-      "updated": "2026-08-11",
-      "status": "superseded"
-    },
     {
       "goal": "Complete and deploy Yoke-owned role plugins so Claude and Codex load the same common skills and read-only lifecycle hook globally, while agents and commands use a separate digest-bound user-runtime distribution path and repository-local definitions retain precedence.",
       "updated": "2026-09-04",
@@ -18,6 +13,11 @@
     {
       "goal": "Audit and minimally repair Mir Yoke supported surfaces: plugin configuration and contract alignment, Claude/Codex generated parity, platform continuity documentation, installer and lock references, asset classification, current Profile and documentation consistency, and concrete runtime defects. Preserve the ADR-79 macOS-primary and Linux/WSL-compatible posture, with native Windows as a reference-adaptation lane; do not install into user runtimes or consumer repositories. Record evidence, run focused and full verification, and prepare the maintainer-owned result for direct main commit and push.",
       "updated": "2026-09-05",
+      "status": "superseded"
+    },
+    {
+      "goal": "Repair Mir Yoke central capability status and multi-consumer update architecture: make global provider health readable without a consumer-local configuration or enrollment, separate consumer-local integration state, and permit atomic provider version migration across registered consumers while preserving non-requesting consumer files and locks as pending local integration. Preserve capability trust, digest, identity, secret, path, runtime, and activation checks; update ADR-89, current documentation, tests, and generated adopter payload without user-runtime or consumer writes.",
+      "updated": "2026-09-06",
       "status": "superseded"
     }
   ]

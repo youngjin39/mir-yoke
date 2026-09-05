@@ -41,7 +41,7 @@
   },
   "notes": [
     "Sanitized self-profile used by public harness-consistency generation and verification.",
-    "Mir Harness may directly modify this repository from the Yoke Git root without a target-prompt handoff or per-file approval; Mir Yoke itself declares no repository product/runtime agents, skills, or orchestration.",
+    "Mir Harness manages Yoke's direction, reuse decisions, verification, and authorized delivery coordination; Yoke supplies generic shared sources and declares no consumer runtime or orchestration authority.",
     "Commit, push, tag, release, and consumer-repository changes still require current explicit user authority."
   ],
   "active_agents": [],
@@ -55,6 +55,6 @@
     "remove": []
   },
   "orchestration_profile": "none",
-  "last_reviewed_at": "2026-08-27",
-  "rationale": "ADR-83 public Starter, Project Agent Kit recipe, portable plugin, and reference-corpus profile managed by Mir Harness. Mir Yoke publishes inert assets and declares no repository runtime agent or orchestration authority."
+  "last_reviewed_at": "2026-09-06",
+  "rationale": "ADR-86 defines Mir Yoke as the Harness-managed central capability supply system for independently owned repositories. ADR-83 retains the public Starter, Project Agent Kit recipe, optional CLI, portable plugin, and reference-corpus distribution surfaces; consumers retain local policy and execution authority."
 }

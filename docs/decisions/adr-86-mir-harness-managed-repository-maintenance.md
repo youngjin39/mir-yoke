@@ -4,12 +4,30 @@ title: "Mir Harness-managed repository maintenance"
 type: template-adr
 created: 2026-08-30
 status: accepted
+amended: 2026-09-06
 template_scope: mir-yoke
 related_adrs: ["adr-83", "adr-84", "adr-85"]
 schema: docs/templates/_schema/adr.schema.json
 ---
 
 # ADR-86 — Mir Harness-Managed Repository Maintenance
+
+## 2026-09-06 Purpose and Management Amendment
+
+This amendment controls where it conflicts with earlier template-only characterizations of Yoke's
+primary role. Mir Yoke is the **Harness-managed central capability supply system for independently
+owned repositories**. Its public-template classification describes a distribution form, not its
+primary purpose or a transfer of consumer authority.
+
+Mir Harness owns management direction, reuse decisions, verification, and authorized delivery
+coordination. Yoke owns generic shared capability sources, plugins, separately distributed common
+agents and commands, versioned delivery, and compatibility evidence. Consumers retain their goals,
+data, local policy, adapters, and execution.
+
+ADR-78, ADR-83, and ADR-84 continue to own their identity, adoption-layer, and upgrade-guidance
+boundaries. This amendment takes precedence only for Yoke's primary purpose and the Harness/Yoke/
+consumer management relationship. It neither creates a running service or control plane nor changes
+the supported Starter, Project Agent Kit, optional CLI, or optional-plugin interfaces.
 
 ## Decision
 

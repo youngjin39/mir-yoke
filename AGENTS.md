@@ -1,15 +1,21 @@
 <!-- GENERATED FILE: edit CLAUDE.md and rerun scripts/generate_codex_derivatives.sh -->
 
-# Mir Yoke — Starter, Project Agent Kit, and Optional CLI Contract
+# Mir Yoke — Harness-Managed Central Capability Supply Contract
 
-Mir Yoke is a public agent-guided template, not an agent runtime and not a universal installer; it
-has no standing authority over consumers. `starter/` is the four-file payload; the Project Agent Kit
-is the greenfield recipe; installed `mir` acts only on an explicit target and operation.
+Mir Yoke is the Harness-managed central capability supply system for independently owned
+repositories. It distributes versioned generic capability sources as a public agent-guided template,
+not an agent runtime and not a universal installer, and has no standing authority over consumers.
+`starter/` is the four-file payload; the Project Agent Kit is the greenfield recipe; installed `mir`
+acts only on an explicit target and operation.
 
 ## Outcome and completion
 
-- Maintain the four-file Starter, the Project Agent Kit with harness and required memory,
-  the optional public `mir` CLI, namespaced plugins, and retrievable reference corpus.
+- Mir Harness owns Yoke management direction, reuse decisions, verification, and authorized
+  delivery coordination. Yoke owns the generic shared sources, plugins, separately delivered common
+  agents and commands, versioned delivery, and compatibility evidence.
+- Consumers own their goals, data, local policy, adapters, and execution. Maintain the four-file
+  Starter, Project Agent Kit with harness and required memory, optional public `mir` CLI,
+  namespaced plugins, and retrievable reference corpus without requiring any channel.
 - Finish when the affected supported-surface contracts, generated parity, and smallest relevant
   checks pass.
 
@@ -20,13 +26,17 @@ is the greenfield recipe; installed `mir` acts only on an explicit target and op
 - `src/mir/cli/` owns the optional installed v0.8-compatible command surface; the Kit never copies it.
 - `plugins/` owns common skills and the exact read-only global hook;
   `config/capability-sources.json` owns commit-pinned runtime selection.
-- ADR-79 owns the primary macOS, Linux/WSL compatibility, and native Windows reference-adaptation lanes; ADRs 81, 83-86, and 88-90 own the current product and capability boundaries.
+- ADR-86 owns Yoke's current primary purpose and management relationship; its 2026-09-06 amendment
+  takes precedence over older template-only role descriptions. ADR-79 owns the primary macOS,
+  Linux/WSL compatibility, and native Windows reference-adaptation lanes; ADRs 81, 83-86, and 88-90
+  own the current adoption and capability boundaries.
 - `config/template-assets.json` classifies the full maintainer checkout.
 - `.mir/repo-profile.toml` owns this maintainer repository's local boundaries when present.
 
 ## Authority and safety
 
-- Mir Harness may modify Yoke directly; `.mir/capability-lock.json` is managed, not protected.
+- Mir Harness may manage Yoke directly within current user authority; `.mir/capability-lock.json` is
+  managed, not protected. That responsibility does not give Yoke authority to manage consumers.
 - Get explicit direction before destructive actions, credentials, consumer writes, commits, pushes,
   tags, releases, or material scope expansion.
 - Preserve unrelated local changes and keep public material generic, English, and sanitized.

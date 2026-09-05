@@ -9,6 +9,13 @@ schema: docs/templates/_schema/adr.schema.json
 
 # ADR-84 — Harness Upgrade Guidance and Runtime Hygiene
 
+## 2026-09-06 Current Management Amendment
+
+ADR-86's 2026-09-06 amendment controls Yoke's primary purpose and the Harness/Yoke/consumer
+management relationship. This ADR remains the current reference-only upgrade guide: it does not
+create a consumer control plane, change the supported adoption channels, or transfer local policy
+or execution from a consumer.
+
 ## 1. Context
 
 Mir Yoke has a clear four-file Starter, a supported empty-target Project Agent Kit, and an optional

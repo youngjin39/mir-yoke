@@ -1,7 +1,7 @@
 # Mir Yoke — AI routing index
 
 ## Start here
-- `README.md` — supported surfaces and the short new-project prompt
+- `README.md` — Harness-managed central capability supply purpose, supported surfaces, and short new-project prompt
 - `BOOTSTRAP.md` — choose Minimal Starter, standard Project Agent Kit, or optional installed CLI
 - `recipes/project-agent-kit/README.md` — standard empty-target Project Agent Kit procedure
 - `recipes/project-agent-kit/reviewer.md` — repository-unique review skill and agent contract
@@ -15,6 +15,7 @@
 
 ## Authority
 - `docs/decisions/adr-83-project-agent-kit-recipe-and-supported-surfaces.md`
+- `docs/decisions/adr-86-mir-harness-managed-repository-maintenance.md` — current Yoke purpose, manager, and consumer ownership boundary
 - `docs/decisions/adr-81-minimal-starter-support-boundary.md`
 - `docs/decisions/adr-74-portable-bootstrap-capability-sources-and-memory.md`
 - `docs/decisions/INDEX.md`

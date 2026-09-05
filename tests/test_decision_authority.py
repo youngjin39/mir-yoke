@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date
 from pathlib import Path
 
 import yaml
@@ -22,6 +23,9 @@ ACTIVE_PLUGIN_ADR = (
 )
 ROLE_PLUGIN_ADR = (
     ROOT / "docs/decisions/adr-90-role-plugins-and-common-hooks.md"
+)
+MANAGEMENT_ADR = (
+    ROOT / "docs/decisions/adr-86-mir-harness-managed-repository-maintenance.md"
 )
 COMPOSITION_ADR = (
     ROOT / "docs/decisions/adr-82-product-planes-capability-packs-and-composition.md"
@@ -68,6 +72,23 @@ def test_should_make_adr_83_the_current_supported_surface_decision() -> None:
     assert "must not copy the full Mir package or CLI source" in body
     assert "post-release owner acceptance" in body
     assert index.index("ADR-83") < index.index("ADR-81")
+
+
+def test_should_make_adr_86_the_current_management_precedence() -> None:
+    metadata = _frontmatter(MANAGEMENT_ADR)
+    body = " ".join(MANAGEMENT_ADR.read_text(encoding="utf-8").split())
+    adr_78 = IDENTITY_ADR.read_text(encoding="utf-8")
+    adr_83 = PROJECT_AGENT_KIT_ADR.read_text(encoding="utf-8")
+    adr_84 = UPGRADE_ADR.read_text(encoding="utf-8")
+
+    assert metadata["status"] == "accepted"
+    assert metadata["amended"] == date(2026, 9, 6)
+    assert "Harness-managed central capability supply system" in body
+    assert "Consumers retain their goals, data, local policy, adapters, and execution" in body
+    assert "Starter, Project Agent Kit, optional CLI" in body
+    assert "ADR-86's 2026-09-06 amendment controls" in adr_78
+    assert "ADR-86's 2026-09-06 amendment controls" in adr_83
+    assert "ADR-86's 2026-09-06 amendment controls" in adr_84
 
 
 def test_should_make_adr_84_the_current_upgrade_guidance_decision() -> None:

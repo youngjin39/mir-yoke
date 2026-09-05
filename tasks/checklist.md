@@ -2,10 +2,16 @@
 
 Historical evidence remains in `tasks/change_log.md`, `tasks/tdd.json` and Git history.
 
-## Current
+## Current purpose alignment
 
-- [x] Published central capability and hook compatibility implementation `0d5501fb765e7a829d3aec7ff64fa591f226f0d9` with verified local/origin main parity (2026-09-06).
-- [x] Passed 987 full tests, all clean-candidate gates, focused and final payload/contract checks.
-- [x] Preserved target ownership, prior-config rollback, fail-closed provider bindings and separate hook-trust authority.
+- [x] Record the Yoke purpose/management alignment in the active cursor and preserve the prior
+  cursor in the evidence archive.
+- [x] Align canonical purpose, authority, Profile, current ADR precedence, and supported-channel
+  documentation without changing consumer interfaces or classification enums.
+- [x] Regenerate derivatives and adopter payload after the final canonical wording, then pass
+  focused purpose, authority, adopter-boundary, asset, and parity checks (52 focused tests;
+  derivative, asset, Ruff, and diff checks passed;
+  `/tmp/mir-yoke-purpose-alignment-postdocs.log`).
 
-No implementation action remains. Recheck current local/remote revisions and dirty state before new work.
+Prior capability implementation and publication evidence remains in `tasks/change_log.md` and Git
+history. Recheck current local/remote revisions and dirty state before new work.

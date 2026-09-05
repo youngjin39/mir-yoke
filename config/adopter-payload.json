@@ -461,7 +461,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": ".mir/repo-profile.toml",
-      "sha256": "ad86e05fc42d7ff5fc6eb5ed1e1eb055a90f8e4abe7ccefa0fca3ccc4e379edc"
+      "sha256": "e1755af87f895488e4fb9111eedc70855fe637ba317425b895a441c6ccf7ef38"
     },
     {
       "classification": "template-maintainer-tool",
@@ -473,13 +473,13 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "AGENTS.md",
-      "sha256": "6f2d9de8a0d98bdf00c1c1e2ba4d2f96558fe268cc1a5f43dbe525c3382b848f"
+      "sha256": "b4daff36df5dadc38bc309982d148ded71bf0bb4ad0730c5b44196359819c3ba"
     },
     {
       "classification": "reference",
       "disposition": "remove",
       "path": "ARCHITECTURE.md",
-      "sha256": "1732d934ca3d11cd41b42b076efb56f62844d87c8c89664063336b7cff356e72"
+      "sha256": "dc2efd4ac5b5b9b00ba575583b54f73606d59c5e42ba89d2957c0b05f143c6cc"
     },
     {
       "classification": "reference",
@@ -497,7 +497,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "CLAUDE.md",
-      "sha256": "49ff4a8c3396b603c02466b4c0af4003f149942b7142da7237fc2e3f1a9417ed"
+      "sha256": "0249761e2c33cbbc88282ddce7f89276252add0795d3c3d440efa73c68ff5eff"
     },
     {
       "classification": "reference",
@@ -521,7 +521,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "README.md",
-      "sha256": "73c446806af10cbf32a2f3e76b99ef293023bdd888508ef95943c99c6afed208"
+      "sha256": "8c5d23c5bbca9227455a162d653bb3bd2a25bb5cefd4a7a84de8f75eafce0c7b"
     },
     {
       "classification": "reference",
@@ -539,7 +539,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "config/adopter-boundary.json",
-      "sha256": "47e9ea855c17b50d9a0dde39e9a2d4418289bdae8b118088c54e7a23048566fe"
+      "sha256": "de21bdf5beb31c05460ced6e830d0c938d95aa866ec691f75ce9ea9b2b489bb0"
     },
     {
       "classification": "reference",
@@ -623,7 +623,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "config/repos/mir-yoke.json",
-      "sha256": "8a3f9f47dd1c90759a4e5799302865fc544510a1e9a837ba7b32c41aa5436a38"
+      "sha256": "a46bb9805adfef6951c291f52776e39f7fdc98f6bda45f19d0a1bb0defd3458f"
     },
     {
       "classification": "reference",
@@ -1271,7 +1271,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "docs/decisions/INDEX.md",
-      "sha256": "6cd6b3d8b9b98f58309612cd97f7d158d4da4f379211e1c23d968657f1516740"
+      "sha256": "162581f5ac1e9d28d59b794051332ce7e735aef5da19a9ca9de3f1483461f9fd"
     },
     {
       "classification": "historical",
@@ -1625,7 +1625,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "docs/decisions/adr-78-public-template-identity-and-non-authority.md",
-      "sha256": "26d278242fc8d76f5109341095601e5db25f9990b64576bfc8be87dc77cf61ac"
+      "sha256": "b675e66260423f9b6fefa1c0e6423f524a611ae79eee5b6d877fde9e10576896"
     },
     {
       "classification": "reference",
@@ -1655,13 +1655,13 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "docs/decisions/adr-83-project-agent-kit-recipe-and-supported-surfaces.md",
-      "sha256": "9ebbbddaeb4d659c7742711a9e5808f360e4d0226765b522e5e571d881587974"
+      "sha256": "aa134d996d726abe90e59383b55ac5eea43c9d93ad14631a4035d797117f24b6"
     },
     {
       "classification": "reference",
       "disposition": "remove",
       "path": "docs/decisions/adr-84-harness-upgrade-guidance-and-runtime-hygiene.md",
-      "sha256": "91dd06db9bac34d96a6bbca3f7ddeda02165dfc24300ac58298b632ac3969b7f"
+      "sha256": "beda40293ec08bf47a8d2ac7a06fadb43826b10433c121bd5313943cb9d2e1f9"
     },
     {
       "classification": "reference",
@@ -1673,7 +1673,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "docs/decisions/adr-86-mir-harness-managed-repository-maintenance.md",
-      "sha256": "a40e0a8e56b9d8aff2e8fc07c0fda2eaa7882051a955d83704384dd6b6ce9d5b"
+      "sha256": "ef43cf11d73fec72e5701c9699a893bca54287b91ebe54d0702cbdf61b9c96e0"
     },
     {
       "classification": "reference",
@@ -1691,7 +1691,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "docs/decisions/adr-89-dual-runtime-capability-management.md",
-      "sha256": "0187d10315f2e79991258ae513567d8c0fe2763146a0b61b1db4987382e5117f"
+      "sha256": "0e8e144c071716b3ea1b62cf576471e7ae2e98584b5e7dbc4608bef9517b9011"
     },
     {
       "classification": "reference",
@@ -2705,7 +2705,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "llms.txt",
-      "sha256": "e7014857d0ee5c08fbd3065194bcf9d92db1f73f20341b7338acedaba53524ec"
+      "sha256": "e81cebcd790d2aad041ae3c1ac6326781b62057bbf8e227de955740b7d8898cf"
     },
     {
       "classification": "optional-consumer-tool",
@@ -3959,31 +3959,31 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/archive/intent-history.json",
-      "sha256": "0954330fd0f3fec39343ca592bee10219b32cbe9f6546a4fb1a0725f406ce3ca"
+      "sha256": "b6db03d1382587a0688a93756a85030fdfcf4a4e4ef77d571816698b1236812e"
     },
     {
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/change_log.md",
-      "sha256": "95fbddd8d4b6a9c5327522b1bce159d6824fce368f3a8f9bba883cf07b2e0d38"
+      "sha256": "38287a4d72012986f0e74a4ecc1e177356648e61b340d9d11ceaff5c4aaf16a8"
     },
     {
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/checklist.md",
-      "sha256": "97fcc6e682e68b4fee67387fb56bf9f8fb9211c76da04099b9f9995881c6c4db"
+      "sha256": "6cb9a0454e1d852d90028334486f055428581ad8799d370d6d18b66fd7e12bc6"
     },
     {
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/handoffs/session-handoff-LATEST.md",
-      "sha256": "7d4ceb7d80c37a8f92d6b98549bffe4ecc7800b2fc4c346db4f8d776c5070180"
+      "sha256": "7e0ac9e0394c3655ac43ae332416ab101e1c29c95666fd20ed9f5d09c1bbd1ae"
     },
     {
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/intent.json",
-      "sha256": "23f3dc1198549ae884ca7e9c6b8ded357e71896e840b848ac53caa139e23ca25"
+      "sha256": "c77c112b414915857e4ff36b4afc6714b127beee30b93dc0975499f85da67456"
     },
     {
       "classification": "reference",
@@ -4007,7 +4007,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/plan.md",
-      "sha256": "3df89bf610cd270eb44703dc0d51479a0027a7cd4b4c30142b4a77fa9d1da1c1"
+      "sha256": "df153b397aa6c2390920daa4a5868683c11755bccf80b93e2444823810cec559"
     },
     {
       "classification": "reference",
@@ -4103,7 +4103,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_adopter_slim.py",
-      "sha256": "e446ad99ca23277acd0d6b508644de8c17366baaef5450cd14ae68245ccdeada"
+      "sha256": "c6bb75b73e8b8059e0b21ab8d474e34fb6155fc4b205e8dbc605a3829e32f61e"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4217,7 +4217,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_decision_authority.py",
-      "sha256": "acaa40719231412a3e93d05ca4567bcb92536150335d0c6c6efa0fd3219c60fc"
+      "sha256": "ba3bdcba601953bb67436aec833bf30bab9bcf93bd4dbd0f6fd1d6ee784278fb"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4343,7 +4343,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_public_template_identity.py",
-      "sha256": "ba2644d080c6428f68658af737e520d85df4bbf58e032264d7b9657369595f5d"
+      "sha256": "126807cd1c5caf1089dae2c40cdc00d35549c7d32566f6ed47df84dc856f4495"
     },
     {
       "classification": "template-maintainer-tool",

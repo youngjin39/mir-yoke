@@ -44,6 +44,11 @@
       "goal": "Release v0.9.0 with the v0.8 public harness CLI restored, a standard Project Agent Kit that includes bounded common harness and required memory, and superseded complex composition preserved as inert references without copying the Mir runtime into generated projects.",
       "updated": "2026-08-11",
       "status": "superseded"
+    },
+    {
+      "goal": "Maintain the released Mir Yoke v0.9.0 baseline with the clarified Project Agent Kit prompt; no active repository work remains, and owner-run Claude/Codex acceptance is optional post-release follow-up when a target is supplied.",
+      "updated": "2026-08-11",
+      "status": "superseded"
     }
   ]
 }

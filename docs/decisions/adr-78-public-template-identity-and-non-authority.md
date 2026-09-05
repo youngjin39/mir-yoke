@@ -13,6 +13,13 @@ schema: docs/templates/_schema/adr.schema.json
 
 # ADR-78 — Mir Yoke Public Template Identity and Non-Authority
 
+## 2026-09-06 Current Management Amendment
+
+ADR-86's 2026-09-06 amendment controls Yoke's current primary purpose and management relationship:
+Yoke is the Harness-managed central capability supply system for independently owned repositories.
+This ADR's public-template identity describes its distribution form and its non-runtime,
+non-authority boundary; it does not make Yoke independently managed or a consumer control plane.
+
 ## 1. Context
 
 Mir Yoke began as a reusable public harness template. A later centralization period added fleet

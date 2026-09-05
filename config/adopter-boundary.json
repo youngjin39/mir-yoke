@@ -25,6 +25,10 @@
   "provider_text_markers": [
     {
       "path": "CLAUDE.md",
+      "contains": "# Mir Yoke — Harness-Managed Central Capability Supply Contract"
+    },
+    {
+      "path": "CLAUDE.md",
       "contains": "# Mir Yoke — Starter, Project Agent Kit, and Optional CLI Contract"
     },
     {

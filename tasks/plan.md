@@ -1,12 +1,22 @@
 # Plan
 
-## Current status — complete (2026-09-06)
+## Current status — implementation verified; delivery authorized (2026-09-06)
 
-- Authority: `tasks/intent.json` retains the accepted central capability repair intent.
-- Published implementation: `0d5501fb765e7a829d3aec7ff64fa591f226f0d9` on local main and origin/main; parity was verified after publication. This closeout records that observed delivery.
-- Outcome: provider health and consumer integration are separate; schema-3 updates preserve peer files/locks and permit receipt-bound catch-up; rollback restores the prior configuration; supported Codex hook metadata loads correctly.
-- Verification: clean-candidate readiness passed every gate with 987 full tests. Focused capability/adopter checks passed 169 tests; final documentation/payload checks passed 194 tests and the last bounded ADR/asset check passed 19 tests.
-- Prior detailed trackers remain available at implementation commit `0d5501fb765e7a829d3aec7ff64fa591f226f0d9`; `tasks/change_log.md` preserves the evidence history. No implementation action remains.
+- Authority: `tasks/intent.json` records the current Yoke purpose and management alignment. Parent
+  Harness cursor `tasks/plan.md` run `harness-managed-central-provider-mandate-2026-09-06` is the
+  overall design authority.
+- [x] Preserve the published central capability implementation and its 987-test clean-candidate
+  evidence at `0d5501fb765e7a829d3aec7ff64fa591f226f0d9`.
+- [x] Record the superseding Yoke intent and preserve the previous cursor in the evidence archive.
+- [x] Amend the current purpose/authority sources and maintain public-template distribution,
+  supported-channel, and consumer-ownership boundaries.
+- [x] Regenerate canonical derivatives and adopter payload after documentation stabilizes, then pass
+  focused purpose, authority, adopter-boundary, asset, and parity verification: 52 tests passed;
+  Codex derivative, asset classification, Ruff, and diff checks passed. The current and legacy
+  Yoke contract titles both remain provider-identity markers. Log:
+  `/tmp/mir-yoke-purpose-alignment-postdocs.log`.
+
+Parent retains commit and push delivery.
 
 ## Current boundaries
 

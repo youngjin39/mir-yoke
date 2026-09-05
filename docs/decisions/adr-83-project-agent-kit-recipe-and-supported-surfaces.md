@@ -11,6 +11,13 @@ schema: docs/templates/_schema/adr.schema.json
 
 # ADR-83 — Project Agent Kit Recipe and Supported Surfaces
 
+## 2026-09-06 Current Management Amendment
+
+ADR-86's 2026-09-06 amendment controls Yoke's primary purpose and the Harness/Yoke/consumer
+management relationship. This ADR continues to own the supported Starter, Project Agent Kit,
+optional CLI, plugin, and inert-reference surfaces; none becomes required or transfers consumer
+authority.
+
 ## 2026-08-11 Owner Amendment
 
 This amendment controls where it conflicts with the original decision below:

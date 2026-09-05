@@ -2,10 +2,13 @@
 
 ## Product boundary
 
-Mir Yoke is a public template, agent-guided recipe, optional installed CLI, portable plugin
-provider, and reference corpus. It is not a universal installer, target composer, agent runtime,
-service, or control plane. It has no provider runtime and no standing authority over consumer
-repositories.
+Mir Yoke is the Harness-managed central capability supply system for independently owned
+repositories. It versions and distributes generic sources through a public template, agent-guided
+recipe, optional installed CLI, portable plugin provider, and reference corpus. Mir Harness owns
+management direction, reuse decisions, verification, and authorized delivery coordination. Yoke is
+not a universal installer, target composer, agent runtime, service, or control plane; it has no
+provider runtime and no standing authority over consumer repositories. Consumers retain their
+goals, data, local policy, adapters, and execution.
 
 `starter/` is the only fixed consumer payload. The Project Agent Kit recipe is guidance read by the
 target's active AI; it never becomes a provider-side target writer. The installed `mir` CLI is a

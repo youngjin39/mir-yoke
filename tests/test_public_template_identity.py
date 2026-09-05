@@ -32,6 +32,27 @@ def test_should_publish_one_non_runtime_template_identity_when_root_contracts_ar
         assert "not a universal installer" in body, relative
 
 
+# @spec CR-001 CR-003 QR-004
+def test_should_state_harness_managed_central_capability_supply_without_consumer_control() -> None:
+    phrase = "harness-managed central capability supply system for independently owned repositories"
+    for relative in (
+        "CLAUDE.md",
+        "README.md",
+        "ARCHITECTURE.md",
+        "docs/decisions/adr-86-mir-harness-managed-repository-maintenance.md",
+    ):
+        body = re.sub(
+            r"\s+", " ", (ROOT / relative).read_text(encoding="utf-8").lower()
+        )
+        assert phrase in body, relative
+        assert "no standing authority" in body or "consumer authority" in body, relative
+
+    with (ROOT / ".mir/repo-profile.toml").open("rb") as stream:
+        profile = tomllib.load(stream)
+    assert phrase in profile["repo"]["purpose"].lower()
+    assert profile["repo"]["repository_type"] == "public_harness_template"
+
+
 # @spec CR-003 QR-004
 def test_should_disable_fleet_identity_when_public_configuration_is_loaded() -> None:
     consistency = json.loads((ROOT / "config/harness-consistency.json").read_text())
@@ -50,7 +71,7 @@ def test_should_disable_fleet_identity_when_public_configuration_is_loaded() -> 
     assert repository["repository_type"] == "public_harness_template"
     assert repository["adoption_mode"] == "explicit_local"
     assert repository["management_mode"] == "harness-managed"
-    assert "may modify Yoke directly" in (ROOT / "CLAUDE.md").read_text(encoding="utf-8")
+    assert "may manage Yoke directly" in (ROOT / "CLAUDE.md").read_text(encoding="utf-8")
     assert "fleet_management" not in repository
     local_profile = ROOT / ".mir/repo-profile.toml"
     with local_profile.open("rb") as stream:

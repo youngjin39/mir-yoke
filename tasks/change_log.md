@@ -2,6 +2,16 @@
 
 One bullet per non-trivial change. Newest at the top.
 
+- 2026-09-06: aligned Yoke's current purpose as the Harness-managed central capability supply
+  system for independently owned repositories. Mir Harness manages direction, reuse decisions,
+  verification, and authorized delivery coordination; Yoke supplies versioned generic capabilities;
+  consumers retain their goals, data, local policy, adapters, and execution. The public-template
+  classification and Starter, Project Agent Kit, optional CLI, and plugin channels remain intact.
+  ADR-86 now takes precedence over older template-only role wording. The adopter boundary detects
+  both the new and legacy Yoke contract titles. Regenerated derivatives and payload passed 52
+  focused tests plus Codex parity, asset, Ruff, and diff checks; log:
+  `/tmp/mir-yoke-purpose-alignment-postdocs.log`.
+
 - 2026-09-06: published central operations implementation `0d5501fb765e7a829d3aec7ff64fa591f226f0d9` to main and verified origin parity. Compact current trackers supersede the mixed historical completion lists retained at that commit; the final implementation baseline is 987 full tests, not the earlier 974-test audit.
 
 - 2026-09-06: separated central provider health from consumer enrollment and local integration,
@@ -279,3 +289,5 @@ remote revisions. The generated snapshot below records the checkpoint before clo
 <!-- mir:runtime-snapshot:end -->
 
 </details>
+
+Final independent parent acceptance (2026-09-06): 52 tests passed in 4.07s across `test_adopter_slim`, `test_public_template_identity`, `test_decision_authority`, `test_template_asset_classification`, `test_advanced_reference_templates`, `test_release_metadata`, and `test_no_korean_in_user_facing`. Current and legacy provider contract titles are both detected even when CLAUDE.md is the only copied provider surface. An intermediate exact-payload failure during documentation changes was resolved by final payload regeneration. Ruff passed; the independent final policy/docs review has no remaining blocker.

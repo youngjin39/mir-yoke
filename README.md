@@ -1,11 +1,14 @@
 # Mir Yoke
 
-**A four-file compatibility starter, standard Project Agent Kit, and optional public Mir CLI.**
+**A Harness-managed central capability supply system for independently owned repositories.**
 
-Mir Yoke is a public template and reference repository, not an agent runtime, service, or control
-plane. It is not a universal installer and has no standing authority over a repository that reads
-or adopts its material. The active AI agent owns the target session, inspects the real target, and
-writes only under the user's target-specific authorization.
+Mir Harness manages Yoke's direction, reuse decisions, verification, and authorized delivery
+coordination. Yoke versions and distributes generic shared sources through its public template,
+standard Project Agent Kit, optional public Mir CLI, plugins, and reference corpus. It is not an
+agent runtime, service, or control plane, is not a universal installer, and has no standing
+authority over a repository that reads or adopts its material. Consumers retain their goals, data,
+local policy, adapters, and execution; the active AI agent writes only under the user's
+target-specific authorization.
 
 ## Supported layers
 

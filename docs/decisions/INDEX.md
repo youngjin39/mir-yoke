@@ -1,15 +1,16 @@
 ---
 title: Public Harness Decision Index
 status: accepted
-updated: 2026-09-04
+updated: 2026-09-06
 ---
 
 # Public Harness Decision Index
 
-Mir Yoke is a public template, standard agent-guided Project Agent Kit, optional installed CLI and
-plugin provider, and reference corpus. It has no provider runtime and no standing authority over
-consumer repositories. It is not a universal installer. `starter/` remains the only fixed consumer
-payload.
+Mir Yoke is the Harness-managed central capability supply system for independently owned
+repositories. Its public template, standard agent-guided Project Agent Kit, optional installed CLI,
+plugin provider, and reference corpus are distribution surfaces. It has no provider runtime, is not
+an agent runtime, has no standing authority over consumer repositories, and is not a universal
+installer. `starter/` remains the only fixed consumer payload.
 
 ## Current Authority
 
@@ -25,8 +26,9 @@ payload.
 4. [ADR-87](adr-87-deny-list-enforcement-recovery.md) restores deny-list enforcement, makes the
    destructive-command guards position-independent and POSIX-portable, and requires a test that
    asserts the blocking reason rather than only the exit code.
-5. [ADR-86](adr-86-mir-harness-managed-repository-maintenance.md) designates Mir Harness as this
-   repository's maintenance manager while preserving consumer and release authority boundaries.
+5. [ADR-86](adr-86-mir-harness-managed-repository-maintenance.md) defines the current
+   Harness-managed central-supply purpose, responsibility split, and consumer/release authority
+   boundaries; its 2026-09-06 amendment takes precedence over older template-only role language.
 6. [ADR-85](adr-85-global-policy-inheritance-and-agent-contracts.md) defines operator-owned Codex
    policy inheritance, runtime-neutral agent contracts, source-driven read-only roles, and the
    cross-runtime model boundary.

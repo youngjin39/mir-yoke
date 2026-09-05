@@ -163,8 +163,9 @@ plugin names remain a visible fail-closed incompatibility.
 
 ## 3. Consequences
 
-- Yoke is the central source for the five managed surface classes without becoming a universal
-  runtime or gaining standing authority over consumers.
+- Yoke is the versioned central source for the five managed surface classes without becoming a
+  universal runtime or gaining standing authority over consumers; ADR-86 assigns management
+  direction and authorized delivery coordination to Mir Harness.
 - Claude commands can be updated through the same explicit, commit-pinned sync and divergence guard
   used by agent sources; Codex reaches the equivalent intent through the installed common skill.
 - Agents and Claude commands can also be installed at user scope without modifying consumer

@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+from mir.core.adoption.boundary import load_boundary, payload_findings
 from mir.core.adoption.slim import (
     SlimError,
     apply_adopter_slim,
@@ -15,10 +16,31 @@ from mir.core.adoption.slim import (
     rollback_adopter_slim,
 )
 
+ROOT = Path(__file__).resolve().parents[1]
+
 
 def _write(path: Path, body: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(body, encoding="utf-8")
+
+
+@pytest.mark.parametrize(
+    "contract",
+    (
+        (ROOT / "CLAUDE.md").read_text(encoding="utf-8"),
+        "# Mir Yoke — Starter, Project Agent Kit, and Optional CLI Contract\n",
+    ),
+)
+def test_should_detect_current_and_legacy_yoke_contract_markers_in_an_adopter(
+    tmp_path: Path, contract: str
+) -> None:
+    _write(tmp_path / "CLAUDE.md", contract)
+    boundary = load_boundary(ROOT)
+    profile = {"repo": {"slug": "independent-product", "repository_type": "code_app"}}
+
+    assert payload_findings(tmp_path, boundary=boundary, profile=profile) == [
+        {"kind": "text", "path": "CLAUDE.md"}
+    ]
 
 
 # @spec FR-001 FR-004 QR-001
