@@ -1,6 +1,6 @@
 # Plan
 
-## Current status — implementation verified; delivery authorized (2026-09-06)
+## Current status — completed and published (2026-09-06)
 
 - Authority: `tasks/intent.json` records the current Yoke purpose and management alignment. Parent
   Harness cursor `tasks/plan.md` run `harness-managed-central-provider-mandate-2026-09-06` is the
@@ -16,7 +16,7 @@
   Yoke contract titles both remain provider-identity markers. Log:
   `/tmp/mir-yoke-purpose-alignment-postdocs.log`.
 
-Parent retains commit and push delivery.
+Published implementation `f6d3f9a4949cfe19785d37ab952bf8f699d51802` has verified local/origin main parity.
 
 ## Current boundaries
 

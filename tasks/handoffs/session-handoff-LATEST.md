@@ -1,45 +1,21 @@
 # Session Handoff — Central Capability Supply Purpose Alignment
 
 - Date: 2026-09-06.
-- Status: canonical purpose and management alignment is verified and ready for parent-authorized
-  delivery; the prior capability repair remains published and verified.
-- Intent authority: `tasks/intent.json`; `tasks/plan.md` is the compact status projection.
-- Overall design authority: parent Harness cursor `tasks/plan.md` run
-  `harness-managed-central-provider-mandate-2026-09-06`. Yoke's current intent is recorded in
-  `tasks/intent.json` with its prior cursor preserved in the archive.
+- Status: completed and published.
+- Intent authority: `tasks/intent.json`; `tasks/plan.md` is the current cursor. The Harness cursor run `harness-managed-central-provider-mandate-2026-09-06` owns the overall design.
 
-## Current objective and decisions
+## Decisions
 
-- Make Yoke's primary purpose explicit as the Harness-managed central capability supply system for
-  independently owned repositories. Harness owns management direction, reuse decisions,
-  verification, and authorized delivery coordination; Yoke owns generic sources and versioned
-  compatibility delivery; consumers retain goals, data, local policy, adapters, and execution.
-- Keep `public_harness_template` as the distribution classification. Preserve the Starter, Project
-  Agent Kit, optional CLI, and optional plugins without a forced channel, runtime, control-plane,
-  universal-installer, or standing-consumer-authority claim.
+Mir Yoke is the Harness-managed central capability supply system for independently owned repositories. Harness owns management direction, reuse decisions, verification and authorized delivery coordination. Yoke owns generic shared sources, plugins, separate common agents/commands, versioned delivery and compatibility evidence. Consumers retain goals, data, local policy, adapters and execution.
 
-The published capability-repair baseline, including provider/consumer separation, schema-3
-catch-up, rollback, hook metadata, and package inventory evidence, remains recorded in
-`tasks/change_log.md` and Git history.
+ADR-86's 2026-09-06 amendment controls this primary purpose and management split. Starter, Project Agent Kit, optional CLI and plugins remain supported; `public_harness_template` remains the distribution classification. New and legacy provider contract titles are recognized by adopter boundary checks.
 
-## Verification
+## Verified Delivery
 
-- The published capability repair previously passed clean-candidate readiness with 987 full tests;
-  its evidence is `/tmp/mir-yoke-capability-release-readiness.log`.
-- Canonical `AGENTS.md`/Codex derivatives and `config/adopter-payload.json` were regenerated.
-  The current and legacy Yoke contract titles both remain adopter provider-identity markers.
-  `uv run pytest -q tests/test_adopter_slim.py tests/test_template_asset_classification.py
-  tests/test_public_template_identity.py tests/test_decision_authority.py
-  tests/test_advanced_reference_templates.py tests/test_release_metadata.py
-  tests/test_no_korean_in_user_facing.py` passed 52 tests. Codex parity, asset classification,
-  Ruff, and diff checks passed. Log:
-  `/tmp/mir-yoke-purpose-alignment-postdocs.log`.
+Implementation `f6d3f9a4949cfe19785d37ab952bf8f699d51802` was committed and pushed to origin/main with matching local/remote revisions. The parent observed 52 passing focused tests, exact payload parity, complete classification of 806 assets, generated Codex parity, Ruff and diff checks. Final policy/docs review has no blocker. For future delivery-record edits, regenerate the payload and verify its exact hashes before committing.
 
-## Resume and boundaries
+Detailed evidence and the prior capability/runtime proof remain in `tasks/change_log.md` and Git history. No live provider installation/update, consumer deployment, trust/credential/protected-memory change, PR or workflow was performed.
 
-This purpose-alignment change does not modify runtime code, consumer repositories, protected
-memory, credentials, or external services.
-Before a new session, compare current HEAD with `git ls-remote origin refs/heads/main` and inspect
-the working tree. Parent retains commit and push authority; this handoff does not claim a new push.
-Consumers retain their local policy and delivery authority; a modified hook requires its own
-operator trust review.
+## Resume
+
+No work remains for this mandate. Compare current local/remote main revisions and inspect the working tree before new work. Consumer ownership and explicit delivery authority remain intact.
