@@ -1,15 +1,10 @@
 {
-  "goal": "Audit and minimally repair Mir Yoke supported surfaces: plugin configuration and contract alignment, Claude/Codex generated parity, platform continuity documentation, installer and lock references, asset classification, current Profile and documentation consistency, and concrete runtime defects. Preserve the ADR-79 macOS-primary and Linux/WSL-compatible posture, with native Windows as a reference-adaptation lane; do not install into user runtimes or consumer repositories. Record evidence, run focused and full verification, and prepare the maintainer-owned result for direct main commit and push.",
+  "goal": "Repair Mir Yoke central capability status and multi-consumer update architecture: make global provider health readable without a consumer-local configuration or enrollment, separate consumer-local integration state, and permit atomic provider version migration across registered consumers while preserving non-requesting consumer files and locks as pending local integration. Preserve capability trust, digest, identity, secret, path, runtime, and activation checks; update ADR-89, current documentation, tests, and generated adopter payload without user-runtime or consumer writes.",
   "goal_type": "maintenance",
-  "scope": "Review and minimally repair the Yoke-owned plugin, capability, Claude/Codex generation, platform-reference, documentation, Profile, and release-gate surfaces. Run static, focused, and full checks; preserve target ownership, current platform lanes, managed lock semantics, and all unrelated work. Do not mutate user runtimes, consumer repositories, protected memory, credentials, or external services. The maintainer may commit and push the resulting Yoke main change directly after review.",
+  "scope": "Repair Yoke-owned central capability status and multi-consumer provider updates. Preserve host provider trust, source and digest binding, runtime activation, path and identity checks, legacy compatibility, and consumer ownership. Do not mutate live user runtimes, consumer repositories, protected memory, credentials, or external services. Update ADR-89, current migration guidance, tests, task evidence, and generated adopter payload; prepare the bounded Yoke result for authorized delivery after verification.",
   "priority": "normal",
-  "updated": "2026-09-05",
+  "updated": "2026-09-06",
   "history": [
-    {
-      "goal": "Release v0.9.0 with the v0.8 public harness CLI restored, a standard Project Agent Kit that includes bounded common harness and required memory, and superseded complex composition preserved as inert references without copying the Mir runtime into generated projects.",
-      "updated": "2026-08-11",
-      "status": "superseded"
-    },
     {
       "goal": "Maintain the released Mir Yoke v0.9.0 baseline with the clarified Project Agent Kit prompt; no active repository work remains, and owner-run Claude/Codex acceptance is optional post-release follow-up when a target is supplied.",
       "updated": "2026-08-11",
@@ -18,6 +13,11 @@
     {
       "goal": "Complete and deploy Yoke-owned role plugins so Claude and Codex load the same common skills and read-only lifecycle hook globally, while agents and commands use a separate digest-bound user-runtime distribution path and repository-local definitions retain precedence.",
       "updated": "2026-09-04",
+      "status": "superseded"
+    },
+    {
+      "goal": "Audit and minimally repair Mir Yoke supported surfaces: plugin configuration and contract alignment, Claude/Codex generated parity, platform continuity documentation, installer and lock references, asset classification, current Profile and documentation consistency, and concrete runtime defects. Preserve the ADR-79 macOS-primary and Linux/WSL-compatible posture, with native Windows as a reference-adaptation lane; do not install into user runtimes or consumer repositories. Record evidence, run focused and full verification, and prepare the maintainer-owned result for direct main commit and push.",
+      "updated": "2026-09-05",
       "status": "superseded"
     }
   ]

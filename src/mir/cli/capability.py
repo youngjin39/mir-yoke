@@ -72,13 +72,13 @@ def main(argv: list[str] | None = None) -> int:
     # @spec CR-004 FR-005 QR-003
     namespace = _parser().parse_args(argv)
     project_root = namespace.project_root.expanduser().resolve()
-    before = snapshot_project(project_root)
     try:
         manager = CapabilityManager(
             project_root,
             config_path=namespace.config,
             capability_home=namespace.capability_home,
         )
+        before = None if namespace.command == "status" else snapshot_project(project_root)
         if namespace.command == "status":
             result = manager.status(namespace.profile)
         elif namespace.command == "check":
@@ -104,7 +104,13 @@ def main(argv: list[str] | None = None) -> int:
     except (CapabilityConfigError, CapabilityError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
-    result["changed_paths"] = changed_paths(before, snapshot_project(project_root))
+    if before is not None:
+        result["changed_paths"] = changed_paths(before, snapshot_project(project_root))
+    else:
+        result["change_evidence"] = {
+            "status": "not-applicable",
+            "reason": "read-only-operation",
+        }
     _render(result, namespace.as_json)
     return 0
 

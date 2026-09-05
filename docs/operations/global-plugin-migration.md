@@ -24,11 +24,19 @@ AI agent can select and adapt the required structure without changing the macOS 
 ## 1. Establish the host inventory
 
 Start from an operator-owned registry of repositories that may be opened by the same Claude or
-Codex user. For every root, run the local read-only check:
+Codex user. For every root, run the Yoke CLI environment's read-only check:
 
 ```bash
-uv run mir capability status --project-root /absolute/repository --json
+uv run --project /absolute/path/to/mir-yoke mir capability status \
+  --project-root /absolute/repository --json
 ```
+
+This command may inspect a global-only repository that has no Yoke configuration, capability lock,
+or copied provider files. It reports host provider health separately from consumer enrollment, which
+is `not-enrolled` until the repository owner explicitly applies local integration. Read-only status
+does not calculate a project-tree change diff; its `change_evidence` records that this observation is
+not applicable to a read-only operation. An explicitly supplied malformed `--config` still fails
+closed. A consumer's own `mir` command need not expose the Yoke capability subcommand.
 
 Record all paths in `collisions`. Also record whether `.claude/skills` or `.agents/skills` has
 uncommitted changes. Do not activate a provider until every active root has been inspected. A

@@ -81,6 +81,10 @@ repository identity, protected paths, code paths, endpoints, credentials, trust,
 
 ### 2.4 Compatibility
 
+> **2026-09-06 amendment:** Section 2.5 supersedes the universal same-commit and peer-lock status
+> rules below for schema-3 registry state. The retained schema-1/2 wording describes the legacy
+> migration proof that must succeed before a registry can enter schema 3.
+
 Capability-source schemas 1 and 2 remain readable and yield no managed commands or active hook
 package. The first explicit `update --apply` against schema 4 writes command digests, Codex skill
 mappings, and the selected hook package into the existing schema-2 project lock format. A pinned
@@ -89,20 +93,21 @@ Schema-4 status requires schema-2 lock, receipt, and registry evidence, so chang
 markers to legacy schema 1 cannot bypass current digest bindings. Genuine schema-1 and schema-2
 capability sources retain their skills-only compatibility paths.
 
-The host-global active plugin set is the union of every registered consumer's selected set at the
-same commit. Each project lock retains only that project's subset. Apply removes configured plugins
+For legacy schema-1/2 registry state, the host-global active plugin set is the union of every
+registered consumer's selected set at the same commit. Each project lock retains only that project's
+subset. Apply removes configured plugins
 outside the union; rollback restores the prior union and removes candidate-only plugins. Local file
 and runtime state is also restored for catchable process interruptions before the interruption is
 re-raised.
 
-Status recomputes that union from every validated registry consumer and requires exact agreement
+Legacy status recomputes that union from every validated registry consumer and requires exact agreement
 between the registry, active receipt, materialized plugin digests, and the current consumer lock.
 Codex persistence verification also compares the complete enabled `mir-yoke` configuration set,
 not only plugins reported by the CLI. Project lock reads and writes reject a symlinked or non-
 directory `.mir` boundary. Apply, attestation writes, and activation finalization share one guard;
 each operation reads and revalidates state only after acquiring it.
 
-Rollback uses the same complete consumer-union validation before issuing any restoration command;
+Legacy rollback uses the same complete consumer-union validation before issuing any restoration command;
 an unverifiable prior receipt produces an explicitly incomplete rollback instead of expanding host
 activation. Required project integrations and generated output roots reject symlinked ancestors
 immediately before derivative generation, and Codex cache evidence rejects a symlinked component or
@@ -137,6 +142,24 @@ policy edit cannot reduce the gate to one CLI. The capability-home root is also 
 path plus device and inode when created or adopted. Guard creation, provider state reads and writes,
 runtime commands, and rollback all revalidate that identity so replacing the state root cannot
 redirect global control files.
+
+### 2.5 Provider health and pending local integration
+
+The host provider has one active commit and digest union. Consumer-local agent, command, lock, and
+integration state is separate. A global-only `status` uses the Yoke CLI's receipt-bound active
+provider configuration when present, or its shipped compatibility configuration for an older active
+provider. It validates the active receipt source, materialized root, marketplaces, and package trees
+without traversing or hashing the whole inspected repository. Only bounded skill roots are inspected
+for naming collisions. Provider health can therefore be healthy while that repository reports
+`not-enrolled`.
+
+Schema-3 registry state permits a provider update to activate a candidate after validating the
+registered selection union and current runtime registration. It writes only the requesting
+consumer's local files and lock. Other registered consumers retain their files and old local lock
+commit as `pending-local-update`; their later explicit update uses the active receipt-bound
+candidate commit, not a newer remote revision. A legacy registry moves to schema 3 only after every
+legacy peer has passed its existing lock and binding validation. Missing or renamed peer-selected
+plugin names remain a visible fail-closed incompatibility.
 
 ## 3. Consequences
 

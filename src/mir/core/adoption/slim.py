@@ -102,15 +102,11 @@ def _digest(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def _validate_release_controls(
-    project_root: Path, profile: dict[str, object]
-) -> None:
+def _validate_release_controls(project_root: Path, profile: dict[str, object]) -> None:
     repo = profile.get("repo")
     commit = repo.get("profile_base_commit") if isinstance(repo, dict) else None
     if not isinstance(commit, str) or not _COMMIT_RE.fullmatch(commit):
-        raise SlimError(
-            "slim requires a Git-bound profile_base_commit from greenfield Phase 1"
-        )
+        raise SlimError("slim requires a Git-bound profile_base_commit from greenfield Phase 1")
     for relative in _RELEASE_CONTROL_PATHS:
         control_path = project_root / relative
         if not _is_safe_project_file(project_root, control_path):
@@ -216,9 +212,7 @@ def _validated_project_directory(root: Path, directory: Path, *, label: str) -> 
 def _ensure_quarantine_root(root: Path) -> Path:
     quarantine_root = root / ".mir" / "slim-quarantine"
     if quarantine_root.exists() or quarantine_root.is_symlink():
-        return _validated_project_directory(
-            root, quarantine_root, label="slim quarantine root"
-        )
+        return _validated_project_directory(root, quarantine_root, label="slim quarantine root")
     try:
         os.mkdir(quarantine_root, 0o700)
     except OSError as exc:
@@ -278,7 +272,13 @@ def _default_verify(external_cli: Path, project_root: Path) -> tuple[bool, str]:
         report = json.loads(completed.stdout)
     except json.JSONDecodeError:
         return False, "capability status did not return JSON"
-    ready = report.get("ready") is True and report.get("changed_paths") == []
+    read_only_evidence = report.get("change_evidence") == {
+        "status": "not-applicable",
+        "reason": "read-only-operation",
+    }
+    ready = report.get("ready") is True and (
+        report.get("changed_paths") == [] or read_only_evidence
+    )
     return ready, "ready" if ready else "capability status is not ready and read-only"
 
 
@@ -521,8 +521,7 @@ def apply_adopter_slim(
     path_findings = [item["path"] for item in findings if item["kind"] == "path"]
     if text_findings:
         raise SlimError(
-            "product contract still contains provider identity markers: "
-            + ", ".join(text_findings)
+            "product contract still contains provider identity markers: " + ", ".join(text_findings)
         )
 
     cli = _validate_external_cli(root, external_cli)
@@ -559,9 +558,7 @@ def apply_adopter_slim(
         if move_paths:
             raise SlimError(
                 "unchanged remove payload remains without a provider marker: "
-                + ", ".join(
-                    sorted(path.relative_to(root).as_posix() for path in move_paths)
-                )
+                + ", ".join(sorted(path.relative_to(root).as_posix() for path in move_paths))
             )
         verified, detail = verify(cli, root)
         if not verified:
@@ -617,9 +614,7 @@ def apply_adopter_slim(
         "transaction_id": transaction_id,
         "pid": os.getpid(),
         "status": "moving",
-        "paths": sorted(
-            {path.relative_to(root).as_posix() for path in move_paths}
-        ),
+        "paths": sorted({path.relative_to(root).as_posix() for path in move_paths}),
     }
     try:
         _atomic_fsync_json(root / _JOURNAL_PATH, journal)
@@ -632,9 +627,7 @@ def apply_adopter_slim(
             relative = source.relative_to(root)
             expected_hash = expected_hashes.get(relative.as_posix())
             if expected_hash is not None and _digest(source) != expected_hash:
-                raise SlimError(
-                    "provider path changed before move: " + relative.as_posix()
-                )
+                raise SlimError("provider path changed before move: " + relative.as_posix())
             destination = quarantine / relative
             if destination.exists() or destination.is_symlink():
                 raise SlimError(
@@ -642,8 +635,7 @@ def apply_adopter_slim(
                 )
             if not _safe_parent_for_restore(root, destination.parent):
                 raise SlimError(
-                    "slim quarantine destination parent is unsafe: "
-                    + relative.as_posix()
+                    "slim quarantine destination parent is unsafe: " + relative.as_posix()
                 )
             os.replace(source, destination)
             moved.append((source, destination))
@@ -659,8 +651,10 @@ def apply_adopter_slim(
         _atomic_fsync_json(root / _JOURNAL_PATH, journal)
     except Exception as exc:
         rollback_errors = _rollback_journal(root, journal)
-        detail = "rollback complete" if not rollback_errors else (
-            "rollback incomplete: " + "; ".join(rollback_errors)
+        detail = (
+            "rollback complete"
+            if not rollback_errors
+            else ("rollback incomplete: " + "; ".join(rollback_errors))
         )
         raise SlimError(f"{exc}; {detail}") from exc
 

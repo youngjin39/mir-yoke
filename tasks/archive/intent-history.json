@@ -39,6 +39,11 @@
       "goal": "Maintain Mir Yoke as the verified ADR-78 public template; no active implementation, publication, or branch-cleanup task remains.",
       "updated": "2026-08-08",
       "status": "superseded"
+    },
+    {
+      "goal": "Release v0.9.0 with the v0.8 public harness CLI restored, a standard Project Agent Kit that includes bounded common harness and required memory, and superseded complex composition preserved as inert references without copying the Mir runtime into generated projects.",
+      "updated": "2026-08-11",
+      "status": "superseded"
     }
   ]
 }

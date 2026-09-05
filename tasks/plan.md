@@ -1,6 +1,19 @@
 # Plan
 
-## Current status — audit and implementation delivery complete (2026-09-05)
+## Current status — central capability operations repair complete (2026-09-06)
+
+- [x] Separate host provider health from optional consumer enrollment and local integration status.
+- [x] Make status read-only without project-tree hashing, while reporting bounded common-skill
+  collisions and explicit `change_evidence` non-measurement.
+- [x] Preserve current legacy active-provider compatibility and fail closed on a missing, tampered,
+  or symlinked receipt-bound active configuration.
+- [x] Migrate a fully verified legacy consumer set to schema 3, advance one host provider version
+  without peer writes, and let pending peers catch up from the receipt-bound active configuration.
+- [x] Prove candidate-config rollback restores the prior provider, registry, requester, and peer
+  state; run focused capability and adopter checks before the final repository suite.
+- [x] Regenerate the adopter payload and pass clean-candidate release readiness, including 987 full
+  repository tests and the configured contract, CLI, asset, derivative, sanitization, link, schema,
+  and lint gates.
 
 - [x] Record the current audit in `tasks/intent.json`, archive superseded cursor history, and keep
   the active cursor as the authority for this review.

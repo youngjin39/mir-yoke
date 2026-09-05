@@ -407,7 +407,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": ".codex/hooks.json",
-      "sha256": "19c997a5b254edd773f7c8575aedac85a0c12a80ba3c11841399ade5aee31b89"
+      "sha256": "72a7e4c7d9514f1f3dfed1619aeb1fd9edf8ff557e08ec619571e592e14f17cd"
     },
     {
       "classification": "reference",
@@ -1691,7 +1691,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "docs/decisions/adr-89-dual-runtime-capability-management.md",
-      "sha256": "8cff2c79a98c04eb8b0fab959be2859f2c53fb5176be2f70b9e40eccd8cf48ec"
+      "sha256": "0187d10315f2e79991258ae513567d8c0fe2763146a0b61b1db4987382e5117f"
     },
     {
       "classification": "reference",
@@ -2225,13 +2225,13 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "docs/operations/global-plugin-migration.md",
-      "sha256": "476d347da2eba26fe37e3a3af8dcb3c848843a9bec6027f13719f55c51db130e"
+      "sha256": "78d66353be4cdc56faebef5477f7d9811272581d3108c01aa12d894751fb807e"
     },
     {
       "classification": "reference",
       "disposition": "remove",
       "path": "docs/operations/harness-engineering-upgrade.md",
-      "sha256": "f17ae2be6843aa2c1ec20415b605b669ddad106d141076c2db46dcb61dcad852"
+      "sha256": "fec571ca525064ea1f7e367950e5507dd63070fed7d71a350b0375a2c9433926"
     },
     {
       "classification": "reference",
@@ -2891,7 +2891,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "pyproject.toml",
-      "sha256": "ce745cdd4b09e6f18df37af8c4ef37739686809a445fddfbdfe5e554d0a6a39d"
+      "sha256": "c012f5099c762a9a49c07a416ad4977208cf88c947a139ccd28d11f58086c7e0"
     },
     {
       "classification": "reference",
@@ -3539,7 +3539,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "src/mir/cli/capability.py",
-      "sha256": "6a430dcd69c0df3a0b8da1ffaf95c48fb87781054584a66f4e6bf1a9c6369c12"
+      "sha256": "56c3257247219ddbf0fa5c6b68e7acf9c01dc30ffccec9fff1878537c15480b5"
     },
     {
       "classification": "optional-consumer-tool",
@@ -3611,7 +3611,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "src/mir/core/adoption/slim.py",
-      "sha256": "c9629cb05bcfcc6c56e6ec8f64f8fe61ee3c536510b37150e45df414d05c6913"
+      "sha256": "d8071e23b20e4155c0c348068876e2478fea37dc7d2e235e2b3fab25e349f306"
     },
     {
       "classification": "optional-consumer-tool",
@@ -3629,7 +3629,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "src/mir/core/capabilities/manager.py",
-      "sha256": "995ec95eddcacc8321e05f01b3c15ba2e83e61b14a0a13d3021b1dffbbf309f6"
+      "sha256": "7f2549792224cdb1391676394ab057f90c6f4e8b0bf91b431506a35feeea552e"
     },
     {
       "classification": "optional-consumer-tool",
@@ -3959,31 +3959,31 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/archive/intent-history.json",
-      "sha256": "2563f35ddd6ae217fe5077346702eabd26edfcddcc31ef7d5c7a8e158d25a3c7"
+      "sha256": "0954330fd0f3fec39343ca592bee10219b32cbe9f6546a4fb1a0725f406ce3ca"
     },
     {
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/change_log.md",
-      "sha256": "dd98c2e50d47749813bc628ad8b6eedd4497e900cba16cee4ef66051a7f0648e"
+      "sha256": "23db894add8759a990bed4f791fc02f76d1704b7400c562b91aa57d5040815a4"
     },
     {
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/checklist.md",
-      "sha256": "cc8f6db63e6f23484502ba810d815891b4ba8e31d3c70c1f3f2dad8e74d50363"
+      "sha256": "48eb44cd2c1202f3b80b4273a382b4a939f19b2d8691601b4e326eb7d5d2c4dd"
     },
     {
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/handoffs/session-handoff-LATEST.md",
-      "sha256": "0f48e62d57661f38558eca50b41d087226bb01e00ae56f716280b3b1c213cf81"
+      "sha256": "638d3b914e7ee5810741074f1a8179c98c8b020d6c8ca85e611f20a9dceabe72"
     },
     {
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/intent.json",
-      "sha256": "2362d116a131a0969bdee46dbf2414e172d7f0f3be3739303221c2755fb7a2aa"
+      "sha256": "23f3dc1198549ae884ca7e9c6b8ded357e71896e840b848ac53caa139e23ca25"
     },
     {
       "classification": "reference",
@@ -4007,7 +4007,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/plan.md",
-      "sha256": "bc597461272e0b3d446925d35ad59464b58c5e2d3e47e59b4f09214981427f26"
+      "sha256": "616dfd407312c3cf42c3e5c7a2a0400c6f820b6eb3e8d8cf3262cd3b005e1387"
     },
     {
       "classification": "reference",
@@ -4091,7 +4091,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "templates/common-harness/scripts/render-hook-configs.py",
-      "sha256": "13e50cc6d76939379b58397a72b8c95280c7a5d49aa058077fe417364b31d31c"
+      "sha256": "f6488a3eb077587108f1b033ceef093b20bda2e30a0e1ab7438ff03502b2c9e4"
     },
     {
       "classification": "optional-consumer-tool",
@@ -4175,13 +4175,13 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_capability_cli.py",
-      "sha256": "4d62d8eadd00d6ca685db8df9342e5d8c0b87b146f9172038ab2f71ee0e04b49"
+      "sha256": "371b5850d866bd28430dc0e8bfadddbd5da84b4bc38d4e9152380df2a09a9368"
     },
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_capability_security.py",
-      "sha256": "57e0086cb900af00449691689d8c180ab38bfeebb87400019ef1dd49d36498a1"
+      "sha256": "77c7f18dbb45c3557cf7ff63a1b43ef0cace8eb9f5a1608385a40185680b202b"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4211,7 +4211,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_compact_lifecycle_hooks.py",
-      "sha256": "1b11dc13b5cfa2bb59f08825887b580b140553dfca9230c79c8dd05edf5ed8f3"
+      "sha256": "17b3dff916162b9919429af6a82d6a21261685db1370a0ffd0634b8a653b10e3"
     },
     {
       "classification": "template-maintainer-tool",

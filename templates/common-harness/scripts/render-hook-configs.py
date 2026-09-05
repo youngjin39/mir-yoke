@@ -119,7 +119,7 @@ def render_hooks(definition: dict[str, Any], runtime: str) -> dict[str, Any]:
         notes = definition["codex_notes"]
         if not isinstance(notes, list) or not all(isinstance(item, str) for item in notes):
             raise HookDefinitionError("codex_notes must be an array of strings")
-        payload = {"//": notes, **payload}
+        payload = {"description": " ".join(notes), **payload}
     return payload
 
 

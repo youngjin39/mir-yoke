@@ -15,6 +15,7 @@ import tomllib
 from collections.abc import Callable, Iterator, Sequence
 from contextlib import contextmanager
 from datetime import UTC, datetime
+from importlib.resources import files
 from pathlib import Path, PurePosixPath
 
 from .config import CapabilityConfig, CapabilityConfigError, CapabilityPack, load_capability_config
@@ -344,6 +345,28 @@ def _configured_provider_home(codex_home: Path, source_url: str) -> Path | None:
     return source.parent
 
 
+def _codex_provider_home(codex_home: Path) -> Path | None:
+    """Locate a real active provider before its source configuration is known."""
+    config_path = codex_home / "config.toml"
+    if not config_path.is_file():
+        return None
+    try:
+        config = tomllib.loads(config_path.read_text(encoding="utf-8"))
+    except (OSError, tomllib.TOMLDecodeError):
+        return None
+    marketplaces = config.get("marketplaces")
+    marketplace = marketplaces.get("mir-yoke") if isinstance(marketplaces, dict) else None
+    if not isinstance(marketplace, dict) or marketplace.get("source_type") != "local":
+        return None
+    raw_source = marketplace.get("source")
+    if not isinstance(raw_source, str):
+        return None
+    source = Path(raw_source).expanduser().resolve()
+    if source.name != "active" or source.is_symlink() or not source.is_dir():
+        return None
+    return source.parent
+
+
 def _atomic_write_json(path: Path, payload: dict[str, object]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     descriptor, raw_temp = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
@@ -510,9 +533,7 @@ def _validate_plugin(plugin_root: Path, expected_name: str, *, package_kind: str
     return _tree_digest(plugin_root)
 
 
-def _marketplace_entries(
-    payload: dict[str, object], path: str
-) -> dict[str, dict[str, object]]:
+def _marketplace_entries(payload: dict[str, object], path: str) -> dict[str, dict[str, object]]:
     raw_entries = payload.get("plugins")
     if not isinstance(raw_entries, list):
         raise CapabilityError(f"marketplace plugins must be an array: {path}")
@@ -619,8 +640,6 @@ class CapabilityManager:
         self._project_root_identity = _directory_identity(self.project_root)
         if self._project_root_identity is None:
             raise CapabilityError("project root is not a real directory")
-        self.config_path = config_path or self.project_root / "config" / "capability-sources.json"
-        self.config = load_capability_config(self.config_path)
         self.user_home = (user_home or Path.home()).resolve()
         raw_codex_home = os.environ.get("CODEX_HOME")
         configured_codex_home = codex_home or (
@@ -629,18 +648,42 @@ class CapabilityManager:
         self.codex_home = configured_codex_home.expanduser().resolve()
         self._codex_home_anchor = self.codex_home
         self._codex_home_identity = _directory_identity(self._codex_home_anchor)
-        configured_capability_home = capability_home
-        if configured_capability_home is None and "MIR_CAPABILITY_HOME" not in os.environ:
-            configured_capability_home = _configured_provider_home(
+        configured_capability_home = capability_home or default_capability_home()
+        codex_provider_candidate = None
+        if capability_home is None and "MIR_CAPABILITY_HOME" not in os.environ:
+            codex_provider_candidate = _codex_provider_home(self.codex_home)
+            configured_capability_home = codex_provider_candidate or configured_capability_home
+        local_config = self.project_root / "config" / "capability-sources.json"
+        provider_config = (
+            configured_capability_home / "active" / "config" / "capability-sources.json"
+        )
+        self._provider_only = False
+        if config_path is not None:
+            self.config_path = config_path
+        elif local_config.exists() or local_config.is_symlink():
+            self.config_path = local_config
+        elif provider_config.is_file() and not provider_config.is_symlink():
+            self.config_path = provider_config
+            self._provider_only = True
+        else:
+            bundled_config = Path(files("mir").joinpath("resources/capability-sources.json"))
+            self.config_path = (
+                bundled_config
+                if bundled_config.is_file()
+                else Path(__file__).resolve().parents[4] / "config" / "capability-sources.json"
+            )
+            self._provider_only = True
+        self.config = load_capability_config(self.config_path)
+        if capability_home is None and "MIR_CAPABILITY_HOME" not in os.environ:
+            verified_provider_home = _configured_provider_home(
                 self.codex_home, self.config.source_url
             )
-        self.capability_home = (
-            configured_capability_home or default_capability_home()
-        ).expanduser().resolve()
+            if codex_provider_candidate is not None and verified_provider_home is None:
+                raise CapabilityError("configured Codex provider is invalid")
+            configured_capability_home = verified_provider_home or configured_capability_home
+        self.capability_home = (configured_capability_home).expanduser().resolve()
         self._capability_home_anchor = self.capability_home
-        self._capability_home_identity = _directory_identity(
-            self._capability_home_anchor
-        )
+        self._capability_home_identity = _directory_identity(self._capability_home_anchor)
         self.git = git or GitClient()
         self.command_runner = command_runner
         self.which = which
@@ -651,6 +694,10 @@ class CapabilityManager:
         self.active_receipt_path = self.capability_home / "active.json"
         if self._capability_home_anchor.exists() or self._capability_home_anchor.is_symlink():
             self._assert_capability_home_safe(allow_missing=False, adopt=True)
+
+    @property
+    def provider_only(self) -> bool:
+        return self._provider_only
 
     def _assert_project_root_identity(self) -> None:
         if _directory_identity(self.project_root) != self._project_root_identity:
@@ -686,9 +733,7 @@ class CapabilityManager:
                         return
                     raise CapabilityError("capability home is missing") from None
                 anchor.mkdir(parents=True, exist_ok=True)
-                return self._assert_capability_home_safe(
-                    allow_missing=False, adopt=True
-                )
+                return self._assert_capability_home_safe(allow_missing=False, adopt=True)
             except OSError as exc:
                 raise CapabilityError("capability home is unsafe") from exc
             if stat.S_ISLNK(metadata.st_mode) or not stat.S_ISDIR(metadata.st_mode):
@@ -731,9 +776,7 @@ class CapabilityManager:
         """Ensure managed lock state cannot be redirected outside the project."""
         self._assert_project_root_identity()
         lock_parent = self.lock_path.parent
-        if lock_parent.is_symlink() or (
-            lock_parent.exists() and not lock_parent.is_dir()
-        ):
+        if lock_parent.is_symlink() or (lock_parent.exists() and not lock_parent.is_dir()):
             raise CapabilityError("project .mir capability state path is unsafe")
         if self.lock_path.is_symlink():
             raise CapabilityError("project capability lock path is a symlink")
@@ -743,7 +786,7 @@ class CapabilityManager:
             raise CapabilityError("project capability lock path escapes repository") from exc
 
     def _load_registry(self) -> dict[str, object]:
-        self._assert_capability_home_safe(allow_missing=True)
+        self._assert_capability_home_safe(allow_missing=True, adopt=True)
         return _read_json(self.registry_path) or {
             "schema_version": 1,
             "active_commit": None,
@@ -881,7 +924,8 @@ class CapabilityManager:
             }
             or "consumer_binding" in lock
             or not isinstance(source, dict)
-            or source != {
+            or source
+            != {
                 "url": self.config.source_url,
                 "ref": self.config.source_ref,
                 "commit": commit,
@@ -907,8 +951,7 @@ class CapabilityManager:
         return all(
             isinstance(digest, str)
             and _CONSUMER_BINDING.fullmatch(digest) is not None
-            and metadata
-            == {"path": self.config.plugins.get(plugin), "sha256": digest}
+            and metadata == {"path": self.config.plugins.get(plugin), "sha256": digest}
             for plugin, digest in required.items()
             for metadata in (locked_plugins.get(plugin),)
         )
@@ -967,6 +1010,8 @@ class CapabilityManager:
 
     def status(self, profile: str | None = None) -> dict[str, object]:
         self._assert_capability_home_safe(allow_missing=True)
+        if self._provider_only:
+            return self._provider_status()
         lock = self._load_lock()
         resolved_profile, pack = self._profile(profile, lock)
         plugins = pack.plugins
@@ -989,12 +1034,32 @@ class CapabilityManager:
             lock_commit = lock["source"].get("commit")
         active_commit = active_receipt.get("commit") if active_receipt else None
         active_integrity = self._active_integrity(lock, plugins)
+        provider_ready = self._provider_status()["provider_ready"] is True
         consumer_integrity = self._consumer_integrity(lock, consumer, plugins)
         agent_status = self._agent_status(lock, pack.agents)
         command_status = self._command_status(lock, pack.commands)
         missing_project_paths = self._missing_project_paths()
         activation = self._activation_evidence(lock) if lock else {"status": "not-synced"}
         discovery = self._discovery_evidence(lock) if lock else {"status": "not-synced"}
+        active_provider_commit = registry.get("active_commit")
+        bindings = self._load_consumer_bindings()
+        lock_binding = lock.get("consumer_binding") if isinstance(lock, dict) else None
+        binding_valid = self.config.source_schema_version < 3 or (
+            isinstance(consumer, dict)
+            and isinstance(lock_binding, str)
+            and bindings.get(_consumer_key(self.project_root)) == lock_binding
+            and consumer.get("binding") == lock_binding
+        )
+        if not isinstance(consumer, dict):
+            integration = "not-enrolled"
+        elif not binding_valid:
+            integration = "invalid"
+        elif consumer.get("commit") != active_provider_commit:
+            integration = "pending-local-update"
+        elif consumer_integrity:
+            integration = "active"
+        else:
+            integration = "invalid"
         ready = bool(
             lock
             and _SHA.fullmatch(str(lock_commit))
@@ -1014,6 +1079,13 @@ class CapabilityManager:
             "operation": "status",
             "dry_run": True,
             "ready": ready,
+            "scope": "consumer",
+            "provider_ready": provider_ready,
+            "consumer": (
+                {"status": "enrolled", "integration": integration}
+                if isinstance(consumer, dict)
+                else {"status": "not-enrolled"}
+            ),
             "profile": resolved_profile,
             "plugins": list(plugins),
             "required_commit": lock_commit,
@@ -1024,9 +1096,7 @@ class CapabilityManager:
             "missing_project_paths": missing_project_paths,
             "agent_status": agent_status,
             "command_status": command_status,
-            "command_skill_map": {
-                path: self.config.commands[path] for path in pack.commands
-            },
+            "command_skill_map": {path: self.config.commands[path] for path in pack.commands},
             "managed_surfaces": self._managed_surfaces(pack),
             "runtime_support": self.config.runtime_support,
             "registration": lock.get("registration") if lock else None,
@@ -1034,18 +1104,153 @@ class CapabilityManager:
             "discovery": discovery,
         }
 
+    def _provider_status(self) -> dict[str, object]:
+        active_receipt = _read_json(self.active_receipt_path)
+        registry = self._load_registry()
+        active_plugins = active_receipt.get("plugins") if active_receipt else None
+        active_config = self._active_config_path()
+        config_bound = (
+            isinstance(active_receipt, dict)
+            and active_config is not None
+            and active_receipt.get("config_sha256") == _file_digest(active_config)
+        )
+        configured_path = self.active_path / "config"
+        legacy_fallback = (
+            isinstance(active_receipt, dict)
+            and "config_sha256" not in active_receipt
+            and not configured_path.exists()
+            and not configured_path.is_symlink()
+        )
+        activation = (
+            self._activation_evidence(
+                {
+                    "plugins": {
+                        name: {"sha256": digest} for name, digest in active_plugins.items()
+                    },
+                    "registration": {"status": "active"},
+                }
+            )
+            if isinstance(active_plugins, dict)
+            else {"status": "not-synced", "runtimes": {}}
+        )
+        provider_ready = bool(
+            (config_bound or legacy_fallback)
+            and isinstance(active_receipt, dict)
+            and active_receipt.get("schema_version") == 2
+            and isinstance(active_plugins, dict)
+            and registry.get("active_commit") == active_receipt.get("commit")
+            and registry.get("active_plugins") == active_plugins
+            and self._provider_active_integrity(active_receipt)
+            and activation.get("status") == "active"
+        )
+        collisions = _standalone_collisions(
+            self._configured_skill_names(tuple(self.config.plugins)),
+            self.project_root,
+            self.user_home,
+        )
+        return {
+            "operation": "status",
+            "dry_run": True,
+            "scope": "provider",
+            "provider_ready": provider_ready,
+            "active_commit": active_receipt.get("commit") if active_receipt else None,
+            "active_integrity": provider_ready,
+            "activation": activation,
+            "config_status": (
+                "bound"
+                if config_bound
+                else "legacy-provider-fallback"
+                if legacy_fallback
+                else "missing-or-tampered"
+            ),
+            "collisions": collisions,
+            "consumer": {"status": "not-enrolled", "collisions": collisions},
+        }
+
+    def _provider_active_integrity(self, receipt: dict[str, object]) -> bool:
+        plugins = receipt.get("plugins")
+        materialized = receipt.get("materialized_plugins")
+        if not isinstance(plugins, dict) or not isinstance(materialized, dict):
+            return False
+        try:
+            materialized_root = Path(str(receipt.get("materialized_root"))).expanduser().resolve()
+        except OSError:
+            return False
+        if (
+            receipt.get("source_url") != self.config.source_url
+            or materialized_root != self.active_path
+        ):
+            return False
+        try:
+            marketplaces = _validate_marketplaces(self.active_path, self.config)
+            actual = {
+                plugin: _validate_plugin(
+                    self.active_path / path,
+                    plugin,
+                    package_kind=self.config.plugin_kinds[plugin],
+                )
+                for plugin, path in self.config.plugins.items()
+            }
+        except (CapabilityError, OSError):
+            return False
+        return (
+            materialized == actual
+            and all(actual.get(plugin) == digest for plugin, digest in plugins.items())
+            and receipt.get("marketplaces")
+            == {path: {"sha256": digest} for path, digest in marketplaces.items()}
+        )
+
+    def _active_config_path(self) -> Path | None:
+        config_dir = self.active_path / "config"
+        config_path = config_dir / "capability-sources.json"
+        if (
+            config_dir.is_symlink()
+            or not config_dir.is_dir()
+            or config_path.is_symlink()
+            or not config_path.is_file()
+        ):
+            return None
+        try:
+            config_path.resolve().relative_to(self.active_path.resolve())
+        except (OSError, ValueError):
+            return None
+        return config_path
+
+    def _use_receipt_bound_active_config(self) -> None:
+        receipt = _read_json(self.active_receipt_path)
+        config_path = self._active_config_path()
+        if (
+            not isinstance(receipt, dict)
+            or config_path is None
+            or receipt.get("config_sha256") != _file_digest(config_path)
+        ):
+            raise CapabilityError("active provider configuration is missing or unbound")
+        config = load_capability_config(config_path)
+        if receipt.get("source_url") != config.source_url:
+            raise CapabilityError("active provider configuration source drift")
+        self.config_path = config_path
+        self.config = config
+
+    def _use_previous_config_for_rollback(
+        self, receipt: dict[str, object] | None
+    ) -> CapabilityConfig | None:
+        config_path = self._active_config_path()
+        if not isinstance(receipt, dict) or config_path is None:
+            return None
+        if receipt.get("config_sha256") != _file_digest(config_path):
+            return None
+        previous = self.config
+        self.config = load_capability_config(config_path)
+        return previous
+
     def _configured_skill_names(self, plugins: Sequence[str]) -> set[str]:
         return {skill for plugin in plugins for skill in self.config.plugin_skills[plugin]}
 
-    def _assert_active_digest_acknowledgements(
-        self, plugin_hashes: dict[str, str]
-    ) -> None:
+    def _assert_active_digest_acknowledgements(self, plugin_hashes: dict[str, str]) -> None:
         for plugin, expected in self.config.active_digest_acknowledgements.items():
             actual = plugin_hashes.get(plugin)
             if actual != expected:
-                raise CapabilityError(
-                    f"active package digest acknowledgement is stale: {plugin}"
-                )
+                raise CapabilityError(f"active package digest acknowledgement is stale: {plugin}")
 
     def _managed_surfaces(self, pack: CapabilityPack) -> dict[str, object]:
         surfaces: dict[str, object] = {
@@ -1053,8 +1258,7 @@ class CapabilityManager:
                 "delivery": "host-plugin",
                 "plugins": list(pack.plugins),
                 "inventory": {
-                    plugin: list(self.config.plugin_skills[plugin])
-                    for plugin in pack.plugins
+                    plugin: list(self.config.plugin_skills[plugin]) for plugin in pack.plugins
                 },
             },
             "agents": {
@@ -1063,9 +1267,7 @@ class CapabilityManager:
             },
             "commands": {
                 "delivery": "claude-project-file-codex-plugin-skill",
-                "mappings": {
-                    path: self.config.commands[path] for path in pack.commands
-                },
+                "mappings": {path: self.config.commands[path] for path in pack.commands},
             },
         }
         plugin_hooks = {
@@ -1157,9 +1359,7 @@ class CapabilityManager:
         receipt_schema = active_receipt.get("schema_version") if active_receipt else None
         if receipt_schema not in {None, 1, 2}:
             return False
-        if self.config.source_schema_version >= 3 and (
-            lock_schema != 2 or receipt_schema != 2
-        ):
+        if self.config.source_schema_version >= 3 and (lock_schema != 2 or receipt_schema != 2):
             return False
         materialized_plugins = (
             active_receipt.get("materialized_plugins") if active_receipt else None
@@ -1210,9 +1410,7 @@ class CapabilityManager:
                 continue
             if not isinstance(evidence, dict):
                 return False
-            expected = {
-                path: {"sha256": digest} for path, digest in marketplace_hashes.items()
-            }
+            expected = {path: {"sha256": digest} for path, digest in marketplace_hashes.items()}
             if evidence != expected:
                 return False
         return True
@@ -1226,7 +1424,7 @@ class CapabilityManager:
         if (
             registry is None
             or receipt is None
-            or registry.get("schema_version") != 2
+            or registry.get("schema_version") not in {2, 3}
             or receipt.get("schema_version") != 2
         ):
             return None
@@ -1258,6 +1456,12 @@ class CapabilityManager:
             bindings = self._load_consumer_bindings()
         except CapabilityError:
             return None
+        if registry.get("schema_version") == 3:
+            try:
+                registered_names = self._registered_plugin_names(consumers, bindings)
+            except CapabilityError:
+                return None
+            return active_plugins if set(active_plugins) == registered_names else None
         consumer_union = self._consumer_union(
             consumers,
             receipt_commit,
@@ -1323,11 +1527,16 @@ class CapabilityManager:
         ):
             return False
         if self.config.source_schema_version >= 3:
-            if lock.get("schema_version") != 2 or source != {
-                "url": self.config.source_url,
-                "ref": self.config.source_ref,
-                "commit": commit,
-            } or lock.get("consumer_binding") != binding:
+            if (
+                lock.get("schema_version") != 2
+                or source
+                != {
+                    "url": self.config.source_url,
+                    "ref": self.config.source_ref,
+                    "commit": commit,
+                }
+                or lock.get("consumer_binding") != binding
+            ):
                 return False
         return all(
             (
@@ -1392,9 +1601,7 @@ class CapabilityManager:
             if (
                 raw_root != pending_key
                 and binding is not None
-                and not self._consumer_lock_matches(
-                    root, entry, commit, binding
-                )
+                and not self._consumer_lock_matches(root, entry, commit, binding)
             ):
                 return None
         return consumer_union
@@ -1567,8 +1774,7 @@ class CapabilityManager:
             )
         if missing_hooks:
             raise CapabilityError(
-                "runtime hook discovery is missing expected hooks: "
-                + ", ".join(missing_hooks)
+                "runtime hook discovery is missing expected hooks: " + ", ".join(missing_hooks)
             )
         if not session_valid:
             raise CapabilityError(
@@ -1669,9 +1875,7 @@ class CapabilityManager:
             missing_hooks = sorted(expected_hooks - observed_hook_set)
             session_id = receipt.get("session_id")
             installation_session = (
-                consumer_sessions.get(runtime)
-                if isinstance(consumer_sessions, dict)
-                else None
+                consumer_sessions.get(runtime) if isinstance(consumer_sessions, dict) else None
             )
             if receipt.get("commit") != commit or receipt.get("plugins") != expected_plugins:
                 status = "provider-mismatch"
@@ -1685,8 +1889,7 @@ class CapabilityManager:
                 status = "hooks-missing"
             elif (
                 expected_hooks
-                and receipt.get("attestation_kind")
-                != "operator-observed-runtime-catalog-and-hooks"
+                and receipt.get("attestation_kind") != "operator-observed-runtime-catalog-and-hooks"
             ):
                 status = "hook-attestation-invalid"
             else:
@@ -1769,9 +1972,7 @@ class CapabilityManager:
             return {"status": "invalid-lock", "runtimes": {}}
         runtime_plugins = plugins
         active_receipt = _read_json(self.active_receipt_path)
-        if isinstance(active_receipt, dict) and isinstance(
-            active_receipt.get("plugins"), dict
-        ):
+        if isinstance(active_receipt, dict) and isinstance(active_receipt.get("plugins"), dict):
             runtime_plugins = {
                 name: {"sha256": digest}
                 for name, digest in active_receipt["plugins"].items()
@@ -1842,9 +2043,7 @@ class CapabilityManager:
             return "codex-plugin-not-persistently-enabled"
         return None
 
-    def _codex_enabled_plugins(
-        self, config: dict[str, object] | None
-    ) -> set[str] | None:
+    def _codex_enabled_plugins(self, config: dict[str, object] | None) -> set[str] | None:
         if config is None:
             return None
         plugins = config.get("plugins")
@@ -1969,9 +2168,7 @@ class CapabilityManager:
                 continue
             entry = matches[0]
             enabled = entry.get("enabled") is True or entry.get("status") == "enabled"
-            claude_scope_mismatch = (
-                executable == "claude" and entry.get("scope") != "user"
-            )
+            claude_scope_mismatch = executable == "claude" and entry.get("scope") != "user"
             if executable == "codex":
                 persistence_error = self._codex_persistence_error(codex_config, name)
                 installed_path, cache_error = self._codex_cache_path(entry, name)
@@ -2022,6 +2219,27 @@ class CapabilityManager:
         locked_commit = None
         if lock and isinstance(lock.get("source"), dict):
             locked_commit = lock["source"].get("commit")
+        registry = self._load_registry()
+        consumers = registry.get("consumers")
+        current_consumer = (
+            consumers.get(_consumer_key(self.project_root)) if isinstance(consumers, dict) else None
+        )
+        active_commit = registry.get("active_commit")
+        pending_local_update = (
+            operation == "update"
+            and registry.get("schema_version") == 3
+            and isinstance(current_consumer, dict)
+            and isinstance(active_commit, str)
+            and _SHA.fullmatch(active_commit) is not None
+            and current_consumer.get("commit") != active_commit
+        )
+        if pending_local_update:
+            self._use_receipt_bound_active_config()
+            resolved_profile, pack = self._profile(profile, lock)
+            selected_plugins = pack.plugins
+            selected_agents = pack.agents
+            selected_commands = pack.commands
+            remote_commit = self.git.resolve(self.config.source_url, self.config.source_ref)
         if (
             operation == "sync"
             and self.config.source_schema_version == 4
@@ -2041,7 +2259,9 @@ class CapabilityManager:
                     + "); run 'mir capability update --apply'"
                 )
         desired_commit = (
-            locked_commit
+            active_commit
+            if pending_local_update
+            else locked_commit
             if operation == "sync"
             and isinstance(locked_commit, str)
             and _SHA.fullmatch(locked_commit)
@@ -2051,6 +2271,7 @@ class CapabilityManager:
             raise CapabilityError("required capability commit is invalid")
 
         export_paths = [
+            "config/capability-sources.json",
             ".claude-plugin/marketplace.json",
             ".agents/plugins/marketplace.json",
             *self.config.plugins.values(),
@@ -2066,6 +2287,14 @@ class CapabilityManager:
                 export_paths,
                 checkout,
             )
+            if operation == "update" and not pending_local_update:
+                self.config = load_capability_config(
+                    checkout / "config" / "capability-sources.json"
+                )
+                resolved_profile, pack = self._profile(profile, lock)
+                selected_plugins = pack.plugins
+                selected_agents = pack.agents
+                selected_commands = pack.commands
             plugin_hashes = {
                 name: _validate_plugin(
                     checkout / path,
@@ -2084,15 +2313,11 @@ class CapabilityManager:
                 if actual_skills != set(expected_skills):
                     raise CapabilityError(f"remote plugin skill inventory drift: {name}")
             agent_hashes = {path: _file_digest(checkout / path) for path in self.config.agents}
-            command_hashes = {
-                path: _file_digest(checkout / path) for path in self.config.commands
-            }
+            command_hashes = {path: _file_digest(checkout / path) for path in self.config.commands}
             skill_names = _skill_names(checkout, self.config, selected_plugins)
             collisions = _standalone_collisions(skill_names, self.project_root, self.user_home)
             agent_changes = self._agent_changes(lock, agent_hashes, selected_agents)
-            command_changes = self._command_changes(
-                lock, command_hashes, selected_commands
-            )
+            command_changes = self._command_changes(lock, command_hashes, selected_commands)
             missing_project_paths = self._missing_project_paths()
             result: dict[str, object] = {
                 "operation": operation,
@@ -2103,6 +2328,7 @@ class CapabilityManager:
                 "remote_commit": remote_commit,
                 "required_commit": desired_commit,
                 "update_available": bool(locked_commit and locked_commit != remote_commit),
+                "pending_local_update": pending_local_update,
                 "collisions": collisions,
                 "missing_project_paths": missing_project_paths,
                 "agent_changes": agent_changes,
@@ -2271,9 +2497,7 @@ class CapabilityManager:
                 else:
                     changes[path] = "update"
             elif target.is_file() and not target.is_symlink():
-                changes[path] = (
-                    "unchanged" if _file_digest(target) == digest else "diverged"
-                )
+                changes[path] = "unchanged" if _file_digest(target) == digest else "diverged"
             elif target.exists() or target.is_symlink():
                 changes[path] = "diverged"
             else:
@@ -2290,39 +2514,80 @@ class CapabilityManager:
     ) -> dict[str, object]:
         registry = self._load_registry()
         consumers = registry.get("consumers")
-        if registry.get("schema_version") not in {1, 2} or not isinstance(consumers, dict):
+        schema_version = registry.get("schema_version")
+        if schema_version not in {1, 2, 3} or not isinstance(consumers, dict):
             raise CapabilityError("global consumer registry is invalid")
-        current_key = _consumer_key(self.project_root)
-        for root, metadata in consumers.items():
+        if self.config.source_schema_version < 3:
+            return registry
+        if schema_version in {1, 2} and consumers:
+            active_receipt = _read_json(self.active_receipt_path)
+            active_commit = registry.get("active_commit")
             if (
-                root != current_key
-                and isinstance(metadata, dict)
-                and metadata.get("commit") != commit
+                not isinstance(active_receipt, dict)
+                or active_receipt.get("commit") != active_commit
+                or not isinstance(active_commit, str)
             ):
-                raise CapabilityError(
-                    f"global capability update conflicts with another registered consumer: {root}"
+                raise CapabilityError("global consumer registry is invalid")
+            try:
+                active_hashes = {
+                    plugin: _validate_plugin(
+                        self.active_path / path,
+                        plugin,
+                        package_kind=self.config.plugin_kinds[plugin],
+                    )
+                    for plugin, path in self.config.plugins.items()
+                }
+            except (CapabilityError, OSError) as exc:
+                raise CapabilityError("global consumer registry is invalid") from exc
+            if (
+                self._consumer_union(
+                    consumers,
+                    active_commit,
+                    active_hashes,
+                    bindings=bindings,
                 )
-        pending_consumers = dict(consumers)
-        pending_consumers[current_key] = {
-            "commit": commit,
-            "plugins": {plugin: plugin_hashes[plugin] for plugin in selected_plugins},
-            **({"binding": pending_binding} if pending_binding is not None else {}),
-        }
-        pending_bindings = dict(bindings)
-        if pending_binding is not None:
-            pending_bindings[current_key] = pending_binding
-        if (
-            self._consumer_union(
-                pending_consumers,
-                commit,
-                plugin_hashes,
-                pending_key=current_key,
-                bindings=pending_bindings,
-            )
-            is None
-        ):
-            raise CapabilityError("global consumer registry is invalid")
+                is None
+            ):
+                raise CapabilityError("global consumer registry is invalid")
+            return registry
+        self._registered_plugin_names(consumers, bindings)
         return registry
+
+    def _registered_plugin_names(self, consumers: object, bindings: dict[str, str]) -> set[str]:
+        if not isinstance(consumers, dict):
+            raise CapabilityError("global consumer registry is invalid")
+        names: set[str] = set()
+        for root, entry in consumers.items():
+            if not isinstance(root, str) or not isinstance(entry, dict):
+                raise CapabilityError("global consumer registry is invalid")
+            commit_value = entry.get("commit")
+            plugins = entry.get("plugins")
+            profile = entry.get("profile")
+            binding = bindings.get(root)
+            if (
+                not isinstance(commit_value, str)
+                or _SHA.fullmatch(commit_value) is None
+                or not isinstance(plugins, dict)
+                or not isinstance(profile, str)
+                or not isinstance(binding, str)
+                or entry.get("binding") != binding
+                or _CONSUMER_BINDING.fullmatch(binding) is None
+            ):
+                raise CapabilityError("global consumer registry is invalid")
+            try:
+                self.config.resolve_profile(profile)
+            except CapabilityConfigError as exc:
+                raise CapabilityError("global consumer registry is invalid") from exc
+            for plugin, digest in plugins.items():
+                if (
+                    not isinstance(plugin, str)
+                    or plugin not in self.config.plugins
+                    or not isinstance(digest, str)
+                    or _CONSUMER_BINDING.fullmatch(digest) is None
+                ):
+                    raise CapabilityError("global consumer registry is invalid")
+                names.add(plugin)
+        return names
 
     def _assert_agents_unchanged(self, lock: dict[str, object] | None) -> None:
         if lock is None:
@@ -2345,7 +2610,9 @@ class CapabilityManager:
                     f"project-local agent diverged from its lock; refusing overwrite: {source_path}"
                 )
 
-    def _assert_commands_unchanged(self, lock: dict[str, object] | None) -> None:
+    def _assert_commands_unchanged(
+        self, lock: dict[str, object] | None, *, allow_mapping_update: bool = False
+    ) -> None:
         if lock is None or "commands" not in lock:
             return
         previous = lock.get("commands")
@@ -2359,7 +2626,10 @@ class CapabilityManager:
             target = self._project_target(source_path)
             if (
                 not isinstance(digest, str)
-                or codex_skill != self.config.commands.get(source_path)
+                or (
+                    not allow_mapping_update
+                    and codex_skill != self.config.commands.get(source_path)
+                )
                 or not target.is_file()
                 or target.is_symlink()
                 or _file_digest(target) != digest
@@ -2388,7 +2658,13 @@ class CapabilityManager:
             self._assert_project_lock_path_safe()
             previous_lock = self._load_lock()
             self._assert_agents_unchanged(previous_lock)
-            self._assert_commands_unchanged(previous_lock)
+            previous_source = previous_lock.get("source") if previous_lock else None
+            previous_commit = (
+                previous_source.get("commit") if isinstance(previous_source, dict) else None
+            )
+            self._assert_commands_unchanged(
+                previous_lock, allow_mapping_update=previous_commit != commit
+            )
             bindings = self._load_consumer_bindings()
             consumer_key = _consumer_key(self.project_root)
             pending_binding = self._current_binding_for_apply(
@@ -2428,6 +2704,9 @@ class CapabilityManager:
             with tempfile.TemporaryDirectory(prefix="apply-", dir=stage_parent) as raw_stage:
                 staged_active = Path(raw_stage) / "active"
                 staged_active.mkdir()
+                config_target = staged_active / "config" / "capability-sources.json"
+                config_target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(checkout / "config" / "capability-sources.json", config_target)
                 for relative in (
                     ".claude-plugin/marketplace.json",
                     ".agents/plugins/marketplace.json",
@@ -2498,17 +2777,29 @@ class CapabilityManager:
                     pending_bindings = dict(bindings)
                     if pending_binding is not None:
                         pending_bindings[consumer_key] = pending_binding
-                    active_hashes = self._consumer_union(
-                        consumers,
-                        commit,
-                        plugin_hashes,
-                        pending_key=consumer_key,
-                        bindings=pending_bindings,
+                    can_migrate = self.config.source_schema_version >= 3 and all(
+                        isinstance(entry, dict)
+                        and isinstance(entry.get("binding"), str)
+                        and pending_bindings.get(root) == entry.get("binding")
+                        for root, entry in consumers.items()
                     )
-                    if active_hashes is None:
-                        raise CapabilityError("global consumer registry entry is invalid")
+                    if not can_migrate:
+                        active_hashes = self._consumer_union(
+                            consumers,
+                            commit,
+                            plugin_hashes,
+                            pending_key=consumer_key,
+                            bindings=pending_bindings,
+                        )
+                        if active_hashes is None:
+                            raise CapabilityError("global consumer registry entry is invalid")
+                    else:
+                        active_names = self._registered_plugin_names(consumers, pending_bindings)
+                        if not active_names:
+                            raise CapabilityError("global consumer registry entry is invalid")
+                        active_hashes = {plugin: plugin_hashes[plugin] for plugin in active_names}
                     candidate_active_plugins = tuple(sorted(active_hashes))
-                    registry["schema_version"] = 2
+                    registry["schema_version"] = 3 if can_migrate else 2
                     registry["active_commit"] = commit
                     registry["active_plugins"] = active_hashes
 
@@ -2520,10 +2811,7 @@ class CapabilityManager:
                                 sorted(set(self.config.plugins) - set(active_hashes))
                             ),
                         ),
-                        {
-                            plugin: {"sha256": digest}
-                            for plugin, digest in active_hashes.items()
-                        },
+                        {plugin: {"sha256": digest} for plugin, digest in active_hashes.items()},
                     )
                     if registration["status"] != "restart-required":
                         raise CapabilityError("runtime plugin registration failed")
@@ -2547,8 +2835,7 @@ class CapabilityManager:
                             for plugin in selected_plugins
                         },
                         "marketplaces": {
-                            path: {"sha256": digest}
-                            for path, digest in marketplace_hashes.items()
+                            path: {"sha256": digest} for path, digest in marketplace_hashes.items()
                         },
                         "agents": {
                             path: {"sha256": agent_hashes[path], "project_path": path}
@@ -2595,10 +2882,12 @@ class CapabilityManager:
                         "plugins": active_hashes,
                         "materialized_plugins": plugin_hashes,
                         "marketplaces": {
-                            path: {"sha256": digest}
-                            for path, digest in marketplace_hashes.items()
+                            path: {"sha256": digest} for path, digest in marketplace_hashes.items()
                         },
                         "materialized_root": str(self.active_path),
+                        "config_sha256": _file_digest(
+                            checkout / "config" / "capability-sources.json"
+                        ),
                         "discovery": preserved_discovery,
                         "installation_sessions": preserved_installation_sessions,
                         "updated_at": timestamp,
@@ -2653,13 +2942,18 @@ class CapabilityManager:
                                 _atomic_write_bytes(path, body)
                     runtime_rollback = True
                     if registration_attempted and capability_rollback_safe:
-                        runtime_rollback = self._rollback_runtime_registration(
-                            candidate_active_plugins, previous_active_receipt
+                        candidate_config = self._use_previous_config_for_rollback(
+                            previous_active_receipt
                         )
+                        try:
+                            runtime_rollback = self._rollback_runtime_registration(
+                                candidate_active_plugins, previous_active_receipt
+                            )
+                        finally:
+                            if candidate_config is not None:
+                                self.config = candidate_config
                     rollback_complete = (
-                        capability_rollback_safe
-                        and runtime_rollback
-                        and derivatives_rollback
+                        capability_rollback_safe and runtime_rollback and derivatives_rollback
                     )
                     detail = "complete" if rollback_complete else "incomplete"
                     if not isinstance(exc, Exception) and rollback_complete:
@@ -2730,7 +3024,7 @@ class CapabilityManager:
             lock_schema = restored_lock.get("schema_version") if restored_lock else None
             registry = self._load_registry()
             registry_schema = registry.get("schema_version")
-            if lock_schema not in {None, 1, 2} or registry_schema not in {1, 2}:
+            if lock_schema not in {None, 1, 2} or registry_schema not in {1, 2, 3}:
                 return False
             if (lock_schema == 2 or registry_schema == 2) and receipt_schema != 2:
                 return False
@@ -2749,14 +3043,12 @@ class CapabilityManager:
             if receipt_schema == 2:
                 materialized = previous_active_receipt.get("materialized_plugins")
                 expected_marketplaces = {
-                    path: {"sha256": digest}
-                    for path, digest in marketplace_hashes.items()
+                    path: {"sha256": digest} for path, digest in marketplace_hashes.items()
                 }
                 if (
-                    registry.get("schema_version") != 2
+                    registry.get("schema_version") not in {2, 3}
                     or registry.get("active_plugins") != previous_plugins
-                    or previous_active_receipt.get("marketplaces")
-                    != expected_marketplaces
+                    or previous_active_receipt.get("marketplaces") != expected_marketplaces
                     or materialized != actual_materialized
                 ):
                     return False
@@ -2776,10 +3068,7 @@ class CapabilityManager:
                     isinstance(name, str)
                     and name in self.config.plugins
                     and isinstance(digest, str)
-                    and (
-                        receipt_schema != 2
-                        or materialized.get(name) == digest
-                    )
+                    and (receipt_schema != 2 or materialized.get(name) == digest)
                 )
             }
             if len(expected) != len(previous_plugins):
@@ -2793,9 +3082,7 @@ class CapabilityManager:
                 restored = self._install_and_verify(
                     self._registration_plan(
                         tuple(sorted(expected)),
-                        remove_plugins=tuple(
-                            sorted(set(self.config.plugins) - set(expected))
-                        ),
+                        remove_plugins=tuple(sorted(set(self.config.plugins) - set(expected))),
                     ),
                     expected,
                 )

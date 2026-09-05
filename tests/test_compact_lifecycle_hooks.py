@@ -196,6 +196,8 @@ def test_should_render_exact_claude_and_codex_hooks_from_one_definition(
     codex = json.loads((tmp_path / ".codex" / "hooks.json").read_text())
     assert claude == json.loads((ROOT / ".claude" / "settings.json").read_text())
     assert codex == json.loads((ROOT / ".codex" / "hooks.json").read_text())
+    assert set(codex) <= {"description", "hooks"}
+    assert isinstance(codex.get("description"), str)
     for runtime in (claude, codex):
         assert "PreCompact" in runtime["hooks"]
         assert "PostCompact" in runtime["hooks"]

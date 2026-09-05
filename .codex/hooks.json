@@ -1,8 +1,5 @@
 {
-  "//": [
-    "GENERATED FILE: edit config/project-hooks.json and run scripts/generate_codex_derivatives.sh.",
-    "Runtime-specific events omitted here: UserPromptSubmit and StopFailure remain Claude-only by policy."
-  ],
+  "description": "GENERATED FILE: edit config/project-hooks.json and run scripts/generate_codex_derivatives.sh. Runtime-specific events omitted here: UserPromptSubmit and StopFailure remain Claude-only by policy.",
   "hooks": {
     "PreToolUse": [
       {

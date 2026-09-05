@@ -48,6 +48,7 @@ packages = ["src/mir"]
 "tools/run_orchestrator" = "tools/run_orchestrator"
 ".claude/hooks/_lib/bootstrap-gate.sh" = "mir/resources/hooks/bootstrap-gate.sh"
 ".claude/hooks/_lib/run-python.sh" = "mir/resources/hooks/run-python.sh"
+"config/capability-sources.json" = "mir/resources/capability-sources.json"
 
 [tool.pytest.ini_options]
 # Reclaim pytest scratch immediately. The default retention keeps three full runs,

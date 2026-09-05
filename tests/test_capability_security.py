@@ -65,9 +65,7 @@ def schema1_capability_source_payload() -> dict[str, object]:
     current.pop("project_integrations")
     current["agents"].pop("provider_local")
     for pack in current["profiles"]["packs"].values():
-        pack["plugins"] = [
-            name for name in pack["plugins"] if name in legacy_plugins
-        ]
+        pack["plugins"] = [name for name in pack["plugins"] if name in legacy_plugins]
         pack.pop("commands")
     current["required_project_paths"] = [
         "CLAUDE.md",
@@ -125,9 +123,7 @@ def downgrade_lock_to_genuine_legacy_consumer(
     manager.lock_path.write_text(json.dumps(lock), encoding="utf-8")
     return {
         "commit": lock["source"]["commit"],
-        "plugins": {
-            name: metadata["sha256"] for name, metadata in legacy_plugins.items()
-        },
+        "plugins": {name: metadata["sha256"] for name, metadata in legacy_plugins.items()},
         "profile": lock["profile"],
     }
 
@@ -177,18 +173,18 @@ def test_legacy_consumers_enroll_bindings_one_at_a_time_without_registry_deadloc
 
     managers[0].sync("code_app", apply=True)
     first_registry = json.loads(managers[0].registry_path.read_text(encoding="utf-8"))
-    first_bindings = json.loads(
-        managers[0].consumer_bindings_path.read_text(encoding="utf-8")
-    )["consumers"]
+    first_bindings = json.loads(managers[0].consumer_bindings_path.read_text(encoding="utf-8"))[
+        "consumers"
+    ]
     first_key, second_key = (str(manager.project_root) for manager in managers)
     assert set(first_bindings) == {first_key}
     assert "binding" in first_registry["consumers"][first_key]
     assert "binding" not in first_registry["consumers"][second_key]
 
     managers[1].sync("code_app", apply=True)
-    bindings = json.loads(
-        managers[1].consumer_bindings_path.read_text(encoding="utf-8")
-    )["consumers"]
+    bindings = json.loads(managers[1].consumer_bindings_path.read_text(encoding="utf-8"))[
+        "consumers"
+    ]
     registry = json.loads(managers[1].registry_path.read_text(encoding="utf-8"))
     assert set(bindings) == {first_key, second_key}
     assert all("binding" in entry for entry in registry["consumers"].values())
@@ -258,8 +254,11 @@ def test_schema4_sync_requires_update_for_legacy_lock_missing_selected_plugin(
     lock["source"]["commit"] = old_commit
     registry["active_commit"] = old_commit
     registry["consumers"][str(project)]["commit"] = old_commit
+    active_receipt = json.loads(manager.active_receipt_path.read_text(encoding="utf-8"))
+    active_receipt["commit"] = old_commit
     manager.lock_path.write_text(json.dumps(lock), encoding="utf-8")
     manager.registry_path.write_text(json.dumps(registry), encoding="utf-8")
+    manager.active_receipt_path.write_text(json.dumps(active_receipt), encoding="utf-8")
     commands.clear()
 
     exported = False
@@ -327,9 +326,7 @@ def test_activation_required_runtimes_reject_invalid_policy(
 ) -> None:
     config = mutated_config(
         tmp_path,
-        lambda value: value["policy"].update(
-            activation_required_runtimes=required_runtimes
-        ),
+        lambda value: value["policy"].update(activation_required_runtimes=required_runtimes),
     )
     with pytest.raises(CapabilityConfigError):
         load_capability_config(config)
@@ -385,9 +382,7 @@ def test_capability_home_identity_change_blocks_state_and_runtime_use(
     assert commands == []
     assert not (redirected / ".apply.lock").exists()
     assert not (capability_home / ".apply.lock").exists()
-    assert {
-        name: (preserved_home / name).read_bytes() for name in before
-    } == before
+    assert {name: (preserved_home / name).read_bytes() for name in before} == before
 
 
 def test_capability_source_declares_the_reviewed_active_hook_package() -> None:
@@ -395,9 +390,7 @@ def test_capability_source_declares_the_reviewed_active_hook_package() -> None:
 
     assert config.plugin_kinds["mir-lifecycle-hooks"] == "skills-hooks"
     assert config.plugin_hooks == {"mir-lifecycle-hooks": ("SessionStart",)}
-    assert config.provider_local_agents == (
-        ".claude/agents/template-sync-validator.md",
-    )
+    assert config.provider_local_agents == (".claude/agents/template-sync-validator.md",)
     assert config.component_policy["admitted_package_kinds"] == ["skills", "skills-hooks"]
     assert config.component_policy["reserved_active_package_kinds"] == ["mcp"]
     acknowledgement = config.active_digest_acknowledgements["mir-lifecycle-hooks"]
@@ -416,9 +409,7 @@ def test_provider_local_agents_are_explicit_and_not_distributed(
                 value["profiles"]["packs"]["code_app"]["agents"][0]
             ]
         else:
-            value["agents"]["provider_local"] = [
-                ".claude/agents/not-declared.md"
-            ]
+            value["agents"]["provider_local"] = [".claude/agents/not-declared.md"]
 
     path = mutated_config(tmp_path, mutate)
 
@@ -427,9 +418,7 @@ def test_provider_local_agents_are_explicit_and_not_distributed(
 
 
 @pytest.mark.parametrize("kind", [None, "hooks", "mcp", "mixed", "agents"])
-def test_plugin_package_kind_is_explicit_and_fail_closed(
-    tmp_path: Path, kind: str | None
-) -> None:
+def test_plugin_package_kind_is_explicit_and_fail_closed(tmp_path: Path, kind: str | None) -> None:
     def mutate(value: dict[str, object]) -> None:
         plugin = value["plugins"]["mir-core"]
         if kind is None:
@@ -481,9 +470,7 @@ def test_active_hook_package_requires_an_exact_digest_acknowledgement(
         ),
     )
     assert (
-        load_capability_config(stale).active_digest_acknowledgements[
-            "mir-lifecycle-hooks"
-        ]
+        load_capability_config(stale).active_digest_acknowledgements["mir-lifecycle-hooks"]
         == "0" * 64
     )
 
@@ -518,9 +505,7 @@ def test_active_hook_package_rejects_undeclared_manifest_files(
 ) -> None:
     plugin = tmp_path / "mir-lifecycle-hooks"
     shutil.copytree(ROOT / "plugins" / "mir-lifecycle-hooks", plugin)
-    (plugin / f".{runtime}-plugin" / "unexpected.txt").write_text(
-        "unexpected\n", encoding="utf-8"
-    )
+    (plugin / f".{runtime}-plugin" / "unexpected.txt").write_text("unexpected\n", encoding="utf-8")
 
     with pytest.raises(CapabilityError, match="shared hook manifest content rejected"):
         _validate_plugin(plugin, "mir-lifecycle-hooks", package_kind="skills-hooks")
@@ -578,9 +563,7 @@ def test_active_hook_package_rejects_credential_bearing_content(
     shutil.copytree(ROOT / "plugins" / "mir-lifecycle-hooks", plugin)
     target = plugin / relative_path
     if field is None:
-        target.write_text(
-            f"{target.read_text(encoding='utf-8')}\n{credential}\n", encoding="utf-8"
-        )
+        target.write_text(f"{target.read_text(encoding='utf-8')}\n{credential}\n", encoding="utf-8")
     else:
         payload = json.loads(target.read_text(encoding="utf-8"))
         payload[field] = credential
@@ -685,9 +668,7 @@ def test_initial_sync_refuses_an_existing_unlocked_agent(tmp_path: Path) -> None
 def test_should_reject_unsafe_or_unknown_command_mapping(tmp_path: Path) -> None:
     unsafe_path = mutated_config(
         tmp_path,
-        lambda value: value["commands"]["allowlist"].update(
-            {"../commands/escape.md": "design"}
-        ),
+        lambda value: value["commands"]["allowlist"].update({"../commands/escape.md": "design"}),
     )
     with pytest.raises(CapabilityConfigError, match="command path"):
         load_capability_config(unsafe_path)
@@ -705,9 +686,7 @@ def test_should_reject_unsafe_or_unknown_command_mapping(tmp_path: Path) -> None
 def test_should_keep_hook_and_mcp_delivery_target_local(tmp_path: Path) -> None:
     relaxed = mutated_config(
         tmp_path,
-        lambda value: value["project_integrations"]["hooks"].update(
-            delivery="host-plugin"
-        ),
+        lambda value: value["project_integrations"]["hooks"].update(delivery="host-plugin"),
     )
 
     with pytest.raises(CapabilityConfigError, match="target-local hook and MCP"):
@@ -786,9 +765,7 @@ def test_should_refuse_existing_command_symlink_on_first_sync(tmp_path: Path) ->
     )
 
     preview = manager.sync("code_app")
-    assert preview["command_changes"][
-        ".claude/commands/analyze-design.md"
-    ] == "diverged"
+    assert preview["command_changes"][".claude/commands/analyze-design.md"] == "diverged"
     assert preview["ready_to_apply"] is False
     with pytest.raises(CapabilityError, match="command diverged"):
         manager.sync("code_app", apply=True)
@@ -808,7 +785,9 @@ def test_should_reject_unsafe_project_target_from_tampered_lock(tmp_path: Path) 
         manager._project_target("../outside.md")
 
 
-def test_global_one_version_conflict_is_fail_closed(tmp_path: Path) -> None:
+def test_adr89_should_advance_provider_and_leave_peer_local_integration_pending(
+    tmp_path: Path,
+) -> None:
     home = tmp_path / "home"
     codex_home = tmp_path / "codex-home"
     runner = runtime_runner(home / "active", codex_home)
@@ -832,14 +811,129 @@ def test_global_one_version_conflict_is_fail_closed(tmp_path: Path) -> None:
     )
     first.sync("infra_runtime", apply=True)
     second.sync("infra_runtime", apply=True)
+    second_lock_before = second.lock_path.read_bytes()
     first.git.commit = "b" * 40
-    with pytest.raises(CapabilityError, match="another registered consumer"):
-        first.update("infra_runtime", apply=True)
+    result = first.update("infra_runtime", apply=True)
+
+    assert result["applied"] is True
     registry = json.loads((home / "consumers.json").read_text())
-    assert registry["active_commit"] == "a" * 40
+    assert registry["active_commit"] == "b" * 40
+    assert second.lock_path.read_bytes() == second_lock_before
+    assert second.status()["consumer"]["integration"] == "pending-local-update"
+
+    first_lock_before = first.lock_path.read_bytes()
+    second.git.commit = "c" * 40
+    catch_up = second.update("infra_runtime", apply=True)
+
+    assert catch_up["required_commit"] == "b" * 40
+    assert json.loads((home / "consumers.json").read_text())["active_commit"] == "b" * 40
+    assert first.lock_path.read_bytes() == first_lock_before
+    assert json.loads(second.lock_path.read_text())["source"]["commit"] == "b" * 40
+    assert second.status()["consumer"]["integration"] == "active"
 
 
-def test_active_integrity_revalidates_every_consumer_and_current_lock_set(
+def test_adr89_pending_peer_catchup_uses_receipt_bound_candidate_config(
+    tmp_path: Path,
+) -> None:
+    home = tmp_path / "home"
+    codex_home = tmp_path / "codex-home"
+    runner = runtime_runner(home / "active", codex_home)
+    source_b = tmp_path / "provider-b"
+    shutil.copytree(ROOT, source_b)
+    source_config = source_b / "config" / "capability-sources.json"
+    payload = json.loads(source_config.read_text(encoding="utf-8"))
+    payload["profiles"]["packs"]["code_app"]["plugins"].append("mir-content")
+    source_config.write_text(json.dumps(payload), encoding="utf-8")
+    first = CapabilityManager(
+        make_project(tmp_path, "first"),
+        capability_home=home,
+        user_home=tmp_path / "user",
+        codex_home=codex_home,
+        git=CopyGit(commit="a" * 40),
+        command_runner=runner,
+        which=lambda executable: f"/fake/{executable}",
+    )
+    second = CapabilityManager(
+        make_project(tmp_path, "second"),
+        capability_home=home,
+        user_home=tmp_path / "user",
+        codex_home=codex_home,
+        git=CopyGit(commit="a" * 40),
+        command_runner=runner,
+        which=lambda executable: f"/fake/{executable}",
+    )
+    first.sync("code_app", apply=True)
+    second.sync("code_app", apply=True)
+    first.git.source = source_b
+    first.git.commit = "b" * 40
+
+    first.update("code_app", apply=True)
+    assert "mir-content" in json.loads((home / "consumers.json").read_text())["active_plugins"]
+
+    second.git.commit = "c" * 40
+    second.update("code_app", apply=True)
+
+    lock = json.loads(second.lock_path.read_text(encoding="utf-8"))
+    assert lock["source"]["commit"] == "b" * 40
+    assert "mir-content" in lock["plugins"]
+
+
+def test_adr89_rollback_restores_provider_with_its_prior_bound_config(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    home = tmp_path / "home"
+    codex_home = tmp_path / "codex-home"
+    runner = runtime_runner(home / "active", codex_home)
+    source_b = tmp_path / "provider-b"
+    shutil.copytree(ROOT, source_b, ignore=shutil.ignore_patterns(".git", ".venv"))
+    source_config = source_b / "config" / "capability-sources.json"
+    payload = json.loads(source_config.read_text(encoding="utf-8"))
+    payload["commands"]["allowlist"][".claude/commands/analyze-design.md"] = "mir-core:verify"
+    source_config.write_text(json.dumps(payload), encoding="utf-8")
+    first = CapabilityManager(
+        make_project(tmp_path, "first"),
+        capability_home=home,
+        user_home=tmp_path / "user",
+        codex_home=codex_home,
+        git=CopyGit(commit="a" * 40),
+        command_runner=runner,
+        which=lambda executable: f"/fake/{executable}",
+    )
+    second = CapabilityManager(
+        make_project(tmp_path, "second"),
+        capability_home=home,
+        user_home=tmp_path / "user",
+        codex_home=codex_home,
+        git=CopyGit(commit="a" * 40),
+        command_runner=runner,
+        which=lambda executable: f"/fake/{executable}",
+    )
+    first.sync("code_app", apply=True)
+    second.sync("code_app", apply=True)
+    before_active = _tree_digest(home / "active")
+    before_registry = first.registry_path.read_bytes()
+    before_first_lock = first.lock_path.read_bytes()
+    before_second_lock = second.lock_path.read_bytes()
+    first.git.source = source_b
+    first.git.commit = "b" * 40
+
+    def fail_candidate_derivative(*, raise_on_error: bool = True) -> bool:
+        if raise_on_error:
+            raise CapabilityError("forced derivative failure")
+        return True
+
+    monkeypatch.setattr(first, "_regenerate_agent_derivatives", fail_candidate_derivative)
+
+    with pytest.raises(CapabilityError, match="local rollback was complete"):
+        first.update("code_app", apply=True)
+
+    assert _tree_digest(home / "active") == before_active
+    assert first.registry_path.read_bytes() == before_registry
+    assert first.lock_path.read_bytes() == before_first_lock
+    assert second.lock_path.read_bytes() == before_second_lock
+
+
+def test_provider_integrity_does_not_read_peer_local_lock_state(
     tmp_path: Path,
 ) -> None:
     home = tmp_path / "home"
@@ -873,7 +967,7 @@ def test_active_integrity_revalidates_every_consumer_and_current_lock_set(
     lock = json.loads(first.lock_path.read_text(encoding="utf-8"))
     consumer = registry["consumers"][first_key]
     assert first._consumer_integrity(lock, consumer, ["mir-core", "mir-content"]) is False
-    assert second.status()["active_integrity"] is False
+    assert second.status()["provider_ready"] is True
 
 
 def test_fake_registry_consumer_blocks_status_apply_and_rollback_registration(
@@ -913,7 +1007,8 @@ def test_fake_registry_consumer_blocks_status_apply_and_rollback_registration(
     manager.registry_path.write_text(json.dumps(registry), encoding="utf-8")
     commands.clear()
 
-    assert manager.status()["active_integrity"] is False
+    assert manager.status()["provider_ready"] is False
+    assert manager.status()["consumer"]["integration"] == "active"
     with pytest.raises(CapabilityError, match="global consumer registry is invalid"):
         manager.sync("code_app", apply=True)
     assert manager._rollback_runtime_registration(["mir-core", "mir-code"], receipt) is False
@@ -965,7 +1060,7 @@ def test_minimal_forged_existing_consumer_lock_is_not_authentic(tmp_path: Path) 
     manager.registry_path.write_text(json.dumps(registry), encoding="utf-8")
     commands.clear()
 
-    assert manager.status()["active_integrity"] is False
+    assert manager.status()["provider_ready"] is False
     with pytest.raises(CapabilityError, match="global consumer registry is invalid"):
         manager.sync("code_app", apply=True)
     assert manager._rollback_runtime_registration(["mir-core", "mir-code"], receipt) is False
@@ -1074,7 +1169,13 @@ def test_current_consumer_binding_ledger_mutation_blocks_status_apply_and_rollba
         manager.consumer_bindings_path.symlink_to(outside)
     commands.clear()
 
-    assert manager.status()["active_integrity"] is False
+    if mutation == "missing":
+        status = manager.status()
+        assert status["provider_ready"] is True
+        assert status["consumer"]["integration"] == "invalid"
+    else:
+        with pytest.raises(CapabilityError, match="consumer binding ledger"):
+            manager.status()
     with pytest.raises(CapabilityError, match="consumer enrollment|binding ledger"):
         manager.sync("code_app", apply=True)
     assert manager._rollback_runtime_registration(["mir-core", "mir-code"], receipt) is False
@@ -1108,9 +1209,7 @@ def test_project_mir_lock_parent_must_be_a_real_project_directory(
 
 
 @pytest.mark.parametrize("unsafe_kind", ["non-plugin", "symlink", "executable"])
-def test_materialized_plugin_rejects_unsafe_content(
-    tmp_path: Path, unsafe_kind: str
-) -> None:
+def test_materialized_plugin_rejects_unsafe_content(tmp_path: Path, unsafe_kind: str) -> None:
     plugin = tmp_path / "mir-core"
     shutil.copytree(ROOT / "plugins" / "mir-core", plugin)
     if unsafe_kind == "non-plugin":
@@ -1125,9 +1224,7 @@ def test_materialized_plugin_rejects_unsafe_content(
 
 
 @pytest.mark.parametrize("kind", ["hooks", "mcp", "mixed"])
-def test_plugin_validator_has_no_generic_active_component_path(
-    tmp_path: Path, kind: str
-) -> None:
+def test_plugin_validator_has_no_generic_active_component_path(tmp_path: Path, kind: str) -> None:
     plugin = tmp_path / "mir-core"
     shutil.copytree(ROOT / "plugins" / "mir-core", plugin)
 
@@ -1198,13 +1295,7 @@ def test_new_receipt_cannot_downgrade_away_all_materialized_digest_binding(
     receipt.pop("materialized_plugins")
     receipt_path.write_text(json.dumps(receipt), encoding="utf-8")
     unselected = (
-        capability_home
-        / "active"
-        / "plugins"
-        / "mir-content"
-        / "skills"
-        / "knowledge"
-        / "SKILL.md"
+        capability_home / "active" / "plugins" / "mir-content" / "skills" / "knowledge" / "SKILL.md"
     )
     unselected.write_text(unselected.read_text(encoding="utf-8") + "\nmutation\n")
 
@@ -1403,9 +1494,7 @@ def test_marketplace_inventory_rejects_nonlocal_plugin_redirect(
 @pytest.mark.parametrize(
     "mutation", ["missing", "duplicate", "version", "name", "unknown-field", "policy"]
 )
-def test_marketplace_inventory_and_version_are_exact(
-    tmp_path: Path, mutation: str
-) -> None:
+def test_marketplace_inventory_and_version_are_exact(tmp_path: Path, mutation: str) -> None:
     checkout = tmp_path / "checkout"
     shutil.copytree(ROOT / ".claude-plugin", checkout / ".claude-plugin")
     shutil.copytree(ROOT / ".agents" / "plugins", checkout / ".agents" / "plugins")

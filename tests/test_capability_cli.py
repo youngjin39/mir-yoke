@@ -13,7 +13,12 @@ from pathlib import Path
 import pytest
 
 from mir.cli import capability as capability_cli
-from mir.core.capabilities import CapabilityError, CapabilityManager, load_capability_config
+from mir.core.capabilities import (
+    CapabilityConfigError,
+    CapabilityError,
+    CapabilityManager,
+    load_capability_config,
+)
 from mir.core.capabilities.manager import _file_digest, _installed_path, _tree_digest
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -243,9 +248,7 @@ def test_profiles_are_canonical_and_have_distinct_inventories() -> None:
     for pack in config.packs.values():
         assert pack.commands == tuple(config.commands)
         selected_skills = {
-            f"{plugin}:{skill}"
-            for plugin in pack.plugins
-            for skill in config.plugin_skills[plugin]
+            f"{plugin}:{skill}" for plugin in pack.plugins for skill in config.plugin_skills[plugin]
         }
         assert {config.commands[path] for path in pack.commands} <= selected_skills
     assert config.resolve_profile("hybrid")[0] == "hybrid_pipeline"
@@ -291,9 +294,7 @@ def test_manager_recovers_verified_external_provider_from_codex_config(
     provider_home = tmp_path / "external" / "mir" / "capabilities"
     active = provider_home / "active"
     active.mkdir(parents=True)
-    source_url = load_capability_config(
-        project / "config" / "capability-sources.json"
-    ).source_url
+    source_url = load_capability_config(project / "config" / "capability-sources.json").source_url
     (provider_home / "active.json").write_text(
         json.dumps(
             {
@@ -366,7 +367,7 @@ def test_sync_materializes_exact_lock_and_requires_restart(tmp_path: Path) -> No
     assert set(receipt["plugins"]) == {"mir-core", "mir-code", "mir-lifecycle-hooks"}
     assert set(receipt["materialized_plugins"]) == set(manager.config.plugins)
     registry = json.loads((capability_home / "consumers.json").read_text())
-    assert registry["schema_version"] == 2
+    assert registry["schema_version"] == 3
     assert registry["active_plugins"] == receipt["plugins"]
     assert "materialized_root" not in lock
     assert all((project / path).is_file() for path in lock["agents"])
@@ -385,16 +386,9 @@ def test_sync_materializes_exact_lock_and_requires_restart(tmp_path: Path) -> No
     }
     hook_surfaces = status["managed_surfaces"]["hooks"]
     assert hook_surfaces["delivery"] == "host-plugin-and-target-local-generated"
-    assert hook_surfaces["global_plugins"] == {
-        "mir-lifecycle-hooks": ["SessionStart"]
-    }
-    assert hook_surfaces["repository_coupled"]["delivery"] == (
-        "target-local-generated"
-    )
-    assert (
-        status["managed_surfaces"]["mcp_servers"]["plugin_package_kind"]
-        == "reserved"
-    )
+    assert hook_surfaces["global_plugins"] == {"mir-lifecycle-hooks": ["SessionStart"]}
+    assert hook_surfaces["repository_coupled"]["delivery"] == ("target-local-generated")
+    assert status["managed_surfaces"]["mcp_servers"]["plugin_package_kind"] == "reserved"
 
     marketplace = capability_home / "active" / ".agents" / "plugins" / "marketplace.json"
     marketplace_payload = json.loads(marketplace.read_text(encoding="utf-8"))
@@ -428,9 +422,7 @@ def test_should_report_and_lock_commands_when_sync_applies(tmp_path: Path) -> No
     lock = json.loads(manager.lock_path.read_text(encoding="utf-8"))
     for source_path, skill in manager.config.commands.items():
         assert lock["commands"][source_path]["codex_skill"] == skill
-        assert _file_digest(project / source_path) == lock["commands"][source_path][
-            "sha256"
-        ]
+        assert _file_digest(project / source_path) == lock["commands"][source_path]["sha256"]
     assert set(manager.status()["command_status"].values()) == {"unchanged"}
 
     command = next(iter(lock["commands"]))
@@ -507,11 +499,294 @@ def test_should_keep_global_plugin_union_for_two_consumers(tmp_path: Path) -> No
     codex = tomllib.loads((codex_home / "config.toml").read_text(encoding="utf-8"))
     assert set(registry["active_plugins"]) == expected
     assert set(receipt["plugins"]) == expected
-    assert {
-        key.split("@", 1)[0] for key in codex["plugins"]
-    } == expected
+    assert {key.split("@", 1)[0] for key in codex["plugins"]} == expected
     assert first.status()["active_integrity"] is True
     assert second.status()["active_integrity"] is True
+
+
+def test_should_report_healthy_provider_for_global_only_consumer_without_local_config(
+    tmp_path: Path,
+) -> None:
+    capability_home = tmp_path / "capability-home"
+    codex_home = tmp_path / "codex-home"
+    runner = runtime_runner(capability_home / "active", codex_home)
+    enrolled = CapabilityManager(
+        make_project(tmp_path, "enrolled"),
+        capability_home=capability_home,
+        user_home=tmp_path / "user",
+        codex_home=codex_home,
+        git=CopyGit(),
+        command_runner=runner,
+        which=lambda executable: f"/fake/{executable}",
+    )
+    enrolled.sync("hybrid_pipeline", apply=True)
+
+    global_only = tmp_path / "global-only"
+    global_only.mkdir()
+    manager = CapabilityManager(
+        global_only,
+        capability_home=capability_home,
+        user_home=tmp_path / "user",
+        codex_home=codex_home,
+        command_runner=runner,
+        which=lambda executable: f"/fake/{executable}",
+    )
+
+    result = manager.status()
+
+    assert result["scope"] == "provider"
+    assert result["provider_ready"] is True
+    assert result["consumer"]["status"] == "not-enrolled"
+    assert result["collisions"] == []
+
+
+def test_should_mark_global_only_provider_unhealthy_when_active_config_digest_drifts(
+    tmp_path: Path,
+) -> None:
+    capability_home = tmp_path / "capability-home"
+    codex_home = tmp_path / "codex-home"
+    runner = runtime_runner(capability_home / "active", codex_home)
+    enrolled = CapabilityManager(
+        make_project(tmp_path, "enrolled"),
+        capability_home=capability_home,
+        user_home=tmp_path / "user",
+        codex_home=codex_home,
+        git=CopyGit(),
+        command_runner=runner,
+        which=lambda executable: f"/fake/{executable}",
+    )
+    enrolled.sync("hybrid_pipeline", apply=True)
+    active_config = capability_home / "active" / "config" / "capability-sources.json"
+    payload = json.loads(active_config.read_text(encoding="utf-8"))
+    payload["source"]["ref"] = "tampered"
+    active_config.write_text(json.dumps(payload), encoding="utf-8")
+    assert enrolled.status()["provider_ready"] is False
+
+    global_only = tmp_path / "global-only"
+    global_only.mkdir()
+    result = CapabilityManager(
+        global_only,
+        capability_home=capability_home,
+        user_home=tmp_path / "user",
+        codex_home=codex_home,
+        command_runner=runner,
+        which=lambda executable: f"/fake/{executable}",
+    ).status()
+
+    assert result["provider_ready"] is False
+    assert result["config_status"] == "missing-or-tampered"
+
+
+def test_global_only_status_reports_common_skill_collision_without_tree_snapshot(
+    tmp_path: Path,
+) -> None:
+    capability_home = tmp_path / "capability-home"
+    codex_home = tmp_path / "codex-home"
+    runner = runtime_runner(capability_home / "active", codex_home)
+    CapabilityManager(
+        make_project(tmp_path, "enrolled"),
+        capability_home=capability_home,
+        user_home=tmp_path / "user",
+        codex_home=codex_home,
+        git=CopyGit(),
+        command_runner=runner,
+        which=lambda executable: f"/fake/{executable}",
+    ).sync("hybrid_pipeline", apply=True)
+    global_only = tmp_path / "global-only"
+    raw_skill = global_only / ".claude" / "skills" / "design"
+    raw_skill.mkdir(parents=True)
+    (raw_skill / "SKILL.md").write_text("local\n", encoding="utf-8")
+
+    result = CapabilityManager(
+        global_only,
+        capability_home=capability_home,
+        user_home=tmp_path / "user",
+        codex_home=codex_home,
+        command_runner=runner,
+        which=lambda executable: f"/fake/{executable}",
+    ).status()
+
+    assert result["provider_ready"] is True
+    assert str(raw_skill) in result["collisions"]
+
+
+def test_should_mark_global_only_provider_unhealthy_when_receipt_source_drifts(
+    tmp_path: Path,
+) -> None:
+    capability_home = tmp_path / "capability-home"
+    codex_home = tmp_path / "codex-home"
+    runner = runtime_runner(capability_home / "active", codex_home)
+    enrolled = CapabilityManager(
+        make_project(tmp_path, "enrolled"),
+        capability_home=capability_home,
+        user_home=tmp_path / "user",
+        codex_home=codex_home,
+        git=CopyGit(),
+        command_runner=runner,
+        which=lambda executable: f"/fake/{executable}",
+    )
+    enrolled.sync("hybrid_pipeline", apply=True)
+    receipt_path = capability_home / "active.json"
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    receipt["source_url"] = "https://example.invalid/mir-yoke.git"
+    receipt_path.write_text(json.dumps(receipt), encoding="utf-8")
+
+    global_only = tmp_path / "global-only"
+    global_only.mkdir()
+    result = CapabilityManager(
+        global_only,
+        capability_home=capability_home,
+        user_home=tmp_path / "user",
+        codex_home=codex_home,
+        command_runner=runner,
+        which=lambda executable: f"/fake/{executable}",
+    ).status()
+
+    assert result["provider_ready"] is False
+
+
+def test_global_only_status_rejects_missing_or_symlinked_bound_active_config(
+    tmp_path: Path,
+) -> None:
+    capability_home = tmp_path / "capability-home"
+    codex_home = tmp_path / "codex-home"
+    runner = runtime_runner(capability_home / "active", codex_home)
+    enrolled = CapabilityManager(
+        make_project(tmp_path, "enrolled"),
+        capability_home=capability_home,
+        user_home=tmp_path / "user",
+        codex_home=codex_home,
+        git=CopyGit(),
+        command_runner=runner,
+        which=lambda executable: f"/fake/{executable}",
+    )
+    enrolled.sync("hybrid_pipeline", apply=True)
+    config_dir = capability_home / "active" / "config"
+    outside = tmp_path / "outside-config"
+    shutil.move(str(config_dir), outside)
+    config_dir.symlink_to(tmp_path / "missing-config", target_is_directory=True)
+
+    global_only = tmp_path / "global-only"
+    global_only.mkdir()
+    result = CapabilityManager(
+        global_only,
+        capability_home=capability_home,
+        user_home=tmp_path / "user",
+        codex_home=codex_home,
+        command_runner=runner,
+        which=lambda executable: f"/fake/{executable}",
+    ).status()
+
+    assert result["provider_ready"] is False
+    assert result["config_status"] == "missing-or-tampered"
+
+
+def test_enrolled_status_accepts_genuine_legacy_active_config_fallback(tmp_path: Path) -> None:
+    capability_home = tmp_path / "capability-home"
+    codex_home = tmp_path / "codex-home"
+    runner = runtime_runner(capability_home / "active", codex_home)
+    enrolled = CapabilityManager(
+        make_project(tmp_path, "enrolled"),
+        capability_home=capability_home,
+        user_home=tmp_path / "user",
+        codex_home=codex_home,
+        git=CopyGit(),
+        command_runner=runner,
+        which=lambda executable: f"/fake/{executable}",
+    )
+    enrolled.sync("hybrid_pipeline", apply=True)
+    shutil.rmtree(capability_home / "active" / "config")
+    receipt_path = capability_home / "active.json"
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    receipt.pop("config_sha256")
+    receipt_path.write_text(json.dumps(receipt), encoding="utf-8")
+
+    assert enrolled.status()["provider_ready"] is True
+
+
+def test_global_only_status_requires_host_runtime_activation(tmp_path: Path) -> None:
+    capability_home = tmp_path / "capability-home"
+    codex_home = tmp_path / "codex-home"
+    runner = runtime_runner(capability_home / "active", codex_home)
+    CapabilityManager(
+        make_project(tmp_path, "enrolled"),
+        capability_home=capability_home,
+        user_home=tmp_path / "user",
+        codex_home=codex_home,
+        git=CopyGit(),
+        command_runner=runner,
+        which=lambda executable: f"/fake/{executable}",
+    ).sync("hybrid_pipeline", apply=True)
+
+    def disabled_runner(args: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        if args[1:3] == ["plugin", "list"]:
+            return subprocess.CompletedProcess(args, 0, "[]", "")
+        return runner(args, **kwargs)
+
+    global_only = tmp_path / "global-only"
+    global_only.mkdir()
+    status = CapabilityManager(
+        global_only,
+        capability_home=capability_home,
+        user_home=tmp_path / "user",
+        codex_home=codex_home,
+        command_runner=disabled_runner,
+        which=lambda executable: f"/fake/{executable}",
+    ).status()
+
+    assert status["provider_ready"] is False
+    assert status["activation"]["status"] == "cli-evidence-missing"
+
+
+def test_should_find_global_only_provider_from_codex_marketplace_without_home_argument(
+    tmp_path: Path,
+) -> None:
+    capability_home = tmp_path / "external-capability-home"
+    codex_home = tmp_path / "codex-home"
+    runner = runtime_runner(capability_home / "active", codex_home)
+    enrolled = CapabilityManager(
+        make_project(tmp_path, "enrolled"),
+        capability_home=capability_home,
+        user_home=tmp_path / "user",
+        codex_home=codex_home,
+        git=CopyGit(),
+        command_runner=runner,
+        which=lambda executable: f"/fake/{executable}",
+    )
+    enrolled.sync("hybrid_pipeline", apply=True)
+
+    global_only = tmp_path / "global-only"
+    global_only.mkdir()
+    manager = CapabilityManager(
+        global_only,
+        user_home=tmp_path / "user",
+        codex_home=codex_home,
+        command_runner=runner,
+        which=lambda executable: f"/fake/{executable}",
+    )
+
+    assert manager.capability_home == capability_home
+    assert manager.status()["provider_ready"] is True
+
+
+def test_explicit_malformed_config_should_not_fall_back_to_provider_status(tmp_path: Path) -> None:
+    malformed = tmp_path / "malformed.json"
+    malformed.write_text("{not-json", encoding="utf-8")
+
+    with pytest.raises(CapabilityConfigError, match="invalid capability source JSON"):
+        CapabilityManager(tmp_path, config_path=malformed)
+
+
+def test_local_config_without_enrollment_reports_not_enrolled(tmp_path: Path) -> None:
+    project = make_project(tmp_path)
+    status = CapabilityManager(
+        project,
+        capability_home=tmp_path / "capability-home",
+        user_home=tmp_path / "user",
+    ).status()
+
+    assert status["scope"] == "consumer"
+    assert status["consumer"] == {"status": "not-enrolled"}
 
 
 def test_should_serialize_concurrent_sync_before_preserving_both_consumers(
@@ -561,9 +836,10 @@ def test_should_serialize_concurrent_sync_before_preserving_both_consumers(
     assert completed
     for index in rejected:
         retry_profile = "hybrid_pipeline" if index == 0 else "code_app"
-        assert managers[index].sync(retry_profile, apply=True)[
-            "registration_status"
-        ] == "restart-required"
+        assert (
+            managers[index].sync(retry_profile, apply=True)["registration_status"]
+            == "restart-required"
+        )
 
     registry = json.loads(managers[0].registry_path.read_text(encoding="utf-8"))
     assert len(registry["consumers"]) == 2
@@ -656,8 +932,7 @@ def test_rollback_rejects_inflated_schema2_prior_consumer_union_before_commands(
         manager.sync("code_app", apply=True)
 
     assert not any(
-        args[1:3] in (["plugin", "install"], ["plugin", "add"])
-        and "mir-content@mir-yoke" in args
+        args[1:3] in (["plugin", "install"], ["plugin", "add"]) and "mir-content@mir-yoke" in args
         for args in commands
     )
 
@@ -1006,8 +1281,7 @@ def test_claude_project_scoped_plugin_cannot_satisfy_central_activation(
     assert activation["status"] == "cli-evidence-missing"
     assert activation["runtimes"]["claude-code"]["verified"] is False
     assert {
-        evidence["status"]
-        for evidence in activation["runtimes"]["claude-code"]["plugins"].values()
+        evidence["status"] for evidence in activation["runtimes"]["claude-code"]["plugins"].values()
     } == {"scope-mismatch"}
 
 
@@ -1213,9 +1487,7 @@ def test_attest_requires_expected_skills_and_new_session(
         )
 
     monkeypatch.setenv("CODEX_THREAD_ID", "new-session")
-    receipt = manager.attest(
-        "codex-cli-desktop", skills, observed_hooks(manager), apply=True
-    )
+    receipt = manager.attest("codex-cli-desktop", skills, observed_hooks(manager), apply=True)
     assert receipt["status"] == "attested"
     assert receipt["attestation_kind"] == "operator-observed-runtime-catalog-and-hooks"
     assert manager.finalize()["discovery"]["status"] == "incomplete"
@@ -1376,8 +1648,7 @@ def test_failed_reregistration_restores_provider_agents_and_state(tmp_path: Path
     assert {path: path.read_bytes() for path in tracked} == before
     assert not (capability_home / ".active.previous").exists()
     assert not any(
-        args[1:3] in (["plugin", "install"], ["plugin", "add"])
-        and "mir-content@mir-yoke" in args
+        args[1:3] in (["plugin", "install"], ["plugin", "add"]) and "mir-content@mir-yoke" in args
         for args in failed_commands
     )
 
@@ -1454,6 +1725,34 @@ def test_cli_accepts_bootstrap_argument_order(monkeypatch, tmp_path: Path, capsy
     assert exit_code == 0
     assert calls == [("hybrid_pipeline", True)]
     assert json.loads(capsys.readouterr().out)["dry_run"] is False
+
+
+def test_status_should_not_snapshot_project_tree(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    class FakeManager:
+        def __init__(self, *args: object, **kwargs: object) -> None:
+            pass
+
+        def status(self, profile: str | None) -> dict[str, object]:
+            return {"operation": "status", "dry_run": True, "scope": "provider"}
+
+    monkeypatch.setattr(capability_cli, "CapabilityManager", FakeManager)
+    monkeypatch.setattr(
+        capability_cli,
+        "snapshot_project",
+        lambda root: (_ for _ in ()).throw(AssertionError("status must not snapshot project")),
+    )
+
+    exit_code = capability_cli.main(["status", "--project-root", str(tmp_path), "--json"])
+
+    assert exit_code == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert "changed_paths" not in payload
+    assert payload["change_evidence"] == {
+        "status": "not-applicable",
+        "reason": "read-only-operation",
+    }
 
 
 def test_cli_accepts_runtime_skill_and_hook_attestation(
