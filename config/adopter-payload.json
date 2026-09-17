@@ -491,7 +491,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "CHANGELOG.md",
-      "sha256": "19cc5ec39c54b7e246b5c8b7a034bd82b2bf581307bf0b49640ac5a12b4e9494"
+      "sha256": "ed072f9625945443097c09ecdf967f186347dcb8497fade7cc079c506f681a79"
     },
     {
       "classification": "reference",
@@ -3653,7 +3653,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "src/mir/core/capabilities/manager.py",
-      "sha256": "7f2549792224cdb1391676394ab057f90c6f4e8b0bf91b431506a35feeea552e"
+      "sha256": "e770d54024cae3d91bd78d3fbf1035575abe4a1ba368c2148306f3df0d719d8c"
     },
     {
       "classification": "optional-consumer-tool",
@@ -4055,7 +4055,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/tdd.json",
-      "sha256": "10d690dca0f9dc1d940be4b9e2257621f11088c1855ca6791077b05853f01aa7"
+      "sha256": "cbd2fbe40301fa596c36ffe320432ba98a0c1ec0973b22e7aec626dc7ff2f5d8"
     },
     {
       "classification": "reference",
@@ -4205,7 +4205,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_capability_cli.py",
-      "sha256": "371b5850d866bd28430dc0e8bfadddbd5da84b4bc38d4e9152380df2a09a9368"
+      "sha256": "e81a7faa6336a4971bb88b869fa0c7a0c4e7349bdd10918609f09466c8eed4a2"
     },
     {
       "classification": "template-maintainer-tool",

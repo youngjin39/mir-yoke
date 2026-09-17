@@ -8,6 +8,7 @@ import shutil
 import subprocess
 import tomllib
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -176,6 +177,88 @@ def runtime_runner(active: Path, codex_home: Path):
         return subprocess.CompletedProcess(args, 0, json.dumps(payload), "")
 
     return run
+
+
+def sticky_runtime_runner(active: Path, codex_home: Path, claude_home: Path):
+    """Model native add/install commands that retain an existing cached package."""
+    installed = {"claude": set(), "codex": set()}
+    commands: list[list[str]] = []
+
+    def cache_path(executable: str, plugin: str) -> Path:
+        if executable == "claude":
+            return claude_home / "plugins" / "cache" / "mir-yoke" / plugin
+        manifest = json.loads(
+            (active / "plugins" / plugin / ".codex-plugin" / "plugin.json").read_text()
+        )
+        return codex_home / "plugins" / "cache" / "mir-yoke" / plugin / manifest["version"]
+
+    def write_codex_state() -> None:
+        codex_home.mkdir(parents=True, exist_ok=True)
+        lines = [
+            "[marketplaces.mir-yoke]",
+            'source_type = "local"',
+            f'source = "{active}"',
+            "",
+        ]
+        for plugin in sorted(installed["codex"]):
+            lines.extend([f'[plugins."{plugin}@mir-yoke"]', "enabled = true", ""])
+        (codex_home / "config.toml").write_text("\n".join(lines), encoding="utf-8")
+
+    def copy_if_absent(executable: str, plugin: str) -> Path:
+        cache = cache_path(executable, plugin)
+        if plugin not in installed[executable]:
+            if cache.exists():
+                shutil.rmtree(cache)
+            cache.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copytree(active / "plugins" / plugin, cache)
+            installed[executable].add(plugin)
+        return cache
+
+    def run(args: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        commands.append(args)
+        executable = Path(args[0]).name
+        if executable == "codex" and args[1:4] == ["plugin", "marketplace", "add"]:
+            write_codex_state()
+            return subprocess.CompletedProcess(args, 0, "{}", "")
+        if executable == "claude" and args[1:4] == ["plugin", "marketplace", "add"]:
+            return subprocess.CompletedProcess(args, 0, "{}", "")
+        if executable in installed and args[1:3] in (["plugin", "install"], ["plugin", "add"]):
+            plugin = args[3].split("@", 1)[0]
+            cache = copy_if_absent(executable, plugin)
+            if executable == "codex":
+                write_codex_state()
+            return subprocess.CompletedProcess(
+                args,
+                0,
+                json.dumps({"installedPath": str(cache), "pluginId": args[3]}),
+                "",
+            )
+        if executable in installed and args[1:3] in (["plugin", "uninstall"], ["plugin", "remove"]):
+            plugin = args[3].split("@", 1)[0]
+            installed[executable].discard(plugin)
+            shutil.rmtree(cache_path(executable, plugin), ignore_errors=True)
+            if executable == "codex":
+                write_codex_state()
+            return subprocess.CompletedProcess(args, 0, "{}", "")
+        if executable not in installed:
+            return subprocess.CompletedProcess(args, 0, "", "")
+        entries = []
+        for plugin in sorted(installed[executable]):
+            entry = {
+                "name": plugin,
+                "enabled": True,
+                "installedPath": str(cache_path(executable, plugin)),
+                "version": json.loads(
+                    (active / "plugins" / plugin / ".codex-plugin" / "plugin.json").read_text()
+                )["version"],
+            }
+            if executable == "claude":
+                entry["scope"] = "user"
+            entries.append(entry)
+        payload: object = entries if executable == "claude" else {"installed": entries}
+        return subprocess.CompletedProcess(args, 0, json.dumps(payload), "")
+
+    return run, commands, cache_path
 
 
 def runtime_with_real_derivatives(active: Path, codex_home: Path):
@@ -431,6 +514,130 @@ def test_should_report_and_lock_commands_when_sync_applies(tmp_path: Path) -> No
     assert manager.status()["command_status"][command] == "mapping-mismatch"
     with pytest.raises(CapabilityError, match="skill mapping diverged"):
         manager.update("hybrid_pipeline", apply=True)
+
+
+def test_provider_update_refreshes_selected_native_plugin_caches(tmp_path: Path) -> None:
+    project = make_project(tmp_path)
+    capability_home = tmp_path / "capability-home"
+    codex_home = tmp_path / "codex-home"
+    runner, commands, cache_path = sticky_runtime_runner(
+        capability_home / "active", codex_home, tmp_path / "claude-home"
+    )
+    git = CopyGit()
+    manager = CapabilityManager(
+        project,
+        capability_home=capability_home,
+        user_home=tmp_path / "user",
+        codex_home=codex_home,
+        git=git,
+        command_runner=runner,
+        which=lambda executable: f"/fake/{executable}",
+    )
+    manager.sync("code_app", apply=True)
+    selected = manager.config.packs["code_app"].plugins
+    for executable in ("claude", "codex"):
+        for plugin in selected:
+            (cache_path(executable, plugin) / "stale-digest.txt").write_text(
+                "old", encoding="utf-8"
+            )
+
+    commands.clear()
+    git.commit = "b" * 40
+    assert manager.update("code_app", apply=True)["registration_status"] == "restart-required"
+
+    for executable in ("claude", "codex"):
+        for plugin in selected:
+            assert not (cache_path(executable, plugin) / "stale-digest.txt").exists()
+            if executable == "claude":
+                remove = ["plugin", "uninstall", f"{plugin}@mir-yoke", "--scope", "user"]
+                add = ["plugin", "install", f"{plugin}@mir-yoke", "--scope", "user"]
+            else:
+                remove = ["plugin", "remove", f"{plugin}@mir-yoke", "--json"]
+                add = ["plugin", "add", f"{plugin}@mir-yoke", "--json"]
+            remove_index = next(
+                index for index, command in enumerate(commands) if command[1:] == remove
+            )
+            add_index = next(index for index, command in enumerate(commands) if command[1:] == add)
+            assert remove_index < add_index
+
+
+def test_rollback_removes_candidate_only_plugin_and_refreshes_previous_caches(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    project = make_project(tmp_path)
+    capability_home = tmp_path / "capability-home"
+    codex_home = tmp_path / "codex-home"
+    runner, commands, cache_path = sticky_runtime_runner(
+        capability_home / "active", codex_home, tmp_path / "claude-home"
+    )
+    manager = CapabilityManager(
+        project,
+        capability_home=capability_home,
+        user_home=tmp_path / "user",
+        codex_home=codex_home,
+        git=CopyGit(),
+        command_runner=runner,
+        which=lambda executable: f"/fake/{executable}",
+    )
+    manager.sync("code_app", apply=True)
+    previous_selected = manager.config.packs["code_app"].plugins
+    candidate_only = "mir-content"
+    for executable, command in (
+        ("claude", ["plugin", "install", f"{candidate_only}@mir-yoke", "--scope", "user"]),
+        ("codex", ["plugin", "add", f"{candidate_only}@mir-yoke", "--json"]),
+    ):
+        assert runner([f"/fake/{executable}", *command]).returncode == 0
+    for executable in ("claude", "codex"):
+        for plugin in previous_selected:
+            (cache_path(executable, plugin) / "stale-previous.txt").write_text(
+                "old", encoding="utf-8"
+            )
+
+    old_plugin_names = set(manager.config.plugins) - {candidate_only}
+    manager.config = replace(
+        manager.config,
+        plugins={
+            name: path for name, path in manager.config.plugins.items() if name in old_plugin_names
+        },
+        plugin_kinds={
+            name: kind
+            for name, kind in manager.config.plugin_kinds.items()
+            if name in old_plugin_names
+        },
+        plugin_skills={
+            name: skills
+            for name, skills in manager.config.plugin_skills.items()
+            if name in old_plugin_names
+        },
+        plugin_hooks={
+            name: hooks
+            for name, hooks in manager.config.plugin_hooks.items()
+            if name in old_plugin_names
+        },
+    )
+    previous_receipt = json.loads((capability_home / "active.json").read_text(encoding="utf-8"))
+    previous_receipt["materialized_plugins"] = {
+        plugin: _tree_digest(capability_home / "active" / "plugins" / plugin)
+        for plugin in old_plugin_names
+    }
+    previous_receipt["marketplaces"] = {}
+    from mir.core.capabilities import manager as capability_manager
+
+    monkeypatch.setattr(capability_manager, "_validate_marketplaces", lambda *_args: {})
+
+    commands.clear()
+    assert manager._rollback_runtime_registration(
+        [*previous_selected, candidate_only], previous_receipt
+    )
+    for executable in ("claude", "codex"):
+        assert not cache_path(executable, candidate_only).exists()
+        for plugin in previous_selected:
+            assert not (cache_path(executable, plugin) / "stale-previous.txt").exists()
+        if executable == "claude":
+            remove = ["plugin", "uninstall", f"{candidate_only}@mir-yoke", "--scope", "user"]
+        else:
+            remove = ["plugin", "remove", f"{candidate_only}@mir-yoke", "--json"]
+        assert any(command[1:] == remove for command in commands)
 
 
 def test_profile_materializes_only_its_selected_agent_pack(tmp_path: Path) -> None:

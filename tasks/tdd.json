@@ -2,6 +2,73 @@
   "version": 1,
   "changes": [
     {
+      "id": "provider-native-plugin-refresh-2026-09-18",
+      "record_status": "complete",
+      "scope": "Refresh managed plugin caches through native CLI removal and installation within the existing update and rollback transaction. Preserve exact-source and digest gates.",
+      "targets": [
+        "src/mir/core/capabilities/manager.py",
+        "tests/test_capability_cli.py"
+      ],
+      "design_ref": "docs/decisions/adr-80-release-runtime-isolation-and-adopter-ownership.md",
+      "bluebrick": "Commit-bound provider deployment / Native cache refresh",
+      "categories": {
+        "unit": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_capability_cli.py -k \"not repository_lock_is_portable_and_matches_managed_trees\"",
+          "notes": "50 passed, 1 deliberately deselected pre-bind lock test. Sticky native-cache regressions prove remove precedes install and rollback removes candidate-only packages while refreshing prior caches. Existing rollback tests pass. Actual host stale-cache mismatch and verified rollback established the original failure."
+        },
+        "integration": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_capability_cli.py -k \"not repository_lock_is_portable_and_matches_managed_trees\"",
+          "notes": "50 passed, 1 deliberately deselected pre-bind lock test. Sticky native-cache regressions prove remove precedes install and rollback removes candidate-only packages while refreshing prior caches. Existing rollback tests pass. Actual host stale-cache mismatch and verified rollback established the original failure."
+        },
+        "edge": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_capability_cli.py -k \"not repository_lock_is_portable_and_matches_managed_trees\"",
+          "notes": "50 passed, 1 deliberately deselected pre-bind lock test. Sticky native-cache regressions prove remove precedes install and rollback removes candidate-only packages while refreshing prior caches. Existing rollback tests pass. Actual host stale-cache mismatch and verified rollback established the original failure."
+        },
+        "security": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_capability_cli.py -k \"not repository_lock_is_portable_and_matches_managed_trees\"",
+          "notes": "50 passed, 1 deliberately deselected pre-bind lock test. Sticky native-cache regressions prove remove precedes install and rollback removes candidate-only packages while refreshing prior caches. Existing rollback tests pass. Actual host stale-cache mismatch and verified rollback established the original failure."
+        },
+        "compatibility": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_capability_cli.py -k \"not repository_lock_is_portable_and_matches_managed_trees\"",
+          "notes": "50 passed, 1 deliberately deselected pre-bind lock test. Sticky native-cache regressions prove remove precedes install and rollback removes candidate-only packages while refreshing prior caches. Existing rollback tests pass. Actual host stale-cache mismatch and verified rollback established the original failure."
+        },
+        "transaction_locking": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_capability_cli.py -k \"not repository_lock_is_portable_and_matches_managed_trees\"",
+          "notes": "50 passed, 1 deliberately deselected pre-bind lock test. Sticky native-cache regressions prove remove precedes install and rollback removes candidate-only packages while refreshing prior caches. Existing rollback tests pass. Actual host stale-cache mismatch and verified rollback established the original failure."
+        },
+        "browser": {
+          "status": "not_applicable",
+          "reason": "No new surface or service; host delivery and final complete-suite proof follow the committed source and generated lock under ADR-80."
+        },
+        "load": {
+          "status": "not_applicable",
+          "reason": "No new surface or service; host delivery and final complete-suite proof follow the committed source and generated lock under ADR-80."
+        },
+        "soak": {
+          "status": "not_applicable",
+          "reason": "No new surface or service; host delivery and final complete-suite proof follow the committed source and generated lock under ADR-80."
+        },
+        "architecture": {
+          "status": "not_applicable",
+          "reason": "No new surface or service; host delivery and final complete-suite proof follow the committed source and generated lock under ADR-80."
+        },
+        "availability": {
+          "status": "not_applicable",
+          "reason": "No new surface or service; host delivery and final complete-suite proof follow the committed source and generated lock under ADR-80."
+        },
+        "e2e": {
+          "status": "not_applicable",
+          "reason": "No new surface or service; host delivery and final complete-suite proof follow the committed source and generated lock under ADR-80."
+        }
+      }
+    },
+    {
       "id": "selective-relations-shared-plugin-2026-09-18",
       "record_status": "complete",
       "scope": "Ship optional mir-core:selective-relations in all profile catalogs, preserve ordinary search and native relation adapters, and prepare commit-bound 0.9.1 delivery. Actual activation and release binding are recorded separately by Harness.",

@@ -151,6 +151,8 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ### Changed
 
+- Refresh managed native plugin caches during provider updates and rollback so install/add cannot
+  silently retain an older package behind a successful command exit.
 - Documented SRR as declared, provenance-bearing relationship discovery. It does not promise token
   savings, require a per-repository database migration, or generate a graph.
 

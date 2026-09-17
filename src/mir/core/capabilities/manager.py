@@ -2807,9 +2807,9 @@ class CapabilityManager:
                     registration = self._install_and_verify(
                         self._registration_plan(
                             candidate_active_plugins,
-                            remove_plugins=tuple(
-                                sorted(set(self.config.plugins) - set(active_hashes))
-                            ),
+                            # Native install/add may retain an existing cache.
+                            # Refresh every managed package before verifying candidate bytes.
+                            remove_plugins=tuple(sorted(self.config.plugins)),
                         ),
                         {plugin: {"sha256": digest} for plugin, digest in active_hashes.items()},
                     )
@@ -3082,7 +3082,10 @@ class CapabilityManager:
                 restored = self._install_and_verify(
                     self._registration_plan(
                         tuple(sorted(expected)),
-                        remove_plugins=tuple(sorted(set(self.config.plugins) - set(expected))),
+                        # Restore exact prior package bytes; selected caches need the same refresh.
+                        remove_plugins=tuple(
+                            sorted(set(self.config.plugins) | set(selected_plugins))
+                        ),
                     ),
                     expected,
                 )
