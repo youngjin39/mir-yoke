@@ -82,4 +82,4 @@ Discard an uncommitted Project Agent Kit adaptation in the target or restore the
 commit. For an explicitly invoked CLI transaction, use that command's recorded rollback/recovery
 contract. Installing the CLI does not itself mutate a target.
 
-Current version: `0.9.1`. See `CHANGELOG.md` for release details.
+Current version: `0.9.2`. See `CHANGELOG.md` for release details.

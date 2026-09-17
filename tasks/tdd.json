@@ -2,6 +2,74 @@
   "version": 1,
   "changes": [
     {
+      "id": "srr-dynamic-scope-guidance-2026-09-18",
+      "record_status": "complete",
+      "scope": "Expand optional shared SRR applicability and document dynamic memory admission using existing native stores. No new writer, extraction job, DB adapter or portable purpose is implemented.",
+      "targets": [
+        "plugins/mir-core/skills/selective-relations/SKILL.md",
+        "plugins/mir-core/skills/selective-relations/references/applicability-and-memory.md"
+      ],
+      "design_ref": "plugins/mir-core/skills/selective-relations/references/applicability-and-memory.md",
+      "bluebrick": "Selective retrieval scope / Existing native memory extensibility",
+      "categories": {
+        "unit": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_selective_relations_skill.py tests/test_plugin_skill_packages.py tests/test_common_skill_contracts.py tests/test_release_metadata.py tests/test_template_asset_classification.py",
+          "notes": "31 focused checks passed; independent review Sound with eight routing scenarios and 62 relation regressions. Existing native adapter preferred, unsupported predicates fall back, similarity never proves typed relations, and re-embedding preserves unchanged verified source-backed facts. Source binding and complete release gates follow ADR-80."
+        },
+        "integration": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_selective_relations_skill.py tests/test_plugin_skill_packages.py tests/test_common_skill_contracts.py tests/test_release_metadata.py tests/test_template_asset_classification.py",
+          "notes": "31 focused checks passed; independent review Sound with eight routing scenarios and 62 relation regressions. Existing native adapter preferred, unsupported predicates fall back, similarity never proves typed relations, and re-embedding preserves unchanged verified source-backed facts. Source binding and complete release gates follow ADR-80."
+        },
+        "edge": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_selective_relations_skill.py tests/test_plugin_skill_packages.py tests/test_common_skill_contracts.py tests/test_release_metadata.py tests/test_template_asset_classification.py",
+          "notes": "31 focused checks passed; independent review Sound with eight routing scenarios and 62 relation regressions. Existing native adapter preferred, unsupported predicates fall back, similarity never proves typed relations, and re-embedding preserves unchanged verified source-backed facts. Source binding and complete release gates follow ADR-80."
+        },
+        "architecture": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_selective_relations_skill.py tests/test_plugin_skill_packages.py tests/test_common_skill_contracts.py tests/test_release_metadata.py tests/test_template_asset_classification.py",
+          "notes": "31 focused checks passed; independent review Sound with eight routing scenarios and 62 relation regressions. Existing native adapter preferred, unsupported predicates fall back, similarity never proves typed relations, and re-embedding preserves unchanged verified source-backed facts. Source binding and complete release gates follow ADR-80."
+        },
+        "security": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_selective_relations_skill.py tests/test_plugin_skill_packages.py tests/test_common_skill_contracts.py tests/test_release_metadata.py tests/test_template_asset_classification.py",
+          "notes": "31 focused checks passed; independent review Sound with eight routing scenarios and 62 relation regressions. Existing native adapter preferred, unsupported predicates fall back, similarity never proves typed relations, and re-embedding preserves unchanged verified source-backed facts. Source binding and complete release gates follow ADR-80."
+        },
+        "compatibility": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_selective_relations_skill.py tests/test_plugin_skill_packages.py tests/test_common_skill_contracts.py tests/test_release_metadata.py tests/test_template_asset_classification.py",
+          "notes": "31 focused checks passed; independent review Sound with eight routing scenarios and 62 relation regressions. Existing native adapter preferred, unsupported predicates fall back, similarity never proves typed relations, and re-embedding preserves unchanged verified source-backed facts. Source binding and complete release gates follow ADR-80."
+        },
+        "availability": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_selective_relations_skill.py tests/test_plugin_skill_packages.py tests/test_common_skill_contracts.py tests/test_release_metadata.py tests/test_template_asset_classification.py",
+          "notes": "31 focused checks passed; independent review Sound with eight routing scenarios and 62 relation regressions. Existing native adapter preferred, unsupported predicates fall back, similarity never proves typed relations, and re-embedding preserves unchanged verified source-backed facts. Source binding and complete release gates follow ADR-80."
+        },
+        "e2e": {
+          "status": "not_applicable",
+          "reason": "Guidance and lockstep package metadata only; runtime source, hooks and live memory unchanged. No dynamic writer or new performance claim."
+        },
+        "browser": {
+          "status": "not_applicable",
+          "reason": "Guidance and lockstep package metadata only; runtime source, hooks and live memory unchanged. No dynamic writer or new performance claim."
+        },
+        "load": {
+          "status": "not_applicable",
+          "reason": "Guidance and lockstep package metadata only; runtime source, hooks and live memory unchanged. No dynamic writer or new performance claim."
+        },
+        "soak": {
+          "status": "not_applicable",
+          "reason": "Guidance and lockstep package metadata only; runtime source, hooks and live memory unchanged. No dynamic writer or new performance claim."
+        },
+        "transaction_locking": {
+          "status": "not_applicable",
+          "reason": "Guidance and lockstep package metadata only; runtime source, hooks and live memory unchanged. No dynamic writer or new performance claim."
+        }
+      }
+    },
+    {
       "id": "provider-native-plugin-refresh-2026-09-18",
       "record_status": "complete",
       "scope": "Refresh managed plugin caches through native CLI removal and installation within the existing update and rollback transaction. Preserve exact-source and digest gates.",

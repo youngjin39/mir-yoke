@@ -142,6 +142,18 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
   maintainer configuration already carried it; the generator, which is what every new project
   actually receives, did not.
 
+## [0.9.2] — 2026-09-18 — SRR applicability and dynamic-memory guidance
+
+### Changed
+
+- Clarified bounded project/subsystem orientation, implementation/verification, change impact,
+  declared dependencies, decision/evidence and history use cases, with explicit portable-reader
+  versus native-adapter boundaries.
+- Documented reuse of existing entity/fact/link/provenance stores, source-validated relation
+  admission, asynchronous embedding, idempotent updates and source-driven invalidation.
+  Re-embedding does not invalidate verified source-backed relations. No automatic DB writer,
+  extraction, new CLI purpose, or performance guarantee is introduced.
+
 ## [0.9.1] — 2026-09-18 — Selective relation retrieval
 
 ### Added

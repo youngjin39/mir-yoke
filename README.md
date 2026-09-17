@@ -39,7 +39,7 @@ immutable release:
 
 ```bash
 uv tool install --force --link-mode copy \
-  "git+https://github.com/youngjin39/mir-yoke.git@v0.9.1"
+  "git+https://github.com/youngjin39/mir-yoke.git@v0.9.2"
 mir --help
 ```
 
@@ -77,6 +77,9 @@ to it when declared, typed relationship evidence can answer a bounded question. 
 relations as provenance-bearing locators and does not promise token savings, require a per-repository
 database migration, or generate a graph. The published immutable v0.9.0 does not include this
 capability; older installations continue with ordinary source search.
+Version 0.9.2 adds on-demand project/code and dynamic-memory applicability guidance. It prefers
+existing fact/link/provenance storage and separates verified relations from similarity candidates;
+it does not add a database writer or automatic extraction to the portable reader.
 
 ### Platform use
 
