@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 from pathlib import Path
@@ -15,6 +16,7 @@ PUBLIC_SUBCOMMANDS = (
     "memory",
     "migrate",
     "policy",
+    "relations",
     "run-python",
     "runtime-manifest",
 )
@@ -128,3 +130,32 @@ def test_should_run_copied_tool_when_repository_python_is_not_on_path(tmp_path: 
         env=clean_env,
     )
     assert resource_probe.returncode == 0, resource_probe.stderr
+
+    consumer = tmp_path / "consumer root"
+    graph = consumer / "relations/declared graph.yaml"
+    graph.parent.mkdir(parents=True)
+    graph.write_text("edges:\n  - [APP, depends_on, LIB]\n", encoding="utf-8")
+    relations_probe = subprocess.run(
+        [
+            str(cli),
+            "relations",
+            "query",
+            "APP",
+            "--purpose",
+            "dependencies",
+            "--root",
+            str(consumer),
+            "--graph",
+            "relations/declared graph.yaml",
+            "--json",
+        ],
+        cwd=tmp_path,
+        check=False,
+        capture_output=True,
+        text=True,
+        env=clean_env,
+    )
+    assert relations_probe.returncode == 0, relations_probe.stderr
+    relations = json.loads(relations_probe.stdout)
+    assert relations["source"]["graph"] == "relations/declared graph.yaml"
+    assert relations["edges"][0]["target"] == "LIB"

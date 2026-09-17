@@ -58,7 +58,10 @@ process and exposes no `yoke` composer.
 - **Plugin provider** — `plugins/` and marketplace manifests publish three role-oriented,
   skills-only packages plus the exact read-only `mir-lifecycle-hooks` package. All four are shared
   by Claude and Codex. Project-coupled hooks still require repository-owned adapters. No MCP server
-  or MCP plugin currently exists.
+  or MCP plugin currently exists. Version 0.9.1 adds the on-demand
+  `mir-core:selective-relations` SRR skill, with pointers from `mir-code:bluebricks` and
+  `mir-content:knowledge` when a bounded question has declared typed relationship evidence. It does
+  not guarantee token savings, require per-repository database migration, or generate graphs.
 - **Capability management** — `config/capability-sources.json` selects commit-pinned plugins,
   project agent sources, Claude command sources with Codex skill equivalents, and target-local hook
   and MCP integration boundaries. Explicit sync copies and locks only selected agents and commands;

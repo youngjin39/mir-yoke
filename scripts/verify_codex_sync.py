@@ -22,6 +22,7 @@ PLUGIN_SKILLS = {
         "efficiency",
         "governance",
         "memory-gc",
+        "selective-relations",
         "spec-architect",
         "verify",
     },

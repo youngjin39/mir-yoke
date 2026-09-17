@@ -17,3 +17,7 @@ description: "Ingest and lint knowledge in a repository-owned or explicitly conf
 6. Lint for contradictory active claims, expired facts, missing provenance, broken links,
    duplicates, and taxonomy gaps.
 7. Write only to the user-authorized destination and report what changed and remains uncertain.
+
+For a known anchor and maintained declared evidence path, `mir-core:selective-relations` may provide
+optional read-only retrieval. It does not replace the repository's knowledge system or require graph
+creation, indexing, or writes.

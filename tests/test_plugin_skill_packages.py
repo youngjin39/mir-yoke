@@ -32,7 +32,7 @@ def test_common_skills_have_one_namespaced_provider() -> None:
             assert skill not in providers
             providers[skill] = plugin_name
 
-    assert len(providers) == 14
+    assert len(providers) == 15
     assert not (ROOT / ".claude" / "skills").exists()
     assert not (ROOT / ".agents" / "skills").exists()
 
@@ -43,7 +43,7 @@ def test_dual_runtime_manifests_share_one_skill_tree() -> None:
         claude = _json(plugin_root / ".claude-plugin" / "plugin.json")
         codex = _json(plugin_root / ".codex-plugin" / "plugin.json")
         assert claude["name"] == codex["name"] == plugin_name
-        assert claude["version"] == codex["version"] == "0.9.0"
+        assert claude["version"] == codex["version"] == "0.9.1"
         assert codex["skills"] == "./skills/"
         assert isinstance(codex["interface"]["defaultPrompt"], list)
         assert 1 <= len(codex["interface"]["defaultPrompt"]) <= 3
@@ -155,6 +155,15 @@ def test_plugin_packages_are_self_contained_in_isolated_copy(tmp_path: Path) -> 
         assert "memory_gc_runner.py" not in text
 
 
+def test_bluebricks_relation_reference_survives_isolated_plugin_copy(tmp_path: Path) -> None:
+    isolated = tmp_path / "mir-code"
+    shutil.copytree(ROOT / "plugins" / "mir-code", isolated)
+
+    reference = isolated / "skills" / "bluebricks" / "references" / "selective-relations.md"
+    assert reference.is_file()
+    assert _validate_plugin(isolated, "mir-code", package_kind="skills")
+
+
 def test_activation_path_must_be_a_real_copy_inside_the_runtime_home(
     tmp_path: Path,
 ) -> None:
@@ -178,7 +187,7 @@ def test_activation_path_must_be_a_real_copy_inside_the_runtime_home(
 
 def test_manifest_versions_match_repository_release() -> None:
     version = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
-    assert version == "0.9.0"
+    assert version == "0.9.1"
     for plugin_name in PLUGIN_SKILLS:
         plugin_root = ROOT / "plugins" / plugin_name
         assert _json(plugin_root / ".claude-plugin" / "plugin.json")["version"] == version

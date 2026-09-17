@@ -1,6 +1,6 @@
 [project]
 name = "mir-harness"
-version = "0.9.0"
+version = "0.9.1"
 description = "mir-yoke — minimal starter and Project Agent Kit recipe for Claude and Codex"
 readme = "README.md"
 license = {file = "LICENSE"}

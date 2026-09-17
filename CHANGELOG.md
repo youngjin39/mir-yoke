@@ -142,6 +142,18 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
   maintainer configuration already carried it; the generator, which is what every new project
   actually receives, did not.
 
+## [0.9.1] — 2026-09-18 — Selective relation retrieval
+
+### Added
+
+- Added the on-demand `mir-core:selective-relations` skill for bounded selective relation retrieval
+  (SRR), with `mir-code:bluebricks` and `mir-content:knowledge` pointers for applicable work.
+
+### Changed
+
+- Documented SRR as declared, provenance-bearing relationship discovery. It does not promise token
+  savings, require a per-repository database migration, or generate a graph.
+
 ## [0.9.0] — 2026-08-11 — Project Agent Kit boundary
 
 ### Added

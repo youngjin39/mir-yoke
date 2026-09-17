@@ -14,7 +14,7 @@ target-specific authorization.
 
 ### 1. Minimal Starter compatibility
 
-[`starter/`](starter/) is the only fixed consumer payload. It contains exactly four Markdown
+[`starter/`](starter/) is the four-file compatibility payload. It contains exactly four Markdown
 files: a repository-owned `HARNESS.md`, thin `CLAUDE.md` and `AGENTS.md` entrypoints, and an adoption
 guide. It does not require a Mir CLI, installer, plugin, hook, memory database, specification tree,
 sub-agent, daemon, receipt, restart, or platform-specific runtime.
@@ -39,7 +39,7 @@ immutable release:
 
 ```bash
 uv tool install --force --link-mode copy \
-  "git+https://github.com/youngjin39/mir-yoke.git@v0.9.0"
+  "git+https://github.com/youngjin39/mir-yoke.git@v0.9.1"
 mir --help
 ```
 
@@ -70,6 +70,13 @@ host-wide, repository-neutral setup, `scripts/install_user_runtime_agents.py` in
 Profile-selected agents and Claude commands into explicit user configuration roots; it is dry-run by
 default, records file digests, and never edits a consumer repository. Yoke-only allowlist entries are
 excluded, and project-local definitions still win.
+
+Version 0.9.1 adds `mir-core:selective-relations`, an on-demand
+selective relation retrieval (SRR) skill. `mir-code:bluebricks` and `mir-content:knowledge` point
+to it when declared, typed relationship evidence can answer a bounded question. The skill treats
+relations as provenance-bearing locators and does not promise token savings, require a per-repository
+database migration, or generate a graph. The published immutable v0.9.0 does not include this
+capability; older installations continue with ordinary source search.
 
 ### Platform use
 

@@ -2,6 +2,158 @@
   "version": 1,
   "changes": [
     {
+      "id": "selective-relations-shared-plugin-2026-09-18",
+      "record_status": "complete",
+      "scope": "Ship optional mir-core:selective-relations in all profile catalogs, preserve ordinary search and native relation adapters, and prepare commit-bound 0.9.1 delivery. Actual activation and release binding are recorded separately by Harness.",
+      "targets": [
+        "plugins/mir-core/skills/selective-relations/",
+        "config/capability-sources.json",
+        "config/repo-agent-management.json",
+        "tests/test_selective_relations_skill.py",
+        "tests/test_plugin_skill_packages.py"
+      ],
+      "design_ref": "plugins/mir-core/skills/selective-relations/references/selective-relations.md",
+      "bluebrick": "Shared optional retrieval / Read-only evidence / Commit-bound capability delivery",
+      "categories": {
+        "unit": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_selective_relations_skill.py tests/test_plugin_skill_packages.py tests/test_greenfield_slim_integration.py tests/test_codex_derivation_script.py tests/test_template_asset_classification.py",
+          "notes": "Independent shared-plugin review Sound; 45 focused checks and isolated dual-runtime installation passed. Parent 21 adoption/derivation/asset checks passed after fixing missing optional catalog entry. Single-purpose and native-source scope corrected. Full-suite source-lock comparison intentionally remains a pre-bind transition under ADR-80; complete clean-tree proof follows the generated lock commit."
+        },
+        "integration": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_selective_relations_skill.py tests/test_plugin_skill_packages.py tests/test_greenfield_slim_integration.py tests/test_codex_derivation_script.py tests/test_template_asset_classification.py",
+          "notes": "Independent shared-plugin review Sound; 45 focused checks and isolated dual-runtime installation passed. Parent 21 adoption/derivation/asset checks passed after fixing missing optional catalog entry. Single-purpose and native-source scope corrected. Full-suite source-lock comparison intentionally remains a pre-bind transition under ADR-80; complete clean-tree proof follows the generated lock commit."
+        },
+        "edge": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_selective_relations_skill.py tests/test_plugin_skill_packages.py tests/test_greenfield_slim_integration.py tests/test_codex_derivation_script.py tests/test_template_asset_classification.py",
+          "notes": "Independent shared-plugin review Sound; 45 focused checks and isolated dual-runtime installation passed. Parent 21 adoption/derivation/asset checks passed after fixing missing optional catalog entry. Single-purpose and native-source scope corrected. Full-suite source-lock comparison intentionally remains a pre-bind transition under ADR-80; complete clean-tree proof follows the generated lock commit."
+        },
+        "architecture": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_selective_relations_skill.py tests/test_plugin_skill_packages.py tests/test_greenfield_slim_integration.py tests/test_codex_derivation_script.py tests/test_template_asset_classification.py",
+          "notes": "Independent shared-plugin review Sound; 45 focused checks and isolated dual-runtime installation passed. Parent 21 adoption/derivation/asset checks passed after fixing missing optional catalog entry. Single-purpose and native-source scope corrected. Full-suite source-lock comparison intentionally remains a pre-bind transition under ADR-80; complete clean-tree proof follows the generated lock commit."
+        },
+        "availability": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_selective_relations_skill.py tests/test_plugin_skill_packages.py tests/test_greenfield_slim_integration.py tests/test_codex_derivation_script.py tests/test_template_asset_classification.py",
+          "notes": "Independent shared-plugin review Sound; 45 focused checks and isolated dual-runtime installation passed. Parent 21 adoption/derivation/asset checks passed after fixing missing optional catalog entry. Single-purpose and native-source scope corrected. Full-suite source-lock comparison intentionally remains a pre-bind transition under ADR-80; complete clean-tree proof follows the generated lock commit."
+        },
+        "security": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_selective_relations_skill.py tests/test_plugin_skill_packages.py tests/test_greenfield_slim_integration.py tests/test_codex_derivation_script.py tests/test_template_asset_classification.py",
+          "notes": "Independent shared-plugin review Sound; 45 focused checks and isolated dual-runtime installation passed. Parent 21 adoption/derivation/asset checks passed after fixing missing optional catalog entry. Single-purpose and native-source scope corrected. Full-suite source-lock comparison intentionally remains a pre-bind transition under ADR-80; complete clean-tree proof follows the generated lock commit."
+        },
+        "compatibility": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_selective_relations_skill.py tests/test_plugin_skill_packages.py tests/test_greenfield_slim_integration.py tests/test_codex_derivation_script.py tests/test_template_asset_classification.py",
+          "notes": "Independent shared-plugin review Sound; 45 focused checks and isolated dual-runtime installation passed. Parent 21 adoption/derivation/asset checks passed after fixing missing optional catalog entry. Single-purpose and native-source scope corrected. Full-suite source-lock comparison intentionally remains a pre-bind transition under ADR-80; complete clean-tree proof follows the generated lock commit."
+        },
+        "e2e": {
+          "status": "pass",
+          "command": "uv run python scripts/verify_plugin_cli_activation.py",
+          "notes": "Independent reviewer verified all four isolated plugins from two consumer directories for Claude and Codex. This proves package installation, not host/fleet activation."
+        },
+        "browser": {
+          "status": "not_applicable",
+          "reason": "No new browser, service, persistent writer or transaction mechanism; existing capability manager owns deployment."
+        },
+        "load": {
+          "status": "not_applicable",
+          "reason": "No new browser, service, persistent writer or transaction mechanism; existing capability manager owns deployment."
+        },
+        "soak": {
+          "status": "not_applicable",
+          "reason": "No new browser, service, persistent writer or transaction mechanism; existing capability manager owns deployment."
+        },
+        "transaction_locking": {
+          "status": "not_applicable",
+          "reason": "No new browser, service, persistent writer or transaction mechanism; existing capability manager owns deployment."
+        }
+      }
+    },
+    {
+      "id": "selective-relations-reusable-2026-09-18",
+      "record_status": "complete",
+      "scope": "Deliver optional portable read-only declared-relation retrieval, custom target-owned graph source and upstream dependencies, with on-demand bluebricks guidance; preserve ordinary search and memory. No release or consumer activation.",
+      "targets": [
+        "src/mir/core/relations.py",
+        "src/mir/cli/relations.py",
+        "tests/test_relations.py",
+        "tests/test_cli_relations.py",
+        "tests/test_relation_bundle.py",
+        "tests/test_relation_sources.py",
+        "plugins/mir-code/skills/bluebricks/references/selective-relations.md",
+        "tests/test_installed_cli.py",
+        "tests/test_plugin_skill_packages.py"
+      ],
+      "design_ref": "plugins/mir-code/skills/bluebricks/references/selective-relations.md",
+      "bluebrick": "Selective Relation Retrieval / Optional provider CLI / On-demand guidance",
+      "categories": {
+        "unit": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_relations.py tests/test_cli_relations.py tests/test_relation_bundle.py tests/test_relation_sources.py tests/test_installed_cli.py tests/test_bootstrap_cli.py tests/test_plugin_skill_packages.py tests/test_common_skill_contracts.py",
+          "notes": "117 passed on final runtime. Original regressions retained; explicit missing-path fixture disambiguates dotted logical IDs. Initial missing-module red, five review-boundary red tests, and six Unicode separator red tests were repaired."
+        },
+        "integration": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_relations.py tests/test_cli_relations.py tests/test_relation_bundle.py tests/test_relation_sources.py tests/test_installed_cli.py tests/test_bootstrap_cli.py tests/test_plugin_skill_packages.py tests/test_common_skill_contracts.py",
+          "notes": "117 passed on final runtime. Original regressions retained; explicit missing-path fixture disambiguates dotted logical IDs. Initial missing-module red, five review-boundary red tests, and six Unicode separator red tests were repaired."
+        },
+        "e2e": {
+          "status": "pass",
+          "command": "uv build --wheel; install built wheel into isolated temporary venv; execute documented examples and source/protection/fallback probes from outside both checkouts",
+          "notes": "13 installed-wheel checks passed, consumer files unchanged. Installed module origin and wheel source hashes verified. macOS executed; no native Windows or Linux/WSL runtime execution claimed."
+        },
+        "edge": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_relations.py tests/test_cli_relations.py tests/test_relation_bundle.py tests/test_relation_sources.py tests/test_installed_cli.py tests/test_bootstrap_cli.py tests/test_plugin_skill_packages.py tests/test_common_skill_contracts.py",
+          "notes": "117 passed on final runtime. Original regressions retained; explicit missing-path fixture disambiguates dotted logical IDs. Initial missing-module red, five review-boundary red tests, and six Unicode separator red tests were repaired."
+        },
+        "architecture": {
+          "status": "pass",
+          "command": "uv run python scripts/verify_codex_sync.py; uv run ruff check <changed Python files>; independent bounded SRR review",
+          "notes": "Codex parity and Ruff passed. Independent final review Sound, P0/P1/P2=0/0/0, including reviewer-run61 tests. No new agent/skill inventory or startup policy; existing memory preserved."
+        },
+        "availability": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_relations.py tests/test_cli_relations.py tests/test_relation_bundle.py tests/test_relation_sources.py tests/test_installed_cli.py tests/test_bootstrap_cli.py tests/test_plugin_skill_packages.py tests/test_common_skill_contracts.py",
+          "notes": "117 passed on final runtime. Original regressions retained; explicit missing-path fixture disambiguates dotted logical IDs. Initial missing-module red, five review-boundary red tests, and six Unicode separator red tests were repaired."
+        },
+        "security": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_relations.py tests/test_cli_relations.py tests/test_relation_bundle.py tests/test_relation_sources.py tests/test_installed_cli.py tests/test_bootstrap_cli.py tests/test_plugin_skill_packages.py tests/test_common_skill_contracts.py",
+          "notes": "117 passed on final runtime. Original regressions retained; explicit missing-path fixture disambiguates dotted logical IDs. Initial missing-module red, five review-boundary red tests, and six Unicode separator red tests were repaired."
+        },
+        "compatibility": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_relations.py tests/test_cli_relations.py tests/test_relation_bundle.py tests/test_relation_sources.py tests/test_installed_cli.py tests/test_bootstrap_cli.py tests/test_plugin_skill_packages.py tests/test_common_skill_contracts.py",
+          "notes": "117 passed on final runtime. Original regressions retained; explicit missing-path fixture disambiguates dotted logical IDs. Initial missing-module red, five review-boundary red tests, and six Unicode separator red tests were repaired."
+        },
+        "transaction_locking": {
+          "status": "not_applicable",
+          "command": "not_applicable",
+          "notes": "Read-only file retrieval; no DB writes or transaction/locking changes."
+        },
+        "browser": {
+          "status": "not_applicable",
+          "command": "not_applicable",
+          "notes": "No browser or GUI surface."
+        },
+        "load": {
+          "status": "not_applicable",
+          "command": "not_applicable",
+          "notes": "No persistent service or throughput claim; hard graph/result limits are covered by edge tests."
+        },
+        "soak": {
+          "status": "not_applicable",
+          "command": "not_applicable",
+          "notes": "Finite read-only command with no background lifecycle; no sustained-service claim."
+        }
+      }
+    },
+    {
       "id": "adr90-role-plugins-common-hooks-2026-09-03",
       "record_status": "complete",
       "scope": "Publish and deploy the separately named common lifecycle hook package for both runtimes, preserve repository-owned policy, distribute agents and commands through a separate digest-bound user-runtime path, document the absent MCP-server state, and submit the Codex plugin-agent feature request.",

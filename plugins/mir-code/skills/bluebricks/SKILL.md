@@ -19,6 +19,11 @@ when present and relevant. Common locations include `.ai-harness/`, `docs/`, and
 files, but their absence is valid and never a reason to invent or install a local harness. Follow the
 actual repository contract instead of assuming Mir Yoke's maintainer layout.
 
+For bounded retrieval through declared relationships, apply `mir-core:selective-relations` when that
+namespaced skill is available. Otherwise use ordinary source search. The relation adapter and graph
+are optional; use direct search when the answer location is already known or the question is outside
+the supported declared relationships.
+
 ## Workflow
 1. Define the exact task boundary.
 2. Identify the affected module or bluebrick.

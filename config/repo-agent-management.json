@@ -366,6 +366,13 @@
         "status": "active",
         "source_path": "plugins/mir-core/skills/memory-gc/"
       },
+      "selective-relations": {
+        "category": "knowledge",
+        "absorbs": [],
+        "scope": "universal",
+        "status": "active",
+        "source_path": "plugins/mir-core/skills/selective-relations/"
+      },
       "runtime-continuity": {
         "category": "automation",
         "absorbs": [],

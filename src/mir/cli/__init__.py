@@ -1,4 +1,5 @@
 """Lazy command registry for the optional public Mir operator CLI."""
+
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -14,6 +15,7 @@ _SUBCOMMAND_MODULES = {
     "memory": "mir.cli.memory",
     "migrate": "mir.cli.migrate",
     "policy": "mir.cli.policy",
+    "relations": "mir.cli.relations",
     "run-python": "mir.cli.run_python",
     "runtime-manifest": "mir.cli.runtime_manifest",
 }
@@ -28,6 +30,5 @@ def _lazy_handler(module_name: str) -> Callable[[list[str]], int]:
 
 
 SUBCOMMANDS: dict[str, Callable[[list[str]], int]] = {
-    name: _lazy_handler(module_name)
-    for name, module_name in _SUBCOMMAND_MODULES.items()
+    name: _lazy_handler(module_name) for name, module_name in _SUBCOMMAND_MODULES.items()
 }
