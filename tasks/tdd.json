@@ -2,6 +2,77 @@
   "version": 1,
   "changes": [
     {
+      "id": "selective-relations-memory-implementation-2026-09-18",
+      "record_status": "complete",
+      "scope": "Implement explicit source-backed relation ingestion and immutable memory SRR using existing facts/entities/provenance; preserve YAML defaults and embedding independence.",
+      "targets": [
+        "src/mir/core/engine/memory/relation_facts.py",
+        "src/mir/core/memory_relations.py",
+        "tests/test_memory_relation_workflow.py"
+      ],
+      "design_ref": "plugins/mir-core/skills/selective-relations/references/memory-relations.md",
+      "bluebrick": "Memory ingestion / Selective relation retrieval",
+      "categories": {
+        "unit": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_memory_relation_ingest.py tests/test_memory_relations.py tests/test_memory_relation_workflow.py tests/test_relations.py tests/test_relation_sources.py tests/test_relation_bundle.py tests/test_cli_relations.py",
+          "notes": "108 focused Yoke checks passed; Harness adds legacy self-ingest coverage for 133 passing checks. Initial workflow failures repaired and independently reviewed Sound. Covers source-scoped revisions, independent sources, A-B-A/removal, exact provenance, immutable bounds, strict audit rollback and outer-transaction savepoints."
+        },
+        "integration": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_memory_relation_ingest.py tests/test_memory_relations.py tests/test_memory_relation_workflow.py tests/test_relations.py tests/test_relation_sources.py tests/test_relation_bundle.py tests/test_cli_relations.py",
+          "notes": "108 focused Yoke checks passed; Harness adds legacy self-ingest coverage for 133 passing checks. Initial workflow failures repaired and independently reviewed Sound. Covers source-scoped revisions, independent sources, A-B-A/removal, exact provenance, immutable bounds, strict audit rollback and outer-transaction savepoints."
+        },
+        "edge": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_memory_relation_ingest.py tests/test_memory_relations.py tests/test_memory_relation_workflow.py tests/test_relations.py tests/test_relation_sources.py tests/test_relation_bundle.py tests/test_cli_relations.py",
+          "notes": "108 focused Yoke checks passed; Harness adds legacy self-ingest coverage for 133 passing checks. Initial workflow failures repaired and independently reviewed Sound. Covers source-scoped revisions, independent sources, A-B-A/removal, exact provenance, immutable bounds, strict audit rollback and outer-transaction savepoints."
+        },
+        "architecture": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_memory_relation_ingest.py tests/test_memory_relations.py tests/test_memory_relation_workflow.py tests/test_relations.py tests/test_relation_sources.py tests/test_relation_bundle.py tests/test_cli_relations.py",
+          "notes": "108 focused Yoke checks passed; Harness adds legacy self-ingest coverage for 133 passing checks. Initial workflow failures repaired and independently reviewed Sound. Covers source-scoped revisions, independent sources, A-B-A/removal, exact provenance, immutable bounds, strict audit rollback and outer-transaction savepoints."
+        },
+        "security": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_memory_relation_ingest.py tests/test_memory_relations.py tests/test_memory_relation_workflow.py tests/test_relations.py tests/test_relation_sources.py tests/test_relation_bundle.py tests/test_cli_relations.py",
+          "notes": "108 focused Yoke checks passed; Harness adds legacy self-ingest coverage for 133 passing checks. Initial workflow failures repaired and independently reviewed Sound. Covers source-scoped revisions, independent sources, A-B-A/removal, exact provenance, immutable bounds, strict audit rollback and outer-transaction savepoints."
+        },
+        "compatibility": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_memory_relation_ingest.py tests/test_memory_relations.py tests/test_memory_relation_workflow.py tests/test_relations.py tests/test_relation_sources.py tests/test_relation_bundle.py tests/test_cli_relations.py",
+          "notes": "108 focused Yoke checks passed; Harness adds legacy self-ingest coverage for 133 passing checks. Initial workflow failures repaired and independently reviewed Sound. Covers source-scoped revisions, independent sources, A-B-A/removal, exact provenance, immutable bounds, strict audit rollback and outer-transaction savepoints."
+        },
+        "transaction_locking": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_memory_relation_ingest.py tests/test_memory_relations.py tests/test_memory_relation_workflow.py tests/test_relations.py tests/test_relation_sources.py tests/test_relation_bundle.py tests/test_cli_relations.py",
+          "notes": "108 focused Yoke checks passed; Harness adds legacy self-ingest coverage for 133 passing checks. Initial workflow failures repaired and independently reviewed Sound. Covers source-scoped revisions, independent sources, A-B-A/removal, exact provenance, immutable bounds, strict audit rollback and outer-transaction savepoints."
+        },
+        "e2e": {
+          "status": "pass",
+          "command": "Installed 0.10.0 wheel CLI probe from an external temporary consumer directory",
+          "notes": "Nine real CLI lifecycle checks passed without sqlite-vec or an embedding service. All databases were isolated fixtures. Commit-bound delivery follows ADR-80 separately."
+        },
+        "load": {
+          "status": "pass",
+          "command": "Memory reader/writer budget regression tests",
+          "notes": "Enforces physical source bytes, source-validation bytes, row/depth/edge/output/provenance bounds; no throughput or token-saving claim."
+        },
+        "browser": {
+          "status": "not_applicable",
+          "reason": "No UI, hosted service or background process changed."
+        },
+        "availability": {
+          "status": "not_applicable",
+          "reason": "No UI, hosted service or background process changed."
+        },
+        "soak": {
+          "status": "not_applicable",
+          "reason": "No UI, hosted service or background process changed."
+        }
+      }
+    },
+    {
       "id": "srr-dynamic-scope-guidance-2026-09-18",
       "record_status": "complete",
       "scope": "Expand optional shared SRR applicability and document dynamic memory admission using existing native stores. No new writer, extraction job, DB adapter or portable purpose is implemented.",

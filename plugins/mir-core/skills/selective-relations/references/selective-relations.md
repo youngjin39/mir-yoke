@@ -52,8 +52,8 @@ and 16000 bytes. A truncated result is incomplete evidence. Do not raise every l
 completeness because a result was truncated.
 
 The reader validates graph and file locators beneath the explicit root, rejects unsafe and protected
-paths, and respects target Profile protections when present. It reads a local declared YAML triple
-file only. It never creates source files or graphs, writes a database, extracts relations, or changes
+paths, and respects target Profile protections when present. By default it reads a local declared YAML triple
+file. The explicit `--memory` adapter is described in [the memory reference](memory-relations.md). It never creates source files or graphs, writes a database, extracts relations, or changes
 the repository.
 
 ## Fallback and verification

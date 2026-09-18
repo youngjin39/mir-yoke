@@ -82,4 +82,9 @@ Discard an uncommitted Project Agent Kit adaptation in the target or restore the
 commit. For an explicitly invoked CLI transaction, use that command's recorded rollback/recovery
 contract. Installing the CLI does not itself mutate a target.
 
-Current version: `0.9.2`. See `CHANGELOG.md` for release details.
+Current version: `0.10.0`. See `CHANGELOG.md` for release details.
+
+Version 0.10.0 adds opt-in `memory_relations` ingestion and read-only `mir relations query|bundle --memory`
+query/bundle selection using the existing memory schema. No automatic corpus backfill, database
+migration or vector re-embedding is performed. Re-ingest an authorized declaring source to update
+its relations; keep existing memory and source ownership.

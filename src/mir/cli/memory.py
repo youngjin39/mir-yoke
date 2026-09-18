@@ -19,6 +19,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import sys
 import uuid
 from pathlib import Path
 
@@ -30,6 +31,7 @@ from mir.core.config.loader import (
 )
 from mir.core.engine.memory import distill, store
 from mir.core.engine.memory.external_store import CURRENT_METADATA_VERSION
+from mir.core.engine.memory.relation_facts import RelationDeclarationError
 
 from ._common import default_db_path
 
@@ -303,11 +305,15 @@ def main(argv: list[str]) -> int:
 
         if ns.action == "ingest-md":
             globs = tuple(ns.whitelist) if ns.whitelist else distill.DEFAULT_WHITELIST
-            result = distill.ingest_markdown_file(
-                ns.path,
-                conn=conn.conn,
-                whitelist_globs=globs,
-            )
+            try:
+                result = distill.ingest_markdown_file(
+                    ns.path,
+                    conn=conn.conn,
+                    whitelist_globs=globs,
+                )
+            except RelationDeclarationError as exc:
+                print(f"error: {exc}", file=sys.stderr)
+                return 2
             if result.no_op:
                 reason = result.no_op_reason or "unspecified"
                 print(f"no_op[{reason}]: hash={result.file_hash[:12] or 'n/a'}…")

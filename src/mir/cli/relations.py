@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import sys
 
+from mir.core.memory_relations import bundle_memory_relations, query_memory_relations
 from mir.core.relations import (
     DEFAULT_DEPTH,
     DEFAULT_GRAPH,
@@ -23,7 +24,13 @@ _PURPOSES = ("implementation", "impact", "verification", "dependencies")
 
 def _common_options(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--root", default=".")
-    parser.add_argument("--graph", default=DEFAULT_GRAPH)
+    source = parser.add_mutually_exclusive_group()
+    source.add_argument("--graph", default=DEFAULT_GRAPH)
+    source.add_argument(
+        "--memory",
+        action="store_true",
+        help="read only the canonical <root>/.mir/memory.db relation facts",
+    )
     parser.add_argument("--depth", type=int, default=DEFAULT_DEPTH)
     parser.add_argument("--max-edges", type=int, default=DEFAULT_MAX_EDGES)
     parser.add_argument("--max-bytes", type=int, default=DEFAULT_MAX_BYTES)
@@ -44,14 +51,25 @@ def main(argv: list[str]) -> int:
     args = parser.parse_args(argv)
     try:
         if args.command == "bundle":
-            result = bundle_relations(
-                args.anchors,
-                args.purpose,
-                root=args.root,
-                graph=args.graph,
-                depth=args.depth,
-                max_edges=args.max_edges,
-                max_bytes=args.max_bytes,
+            result = (
+                bundle_memory_relations(
+                    args.anchors,
+                    args.purpose,
+                    root=args.root,
+                    depth=args.depth,
+                    max_edges=args.max_edges,
+                    max_bytes=args.max_bytes,
+                )
+                if args.memory
+                else bundle_relations(
+                    args.anchors,
+                    args.purpose,
+                    root=args.root,
+                    graph=args.graph,
+                    depth=args.depth,
+                    max_edges=args.max_edges,
+                    max_bytes=args.max_bytes,
+                )
             )
             output = (
                 render_json(result, args.max_bytes)
@@ -59,14 +77,25 @@ def main(argv: list[str]) -> int:
                 else render_bundle_human(result, args.max_bytes)
             )
         else:
-            result = query_relations(
-                args.anchor,
-                args.purpose,
-                root=args.root,
-                graph=args.graph,
-                depth=args.depth,
-                max_edges=args.max_edges,
-                max_bytes=args.max_bytes,
+            result = (
+                query_memory_relations(
+                    args.anchor,
+                    args.purpose,
+                    root=args.root,
+                    depth=args.depth,
+                    max_edges=args.max_edges,
+                    max_bytes=args.max_bytes,
+                )
+                if args.memory
+                else query_relations(
+                    args.anchor,
+                    args.purpose,
+                    root=args.root,
+                    graph=args.graph,
+                    depth=args.depth,
+                    max_edges=args.max_edges,
+                    max_bytes=args.max_bytes,
+                )
             )
             output = (
                 render_json(result, args.max_bytes)

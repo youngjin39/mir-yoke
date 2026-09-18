@@ -31,6 +31,36 @@ from pathlib import Path
 
 log = logging.getLogger("mir.memory.store")
 
+_TERMINAL_DOCUMENT_STATUSES = (
+    "archived",
+    "rejected",
+    "superseded",
+    "superseded-design",
+    "historical",
+    "historical-snapshot",
+    "historical-manual-snapshot",
+    "historical-ledger",
+    "applied-ledger-v1",
+    "done",
+)
+
+
+def current_fact_filter_sql(alias: str = "f") -> str:
+    """Return current-only status filtering for read paths."""
+    if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", alias):
+        raise ValueError(f"invalid SQL alias: {alias!r}")
+    values = ", ".join(f"'{value}'" for value in _TERMINAL_DOCUMENT_STATUSES)
+    return f"""AND NOT EXISTS (
+      SELECT 1 FROM facts terminal
+       WHERE terminal.subject_entity_id = {alias}.subject_entity_id
+         AND terminal.predicate = 'status' AND terminal.status = 'active'
+         AND terminal.polarity = 'asserted' AND (
+           lower(trim(terminal.object_literal)) IN ({values})
+           OR lower(trim(terminal.object_literal)) LIKE 'historical%'
+           OR lower(trim(terminal.object_literal)) LIKE 'superseded%'
+         ))"""
+
+
 # A migration filename = NNN_snake_name.sql. Anything else is ignored so
 # developers can drop README.md / notes into the package without breaking
 # discovery.
@@ -70,6 +100,28 @@ class Connection:
     conn: sqlite3.Connection
     vec_available: bool
     vec_reason: str | None
+
+
+class ReadOnlySnapshotUnavailable(RuntimeError):
+    """Immutable reads cannot safely observe a non-empty WAL."""
+
+
+def connect_read_only(db_path: Path, *, load_vec: bool = False) -> Connection:
+    """Open a query-only immutable connection without creating sidecars."""
+    db_path = Path(db_path).resolve()
+    try:
+        if Path(f"{db_path}-wal").stat().st_size > 0:
+            raise ReadOnlySnapshotUnavailable(
+                "immutable read refused because a non-empty SQLite WAL is present"
+            )
+    except FileNotFoundError:
+        pass
+    raw = sqlite3.connect(f"{db_path.as_uri()}?mode=ro&immutable=1", uri=True)
+    raw.execute("PRAGMA query_only = ON")
+    if load_vec:
+        ok, reason = _load_sqlite_vec(raw)
+        return Connection(raw, ok, reason)
+    return Connection(raw, False, "vec loading disabled by immutable reader")
 
 
 def connect(

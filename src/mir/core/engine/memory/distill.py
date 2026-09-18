@@ -26,12 +26,22 @@ import fnmatch
 import hashlib
 import json
 import re
-import sqlite3
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
 from .predicates import canonicalize
+from .relation_facts import (
+    MAX_RELATION_SOURCE_CHARS,
+    RELATION_SCHEMA,
+    RelationDeclarationError,
+    has_owned_active_relation_facts,
+    parse_relation_document,
+    reconcile_relation_facts,
+    relation_metadata,
+    safe_source_relative_path,
+    validate_declarations_for_root,
+)
 from .sanitize import sanitize
 
 
@@ -283,6 +293,8 @@ def _frontmatter_to_triples(slug: str, fm: dict[str, object]) -> list[Triple]:
     """
     triples: list[Triple] = []
     for key, value in fm.items():
+        if key == "memory_relations":
+            continue
         if isinstance(value, list):
             for item in value:
                 if not item:
@@ -348,6 +360,7 @@ def _supersede_existing(
              WHERE subject_entity_id = ?
                AND predicate          = ?
                AND status             = 'active'
+               AND object_entity_id IS NULL
                AND id                != ?
             """,
             (subject_id, canonicalize(predicate), new_fact_id),
@@ -360,6 +373,7 @@ def _supersede_existing(
              WHERE subject_entity_id = ?
                AND predicate          = ?
                AND status             = 'active'
+               AND object_entity_id IS NULL
                AND id                != ?
                AND (created_from IS NULL OR created_from != ?)
             """,
@@ -436,12 +450,12 @@ def _link_cross_refs(conn, raw: str, subject_id: int) -> int:
         if target_id == subject_id:
             continue
         from_fact = conn.execute(
-            "SELECT id FROM facts WHERE subject_entity_id = ? "
+            "SELECT id FROM facts WHERE subject_entity_id = ? AND object_entity_id IS NULL "
             "ORDER BY id DESC LIMIT 1",
             (subject_id,),
         ).fetchone()
         to_fact = conn.execute(
-            "SELECT id FROM facts WHERE subject_entity_id = ? "
+            "SELECT id FROM facts WHERE subject_entity_id = ? AND object_entity_id IS NULL "
             "ORDER BY id DESC LIMIT 1",
             (target_id,),
         ).fetchone()
@@ -485,35 +499,144 @@ def ingest_markdown_file(
         return IngestResult(0, 0, 0, "", True, "archive")
     if not _matches_whitelist(rel, whitelist_globs):
         return IngestResult(0, 0, 0, "", True, "whitelist")
+    try:
+        rel = safe_source_relative_path(path, root)
+    except ValueError:
+        return IngestResult(0, 0, 0, "", True, "unsafe_path")
 
     # ``utf-8-sig`` strips the optional BOM; the regex anchor ``\A---`` would
     # otherwise miss BOM-prefixed files and silently return no_op (R2.5).
     raw = path.read_text(encoding="utf-8-sig")
+    frontmatter_match = _FRONTMATTER_RE.match(raw)
+    has_relation_key = bool(
+        frontmatter_match
+        and re.search(r"(?m)^\s*memory_relations\s*:", frontmatter_match.group(1))
+    )
+    if has_relation_key and path.stat().st_size > MAX_RELATION_SOURCE_CHARS:
+        raise RelationDeclarationError("invalid memory_relations: source exceeds 1 MiB")
     file_hash = hashlib.sha256(raw.encode("utf-8")).hexdigest()
-    existing = conn.execute(
-        "SELECT id FROM content_items WHERE source = ? AND text_hash = ? LIMIT 1",
-        ("self_ingest_md", file_hash),
-    ).fetchone()
-    if existing:
-        return IngestResult(0, 0, 0, file_hash, True, "unchanged")
-
     fm = _parse_frontmatter(raw)
+    relation_document = parse_relation_document(raw)
+    validate_declarations_for_root(relation_document.declarations, root.resolve())
+    if relation_document.declarations:
+        existing = conn.execute(
+            "SELECT text_hash FROM content_items WHERE source = ? AND "
+            "json_extract(metadata_json, '$.path') = ? AND "
+            "json_extract(metadata_json, '$.relation_schema') = ? AND "
+            "json_extract(metadata_json, '$.relation_project_path') = ? "
+            "ORDER BY id DESC LIMIT 1",
+            ("self_ingest_md", rel, RELATION_SCHEMA, str(root.resolve())),
+        ).fetchone()
+    else:
+        existing = conn.execute(
+            "SELECT text_hash FROM content_items WHERE source = ? "
+            "AND json_extract(metadata_json, '$.path') = ? ORDER BY id DESC LIMIT 1",
+            ("self_ingest_md", rel),
+        ).fetchone()
+    if existing and existing[0] == file_hash:
+        return IngestResult(0, 0, 0, file_hash, True, "unchanged")
     if not fm:
-        return IngestResult(0, 0, 0, file_hash, True, "empty_frontmatter")
+        in_outer_tx = bool(getattr(conn, "in_transaction", False))
+        if in_outer_tx:
+            conn.execute("SAVEPOINT ingest_markdown_relations")
+        else:
+            conn.execute("BEGIN IMMEDIATE")
+        try:
+            locked_raw = path.read_text(encoding="utf-8-sig")
+            if hashlib.sha256(locked_raw.encode("utf-8")).hexdigest() != file_hash:
+                raise RelationDeclarationError("source changed during ingestion; retry")
+            relation_tombstone = has_owned_active_relation_facts(
+                conn, project_root=root.resolve(), source_path=rel
+            )
+            if relation_tombstone:
+                conn.execute(
+                    """
+                    INSERT INTO content_items
+                      (source, occurred_at, ingested_at, text_hash, byte_len, raw_text,
+                       metadata_json)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        "self_ingest_md",
+                        _now_iso(),
+                        _now_iso(),
+                        file_hash,
+                        len(raw.encode("utf-8")),
+                        raw,
+                        json.dumps(
+                            relation_metadata(
+                                path=rel,
+                                project_root=root.resolve(),
+                                document_status="",
+                            ),
+                            ensure_ascii=False,
+                        ),
+                    ),
+                )
+            _, superseded = reconcile_relation_facts(
+                conn,
+                declarations=(),
+                content_item_id=None,
+                project_root=root.resolve(),
+                source_path=rel,
+                document_status="",
+            )
+            if in_outer_tx:
+                conn.execute("RELEASE SAVEPOINT ingest_markdown_relations")
+            else:
+                conn.commit()
+        except Exception:
+            if in_outer_tx:
+                conn.execute("ROLLBACK TO SAVEPOINT ingest_markdown_relations")
+                conn.execute("RELEASE SAVEPOINT ingest_markdown_relations")
+            else:
+                conn.rollback()
+            raise
+        return IngestResult(
+            0,
+            superseded,
+            0,
+            file_hash,
+            not relation_tombstone,
+            "" if relation_tombstone else "empty_frontmatter",
+        )
 
     # Single-transaction ingest: BEGIN IMMEDIATE serializes against
     # concurrent writers and audit_append is invoked in commit=False mode so
     # the audit row participates in this transaction (atomic with the facts
     # supersede UPDATE).
     in_outer_tx = bool(getattr(conn, "in_transaction", False))
-    if not in_outer_tx:
-        try:
-            conn.execute("BEGIN IMMEDIATE")
-        except sqlite3.OperationalError:
-            # Another writer holds the lock; sqlite3 busy_timeout retries the
-            # subsequent statements. Fall through.
-            pass
+    if in_outer_tx:
+        conn.execute("SAVEPOINT ingest_markdown_relations")
+    else:
+        conn.execute("BEGIN IMMEDIATE")
     try:
+        locked_raw = path.read_text(encoding="utf-8-sig")
+        if has_relation_key and path.stat().st_size > MAX_RELATION_SOURCE_CHARS:
+            raise RelationDeclarationError("invalid memory_relations: source exceeds 1 MiB")
+        if hashlib.sha256(locked_raw.encode("utf-8")).hexdigest() != file_hash:
+            raise RelationDeclarationError("source changed during ingestion; retry")
+        if relation_document.declarations:
+            concurrent_existing = conn.execute(
+                "SELECT text_hash FROM content_items WHERE source = ? AND "
+                "json_extract(metadata_json, '$.path') = ? AND "
+                "json_extract(metadata_json, '$.relation_schema') = ? AND "
+                "json_extract(metadata_json, '$.relation_project_path') = ? "
+                "ORDER BY id DESC LIMIT 1",
+                ("self_ingest_md", rel, RELATION_SCHEMA, str(root.resolve())),
+            ).fetchone()
+        else:
+            concurrent_existing = conn.execute(
+                "SELECT text_hash FROM content_items WHERE source = ? "
+                "AND json_extract(metadata_json, '$.path') = ? ORDER BY id DESC LIMIT 1",
+                ("self_ingest_md", rel),
+            ).fetchone()
+        if concurrent_existing and concurrent_existing[0] == file_hash:
+            if in_outer_tx:
+                conn.execute("RELEASE SAVEPOINT ingest_markdown_relations")
+            else:
+                conn.commit()
+            return IngestResult(0, 0, 0, file_hash, True, "unchanged")
         conn.execute(
             """
             INSERT INTO content_items
@@ -527,21 +650,37 @@ def ingest_markdown_file(
                 file_hash,
                 len(raw.encode("utf-8")),
                 raw,
-                json.dumps({"path": rel}, ensure_ascii=False),
+                json.dumps(
+                    relation_metadata(
+                        path=rel,
+                        project_root=root.resolve(),
+                        document_status=relation_document.document_status,
+                    ),
+                    ensure_ascii=False,
+                ),
             ),
         )
         content_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
 
+        relation_inserted, relation_superseded = reconcile_relation_facts(
+            conn,
+            declarations=relation_document.declarations,
+            content_item_id=content_id,
+            project_root=root.resolve(),
+            source_path=rel,
+            document_status=relation_document.document_status,
+        )
+
         slug = _adr_slug(path)
         entity_type = fm.get('type') if isinstance(fm.get('type'), str) else None
         subject_id = _upsert_entity(conn, slug, entity_type=entity_type)
-        facts_inserted = 0
-        facts_superseded = 0
+        facts_inserted = relation_inserted
+        facts_superseded = relation_superseded
         for triple in _frontmatter_to_triples(slug, fm):
             canon_pred = canonicalize(triple.predicate)
             existing = conn.execute(
                 "SELECT id FROM facts WHERE subject_entity_id = ? AND predicate = ? "
-                "AND object_literal = ? AND status = 'active' LIMIT 1",
+                "AND object_entity_id IS NULL AND object_literal = ? AND status = 'active' LIMIT 1",
                 (subject_id, canon_pred, triple.object_literal),
             ).fetchone()
             if existing:
@@ -608,12 +747,16 @@ def ingest_markdown_file(
                     (fact_id, ext_doc_id),
                 )
 
-        conn.commit()
+        if in_outer_tx:
+            conn.execute("RELEASE SAVEPOINT ingest_markdown_relations")
+        else:
+            conn.commit()
     except Exception:
-        try:
+        if in_outer_tx:
+            conn.execute("ROLLBACK TO SAVEPOINT ingest_markdown_relations")
+            conn.execute("RELEASE SAVEPOINT ingest_markdown_relations")
+        else:
             conn.rollback()
-        except Exception:
-            pass
         raise
     return IngestResult(
         facts_inserted=facts_inserted,
@@ -758,7 +901,11 @@ def reconcile_missing_source(
     # Find active facts sourced from those content_items
     placeholders = ",".join("?" * len(missing_content_ids))
     fact_rows = conn.execute(
-        f"SELECT id FROM facts WHERE status = 'active' AND created_from IN ({placeholders})",
+        f"""
+        SELECT f.id, ci.metadata_json FROM facts f
+        JOIN content_items ci ON ci.id = f.created_from
+        WHERE f.status = 'active' AND f.created_from IN ({placeholders})
+        """,
         missing_content_ids,
     ).fetchall()
 
@@ -768,14 +915,37 @@ def reconcile_missing_source(
     if dry_run:
         return len(fact_rows)
 
-    fact_ids = [r[0] for r in fact_rows]
-    for fid in fact_ids:
-        conn.execute(
-            "UPDATE facts SET status = 'expired', valid_to = ? WHERE id = ?",
-            (today, fid),
-        )
-    conn.commit()
-    return len(fact_ids)
+    in_outer_tx = conn.in_transaction
+    if in_outer_tx:
+        conn.execute("SAVEPOINT reconcile_missing_relations")
+    else:
+        conn.execute("BEGIN IMMEDIATE")
+    try:
+        for fid, metadata_json in fact_rows:
+            conn.execute(
+                "UPDATE facts SET status = 'expired', valid_to = ? WHERE id = ?", (today, fid)
+            )
+            metadata = json.loads(metadata_json or "{}")
+            if metadata.get("relation_schema") == RELATION_SCHEMA:
+                from .store import audit_append
+                audit_append(
+                    conn,
+                    event="memory_relation.expired",
+                    payload={"fact_id": fid, "source_path": metadata.get("path", "")},
+                    commit=False,
+                )
+        if in_outer_tx:
+            conn.execute("RELEASE SAVEPOINT reconcile_missing_relations")
+        else:
+            conn.commit()
+    except Exception:
+        if in_outer_tx:
+            conn.execute("ROLLBACK TO SAVEPOINT reconcile_missing_relations")
+            conn.execute("RELEASE SAVEPOINT reconcile_missing_relations")
+        else:
+            conn.rollback()
+        raise
+    return len(fact_rows)
 
 
 def recall_lessons(conn) -> list[dict]:

@@ -142,6 +142,22 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
   maintainer configuration already carried it; the generator, which is what every new project
   actually receives, did not.
 
+## [0.10.0] — 2026-09-18 — Source-backed memory relations
+
+### Added
+
+- Opt-in `memory_relations` Markdown declarations for explicit implementation, verification and
+  dependency relationships, represented in existing entity-object facts and stated provenance.
+- Read-only `--memory` query/bundle retrieval from the owning root's canonical database, with
+  bounded output, current-source validation and memory/source provenance.
+
+### Changed
+
+- Reconcile relation evidence per source, retaining independent sources, multiple targets and
+  history; preserve atomic validation failures and idempotent source re-ingestion.
+- Keep ordinary YAML retrieval and embedding lifecycle independent. No new relation table,
+  natural-language inference, similarity-based promotion or automatic historical backfill.
+
 ## [0.9.2] — 2026-09-18 — SRR applicability and dynamic-memory guidance
 
 ### Changed

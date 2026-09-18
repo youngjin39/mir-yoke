@@ -27,8 +27,9 @@ fall back to search. Do not silently reinterpret `mentions` or `imports` as `dep
 ## Dynamic relations belong to the repository's write path
 
 Relations need not be static. A repository's ingestion pipeline can create and update source-backed
-relationships as documents, decisions or code change. SRR itself remains read-only: this skill and
-the portable reader do not implement a database writer or automatic extractor.
+relationships as documents, decisions or code change. SRR retrieval itself remains read-only. For existing Mir memory, the separate authorized ingestion
+path can persist explicit `memory_relations` declarations; see [the memory reference](memory-relations.md).
+No automatic prose or similarity extractor is provided.
 
 Prefer an existing entity/fact/link/provenance schema before adding storage. A relation can itself
 be a fact with entity endpoints and its own evidence and validity. A bare fact-to-fact link may not

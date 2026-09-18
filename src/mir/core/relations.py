@@ -38,15 +38,20 @@ class Edge:
     source: str
     relation: str
     target: str
-    source_line: int
+    source_line: int | None
+    provenance: dict[str, Any] | None = None
 
     def as_dict(self) -> dict[str, Any]:
-        return {
+        result = {
             "source": self.source,
             "relation": self.relation,
             "target": self.target,
-            "source_line": self.source_line,
         }
+        if self.source_line is not None:
+            result["source_line"] = self.source_line
+        if self.provenance is not None:
+            result["provenance"] = self.provenance
+        return result
 
 
 _FORWARD = {
@@ -309,9 +314,7 @@ def _normalized_locator(value: str) -> str:
 
 def _has_control_characters(value: str) -> bool:
     return any(
-        ord(character) < 32
-        or 127 <= ord(character) <= 159
-        or character in {"\u2028", "\u2029"}
+        ord(character) < 32 or 127 <= ord(character) <= 159 or character in {"\u2028", "\u2029"}
         for character in value
     )
 
@@ -348,12 +351,15 @@ def _result(
     edges: list[Edge],
     notices: list[str],
     resolved: list[str],
+    *,
+    scope: str = "declared_spec_relations_only",
+    source_metadata: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     return {
         "anchor": anchor,
         "purpose": purpose,
-        "scope": "declared_spec_relations_only",
-        "source": {"graph": source, "sha256": digest},
+        "scope": scope,
+        "source": source_metadata or {"graph": source, "sha256": digest},
         "edges": [edge.as_dict() for edge in edges],
         "notices": notices,
         "truncated": any(notice.startswith("truncated:") for notice in notices),
@@ -382,6 +388,9 @@ def query_relations(
     _digest: str | None = None,
     _source: str | None = None,
     _protections: tuple[str, ...] | None = None,
+    _scope: str = "declared_spec_relations_only",
+    _source_metadata: dict[str, Any] | None = None,
+    _nodes: set[str] | None = None,
 ) -> dict[str, Any]:
     """Return explicitly declared, safety-checked graph edges for one purpose."""
     if not isinstance(purpose, str) or purpose not in _FORWARD:
@@ -395,7 +404,12 @@ def query_relations(
     else:
         loaded_graph, digest, source = _graph, _digest, _source
     nodes = list(
-        dict.fromkeys(item for edge in loaded_graph for item in (edge.source, edge.target))
+        dict.fromkeys(
+            [
+                *(item for edge in loaded_graph for item in (edge.source, edge.target)),
+                *(_nodes or ()),
+            ]
+        )
     )
     file_nodes = {edge.target for edge in loaded_graph if edge.relation in _FILE_ENDPOINT_RELATIONS}
     if anchor not in nodes:
@@ -469,6 +483,8 @@ def query_relations(
                             [*notices, "truncated: max-edges reached; frontier remains unexplored"],
                         ),
                         resolved,
+                        scope=_scope,
+                        source_metadata=_source_metadata,
                     )
                 result.append(edge)
                 seen_edges.add(key)
@@ -482,7 +498,17 @@ def query_relations(
         if level + 1 == depth and _has_eligible_edge(frontier, loaded_graph, purpose):
             notices.append("truncated: depth reached; frontier remains unexplored")
             break
-    return _result(anchor, purpose, digest, source, result, _notices(skipped, notices), resolved)
+    return _result(
+        anchor,
+        purpose,
+        digest,
+        source,
+        result,
+        _notices(skipped, notices),
+        resolved,
+        scope=_scope,
+        source_metadata=_source_metadata,
+    )
 
 
 def _source_line(source: str, line: int) -> str:
@@ -490,10 +516,33 @@ def _source_line(source: str, line: int) -> str:
 
 
 def _render_edge(edge: dict[str, Any], source: str) -> str:
-    return (
-        f"{edge['source']} {edge['relation']} {edge['target']} "
-        f"({_source_line(source, edge['source_line'])})"
-    )
+    rendered = f"{edge['source']} {edge['relation']} {edge['target']}"
+    if "source_line" in edge:
+        return f"{rendered} ({_source_line(source, edge['source_line'])})"
+    provenance = edge.get("provenance")
+    if isinstance(provenance, dict):
+        sources = provenance.get("sources", [])
+        evidence = sources if isinstance(sources, list) else [provenance]
+        rendered_evidence = ";".join(
+            "fact_id={fact_id},content_item_id={content_id},path={path},sha256={source_hash}".format(
+                fact_id=item.get("fact_id"),
+                content_id=item.get("content_item_id"),
+                path=json.dumps(item.get("source_path"), ensure_ascii=False),
+                source_hash=item.get("source_hash"),
+            )
+            for item in evidence
+            if isinstance(item, dict)
+        )
+        return f"{rendered} (database={provenance.get('database')}, evidence=[{rendered_evidence}])"
+    return rendered
+
+
+def _render_source(source: dict[str, Any]) -> str:
+    if "graph" in source:
+        return f"source={source['graph']} sha256={source['sha256']}"
+    if "memory_db" in source:
+        return f"source={source['memory_db']} mode={source.get('mode', 'read_only')}"
+    raise RelationError("result source metadata is invalid")
 
 
 def render_json(result: dict[str, Any], max_bytes: int) -> str:
@@ -515,10 +564,11 @@ def render_json(result: dict[str, Any], max_bytes: int) -> str:
 
 
 def render_human(result: dict[str, Any], max_bytes: int) -> str:
-    source = result["source"]["graph"]
+    source_metadata = result["source"]
+    source = source_metadata.get("graph", source_metadata.get("memory_db", "memory.db"))
     lines = [
         f"anchor={result['anchor']} purpose={result['purpose']} scope={result['scope']}",
-        f"source={source} sha256={result['source']['sha256']}",
+        _render_source(source_metadata),
     ]
     if result.get("resolved_anchors", []) != [result["anchor"]]:
         lines.append("resolved_anchors=" + ",".join(result["resolved_anchors"]))
@@ -565,6 +615,13 @@ def bundle_relations(
     depth: int = DEFAULT_DEPTH,
     max_edges: int = DEFAULT_MAX_EDGES,
     max_bytes: int = DEFAULT_MAX_BYTES,
+    _graph: list[Edge] | None = None,
+    _digest: str | None = None,
+    _source: str | None = None,
+    _protections: tuple[str, ...] | None = None,
+    _scope: str = "declared_spec_relations_only",
+    _source_metadata: dict[str, Any] | None = None,
+    _route: str = "graph",
 ) -> dict[str, Any]:
     """Combine eligible same-anchor facets from one graph read, or select ordinary search."""
     if (
@@ -588,13 +645,16 @@ def bundle_relations(
     if any(purpose not in _FORWARD for purpose in unique_purposes):
         return _search_bundle(unique_anchors, unique_purposes, "unknown purpose")
     base = _resolve_root(root)
-    protections = _profile_protections(base)
-    try:
-        loaded_graph, digest, source = _load_graph(base, graph, protections=protections)
-    except RelationError as exc:
-        if "unavailable" in str(exc):
-            return _search_bundle(unique_anchors, unique_purposes, "graph unavailable")
-        raise
+    protections = _profile_protections(base) if _protections is None else _protections
+    if _graph is None or _digest is None or _source is None:
+        try:
+            loaded_graph, digest, source = _load_graph(base, graph, protections=protections)
+        except RelationError as exc:
+            if "unavailable" in str(exc):
+                return _search_bundle(unique_anchors, unique_purposes, "graph unavailable")
+            raise
+    else:
+        loaded_graph, digest, source = _graph, _digest, _source
     anchor = unique_anchors[0]
     nodes = {item for edge in loaded_graph for item in (edge.source, edge.target)}
     resolved_anchor, resolution = anchor, None
@@ -621,12 +681,7 @@ def bundle_relations(
             )
         resolved_anchor = owner_ids[0]
         owner = owners[0]
-        resolution = {
-            "relation": owner.relation,
-            "source": owner.source,
-            "target": owner.target,
-            "source_line": owner.source_line,
-        }
+        resolution = owner.as_dict()
     elif anchor not in nodes:
         return _search_bundle(unique_anchors, unique_purposes, "unknown anchor")
     merged: list[dict[str, Any]] = []
@@ -645,6 +700,8 @@ def bundle_relations(
             _digest=digest,
             _source=source,
             _protections=protections,
+            _scope=_scope,
+            _source_metadata=_source_metadata,
         )
         available, contributed = len(item["edges"]), 0
         for edge in item["edges"]:
@@ -685,14 +742,14 @@ def bundle_relations(
     if omitted:
         notices.append("truncated: global max-edges reached; facet coverage incomplete")
     result = {
-        "route": "graph",
+        "route": _route,
         "anchor": anchor,
         "resolved_anchor": resolved_anchor,
         "resolution": resolution,
         "requested_purposes": unique_purposes,
         "facets": facets,
-        "scope": "declared_spec_relations_only",
-        "source": {"graph": source, "sha256": digest},
+        "scope": _scope,
+        "source": _source_metadata or {"graph": source, "sha256": digest},
         "edges": merged,
         "notices": notices,
         "truncated": any(notice.startswith("truncated:") for notice in notices),
@@ -729,20 +786,21 @@ def render_bundle_human(result: dict[str, Any], max_bytes: int) -> str:
         )
         if candidate.get("resolution"):
             resolution = candidate["resolution"]
-            lines.append(
-                "resolution=implemented_in "
-                f"{_source_line(candidate['source']['graph'], resolution['source_line'])}"
-            )
-        lines.append(
-            f"source={candidate['source']['graph']} sha256={candidate['source']['sha256']}"
-        )
+            if "source_line" in resolution:
+                graph = candidate["source"].get("graph", DEFAULT_GRAPH)
+                lines.append(
+                    f"resolution=implemented_in {_source_line(graph, resolution['source_line'])}"
+                )
+            else:
+                lines.append("resolution=" + _render_edge(resolution, "memory.db"))
+        lines.append(_render_source(candidate["source"]))
     edges, notices = list(candidate["edges"]), list(candidate["notices"])
     while True:
         facets = [
             f"facet={facet['purpose']} edges={facet['edge_count']} coverage={facet['coverage']}"
             for facet in candidate.get("facets", [])
         ]
-        source = candidate.get("source", {}).get("graph", DEFAULT_GRAPH)
+        source = candidate.get("source", {}).get("graph", "memory.db")
         output = (
             "\n".join(
                 [

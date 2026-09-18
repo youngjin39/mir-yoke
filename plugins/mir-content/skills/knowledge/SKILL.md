@@ -21,3 +21,6 @@ description: "Ingest and lint knowledge in a repository-owned or explicitly conf
 For a known anchor and maintained declared evidence path, `mir-core:selective-relations` may provide
 optional read-only retrieval. It does not replace the repository's knowledge system or require graph
 creation, indexing, or writes.
+
+For authorized Mir-memory ingestion of explicit typed relationships, consult the memory adapter
+reference in `mir-core:selective-relations`. Preserve source evidence and source-scoped updates.

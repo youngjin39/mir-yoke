@@ -27,11 +27,15 @@ When the repository has a compatible adapter and maintained declared relation so
 reader's four supported purposes, bounded commands, current-view requirement, and fallback behavior.
 
 Prefer an existing repository-native adapter when it supports the needed relationship.
-The portable `mir relations` YAML reader supports only `implementation`, `verification`, `impact`,
+The portable `mir relations` reader supports only `implementation`, `verification`, `impact`,
 and `dependencies`. Use a compatible repository-native adapter for relationship families or storage
 that this reader does not support. When evaluating a new question family or designing dynamic
 relation maintenance during ingestion, read
 [the applicability and memory reference](references/applicability-and-memory.md).
+
+For existing Mir memory, read [the memory adapter reference](references/memory-relations.md)
+when selecting `--memory` or handling an authorized explicit relation-ingestion task. Retrieval
+itself remains read-only.
 
 The portable reader is optional and works only in provider revisions that include it. If a compatible
 adapter or relation source is absent, continue with ordinary search; do not install or preflight a tool

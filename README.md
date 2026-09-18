@@ -39,7 +39,7 @@ immutable release:
 
 ```bash
 uv tool install --force --link-mode copy \
-  "git+https://github.com/youngjin39/mir-yoke.git@v0.9.2"
+  "git+https://github.com/youngjin39/mir-yoke.git@v0.10.0"
 mir --help
 ```
 
@@ -170,3 +170,11 @@ reference adaptation.
 ## License
 
 MIT — see [`LICENSE`](LICENSE).
+
+### Source-backed memory relations
+
+Version 0.10.0 supports explicit `memory_relations` declarations through the existing authorized
+`mir memory ingest-md` writer and bounded read-only `mir relations query|bundle --memory` retrieval.
+The adapter reuses entity-object facts and provenance; it does not infer edges from prose or vectors.
+See the [memory relation reference](plugins/mir-core/skills/selective-relations/references/memory-relations.md)
+for the opt-in source format, update lifecycle, supported predicates and read-only limits.
