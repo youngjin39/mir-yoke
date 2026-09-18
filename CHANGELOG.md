@@ -142,6 +142,21 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
   maintainer configuration already carried it; the generator, which is what every new project
   actually receives, did not.
 
+## [0.10.1] — 2026-09-18 — Stable selective retrieval and compact evidence
+
+### Fixed
+
+- Charge rejected source reads to the aggregate validation budget and report incomplete relation
+  views explicitly. Preserve memory scope and validation notices when falling back to search.
+- Detect database/WAL/journal changes around immutable snapshot reads and discard unstable results.
+- Document provider writer/reader routing when a consumer still has an older repository-local CLI.
+
+### Added
+
+- Optional bounded authored summary/reason fields alongside backward-compatible triple declarations.
+- Compact source evidence with real declaration locations and explicit authored/generated basis;
+  agents choose the needed original span instead of receiving complete source bodies.
+
 ## [0.10.0] — 2026-09-18 — Source-backed memory relations
 
 ### Added

@@ -11,9 +11,11 @@ known feature, requirement, module, or file: which modules, files, or tests the 
 connects, which declared consumers it may affect, or which components it depends on. Bundle only
 when two or more unresolved purposes concern the same anchor.
 
-SRR returns locators with provenance. It does not prove current source behavior, runtime calls, or
-the completeness of the relationship inventory. Read the selected current source, tests, or decision
-record before making those claims. A missing edge is not proof that no relationship exists.
+SRR returns bounded evidence with locators, provenance and short authored summaries/reasons when
+available. Start with that compact result. Open only the relevant source span when a behavioral
+claim, ambiguity, contradiction or edit requires it; do not preload every related document.
+The result does not prove runtime calls or inventory completeness. Missing edges do not prove
+absence, and a declared rationale is source evidence rather than an independently verified cause.
 
 Use ordinary targeted search and direct reading when the answer location is known, the task is
 symbol-level debugging or runtime investigation, the anchor is unknown, or the question is outside

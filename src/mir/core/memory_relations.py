@@ -5,9 +5,11 @@ from __future__ import annotations
 import hashlib
 import io
 import json
+import os
 import sqlite3
 import stat
 from collections import Counter
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -60,6 +62,21 @@ _INACTIVE_DOCUMENT_STATUSES = frozenset(
     }
 )
 _PURPOSES = frozenset({"implementation", "impact", "verification", "dependencies"})
+
+
+@dataclass(frozen=True)
+class _SourceValidation:
+    reason: str | None = None
+    source_path: str | None = None
+    source_hash: str | None = None
+    source_text: str | None = None
+    bytes_read: int = 0
+    budget_exhausted: bool = False
+    source_unstable: bool = False
+
+
+def _source_stamp(entry: os.stat_result) -> tuple[int, int, int, int, int]:
+    return (entry.st_dev, entry.st_ino, entry.st_size, entry.st_mtime_ns, entry.st_ctime_ns)
 
 
 def _metadata_gate(root: Path, metadata: object) -> str | None:
@@ -116,19 +133,19 @@ def _source_text(
     expected_hash: object,
     protections: tuple[str, ...],
     remaining_bytes: int,
-) -> tuple[str, str, str, int] | str:
+) -> _SourceValidation:
     """Return source path and ingester-compatible hash, or a safe skip reason."""
     metadata_issue = _metadata_gate(root, metadata)
     if metadata_issue:
-        return metadata_issue
+        return _SourceValidation(reason=metadata_issue)
     assert isinstance(metadata, dict)
     source_path = metadata.get("path")
     try:
         relative = _safe_relative_path(source_path, label="relation source")
     except RelationError:
-        return "unsafe relation source"
+        return _SourceValidation(reason="unsafe relation source")
     if _protected(relative.parts, protections):
-        return "protected relation source"
+        return _SourceValidation(reason="protected relation source")
     candidate = root.joinpath(*relative.parts)
     try:
         parent = candidate.parent.resolve(strict=True)
@@ -137,32 +154,88 @@ def _source_text(
         resolved = candidate.resolve(strict=True)
         resolved_relative = resolved.relative_to(root)
     except (FileNotFoundError, OSError, ValueError):
-        return "unavailable relation source"
+        return _SourceValidation(reason="unavailable relation source")
     if not stat.S_ISREG(mode) or _protected(resolved_relative.parts, protections):
-        return (
-            "protected relation source"
-            if _protected(resolved_relative.parts, protections)
-            else "unavailable relation source"
+        return _SourceValidation(
+            reason=(
+                "protected relation source"
+                if _protected(resolved_relative.parts, protections)
+                else "unavailable relation source"
+            )
         )
     try:
-        with resolved.open("rb") as handle:
-            raw = handle.read(min(_MAX_SOURCE_BYTES, remaining_bytes) + 1)
+        expected_stamp = _source_stamp(resolved.stat())
     except OSError:
-        return "unavailable relation source"
-    if len(raw) > min(_MAX_SOURCE_BYTES, remaining_bytes):
-        return (
-            "relation source exceeds 1 MiB limit"
-            if remaining_bytes >= _MAX_SOURCE_BYTES
-            else "relation source validation byte limit"
+        return _SourceValidation(reason="unavailable relation source")
+    source_size = expected_stamp[2]
+    if source_size > _MAX_SOURCE_BYTES:
+        return _SourceValidation(reason="relation source exceeds 1 MiB limit")
+    if source_size > remaining_bytes:
+        return _SourceValidation(
+            reason="relation source validation byte limit", budget_exhausted=True
+        )
+    handle: Any | None = None
+    try:
+        handle = resolved.open("rb")
+        try:
+            opened_stamp = _source_stamp(os.fstat(handle.fileno()))
+        except (AttributeError, OSError):
+            opened_stamp = None
+        if opened_stamp is not None and opened_stamp != expected_stamp:
+            return _SourceValidation(
+                reason="relation source changed while reading", source_unstable=True
+            )
+        try:
+            raw = handle.read(source_size)
+        finally:
+            descriptor_after = (
+                _source_stamp(os.fstat(handle.fileno())) if opened_stamp is not None else None
+            )
+    except OSError:
+        bytes_read = 0
+        if handle is not None:
+            try:
+                bytes_read = max(0, int(handle.tell()))
+            except (AttributeError, OSError, ValueError):
+                pass
+        return _SourceValidation(reason="unavailable relation source", bytes_read=bytes_read)
+    finally:
+        if handle is not None:
+            try:
+                handle.close()
+            except OSError:
+                pass
+    try:
+        path_after = _source_stamp(resolved.stat())
+    except OSError:
+        return _SourceValidation(
+            reason="relation source changed while reading",
+            bytes_read=len(raw),
+            source_unstable=True,
+        )
+    if (
+        len(raw) != source_size
+        or path_after != expected_stamp
+        or (descriptor_after is not None and descriptor_after != expected_stamp)
+    ):
+        return _SourceValidation(
+            reason="relation source changed while reading",
+            bytes_read=len(raw),
+            source_unstable=True,
         )
     try:
         text = io.TextIOWrapper(io.BytesIO(raw), encoding="utf-8-sig", newline=None).read()
     except UnicodeDecodeError:
-        return "relation source is not UTF-8"
+        return _SourceValidation(reason="relation source is not UTF-8", bytes_read=len(raw))
     digest = hashlib.sha256(text.encode("utf-8")).hexdigest()
     if not isinstance(expected_hash, str) or expected_hash != digest:
-        return "stale relation source"
-    return relative.as_posix(), digest, text, len(raw)
+        return _SourceValidation(reason="stale relation source", bytes_read=len(raw))
+    return _SourceValidation(
+        source_path=relative.as_posix(),
+        source_hash=digest,
+        source_text=text,
+        bytes_read=len(raw),
+    )
 
 
 def _provenance_is_current(
@@ -206,6 +279,16 @@ def _load_memory_edges(
     root: Path, protections: tuple[str, ...]
 ) -> tuple[list[Edge], list[str], set[str], bool]:
     db_path = _memory_db_path(root)
+    try:
+        with store.immutable_snapshot_guard(db_path):
+            return _load_memory_edges_from_snapshot(db_path, root, protections)
+    except (OSError, sqlite3.Error, RuntimeError, store.ReadOnlySnapshotUnavailable) as exc:
+        raise RelationError("memory database cannot be read safely") from exc
+
+
+def _load_memory_edges_from_snapshot(
+    db_path: Path, root: Path, protections: tuple[str, ...]
+) -> tuple[list[Edge], list[str], set[str], bool]:
     try:
         connection = store.connect_read_only(db_path, load_vec=False)
     except (OSError, sqlite3.Error, RuntimeError, store.ReadOnlySnapshotUnavailable) as exc:
@@ -253,8 +336,10 @@ def _load_memory_edges(
         skipped: Counter[str] = Counter()
         emitted: dict[tuple[str, str, str], Edge] = {}
         known_nodes: set[str] = set()
-        source_cache: dict[tuple[str, str], tuple[str, str, str, int] | str] = {}
+        source_cache: dict[tuple[str, str], _SourceValidation] = {}
         source_bytes = 0
+        incomplete = exceeded
+        proofs_omitted = 0
         for (
             fact_id,
             source,
@@ -292,43 +377,64 @@ def _load_memory_edges(
                 )
                 if cache_key:
                     source_cache[cache_key] = validated
-            if isinstance(validated, str):
-                skipped[validated] += 1
-                continue
-            source_path, source_hash, source_text, read_bytes = validated
             if not from_cache:
-                source_bytes += read_bytes
+                source_bytes += validated.bytes_read
+            if validated.reason is not None:
+                skipped[validated.reason] += 1
+                incomplete = incomplete or validated.budget_exhausted or validated.source_unstable
+                continue
+            assert (
+                validated.source_path is not None
+                and validated.source_hash is not None
+                and validated.source_text is not None
+            )
             try:
-                declaration = parse_relation_document(source_text)
+                declaration = parse_relation_document(validated.source_text)
             except ValueError:
                 skipped["invalid relation declaration"] += 1
                 continue
             if declaration.document_status != metadata.get("relation_document_status"):
                 skipped["relation document status changed"] += 1
                 continue
-            declaration_quotes = {
-                item.quote
+            declarations = [
+                item
                 for item in declaration.declarations
                 if item.subject == source_value
                 and item.predicate == predicate
                 and item.object == target_value
-            }
-            if not declaration_quotes:
+            ]
+            if not declarations:
                 skipped["undeclared relation fact"] += 1
                 continue
-            if not any(
-                _provenance_is_current(connection.conn, fact_id, content_id, quote)
-                for quote in declaration_quotes
-            ):
+            declared = next(
+                (
+                    item
+                    for item in declarations
+                    if _provenance_is_current(connection.conn, fact_id, content_id, item.quote)
+                ),
+                None,
+            )
+            if declared is None:
                 skipped["missing relation provenance"] += 1
                 continue
+            authored_summary = getattr(declared, "summary", None)
+            authored_reason = getattr(declared, "reason", None)
+            summary = authored_summary or f"Declared {predicate.replace('_', ' ')} relationship."
+            reason = authored_reason or "No authored rationale was supplied."
             key = (source_value, predicate, target_value)
-            provenance = {
+            proof = {
                 "database": _MEMORY_RELATIONS_DB,
                 "fact_id": int(fact_id),
                 "content_item_id": int(content_id),
-                "source_path": source_path,
-                "source_hash": source_hash,
+                "source_path": validated.source_path,
+                "source_hash": validated.source_hash,
+                "source_line": getattr(declared, "source_line", None),
+                "summary": summary,
+                "summary_basis": (
+                    "authored" if authored_summary else "deterministic predicate description"
+                ),
+                "reason": reason,
+                "reason_basis": "authored" if authored_reason else "no authored rationale",
             }
             if key in emitted:
                 existing = emitted[key]
@@ -336,20 +442,42 @@ def _load_memory_edges(
                     existing.provenance.setdefault("sources", []) if existing.provenance else []
                 )
                 if len(sources) < _MAX_PROVENANCE_PER_EDGE:
-                    sources.append(provenance)
+                    sources.append(proof)
                 else:
                     existing.provenance["sources_omitted"] = (
                         int(existing.provenance.get("sources_omitted", 0)) + 1
                     )
+                    proofs_omitted += 1
             else:
-                provenance["sources"] = [dict(provenance)]
-                emitted[key] = Edge(source_value, predicate, target_value, None, provenance)
+                provenance = {
+                    key: proof[key]
+                    for key in (
+                        "database",
+                        "fact_id",
+                        "content_item_id",
+                        "source_path",
+                        "source_hash",
+                    )
+                }
+                provenance["sources"] = [proof]
+                emitted[key] = Edge(
+                    source_value,
+                    predicate,
+                    target_value,
+                    None,
+                    provenance,
+                )
         notices = [
             *(f"skipped {reason}: {count} edge(s)" for reason, count in sorted(skipped.items()))
         ]
         if exceeded:
             notices.append("truncated: memory fact row limit reached; additional facts omitted")
-        return list(emitted.values()), notices, known_nodes, exceeded
+        if proofs_omitted:
+            notices.append(
+                "truncated: per-edge source proof limit reached; "
+                f"{proofs_omitted} proof(s) omitted"
+            )
+        return list(emitted.values()), notices, known_nodes, incomplete
     except sqlite3.Error as exc:
         raise RelationError("memory database schema is unavailable") from exc
     finally:
@@ -475,9 +603,9 @@ def bundle_memory_relations(
         _source_metadata=_memory_source(),
         _route="memory",
     )
-    if result["route"] != "search":
-        result["notices"] = [*notices, *result["notices"]]
-        result["truncated"] = result["truncated"] or any(
-            notice.startswith("truncated:") for notice in notices
-        )
+    result["scope"] = "declared_memory_relations_only"
+    result["notices"] = list(dict.fromkeys([*notices, *result["notices"]]))
+    result["truncated"] = result["truncated"] or any(
+        notice.startswith("truncated:") for notice in notices
+    )
     return result

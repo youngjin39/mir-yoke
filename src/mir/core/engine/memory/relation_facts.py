@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -16,6 +17,7 @@ RELATION_SCHEMA = "mir-memory-relations/v1"
 RELATION_PREDICATES = frozenset({"realized_by", "implemented_in", "verified_by", "depends_on"})
 MAX_RELATIONS_PER_DOCUMENT = 64
 MAX_RELATION_VALUE_CHARS = 1024
+MAX_RELATION_NOTE_CHARS = 240
 MAX_PROVENANCE_QUOTE_CHARS = 4096
 MAX_RELATION_SOURCE_CHARS = 1024 * 1024
 _INACTIVE_VERIFICATION_STATUSES = frozenset({"candidate", "draft", "proposed"})
@@ -46,6 +48,9 @@ class RelationDeclaration:
     predicate: str
     object: str
     quote: str
+    summary: str | None = None
+    reason: str | None = None
+    source_line: int | None = None
 
 
 @dataclass(frozen=True)
@@ -84,15 +89,78 @@ def _node_string(node: yaml.Node, *, label: str) -> str:
     return value
 
 
+def _note_string(node: yaml.Node, *, label: str) -> str:
+    if not isinstance(node, yaml.ScalarNode) or node.tag != "tag:yaml.org,2002:str":
+        raise RelationDeclarationError(f"invalid memory_relations: {label} must be a string")
+    value = node.value
+    if (
+        not value
+        or "\n" in value
+        or "\r" in value
+        or len(value) > MAX_RELATION_NOTE_CHARS
+        or relation_core._has_control_characters(value)
+    ):
+        raise RelationDeclarationError(f"invalid memory_relations: {label} is unsafe or too long")
+    return value
+
+
+def _frontmatter_declares_relations(
+    frontmatter: str, *, max_compose_chars: int | None = None
+) -> bool:
+    """Recognize the reserved top-level key without trusting its spelling."""
+    if max_compose_chars is not None and len(frontmatter) > max_compose_chars:
+        # Relation-bearing sources have a physical 1 MiB admission cap. Do
+        # not risk treating an oversized frontmatter declaration as ordinary
+        # metadata just because safe node inspection is bounded.
+        return True
+    try:
+        root = yaml.compose(frontmatter)
+    except (RecursionError, yaml.YAMLError):
+        root = None
+    if root is None:
+        # Keep ordinary malformed legacy frontmatter on its existing path. A
+        # syntactically formed top-level key still cannot let relation data
+        # become an ordinary metadata literal, so inspect candidate keys with
+        # YAML rather than comparing source substrings.
+        for match in re.finditer(r"(?m)^(?P<key>[^\s:#][^:]*?)\s*:", frontmatter):
+            if is_relation_declaration_key(match.group("key")):
+                return True
+        return False
+    if not isinstance(root, yaml.MappingNode):
+        return False
+    return any(
+        isinstance(key, yaml.ScalarNode) and key.value == "memory_relations"
+        for key, _value in root.value
+    )
+
+
+def is_relation_declaration_key(key: str) -> bool:
+    """Whether a frontmatter key spelling resolves to the reserved key."""
+    try:
+        root = yaml.compose(f"{key}: null\n")
+    except (RecursionError, yaml.YAMLError):
+        return False
+    if not isinstance(root, yaml.MappingNode) or len(root.value) != 1:
+        return False
+    key_node, _value_node = root.value[0]
+    return isinstance(key_node, yaml.ScalarNode) and key_node.value == "memory_relations"
+
+
+def has_relation_declaration(raw: str, *, max_compose_chars: int | None = None) -> bool:
+    """Whether frontmatter declares the reserved ``memory_relations`` key."""
+    frontmatter = _frontmatter(raw)
+    return frontmatter is not None and _frontmatter_declares_relations(
+        frontmatter, max_compose_chars=max_compose_chars
+    )
+
+
 def parse_relation_document(raw: str) -> ParsedRelationDocument:
     """Parse only explicit ``memory_relations`` declarations from frontmatter."""
     frontmatter = _frontmatter(raw)
     if frontmatter is None:
         return ParsedRelationDocument((), "", False)
-    if not any(
-        line.split(":", 1)[0].strip() == "memory_relations"
-        for line in frontmatter.splitlines()
-        if ":" in line
+    if not _frontmatter_declares_relations(
+        frontmatter, max_compose_chars=MAX_RELATION_SOURCE_CHARS
     ):
         status = ""
         for line in frontmatter.splitlines():
@@ -136,13 +204,53 @@ def parse_relation_document(raw: str) -> ParsedRelationDocument:
     declarations: list[RelationDeclaration] = []
     seen: set[tuple[str, str, str]] = set()
     for edge in declaration_node.value:
-        if not isinstance(edge, yaml.SequenceNode) or len(edge.value) != 3:
+        summary: str | None = None
+        reason: str | None = None
+        if isinstance(edge, yaml.SequenceNode):
+            if len(edge.value) != 3:
+                raise RelationDeclarationError(
+                    "invalid memory_relations: each item must be a three-string list"
+                )
+            subject = _node_string(edge.value[0], label="subject")
+            predicate = _node_string(edge.value[1], label="predicate")
+            object_value = _node_string(edge.value[2], label="object")
+        elif isinstance(edge, yaml.MappingNode):
+            fields: dict[str, yaml.Node] = {}
+            for key_node, value_node in edge.value:
+                if (
+                    not isinstance(key_node, yaml.ScalarNode)
+                    or key_node.tag != "tag:yaml.org,2002:str"
+                ):
+                    raise RelationDeclarationError(
+                        "invalid memory_relations: relation mapping key must be a string"
+                    )
+                key = key_node.value
+                if key not in {"subject", "predicate", "object", "summary", "reason"}:
+                    raise RelationDeclarationError(
+                        f"invalid memory_relations: unknown relation mapping field {key!r}"
+                    )
+                if key in fields:
+                    raise RelationDeclarationError(
+                        f"invalid memory_relations: duplicate relation mapping field {key!r}"
+                    )
+                fields[key] = value_node
+            missing = {"subject", "predicate", "object"} - fields.keys()
+            if missing:
+                raise RelationDeclarationError(
+                    "invalid memory_relations: relation mapping requires subject, predicate, "
+                    "and object"
+                )
+            subject = _node_string(fields["subject"], label="subject")
+            predicate = _node_string(fields["predicate"], label="predicate")
+            object_value = _node_string(fields["object"], label="object")
+            if "summary" in fields:
+                summary = _note_string(fields["summary"], label="summary")
+            if "reason" in fields:
+                reason = _note_string(fields["reason"], label="reason")
+        else:
             raise RelationDeclarationError(
-                "invalid memory_relations: each item must be a three-string list"
+                "invalid memory_relations: each item must be a three-string list or mapping"
             )
-        subject = _node_string(edge.value[0], label="subject")
-        predicate = _node_string(edge.value[1], label="predicate")
-        object_value = _node_string(edge.value[2], label="object")
         if predicate not in RELATION_PREDICATES:
             raise RelationDeclarationError(
                 f"invalid memory_relations: unsupported predicate {predicate!r}"
@@ -161,7 +269,17 @@ def parse_relation_document(raw: str) -> ParsedRelationDocument:
         quote = "\n".join(lines[edge.start_mark.line : edge.end_mark.line + 1])
         if not quote or len(quote) > MAX_PROVENANCE_QUOTE_CHARS:
             raise RelationDeclarationError("invalid memory_relations: supporting quote is too long")
-        declarations.append(RelationDeclaration(subject, predicate, object_value, quote))
+        declarations.append(
+            RelationDeclaration(
+                subject,
+                predicate,
+                object_value,
+                quote,
+                summary=summary,
+                reason=reason,
+                source_line=edge.start_mark.line + 2,
+            )
+        )
     return ParsedRelationDocument(tuple(declarations), document_status, True)
 
 

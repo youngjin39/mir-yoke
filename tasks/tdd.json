@@ -2,6 +2,78 @@
   "version": 1,
   "changes": [
     {
+      "id": "srr-stability-compact-evidence-2026-09-18",
+      "record_status": "complete",
+      "scope": "Repair selective memory retrieval completeness, source-byte accounting, immutable read races and fallback diagnostics; return bounded source-owned summaries/reasons/locations with backward-compatible declarations.",
+      "targets": [
+        "src/mir/core/engine/memory/relation_facts.py",
+        "src/mir/core/engine/memory/store.py",
+        "src/mir/core/memory_relations.py",
+        "src/mir/core/relations.py"
+      ],
+      "design_ref": "plugins/mir-core/skills/selective-relations/references/memory-relations.md",
+      "bluebrick": "Selective memory retrieval / Compact evidence / Stable read interval",
+      "categories": {
+        "unit": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_memory_relation_evidence.py tests/test_srr_snapshot_guard.py tests/test_srr_compact_evidence.py tests/test_memory_relation_ingest.py tests/test_memory_relations.py tests/test_memory_relation_workflow.py",
+          "notes": "Independent final review Sound with77 focused passes per runtime after repaired reserved-key admission, source instability, note ownership and snapshot gaps. Parent Harness193 checks passed; Yoke prebind1132 passed with only ADR-80 lock binding deferred. QuietLeaf26 consumer guards/legacy regressions passed with isolated017 DB. Final binding release checks are recorded separately."
+        },
+        "integration": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_memory_relation_evidence.py tests/test_srr_snapshot_guard.py tests/test_srr_compact_evidence.py tests/test_memory_relation_ingest.py tests/test_memory_relations.py tests/test_memory_relation_workflow.py",
+          "notes": "Independent final review Sound with77 focused passes per runtime after repaired reserved-key admission, source instability, note ownership and snapshot gaps. Parent Harness193 checks passed; Yoke prebind1132 passed with only ADR-80 lock binding deferred. QuietLeaf26 consumer guards/legacy regressions passed with isolated017 DB. Final binding release checks are recorded separately."
+        },
+        "edge": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_memory_relation_evidence.py tests/test_srr_snapshot_guard.py tests/test_srr_compact_evidence.py tests/test_memory_relation_ingest.py tests/test_memory_relations.py tests/test_memory_relation_workflow.py",
+          "notes": "Independent final review Sound with77 focused passes per runtime after repaired reserved-key admission, source instability, note ownership and snapshot gaps. Parent Harness193 checks passed; Yoke prebind1132 passed with only ADR-80 lock binding deferred. QuietLeaf26 consumer guards/legacy regressions passed with isolated017 DB. Final binding release checks are recorded separately."
+        },
+        "architecture": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_memory_relation_evidence.py tests/test_srr_snapshot_guard.py tests/test_srr_compact_evidence.py tests/test_memory_relation_ingest.py tests/test_memory_relations.py tests/test_memory_relation_workflow.py",
+          "notes": "Independent final review Sound with77 focused passes per runtime after repaired reserved-key admission, source instability, note ownership and snapshot gaps. Parent Harness193 checks passed; Yoke prebind1132 passed with only ADR-80 lock binding deferred. QuietLeaf26 consumer guards/legacy regressions passed with isolated017 DB. Final binding release checks are recorded separately."
+        },
+        "security": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_memory_relation_evidence.py tests/test_srr_snapshot_guard.py tests/test_srr_compact_evidence.py tests/test_memory_relation_ingest.py tests/test_memory_relations.py tests/test_memory_relation_workflow.py",
+          "notes": "Independent final review Sound with77 focused passes per runtime after repaired reserved-key admission, source instability, note ownership and snapshot gaps. Parent Harness193 checks passed; Yoke prebind1132 passed with only ADR-80 lock binding deferred. QuietLeaf26 consumer guards/legacy regressions passed with isolated017 DB. Final binding release checks are recorded separately."
+        },
+        "compatibility": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_memory_relation_evidence.py tests/test_srr_snapshot_guard.py tests/test_srr_compact_evidence.py tests/test_memory_relation_ingest.py tests/test_memory_relations.py tests/test_memory_relation_workflow.py",
+          "notes": "Independent final review Sound with77 focused passes per runtime after repaired reserved-key admission, source instability, note ownership and snapshot gaps. Parent Harness193 checks passed; Yoke prebind1132 passed with only ADR-80 lock binding deferred. QuietLeaf26 consumer guards/legacy regressions passed with isolated017 DB. Final binding release checks are recorded separately."
+        },
+        "transaction_locking": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_memory_relation_evidence.py tests/test_srr_snapshot_guard.py tests/test_srr_compact_evidence.py tests/test_memory_relation_ingest.py tests/test_memory_relations.py tests/test_memory_relation_workflow.py",
+          "notes": "Independent final review Sound with77 focused passes per runtime after repaired reserved-key admission, source instability, note ownership and snapshot gaps. Parent Harness193 checks passed; Yoke prebind1132 passed with only ADR-80 lock binding deferred. QuietLeaf26 consumer guards/legacy regressions passed with isolated017 DB. Final binding release checks are recorded separately."
+        },
+        "e2e": {
+          "status": "pass",
+          "command": "Installed 0.10.1 wheel CLI probe outside checkout",
+          "notes": "Authored compact evidence, real line, default output bounds, immutable file snapshots and stale/re-ingested note lifecycle passed. Six installed runtime file hashes match final source."
+        },
+        "load": {
+          "status": "pass",
+          "command": "Installed small-versus-large source compact-output probe",
+          "notes": "268-byte and620237-byte source documents both return901 JSON bytes and496 human bytes. No source body emitted. Source IO budget and eight-proof truncation are separately tested. No tokenizer/session token saving claim."
+        },
+        "browser": {
+          "status": "not_applicable",
+          "reason": "No GUI, hosted service or long-running process implementation changed; bounded filesystem/SQLite concurrency is tested directly."
+        },
+        "availability": {
+          "status": "not_applicable",
+          "reason": "No GUI, hosted service or long-running process implementation changed; bounded filesystem/SQLite concurrency is tested directly."
+        },
+        "soak": {
+          "status": "not_applicable",
+          "reason": "No GUI, hosted service or long-running process implementation changed; bounded filesystem/SQLite concurrency is tested directly."
+        }
+      }
+    },
+    {
       "id": "selective-relations-memory-implementation-2026-09-18",
       "record_status": "complete",
       "scope": "Implement explicit source-backed relation ingestion and immutable memory SRR using existing facts/entities/provenance; preserve YAML defaults and embedding independence.",

@@ -63,6 +63,7 @@ hint to use ordinary search; it does not perform that search. Unknown anchors, u
 types, ambiguous ownership, multi-anchor joins, graph-wide discovery, and source-level questions
 also require ordinary search and direct evidence.
 
-After retrieval, inspect the minimum current source, test, or decision evidence needed for the claim.
+After retrieval, use the compact result to select the minimum current source span needed for a
+behavioral claim or edit. Do not read every connected file merely because it was returned.
 Distinguish the declared relation from observed behavior, and stop when the stated question is
 answered.

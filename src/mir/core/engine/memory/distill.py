@@ -36,6 +36,8 @@ from .relation_facts import (
     RELATION_SCHEMA,
     RelationDeclarationError,
     has_owned_active_relation_facts,
+    has_relation_declaration,
+    is_relation_declaration_key,
     parse_relation_document,
     reconcile_relation_facts,
     relation_metadata,
@@ -293,7 +295,7 @@ def _frontmatter_to_triples(slug: str, fm: dict[str, object]) -> list[Triple]:
     """
     triples: list[Triple] = []
     for key, value in fm.items():
-        if key == "memory_relations":
+        if is_relation_declaration_key(key):
             continue
         if isinstance(value, list):
             for item in value:
@@ -507,12 +509,14 @@ def ingest_markdown_file(
     # ``utf-8-sig`` strips the optional BOM; the regex anchor ``\A---`` would
     # otherwise miss BOM-prefixed files and silently return no_op (R2.5).
     raw = path.read_text(encoding="utf-8-sig")
-    frontmatter_match = _FRONTMATTER_RE.match(raw)
-    has_relation_key = bool(
-        frontmatter_match
-        and re.search(r"(?m)^\s*memory_relations\s*:", frontmatter_match.group(1))
+    source_size = path.stat().st_size
+    has_relation_key = has_relation_declaration(
+        raw,
+        max_compose_chars=(
+            MAX_RELATION_SOURCE_CHARS if source_size > MAX_RELATION_SOURCE_CHARS else None
+        ),
     )
-    if has_relation_key and path.stat().st_size > MAX_RELATION_SOURCE_CHARS:
+    if has_relation_key and source_size > MAX_RELATION_SOURCE_CHARS:
         raise RelationDeclarationError("invalid memory_relations: source exceeds 1 MiB")
     file_hash = hashlib.sha256(raw.encode("utf-8")).hexdigest()
     fm = _parse_frontmatter(raw)
@@ -612,7 +616,15 @@ def ingest_markdown_file(
         conn.execute("BEGIN IMMEDIATE")
     try:
         locked_raw = path.read_text(encoding="utf-8-sig")
-        if has_relation_key and path.stat().st_size > MAX_RELATION_SOURCE_CHARS:
+        locked_source_size = path.stat().st_size
+        if has_relation_declaration(
+            locked_raw,
+            max_compose_chars=(
+                MAX_RELATION_SOURCE_CHARS
+                if locked_source_size > MAX_RELATION_SOURCE_CHARS
+                else None
+            ),
+        ) and locked_source_size > MAX_RELATION_SOURCE_CHARS:
             raise RelationDeclarationError("invalid memory_relations: source exceeds 1 MiB")
         if hashlib.sha256(locked_raw.encode("utf-8")).hexdigest() != file_hash:
             raise RelationDeclarationError("source changed during ingestion; retry")

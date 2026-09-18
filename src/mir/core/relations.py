@@ -517,18 +517,25 @@ def _source_line(source: str, line: int) -> str:
 
 def _render_edge(edge: dict[str, Any], source: str) -> str:
     rendered = f"{edge['source']} {edge['relation']} {edge['target']}"
-    if "source_line" in edge:
-        return f"{rendered} ({_source_line(source, edge['source_line'])})"
     provenance = edge.get("provenance")
+    if "source_line" in edge and not isinstance(provenance, dict):
+        return f"{rendered} ({_source_line(source, edge['source_line'])})"
     if isinstance(provenance, dict):
         sources = provenance.get("sources", [])
         evidence = sources if isinstance(sources, list) else [provenance]
         rendered_evidence = ";".join(
-            "fact_id={fact_id},content_item_id={content_id},path={path},sha256={source_hash}".format(
+            "path={path}:{source_line},fact_id={fact_id},content_item_id={content_id},"
+            "sha256={source_hash},summary={summary},summary_basis={summary_basis},"
+            "reason={reason},reason_basis={reason_basis}".format(
                 fact_id=item.get("fact_id"),
                 content_id=item.get("content_item_id"),
                 path=json.dumps(item.get("source_path"), ensure_ascii=False),
+                source_line=item.get("source_line"),
                 source_hash=item.get("source_hash"),
+                summary=json.dumps(item.get("summary"), ensure_ascii=False),
+                summary_basis=item.get("summary_basis"),
+                reason=json.dumps(item.get("reason"), ensure_ascii=False),
+                reason_basis=item.get("reason_basis"),
             )
             for item in evidence
             if isinstance(item, dict)
@@ -777,6 +784,7 @@ def render_bundle_human(result: dict[str, Any], max_bytes: int) -> str:
     lines = [f"route={candidate['route']}"]
     if candidate["route"] == "search":
         lines.append(f"reason={candidate['reason']}")
+        lines.append(f"scope={candidate['scope']}")
     else:
         lines.extend(
             [

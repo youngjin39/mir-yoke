@@ -24,6 +24,7 @@ import logging
 import re
 import sqlite3
 from collections.abc import Iterable, Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from importlib.resources import files
@@ -106,18 +107,88 @@ class ReadOnlySnapshotUnavailable(RuntimeError):
     """Immutable reads cannot safely observe a non-empty WAL."""
 
 
+@dataclass(frozen=True)
+class _SnapshotFileState:
+    """Filesystem metadata used for an optimistic immutable-read interval."""
+
+    device: int
+    inode: int
+    size: int
+    mtime_ns: int
+    ctime_ns: int
+
+
+def _snapshot_file_state(path: Path) -> _SnapshotFileState | None:
+    try:
+        stat = path.stat()
+    except FileNotFoundError:
+        return None
+    return _SnapshotFileState(
+        device=stat.st_dev,
+        inode=stat.st_ino,
+        size=stat.st_size,
+        mtime_ns=stat.st_mtime_ns,
+        ctime_ns=stat.st_ctime_ns,
+    )
+
+
+def _immutable_snapshot_state(db_path: Path) -> dict[str, _SnapshotFileState | None]:
+    return {
+        "database": _snapshot_file_state(db_path),
+        "wal": _snapshot_file_state(Path(f"{db_path}-wal")),
+        "journal": _snapshot_file_state(Path(f"{db_path}-journal")),
+    }
+
+
+def _assert_immutable_snapshot_state(
+    db_path: Path,
+    expected: dict[str, _SnapshotFileState | None],
+) -> None:
+    current = _immutable_snapshot_state(db_path)
+    if current["wal"] is not None and current["wal"].size > 0:
+        raise ReadOnlySnapshotUnavailable(
+            "immutable read refused because a non-empty SQLite WAL is present"
+        )
+    if current["journal"] is not None and current["journal"].size > 0:
+        raise ReadOnlySnapshotUnavailable(
+            "immutable read refused because a non-empty SQLite rollback journal is present"
+        )
+    if current != expected:
+        raise ReadOnlySnapshotUnavailable(
+            "immutable read refused because SQLite database or journal files changed "
+            "during the snapshot interval"
+        )
+
+
+@contextmanager
+def immutable_snapshot_guard(db_path: Path) -> Iterator[None]:
+    """Reject immutable reads unless DB, WAL, and rollback journal stay stable.
+
+    This is optimistic filesystem validation for normal concurrent changes. It
+    neither locks SQLite nor protects against adversarial metadata changes.
+    """
+    resolved_path = Path(db_path).resolve()
+    before = _immutable_snapshot_state(resolved_path)
+    _assert_immutable_snapshot_state(resolved_path, before)
+    try:
+        yield
+    finally:
+        _assert_immutable_snapshot_state(resolved_path, before)
+
+
 def connect_read_only(db_path: Path, *, load_vec: bool = False) -> Connection:
     """Open a query-only immutable connection without creating sidecars."""
     db_path = Path(db_path).resolve()
+    raw: sqlite3.Connection | None = None
     try:
-        if Path(f"{db_path}-wal").stat().st_size > 0:
-            raise ReadOnlySnapshotUnavailable(
-                "immutable read refused because a non-empty SQLite WAL is present"
-            )
-    except FileNotFoundError:
-        pass
-    raw = sqlite3.connect(f"{db_path.as_uri()}?mode=ro&immutable=1", uri=True)
-    raw.execute("PRAGMA query_only = ON")
+        with immutable_snapshot_guard(db_path):
+            raw = sqlite3.connect(f"{db_path.as_uri()}?mode=ro&immutable=1", uri=True)
+            raw.execute("PRAGMA query_only = ON")
+    except Exception:
+        if raw is not None:
+            raw.close()
+        raise
+    assert raw is not None
     if load_vec:
         ok, reason = _load_sqlite_vec(raw)
         return Connection(raw, ok, reason)
