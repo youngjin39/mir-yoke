@@ -82,7 +82,7 @@ Discard an uncommitted Project Agent Kit adaptation in the target or restore the
 commit. For an explicitly invoked CLI transaction, use that command's recorded rollback/recovery
 contract. Installing the CLI does not itself mutate a target.
 
-Current version: `0.10.1`. See `CHANGELOG.md` for release details.
+Current version: `0.10.2`. See `CHANGELOG.md` for release details.
 
 Version 0.10.0 adds opt-in `memory_relations` ingestion and read-only `mir relations query|bundle --memory`
 query/bundle selection using the existing memory schema. No automatic corpus backfill, database
@@ -96,3 +96,9 @@ ingestion and retrieval: a plugin install alone does not upgrade a repository-lo
 Ingestion into an existing compatible schema does not apply migrations. No corpus backfill or
 re-embedding is required. A concurrent database change now discards the read and requires a stable
 retry or existing owner-controlled snapshot operation.
+
+Version 0.10.2 narrows memory SRR at the SQL boundary. Existing schema, ingestion, embeddings, source
+validation and compact evidence format remain unchanged. Candidate/source limits now apply to the
+selected neighborhood; depth boundaries may report unvalidated continuation candidates without
+opening their source bodies. No migration, re-ingestion or permanent cache is required solely for
+this reader update. Use the same existing memory command when an agent elects to read a body.

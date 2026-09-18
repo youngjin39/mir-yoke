@@ -9,6 +9,7 @@ import os
 import sqlite3
 import stat
 from collections import Counter
+from copy import deepcopy
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -20,19 +21,25 @@ from mir.core.engine.memory.relation_facts import (
     parse_relation_document,
 )
 from mir.core.relations import (
+    _FILE_ENDPOINT_RELATIONS,
+    _FORWARD,
+    _REVERSE,
     DEFAULT_DEPTH,
     DEFAULT_MAX_BYTES,
     DEFAULT_MAX_EDGES,
+    MAX_EDGES,
     Edge,
     RelationError,
     _anchor_spelling_safe,
+    _endpoint_path,
     _has_control_characters,
+    _normalized_locator,
     _profile_protections,
     _protected,
     _resolve_root,
     _safe_relative_path,
+    _validate_endpoint,
     _validate_limits,
-    bundle_relations,
     query_relations,
 )
 
@@ -73,6 +80,18 @@ class _SourceValidation:
     bytes_read: int = 0
     budget_exhausted: bool = False
     source_unstable: bool = False
+
+
+@dataclass
+class _SelectionState:
+    """Request-scoped validation and selected-fact accounting."""
+
+    source_cache: dict[tuple[str, str], _SourceValidation]
+    fact_cache: dict[int, tuple[Edge | None, str | None]]
+    selected_fact_ids: set[int]
+    source_bytes: int = 0
+    incomplete: bool = False
+    proofs_omitted: int = 0
 
 
 def _source_stamp(entry: os.stat_result) -> tuple[int, int, int, int, int]:
@@ -275,213 +294,519 @@ def _inactive_endpoint_sql(entity_id: str) -> str:
     """
 
 
-def _load_memory_edges(
-    root: Path, protections: tuple[str, ...]
-) -> tuple[list[Edge], list[str], set[str], bool]:
-    db_path = _memory_db_path(root)
-    try:
-        with store.immutable_snapshot_guard(db_path):
-            return _load_memory_edges_from_snapshot(db_path, root, protections)
-    except (OSError, sqlite3.Error, RuntimeError, store.ReadOnlySnapshotUnavailable) as exc:
-        raise RelationError("memory database cannot be read safely") from exc
+_MEMORY_ROW_COLUMNS = """
+    f.id, subject.slug, f.predicate, object.slug, ci.id, ci.text_hash, ci.metadata_json
+"""
 
 
-def _load_memory_edges_from_snapshot(
-    db_path: Path, root: Path, protections: tuple[str, ...]
-) -> tuple[list[Edge], list[str], set[str], bool]:
+def _relation_rows(
+    conn: sqlite3.Connection,
+    root: Path,
+    frontier: set[str],
+    purpose: str,
+    *,
+    fact_ids: set[int] | None = None,
+    excluded_fact_ids: set[int] | None = None,
+    limit: int,
+) -> list[tuple[Any, ...]]:
+    """Read one purpose-compatible SQL frontier in stable fact order."""
+    forward = tuple(sorted(_FORWARD[purpose] & RELATION_PREDICATES))
+    reverse = tuple(sorted(_REVERSE[purpose] & RELATION_PREDICATES))
+    if not frontier or (not forward and not reverse):
+        return []
+    frontier_values = tuple(sorted(frontier))
+    frontier_marks = ", ".join("?" for _ in frontier_values)
+    directions: list[str] = []
+    parameters: list[Any] = []
+    if forward:
+        predicate_marks = ", ".join("?" for _ in forward)
+        directions.append(
+            f"(subject.slug IN ({frontier_marks}) AND f.predicate IN ({predicate_marks}))"
+        )
+        parameters.extend(frontier_values)
+        parameters.extend(forward)
+    if reverse:
+        predicate_marks = ", ".join("?" for _ in reverse)
+        directions.append(
+            f"(object.slug IN ({frontier_marks}) AND f.predicate IN ({predicate_marks}))"
+        )
+        parameters.extend(frontier_values)
+        parameters.extend(reverse)
+    id_clause = ""
+    if fact_ids:
+        id_marks = ", ".join("?" for _ in fact_ids)
+        id_clause = f" AND f.id IN ({id_marks})"
+        parameters.extend(sorted(fact_ids))
+    elif excluded_fact_ids:
+        id_marks = ", ".join("?" for _ in excluded_fact_ids)
+        id_clause = f" AND f.id NOT IN ({id_marks})"
+        parameters.extend(sorted(excluded_fact_ids))
+    rows = conn.execute(
+        f"""
+        SELECT {_MEMORY_ROW_COLUMNS}
+          FROM facts f
+          JOIN entities subject ON subject.id = f.subject_entity_id
+          JOIN entities object ON object.id = f.object_entity_id
+          JOIN content_items ci ON ci.id = f.created_from
+         WHERE f.object_literal IS NULL
+           AND f.polarity = 'asserted'
+           AND f.status = 'active'
+           AND f.valid_to IS NULL
+           AND f.scope = 'project'
+           AND f.project_path = ?
+           AND ci.source = 'self_ingest_md'
+           AND length(ci.metadata_json) <= ?
+           AND length(ci.text_hash) <= 128
+           AND length(subject.slug) <= ?
+           AND length(object.slug) <= ?
+           AND ({" OR ".join(directions)})
+           {id_clause}
+           {store.current_fact_filter_sql("f")}
+           {_inactive_endpoint_sql("f.subject_entity_id")}
+           {_inactive_endpoint_sql("f.object_entity_id")}
+         ORDER BY f.id
+         LIMIT ?
+        """,
+        (
+            str(root),
+            _MAX_METADATA_CHARS,
+            _MAX_VALUE_CHARS,
+            _MAX_VALUE_CHARS,
+            *parameters,
+            limit,
+        ),
+    ).fetchall()
+    return [tuple(row) for row in rows]
+
+
+def _has_relation_row(
+    conn: sqlite3.Connection, root: Path, frontier: set[str], purpose: str
+) -> bool:
+    """A metadata-only depth probe; it never validates or expands an edge."""
+    return bool(_relation_rows(conn, root, frontier, purpose, limit=1))
+
+
+def _eligible_nodes(conn: sqlite3.Connection, root: Path, anchor: str) -> list[str]:
+    """Resolve exact logical nodes without reading source documents."""
+    predicates = tuple(sorted(RELATION_PREDICATES))
+    marks = ", ".join("?" for _ in predicates)
+    rows = conn.execute(
+        f"""
+        SELECT DISTINCT entity.slug
+          FROM entities entity
+         WHERE entity.slug = ?
+           AND length(entity.slug) <= ?
+           AND EXISTS (
+                SELECT 1
+                  FROM facts f
+                  JOIN entities subject ON subject.id = f.subject_entity_id
+                  JOIN entities object ON object.id = f.object_entity_id
+                  JOIN content_items ci ON ci.id = f.created_from
+                 WHERE f.predicate IN ({marks})
+                   AND f.object_literal IS NULL
+                   AND f.polarity = 'asserted'
+                   AND f.status = 'active'
+                   AND f.valid_to IS NULL
+                   AND f.scope = 'project'
+                   AND f.project_path = ?
+                   AND ci.source = 'self_ingest_md'
+                   AND length(ci.metadata_json) <= ?
+                   AND length(ci.text_hash) <= 128
+                   AND (f.subject_entity_id = entity.id OR f.object_entity_id = entity.id)
+                   {store.current_fact_filter_sql("f")}
+                   {_inactive_endpoint_sql("f.subject_entity_id")}
+                   {_inactive_endpoint_sql("f.object_entity_id")}
+           )
+         LIMIT 1
+        """,
+        (anchor, _MAX_VALUE_CHARS, *predicates, str(root), _MAX_METADATA_CHARS),
+    ).fetchall()
+    return [str(row[0]) for row in rows]
+
+
+def _locator_path_sql(column: str) -> str:
+    return f"mir_locator_path({column})"
+
+
+def _register_locator_normalizer(conn: sqlite3.Connection) -> None:
+    conn.create_function(
+        "mir_locator_path",
+        1,
+        lambda value: _normalized_locator(str(value)).split("::", 1)[0],
+        deterministic=True,
+    )
+    conn.create_function("mir_normalized_locator", 1, lambda value: _normalized_locator(str(value)))
+
+
+def _locator_nodes(conn: sqlite3.Connection, root: Path, anchor: str) -> list[str]:
+    """Resolve normalized path/symbol aliases with case-sensitive literal SQL equality."""
+    normalized = _normalized_locator(anchor)
+    normalized_path = normalized.split("::", 1)[0]
+    _register_locator_normalizer(conn)
+    exact = _eligible_nodes(conn, root, normalized)
+    predicates = tuple(sorted(RELATION_PREDICATES))
+    marks = ", ".join("?" for _ in predicates)
+    rows = conn.execute(
+        f"""
+        SELECT DISTINCT entity.slug
+          FROM entities entity
+         WHERE {_locator_path_sql("entity.slug")} = ?
+           AND instr(entity.slug, '::') > 0
+           AND (instr(?, '::') = 0 OR mir_normalized_locator(entity.slug) = ?)
+           AND length(entity.slug) <= ?
+           AND EXISTS (
+                SELECT 1
+                  FROM facts f
+                  JOIN entities subject ON subject.id = f.subject_entity_id
+                  JOIN entities object ON object.id = f.object_entity_id
+                  JOIN content_items ci ON ci.id = f.created_from
+                 WHERE f.predicate IN ({marks})
+                   AND f.object_literal IS NULL
+                   AND f.polarity = 'asserted'
+                   AND f.status = 'active'
+                   AND f.valid_to IS NULL
+                   AND f.scope = 'project'
+                   AND f.project_path = ?
+                   AND ci.source = 'self_ingest_md'
+                   AND length(ci.metadata_json) <= ?
+                   AND length(ci.text_hash) <= 128
+                   AND (f.subject_entity_id = entity.id OR f.object_entity_id = entity.id)
+                   {store.current_fact_filter_sql("f")}
+                   {_inactive_endpoint_sql("f.subject_entity_id")}
+                   {_inactive_endpoint_sql("f.object_entity_id")}
+           )
+         ORDER BY entity.slug
+         LIMIT ?
+        """,
+        (
+            normalized_path,
+            normalized,
+            normalized,
+            _MAX_VALUE_CHARS,
+            *predicates,
+            str(root),
+            _MAX_METADATA_CHARS,
+            MAX_EDGES + 1,
+        ),
+    ).fetchall()
+    aliases = [str(row[0]) for row in rows]
+    return aliases or exact
+
+
+def _validate_memory_row(
+    conn: sqlite3.Connection,
+    root: Path,
+    protections: tuple[str, ...],
+    row: tuple[Any, ...],
+    state: _SelectionState,
+) -> tuple[Edge | None, str | None]:
+    """Validate selected evidence before it can extend a traversal frontier."""
+    fact_id, source, predicate, target, content_id, text_hash, metadata_json = row
+    cached = state.fact_cache.get(int(fact_id))
+    if cached is not None:
+        edge, reason = cached
+        return (
+            Edge(
+                edge.source, edge.relation, edge.target, edge.source_line, deepcopy(edge.provenance)
+            )
+            if edge is not None
+            else None,
+            reason,
+        )
+    source_value, target_value = _entity_value(source), _entity_value(target)
+    if source_value is None or target_value is None:
+        result = (None, "invalid relation endpoint")
+        state.fact_cache[int(fact_id)] = result
+        return result
+    source_path = source_value.split("::", 1)[0]
+    issue = (
+        _validate_endpoint(source_value, root, protections=protections)
+        if "/" in source_path or source_path.startswith(".")
+        else None
+    )
+    issue = issue or _validate_endpoint(
+        target_value,
+        root,
+        force_file=predicate in _FILE_ENDPOINT_RELATIONS,
+        protections=protections,
+    )
+    if issue:
+        result = (None, issue)
+        state.fact_cache[int(fact_id)] = result
+        return result
     try:
-        connection = store.connect_read_only(db_path, load_vec=False)
-    except (OSError, sqlite3.Error, RuntimeError, store.ReadOnlySnapshotUnavailable) as exc:
-        raise RelationError("memory database cannot be read safely") from exc
+        metadata = json.loads(metadata_json)
+    except (TypeError, json.JSONDecodeError):
+        result = (None, "invalid relation metadata")
+        state.fact_cache[int(fact_id)] = result
+        return result
+    metadata_issue = _metadata_gate(root, metadata)
+    if metadata_issue:
+        result = (None, metadata_issue)
+        state.fact_cache[int(fact_id)] = result
+        return result
+    assert isinstance(metadata, dict)
+    metadata_path = metadata.get("path")
+    cache_key = (
+        (metadata_path, text_hash)
+        if isinstance(metadata_path, str) and isinstance(text_hash, str)
+        else None
+    )
+    validated = state.source_cache.get(cache_key) if cache_key else None
+    from_cache = validated is not None
+    if validated is None:
+        validated = _source_text(
+            root, metadata, text_hash, protections, _MAX_TOTAL_SOURCE_BYTES - state.source_bytes
+        )
+        if cache_key:
+            state.source_cache[cache_key] = validated
+    if not from_cache:
+        state.source_bytes += validated.bytes_read
+    if validated.reason is not None:
+        state.incomplete = (
+            state.incomplete or validated.budget_exhausted or validated.source_unstable
+        )
+        result = (None, validated.reason)
+        state.fact_cache[int(fact_id)] = result
+        return result
+    assert (
+        validated.source_path is not None
+        and validated.source_hash is not None
+        and validated.source_text is not None
+    )
     try:
-        predicates = tuple(sorted(RELATION_PREDICATES))
-        predicate_marks = ", ".join("?" for _ in predicates)
-        rows = connection.conn.execute(
-            f"""
-            SELECT f.id, subject.slug, f.predicate, object.slug, ci.id, ci.text_hash,
-                   ci.metadata_json
-              FROM facts f
-              JOIN entities subject ON subject.id = f.subject_entity_id
-              JOIN entities object ON object.id = f.object_entity_id
-              JOIN content_items ci ON ci.id = f.created_from
-             WHERE f.predicate IN ({predicate_marks})
-               AND f.object_literal IS NULL
-               AND f.polarity = 'asserted'
-               AND f.status = 'active'
-               AND f.valid_to IS NULL
-               AND f.scope = 'project'
-               AND f.project_path = ?
-               AND ci.source = 'self_ingest_md'
-               AND length(ci.metadata_json) <= ?
-               AND length(ci.text_hash) <= 128
-               AND length(subject.slug) <= ?
-               AND length(object.slug) <= ?
-               {store.current_fact_filter_sql("f")}
-               {_inactive_endpoint_sql("f.subject_entity_id")}
-               {_inactive_endpoint_sql("f.object_entity_id")}
-             ORDER BY f.id
-             LIMIT ?
-            """,
-            (
-                *predicates,
-                str(root),
-                _MAX_METADATA_CHARS,
-                _MAX_VALUE_CHARS,
-                _MAX_VALUE_CHARS,
-                _MAX_DB_ROWS + 1,
-            ),
-        ).fetchall()
-        exceeded = len(rows) > _MAX_DB_ROWS
-        rows = rows[:_MAX_DB_ROWS]
-        skipped: Counter[str] = Counter()
-        emitted: dict[tuple[str, str, str], Edge] = {}
-        known_nodes: set[str] = set()
-        source_cache: dict[tuple[str, str], _SourceValidation] = {}
-        source_bytes = 0
-        incomplete = exceeded
-        proofs_omitted = 0
-        for (
-            fact_id,
-            source,
-            predicate,
-            target,
-            content_id,
-            text_hash,
-            metadata_json,
-        ) in rows:
+        declaration = parse_relation_document(validated.source_text)
+    except ValueError:
+        result = (None, "invalid relation declaration")
+        state.fact_cache[int(fact_id)] = result
+        return result
+    if declaration.document_status != metadata.get("relation_document_status"):
+        result = (None, "relation document status changed")
+        state.fact_cache[int(fact_id)] = result
+        return result
+    declarations = [
+        item
+        for item in declaration.declarations
+        if item.subject == source_value
+        and item.predicate == predicate
+        and item.object == target_value
+    ]
+    declared = next(
+        (
+            item
+            for item in declarations
+            if _provenance_is_current(conn, int(fact_id), int(content_id), item.quote)
+        ),
+        None,
+    )
+    if declared is None:
+        result = (
+            None,
+            "missing relation provenance" if declarations else "undeclared relation fact",
+        )
+        state.fact_cache[int(fact_id)] = result
+        return result
+    authored_summary = getattr(declared, "summary", None)
+    authored_reason = getattr(declared, "reason", None)
+    proof = {
+        "database": _MEMORY_RELATIONS_DB,
+        "fact_id": int(fact_id),
+        "content_item_id": int(content_id),
+        "source_path": validated.source_path,
+        "source_hash": validated.source_hash,
+        "source_line": getattr(declared, "source_line", None),
+        "summary": authored_summary or f"Declared {predicate.replace('_', ' ')} relationship.",
+        "summary_basis": "authored" if authored_summary else "deterministic predicate description",
+        "reason": authored_reason or "No authored rationale was supplied.",
+        "reason_basis": "authored" if authored_reason else "no authored rationale",
+    }
+    provenance = {
+        key: proof[key]
+        for key in ("database", "fact_id", "content_item_id", "source_path", "source_hash")
+    }
+    provenance["sources"] = [proof]
+    edge = Edge(source_value, predicate, target_value, None, provenance)
+    state.fact_cache[int(fact_id)] = (
+        Edge(edge.source, edge.relation, edge.target, edge.source_line, deepcopy(edge.provenance)),
+        None,
+    )
+    return edge, None
+
+
+def _append_edge(
+    emitted: dict[tuple[str, str, str], Edge], edge: Edge, state: _SelectionState
+) -> bool:
+    """Coalesce source proofs exactly as the former full-memory loader did."""
+    key = (edge.source, edge.relation, edge.target)
+    if key not in emitted:
+        emitted[key] = edge
+        return True
+    existing = emitted[key]
+    sources = existing.provenance.setdefault("sources", []) if existing.provenance else []
+    proof = edge.provenance["sources"][0] if edge.provenance else None
+    if isinstance(proof, dict):
+        if len(sources) < _MAX_PROVENANCE_PER_EDGE:
+            sources.append(proof)
+        else:
+            existing.provenance["sources_omitted"] = (
+                int(existing.provenance.get("sources_omitted", 0)) + 1
+            )
+            state.proofs_omitted += 1
+    return False
+
+
+def _traverse_memory_rows(
+    conn: sqlite3.Connection,
+    root: Path,
+    protections: tuple[str, ...],
+    resolved: list[str],
+    purpose: str,
+    *,
+    depth: int,
+    max_edges: int,
+    state: _SelectionState,
+) -> tuple[list[Edge], list[str]]:
+    """Select and validate a single purpose's SQL BFS without mixing frontiers."""
+    emitted: dict[tuple[str, str, str], Edge] = {}
+    notices: list[str] = []
+    skipped: Counter[str] = Counter()
+    frontier, seen_nodes, seen_fact_ids = set(resolved), set(resolved), set()
+    for level in range(depth):
+        remaining = _MAX_DB_ROWS - len(state.selected_fact_ids)
+        cached_rows = (
+            _relation_rows(
+                conn, root, frontier, purpose, fact_ids=state.selected_fact_ids, limit=_MAX_DB_ROWS
+            )
+            if state.selected_fact_ids
+            else []
+        )
+        fresh_rows = _relation_rows(
+            conn,
+            root,
+            frontier,
+            purpose,
+            excluded_fact_ids=state.selected_fact_ids or None,
+            limit=max(1, remaining + 1),
+        )
+        overflow = len(fresh_rows) > remaining
+        state.incomplete = state.incomplete or overflow
+        fresh_rows = fresh_rows[:remaining]
+        state.selected_fact_ids.update(int(row[0]) for row in fresh_rows)
+        next_frontier: set[str] = set()
+        for row in sorted([*cached_rows, *fresh_rows], key=lambda value: int(value[0])):
+            fact_id, source, predicate, target, *_ = row
+            if int(fact_id) in seen_fact_ids:
+                continue
+            seen_fact_ids.add(int(fact_id))
+            if int(fact_id) not in state.selected_fact_ids:
+                state.selected_fact_ids.add(int(fact_id))
             source_value, target_value = _entity_value(source), _entity_value(target)
             if source_value is None or target_value is None:
                 skipped["invalid relation endpoint"] += 1
                 continue
-            known_nodes.update((source_value, target_value))
-            try:
-                metadata = json.loads(metadata_json)
-            except (TypeError, json.JSONDecodeError):
-                skipped["invalid relation metadata"] += 1
+            key = (source_value, str(predicate), target_value)
+            if key not in emitted and len(emitted) >= max_edges:
+                notices.append("truncated: max-edges reached; frontier remains unexplored")
+                return list(emitted.values()), [
+                    *(
+                        f"skipped {reason}: {count} edge(s)"
+                        for reason, count in sorted(skipped.items())
+                    ),
+                    *notices,
+                ]
+            edge, reason = _validate_memory_row(conn, root, protections, row, state)
+            if reason:
+                skipped[reason] += 1
                 continue
-            metadata_issue = _metadata_gate(root, metadata)
-            if metadata_issue:
-                skipped[metadata_issue] += 1
-                continue
-            metadata_path = metadata.get("path") if isinstance(metadata, dict) else None
-            cache_key = (
-                (metadata_path, text_hash)
-                if isinstance(metadata_path, str) and isinstance(text_hash, str)
-                else None
-            )
-            validated = source_cache.get(cache_key) if cache_key else None
-            from_cache = validated is not None
-            if validated is None:
-                validated = _source_text(
-                    root, metadata, text_hash, protections, _MAX_TOTAL_SOURCE_BYTES - source_bytes
-                )
-                if cache_key:
-                    source_cache[cache_key] = validated
-            if not from_cache:
-                source_bytes += validated.bytes_read
-            if validated.reason is not None:
-                skipped[validated.reason] += 1
-                incomplete = incomplete or validated.budget_exhausted or validated.source_unstable
-                continue
-            assert (
-                validated.source_path is not None
-                and validated.source_hash is not None
-                and validated.source_text is not None
-            )
-            try:
-                declaration = parse_relation_document(validated.source_text)
-            except ValueError:
-                skipped["invalid relation declaration"] += 1
-                continue
-            if declaration.document_status != metadata.get("relation_document_status"):
-                skipped["relation document status changed"] += 1
-                continue
-            declarations = [
-                item
-                for item in declaration.declarations
-                if item.subject == source_value
-                and item.predicate == predicate
-                and item.object == target_value
-            ]
-            if not declarations:
-                skipped["undeclared relation fact"] += 1
-                continue
-            declared = next(
-                (
-                    item
-                    for item in declarations
-                    if _provenance_is_current(connection.conn, fact_id, content_id, item.quote)
-                ),
-                None,
-            )
-            if declared is None:
-                skipped["missing relation provenance"] += 1
-                continue
-            authored_summary = getattr(declared, "summary", None)
-            authored_reason = getattr(declared, "reason", None)
-            summary = authored_summary or f"Declared {predicate.replace('_', ' ')} relationship."
-            reason = authored_reason or "No authored rationale was supplied."
-            key = (source_value, predicate, target_value)
-            proof = {
-                "database": _MEMORY_RELATIONS_DB,
-                "fact_id": int(fact_id),
-                "content_item_id": int(content_id),
-                "source_path": validated.source_path,
-                "source_hash": validated.source_hash,
-                "source_line": getattr(declared, "source_line", None),
-                "summary": summary,
-                "summary_basis": (
-                    "authored" if authored_summary else "deterministic predicate description"
-                ),
-                "reason": reason,
-                "reason_basis": "authored" if authored_reason else "no authored rationale",
-            }
-            if key in emitted:
-                existing = emitted[key]
-                sources = (
-                    existing.provenance.setdefault("sources", []) if existing.provenance else []
-                )
-                if len(sources) < _MAX_PROVENANCE_PER_EDGE:
-                    sources.append(proof)
-                else:
-                    existing.provenance["sources_omitted"] = (
-                        int(existing.provenance.get("sources_omitted", 0)) + 1
-                    )
-                    proofs_omitted += 1
-            else:
-                provenance = {
-                    key: proof[key]
-                    for key in (
-                        "database",
-                        "fact_id",
-                        "content_item_id",
-                        "source_path",
-                        "source_hash",
-                    )
-                }
-                provenance["sources"] = [proof]
-                emitted[key] = Edge(
-                    source_value,
-                    predicate,
-                    target_value,
-                    None,
-                    provenance,
-                )
-        notices = [
-            *(f"skipped {reason}: {count} edge(s)" for reason, count in sorted(skipped.items()))
-        ]
-        if exceeded:
-            notices.append("truncated: memory fact row limit reached; additional facts omitted")
-        if proofs_omitted:
-            notices.append(
-                "truncated: per-edge source proof limit reached; "
-                f"{proofs_omitted} proof(s) omitted"
-            )
-        return list(emitted.values()), notices, known_nodes, incomplete
-    except sqlite3.Error as exc:
-        raise RelationError("memory database schema is unavailable") from exc
-    finally:
-        connection.conn.close()
+            assert edge is not None
+            added = _append_edge(emitted, edge, state)
+            forward = edge.source in frontier and edge.relation in _FORWARD[purpose]
+            neighbour = edge.target if forward else edge.source
+            if added and neighbour not in seen_nodes:
+                seen_nodes.add(neighbour)
+                next_frontier.add(neighbour)
+        if overflow:
+            state.incomplete = True
+            notices.append("truncated: memory fact row limit reached; frontier remains unexplored")
+            break
+        frontier = next_frontier
+        if not frontier:
+            break
+        if level + 1 == depth and _has_relation_row(conn, root, frontier, purpose):
+            notices.append("truncated: depth reached; frontier remains unexplored")
+            break
+    return list(emitted.values()), [
+        *(f"skipped {reason}: {count} edge(s)" for reason, count in sorted(skipped.items())),
+        *notices,
+    ]
+
+
+def _resolve_query_anchor(
+    conn: sqlite3.Connection, root: Path, protections: tuple[str, ...], anchor: str
+) -> list[str]:
+    exact = _eligible_nodes(conn, root, anchor)
+    if _endpoint_path(anchor) is None:
+        if not exact:
+            raise RelationError("unknown anchor")
+        return exact
+    issue = _validate_endpoint(anchor, root, force_file=True, protections=protections)
+    if issue:
+        raise RelationError(f"anchor {issue}")
+    resolved = _locator_nodes(conn, root, anchor)
+    if not resolved:
+        raise RelationError("unknown anchor")
+    return resolved
+
+
+def _implemented_in_rows(
+    conn: sqlite3.Connection, root: Path, anchor: str
+) -> list[tuple[Any, ...]]:
+    normalized = _normalized_locator(anchor).split("::", 1)[0]
+    _register_locator_normalizer(conn)
+    rows = conn.execute(
+        f"""
+        SELECT {_MEMORY_ROW_COLUMNS}
+          FROM facts f
+          JOIN entities subject ON subject.id = f.subject_entity_id
+          JOIN entities object ON object.id = f.object_entity_id
+          JOIN content_items ci ON ci.id = f.created_from
+         WHERE f.predicate = 'implemented_in'
+           AND {_locator_path_sql("object.slug")} = ?
+           AND f.object_literal IS NULL
+           AND f.polarity = 'asserted'
+           AND f.status = 'active'
+           AND f.valid_to IS NULL
+           AND f.scope = 'project'
+           AND f.project_path = ?
+           AND ci.source = 'self_ingest_md'
+           AND length(ci.metadata_json) <= ?
+           AND length(ci.text_hash) <= 128
+           AND length(subject.slug) <= ?
+           AND length(object.slug) <= ?
+           {store.current_fact_filter_sql("f")}
+           {_inactive_endpoint_sql("f.subject_entity_id")}
+           {_inactive_endpoint_sql("f.object_entity_id")}
+         ORDER BY f.id
+         LIMIT ?
+        """,
+        (
+            normalized,
+            str(root),
+            _MAX_METADATA_CHARS,
+            _MAX_VALUE_CHARS,
+            _MAX_VALUE_CHARS,
+            _MAX_DB_ROWS + 1,
+        ),
+    ).fetchall()
+    return [tuple(row) for row in rows]
+
+
+def _proof_notices(state: _SelectionState) -> list[str]:
+    if not state.proofs_omitted:
+        return []
+    return [
+        f"truncated: per-edge source proof limit reached; {state.proofs_omitted} proof(s) omitted"
+    ]
 
 
 def _memory_source() -> dict[str, str]:
@@ -517,8 +842,39 @@ def query_memory_relations(
     _validate_limits(depth, max_edges, max_bytes)
     base = _resolve_root(root)
     protections = _profile_protections(base)
-    edges, notices, nodes, incomplete = _load_memory_edges(base, protections)
-    if incomplete:
+    db_path = _memory_db_path(base)
+    state = _SelectionState({}, {}, set())
+    try:
+        with store.immutable_snapshot_guard(db_path):
+            connection = store.connect_read_only(db_path, load_vec=False)
+            try:
+                resolved = _resolve_query_anchor(connection.conn, base, protections, anchor)
+                if len(resolved) > max_edges:
+                    notices = [
+                        "truncated: anchor expansion limit reached; "
+                        "additional locators remain unexamined"
+                    ]
+                    resolved = resolved[:max_edges]
+                else:
+                    notices = []
+                edges, traversal_notices = _traverse_memory_rows(
+                    connection.conn,
+                    base,
+                    protections,
+                    resolved,
+                    purpose,
+                    depth=depth,
+                    max_edges=max_edges,
+                    state=state,
+                )
+                notices.extend(traversal_notices)
+            finally:
+                connection.conn.close()
+    except RelationError:
+        raise
+    except (OSError, sqlite3.Error, RuntimeError, store.ReadOnlySnapshotUnavailable) as exc:
+        raise RelationError("memory database cannot be read safely") from exc
+    if state.incomplete:
         raise RelationError("memory relation view is incomplete; use ordinary search")
     result = query_relations(
         anchor,
@@ -533,11 +889,11 @@ def query_memory_relations(
         _protections=protections,
         _scope="declared_memory_relations_only",
         _source_metadata=_memory_source(),
-        _nodes=nodes,
+        _nodes=set(resolved),
     )
-    result["notices"] = [*notices, *result["notices"]]
+    result["notices"] = [*notices, *_proof_notices(state), *result["notices"]]
     result["truncated"] = result["truncated"] or any(
-        notice.startswith("truncated:") for notice in notices
+        notice.startswith("truncated:") for notice in result["notices"]
     )
     return result
 
@@ -575,37 +931,198 @@ def bundle_memory_relations(
         return _search_hint(unique_anchors, unique_purposes, "unknown purpose")
     base = _resolve_root(root)
     protections = _profile_protections(base)
+    state = _SelectionState({}, {}, set())
     try:
-        edges, notices, _, incomplete = _load_memory_edges(base, protections)
+        db_path = _memory_db_path(base)
+        with store.immutable_snapshot_guard(db_path):
+            connection = store.connect_read_only(db_path, load_vec=False)
+            try:
+                anchor = unique_anchors[0]
+                owner_edges: dict[tuple[str, str, str], Edge] = {}
+                owner_notices: Counter[str] = Counter()
+                resolution: dict[str, Any] | None = None
+                if _endpoint_path(anchor) is not None:
+                    issue = _validate_endpoint(
+                        anchor, base, force_file=True, protections=protections
+                    )
+                    if issue:
+                        if issue == "unavailable endpoint":
+                            return _search_hint(unique_anchors, unique_purposes, "unknown anchor")
+                        raise RelationError(f"anchor {issue}")
+                    rows = _implemented_in_rows(connection.conn, base, anchor)
+                    if len(rows) > _MAX_DB_ROWS:
+                        result = _search_hint(
+                            unique_anchors,
+                            unique_purposes,
+                            "memory relation view is incomplete",
+                        )
+                        result["notices"] = [
+                            "truncated: memory fact row limit reached; "
+                            "implementation owner frontier remains unexplored"
+                        ]
+                        result["truncated"] = True
+                        return result
+                    for row in rows:
+                        fact_id = int(row[0])
+                        state.selected_fact_ids.add(fact_id)
+                        edge, reason = _validate_memory_row(
+                            connection.conn, base, protections, row, state
+                        )
+                        if reason:
+                            owner_notices[reason] += 1
+                        if edge is not None:
+                            _append_edge(owner_edges, edge, state)
+                    if state.incomplete:
+                        result = _search_hint(
+                            unique_anchors, unique_purposes, "memory relation view is incomplete"
+                        )
+                        result["notices"] = [
+                            *(
+                                f"skipped {reason}: {count} edge(s)"
+                                for reason, count in owner_notices.items()
+                            )
+                        ]
+                        result["truncated"] = True
+                        return result
+                    owner_ids = list(dict.fromkeys(edge.source for edge in owner_edges.values()))
+                    if len(owner_ids) != 1:
+                        result = _search_hint(
+                            unique_anchors,
+                            unique_purposes,
+                            "ambiguous implementation owner" if owner_edges else "unknown anchor",
+                        )
+                        result["notices"] = [
+                            *(
+                                f"skipped {reason}: {count} edge(s)"
+                                for reason, count in owner_notices.items()
+                            )
+                        ]
+                        return result
+                    resolved_anchor = owner_ids[0]
+                    resolution = next(iter(owner_edges.values())).as_dict()
+                else:
+                    exact = _eligible_nodes(connection.conn, base, anchor)
+                    if not exact:
+                        return _search_hint(unique_anchors, unique_purposes, "unknown anchor")
+                    resolved_anchor = exact[0]
+                facet_edges: dict[str, list[Edge]] = {}
+                facet_notices: dict[str, list[str]] = {}
+                for purpose in unique_purposes:
+                    edges, notices = _traverse_memory_rows(
+                        connection.conn,
+                        base,
+                        protections,
+                        [resolved_anchor],
+                        purpose,
+                        depth=depth,
+                        max_edges=max_edges,
+                        state=state,
+                    )
+                    facet_edges[purpose] = edges
+                    facet_notices[purpose] = notices
+            finally:
+                connection.conn.close()
     except RelationError as exc:
         if "unavailable" in str(exc) or "cannot be read" in str(exc):
             result = _search_hint(unique_anchors, unique_purposes, "memory unavailable")
             result["notices"] = [str(exc)]
             return result
         raise
-    if incomplete:
+    except (OSError, sqlite3.Error, RuntimeError, store.ReadOnlySnapshotUnavailable):
+        result = _search_hint(unique_anchors, unique_purposes, "memory unavailable")
+        result["notices"] = ["memory database cannot be read safely"]
+        return result
+    if state.incomplete:
         result = _search_hint(unique_anchors, unique_purposes, "memory relation view is incomplete")
-        result["notices"] = notices
+        result["notices"] = [
+            *(f"skipped {reason}: {count} edge(s)" for reason, count in owner_notices.items()),
+            *(notice for values in facet_notices.values() for notice in values),
+            *_proof_notices(state),
+        ]
         result["truncated"] = True
         return result
-    result = bundle_relations(
-        anchors,
-        purposes,
-        root=base,
-        depth=depth,
-        max_edges=max_edges,
-        max_bytes=max_bytes,
-        _graph=edges,
-        _digest="memory",
-        _source=_MEMORY_RELATIONS_DB,
-        _protections=protections,
-        _scope="declared_memory_relations_only",
-        _source_metadata=_memory_source(),
-        _route="memory",
-    )
-    result["scope"] = "declared_memory_relations_only"
-    result["notices"] = list(dict.fromkeys([*notices, *result["notices"]]))
-    result["truncated"] = result["truncated"] or any(
-        notice.startswith("truncated:") for notice in notices
-    )
+    merged: list[dict[str, Any]] = []
+    seen: set[tuple[str, str, str]] = set()
+    facets: list[dict[str, Any]] = []
+    notices = [f"skipped {reason}: {count} edge(s)" for reason, count in owner_notices.items()]
+    omitted = False
+    for purpose in unique_purposes:
+        item = query_relations(
+            resolved_anchor,
+            purpose,
+            root=base,
+            depth=depth,
+            max_edges=max_edges,
+            max_bytes=max_bytes,
+            _graph=facet_edges[purpose],
+            _digest="memory",
+            _source=_MEMORY_RELATIONS_DB,
+            _protections=protections,
+            _scope="declared_memory_relations_only",
+            _source_metadata=_memory_source(),
+            _nodes={resolved_anchor},
+        )
+        item_notices = [*facet_notices[purpose], *item["notices"]]
+        available, contributed = len(item["edges"]), 0
+        for edge in item["edges"]:
+            key = (edge["source"], edge["relation"], edge["target"])
+            if key in seen:
+                next(
+                    candidate
+                    for candidate in merged
+                    if (candidate["source"], candidate["relation"], candidate["target"]) == key
+                )["purposes"].append(purpose)
+            elif len(merged) < max_edges:
+                merged.append({**edge, "purposes": [purpose]})
+                seen.add(key)
+                contributed += 1
+            else:
+                omitted = True
+        facets.append(
+            {
+                "purpose": purpose,
+                "available_count": available,
+                "edge_count": contributed,
+                "coverage": "truncated"
+                if any(notice.startswith("truncated:") for notice in item_notices) or omitted
+                else "empty"
+                if not available
+                else "bounded",
+                "notices": item_notices,
+            }
+        )
+        notices.extend(item_notices)
+    if any(facet["available_count"] == 0 for facet in facets):
+        result = _search_hint(
+            unique_anchors,
+            unique_purposes,
+            "one or more requested facets have no declared evidence",
+        )
+        result["notices"] = list(dict.fromkeys([*notices, *_proof_notices(state)]))
+        result["truncated"] = any(notice.startswith("truncated:") for notice in result["notices"])
+        return result
+    if omitted:
+        notices.append("truncated: global max-edges reached; facet coverage incomplete")
+    result = {
+        "route": "memory",
+        "anchor": unique_anchors[0],
+        "resolved_anchor": resolved_anchor,
+        "resolution": resolution,
+        "requested_purposes": unique_purposes,
+        "facets": facets,
+        "scope": "declared_memory_relations_only",
+        "source": _memory_source(),
+        "edges": merged,
+        "notices": list(dict.fromkeys([*notices, *_proof_notices(state)])),
+        "truncated": False,
+    }
+    emitted = {facet["purpose"]: 0 for facet in facets}
+    for edge in merged:
+        for purpose in edge["purposes"]:
+            emitted[purpose] += 1
+    for facet in facets:
+        facet["edge_count"] = emitted[facet["purpose"]]
+        if facet["edge_count"] < facet["available_count"]:
+            facet["coverage"] = "truncated"
+    result["truncated"] = any(notice.startswith("truncated:") for notice in result["notices"])
     return result

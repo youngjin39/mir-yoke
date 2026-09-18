@@ -2,6 +2,75 @@
   "version": 1,
   "changes": [
     {
+      "id": "srr-anchor-sql-selection-2026-09-19",
+      "record_status": "complete",
+      "scope": "Select bounded purpose-specific SQL neighborhoods before source validation; preserve compact evidence and ordinary memory paths.",
+      "targets": [
+        "src/mir/core/memory_relations.py"
+      ],
+      "bluebrick": "Selective memory retrieval / Anchor SQL selection / Selected source validation",
+      "categories": {
+        "unit": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_srr_sql_neighborhood.py tests/test_srr_memory_selection_parity.py tests/test_memory_relations.py tests/test_srr_compact_evidence.py tests/test_srr_snapshot_guard.py",
+          "notes": "Parent Harness262 focused checks passed. Independent common-YAML parity covers51 cases;18 neighborhood regressions cover disconnected growth, candidate limits, source races and normalized locators. Existing25 Harness/22 Yoke memory/context/schema files retain baseline hashes."
+        },
+        "integration": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_srr_sql_neighborhood.py tests/test_srr_memory_selection_parity.py tests/test_memory_relations.py tests/test_srr_compact_evidence.py tests/test_srr_snapshot_guard.py",
+          "notes": "Parent Harness262 focused checks passed. Independent common-YAML parity covers51 cases;18 neighborhood regressions cover disconnected growth, candidate limits, source races and normalized locators. Existing25 Harness/22 Yoke memory/context/schema files retain baseline hashes."
+        },
+        "edge": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_srr_sql_neighborhood.py tests/test_srr_memory_selection_parity.py tests/test_memory_relations.py tests/test_srr_compact_evidence.py tests/test_srr_snapshot_guard.py",
+          "notes": "Parent Harness262 focused checks passed. Independent common-YAML parity covers51 cases;18 neighborhood regressions cover disconnected growth, candidate limits, source races and normalized locators. Existing25 Harness/22 Yoke memory/context/schema files retain baseline hashes."
+        },
+        "architecture": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_srr_sql_neighborhood.py tests/test_srr_memory_selection_parity.py tests/test_memory_relations.py tests/test_srr_compact_evidence.py tests/test_srr_snapshot_guard.py",
+          "notes": "Parent Harness262 focused checks passed. Independent common-YAML parity covers51 cases;18 neighborhood regressions cover disconnected growth, candidate limits, source races and normalized locators. Existing25 Harness/22 Yoke memory/context/schema files retain baseline hashes."
+        },
+        "security": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_srr_sql_neighborhood.py tests/test_srr_memory_selection_parity.py tests/test_memory_relations.py tests/test_srr_compact_evidence.py tests/test_srr_snapshot_guard.py",
+          "notes": "Parent Harness262 focused checks passed. Independent common-YAML parity covers51 cases;18 neighborhood regressions cover disconnected growth, candidate limits, source races and normalized locators. Existing25 Harness/22 Yoke memory/context/schema files retain baseline hashes."
+        },
+        "compatibility": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_srr_sql_neighborhood.py tests/test_srr_memory_selection_parity.py tests/test_memory_relations.py tests/test_srr_compact_evidence.py tests/test_srr_snapshot_guard.py",
+          "notes": "Parent Harness262 focused checks passed. Independent common-YAML parity covers51 cases;18 neighborhood regressions cover disconnected growth, candidate limits, source races and normalized locators. Existing25 Harness/22 Yoke memory/context/schema files retain baseline hashes."
+        },
+        "transaction_locking": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_srr_sql_neighborhood.py tests/test_srr_memory_selection_parity.py tests/test_memory_relations.py tests/test_srr_compact_evidence.py tests/test_srr_snapshot_guard.py",
+          "notes": "Parent Harness262 focused checks passed. Independent common-YAML parity covers51 cases;18 neighborhood regressions cover disconnected growth, candidate limits, source races and normalized locators. Existing25 Harness/22 Yoke memory/context/schema files retain baseline hashes."
+        },
+        "e2e": {
+          "status": "pass",
+          "command": "Installed0.10.2 wheel probes outside checkout",
+          "notes": "Nine ingestion/read lifecycle checks and compact-output proof passed. Only temporary databases were used."
+        },
+        "load": {
+          "status": "pass",
+          "command": "Installed disconnected-growth and compact-source probes",
+          "notes": "One and2049 total relations each return one edge, open one source, issue4 SELECTs and emit909 JSON bytes, including invalid unrelated sources.268/620237-byte compact fixture sources each emit901 JSON/496 human bytes. No latency benchmark or tokenizer measurement."
+        },
+        "browser": {
+          "status": "not_applicable",
+          "reason": "No GUI, hosted service or persistent runtime changed; bounded SQLite/source races are directly tested."
+        },
+        "availability": {
+          "status": "not_applicable",
+          "reason": "No GUI, hosted service or persistent runtime changed; bounded SQLite/source races are directly tested."
+        },
+        "soak": {
+          "status": "not_applicable",
+          "reason": "No GUI, hosted service or persistent runtime changed; bounded SQLite/source races are directly tested."
+        }
+      },
+      "design_ref": "plugins/mir-core/skills/selective-relations/references/memory-relations.md"
+    },
+    {
       "id": "srr-stability-compact-evidence-2026-09-18",
       "record_status": "complete",
       "scope": "Repair selective memory retrieval completeness, source-byte accounting, immutable read races and fallback diagnostics; return bounded source-owned summaries/reasons/locations with backward-compatible declarations.",

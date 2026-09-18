@@ -38,7 +38,7 @@ def test_source_budget_refuses_partial_memory_view_and_keeps_fallback_diagnostic
         query_memory_relations("MOD-A", "dependencies", root=tmp_path)
 
     result = bundle_memory_relations(
-        ["MOD-A"], ["implementation", "verification"], root=tmp_path
+        ["MOD-A"], ["dependencies", "implementation"], root=tmp_path
     )
     assert result["route"] == "search"
     assert result["scope"] == "declared_memory_relations_only"

@@ -142,6 +142,16 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
   maintainer configuration already carried it; the generator, which is what every new project
   actually receives, did not.
 
+## [0.10.2] — 2026-09-19 — Anchor-scoped SQL relation selection
+
+### Changed
+
+- Resolve memory anchors and select purpose-specific SQL neighborhoods before validating source
+  evidence, so disconnected project growth does not exhaust a small query's relationship budget.
+- Keep independent bundle frontiers, directional traversal, source/snapshot guards and compact
+  source proofs; report unexamined boundary candidates without reading their source bodies.
+- Preserve ordinary memory search, ingestion, embeddings, body retrieval and existing schema.
+
 ## [0.10.1] — 2026-09-18 — Stable selective retrieval and compact evidence
 
 ### Fixed

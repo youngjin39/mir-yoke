@@ -1,7 +1,8 @@
 # Declared relationships in repository memory
 
 Use this adapter when the repository already has Mir memory and the task needs maintained explicit
-relationships. Provider versions that include the memory adapter support `--memory` on
+relationships. Use provider 0.10.2 or later for anchor-scoped SQL selection; 0.10.1 provides compact
+cards but still loads a bounded whole-project view. The memory adapter supports `--memory` on
 `mir relations query` and `mir relations bundle` below. Older versions continue with their existing adapter or
 ordinary search. Do not initialize a DB or populate a corpus solely to make retrieval available.
 
@@ -85,7 +86,8 @@ validation do not add the full source to model context. Output byte limits bound
 receives; they are not a measured token-savings claim.
 
 Declarations are limited to 64 per source and 1 MiB of physical source bytes. The reader limits
-its scan to 2,048 rows, all consumed source-validation bytes to 4 MiB total (including rejected
+SQL-selected candidates to 2,048 distinct fact rows, all consumed source-validation bytes to
+4 MiB total (including rejected
 reads), and retained evidence to eight proofs per
 edge. Budget exhaustion makes the view incomplete; it is not ordinary missing evidence. Keep
 memory scope and validation diagnostics when falling back to search. Use the same bounded depth,
@@ -103,3 +105,16 @@ relations from current retrieval; persistent retirement follows the existing rec
 This adapter does not implement natural-language relation extraction, similarity-based admission,
 automatic backfill of old memory, historical/as-of queries, or new relationship families. Extending
 those requires separate semantics and evidence, not merely adding a predicate name to a document.
+
+## Selection before validation
+
+Resolve the requested anchor first. SQL selects only the allowed relation directions for the requested
+purpose and bounded frontier. Only those candidates' declaring sources are read internally and
+validated; invalid evidence cannot extend the frontier. Bundle purposes keep separate frontiers
+while reusing validated evidence. Unrelated sources do not consume the selected-source budget.
+
+Metadata-only checks at a depth boundary may report possible unexamined continuation. They do not
+prove that an unvalidated candidate is current. A wide selected neighborhood can still exhaust its
+limits and require ordinary search. Existing normal memory lookup and optional body reads remain
+separate: SRR returns relationship/reason/location evidence and never automatically loads a body into
+agent context. Source validation is retained; no persistent validation cache is introduced.

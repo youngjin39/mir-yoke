@@ -39,7 +39,7 @@ immutable release:
 
 ```bash
 uv tool install --force --link-mode copy \
-  "git+https://github.com/youngjin39/mir-yoke.git@v0.10.1"
+  "git+https://github.com/youngjin39/mir-yoke.git@v0.10.2"
 mir --help
 ```
 
@@ -183,3 +183,7 @@ SRR 0.10.1 returns compact, source-backed summaries, authored relationship reaso
 locations. Agents can select the relevant original span when needed. Full source bodies remain
 inside bounded validation and are not included in retrieval output. Select the supported provider
 writer explicitly if the repository also has an older local Mir package.
+
+SRR 0.10.2 resolves the requested memory anchor and selects its purpose-specific neighborhood in SQL
+before validating source evidence. Disconnected relation growth does not consume that query's
+candidate/source budget. Ordinary memory search and body retrieval remain unchanged.
