@@ -142,6 +142,16 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
   maintainer configuration already carried it; the generator, which is what every new project
   actually receives, did not.
 
+## [0.10.3] — 2026-09-21 — Selective SRR scope and direct dependency defaults
+
+### Changed
+
+- Focus common skill selection on known-anchor implementation, verification and direct dependencies;
+  keep broad impact exploration for explicit requests and ordinary search for known answer locations.
+- Default omitted dependency depth to one hop in YAML/memory queries and dependency facets within bundles; preserve
+  explicit deeper traversal and the existing three-hop default for other purposes.
+- Preserve compact source-validated evidence, existing memory/body retrieval and the database schema.
+
 ## [0.10.2] — 2026-09-19 — Anchor-scoped SQL relation selection
 
 ### Changed

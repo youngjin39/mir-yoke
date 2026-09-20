@@ -7,7 +7,6 @@ import sys
 
 from mir.core.memory_relations import bundle_memory_relations, query_memory_relations
 from mir.core.relations import (
-    DEFAULT_DEPTH,
     DEFAULT_GRAPH,
     DEFAULT_MAX_BYTES,
     DEFAULT_MAX_EDGES,
@@ -31,7 +30,14 @@ def _common_options(parser: argparse.ArgumentParser) -> None:
         action="store_true",
         help="read only the canonical <root>/.mir/memory.db relation facts",
     )
-    parser.add_argument("--depth", type=int, default=DEFAULT_DEPTH)
+    parser.add_argument(
+        "--depth",
+        type=int,
+        help=(
+            "omit: dependencies=1; implementation, verification, and impact=3; "
+            "an explicit value applies to every facet"
+        ),
+    )
     parser.add_argument("--max-edges", type=int, default=DEFAULT_MAX_EDGES)
     parser.add_argument("--max-bytes", type=int, default=DEFAULT_MAX_BYTES)
     parser.add_argument("--json", action="store_true")

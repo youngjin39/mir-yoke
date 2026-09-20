@@ -82,7 +82,7 @@ Discard an uncommitted Project Agent Kit adaptation in the target or restore the
 commit. For an explicitly invoked CLI transaction, use that command's recorded rollback/recovery
 contract. Installing the CLI does not itself mutate a target.
 
-Current version: `0.10.2`. See `CHANGELOG.md` for release details.
+Current version: `0.10.3`. See `CHANGELOG.md` for release details.
 
 Version 0.10.0 adds opt-in `memory_relations` ingestion and read-only `mir relations query|bundle --memory`
 query/bundle selection using the existing memory schema. No automatic corpus backfill, database
@@ -102,3 +102,10 @@ validation and compact evidence format remain unchanged. Candidate/source limits
 selected neighborhood; depth boundaries may report unvalidated continuation candidates without
 opening their source bodies. No migration, re-ingestion or permanent cache is required solely for
 this reader update. Use the same existing memory command when an agent elects to read a body.
+
+
+Version 0.10.3 changes omitted dependency depth from three hops to one for the CLI and both public
+relation adapters, including each dependency facet of a bundle. Implementation, verification and
+explicitly requested impact retain the three-hop default. Pass `--depth 3` (or `depth=3` in Python)
+to retain prior transitive dependency behavior. Existing explicit depths, result shapes, source
+validation and ordinary memory operations are unchanged. No schema migration or re-ingestion is needed.

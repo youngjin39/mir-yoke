@@ -22,12 +22,14 @@ Preserve the graph path, content hash, and edge locator with any conclusion deri
 | --- | --- | --- |
 | Where is this requirement implemented? | `implementation` | Implementation locators. |
 | Which checks substantiate this requirement? | `verification` | Verification locators. |
-| What declared consumers could be affected? | `impact` | Downstream declared relationships. |
+| What declared consumers could be affected, when explicitly requested? | `impact` | Optional downstream declared relationships; not part of routine bundles. |
 | What declared components does this work depend on? | `dependencies` | Forward `depends_on` relationships. |
 
-For a known anchor and one purpose, use `query`. Use `bundle` only when two or more unresolved
+Prefer `implementation`, `verification`, and direct `dependencies` for routine SRR use.
+For a known anchor and one unresolved purpose, use `query`. Use `bundle` only when two or more unresolved
 purposes concern the same anchor. Do not bundle unrelated anchors. For a direct declared dependency,
-request `--depth 1`; otherwise use only the hops needed for the evidence path.
+request `--depth 1`; otherwise use only the hops needed for the evidence path. Do not include
+`impact` unless the task explicitly asks for it. Fewer bundle calls do not guarantee smaller output.
 
 ```yaml
 # spec/graph.yaml
@@ -45,6 +47,12 @@ mir relations bundle REQ-LOGIN --purpose implementation --purpose verification -
 mir relations query MOD-AUTH --purpose dependencies --root . --depth 1
 mir relations query REQ-LOGIN --purpose implementation --root . --graph relations/declared.yaml
 ```
+
+From provider 0.10.3, omitted depth defaults to 1 for `dependencies` and 3 for other purposes.
+A bundle applies these defaults independently per purpose. An explicit `--depth` overrides every
+requested purpose, including deeper dependency exploration when the task requires it. Earlier
+providers require explicit `--depth 1` for direct dependencies. On those providers, keep a direct
+dependency query separate from implementation/verification queries that need deeper traversal.
 
 The reader uses an explicit `--root`, defaults to `spec/graph.yaml`, and accepts a repository-relative
 `--graph`. Its default result budget is 16 edges and 6000 bytes; hard ceilings are depth 4, 64 edges,

@@ -3,15 +3,17 @@
 ## Choose by question, available evidence, and reader
 
 A useful relation reduces an otherwise repeated join between authoritative records. These are
-eligible question families, not measured performance guarantees. Confirm current evidence before
-answering and compare ordinary search when the benefit is unclear.
+candidate question families, not measured performance guarantees. Routine portable SRR use is
+limited to implementation, verification and direct dependencies from a known anchor. Wider families
+below require an explicit task and a compatible reader; they are not reasons to expand every query.
+Confirm current evidence before answering and use ordinary search when the answer location is known.
 
 | Question family | Useful bounded path | Reader boundary |
 | --- | --- | --- |
 | Project or subsystem orientation | Known feature or module to responsibilities, implementation files, and tests | Portable reader for supported declared paths; native adapter for other containment/ownership types |
 | Implementation and verification | Requirement to implementing module/file and substantiating check | Portable `implementation` / `verification` |
-| Change impact | Known component to declared consumers and relevant checks | Portable `impact`; no runtime-call or exhaustive-impact claim |
-| Module, service, or data dependencies | Known component to the next declared dependency | Portable `dependencies` for actual `depends_on` edges; native adapter for richer flow semantics |
+| Explicit change-impact request | Known component to declared consumers and relevant checks | Optional portable `impact`; never add automatically to routine bundles; no runtime-call or exhaustive-impact claim |
+| Module, service, or data dependencies | Known component to the next declared dependency | Portable `dependencies` at depth 1 for actual `depends_on` edges; native adapter for richer flow semantics |
 | Design rationale and evidence | Known decision or claim to its evidence and affected components | Portable reader may return a supported decision/evidence locator; read its source; generic claim/evidence joins require a native adapter |
 | Supersession, incident history, or changing knowledge | Known record to the applicable version, supported cause, or resolution evidence | Native adapter with explicit relation semantics and temporal/current-view filtering |
 

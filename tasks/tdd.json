@@ -2,6 +2,77 @@
   "version": 1,
   "changes": [
     {
+      "id": "srr-selective-scope-completion-2026-09-21",
+      "record_status": "complete",
+      "scope": "Focus SRR on implementation, verification and direct dependencies; resolve omitted dependency depth to one per query/facet while preserving explicit overrides.",
+      "targets": [
+        "src/mir/core/relations.py",
+        "src/mir/core/memory_relations.py",
+        "src/mir/cli/relations.py"
+      ],
+      "bluebrick": "Selective relation retrieval / Purpose-specific depth / Common selection guidance",
+      "categories": {
+        "unit": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_srr_purpose_defaults.py tests/test_srr_sql_neighborhood.py tests/test_srr_memory_selection_parity.py tests/test_memory_relations.py tests/test_relation_bundle.py tests/test_cli_relations.py",
+          "notes": "Parent353 Harness boundary/memory checks and31 Yoke installed-CLI/plugin/default checks passed. Default dependency depth1, explicit depths, mixed facets, three-hop verification and real writer-backed fixtures covered."
+        },
+        "integration": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_srr_purpose_defaults.py tests/test_srr_sql_neighborhood.py tests/test_srr_memory_selection_parity.py tests/test_memory_relations.py tests/test_relation_bundle.py tests/test_cli_relations.py",
+          "notes": "Parent353 Harness boundary/memory checks and31 Yoke installed-CLI/plugin/default checks passed. Default dependency depth1, explicit depths, mixed facets, three-hop verification and real writer-backed fixtures covered."
+        },
+        "edge": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_srr_purpose_defaults.py tests/test_srr_sql_neighborhood.py tests/test_srr_memory_selection_parity.py tests/test_memory_relations.py tests/test_relation_bundle.py tests/test_cli_relations.py",
+          "notes": "Parent353 Harness boundary/memory checks and31 Yoke installed-CLI/plugin/default checks passed. Default dependency depth1, explicit depths, mixed facets, three-hop verification and real writer-backed fixtures covered."
+        },
+        "architecture": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_srr_purpose_defaults.py tests/test_srr_sql_neighborhood.py tests/test_srr_memory_selection_parity.py tests/test_memory_relations.py tests/test_relation_bundle.py tests/test_cli_relations.py",
+          "notes": "Parent353 Harness boundary/memory checks and31 Yoke installed-CLI/plugin/default checks passed. Default dependency depth1, explicit depths, mixed facets, three-hop verification and real writer-backed fixtures covered."
+        },
+        "compatibility": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_srr_purpose_defaults.py tests/test_srr_sql_neighborhood.py tests/test_srr_memory_selection_parity.py tests/test_memory_relations.py tests/test_relation_bundle.py tests/test_cli_relations.py",
+          "notes": "Parent353 Harness boundary/memory checks and31 Yoke installed-CLI/plugin/default checks passed. Default dependency depth1, explicit depths, mixed facets, three-hop verification and real writer-backed fixtures covered."
+        },
+        "security": {
+          "status": "covered_existing",
+          "command": "uv run pytest -q tests/test_srr_sql_neighborhood.py tests/test_srr_snapshot_guard.py tests/test_srr_compact_evidence.py",
+          "notes": "Passed within the353-test parent run. Selected-source guards, candidate budgets and immutable snapshot behavior retained; no new concurrency/cache design."
+        },
+        "transaction_locking": {
+          "status": "covered_existing",
+          "command": "uv run pytest -q tests/test_srr_sql_neighborhood.py tests/test_srr_snapshot_guard.py tests/test_srr_compact_evidence.py",
+          "notes": "Passed within the353-test parent run. Selected-source guards, candidate budgets and immutable snapshot behavior retained; no new concurrency/cache design."
+        },
+        "load": {
+          "status": "covered_existing",
+          "command": "uv run pytest -q tests/test_srr_sql_neighborhood.py tests/test_srr_snapshot_guard.py tests/test_srr_compact_evidence.py",
+          "notes": "Passed within the353-test parent run. Selected-source guards, candidate budgets and immutable snapshot behavior retained; no new concurrency/cache design."
+        },
+        "e2e": {
+          "status": "pass",
+          "command": "Installed0.10.3 wheel Python running srr-scope-installed-probe-2026-09-21.py outside checkout",
+          "notes": "YAML/memory CLI paths pass default1, explicit2, independent mixed facets, invalid0, body exclusion and unchanged fixture files. Installed runtime hashes match both source trees."
+        },
+        "browser": {
+          "status": "not_applicable",
+          "reason": "No GUI, hosted service or long-running runtime changed; bounded CLI/SQLite behavior is tested directly."
+        },
+        "availability": {
+          "status": "not_applicable",
+          "reason": "No GUI, hosted service or long-running runtime changed; bounded CLI/SQLite behavior is tested directly."
+        },
+        "soak": {
+          "status": "not_applicable",
+          "reason": "No GUI, hosted service or long-running runtime changed; bounded CLI/SQLite behavior is tested directly."
+        }
+      },
+      "design_ref": "plugins/mir-core/skills/selective-relations/references/selective-relations.md"
+    },
+    {
       "id": "srr-anchor-sql-selection-2026-09-19",
       "record_status": "complete",
       "scope": "Select bounded purpose-specific SQL neighborhoods before source validation; preserve compact evidence and ordinary memory paths.",

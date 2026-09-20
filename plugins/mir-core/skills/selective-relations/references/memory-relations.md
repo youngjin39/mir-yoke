@@ -106,6 +106,15 @@ This adapter does not implement natural-language relation extraction, similarity
 automatic backfill of old memory, historical/as-of queries, or new relationship families. Extending
 those requires separate semantics and evidence, not merely adding a predicate name to a document.
 
+## Selective operating scope
+
+Use maintained memory relations for unresolved implementation, verification, or direct-dependency
+questions with a known anchor. Provider 0.10.3 defaults omitted dependency depth to 1, including in
+mixed bundles; other purposes retain depth 3. Explicit depth still overrides these defaults. Keep
+`--depth 1` in direct-dependency commands for compatibility with older providers. Wider `impact`
+queries require an explicit task. Unknown anchors and unsupported joins return to ordinary search;
+a search hint does not execute a search. Do not automatically load every returned source body.
+
 ## Selection before validation
 
 Resolve the requested anchor first. SQL selects only the allowed relation directions for the requested

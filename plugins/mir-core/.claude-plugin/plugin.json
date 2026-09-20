@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "mir-core",
-  "version": "0.10.2",
+  "version": "0.10.3",
   "description": "Portable Mir architecture, governance, memory, and verification skills.",
   "author": {
     "name": "Harness Contributors",

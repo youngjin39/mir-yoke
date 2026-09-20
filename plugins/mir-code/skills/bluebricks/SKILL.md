@@ -19,8 +19,9 @@ when present and relevant. Common locations include `.ai-harness/`, `docs/`, and
 files, but their absence is valid and never a reason to invent or install a local harness. Follow the
 actual repository contract instead of assuming Mir Yoke's maintainer layout.
 
-For bounded retrieval through declared relationships, apply `mir-core:selective-relations` when that
-namespaced skill is available. Otherwise use ordinary source search. The relation adapter and graph
+For unresolved implementation, verification, or direct-dependency questions with a known anchor,
+apply `mir-core:selective-relations` when that namespaced skill and maintained evidence are available.
+Do not add relationship retrieval as a preflight to every code task. Otherwise use ordinary source search. The relation adapter and graph
 are optional; use direct search when the answer location is already known or the question is outside
 the supported declared relationships.
 

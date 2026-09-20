@@ -39,7 +39,7 @@ immutable release:
 
 ```bash
 uv tool install --force --link-mode copy \
-  "git+https://github.com/youngjin39/mir-yoke.git@v0.10.2"
+  "git+https://github.com/youngjin39/mir-yoke.git@v0.10.3"
 mir --help
 ```
 
@@ -187,3 +187,9 @@ writer explicitly if the repository also has an older local Mir package.
 SRR 0.10.2 resolves the requested memory anchor and selects its purpose-specific neighborhood in SQL
 before validating source evidence. Disconnected relation growth does not consume that query's
 candidate/source budget. Ordinary memory search and body retrieval remain unchanged.
+
+
+SRR 0.10.3 focuses routine skill selection on implementation, verification and direct dependencies
+from known anchors. Omitted dependency depth is one hop in both adapters and in mixed bundles;
+explicit depth remains available. Broader impact traversal is reserved for explicit requests.
+Ordinary memory/body retrieval is unchanged; fewer relation calls do not guarantee fewer tokens.

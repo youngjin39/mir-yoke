@@ -1,15 +1,22 @@
 ---
 name: selective-relations
-description: Retrieve a bounded, declared evidence path for a known feature, module, file, or memory record when a repository provides typed relationship data and a read-only adapter. Use ordinary search for source behavior, unknown anchors, and unsupported relationships.
+description: Find maintained implementation, verification, or direct-dependency evidence for a known requirement, module, or file through a read-only relation adapter. Use ordinary search for known answer locations, runtime behavior, and unknown anchors.
 ---
 
 # Selective Relation Retrieval
 
-Use selective relation retrieval (SRR) to find a bounded path through relationships the repository
-already declares and maintains. It can answer basic project or code-structure questions from a
-known feature, requirement, module, or file: which modules, files, or tests the declared evidence
-connects, which declared consumers it may affect, or which components it depends on. Bundle only
-when two or more unresolved purposes concern the same anchor.
+Use selective relation retrieval (SRR) when a known anchor and maintained declared relationships
+can answer an unresolved implementation, verification, or direct-dependency question. Prefer ordinary
+search when the answer location is already known; SRR is not a mandatory preflight for code work.
+
+Use one purpose at a time unless multiple unresolved purposes concern the same anchor. A bundle can
+avoid repeated source reads, but its metadata may make the response larger. For direct dependencies,
+use depth 1. Inspect the compact result and stop when the question is answered; do not automatically
+increase depth or edge limits. Treat truncation as incomplete evidence.
+
+Broader `impact` traversal is available only when the task explicitly asks for declared downstream
+impact. Do not add it to implementation or verification bundles automatically, and do not interpret
+it as an upstream dependency query or a complete runtime impact inventory.
 
 SRR returns bounded evidence with locators, provenance and short authored summaries/reasons when
 available. Start with that compact result. Open only the relevant source span when a behavioral

@@ -76,6 +76,12 @@ _REVERSE = {
     "dependencies": set(),
 }
 _FILE_ENDPOINT_RELATIONS = {"implemented_in", "verified_by"}
+_DEFAULT_DEPTHS = {
+    "dependencies": 1,
+    "implementation": DEFAULT_DEPTH,
+    "impact": DEFAULT_DEPTH,
+    "verification": DEFAULT_DEPTH,
+}
 
 
 def _protected(parts: tuple[str, ...], patterns: tuple[str, ...] = ()) -> bool:
@@ -336,6 +342,11 @@ def _validate_limits(depth: int, max_edges: int, max_bytes: int) -> None:
         raise RelationError("max-bytes must be between 1024 and 16000")
 
 
+def _resolve_depth(purpose: str, depth: int | None) -> int:
+    """Use the bounded, purpose-specific default only when depth is omitted."""
+    return _DEFAULT_DEPTHS[purpose] if depth is None else depth
+
+
 def _notices(skipped: dict[str, int], extra: list[str]) -> list[str]:
     return [
         *(f"skipped {reason}: {count} edge(s)" for reason, count in sorted(skipped.items())),
@@ -381,7 +392,7 @@ def query_relations(
     *,
     root: str | Path = ".",
     graph: str = DEFAULT_GRAPH,
-    depth: int = DEFAULT_DEPTH,
+    depth: int | None = None,
     max_edges: int = DEFAULT_MAX_EDGES,
     max_bytes: int = DEFAULT_MAX_BYTES,
     _graph: list[Edge] | None = None,
@@ -395,7 +406,8 @@ def query_relations(
     """Return explicitly declared, safety-checked graph edges for one purpose."""
     if not isinstance(purpose, str) or purpose not in _FORWARD:
         raise RelationError("purpose must be implementation, impact, verification, or dependencies")
-    _validate_limits(depth, max_edges, max_bytes)
+    resolved_depth = _resolve_depth(purpose, depth)
+    _validate_limits(resolved_depth, max_edges, max_bytes)
     base = _resolve_root(root)
     protections = _profile_protections(base) if _protections is None else _protections
     _anchor_spelling_safe(anchor)
@@ -447,7 +459,7 @@ def query_relations(
     result: list[Edge] = []
     seen_edges: set[tuple[str, str, str]] = set()
     frontier, seen_nodes = set(resolved), set(resolved)
-    for level in range(depth):
+    for level in range(resolved_depth):
         next_frontier: set[str] = set()
         for edge in loaded_graph:
             forward = edge.source in frontier and edge.relation in _FORWARD[purpose]
@@ -495,7 +507,7 @@ def query_relations(
         frontier = next_frontier
         if not frontier:
             break
-        if level + 1 == depth and _has_eligible_edge(frontier, loaded_graph, purpose):
+        if level + 1 == resolved_depth and _has_eligible_edge(frontier, loaded_graph, purpose):
             notices.append("truncated: depth reached; frontier remains unexplored")
             break
     return _result(
@@ -619,7 +631,7 @@ def bundle_relations(
     *,
     root: str | Path = ".",
     graph: str = DEFAULT_GRAPH,
-    depth: int = DEFAULT_DEPTH,
+    depth: int | None = None,
     max_edges: int = DEFAULT_MAX_EDGES,
     max_bytes: int = DEFAULT_MAX_BYTES,
     _graph: list[Edge] | None = None,
@@ -637,7 +649,7 @@ def bundle_relations(
         or any(not isinstance(value, str) for value in [*anchors, *purposes])
     ):
         raise RelationError("anchors and purposes must be lists")
-    _validate_limits(depth, max_edges, max_bytes)
+    _validate_limits(DEFAULT_DEPTH if depth is None else depth, max_edges, max_bytes)
     for anchor in anchors:
         _anchor_spelling_safe(anchor)
     unique_anchors, unique_purposes = list(dict.fromkeys(anchors)), list(dict.fromkeys(purposes))
@@ -700,7 +712,7 @@ def bundle_relations(
             purpose,
             root=base,
             graph=graph,
-            depth=depth,
+            depth=_resolve_depth(purpose, depth),
             max_edges=max_edges,
             max_bytes=max_bytes,
             _graph=loaded_graph,

@@ -36,6 +36,7 @@ from mir.core.relations import (
     _normalized_locator,
     _profile_protections,
     _protected,
+    _resolve_depth,
     _resolve_root,
     _safe_relative_path,
     _validate_endpoint,
@@ -831,7 +832,7 @@ def query_memory_relations(
     purpose: str,
     *,
     root: str | Path = ".",
-    depth: int = DEFAULT_DEPTH,
+    depth: int | None = None,
     max_edges: int = DEFAULT_MAX_EDGES,
     max_bytes: int = DEFAULT_MAX_BYTES,
 ) -> dict[str, Any]:
@@ -839,7 +840,8 @@ def query_memory_relations(
     if not isinstance(purpose, str) or purpose not in _PURPOSES:
         raise RelationError("purpose must be implementation, impact, verification, or dependencies")
     _anchor_spelling_safe(anchor)
-    _validate_limits(depth, max_edges, max_bytes)
+    resolved_depth = _resolve_depth(purpose, depth)
+    _validate_limits(resolved_depth, max_edges, max_bytes)
     base = _resolve_root(root)
     protections = _profile_protections(base)
     db_path = _memory_db_path(base)
@@ -863,7 +865,7 @@ def query_memory_relations(
                     protections,
                     resolved,
                     purpose,
-                    depth=depth,
+                    depth=resolved_depth,
                     max_edges=max_edges,
                     state=state,
                 )
@@ -880,7 +882,7 @@ def query_memory_relations(
         anchor,
         purpose,
         root=base,
-        depth=depth,
+        depth=resolved_depth,
         max_edges=max_edges,
         max_bytes=max_bytes,
         _graph=edges,
@@ -903,7 +905,7 @@ def bundle_memory_relations(
     purposes: list[str],
     *,
     root: str | Path = ".",
-    depth: int = DEFAULT_DEPTH,
+    depth: int | None = None,
     max_edges: int = DEFAULT_MAX_EDGES,
     max_bytes: int = DEFAULT_MAX_BYTES,
 ) -> dict[str, Any]:
@@ -914,7 +916,7 @@ def bundle_memory_relations(
         or any(not isinstance(value, str) for value in [*anchors, *purposes])
     ):
         raise RelationError("anchors and purposes must be lists")
-    _validate_limits(depth, max_edges, max_bytes)
+    _validate_limits(DEFAULT_DEPTH if depth is None else depth, max_edges, max_bytes)
     for anchor in anchors:
         _anchor_spelling_safe(anchor)
     unique_anchors, unique_purposes = list(dict.fromkeys(anchors)), list(dict.fromkeys(purposes))
@@ -1014,7 +1016,7 @@ def bundle_memory_relations(
                         protections,
                         [resolved_anchor],
                         purpose,
-                        depth=depth,
+                        depth=_resolve_depth(purpose, depth),
                         max_edges=max_edges,
                         state=state,
                     )
@@ -1051,7 +1053,7 @@ def bundle_memory_relations(
             resolved_anchor,
             purpose,
             root=base,
-            depth=depth,
+            depth=_resolve_depth(purpose, depth),
             max_edges=max_edges,
             max_bytes=max_bytes,
             _graph=facet_edges[purpose],
