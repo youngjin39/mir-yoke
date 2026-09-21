@@ -39,7 +39,7 @@ immutable release:
 
 ```bash
 uv tool install --force --link-mode copy \
-  "git+https://github.com/youngjin39/mir-yoke.git@v0.10.3"
+  "git+https://github.com/youngjin39/mir-yoke.git@v0.10.4"
 mir --help
 ```
 
@@ -193,3 +193,6 @@ SRR 0.10.3 focuses routine skill selection on implementation, verification and d
 from known anchors. Omitted dependency depth is one hop in both adapters and in mixed bundles;
 explicit depth remains available. Broader impact traversal is reserved for explicit requests.
 Ordinary memory/body retrieval is unchanged; fewer relation calls do not guarantee fewer tokens.
+
+SRR 0.10.4 requires a delivery-selected provider and explicit target root for portable examples.
+It does not upgrade repository-local consoles, install providers, or change memory ownership.

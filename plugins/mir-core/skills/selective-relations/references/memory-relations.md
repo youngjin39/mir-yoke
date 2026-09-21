@@ -3,7 +3,7 @@
 Use this adapter when the repository already has Mir memory and the task needs maintained explicit
 relationships. Use provider 0.10.2 or later for anchor-scoped SQL selection; 0.10.1 provides compact
 cards but still loads a bounded whole-project view. The memory adapter supports `--memory` on
-`mir relations query` and `mir relations bundle` below. Older versions continue with their existing adapter or
+the selected provider's `relations query` and `relations bundle` commands below. Older versions continue with their existing adapter or
 ordinary search. Do not initialize a DB or populate a corpus solely to make retrieval available.
 
 ## Authorized ingestion
@@ -47,13 +47,18 @@ a missing reason is labeled as no authored rationale, never filled by an inferre
 The referenced files must exist and satisfy the repository's protections. With an existing memory
 DB, select the explicitly supported provider writer. A repository-local `uv run mir` may resolve to
 an older package even when the shared skill is installed. Before authoring relations, check that the
-chosen executable exposes `mir relations query --help` with `--memory` and supports the current
+chosen executable exposes `relations query --help` with `--memory` and supports the current
 relation declaration contract. Use the same provider for relation ingestion and retrieval; retain
 other repository-owned memory operations. Do not silently send declarations through an old writer.
-From a shell outside a repository-local `uv run` environment:
+Delivery supplies the supported executable and target root as absolute `MIR_SRR_PROVIDER` and
+`MIR_SRR_ROOT` paths. Check the provider once during setup, adoption, or a runtime change, not on
+every operation. From that selected provider:
 
 ```bash
-mir memory ingest-md docs/decisions/adr-checkout.md
+(
+  cd -- "$MIR_SRR_ROOT" && \
+    "$MIR_SRR_PROVIDER" memory ingest-md docs/decisions/adr-checkout.md --db .mir/memory.db
+)
 ```
 
 The writer stores entity-object facts and stated provenance in the existing schema. It preserves
@@ -65,8 +70,8 @@ Malformed declarations must not leave partially written memory. No embedding cal
 ## Read-only retrieval
 
 ```bash
-mir relations bundle REQ-CHECKOUT --memory --root . --purpose implementation --purpose verification
-mir relations query MOD-CHECKOUT --memory --root . --purpose dependencies --depth 1
+"$MIR_SRR_PROVIDER" relations bundle REQ-CHECKOUT --memory --root "$MIR_SRR_ROOT" --purpose implementation --purpose verification
+"$MIR_SRR_PROVIDER" relations query MOD-CHECKOUT --memory --root "$MIR_SRR_ROOT" --purpose dependencies --depth 1
 ```
 
 `--memory` selects only `.mir/memory.db` beneath the explicit root and cannot be combined with

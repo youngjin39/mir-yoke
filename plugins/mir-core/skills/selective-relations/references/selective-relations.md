@@ -42,11 +42,15 @@ edges:
 ```
 
 ```bash
-mir relations query REQ-LOGIN --purpose implementation --root .
-mir relations bundle REQ-LOGIN --purpose implementation --purpose verification --root .
-mir relations query MOD-AUTH --purpose dependencies --root . --depth 1
-mir relations query REQ-LOGIN --purpose implementation --root . --graph relations/declared.yaml
+"$MIR_SRR_PROVIDER" relations query REQ-LOGIN --purpose implementation --root "$MIR_SRR_ROOT"
+"$MIR_SRR_PROVIDER" relations bundle REQ-LOGIN --purpose implementation --purpose verification --root "$MIR_SRR_ROOT"
+"$MIR_SRR_PROVIDER" relations query MOD-AUTH --purpose dependencies --root "$MIR_SRR_ROOT" --depth 1
+"$MIR_SRR_PROVIDER" relations query REQ-LOGIN --purpose implementation --root "$MIR_SRR_ROOT" --graph relations/declared.yaml
 ```
+
+`MIR_SRR_PROVIDER` and `MIR_SRR_ROOT` are delivery-selected absolute paths. Verify the selected
+provider once at setup, adoption, or runtime change; do not probe every query. If it cannot serve
+this adapter, return to ordinary search rather than using a bare or repository-local Mir command.
 
 From provider 0.10.3, omitted depth defaults to 1 for `dependencies` and 3 for other purposes.
 A bundle applies these defaults independently per purpose. An explicit `--depth` overrides every

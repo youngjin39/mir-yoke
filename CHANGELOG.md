@@ -142,6 +142,15 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
   maintainer configuration already carried it; the generator, which is what every new project
   actually receives, did not.
 
+## [0.10.4] — 2026-09-21 — Explicit SRR provider selection
+
+### Fixed
+
+- Require delivery-selected provider and target-root paths for portable SRR commands, avoiding
+  ambiguous repository-local consoles while retaining ordinary-search fallback when unsupported.
+- Make relation-ingest guidance enter the declared target root before resolving whitelisted source
+  paths, and fail before invoking a provider when that root is unavailable.
+
 ## [0.10.3] — 2026-09-21 — Selective SRR scope and direct dependency defaults
 
 ### Changed

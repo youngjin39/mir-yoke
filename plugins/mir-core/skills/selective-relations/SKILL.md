@@ -29,6 +29,20 @@ symbol-level debugging or runtime investigation, the anchor is unknown, or the q
 the repository's declared relationship types. Do not create a graph, extract links, index a memory
 store, migrate a database, or write records merely to make SRR available.
 
+## Select the supported provider
+
+Do not invoke bare `mir`, `uv run mir`, or a repository-local `.venv/bin/mir` for SRR. Delivery
+selects one supported executable and the target root before the query. Keep their absolute paths in
+`MIR_SRR_PROVIDER` and `MIR_SRR_ROOT`, then quote both values in every invocation. A Kit-managed
+target may select its own hash-bound `scripts/mir.sh`; another delivery path may select a different
+supported provider. The skill never supplies a host-specific path.
+
+At setup, adoption, or after the selected runtime changes, verify the selection once with
+`"$MIR_SRR_PROVIDER" relations query --help` and confirm that its output advertises `--memory`.
+Do not repeat that preflight for each query. If the selected provider is absent, not executable, or
+does not support the requested SRR adapter, use ordinary search and direct source evidence. Do not
+install, upgrade, or substitute another local runtime merely to make SRR available.
+
 ## Retrieve declared evidence
 
 When the repository has a compatible adapter and maintained declared relation source or view, read
