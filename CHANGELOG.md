@@ -142,6 +142,16 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
   maintainer configuration already carried it; the generator, which is what every new project
   actually receives, did not.
 
+## [0.10.6] — 2026-09-23 — Repository maintenance checklist skill
+
+### Added
+
+- `mir-core:repo-maintenance`: the owner-defined twenty-item periodic maintenance checklist for
+  agent-operated repositories (consistency through open decisions, including test health,
+  code/security/dependencies, integrity evidence and runtime behavior). It sequences the existing
+  governance, verify, testing and code-review skills. It stays read-only unless a fix is requested and never
+  fabricates provenance or weakens a safety guard.
+
 ## [0.10.5] — 2026-09-23 — Codex plugin and app-server transport records
 
 ### Changed

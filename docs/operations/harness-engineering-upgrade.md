@@ -154,11 +154,12 @@ entry when the repository discovers runtime capabilities directly. Then run the 
 agent-management verifier. Follow the complete inventory, collision, activation, and rollback
 procedure in [Global Plugin Migration](global-plugin-migration.md).
 
-Mir Yoke's portable set is intentionally limited to four plugins and fifteen skills. The optional
+Mir Yoke's portable set is intentionally limited to four plugins and sixteen skills. The optional
 `mir-core:selective-relations` skill supports bounded retrieval through declared relationships. The
 `design`, `governance`, `efficiency`, `bluebricks`, `testing`, `code-review`, and
 `verify` skills already compose this upgrade workflow; an umbrella duplicate would add discovery
-cost without a new capability.
+cost without a new capability. `mir-core:repo-maintenance` is the owner-defined twenty-item
+periodic checklist; it sequences those skills for a maintenance pass and does not restate their procedures.
 
 #### Hooks
 

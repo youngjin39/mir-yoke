@@ -48,7 +48,7 @@ immutable release:
 
 ```bash
 uv tool install --force --link-mode copy \
-  "git+https://github.com/youngjin39/mir-yoke.git@v0.10.5"
+  "git+https://github.com/youngjin39/mir-yoke.git@v0.10.6"
 mir --help
 ```
 

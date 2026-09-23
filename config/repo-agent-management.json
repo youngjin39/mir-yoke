@@ -366,6 +366,13 @@
         "status": "active",
         "source_path": "plugins/mir-core/skills/memory-gc/"
       },
+      "repo-maintenance": {
+        "category": "governance",
+        "absorbs": [],
+        "scope": "universal",
+        "status": "active",
+        "source_path": "plugins/mir-core/skills/repo-maintenance/"
+      },
       "selective-relations": {
         "category": "knowledge",
         "absorbs": [],

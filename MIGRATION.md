@@ -82,7 +82,7 @@ Discard an uncommitted Project Agent Kit adaptation in the target or restore the
 commit. For an explicitly invoked CLI transaction, use that command's recorded rollback/recovery
 contract. Installing the CLI does not itself mutate a target.
 
-Current version: `0.10.5`. See `CHANGELOG.md` for release details.
+Current version: `0.10.6`. See `CHANGELOG.md` for release details.
 
 Version 0.10.0 adds opt-in `memory_relations` ingestion and read-only `mir relations query|bundle --memory`
 query/bundle selection using the existing memory schema. No automatic corpus backfill, database
@@ -116,3 +116,6 @@ Existing local consoles are not upgraded, and unsupported providers continue wit
 Version 0.10.5 changes guidance and records only: Claude reaches Codex through the official Codex
 plugin and `mir_executor` uses `codex app-server`. Plugin skill content, schemas and memory are unchanged;
 no migration or re-ingestion is needed.
+
+Version 0.10.6 adds the optional `mir-core:repo-maintenance` skill, a twenty-item periodic maintenance
+checklist for agent-operated repositories. It is read-only unless a fix is requested; nothing else changes.
