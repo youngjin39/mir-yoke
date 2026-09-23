@@ -14,6 +14,32 @@ from scripts import verify_codex_sync
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def test_should_generate_without_retired_hook_library_when_source_is_absent(tmp_path):
+    source = tmp_path / "source"
+    scripts = source / "scripts"
+    scripts.mkdir(parents=True)
+    shutil.copy2(ROOT / "scripts/generate_codex_derivatives.sh", scripts)
+    (source / "CLAUDE.md").write_text("# Fixture\n", encoding="utf-8")
+    output = tmp_path / "output"
+    stale = output / ".codex/hooks/lib/obsolete.py"
+    stale.parent.mkdir(parents=True)
+    stale.write_text("# Obsolete generated helper\n", encoding="utf-8")
+    result = subprocess.run(
+        ["bash", str(scripts / "generate_codex_derivatives.sh")],
+        env={**os.environ, "CODEX_DERIVATION_OUTPUT_ROOT": str(output)},
+        capture_output=True, text=True, check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    assert not (output / ".codex/hooks/lib").exists()
+    manifest = json.loads((output / ".codex-sync/manifest.json").read_text())
+    assert all(item["source"] != ".claude/hooks/lib" for item in manifest["mappings"])
+    failures = []
+    verify_codex_sync.validate_portable_hook_copy(
+        failures, source_root=source, output_root=output,
+    )
+    assert failures == []
+
+
 def test_generator_skips_non_agent_markdown_and_empty_targets(tmp_path: Path) -> None:
     stale_agent = tmp_path / ".codex" / "agents" / "stale-agent.toml"
     stale_agent.parent.mkdir(parents=True)
@@ -431,21 +457,30 @@ def test_should_validate_all_yoke_managed_runtime_surfaces() -> None:
 
 
 def test_generator_emits_real_portable_hook_library(tmp_path: Path) -> None:
-    env = {**os.environ, "CODEX_DERIVATION_OUTPUT_ROOT": str(tmp_path)}
+    source = tmp_path / "source"
+    scripts = source / "scripts"
+    scripts.mkdir(parents=True)
+    shutil.copy2(ROOT / "scripts/generate_codex_derivatives.sh", scripts)
+    (source / "CLAUDE.md").write_text("# Fixture\n", encoding="utf-8")
+    library = source / ".claude/hooks/lib"
+    library.mkdir(parents=True)
+    (library / "portable.py").write_text("# Portable fixture\n", encoding="utf-8")
+    output = tmp_path / "output"
+    env = {**os.environ, "CODEX_DERIVATION_OUTPUT_ROOT": str(output)}
     completed = subprocess.run(
         ["/bin/bash", "scripts/generate_codex_derivatives.sh"],
-        cwd=ROOT,
+        cwd=source,
         env=env,
         capture_output=True,
         text=True,
         check=False,
     )
     assert completed.returncode == 0, completed.stderr
-    target = tmp_path / ".codex" / "hooks" / "lib"
+    target = output / ".codex" / "hooks" / "lib"
     assert target.is_dir()
     assert not target.is_symlink()
     failures: list[str] = []
     verify_codex_sync.validate_portable_hook_copy(
-        failures, source_root=ROOT, output_root=tmp_path
+        failures, source_root=source, output_root=output
     )
     assert failures == []

@@ -5,10 +5,8 @@ _MIR_PYTHON_LAUNCHER="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/_lib/r
 # Reads tool_input from stdin (JSON). Exit 2 = block; exit 0 = allow.
 #
 # Tier declarations per ADR-33 / R27-T02 (Choice 5=A):
-#   pre-tool-use/code-path-block  : tier=block  (your-harness BLOCK code path protection)
 #   pre-tool-use/deny-list        : tier=block  (security)
 #   pre-tool-use/tool-contract-log: tier=warn   (MIR_TOOL_CONTRACT_LOG advisory)
-_MIR_HOOK_TIER_CODE_PATH="warn"
 _MIR_HOOK_TIER_DENY_LIST="block"
 _MIR_HOOK_TIER_TOOL_CONTRACT_LOG="warn"
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
@@ -351,134 +349,10 @@ fi
 #     `secrets/prod.yaml` was allowed while `./secrets/prod.yaml` was blocked.
 # Screening one bare path at a time fixes both, and keeps every guard in one
 # place so a new edit-shaped tool cannot silently miss a subset.
-screen_path_target() {
-  local fp="$1"
-  [ -n "$fp" ] || return 0
-  local relative_fp
-  relative_fp="$(resolve_project_relative_path "$fp" 2>/dev/null)" || block "project path resolution failed"
-
-  # 1. Outside project root
-  if [ -z "$relative_fp" ]; then
-    case "$fp" in
-      /etc/*|/System/*|/Library/*|/usr/*|/bin/*|/sbin/*|/var/*|/private/*)
-        block "Write outside project root: $fp"
-        ;;
-    esac
-  fi
-  # 2. Secret/env files
-  case "$(basename "$fp")" in
-    .env|.env.*|credentials|credentials.*|id_rsa|id_ed25519|*.pem|*.key|*.p12)
-      block "Write to secret/credential file: $fp"
-      ;;
-  esac
-  # 3. Git internal state
-  if safety_pattern_matches "$fp" '(^|/)\.git/(config|hooks/|refs/|objects/)'; then
-    block "Write to git internal state: $fp"
-  fi
-  # ADR-60 R5: a sub-agent / codex-delegated context must NOT write the MAIN control-plane
-  # cursor tasks/plan.md (the control_plane main owns it). Defense-in-depth behind the R4
-  # worktree isolation. Detect the delegated context via MIR_CODEX_SESSION_ID.
-  # The main (MIR_CODEX_SESSION_ID unset) is allowed.
-  if [ -n "${MIR_CODEX_SESSION_ID:-}" ]; then
-    case "$fp" in
-      tasks/plan.md|*/tasks/plan.md)
-        block "ADR-60 R5: a sub-agent/codex context must not edit the main control-plane cursor tasks/plan.md — the control_plane main owns it (report your result via your final message + the JobRegistry, never plan.md)"
-        ;;
-    esac
-  fi
-  apply_deny_list "${relative_fp:-$fp}" "path"
-}
-
-if [ "$TOOL_NAME" = "Write" ] || [ "$TOOL_NAME" = "Edit" ] || [ "$TOOL_NAME" = "NotebookEdit" ]; then
-  FP="$(extract_json '.tool_input.file_path // .tool_input.path // .tool_input.notebook_path')" || block "Malformed PreToolUse payload for filter: .tool_input.file_path // .tool_input.path // .tool_input.notebook_path"
-  [ -z "$FP" ] && block "Empty file path payload"
-  screen_path_target "$FP"
-fi
-
-# mir:bluebrick-advisory:begin
-# Advisory: emit one stderr line when a Write/Edit/Bash-write targets a bluebrick-owned path.
-# Never blocks (exit 0 always). Config lives in config/bluebrick-paths.json.
-_MIR_BB_CONFIG="$PROJECT_DIR/config/bluebrick-paths.json"
-if [ -f "$_MIR_BB_CONFIG" ] && ([ "$TOOL_NAME" = "Edit" ] || [ "$TOOL_NAME" = "Write" ]); then
-  _bb_fp="$(extract_json '.tool_input.file_path // .tool_input.path' 2>/dev/null || echo "")"
-  if [ -n "$_bb_fp" ]; then
-    _bb_match="$("$_MIR_PYTHON_LAUNCHER" - "$_bb_fp" "$_MIR_BB_CONFIG" <<'BBPY'
-import sys, json, os
-fp, cfg_path = sys.argv[1], sys.argv[2]
-try:
-    mapping = json.load(open(cfg_path))
-except Exception:
-    sys.exit(1)
-pwd = os.environ.get("PWD", "")
-candidates = [fp]
-if pwd and fp.startswith(pwd + "/"):
-    candidates.append(fp[len(pwd)+1:])
-for prefix, brick in mapping.items():
-    for c in candidates:
-        if c == prefix or c.startswith(prefix):
-            print(f"{brick}")
-            sys.exit(0)
-BBPY
-)" || warn "bluebrick advisory inspection failed"
-    [ -n "$_bb_match" ] && warn "[bluebrick] read docs/bluebricks/$_bb_match.md before changing $_bb_fp"
-  fi
-fi
-# mir:bluebrick-advisory:end
-
-# mir:profile:enforcement:begin
-# --- Mir profile-driven enforcement (V2.2 — phase-2 scope + ADR-23 dogfooding exemption) ---
-if [ "${MIR_FAMILY_CODE_PATHS_INITIALIZED:-no}" != "yes" ]; then
-    MIR_FAMILY_SLUG="${MIR_FAMILY_SLUG:-your-harness}"
-    MIR_FAMILY_CODE_PATHS=()
-    _MIR_CODE_PATH_HELPER="$PROJECT_DIR/.claude/hooks/lib/code-path-config.py"
-    if [ -f "$_MIR_CODE_PATH_HELPER" ]; then
-        _mir_code_paths="$("$_MIR_PYTHON_LAUNCHER" "$_MIR_CODE_PATH_HELPER" \
-                 --family "$MIR_FAMILY_SLUG" --check code-paths 2>/dev/null)" || {
-            warn "code-path configuration inspection failed; using advisory defaults"
-            _mir_code_paths=""
-        }
-        while IFS= read -r line; do
-            [ -n "$line" ] && MIR_FAMILY_CODE_PATHS+=("$line")
-        done <<< "$_mir_code_paths"
-    fi
-    [ "${#MIR_FAMILY_CODE_PATHS[@]}" -eq 0 ] && MIR_FAMILY_CODE_PATHS=( "tools/" "src/" )
-
-    # ADR-23 dogfooding exempt check
-    MIR_DOGFOODING_EXEMPT="no"
-    if [ -f "$_MIR_CODE_PATH_HELPER" ]; then
-        MIR_DOGFOODING_EXEMPT="$("$_MIR_PYTHON_LAUNCHER" "$_MIR_CODE_PATH_HELPER" \
-                                --family "$MIR_FAMILY_SLUG" --check dogfooding-exempt 2>/dev/null)" || {
-            warn "dogfooding advisory inspection failed; using advisory defaults"
-            MIR_DOGFOODING_EXEMPT="no"
-        }
-    fi
-
-    MIR_CODEX_DEFAULT_ENABLED="true"
-    MIR_FAMILY_CODE_PATHS_INITIALIZED=yes
-fi
-
-_mir_path_matches_code_path() {
-    "$_MIR_PYTHON_LAUNCHER" - "$1" "${MIR_FAMILY_CODE_PATHS[@]}" <<'PY'
-import fnmatch
-import os
-import sys
-
-path, *patterns = sys.argv[1:]
-pwd = os.environ.get("PWD", "")
-candidates = [path]
-if pwd and path.startswith(pwd + "/"):
-    candidates.append(path[len(pwd) + 1:])
-
-def matches(candidate, pattern):
-    if pattern.endswith("/"):
-        return candidate.startswith(pattern) or ("/" + pattern) in ("/" + candidate + "/")
-    return fnmatch.fnmatch(candidate, pattern.replace("**", "*"))
-
-print("yes" if any(matches(candidate, pattern) for candidate in candidates for pattern in patterns) else "no")
-PY
-}
-
-_mir_patch_path_safety_reason() {
+# Root-based resolution preserves the retired profile block semantics. The local
+# file guard additionally resolves against hook cwd; NotebookEdit keeps its narrower
+# existing checks. History: tasks/change_log.md, Owner Tasks B and D (2026-09-24).
+root_path_safety_reason() {
     "$_MIR_PYTHON_LAUNCHER" - "$1" "$PROJECT_DIR" <<'PY'
 import os
 from pathlib import Path
@@ -513,48 +387,104 @@ if (
 PY
 }
 
-_mir_tool_name="$TOOL_NAME"
-if [ "$_mir_tool_name" = "Edit" ] || [ "$_mir_tool_name" = "Write" ]; then
-    _mir_file_path="$FP"
-    if [ -n "$_mir_file_path" ]; then
-        _mir_file_safety_reason="$(_mir_patch_path_safety_reason "$_mir_file_path" 2>/dev/null)" || block "file path safety inspection failed"
-        if [ -n "$_mir_file_safety_reason" ]; then
-            echo "[PreToolUse BLOCK] $_mir_file_safety_reason: $_mir_file_path" >&2
-            exit 2
-        fi
-        if [ "${#MIR_FAMILY_CODE_PATHS[@]}" -gt 0 ]; then
-            _mir_match="$(_mir_path_matches_code_path "$_mir_file_path" 2>/dev/null)" || warn "code-path advisory inspection failed"
-            if [ "$_mir_match" = "yes" ] && [ -z "${MIR_CODEX_SESSION_ID:-}" ] && [ "${MIR_CODEX_MAIN:-0}" != "1" ]; then
-                echo "[mir ADVISORY] code-path edit on $_mir_file_path: consider the delegated lane when isolation, review independence, or parallelism justifies its cost; bounded direct-main edits are allowed." >&2
-            fi
-        fi
-    fi
+screen_path_target() {
+  local fp="$1"
+  [ -n "$fp" ] || return 0
+  local safety_reason
+  case "$TOOL_NAME" in
+    apply_patch|ApplyPatch)
+      safety_reason="$(root_path_safety_reason "$fp" 2>/dev/null)" || block "patch path safety inspection failed"
+      [ -z "$safety_reason" ] || block "$safety_reason"
+      apply_deny_list "$fp" "path"
+      return 0
+      ;;
+  esac
+  local relative_fp
+  relative_fp="$(resolve_project_relative_path "$fp" 2>/dev/null)" || block "project path resolution failed"
+
+  # 1. Outside project root
+  if [ -z "$relative_fp" ]; then
+    case "$fp" in
+      /etc/*|/System/*|/Library/*|/usr/*|/bin/*|/sbin/*|/var/*|/private/*)
+        block "Write outside project root: $fp"
+        ;;
+    esac
+  fi
+  # 2. Secret/env files
+  case "$(basename "$fp")" in
+    .env|.env.*|credentials|credentials.*|id_rsa|id_ed25519|*.pem|*.key|*.p12)
+      block "Write to secret/credential file: $fp"
+      ;;
+  esac
+  # 3. Git internal state
+  if safety_pattern_matches "$fp" '(^|/)\.git/(config|hooks/|refs/|objects/)'; then
+    block "Write to git internal state: $fp"
+  fi
+  # ADR-60 R5: a sub-agent / codex-delegated context must NOT write the MAIN control-plane
+  # cursor tasks/plan.md (the control_plane main owns it). Defense-in-depth behind the R4
+  # worktree isolation. Detect the delegated context via MIR_CODEX_SESSION_ID.
+  # The main (MIR_CODEX_SESSION_ID unset) is allowed.
+  if [ -n "${MIR_CODEX_SESSION_ID:-}" ]; then
+    case "$fp" in
+      tasks/plan.md|*/tasks/plan.md)
+        block "ADR-60 R5: a sub-agent/codex context must not edit the main control-plane cursor tasks/plan.md — the control_plane main owns it (report your result via your final message + the JobRegistry, never plan.md)"
+        ;;
+    esac
+  fi
+  apply_deny_list "${relative_fp:-$fp}" "path"
+  if [ "$TOOL_NAME" = "Edit" ] || [ "$TOOL_NAME" = "Write" ]; then
+    safety_reason="$(root_path_safety_reason "$fp" 2>/dev/null)" || block "file path safety inspection failed"
+    [ -z "$safety_reason" ] || block "$safety_reason"
+  fi
+}
+
+if [ "$TOOL_NAME" = "Write" ] || [ "$TOOL_NAME" = "Edit" ] || [ "$TOOL_NAME" = "NotebookEdit" ]; then
+  FP="$(extract_json '.tool_input.file_path // .tool_input.path // .tool_input.notebook_path')" || block "Malformed PreToolUse payload for filter: .tool_input.file_path // .tool_input.path // .tool_input.notebook_path"
+  [ -z "$FP" ] && block "Empty file path payload"
+  screen_path_target "$FP"
 fi
-if [ "$_mir_tool_name" = "apply_patch" ] || [ "$_mir_tool_name" = "ApplyPatch" ]; then
+
+if [ "$TOOL_NAME" = "apply_patch" ] || [ "$TOOL_NAME" = "ApplyPatch" ]; then
     _mir_patch="$(extract_json '.tool_input.command // .tool_input.input // .tool_input.patch // .tool_input.content | select(type == "string" and length > 0)')" || block "Malformed apply_patch payload"
     _mir_patch_paths="$(printf '%s\n' "$_mir_patch" | sed -nE \
         -e 's/^\*\*\* (Add|Update|Delete) File: (.*)$/\2/p' \
         -e 's/^\*\*\* Move to: (.*)$/\1/p')" || block "patch path extraction failed"
     while IFS= read -r _mir_patch_path; do
         [ -n "$_mir_patch_path" ] || continue
-        _mir_patch_safety_reason="$(_mir_patch_path_safety_reason "$_mir_patch_path" 2>/dev/null)" || block "patch path safety inspection failed"
-        if [ -n "$_mir_patch_safety_reason" ]; then
-            echo "[PreToolUse BLOCK] $_mir_patch_safety_reason: $_mir_patch_path" >&2
-            exit 2
-        fi
-        # ADR-87 follow-up: the safety reason above covers outside-root, git internals
-        # and secret basenames, but not the deny-list. A patch could therefore add
-        # secrets/prod.yaml, which protected-secrets-dir exists to stop.
-        apply_deny_list "$_mir_patch_path" "path"
-        _mir_match="$(_mir_path_matches_code_path "$_mir_patch_path" 2>/dev/null)" || warn "code-path advisory inspection failed"
-        if [ "$_mir_match" = "yes" ] && [ -z "${MIR_CODEX_SESSION_ID:-}" ] && [ "${MIR_CODEX_MAIN:-0}" != "1" ]; then
-            echo "[mir ADVISORY] code-path patch on $_mir_patch_path: consider the delegated lane when isolation, review independence, or parallelism justifies its cost; bounded direct-main edits are allowed." >&2
-        fi
+        screen_path_target "$_mir_patch_path"
     done <<< "$_mir_patch_paths"
 fi
-# --- end Mir profile-driven enforcement (V2.2) ---
 
-# mir:profile:enforcement:end
+# mir:bluebrick-advisory:begin
+# Advisory: emit one stderr line when a Write/Edit/Bash-write targets a bluebrick-owned path.
+# Never blocks (exit 0 always). Config lives in config/bluebrick-paths.json.
+_MIR_BB_CONFIG="$PROJECT_DIR/config/bluebrick-paths.json"
+if [ -f "$_MIR_BB_CONFIG" ] && ([ "$TOOL_NAME" = "Edit" ] || [ "$TOOL_NAME" = "Write" ]); then
+  _bb_fp="$(extract_json '.tool_input.file_path // .tool_input.path' 2>/dev/null || echo "")"
+  if [ -n "$_bb_fp" ]; then
+    _bb_match="$("$_MIR_PYTHON_LAUNCHER" - "$_bb_fp" "$_MIR_BB_CONFIG" <<'BBPY'
+import sys, json, os
+fp, cfg_path = sys.argv[1], sys.argv[2]
+try:
+    mapping = json.load(open(cfg_path))
+except Exception:
+    sys.exit(1)
+pwd = os.environ.get("PWD", "")
+candidates = [fp]
+if pwd and fp.startswith(pwd + "/"):
+    candidates.append(fp[len(pwd)+1:])
+for prefix, brick in mapping.items():
+    for c in candidates:
+        if c == prefix or c.startswith(prefix):
+            print(f"{brick}")
+            sys.exit(0)
+BBPY
+)" || warn "bluebrick advisory inspection failed"
+    [ -n "$_bb_match" ] && warn "[bluebrick] read docs/bluebricks/$_bb_match.md before changing $_bb_fp"
+  fi
+fi
+# mir:bluebrick-advisory:end
+
 
 # mir:enabled-phases:begin
 # --- R25-T06: enabled_phases advisory check (gated by MIR_ENABLED_PHASES_CHECK=1) ---

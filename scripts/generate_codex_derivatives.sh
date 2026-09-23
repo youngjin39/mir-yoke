@@ -122,11 +122,12 @@ validate_agent_frontmatter_sources() {
 validate_agent_frontmatter_sources
 
 mkdir -p "$OUTPUT_ROOT/.codex/agents" "$OUTPUT_ROOT/.codex/hooks" "$OUTPUT_ROOT/.codex-sync"
-mkdir -p "$OUTPUT_ROOT/.claude/hooks/lib"
 
 # Keep the Codex hook library portable on Windows: generate a real directory copy.
 rm -rf -- "$OUTPUT_ROOT/.codex/hooks/lib"
-cp -R ".claude/hooks/lib" "$OUTPUT_ROOT/.codex/hooks/lib"
+if [ -d ".claude/hooks/lib" ]; then
+  cp -R ".claude/hooks/lib" "$OUTPUT_ROOT/.codex/hooks/lib"
+fi
 
 body_without_frontmatter() {
   local file="$1"
@@ -544,7 +545,9 @@ write_manifest_json() {
 
     append_mapping "scripts/generate_codex_derivatives.sh" '[".codex/README.md"]' "content" "Generated Codex runtime and hook-trust guide"
 
-    append_mapping ".claude/hooks/lib" '[".codex/hooks/lib"]' "directory" "Portable Codex hook library copy"
+    if [ -d ".claude/hooks/lib" ]; then
+      append_mapping ".claude/hooks/lib" '[".codex/hooks/lib"]' "directory" "Portable Codex hook library copy"
+    fi
 
     echo
     echo '  ]'

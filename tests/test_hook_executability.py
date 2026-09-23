@@ -186,10 +186,10 @@ def test_should_block_when_required_validator_is_missing(flag, command, reason, 
     assert reason in result.stderr
 
 
-@pytest.mark.parametrize("mode", ["contract", "phase", "bluebrick", "code-path"])
+@pytest.mark.parametrize("mode", ["contract", "phase", "bluebrick"])
 def test_should_warn_when_advisory_inspection_fails(mode, tmp_path):
     failure = {"contract": '"_mir_contract"', "phase": "enabled_phases",
-               "bluebrick": "mapping =", "code-path": "import fnmatch"}[mode]
+               "bluebrick": "mapping ="}[mode]
     script = _isolated_guard(tmp_path, failure=failure)
     env = {}
     payload = {"tool_name": "Write", "tool_input": {"file_path": "docs/test.md"}}
@@ -210,15 +210,12 @@ def test_should_warn_when_advisory_inspection_fails(mode, tmp_path):
     assert "failed" in result.stderr
 
 
-def test_should_warn_when_profile_advisory_helper_fails(tmp_path):
+def test_should_allow_without_retired_profile_advisories(tmp_path):
     script = _isolated_guard(tmp_path)
-    helper = tmp_path / ".claude/hooks/lib/code-path-config.py"
-    helper.parent.mkdir(parents=True)
-    helper.write_text("raise SystemExit(1)\n", encoding="utf-8")
     result = _run_pre_tool_use("echo safe", tmp_path, script=script)
     assert result.returncode == 0
-    assert "code-path configuration inspection failed" in result.stderr
-    assert "dogfooding advisory inspection failed" in result.stderr
+    assert "code-path configuration inspection failed" not in result.stderr
+    assert "dogfooding advisory inspection failed" not in result.stderr
 
 
 @pytest.mark.parametrize("failure", ["parser", "matcher"])
@@ -432,3 +429,10 @@ def test_post_edit_check_scans_codex_apply_patch_command(tmp_path: Path) -> None
 if __name__ == "__main__":
     test_all_hooks_executable()
     print("test_hook_executability: PASS")
+
+
+def test_should_keep_only_local_guard_without_compiler_markers():
+    source = (ROOT / ".claude/hooks/pre-tool-use.sh").read_text(encoding="utf-8")
+    assert "mir:profile:enforcement:" not in source
+    assert "consider the delegated lane" not in source
+    assert "MIR_FAMILY_CODE_PATHS_INITIALIZED" not in source

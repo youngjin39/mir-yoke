@@ -31,6 +31,9 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ### Changed
 
+- Retired the unused code-path configuration helper and its generated Codex copy after
+  owner choice B removed the profile enforcement block. Adopters no longer receive either
+  component; the consolidated local safety guard remains unchanged.
 - Opened only the schema-4 `skills-hooks` package shape after proving Codex 0.152.1 accepts hook
   plugins; exact handler bytes, hook inventory, and package digest are now required before runtime
   registration. MCP admission remains closed because neither runtime has a registered Yoke server.

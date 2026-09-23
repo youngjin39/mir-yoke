@@ -202,12 +202,6 @@
     {
       "classification": "reference",
       "disposition": "remove",
-      "path": ".claude/hooks/lib/code-path-config.py",
-      "sha256": "7e8260b862fb417570e881f3fd553617b690424468000eda9c748744c625e890"
-    },
-    {
-      "classification": "reference",
-      "disposition": "remove",
       "path": ".claude/hooks/mir-stop.sh",
       "sha256": "ec285cb5eab97c62e6f26063ce0f1a9cc16a490da0dd9cc002449b0760720910"
     },
@@ -251,7 +245,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": ".claude/hooks/pre-tool-use.sh",
-      "sha256": "c8c559a9a700e75c11d634199d642810272fdad8b2925ef89619c0b671c0291e"
+      "sha256": "e93feeed8af3682e6207983446206195cc54e9b95bb036cbd62c5761070bbaaa"
     },
     {
       "classification": "reference",
@@ -317,7 +311,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": ".codex-sync/manifest.json",
-      "sha256": "fedd411d6e81808b296c6517eda46777f761d1bdef950986b6b28083cfc3ccbc"
+      "sha256": "1fcae0460610d363977ea836d26068580013eb717bcfac877e83ad1d3439bff4"
     },
     {
       "classification": "reference",
@@ -410,12 +404,6 @@
       "sha256": "72a7e4c7d9514f1f3dfed1619aeb1fd9edf8ff557e08ec619571e592e14f17cd"
     },
     {
-      "classification": "reference",
-      "disposition": "remove",
-      "path": ".codex/hooks/lib/code-path-config.py",
-      "sha256": "7e8260b862fb417570e881f3fd553617b690424468000eda9c748744c625e890"
-    },
-    {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": ".github/workflows/release.yml",
@@ -491,7 +479,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "CHANGELOG.md",
-      "sha256": "ad38d868e4f232b8cf76ab5d9971f4489b37c8f92730475fbee150542f5310de"
+      "sha256": "cd4ecc9f66e3f284e570f0c2075ba9f952f7361f14ec30d25b8cf332b01c3160"
     },
     {
       "classification": "reference",
@@ -1271,7 +1259,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "docs/decisions/INDEX.md",
-      "sha256": "71e8a3858993d6e10b6c785a94824111ce523f0e5b618c932e1445d07710552f"
+      "sha256": "2d3ce739306a98530c94dfa9e54597a76cdd0c6803fc5f2db6f86ffb825d2c81"
     },
     {
       "classification": "historical",
@@ -1301,19 +1289,19 @@
       "classification": "historical",
       "disposition": "remove",
       "path": "docs/decisions/adr-05-mir-self-llmwiki.md",
-      "sha256": "f20e704d152ebb61a05d88879cf93b8713381f955bab266a0e7a48e0221ecc25"
+      "sha256": "3310ae9b071b262976791d023630445df381d520739274dfce8a87c8df71fe59"
     },
     {
       "classification": "historical",
       "disposition": "remove",
       "path": "docs/decisions/adr-06-stall-detection-2026-05-11.md",
-      "sha256": "d3cfa412269d20c11ad59a65ad419697d9d38deb21edf3cf559b8d49e406a6d5"
+      "sha256": "77953f0d3a0e559f809ced54c73df4a4ac867e8758032a2b9071516970dc5733"
     },
     {
       "classification": "historical",
       "disposition": "remove",
       "path": "docs/decisions/adr-07-review-gate-2026-05-11.md",
-      "sha256": "f33a3664fc1fd900433729b68e8063ff9bec1e7f6b6fd19a109e8092f58e42e9"
+      "sha256": "6288e348d3e84cd13347a8f98ebdb4f940aefacb45b60f467be3a12e1f284470"
     },
     {
       "classification": "historical",
@@ -1343,7 +1331,7 @@
       "classification": "historical",
       "disposition": "remove",
       "path": "docs/decisions/adr-12-prompt-cache-reshape-lane-2026-05-19.md",
-      "sha256": "4a0f9283154d8a9964b3b0c571e93f9fa42ec6f0e93f40b37d04c75f570915fb"
+      "sha256": "82b2faacab8c1ca67bac89124f063ff71a329f5e0208c4888c389336fa06bf55"
     },
     {
       "classification": "historical",
@@ -1367,7 +1355,7 @@
       "classification": "historical",
       "disposition": "remove",
       "path": "docs/decisions/adr-16-specialist-deployment-2026-05-21.md",
-      "sha256": "20fe116f6564f1e263d38642ced1b8b87ed15403adf47e2065828b57b5156ba6"
+      "sha256": "1427b992d5e9f59c77825d3403331bbec19b4b91d4218970ac889afd361b4be5"
     },
     {
       "classification": "historical",
@@ -1409,7 +1397,7 @@
       "classification": "historical",
       "disposition": "remove",
       "path": "docs/decisions/adr-23-active-family-dogfooding-exception-2026-05-23.md",
-      "sha256": "bef4f1c8b86687e3222583b964e10905dca83c4602d211033a6a98870f4e9c30"
+      "sha256": "4f60dc34abd3655d8722a50396b1f8b14de82f2dac39a2c4130b9cc114d95387"
     },
     {
       "classification": "historical",
@@ -1421,13 +1409,13 @@
       "classification": "historical",
       "disposition": "remove",
       "path": "docs/decisions/adr-26-rollout-share-pipeline-2026-05-23.md",
-      "sha256": "6bb7aeb22f4c91a2ae58d1b4e43b2dc5b3b8bbe0058823461aedd8f13948f261"
+      "sha256": "7e64dcbf0d92c694e0ad7012d6e671a709cd78e5f0e6c9775793e32e49434e9a"
     },
     {
       "classification": "historical",
       "disposition": "remove",
       "path": "docs/decisions/adr-27-back-propagation-2026-05-23.md",
-      "sha256": "c7d8e85ceafd0af24d5d6a277b5e44531abf55520d9f2d5322c5477e0be74511"
+      "sha256": "514cbd1efcb4691b6d2e01f32192d71f6c2cee4a625805ce197262540e2f9223"
     },
     {
       "classification": "historical",
@@ -1445,25 +1433,25 @@
       "classification": "historical",
       "disposition": "remove",
       "path": "docs/decisions/adr-40-mir-template-maintainer-charter-2026-05-23.md",
-      "sha256": "ad985c168e3c38dd5e0d5ef75a6f772034a1229a91c672c7814a39ca1cfef8b3"
+      "sha256": "60cc7352f5ea8568f03465ebba02a10c7d45741ab4c7c042352c2b68dc6136da"
     },
     {
       "classification": "historical",
       "disposition": "remove",
       "path": "docs/decisions/adr-41-verify-self-stop-hook-2026-05-23.md",
-      "sha256": "eb22d45f2a8fe6a74d59c52309c6012c8b7bc6a1ddc0bdd86e86a15ad287c373"
+      "sha256": "1af84d5d06f3170b7981c584ac7aebba0e8797a919a62450f5e523f3cea31d6c"
     },
     {
       "classification": "historical",
       "disposition": "remove",
       "path": "docs/decisions/adr-42-verify-template-applied-state-2026-05-23.md",
-      "sha256": "7c7b7b806c25c5261ae380b6f18643e2c32424aee11920dd85254b32bbd8f68c"
+      "sha256": "c1a95890be23fff3914477761abb8d48c9d4d6d3c2edb60a6fad61717634e618"
     },
     {
       "classification": "historical",
       "disposition": "remove",
       "path": "docs/decisions/adr-43-fleet-phase-4-rollout-deferral-2026-05-24.md",
-      "sha256": "1cb62a9c6f052b10116b26029156fcaf7def4cf27691d55d857c437ff55aaf89"
+      "sha256": "a0901560961cc5b8297507ff08bd09c182a6079dc9018fe9c0c34224a1592d24"
     },
     {
       "classification": "historical",
@@ -1517,7 +1505,7 @@
       "classification": "historical",
       "disposition": "remove",
       "path": "docs/decisions/adr-52-fleet-admin-elevation-and-cross-repo-write-model-2026-06-05.md",
-      "sha256": "59fc195e0ddde09c6df011ae06f9fe524a0515e3126f043c25c04ccac10cbfcb"
+      "sha256": "0b2327af13cc07e1b04a8cdd3761f4272df8436fb2a140c63abf250de988e19a"
     },
     {
       "classification": "historical",
@@ -3203,7 +3191,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "scripts/generate_codex_derivatives.sh",
-      "sha256": "e9e947818b53cd604eb7467c2fc492401ff0ec393c0f06598f2605dacb3d09b5"
+      "sha256": "d9df83c4106da062b2b633fba295a9e458c62086c72feffa12672a41aea6a1ce"
     },
     {
       "classification": "reference",
@@ -4031,7 +4019,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/change_log.md",
-      "sha256": "a0e0c6d34efa54e1d366fa340bedb93a1675dacbbb1f310b8f718d693ad54cf3"
+      "sha256": "0a1a3041095ca18be10ecec9d233c7b6f8aa001766eb3c9c69904630e4fd51d1"
     },
     {
       "classification": "reference",
@@ -4073,7 +4061,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/plan.md",
-      "sha256": "21045b4ea224bcde32b52c34014c89e743c82134138e1bf1ec8957f81036663b"
+      "sha256": "f0dc8768aeaf7011af5469239bdb796ba24dd0cf9f140e708df3fe6bf511b9f3"
     },
     {
       "classification": "reference",
@@ -4265,7 +4253,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_codex_derivation_script.py",
-      "sha256": "49b2ce1744021254cf0db8dcd8ea3df09197fcf2eb0c0201af020fdcc30e0a4b"
+      "sha256": "283da24a7e1c0cfa26756f35397ee42fa12598506ad70a517035d7ba074e1122"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4319,7 +4307,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_hook_executability.py",
-      "sha256": "fbb6bdec04f2751a2d304f238d1bc3609b3f50ed1ddbad281250222bd880c165"
+      "sha256": "98ef27e16f291f8234afdb49268b63dcbd3fc5883e25176f1f51bcd8faa2cca7"
     },
     {
       "classification": "template-maintainer-tool",

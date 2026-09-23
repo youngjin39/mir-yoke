@@ -139,14 +139,6 @@
       "sync_policy": "regenerate",
       "owner": "project-maintainer",
       "notes": "Generated Codex runtime and hook-trust guide"
-    },
-    {
-      "source": ".claude/hooks/lib",
-      "targets": [".codex/hooks/lib"],
-      "change_scope": "directory",
-      "sync_policy": "regenerate",
-      "owner": "project-maintainer",
-      "notes": "Portable Codex hook library copy"
     }
   ]
 }

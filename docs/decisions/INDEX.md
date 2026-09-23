@@ -1,7 +1,7 @@
 ---
 title: Public Harness Decision Index
 status: accepted
-updated: 2026-09-06
+updated: 2026-09-24
 ---
 
 # Public Harness Decision Index
@@ -67,8 +67,10 @@ implementation details.
 
 This register lists every local ADR file and its recorded status. The current-authority order
 above governs precedence; an older accepted record does not expand the supported surfaces.
-Mirrored summaries marked superseded say Mir Harness retired them but do not identify a
-numbered successor. That missing mapping needs an owner decision before it can be asserted.
+Mirrored successor mappings below were verified against the archived Mir Harness
+`superseded_by` fields under the owner authority recorded in `tasks/change_log.md`,
+"Owner Tasks B and D (2026-09-24)". Mir Harness ADR numbers refer to that repository;
+Mir Yoke decisions with the same numbers are different records.
 
 | Record | Recorded status | Successor or retirement note |
 |---|---|---|
@@ -76,34 +78,34 @@ numbered successor. That missing mapping needs an owner decision before it can b
 | [ADR-02](adr-02-skill-preserve-manifest.md) | accepted | — |
 | [ADR-03](adr-03-phase-gate-policy.md) | accepted | — |
 | [ADR-04](adr-04-claude-md-preserve.md) | accepted | — |
-| [ADR-05](adr-05-mir-self-llmwiki.md) | superseded | No numbered successor recorded; retired upstream |
-| [ADR-06](adr-06-stall-detection-2026-05-11.md) | superseded | No numbered successor recorded; retired upstream |
-| [ADR-07](adr-07-review-gate-2026-05-11.md) | superseded | No numbered successor recorded; retired upstream |
+| [ADR-05](adr-05-mir-self-llmwiki.md) | superseded | Mir Harness ADR-50 |
+| [ADR-06](adr-06-stall-detection-2026-05-11.md) | superseded | Mir Harness ADR-59 (the source note also names Mir Harness ADR-72 and Mir Harness ADR-73) |
+| [ADR-07](adr-07-review-gate-2026-05-11.md) | superseded | Mir Harness ADR-73 |
 | [ADR-08](adr-08-agent-routing-2026-05-12.md) | rejected | — |
 | [ADR-09](adr-09-execution-backend-frontmatter.md) | accepted | — |
 | [ADR-10](adr-10-fleet-governance-advisory-2026-05-18.md) | archived | — |
 | [ADR-11](adr-11-fleet-inventory-catalog-axis-extension-2026-05-19.md) | accepted | — |
-| [ADR-12](adr-12-prompt-cache-reshape-lane-2026-05-19.md) | superseded | No numbered successor recorded; retired upstream |
+| [ADR-12](adr-12-prompt-cache-reshape-lane-2026-05-19.md) | superseded | Mir Harness ADR-74 |
 | [ADR-13](adr-13-harness-generator-bootstrap-2026-05-19.md) | accepted | — |
 | [ADR-14](adr-14-sqlite-memory-python-native-2026-05-19.md) | accepted | — |
 | [ADR-15](adr-15-catalog-multi-agent-skill.md) | accepted | — |
-| [ADR-16](adr-16-specialist-deployment-2026-05-21.md) | superseded | No numbered successor recorded; retired upstream |
+| [ADR-16](adr-16-specialist-deployment-2026-05-21.md) | superseded | Mir Harness ADR-76 |
 | [ADR-17](adr-17-orchestrator-context-routing-2026-05-21.md) | accepted | — |
 | [ADR-18](adr-18-orchestrator-runtime-guard.md) | accepted | — |
 | [ADR-19](adr-19-workflow-preset-json-encoding-2026-05-22.md) | deferred | — |
 | [ADR-20](adr-20-per-family-execution-backend-schema-2026-05-22.md) | deferred | — |
 | [ADR-21](adr-21-family-type-schema-2026-05-23.md) | accepted | — |
 | [ADR-22](adr-22-sealed-family-policy-2026-05-23.md) | accepted | — |
-| [ADR-23](adr-23-active-family-dogfooding-exception-2026-05-23.md) | superseded | No numbered successor recorded; retired upstream |
+| [ADR-23](adr-23-active-family-dogfooding-exception-2026-05-23.md) | superseded | Mir Harness ADR-41 (itself superseded by Mir Harness ADR-76) |
 | [ADR-25](adr-25-fleet-catalog-2026-05-23.md) | archived | — |
-| [ADR-26](adr-26-rollout-share-pipeline-2026-05-23.md) | superseded | No numbered successor recorded; retired upstream |
-| [ADR-27](adr-27-back-propagation-2026-05-23.md) | superseded | No numbered successor recorded; retired upstream |
+| [ADR-26](adr-26-rollout-share-pipeline-2026-05-23.md) | superseded | Mir Harness ADR-76 |
+| [ADR-27](adr-27-back-propagation-2026-05-23.md) | superseded | Mir Harness ADR-76 |
 | [ADR-33](adr-33-design-complete-gate-hook-2026-05-23.md) | archived | — |
 | [ADR-39](adr-39-template-applied-state-charter-2026-05-23.md) | accepted | — |
-| [ADR-40](adr-40-mir-template-maintainer-charter-2026-05-23.md) | superseded | No numbered successor recorded; retired upstream |
-| [ADR-41](adr-41-verify-self-stop-hook-2026-05-23.md) | superseded | No numbered successor recorded; retired upstream |
-| [ADR-42](adr-42-verify-template-applied-state-2026-05-23.md) | superseded | No numbered successor recorded; retired upstream |
-| [ADR-43](adr-43-fleet-phase-4-rollout-deferral-2026-05-24.md) | superseded | No numbered successor recorded; retired upstream |
+| [ADR-40](adr-40-mir-template-maintainer-charter-2026-05-23.md) | superseded | Mir Harness ADR-76 |
+| [ADR-41](adr-41-verify-self-stop-hook-2026-05-23.md) | superseded | Mir Harness ADR-76 |
+| [ADR-42](adr-42-verify-template-applied-state-2026-05-23.md) | superseded | Mir Harness ADR-76 |
+| [ADR-43](adr-43-fleet-phase-4-rollout-deferral-2026-05-24.md) | superseded | Mir Harness ADR-44 |
 | [ADR-44](adr-44-13-state-sm-migration-2026-05-24.md) | accepted | — |
 | [ADR-45](adr-45-error-taxonomy-unification-2026-05-24.md) | accepted | — |
 | [ADR-46](adr-46-phase-4-enforce-flip-rollout-2026-05-24.md) | accepted | — |
@@ -112,7 +114,7 @@ numbered successor. That missing mapping needs an owner decision before it can b
 | [ADR-49](adr-49-opus-4-8-alignment-and-model-tier-routing-2026-05-30.md) | accepted | — |
 | [ADR-50](adr-50-memory-db-canonical-md-projection-2026-05-31.md) | accepted | — |
 | [ADR-51](adr-51-harness-self-consistency-verification-2026-06-04.md) | accepted | — |
-| [ADR-52](adr-52-fleet-admin-elevation-and-cross-repo-write-model-2026-06-05.md) | superseded | No numbered successor recorded; retired upstream |
+| [ADR-52](adr-52-fleet-admin-elevation-and-cross-repo-write-model-2026-06-05.md) | superseded | Mir Harness ADR-76 |
 | [ADR-53](adr-53-context-assembly-current-only-retrieval-2026-06-05.md) | accepted | — |
 | [ADR-54](adr-54-template-anchored-fleet-parity-manifest-2026-06-06.md) | archived | — |
 | [ADR-55](adr-55-native-memory-db-projection-2026-06-08.md) | accepted | — |

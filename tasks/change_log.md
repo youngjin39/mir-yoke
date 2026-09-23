@@ -1273,7 +1273,8 @@ The superseded handoff is retained above, not rewritten as historical fact.
     missing-TDD warnings are advisory. Real-repository safe/blocked probes pass. The shared hook
     exits 0. Installed package and all plugins are 0.10.6; Codex CLI reports 0.156.0. Credential-backed
     live execution and runtime installation are outside this pass; no activation claim is made.
-20. Open decisions: one existing historical decision remains. Thirteen mirrored ADRs record
+20. Historical pending item, closed 2026-09-24 by owner Tasks B and D below.
+    Original record retained: one existing historical decision remains. Thirteen mirrored ADRs record
     retirement, but no numbered successor is recorded. Keep their retirement notes unless the
     owner supplies authoritative successor mappings; only a definitive historical mapping is
     blocked. No implementation change in this pass conflicts with an accepted ADR.
@@ -1397,6 +1398,386 @@ No commit, push, tag, release, runtime installation or consumer write was perfor
 - Dependency latest-version lookup failed on DNS; online vulnerability and transitive-license checks skipped. Direct installed package metadata reviewed; no private absolute-path matches found.
 - Credential-pattern locations only (not proof of real credentials): docs/_archive/harness-engineering/applications/example-harness/phase-1-application-2026-06-13-historical.md; tests/test_adr53_phase3b_context_cli.py; tests/test_capability_security.py; tests/test_hook_executability.py.
 - Runtime limits: general Bash writes do not expose edit paths to the post-edit scan; intended context output sites remain pre-compact.sh, compact-resume.sh and user-prompt-submit.sh. No credential-backed runtime activation exercised.
-- Item 20: the sole historical successor-mapping decision remains in the prior twenty-item entry, item 20; retirement records are preserved and no successor is invented.
+- Item 20 (historical; closed by owner Tasks B and D below): the sole historical successor-mapping decision remains in the prior twenty-item entry, item 20; retirement records are preserved and no successor is invented.
 - Integrity: profile, receipts, capability lock and released plugin trees unchanged; adopter payload regenerated after tracked edits. No rebind or delivery required.
 - No commits, pushes, tags, releases, consumer writes, secret access or direct database mutation.
+
+## Owner Tasks B and D (2026-09-24)
+
+Authority: owner Discord messages 1552352486801547415 (items 1–4) and
+1552354384296411267 (lighter harness), relayed by Mir Harness. Scope: this repository
+only; no delivery, re-attestation, secrets or direct memory writes.
+
+### Superseded cursor (verbatim)
+
+```markdown
+# Plan
+
+Owner-authorized maintenance re-verification, 2026-09-23–24, within this repository only.
+`tasks/intent.json` remains the intent authority; the owner renewed the same scope.
+Predecessor completion evidence: `tasks/change_log.md`, "Twenty-item repository maintenance re-verification".
+
+- [x] Re-check twenty items, including output disclosure, guard errors, JSON types and hermetic tests.
+- [x] Repair reproduced defects with failing regression tests, preserving released plugin bytes.
+- [x] Run full tests, governance, temporary-root generation and payload/release evidence checks.
+- [x] Record concise results, deferred work and owner decisions in the existing evidence log.
+
+Verification and repairs are complete within scope. Full suite: 1300 passed; two unchanged
+installation tests fail on PyPI DNS. Final record evidence: `tasks/change_log.md`,
+"Owner-authorized maintenance continuation (2026-09-24)". No delivery or integrity rebind is pending.
+```
+
+### Historical profile enforcement region (verbatim)
+
+Retired by the owner choice above. Safety behavior moves to the local guard; only
+the redundant region and its code-path/dogfooding advisories are retired.
+
+```bash
+# --- Mir profile-driven enforcement (V2.2 — phase-2 scope + ADR-23 dogfooding exemption) ---
+if [ "${MIR_FAMILY_CODE_PATHS_INITIALIZED:-no}" != "yes" ]; then
+    MIR_FAMILY_SLUG="${MIR_FAMILY_SLUG:-your-harness}"
+    MIR_FAMILY_CODE_PATHS=()
+    _MIR_CODE_PATH_HELPER="$PROJECT_DIR/.claude/hooks/lib/code-path-config.py"
+    if [ -f "$_MIR_CODE_PATH_HELPER" ]; then
+        _mir_code_paths="$("$_MIR_PYTHON_LAUNCHER" "$_MIR_CODE_PATH_HELPER" \
+                 --family "$MIR_FAMILY_SLUG" --check code-paths 2>/dev/null)" || {
+            warn "code-path configuration inspection failed; using advisory defaults"
+            _mir_code_paths=""
+        }
+        while IFS= read -r line; do
+            [ -n "$line" ] && MIR_FAMILY_CODE_PATHS+=("$line")
+        done <<< "$_mir_code_paths"
+    fi
+    [ "${#MIR_FAMILY_CODE_PATHS[@]}" -eq 0 ] && MIR_FAMILY_CODE_PATHS=( "tools/" "src/" )
+
+    # ADR-23 dogfooding exempt check
+    MIR_DOGFOODING_EXEMPT="no"
+    if [ -f "$_MIR_CODE_PATH_HELPER" ]; then
+        MIR_DOGFOODING_EXEMPT="$("$_MIR_PYTHON_LAUNCHER" "$_MIR_CODE_PATH_HELPER" \
+                                --family "$MIR_FAMILY_SLUG" --check dogfooding-exempt 2>/dev/null)" || {
+            warn "dogfooding advisory inspection failed; using advisory defaults"
+            MIR_DOGFOODING_EXEMPT="no"
+        }
+    fi
+
+    MIR_CODEX_DEFAULT_ENABLED="true"
+    MIR_FAMILY_CODE_PATHS_INITIALIZED=yes
+fi
+
+_mir_path_matches_code_path() {
+    "$_MIR_PYTHON_LAUNCHER" - "$1" "${MIR_FAMILY_CODE_PATHS[@]}" <<'PY'
+import fnmatch
+import os
+import sys
+
+path, *patterns = sys.argv[1:]
+pwd = os.environ.get("PWD", "")
+candidates = [path]
+if pwd and path.startswith(pwd + "/"):
+    candidates.append(path[len(pwd) + 1:])
+
+def matches(candidate, pattern):
+    if pattern.endswith("/"):
+        return candidate.startswith(pattern) or ("/" + pattern) in ("/" + candidate + "/")
+    return fnmatch.fnmatch(candidate, pattern.replace("**", "*"))
+
+print("yes" if any(matches(candidate, pattern) for candidate in candidates for pattern in patterns) else "no")
+PY
+}
+
+_mir_patch_path_safety_reason() {
+    "$_MIR_PYTHON_LAUNCHER" - "$1" "$PROJECT_DIR" <<'PY'
+import os
+from pathlib import Path
+import sys
+
+raw_path, project_dir = sys.argv[1:]
+root = Path(project_dir).resolve()
+candidate = Path(os.path.expanduser(raw_path))
+if not candidate.is_absolute():
+    candidate = root / candidate
+resolved = candidate.resolve(strict=False)
+try:
+    relative = resolved.relative_to(root).as_posix()
+except ValueError:
+    print("patch path outside project root")
+    raise SystemExit(0)
+
+parts = Path(relative).parts
+if ".git" in parts:
+    print("patch targets git internal state")
+    raise SystemExit(0)
+
+name = Path(relative).name
+secret_names = {".env", "credentials", "id_rsa", "id_ed25519"}
+if (
+    name in secret_names
+    or name.startswith(".env.")
+    or name.startswith("credentials.")
+    or name.endswith((".pem", ".key", ".p12"))
+):
+    print("patch targets a secret or credential file")
+PY
+}
+
+_mir_tool_name="$TOOL_NAME"
+if [ "$_mir_tool_name" = "Edit" ] || [ "$_mir_tool_name" = "Write" ]; then
+    _mir_file_path="$FP"
+    if [ -n "$_mir_file_path" ]; then
+        _mir_file_safety_reason="$(_mir_patch_path_safety_reason "$_mir_file_path" 2>/dev/null)" || block "file path safety inspection failed"
+        if [ -n "$_mir_file_safety_reason" ]; then
+            echo "[PreToolUse BLOCK] $_mir_file_safety_reason: $_mir_file_path" >&2
+            exit 2
+        fi
+        if [ "${#MIR_FAMILY_CODE_PATHS[@]}" -gt 0 ]; then
+            _mir_match="$(_mir_path_matches_code_path "$_mir_file_path" 2>/dev/null)" || warn "code-path advisory inspection failed"
+            if [ "$_mir_match" = "yes" ] && [ -z "${MIR_CODEX_SESSION_ID:-}" ] && [ "${MIR_CODEX_MAIN:-0}" != "1" ]; then
+                echo "[mir ADVISORY] code-path edit on $_mir_file_path: consider the delegated lane when isolation, review independence, or parallelism justifies its cost; bounded direct-main edits are allowed." >&2
+            fi
+        fi
+    fi
+fi
+if [ "$_mir_tool_name" = "apply_patch" ] || [ "$_mir_tool_name" = "ApplyPatch" ]; then
+    _mir_patch="$(extract_json '.tool_input.command // .tool_input.input // .tool_input.patch // .tool_input.content | select(type == "string" and length > 0)')" || block "Malformed apply_patch payload"
+    _mir_patch_paths="$(printf '%s\n' "$_mir_patch" | sed -nE \
+        -e 's/^\*\*\* (Add|Update|Delete) File: (.*)$/\2/p' \
+        -e 's/^\*\*\* Move to: (.*)$/\1/p')" || block "patch path extraction failed"
+    while IFS= read -r _mir_patch_path; do
+        [ -n "$_mir_patch_path" ] || continue
+        _mir_patch_safety_reason="$(_mir_patch_path_safety_reason "$_mir_patch_path" 2>/dev/null)" || block "patch path safety inspection failed"
+        if [ -n "$_mir_patch_safety_reason" ]; then
+            echo "[PreToolUse BLOCK] $_mir_patch_safety_reason: $_mir_patch_path" >&2
+            exit 2
+        fi
+        # ADR-87 follow-up: the safety reason above covers outside-root, git internals
+        # and secret basenames, but not the deny-list. A patch could therefore add
+        # secrets/prod.yaml, which protected-secrets-dir exists to stop.
+        apply_deny_list "$_mir_patch_path" "path"
+        _mir_match="$(_mir_path_matches_code_path "$_mir_patch_path" 2>/dev/null)" || warn "code-path advisory inspection failed"
+        if [ "$_mir_match" = "yes" ] && [ -z "${MIR_CODEX_SESSION_ID:-}" ] && [ "${MIR_CODEX_MAIN:-0}" != "1" ]; then
+            echo "[mir ADVISORY] code-path patch on $_mir_patch_path: consider the delegated lane when isolation, review independence, or parallelism justifies its cost; bounded direct-main edits are allowed." >&2
+        fi
+    done <<< "$_mir_patch_paths"
+fi
+# --- end Mir profile-driven enforcement (V2.2) ---
+
+```
+
+### Superseded index qualification (verbatim)
+
+Mirrored summaries marked superseded say Mir Harness retired them but do not identify a
+numbered successor. That missing mapping needs an owner decision before it can be asserted.
+
+### B: behavior inventory and disposition
+
+| Concern | Existing local behavior | Retired region contribution retained locally |
+|---|---|---|
+| Git internals | Raw `.git/config`, hooks, refs and objects check for file tools | Root-resolved `.git` at any path component for Edit/Write and patches |
+| Secret basenames | Raw basename check for Edit/Write/NotebookEdit | Root-resolved basename checks for Edit/Write and patches, including symlink destinations |
+| Outside root | Listed system prefixes block file tools | Every outside-root Edit/Write or patch target blocks; no outside-root advisory or exemption existed |
+| Deny-list | File tools screen cwd-resolved relative paths | Patches keep their raw-path deny-list subject and rule reason; no pattern is removed |
+| Protected paths | Secret/credential rules are literal and deny-list driven | No general profile protected-path loader existed in the region; no new profile policy is inferred |
+| Memory/scratchpad | No dedicated exception | No exception existed; owner memory and scratchpad Write probes remain blocked |
+| Parsing/errors | jq required; malformed JSON, missing paths, failed inspectors block | Non-string/empty patch and failed Add/Update/Delete/Move extraction or safety inspection still block |
+| Redaction | Bash/validator contents omitted from block messages | Moved diagnostics use `block` with a fixed reason, never command or patch contents |
+
+All file tools and both patch spellings now enter `screen_path_target`. The existing
+root-based helper is retained within that local section to preserve its distinct
+resolution semantics; NotebookEdit keeps its existing narrower checks. The removed
+region never enforced family code-path ownership. Its initialization, matcher,
+dogfooding probe and delegation advisory were advisory-only.
+
+`rg` found no runtime readers of the removed initialized/code-path/dogfooding/default
+variables outside the removed block. The remaining enabled-phases reader uses
+`${MIR_FAMILY_SLUG:-your-harness}`, preserving the previous default without setup.
+The standalone code-path helper and unrelated bluebrick/phase/contract advisories
+remain unchanged. Removed unused tier declaration, preserved verbatim:
+
+```bash
+#   pre-tool-use/code-path-block  : tier=block  (your-harness BLOCK code path protection)
+_MIR_HOOK_TIER_CODE_PATH="warn"
+```
+
+### D: authoritative successor resolution
+
+Verified all 13 `superseded_by` fields in the Mir Harness archived copies named by
+these records' `mirrors` fields. The complete mappings are now in
+`docs/decisions/INDEX.md` and each corresponding ADR. Mir Harness ADR-06 explicitly
+also names Mir Harness ADR-72 and Mir Harness ADR-73 in its supersession note;
+Mir Harness ADR-23 points to Mir Harness ADR-41, whose archived field points to
+Mir Harness ADR-76. No same-numbered Yoke decision is substituted.
+
+The prior item 20 is closed under owner Discord 1552352486801547415 and
+1552354384296411267 (2026-09-24), relayed by Mir Harness. Its original pending text
+remains labeled historical. Tasks A/C were not assigned in this execution request.
+
+### Verification evidence
+
+- Before implementation, the updated retired-profile-advisory test and new compiler-marker
+  regression both fail: 2 failed / 53 deselected. After implementation, hook and deny-list
+  checks pass: 81 passed / 0 failed, including parser/extractor fail-closed and redaction cases.
+- Bootstrap/decisions/governance/generation/classification/identity first run: 59 passed /
+  1 failed. The failure is the stale adopter-payload digest after source edits;
+  regenerate through `python -m tools.template_assets --write-adopter-payload` at closeout.
+- Links, schemas and public surface/identity: 10 passed / 0 failed.
+- Ruff, context paths (9 files / 69 references), repository agent management and Codex sync pass.
+- Temporary-root Codex generation is byte-identical to every checked-in generated output;
+  no extra Codex output exists and no `.codex` install or removal is needed.
+- Real-repository probes before and after: 20/20 match the supplied baseline. Payloads only
+  reach PreToolUse; no tested Bash command or file mutation executes. Probe-added invocation
+  log suffixes are removed with prefix validation, preserving pre-existing log bytes.
+
+| Case | Baseline | Before | After |
+|---|---:|---:|---:|
+| edit-src | 0 | 0 | 0 |
+| write-readme | 0 | 0 | 0 |
+| write-env | 2 | 2 | 2 |
+| write-git | 2 | 2 | 2 |
+| write-etc | 2 | 2 | 2 |
+| write-outside | 2 | 2 | 2 |
+| write-memory | 2 | 2 | 2 |
+| write-scratch | 2 | 2 | 2 |
+| write-secretsdir | 2 | 2 | 2 |
+| nb-env | 2 | 2 | 2 |
+| nb-src | 0 | 0 | 0 |
+| patch-src | 0 | 0 | 0 |
+| patch-env | 2 | 2 | 2 |
+| patch-git | 2 | 2 | 2 |
+| patch-outside | 2 | 2 | 2 |
+| patch-secretsdir | 2 | 2 | 2 |
+| bash-ls | 0 | 0 | 0 |
+| bash-rmrf | 2 | 2 | 2 |
+| bash-cat-env | 0 | 0 | 0 |
+| malformed | 2 | 2 | 2 |
+
+Bootstrap evidence changed: `.claude/hooks/pre-tool-use.sh`. Re-attestation belongs
+to the Mir Harness orchestrator and was not performed. Profile, capability lock,
+receipts, memory databases and released plugin bytes are unchanged. Owner B/D
+implementation is complete; orchestrator clone remeasurement and re-attestation
+remain external acceptance work. No commits, pushes, tags or consumer writes.
+
+Final follow-up: after repository-owned payload regeneration, the same
+bootstrap/decisions/governance/generation/classification/identity suite passes:
+60 passed / 0 failed. Public sanitization passes; harness consistency reports
+0 errors / 0 warnings. The payload changes only the 18 edited source-file hashes,
+with identical file membership and classifications. Final record edits are followed
+by regeneration and the focused payload/link/schema checks.
+
+
+## Owner choice B orphan-helper follow-up (2026-09-24)
+
+Authority: owner Discord 1552352486801547415 and 1552354384296411267, relayed
+by Mir Harness. The follow-up section of `tasks/plan.md` is the active intent cursor.
+Scope is this repository only. The prior B/D evidence above remains historical;
+its statement that the standalone helper remains unchanged is superseded here.
+
+### Changes and delivery
+
+- Removed `.claude/hooks/lib/code-path-config.py`, the orphan reported by R8, and
+  removed its construction from the retired-advisory test. Existing safety tests remain.
+- Made the existing Codex generator tolerate an absent hook library and omit its
+  mapping. Added a missing-source regression; the portable-copy test now supplies
+  its own library fixture instead of depending on the retired production helper.
+- Regenerated `.codex-sync/manifest.json` through the repository generator in a
+  temporary output root. All other generated file bytes match the checked-in files.
+- Regenerated `config/adopter-payload.json` through `tools.template_assets` against
+  the candidate after applying generated removals. Both Claude and Codex helper
+  entries are absent. No payload filtering or hand editing was used.
+- Added an Unreleased entry in `CHANGELOG.md`, preserving the old introduction.
+  Adopters no longer receive this helper or the profile enforcement block removed
+  by owner choice B. Local safety guard behavior is unchanged.
+
+Pending orchestrator application: delete `.codex/hooks/lib/code-path-config.py`
+using the repository generator. The sandbox cannot modify `.codex/**`; its stale
+copy remains in this working tree. Consequently the prepared payload describes
+833 minus 1 = 832 candidate files, while the working tree still has 833 files.
+This is a delivery dependency, not permission to suppress parity checks.
+
+### Verification
+
+- Before cleanup: existing `test_hook_file_reachability_real_repo_green` fails
+  with the exact R8 orphan finding (1 failed).
+- New missing-source generator regression before the fix: 1 failed, with
+  `cp: .claude/hooks/lib: No such file or directory`. After the fix it passes.
+- First focused run: 66 passed / 1 failed. The pre-existing portable-copy test
+  assumed the retired production library existed; the independent fixture fixes
+  that assumption without dropping its directory, symlink or digest assertions.
+- Final hook, Codex generation, harness/governance, decisions, public surface,
+  identity, links and schema tests: 153 passed / 0 failed.
+- Candidate payload/classification/public tests: 10 passed / 0 failed. Candidate
+  Codex sync passes. Working-tree Codex sync reports the expected portable-library
+  drift until the orchestrator applies the generated deletion.
+- The first candidate sync attempt could not download dependencies because PyPI
+  DNS resolution failed. Retrying with the existing environment and UV_NO_SYNC=1
+  passes; no dependency or environment policy was changed in the repository.
+- Harness consistency: 0 errors / 0 warnings. Ruff, context paths (9 files /
+  69 references), agent management, sanitization, links, schemas and diff checks pass.
+
+### Task B probes versus the preserved baseline
+
+These payloads are supplied only to PreToolUse; commands and edits are not executed.
+The probe records stay in ignored runtime evidence. Nineteen direct probes match
+the preserved baseline. The inline destructive-command probe was rejected by the
+execution tool's own PreToolUse screening; an attempted temporary test-script patch
+was also rejected as outside the project. Neither guard was bypassed. Existing
+`test_should_redact_command_when_bash_guard_blocks` covers destructive command
+blocking in the passing hook suite. That isolated test is not a twentieth direct probe.
+
+| Case | BASELINE | Follow-up probe |
+|---|---:|---:|
+| edit-src | 0 | 0 |
+| write-readme | 0 | 0 |
+| write-env | 2 | 2 |
+| write-git | 2 | 2 |
+| write-etc | 2 | 2 |
+| write-outside | 2 | 2 |
+| write-memory | 2 | 2 |
+| write-scratch | 2 | 2 |
+| write-secretsdir | 2 | 2 |
+| nb-env | 2 | 2 |
+| nb-src | 0 | 0 |
+| patch-src | 0 | 0 |
+| patch-env | 2 | 2 |
+| patch-git | 2 | 2 |
+| patch-outside | 2 | 2 |
+| patch-secretsdir | 2 | 2 |
+| bash-ls | 0 | 0 |
+| bash-cat-env | 0 | 0 |
+| malformed | 2 | 2 |
+| bash-rmrf | 2 | Not rerun directly; tool rejected the probe |
+
+### Boundaries and remaining owner work
+
+No declared bootstrap evidence changed in this follow-up (23 tracked evidence
+files checked against starting hashes); no re-attestation is required by this pass.
+The pre-existing `pre-tool-use.sh` edits and the orchestrator's SessionStart fix
+remain intact. No memory commands, database edits, credential access, commits,
+pushes, tags or consumer writes were performed. B's local helper cleanup is done;
+D's earlier successor mapping remains closed. Owner A/C were not assigned here.
+Only generated Codex deletion and the resulting parity/payload acceptance remain
+with the orchestrator, in addition to any explicitly reported full-suite limits.
+
+### Full-suite closeout
+
+`UV_CACHE_DIR=/tmp/mir-yoke-followup-uv uv run pytest -q` completed with
+1298 passed / 5 failed in 337.76 seconds:
+
+- Two payload equality tests report the pending generated Codex removal; final
+  payload regeneration and candidate checks below isolate the remaining mismatch
+  to `.codex/hooks/lib/code-path-config.py`.
+- `test_should_leave_minimal_starter_and_project_owned_changes_when_candidate_is_slimmed`
+  cannot download PyYAML because files.pythonhosted.org DNS resolution fails.
+- `test_should_run_copied_tool_when_repository_python_is_not_on_path` cannot fetch
+  pydantic because pypi.org DNS resolution fails. No installation code was changed.
+- `test_release_evidence_rejects_unobserved_git_configuration` reports a changed
+  provider snapshot. Closeout documentation was edited while this full run was
+  active, so the run was not frozen. With writes stopped, its exact rerun passes:
+  1 passed / 0 failed in 5.60 seconds. No test or guard was changed for this failure.
+
+The full suite is not claimed green. After final cursor/log writes, payload is
+regenerated through the existing generator and its candidate/public checks are
+rerun; the orchestrator must apply the Codex deletion and verify the working-tree
+payload/parity checks. Network-enabled installation acceptance remains open.
+Evidence logs are under `/tmp/mir-yoke-helper-followup/`: `generator-red.log`,
+`focused.log`, `governance-tests.log`, `full.log`, `release-recheck.log`,
+`payload-candidate-tests.log`, `sync-cwd.log`, `sync-candidate.log`, and `probes.json`.
