@@ -1095,3 +1095,224 @@ Orchestrator acceptance (2026-09-23): the four `.claude/agents/*.md` wording edi
 binds agent bytes to a published source commit, which requires release authority. The replaced lines
 listed above remain the current agent text until that release. The adopter payload was regenerated
 and the full suite passed (1,229).
+
+
+## Twenty-item repository maintenance re-verification (2026-09-23)
+
+Owner-authorized repository-only re-verification and minimal improvements. The active intent authority is `tasks/intent.json`; the sole cursor is `tasks/plan.md`. No delivery or runtime authority is added.
+
+### Preserved predecessor continuity records
+
+#### tasks/plan.md
+
+````text
+# Plan
+
+Owner-authorized second-pass audit, 2026-09-23. `tasks/intent.json` is the intent authority.
+
+- [x] Re-check the 15 items against actual files, commands and read-only health evidence.
+- [x] Repair stale runtime guidance and the setup test isolation defect; preserve prior wording.
+- [x] Generate Codex output in a temporary root and verify the generated candidate.
+- [x] Run the full suite and affected checks; classify residual failures.
+
+Repository work is complete. The orchestrator committed the verified changes locally (no push, tag or
+release). The four agent-source wording edits were withheld: the capability lock binds agent bytes to
+a published commit, so they ship with the next authorized release together with the lock binding.
+Two network-dependent tests still need a network-capable environment.
+Evidence, predecessor records and exact delivery paths: `tasks/change_log.md`,
+"Second-pass fleet re-verification".
+
+````
+
+#### tasks/intent.json
+
+````text
+{
+  "goal": "Re-verify and minimally fix all 15 owner fleet audit items in this repository only under the owner-authorized second pass of 2026-09-23. Preserve accepted decisions, safety gates, historical text and user work; validate actual commands and generated parity; report sandbox-only installation gaps without committing or delivering changes.",
+  "goal_type": "maintenance",
+  "scope": "Repository-only second-pass audit and minimal fixes. No commits, pushes, tags, stash, reset, checkout, user-work deletion, credentials, consumer writes, runtime installation or direct database mutation. Generated files change only through repository generators; sandbox-blocked Codex derivatives are staged outside the checkout for the orchestrator.",
+  "priority": "normal",
+  "updated": "2026-09-23",
+  "history": [
+    {
+      "goal": "Repair Mir Yoke central capability status and multi-consumer update architecture: make global provider health readable without a consumer-local configuration or enrollment, separate consumer-local integration state, and permit atomic provider version migration across registered consumers while preserving non-requesting consumer files and locks as pending local integration. Preserve capability trust, digest, identity, secret, path, runtime, and activation checks; update ADR-89, current documentation, tests, and generated adopter payload without user-runtime or consumer writes.",
+      "updated": "2026-09-06",
+      "status": "superseded"
+    },
+    {
+      "goal": "Align Mir Yoke as the Harness-managed central capability supply system for independently owned repositories: make the primary purpose, management authority, supported adoption channels, consumer ownership boundaries, ADR precedence, maintainer Profile, operating documentation, contract tests, generated derivatives, and adopter payload consistent without changing interfaces, profile enums, runtime installations, consumer repositories, protected memory, credentials, or external services.",
+      "updated": "2026-09-06",
+      "status": "superseded"
+    },
+    {
+      "goal": "Clean up Mir Yoke project documents under owner Discord message 1552197111624372339 (2026-09-23): align the current documentation entry points and decision index with the supported surfaces, keep one active plan, preserve historical text and existing work, and verify document references and tests without changing behavior or delivery state.",
+      "updated": "2026-09-23",
+      "status": "complete"
+    }
+  ]
+}
+
+````
+
+#### tasks/handoffs/session-handoff-LATEST.md
+
+````text
+# Session Handoff — Second-pass re-verification
+
+Resume pointer: `tasks/plan.md` is the only cursor; `tasks/intent.json` records authority.
+Evidence and predecessor records: `tasks/change_log.md`, "Second-pass fleet re-verification".
+Verified changes are committed locally; the four agent-source wording edits were withheld until the
+next authorized release can bind them in the capability lock. No push, tag, release or consumer write.
+
+<!-- mir:runtime-snapshot:begin -->
+## Runtime Snapshot (Generated)
+
+### Active Plan Items
+- No open plan items.
+
+### Working Tree
+- Working tree clean.
+<!-- mir:runtime-snapshot:end -->
+
+````
+
+#### tasks/checklist.md
+
+````text
+# Checklist
+
+Status projection for the single `tasks/plan.md` cursor: all 15 audit items were checked.
+Local fixes and verification are complete and committed; the withheld agent-source edits (next
+authorized release, with lock binding) and two network-dependent tests remain open.
+Details and preserved predecessor text: `tasks/change_log.md`, "Second-pass fleet re-verification".
+
+````
+
+### Preserved stale closeout guidance
+
+The generated Claude and Codex registrations both include SessionEnd;
+`tests/test_compact_lifecycle_hooks.py` asserts the respective 60s and 3s timeouts.
+Prior `.ai-harness/session-closeout.md` text:
+
+````text
+Claude wires `.claude/hooks/session-end.sh` to `SessionEnd`. This template's Codex hook surface does
+not have that event, so run the same script manually only when a Codex closeout is explicitly
+requested.
+````
+
+### Bounded maintenance design
+
+Authority: `tasks/intent.json`. Correct only the on-demand closeout document to match
+the existing canonical hook configuration and executed lifecycle tests. Preserve its
+old text above; change no event, timeout, guard, profile, released package or lock.
+The predecessor audit is marked complete in intent history because its cursor and
+orchestrator acceptance already record completion; this new request extends it to
+the twenty-item checklist. No unresolved owner conflict is suppressed.
+
+The earlier handoff claimed four agent-source corrections were still withheld.
+Current HEAD already contains those corrections after the intervening 0.10.5 release;
+the generated mirror and committed capability-lock tests are rechecked below.
+The superseded handoff is retained above, not rewritten as historical fact.
+
+### Twenty-item results and evidence
+
+1. Consistency: done. Profile paths exist; context verifier checks 9 files / 69 references;
+   source/derivative parity, registry and harness consistency pass. Context freshness still
+   correctly identifies the historical Profile baseline as review_required; this audit does not
+   invent a replacement attestation.
+2. Operating base: no change needed. Registered hook targets exist. Retained optional hooks and
+   inert reference surfaces do not imply activation; no justified safety-check removal was found.
+3. Documents: done. Corrected the on-demand SessionEnd statement against canonical configuration
+   and existing lifecycle tests; current continuity no longer repeats the pre-0.10.5 release hold.
+4. Archiving: done. Four predecessor continuity files and replaced closeout guidance are preserved
+   verbatim above, with live pointers. No rule, decision or lesson was deleted.
+5. Context: no change needed. One plan cursor; large logs and historical specifications remain
+   on demand. Root instruction documents remain within their stricter budgets.
+6. Memory: partial. Immutable read-only quick_check returns ok; database 348160 bytes / 21 facts;
+   no foreign-key errors or expired facts. Documented reconcile-missing --dry-run returns 0;
+   both render projections match. Doctor reports missing harness_a.toml, as before; the provider
+   Profile requires no memory baseline. No memory reconfiguration or direct mutation was performed.
+7. Harness: done. Both runtimes register SessionEnd. Actual PreToolUse permits a safe read and
+   rejects raw Codex exec and secret-path edits. Bootstrap/receipt and protected-path guards remain.
+8. Skills and agents: no change needed. Plugin/common-contract tests pass; no local skills shadow
+   plugins. All 12 generated agent TOMLs parse with no model pins. Current agent transport wording
+   already uses the Codex plugin/native lane; compatibility CodexMcp API names are not MCP dispatch.
+9. Instructions: unchanged before/after: CLAUDE.md 41 lines / 3448 bytes; AGENTS.md 43 / 3537.
+   Generated root body equals the source; limits 55/3600 and 60/3800 pass.
+10. Rules and lessons: no change needed. Existing canonical rule ownership is retained; lessons and
+    memory-map match documented dry-run rendering. No competing policy or lesson store was added.
+11. Architecture: no change needed. Starter, Kit recipe, optional CLI, plugins, separate agent and
+    command delivery, and inert references match actual paths and public-surface contract tests.
+12. Delegation: no change needed. Central overlay resolves Astra > Sol > Luna, unit=Luna/high,
+    default=Sol/medium; no model pin or extra delegation layer was introduced. App-server protocol
+    tests execute locally; no authenticated live model run is claimed.
+13. Continuity: done. One cursor, resume pointer, status projection and evidence log are retained;
+    the repository PreCompact generator refreshes the handoff runtime snapshot.
+14. Work context: done. Context pull returns relevant architecture anchors; archives are unconfigured,
+    so facts/chunks are empty. Immutable SRR query returns four current implementation edges.
+15. Token efficiency: no change needed. Actual SessionStart emits 551 bytes; shared continuity
+    emits 94 bytes. Completed predecessor intent is marked complete using its recorded acceptance,
+    preventing a false unfinished-intent advisory. No startup context expansion was added.
+16. Test health: done with environment limits. All tracked tests lie under default tests/tools
+    testpaths. A teardown regression had an unrelated 1-second process-start deadline: the full
+    suite observed an initialize timeout, and an injected 1.2-second startup reproduced it before
+    the fix. The same probe passes after restoring the normal client startup budget; all teardown
+    assertions and kill timeout remain unchanged. Transport tests: 27 passed. Two new ancestor-path cases fail before the scan fix and pass after it; all 52 rule tests pass.
+    Two installation tests still require PyPI access and therefore are not hermetic offline.
+17. Code/security/dependencies: done with skipped online checks. The isolated full run exposed two scans that skipped all code when an ancestor directory
+    was named tests. Both now apply the existing exclusion to repository-relative paths.
+    Bounded transport and final-diff review found no further confirmed production defect. Public sanitization passes; no private
+    absolute paths were found. The only credential-pattern hit is a synthetic security fixture in
+    tests/test_capability_security.py. Direct runtime/dev dependency metadata uses MIT, BSD-3-Clause
+    or Apache-2.0. Latest-version lookup fails with PyPI DNS errors; current vulnerability and
+    transitive-license verification are not claimed. No dependency upgrade was made.
+18. Integrity: done. Adopter payload is regenerated after tracked edits. Provider lock, Profile,
+    plugin trees and receipts stay unchanged; only two maintainer scan conditions change. No integrity evidence needs rebind.
+19. Runtime: done with live-runtime exclusions. All 17 shell hook entrypoints were invoked in an
+    isolated fixture: 16 exit 0, PreToolUse rejects its missing bootstrap evidence as designed;
+    missing-TDD warnings are advisory. Real-repository safe/blocked probes pass. The shared hook
+    exits 0. Installed package and all plugins are 0.10.6; Codex CLI reports 0.156.0. Credential-backed
+    live execution and runtime installation are outside this pass; no activation claim is made.
+20. Open decisions: one existing historical decision remains. Thirteen mirrored ADRs record
+    retirement, but no numbered successor is recorded. Keep their retirement notes unless the
+    owner supplies authoritative successor mappings; only a definitive historical mapping is
+    blocked. No implementation change in this pass conflicts with an accepted ADR.
+
+### Verification and failure classification
+
+- First full run: 1227 passed / 4 failed. Two payload mismatches were caused by this pass's
+  concurrent documentation updates; generation and frozen-state reruns resolve them. Two failures
+  were PyPI DNS/network limitations in unchanged installation tests.
+- Second frozen-state run: 1228 passed / 3 failed. The same two network failures plus an existing
+  teardown test's initialize timeout. Its exact scheduling cause is unknown; the bounded slow-start
+  reproduction establishes the unrelated startup-budget sensitivity. The test-only fix restores
+  the existing 10-second initialization default; no production timeout or guard changes.
+- An additional full rerun lost its shared pytest scratch directory mid-run: 378 passed,
+  1 failed, 852 setup errors. FileNotFoundError identifies the missing directory; the removal
+  cause is unknown and disk space was available. No code fix was inferred from that event.
+  The final run uses a new dedicated --basetemp outside the shared pytest scratch tree.
+- First isolated full run: 1227 passed / 4 failed: the two network failures plus two confirmed
+  ancestor-path scan defects. Added two regression cases: 2 fail and 2 existing cases pass before
+  the fix; all 52 rule tests pass after the two-line fix. Existing repository-local test exclusions
+  remain intact; parent directory names no longer suppress production scanning.
+- Final implementation-state full run: 2 failed, 1231 passed in 200.74s (0:03:20).
+  Both remaining failures are PyPI DNS/network errors in test_greenfield_slim_integration.py and
+  test_installed_cli.py. Their files and production paths are unchanged.
+- Focused lifecycle/plugin/common/release-evidence checks: 83 passed. Document/payload/generator,
+  schemas, links, sanitization and decision checks: 72 passed. Transport tests after the fix:
+  27 passed; injected slow-start probe fails before and passes after.
+- Ruff, context paths, agent registry, harness consistency (0 errors / 0 warnings), generated
+  parity and git diff --check pass. Existing tests cover the documentation contract; two new scan regression cases fail
+  without the fix and pass with it. Closing record edits are followed by payload regeneration and
+  relevant payload/release-evidence checks.
+- Temporary-root generator initially failed on the inaccessible default uv cache; retry with
+  UV_CACHE_DIR in a writable temporary directory succeeds. Generated outputs are byte-identical:
+  no non-Codex copy-back, Codex installation or Codex removal is required.
+
+### Delivery boundary
+
+No commits, pushes, tags, releases, dependency upgrades, consumer writes, runtime installation,
+secret access or direct database writes. No pending Codex derivative installation/removal or
+integrity rebind. The remaining operational limitations are offline installation acceptance and
+online dependency intelligence; optional provider memory doctor remains not_ready as documented.
+Only the historical ADR mapping decision in item 20 remains; the prior agent release hold is closed.

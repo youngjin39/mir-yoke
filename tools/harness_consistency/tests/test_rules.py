@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from tools.harness_consistency.rules import (
     adopter_payload_boundary,
     adr_artifact_present,
@@ -239,7 +241,11 @@ def test_single_family_source_allows_required_symbol(tmp_path: Path) -> None:
     assert findings == []
 
 
-def test_catalog_loader_usage_reports_repository_index_without_loader(tmp_path: Path) -> None:
+@pytest.mark.parametrize("parent_name", ["workspace", "tests"])
+def test_catalog_loader_usage_reports_repository_index_without_loader(
+    tmp_path: Path, parent_name: str
+) -> None:
+    tmp_path = tmp_path / parent_name / "repository"
     source = tmp_path / "tools" / "consumer.py"
     source.parent.mkdir(parents=True)
     source.write_text(
@@ -451,7 +457,11 @@ def test_removed_symbol_references_real_repo_green() -> None:
     assert findings == []
 
 
-def test_removed_symbol_references_reports_retired_symbol(tmp_path: Path) -> None:
+@pytest.mark.parametrize("parent_name", ["workspace", "tests"])
+def test_removed_symbol_references_reports_retired_symbol(
+    tmp_path: Path, parent_name: str
+) -> None:
+    tmp_path = tmp_path / parent_name / "repository"
     source = tmp_path / "tools" / "live.py"
     source.parent.mkdir(parents=True)
     source.write_text("STATE = 'active_task.json'\n", encoding="utf-8")

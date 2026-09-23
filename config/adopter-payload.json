@@ -41,7 +41,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": ".ai-harness/session-closeout.md",
-      "sha256": "b22843d9101c65d7887f4454054cfd753f555efae9655a9df185f2287edfe833"
+      "sha256": "0c08d8a38d2b0ccfdf4acf565d48290a6c3b7f80ae40823a7094a34653d13b09"
     },
     {
       "classification": "reference",
@@ -455,7 +455,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": ".mir/capability-lock.json",
-      "sha256": "f85d64e7d5941ee16610be96888aa44215f2f9563869229ab7c4305aeab27a9e"
+      "sha256": "01c84471db6d22bb3dec695023be9ae408345e2bb8715f5f88f48a1e26b2d1b7"
     },
     {
       "classification": "reference",
@@ -4025,31 +4025,31 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/archive/intent-history.json",
-      "sha256": "65a3f48e40d18dd5eca0d4c46e90060196a1a9bb22ceae0109654df0f90edd14"
+      "sha256": "bd7a66fa4dba1e7c461b8f88ec34dfcf125ca2c66d1dc5f2589b9e01857719bc"
     },
     {
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/change_log.md",
-      "sha256": "3f4dde25a806792f14165865330c4eabdcfd365f106b81c9015eb687a255204a"
+      "sha256": "46bc5d37bebb67b362298d54487a66d6fa16b712d9685c4f7d159e44b89b86a3"
     },
     {
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/checklist.md",
-      "sha256": "e896bcf69d93f28e8ec6dd9338f3f2c9f2328b7385db89bdd07dcf9acbe6bf9a"
+      "sha256": "e34e04b198a127c086421cdba0bbaf9d7d391cfa257f65ee13276a2582b2671e"
     },
     {
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/handoffs/session-handoff-LATEST.md",
-      "sha256": "fb2f920e891e10f8bdd49466ec9491640657fefbcf80f2dcb59bd89618e64c1c"
+      "sha256": "59bcea25420091520db152974d3c50eaacb9aef5a2130535f95fbe80188006e7"
     },
     {
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/intent.json",
-      "sha256": "57388c873f6f9bc630e50da1014a50fd1a5b8eaeee62ef36a2f0caab47237090"
+      "sha256": "acb940775ebd42913d71a7f9a70a3d509cbb9c9400e1a1aa7f7b58dd4a974255"
     },
     {
       "classification": "reference",
@@ -4073,7 +4073,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/plan.md",
-      "sha256": "9f2db2fb4f43dcd886a7db2391c05e728667919acc82a83b938971fb231f1474"
+      "sha256": "2d69b2d24039f4989e665d73c9b830821c7ab5200baaff815aa8b001d2cb75a2"
     },
     {
       "classification": "reference",
@@ -4661,7 +4661,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tools/harness_consistency/rules.py",
-      "sha256": "4b109bbf23313528e0971d4afb451d4656f05734f9010ff13e5bac7ef2fe6cd3"
+      "sha256": "a1a438170c467929578b8c089378ea85285dcae2890bc1d60e5d21ad9862a33a"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4685,7 +4685,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tools/harness_consistency/tests/test_rules.py",
-      "sha256": "4dda0a875ee478f3e786ed50b4ed840b9192016ab1e8b1fca6b3c7648d34f88b"
+      "sha256": "8508818dfe50c8c818787998c42efc0fc5954e06b635950c9a0bb275e7532ad2"
     },
     {
       "classification": "reference",
@@ -4817,7 +4817,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/tests/test_codex_mcp_client.py",
-      "sha256": "34985ff80ca170403b26691ee18b2db4d5d005a138f111566416c8a7bd664ef5"
+      "sha256": "b0d53484e39f9692581ee5672aef9d9a9bdbf8c2fea8662bada75319d50dd95d"
     },
     {
       "classification": "optional-consumer-tool",

@@ -3,9 +3,9 @@
 At the end of a substantial session, update the canonical handoff at
 `tasks/handoffs/session-handoff-LATEST.md`; do not create a competing session summary.
 
-Claude wires `.claude/hooks/session-end.sh` to `SessionEnd`. This template's Codex hook surface does
-not have that event, so run the same script manually only when a Codex closeout is explicitly
-requested.
+`config/project-hooks.json` registers `.claude/hooks/session-end.sh` for `SessionEnd` in both
+Claude and Codex; the generated configurations use 60-second and 3-second timeouts, respectively.
+Previous runtime guidance is preserved in `tasks/change_log.md`, "Preserved stale closeout guidance".
 
 Keep only the state needed to resume:
 

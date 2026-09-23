@@ -397,7 +397,8 @@ def test_close_during_pending_call_tears_down_reader_threads_cleanly(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     fake_bin = _write_fake_app_server(tmp_path, mode="pending_notification")
-    client = CodexMcpClient(codex_bin=str(fake_bin), initialize_timeout=1.0, kill_timeout=0.1)
+    # This test checks teardown; keep the normal startup budget for process scheduling.
+    client = CodexMcpClient(codex_bin=str(fake_bin), kill_timeout=0.1)
     notification_seen = threading.Event()
     release_notification = threading.Event()
     reader_exceptions: list[tuple[str, str, str]] = []

@@ -1,6 +1,7 @@
 # Checklist
 
-Status projection for the single `tasks/plan.md` cursor: all 15 audit items were checked.
-Local fixes and verification are complete and committed; the withheld agent-source edits (next
-authorized release, with lock binding) and two network-dependent tests remain open.
-Details and preserved predecessor text: `tasks/change_log.md`, "Second-pass fleet re-verification".
+Status projection for the single `tasks/plan.md` cursor: all twenty maintenance items were checked.
+Closeout guidance, teardown-test startup sensitivity and ancestor-sensitive scans are repaired. Two installation tests are
+network-limited; online dependency checks are unavailable. Generated derivatives match.
+Evidence, preserved predecessor text and the single historical owner decision are in
+`tasks/change_log.md`, "Twenty-item repository maintenance re-verification".

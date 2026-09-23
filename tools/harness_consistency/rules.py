@@ -256,7 +256,7 @@ def _is_catalog_loader_usage_skipped(
 ) -> bool:
     if any(excluded in relpath for excluded in exclude_substrings):
         return True
-    if "tests" in path.parts:
+    if "tests" in Path(relpath).parts:
         return True
     return path.name.startswith("test_")
 
@@ -521,7 +521,7 @@ def removed_symbol_references(project_root: Path, rule_inputs: dict) -> list[Fin
                 relpath = _relative_location(project_root, path)
                 if any(allowed in relpath for allowed in allowed_path_substrings):
                     continue
-                if "tests" in path.parts or path.name.startswith("test_"):
+                if "tests" in Path(relpath).parts or path.name.startswith("test_"):
                     continue
 
                 text = path.read_text(encoding="utf-8")
