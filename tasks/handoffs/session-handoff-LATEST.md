@@ -18,5 +18,5 @@ The generated snapshot below belongs to the preceding hook run; inspect current 
 - No open plan items.
 
 ### Working Tree
-- Working tree dirty (18 paths; inspect git status --short).
+- Working tree dirty (1 paths; inspect git status --short).
 <!-- mir:runtime-snapshot:end -->
