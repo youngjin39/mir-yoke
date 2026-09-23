@@ -248,9 +248,9 @@ class MirExecutor:
         reasoning_effort: str | None = None,
         stall_timeout: float | None = None,
     ) -> SubprocessResult:
-        """Run Codex through the MCP backend (blocking).
+        """Run Codex through the app-server backend (blocking).
 
-        Maps the MCP response into the existing SubprocessResult contract.
+        Maps the app-server result into the existing SubprocessResult contract.
         Raises FileNotFoundError with clear message if binary missing.
         Raises subprocess.TimeoutExpired on timeout (not swallowed).
         """

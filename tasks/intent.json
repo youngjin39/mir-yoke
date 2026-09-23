@@ -1,20 +1,10 @@
 {
-  "goal": "Clean up Mir Yoke project documents under owner Discord message 1552197111624372339 (2026-09-23): align the current documentation entry points and decision index with the supported surfaces, keep one active plan, preserve historical text and existing work, and verify document references and tests without changing behavior or delivery state.",
+  "goal": "Re-verify and minimally fix all 15 owner fleet audit items in this repository only under the owner-authorized second pass of 2026-09-23. Preserve accepted decisions, safety gates, historical text and user work; validate actual commands and generated parity; report sandbox-only installation gaps without committing or delivering changes.",
   "goal_type": "maintenance",
-  "scope": "Repository-only PRD/spec, architecture/decision-index, plan/checklist, README and document-index cleanup. Preserve all pre-existing edits and accepted decision bodies; archive moved text verbatim. Do not edit orchestrator-owned paths, behavior, configuration values, generated projections, secrets, memory databases, recovery stash or worktrees. No commits, pushes, tags, stash, reset, checkout, releases, runtime installs or consumer writes.",
+  "scope": "Repository-only second-pass audit and minimal fixes. No commits, pushes, tags, stash, reset, checkout, user-work deletion, credentials, consumer writes, runtime installation or direct database mutation. Generated files change only through repository generators; sandbox-blocked Codex derivatives are staged outside the checkout for the orchestrator.",
   "priority": "normal",
   "updated": "2026-09-23",
   "history": [
-    {
-      "goal": "Consolidate this Mir Yoke checkout under owner Discord message 1552179237325377586 (2026-09-23): audit the 15 fleet items, preserve ADR-86 purpose and all safety boundaries, minimize startup context, verify generated parity and read-only memory/relation health, and report remaining owner decisions without delivery or consumer writes.",
-      "updated": "2026-09-23",
-      "status": "complete"
-    },
-    {
-      "goal": "Audit and minimally repair Mir Yoke supported surfaces: plugin configuration and contract alignment, Claude/Codex generated parity, platform continuity documentation, installer and lock references, asset classification, current Profile and documentation consistency, and concrete runtime defects. Preserve the ADR-79 macOS-primary and Linux/WSL-compatible posture, with native Windows as a reference-adaptation lane; do not install into user runtimes or consumer repositories. Record evidence, run focused and full verification, and prepare the maintainer-owned result for direct main commit and push.",
-      "updated": "2026-09-05",
-      "status": "superseded"
-    },
     {
       "goal": "Repair Mir Yoke central capability status and multi-consumer update architecture: make global provider health readable without a consumer-local configuration or enrollment, separate consumer-local integration state, and permit atomic provider version migration across registered consumers while preserving non-requesting consumer files and locks as pending local integration. Preserve capability trust, digest, identity, secret, path, runtime, and activation checks; update ADR-89, current documentation, tests, and generated adopter payload without user-runtime or consumer writes.",
       "updated": "2026-09-06",
@@ -24,6 +14,11 @@
       "goal": "Align Mir Yoke as the Harness-managed central capability supply system for independently owned repositories: make the primary purpose, management authority, supported adoption channels, consumer ownership boundaries, ADR precedence, maintainer Profile, operating documentation, contract tests, generated derivatives, and adopter payload consistent without changing interfaces, profile enums, runtime installations, consumer repositories, protected memory, credentials, or external services.",
       "updated": "2026-09-06",
       "status": "superseded"
+    },
+    {
+      "goal": "Clean up Mir Yoke project documents under owner Discord message 1552197111624372339 (2026-09-23): align the current documentation entry points and decision index with the supported surfaces, keep one active plan, preserve historical text and existing work, and verify document references and tests without changing behavior or delivery state.",
+      "updated": "2026-09-23",
+      "status": "complete"
     }
   ]
 }

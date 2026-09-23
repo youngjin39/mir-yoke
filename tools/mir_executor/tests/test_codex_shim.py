@@ -187,7 +187,7 @@ def test_rejects_raw_exec_without_invoking_real_binary(
     assert result.returncode == 2
     assert result.stderr == (
         "[codex-shim] raw 'codex exec' and 'codex e' are prohibited; "
-        'use MCP-backed dispatch.\n'
+        'use app-server-backed dispatch.\n'
     )
     assert not args_file.exists()
     events = _read_events(events_file)

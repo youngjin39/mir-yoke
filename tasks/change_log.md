@@ -837,3 +837,261 @@ Prior resume text is preserved verbatim in the 2026-09-23 evidence log.
 - The pre-existing ADR-69/ADR-85 transport conflict remains as recorded in the fleet consolidation evidence above. No accepted decision body or orchestrator-owned path was changed.
 - The retired Mir Harness mirror ADRs do not identify numbered successors. Confirm the upstream mappings if those records must name successors; the current index explicitly marks them unrecorded.
 - The document inventory needs an orchestrator-owned regeneration before the two payload equality tests can pass. Network-dependent tests need a network-capable environment, and the setup-wrapper failure needs separate diagnosis if it persists there.
+
+
+## 2026-09-23 — Second-pass fleet re-verification
+
+Owner-authorized repository-only second pass, relayed by the control plane. This extends the completed cleanup and preserves ADR-86 purpose; it grants no delivery or consumer authority. The single cursor is `tasks/plan.md`.
+
+### Preserved predecessor continuity records
+
+#### tasks/plan.md
+
+````text
+# Plan
+
+No active repository document cleanup remains. The completed 2026-09-23 plan and verification
+record are preserved verbatim in `tasks/change_log.md` under "Project-document cleanup evidence".
+`tasks/intent.json` records the owner instruction. The orchestrator-owned adopter payload refresh
+and unresolved owner decisions are listed once in that log.
+````
+
+#### tasks/checklist.md
+
+````text
+# Checklist
+
+Status projection for the single `tasks/plan.md` cursor: document cleanup is complete.
+The check results, pending orchestrator payload refresh and owner decisions are recorded in
+`tasks/change_log.md` under "Project-document cleanup evidence".
+
+Previous checklist text is preserved verbatim in that log. No release or consumer deployment was performed.
+````
+
+#### tasks/handoffs/session-handoff-LATEST.md
+
+````text
+# Session Handoff — Project-document cleanup
+
+Resume pointer: `tasks/plan.md` is the only cursor; `tasks/intent.json` records owner authority.
+The cleanup and verification evidence, preserved predecessor records, pending adopter payload refresh,
+and unresolved owner decisions live in `tasks/change_log.md` under 2026-09-23.
+
+The orchestrator owns `config/adopter-payload.json` and must refresh the seven changed document
+hashes before its exact-inventory tests can pass. No `.codex/` file differs. Preserve the pre-existing
+dirty implementation, protected files, recovery stash and worktrees. Do not infer release, consumer
+write, runtime installation or memory-reconfiguration authority from this handoff.
+
+Prior resume text is preserved verbatim in the evidence log.
+
+<!-- mir:runtime-snapshot:begin -->
+## Runtime Snapshot (Generated)
+
+### Active Plan Items
+- No open plan items.
+
+### Working Tree
+- Working tree dirty (26 paths; inspect git status --short).
+<!-- mir:runtime-snapshot:end -->
+````
+
+#### tasks/intent.json
+
+````text
+{
+  "goal": "Clean up Mir Yoke project documents under owner Discord message 1552197111624372339 (2026-09-23): align the current documentation entry points and decision index with the supported surfaces, keep one active plan, preserve historical text and existing work, and verify document references and tests without changing behavior or delivery state.",
+  "goal_type": "maintenance",
+  "scope": "Repository-only PRD/spec, architecture/decision-index, plan/checklist, README and document-index cleanup. Preserve all pre-existing edits and accepted decision bodies; archive moved text verbatim. Do not edit orchestrator-owned paths, behavior, configuration values, generated projections, secrets, memory databases, recovery stash or worktrees. No commits, pushes, tags, stash, reset, checkout, releases, runtime installs or consumer writes.",
+  "priority": "normal",
+  "updated": "2026-09-23",
+  "history": [
+    {
+      "goal": "Consolidate this Mir Yoke checkout under owner Discord message 1552179237325377586 (2026-09-23): audit the 15 fleet items, preserve ADR-86 purpose and all safety boundaries, minimize startup context, verify generated parity and read-only memory/relation health, and report remaining owner decisions without delivery or consumer writes.",
+      "updated": "2026-09-23",
+      "status": "complete"
+    },
+    {
+      "goal": "Audit and minimally repair Mir Yoke supported surfaces: plugin configuration and contract alignment, Claude/Codex generated parity, platform continuity documentation, installer and lock references, asset classification, current Profile and documentation consistency, and concrete runtime defects. Preserve the ADR-79 macOS-primary and Linux/WSL-compatible posture, with native Windows as a reference-adaptation lane; do not install into user runtimes or consumer repositories. Record evidence, run focused and full verification, and prepare the maintainer-owned result for direct main commit and push.",
+      "updated": "2026-09-05",
+      "status": "superseded"
+    },
+    {
+      "goal": "Repair Mir Yoke central capability status and multi-consumer update architecture: make global provider health readable without a consumer-local configuration or enrollment, separate consumer-local integration state, and permit atomic provider version migration across registered consumers while preserving non-requesting consumer files and locks as pending local integration. Preserve capability trust, digest, identity, secret, path, runtime, and activation checks; update ADR-89, current documentation, tests, and generated adopter payload without user-runtime or consumer writes.",
+      "updated": "2026-09-06",
+      "status": "superseded"
+    },
+    {
+      "goal": "Align Mir Yoke as the Harness-managed central capability supply system for independently owned repositories: make the primary purpose, management authority, supported adoption channels, consumer ownership boundaries, ADR precedence, maintainer Profile, operating documentation, contract tests, generated derivatives, and adopter payload consistent without changing interfaces, profile enums, runtime installations, consumer repositories, protected memory, credentials, or external services.",
+      "updated": "2026-09-06",
+      "status": "superseded"
+    }
+  ]
+}
+````
+
+### Preserved superseded runtime guidance
+
+The ADR-69/85 transport amendment already authorizes the plugin/app-server route. These replacements update operational guidance without changing accepted decisions or safety guards. Compatibility class and function names remain unchanged.
+
+#### .claude/agents/main-orchestrator.md
+
+````text
+- Match trigger table (CLAUDE.md) → Read matching skills (max 3) → one-line report.
+See CLAUDE.md "Orchestration Presets" table (single source of truth).
+2. If `execution_backend: codex`, use the supported MCP/native lane when that agent is selected. Raw `codex exec` is banned. A missing preferred lane blocks only work that truly requires that protected or isolated route; safe bounded direct work may continue.
+See CLAUDE.md "Role Policy (Template Profile)" and AGENTS.md `template:profile:role-policy` block for the binding policy contract. This section covers the per-agent declarative surface introduced by ADR-09.
+- A missing preferred MCP lane is a lane limitation, not a task blocker when a safe direct, native, or manual path remains. Never use raw `codex exec` fallback.
+- **Supported Codex MCP lane**:
+  - When the current host exposes a Codex MCP lane, keep read-only investigation or review bounded
+    and request its read-only sandbox mode.
+    explicit routing fields when the active policy requires them. Repository custom-agent settings
+    still take precedence when the runtime defines that behavior.
+- User correction feedback → record pattern in tasks/lessons.md.
+- New project knowledge → save to docs/{category}/ + update memory-map.md.
+````
+
+#### .claude/agents/executor-agent.md
+
+````text
+> **Codex Backend Dispatch Rule (ADR-18 §S2, amended by ADR-69/73)**: When this delegated agent is selected, use the MCP/native Codex lane and never raw `codex exec`. Delegation itself is proportional; bounded main work may stay direct.
+Routing SoT: ADR-69 amends ADR-65. Raw `codex exec` is banned. When delegation is selected, use `mir_executor --dispatch`, MCP, or native read-only breadth according to the task. A missing preferred lane is not a task blocker when a safe bounded direct path remains.
+`--codex-args` is a legacy option name; in `--dispatch` mode its positional prompt is sent to the MCP Codex backend, not to raw `codex exec`.
+### Read-only / non-mutating work → MCP/native routing (nothing to merge)
+Claude-main investigation/review uses the supported Codex MCP lane. Codex-main breadth uses only
+MCP/native routes. If the selected lane is unavailable, report the lane limitation so the parent
+  positional prompt and sends it to the MCP backend.
+- **Verify Codex actually ran** by checking the JobRegistry status/result plus MCP dispatch artifacts.
+  `${CODEX_HOME:-$HOME/.codex}`). If `codex --version` works in the shell, auth is set.
+````
+
+#### .claude/agents/codex-final-reviewer.md
+
+````text
+> **Codex Backend Dispatch Rule (ADR-85)**: This agent declares `execution_backend: codex`. When delegation is selected, use the supported MCP or native Codex collaboration operation exposed by the current host. Never invoke raw `codex exec`.
+````
+
+#### .claude/agents/pipeline-validator.md
+
+````text
+> **Codex Backend Dispatch Rule (ADR-85)**: This agent declares `execution_backend: codex`. When delegation is selected, use the supported MCP or native Codex collaboration operation exposed by the current host. Never invoke raw `codex exec`.
+````
+
+#### scripts/codex-shim.sh
+
+````text
+# MCP-backed clients honor CODEX_BIN when a shimmed Codex binary is required.
+    _POLICY_MESSAGE="[codex-shim] raw 'codex exec' and 'codex e' are prohibited; use MCP-backed dispatch."
+````
+
+#### tools/mir_executor/tests/test_codex_shim.py
+
+````text
+        'use MCP-backed dispatch.\n'
+````
+
+#### tools/mir_executor/executor.py
+
+````text
+        """Run Codex through the MCP backend (blocking).
+
+        Maps the MCP response into the existing SubprocessResult contract.
+````
+
+#### Additional stale invocation text
+
+The design skill absorbs deep-interview. The raw-exec guard keeps the same condition and exit status; only its route hint changes. Prior lines:
+
+````text
+**0 signals** → load deep-interview skill → ambiguity gating.
+    block "raw codex exec/e is banned — route through MCP/mir_executor"
+````
+
+### Second-pass item results
+
+1. Consistency: Profile-declared paths exist; current references and root rule parity pass.
+   Codex candidate parity passes, with four sandbox-blocked agent derivatives awaiting installation.
+2. Operating base: registered hook targets exist. Retained optional/reference hooks do not grant
+   activation authority; no justified safety-gate removal was found. Stale transport hints were fixed.
+3. Current facts: corrected agent invocation, missing section references, binary/auth distinction,
+   generated-memory write guidance and obsolete continuity claims. Accepted ADR bodies stay unchanged.
+4. Archival: all four predecessor continuity records and 24 replaced agent guidance lines were
+   checked verbatim against HEAD in this log; current documents retain archive pointers.
+5. Context: root instructions already meet budget. The single cursor remains tasks/plan.md;
+   detailed evidence stays here on demand. No additional status or handoff document was created.
+6. Memory: the 348160-byte database passes immutable read-only quick_check; 21 facts exist.
+   Ordinary sqlite3 -readonly reports unable to open database (cause not established).
+   Memory doctor fails with missing harness_a.toml. The Profile does not require the memory baseline;
+   no consumer configuration was introduced. Documented dry-run renders match both existing projections.
+7. Constraints: secret/protected-path, destructive-action, raw-exec, bootstrap and receipt tests
+   remain intact. A pre-existing setup test tried the real host data directory before its fake uv;
+   XDG_DATA_HOME now points to its temporary fixture. The same assertions pass without guard changes.
+8. Skills/agents: isolated plugin/common-contract checks, registry checks and strict parsing of
+   all four changed agents pass. No local duplicate skills or Codex model pins were introduced.
+9. Instructions: unchanged CLAUDE.md = 41 lines / 3448 bytes; AGENTS.md = 43 / 3537.
+   Both before and after satisfy 55/3600 and 60/3800; generated root body equals the source.
+10. Rules/lessons: corrected the orchestrator to use documented memory commands and render lessons
+    and memory-map projections. No lesson, safety rule or accepted decision was deleted.
+11. Architecture: supported Starter, recipe, CLI, plugin, agent/command and reference boundaries
+    match the checkout. No architecture rewrite was needed.
+12. Routing: applied the already accepted ADR-69/85 amendment to the four operational agent
+    contracts and route hints. The central policy overlay resolves unit work to gpt-6-luna/high;
+    local null routing fields inherit policy. Compatibility CodexMcp* API names remain unchanged.
+13. Continuity: one cursor, one resume pointer, one status projection and one evidence log remain.
+    The canonical pre-compact generator refreshes the handoff's managed runtime snapshot.
+14. Retrieval: memory-backed SRR-MEMORY-RELATIONS returns four implementation edges, including
+    src/mir/core/memory_relations.py and src/mir/cli/relations.py. Context pull returns relevant
+    architecture/verification anchors but no facts or chunks because no archives are configured.
+    The historical spec graph does not contain that SRR anchor; no graph was synthesized.
+15. Efficiency: current repository SessionStart emits 551 bytes; the shared continuity hook emits
+    94 bytes. Large evidence, TDD and historical documents remain on demand. Root sizes are unchanged.
+
+### Second-pass verification and failure classification
+
+- Full final suite: 1226 passed, 3 failed in 203.46 seconds.
+- Focused generator, isolated plugin/common-contract, public-surface/sanitization, links, payload,
+  release-evidence, release metadata, startup, safety guards and shim suite: 166 passed.
+- Setup isolation regression: observed failure with a host-directory permission error, then 1 passed
+  after the fixture-only change. The full final suite also passes that test.
+- The first full run overlapped the diagnostic-text edit after pytest had imported its old expectation,
+  producing 8 transient shim mismatches; the final full run passes all 8. They are not pre-existing defects.
+- Two final failures are pre-existing environment limitations: test_greenfield_slim_integration and
+  test_installed_cli cannot download required PyPI packages because DNS/network access is unavailable.
+  Their test files and production paths were not changed; the same failures appeared in the initial run.
+- One final failure is caused by these authorized agent-source edits: the capability-lock test requires
+  both committed-source hashes and working-source hashes to match. All existing committed-source hashes
+  still verify, but the four edited agents differ. ADR-85 requires committed-source binding, while this
+  turn forbids commits. The lock and its test were not weakened or given fabricated provenance.
+- Worktree verify_codex_sync reports exactly the four pending agent derivatives below. A temporary
+  tracked-source copy with generated output installed passes the same verifier. Non-Codex generator
+  outputs are byte-identical; nothing needed copying back. Root and nested generated files are intact.
+- Ruff, context paths (9 files / 69 references), document-size budgets, agent registry, strict agent
+  frontmatter and harness consistency (0 errors / 0 warnings) pass. git diff --check passes.
+- The adopter payload is regenerated after tracked documentation changes. Final closing checks
+  are run again after recording this evidence and generating the handoff snapshot.
+
+### Second-pass delivery and owner boundaries
+
+Pending generated installation (re-run scripts/generate_codex_derivatives.sh in an authorized environment):
+
+- .codex/agents/codex-final-reviewer.toml
+- .codex/agents/executor-agent.toml
+- .codex/agents/main-orchestrator.toml
+- .codex/agents/pipeline-validator.toml
+
+The temporary generated output and command logs are retained outside the checkout for the orchestrator;
+no host-specific absolute path is added to public files. After installing derivatives, regenerate the
+adopter payload. Capability-lock binding requires a separately authorized commit containing the source
+changes, followed by the repository's normal committed-source binding process and lock verification.
+
+No Profile edit or bootstrap re-attestation is pending. No new ADR policy decision is needed for the
+transport corrections: amendment A1 already settled it. The prior uncertainty about unnumbered
+successors for 13 retired mirror ADRs remains historical and was not resolved by guessing.
+The remaining owner boundary is the no-commit instruction versus committed-source lock binding;
+this pass preserves both and leaves that delivery action to the orchestrator. Live model execution,
+runtime installation, network-dependent acceptance, commits, tags and releases were not performed.
+
+Orchestrator acceptance (2026-09-23): the four `.claude/agents/*.md` wording edits and their
+`.codex/agents/*.toml` derivatives were withheld from the local commit because the capability lock
+binds agent bytes to a published source commit, which requires release authority. The replaced lines
+listed above remain the current agent text until that release. The adopter payload was regenerated
+and the full suite passed (1,229).

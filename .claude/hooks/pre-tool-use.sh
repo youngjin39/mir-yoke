@@ -297,7 +297,7 @@ for argv in segments:
         raise SystemExit(0)
 raise SystemExit(1)
 '; then
-    block "raw codex exec/e is banned — route through MCP/mir_executor"
+    block "raw codex exec/e is banned — use the Codex plugin or mir_executor (app-server)"
   fi
   if [ "${MIR_PRE_COMMIT_VERIFY:-0}" = "1" ] && \
      echo "$CMD" | grep -qE '(^|[[:space:]])git[[:space:]]+commit([[:space:]]|$)'; then

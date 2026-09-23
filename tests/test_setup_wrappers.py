@@ -773,6 +773,7 @@ def test_receipt_cli_is_not_reused_after_locked_source_changes(tmp_path):
     fake_uv.chmod(0o755)
     env = os.environ.copy()
     env["PATH"] = f"{fake_bin}{os.pathsep}{env['PATH']}"
+    env["XDG_DATA_HOME"] = str(tmp_path / "data")
 
     completed = subprocess.run(
         ["bash", str(project / "setup.sh"), "--json"],

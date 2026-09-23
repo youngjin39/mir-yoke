@@ -14,7 +14,7 @@
 #   export CODEX_BIN="$(pwd)/scripts/codex-shim.sh"          # routes MirExecutor
 #   PATH="$(pwd)/scripts/codex-shim-dir:$PATH"               # routes shutil.which
 #
-# MCP-backed clients honor CODEX_BIN when a shimmed Codex binary is required.
+# App-server clients honor CODEX_BIN when a shimmed Codex binary is required.
 # See ADR-59 §5.1 for the full wiring rationale.
 set -eu
 
@@ -78,7 +78,7 @@ _STDERR_TMP="$(mktemp /tmp/codex-shim-stderr.XXXXXX)"
 
 _SHIM_EXIT=0
 if [ "$_RAW_EXEC_REJECTED" -eq 1 ]; then
-    _POLICY_MESSAGE="[codex-shim] raw 'codex exec' and 'codex e' are prohibited; use MCP-backed dispatch."
+    _POLICY_MESSAGE="[codex-shim] raw 'codex exec' and 'codex e' are prohibited; use app-server-backed dispatch."
     printf '%s\n' "$_POLICY_MESSAGE" > "$_STDERR_TMP"
     printf '%s\n' "$_POLICY_MESSAGE" >&2
     _SHIM_EXIT=2
