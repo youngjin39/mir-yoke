@@ -19,7 +19,7 @@ Role: Project-wide control plane for the currently opened host.
    `tools.catalog_loader.load_catalog(ROOT)` and cache it only for that task.
 ## Ambiguity Gate
 Check for specificity signals: file path, function name, numbered steps, error message.
-**0 signals** → load deep-interview skill → ambiguity gating.
+**0 signals** → load `mir-core:design` and its deep-interview guidance → ambiguity gating.
 `force:` prefix → bypass gate.
 
 ## Task Classification
@@ -32,12 +32,12 @@ Request → specificity signals? → if none: deep-interview → classify
 ```
 - Classify from uncertainty, blast radius, reversibility, coordination, and protected boundaries rather than step or file count.
 - Use tiny/normal/heavy labels only when they help select a lane or handoff depth.
-- Match trigger table (CLAUDE.md) → Read matching skills (max 3) → one-line report.
+- Select relevant skills from the active runtime catalog → read only needed instructions → one-line report.
 - The main may write bounded production code directly and run the smallest relevant verification.
 
 - Use sub-agents for breadth only when parallelism, isolation, specialist knowledge, or context economy justifies the dispatch cost; direct bounded investigation is valid.
 ## Orchestration Presets
-See CLAUDE.md "Orchestration Presets" table (single source of truth).
+Use the proportional execution rules in `CLAUDE.md` and `docs/decisions/role-policy.md`.
 
 ## Simple Tasks (direct execution)
 - Bounded code, docs, config, and harness work may execute directly when the route and focused check are clear.
@@ -54,7 +54,7 @@ See CLAUDE.md "Orchestration Presets" table (single source of truth).
 Before dispatching any agent via the Agent tool:
 
 1. Inspect the target agent's frontmatter via tools.agent_loader or by reading the .md file. (Cached from Startup Protocol step 3 — no re-Read needed unless cache stale.)
-2. If `execution_backend: codex`, use the supported MCP/native lane when that agent is selected. Raw `codex exec` is banned. A missing preferred lane blocks only work that truly requires that protected or isolated route; safe bounded direct work may continue.
+2. If `execution_backend: codex`, use the user-scope Codex plugin or native Codex lane when that agent is selected. Raw `codex exec` is banned. A missing preferred lane blocks only work that truly requires that protected or isolated route; safe bounded direct work may continue.
 3. Affected agents today: `codex-final-reviewer`, `executor-agent`, `pipeline-validator`. New agents declaring `execution_backend: codex` are automatically in scope.
 4. Best-effort log: append a line to `tasks/log/dispatch-log.jsonl` with `{ts, agent_slug, routed_via, purpose, task_id}`. routed_via = `codex_cli` | `claude_session` | `unknown`. If the log directory doesn't exist, do not fail the dispatch — log absence is INFO-level only.
 
@@ -88,7 +88,7 @@ This routing applies only to specialists. The scope-pattern filter is the dispat
 
 ## Sub-agent dispatch policy
 
-See CLAUDE.md "Role Policy (Template Profile)" and AGENTS.md `template:profile:role-policy` block for the binding policy contract. This section covers the per-agent declarative surface introduced by ADR-09.
+See `docs/decisions/role-policy.md` and `.mir/repo-profile.toml` for the binding local role policy; operator-owned global routing remains authoritative. This section covers the per-agent declarative surface introduced by ADR-09.
 
 - The main may execute bounded code work directly; delegate when it materially improves isolation, parallelism, or review quality.
 - Default delegated sub-agent for code/TDD/review: `executor-agent`. This is a preference, not a precondition for direct bounded work.
@@ -102,11 +102,11 @@ See CLAUDE.md "Role Policy (Template Profile)" and AGENTS.md `template:profile:r
 - Deterministic enforcement (orchestrator-guard hook + MCP per-subagent whitelist) is out of ADR-09 scope. ADR-08 cancelled 2026-05-12; the enforcement layer is a separate future ADR. ADR-09 covers declarative surface only.
 
 - Non-code breadth may be handled directly or delegated according to uncertainty, isolation needs, and context cost.
-- A missing preferred MCP lane is a lane limitation, not a task blocker when a safe direct, native, or manual path remains. Never use raw `codex exec` fallback.
+- A missing preferred Codex plugin lane is a lane limitation, not a task blocker when a safe direct, native, or manual path remains. Never use raw `codex exec` fallback.
 - **Model/effort routing (CLI-agnostic — ADR-67 priority schema)**: before any Codex sub-agent call, resolve the model and reasoning effort for the task's TDD category through `scripts/mir.sh policy resolve --category <cat>` and pass the returned routing fields when the active policy requires them. A null field means inherit the Codex default. Values are policy-source-owned (`sub-agent-policy.json` routing, `MIR_SUB_AGENT_POLICY` overlay). Hooks do not inject native routing, so resolve and pass it consistently across supported collaboration lanes. `mir executor … --dispatch` resolves the same routing internally.
-- **Supported Codex MCP lane**:
-  - When the current host exposes a Codex MCP lane, keep read-only investigation or review bounded
-    and request its read-only sandbox mode.
+- **Claude-to-Codex plugin lane (ADR-69/85 amendment)**:
+  - Use the user-scope `codex:codex-rescue` / `/codex:rescue` plugin with centrally resolved
+    `--model` / `--effort`; keep investigation or review bounded and read-only.
   - Work in another repository requires a current user instruction naming that single target and
     scope; open a target-local session and obey that repository's contract.
   - Continue an existing conversation through the host's supported continuation operation instead
@@ -117,8 +117,8 @@ See CLAUDE.md "Role Policy (Template Profile)" and AGENTS.md `template:profile:r
     global and repository policy for model, reasoning effort, context inheritance, concurrency,
     lifecycle reuse, and release; do not assume a tool-loading step or fixed call sequence.
   - Resolve task-category routing through `scripts/mir.sh policy resolve --category <cat>` and pass
-    explicit routing fields when the active policy requires them. Repository custom-agent settings
-    still take precedence when the runtime defines that behavior.
+    explicit routing fields when the active policy requires them. Codex custom-agent pins require
+    an evaluated exception in the operator-owned central allowlist.
   - Native sub-agents stay read-only; use `mir_executor --dispatch` when delegated mutation needs worktree isolation. Bounded main edits remain valid.
   - Reason: native sub-agents bypass harness worktrees, merge gates, and TDD gates.
 - For delegated in-repo mutation, prefer `mir_executor … --dispatch` when worktree isolation or its merge gate is useful; bounded direct-main edits are valid. Raw `codex exec` remains banned.
@@ -135,8 +135,10 @@ escalation service.
 2. Run the affected checks; add broader lint, analysis, review, or archive work only when risk warrants it.
 
 ## Feedback → Learning
-- User correction feedback → record pattern in tasks/lessons.md.
-- New project knowledge → save to docs/{category}/ + update memory-map.md.
+- User correction feedback → preserve the lesson in tracked Markdown, synchronize through the
+  documented memory commands, and render `tasks/lessons.md`; never edit its generated projection.
+- New project knowledge → save to docs/{category}/ and regenerate `docs/memory-map.md` through
+  the documented workflow in `docs/memory-map.md`.
 
 ## Reporting
 [Found] / [Fixed] / [Rationale] / [Next Action].
@@ -155,3 +157,5 @@ escalation service.
 - Reporting completion without relevant executed evidence.
 - Skipping lessons.md check. Repeating the same mistakes.
 </Failure_Modes_To_Avoid>
+
+Prior transport and replaced guidance: `tasks/change_log.md`, "Preserved superseded runtime guidance".

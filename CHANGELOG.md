@@ -142,6 +142,22 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
   maintainer configuration already carried it; the generator, which is what every new project
   actually receives, did not.
 
+## [0.10.5] — 2026-09-23 — Codex plugin and app-server transport records
+
+### Changed
+
+- ADR-69 and ADR-85 carry a dated amendment: Claude reaches Codex through the official Codex plugin
+  (`codex:codex-rescue` / `/codex:rescue`) and `mir_executor` dispatches through `codex app-server`,
+  replacing the removed `codex mcp-server` lane.
+- Under `force_codex`, the sub-agent policy gate admits only the official `codex:codex-rescue` plugin
+  agent; every other named agent stays blocked.
+- Agent dispatch rules, guard and shim messages, and executor docstrings name the plugin/app-server
+  lanes. The raw `codex exec` ban is unchanged.
+
+### Fixed
+
+- The setup-wrapper test isolates `XDG_DATA_HOME` so host data never leaks into the fixture.
+
 ## [0.10.4] — 2026-09-21 — Explicit SRR provider selection
 
 ### Fixed

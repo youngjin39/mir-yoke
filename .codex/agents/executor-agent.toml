@@ -6,7 +6,7 @@ Use `AGENTS.md` as the shared repository contract.
 Apply only the agent-specific behavior below; do not restate the root contract.
 
 
-> **Codex Backend Dispatch Rule (ADR-18 §S2, amended by ADR-69/73)**: When this delegated agent is selected, use the MCP/native Codex lane and never raw `codex exec`. Delegation itself is proportional; bounded main work may stay direct.
+> **Codex Backend Dispatch Rule (ADR-18 §S2, amended by ADR-69/73)**: When this delegated agent is selected, use the Codex plugin/native lane and never raw `codex exec`. Delegation itself is proportional; bounded main work may stay direct.
 
 > **Main-Agent Parity Preamble (ADR-56)**: The orchestrating main may be Claude CLI or Codex CLI. Follow the same bounded scope and hard safety boundaries either way.
 
@@ -25,7 +25,7 @@ Role: Execute a bounded task when the main chooses the Codex delegated lane.
 
 ## Codex CLI invocation (ADR-09 round 4 — lessons from Phase 9A phantom "stdin issue")
 
-Routing SoT: ADR-69 amends ADR-65. Raw `codex exec` is banned. When delegation is selected, use `mir_executor --dispatch`, MCP, or native read-only breadth according to the task. A missing preferred lane is not a task blocker when a safe bounded direct path remains.
+Routing SoT: ADR-69 amends ADR-65. Raw `codex exec` is banned. When delegation is selected, use `mir_executor --dispatch`, the user-scope Codex plugin, or native read-only breadth according to the task. A missing preferred lane is not a task blocker when a safe bounded direct path remains.
 
 Codex dispatch in the executor lane has one supported mutating form (ADR-60 §16 D1) and no raw-exec exception.
 
@@ -50,34 +50,36 @@ scripts/mir.sh executor execute --background --dispatch \
   --verify-cmd '<tdd-category command>'
 ```
 
-`--codex-args` is a legacy option name; in `--dispatch` mode its positional prompt is sent to the MCP Codex backend, not to raw `codex exec`.
+`--codex-args` is a legacy option name; in `--dispatch` mode its positional prompt is sent to `codex app-server`, not to raw `codex exec`.
 `--allow-path` is the merge allowlist — code paths ONLY; NEVER pass `.claude/`, `.ai-harness/`,
 `config/`, `docs/`, or `tasks/plan.md` (the merge gate fail-closes on any out-of-allowlist path).
 `--verify-cmd` re-runs the TDD-category command in the worktree before the merge is allowed.
 
-### Read-only / non-mutating work → MCP/native routing (nothing to merge)
+### Read-only / non-mutating work → plugin/native routing (nothing to merge)
 
-Claude-main investigation/review uses the supported Codex MCP lane. Codex-main breadth uses only
+Claude-main investigation/review uses the user-scope `codex:codex-rescue` / `/codex:rescue`
+plugin with `--model` / `--effort` from the central routing policy. Codex-main breadth uses only
 the native collaboration operations exposed by the current host and follows the active policy for
 model, reasoning effort, context inheritance, concurrency, reuse, and lifecycle handling. It does
 not assume a tool-loading step or fixed call sequence.
 
 For pure-read or otherwise non-mutating dispatches with no code to merge back, use those supported
-MCP/native routes. If the selected lane is unavailable, report the lane limitation so the parent
+plugin/native routes. If the selected lane is unavailable, report the lane limitation so the parent
 can choose another safe in-scope route; do not invoke raw `codex exec`.
 
 Rules (Phase 9A retro):
 - **Use a positional prompt in `--codex-args`**, not stdin piping. The dispatch helper extracts the
-  positional prompt and sends it to the MCP backend.
+  positional prompt and sends it to the app-server backend.
 - Omitted timeouts continue. Use an explicit operator cap only when the task actually requires one;
   the 600/180 observations do not terminate work.
 - Give prompts only the context needed for the bounded task; do not prohibit necessary reads blindly.
 - Use the worktree dispatch for template paths when isolation or its merge gate is useful. Bounded
   direct-main edits are valid and code-path routing is advisory.
-- **Verify Codex actually ran** by checking the JobRegistry status/result plus MCP dispatch artifacts.
+- **Verify Codex actually ran** by checking the JobRegistry status/result plus app-server dispatch artifacts.
   Absence means the backend did not complete and the result is not acceptable.
 - **Auth**: `CODEX_HOME` env must point to the auth.json directory (usually
-  `${CODEX_HOME:-$HOME/.codex}`). If `codex --version` works in the shell, auth is set.
+  `${CODEX_HOME:-$HOME/.codex}`). `codex --version` verifies binary availability only;
+  it does not prove authentication or authorize credential access.
 
 
 ## State Checkpoint (externalize, don't trust memory — ADR-60 R5)

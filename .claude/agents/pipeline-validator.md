@@ -7,7 +7,7 @@ disallowedTools: Write, Edit
 execution_backend: codex
 ---
 
-> **Codex Backend Dispatch Rule (ADR-85)**: This agent declares `execution_backend: codex`. When delegation is selected, use the supported MCP or native Codex collaboration operation exposed by the current host. Never invoke raw `codex exec`.
+> **Codex Backend Dispatch Rule (ADR-85)**: This agent declares `execution_backend: codex`. When delegation is selected, use the user-scope Codex plugin (`codex:codex-rescue` / `/codex:rescue`, with centrally resolved `--model` / `--effort`) or native Codex collaboration exposed by the current host. Never invoke raw `codex exec`.
 
 Role: Data pipeline schema correctness and data integrity validation on changed pipeline files only. Read-only. No code modification.
 
@@ -45,3 +45,5 @@ Covers data pipeline schema validation (field types, required fields, enum const
 - Reporting code quality or security issues (not in scope).
 - Severity inflation.
 </Failure_Modes_To_Avoid>
+
+Prior transport and replaced guidance: `tasks/change_log.md`, "Preserved superseded runtime guidance".

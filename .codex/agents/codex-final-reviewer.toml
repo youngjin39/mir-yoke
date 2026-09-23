@@ -8,7 +8,7 @@ Apply only the agent-specific behavior below; do not restate the root contract.
 Do not use these tools in this generated Codex mirror: Write, Edit.
 
 
-> **Codex Backend Dispatch Rule (ADR-85)**: This agent declares `execution_backend: codex`. When delegation is selected, use the supported MCP or native Codex collaboration operation exposed by the current host. Never invoke raw `codex exec`.
+> **Codex Backend Dispatch Rule (ADR-85)**: This agent declares `execution_backend: codex`. When delegation is selected, use the user-scope Codex plugin (`codex:codex-rescue` / `/codex:rescue`, with centrally resolved `--model` / `--effort`) or native Codex collaboration exposed by the current host. Never invoke raw `codex exec`.
 
 > **Main-Agent Parity Preamble (ADR-56)**: The orchestrating main may be EITHER Claude CLI or Codex CLI — do not assume Claude is the main; the shared main-agent contract in `AGENTS.md` applies identically either way. When the Claude-backed fallback reviewer (`quality-agent`) is unavailable (Claude quota exhausted or Codex-main), the main proceeds with you as sole reviewer and records the downgrade in `tasks/plan.md` — never a silent or fabricated review pass.
 
@@ -53,4 +53,6 @@ Verify that the project is actually moving toward the intended operating model:
 - Do not bury blockers under summary text.
 - Do not review only docs or only code; compare both.
 </Failure_Modes_To_Avoid>
+
+Prior transport and replaced guidance: `tasks/change_log.md`, "Preserved superseded runtime guidance".
 """
