@@ -2,7 +2,7 @@
   "agents": {
     ".claude/agents/codex-final-reviewer.md": {
       "project_path": ".claude/agents/codex-final-reviewer.md",
-      "sha256": "f6954a532f3d6dd61b071bc8927c926295a661d3cac07d6e6b987f4613be6970"
+      "sha256": "f6c02f5513d00d239ccbe8e41a3d819739bb97ff0f48860692dbb0bf1106344d"
     },
     ".claude/agents/cwe-auditor.md": {
       "project_path": ".claude/agents/cwe-auditor.md",
@@ -14,7 +14,7 @@
     },
     ".claude/agents/executor-agent.md": {
       "project_path": ".claude/agents/executor-agent.md",
-      "sha256": "13d39e15f9f2154f395308f8626e2f6a4399be7dc77ecf75233d253487efb698"
+      "sha256": "3fd6462d94d39bf9a99757e63f3c09b5788818afe3493c19b272cbbc0aaaa8c6"
     },
     ".claude/agents/fleet-doc-steward.md": {
       "project_path": ".claude/agents/fleet-doc-steward.md",
@@ -22,7 +22,7 @@
     },
     ".claude/agents/main-orchestrator.md": {
       "project_path": ".claude/agents/main-orchestrator.md",
-      "sha256": "8285dab537ed41849b80cbed41f5e0baf2b59e39fce40382a5564e9f989b03d8"
+      "sha256": "4bcecf090560aa9075587111bb5d1e00dbb6b29d939a7bc99b2b4b911ec85a5d"
     },
     ".claude/agents/ontology-validator.md": {
       "project_path": ".claude/agents/ontology-validator.md",
@@ -30,7 +30,7 @@
     },
     ".claude/agents/pipeline-validator.md": {
       "project_path": ".claude/agents/pipeline-validator.md",
-      "sha256": "a7cf3f5b94d9215b54301e286f4cfc16959589f113f6c240c5ba664fb25cfec1"
+      "sha256": "3f77862d1c09954a9b13a7e3228477d7c13e442d16bb5474cca094664845bde7"
     },
     ".claude/agents/quality-agent.md": {
       "project_path": ".claude/agents/quality-agent.md",
@@ -83,29 +83,29 @@
       "sha256": "56b047474551913d6734e85c60a3f25d4944f55d28b7a2110495f9175f52ed07"
     },
     ".claude-plugin/marketplace.json": {
-      "sha256": "a4340a199fc117d3d807cd1415b1e28d919a2ba46d27af312ca0ee417651aff2"
+      "sha256": "a953375d1e632c1cb88c3c5cef9af40a166e43bb4b8b8b28294cffc4ce51edbb"
     }
   },
   "plugins": {
     "mir-code": {
       "package_kind": "skills",
       "path": "plugins/mir-code",
-      "sha256": "28bfb9856b25e92a0f194e4c59571ef58fdc5298b1b16922c0b03c7a8605c0b5"
+      "sha256": "51410ab8e211b6b1f5a28c9df52d0184eb1bad7bad58e4d652e687782de342d4"
     },
     "mir-content": {
       "package_kind": "skills",
       "path": "plugins/mir-content",
-      "sha256": "5160cfd63dfa769da02973d5bedf906cc26b4d76743330023ba87a4cd9cc4781"
+      "sha256": "ceced284a8033aeead1e0718b11557b8466cec0f68fa2124d9b64afa191d2934"
     },
     "mir-core": {
       "package_kind": "skills",
       "path": "plugins/mir-core",
-      "sha256": "db0ec7e053a26656514247fa21e4d0a27a1c9dcbd134f25c0c64d616d4ed67fa"
+      "sha256": "357af24a500906708c3d6042d4f783175086a449a4c461a54c51ffcf7de1fc0f"
     },
     "mir-lifecycle-hooks": {
       "package_kind": "skills-hooks",
       "path": "plugins/mir-lifecycle-hooks",
-      "sha256": "8d8a095ac94b7c595de59cfe4494fe9d3be7d48f6f86c242d73a71ca81e9f7c7"
+      "sha256": "9e1dab810aa6f49dfd3a1e731d5e605c4eb396edf84a428ec0bd2875623fa196"
     }
   },
   "profile": "hybrid_pipeline",
@@ -115,7 +115,7 @@
   },
   "schema_version": 2,
   "source": {
-    "commit": "3c14880ef1eaffc3b3c1739e2eb178b0fde15bb0",
+    "commit": "fe4cdbb423890053760aa39623a237b6287b3063",
     "ref": "main",
     "url": "https://github.com/youngjin39/mir-yoke.git"
   },
