@@ -270,7 +270,7 @@ def build_codex_mcp_runner(
     stall_timeout: float | None = None,
     client_factory: Callable[..., CodexMcpClient] = CodexMcpClient,
 ) -> Callable[[DispatchWorktree, int], CodexAttempt]:
-    """Build an ADR-66 MCP-backed Codex runner without ``codex exec`` argv."""
+    """Build an app-server-backed Codex runner without ``codex exec`` argv."""
     config: dict[str, object] = {"project_doc_max_bytes": 0}
     if reasoning_effort is not None:
         config["model_reasoning_effort"] = reasoning_effort
@@ -288,7 +288,7 @@ def build_codex_mcp_runner(
             _append_event(
                 events_file,
                 {
-                    "transport": "mcp",
+                    "transport": "app-server",
                     "event": "progress",
                     "duration_s": time.monotonic() - started_at,
                     "method": method,
@@ -310,7 +310,7 @@ def build_codex_mcp_runner(
                         "exit_code": exit_code,
                         "duration_s": time.monotonic() - started_at,
                         "error_sig": error_sig,
-                        "transport": "mcp",
+                        "transport": "app-server",
                         "lane_unavailable": lane_unavailable,
                     },
                 )
@@ -347,7 +347,7 @@ def build_codex_mcp_runner(
                     "exit_code": 0,
                     "duration_s": duration_s,
                     "error_sig": "",
-                    "transport": "mcp",
+                    "transport": "app-server",
                     "threadId": thread_id,
                     "lane_unavailable": False,
                 },
@@ -370,7 +370,7 @@ def build_codex_mcp_runner(
                 "exit_code": exit_code,
                 "duration_s": duration_s,
                 "error_sig": error_sig,
-                "transport": "mcp",
+                "transport": "app-server",
                 "threadId": thread_id,
                 "lane_unavailable": lane_unavailable,
             },

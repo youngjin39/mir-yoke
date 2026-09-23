@@ -25,3 +25,8 @@ manual work remains available under the repository contract.
 
 The shell hook is a narrow recognizer for obvious direct command forms. It is not a general shell
 parser and must not expand into one.
+
+
+## Amendment 2026-09-23 — Codex transport (owner decision A1)
+
+Codex CLI 0.154.0 removed `codex mcp-server`. By owner decision A1 on 2026-09-23 (Discord, recorded in the Mir Harness run `claude-orchestration-codex-execution-restore-2026-09-23`; applied here by owner instruction of the same day), Claude-main delegates to Codex through the user-scope official Codex plugin (`codex@openai-codex`: `codex:codex-rescue` or `/codex:rescue`, passing `--model`/`--effort` from the central routing policy), and `tools/mir_executor` dispatches through `codex app-server`. Where this record names MCP as the Claude-to-Codex or `mir_executor` transport, read that transport. The raw `codex exec` ban and every other decision in this record are unchanged.

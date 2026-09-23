@@ -1,21 +1,22 @@
-# Session Handoff — Central Capability Supply Purpose Alignment
+# Session Handoff — Project-document cleanup
 
-- Date: 2026-09-06.
-- Status: completed and published.
-- Intent authority: `tasks/intent.json`; `tasks/plan.md` is the current cursor. The Harness cursor run `harness-managed-central-provider-mandate-2026-09-06` owns the overall design.
+Resume pointer: `tasks/plan.md` is the only cursor; `tasks/intent.json` records owner authority.
+The cleanup and verification evidence, preserved predecessor records, pending adopter payload refresh,
+and unresolved owner decisions live in `tasks/change_log.md` under 2026-09-23.
 
-## Decisions
+The orchestrator owns `config/adopter-payload.json` and must refresh the seven changed document
+hashes before its exact-inventory tests can pass. No `.codex/` file differs. Preserve the pre-existing
+dirty implementation, protected files, recovery stash and worktrees. Do not infer release, consumer
+write, runtime installation or memory-reconfiguration authority from this handoff.
 
-Mir Yoke is the Harness-managed central capability supply system for independently owned repositories. Harness owns management direction, reuse decisions, verification and authorized delivery coordination. Yoke owns generic shared sources, plugins, separate common agents/commands, versioned delivery and compatibility evidence. Consumers retain goals, data, local policy, adapters and execution.
+Prior resume text is preserved verbatim in the evidence log.
 
-ADR-86's 2026-09-06 amendment controls this primary purpose and management split. Starter, Project Agent Kit, optional CLI and plugins remain supported; `public_harness_template` remains the distribution classification. New and legacy provider contract titles are recognized by adopter boundary checks.
+<!-- mir:runtime-snapshot:begin -->
+## Runtime Snapshot (Generated)
 
-## Verified Delivery
+### Active Plan Items
+- No open plan items.
 
-Implementation `f6d3f9a4949cfe19785d37ab952bf8f699d51802` was committed and pushed to origin/main with matching local/remote revisions. The parent observed 52 passing focused tests, exact payload parity, complete classification of 806 assets, generated Codex parity, Ruff and diff checks. Final policy/docs review has no blocker. For future delivery-record edits, regenerate the payload and verify its exact hashes before committing.
-
-Detailed evidence and the prior capability/runtime proof remain in `tasks/change_log.md` and Git history. No live provider installation/update, consumer deployment, trust/credential/protected-memory change, PR or workflow was performed.
-
-## Resume
-
-No work remains for this mandate. Compare current local/remote main revisions and inspect the working tree before new work. Consumer ownership and explicit delivery authority remain intact.
+### Working Tree
+- Working tree dirty (26 paths; inspect git status --short).
+<!-- mir:runtime-snapshot:end -->

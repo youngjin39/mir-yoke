@@ -84,10 +84,22 @@ if [ "$_mir_sub_agent_policy_mode" != "force_codex" ]; then
   exit 0
 fi
 
+# Owner decision 2026-09-23: the official Codex plugin agent is the Codex lane, not a bypass.
+_mir_subagent_type="$(printf '%s' "$INPUT" | "$_MIR_PYTHON_LAUNCHER" -c '
+import json
+import sys
+
+tool_input = json.load(sys.stdin).get("tool_input") or {}
+print(tool_input.get("subagent_type") or "")
+' 2>/dev/null || true)"
+if [ "$_mir_subagent_type" = "codex:codex-rescue" ]; then
+  exit 0
+fi
+
 if [ "${MIR_R3_FALLBACK:-0}" = "1" ]; then
   echo "[mir ADVISORY] force_codex Agent/Task escape via MIR_R3_FALLBACK=1" >&2
   exit 0
 fi
 
-echo "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Route sub-agent work through Codex MCP: 'mcp__codex__codex' for read-only review/investigation or 'scripts/mir.sh executor execute --background --dispatch ...' for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1; to change policy edit config/sub-agent-policy.json mode." >&2
+echo "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'scripts/mir.sh executor execute --background --dispatch ...' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1; to change policy edit config/sub-agent-policy.json mode." >&2
 exit 2

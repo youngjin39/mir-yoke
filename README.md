@@ -10,6 +10,15 @@ authority over a repository that reads or adopts its material. Consumers retain 
 local policy, adapters, and execution; the active AI agent writes only under the user's
 target-specific authorization.
 
+## Project documents
+
+- [Architecture](ARCHITECTURE.md) describes the current supported flows and source layout.
+- [Decision index](docs/decisions/INDEX.md) identifies current authority and lists every ADR.
+- [Specification snapshot](spec/STATE.md) preserves the completed v0.8 automation requirements;
+  ADR-83 defines the current supported surface. There is no separate active product PRD.
+- [Current maintainer plan](tasks/plan.md) is the single active cursor. Completed work and the
+  outstanding owner decision are recorded in the [change log](tasks/change_log.md).
+
 ## Supported layers
 
 ### 1. Minimal Starter compatibility

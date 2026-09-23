@@ -102,10 +102,10 @@ class TestCodexShimPrimaryPath:
 
         ledger_path = _make_minimal_ledger(tmp_path)
         executor = MirExecutor(tmp_path, ledger_path=ledger_path)
-        result = executor.run_codex(['mcp-server'])
+        result = executor.run_codex(['app-server'])
 
         assert result.exit_code == 1
-        assert 'Codex MCP server exited with code 7' in result.stderr
+        assert 'Codex app-server exited with code 7' in result.stderr
         assert events_file.exists()
         events = _read_events(events_file)
         assert len(events) == 1
@@ -125,13 +125,13 @@ class TestCodexShimPrimaryPath:
 
         ledger_path = _make_minimal_ledger(tmp_path)
         executor = MirExecutor(tmp_path, ledger_path=ledger_path)
-        executor.run_codex(['mcp-server'])
+        executor.run_codex(['app-server'])
         assert events_file.exists()
 
     def test_no_shim_recursion(self, tmp_path, monkeypatch):
         events_file = tmp_path / 'tasks' / 'events.jsonl'
         result = subprocess.run(
-            [str(_SHIM), 'mcp-server'],
+            [str(_SHIM), 'app-server'],
             capture_output=True,
             text=True,
             env={
@@ -157,8 +157,8 @@ class TestCodexShimPrimaryPath:
 
         ledger_path = _make_minimal_ledger(tmp_path)
         executor = MirExecutor(tmp_path, ledger_path=ledger_path)
-        executor.run_codex(['mcp-server'])
-        executor.run_codex(['mcp-server'])
+        executor.run_codex(['app-server'])
+        executor.run_codex(['app-server'])
 
         assert len(_read_events(events_file)) == 2
 
@@ -200,7 +200,7 @@ def test_rejects_raw_exec_without_invoking_real_binary(
 def test_rejects_exact_token_used_as_separate_option_value(tmp_path, value):
     result, args_file, events_file = _run_shim(
         tmp_path,
-        ['--profile', value, 'mcp-server'],
+        ['--profile', value, 'app-server'],
     )
 
     assert result.returncode == 2
@@ -209,8 +209,8 @@ def test_rejects_exact_token_used_as_separate_option_value(tmp_path, value):
 
 
 @pytest.mark.parametrize('value', ['exec', 'e'])
-def test_allows_equals_form_option_value_for_mcp_server(tmp_path, value):
-    args = [f'--profile={value}', 'mcp-server']
+def test_allows_equals_form_option_value_for_app_server(tmp_path, value):
+    args = [f'--profile={value}', 'app-server']
     result, args_file, events_file = _run_shim(tmp_path, args)
 
     assert result.returncode == 0

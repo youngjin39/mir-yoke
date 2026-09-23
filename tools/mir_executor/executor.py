@@ -1,7 +1,7 @@
 """
 executor.py
 -----------
-MirExecutor: MCP-backed Codex runner + tdd.json ledger update.
+MirExecutor: app-server-backed Codex runner + tdd.json ledger update.
 
 Design inspiration: harness_framework (Hermes pattern) — no code copied.
 P0-J lineage: blocking executor MVP; ADR-69 bans raw exec delegation, so Codex
@@ -115,16 +115,13 @@ def _prompt_from_codex_args(codex_args: list[str]) -> str:
     return " ".join(prompt_parts).strip()
 
 
-def _codex_mcp_command(codex_bin: str, prompt: str) -> list[str]:
+def _codex_mcp_command(codex_bin: str) -> list[str]:
     """Return a representative command list for result/ledger reporting."""
-    command = [codex_bin, "mcp-server", "codex"]
-    if prompt:
-        command.append(prompt)
-    return command
+    return [codex_bin, "app-server"]
 
 
 def _codex_mcp_config(reasoning_effort: str | None = None) -> dict[str, object]:
-    """Return the lightweight MCP config, optionally pinning reasoning effort."""
+    """Return the lightweight app-server config, optionally pinning reasoning effort."""
     config: dict[str, object] = {"project_doc_max_bytes": 0}
     if reasoning_effort is not None:
         config["model_reasoning_effort"] = reasoning_effort
@@ -262,7 +259,7 @@ class MirExecutor:
         _guard_codex_main_worktree(resolved_cwd, os.environ)
         codex_bin = os.environ.get("CODEX_BIN", "codex")
         prompt = _prompt_from_codex_args(self.resolve_codex_args(codex_args))
-        command = _codex_mcp_command(codex_bin, prompt)
+        command = _codex_mcp_command(codex_bin)
 
         start = time.monotonic()
         try:
@@ -459,7 +456,7 @@ class MirExecutor:
         reasoning_effort: str | None = None,
         stall_timeout: float | None = None,
     ) -> SubprocessResult:
-        """Async variant of run_codex using the MCP backend in a worker thread.
+        """Async variant of run_codex using the app-server backend in a worker thread.
 
         Single call: prefer sync run_codex. Multi-call or long-running: use this.
         On timeout: TimeoutError (caller catches both sync and async timeout classes
@@ -488,10 +485,10 @@ class MirExecutor:
         reasoning_effort: str | None,
         stall_timeout: float | None,
     ) -> SubprocessResult:
-        """Run the shared MCP call for the async wrapper without timeout remapping."""
+        """Run the shared app-server call for the async wrapper without timeout remapping."""
         codex_bin = os.environ.get("CODEX_BIN", "codex")
         prompt = _prompt_from_codex_args(self.resolve_codex_args(codex_args))
-        command = _codex_mcp_command(codex_bin, prompt)
+        command = _codex_mcp_command(codex_bin)
         start = time.monotonic()
         try:
             with CodexMcpClient(

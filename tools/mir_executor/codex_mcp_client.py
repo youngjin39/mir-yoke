@@ -1,7 +1,6 @@
-"""JSON-RPC stdio client for ``codex mcp-server``.
+"""JSON-RPC stdio client for ``codex app-server``.
 
-ADR-66 S1 keeps this as a standalone client. Dispatch runner wiring is a later
-slice.
+The CodexMcp* public names remain compatible with existing dispatch callers.
 """
 
 from __future__ import annotations
@@ -20,19 +19,19 @@ DEFAULT_PROTOCOL_VERSION = "2024-11-05"
 
 
 class CodexMcpError(RuntimeError):
-    """Base class for Codex MCP client failures."""
+    """Base class for Codex app-server client failures."""
 
 
 class CodexMcpProcessError(CodexMcpError):
-    """The MCP server process exited or became unavailable."""
+    """The app-server process exited or became unavailable."""
 
 
 class CodexMcpProtocolError(CodexMcpError):
-    """The MCP server returned a JSON-RPC error or invalid response."""
+    """The app-server returned a JSON-RPC error or invalid response."""
 
 
 class CodexMcpTimeoutError(CodexMcpError, TimeoutError):
-    """A JSON-RPC request timed out and the MCP server was killed."""
+    """A JSON-RPC request timed out and the app-server was killed."""
 
 
 class CodexMcpStallError(CodexMcpError):
@@ -41,7 +40,7 @@ class CodexMcpStallError(CodexMcpError):
 
 @dataclass(frozen=True)
 class CodexMcpResult:
-    """Structured result returned by the Codex MCP ``codex`` tool."""
+    """Structured result returned by a completed app-server turn."""
 
     content_text: str
     thread_id: str | None
@@ -55,8 +54,14 @@ class _PendingRequest:
     error: BaseException | None = None
 
 
+@dataclass
+class _PendingTurn:
+    pending: _PendingRequest = field(default_factory=_PendingRequest)
+    texts: dict[str, str] = field(default_factory=dict)
+
+
 class CodexMcpClient:
-    """Small JSON-RPC client for a single ``codex mcp-server`` subprocess."""
+    """Small JSON-RPC client for a single ``codex app-server`` subprocess."""
 
     def __init__(
         self,
@@ -73,7 +78,8 @@ class CodexMcpClient:
         self._initialize_timeout = initialize_timeout
         self._call_timeout = call_timeout
         self._kill_timeout = kill_timeout
-        self._protocol_version = protocol_version
+        # Retained as a constructor compatibility argument; app-server has no MCP version.
+        _ = protocol_version
 
         self._proc: subprocess.Popen[str] | None = None
         self._next_id = 1
@@ -81,6 +87,7 @@ class CodexMcpClient:
         self._send_lock = threading.Lock()
         self._pending_lock = threading.Lock()
         self._pending: dict[str, _PendingRequest] = {}
+        self._turns: dict[str, _PendingTurn] = {}
         self._closing = False
         self._stdout_thread: threading.Thread | None = None
         self._stderr_thread: threading.Thread | None = None
@@ -94,7 +101,7 @@ class CodexMcpClient:
 
     @property
     def is_running(self) -> bool:
-        """Return True while the MCP server subprocess is alive."""
+        """Return True while the app-server subprocess is alive."""
         return self._proc is not None and self._proc.poll() is None
 
     @property
@@ -110,7 +117,7 @@ class CodexMcpClient:
 
     @property
     def stderr_lines(self) -> list[str]:
-        """Return stderr lines observed from the MCP server."""
+        """Return stderr lines observed from the app-server."""
         return list(self._stderr_lines)
 
     def __enter__(self) -> CodexMcpClient:
@@ -121,14 +128,14 @@ class CodexMcpClient:
         self.close()
 
     def start(self) -> None:
-        """Spawn ``codex mcp-server`` and perform the MCP initialize handshake."""
+        """Spawn ``codex app-server`` and perform its initialize handshake."""
         if self._proc is not None and self._proc.poll() is None:
-            raise CodexMcpProcessError("Codex MCP client already started")
+            raise CodexMcpProcessError("Codex app-server client already started")
 
         self._closing = False
         try:
             self._proc = subprocess.Popen(
-                [self._codex_bin, "mcp-server"],
+                [self._codex_bin, "app-server"],
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
@@ -165,7 +172,6 @@ class CodexMcpClient:
             self._request(
                 "initialize",
                 {
-                    "protocolVersion": self._protocol_version,
                     "capabilities": {},
                     "clientInfo": {
                         "name": "mir_executor",
@@ -174,15 +180,15 @@ class CodexMcpClient:
                 },
                 timeout=self._initialize_timeout,
             )
-            self._notify("notifications/initialized", {})
+            self._notify("initialized", {})
         except Exception:
             self.close()
             raise
 
     def close(self) -> None:
-        """Reject pending requests and stop the MCP server subprocess."""
+        """Reject pending requests and stop the app-server subprocess."""
         self._closing = True
-        self._reject_all_pending(CodexMcpProcessError("Codex MCP client closed"))
+        self._reject_all_pending(CodexMcpProcessError("Codex app-server client closed"))
         self._terminate_server()
 
     def call_codex(
@@ -199,46 +205,87 @@ class CodexMcpClient:
         stall_timeout: float | None = None,
         progress_callback: Callable[[str, object], None] | None = None,
     ) -> CodexMcpResult:
-        """Call the MCP ``codex`` tool and return content text plus thread id."""
+        """Start a thread and wait for its turn to complete, including streamed items."""
         arguments: dict[str, Any] = {
-            "prompt": prompt,
             "cwd": os.fspath(cwd),
             "sandbox": sandbox,
-            "approval-policy": approval_policy,
+            "approvalPolicy": approval_policy,
         }
         if model is not None:
             arguments["model"] = model
         if base_instructions is not None:
-            arguments["base-instructions"] = base_instructions
+            arguments["baseInstructions"] = base_instructions
         if config is not None:
             arguments["config"] = dict(config)
 
+        effective_timeout = self._call_timeout if timeout is None else timeout
+        deadline = None if effective_timeout is None else time.monotonic() + effective_timeout
+
+        def remaining() -> float | None:
+            return None if deadline is None else max(0.0, deadline - time.monotonic())
+
+        thread_id: str | None = None
         with self._progress_lock:
             previous_progress_callback = self._progress_callback
             self._progress_callback = progress_callback
         try:
-            result = self._request(
-                "tools/call",
-                {
-                    "name": "codex",
-                    "arguments": arguments,
-                },
-                timeout=self._call_timeout if timeout is None else timeout,
+            started = self._request(
+                "thread/start", arguments, timeout=remaining(), stall_timeout=stall_timeout
+            )
+            thread = started.get("thread") if isinstance(started, Mapping) else None
+            candidate_id = thread.get("id") if isinstance(thread, Mapping) else None
+            if not isinstance(candidate_id, str) or not candidate_id:
+                raise CodexMcpProtocolError("thread/start returned no thread id")
+            thread_id = candidate_id
+
+            # Register before turn/start: completion notifications may precede its response.
+            turn = _PendingTurn()
+            key = f"turn:{thread_id}"
+            with self._pending_lock:
+                self._turns[thread_id] = turn
+                self._pending[key] = turn.pending
+            started = self._request(
+                "turn/start",
+                {"threadId": thread_id, "input": [{"type": "text", "text": prompt}]},
+                timeout=remaining(),
                 stall_timeout=stall_timeout,
             )
+            started_turn = started.get("turn") if isinstance(started, Mapping) else None
+            if not isinstance(started_turn, Mapping) or not isinstance(started_turn.get("id"), str):
+                raise CodexMcpProtocolError("turn/start returned no turn id")
+            result = self._wait_pending(
+                key,
+                "turn/completed",
+                turn.pending,
+                timeout=remaining(),
+                stall_timeout=stall_timeout,
+            )
+            completed = result.get("turn")
+            if not isinstance(completed, Mapping):
+                raise CodexMcpProtocolError("turn/completed returned no turn")
+            if completed.get("id") != started_turn["id"]:
+                raise CodexMcpProtocolError("turn/completed returned an unexpected turn id")
+            if completed.get("status") != "completed":
+                error = completed.get("error")
+                detail = _json_rpc_error_message(error) if error else completed.get("status")
+                raise CodexMcpProtocolError(f"Codex turn failed: {detail}")
+            for item in completed.get("items", []):
+                if item.get("type") == "agentMessage" and item.get("phase") != "commentary":
+                    turn.texts[item["id"]] = item["text"]
+            return CodexMcpResult(
+                content_text="\n".join(turn.texts.values()),
+                thread_id=thread_id,
+                raw_result=result,
+            )
+        except Exception:
+            self.close()
+            raise
         finally:
+            with self._pending_lock:
+                self._turns.pop(thread_id, None)
+                self._pending.pop(f"turn:{thread_id}", None)
             with self._progress_lock:
                 self._progress_callback = previous_progress_callback
-        if not isinstance(result, Mapping):
-            raise CodexMcpProtocolError("Codex tool returned a non-object result")
-
-        content_text = _extract_content_text(result)
-        thread_id = _find_thread_id(result) or _find_thread_id_in_text(content_text)
-        return CodexMcpResult(
-            content_text=content_text,
-            thread_id=thread_id,
-            raw_result=result,
-        )
 
     def _next_request_id(self) -> int:
         with self._id_lock:
@@ -260,11 +307,10 @@ class CodexMcpClient:
         with self._pending_lock:
             self._pending[key] = pending
 
-        watchdog_thread: threading.Thread | None = None
+        self._last_activity_ts = time.monotonic()
         try:
             self._send(
                 {
-                    "jsonrpc": "2.0",
                     "id": request_id,
                     "method": method,
                     "params": dict(params),
@@ -275,8 +321,21 @@ class CodexMcpClient:
                 self._pending.pop(key, None)
             raise
 
+        return self._wait_pending(
+            key, method, pending, timeout=timeout, stall_timeout=stall_timeout
+        )
+
+    def _wait_pending(
+        self,
+        key: str,
+        method: str,
+        pending: _PendingRequest,
+        *,
+        timeout: float | None,
+        stall_timeout: float | None,
+    ) -> Any:
+        watchdog_thread: threading.Thread | None = None
         if stall_timeout is not None:
-            self._last_activity_ts = time.monotonic()
             watchdog_thread = threading.Thread(
                 target=self._watch_request_stall,
                 args=(key, method, pending, stall_timeout),
@@ -289,7 +348,7 @@ class CodexMcpClient:
             pending.event.wait()
         elif not pending.event.wait(timeout):
             error = CodexMcpTimeoutError(
-                f"Codex MCP request {method!r} timed out after {timeout:g}s"
+                f"Codex app-server request {method!r} timed out after {timeout:g}s"
             )
             self._reject_all_pending(error)
             self._terminate_server()
@@ -319,7 +378,7 @@ class CodexMcpClient:
                 continue
 
             error = CodexMcpStallError(
-                f"Codex MCP request {method!r} stalled after "
+                f"Codex app-server request {method!r} stalled after "
                 f"{inactive_for:g}s without stdout activity"
             )
             pending_requests = self._drain_pending(error)
@@ -331,19 +390,19 @@ class CodexMcpClient:
             return
 
     def _notify(self, method: str, params: Mapping[str, Any]) -> None:
-        self._send({"jsonrpc": "2.0", "method": method, "params": dict(params)})
+        self._send({"method": method, "params": dict(params)})
 
     def _send(self, message: Mapping[str, Any]) -> None:
         proc = self._proc
         if proc is None or proc.poll() is not None or proc.stdin is None:
-            raise CodexMcpProcessError("Codex MCP server stdin is unavailable")
+            raise CodexMcpProcessError("Codex app-server stdin is unavailable")
         payload = json.dumps(message, ensure_ascii=False)
         with self._send_lock:
             try:
                 proc.stdin.write(payload + "\n")
                 proc.stdin.flush()
             except OSError as exc:
-                raise CodexMcpProcessError("Codex MCP server stdin write failed") from exc
+                raise CodexMcpProcessError("Codex app-server stdin write failed") from exc
 
     def _read_stdout(self) -> None:
         proc = self._proc
@@ -355,8 +414,10 @@ class CodexMcpClient:
         except (OSError, ValueError) as exc:
             if not self._closing:
                 self._reject_all_pending(
-                    CodexMcpProcessError(f"Codex MCP stdout read failed: {exc}")
+                    CodexMcpProcessError(f"Codex app-server stdout read failed: {exc}")
                 )
+        except CodexMcpError as exc:
+            self._reject_all_pending(exc)
 
     def _read_stderr(self) -> None:
         proc = self._proc
@@ -375,7 +436,7 @@ class CodexMcpClient:
         code = proc.wait()
         if not self._closing:
             self._reject_all_pending(
-                CodexMcpProcessError(f"Codex MCP server exited with code {code}")
+                CodexMcpProcessError(f"Codex app-server exited with code {code}")
             )
 
     def _handle_stdout_line(self, line: str) -> None:
@@ -420,8 +481,26 @@ class CodexMcpClient:
                     progress_callback(message["method"], params)
                 except Exception as exc:  # noqa: BLE001
                     self._reject_all_pending(
-                        CodexMcpError(f"Codex MCP progress callback failed: {exc}")
+                        CodexMcpError(f"Codex app-server progress callback failed: {exc}")
                     )
+            if isinstance(params, Mapping):
+                with self._pending_lock:
+                    turn = self._turns.get(params.get("threadId"))
+                if turn is not None and not turn.pending.event.is_set():
+                    if message["method"] == "item/completed":
+                        item = params.get("item", {})
+                        if item.get("type") == "agentMessage" and item.get("phase") != "commentary":
+                            turn.texts[item["id"]] = item["text"]
+                    elif message["method"] == "turn/completed":
+                        turn.pending.result = params
+                        turn.pending.event.set()
+            return
+
+        if has_method and has_id:
+            # This unattended client cannot grant approvals or answer interactive requests.
+            error = f"Unsupported app-server request: {message['method']}"
+            self._send({"id": message["id"], "error": {"code": -32601, "message": error}})
+            self._reject_all_pending(CodexMcpProtocolError(error))
             return
 
         self._malformed_messages.append(text)
@@ -473,56 +552,4 @@ def _json_rpc_error_message(error: object) -> str:
         message = error.get("message")
         if isinstance(message, str):
             return message
-    return "Codex MCP JSON-RPC request failed"
-
-
-def _extract_content_text(result: Mapping[str, Any]) -> str:
-    content = result.get("content")
-    if isinstance(content, list):
-        texts: list[str] = []
-        for item in content:
-            if isinstance(item, Mapping):
-                text = item.get("text")
-                if isinstance(text, str):
-                    texts.append(text)
-            elif isinstance(item, str):
-                texts.append(item)
-        return "\n".join(texts)
-
-    text = result.get("text")
-    if isinstance(text, str):
-        return text
-    return json.dumps(result, ensure_ascii=False, sort_keys=True)
-
-
-def _find_thread_id(value: object) -> str | None:
-    if isinstance(value, Mapping):
-        for key in ("threadId", "thread_id"):
-            found = value.get(key)
-            if isinstance(found, str):
-                return found
-        for nested in value.values():
-            found = _find_thread_id(nested)
-            if found is not None:
-                return found
-    elif isinstance(value, list):
-        for item in value:
-            found = _find_thread_id(item)
-            if found is not None:
-                return found
-    return None
-
-
-def _find_thread_id_in_text(text: str) -> str | None:
-    for line in text.splitlines():
-        stripped = line.strip()
-        if not stripped:
-            continue
-        try:
-            parsed = json.loads(stripped)
-        except json.JSONDecodeError:
-            continue
-        found = _find_thread_id(parsed)
-        if found is not None:
-            return found
-    return None
+    return "Codex app-server JSON-RPC request failed"

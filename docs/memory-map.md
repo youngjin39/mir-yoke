@@ -45,5 +45,10 @@ description: Generated index over portable, tracked memory documents.
 
 | Keyword | File | Title |
 |---|---|---|
-| (no ingested documents) | — | — |
+| — | docs/knowledge/srr-code-relations.md | MIR-MEMORY-RELATIONS |
+| — | docs/knowledge/srr-code-relations.md | MIR-RELATION-FACTS |
+| — | docs/knowledge/srr-code-relations.md | MIR-RELATIONS-CLI |
+| — | docs/knowledge/srr-code-relations.md | MIR-RELATIONS-CORE |
+| — | docs/knowledge/srr-code-relations.md | SRR-MEMORY-RELATIONS |
+| — | docs/knowledge/srr-code-relations.md | SRR code relations |
 <!-- mir:generated:end -->

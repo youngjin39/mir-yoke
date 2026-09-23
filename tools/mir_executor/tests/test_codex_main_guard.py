@@ -146,7 +146,7 @@ def test_run_codex_allows_linked_worktree_cwd(tmp_path, monkeypatch):
         )
 
         assert result.exit_code == 0
-        assert result.command == [str(shim), "mcp-server", "codex", "echo ok"]
+        assert result.command == [str(shim), "app-server"]
         assert calls[0]["cwd"] == worktree_path.resolve()
     finally:
         _remove_worktree(repo_clone, worktree_path)

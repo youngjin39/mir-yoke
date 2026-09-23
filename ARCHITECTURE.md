@@ -30,8 +30,8 @@ separate operator-selected surface and never becomes an implicit recipe dependen
 3. It creates project-owned intent, a bounded common harness, required local SQLite+FTS5 memory,
    runtime entrypoints, reviewer sources, generated Codex parity, a machine-readable toolchain
    foundation, and real lint/build/test verification.
-4. It initializes Git locally only after verification, installs the tracked pre-commit hook, and
-   creates one verified initial commit.
+4. Only when the target prompt explicitly grants Git initialization and commit authority, it
+   initializes Git after verification, installs the tracked pre-commit hook and creates one verified initial commit.
 5. It stops before product planning or implementation.
 
 The target agent owns every write. The generated repository owns its harness, tracked durable
@@ -83,6 +83,12 @@ memory contract. No plugin, installed CLI, reference implementation, or historic
 become a target prerequisite by presence alone.
 
 ## Source of truth and generation
+
+The [decision index](docs/decisions/INDEX.md) records authority and the complete ADR register.
+The [specification tree](spec/STATE.md) is a completed historical v0.8 automation snapshot;
+ADR-83 defines current support. Maintainer work uses the single active
+[`tasks/plan.md`](tasks/plan.md) cursor and archives completed evidence in
+[`tasks/change_log.md`](tasks/change_log.md).
 
 Mir Yoke authors its root contract in `CLAUDE.md` and regenerates `AGENTS.md` and Codex surfaces.
 Agents use Claude Markdown as their source and generated Codex TOML as their projection. They may

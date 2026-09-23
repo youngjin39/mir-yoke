@@ -1,4 +1,4 @@
-"""Unit tests for ADR-66 S1 CodexMcpClient."""
+"""App-server transport tests for the compatible CodexMcpClient interface."""
 
 from __future__ import annotations
 
@@ -17,6 +17,7 @@ from tools.mir_executor.codex_mcp_client import (
     DEFAULT_CODEX_BIN,
     CodexMcpClient,
     CodexMcpProcessError,
+    CodexMcpProtocolError,
     CodexMcpStallError,
     CodexMcpTimeoutError,
 )
@@ -31,17 +32,21 @@ def test_default_codex_command_is_portable(monkeypatch: pytest.MonkeyPatch) -> N
     assert "/Users" not in client._codex_bin
 
 
-def _write_fake_mcp_server(tmp_path: pathlib.Path, *, mode: str) -> pathlib.Path:
+def _write_fake_app_server(tmp_path: pathlib.Path, *, mode: str) -> pathlib.Path:
     record_path = tmp_path / "messages.jsonl"
     server_py = tmp_path / "fake_codex_server.py"
     server_py.write_text(
         textwrap.dedent(
             f"""\
             import json
+            import signal
             import sys
             import time
 
+            assert sys.argv[1:] == ["app-server"]
             MODE = {mode!r}
+            if MODE == "stubborn_timeout":
+                signal.signal(signal.SIGTERM, signal.SIG_IGN)
             RECORD_PATH = {str(record_path)!r}
             malformed_sent = False
 
@@ -66,44 +71,72 @@ def _write_fake_mcp_server(tmp_path: pathlib.Path, *, mode: str) -> pathlib.Path
 
                 if method == "initialize":
                     send({{
-                        "jsonrpc": "2.0",
                         "id": message["id"],
-                        "result": {{
-                            "protocolVersion": message["params"]["protocolVersion"],
-                            "capabilities": {{}},
-                            "serverInfo": {{"name": "fake-codex", "version": "0.0"}}
-                        }}
+                        "result": {{"userAgent": "fake-codex/0.156.0"}}
                     }})
-                elif method == "notifications/initialized":
+                elif method == "initialized":
                     continue
-                elif method == "tools/call":
-                    if MODE == "timeout":
+                elif method == "thread/start":
+                    if MODE == "thread_timeout":
+                        time.sleep(30)
+                    if MODE == "rpc_error":
+                        send({{"id": message["id"], "error": {{
+                            "code": -32602, "message": "bad model"
+                        }}}})
+                        continue
+                    send({{"id": message["id"], "result": {{"thread": {{"id": "thread-123"}}}}}})
+                elif method == "turn/start":
+                    turn = {{"id": "turn-123", "status": "inProgress", "items": []}}
+                    if MODE != "early_completion":
+                        send({{"id": message["id"], "result": {{"turn": turn}}}})
+                    if MODE == "exit":
+                        sys.exit(7)
+                    if MODE == "approval":
+                        send({{"id": "approval-1",
+                              "method": "item/commandExecution/requestApproval",
+                              "params": {{}}}})
+                        continue
+                    if MODE in ("timeout", "stubborn_timeout"):
                         time.sleep(30)
                     elif MODE == "delayed":
                         time.sleep(0.05)
-                    elif MODE == "notification":
-                        send({{
-                            "jsonrpc": "2.0",
-                            "method": "notifications/progress",
-                            "params": {{"message": "working"}}
-                        }})
-                    elif MODE == "pending_notification":
-                        send({{
-                            "jsonrpc": "2.0",
-                            "method": "notifications/progress",
-                            "params": {{"message": "working"}}
-                        }})
+                    elif MODE in ("notification", "pending_notification", "heartbeat"):
+                        for _ in range(5 if MODE == "heartbeat" else 1):
+                            send({{
+                                "method": "item/agentMessage/delta",
+                                "params": {{"threadId": "thread-123", "turnId": "turn-123",
+                                           "itemId": "item-1", "delta": "working"}}
+                            }})
+                            if MODE == "heartbeat":
+                                time.sleep(0.25)
+                    if MODE == "pending_notification":
                         time.sleep(30)
+                    item = {{"type": "agentMessage", "id": "item-1", "text": "codex completed"}}
+                    if MODE == "commentary":
+                        send({{
+                            "method": "item/completed",
+                            "params": {{"threadId": "thread-123", "turnId": "turn-123", "item": {{
+                                "type": "agentMessage", "id": "commentary-1",
+                                "phase": "commentary", "text": "still working"
+                            }}}}
+                        }})
+                    if MODE != "completion_items":
+                        send({{
+                            "method": "item/completed",
+                            "params": {{"threadId": "thread-123", "turnId": "turn-123",
+                                       "item": item}}
+                        }})
+                    turn["status"] = MODE if MODE in ("failed", "interrupted") else "completed"
+                    if MODE == "failed":
+                        turn["error"] = {{"message": "model unavailable"}}
+                    if MODE in ("completion_items", "duplicate_items"):
+                        turn["items"] = [item]
                     send({{
-                        "jsonrpc": "2.0",
-                        "id": message["id"],
-                        "result": {{
-                            "content": [
-                                {{"type": "text", "text": "codex completed"}}
-                            ],
-                            "threadId": "thread-123"
-                        }}
+                        "method": "turn/completed",
+                        "params": {{"threadId": "thread-123", "turn": turn}}
                     }})
+                    if MODE == "early_completion":
+                        send({{"id": message["id"], "result": {{"turn": turn}}}})
             """
         ),
         encoding="utf-8",
@@ -139,7 +172,7 @@ def _wait_for_messages(record_path: pathlib.Path, count: int) -> list[dict]:
 
 
 def test_initialize_handshake_sends_initialized_notification(tmp_path: pathlib.Path) -> None:
-    fake_bin = _write_fake_mcp_server(tmp_path, mode="success")
+    fake_bin = _write_fake_app_server(tmp_path, mode="success")
     record_path = tmp_path / "messages.jsonl"
 
     client = CodexMcpClient(codex_bin=str(fake_bin), initialize_timeout=1.0)
@@ -152,13 +185,14 @@ def test_initialize_handshake_sends_initialized_notification(tmp_path: pathlib.P
     messages = _wait_for_messages(record_path, 3)
     assert messages[0]["method"] == "initialize"
     assert messages[0]["params"]["clientInfo"]["name"] == "mir_executor"
-    assert messages[0]["params"]["protocolVersion"] == "2024-11-05"
-    assert messages[1]["method"] == "notifications/initialized"
+    assert "protocolVersion" not in messages[0]["params"]
+    assert "jsonrpc" not in messages[0]
+    assert messages[1]["method"] == "initialized"
     assert result.content_text == "codex completed"
 
 
 def test_call_codex_maps_content_and_thread_id(tmp_path: pathlib.Path) -> None:
-    fake_bin = _write_fake_mcp_server(tmp_path, mode="success")
+    fake_bin = _write_fake_app_server(tmp_path, mode="success")
     record_path = tmp_path / "messages.jsonl"
 
     with CodexMcpClient(codex_bin=str(fake_bin), initialize_timeout=1.0) as client:
@@ -168,18 +202,22 @@ def test_call_codex_maps_content_and_thread_id(tmp_path: pathlib.Path) -> None:
     assert result.thread_id == "thread-123"
 
     tool_call = _wait_for_messages(record_path, 3)[2]
-    assert tool_call["method"] == "tools/call"
-    assert tool_call["params"]["name"] == "codex"
-    assert tool_call["params"]["arguments"] == {
-        "prompt": "implement s1",
+    assert tool_call["method"] == "thread/start"
+    assert tool_call["params"] == {
         "cwd": str(tmp_path),
         "sandbox": "danger-full-access",
-        "approval-policy": "never",
+        "approvalPolicy": "never",
+    }
+    turn_call = _wait_for_messages(record_path, 4)[3]
+    assert turn_call["method"] == "turn/start"
+    assert turn_call["params"] == {
+        "threadId": "thread-123",
+        "input": [{"type": "text", "text": "implement s1"}],
     }
 
 
 def test_call_codex_includes_base_instructions_and_config(tmp_path: pathlib.Path) -> None:
-    fake_bin = _write_fake_mcp_server(tmp_path, mode="success")
+    fake_bin = _write_fake_app_server(tmp_path, mode="success")
     record_path = tmp_path / "messages.jsonl"
 
     with CodexMcpClient(codex_bin=str(fake_bin), initialize_timeout=1.0) as client:
@@ -192,21 +230,20 @@ def test_call_codex_includes_base_instructions_and_config(tmp_path: pathlib.Path
         )
 
     tool_call = _wait_for_messages(record_path, 3)[2]
-    assert tool_call["params"]["arguments"] == {
-        "prompt": "implement s1",
+    assert tool_call["params"] == {
         "cwd": str(tmp_path),
         "sandbox": "danger-full-access",
-        "approval-policy": "never",
-        "base-instructions": "SLIM",
+        "approvalPolicy": "never",
+        "baseInstructions": "SLIM",
         "config": {"project_doc_max_bytes": 0},
     }
-    assert "model" not in tool_call["params"]["arguments"]
+    assert "model" not in tool_call["params"]
 
 
 def test_call_codex_includes_model_with_base_instructions_and_config(
     tmp_path: pathlib.Path,
 ) -> None:
-    fake_bin = _write_fake_mcp_server(tmp_path, mode="success")
+    fake_bin = _write_fake_app_server(tmp_path, mode="success")
     record_path = tmp_path / "messages.jsonl"
 
     with CodexMcpClient(codex_bin=str(fake_bin), initialize_timeout=1.0) as client:
@@ -220,13 +257,12 @@ def test_call_codex_includes_model_with_base_instructions_and_config(
         )
 
     tool_call = _wait_for_messages(record_path, 3)[2]
-    assert tool_call["params"]["arguments"] == {
-        "prompt": "implement routing",
+    assert tool_call["params"] == {
         "cwd": str(tmp_path),
         "sandbox": "danger-full-access",
-        "approval-policy": "never",
+        "approvalPolicy": "never",
         "model": "high",
-        "base-instructions": "SLIM",
+        "baseInstructions": "SLIM",
         "config": {"project_doc_max_bytes": 0},
     }
 
@@ -234,7 +270,7 @@ def test_call_codex_includes_model_with_base_instructions_and_config(
 def test_call_codex_base_instructions_without_config_omits_config(
     tmp_path: pathlib.Path,
 ) -> None:
-    fake_bin = _write_fake_mcp_server(tmp_path, mode="success")
+    fake_bin = _write_fake_app_server(tmp_path, mode="success")
     record_path = tmp_path / "messages.jsonl"
 
     with CodexMcpClient(codex_bin=str(fake_bin), initialize_timeout=1.0) as client:
@@ -245,8 +281,8 @@ def test_call_codex_base_instructions_without_config_omits_config(
             timeout=1.0,
         )
 
-    arguments = _wait_for_messages(record_path, 3)[2]["params"]["arguments"]
-    assert arguments["base-instructions"] == "SLIM"
+    arguments = _wait_for_messages(record_path, 3)[2]["params"]
+    assert arguments["baseInstructions"] == "SLIM"
     assert "config" not in arguments
 
 
@@ -254,7 +290,7 @@ def test_client_uses_codex_bin_environment_default(
     tmp_path: pathlib.Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    fake_bin = _write_fake_mcp_server(tmp_path, mode="success")
+    fake_bin = _write_fake_app_server(tmp_path, mode="success")
     monkeypatch.setenv("CODEX_BIN", str(fake_bin))
 
     with CodexMcpClient(initialize_timeout=1.0) as client:
@@ -264,7 +300,7 @@ def test_client_uses_codex_bin_environment_default(
 
 
 def test_call_timeout_kills_server_and_rejects_pending(tmp_path: pathlib.Path) -> None:
-    fake_bin = _write_fake_mcp_server(tmp_path, mode="timeout")
+    fake_bin = _write_fake_app_server(tmp_path, mode="timeout")
     client = CodexMcpClient(codex_bin=str(fake_bin), initialize_timeout=1.0, kill_timeout=1.0)
     client.start()
 
@@ -276,7 +312,7 @@ def test_call_timeout_kills_server_and_rejects_pending(tmp_path: pathlib.Path) -
 
 
 def test_call_timeout_none_waits_for_completion(tmp_path: pathlib.Path) -> None:
-    fake_bin = _write_fake_mcp_server(tmp_path, mode="delayed")
+    fake_bin = _write_fake_app_server(tmp_path, mode="delayed")
 
     with CodexMcpClient(codex_bin=str(fake_bin), initialize_timeout=1.0) as client:
         result = client.call_codex(prompt="wait", cwd=tmp_path, timeout=None)
@@ -300,20 +336,32 @@ def test_call_timeout_none_passes_none_to_effective_request(
     ) -> object:
         _ = method, params, stall_timeout
         observed_timeouts.append(timeout)
-        return {"content": [{"type": "text", "text": "done"}]}
+        if method == "thread/start":
+            return {"thread": {"id": "thread-test"}}
+        turn = {
+            "id": "turn-test",
+            "status": "completed",
+            "items": [{"type": "agentMessage", "id": "item-test", "text": "done"}],
+        }
+        client._handle_stdout_line(
+            json.dumps(
+                {"method": "turn/completed", "params": {"threadId": "thread-test", "turn": turn}}
+            )
+        )
+        return {"turn": turn}
 
     monkeypatch.setattr(client, "_request", fake_request)
 
     result = client.call_codex(prompt="wait", cwd=tmp_path, timeout=None)
 
     assert result.content_text == "done"
-    assert observed_timeouts == [None]
+    assert observed_timeouts == [None, None]
 
 
 def test_stall_watchdog_kills_silent_server_and_rejects_pending(
     tmp_path: pathlib.Path,
 ) -> None:
-    fake_bin = _write_fake_mcp_server(tmp_path, mode="timeout")
+    fake_bin = _write_fake_app_server(tmp_path, mode="timeout")
     client = CodexMcpClient(codex_bin=str(fake_bin), initialize_timeout=1.0, kill_timeout=1.0)
     client.start()
 
@@ -325,7 +373,7 @@ def test_stall_watchdog_kills_silent_server_and_rejects_pending(
 
 
 def test_progress_callback_is_invoked_for_notifications(tmp_path: pathlib.Path) -> None:
-    fake_bin = _write_fake_mcp_server(tmp_path, mode="notification")
+    fake_bin = _write_fake_app_server(tmp_path, mode="notification")
     progress: list[tuple[str, object]] = []
 
     with CodexMcpClient(codex_bin=str(fake_bin), initialize_timeout=1.0) as client:
@@ -337,14 +385,18 @@ def test_progress_callback_is_invoked_for_notifications(tmp_path: pathlib.Path) 
         )
 
     assert result.content_text == "codex completed"
-    assert progress == [("notifications/progress", {"message": "working"})]
+    assert [method for method, _ in progress] == [
+        "item/agentMessage/delta",
+        "item/completed",
+        "turn/completed",
+    ]
 
 
 def test_close_during_pending_call_tears_down_reader_threads_cleanly(
     tmp_path: pathlib.Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    fake_bin = _write_fake_mcp_server(tmp_path, mode="pending_notification")
+    fake_bin = _write_fake_app_server(tmp_path, mode="pending_notification")
     client = CodexMcpClient(codex_bin=str(fake_bin), initialize_timeout=1.0, kill_timeout=0.1)
     notification_seen = threading.Event()
     release_notification = threading.Event()
@@ -372,7 +424,7 @@ def test_close_during_pending_call_tears_down_reader_threads_cleanly(
         original_handle_stdout_line = client._handle_stdout_line
 
         def hold_progress_notification(line: str) -> None:
-            if "notifications/progress" in line:
+            if "item/agentMessage/delta" in line:
                 notification_seen.set()
                 release_notification.wait(timeout=5.0)
             original_handle_stdout_line(line)
@@ -404,10 +456,98 @@ def test_close_during_pending_call_tears_down_reader_threads_cleanly(
 
 
 def test_malformed_json_line_is_recorded_and_ignored(tmp_path: pathlib.Path) -> None:
-    fake_bin = _write_fake_mcp_server(tmp_path, mode="malformed")
+    fake_bin = _write_fake_app_server(tmp_path, mode="malformed")
 
     with CodexMcpClient(codex_bin=str(fake_bin), initialize_timeout=1.0) as client:
         result = client.call_codex(prompt="after malformed", cwd=os.fspath(tmp_path), timeout=1.0)
 
     assert result.content_text == "codex completed"
     assert client.malformed_messages == ["{not-json"]
+
+
+@pytest.mark.parametrize(
+    "mode", ["early_completion", "completion_items", "duplicate_items", "commentary"]
+)
+def test_should_return_text_once_when_completion_order_varies(
+    tmp_path: pathlib.Path, mode: str
+) -> None:
+    fake_bin = _write_fake_app_server(tmp_path, mode=mode)
+    with CodexMcpClient(codex_bin=str(fake_bin)) as client:
+        result = client.call_codex(prompt="hello", cwd=tmp_path, timeout=1.0)
+        assert client.pending_count == 0
+    assert result.content_text == "codex completed"
+    assert result.thread_id == "thread-123"
+    assert result.raw_result["turn"]["status"] == "completed"
+
+
+@pytest.mark.parametrize(
+    "mode, message",
+    [
+        ("failed", "model unavailable"),
+        ("interrupted", "interrupted"),
+        ("rpc_error", "bad model"),
+        ("approval", "Unsupported app-server request"),
+    ],
+)
+def test_should_raise_protocol_error_when_turn_cannot_complete(
+    tmp_path: pathlib.Path,
+    mode: str,
+    message: str,
+) -> None:
+    fake_bin = _write_fake_app_server(tmp_path, mode=mode)
+    with CodexMcpClient(codex_bin=str(fake_bin)) as client:
+        with pytest.raises(CodexMcpProtocolError, match=message):
+            client.call_codex(prompt="fail", cwd=tmp_path, timeout=1.0)
+        assert client.pending_count == 0
+        assert not client.is_running
+
+
+def test_should_raise_process_error_when_server_exits_during_turn(tmp_path: pathlib.Path) -> None:
+    fake_bin = _write_fake_app_server(tmp_path, mode="exit")
+    with CodexMcpClient(codex_bin=str(fake_bin)) as client:
+        with pytest.raises(CodexMcpProcessError, match="exited with code 7"):
+            client.call_codex(prompt="exit", cwd=tmp_path, timeout=1.0)
+        assert client.pending_count == 0
+
+
+@pytest.mark.parametrize("mode", ["thread_timeout", "stubborn_timeout"])
+def test_should_kill_process_when_thread_or_turn_times_out(
+    tmp_path: pathlib.Path, mode: str
+) -> None:
+    fake_bin = _write_fake_app_server(tmp_path, mode=mode)
+    with CodexMcpClient(codex_bin=str(fake_bin), kill_timeout=0.05) as client:
+        proc = client._proc
+        with pytest.raises(CodexMcpTimeoutError):
+            client.call_codex(prompt="timeout", cwd=tmp_path, timeout=0.05)
+        assert proc is not None and proc.poll() is not None
+        assert client.pending_count == 0
+        assert not client.is_running
+
+
+def test_should_keep_waiting_when_turn_emits_activity(tmp_path: pathlib.Path) -> None:
+    fake_bin = _write_fake_app_server(tmp_path, mode="heartbeat")
+    with CodexMcpClient(codex_bin=str(fake_bin)) as client:
+        result = client.call_codex(prompt="wait", cwd=tmp_path, timeout=5, stall_timeout=1)
+    assert result.content_text == "codex completed"
+
+
+def test_should_pass_thread_settings_to_app_server(tmp_path: pathlib.Path) -> None:
+    fake_bin = _write_fake_app_server(tmp_path, mode="success")
+    with CodexMcpClient(codex_bin=str(fake_bin)) as client:
+        client.call_codex(
+            prompt="read only",
+            cwd=tmp_path,
+            sandbox="read-only",
+            approval_policy="on-request",
+            model="gpt-6-luna",
+            config={"model_reasoning_effort": "low"},
+            timeout=1,
+        )
+    params = _read_messages(tmp_path / "messages.jsonl")[2]["params"]
+    assert params == {
+        "cwd": str(tmp_path),
+        "sandbox": "read-only",
+        "approvalPolicy": "on-request",
+        "model": "gpt-6-luna",
+        "config": {"model_reasoning_effort": "low"},
+    }

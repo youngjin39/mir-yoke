@@ -62,3 +62,84 @@ Central rollout, target mutation, superseded composition experiments, back-propa
 catalog, template parity, watchdog, and deployment decisions are non-authoritative history. Start at
 [`docs/history/centralization`](../history/centralization/README.md); Git history preserves removed
 implementation details.
+
+## Complete decision register
+
+This register lists every local ADR file and its recorded status. The current-authority order
+above governs precedence; an older accepted record does not expand the supported surfaces.
+Mirrored summaries marked superseded say Mir Harness retired them but do not identify a
+numbered successor. That missing mapping needs an owner decision before it can be asserted.
+
+| Record | Recorded status | Successor or retirement note |
+|---|---|---|
+| [ADR-01](adr-01-external-store.md) | accepted | — |
+| [ADR-02](adr-02-skill-preserve-manifest.md) | accepted | — |
+| [ADR-03](adr-03-phase-gate-policy.md) | accepted | — |
+| [ADR-04](adr-04-claude-md-preserve.md) | accepted | — |
+| [ADR-05](adr-05-mir-self-llmwiki.md) | superseded | No numbered successor recorded; retired upstream |
+| [ADR-06](adr-06-stall-detection-2026-05-11.md) | superseded | No numbered successor recorded; retired upstream |
+| [ADR-07](adr-07-review-gate-2026-05-11.md) | superseded | No numbered successor recorded; retired upstream |
+| [ADR-08](adr-08-agent-routing-2026-05-12.md) | rejected | — |
+| [ADR-09](adr-09-execution-backend-frontmatter.md) | accepted | — |
+| [ADR-10](adr-10-fleet-governance-advisory-2026-05-18.md) | archived | — |
+| [ADR-11](adr-11-fleet-inventory-catalog-axis-extension-2026-05-19.md) | accepted | — |
+| [ADR-12](adr-12-prompt-cache-reshape-lane-2026-05-19.md) | superseded | No numbered successor recorded; retired upstream |
+| [ADR-13](adr-13-harness-generator-bootstrap-2026-05-19.md) | accepted | — |
+| [ADR-14](adr-14-sqlite-memory-python-native-2026-05-19.md) | accepted | — |
+| [ADR-15](adr-15-catalog-multi-agent-skill.md) | accepted | — |
+| [ADR-16](adr-16-specialist-deployment-2026-05-21.md) | superseded | No numbered successor recorded; retired upstream |
+| [ADR-17](adr-17-orchestrator-context-routing-2026-05-21.md) | accepted | — |
+| [ADR-18](adr-18-orchestrator-runtime-guard.md) | accepted | — |
+| [ADR-19](adr-19-workflow-preset-json-encoding-2026-05-22.md) | deferred | — |
+| [ADR-20](adr-20-per-family-execution-backend-schema-2026-05-22.md) | deferred | — |
+| [ADR-21](adr-21-family-type-schema-2026-05-23.md) | accepted | — |
+| [ADR-22](adr-22-sealed-family-policy-2026-05-23.md) | accepted | — |
+| [ADR-23](adr-23-active-family-dogfooding-exception-2026-05-23.md) | superseded | No numbered successor recorded; retired upstream |
+| [ADR-25](adr-25-fleet-catalog-2026-05-23.md) | archived | — |
+| [ADR-26](adr-26-rollout-share-pipeline-2026-05-23.md) | superseded | No numbered successor recorded; retired upstream |
+| [ADR-27](adr-27-back-propagation-2026-05-23.md) | superseded | No numbered successor recorded; retired upstream |
+| [ADR-33](adr-33-design-complete-gate-hook-2026-05-23.md) | archived | — |
+| [ADR-39](adr-39-template-applied-state-charter-2026-05-23.md) | accepted | — |
+| [ADR-40](adr-40-mir-template-maintainer-charter-2026-05-23.md) | superseded | No numbered successor recorded; retired upstream |
+| [ADR-41](adr-41-verify-self-stop-hook-2026-05-23.md) | superseded | No numbered successor recorded; retired upstream |
+| [ADR-42](adr-42-verify-template-applied-state-2026-05-23.md) | superseded | No numbered successor recorded; retired upstream |
+| [ADR-43](adr-43-fleet-phase-4-rollout-deferral-2026-05-24.md) | superseded | No numbered successor recorded; retired upstream |
+| [ADR-44](adr-44-13-state-sm-migration-2026-05-24.md) | accepted | — |
+| [ADR-45](adr-45-error-taxonomy-unification-2026-05-24.md) | accepted | — |
+| [ADR-46](adr-46-phase-4-enforce-flip-rollout-2026-05-24.md) | accepted | — |
+| [ADR-47](adr-47-orchestration-dispatch-brief-and-tiered-gates-2026-05-28.md) | accepted | — |
+| [ADR-48](adr-48-central-fleet-management-and-direct-apply-2026-05-28.md) | archived | — |
+| [ADR-49](adr-49-opus-4-8-alignment-and-model-tier-routing-2026-05-30.md) | accepted | — |
+| [ADR-50](adr-50-memory-db-canonical-md-projection-2026-05-31.md) | accepted | — |
+| [ADR-51](adr-51-harness-self-consistency-verification-2026-06-04.md) | accepted | — |
+| [ADR-52](adr-52-fleet-admin-elevation-and-cross-repo-write-model-2026-06-05.md) | superseded | No numbered successor recorded; retired upstream |
+| [ADR-53](adr-53-context-assembly-current-only-retrieval-2026-06-05.md) | accepted | — |
+| [ADR-54](adr-54-template-anchored-fleet-parity-manifest-2026-06-06.md) | archived | — |
+| [ADR-55](adr-55-native-memory-db-projection-2026-06-08.md) | accepted | — |
+| [ADR-56](adr-56-symmetric-main-parity.md) | accepted | — |
+| [ADR-57](adr-57-callgraph-mcp-borrow-scaffold.md) | accepted | — |
+| [ADR-58](adr-58-ouroboros-borrow-adoption.md) | accepted | — |
+| [ADR-59](adr-59-agent-execution-monitoring.md) | accepted | — |
+| [ADR-60](adr-60-claude-orchestrator-codex-subagent-execution.md) | accepted | — |
+| [ADR-61](adr-61-cli-agnostic-meta-harness.md) | accepted | — |
+| [ADR-65](adr-65-sub-agent-routing-sandbox.md) | accepted | — |
+| [ADR-69](adr-69-codex-exec-ban-mcp-only.md) | accepted | — |
+| [ADR-72](adr-72-dispatch-resilience.md) | accepted | — |
+| [ADR-73](adr-73-proportional-guidance-first-harness.md) | accepted | — |
+| [ADR-74](adr-74-portable-bootstrap-capability-sources-and-memory.md) | accepted | — |
+| [ADR-75](adr-75-global-plugin-migration-gate.md) | accepted | — |
+| [ADR-76](adr-76-codex-required-plugin-activation.md) | accepted | — |
+| [ADR-77](adr-77-existing-repository-bootstrap-adoption.md) | accepted | — |
+| [ADR-78](adr-78-public-template-identity-and-non-authority.md) | accepted | — |
+| [ADR-79](adr-79-agent-guided-platform-scope.md) | accepted | — |
+| [ADR-80](adr-80-release-runtime-isolation-and-adopter-ownership.md) | accepted | — |
+| [ADR-81](adr-81-minimal-starter-support-boundary.md) | accepted | — |
+| [ADR-82](adr-82-product-planes-capability-packs-and-composition.md) | superseded | [ADR-83](adr-83-project-agent-kit-recipe-and-supported-surfaces.md) |
+| [ADR-83](adr-83-project-agent-kit-recipe-and-supported-surfaces.md) | accepted | — |
+| [ADR-84](adr-84-harness-upgrade-guidance-and-runtime-hygiene.md) | accepted | — |
+| [ADR-85](adr-85-global-policy-inheritance-and-agent-contracts.md) | accepted | — |
+| [ADR-86](adr-86-mir-harness-managed-repository-maintenance.md) | accepted | — |
+| [ADR-87](adr-87-deny-list-enforcement-recovery.md) | accepted | — |
+| [ADR-88](adr-88-active-plugin-component-admission.md) | accepted | — |
+| [ADR-89](adr-89-dual-runtime-capability-management.md) | accepted | — |
+| [ADR-90](adr-90-role-plugins-and-common-hooks.md) | accepted | — |

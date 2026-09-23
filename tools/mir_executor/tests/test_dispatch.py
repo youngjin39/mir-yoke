@@ -602,7 +602,7 @@ def test_run_codex_rewrites_short_workspace_write(
 
     assert calls[0]["prompt"] == "hello"
     assert calls[0]["sandbox"] == "danger-full-access"
-    assert result.command == ["/usr/bin/true", "mcp-server", "codex", "hello"]
+    assert result.command == ["/usr/bin/true", "app-server"]
 
 
 def test_run_codex_leaves_args_without_sandbox_flag(
@@ -635,7 +635,7 @@ def test_run_codex_leaves_args_without_sandbox_flag(
 
     assert calls[0]["prompt"] == "hello"
     assert calls[0]["sandbox"] == "danger-full-access"
-    assert result.command == ["/usr/bin/true", "mcp-server", "codex", "hello"]
+    assert result.command == ["/usr/bin/true", "app-server"]
 
 
 def test_build_codex_mcp_runner_success_writes_stdout_and_event(
@@ -659,7 +659,11 @@ def test_build_codex_mcp_runner_success_writes_stdout_and_event(
             calls.append(kwargs)
             progress_callback = kwargs.get("progress_callback")
             if callable(progress_callback):
-                progress_callback("notifications/progress", {"message": "working"})
+                progress_callback(
+                    "item/agentMessage/delta",
+                    {"threadId": "thread-abc", "turnId": "turn-abc",
+                     "itemId": "item-1", "delta": "working"},
+                )
             return CodexMcpResult(
                 content_text="mcp completed",
                 thread_id="thread-abc",
@@ -693,12 +697,12 @@ def test_build_codex_mcp_runner_success_writes_stdout_and_event(
                 "timeout": 5.0,
             }
         ]
-        assert events[0]["transport"] == "mcp"
+        assert events[0]["transport"] == "app-server"
         assert events[0]["event"] == "progress"
-        assert events[0]["method"] == "notifications/progress"
+        assert events[0]["method"] == "item/agentMessage/delta"
         assert isinstance(events[0]["duration_s"], float)
         assert event["exit_code"] == 0
-        assert event["transport"] == "mcp"
+        assert event["transport"] == "app-server"
         assert event["threadId"] == "thread-abc"
         assert event["error_sig"] == ""
         assert isinstance(event["duration_s"], float)
@@ -890,7 +894,7 @@ def test_build_codex_mcp_runner_timeout_maps_to_124_and_event(
         assert "mcp timed out" in attempt.stderr
         assert len(attempt.error_sig) == 12
         assert event["exit_code"] == 124
-        assert event["transport"] == "mcp"
+        assert event["transport"] == "app-server"
         assert event["threadId"] is None
         assert event["error_sig"] == attempt.error_sig
     finally:
@@ -930,7 +934,7 @@ def test_build_codex_mcp_runner_transport_error_maps_to_nonzero(
         assert "mcp server died" in attempt.stderr
         assert len(attempt.error_sig) == 12
         assert event["exit_code"] == attempt.exit_code
-        assert event["transport"] == "mcp"
+        assert event["transport"] == "app-server"
         assert event["error_sig"] == attempt.error_sig
     finally:
         cleanup_worktree(wt)
