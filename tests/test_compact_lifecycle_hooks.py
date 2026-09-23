@@ -101,6 +101,51 @@ def test_should_include_ordered_incomplete_plan_cursors_in_precompact_snapshot(
     assert "- No open plan items." not in snapshot
 
 
+def test_should_warn_and_keep_bounded_snapshot_when_dispatch_json_is_invalid(
+    tmp_path: Path,
+) -> None:
+    project = tmp_path / "project"
+    runner_dir = project / "tasks" / "runner"
+    dispatch_dir = project / "tasks" / "dispatch"
+    runner_dir.mkdir(parents=True)
+    dispatch_dir.mkdir(parents=True)
+    (runner_dir / "current.md").write_text("- status: active\n", encoding="utf-8")
+    (dispatch_dir / "current.json").write_text(
+        '{"private": "sensitive-marker",', encoding="utf-8"
+    )
+
+    completed = _run_hook("pre-compact.sh", project, {"trigger": "auto"})
+
+    assert completed.returncode == 0
+    assert "[PreCompact] WARNING: Dispatch brief unavailable" in completed.stderr
+    assert "Traceback" not in completed.stderr
+    assert "sensitive-marker" not in completed.stderr + completed.stdout
+    snapshot = (project / "tasks/handoffs/session-handoff-LATEST.md").read_text()
+    assert "- Dispatch brief unavailable" in snapshot
+    assert "<!-- mir:runtime-snapshot:end -->" in snapshot
+    assert "sensitive-marker" not in snapshot
+
+    (dispatch_dir / "current.json").write_text(
+        json.dumps(
+            {
+                "task_id": "task-7",
+                "slice_id": "slice-2",
+                "target_agent": "worker",
+                "resume_state_ref": "tasks/runner/current.md",
+            }
+        ),
+        encoding="utf-8",
+    )
+    recovered = _run_hook("pre-compact.sh", project, {"trigger": "auto"})
+    assert recovered.returncode == 0
+    snapshot = (project / "tasks/handoffs/session-handoff-LATEST.md").read_text()
+    assert "- task_id: `task-7`" in snapshot
+    assert "- slice_id: `slice-2`" in snapshot
+    assert "- target_agent: `worker`" in snapshot
+    assert "- resume_state_ref: `tasks/runner/current.md`" in snapshot
+    assert "Dispatch brief unavailable" not in snapshot
+
+
 @pytest.mark.parametrize("trigger", ["manual", "auto"])
 def test_should_validate_checkpoint_without_blocking_when_postcompact_runs(
     tmp_path: Path, trigger: str

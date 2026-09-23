@@ -1,7 +1,8 @@
 # Checklist
 
-Status projection for the single `tasks/plan.md` cursor: all twenty maintenance items were checked.
-Closeout guidance, teardown-test startup sensitivity and ancestor-sensitive scans are repaired. Two installation tests are
-network-limited; online dependency checks are unavailable. Generated derivatives match.
-Evidence, preserved predecessor text and the single historical owner decision are in
-`tasks/change_log.md`, "Twenty-item repository maintenance re-verification".
+Status projection for `tasks/plan.md`: all twenty maintenance items were re-verified.
+Guards, advisory failure handling, external JSON validation and startup-test timing were repaired.
+Final full suite: 1300 passed, two unchanged installation tests failed on PyPI DNS.
+Evidence and preserved predecessor text: `tasks/change_log.md`, 2026-09-24.
+Generated parity passes; no Codex installation/removal or integrity rebind is pending.
+The historical ADR mapping decision remains in the prior twenty-item evidence entry, item 20.

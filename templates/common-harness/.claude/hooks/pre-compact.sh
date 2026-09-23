@@ -118,18 +118,26 @@ trap _mir_pre_compact_on_exit EXIT
     echo ""
     echo "### Dispatch Brief"
     echo "- Brief: $DISPATCH_REL"
-    "$_MIR_PYTHON_LAUNCHER" - "$LATEST_DISPATCH_BRIEF" <<'PY'
+    if DISPATCH_FIELDS=$("$_MIR_PYTHON_LAUNCHER" - "$LATEST_DISPATCH_BRIEF" 2>/dev/null <<'PY'
 import json
 import pathlib
 import sys
 
 path = pathlib.Path(sys.argv[1])
 data = json.loads(path.read_text(encoding="utf-8"))
+if not isinstance(data, dict):
+    raise ValueError("dispatch brief must be an object")
 print(f"- task_id: `{data.get('task_id', 'unknown')}`")
 print(f"- slice_id: `{data.get('slice_id', 'unknown')}`")
 print(f"- target_agent: `{data.get('target_agent', 'unknown')}`")
 print(f"- resume_state_ref: `{data.get('resume_state_ref', 'unknown')}`")
 PY
+    ); then
+      printf '%s\n' "$DISPATCH_FIELDS"
+    else
+      echo "- Dispatch brief unavailable (invalid JSON or Python unavailable)."
+      echo "[PreCompact] WARNING: Dispatch brief unavailable; runtime snapshot is partial." >&2
+    fi
   fi
   echo "<!-- mir:runtime-snapshot:end -->"
 } > "$SNAPSHOT_FILE"

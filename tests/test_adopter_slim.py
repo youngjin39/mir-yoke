@@ -11,12 +11,25 @@ import pytest
 from mir.core.adoption.boundary import load_boundary, payload_findings
 from mir.core.adoption.slim import (
     SlimError,
+    _default_verify,
     apply_adopter_slim,
     recover_adopter_slim,
     rollback_adopter_slim,
 )
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+@pytest.mark.parametrize("report", [None, [], "ready", True, 1])
+def test_should_reject_non_object_capability_status(tmp_path, monkeypatch, report):
+    monkeypatch.setattr(
+        subprocess, "run",
+        lambda *args, **kwargs: subprocess.CompletedProcess([], 0, json.dumps(report), ""),
+    )
+
+    assert _default_verify(tmp_path / "mir", tmp_path) == (
+        False, "capability status did not return a JSON object",
+    )
 
 
 def _write(path: Path, body: str) -> None:

@@ -1127,6 +1127,80 @@ def test_session_start_routes_existing_repository_to_adoption(tmp_path: Path) ->
     assert "run setup.sh/setup.ps1" not in completed.stdout
 
 
+def test_should_emit_safety_fallback_when_upfront_generator_fails(tmp_path: Path) -> None:
+    hooks = _copy_hooks(tmp_path)
+    gate = hooks / "_lib/bootstrap-gate.sh"
+    gate.write_text(
+        "mir_bootstrap_gate_state() { printf 'ready\\n'; return 0; }\n",
+        encoding="utf-8",
+    )
+    launcher = hooks / "_lib/run-python.sh"
+    launcher.write_text(
+        "#!/bin/bash\n"
+        "case \"$1\" in *build_session_upfront_context.py) exit 7 ;; esac\n"
+        "exec \"$MIR_TEST_PYTHON\" \"$@\"\n",
+        encoding="utf-8",
+    )
+    launcher.chmod(0o755)
+    generator = tmp_path / "scripts/build_session_upfront_context.py"
+    generator.parent.mkdir()
+    generator.write_text("print('unused')\n", encoding="utf-8")
+    env = {
+        **os.environ,
+        "CLAUDE_PROJECT_DIR": str(tmp_path),
+        "MIR_TEST_PYTHON": shutil.which("python3") or "python3",
+    }
+
+    completed = subprocess.run(
+        ["bash", str(hooks / "session-start.sh")],
+        capture_output=True,
+        text=True,
+        check=False,
+        env=env,
+    )
+
+    assert completed.returncode == 0
+    assert "[SessionStart] WARNING: Upfront context unavailable" in completed.stderr
+    assert "repository_profile: unavailable" in completed.stdout
+    assert (
+        "mandatory_safety: inspect repository-local instructions before mutation"
+        in completed.stdout
+    )
+
+
+def test_should_keep_bounded_safety_fallback_when_python_launcher_fails(
+    tmp_path: Path,
+) -> None:
+    hooks = _copy_hooks(tmp_path)
+    (hooks / "_lib/bootstrap-gate.sh").write_text(
+        "mir_bootstrap_gate_state() { printf 'ready\\n'; return 0; }\n",
+        encoding="utf-8",
+    )
+    launcher = hooks / "_lib/run-python.sh"
+    launcher.write_text("#!/bin/bash\nexit 127\n", encoding="utf-8")
+    launcher.chmod(0o755)
+    generator = tmp_path / "scripts/build_session_upfront_context.py"
+    generator.parent.mkdir()
+    generator.write_text("print('unused')\n", encoding="utf-8")
+
+    completed = subprocess.run(
+        ["bash", str(hooks / "session-start.sh")],
+        capture_output=True,
+        text=True,
+        check=False,
+        env={**os.environ, "CLAUDE_PROJECT_DIR": str(tmp_path)},
+    )
+
+    assert completed.returncode == 0
+    assert "[SessionStart] WARNING: Context output cap unavailable" in completed.stderr
+    assert "repository_profile: unavailable" in completed.stdout
+    assert (
+        "mandatory_safety: inspect repository-local instructions before mutation"
+        in completed.stdout
+    )
+    assert len(completed.stdout.encode("utf-8")) <= 10240
+
+
 def test_invalid_adoption_receipt_keeps_declared_evidence_repair_reachable(
     tmp_path: Path,
 ) -> None:

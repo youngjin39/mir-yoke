@@ -239,7 +239,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": ".claude/hooks/pre-compact.sh",
-      "sha256": "852b0f50a28293f13806bfbd69cc3a9203620b6aee8581fb68abbce4a6ca9488"
+      "sha256": "92d4c8bc0dea1cd66ed6bf73a0d2929969f58b8c4985aa0e5874d2f8bdf6d721"
     },
     {
       "classification": "reference",
@@ -251,7 +251,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": ".claude/hooks/pre-tool-use.sh",
-      "sha256": "4437bbcae4f4cd81cf2ee1cbf9ef14f07001ccab58bf815dfa18bfe3917d2d91"
+      "sha256": "c8c559a9a700e75c11d634199d642810272fdad8b2925ef89619c0b671c0291e"
     },
     {
       "classification": "reference",
@@ -263,7 +263,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": ".claude/hooks/session-start.sh",
-      "sha256": "88efa4d1ced955a6879e3b1ce04f31d6f811b9db9d5be1953040bae90546adb8"
+      "sha256": "b95082067914f8bfbd89c3cb593f750f0ee04cf297278b56b6dfd21273a56abd"
     },
     {
       "classification": "reference",
@@ -305,7 +305,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": ".claude/hooks/user-prompt-submit.sh",
-      "sha256": "81fd71e2af1028e79a6d39578f9ebb0f5f555e83646378251d76a1950d68ff3a"
+      "sha256": "73671071ba5ed2a721e6735b0454f31914aad2a2f38b9b7105c2408599429394"
     },
     {
       "classification": "reference",
@@ -3659,7 +3659,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "src/mir/core/adoption/slim.py",
-      "sha256": "d8071e23b20e4155c0c348068876e2478fea37dc7d2e235e2b3fab25e349f306"
+      "sha256": "6028f127d80adc74c4adb88d9d443ba7a755d691cdb70620baf2df031bfb0b92"
     },
     {
       "classification": "optional-consumer-tool",
@@ -4031,19 +4031,19 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/change_log.md",
-      "sha256": "46bc5d37bebb67b362298d54487a66d6fa16b712d9685c4f7d159e44b89b86a3"
+      "sha256": "a0e0c6d34efa54e1d366fa340bedb93a1675dacbbb1f310b8f718d693ad54cf3"
     },
     {
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/checklist.md",
-      "sha256": "e34e04b198a127c086421cdba0bbaf9d7d391cfa257f65ee13276a2582b2671e"
+      "sha256": "2c7caf08afe82b1765a2ab8caab3eb05d758ddb11c9452d385de1445db189332"
     },
     {
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/handoffs/session-handoff-LATEST.md",
-      "sha256": "59bcea25420091520db152974d3c50eaacb9aef5a2130535f95fbe80188006e7"
+      "sha256": "c3df3cc3fdb0a674ff260f5b69ffda8b486b292e4812f7981486043ab862d706"
     },
     {
       "classification": "reference",
@@ -4073,7 +4073,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/plan.md",
-      "sha256": "2d69b2d24039f4989e665d73c9b830821c7ab5200baaff815aa8b001d2cb75a2"
+      "sha256": "21045b4ea224bcde32b52c34014c89e743c82134138e1bf1ec8957f81036663b"
     },
     {
       "classification": "reference",
@@ -4127,7 +4127,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "templates/common-harness/.claude/hooks/pre-compact.sh",
-      "sha256": "852b0f50a28293f13806bfbd69cc3a9203620b6aee8581fb68abbce4a6ca9488"
+      "sha256": "92d4c8bc0dea1cd66ed6bf73a0d2929969f58b8c4985aa0e5874d2f8bdf6d721"
     },
     {
       "classification": "optional-consumer-tool",
@@ -4169,7 +4169,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_adopter_slim.py",
-      "sha256": "c6bb75b73e8b8059e0b21ab8d474e34fb6155fc4b205e8dbc605a3829e32f61e"
+      "sha256": "07b3cbd0a942ca8a137ec136fe39046e479f1ce0361c27dc49bd493616037503"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4235,7 +4235,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_bootstrap_start_gate.py",
-      "sha256": "43b0191d96f125649ff06d2e1dc03d82d32597949f56fd752dac1839cac85c88"
+      "sha256": "e37ae2f6345aeca0f74136d6699ead9b7988e586c8b1336db19a5cb2345f2287"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4283,7 +4283,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_compact_lifecycle_hooks.py",
-      "sha256": "17b3dff916162b9919429af6a82d6a21261685db1370a0ffd0634b8a653b10e3"
+      "sha256": "cdc25a7a3932b034ad1d83715b9a01c5ef3634ac920b8c957742ba969df02e55"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4319,7 +4319,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_hook_executability.py",
-      "sha256": "4d6b00932ca6f3552b689f07c330edafcebabf9ee089c7a466a7ae5955f12b7d"
+      "sha256": "fbb6bdec04f2751a2d304f238d1bc3609b3f50ed1ddbad281250222bd880c165"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4576,6 +4576,12 @@
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
+      "path": "tests/test_user_prompt_submit_hook.py",
+      "sha256": "8d48a3e8a8bfd6a394ff4ceb50b970b4c022739b6bd5671c53aa461e94c9d60a"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
       "path": "tests/test_user_runtime_agent_command_install.py",
       "sha256": "549faaf4a1c4910e7742863c37a33d6b2794cc2bba752307eb7772ea4c84138d"
     },
@@ -4763,7 +4769,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/codex_mcp_client.py",
-      "sha256": "f2a35c79595b0937a8265f843c562d75ea22b302a1e90e0d0601c832ee4d56af"
+      "sha256": "68d1751a5d55951c475a19eb61d619f6a64e7055e0848358b928e7171ca84a03"
     },
     {
       "classification": "optional-consumer-tool",
@@ -4823,7 +4829,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/tests/test_codex_mcp_client.py",
-      "sha256": "b0d53484e39f9692581ee5672aef9d9a9bdbf8c2fea8662bada75319d50dd95d"
+      "sha256": "52ab9601b01d06c7f2a704f602ac53d267b5ec797b7afe2b8ea0f15fb62200c6"
     },
     {
       "classification": "optional-consumer-tool",

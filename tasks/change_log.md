@@ -1316,3 +1316,87 @@ secret access or direct database writes. No pending Codex derivative installatio
 integrity rebind. The remaining operational limitations are offline installation acceptance and
 online dependency intelligence; optional provider memory doctor remains not_ready as documented.
 Only the historical ADR mapping decision in item 20 remains; the prior agent release hold is closed.
+
+## Preserved predecessor continuity text (2026-09-24)
+
+### tasks/plan.md
+
+```markdown
+# Plan
+
+Twenty-item repository maintenance, 2026-09-23. `tasks/intent.json` is the intent authority.
+Predecessor records and evidence: `tasks/change_log.md`, "Twenty-item repository maintenance re-verification".
+
+- [x] Re-check all twenty items against files, runtime probes and read-only memory evidence.
+- [x] Correct closeout guidance, teardown startup budget and repository-relative scan exclusions.
+- [x] Verify full tests, governance, generator parity and adopter payload/release evidence.
+- [x] Record results, environment limits and the existing historical owner decision.
+
+Repository maintenance is complete within the authorized boundary. Two installation checks remain
+limited by unavailable PyPI access. No delivery, Codex installation or integrity rebind is pending.
+```
+
+### tasks/checklist.md
+
+```markdown
+# Checklist
+
+Status projection for the single `tasks/plan.md` cursor: all twenty maintenance items were checked.
+Closeout guidance, teardown-test startup sensitivity and ancestor-sensitive scans are repaired. Two installation tests are
+network-limited; online dependency checks are unavailable. Generated derivatives match.
+Evidence, preserved predecessor text and the single historical owner decision are in
+`tasks/change_log.md`, "Twenty-item repository maintenance re-verification".
+```
+
+### tasks/handoffs/session-handoff-LATEST.md
+
+```markdown
+# Session Handoff — Twenty-item repository maintenance
+
+Resume pointer: `tasks/plan.md` is the only cursor; `tasks/intent.json` records authority.
+Evidence and predecessor records: `tasks/change_log.md`, "Twenty-item repository maintenance re-verification".
+
+Corrected SessionEnd guidance, a teardown test's startup deadline, and repository-relative scan exclusions.
+Final full suite: 1231 passed, two PyPI DNS/network failures; the slow-start reproduction and
+27 transport tests pass. No Codex installation/removal or integrity rebind is pending.
+Next verification requires network access for the two installation tests and dependency intelligence.
+The existing historical ADR-mapping decision is recorded once in the evidence log.
+No commit, push, tag, release, runtime installation or consumer write was performed.
+
+<!-- mir:runtime-snapshot:begin -->
+## Runtime Snapshot (Generated)
+
+### Active Plan Items
+- No open plan items.
+
+### Working Tree
+- Working tree dirty (11 paths; inspect git status --short).
+<!-- mir:runtime-snapshot:end -->
+```
+
+## Owner-authorized maintenance continuation (2026-09-24)
+
+- Authority: renewed owner maintenance scope; `tasks/intent.json` and `tasks/plan.md`; initial tree clean at 9b1fde0.
+- Items 1–5: profile/layout/contracts checked; predecessor cursor, projection and handoff preserved verbatim above; one current cursor remains.
+- Items 6, 14: immutable quick_check ok, 348160 bytes, 21 facts, no FK errors, expired facts or missing sources; both memory projections match.
+- Memory relation retrieval returned four implementation edges without notices; context pull returned architecture anchors. Optional doctor remains not_ready because harness_a.toml is absent.
+- Item 7: fail closed on bootstrap, parser, path, required-validator and safety-regex errors; diagnostics omit command and validator bodies.
+- Items 8–12: registry, instruction parity, canonical rules, architecture and central routing checked; no local shared-skill shadow or model pin introduced.
+- Item 9 before/after: CLAUDE.md 41 lines / 3448 bytes; AGENTS.md 43 / 3537; unchanged and within limits.
+- Items 13, 15: one cursor/resume/projection/log retained; SessionStart emits 550 bytes and the shared continuity hook 94 bytes.
+- Item 16: all tests remain under default tests/tools collection; unrelated one-second startup limits removed after a 1.2-second delayed-handshake reproduction failed before and passed after.
+- Item 17: Codex completion params/items and external capability-status JSON now validate types; malformed replies reject pending calls. No dependency upgrades.
+- Items 18–19: temporary-root generation is byte-identical; no Codex install/removal. All 17 shell hooks exit 0 on isolated representative inputs; shared hook exits 0.
+- Guard regressions: 38 new cases fail without their respective fixes; guard/deny suite 81 passed. Client regressions: 17 fail against preceding/original code; client suite 44 passed.
+- Slim JSON regression: 5 failed before, 22 passed after. Advisory regressions: 6 failed before fixes; related suite 43 passed; template parity suite 6 passed.
+- Independent review reproduced patch-extraction and Python-fallback defects; both repaired. Final safety-regex review accepted; no unresolved introduced defect reported.
+- Frozen full run: 1300 passed / 2 failed in 365.99s. Both failures are unchanged test_greenfield_slim_integration.py and test_installed_cli.py PyPI DNS failures.
+- Earlier runs: 1231/4 and 1284/4 pass/fail; concurrent edits caused payload/clean-room mismatches, and the compact template parity regression was repaired. Final frozen run clears these.
+- Earlier focused run: 177 passed / 1 existing initialize-timeout failure; the test-only startup fix above resolves the reproduced sensitivity.
+- Ruff, context references (9 files / 69 refs), agent registry, harness consistency (0 errors / 0 warnings), generator parity and diff checks pass.
+- Dependency latest-version lookup failed on DNS; online vulnerability and transitive-license checks skipped. Direct installed package metadata reviewed; no private absolute-path matches found.
+- Credential-pattern locations only (not proof of real credentials): docs/_archive/harness-engineering/applications/example-harness/phase-1-application-2026-06-13-historical.md; tests/test_adr53_phase3b_context_cli.py; tests/test_capability_security.py; tests/test_hook_executability.py.
+- Runtime limits: general Bash writes do not expose edit paths to the post-edit scan; intended context output sites remain pre-compact.sh, compact-resume.sh and user-prompt-submit.sh. No credential-backed runtime activation exercised.
+- Item 20: the sole historical successor-mapping decision remains in the prior twenty-item entry, item 20; retirement records are preserved and no successor is invented.
+- Integrity: profile, receipts, capability lock and released plugin trees unchanged; adopter payload regenerated after tracked edits. No rebind or delivery required.
+- No commits, pushes, tags, releases, consumer writes, secret access or direct database mutation.

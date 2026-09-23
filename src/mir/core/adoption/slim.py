@@ -272,6 +272,8 @@ def _default_verify(external_cli: Path, project_root: Path) -> tuple[bool, str]:
         report = json.loads(completed.stdout)
     except json.JSONDecodeError:
         return False, "capability status did not return JSON"
+    if not isinstance(report, dict):
+        return False, "capability status did not return a JSON object"
     read_only_evidence = report.get("change_evidence") == {
         "status": "not-applicable",
         "reason": "read-only-operation",

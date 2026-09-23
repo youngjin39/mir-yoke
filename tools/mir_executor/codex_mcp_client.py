@@ -269,9 +269,11 @@ class CodexMcpClient:
                 error = completed.get("error")
                 detail = _json_rpc_error_message(error) if error else completed.get("status")
                 raise CodexMcpProtocolError(f"Codex turn failed: {detail}")
-            for item in completed.get("items", []):
-                if item.get("type") == "agentMessage" and item.get("phase") != "commentary":
-                    turn.texts[item["id"]] = item["text"]
+            items = completed.get("items", [])
+            if not isinstance(items, list):
+                raise CodexMcpProtocolError("turn/completed returned invalid items")
+            for item in items:
+                _record_completed_item(turn, item, "turn/completed items")
             return CodexMcpResult(
                 content_text="\n".join(turn.texts.values()),
                 thread_id=thread_id,
@@ -483,17 +485,22 @@ class CodexMcpClient:
                     self._reject_all_pending(
                         CodexMcpError(f"Codex app-server progress callback failed: {exc}")
                     )
-            if isinstance(params, Mapping):
-                with self._pending_lock:
-                    turn = self._turns.get(params.get("threadId"))
-                if turn is not None and not turn.pending.event.is_set():
-                    if message["method"] == "item/completed":
-                        item = params.get("item", {})
-                        if item.get("type") == "agentMessage" and item.get("phase") != "commentary":
-                            turn.texts[item["id"]] = item["text"]
-                    elif message["method"] == "turn/completed":
-                        turn.pending.result = params
-                        turn.pending.event.set()
+            method = message["method"]
+            if method not in ("item/completed", "turn/completed"):
+                return
+            if not isinstance(params, Mapping):
+                raise CodexMcpProtocolError(f"{method} returned invalid params")
+            thread_id = params.get("threadId")
+            if not isinstance(thread_id, str) or not thread_id:
+                raise CodexMcpProtocolError(f"{method} returned invalid threadId")
+            with self._pending_lock:
+                turn = self._turns.get(thread_id)
+            if turn is not None and not turn.pending.event.is_set():
+                if method == "item/completed":
+                    _record_completed_item(turn, params.get("item"), "item/completed item")
+                else:
+                    turn.pending.result = params
+                    turn.pending.event.set()
             return
 
         if has_method and has_id:
@@ -553,3 +560,15 @@ def _json_rpc_error_message(error: object) -> str:
         if isinstance(message, str):
             return message
     return "Codex app-server JSON-RPC request failed"
+
+
+def _record_completed_item(turn: _PendingTurn, item: object, source: str) -> None:
+    if not isinstance(item, Mapping):
+        raise CodexMcpProtocolError(f"{source} is not an object")
+    if item.get("type") != "agentMessage" or item.get("phase") == "commentary":
+        return
+    item_id = item.get("id")
+    item_text = item.get("text")
+    if not isinstance(item_id, str) or not isinstance(item_text, str):
+        raise CodexMcpProtocolError(f"{source} has invalid agent message fields")
+    turn.texts[item_id] = item_text

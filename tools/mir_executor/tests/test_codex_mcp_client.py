@@ -112,6 +112,18 @@ def _write_fake_app_server(tmp_path: pathlib.Path, *, mode: str) -> pathlib.Path
                     if MODE == "pending_notification":
                         time.sleep(30)
                     item = {{"type": "agentMessage", "id": "item-1", "text": "codex completed"}}
+                    if MODE.startswith("malformed_notification_"):
+                        item = {{"none": None, "list": [], "string": "bad"}}[
+                            MODE.removeprefix("malformed_notification_")
+                        ]
+                    if MODE == "malformed_agent_id":
+                        item["id"] = []
+                    if MODE == "malformed_agent_text":
+                        item["text"] = None
+                    if MODE == "malformed_completion_agent_id":
+                        item["id"] = []
+                    if MODE == "malformed_completion_agent_text":
+                        item["text"] = None
                     if MODE == "commentary":
                         send({{
                             "method": "item/completed",
@@ -120,20 +132,46 @@ def _write_fake_app_server(tmp_path: pathlib.Path, *, mode: str) -> pathlib.Path
                                 "phase": "commentary", "text": "still working"
                             }}}}
                         }})
-                    if MODE != "completion_items":
+                    if MODE not in ("completion_items", "malformed_completion_agent_id",
+                                    "malformed_completion_agent_text"):
+                        item_params = {{"threadId": "thread-123", "turnId": "turn-123",
+                                       "item": item}}
+                        if MODE == "bad_item_params_list":
+                            item_params = []
+                        elif MODE == "bad_item_thread_id_list":
+                            item_params["threadId"] = []
+                        elif MODE == "bad_item_thread_id_dict":
+                            item_params["threadId"] = {{}}
+                        elif MODE == "bad_item_thread_id_missing":
+                            del item_params["threadId"]
                         send({{
                             "method": "item/completed",
-                            "params": {{"threadId": "thread-123", "turnId": "turn-123",
-                                       "item": item}}
+                            "params": item_params
                         }})
                     turn["status"] = MODE if MODE in ("failed", "interrupted") else "completed"
                     if MODE == "failed":
                         turn["error"] = {{"message": "model unavailable"}}
                     if MODE in ("completion_items", "duplicate_items"):
                         turn["items"] = [item]
+                    if MODE == "malformed_completion_items":
+                        turn["items"] = None
+                    if MODE == "malformed_completion_item":
+                        turn["items"] = [None]
+                    if MODE in ("malformed_completion_agent_id",
+                                "malformed_completion_agent_text"):
+                        turn["items"] = [item]
+                    turn_params = {{"threadId": "thread-123", "turn": turn}}
+                    if MODE == "bad_turn_params_list":
+                        turn_params = []
+                    elif MODE == "bad_turn_thread_id_list":
+                        turn_params["threadId"] = []
+                    elif MODE == "bad_turn_thread_id_dict":
+                        turn_params["threadId"] = {{}}
+                    elif MODE == "bad_turn_thread_id_missing":
+                        del turn_params["threadId"]
                     send({{
                         "method": "turn/completed",
-                        "params": {{"threadId": "thread-123", "turn": turn}}
+                        "params": turn_params
                     }})
                     if MODE == "early_completion":
                         send({{"id": message["id"], "result": {{"turn": turn}}}})
@@ -175,7 +213,7 @@ def test_initialize_handshake_sends_initialized_notification(tmp_path: pathlib.P
     fake_bin = _write_fake_app_server(tmp_path, mode="success")
     record_path = tmp_path / "messages.jsonl"
 
-    client = CodexMcpClient(codex_bin=str(fake_bin), initialize_timeout=1.0)
+    client = CodexMcpClient(codex_bin=str(fake_bin))
     try:
         client.start()
         result = client.call_codex(prompt="hello", cwd=tmp_path, timeout=1.0)
@@ -195,7 +233,7 @@ def test_call_codex_maps_content_and_thread_id(tmp_path: pathlib.Path) -> None:
     fake_bin = _write_fake_app_server(tmp_path, mode="success")
     record_path = tmp_path / "messages.jsonl"
 
-    with CodexMcpClient(codex_bin=str(fake_bin), initialize_timeout=1.0) as client:
+    with CodexMcpClient(codex_bin=str(fake_bin)) as client:
         result = client.call_codex(prompt="implement s1", cwd=tmp_path, timeout=1.0)
 
     assert result.content_text == "codex completed"
@@ -220,7 +258,7 @@ def test_call_codex_includes_base_instructions_and_config(tmp_path: pathlib.Path
     fake_bin = _write_fake_app_server(tmp_path, mode="success")
     record_path = tmp_path / "messages.jsonl"
 
-    with CodexMcpClient(codex_bin=str(fake_bin), initialize_timeout=1.0) as client:
+    with CodexMcpClient(codex_bin=str(fake_bin)) as client:
         client.call_codex(
             prompt="implement s1",
             cwd=tmp_path,
@@ -246,7 +284,7 @@ def test_call_codex_includes_model_with_base_instructions_and_config(
     fake_bin = _write_fake_app_server(tmp_path, mode="success")
     record_path = tmp_path / "messages.jsonl"
 
-    with CodexMcpClient(codex_bin=str(fake_bin), initialize_timeout=1.0) as client:
+    with CodexMcpClient(codex_bin=str(fake_bin)) as client:
         client.call_codex(
             prompt="implement routing",
             cwd=tmp_path,
@@ -273,7 +311,7 @@ def test_call_codex_base_instructions_without_config_omits_config(
     fake_bin = _write_fake_app_server(tmp_path, mode="success")
     record_path = tmp_path / "messages.jsonl"
 
-    with CodexMcpClient(codex_bin=str(fake_bin), initialize_timeout=1.0) as client:
+    with CodexMcpClient(codex_bin=str(fake_bin)) as client:
         client.call_codex(
             prompt="implement s1",
             cwd=tmp_path,
@@ -293,7 +331,7 @@ def test_client_uses_codex_bin_environment_default(
     fake_bin = _write_fake_app_server(tmp_path, mode="success")
     monkeypatch.setenv("CODEX_BIN", str(fake_bin))
 
-    with CodexMcpClient(initialize_timeout=1.0) as client:
+    with CodexMcpClient() as client:
         result = client.call_codex(prompt="env bin", cwd=tmp_path, timeout=1.0)
 
     assert result.thread_id == "thread-123"
@@ -301,7 +339,7 @@ def test_client_uses_codex_bin_environment_default(
 
 def test_call_timeout_kills_server_and_rejects_pending(tmp_path: pathlib.Path) -> None:
     fake_bin = _write_fake_app_server(tmp_path, mode="timeout")
-    client = CodexMcpClient(codex_bin=str(fake_bin), initialize_timeout=1.0, kill_timeout=1.0)
+    client = CodexMcpClient(codex_bin=str(fake_bin), kill_timeout=1.0)
     client.start()
 
     with pytest.raises(CodexMcpTimeoutError):
@@ -314,7 +352,7 @@ def test_call_timeout_kills_server_and_rejects_pending(tmp_path: pathlib.Path) -
 def test_call_timeout_none_waits_for_completion(tmp_path: pathlib.Path) -> None:
     fake_bin = _write_fake_app_server(tmp_path, mode="delayed")
 
-    with CodexMcpClient(codex_bin=str(fake_bin), initialize_timeout=1.0) as client:
+    with CodexMcpClient(codex_bin=str(fake_bin)) as client:
         result = client.call_codex(prompt="wait", cwd=tmp_path, timeout=None)
 
     assert result.content_text == "codex completed"
@@ -362,7 +400,7 @@ def test_stall_watchdog_kills_silent_server_and_rejects_pending(
     tmp_path: pathlib.Path,
 ) -> None:
     fake_bin = _write_fake_app_server(tmp_path, mode="timeout")
-    client = CodexMcpClient(codex_bin=str(fake_bin), initialize_timeout=1.0, kill_timeout=1.0)
+    client = CodexMcpClient(codex_bin=str(fake_bin), kill_timeout=1.0)
     client.start()
 
     with pytest.raises(CodexMcpStallError):
@@ -376,7 +414,7 @@ def test_progress_callback_is_invoked_for_notifications(tmp_path: pathlib.Path) 
     fake_bin = _write_fake_app_server(tmp_path, mode="notification")
     progress: list[tuple[str, object]] = []
 
-    with CodexMcpClient(codex_bin=str(fake_bin), initialize_timeout=1.0) as client:
+    with CodexMcpClient(codex_bin=str(fake_bin)) as client:
         result = client.call_codex(
             prompt="notify",
             cwd=tmp_path,
@@ -459,11 +497,83 @@ def test_close_during_pending_call_tears_down_reader_threads_cleanly(
 def test_malformed_json_line_is_recorded_and_ignored(tmp_path: pathlib.Path) -> None:
     fake_bin = _write_fake_app_server(tmp_path, mode="malformed")
 
-    with CodexMcpClient(codex_bin=str(fake_bin), initialize_timeout=1.0) as client:
+    with CodexMcpClient(codex_bin=str(fake_bin)) as client:
         result = client.call_codex(prompt="after malformed", cwd=os.fspath(tmp_path), timeout=1.0)
 
     assert result.content_text == "codex completed"
     assert client.malformed_messages == ["{not-json"]
+
+
+@pytest.mark.parametrize("kind", ["none", "list", "string"])
+def test_malformed_item_notification_rejects_pending_turn(
+    tmp_path: pathlib.Path, kind: str
+) -> None:
+    fake_bin = _write_fake_app_server(tmp_path, mode=f"malformed_notification_{kind}")
+
+    with CodexMcpClient(codex_bin=str(fake_bin), call_timeout=None) as client:
+        with pytest.raises(CodexMcpProtocolError, match="item/completed.*item"):
+            client.call_codex(prompt="malformed item", cwd=tmp_path, timeout=1.0)
+        assert client.pending_count == 0
+        assert not client.is_running
+
+
+@pytest.mark.parametrize("mode", ["malformed_completion_items", "malformed_completion_item"])
+def test_malformed_completion_items_raise_protocol_error(
+    tmp_path: pathlib.Path, mode: str
+) -> None:
+    fake_bin = _write_fake_app_server(tmp_path, mode=mode)
+
+    with CodexMcpClient(codex_bin=str(fake_bin), call_timeout=None) as client:
+        with pytest.raises(CodexMcpProtocolError, match="turn/completed.*items"):
+            client.call_codex(prompt="malformed items", cwd=tmp_path, timeout=1.0)
+        assert client.pending_count == 0
+        assert not client.is_running
+
+
+@pytest.mark.parametrize(
+    "mode, method",
+    [
+        ("bad_item_params_list", "item/completed"),
+        ("bad_item_thread_id_list", "item/completed"),
+        ("bad_item_thread_id_dict", "item/completed"),
+        ("bad_item_thread_id_missing", "item/completed"),
+        ("bad_turn_params_list", "turn/completed"),
+        ("bad_turn_thread_id_list", "turn/completed"),
+        ("bad_turn_thread_id_dict", "turn/completed"),
+        ("bad_turn_thread_id_missing", "turn/completed"),
+    ],
+)
+def test_malformed_completion_notification_rejects_pending_turn(
+    tmp_path: pathlib.Path, mode: str, method: str
+) -> None:
+    fake_bin = _write_fake_app_server(tmp_path, mode=mode)
+
+    with CodexMcpClient(codex_bin=str(fake_bin), call_timeout=None) as client:
+        with pytest.raises(CodexMcpProtocolError, match=method):
+            client.call_codex(prompt="malformed notification", cwd=tmp_path, timeout=1.0)
+        assert client.pending_count == 0
+        assert not client.is_running
+
+
+@pytest.mark.parametrize(
+    "mode, method",
+    [
+        ("malformed_agent_id", "item/completed"),
+        ("malformed_agent_text", "item/completed"),
+        ("malformed_completion_agent_id", "turn/completed"),
+        ("malformed_completion_agent_text", "turn/completed"),
+    ],
+)
+def test_malformed_agent_message_fields_raise_protocol_error(
+    tmp_path: pathlib.Path, mode: str, method: str
+) -> None:
+    fake_bin = _write_fake_app_server(tmp_path, mode=mode)
+
+    with CodexMcpClient(codex_bin=str(fake_bin), call_timeout=None) as client:
+        with pytest.raises(CodexMcpProtocolError, match=f"{method}.*agent message fields"):
+            client.call_codex(prompt="malformed agent message", cwd=tmp_path, timeout=1.0)
+        assert client.pending_count == 0
+        assert not client.is_running
 
 
 @pytest.mark.parametrize(

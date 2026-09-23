@@ -15,10 +15,18 @@ PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
 INPUT=$(cat)
 _MIR_BOOTSTRAP_GATE="$(dirname "$_MIR_PYTHON_LAUNCHER")/bootstrap-gate.sh"
 # shellcheck source=./_lib/bootstrap-gate.sh
-[ -f "$_MIR_BOOTSTRAP_GATE" ] && . "$_MIR_BOOTSTRAP_GATE"
-if command -v mir_bootstrap_gate_enforce >/dev/null 2>&1; then
-  mir_bootstrap_gate_enforce "$INPUT" "$PROJECT_DIR" || exit $?
+if [ ! -f "$_MIR_BOOTSTRAP_GATE" ] || ! . "$_MIR_BOOTSTRAP_GATE" || \
+   ! command -v mir_bootstrap_gate_enforce >/dev/null 2>&1; then
+  echo "[PreToolUse BLOCK] bootstrap gate helper unavailable" >&2
+  exit 2
 fi
+mir_bootstrap_gate_enforce "$INPUT" "$PROJECT_DIR" || {
+  _mir_bootstrap_rc=$?
+  if [ "$_mir_bootstrap_rc" -ne 2 ]; then
+    echo "[PreToolUse BLOCK] bootstrap gate enforcement failed" >&2
+  fi
+  exit 2
+}
 _MIR_TIER_DISPATCH="$(dirname "$0")/_lib/tier_dispatch.sh"
 # shellcheck source=./_lib/tier_dispatch.sh
 [ -f "$_MIR_TIER_DISPATCH" ] && . "$_MIR_TIER_DISPATCH"
@@ -42,6 +50,13 @@ warn() {
   echo "[PreToolUse WARN] $1" >&2
 }
 
+safety_pattern_matches() {
+  local match_rc=0
+  printf '%s' "$1" | grep -qE "$2" 2>/dev/null || match_rc=$?
+  [ "$match_rc" -le 1 ] || block "safety pattern matching failed"
+  return "$match_rc"
+}
+
 require_jq() {
   if ! command -v jq >/dev/null 2>&1; then
     block "jq is required for PreToolUse parsing"
@@ -59,7 +74,7 @@ extract_json() {
 
 emit_deny_patterns() {
   local file="$1"
-  [ -f "$file" ] || return 0
+  [ -f "$file" ] || return 1
   awk '
     function trim_field(line) {
       sub(/^[^:]+:[[:space:]]*/, "", line)
@@ -105,7 +120,8 @@ apply_deny_list() {
   [ -n "$subject" ] || return 0
   [ -f "$DENY_LIST_FILE" ] || return 0
 
-  local row id pattern severity reason
+  local rows id pattern severity reason
+  rows="$(emit_deny_patterns "$DENY_LIST_FILE" 2>/dev/null)" || block "deny-list parsing failed"
   while IFS=$'\t' read -r id pattern severity reason; do
     [ -n "$id" ] || continue
     [ -n "$pattern" ] || continue
@@ -121,7 +137,10 @@ apply_deny_list() {
     if [ "$compile_rc" -gt 1 ]; then
       block "deny-list[$id] is not a usable POSIX regex; fix .ai-harness/deny-list.yaml"
     fi
-    if printf '%s' "$subject" | grep -qE "$regex"; then
+    local match_rc=0
+    printf '%s' "$subject" | grep -qE "$regex" 2>/dev/null || match_rc=$?
+    [ "$match_rc" -le 1 ] || block "deny-list[$id] matching failed"
+    if [ "$match_rc" -eq 0 ]; then
       if [ "$severity" = "block" ]; then
         # tier: block (deny-list security enforcement)
         block "deny-list[$id] $target_label: $reason"
@@ -139,7 +158,7 @@ apply_deny_list() {
         warn "deny-list[$id] $target_label: $reason"
       fi
     fi
-  done < <(emit_deny_patterns "$DENY_LIST_FILE")
+  done <<< "$rows"
 }
 
 require_jq
@@ -179,13 +198,13 @@ if [ -n "${MIR_CODEX_SESSION_ID:-}" ]; then
   case "$TOOL_NAME" in
     apply_patch|ApplyPatch)
       _r5_patch="$(extract_json '.tool_input.command // .tool_input.input // .tool_input.patch // .tool_input.content // .tool_input' 2>/dev/null || echo "")"
-      if printf '%s' "$_r5_patch" | grep -qE '(^|[^[:alnum:]_./-])tasks/plan\.md([^[:alnum:]_]|$)'; then
+      if safety_pattern_matches "$_r5_patch" '(^|[^[:alnum:]_./-])tasks/plan\.md([^[:alnum:]_]|$)'; then
         block "ADR-60 R5: a sub-agent/codex context must not edit the main control-plane cursor tasks/plan.md via apply_patch — the control_plane main owns it (report your result via your final message + the JobRegistry, never plan.md)"
       fi
       ;;
     Bash)
       _r5_cmd="$(extract_json '.tool_input.command' 2>/dev/null || echo "")"
-      if printf '%s' "$_r5_cmd" | grep -qE 'tasks/plan\.md' && printf '%s' "$_r5_cmd" | grep -qE '(>>?|[[:space:]]tee([[:space:]]|$)|sed[[:space:]]+-i|[[:space:]]truncate([[:space:]]|$)|[[:space:]]dd([[:space:]]|$)|[[:space:]]cp([[:space:]]|$)|[[:space:]]mv([[:space:]]|$))'; then
+      if safety_pattern_matches "$_r5_cmd" 'tasks/plan\.md' && safety_pattern_matches "$_r5_cmd" '(>>?|[[:space:]]tee([[:space:]]|$)|sed[[:space:]]+-i|[[:space:]]truncate([[:space:]]|$)|[[:space:]]dd([[:space:]]|$)|[[:space:]]cp([[:space:]]|$)|[[:space:]]mv([[:space:]]|$))'; then
         block "ADR-60 R5: a sub-agent/codex context must not write the main control-plane cursor tasks/plan.md via Bash — the control_plane main owns it (report your result via your final message + the JobRegistry, never plan.md)"
       fi
       ;;
@@ -198,8 +217,8 @@ if [ "$TOOL_NAME" = "Bash" ]; then
   [ -z "$CMD" ] && block "Empty Bash command payload"
 
   # 1. rm -rf on anything remotely dangerous
-  if echo "$CMD" | grep -qE 'rm[[:space:]]+(-[rRfF]+[[:space:]]+)+(/|~|\$HOME|\*|\.|\.\./)'; then
-    block "Destructive rm pattern: $CMD"
+  if safety_pattern_matches "$CMD" 'rm[[:space:]]+(-[rRfF]+[[:space:]]+)+(/|~|\$HOME|\*|\.|\.\./)'; then
+    block "Destructive rm pattern"
   fi
   # 2. Force push to protected branches.
   #    ADR-87: the flag may appear anywhere after `push`, so do not require it
@@ -222,33 +241,35 @@ if [ "$TOOL_NAME" = "Bash" ]; then
   #    scanned the whole line, and `git push origin dev --force && echo main`
   #    blocked on the `main` in the echo.
   _mir_push_args='git[[:space:]]+push([[:space:]]+[^[:space:];&|]+)*[[:space:]]+'
-  if echo "$CMD" | grep -qE "${_mir_push_args}((-f|--force|--force-with-lease)([[:space:]]|[;&|]|\$)|[+])" \
-    && echo "$CMD" | grep -qE "${_mir_push_args}[+]?([^[:space:];&|]*/)?(main|master|release)([[:space:]]|[;&|]|\$)"; then
-    block "Force push to protected branch: $CMD"
+  if safety_pattern_matches "$CMD" "${_mir_push_args}((-f|--force|--force-with-lease)([[:space:]]|[;&|]|\$)|[+])" \
+    && safety_pattern_matches "$CMD" "${_mir_push_args}[+]?([^[:space:];&|]*/)?(main|master|release)([[:space:]]|[;&|]|\$)"; then
+    block "Force push to protected branch"
   fi
   # 3. Hook bypass flags
-  if echo "$CMD" | grep -qE '(--no-verify|--no-gpg-sign|-c[[:space:]]+commit\.gpgsign=false)'; then
-    block "Hook/signing bypass flag: $CMD"
+  if safety_pattern_matches "$CMD" '(--no-verify|--no-gpg-sign|-c[[:space:]]+commit\.gpgsign=false)'; then
+    block "Hook/signing bypass flag"
   fi
   # 4. History rewrite on shared refs
-  if echo "$CMD" | grep -qE 'git[[:space:]]+(reset[[:space:]]+--hard[[:space:]]+origin|rebase[[:space:]]+.*main|filter-branch|filter-repo)'; then
-    block "History rewrite on shared refs: $CMD"
+  if safety_pattern_matches "$CMD" 'git[[:space:]]+(reset[[:space:]]+--hard[[:space:]]+origin|rebase[[:space:]]+.*main|filter-branch|filter-repo)'; then
+    block "History rewrite on shared refs"
   fi
   # 5. Piped remote install
-  if echo "$CMD" | grep -qE '(curl|wget)[^|]*\|[[:space:]]*(bash|sh|zsh|python)'; then
-    block "Piped remote install: $CMD"
+  if safety_pattern_matches "$CMD" '(curl|wget)[^|]*\|[[:space:]]*(bash|sh|zsh|python)'; then
+    block "Piped remote install"
   fi
   # 6. sudo in any form.
   #    ADR-87: the previous (^| )sudo( |$) required a space or line start before
   #    the word, so `echo x;sudo rm -rf /var` and `/usr/bin/sudo ...` both slipped.
   #    Accept any shell separator and any path prefix ending in a slash.
-  if echo "$CMD" | grep -qE '(^|[[:space:];&|(`]|/)sudo([[:space:]]|$)'; then
-    block "sudo requires user confirmation, not this hook: $CMD"
+  if safety_pattern_matches "$CMD" '(^|[[:space:];&|(`]|/)sudo([[:space:]]|$)'; then
+    block "sudo requires user confirmation, not this hook"
   fi
   # 7. Raw Codex subprocess routing is forbidden. Use a small, non-executing
   #    token check so quoted search/data strings do not look like commands.
   #    This is intentionally best-effort rather than a shell-language parser.
-  if [ -x "$_MIR_PYTHON_LAUNCHER" ] && printf '%s' "$CMD" | "$_MIR_PYTHON_LAUNCHER" -c '
+  [ -x "$_MIR_PYTHON_LAUNCHER" ] || block "Bash command screening unavailable"
+  _mir_command_screen_rc=0
+  printf '%s' "$CMD" | "$_MIR_PYTHON_LAUNCHER" -c '
 import os
 import re
 import shlex
@@ -264,7 +285,7 @@ try:
     lexer.commenters = "#"
     tokens = list(lexer)
 except (ValueError, TypeError):
-    raise SystemExit(1)
+    raise SystemExit(2)
 
 segments = []
 segment = []
@@ -294,17 +315,19 @@ for argv in segments:
         continue
     executable = os.path.basename(argv[index].rstrip("/"))
     if executable == "codex" and any(arg in {"exec", "e"} for arg in argv[index + 1 :]):
-        raise SystemExit(0)
-raise SystemExit(1)
-'; then
-    block "raw codex exec/e is banned — use the Codex plugin or mir_executor (app-server)"
-  fi
+        raise SystemExit(10)
+raise SystemExit(0)
+' 2>/dev/null || _mir_command_screen_rc=$?
+  case "$_mir_command_screen_rc" in
+    0) ;;
+    10) block "raw codex exec/e is banned — use the Codex plugin or mir_executor (app-server)" ;;
+    *) block "Bash command screening failed" ;;
+  esac
   if [ "${MIR_PRE_COMMIT_VERIFY:-0}" = "1" ] && \
-     echo "$CMD" | grep -qE '(^|[[:space:]])git[[:space:]]+commit([[:space:]]|$)'; then
-    if [ -f "$PRE_COMMIT_VERIFICATION_SCRIPT" ]; then
-      if ! /bin/bash "$PRE_COMMIT_VERIFICATION_SCRIPT"; then
-        block "pre-commit verification failed for code changes"
-      fi
+     safety_pattern_matches "$CMD" '(^|[[:space:]])git[[:space:]]+commit([[:space:]]|$)'; then
+    [ -f "$PRE_COMMIT_VERIFICATION_SCRIPT" ] || block "required pre-commit verification script missing"
+    if ! /bin/bash "$PRE_COMMIT_VERIFICATION_SCRIPT"; then
+      block "pre-commit verification failed for code changes"
     fi
   fi
   # ADR-87 removed the F9 sealed-family push guard. Its regex carried
@@ -332,7 +355,7 @@ screen_path_target() {
   local fp="$1"
   [ -n "$fp" ] || return 0
   local relative_fp
-  relative_fp="$(resolve_project_relative_path "$fp")"
+  relative_fp="$(resolve_project_relative_path "$fp" 2>/dev/null)" || block "project path resolution failed"
 
   # 1. Outside project root
   if [ -z "$relative_fp" ]; then
@@ -349,7 +372,7 @@ screen_path_target() {
       ;;
   esac
   # 3. Git internal state
-  if echo "$fp" | grep -qE '(^|/)\.git/(config|hooks/|refs/|objects/)'; then
+  if safety_pattern_matches "$fp" '(^|/)\.git/(config|hooks/|refs/|objects/)'; then
     block "Write to git internal state: $fp"
   fi
   # ADR-60 R5: a sub-agent / codex-delegated context must NOT write the MAIN control-plane
@@ -385,7 +408,7 @@ fp, cfg_path = sys.argv[1], sys.argv[2]
 try:
     mapping = json.load(open(cfg_path))
 except Exception:
-    sys.exit(0)
+    sys.exit(1)
 pwd = os.environ.get("PWD", "")
 candidates = [fp]
 if pwd and fp.startswith(pwd + "/"):
@@ -396,7 +419,7 @@ for prefix, brick in mapping.items():
             print(f"{brick}")
             sys.exit(0)
 BBPY
-)"
+)" || warn "bluebrick advisory inspection failed"
     [ -n "$_bb_match" ] && warn "[bluebrick] read docs/bluebricks/$_bb_match.md before changing $_bb_fp"
   fi
 fi
@@ -409,10 +432,14 @@ if [ "${MIR_FAMILY_CODE_PATHS_INITIALIZED:-no}" != "yes" ]; then
     MIR_FAMILY_CODE_PATHS=()
     _MIR_CODE_PATH_HELPER="$PROJECT_DIR/.claude/hooks/lib/code-path-config.py"
     if [ -f "$_MIR_CODE_PATH_HELPER" ]; then
+        _mir_code_paths="$("$_MIR_PYTHON_LAUNCHER" "$_MIR_CODE_PATH_HELPER" \
+                 --family "$MIR_FAMILY_SLUG" --check code-paths 2>/dev/null)" || {
+            warn "code-path configuration inspection failed; using advisory defaults"
+            _mir_code_paths=""
+        }
         while IFS= read -r line; do
             [ -n "$line" ] && MIR_FAMILY_CODE_PATHS+=("$line")
-        done < <("$_MIR_PYTHON_LAUNCHER" "$_MIR_CODE_PATH_HELPER" \
-                 --family "$MIR_FAMILY_SLUG" --check code-paths 2>/dev/null)
+        done <<< "$_mir_code_paths"
     fi
     [ "${#MIR_FAMILY_CODE_PATHS[@]}" -eq 0 ] && MIR_FAMILY_CODE_PATHS=( "tools/" "src/" )
 
@@ -420,7 +447,10 @@ if [ "${MIR_FAMILY_CODE_PATHS_INITIALIZED:-no}" != "yes" ]; then
     MIR_DOGFOODING_EXEMPT="no"
     if [ -f "$_MIR_CODE_PATH_HELPER" ]; then
         MIR_DOGFOODING_EXEMPT="$("$_MIR_PYTHON_LAUNCHER" "$_MIR_CODE_PATH_HELPER" \
-                                --family "$MIR_FAMILY_SLUG" --check dogfooding-exempt 2>/dev/null || echo "no")"
+                                --family "$MIR_FAMILY_SLUG" --check dogfooding-exempt 2>/dev/null)" || {
+            warn "dogfooding advisory inspection failed; using advisory defaults"
+            MIR_DOGFOODING_EXEMPT="no"
+        }
     fi
 
     MIR_CODEX_DEFAULT_ENABLED="true"
@@ -483,24 +513,17 @@ if (
 PY
 }
 
-if [ -n "${INPUT:-}" ]; then
-    _mir_payload="$INPUT"
-else
-    _mir_payload="$(cat)"
-    INPUT="$_mir_payload"
-fi
-
-_mir_tool_name="$(printf '%s' "$_mir_payload" | "$_MIR_PYTHON_LAUNCHER" -c 'import sys,json; print(json.loads(sys.stdin.read()).get("tool_name",""))' 2>/dev/null || echo "")"
+_mir_tool_name="$TOOL_NAME"
 if [ "$_mir_tool_name" = "Edit" ] || [ "$_mir_tool_name" = "Write" ]; then
-    _mir_file_path="$(printf '%s' "$_mir_payload" | "$_MIR_PYTHON_LAUNCHER" -c 'import sys,json; d=json.loads(sys.stdin.read()); print(d.get("tool_input",{}).get("file_path") or d.get("tool_input",{}).get("path") or "")' 2>/dev/null || echo "")"
+    _mir_file_path="$FP"
     if [ -n "$_mir_file_path" ]; then
-        _mir_file_safety_reason="$(_mir_patch_path_safety_reason "$_mir_file_path")"
+        _mir_file_safety_reason="$(_mir_patch_path_safety_reason "$_mir_file_path" 2>/dev/null)" || block "file path safety inspection failed"
         if [ -n "$_mir_file_safety_reason" ]; then
             echo "[PreToolUse BLOCK] $_mir_file_safety_reason: $_mir_file_path" >&2
             exit 2
         fi
         if [ "${#MIR_FAMILY_CODE_PATHS[@]}" -gt 0 ]; then
-            _mir_match="$(_mir_path_matches_code_path "$_mir_file_path")"
+            _mir_match="$(_mir_path_matches_code_path "$_mir_file_path" 2>/dev/null)" || warn "code-path advisory inspection failed"
             if [ "$_mir_match" = "yes" ] && [ -z "${MIR_CODEX_SESSION_ID:-}" ] && [ "${MIR_CODEX_MAIN:-0}" != "1" ]; then
                 echo "[mir ADVISORY] code-path edit on $_mir_file_path: consider the delegated lane when isolation, review independence, or parallelism justifies its cost; bounded direct-main edits are allowed." >&2
             fi
@@ -508,10 +531,13 @@ if [ "$_mir_tool_name" = "Edit" ] || [ "$_mir_tool_name" = "Write" ]; then
     fi
 fi
 if [ "$_mir_tool_name" = "apply_patch" ] || [ "$_mir_tool_name" = "ApplyPatch" ]; then
-    _mir_patch="$(printf '%s' "$_mir_payload" | "$_MIR_PYTHON_LAUNCHER" -c 'import sys,json; d=json.loads(sys.stdin.read()); i=d.get("tool_input",{}); print(i.get("command") or i.get("input") or i.get("patch") or i.get("content") or "")' 2>/dev/null || echo "")"
+    _mir_patch="$(extract_json '.tool_input.command // .tool_input.input // .tool_input.patch // .tool_input.content | select(type == "string" and length > 0)')" || block "Malformed apply_patch payload"
+    _mir_patch_paths="$(printf '%s\n' "$_mir_patch" | sed -nE \
+        -e 's/^\*\*\* (Add|Update|Delete) File: (.*)$/\2/p' \
+        -e 's/^\*\*\* Move to: (.*)$/\1/p')" || block "patch path extraction failed"
     while IFS= read -r _mir_patch_path; do
         [ -n "$_mir_patch_path" ] || continue
-        _mir_patch_safety_reason="$(_mir_patch_path_safety_reason "$_mir_patch_path")"
+        _mir_patch_safety_reason="$(_mir_patch_path_safety_reason "$_mir_patch_path" 2>/dev/null)" || block "patch path safety inspection failed"
         if [ -n "$_mir_patch_safety_reason" ]; then
             echo "[PreToolUse BLOCK] $_mir_patch_safety_reason: $_mir_patch_path" >&2
             exit 2
@@ -520,12 +546,11 @@ if [ "$_mir_tool_name" = "apply_patch" ] || [ "$_mir_tool_name" = "ApplyPatch" ]
         # and secret basenames, but not the deny-list. A patch could therefore add
         # secrets/prod.yaml, which protected-secrets-dir exists to stop.
         apply_deny_list "$_mir_patch_path" "path"
-        if [ "$(_mir_path_matches_code_path "$_mir_patch_path")" = "yes" ] && [ -z "${MIR_CODEX_SESSION_ID:-}" ] && [ "${MIR_CODEX_MAIN:-0}" != "1" ]; then
+        _mir_match="$(_mir_path_matches_code_path "$_mir_patch_path" 2>/dev/null)" || warn "code-path advisory inspection failed"
+        if [ "$_mir_match" = "yes" ] && [ -z "${MIR_CODEX_SESSION_ID:-}" ] && [ "${MIR_CODEX_MAIN:-0}" != "1" ]; then
             echo "[mir ADVISORY] code-path patch on $_mir_patch_path: consider the delegated lane when isolation, review independence, or parallelism justifies its cost; bounded direct-main edits are allowed." >&2
         fi
-    done < <(printf '%s\n' "$_mir_patch" | sed -nE \
-        -e 's/^\*\*\* (Add|Update|Delete) File: (.*)$/\2/p' \
-        -e 's/^\*\*\* Move to: (.*)$/\1/p')
+    done <<< "$_mir_patch_paths"
 fi
 # --- end Mir profile-driven enforcement (V2.2) ---
 
@@ -538,15 +563,12 @@ if [ "${MIR_ENABLED_PHASES_CHECK:-0}" = "1" ]; then
     _MIR_EP_PHASE="${MIR_ACTIVE_PHASE:-}"
     _MIR_EP_CONFIG="$PROJECT_DIR/config/repos/${_MIR_EP_FAMILY}.json"
     if [ -n "$_MIR_EP_PHASE" ] && [ -f "$_MIR_EP_CONFIG" ]; then
-        _MIR_EP_ALLOWED="$("$_MIR_PYTHON_LAUNCHER" -c "
+        _MIR_EP_ALLOWED="$("$_MIR_PYTHON_LAUNCHER" -c '
 import json, sys
-try:
-    d = json.load(open('$_MIR_EP_CONFIG'))
-    phases = [e['phase'] for e in d.get('enabled_phases', [])]
-    print('yes' if int('$_MIR_EP_PHASE') in phases else 'no')
-except Exception:
-    print('yes')
-" 2>/dev/null || echo "yes")"
+d = json.load(open(sys.argv[1]))
+phases = [e["phase"] for e in d.get("enabled_phases", [])]
+print("yes" if int(sys.argv[2]) in phases else "no")
+' "$_MIR_EP_CONFIG" "$_MIR_EP_PHASE" 2>/dev/null)" || warn "enabled-phases advisory inspection failed"
         if [ "$_MIR_EP_ALLOWED" = "no" ]; then
             warn "phase ${_MIR_EP_PHASE} is not in enabled_phases for family ${_MIR_EP_FAMILY} (advisory only)"
         fi
@@ -562,15 +584,14 @@ if [ "${MIR_TOOL_CONTRACT_REQUIRED:-0}" = "1" ]; then
     _MIR_TC_VALIDATOR="$PROJECT_DIR/tools/hooks/validate_tool_contract.py"
     if [ -f "$_MIR_TC_VALIDATOR" ]; then
         # Replay INPUT through stdin to the validator
-        _mir_tc_result="$(printf '%s' "${INPUT:-}" | "$_MIR_PYTHON_LAUNCHER" "$_MIR_TC_VALIDATOR" 2>&1)"
+        printf '%s' "${INPUT:-}" | "$_MIR_PYTHON_LAUNCHER" "$_MIR_TC_VALIDATOR" >/dev/null 2>&1
         _mir_tc_exit=$?
         if [ "$_mir_tc_exit" -ne 0 ]; then
-            echo "$_mir_tc_result" >&2
-            echo "[mir CONTRACT BLOCK] tool contract validation failed (exit $_mir_tc_exit). Set MIR_TOOL_CONTRACT_REQUIRED=0 to disable temporarily." >&2
+            echo "[mir CONTRACT BLOCK] tool contract validation failed (exit $_mir_tc_exit); inspect tools/hooks/validate_tool_contract.py" >&2
             exit 2
         fi
     else
-        echo "[mir TC ADVISORY] MIR_TOOL_CONTRACT_REQUIRED=1 but validator missing at $_MIR_TC_VALIDATOR — skipping" >&2
+        block "required tool contract validator missing"
     fi
 elif [ "${MIR_TOOL_CONTRACT_LOG:-0}" = "1" ]; then
     # Advisory log mode — record contract presence without enforcing
@@ -584,6 +605,8 @@ except Exception:
     if [ "$_mir_tc_has_contract" = "no" ]; then
         # tier: warn (MIR_TOOL_CONTRACT_LOG advisory — MIR_HOOK_TIER_TOOL_CONTRACT_LOG=warn)
         echo "[mir TC ADVISORY LOG] tool call missing _mir_contract (advisory only, not enforced)" >&2
+    elif [ "$_mir_tc_has_contract" != "yes" ]; then
+        warn "tool-contract advisory inspection failed"
     fi
 fi
 # --- end R20-T01 tool contract validation ---

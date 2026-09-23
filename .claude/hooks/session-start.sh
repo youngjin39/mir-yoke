@@ -30,11 +30,14 @@ if [ "$_MIR_BOOTSTRAP_READY" != yes ]; then
   return 0
 fi
 
-if [ -f "$PROJECT_DIR/scripts/build_session_upfront_context.py" ]; then
-  _UPFRONT=$("$_MIR_PYTHON_LAUNCHER" "$PROJECT_DIR/scripts/build_session_upfront_context.py" "$PROJECT_DIR" 2>/dev/null)
+if [ -f "$PROJECT_DIR/scripts/build_session_upfront_context.py" ] &&
+   _UPFRONT=$("$_MIR_PYTHON_LAUNCHER" "$PROJECT_DIR/scripts/build_session_upfront_context.py" "$PROJECT_DIR" 2>/dev/null); then
   echo "$_UPFRONT"
   echo ""
 else
+  if [ -f "$PROJECT_DIR/scripts/build_session_upfront_context.py" ]; then
+    echo "[SessionStart] WARNING: Upfront context unavailable; using safety fallback." >&2
+  fi
   echo "repository_profile: unavailable"
   echo "mandatory_safety: inspect repository-local instructions before mutation"
   echo "Context depth on demand: scripts/mir.sh context pull \"<query>\" (--history for archived/expired)"
@@ -48,15 +51,23 @@ fi
 if [ "$_MIR_BOOTSTRAP_READY" != yes ]; then
   _mir_session_body "$@"
 else
-  _mir_session_body "$@" | "$_MIR_PYTHON_LAUNCHER" -c '
+  if _MIR_SESSION_CONTEXT=$(_mir_session_body "$@" | "$_MIR_PYTHON_LAUNCHER" -c '
 import sys
 data = sys.stdin.buffer.read()
-limit = 10240
+limit = 10239
 if len(data) <= limit:
     sys.stdout.buffer.write(data)
 else:
     cut = data[: limit - 64].decode("utf-8", errors="ignore")
     sys.stdout.write(cut + "\n[mir] session-start context truncated at 10KB (F3 cap)\n")
-'
+'); then
+    printf '%s\n' "$_MIR_SESSION_CONTEXT"
+  else
+    echo "[SessionStart] WARNING: Context output cap unavailable; using safety fallback." >&2
+    echo "=== SESSION CONTEXT ==="
+    echo "repository_profile: unavailable"
+    echo "mandatory_safety: inspect repository-local instructions before mutation"
+    echo "Context depth on demand: scripts/mir.sh context pull \"<query>\" (--history for archived/expired)"
+  fi
 fi
 # mir:f3:stdout-cap:end

@@ -11,16 +11,20 @@ _MIR_PYTHON_LAUNCHER="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/_lib/r
 _MIR_HOOK_TIER="warn"
 
 # Read stdin JSON
-_INPUT=$(cat)
-_PROMPT=$(printf '%s' "$_INPUT" | "$_MIR_PYTHON_LAUNCHER" -c "
+if ! _INPUT=$(cat); then
+  echo "[UserPromptSubmit] WARNING: Prompt payload unavailable; context retrieval skipped." >&2
+  exit 0
+fi
+if ! _PROMPT=$(printf '%s' "$_INPUT" | "$_MIR_PYTHON_LAUNCHER" -c "
 import json, sys
-try:
-    d = json.load(sys.stdin)
-    p = d.get('prompt', '')
-    print(p, end='')
-except Exception:
-    pass
-" 2>/dev/null)
+data = json.load(sys.stdin)
+if not isinstance(data, dict) or not isinstance(data.get('prompt', ''), str):
+    raise ValueError('prompt payload must contain a string')
+print(data.get('prompt', ''), end='')
+" 2>/dev/null); then
+  echo "[UserPromptSubmit] WARNING: Invalid prompt payload or Python unavailable; context retrieval skipped." >&2
+  exit 0
+fi
 
 # Skip short prompts (< 40 chars)
 _LEN="${#_PROMPT}"
@@ -41,7 +45,7 @@ fi
 
 # Extract meaningful Unicode terms: lowercase, split on punctuation,
 # drop common stopwords, take first 6 remaining tokens.
-_TERMS=$(printf '%s' "$_PROMPT" | "$_MIR_PYTHON_LAUNCHER" -c "
+if ! _TERMS=$(printf '%s' "$_PROMPT" | "$_MIR_PYTHON_LAUNCHER" -c "
 import sys, re
 
 STOPWORDS = {
@@ -59,7 +63,10 @@ tokens = re.findall(r'[^\W_]+', raw, flags=re.UNICODE)
 kept = [t for t in tokens if t and len(t) > 2 and t not in STOPWORDS]
 terms = kept[:6]
 print(' '.join(terms), end='')
-" 2>/dev/null)
+" 2>/dev/null); then
+  echo "[UserPromptSubmit] WARNING: Prompt tokenization unavailable; context retrieval skipped." >&2
+  exit 0
+fi
 
 if [ -z "$_TERMS" ]; then
   exit 0
