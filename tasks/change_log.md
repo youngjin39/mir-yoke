@@ -1781,3 +1781,126 @@ payload/parity checks. Network-enabled installation acceptance remains open.
 Evidence logs are under `/tmp/mir-yoke-helper-followup/`: `generator-red.log`,
 `focused.log`, `governance-tests.log`, `full.log`, `release-recheck.log`,
 `payload-candidate-tests.log`, `sync-cwd.log`, `sync-candidate.log`, and `probes.json`.
+
+
+## Codex/Claude hook parity (2026-09-24)
+
+Authority: owner Discord 1552383320107515968, item 6, relayed by Mir Harness.
+The active intent authority is `tasks/plan.md`; scope is this repository only.
+Initial `git status --short` was empty.
+
+### Preserved predecessor cursor (verbatim)
+
+```markdown
+# Plan
+
+Owner Tasks B and D, 2026-09-24, in this repository only. Authority: owner Discord
+1552352486801547415 and 1552354384296411267, relayed by Mir Harness; this cursor
+records the current intent. Prior cursor and retired rules are preserved verbatim
+in `tasks/change_log.md`, "Owner Tasks B and D (2026-09-24)".
+
+- [x] B: inventory and consolidate the local path guard; preserve the 20-case baseline.
+- [x] D: verify 13 archived Mir Harness successor mappings and close the pending item.
+- [x] Verify fail-first regressions, hook/governance checks and generated parity.
+- [x] Record evidence, generated installation differences and re-attestation needs.
+
+Local implementation and verification are complete. Mir Harness owns clone
+remeasurement and re-attestation of the changed PreToolUse bootstrap evidence.
+No Codex generated-file installation is needed. Full evidence is in the log above.
+
+## Owner choice B follow-up (2026-09-24)
+
+This cursor records the owner-authorized cleanup of the orphan code-path helper.
+The completed B/D work above remains historical evidence; the ready bootstrap
+receipt and all declared bootstrap evidence must remain unchanged in this pass.
+
+- [x] Reproduce R8, remove the unused helper and helper-only test fixture.
+- [x] Regenerate payload and temporary Codex output; record pending installation.
+- [x] Run full tests, public-surface and hook/governance checks, and baseline probes.
+- [x] Record evidence and remaining external work in tasks/change_log.md.
+
+Follow-up implementation and permitted verification are complete; full-suite status
+is 1298 passed / 5 failed, with the snapshot failure passing its frozen rerun.
+Two network failures and two payload checks remain limited. The orchestrator must
+apply the generated deletion of `.codex/hooks/lib/code-path-config.py` and recheck
+working-tree payload/parity. No bootstrap evidence changed in this follow-up.
+See `tasks/change_log.md`, "Owner choice B orphan-helper follow-up (2026-09-24)".
+```
+
+### Policy finding and bounded decision
+
+`git log -S 'remain Claude-only'` traced the generator exclusion to `d3693b8`
+(2026-08-29). ADR-84 section 2.4 acknowledged Codex event support but deferred the
+cross-runtime efficiency decision. No incompatible field or blocking requirement
+was recorded. The current owner task resolves that deferral for this repository.
+ADR-84 preserves the original ADR, registration and README wording as dated
+superseded notes. The only new runtime registration is UserPromptSubmit; all
+pre-existing Codex registrations compare equal. StopFailure stays Claude-only.
+
+The hook is unchanged: at most six terms, one advisory hint, no retrieval execution,
+network or memory write; parser/interpreter/tokenizer failures return zero.
+Synthetic payload fields follow the official reference:
+https://learn.chatgpt.com/docs/hooks#userpromptsubmit and #common-input-fields.
+
+### SessionStart finding
+
+The actual Claude command and generated Codex command produce identical stdout,
+stderr and exit code zero with a synthetic startup payload. Both invoke the same
+session-start script and upfront-context builder. They inject identity and safety
+boundaries, not cursor or intent bodies; only an applicable intent-conflict advisory
+is included. This preserves existing task-blind startup policy, so no parity fix
+is needed. The compact-only resume registration is unchanged.
+
+No native MEMORY.md for this repo was found at the repository root,
+`.claude/MEMORY.md`, `.claude/memory/MEMORY.md`, or matching mir-yoke project-memory
+paths under the standard Claude home and installed per-agent Claude homes. No
+native index was available to compare/inject. This finding does not attest other
+machines or operator-specific memory-directory overrides. No memory DB was accessed.
+
+### Verification and fail-first evidence
+
+- All 5 new generated-command regressions failed before the fix with
+  KeyError: UserPromptSubmit. After the fix, the whole prompt-hook file passes
+  9/9. New cases cover normal, short, slash-command, XML-like and invalid-type
+  prompts, asserting exit zero and exact advisory/empty output.
+- Focused hooks, startup and Starter/Kit checks: 81 passed / 0 failed.
+- Candidate derivation, compact lifecycle, startup and Starter/Kit checks:
+  40 passed / 0 failed. Initial candidate run: 39 passed / 1 failed because the
+  disposable copy lacked Git metadata; initializing only that copy fixed it.
+- Full documented `uv run pytest -q`: 1303 passed / 5 failed in 200.02 seconds,
+  with source writes paused. Two payload equality failures were resolved by the
+  existing payload generator, then 13/13 related checks passed. One hook equality
+  failure awaits Codex installation. Two unchanged installation tests fail on DNS:
+  greenfield-slim cannot download jsonschema from files.pythonhosted.org; copied
+  CLI cannot fetch httpx from pypi.org. The full suite is not claimed green.
+- Candidate payload/classification: 13 passed / 0 failed.
+- Ruff, Bash syntax and diff whitespace checks pass. Context paths: 9 files /
+  69 references pass.
+- Documented Codex sync fails in cwd for exactly `.codex/README.md` and
+  `.codex/hooks.json`; the same verifier passes with the generated candidate.
+
+### Generated installation and boundaries
+
+Temporary output: `/tmp/mir-yoke-hook-parity/generated/`, produced with
+CODEX_DERIVATION_OUTPUT_ROOT by the repository generator. Install only
+`.codex/hooks.json` and `.codex/README.md`, then rerun the existing
+`uv run python tools/template_assets.py --write-adopter-payload` and
+`uv run python scripts/verify_codex_sync.py`. The cwd payload manifest reflects
+currently installed bytes and needs regeneration after Codex installation.
+No other Codex/AGENTS/.agents or sync-manifest installation is required.
+The payload generator also corrected a pre-existing stale hash for the unchanged
+`.mir/repo-profile.toml`; the profile itself was not edited.
+
+No declared bootstrap evidence changed: hook and repo-profile bytes are unchanged.
+This checkout has neither a bootstrap adoption manifest nor a local bootstrap
+receipt; the existing maintainer path is unchanged. No re-attestation, new guard,
+removed-hook recreation, credential access, memory edits, commits or delivery
+occurred. Starter, Project Agent Kit and the shared template renderer are unchanged.
+
+Evidence: `/tmp/mir-yoke-hook-parity/` contains fail-first.log, focused.log,
+full.log, candidate-tests.log, candidate-payload.log, session-start.json,
+unchanged-boundaries.json, generated/ and candidate/. Synthetic invocation proves
+payload compatibility, not live Codex dispatch/trust in a new session. Installation
+and network-enabled acceptance remain external. A shell-based documentation append
+was rejected by command screening; the explicit file patch succeeded without
+changing any guard.

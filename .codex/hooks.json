@@ -1,5 +1,5 @@
 {
-  "description": "GENERATED FILE: edit config/project-hooks.json and run scripts/generate_codex_derivatives.sh. Runtime-specific events omitted here: UserPromptSubmit and StopFailure remain Claude-only by policy.",
+  "description": "GENERATED FILE: edit config/project-hooks.json and run scripts/generate_codex_derivatives.sh. UserPromptSubmit shares advisory context with Claude. StopFailure remains Claude-only because Codex has no such event; see ADR-84's 2026-09-24 amendment.",
   "hooks": {
     "PreToolUse": [
       {
@@ -77,6 +77,18 @@
             "command": "project_root=\"$(git rev-parse --show-toplevel)\" && CLAUDE_PROJECT_DIR=\"$project_root\" bash \"$project_root/.claude/hooks/session-end.sh\"",
             "timeout": 3,
             "statusMessage": "Harness canonical closeout"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "project_root=\"$(git rev-parse --show-toplevel)\" && CLAUDE_PROJECT_DIR=\"$project_root\" bash \"$project_root/.claude/hooks/user-prompt-submit.sh\"",
+            "timeout": 30,
+            "statusMessage": "Harness context-pull directive"
           }
         ]
       }

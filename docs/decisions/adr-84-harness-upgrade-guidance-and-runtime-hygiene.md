@@ -115,12 +115,44 @@ key.
 
 The maintainer `SessionEnd` hook will be generated for Codex with a three-second runtime timeout
 override while Claude retains its existing timeout. A regression will prove the maintained closeout
-path completes within that Codex limit. `UserPromptSubmit` remains intentionally Claude-only in
-this change even though Codex supports the event; its per-prompt retrieval policy needs a separate
-cross-runtime efficiency decision. `StopFailure` also remains runtime-specific. Generated Codex
+path completes within that Codex limit. The 2026-09-24 maintainer amendment below shares
+advisory `UserPromptSubmit` context with Codex. `StopFailure` remains Claude-only because Codex
+has no such event. Generated Codex
 guidance will explain project trust and per-hook review; a hook is not an enforcement claim before
 the user trusts the project and the current hook hash. The generator script owns the canonical
 template for generated `.codex/README.md`.
+
+### 2026-09-24 maintainer prompt-parity amendment
+
+Authority and scope: `tasks/plan.md`, the owner-authorized maintainer parity task
+relayed by Mir Harness; Mir Yoke only. Commit `d3693b8` (2026-08-29) explicitly
+acknowledged Codex event support and deferred the cross-runtime efficiency decision;
+no Claude-only payload dependency or blocking requirement was recorded.
+
+The existing hook reads only the string `prompt`, skips short, slash-command and
+XML-like prompts, and emits one advisory retrieval hint with at most six terms.
+It performs no search, network call or memory write, and parser/interpreter/tokenizer
+failures return zero. Codex accepts `prompt` and adds plain stdout as developer
+context ([official hook reference](https://learn.chatgpt.com/docs/hooks#userpromptsubmit)).
+The owner-authorized parity decision therefore registers this unchanged hook in both
+runtimes. It adds context only, without changing guards or requiring retrieval.
+The Project Agent Kit template remains unchanged.
+
+Superseded policy, preserved verbatim on 2026-09-24:
+
+> `UserPromptSubmit` remains intentionally Claude-only in
+> this change even though Codex supports the event; its per-prompt retrieval policy needs a separate
+> cross-runtime efficiency decision. `StopFailure` also remains runtime-specific.
+
+Superseded registration note, preserved verbatim on 2026-09-24:
+
+> Runtime-specific events omitted here: UserPromptSubmit and StopFailure remain Claude-only by policy.
+
+Superseded generated README wording, preserved verbatim on 2026-09-24:
+
+> `UserPromptSubmit` and `StopFailure` remain Claude-only by
+> repository policy; the compact-only Project Agent Kit template intentionally ships only its compact
+> lifecycle.
 
 ### 2.5 Agents and skills
 

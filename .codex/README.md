@@ -24,10 +24,12 @@ Write-capable generated agents inherit that selection; mechanically read-only re
 ## Maintained events
 
 `PreToolUse`, `PermissionRequest`, `PostToolUse`, `SessionStart`, `PreCompact`,
-`PostCompact`, `Stop`, and `SessionEnd` are generated for Codex. Maintainer `SessionEnd`
-uses Codex's three-second limit. `UserPromptSubmit` and `StopFailure` remain Claude-only by
-repository policy; the compact-only Project Agent Kit template intentionally ships only its compact
-lifecycle.
+`PostCompact`, `Stop`, `SessionEnd`, and `UserPromptSubmit` are generated for Codex.
+Maintainer `SessionEnd` uses Codex's three-second limit. `UserPromptSubmit` emits the same
+advisory search-candidate hint as Claude; it never runs retrieval or blocks a prompt.
+`StopFailure` remains Claude-only because Codex has no such event. ADR-84's 2026-09-24
+amendment preserves the superseded exclusion policy. The compact-only Project Agent Kit
+template intentionally ships only its compact lifecycle.
 
 ## Wire format
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import shutil
 import subprocess
@@ -12,6 +13,56 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 HOOK = ROOT / ".claude/hooks/user-prompt-submit.sh"
+
+
+@pytest.mark.parametrize(
+    ("prompt", "expected", "warning"),
+    [
+        (
+            "Please inspect compact lifecycle advisory warning behavior today",
+            '[context-pull] Candidate retrieval: scripts/mir.sh context pull '
+            '"please inspect compact lifecycle advisory warning"\n',
+            "",
+        ),
+        ("short prompt", "", ""),
+        ("  /review " + "context " * 8, "", ""),
+        ("  <task-notification>" + "context " * 8, "", ""),
+        (None, "", "Invalid prompt payload"),
+    ],
+)
+def test_should_inject_advisory_without_blocking_when_codex_submits_prompt(
+    tmp_path: Path, prompt: str | None, expected: str, warning: str
+) -> None:
+    rendered = subprocess.run(
+        [
+            sys.executable,
+            str(ROOT / "templates/common-harness/scripts/render-hook-configs.py"),
+            "--definition", str(ROOT / "config/project-hooks.json"),
+            "--output-root", str(tmp_path),
+        ],
+        capture_output=True, text=True, check=False,
+    )
+    assert rendered.returncode == 0, rendered.stderr
+    codex = json.loads((tmp_path / ".codex/hooks.json").read_text())
+    assert "StopFailure" not in codex["hooks"]
+    hook = codex["hooks"]["UserPromptSubmit"][0]["hooks"][0]
+    payload = {
+        "session_id": "parity-test", "transcript_path": None,
+        "cwd": str(ROOT), "hook_event_name": "UserPromptSubmit",
+        "model": "test-model", "permission_mode": "dontAsk",
+        "turn_id": "parity-turn", "prompt": prompt,
+    }
+    completed = subprocess.run(
+        ["bash", "-c", hook["command"]], cwd=ROOT,
+        input=json.dumps(payload), capture_output=True, text=True,
+        check=False, timeout=hook["timeout"],
+    )
+    assert completed.returncode == 0, completed.stderr
+    assert completed.stdout == expected
+    if warning:
+        assert warning in completed.stderr
+    else:
+        assert completed.stderr == ""
 
 
 @pytest.mark.parametrize(
