@@ -119,3 +119,8 @@ no migration or re-ingestion is needed.
 
 Version 0.10.6 adds the optional `mir-core:repo-maintenance` skill, a twenty-item periodic maintenance
 checklist for agent-operated repositories. It is read-only unless a fix is requested; nothing else changes.
+
+Version 0.10.7 strengthens that checklist to twenty-one items: documented database/memory/graph
+inspection and repair, explicit Claude/Codex harness consistency, and observable parity when either
+CLI is Main. Parity repairs cannot introduce restrictions or recreate owner-removed hooks. Nothing else
+changes for adopters.

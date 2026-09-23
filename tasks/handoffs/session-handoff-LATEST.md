@@ -1,13 +1,15 @@
-# Session Handoff — Repository maintenance re-verification
+# Session Handoff — Twenty-one-item maintenance skill
 
 Resume pointer: `tasks/plan.md` is the only cursor; `tasks/intent.json` records authority.
-Evidence and preserved predecessor text: `tasks/change_log.md`, 2026-09-24.
-Guards now reject checker errors, diagnostics omit command bodies, advisory hooks report failures,
-and malformed external JSON completes with protocol errors instead of leaving pending calls.
-Final full suite: 1300 passed; two unchanged installation tests failed on PyPI DNS.
-Network access is needed for installation acceptance and current dependency intelligence.
-No Codex installation/removal, receipt rebind, commit or delivery is pending.
-The historical ADR mapping decision remains in the prior evidence entry, item 20.
+Evidence and preserved predecessor text: `tasks/change_log.md`,
+"Twenty-one-item maintenance skill implementation (2026-09-24)".
+Items 6 and 7 are strengthened; item 21 adds concrete parity probes for either Main CLI.
+Full suite: 1315 passed / 3 failed. Final focused tests: 33 passed / 0 failed.
+Mir Harness owns ADR-80 binding (mir-core currently differs from the unchanged lock).
+Two installation checks also need working PyPI DNS. Ruff and generated parity pass.
+No Codex installation, bootstrap evidence change or re-attestation is needed.
+No new restriction, hook recreation, memory write, version bump or Git publication occurred.
+The generated snapshot below belongs to the preceding hook run; inspect current Git status.
 
 <!-- mir:runtime-snapshot:begin -->
 ## Runtime Snapshot (Generated)

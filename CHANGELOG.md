@@ -145,6 +145,16 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
   maintainer configuration already carried it; the generator, which is what every new project
   actually receives, did not.
 
+## [0.10.7] — 2026-09-24 — Twenty-one-item maintenance checklist
+
+### Changed
+
+- Strengthened `mir-core:repo-maintenance` to twenty-one items with documented database/memory/graph
+  repairs, explicit Claude/Codex harness consistency, and checkable Main-runtime parity probes.
+  Parity repairs remain non-blocking and cannot recreate owner-removed hooks.
+- The maintainer's advisory `UserPromptSubmit` hint now registers for Codex as well as Claude
+  (ADR-84 amendment); `StopFailure` stays Claude-only because Codex has no such event.
+
 ## [0.10.6] — 2026-09-23 — Repository maintenance checklist skill
 
 ### Added

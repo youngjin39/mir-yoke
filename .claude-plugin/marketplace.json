@@ -10,7 +10,7 @@
       "name": "mir-core",
       "source": "./plugins/mir-core",
       "description": "Architecture, governance, memory, and verification skills.",
-      "version": "0.10.6",
+      "version": "0.10.7",
       "author": {"name": "Harness Contributors"},
       "category": "Development"
     },
@@ -18,7 +18,7 @@
       "name": "mir-code",
       "source": "./plugins/mir-code",
       "description": "Coding, testing, and review skills.",
-      "version": "0.10.6",
+      "version": "0.10.7",
       "author": {"name": "Harness Contributors"},
       "category": "Development"
     },
@@ -26,7 +26,7 @@
       "name": "mir-content",
       "source": "./plugins/mir-content",
       "description": "Knowledge and interface design skills.",
-      "version": "0.10.6",
+      "version": "0.10.7",
       "author": {"name": "Harness Contributors"},
       "category": "Productivity"
     },
@@ -34,7 +34,7 @@
       "name": "mir-lifecycle-hooks",
       "source": "./plugins/mir-lifecycle-hooks",
       "description": "Read-only session continuity hook and guidance.",
-      "version": "0.10.6",
+      "version": "0.10.7",
       "author": {"name": "Harness Contributors"},
       "category": "Development"
     }

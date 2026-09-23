@@ -69,6 +69,11 @@
       "goal": "Repair Mir Yoke central capability status and multi-consumer update architecture: make global provider health readable without a consumer-local configuration or enrollment, separate consumer-local integration state, and permit atomic provider version migration across registered consumers while preserving non-requesting consumer files and locks as pending local integration. Preserve capability trust, digest, identity, secret, path, runtime, and activation checks; update ADR-89, current documentation, tests, and generated adopter payload without user-runtime or consumer writes.",
       "updated": "2026-09-06",
       "status": "superseded"
+    },
+    {
+      "goal": "Align Mir Yoke as the Harness-managed central capability supply system for independently owned repositories: make the primary purpose, management authority, supported adoption channels, consumer ownership boundaries, ADR precedence, maintainer Profile, operating documentation, contract tests, generated derivatives, and adopter payload consistent without changing interfaces, profile enums, runtime installations, consumer repositories, protected memory, credentials, or external services.",
+      "updated": "2026-09-06",
+      "status": "superseded"
     }
   ]
 }

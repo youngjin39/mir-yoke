@@ -1904,3 +1904,205 @@ payload compatibility, not live Codex dispatch/trust in a new session. Installat
 and network-enabled acceptance remain external. A shell-based documentation append
 was rejected by command screening; the explicit file patch succeeded without
 changing any guard.
+
+
+## Twenty-one-item maintenance skill implementation (2026-09-24)
+
+Authority: owner Discord 1552387906927333458, relayed by Mir Harness.
+The active design and scope authority is `tasks/plan.md`. ADR-80 binding is deferred.
+The owner explicitly authorizes updating this plugin source, superseding the prior
+maintenance task's released-plugin byte freeze for this implementation only.
+
+### Implementation and verification
+
+- Items 1-5 and 8-20 retain their original text. Item 6 adds documented database,
+  memory and relation-graph repair and stable snapshots that include WAL state.
+  Item 7 names Claude/Codex harness consistency. Item 21 covers both Main runtimes:
+  root/nested instructions and design references, hook events/commands and documented
+  runtime-only exemptions, SessionStart cursor/intent/native-memory index, skill and
+  workflow loading, MCP bindings, current Codex hook trust, and observed evidence.
+- Bounds prohibit new restrictions, owner-removed hook recreation and blocking
+  previously allowed behavior. No runtime hook or safety guard was changed.
+- Traced registration through `git log -S repo-maintenance` and e3cb1a8 (v0.10.6).
+  Capability sources, agent-management catalog, verifier inventory, dual-runtime
+  manifests and sixteen-skill package count already match; no registration edit needed.
+  Current descriptions say twenty-one; historical v0.10.6 release text stays historical.
+- Fail-first: 11 failed / 1 passed before the skill edit. Every new case failed:
+  memory repair, harness bounds and eight parameterized Main-runtime probes, plus
+  the updated item-count contract. The unchanged safety-bound contract passed.
+- Full documented `uv run pytest`: 1315 passed / 3 failed in 206.87 seconds.
+  The lock test fails because only mir-core differs from the unchanged capability
+  lock; the other three plugin trees still match. ADR-80 binding is explicitly deferred.
+  The greenfield-slim installation cannot download rpds-py from files.pythonhosted.org;
+  the copied CLI installation cannot fetch httpx from pypi.org. Both report DNS errors.
+  Full-suite acceptance remains blocked by binding and network-enabled installation.
+- Final focused skill/package/common contracts: 33 passed / 0 failed after clarifying
+  the WAL snapshot wording and fixing one Ruff line-length error in the test.
+  Ruff, Codex sync, agent-management schema/catalog checks, context paths (9 files,
+  69 references), and diff whitespace checks pass. No skill-size budget was found in
+  repository checks; the skill is 63 lines / 6181 bytes (previously 52 / 4670), English only.
+  CLAUDE.md stays 3448 bytes and AGENTS.md stays 3537 bytes, both byte-identical.
+- Temporary generation produced no differing files: no .codex, AGENTS, .agents or
+  sync-manifest installation is needed. The adopter payload is regenerated through
+  `tools/template_assets.py --write-adopter-payload`; it is not a runtime lock rebind.
+- Declared bootstrap evidence, profile, versions, locks and runtime hooks are unchanged.
+  No re-attestation, credentials, protected memory writes, consumer edits or Git
+  publication occurred. The worktree was clean before this task.
+- Evidence lives at `/tmp/mir-yoke-maintenance-21/`: fail-first.log, focused.log,
+  focused-final.log, full.log, generation.log, codex-sync.log and generated-diff.json.
+  UV_CACHE_DIR points to its writable uv-cache subdirectory because the inherited cache
+  was not writable. The documented intent launcher found no bootstrap receipt; the
+  same intent_store.py document operation ran through uv without re-attestation.
+- Statuses here concern implementing skill guidance, not certifying live CLI parity.
+  Fresh-session hook trust and consumer installation are outside this source-only step.
+  The prior generated checklist projection and handoff snapshot were not hand-edited.
+
+### Superseded handoff (verbatim)
+
+```text
+# Session Handoff — Repository maintenance re-verification
+
+Resume pointer: `tasks/plan.md` is the only cursor; `tasks/intent.json` records authority.
+Evidence and preserved predecessor text: `tasks/change_log.md`, 2026-09-24.
+Guards now reject checker errors, diagnostics omit command bodies, advisory hooks report failures,
+and malformed external JSON completes with protocol errors instead of leaving pending calls.
+Final full suite: 1300 passed; two unchanged installation tests failed on PyPI DNS.
+Network access is needed for installation acceptance and current dependency intelligence.
+No Codex installation/removal, receipt rebind, commit or delivery is pending.
+The historical ADR mapping decision remains in the prior evidence entry, item 20.
+
+<!-- mir:runtime-snapshot:begin -->
+## Runtime Snapshot (Generated)
+
+### Active Plan Items
+- No open plan items.
+
+### Working Tree
+- Working tree dirty (18 paths; inspect git status --short).
+<!-- mir:runtime-snapshot:end -->
+```
+
+### Superseded operations description (verbatim)
+
+```text
+Mir Yoke's portable set is intentionally limited to four plugins and sixteen skills. The optional
+`mir-core:selective-relations` skill supports bounded retrieval through declared relationships. The
+`design`, `governance`, `efficiency`, `bluebricks`, `testing`, `code-review`, and
+`verify` skills already compose this upgrade workflow; an umbrella duplicate would add discovery
+cost without a new capability. `mir-core:repo-maintenance` is the owner-defined twenty-item
+periodic checklist; it sequences those skills for a maintenance pass and does not restate their procedures.
+```
+
+### Superseded input (verbatim)
+
+#### tasks/plan.md
+
+```
+# Plan
+
+Owner-authorized Codex/Claude hook parity, 2026-09-24, in this repository only.
+Authority: owner Discord 1552383320107515968, item 6, relayed by Mir Harness.
+This cursor is the active intent authority. Predecessor cursor is preserved verbatim
+in `tasks/change_log.md`, "Codex/Claude hook parity (2026-09-24)".
+
+- [x] Trace the Claude-only policy and verify synthetic Codex prompt compatibility.
+- [x] Add only advisory parity through canonical sources; preserve superseded wording.
+- [x] Compare SessionStart context and native memory index availability.
+- [x] Prove regressions fail first; run documented verification and temp generation.
+- [x] Record generated installation list, bootstrap evidence and residual risks.
+
+No commits, delivery, memory writes, consumer-template changes, new restrictions,
+or removed-hook recreation are authorized. Generated Codex output stays temporary.
+
+Local source work and permitted verification are complete. Mir Harness must install
+`.codex/hooks.json` and `.codex/README.md` from the temporary generator output, then
+regenerate `config/adopter-payload.json` and rerun parity. Two installation tests
+remain blocked by PyPI DNS. Full evidence is in the log entry named above.
+No declared bootstrap evidence changed; no re-attestation was performed.
+```
+
+#### tasks/intent.json
+
+```
+{
+  "goal": "Re-verify all twenty repo-maintenance checklist items against actual repository state and execution evidence, then minimally repair confirmed defects within this repository only.",
+  "goal_type": "maintenance",
+  "scope": "Owner-authorized maintenance on 2026-09-23. Preserve accepted decisions, user work, safety guards, released plugin and capability-lock bytes, generated-source boundaries and memory databases. No commits, delivery, dependency upgrades, credentials or consumer writes. Previous intent is preserved verbatim in tasks/change_log.md under Twenty-item repository maintenance re-verification.",
+  "priority": "normal",
+  "updated": "2026-09-23",
+  "history": [
+    {
+      "goal": "Align Mir Yoke as the Harness-managed central capability supply system for independently owned repositories: make the primary purpose, management authority, supported adoption channels, consumer ownership boundaries, ADR precedence, maintainer Profile, operating documentation, contract tests, generated derivatives, and adopter payload consistent without changing interfaces, profile enums, runtime installations, consumer repositories, protected memory, credentials, or external services.",
+      "updated": "2026-09-06",
+      "status": "superseded"
+    },
+    {
+      "goal": "Clean up Mir Yoke project documents under owner Discord message 1552197111624372339 (2026-09-23): align the current documentation entry points and decision index with the supported surfaces, keep one active plan, preserve historical text and existing work, and verify document references and tests without changing behavior or delivery state.",
+      "updated": "2026-09-23",
+      "status": "complete"
+    },
+    {
+      "goal": "Re-verify and minimally fix all 15 owner fleet audit items in this repository only under the owner-authorized second pass of 2026-09-23. Preserve accepted decisions, safety gates, historical text and user work; validate actual commands and generated parity; report sandbox-only installation gaps without committing or delivering changes.",
+      "updated": "2026-09-23",
+      "status": "complete"
+    }
+  ]
+}
+```
+
+#### plugins/mir-core/skills/repo-maintenance/SKILL.md
+
+```
+---
+name: repo-maintenance
+description: "Periodic maintenance checkup of an agent-operated repository across twenty fixed items: consistency, operating base, documents, archiving, context, memory, harness constraints, skills and agents, instruction docs, rules and lessons, architecture, delegation and routing, continuity, work-context retrieval, token efficiency, test health, code/security/dependencies, integrity evidence, runtime behavior, and open decisions.\n\nTrigger: repository maintenance, periodic check, repo checkup, fleet maintenance, clean up and improve the repository"
+---
+
+# Repository Maintenance
+
+## Use When
+- The owner asks for a full maintenance pass over one repository or every managed repository.
+- A previous pass needs re-verification against actual files and command output.
+
+## Bounds
+- Read, review and status requests stay read-only. A fix request authorizes in-scope edits and relevant checks only.
+- Commit, push, tag, release, protected paths, secrets and memory-store writes follow the repository's
+  own authority rules. Use only documented commands for memory and generated files.
+- Move stale or duplicate material verbatim to the repository's log or archive and leave a pointer.
+  Never delete a rule, decision or lesson.
+- Relaxing a constraint means removing duplication, dead checks or gates for removed features. It never weakens a safety guard.
+- A change that contradicts an accepted decision record or recorded owner intent is listed for the owner, not applied.
+- Use a concept (fleet registry, bootstrap receipt, memory store, provider lock) only when the repository declares it.
+
+## Checklist
+Apply each item proportionately. Mark it done, no change needed (with evidence), or skipped (with a reason).
+1. Consistency: profile and declared paths and commands match reality; docs match code; references resolve; generator parity holds.
+2. Operating base: scripts, configs and hooks for removed features; dead entries.
+3. Documents: plans, checklists and decision records state current facts. History is not rewritten.
+4. Archiving: stale explanations, detailed history and duplicates move to the log or archive.
+5. Context: always-loaded files stay minimal and procedures load on demand. Keep a single active cursor.
+6. Memory: memory-store integrity and size, stale or missing-source records, and relation-graph health, checked through the documented commands.
+7. Harness: excessive, duplicated or dead constraints are relaxed; harness consistency is improved.
+8. Skills and agents: unused or duplicate capabilities, stale model or tool references, broken frontmatter.
+9. Instruction docs: CLAUDE.md and AGENTS.md stay within size limits and carry the same rules for both runtimes.
+10. Rules and lessons: each rule has one home, and lessons live in the declared location.
+11. Architecture: the overview matches the actual layout and lists no removed components.
+12. Delegation: model routing, delegation lanes and sub-agent limits follow the governing policy.
+13. Continuity: one cursor, one resume pointer, one status projection and one evidence log.
+14. Work context: one retrieval smoke query returns relevant anchors when retrieval is supported.
+15. Token efficiency: session-start and hook output size, always-loaded file sizes, oversized routine reads.
+16. Test health: the whole suite runs by default, stays hermetic, is not flaky under load, and new regression tests fail without their fix.
+17. Code, security, dependencies: real defects, secret exposure, vulnerable or outdated dependencies, licenses.
+18. Integrity evidence: locks, ledgers, receipts, audit chains and profile baselines are rebound through their documented commands after edits. Never fabricate provenance.
+19. Runtime behavior: hooks fire, plugins and skills load, tool servers connect, and CLI versions match. Static documentation is not proof.
+20. Open decisions: every pending owner decision is listed once, with both sides and the item it blocks.
+
+## Workflow
+1. Record the request in the repository's active cursor, then read its contract and profile.
+2. Start from a clean or snapshotted worktree so changes can be attributed.
+3. Run the checklist. When available, use `mir-core:governance`, `mir-core:verify`, `mir-code:testing` and
+   `mir-code:code-review` for item procedures. For many repositories, handle each one under its own contract.
+4. Verify with the repository's documented tests and gates. Re-run them yourself before accepting delegated work.
+5. Report per item, then list changed files, before/after instruction-doc sizes, checks with pass/fail counts,
+   integrity evidence to rebind, owner decisions and residual risks.
+```

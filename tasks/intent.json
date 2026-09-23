@@ -1,15 +1,10 @@
 {
-  "goal": "Re-verify all twenty repo-maintenance checklist items against actual repository state and execution evidence, then minimally repair confirmed defects within this repository only.",
+  "goal": "Strengthen mir-core:repo-maintenance to the owner-authorized twenty-one items in this repository only; prove regressions fail first and run full verification, leaving ADR-80 release binding to Mir Harness.",
   "goal_type": "maintenance",
-  "scope": "Owner-authorized maintenance on 2026-09-23. Preserve accepted decisions, user work, safety guards, released plugin and capability-lock bytes, generated-source boundaries and memory databases. No commits, delivery, dependency upgrades, credentials or consumer writes. Previous intent is preserved verbatim in tasks/change_log.md under Twenty-item repository maintenance re-verification.",
+  "scope": "Owner Discord 1552387906927333458 (2026-09-24), relayed by Mir Harness. Implement the twenty-one-item skill in cwd only; preserve user work, guards, memory, credentials, release versions and locks. No commits or delivery. Generate Codex output only in temporary storage. Prior scope and skill are preserved verbatim in tasks/change_log.md under Twenty-one-item maintenance skill implementation (2026-09-24). tasks/plan.md is the active cursor and design authority.",
   "priority": "normal",
-  "updated": "2026-09-23",
+  "updated": "2026-09-24",
   "history": [
-    {
-      "goal": "Align Mir Yoke as the Harness-managed central capability supply system for independently owned repositories: make the primary purpose, management authority, supported adoption channels, consumer ownership boundaries, ADR precedence, maintainer Profile, operating documentation, contract tests, generated derivatives, and adopter payload consistent without changing interfaces, profile enums, runtime installations, consumer repositories, protected memory, credentials, or external services.",
-      "updated": "2026-09-06",
-      "status": "superseded"
-    },
     {
       "goal": "Clean up Mir Yoke project documents under owner Discord message 1552197111624372339 (2026-09-23): align the current documentation entry points and decision index with the supported surfaces, keep one active plan, preserve historical text and existing work, and verify document references and tests without changing behavior or delivery state.",
       "updated": "2026-09-23",
@@ -19,6 +14,11 @@
       "goal": "Re-verify and minimally fix all 15 owner fleet audit items in this repository only under the owner-authorized second pass of 2026-09-23. Preserve accepted decisions, safety gates, historical text and user work; validate actual commands and generated parity; report sandbox-only installation gaps without committing or delivering changes.",
       "updated": "2026-09-23",
       "status": "complete"
+    },
+    {
+      "goal": "Re-verify all twenty repo-maintenance checklist items against actual repository state and execution evidence, then minimally repair confirmed defects within this repository only.",
+      "updated": "2026-09-23",
+      "status": "superseded"
     }
   ]
 }

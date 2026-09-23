@@ -158,8 +158,10 @@ Mir Yoke's portable set is intentionally limited to four plugins and sixteen ski
 `mir-core:selective-relations` skill supports bounded retrieval through declared relationships. The
 `design`, `governance`, `efficiency`, `bluebricks`, `testing`, `code-review`, and
 `verify` skills already compose this upgrade workflow; an umbrella duplicate would add discovery
-cost without a new capability. `mir-core:repo-maintenance` is the owner-defined twenty-item
-periodic checklist; it sequences those skills for a maintenance pass and does not restate their procedures.
+cost without a new capability. `mir-core:repo-maintenance` is the owner-defined twenty-one-item
+periodic checklist, including documented database/memory/graph repair and observed parity when either
+Claude CLI or Codex CLI is Main; it sequences those skills without restating their procedures.
+The prior description is preserved in `tasks/change_log.md` under the 2026-09-24 skill implementation.
 
 #### Hooks
 
