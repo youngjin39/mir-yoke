@@ -10,8 +10,8 @@ overlay_archetype = "public_template"
 status = "active"
 purpose = "Harness-managed central capability supply system for independently owned repositories: Starter, Project Agent Kit recipe, optional CLI, plugins, and versioned Claude/Codex delivery evidence."
 technology_stack = ["python", "uv", "toml", "json", "powershell", "bash"]
-profile_base_commit = "c19f51077065bd3e71a39f971f4c6c76d89dc39e"
-profile_verified_at = "2026-08-30T11:38:04+09:00"
+profile_base_commit = "e3207d54189467176a67cba95c141150b9e6e9e8"
+profile_verified_at = "2026-09-24T02:46:18+09:00"
 
 [ownership]
 main_role = "control_plane"
