@@ -12,5 +12,5 @@ next authorized release can bind them in the capability lock. No push, tag, rele
 - No open plan items.
 
 ### Working Tree
-- Working tree dirty (16 paths; inspect git status --short).
+- Working tree clean.
 <!-- mir:runtime-snapshot:end -->
