@@ -51,22 +51,20 @@ while IFS= read -r RAW_PATH; do
   DISPLAY_PATH="${FILE_PATH#"$PROJECT_DIR"/}"
   EXT="${FILE_PATH##*.}"
 
-  # 1. Debug statement check (capture output, don't leak to stdout)
+  # 1. Debug statement check. Report line numbers only: matched lines may hold secrets.
   case "$EXT" in
     js|ts|jsx|tsx)
-      DEBUG_HITS=$(grep -n "console\.log" "$FILE_PATH" 2>/dev/null | head -3)
+      DEBUG_HITS=$(grep -n "console\.log" "$FILE_PATH" 2>/dev/null | cut -d: -f1 | head -3 | paste -sd, -)
       if [ -n "$DEBUG_HITS" ]; then
         WARNINGS="${WARNINGS:+$WARNINGS
-}[WARNING] console.log detected in $DISPLAY_PATH
-$DEBUG_HITS"
+}[WARNING] console.log detected in $DISPLAY_PATH at line(s) $DEBUG_HITS"
       fi
       ;;
     py)
-      DEBUG_HITS=$(grep -n "^\s*print(" "$FILE_PATH" 2>/dev/null | grep -v "# keep" | head -3)
+      DEBUG_HITS=$(grep -n "^\s*print(" "$FILE_PATH" 2>/dev/null | grep -v "# keep" | cut -d: -f1 | head -3 | paste -sd, -)
       if [ -n "$DEBUG_HITS" ]; then
         WARNINGS="${WARNINGS:+$WARNINGS
-}[WARNING] print() detected in $DISPLAY_PATH
-$DEBUG_HITS"
+}[WARNING] print() detected in $DISPLAY_PATH at line(s) $DEBUG_HITS"
       fi
       ;;
   esac

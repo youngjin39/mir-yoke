@@ -221,7 +221,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": ".claude/hooks/post-edit-check.sh",
-      "sha256": "73bdbc2790f8fa092e2019651c1b8e1a7ae5b721c5e1559d71eea5f8dd6ad623"
+      "sha256": "7406bb665359c9f72abf0e966d7c79f06e7a7562e1a1abf7df4070c0a082a101"
     },
     {
       "classification": "reference",
@@ -4410,6 +4410,12 @@
       "disposition": "remove",
       "path": "tests/test_plugin_skill_packages.py",
       "sha256": "87f430e1d65c856edcedb6215960448834144589d8c0c3950f1482c18febfe69"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "tests/test_post_edit_check_redaction.py",
+      "sha256": "ab9c52bed6bafb29d46836f564c0a2da1a467ecbf865e88db0538a43763cdcb9"
     },
     {
       "classification": "template-maintainer-tool",
