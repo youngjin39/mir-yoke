@@ -1,0 +1,227 @@
+{
+  "claude": {
+    "agents": {
+      "codex-final-reviewer": {
+        "effort": null,
+        "model": "sonnet"
+      },
+      "cwe-auditor": {
+        "effort": null,
+        "model": "sonnet"
+      },
+      "dep-auditor": {
+        "effort": null,
+        "model": "sonnet"
+      },
+      "executor-agent": {
+        "effort": null,
+        "model": "sonnet"
+      },
+      "fleet-doc-steward": {
+        "effort": null,
+        "model": "sonnet"
+      },
+      "main-orchestrator": {
+        "effort": null,
+        "model": "opus"
+      },
+      "ontology-validator": {
+        "effort": null,
+        "model": "sonnet"
+      },
+      "pipeline-validator": {
+        "effort": null,
+        "model": "sonnet"
+      },
+      "quality-agent": {
+        "effort": null,
+        "model": "sonnet"
+      },
+      "runtime-contract-reviewer": {
+        "effort": null,
+        "model": "sonnet"
+      },
+      "template-sync-validator": {
+        "effort": null,
+        "model": "sonnet"
+      },
+      "ui-reviewer": {
+        "effort": null,
+        "model": "sonnet"
+      }
+    },
+    "tiers": {
+      "frontier": "opus",
+      "standard": "sonnet"
+    }
+  },
+  "main": {
+    "effort": "medium",
+    "model": "gpt-6.1-sol"
+  },
+  "policy": {
+    "_generated_": "Generated from Mir Harness config/model-routing/central.toml; do not edit",
+    "codex_main": {
+      "model": "gpt-6.1-sol",
+      "reasoning_effort": "medium",
+      "tier": "main"
+    },
+    "custom_agent_pins": {
+      "allowed": []
+    },
+    "delegation": {
+      "_comment_": "Provider-neutral Main/Sub contract. `mode` is the only switch a reader changes; no code hardcodes a sub-agent backend. Consumed by the Main agent of either CLI and projected into the global instruction files.",
+      "acceptance_evidence": {
+        "rejected": [
+          "self-report narrative",
+          "status JSON unbacked by artifacts"
+        ],
+        "required": [
+          "filesystem state",
+          "git diff",
+          "test command output"
+        ],
+        "rule": "The Main reads or re-runs the evidence itself. A sub agent's own claim of success is never acceptance."
+      },
+      "default_backend": "codex",
+      "main_agent": {
+        "avoids": [
+          "reading whole files when a delegated summary plus verification result suffices",
+          "running the execution loop itself when a sub agent can"
+        ],
+        "owns": [
+          "user intent",
+          "design",
+          "orchestration",
+          "context budget",
+          "delegation",
+          "result adjudication"
+        ]
+      },
+      "mode": "user_command_priority",
+      "modes": {
+        "force_codex": "Every delegated execution step goes to Codex. A different backend requires an explicit user override recorded in the session.",
+        "per_project": "The project declaration decides. A project without one falls back to default_backend.",
+        "unrestricted": "Any available sub-agent backend may be used; the Main picks per task.",
+        "user_command_priority": "An explicit user instruction in the session decides; absent one, the project declaration decides; absent that, default_backend."
+      },
+      "project_declaration": {
+        "fields": [
+          "delegated_execution_contract",
+          "delegation_required_tasks",
+          "delegation_recommended_tasks",
+          "main_direct_tasks"
+        ],
+        "path": ".mir/repo-profile.toml",
+        "section": "execution"
+      },
+      "resolution_order": [
+        "user_command",
+        "project_declaration",
+        "default_backend"
+      ],
+      "sub_agent": {
+        "owns": [
+          "file edits",
+          "tests",
+          "verification",
+          "review",
+          "iteration"
+        ]
+      }
+    },
+    "harness_source": "config/model-routing/central.toml",
+    "model_tiers": {
+      "economy": "gpt-6-luna",
+      "frontier": "gpt-6.1-sol",
+      "main": "gpt-6.1-sol",
+      "standard": "gpt-6.1-sol"
+    },
+    "native_spawn": {
+      "allow_recursive_delegation": true,
+      "enabled": true,
+      "enforced_after": "2026-08-24T11:48:17Z",
+      "fork_turns_default": "none",
+      "fork_turns_forbidden": [
+        "all"
+      ],
+      "fork_turns_max_recent": 4,
+      "max_concurrent_threads_per_session": 8,
+      "max_depth": 2,
+      "require_explicit_model": true,
+      "require_explicit_reasoning_effort": true
+    },
+    "routing": {
+      "by_category": {
+        "architecture": {
+          "model": "gpt-6.1-sol",
+          "reasoning_effort": "high",
+          "tier": "frontier"
+        },
+        "complex_logic": {
+          "model": "gpt-6.1-sol",
+          "reasoning_effort": "high",
+          "tier": "frontier"
+        },
+        "edge": {
+          "model": "gpt-6.1-sol",
+          "reasoning_effort": "high",
+          "tier": "standard"
+        },
+        "exploration": {
+          "model": "gpt-6.1-sol",
+          "reasoning_effort": "medium",
+          "tier": "standard"
+        },
+        "final_review": {
+          "model": "gpt-6.1-sol",
+          "reasoning_effort": "high",
+          "tier": "frontier"
+        },
+        "implementation": {
+          "model": "gpt-6.1-sol",
+          "reasoning_effort": "medium",
+          "tier": "standard"
+        },
+        "narrow": {
+          "model": "gpt-6-luna",
+          "reasoning_effort": "high",
+          "tier": "economy"
+        },
+        "security": {
+          "model": "gpt-6.1-sol",
+          "reasoning_effort": "high",
+          "tier": "frontier"
+        },
+        "unit": {
+          "model": "gpt-6-luna",
+          "reasoning_effort": "high",
+          "tier": "economy"
+        }
+      },
+      "default": {
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "tier": "standard"
+      },
+      "effort_rank": [
+        "ultra",
+        "max",
+        "xhigh",
+        "high",
+        "medium",
+        "low"
+      ],
+      "model_rank": [
+        "gpt-6.1-sol",
+        "gpt-6-luna"
+      ]
+    },
+    "schema_version": 1
+  },
+  "routes": {},
+  "schema": "mir-model-routing-lock/v1",
+  "source": "config/model-routing/repos/mir-yoke.toml",
+  "source_repository": "mir-harness",
+  "source_sha256": "991a73cd3d0e00e3a9842c59011e35e1c5ece74fccbee1412e25fcb3ed8b19d8"
+}
