@@ -617,7 +617,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "config/sub-agent-policy.json",
-      "sha256": "a8b61c2a3fc08ded335d439b5f12c1c3a58769d5560db1ad327531114eca081d"
+      "sha256": "96af6f023a0101167f52a5b83dcdf396ce125be3fc479334cdfe5af21f045613"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4781,7 +4781,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/policy.py",
-      "sha256": "b967b5f67403140e3ac0b1dc9d9fda2e54698b60560c45698fc4bdee62940f10"
+      "sha256": "3f01b0dbb463da1a1644d13f50f14f5acecca962ac9e4ddb0a1dda6a7781ad8d"
     },
     {
       "classification": "optional-consumer-tool",
@@ -4799,7 +4799,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/tests/conftest.py",
-      "sha256": "a32ed9f6e10ce6da345be36af78e9cb6ffe83134703bec64fc6e61db547648bb"
+      "sha256": "6b4d37bf34825e531bd251708f6c93aca18956f500500b36ae4ebdb9daa0f0e5"
     },
     {
       "classification": "optional-consumer-tool",
@@ -4859,7 +4859,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/tests/test_policy.py",
-      "sha256": "fc191acba2e410323fc3e121e92d3be78fc74d9344825dc7a2984cb409a275d0"
+      "sha256": "3837342c59e694a6621229264b8c704495199e574b52198808b6d823d83d5522"
     },
     {
       "classification": "optional-consumer-tool",

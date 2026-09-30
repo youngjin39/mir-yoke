@@ -40,6 +40,10 @@ PolicyMode = Literal[
     "per_project",
 ]
 
+# The central policy (Mir Harness ADR-88) spells this mode `user_command_priority`;
+# dispatch compares against `obey_user`, so normalise the central word.
+MODE_ALIASES: dict[str, PolicyMode] = {"user_command_priority": "obey_user"}
+
 
 @dataclass(frozen=True)
 class SubAgentPolicy:
@@ -168,8 +172,17 @@ def _read_json_object(path: pathlib.Path) -> dict[str, Any]:
     return data
 
 
+def _declared_mode(data: dict[str, Any]) -> Any:
+    """Owner decision 1-A: the central `delegation.mode` decides; a top-level `mode` is legacy."""
+    delegation = data.get("delegation")
+    if isinstance(delegation, dict) and "mode" in delegation:
+        return delegation.get("mode")
+    return data.get("mode")
+
+
 def _resolve_policy(data: dict[str, Any]) -> SubAgentPolicy:
-    mode = data.get("mode")
+    declared = _declared_mode(data)
+    mode = MODE_ALIASES.get(declared, declared) if isinstance(declared, str) else declared
     per_project = data.get("per_project", {})
     if mode not in SUB_AGENT_POLICY_MODES or not isinstance(per_project, dict):
         return _default_policy()

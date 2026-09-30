@@ -780,3 +780,30 @@ def test_adr88_missing_env_policy_file_falls_back_to_the_rendered_policy(
     route = policy.resolve_category("architecture")
     assert (route["model"], route["reasoning_effort"]) == ("m", "high")
     assert str(missing) in capsys.readouterr().err
+
+
+def test_owner_decision_1a_repository_policy_follows_the_central_delegation_mode(
+    tmp_path: pathlib.Path, monkeypatch
+) -> None:
+    """Owner decision 1-A: this repository states no mode; the central `delegation.mode` decides.
+
+    The rendered global policy carries its switch only as `delegation.mode`, so a loader
+    that reads just the top-level `mode` let a repository-local value decide the lane.
+    """
+    from tools.mir_executor import policy as policy_module
+
+    repo_root = pathlib.Path(__file__).resolve().parents[3]
+    local = json.loads((repo_root / "config" / "sub-agent-policy.json").read_text(encoding="utf-8"))
+    assert "mode" not in local
+    central = tmp_path / "central.json"
+    central.write_text(
+        json.dumps({"delegation": {"mode": "user_command_priority", "default_backend": "codex"}}),
+        encoding="utf-8",
+    )
+    monkeypatch.delenv(POLICY_ENV_VAR, raising=False)
+    monkeypatch.setattr(policy_module, "default_global_policy_path", lambda: central)
+
+    assert load_sub_agent_policy(repo_root).mode == "obey_user"
+
+    central.write_text(json.dumps({"delegation": {"mode": "force_codex"}}), encoding="utf-8")
+    assert load_sub_agent_policy(repo_root).mode == "force_codex"
