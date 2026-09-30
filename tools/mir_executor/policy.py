@@ -5,11 +5,20 @@ from __future__ import annotations
 import json
 import os
 import pathlib
+import pwd
 from dataclasses import dataclass, field
 from typing import Any, Literal, cast
 
 POLICY_ENV_VAR = "MIR_SUB_AGENT_POLICY"
 POLICY_RELPATH = pathlib.Path("config") / "sub-agent-policy.json"
+# ADR-88: rendered by Mir Harness `mir fleet model-routing`. Used when the environment
+# does not name a policy, so a session without MIR_SUB_AGENT_POLICY still routes by
+# category instead of silently resolving every route to null. Resolved from the
+# account's passwd home, not $HOME, because agent sessions run with a HOME other
+# than the account home.
+DEFAULT_GLOBAL_POLICY_PATH = (
+    pathlib.Path(pwd.getpwuid(os.getuid()).pw_dir) / ".mir/model-routing/sub-agent-policy.json"
+)
 SUB_AGENT_POLICY_MODES = frozenset(
     {
         "force_codex",
@@ -177,15 +186,21 @@ def _resolve_policy(data: dict[str, Any]) -> SubAgentPolicy:
     )
 
 
+def default_global_policy_path() -> pathlib.Path:
+    """Resolve the rendered policy location; tests replace this to stay off the host file."""
+    return DEFAULT_GLOBAL_POLICY_PATH
+
+
 def load_sub_agent_policy(repo_root: pathlib.Path) -> SubAgentPolicy:
     """Load sub-agent preferences, falling back to selectable routing."""
     try:
         data = _read_json_object(repo_root / POLICY_RELPATH)
         overlay_env = os.environ.get(POLICY_ENV_VAR)
-        if overlay_env:
-            overlay_path = pathlib.Path(overlay_env).expanduser()
-            if overlay_path.exists():
-                data = {**data, **_read_json_object(overlay_path)}
+        overlay_path = (
+            pathlib.Path(overlay_env).expanduser() if overlay_env else default_global_policy_path()
+        )
+        if overlay_path.exists():
+            data = {**data, **_read_json_object(overlay_path)}
         return _resolve_policy(data)
     except (OSError, ValueError, json.JSONDecodeError):
         return _default_policy()

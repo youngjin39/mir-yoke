@@ -686,7 +686,8 @@ def test_policy_resolve_cli_subcommand_prints_json(
         },
     )
     env = os.environ.copy()
-    env.pop(POLICY_ENV_VAR, None)
+    # A missing overlay keeps the subprocess off the host's rendered policy (ADR-88 fallback).
+    env[POLICY_ENV_VAR] = str(tmp_path / "absent-global-policy.json")
     repo_root = pathlib.Path(__file__).resolve().parents[3]
     pythonpath = os.pathsep.join(
         [
@@ -721,3 +722,34 @@ def test_policy_resolve_cli_subcommand_prints_json(
         "reasoning_effort": "low",
     }
     assert result.stderr == ""
+
+
+def test_adr88_unset_env_falls_back_to_the_rendered_harness_policy(
+    tmp_path: pathlib.Path, monkeypatch
+) -> None:
+    """Without MIR_SUB_AGENT_POLICY, routing still comes from the Harness-rendered JSON."""
+    from tools.mir_executor import policy as policy_module
+
+    monkeypatch.delenv(POLICY_ENV_VAR, raising=False)
+    _write_policy(tmp_path, {"mode": "force_codex", "per_project": {}})
+    fallback = tmp_path / "rendered.json"
+    fallback.write_text(
+        json.dumps({"routing": {"default": {"model": "m", "reasoning_effort": "high"}}}),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(policy_module, "default_global_policy_path", lambda: fallback)
+
+    policy = load_sub_agent_policy(tmp_path)
+
+    assert policy.routing == {"default": {"model": "m", "reasoning_effort": "high"}}
+
+
+def test_adr88_default_global_policy_path_is_the_rendered_harness_policy() -> None:
+    import pwd
+
+    from tools.mir_executor import policy as policy_module
+
+    account_home = pathlib.Path(pwd.getpwuid(os.getuid()).pw_dir)
+    assert policy_module.DEFAULT_GLOBAL_POLICY_PATH == (
+        account_home / ".mir" / "model-routing" / "sub-agent-policy.json"
+    )
