@@ -12,9 +12,11 @@ from typing import Any, Literal, cast
 
 POLICY_ENV_VAR = "MIR_SUB_AGENT_POLICY"
 POLICY_RELPATH = pathlib.Path("config") / "sub-agent-policy.json"
-# ADR-88: rendered by Mir Harness `mir fleet model-routing`. Used when the environment
-# does not name a policy, so a session without MIR_SUB_AGENT_POLICY still routes by
-# category instead of silently resolving every route to null. Resolved from the
+# ADR-88 amendment: the Harness-deployed repository lock; its `policy` drives routing first.
+LOCK_RELPATH = pathlib.Path("config") / "model-routing.lock.json"
+# ADR-88: rendered by Mir Harness `mir fleet model-routing`. Fallback when the repository
+# has no deployed lock and the environment does not name a policy, so such a session still
+# routes by category instead of silently resolving every route to null. Resolved from the
 # account's passwd home, not $HOME, because agent sessions run with a HOME other
 # than the account home.
 DEFAULT_GLOBAL_POLICY_PATH = (
@@ -224,9 +226,29 @@ def _overlay_policy_path() -> pathlib.Path:
     return default_global_policy_path()
 
 
+def _deployed_lock_policy(repo_root: pathlib.Path) -> dict[str, Any] | None:
+    """Return the deployed lock's `policy`, or None when the repository has no lock."""
+    lock_path = repo_root / LOCK_RELPATH
+    if not lock_path.is_file():
+        return None
+    policy = _read_json_object(lock_path).get("policy")
+    if not isinstance(policy, dict):
+        raise ValueError("model-routing lock `policy` must be a JSON object")
+    return policy
+
+
 def load_sub_agent_policy(repo_root: pathlib.Path) -> SubAgentPolicy:
-    """Load sub-agent preferences, falling back to selectable routing."""
+    """Load sub-agent preferences, falling back to selectable routing.
+
+    The deployed lock `policy` is read first; the env overlay and the rendered host
+    policy are used only when the repository has no lock.
+    """
     try:
+        lock_policy = _deployed_lock_policy(repo_root)
+        if lock_policy is not None:
+            local_path = repo_root / POLICY_RELPATH
+            local = _read_json_object(local_path) if local_path.is_file() else {}
+            return _resolve_policy({**local, **lock_policy})
         data = _read_json_object(repo_root / POLICY_RELPATH)
         overlay_path = _overlay_policy_path()
         if overlay_path.exists():

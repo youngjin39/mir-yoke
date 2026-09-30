@@ -83,3 +83,10 @@ def test_advanced_automation_spec_is_a_superseded_reference() -> None:
     assert index["superseded_by"] == "ADR-83"
     assert "current three-layer contract" in state
     assert "Superseded reference snapshot" in features
+
+
+def test_starter_points_sub_agent_routing_at_the_deployed_lock() -> None:
+    harness = " ".join((STARTER / "HARNESS.md").read_text(encoding="utf-8").split())
+
+    assert "`config/model-routing.lock.json`" in harness
+    assert "never edit" in harness

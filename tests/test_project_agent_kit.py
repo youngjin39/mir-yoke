@@ -272,3 +272,11 @@ def test_should_classify_the_supported_recipe_as_non_payload_guidance() -> None:
     assert "Supported agent-guided procedure" in rule["reason"]
     assert "never copied as a consumer payload" in rule["reason"]
     assert (RECIPE / "project-agent-kit.schema.json").is_file()
+
+
+def test_should_point_generated_harness_routing_at_the_deployed_lock() -> None:
+    normalized = " ".join(_read("recipes/project-agent-kit/README.md").split())
+
+    assert "Generated `HARNESS.md`" in normalized
+    assert "`config/model-routing.lock.json`" in normalized
+    assert "never edit" in normalized

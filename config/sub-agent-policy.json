@@ -1,5 +1,5 @@
 {
-  "_comment_": "No repository mode: the central delegation.mode in the Harness-rendered /Users/ai_agent/.mir/model-routing/sub-agent-policy.json decides (owner decision 1-A). Modes: force_codex preserves Codex-first behavior; force_claude forces Claude; select/obey_user honor an explicit requested backend; unrestricted honors any valid requested backend; per_project enables project-specific overrides. Routing/monitoring null or empty values preserve current behavior.",
+  "_comment_": "No repository mode or routes: the Harness-deployed config/model-routing.lock.json policy (delegation.mode and routing) decides; the Harness-rendered host policy is only a fallback when that lock is absent (ADR-88, owner decision 1-A). Modes: force_codex preserves Codex-first behavior; force_claude forces Claude; select/obey_user honor an explicit requested backend; unrestricted honors any valid requested backend; per_project enables project-specific overrides. Routing/monitoring null or empty values preserve current behavior.",
   "per_project": {},
   "routing": {
     "default": {

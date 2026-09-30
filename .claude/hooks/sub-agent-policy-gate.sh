@@ -30,7 +30,7 @@ read_sub_agent_policy_mode() {
   local policy_file="$1"
   [ -f "$policy_file" ] || return 1
   if command -v jq >/dev/null 2>&1; then
-    jq -er '(.mode // empty) | select(type == "string")' "$policy_file" 2>/dev/null
+    jq -er '((.policy // .).delegation.mode // .mode // empty) | select(type == "string")' "$policy_file" 2>/dev/null
     return $?
   fi
   "$_MIR_PYTHON_LAUNCHER" - "$policy_file" <<'PY' 2>/dev/null
@@ -39,7 +39,10 @@ import sys
 
 with open(sys.argv[1], encoding="utf-8") as fh:
     data = json.load(fh)
-mode = data.get("mode") if isinstance(data, dict) else None
+policy = data.get("policy", data) if isinstance(data, dict) else {}
+delegation = policy.get("delegation") if isinstance(policy, dict) else None
+mode = delegation.get("mode") if isinstance(delegation, dict) else None
+mode = mode or (data.get("mode") if isinstance(data, dict) else None)
 if not isinstance(mode, str) or not mode:
     raise SystemExit(1)
 print(mode)
@@ -48,13 +51,19 @@ PY
 
 resolve_sub_agent_policy_mode() {
   local mode
+  # ADR-88 amendment: the Harness-deployed lock decides; the env overlay is a fallback.
+  local lock_file="$PROJECT_DIR/config/model-routing.lock.json"
   local policy_file="$PROJECT_DIR/config/sub-agent-policy.json"
+  local overlay_file="${MIR_SUB_AGENT_POLICY:-}"
+  if [ -f "$lock_file" ]; then
+    policy_file="$lock_file"
+    overlay_file=""
+  fi
   if ! mode="$(read_sub_agent_policy_mode "$policy_file")"; then
     printf '%s\n' "force_codex"
     return 0
   fi
 
-  local overlay_file="${MIR_SUB_AGENT_POLICY:-}"
   if [ -n "$overlay_file" ] && [ -f "$overlay_file" ]; then
     if ! mode="$(read_sub_agent_policy_mode "$overlay_file")"; then
       printf '%s\n' "force_codex"
@@ -63,7 +72,7 @@ resolve_sub_agent_policy_mode() {
   fi
 
   case "$mode" in
-    force_codex|force_claude|select|per_project|unrestricted)
+    force_codex|force_claude|select|per_project|unrestricted|user_command_priority|obey_user)
       printf '%s\n' "$mode"
       ;;
     *)
@@ -101,5 +110,5 @@ if [ "${MIR_R3_FALLBACK:-0}" = "1" ]; then
   exit 0
 fi
 
-echo "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'scripts/mir.sh executor execute --background --dispatch ...' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1; to change policy edit config/sub-agent-policy.json mode." >&2
+echo "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'scripts/mir.sh executor execute --background --dispatch ...' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy." >&2
 exit 2

@@ -13,6 +13,8 @@ import pytest
 from tools.mir_executor import cli
 from tools.mir_executor.policy import POLICY_ENV_VAR, load_sub_agent_policy
 
+REPO_ROOT = pathlib.Path(__file__).resolve().parents[3]
+
 
 def _write_policy(repo_root: pathlib.Path, data: object) -> pathlib.Path:
     policy_path = repo_root / "config" / "sub-agent-policy.json"
@@ -792,9 +794,11 @@ def test_owner_decision_1a_repository_policy_follows_the_central_delegation_mode
     """
     from tools.mir_executor import policy as policy_module
 
-    repo_root = pathlib.Path(__file__).resolve().parents[3]
-    local = json.loads((repo_root / "config" / "sub-agent-policy.json").read_text(encoding="utf-8"))
+    local = json.loads((REPO_ROOT / "config" / "sub-agent-policy.json").read_text(encoding="utf-8"))
     assert "mode" not in local
+    # Without a deployed lock (ADR-88), the rendered host policy is the fallback.
+    repo_root = tmp_path / "repo"
+    _write_policy(repo_root, local)
     central = tmp_path / "central.json"
     central.write_text(
         json.dumps({"delegation": {"mode": "user_command_priority", "default_backend": "codex"}}),
@@ -807,3 +811,72 @@ def test_owner_decision_1a_repository_policy_follows_the_central_delegation_mode
 
     central.write_text(json.dumps({"delegation": {"mode": "force_codex"}}), encoding="utf-8")
     assert load_sub_agent_policy(repo_root).mode == "force_codex"
+
+
+def _write_lock(repo_root: pathlib.Path, policy: object) -> None:
+    lock_path = repo_root / "config" / "model-routing.lock.json"
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    lock_path.write_text(json.dumps({"policy": policy, "routes": {}}), encoding="utf-8")
+
+
+def test_adr88_deployed_lock_policy_drives_routing_before_env_and_host_policy(
+    tmp_path: pathlib.Path, monkeypatch
+) -> None:
+    """ADR-88 amendment: the Harness-deployed lock `policy` wins; env/host JSON are fallbacks."""
+    from tools.mir_executor import policy as policy_module
+
+    _write_policy(tmp_path, {"per_project": {}, "monitoring": {"stall_timeout_seconds": 9}})
+    lock_route = {"model": "lock-model", "reasoning_effort": "high"}
+    _write_lock(
+        tmp_path,
+        {"delegation": {"mode": "force_codex"}, "routing": {"by_category": {"narrow": lock_route}}},
+    )
+    other = {
+        "delegation": {"mode": "unrestricted"},
+        "routing": {"by_category": {"narrow": {"model": "host-model", "reasoning_effort": "low"}}},
+    }
+    env_policy = tmp_path / "env.json"
+    env_policy.write_text(json.dumps(other), encoding="utf-8")
+    host_policy = tmp_path / "host.json"
+    host_policy.write_text(json.dumps(other), encoding="utf-8")
+    monkeypatch.setenv(POLICY_ENV_VAR, str(env_policy))
+    monkeypatch.setattr(policy_module, "default_global_policy_path", lambda: host_policy)
+
+    policy = load_sub_agent_policy(tmp_path)
+
+    assert policy.mode == "force_codex"
+    assert policy.resolve_category("narrow") == lock_route
+    assert policy.monitoring_stall_timeout_seconds() == 9.0
+
+
+def test_adr88_deployed_lock_alone_is_enough_for_a_new_repository(tmp_path: pathlib.Path) -> None:
+    """A greenfield repository with only the deployed lock still routes from it."""
+    _write_lock(
+        tmp_path,
+        {
+            "delegation": {"mode": "user_command_priority"},
+            "routing": {"default": {"model": "lock-model", "reasoning_effort": "medium"}},
+        },
+    )
+
+    policy = load_sub_agent_policy(tmp_path)
+
+    assert policy.mode == "obey_user"
+    assert policy.resolve_category("unit") == {
+        "model": "lock-model",
+        "reasoning_effort": "medium",
+    }
+
+
+def test_adr88_this_repository_routes_from_its_deployed_lock() -> None:
+    """The committed lock, not a host file, decides this repository's live routing."""
+    lock_path = REPO_ROOT / "config" / "model-routing.lock.json"
+    lock = json.loads(lock_path.read_text(encoding="utf-8"))
+    policy = load_sub_agent_policy(REPO_ROOT)
+
+    for category, expected in lock["policy"]["routing"]["by_category"].items():
+        assert policy.resolve_category(category) == {
+            "model": expected["model"],
+            "reasoning_effort": expected["reasoning_effort"],
+        }
+    assert policy.mode == "obey_user"

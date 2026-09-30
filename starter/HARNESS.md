@@ -27,6 +27,9 @@ Keep it short and repository-specific. Add optional machinery only after a real 
 - Protected paths: {{PROTECTED_PATHS_OR_NONE}}.
 - Generated paths: {{GENERATED_PATHS_OR_NONE}}; edit their source and regenerate.
 - Preserve unrelated local changes and never erase work merely to make a check pass.
+- Sub-agent model and effort come from a Mir Harness-deployed `config/model-routing.lock.json`
+  when present; never edit it. `policy` is shared; `routes`, `agent_criteria` and `claude` are
+  this repository's own. Change them in Harness `config/model-routing/repos/<id>.toml`.
 
 ## Work style
 

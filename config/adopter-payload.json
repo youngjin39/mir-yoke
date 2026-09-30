@@ -269,7 +269,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": ".claude/hooks/sub-agent-policy-gate.sh",
-      "sha256": "d044013eb06abdc337ae559f43d1c10af744426967d9c0c5ee3d459a7bef5cd4"
+      "sha256": "aacdb0cfc18c328d65e41586cd6d20df584740276f56570c30b69e675714232a"
     },
     {
       "classification": "reference",
@@ -461,7 +461,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "AGENTS.md",
-      "sha256": "45b605d4187b82360d6819d58f4dbe18aed44c298d83a17a984318593a113377"
+      "sha256": "ae26336f26c5af7e51a81733d397fa1a0a74cf6ddf2a14a58f9487a9662cb9fc"
     },
     {
       "classification": "reference",
@@ -485,7 +485,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "CLAUDE.md",
-      "sha256": "0f73b22b899190ac6950f6e7534bcb3f55a700202ea8ba0aca5082a184d08411"
+      "sha256": "8d9af1d3f30451071f6a2e345a5a583ee12420a6f7fef798f8544cb2b6257256"
     },
     {
       "classification": "reference",
@@ -580,6 +580,12 @@
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
+      "path": "config/model-routing.lock.json",
+      "sha256": "a9f35690861b5dfebbb2843c434d4051732bbd086c02f7a656d9ce2b26c6c0af"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
       "path": "config/project-hooks.json",
       "sha256": "61f7651e42d1b67b0d8b67862d6ef5eb6c162a0badc9376d469a14f4d802cd2a"
     },
@@ -617,13 +623,13 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "config/sub-agent-policy.json",
-      "sha256": "96af6f023a0101167f52a5b83dcdf396ce125be3fc479334cdfe5af21f045613"
+      "sha256": "87d839b7056f3ba7514d51e60eab6f52b8b7352128e447c27abafe70bb87545a"
     },
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "config/template-assets.json",
-      "sha256": "54f447e13d985dec2e1a39863a1dafdc18b9749b4ce8f948a53083362da887c1"
+      "sha256": "5a53348d061fa309772de0599ba454c10ccbfab44b3fbc2cf894e44e8b7bf6e9"
     },
     {
       "classification": "template-maintainer-tool",
@@ -635,13 +641,13 @@
       "classification": "historical",
       "disposition": "remove",
       "path": "docs/_archive/INDEX.md",
-      "sha256": "384149b51c9155c3bc2dee66936bb332b4656193585676dfc164a8400d96a76a"
+      "sha256": "151af9112580f2fbd31884f094e5f45755c33abf4a0ab3b0822f53beda335596"
     },
     {
       "classification": "historical",
       "disposition": "remove",
       "path": "docs/_archive/README.md",
-      "sha256": "437ed174c9ea9529540a0a732770d436ac60f7d455de5c86116af1196c76816d"
+      "sha256": "ecf4c8d2c5b5544aec6791a4ef7f626f02ffba43c6adcae252c32fd7bbe638c7"
     },
     {
       "classification": "historical",
@@ -744,6 +750,12 @@
       "disposition": "remove",
       "path": "docs/_archive/decisions/adr-48-central-fleet-management-and-direct-apply-2026-05-28-historical.md",
       "sha256": "60cec0d44348b65360f5548d49520a879df68a878b30a269fad433c82f3ec141"
+    },
+    {
+      "classification": "historical",
+      "disposition": "remove",
+      "path": "docs/_archive/decisions/adr-49-opus-4-8-alignment-and-model-tier-routing-2026-05-30-historical.md",
+      "sha256": "5342ec5a3b23c17213418f52e193c1b0124f3a14f23a67350786c504891c4cf8"
     },
     {
       "classification": "historical",
@@ -1259,7 +1271,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "docs/decisions/INDEX.md",
-      "sha256": "2d3ce739306a98530c94dfa9e54597a76cdd0c6803fc5f2db6f86ffb825d2c81"
+      "sha256": "be9473a80a769377853d0cd55b084bb5038f5ce3986a154c8949f94a53b1ed6f"
     },
     {
       "classification": "historical",
@@ -1487,7 +1499,7 @@
       "classification": "historical",
       "disposition": "remove",
       "path": "docs/decisions/adr-49-opus-4-8-alignment-and-model-tier-routing-2026-05-30.md",
-      "sha256": "ab62fa5c2f8a8c906555d44e9d64520f765ea2c8a63979c275e14d565c66f3cd"
+      "sha256": "389b0646697d476f8630a566b8e6b9e89c477663b261f5648143e7f32c045dea"
     },
     {
       "classification": "historical",
@@ -2927,7 +2939,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "recipes/project-agent-kit/README.md",
-      "sha256": "c7b3e5509bcc469d71f6ea712d7fc1ab95c04e30c33f98a6ac55eb34ba8db01f"
+      "sha256": "21c09f260a2babcf59f2a72cac15230488a3d8d61654e931a8d7f3d5f9334214"
     },
     {
       "classification": "reference",
@@ -4001,7 +4013,7 @@
       "classification": "starter",
       "disposition": "preserve",
       "path": "starter/HARNESS.md",
-      "sha256": "175ef302e4db18ff17b12ca93453a8cadbc40954d539f29e313a31130c2490dd"
+      "sha256": "755ea28f048b5bd0effda63d7adb51e26b5f3df24c36a6af6440273d5552548a"
     },
     {
       "classification": "starter",
@@ -4379,7 +4391,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_minimal_starter.py",
-      "sha256": "71a92cd3218097121925757d1761b9458f23e458c6c0d75ba1848c016ee4e11c"
+      "sha256": "0592248fed3785c99f0c43c7550fbe94ecd2768dfc1d7b75635d99e93212fcc6"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4415,7 +4427,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_project_agent_kit.py",
-      "sha256": "69c48bb51e1fdaa1c535a012444d111bb1396544c66d7c8497ad6d109775ee33"
+      "sha256": "af692c3c9c5d9e6d412fcdecd2430527fe27cd8922b8dd7e0ba73914bbce24bc"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4554,6 +4566,12 @@
       "disposition": "remove",
       "path": "tests/test_srr_sql_neighborhood.py",
       "sha256": "23085c524e114f5a7f5e4223381866e409ff70927e2e5988d3ea2dc351e07f1b"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "tests/test_sub_agent_policy_gate.py",
+      "sha256": "bc82ff63c883aaf84a44d2fd6ea4deab3e3602221fd5422d99b81f4e1794ad24"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4781,7 +4799,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/policy.py",
-      "sha256": "3f01b0dbb463da1a1644d13f50f14f5acecca962ac9e4ddb0a1dda6a7781ad8d"
+      "sha256": "caa48d6189c33bfda5c1d416fb7e0c0f4c839fd4e07e2473399b1ea8b5a61f90"
     },
     {
       "classification": "optional-consumer-tool",
@@ -4859,7 +4877,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/tests/test_policy.py",
-      "sha256": "3837342c59e694a6621229264b8c704495199e574b52198808b6d823d83d5522"
+      "sha256": "cdceedd30f7cd102b046b4f6693040cc3558845d33964a8c82b6bbbbe4c2b86a"
     },
     {
       "classification": "optional-consumer-tool",

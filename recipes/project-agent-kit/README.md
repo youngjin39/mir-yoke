@@ -68,7 +68,11 @@ Create only the foundation needed to make the future planning session reliable:
 Generated `HARNESS.md` must require one task-scoped
 `scripts/mir.sh context pull "<task query>" --db .mir/memory.db --project-root .` at the start of
 each fresh session before substantial work. The query must describe the actual task and must not
-reuse `intent.context_probe`, which exists only to prove bootstrap retrieval.
+reuse `intent.context_probe`, which exists only to prove bootstrap retrieval. It must also state in
+one line that sub-agent model and effort come from a Mir Harness-deployed
+`config/model-routing.lock.json` when present (never edit it; `policy` is shared, `routes`,
+`agent_criteria` and `claude` are the repository's own, changed in Harness
+`config/model-routing/repos/<id>.toml`); `scripts/mir.sh policy resolve` reads that lock first.
 
 The target must never copy `src/mir/`, `tools/`, or `plugins/`. `scripts/mir.sh` invokes the exact
 external provider revision and confines its home, caches, tools, Python installs, and temporary

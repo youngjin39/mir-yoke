@@ -7,9 +7,9 @@ retrievable in version control.
 
 ## What is here
 
-Measured 2026-09-03: 94 archived documents.
+Measured 2026-10-01: 95 archived documents.
 
-- `decisions/` — 20 retired decision records.
+- `decisions/` — 21 retired decision records.
 - `harness-engineering/` — 74 retired engineering documents: phase specifications,
   application runbooks, and the template-repo guides, mirroring their original
   layout under `docs/harness-engineering/`.
@@ -42,7 +42,7 @@ claimed to be current.
   `historical`, which `config/adopter-boundary.json` lists in
   `remove_classifications`. Adopters never receive it.
 - **Ledger-tracked**: `INDEX.md` records one append-only row per archived item,
-  and it is complete — 94 rows for 94 documents, verified in both directions.
+  and it is complete — 95 rows for 95 documents, verified in both directions.
 
 Do not add new working documents here. Write them under the live `docs/` tree;
 they arrive here only once retired and recorded in the ledger.

@@ -248,6 +248,7 @@
         ".python-version",
         "config/harness-consistency.json",
         "config/harness-consistency.schema.json",
+        "config/model-routing.lock.json",
         "config/project-hooks.json",
         "config/template-assets.json",
         "config/template-assets.schema.json",

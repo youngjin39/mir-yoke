@@ -111,7 +111,7 @@ Mir Yoke decisions with the same numbers are different records.
 | [ADR-46](adr-46-phase-4-enforce-flip-rollout-2026-05-24.md) | accepted | — |
 | [ADR-47](adr-47-orchestration-dispatch-brief-and-tiered-gates-2026-05-28.md) | accepted | — |
 | [ADR-48](adr-48-central-fleet-management-and-direct-apply-2026-05-28.md) | archived | — |
-| [ADR-49](adr-49-opus-4-8-alignment-and-model-tier-routing-2026-05-30.md) | accepted | — |
+| [ADR-49](adr-49-opus-4-8-alignment-and-model-tier-routing-2026-05-30.md) | superseded | Mir Harness ADR-88 |
 | [ADR-50](adr-50-memory-db-canonical-md-projection-2026-05-31.md) | accepted | — |
 | [ADR-51](adr-51-harness-self-consistency-verification-2026-06-04.md) | accepted | — |
 | [ADR-52](adr-52-fleet-admin-elevation-and-cross-repo-write-model-2026-06-05.md) | superseded | Mir Harness ADR-76 |
