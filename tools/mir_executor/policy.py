@@ -6,6 +6,7 @@ import json
 import os
 import pathlib
 import pwd
+import sys
 from dataclasses import dataclass, field
 from typing import Any, Literal, cast
 
@@ -191,14 +192,30 @@ def default_global_policy_path() -> pathlib.Path:
     return DEFAULT_GLOBAL_POLICY_PATH
 
 
+def _overlay_policy_path() -> pathlib.Path:
+    """Return the overlay named by ``MIR_SUB_AGENT_POLICY``, else the rendered policy (ADR-88).
+
+    A variable naming a missing file (such as the retired home_server path) used to drop
+    the overlay silently, so every route resolved to null; fall back and warn instead.
+    """
+    overlay_env = os.environ.get(POLICY_ENV_VAR)
+    if overlay_env:
+        named = pathlib.Path(overlay_env).expanduser()
+        if named.exists():
+            return named
+        print(
+            f"[mir policy] {POLICY_ENV_VAR} names a missing file: {named}; "
+            "falling back to the rendered policy",
+            file=sys.stderr,
+        )
+    return default_global_policy_path()
+
+
 def load_sub_agent_policy(repo_root: pathlib.Path) -> SubAgentPolicy:
     """Load sub-agent preferences, falling back to selectable routing."""
     try:
         data = _read_json_object(repo_root / POLICY_RELPATH)
-        overlay_env = os.environ.get(POLICY_ENV_VAR)
-        overlay_path = (
-            pathlib.Path(overlay_env).expanduser() if overlay_env else default_global_policy_path()
-        )
+        overlay_path = _overlay_policy_path()
         if overlay_path.exists():
             data = {**data, **_read_json_object(overlay_path)}
         return _resolve_policy(data)

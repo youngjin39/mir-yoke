@@ -4781,7 +4781,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/policy.py",
-      "sha256": "d32ef153074db9199bbfbc60942e4190585a4b1044074b6d3ade69fb1370617c"
+      "sha256": "b967b5f67403140e3ac0b1dc9d9fda2e54698b60560c45698fc4bdee62940f10"
     },
     {
       "classification": "optional-consumer-tool",
@@ -4859,7 +4859,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/tests/test_policy.py",
-      "sha256": "04a573d313f5198aca16323c32d7825c751dbd1ee6aa42c387623c76002b579e"
+      "sha256": "fc191acba2e410323fc3e121e92d3be78fc74d9344825dc7a2984cb409a275d0"
     },
     {
       "classification": "optional-consumer-tool",

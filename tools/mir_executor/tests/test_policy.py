@@ -686,8 +686,11 @@ def test_policy_resolve_cli_subcommand_prints_json(
         },
     )
     env = os.environ.copy()
-    # A missing overlay keeps the subprocess off the host's rendered policy (ADR-88 fallback).
-    env[POLICY_ENV_VAR] = str(tmp_path / "absent-global-policy.json")
+    # A present empty overlay keeps the subprocess off the host's rendered policy (ADR-88);
+    # a missing one would now fall back to that policy.
+    empty_overlay = tmp_path / "empty-global-policy.json"
+    empty_overlay.write_text("{}", encoding="utf-8")
+    env[POLICY_ENV_VAR] = str(empty_overlay)
     repo_root = pathlib.Path(__file__).resolve().parents[3]
     pythonpath = os.pathsep.join(
         [
@@ -753,3 +756,27 @@ def test_adr88_default_global_policy_path_is_the_rendered_harness_policy() -> No
     assert policy_module.DEFAULT_GLOBAL_POLICY_PATH == (
         account_home / ".mir" / "model-routing" / "sub-agent-policy.json"
     )
+
+
+def test_adr88_missing_env_policy_file_falls_back_to_the_rendered_policy(
+    tmp_path: pathlib.Path, monkeypatch, capsys
+) -> None:
+    """MIR_SUB_AGENT_POLICY naming a missing file must not route every category to null."""
+    from tools.mir_executor import policy as policy_module
+
+    missing = tmp_path / "retired" / "sub-agent-policy.global.json"
+    monkeypatch.setenv(POLICY_ENV_VAR, str(missing))
+    _write_policy(tmp_path, {"mode": "force_codex", "per_project": {}})
+    rendered_route = {"model": "m", "reasoning_effort": "high"}
+    fallback = tmp_path / "rendered.json"
+    fallback.write_text(
+        json.dumps({"routing": {"by_category": {"architecture": rendered_route}}}),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(policy_module, "default_global_policy_path", lambda: fallback)
+
+    policy = load_sub_agent_policy(tmp_path)
+
+    route = policy.resolve_category("architecture")
+    assert (route["model"], route["reasoning_effort"]) == ("m", "high")
+    assert str(missing) in capsys.readouterr().err
