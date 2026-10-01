@@ -289,7 +289,6 @@ def _append_event(events_path: pathlib.Path, event: dict[str, object]) -> None:
 
 def _write_dispatch_status(wt: DispatchWorktree, state: str, **evidence: object) -> None:
     write_status(wt, state, **evidence)
-    invoke_hook(wt.main_repo_root, "state_callback", state, evidence)
     emit_job_event(wt.main_repo_root, "dispatch_state", {
         "dispatch_id": wt.dispatch_id, "state": state, "evidence": evidence,
     })
@@ -859,6 +858,27 @@ def _verifier_env(repo_root: pathlib.Path):
         yield env
 
 
+def _profile_secret_paths(repo_root: pathlib.Path) -> list[str]:
+    """Return `[boundaries].secrets` from the repository profile, if declared."""
+    try:
+        with (repo_root / ".mir" / "repo-profile.toml").open("rb") as handle:
+            patterns = tomllib.load(handle).get("boundaries", {}).get("secrets", [])
+    except (OSError, tomllib.TOMLDecodeError):
+        return []
+    return [p for p in patterns if isinstance(p, str)] if isinstance(patterns, list) else []
+
+
+def _is_secret_path(path: str, patterns: list[str]) -> bool:
+    """A slash-free pattern names a file at any depth, like `.gitignore`."""
+    for pattern in patterns:
+        if "/" not in pattern:
+            if any(fnmatch.fnmatchcase(part, pattern) for part in path.split("/")):
+                return True
+        elif fnmatch.fnmatchcase(path, pattern):
+            return True
+    return False
+
+
 def evaluate_merge_gate(
     wt: DispatchWorktree,
     *,
@@ -888,6 +908,11 @@ def evaluate_merge_gate(
             allow_harness_self_modify=allow_harness_self_modify,
         ):
             return MergeGate(False, f"denied-harness:{path}; changed={changed}", changed)
+
+    secrets = _profile_secret_paths(wt.main_repo_root)
+    for path in changed:
+        if _is_secret_path(path, secrets):
+            return MergeGate(False, f"secret-path:{path}", changed)
 
     for path in changed:
         if not _path_allowed(path, allowlist):

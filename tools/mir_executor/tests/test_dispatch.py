@@ -3875,3 +3875,49 @@ def test_cli_dispatch_cleanup_failed_action_returns_success(
             registry.close()
     finally:
         cleanup_worktree(wt)
+
+
+@pytest.mark.parametrize(
+    ("path", "refused"),
+    [
+        ("scripts/.env.prod", True),
+        (".env.local", True),
+        ("secrets/token.txt", True),
+        ("scripts/run.sh", False),
+        ("assets/logo.png", False),
+    ],
+)
+def test_evaluate_merge_gate_refuses_profile_secret_paths(
+    tmp_path: pathlib.Path, path: str, refused: bool
+) -> None:
+    """A declared secret inside the allowlist must not merge (owner Discord 1555171965340229633).
+
+    Only `[boundaries].secrets` is enforced; broader `[paths].protected_paths` stay advisory.
+    """
+    repo = _make_repo(tmp_path)
+    _write_repo_file(
+        repo,
+        ".mir/repo-profile.toml",
+        '[paths]\nprotected_paths = ["assets/**"]\n\n'
+        '[boundaries]\nsecrets = [".env", ".env.*", "secrets/**"]\n',
+    )
+    _git(repo, "add", ".mir/repo-profile.toml")
+    _git(repo, "commit", "-m", "profile")
+    wt = create_dispatch_worktree(repo, "gate-protected")
+    try:
+        _write_repo_file(wt.path, path, "VALUE\n")
+        _git(wt.path, "add", "-f", path)
+        _git(wt.path, "commit", "-m", "change")
+
+        gate = evaluate_merge_gate(
+            wt, allowlist=["scripts/", ".env.local", "secrets/", "assets/"],
+            verification_commands=["true"],
+        )
+
+        if refused:
+            assert gate.approved is False
+            assert gate.reason.startswith(f"secret-path:{path}")
+        else:
+            assert gate.approved is True, gate.reason
+    finally:
+        cleanup_worktree(wt)

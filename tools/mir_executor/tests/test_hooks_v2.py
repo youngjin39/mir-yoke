@@ -193,16 +193,16 @@ def test_should_emit_finalized_and_failed_evidence(target, monkeypatch):
     assert event['dispatch_id'] is not None
 
 
-def test_should_preserve_old_callback_and_emit_state(target, monkeypatch):
+def test_should_emit_state_event_without_legacy_state_callback(target, monkeypatch):
+    """No consumer defined state_callback; on_job_event dispatch_state replaces it."""
     root, hooks = target
     hooks.state_callback = lambda state, evidence: hooks.events.append(('old', (state, evidence)))
     monkeypatch.setattr(dispatch, 'write_status', lambda *a, **kw: None)
     wt = SimpleNamespace(main_repo_root=root, dispatch_id='direct')
     dispatch._write_dispatch_status(wt, 'blocked', reason='test')
-    assert hooks.events[0] == ('old', ('blocked', {'reason': 'test'}))
-    payload = hooks.events[1][1]
-    assert payload == {'job_id': None, 'dispatch_id': 'direct', 'state': 'blocked',
-                       'evidence': {'reason': 'test'}}
+    assert [e for e, _ in hooks.events] == ['dispatch_state']
+    assert hooks.events[0][1] == {'job_id': None, 'dispatch_id': 'direct', 'state': 'blocked',
+                                  'evidence': {'reason': 'test'}}
 
 
 def test_should_resolve_repo_root_after_pre_execute(target, tmp_path, monkeypatch):
@@ -297,8 +297,6 @@ def test_should_emit_started_running_with_original_resume_job_id(target, monkeyp
     wt = SimpleNamespace(main_repo_root=root, path=root / 'worktree', dispatch_id='new-attempt')
     monkeypatch.setattr(dispatch, 'create_dispatch_worktree', lambda *a, **kw: wt)
     monkeypatch.setattr(dispatch, 'write_status', lambda *a, **kw: None)
-    old_states = []
-    hooks.state_callback = lambda state, evidence: old_states.append(state)
 
     def run(*a):
         assert [p['state'] for e, p in hooks.events if e == 'dispatch_state'] == [
@@ -313,7 +311,6 @@ def test_should_emit_started_running_with_original_resume_job_id(target, monkeyp
     states = [p for e, p in hooks.events if e == 'dispatch_state']
     assert all(p['job_id'] == 'original-job' and p['dispatch_id'] == 'new-attempt' for p in states)
     assert [p['state'] for p in states] == ['started', 'running', 'codex_completed']
-    assert old_states == ['codex_completed']
 
 
 @pytest.mark.parametrize('fail_dispatch', [False, True])

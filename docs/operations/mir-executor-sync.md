@@ -100,7 +100,6 @@ target root. The sole admission exception is the optional home-owned guard below
   Its result fills `JobRecord.identity_json` at both dispatch and background inserts;
   `model` is the resolved model and `prompt` is the execution prompt.
 - `on_job_event(event, payload)` observes the lifecycle described below.
-- `state_callback(state, evidence)` receives dispatch state and evidence.
 - `before_run(worktree, attempt)` and `after_run(worktree, attempt, result)` wrap
   each attempt.
 - `after_provider_call(result, metadata)` observes each returned provider result,
@@ -172,8 +171,8 @@ Insertion events fire after each new row is inserted and before dispatch/backgro
 execution. A resume reuses the original row and does not emit `job_inserted`.
 It emits `job_resumed` before re-dispatching, after the brief-digest check passes.
 A refused resume emits no `job_resumed`.
-Dispatch state events accompany every existing `state_callback(state, evidence)`
-call, retaining its two-argument signature. The job context associates resumed
+Dispatch state reaches local code only as `on_job_event("dispatch_state", ...)`; the
+unused `state_callback` hook was removed in v3.4. The job context associates resumed
 attempts with the original job ID and the new dispatch ID. Direct dispatch calls
 without a registered job use `job_id=None`. The new observer also receives
 `started` after worktree creation and `running` before each attempt; these extra
@@ -247,3 +246,12 @@ Keep local code formatted separately. Run lint explicitly on common files using 
 provider's 100-character width; a local formatter must not silently change hashes.
 Terminal-artifact retention manages `tasks/dispatch`, including recorded resume
 attempt UUIDs. An explicit external `--artifacts-dir` is owner-managed storage.
+
+## Merge gate and declared secrets (v3.4)
+
+The merge gate refuses any changed file that matches the repository profile's
+`[boundaries].secrets` (`.mir/repo-profile.toml`), even inside the allowlist. A
+slash-free pattern such as `.env.*` names a file at any depth, like `.gitignore`. The
+broader `[paths].protected_paths` stays advisory, because it also lists ordinary working
+directories a delegated task may legitimately change. No new
+hook or configuration key: the profile already declares the data.

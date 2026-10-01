@@ -581,7 +581,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "config/mir-executor-common.json",
-      "sha256": "cfdfe7b7683bbe58a6e3fbbbc960c2ca8ab1fb3f94f187a2c3e2986adf09fbb6"
+      "sha256": "6c74a59a0e6bf50a04fb2d9f2f7b05d2a0dc3371c0ae221852ff9e3b077f2f82"
     },
     {
       "classification": "template-maintainer-tool",
@@ -2255,7 +2255,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "docs/operations/mir-executor-sync.md",
-      "sha256": "17357d2aba79d0cf3a6bcb1b3a93bcae2e7546690b7ef4c97fd3d76d5694e94c"
+      "sha256": "b3b9d628384b1b7b00063cb20b67dfe73e96d9828b3972f4f6f4bfd6613e08e5"
     },
     {
       "classification": "reference",
@@ -4793,7 +4793,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/COMMON_MANIFEST.json",
-      "sha256": "cfdfe7b7683bbe58a6e3fbbbc960c2ca8ab1fb3f94f187a2c3e2986adf09fbb6"
+      "sha256": "6c74a59a0e6bf50a04fb2d9f2f7b05d2a0dc3371c0ae221852ff9e3b077f2f82"
     },
     {
       "classification": "optional-consumer-tool",
@@ -4835,7 +4835,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/dispatch.py",
-      "sha256": "718172423b174852c4c5490b50652ef30d0604946d1fd2666b7ca0ce56b9ca11"
+      "sha256": "b3002e3a2071dd7555a40c19c2f6773c2b3e3ae4900239158324ce3d2f7c9c0a"
     },
     {
       "classification": "optional-consumer-tool",
@@ -4955,7 +4955,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/tests/test_dispatch.py",
-      "sha256": "7abbec496c9f94f938bc0b47ff18a150fd36a44282140bf4bb72a1b8d992045d"
+      "sha256": "387b3128304bfeab3fb3241c877fd0c1c3d315d35a2b0e57c586a41644bedd75"
     },
     {
       "classification": "optional-consumer-tool",
@@ -4979,7 +4979,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/tests/test_hooks_v2.py",
-      "sha256": "9377a563ce1318df743ab65ec961e643485bdb565e214b887a923c25231a04b7"
+      "sha256": "3be4927530f7e55ffba19b8b5200d229b9ce44c8ec2ad1ef26b2c0097bac07ee"
     },
     {
       "classification": "optional-consumer-tool",

@@ -6,7 +6,7 @@
     "tools/mir_executor/cli_jobs.py": "a2cacb6bd9d0e276faa8ab87e079d9b392b9f054ae21a7409dd86d62844580a1",
     "tools/mir_executor/cli_parser.py": "2cba15f659a1efbaab691ac54a1d8daecf64a614b1dbddf28cb626d4e5751a10",
     "tools/mir_executor/codex_mcp_client.py": "cbe89ab390cda5b0951242a63092d0bf08428aa2eeb2e1a3e9aa82e648aa83fc",
-    "tools/mir_executor/dispatch.py": "718172423b174852c4c5490b50652ef30d0604946d1fd2666b7ca0ce56b9ca11",
+    "tools/mir_executor/dispatch.py": "b3002e3a2071dd7555a40c19c2f6773c2b3e3ae4900239158324ce3d2f7c9c0a",
     "tools/mir_executor/executor.py": "83cc55702597d2b16ed97e14cd200663f13b4c5d5feb41a594f0240cc1da026e",
     "tools/mir_executor/jobs.py": "daa7dd5d0dc0136fc8ae8fc23ef057d33e56e5ffd3e5ee36cdff36bce379121c",
     "tools/mir_executor/local_hooks.py": "f619773d21ba5d508ad33a9afb7740e425c124965dde1a8fa76b703c5732ece0",
