@@ -103,7 +103,7 @@
           "result adjudication"
         ]
       },
-      "mode": "user_command_priority",
+      "mode": "force_codex",
       "modes": {
         "force_codex": "Every delegated execution step goes to Codex. A different backend requires an explicit user override recorded in the session.",
         "per_project": "The project declaration decides. A project without one falls back to default_backend.",
@@ -228,5 +228,5 @@
   "schema": "mir-model-routing-lock/v1",
   "source": "config/model-routing/repos/mir-yoke.toml",
   "source_repository": "mir-harness",
-  "source_sha256": "2f621448fb74870d913f6b75bfded52ca5a82836d542d8a3cdc5788de5afcc25"
+  "source_sha256": "74d4018756fcf6d8b839643fc3243582baa51a62d4fd03ad45e8364fd86a8362"
 }
