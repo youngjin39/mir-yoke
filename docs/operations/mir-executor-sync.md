@@ -71,7 +71,8 @@ target root so another repository's hooks cannot leak into that target.
   calls share the lease through a context variable, including worker threads
   inherited from async calls, so an existing CLI lease is acquired only once.
   Independent execution contexts still acquire the local lease separately.
-- `resolve_agent_route(repo_root, name)` returns an `AgentRoute` override.
+- `resolve_agent_route(repo_root, name)` returns an `AgentRoute` override, or `None`
+  to use the common resolver.
 - `resolve_route_key(repo_root, key)` returns `(model, effort)`.
 - `validate_brief(brief, repo_root)` accepts a JSON file Path or plain prompt text.
   A file hook may return a typed object/dict containing `expanded_goal`.
@@ -109,7 +110,17 @@ overrides before dispatch, even when its stored options skip `pre_execute`.
 Without this key, each entry point retains its previous timeout validation.
 
 A brief's `target_agent` selects the common resolver and its target-local route
-hook. CLI dispatch forwards the route to the provider builder, honors its backend,
+hook. A non-null local route wins. Otherwise, the common resolver reads
+`.claude/agents/<target_agent>.md`: frontmatter declares `execution_backend`,
+`model` and optional `effort`; the body supplies base instructions. Denying both
+`Write` and `Edit` through `disallowedTools` makes the route read-only. Codex
+routes use the deployed lock's `agent_criteria[<target_agent>].category`, defaulting
+to `implementation`, to resolve model/effort from policy. An optional matching
+`.codex/agents/<target_agent>.toml` supplies Codex instructions and sandbox;
+it cannot relax the Markdown definition's read-only restriction. Definition path
+and SHA256 identify the instructions used. Missing Markdown definitions emit a
+warning on stderr and continue without an agent route, preserving pre-v3 dispatch.
+CLI dispatch forwards the route to the provider builder, honors its backend,
 base instructions and sandbox, and derives `expect_changes` from the route.
 A `read-only` route uses the read-only sandbox; Claude receives `--agent`.
 Explicit model/effort options override route values; omitted route values retain
@@ -165,15 +176,24 @@ New dispatch rows persist one nullable `dispatch_options_json` column. Opening a
 existing database for writes adds it without rewriting old rows; read-only legacy
 reads remain supported. The JSON stores the absolute brief path and SHA256, allow
 paths, verifier IDs, expect-changes, the original change ID (including `None`),
-category, resolved model/effort/backend, and retry, artifact, finalize-lock and
-stall-timeout options. Existing row fields retain timeout and harness permissions.
+category, resolved model/effort/backend, requested timeout (including `None`), and
+retry, artifact, finalize-lock and stall-timeout options. Existing row fields retain
+the advisory monitoring threshold and harness permissions.
 
 Resume checks the stored brief digest before hooks or execution and refuses a
 changed or missing file without incrementing the resume counter or changing job
 status. It restores saved options, including verifier IDs, before re-dispatching.
-The default resume timeout remains the saved timeout, with an explicit resume
-`--timeout` override. A legacy row with no stored options retains the previous
+Resume restores the saved requested timeout exactly: omitting `--timeout` at the
+original dispatch keeps no hard limit on resume. An explicit resume `--timeout`
+overrides that value. A legacy row with no stored timeout retains the previous
 resume behavior. Resume does not turn a synthetic dispatch change ID into a ledger ID.
+
+Job persistence redacts and bounds each Codex argument as well as stdout/stderr,
+including entire PEM private-key blocks. Writable registry opens restrict the
+database and existing SQLite `-wal`, `-shm` and `-journal` files to mode `0600`;
+new databases are created with that mode. Read-only opens do not change permissions.
+Ledger updates preserve verifier IDs in `command` and store the actual executed
+argument list separately as `executed_argv`, alongside result status and notes.
 
 ## Drift checks
 

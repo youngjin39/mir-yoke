@@ -14,7 +14,6 @@ import asyncio
 import json
 import os
 import pathlib
-import shlex
 import subprocess
 import tempfile
 import time
@@ -389,7 +388,7 @@ class MirExecutor:
         category: str,
         result: SubprocessResult,
     ) -> LedgerUpdate:
-        """Find entry by id in tdd.json. Update categories[category] with status/command/notes.
+        """Update status, executed argv and notes while preserving the verifier ID.
 
         Atomic write: write to temp file in same dir, then os.replace().
         Raises FileNotFoundError if ledger_path missing.
@@ -409,7 +408,6 @@ class MirExecutor:
 
             previous_status: str | None = categories[category].get("status")
             new_status = "pass" if result.exit_code == 0 else "fail"
-            command_str = " ".join(shlex.quote(p) for p in result.command)
             notes = (
                 f"P0-J auto: rc={result.exit_code}, stderr first 200 chars: {result.stderr[:200]!r}"
             )
@@ -417,7 +415,7 @@ class MirExecutor:
             categories[category].update(
                 {
                     "status": new_status,
-                    "command": command_str,
+                    "executed_argv": result.command,
                     "notes": notes,
                 }
             )

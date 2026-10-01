@@ -95,7 +95,9 @@ def test_should_use_agent_route_when_dispatch_brief_names_agent(
     assert final_calls[0]["expect_changes"] is False
 
 
-def test_should_fail_closed_when_brief_agent_is_unresolved(tmp_path, monkeypatch):
+def test_should_dispatch_without_route_when_brief_agent_definition_missing(
+    tmp_path, monkeypatch, capsys,
+):
     brief = tmp_path / "brief.json"
     brief.write_text(json.dumps({"expanded_goal": "Review", "target_agent": "missing"}))
     monkeypatch.setattr(policy, "load_sub_agent_policy", lambda root: SimpleNamespace(
@@ -105,12 +107,19 @@ def test_should_fail_closed_when_brief_agent_is_unresolved(tmp_path, monkeypatch
     ))
     calls = []
     monkeypatch.setattr(dispatch, "build_codex_mcp_runner", lambda *a, **kw: calls.append(kw))
+    monkeypatch.setattr(dispatch, "run_dispatch", lambda *a, **kw: dispatch.DispatchOutcome(
+        "completed", 1, False, None, SimpleNamespace(dispatch_id="unrouted"),
+    ))
+    monkeypatch.setattr(dispatch, "finalize_dispatch", lambda *a, **kw: (
+        dispatch.FinalizeResult("reviewed", "passed", [])
+    ))
     args = cli._build_parser().parse_args([
         "execute", "--dispatch", "--repo-root", str(tmp_path),
         "--dispatch-brief", str(brief),
     ])
-    assert cli._handle_dispatch(args, tmp_path) == 1
-    assert calls == []
+    assert cli._handle_dispatch(args, tmp_path) == 0
+    assert calls[0].get("agent_route") is None
+    assert "warning" in capsys.readouterr().err.lower()
 
 
 @pytest.mark.parametrize("entry", ["dispatch", "execute", "background"])

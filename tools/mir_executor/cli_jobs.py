@@ -222,6 +222,8 @@ def _handle_resume(api, args: argparse.Namespace) -> int:
     )
     execute_args.allow_harness_self_modify = job.allow_harness_self_modify
     if options is not None:
+        if args.timeout is None and "timeout" in options:
+            execute_args.timeout = options["timeout"]
         for name in (
             "allow_paths", "verify_cmds", "expect_changes", "change_id", "category",
             "model", "reasoning_effort", "max_codex_attempts", "execution_backend",

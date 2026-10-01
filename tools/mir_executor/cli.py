@@ -432,7 +432,7 @@ def _dispatch_options_json(
         name: getattr(args, name, None)
         for name in (
             "allow_paths", "verify_cmds", "expect_changes", "change_id", "category",
-            "max_codex_attempts", "finalize_lock_timeout",
+            "max_codex_attempts", "finalize_lock_timeout", "timeout",
         )
     }
     options.update(

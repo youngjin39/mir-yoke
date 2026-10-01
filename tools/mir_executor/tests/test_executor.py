@@ -366,11 +366,11 @@ def test_update_ledger_sets_status_fail_on_nonzero_exit(tmp_path, monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# 9. update_ledger writes command field
+# 9. update_ledger records executed argv separately from verifier IDs
 # ---------------------------------------------------------------------------
 
 
-def test_update_ledger_writes_command_field(tmp_path):
+def test_update_ledger_records_executed_argv(tmp_path):
     ledger_path = _make_ledger(tmp_path, {"unit": {"status": "planned"}})
     executor = MirExecutor(repo_root=tmp_path, ledger_path=ledger_path)
     result = SubprocessResult(
@@ -382,9 +382,9 @@ def test_update_ledger_writes_command_field(tmp_path):
     )
     executor.update_ledger("test-change-id", "unit", result)
     reloaded = json.loads(ledger_path.read_text(encoding="utf-8"))
-    cmd_field = reloaded["changes"][0]["categories"]["unit"]["command"]
-    assert "codex" in cmd_field
-    assert "exec" in cmd_field
+    category = reloaded["changes"][0]["categories"]["unit"]
+    assert category["executed_argv"] == ["codex", "exec pytest"]
+    assert "command" not in category
 
 
 # ---------------------------------------------------------------------------

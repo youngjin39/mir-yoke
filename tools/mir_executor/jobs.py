@@ -22,8 +22,10 @@ from __future__ import annotations
 
 import datetime
 import json
+import os
 import pathlib
 import sqlite3
+import stat
 import threading
 from dataclasses import dataclass
 
@@ -136,6 +138,24 @@ class JobRegistry:
             )
         else:
             db_path.parent.mkdir(parents=True, exist_ok=True)
+            try:
+                descriptor = os.open(
+                    db_path,
+                    os.O_RDWR
+                    | os.O_CREAT
+                    | os.O_EXCL
+                    | getattr(os, "O_NOFOLLOW", 0),
+                    0o600,
+                )
+            except FileExistsError:
+                metadata = db_path.lstat()
+                if not stat.S_ISREG(metadata.st_mode):
+                    raise ValueError(
+                        f"jobs database must be a regular file: {db_path}"
+                    ) from None
+                os.chmod(db_path, 0o600)
+            else:
+                os.close(descriptor)
             self._conn = sqlite3.connect(
                 str(db_path),
                 check_same_thread=False,
@@ -144,6 +164,17 @@ class JobRegistry:
         self._lock = threading.Lock()
         if not read_only:
             self._ensure_schema()
+            self._protect_storage_files()
+
+    def _protect_storage_files(self) -> None:
+        """Restrict the database and SQLite sidecars to the current user."""
+        for suffix in ("", "-journal", "-shm", "-wal"):
+            candidate = pathlib.Path(f"{self._db_path}{suffix}")
+            try:
+                if stat.S_ISREG(candidate.lstat().st_mode):
+                    os.chmod(candidate, 0o600)
+            except FileNotFoundError:
+                continue
 
     def _ensure_schema(self) -> None:
         """CREATE TABLE IF NOT EXISTS jobs + index — idempotent."""
@@ -235,7 +266,7 @@ class JobRegistry:
             job.category,
             job.family,
             job.repo_root,
-            json.dumps(job.codex_args),
+            json.dumps([sanitize_persisted_text(arg) for arg in job.codex_args]),
             job.dispatch_brief_path,
             1 if job.allow_harness_self_modify else 0,
             job.resume_count,
@@ -264,6 +295,7 @@ class JobRegistry:
         with self._lock:
             with self._conn:
                 self._conn.execute(sql, params)
+            self._protect_storage_files()
 
     def update_route_metadata(
         self,
@@ -286,6 +318,7 @@ class JobRegistry:
                         job_id,
                     ),
                 )
+            self._protect_storage_files()
 
     def update_ai_run_metadata(
         self, job_id: str, metadata: dict[str, object] | None
@@ -302,6 +335,7 @@ class JobRegistry:
                     "UPDATE jobs SET ai_run_metadata = ? WHERE job_id = ?",
                     (payload, job_id),
                 )
+            self._protect_storage_files()
 
     def update_status(
         self,
@@ -342,6 +376,7 @@ class JobRegistry:
         with self._lock:
             with self._conn:
                 self._conn.execute(sql, params)
+            self._protect_storage_files()
 
     def cancel(self, job_id: str) -> bool:
         """Set cancel_requested=1 for job_id.  Returns True if row was found, False otherwise."""
@@ -349,7 +384,8 @@ class JobRegistry:
         with self._lock:
             with self._conn:
                 cur = self._conn.execute(sql, (job_id,))
-                return cur.rowcount > 0
+            self._protect_storage_files()
+            return cur.rowcount > 0
 
     # ------------------------------------------------------------------
     # Read operations
@@ -485,6 +521,7 @@ class JobRegistry:
         with self._lock:
             with self._conn:
                 self._conn.execute(sql, (resumed_at, job_id))
+            self._protect_storage_files()
 
     def has_artifact_sweep(self, job_id: str, *, path: str | None = None) -> bool:
         """Return whether deletion evidence exists for a job or one attempt path."""
@@ -509,6 +546,7 @@ class JobRegistry:
                     "VALUES (?, ?, ?, ?, ?)",
                     (job_id, path, files, size_bytes, swept_at),
                 )
+            self._protect_storage_files()
 
     def close(self) -> None:
         """Close the underlying sqlite3 connection."""

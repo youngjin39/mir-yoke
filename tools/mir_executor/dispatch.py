@@ -11,10 +11,13 @@ import hashlib
 import json
 import os
 import pathlib
+import re
 import shutil
 import subprocess
+import sys
 import tempfile
 import time
+import tomllib
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager, nullcontext
 from dataclasses import asdict, dataclass
@@ -112,7 +115,7 @@ class FinalizeResult:
 
 @dataclass(frozen=True)
 class AgentRoute:
-    """Executable identity supplied by the repository route hook."""
+    """Executable identity from a repository definition or local route hook."""
 
     target_agent: str
     execution_backend: str
@@ -128,11 +131,113 @@ def agent_route_expects_changes(agent_route: AgentRoute) -> bool:
     return agent_route.sandbox != "read-only"
 
 
-def resolve_agent_route(main_repo_root: pathlib.Path, target_agent: str) -> AgentRoute:
+def _frontmatter_is_read_only(disallowed_tools: str | None) -> bool:
+    if not disallowed_tools:
+        return False
+    tools = {item.strip().strip("[]") for item in disallowed_tools.split(",")}
+    return {"Write", "Edit"}.issubset(tools)
+
+
+def _agent_definition_fields(text: str) -> tuple[dict[str, str], str]:
+    """Parse the flat, optionally multiline quoted frontmatter used by agents."""
+    match = re.match(r"^---\s*\n(.*?)\n---\s*(?:\n|$)", text, re.DOTALL)
+    if match is None:
+        raise ValueError("agent definition requires leading frontmatter")
+    fields: dict[str, str] = {}
+    lines = iter(match.group(1).splitlines())
+    for line in lines:
+        field = re.match(r"^([a-zA-Z_][a-zA-Z0-9_]*):\s*(.*)$", line)
+        if field is None:
+            continue
+        key, value = field.groups()
+        value = value.strip()
+        if value.startswith('"'):
+            while len(value) < 2 or not value.endswith('"') or value.endswith('\\"'):
+                continuation = next(lines, None)
+                if continuation is None:
+                    break
+                value += "\n" + continuation
+            if len(value) >= 2 and value.endswith('"'):
+                value = value[1:-1]
+        fields[key] = value
+    return fields, text[match.end():].strip()
+
+
+def resolve_agent_route(
+    main_repo_root: pathlib.Path, target_agent: str,
+) -> AgentRoute | None:
+    """Prefer the local hook, then repository definitions, then an unrouted dispatch."""
     route = invoke_hook(main_repo_root, "resolve_agent_route", main_repo_root, target_agent)
-    if not isinstance(route, AgentRoute):
-        raise ValueError(f"unresolved target agent: {target_agent!r}")
-    return route
+    if route is not None:
+        if not isinstance(route, AgentRoute):
+            raise ValueError(f"invalid route for target agent: {target_agent!r}")
+        return route
+    if not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", target_agent):
+        raise ValueError(f"invalid target_agent: {target_agent!r}")
+    repo_root = pathlib.Path(main_repo_root).resolve()
+    definition = repo_root / ".claude" / "agents" / f"{target_agent}.md"
+    if not definition.is_file():
+        print(
+            f"[mir_executor] warning: no definition for target agent {target_agent!r}; "
+            "dispatching without an agent route",
+            file=sys.stderr,
+        )
+        return None
+    text = definition.read_text(encoding="utf-8")
+    fields, instructions = _agent_definition_fields(text)
+    backend = fields.get("execution_backend")
+    if backend not in {"codex", "claude"}:
+        raise ValueError(f"agent {target_agent!r} has no executable backend")
+    sandbox = "read-only" if _frontmatter_is_read_only(fields.get("disallowedTools")) else None
+    model = fields.get("model") if backend == "claude" else None
+    effort = fields.get("effort") or None
+    if backend == "codex":
+        codex_definition = repo_root / ".codex" / "agents" / f"{target_agent}.toml"
+        if codex_definition.is_file():
+            definition = codex_definition
+            text = definition.read_text(encoding="utf-8")
+            parsed = tomllib.loads(text)
+            if isinstance(parsed.get("developer_instructions"), str):
+                if parsed["developer_instructions"].strip():
+                    instructions = parsed["developer_instructions"].strip()
+            declared_sandbox = parsed.get("sandbox_mode")
+            if declared_sandbox is not None:
+                if declared_sandbox not in {"read-only", "workspace-write", "danger-full-access"}:
+                    raise ValueError(f"agent {target_agent!r} has invalid sandbox_mode")
+                # A generated definition may narrow; widening to full access needs the
+                # repository's local opt-in (codex_sandbox_default).
+                widens = declared_sandbox == "danger-full-access" and local_config(
+                    repo_root
+                ).get("codex_sandbox_default") != "danger-full-access"
+                if sandbox != "read-only" and not widens:
+                    sandbox = declared_sandbox
+        if target_agent == "codex-final-reviewer":
+            sandbox = "read-only"
+        elif sandbox is None:
+            sandbox = "workspace-write"
+        from tools.mir_executor.policy import (
+            _read_json_object,
+            load_sub_agent_policy,
+            model_routing_lock_path,
+        )
+
+        lock_path = model_routing_lock_path(repo_root)
+        lock = {}
+        if lock_path.is_file():
+            try:
+                lock = _read_json_object(lock_path)
+            except (OSError, ValueError):
+                pass
+        category = lock.get("agent_criteria", {}).get(target_agent, {}).get(
+            "category", "implementation",
+        )
+        policy_route = load_sub_agent_policy(repo_root).resolve_category(category)
+        model = policy_route["model"]
+        effort = effort or policy_route["reasoning_effort"]
+    return AgentRoute(
+        target_agent, backend, model, effort, definition.relative_to(repo_root).as_posix(),
+        hashlib.sha256(text.encode("utf-8")).hexdigest(), instructions, sandbox,
+    )
 
 
 @dataclass(frozen=True)

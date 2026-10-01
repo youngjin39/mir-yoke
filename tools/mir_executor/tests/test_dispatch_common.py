@@ -170,8 +170,7 @@ def test_common_agent_route_api(tmp_path):
         "review", "codex", "m", "high", "def", "sha", "instructions", "read-only"
     )
     assert not dispatch.agent_route_expects_changes(route)
-    with pytest.raises(ValueError):
-        dispatch.resolve_agent_route(tmp_path, "missing")
+    assert dispatch.resolve_agent_route(tmp_path, "missing") is None
 
 
 def test_common_failure_preserves_metadata(tmp_path):

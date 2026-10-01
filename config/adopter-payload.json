@@ -581,7 +581,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "config/mir-executor-common.json",
-      "sha256": "b06ae3c9f995c99b946a8b0c50a6e27e965e9f9b0cfa85e44a3ee9f3d12b4731"
+      "sha256": "d969de27dbd79c0d50ad87eea513f7a341110d8622213f8942d4e79a5be43623"
     },
     {
       "classification": "template-maintainer-tool",
@@ -2255,7 +2255,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "docs/operations/mir-executor-sync.md",
-      "sha256": "434535de339a957c7c9449d1f1fbea8a3c84c24029c073f9aa00c1639f9c1e2f"
+      "sha256": "f081261bc131c581ccfd54dac1466c5bb50e2ad003d449dc87de7aa93ed359af"
     },
     {
       "classification": "reference",
@@ -4793,7 +4793,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/COMMON_MANIFEST.json",
-      "sha256": "b06ae3c9f995c99b946a8b0c50a6e27e965e9f9b0cfa85e44a3ee9f3d12b4731"
+      "sha256": "d969de27dbd79c0d50ad87eea513f7a341110d8622213f8942d4e79a5be43623"
     },
     {
       "classification": "optional-consumer-tool",
@@ -4811,13 +4811,13 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/cli.py",
-      "sha256": "6ddd80d412cfa2ccfbf0f28abaa193a4f1be43632077b9caa8e8cd6032aeb03c"
+      "sha256": "4b72f3da1e692540b81d097715dc0c0c5b275ea68021187b0903aa1fe00af3f7"
     },
     {
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/cli_jobs.py",
-      "sha256": "7d90a23912cc35947ea09a5e951e1dcc51da1fc5caa414f3f398ca430b522e99"
+      "sha256": "234218572c17c095760c1b458fbf01d98c17ea755aef9fbfeb95d0abc122a879"
     },
     {
       "classification": "optional-consumer-tool",
@@ -4835,19 +4835,19 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/dispatch.py",
-      "sha256": "0ce510dc1d4c5041173809b1a1b2360ae3da790a8cfbad2fb6f4dedb303072bc"
+      "sha256": "9ccfdf67021fb9569fc01e30538fb9c435da7a5b8784eb61f60b39e8d0f3eb16"
     },
     {
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/executor.py",
-      "sha256": "df7cf4d9cdfb837eb159ddf1a9cb732454d750be19a4109ec3c45db68e70620e"
+      "sha256": "83cc55702597d2b16ed97e14cd200663f13b4c5d5feb41a594f0240cc1da026e"
     },
     {
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/jobs.py",
-      "sha256": "7c6f110448be1df0c53ae18ca2c1c4f7f41b6bd9fa6a2f25f4904d0d6fcbf3ad"
+      "sha256": "daa7dd5d0dc0136fc8ae8fc23ef057d33e56e5ffd3e5ee36cdff36bce379121c"
     },
     {
       "classification": "optional-consumer-tool",
@@ -4961,13 +4961,13 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/tests/test_dispatch_common.py",
-      "sha256": "7c24a62a00e71ed1d6c36b8280f037e5f5bf60757b13238c9b5a5607954d46a0"
+      "sha256": "56286bba6bf98221a5222ec2acd38eefa2024ba7321de46f3615fe1e49f66a2e"
     },
     {
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/tests/test_executor.py",
-      "sha256": "6b9284125791d2a091ec3dc7a15782826b651da3d7a4f23d4875e1159113afc1"
+      "sha256": "60e7bfc5b9adc9509c18ae866ee707340dedc9b3e085b184361cba3bb254bd85"
     },
     {
       "classification": "optional-consumer-tool",
@@ -5008,8 +5008,14 @@
     {
       "classification": "optional-consumer-tool",
       "disposition": "remove",
+      "path": "tools/mir_executor/tests/test_v31_regressions.py",
+      "sha256": "950d39b89e192a02d084cb22f119cd54746fc83476d0571249edebe41790da2c"
+    },
+    {
+      "classification": "optional-consumer-tool",
+      "disposition": "remove",
       "path": "tools/mir_executor/tests/test_v3_cli_routes.py",
-      "sha256": "5ce4a524d5f6ad62134f8d2d65c2b4cf2b3e76ae25a253dcbbca85287d5a2e44"
+      "sha256": "1c8b491c81ec7d150455b1733d54fcdad38179e502aa0c7c65a509b64fdbf318"
     },
     {
       "classification": "optional-consumer-tool",
