@@ -862,7 +862,7 @@ def _handle_execute(args: argparse.Namespace) -> int:
             executor._validate_ledger_entry(args.change_id, args.category)
         except (FileNotFoundError, KeyError, ValueError) as exc:
             registry.update_status(
-                job_id, "failed", stderr=str(exc), completed_at=_utc_now()
+                job_id, "failed", exit_code=1, stderr=str(exc), completed_at=_utc_now()
             )
             registry.close()
             print(f"[mir_executor] {type(exc).__name__}: {exc}", file=sys.stderr)

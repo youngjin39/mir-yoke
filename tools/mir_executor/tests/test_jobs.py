@@ -840,3 +840,86 @@ def test_update_status_noop_on_unknown_job(tmp_path):
     reg.update_status("ghost-job", "completed", exit_code=0)
     # Nothing was inserted
     assert reg.get("ghost-job") is None
+
+
+@pytest.mark.parametrize("message,expected_stderr", [
+    ("provider unavailable", "provider unavailable"),
+    ("provider unavailable api_key=test-secret", "provider unavailable api_key=[REDACTED]"),
+])
+def test_cli_execute_records_exit_code_when_background_provider_raises(
+    tmp_path,
+    monkeypatch,
+    message,
+    expected_stderr,
+):
+    import io
+    from contextlib import redirect_stdout
+
+    from tools.mir_executor.cli import main
+    from tools.mir_executor.executor import MirExecutor
+
+    _make_ledger(tmp_path)
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    jobs_db = tmp_path / "tasks" / "jobs.db"
+
+    async def raise_provider_error(self, codex_args, timeout_seconds=None):
+        raise RuntimeError(message)
+
+    monkeypatch.setattr(MirExecutor, "run_codex_async", raise_provider_error)
+
+    stdout = io.StringIO()
+    with redirect_stdout(stdout), pytest.raises(SystemExit) as stopped:
+        main([
+            "--jobs-db", str(jobs_db),
+            "execute",
+            "--background",
+            "--change-id", "bg-test-change",
+            "--category", "unit",
+            "--codex-args", "ignored",
+            "--repo-root", str(tmp_path),
+        ])
+
+    assert stopped.value.code == 1
+    job_id = stdout.getvalue().split("job_id=")[-1].strip()
+    registry = JobRegistry(jobs_db)
+    job = registry.get(job_id)
+    registry.close()
+    assert job is not None
+    assert job.status == "failed"
+    assert job.exit_code == 1
+    assert job.stderr == expected_stderr
+    assert job.completed_at is not None
+
+
+def test_cli_execute_records_exit_code_when_background_ledger_is_missing(
+    tmp_path,
+) -> None:
+    import io
+    from contextlib import redirect_stdout
+
+    from tools.mir_executor.cli import main
+
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    jobs_db = tmp_path / "tasks" / "jobs.db"
+    stdout = io.StringIO()
+    with redirect_stdout(stdout), pytest.raises(SystemExit) as stopped:
+        main([
+            "--jobs-db", str(jobs_db),
+            "execute",
+            "--background",
+            "--change-id", "missing-change",
+            "--category", "unit",
+            "--codex-args", "ignored",
+            "--repo-root", str(tmp_path),
+        ])
+
+    assert stopped.value.code == 1
+    job_id = stdout.getvalue().split("job_id=")[-1].strip()
+    registry = JobRegistry(jobs_db)
+    job = registry.get(job_id)
+    registry.close()
+    assert job is not None
+    assert job.status == "failed"
+    assert job.exit_code == 1
+    assert "tdd.json" in job.stderr
+    assert job.completed_at is not None

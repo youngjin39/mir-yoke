@@ -68,6 +68,7 @@ async def _run_background(
         registry.update_status(
             job_id,
             "failed",
+            exit_code=1,
             stderr=str(exc),
             completed_at=api._utc_now(),
         )

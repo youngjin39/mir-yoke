@@ -1,5 +1,38 @@
 # Plan
 
+## Active task: executor common v3.3 (2026-10-01)
+
+Authority: the current user request and supplied `spec-executor-v33.md`.
+This cursor is the design authority for background failure exit codes and the
+read-only route invariant after local hooks. Work only in mir-yoke; named
+consumer files are read-only. Do not commit or push.
+
+- [x] Port background regression tests and add route tests; observe failure first.
+- [x] Record exit_code=1 and enforce read-only routes; observe focused passes.
+- [x] Update the sync guide and regenerate common manifests and affected payload.
+- [x] Run full pytest, Ruff, Python 3.11 compilation, self-target sync and parity.
+
+Fail-first: `7 failed, 5 passed, 29 deselected in 0.20s`.
+Same initial selection after implementation: `12 passed, 29 deselected in 0.16s`.
+Expanded regression selection: `18 passed, 29 deselected in 0.24s`.
+Affected files: `47 passed in 0.46s`.
+Ruff (`tools tests`): `All checks passed!`. Python 3.11.16 compiled all 15
+common manifest files. Self-target sync and Codex parity passed; manifest, sync
+and adopter tests: `35 passed in 4.16s`.
+
+First full run: `1 failed, 1597 passed in 210.13s (0:03:30)`.
+The exact adopter-payload test failed because this cursor was updated during
+that run, after payload generation. Regenerate the payload before rerunning;
+keep hashed source documents unchanged while the suite executes.
+
+Final full pytest: `1598 passed in 198.08s (0:03:18)`.
+After regenerating the payload, exact inventory, adopter, sync and manifest checks
+passed (`41 passed in 4.77s`). Final cursor updates are followed by payload
+regeneration and the same generated-inventory checks. No commit, push or consumer
+write occurred.
+
+The predecessor records below preserve earlier implementation evidence.
+
 ## Active task: executor common v3.2 (2026-10-01)
 
 Authority: the current user request and supplied `spec-executor-v32.md`.

@@ -20,7 +20,7 @@ import time
 import tomllib
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager, nullcontext
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 
 try:
     import fcntl as _fcntl
@@ -166,16 +166,24 @@ def _agent_definition_fields(text: str) -> tuple[dict[str, str], str]:
 def resolve_agent_route(
     main_repo_root: pathlib.Path, target_agent: str,
 ) -> AgentRoute | None:
-    """Prefer the local hook, then repository definitions, then an unrouted dispatch."""
+    """Prefer local routes while preserving repository read-only constraints."""
     route = invoke_hook(main_repo_root, "resolve_agent_route", main_repo_root, target_agent)
     if route is not None:
         if not isinstance(route, AgentRoute):
             raise ValueError(f"invalid route for target agent: {target_agent!r}")
-        return route
     if not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", target_agent):
         raise ValueError(f"invalid target_agent: {target_agent!r}")
     repo_root = pathlib.Path(main_repo_root).resolve()
     definition = repo_root / ".claude" / "agents" / f"{target_agent}.md"
+    if route is not None:
+        fields = {}
+        if definition.is_file():
+            fields, _ = _agent_definition_fields(definition.read_text(encoding="utf-8"))
+        if target_agent == "codex-final-reviewer" or _frontmatter_is_read_only(
+            fields.get("disallowedTools")
+        ):
+            route = replace(route, sandbox="read-only")
+        return route
     if not definition.is_file():
         print(
             f"[mir_executor] warning: no definition for target agent {target_agent!r}; "
@@ -188,7 +196,10 @@ def resolve_agent_route(
     backend = fields.get("execution_backend")
     if backend not in {"codex", "claude"}:
         raise ValueError(f"agent {target_agent!r} has no executable backend")
-    sandbox = "read-only" if _frontmatter_is_read_only(fields.get("disallowedTools")) else None
+    sandbox = "read-only" if (
+        target_agent == "codex-final-reviewer"
+        or _frontmatter_is_read_only(fields.get("disallowedTools"))
+    ) else None
     model = fields.get("model") if backend == "claude" else None
     effort = fields.get("effort") or None
     if backend == "codex":
@@ -211,9 +222,7 @@ def resolve_agent_route(
                 ).get("codex_sandbox_default") != "danger-full-access"
                 if sandbox != "read-only" and not widens:
                     sandbox = declared_sandbox
-        if target_agent == "codex-final-reviewer":
-            sandbox = "read-only"
-        elif sandbox is None:
+        if sandbox is None:
             sandbox = "workspace-write"
         from tools.mir_executor.policy import (
             _read_json_object,

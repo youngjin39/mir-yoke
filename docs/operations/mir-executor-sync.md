@@ -85,7 +85,10 @@ target root. The sole admission exception is the optional home-owned guard below
   inherited from async calls, so an existing CLI lease is acquired only once.
   Independent execution contexts still acquire the local lease separately.
 - `resolve_agent_route(repo_root, name)` returns an `AgentRoute` override, or `None`
-  to use the common resolver.
+  to use the common resolver. After the hook returns, common code enforces
+  `read-only` when the target Markdown definition denies both `Write` and `Edit`,
+  or the target is `codex-final-reviewer`. This also makes expect-changes false;
+  a hook cannot widen these agents, but may narrow any other agent.
 - `resolve_route_key(repo_root, key)` returns `(model, effort)`.
 - `validate_brief(brief, repo_root)` accepts a JSON file Path or plain prompt text.
   A file hook may return a typed object/dict containing `expanded_goal`.
@@ -123,7 +126,8 @@ overrides before dispatch, even when its stored options skip `pre_execute`.
 Without this key, each entry point retains its previous timeout validation.
 
 A brief's `target_agent` selects the common resolver and its target-local route
-hook. A non-null local route wins. Otherwise, the common resolver reads
+hook. A non-null local route wins subject to the common read-only invariant above.
+Otherwise, the common resolver reads
 `.claude/agents/<target_agent>.md`: frontmatter declares `execution_backend`,
 `model` and optional `effort`; the body supplies base instructions. Denying both
 `Write` and `Edit` through `disallowedTools` makes the route read-only. Codex
@@ -207,6 +211,8 @@ database and existing SQLite `-wal`, `-shm` and `-journal` files to mode `0600`;
 new databases are created with that mode. Read-only opens do not change permissions.
 Ledger updates preserve verifier IDs in `command` and store the actual executed
 argument list separately as `executed_argv`, alongside result status and notes.
+Background provider exceptions and ledger-validation failures persist status
+`failed`, `exit_code=1`, redacted stderr and `completed_at` before the CLI exits.
 
 ## Verifier environment
 
