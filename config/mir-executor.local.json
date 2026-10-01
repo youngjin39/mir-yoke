@@ -1,0 +1,7 @@
+{
+  "verifiers": {
+    "pytest": ["uv", "run", "pytest", "-q"],
+    "ruff": ["uv", "run", "ruff", "check"],
+    "codex-sync": ["uv", "run", "python", "scripts/verify_codex_sync.py"]
+  }
+}

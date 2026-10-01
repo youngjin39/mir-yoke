@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import pathlib
+import shlex
 import shutil
 import subprocess
 
@@ -39,7 +40,7 @@ from tools.mir_executor.dispatch import (
     finalize_dispatch,
     run_dispatch,
 )
-from tools.mir_executor.executor import LedgerUpdate, MirExecutor, SubprocessResult
+from tools.mir_executor.executor import MirExecutor
 from tools.mir_executor.jobs import JobRecord, JobRegistry
 from tools.mir_executor.worktree import (
     DispatchWorktree,
@@ -73,6 +74,18 @@ def _make_repo(tmp_path: pathlib.Path) -> pathlib.Path:
     (repo / "pkg" / "mod.py").write_text("x = 1\n", encoding="utf-8")
     _git(repo, "add", "-A")
     _git(repo, "commit", "-m", "init")
+    (repo / "config").mkdir()
+    commands = [
+        "true",
+        "false",
+        "sh -c 'exit 5'",
+        "sleep 30",
+        "sh -c 'test ! -e pkg/local.cache && touch pkg/verify.tmp'",
+    ]
+    (repo / "config/mir-executor.local.json").write_text(
+        json.dumps({"verifiers": {cmd: shlex.split(cmd) for cmd in commands}})
+    )
+    _write_sub_agent_policy(repo, "user_command_priority")
     return repo
 
 
@@ -136,7 +149,15 @@ def _write_sub_agent_policy(
     policy_path = repo / "config" / "sub-agent-policy.json"
     policy_path.parent.mkdir(parents=True, exist_ok=True)
     policy_path.write_text(
-        json.dumps({"mode": mode, "per_project": per_project or {}}),
+        json.dumps(
+            {
+                "mode": mode,
+                "per_project": per_project or {},
+                "routing": {
+                    "default": {"model": "test-model", "reasoning_effort": "high"}
+                },
+            }
+        ),
         encoding="utf-8",
     )
 
@@ -588,11 +609,15 @@ def test_run_codex_rewrites_short_workspace_write(
 
         def call_codex(self, **kwargs: object) -> CodexMcpResult:
             calls.append(kwargs)
-            return CodexMcpResult(content_text="ok", thread_id="thread-test", raw_result={})
+            return CodexMcpResult(
+                content_text="ok", thread_id="thread-test", raw_result={}
+            )
 
     monkeypatch.setenv("CODEX_BIN", "/usr/bin/true")
     monkeypatch.setenv("MIR_CODEX_MAIN", "1")
-    monkeypatch.setattr("tools.mir_executor.executor.CodexMcpClient", FakeCodexMcpClient)
+    monkeypatch.setattr(
+        "tools.mir_executor.executor.CodexMcpClient", FakeCodexMcpClient
+    )
 
     executor = MirExecutor(tmp_path)
     result = executor.run_codex(
@@ -601,7 +626,7 @@ def test_run_codex_rewrites_short_workspace_write(
     )
 
     assert calls[0]["prompt"] == "hello"
-    assert calls[0]["sandbox"] == "danger-full-access"
+    assert calls[0]["sandbox"] == "workspace-write"
     assert result.command == ["/usr/bin/true", "app-server"]
 
 
@@ -623,18 +648,22 @@ def test_run_codex_leaves_args_without_sandbox_flag(
 
         def call_codex(self, **kwargs: object) -> CodexMcpResult:
             calls.append(kwargs)
-            return CodexMcpResult(content_text="ok", thread_id="thread-test", raw_result={})
+            return CodexMcpResult(
+                content_text="ok", thread_id="thread-test", raw_result={}
+            )
 
     monkeypatch.setenv("CODEX_BIN", "/usr/bin/true")
     monkeypatch.setenv("MIR_CODEX_MAIN", "1")
-    monkeypatch.setattr("tools.mir_executor.executor.CodexMcpClient", FakeCodexMcpClient)
+    monkeypatch.setattr(
+        "tools.mir_executor.executor.CodexMcpClient", FakeCodexMcpClient
+    )
 
     codex_args = ["exec", "--skip-git-repo-check", "hello"]
     executor = MirExecutor(tmp_path)
     result = executor.run_codex(codex_args, cwd=tmp_path)
 
     assert calls[0]["prompt"] == "hello"
-    assert calls[0]["sandbox"] == "danger-full-access"
+    assert calls[0]["sandbox"] == "workspace-write"
     assert result.command == ["/usr/bin/true", "app-server"]
 
 
@@ -661,8 +690,12 @@ def test_build_codex_mcp_runner_success_writes_stdout_and_event(
             if callable(progress_callback):
                 progress_callback(
                     "item/agentMessage/delta",
-                    {"threadId": "thread-abc", "turnId": "turn-abc",
-                     "itemId": "item-1", "delta": "working"},
+                    {
+                        "threadId": "thread-abc",
+                        "turnId": "turn-abc",
+                        "itemId": "item-1",
+                        "delta": "working",
+                    },
                 )
             return CodexMcpResult(
                 content_text="mcp completed",
@@ -682,7 +715,9 @@ def test_build_codex_mcp_runner_success_writes_stdout_and_event(
         events = _read_events(wt.path / ".mir-dispatch" / "events.jsonl")
         event = events[-1]
 
-        assert attempt == CodexAttempt(exit_code=0, stdout="mcp completed")
+        assert attempt == CodexAttempt(
+            exit_code=0, stdout="mcp completed", mcp_protocol="app-server"
+        )
         assert init_kwargs[0]["call_timeout"] == 5.0
         call = calls[0].copy()
         assert callable(call.pop("progress_callback"))
@@ -690,7 +725,7 @@ def test_build_codex_mcp_runner_success_writes_stdout_and_event(
             {
                 "prompt": "structured prompt",
                 "cwd": str(wt.path),
-                "sandbox": "danger-full-access",
+                "sandbox": "workspace-write",
                 "approval_policy": "never",
                 "base_instructions": _MCP_DISPATCH_BASE_INSTRUCTIONS,
                 "config": {"project_doc_max_bytes": 0},
@@ -1099,6 +1134,8 @@ def test_build_dispatch_runner_defaults_codex_backend_to_mcp(monkeypatch) -> Non
         prompt: str,
         *,
         timeout_seconds: int = 600,
+        model: str | None = None,
+        reasoning_effort: str | None = None,
     ):
         _ = timeout_seconds
         selected.append(f"mcp:{prompt}")
@@ -1115,6 +1152,8 @@ def test_build_dispatch_runner_defaults_codex_backend_to_mcp(monkeypatch) -> Non
         repo_root=pathlib.Path("/repo"),
         prompt="structured prompt",
         timeout_seconds=5,
+        model="test-model",
+        reasoning_effort="high",
     )
 
     assert selected == ["mcp:structured prompt"]
@@ -1410,14 +1449,17 @@ def test_dispatch_records_jobregistry_and_outage_accumulates(
         for _ in range(OUTAGE_THRESHOLD):
             with pytest.raises(SystemExit) as excinfo:
                 cli.main(argv)
-            assert excinfo.value.code == 1
+            assert excinfo.value.code == 9
             capsys.readouterr()
 
-        assert count_consecutive_codex_failures(db_path, change_id_prefix="C") >= OUTAGE_THRESHOLD
+        assert (
+            count_consecutive_codex_failures(db_path, change_id_prefix="C")
+            >= OUTAGE_THRESHOLD
+        )
 
         with pytest.raises(SystemExit) as excinfo:
             cli.main(argv)
-        assert excinfo.value.code == 1
+        assert excinfo.value.code == 9
         assert "reason='codex-outage'" in capsys.readouterr().out
         assert mcp_calls
         assert {call["prompt"] for call in mcp_calls} == {"x"}
@@ -1571,7 +1613,7 @@ def test_mcp_failure_still_counts_as_codex_failure(
                 ]
             )
 
-        assert excinfo.value.code == 1
+        assert excinfo.value.code == 9
         assert mcp_calls[0]["prompt"] == "x"
         registry = JobRegistry(db_path)
         try:
@@ -1579,7 +1621,7 @@ def test_mcp_failure_still_counts_as_codex_failure(
             assert len(jobs) == 1
             job = jobs[0]
             assert job.status == "failed"
-            assert job.exit_code == 1
+            assert job.exit_code == 9
             assert job.stdout == f"artifacts=tasks/dispatch/{job.job_id}"
         finally:
             registry.close()
@@ -3179,7 +3221,9 @@ def test_cli_dispatch_codex_args_file_persists_raw_prompt_for_resume(
     repo = _make_repo(tmp_path)
     _make_ledger(repo)
     db_path = tmp_path / "jobs.db"
-    prompt = "Don't shlex \"quoted text\" or --flag-like words.\nKeep apostrophe's line."
+    prompt = (
+        "Don't shlex \"quoted text\" or --flag-like words.\nKeep apostrophe's line."
+    )
     prompt_path = tmp_path / "prompt.txt"
     prompt_path.write_text(prompt, encoding="utf-8")
     brief_path = _write_dispatch_brief_json(tmp_path, "Brief fallback should not win")
@@ -3233,46 +3277,23 @@ def test_cli_dispatch_codex_args_file_persists_raw_prompt_for_resume(
     assert job.codex_args == [prompt]
 
     prompt_path.write_text("changed after dispatch", encoding="utf-8")
-    resume_codex_args: list[list[str]] = []
-
-    def fake_run_codex(
-        self: MirExecutor,
-        codex_args: list[str],
-        timeout_seconds: int = 600,
-        **_kwargs: object,
-    ) -> SubprocessResult:
-        _ = self
-        _ = timeout_seconds
-        resume_codex_args.append(list(codex_args))
-        return SubprocessResult(
-            exit_code=0,
-            stdout="resume-ok",
-            stderr="",
-            duration_seconds=0.1,
-            command=["codex", *codex_args],
+    try:
+        assert (
+            cli.main(["--jobs-db", str(db_path), "resume", "--job-id", job.job_id]) == 0
         )
-
-    def fake_update_ledger(
-        self: MirExecutor,
-        change_id: str,
-        category: str,
-        result: SubprocessResult,
-    ) -> LedgerUpdate:
-        _ = self
-        _ = result
-        return LedgerUpdate(
-            change_id=change_id,
-            category=category,
-            previous_status="planned",
-            new_status="pass",
-            notes="resume test",
-        )
-
-    monkeypatch.setattr(MirExecutor, "run_codex", fake_run_codex)
-    monkeypatch.setattr(MirExecutor, "update_ledger", fake_update_ledger)
-
-    assert cli.main(["--jobs-db", str(db_path), "resume", "--job-id", job.job_id]) == 0
-    assert resume_codex_args == [[prompt]]
+        assert len(mcp_calls) == 2
+        assert mcp_calls[1]["prompt"] == prompt
+        assert persisted_briefs == [prompt, prompt]
+        registry = JobRegistry(db_path)
+        try:
+            resumed = registry.get(job.job_id)
+            assert resumed is not None
+            assert resumed.resume_count == 1
+            assert resumed.status == "completed"
+        finally:
+            registry.close()
+    finally:
+        _cleanup_repo_dispatch_worktrees(repo)
 
 
 def test_cli_dispatch_threads_allow_harness_self_modify_to_finalize_and_registry(

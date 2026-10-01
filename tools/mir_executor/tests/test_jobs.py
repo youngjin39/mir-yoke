@@ -663,9 +663,10 @@ def test_cli_cancel_sets_flag(tmp_path):
 def test_cli_resume_replays_job_with_dispatch_brief(tmp_path, monkeypatch):
     import io
     from contextlib import redirect_stdout
+    from types import SimpleNamespace
 
+    from tools.mir_executor import dispatch, policy
     from tools.mir_executor.cli import main
-    from tools.mir_executor.executor import LedgerUpdate, MirExecutor, SubprocessResult
 
     _make_ledger(tmp_path)
     brief_path = _write_dispatch_brief(tmp_path)
@@ -684,29 +685,27 @@ def test_cli_resume_replays_job_with_dispatch_brief(tmp_path, monkeypatch):
     reg.insert(job)
     reg.close()
 
-    observed_timeouts: list[int | None] = []
+    calls = []
+    monkeypatch.setattr(
+        policy,
+        "load_sub_agent_policy",
+        lambda root: SimpleNamespace(
+            mode="force_codex",
+            resolve_category=lambda cat: {"model": "test", "reasoning_effort": "high"},
+        ),
+    )
+    monkeypatch.setattr(dispatch, "build_codex_mcp_runner", lambda *a, **kw: object())
 
-    def _fake_run_codex(self, codex_args, timeout_seconds: int | None = None):
-        observed_timeouts.append(timeout_seconds)
-        return SubprocessResult(
-            exit_code=0,
-            stdout="resume-ok",
-            stderr="",
-            duration_seconds=0.2,
-            command=["codex", *self.resolve_codex_args(codex_args)],
-        )
+    def fake_dispatch(root, **kwargs):
+        calls.append((root, kwargs))
+        return dispatch.DispatchOutcome("completed", 1, False, None, object())
 
-    def _fake_update_ledger(self, change_id, category, result):
-        return LedgerUpdate(
-            change_id=change_id,
-            category=category,
-            previous_status="planned",
-            new_status="pass",
-            notes="resume test",
-        )
-
-    monkeypatch.setattr(MirExecutor, "run_codex", _fake_run_codex)
-    monkeypatch.setattr(MirExecutor, "update_ledger", _fake_update_ledger)
+    monkeypatch.setattr(dispatch, "run_dispatch", fake_dispatch)
+    monkeypatch.setattr(
+        dispatch,
+        "finalize_dispatch",
+        lambda *a, **kw: dispatch.FinalizeResult("merged", "approved", ["pkg.py"]),
+    )
 
     buf = io.StringIO()
     with redirect_stdout(buf):
@@ -716,17 +715,18 @@ def test_cli_resume_replays_job_with_dispatch_brief(tmp_path, monkeypatch):
     assert rc == 0
     assert "[RESUME] job_id=resumejob" in output
     assert "allow_harness_self_modify=True" in output
-    assert "Resume executor job [role=executor, stack=python]" in output
+    assert calls[0][0] == tmp_path
+    assert "Resume executor job" in calls[0][1]["brief_text"]
 
     reg2 = JobRegistry(jobs_db)
     resumed = reg2.get("resumejob")
     reg2.close()
     assert resumed is not None
     assert resumed.status == "completed"
-    assert resumed.stdout == "resume-ok"
+    assert "artifacts=" in resumed.stdout
     assert resumed.resume_count == 1
     assert resumed.last_resumed_at is not None
-    assert observed_timeouts == [None]
+    assert calls[0][1]["dispatch_id"] != "resumejob"
 
 
 def test_cli_resume_requires_dispatch_brief_path(tmp_path, capsys):

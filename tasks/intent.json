@@ -1,9 +1,9 @@
 {
-  "goal": "Strengthen mir-core:repo-maintenance to the owner-authorized twenty-one items in this repository only; prove regressions fail first and run full verification, leaving ADR-80 release binding to Mir Harness.",
-  "goal_type": "maintenance",
-  "scope": "Owner Discord 1552387906927333458 (2026-09-24), relayed by Mir Harness. Implement the twenty-one-item skill in cwd only; preserve user work, guards, memory, credentials, release versions and locks. No commits or delivery. Generate Codex output only in temporary storage. Prior scope and skill are preserved verbatim in tasks/change_log.md under Twenty-one-item maintenance skill implementation (2026-09-24). tasks/plan.md is the active cursor and design authority.",
+  "goal": "Implement the owner-approved mir_executor common base, optional local hooks/data and explicit sync/drift tooling test-first in mir-yoke only.",
+  "goal_type": "implementation",
+  "scope": "Current user specification; local commits only. No consumer writes, push, tags, releases, capability lock or plugins. tasks/plan.md is the intent and design authority.",
   "priority": "normal",
-  "updated": "2026-09-24",
+  "updated": "2026-10-01",
   "history": [
     {
       "goal": "Clean up Mir Yoke project documents under owner Discord message 1552197111624372339 (2026-09-23): align the current documentation entry points and decision index with the supported surfaces, keep one active plan, preserve historical text and existing work, and verify document references and tests without changing behavior or delivery state.",
@@ -19,6 +19,12 @@
       "goal": "Re-verify all twenty repo-maintenance checklist items against actual repository state and execution evidence, then minimally repair confirmed defects within this repository only.",
       "updated": "2026-09-23",
       "status": "superseded"
+    },
+    {
+      "goal": "Strengthen mir-core:repo-maintenance to the owner-authorized twenty-one items in this repository only; prove regressions fail first and run full verification, leaving ADR-80 release binding to Mir Harness.",
+      "updated": "2026-09-24",
+      "status": "complete"
     }
-  ]
+  ],
+  "status": "commit_blocked"
 }

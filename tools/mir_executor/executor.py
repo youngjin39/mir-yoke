@@ -21,17 +21,14 @@ import time
 from collections.abc import Mapping
 from dataclasses import dataclass
 
-from mir.core.conductor.dispatch_brief import (
-    codex_args_from_dispatch_brief,
-    load_dispatch_brief,
-)
-from mir.core.contracts.dispatch_brief import DispatchBrief
 from tools.mir_executor.codex_mcp_client import (
     CodexMcpClient,
     CodexMcpError,
     CodexMcpTimeoutError,
 )
 from tools.mir_executor.dispatch import _MCP_DISPATCH_BASE_INSTRUCTIONS
+from tools.mir_executor.local_hooks import invoke_hook, local_config
+from tools.mir_executor.worktree import child_env
 
 _CODEX_EXEC_FLAGS_WITH_VALUE = frozenset(
     {
@@ -220,7 +217,7 @@ class MirExecutor:
         )
         self._dispatch_brief_path = dispatch_brief_path
 
-    def load_dispatch_brief(self) -> DispatchBrief | None:
+    def load_dispatch_brief(self) -> object | None:
         if self._dispatch_brief_path is None:
             return None
         if not self._dispatch_brief_path.exists():
@@ -228,7 +225,15 @@ class MirExecutor:
                 f"DispatchBrief not found: {self._dispatch_brief_path}. "
                 "Persist the handoff artifact before invoking the executor lane."
             )
-        return load_dispatch_brief(self._dispatch_brief_path)
+        validated = invoke_hook(
+            self._repo_root, "validate_brief", self._dispatch_brief_path, self._repo_root
+        )
+        if validated is not None:
+            return validated
+        payload = json.loads(self._dispatch_brief_path.read_text(encoding="utf-8"))
+        if not isinstance(payload, dict):
+            raise ValueError("Dispatch brief must contain a JSON object")
+        return payload
 
     def resolve_codex_args(self, codex_args: list[str]) -> list[str]:
         if codex_args:
@@ -236,7 +241,14 @@ class MirExecutor:
         brief = self.load_dispatch_brief()
         if brief is None:
             return []
-        return list(codex_args_from_dispatch_brief(brief))
+        goal = (
+            brief.get("expanded_goal")
+            if isinstance(brief, Mapping)
+            else getattr(brief, "expanded_goal", None)
+        )
+        if not isinstance(goal, str) or not goal.strip():
+            raise ValueError("Dispatch brief must contain a non-empty expanded_goal")
+        return ["exec", goal]
 
     def run_codex(
         self,
@@ -265,12 +277,15 @@ class MirExecutor:
         try:
             with CodexMcpClient(
                 codex_bin=codex_bin,
+                env=child_env(self._repo_root),
                 call_timeout=timeout_seconds,
             ) as client:
                 call_kwargs: dict[str, object] = {
                     "prompt": prompt,
                     "cwd": resolved_cwd,
-                    "sandbox": "danger-full-access",
+                    "sandbox": local_config(self._repo_root).get(
+                        "codex_sandbox_default", "workspace-write"
+                    ),
                     "approval_policy": "never",
                     "base_instructions": _MCP_DISPATCH_BASE_INSTRUCTIONS,
                     "config": _codex_mcp_config(reasoning_effort),
@@ -388,11 +403,13 @@ class MirExecutor:
         command_str = " ".join(shlex.quote(p) for p in result.command)
         notes = f"P0-J auto: rc={result.exit_code}, stderr first 200 chars: {result.stderr[:200]!r}"
 
-        categories[category] = {
-            "status": new_status,
-            "command": command_str,
-            "notes": notes,
-        }
+        categories[category].update(
+            {
+                "status": new_status,
+                "command": command_str,
+                "notes": notes,
+            }
+        )
 
         updated_text = json.dumps(ledger, indent=2, ensure_ascii=False) + "\n"
 
@@ -466,15 +483,25 @@ class MirExecutor:
         resolved_cwd = pathlib.Path.cwd() if cwd is None else pathlib.Path(cwd)
         resolved_cwd = resolved_cwd.resolve()
         _guard_codex_main_worktree(resolved_cwd, os.environ)
-        return await asyncio.to_thread(
-            self._run_codex_mcp_for_async,
-            codex_args,
-            timeout_seconds,
-            resolved_cwd,
-            model,
-            reasoning_effort,
-            stall_timeout,
+        task = asyncio.create_task(
+            asyncio.to_thread(
+                self._run_codex_mcp_for_async,
+                codex_args,
+                timeout_seconds,
+                resolved_cwd,
+                model,
+                reasoning_effort,
+                stall_timeout,
+            )
         )
+        try:
+            return await asyncio.shield(task)
+        except asyncio.CancelledError:
+            try:
+                await task
+            except BaseException:
+                pass
+            raise
 
     def _run_codex_mcp_for_async(
         self,
@@ -493,12 +520,15 @@ class MirExecutor:
         try:
             with CodexMcpClient(
                 codex_bin=codex_bin,
+                env=child_env(self._repo_root),
                 call_timeout=timeout_seconds,
             ) as client:
                 call_kwargs: dict[str, object] = {
                     "prompt": prompt,
                     "cwd": resolved_cwd,
-                    "sandbox": "danger-full-access",
+                    "sandbox": local_config(self._repo_root).get(
+                        "codex_sandbox_default", "workspace-write"
+                    ),
                     "approval_policy": "never",
                     "base_instructions": _MCP_DISPATCH_BASE_INSTRUCTIONS,
                     "config": _codex_mcp_config(reasoning_effort),

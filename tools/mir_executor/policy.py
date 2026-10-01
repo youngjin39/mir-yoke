@@ -20,14 +20,15 @@ LOCK_RELPATH = pathlib.Path("config") / "model-routing.lock.json"
 # account's passwd home, not $HOME, because agent sessions run with a HOME other
 # than the account home.
 DEFAULT_GLOBAL_POLICY_PATH = (
-    pathlib.Path(pwd.getpwuid(os.getuid()).pw_dir) / ".mir/model-routing/sub-agent-policy.json"
+    pathlib.Path(pwd.getpwuid(os.getuid()).pw_dir)
+    / ".mir/model-routing/sub-agent-policy.json"
 )
 SUB_AGENT_POLICY_MODES = frozenset(
     {
         "force_codex",
         "force_claude",
         "select",
-        "obey_user",
+        "user_command_priority",
         "unrestricted",
         "per_project",
     }
@@ -37,14 +38,13 @@ PolicyMode = Literal[
     "force_codex",
     "force_claude",
     "select",
-    "obey_user",
+    "user_command_priority",
     "unrestricted",
     "per_project",
 ]
 
-# The central policy (Mir Harness ADR-88) spells this mode `user_command_priority`;
-# dispatch compares against `obey_user`, so normalise the central word.
-MODE_ALIASES: dict[str, PolicyMode] = {"user_command_priority": "obey_user"}
+# Legacy input spelling; resolved policy uses the central vocabulary.
+MODE_ALIASES: dict[str, PolicyMode] = {"obey_user": "user_command_priority"}
 
 
 @dataclass(frozen=True)
@@ -55,6 +55,47 @@ class SubAgentPolicy:
     per_project: dict[str, Any]
     routing: dict[str, Any] = field(default_factory=dict)
     monitoring: dict[str, Any] = field(default_factory=dict)
+
+    delegation: dict[str, Any] = field(default_factory=dict)
+    default_backend: str = "codex"
+    unresolved_mode: str | None = None
+
+    def effective_delegation_mode(self) -> str:
+        """Return the resolved provider-neutral mode."""
+        return self.mode
+
+    def delegation_mode(self) -> str:
+        """Return the canonical delegation mode."""
+        return self.mode
+
+    def project_declaration(self) -> dict[str, Any]:
+        """Return the project-owned backend declaration location."""
+        return _dict_value(self.delegation.get("project_declaration"))
+
+    def acceptance_evidence_required(self) -> list[str]:
+        """Return the evidence classes required for delegated acceptance."""
+        return _string_list(self.acceptance_evidence().get("required"))
+
+    def delegation_resolution_order(self) -> list[str]:
+        """Return the resolution order for older resolver callers."""
+        return self.resolution_order()
+
+    def delegation_project_declaration(self) -> dict[str, Any]:
+        """Return the project declaration for older resolver callers."""
+        return self.project_declaration()
+
+    def resolution_order(self) -> list[str]:
+        """Return the configured delegation resolution order."""
+        return _string_list(self.delegation.get("resolution_order")) or [
+            "user_command",
+            "project_declaration",
+            "default_backend",
+        ]
+
+    def acceptance_evidence(self) -> dict[str, Any]:
+        """Return required delegated-step evidence."""
+        evidence = self.delegation.get("acceptance_evidence", {})
+        return dict(evidence) if isinstance(evidence, dict) else {}
 
     def routing_default_model(self) -> str | None:
         """Return the policy default model route, if configured."""
@@ -184,10 +225,30 @@ def _declared_mode(data: dict[str, Any]) -> Any:
 
 def _resolve_policy(data: dict[str, Any]) -> SubAgentPolicy:
     declared = _declared_mode(data)
-    mode = MODE_ALIASES.get(declared, declared) if isinstance(declared, str) else declared
-    per_project = data.get("per_project", {})
+    mode = (
+        MODE_ALIASES.get(declared, declared) if isinstance(declared, str) else declared
+    )
+    delegation = _dict_value(data.get("delegation"))
+    default_backend = (
+        _string_value(delegation.get("default_backend"))
+        or _string_value(data.get("default_backend"))
+        or "codex"
+    )
+    per_project = data.get("per_project", delegation.get("per_project", {}))
     if mode not in SUB_AGENT_POLICY_MODES or not isinstance(per_project, dict):
-        return _default_policy()
+        unresolved = declared if isinstance(declared, str) and declared else None
+        if unresolved:
+            print(
+                f"[mir policy] unresolved mode: {unresolved}; using select",
+                file=sys.stderr,
+            )
+        return SubAgentPolicy(
+            mode="select",
+            per_project={},
+            delegation=delegation,
+            default_backend=default_backend,
+            unresolved_mode=unresolved,
+        )
     routing = data.get("routing", {})
     monitoring = data.get("monitoring", {})
     if not isinstance(routing, dict):
@@ -199,6 +260,8 @@ def _resolve_policy(data: dict[str, Any]) -> SubAgentPolicy:
         per_project=dict(per_project),
         routing=dict(routing),
         monitoring=dict(monitoring),
+        delegation=delegation,
+        default_backend=default_backend,
     )
 
 
@@ -226,9 +289,29 @@ def _overlay_policy_path() -> pathlib.Path:
     return default_global_policy_path()
 
 
+def model_routing_lock_path(repo_root: pathlib.Path) -> pathlib.Path:
+    """Resolve the deployed lock location; a standalone seam for wheel consumers."""
+    return repo_root / LOCK_RELPATH
+
+
+def _dict_value(value: Any) -> dict[str, Any]:
+    return dict(value) if isinstance(value, dict) else {}
+
+
+def _merge_policy(local: dict[str, Any], overlay: dict[str, Any]) -> dict[str, Any]:
+    merged = {**local, **overlay}
+    for key in ("delegation", "per_project", "monitoring"):
+        if key in local or key in overlay:
+            merged[key] = {
+                **_dict_value(local.get(key)),
+                **_dict_value(overlay.get(key)),
+            }
+    return merged
+
+
 def _deployed_lock_policy(repo_root: pathlib.Path) -> dict[str, Any] | None:
     """Return the deployed lock's `policy`, or None when the repository has no lock."""
-    lock_path = repo_root / LOCK_RELPATH
+    lock_path = model_routing_lock_path(repo_root)
     if not lock_path.is_file():
         return None
     policy = _read_json_object(lock_path).get("policy")
@@ -248,11 +331,12 @@ def load_sub_agent_policy(repo_root: pathlib.Path) -> SubAgentPolicy:
         if lock_policy is not None:
             local_path = repo_root / POLICY_RELPATH
             local = _read_json_object(local_path) if local_path.is_file() else {}
-            return _resolve_policy({**local, **lock_policy})
-        data = _read_json_object(repo_root / POLICY_RELPATH)
+            return _resolve_policy(_merge_policy(local, lock_policy))
+        local_path = repo_root / POLICY_RELPATH
+        data = _read_json_object(local_path) if local_path.is_file() else {}
         overlay_path = _overlay_policy_path()
         if overlay_path.exists():
-            data = {**data, **_read_json_object(overlay_path)}
+            data = _merge_policy(data, _read_json_object(overlay_path))
         return _resolve_policy(data)
     except (OSError, ValueError, json.JSONDecodeError):
         return _default_policy()

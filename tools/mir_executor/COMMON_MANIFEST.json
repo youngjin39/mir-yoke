@@ -1,0 +1,21 @@
+{
+  "files": {
+    "tools/mir_executor/__init__.py": "83b6955cf874dd9502b7614bf26a7a5689b0135c29e6666ad98d21a947d67dec",
+    "tools/mir_executor/__main__.py": "307406dfc75676443b890b6f2afe45d670cf1f6b2b7a222b2a312a95ba043af7",
+    "tools/mir_executor/cli.py": "71ef3bba283e0565669c425e5b6dffc616b0f5a017b43ccb0a43c2d38e0e01fc",
+    "tools/mir_executor/cli_jobs.py": "e6783cd78f152563bdc1853ab0ce30c2d6afadaefb41e58815c8ff144ad4106e",
+    "tools/mir_executor/cli_parser.py": "de42c8cb3ef300136f7e86d482b2fe07d881e21ac4e04295de99f93e4ad17110",
+    "tools/mir_executor/codex_mcp_client.py": "f2ce622496ed4378e05eedf89c0ca7d40d277eba552a747bebb25683521a5a27",
+    "tools/mir_executor/dispatch.py": "b97475ab5205ad29a4fae4984c06063b28047577113474f1fbb23b20005e1283",
+    "tools/mir_executor/executor.py": "a0fa421504fe67fede988698c3e8455643450482a038c96fb1072a075348dfb0",
+    "tools/mir_executor/jobs.py": "6007762f4e29cff9e7b307badc29cc0f432616afe5a83e010048ac88afc7da8d",
+    "tools/mir_executor/local_hooks.py": "00b070eb4fe63231d39c8d88ea677ba3a0128e18d33aefa78295ff6d681c9d69",
+    "tools/mir_executor/policy.py": "b7880a455ace8d75b5cac6881ecc59ecd66203125dcc82cdb9b58626d201bddc",
+    "tools/mir_executor/redaction.py": "68644bb9d9cf6c0413df64bdc7a73edfaa8688b2789e3bde394d065aecc9c1e8",
+    "tools/mir_executor/sweep.py": "81a58812087992733c5dc0b0549319c9e7663a1d4cf005591882bc103da52c0b",
+    "tools/mir_executor/tests/test_common_manifest.py": "deec5b757c513238c829c84d8c217a8496848fe951c6e5aee5fbc6f6391e0493",
+    "tools/mir_executor/worktree.py": "ec47318d803723395c96d5b575793176f46a8caf10111f91e11c9c7b74baea64"
+  },
+  "source_commit": "SOURCE_COMMIT",
+  "version": 1
+}

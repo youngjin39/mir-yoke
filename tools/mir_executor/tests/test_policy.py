@@ -80,7 +80,7 @@ def test_loader_parses_routing_and_monitoring(
 
     policy = load_sub_agent_policy(tmp_path)
 
-    assert policy.mode == "obey_user"
+    assert policy.mode == "user_command_priority"
     assert policy.routing == routing
     assert policy.monitoring == monitoring
     assert policy.routing_default_model() == "gpt-5.5"
@@ -807,7 +807,7 @@ def test_owner_decision_1a_repository_policy_follows_the_central_delegation_mode
     monkeypatch.delenv(POLICY_ENV_VAR, raising=False)
     monkeypatch.setattr(policy_module, "default_global_policy_path", lambda: central)
 
-    assert load_sub_agent_policy(repo_root).mode == "obey_user"
+    assert load_sub_agent_policy(repo_root).mode == "user_command_priority"
 
     central.write_text(json.dumps({"delegation": {"mode": "force_codex"}}), encoding="utf-8")
     assert load_sub_agent_policy(repo_root).mode == "force_codex"
@@ -861,7 +861,7 @@ def test_adr88_deployed_lock_alone_is_enough_for_a_new_repository(tmp_path: path
 
     policy = load_sub_agent_policy(tmp_path)
 
-    assert policy.mode == "obey_user"
+    assert policy.mode == "user_command_priority"
     assert policy.resolve_category("unit") == {
         "model": "lock-model",
         "reasoning_effort": "medium",
@@ -879,4 +879,4 @@ def test_adr88_this_repository_routes_from_its_deployed_lock() -> None:
             "model": expected["model"],
             "reasoning_effort": expected["reasoning_effort"],
         }
-    assert policy.mode == "obey_user"
+    assert policy.mode == "user_command_priority"

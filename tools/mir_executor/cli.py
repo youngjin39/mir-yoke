@@ -36,35 +36,25 @@ import asyncio
 import datetime
 import json
 import pathlib
+import re
 import shlex
 import subprocess
 import sys
 import tomllib
 import uuid
 
-from tools.mir_executor.dispatch import (
-    DEFAULT_FINALIZE_LOCK_TIMEOUT,
-    MAX_CODEX_ATTEMPTS,
-)
+from tools.mir_executor import cli_jobs
+from tools.mir_executor.cli_parser import _build_parser
 from tools.mir_executor.executor import MirExecutor
-
-_STANDARD_CATEGORIES = [
-    "unit",
-    "integration",
-    "e2e",
-    "browser",
-    "edge",
-    "architecture",
-    "availability",
-    "load",
-    "soak",
-    "security",
-    "compatibility",
-    "transaction_locking",
-]
+from tools.mir_executor.local_hooks import invoke_hook, local_config, writer_scope
 
 _DEFAULT_JOBS_DB_RELPATH = pathlib.Path("tasks") / "jobs.db"
-_MERGED_FINALIZE_ACTIONS = {"merged", "merged-but-cleanup-failed"}
+_MERGED_FINALIZE_ACTIONS = {
+    "merged",
+    "merged-but-cleanup-failed",
+    "reviewed",
+    "reviewed-but-cleanup-failed",
+}
 _DISPATCH_BACKENDS = frozenset({"codex", "claude"})
 _DEFAULT_DISPATCH_PROMPT = (
     "Read the task brief at .mir-dispatch/brief.md and implement it fully "
@@ -132,487 +122,91 @@ def _resolve_jobs_db(args_jobs_db: str | None, repo_root: pathlib.Path) -> pathl
     return (repo_root / _DEFAULT_JOBS_DB_RELPATH).resolve()
 
 
-def _positive_int(value: str) -> int:
-    """Parse a strictly positive integer for explicit retry budgets."""
-    parsed = int(value)
-    if parsed < 1:
-        raise argparse.ArgumentTypeError("must be a positive integer")
-    return parsed
-
-
-def _nonnegative_int(value: str) -> int:
-    """Parse a non-negative integer for bounded lock waits."""
-    parsed = int(value)
-    if parsed < 0:
-        raise argparse.ArgumentTypeError("must be a non-negative integer")
-    return parsed
-
-
-def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        prog="python -m tools.mir_executor",
-        description="Mir Executor — isolated delegated execution with optional TDD ledger update.",
-    )
-    # Global --jobs-db option available for all subcommands
-    parser.add_argument(
-        "--jobs-db",
-        metavar="PATH",
-        default=None,
-        help="Override path to jobs.db (default: <repo_root>/tasks/jobs.db).",
-    )
-    sub = parser.add_subparsers(dest="subcommand")
-
-    # ------------------------------------------------------------------
-    # execute subcommand
-    # ------------------------------------------------------------------
-    exec_p = sub.add_parser(
-        "execute",
-        help="Run a delegated command; ledger identity is optional in dispatch mode.",
-    )
-    exec_p.add_argument(
-        "--change-id",
-        required=False,
-        metavar="ID",
-        help="Optional tdd.json change entry id; required outside --dispatch.",
-    )
-    exec_p.add_argument(
-        "--category",
-        required=False,
-        choices=_STANDARD_CATEGORIES,
-        metavar="NAME",
-        help=(
-            "Optional tdd.json category; required outside --dispatch. One of: "
-            + ", ".join(_STANDARD_CATEGORIES)
-            + "."
-        ),
-    )
-    codex_args_group = exec_p.add_mutually_exclusive_group(required=False)
-    codex_args_group.add_argument(
-        "--codex-args",
-        metavar="QUOTED_STRING",
-        help=(
-            "Arguments for legacy Codex invocation. In --dispatch mode, "
-            "exec-shaped flags are dropped and the positional prompt is sent "
-            "to the MCP Codex backend."
-        ),
-    )
-    codex_args_group.add_argument(
-        "--codex-args-file",
-        type=pathlib.Path,
-        metavar="PATH",
-        help=(
-            "Read UTF-8 file content and use it as one raw positional prompt "
-            "argument, without shlex tokenization."
-        ),
-    )
-    exec_p.add_argument(
-        "--timeout",
-        type=int,
-        default=None,
-        metavar="SECONDS",
-        help="Optional hard subprocess timeout in seconds.",
-    )
-    exec_p.add_argument(
-        "--model",
-        default=None,
-        metavar="MODEL",
-        help=(
-            "Optional Codex model name (e.g. a codex model id); omit to inherit "
-            "Codex defaults."
-        ),
-    )
-    exec_p.add_argument(
-        "--reasoning-effort",
-        default=None,
-        metavar="EFFORT",
-        help=(
-            "Optional Codex model_reasoning_effort (free string); omit to inherit "
-            "Codex defaults."
-        ),
-    )
-    exec_p.add_argument(
-        "--stall-timeout",
-        type=float,
-        default=None,
-        metavar="SECONDS",
-        help=(
-            "Optional no-progress MCP stall timeout in seconds."
-        ),
-    )
-    exec_p.add_argument(
-        "--jobs-db",
-        metavar="PATH",
-        default=argparse.SUPPRESS,
-        help="Override path to jobs.db (default: <repo_root>/tasks/jobs.db).",
-    )
-    exec_p.add_argument(
-        "--repo-root",
-        type=pathlib.Path,
-        metavar="PATH",
-        default=pathlib.Path.cwd(),
-        help="Repository root path. Used to locate tasks/tdd.json.",
-    )
-    exec_p.set_defaults(family=None)
-    exec_p.add_argument(
-        "--async",
-        "-a",
-        action="store_true",
-        default=False,
-        dest="use_async",
-        help="Use asyncio-based async subprocess (asyncio.TimeoutError on timeout).",
-    )
-    exec_p.add_argument(
-        "--background",
-        "-b",
-        action="store_true",
-        default=False,
-        dest="background",
-        help=(
-            "Background mode: print job_id immediately, then run Codex and update "
-            "job status on completion. MVP: runs in same process (true daemon is OOS)."
-        ),
-    )
-    exec_p.add_argument(
-        "--dispatch",
-        action="store_true",
-        default=False,
-        dest="dispatch",
-        help=(
-            "Run the delegated dispatch helper with an isolated worktree, one "
-            "attempt by default, and the outage guard."
-        ),
-    )
-    exec_p.add_argument(
-        "--max-codex-attempts",
-        type=_positive_int,
-        default=MAX_CODEX_ATTEMPTS,
-        dest="max_codex_attempts",
-        metavar="N",
-        help=(
-            "Explicit dispatch attempt budget (default: 1). Values above one opt "
-            "into retrying the same dispatch."
-        ),
-    )
-    exec_p.add_argument(
-        "--finalize-lock-timeout",
-        type=_nonnegative_int,
-        default=DEFAULT_FINALIZE_LOCK_TIMEOUT,
-        dest="finalize_lock_timeout",
-        metavar="SECONDS",
-        help=(
-            "Maximum wait for the short merge-finalize lock (default: 30). "
-            "This never stops a running delegated agent."
-        ),
-    )
-    exec_p.add_argument(
-        "--execution-backend",
-        choices=sorted(_DISPATCH_BACKENDS),
-        default=None,
-        dest="execution_backend",
-        metavar="BACKEND",
-        help=(
-            "ADR-61 dispatch-only backend request. Used only when the sub-agent "
-            "policy permits selection; omitted requests retain the Codex preference."
-        ),
-    )
-    exec_p.add_argument(
-        "--expect-changes",
-        action=argparse.BooleanOptionalAction,
-        default=True,
-        dest="expect_changes",
-        help=(
-            "Require a dispatch to produce a git diff before merge (default: true). "
-            "Use --no-expect-changes for legitimate no-op or verify-only dispatches."
-        ),
-    )
-    exec_p.add_argument(
-        "--allow-harness-self-modify",
-        action="store_true",
-        default=False,
-        dest="allow_harness_self_modify",
-        help=(
-            "Allow dispatch merge-back for liftable harness prefixes "
-            "(.claude/, .ai-harness/, config/, docs/) when also allowlisted. "
-            "tasks/ remains denied."
-        ),
-    )
-    exec_p.add_argument(
-        "--allow-path",
-        action="append",
-        dest="allow_paths",
-        default=argparse.SUPPRESS,
-        metavar="PATH",
-        help="Repeatable ADR-60 dispatch merge allowlist path.",
-    )
-    exec_p.add_argument(
-        "--verify-cmd",
-        action="append",
-        dest="verify_cmds",
-        default=argparse.SUPPRESS,
-        metavar="COMMAND",
-        help="Repeatable ADR-60 dispatch verification command to re-run before merge.",
-    )
-    exec_p.add_argument(
-        "--dispatch-brief",
-        type=pathlib.Path,
-        default=None,
-        dest="dispatch_brief",
-        metavar="PATH",
-        help=(
-            "Persisted DispatchBrief JSON. In --dispatch mode, expanded_goal "
-            "is used as the MCP prompt when --codex-args contains no prompt positional."
-        ),
-    )
-
-    # ------------------------------------------------------------------
-    # status subcommand
-    # ------------------------------------------------------------------
-    status_p = sub.add_parser(
-        "status",
-        help="Print job status from the JobRegistry.",
-    )
-    status_p.add_argument(
-        "--job-id",
-        required=True,
-        metavar="JOB_ID",
-        help="UUID job_id returned by execute --background.",
-    )
-    status_p.add_argument(
-        "--repo-root",
-        type=pathlib.Path,
-        metavar="PATH",
-        default=None,
-        help="Repository root path (for default jobs.db location).",
-    )
-
-    # ------------------------------------------------------------------
-    # result subcommand
-    # ------------------------------------------------------------------
-    result_p = sub.add_parser(
-        "result",
-        help="Print job result (exit_code, stdout, stderr, duration) from the JobRegistry.",
-    )
-    result_p.add_argument(
-        "--job-id",
-        required=True,
-        metavar="JOB_ID",
-        help="UUID job_id returned by execute --background.",
-    )
-    result_p.add_argument(
-        "--repo-root",
-        type=pathlib.Path,
-        metavar="PATH",
-        default=None,
-        help="Repository root path (for default jobs.db location).",
-    )
-
-    # ------------------------------------------------------------------
-    # cancel subcommand
-    # ------------------------------------------------------------------
-    cancel_p = sub.add_parser(
-        "cancel",
-        help="Request cancellation of a background job.",
-    )
-    cancel_p.add_argument(
-        "--job-id",
-        required=True,
-        metavar="JOB_ID",
-        help="UUID job_id returned by execute --background.",
-    )
-    cancel_p.add_argument(
-        "--repo-root",
-        type=pathlib.Path,
-        metavar="PATH",
-        default=None,
-        help="Repository root path (for default jobs.db location).",
-    )
-
-    # ------------------------------------------------------------------
-    # resume subcommand
-    # ------------------------------------------------------------------
-    resume_p = sub.add_parser(
-        "resume",
-        help="Resume a job from its persisted DispatchBrief and stored registry state.",
-    )
-    resume_p.add_argument(
-        "--job-id",
-        required=True,
-        metavar="JOB_ID",
-        help="UUID job_id returned by execute --background or conductor bridge dispatch.",
-    )
-    resume_p.add_argument(
-        "--timeout",
-        type=int,
-        default=None,
-        metavar="SECONDS",
-        help="Optional hard subprocess timeout in seconds.",
-    )
-    resume_p.add_argument(
-        "--async",
-        "-a",
-        action="store_true",
-        default=False,
-        dest="use_async",
-        help="Use asyncio-based async subprocess for resume.",
-    )
-    resume_p.add_argument(
-        "--repo-root",
-        type=pathlib.Path,
-        metavar="PATH",
-        default=None,
-        help="Repository root path (for default jobs.db location).",
-    )
-
-    # ------------------------------------------------------------------
-    # list-jobs subcommand
-    # ------------------------------------------------------------------
-    list_p = sub.add_parser(
-        "list-jobs",
-        help="List background jobs, optionally filtered by status.",
-    )
-    list_p.add_argument(
-        "--status",
-        metavar="STATUS",
-        default=None,
-        choices=["running", "completed", "cancelled", "failed"],
-        help="Filter by status: running / completed / cancelled / failed.",
-    )
-    list_p.add_argument(
-        "--repo-root",
-        type=pathlib.Path,
-        metavar="PATH",
-        default=None,
-        help="Repository root path (for default jobs.db location).",
-    )
-
-    sweep_p = sub.add_parser(
-        "sweep",
-        help="Report advisory-overdue jobs and orphan dispatch worktrees.",
-    )
-    sweep_p.add_argument(
-        "--apply",
-        action="store_true",
-        default=False,
-        help="Apply the reported cleanup (default: dry-run).",
-    )
-    sweep_p.add_argument(
-        "--repo-root",
-        type=pathlib.Path,
-        default=pathlib.Path.cwd(),
-        metavar="PATH",
-        help="Main repository root (default: current directory).",
-    )
-    sweep_p.add_argument(
-        "--jobs-db",
-        metavar="PATH",
-        default=argparse.SUPPRESS,
-        help="Override path to jobs.db (default: <repo-root>/tasks/jobs.db).",
-    )
-    sweep_p.add_argument(
-        "--grace-seconds",
-        type=int,
-        default=120,
-        metavar="N",
-        help="Grace after each advisory elapsed threshold (default: 120).",
-    )
-
-    return parser
-
-
-# ---------------------------------------------------------------------------
-# Background job runner (async)
-# ---------------------------------------------------------------------------
-
-async def _run_background(
-    job_id: str,
-    executor: MirExecutor,
-    change_id: str,
-    category: str,
-    codex_args: list[str],
-    timeout_seconds: int | None,
-    jobs_db_path: pathlib.Path,
-    model: str | None = None,
-    reasoning_effort: str | None = None,
-    stall_timeout: float | None = None,
-) -> None:
-    """Async background runner: invoke run_codex_async + update JobRegistry.
-
-    Cancel polling: checks cancel_requested flag before running (MVP flag-only;
-    real SIGTERM is Out-of-Scope per ADR §8 O1).
-    """
-    # Lazy import to avoid module-load overhead
-    from tools.mir_executor.jobs import JobRegistry  # noqa: PLC0415
-
-    registry = JobRegistry(jobs_db_path)
-    try:
-        # Check for pre-flight cancel request
-        job = registry.get(job_id)
-        if job is not None and job.cancel_requested:
-            registry.update_status(
-                job_id,
-                "cancelled",
-                completed_at=_utc_now(),
-            )
-            return
-
-        run_kwargs: dict[str, object] = {"timeout_seconds": timeout_seconds}
-        if model is not None:
-            run_kwargs["model"] = model
-        if reasoning_effort is not None:
-            run_kwargs["reasoning_effort"] = reasoning_effort
-        if stall_timeout is not None:
-            run_kwargs["stall_timeout"] = stall_timeout
-        result = await executor.run_codex_async(codex_args, **run_kwargs)
-
-        # Update ledger
-        executor.update_ledger(change_id, category, result)
-
-        new_status = "completed" if result.exit_code == 0 else "failed"
-        registry.update_status(
-            job_id,
-            new_status,
-            exit_code=result.exit_code,
-            stdout=result.stdout,
-            stderr=result.stderr,
-            duration_seconds=result.duration_seconds,
-            completed_at=_utc_now(),
-        )
-    except Exception as exc:  # noqa: BLE001
-        registry.update_status(
-            job_id,
-            "failed",
-            stderr=str(exc),
-            completed_at=_utc_now(),
-        )
-    finally:
-        registry.close()
-
-
 def _resolve_dispatch_backend(
     sub_agent_policy: object,
     *,
     requested_backend: str | None,
-    repo_slug: str | None,
+    repo_slug: str | None = None,
+    repo_root: pathlib.Path | None = None,
+    declared_backend: str | None = None,
 ) -> str:
-    """Resolve the effective dispatch runner while retaining Codex as a preference."""
-    mode = getattr(sub_agent_policy, "mode", "select")
-    per_project = getattr(sub_agent_policy, "per_project", {})
-    if mode == "force_codex":
-        return "codex"
-    if mode == "force_claude":
-        return "claude"
-    if mode == "select":
-        return requested_backend if requested_backend in _DISPATCH_BACKENDS else "codex"
+    """Resolve backend using the policy's declared sequence and project data."""
+    mode_accessor = getattr(sub_agent_policy, "effective_delegation_mode", None)
+    mode = (
+        mode_accessor()
+        if callable(mode_accessor)
+        else getattr(sub_agent_policy, "mode", "select")
+    )
     if mode == "obey_user":
-        return requested_backend if requested_backend in _DISPATCH_BACKENDS else "codex"
-    if mode == "unrestricted":
-        return requested_backend if requested_backend in _DISPATCH_BACKENDS else "codex"
-    if mode == "per_project" and isinstance(per_project, dict):
-        if not repo_slug:
-            return "codex"
-        backend = per_project.get(repo_slug)
-        return backend if backend in _DISPATCH_BACKENDS else "codex"
-    return "codex"
+        mode = "user_command_priority"
+    if mode in {"force_codex", "force_claude"}:
+        return mode.removeprefix("force_")
+    fallback = getattr(sub_agent_policy, "default_backend", "codex")
+    if fallback not in _DISPATCH_BACKENDS:
+        fallback = "codex"
+    per_project = getattr(sub_agent_policy, "per_project", {})
+    if isinstance(per_project, dict) and repo_slug:
+        declared_backend = per_project.get(repo_slug, declared_backend)
+    if declared_backend is None and repo_root is not None:
+        accessor = getattr(sub_agent_policy, "delegation_project_declaration", None)
+        spec = (
+            accessor()
+            if callable(accessor)
+            else getattr(sub_agent_policy, "delegation", {}).get(
+                "project_declaration", {}
+            )
+        )
+        if not isinstance(spec, dict):
+            spec = {}
+        path = spec.get("path", ".mir/repo-profile.toml")
+        section = spec.get("section", "execution")
+        try:
+            with (repo_root / path).open("rb") as handle:
+                profile = tomllib.load(handle)
+            declaration = profile.get(section, {})
+            fields = spec.get("fields", ["backend", "delegated_execution_contract"])
+            if not isinstance(fields, list):
+                fields = []
+            found = set()
+            for field in fields:
+                value = declaration.get(field) if isinstance(field, str) else None
+                if isinstance(value, str):
+                    found.update(
+                        set(re.findall(r"[a-z0-9]+", value.lower()))
+                        & _DISPATCH_BACKENDS
+                    )
+            declared_backend = next(iter(found)) if len(found) == 1 else None
+        except (OSError, TypeError, tomllib.TOMLDecodeError):
+            pass
+    accessor = getattr(sub_agent_policy, "delegation_resolution_order", None)
+    order = (
+        accessor()
+        if callable(accessor)
+        else getattr(sub_agent_policy, "resolution_order", ())
+    )
+    if callable(order):
+        order = order()
+    order = order or ("user_command", "project_declaration", "default_backend")
+    enabled = {
+        "user_command_priority": {
+            "user_command",
+            "project_declaration",
+            "default_backend",
+        },
+        "per_project": {"project_declaration", "default_backend"},
+        "unrestricted": {"user_command", "default_backend"},
+        "select": {"user_command", "default_backend"},
+    }.get(mode, {"default_backend"})
+    candidates = {
+        "user_command": requested_backend,
+        "project_declaration": declared_backend,
+        "default_backend": fallback,
+    }
+    for step in order:
+        backend = candidates.get(step)
+        if step in enabled and backend in _DISPATCH_BACKENDS:
+            return backend
+    return fallback
 
 
 def _resolve_repo_policy_slug(repo_root: pathlib.Path) -> str | None:
@@ -680,6 +274,15 @@ def _build_dispatch_runner(
             repo_root,
             timeout_seconds=timeout_seconds,
         )
+    if (
+        not model
+        or not model.strip()
+        or not reasoning_effort
+        or not reasoning_effort.strip()
+    ):
+        raise ValueError(
+            "Codex dispatch requires an explicit model and reasoning effort"
+        )
     runner_kwargs: dict[str, object] = {"timeout_seconds": timeout_seconds}
     if model is not None:
         runner_kwargs["model"] = model
@@ -726,9 +329,11 @@ def _prompt_from_dispatch_brief(path: pathlib.Path | None) -> str:
     """Load DispatchBrief.expanded_goal when a persisted brief is supplied."""
     if path is None:
         return ""
-    from mir.core.conductor.dispatch_brief import load_dispatch_brief  # noqa: PLC0415
-
-    return load_dispatch_brief(path).expanded_goal.strip()
+    brief = json.loads(path.read_text(encoding="utf-8"))
+    goal = brief.get("expanded_goal") if isinstance(brief, dict) else None
+    if not isinstance(goal, str):
+        raise ValueError("DispatchBrief expanded_goal must be a string")
+    return goal.strip()
 
 
 def _resolve_dispatch_prompt(
@@ -747,6 +352,16 @@ def _resolve_dispatch_prompt(
 
 def _resolve_execute_codex_args(args: argparse.Namespace) -> list[str]:
     """Resolve execute prompt source into persisted argv-shaped codex_args."""
+    limit = local_config(args.repo_root.resolve()).get("input_limit_bytes")
+    if isinstance(limit, int) and limit > 0:
+        file = getattr(args, "codex_args_file", None)
+        size = (
+            file.stat().st_size
+            if file
+            else len((getattr(args, "codex_args", None) or "").encode("utf-8"))
+        )
+        if size > limit:
+            raise ValueError("Codex input exceeds configured input_limit_bytes")
     codex_args_text = getattr(args, "codex_args", None)
     codex_args_file = getattr(args, "codex_args_file", None)
     has_codex_args = codex_args_text is not None
@@ -755,9 +370,13 @@ def _resolve_execute_codex_args(args: argparse.Namespace) -> list[str]:
         dispatch_brief = getattr(args, "dispatch_brief", None)
         if args.dispatch and dispatch_brief is not None:
             return []
-        raise ValueError("exactly one of --codex-args or --codex-args-file must be provided")
+        raise ValueError(
+            "exactly one of --codex-args or --codex-args-file must be provided"
+        )
     if has_codex_args and has_codex_args_file:
-        raise ValueError("exactly one of --codex-args or --codex-args-file must be provided")
+        raise ValueError(
+            "exactly one of --codex-args or --codex-args-file must be provided"
+        )
     if has_codex_args_file:
         assert codex_args_file is not None
         return [pathlib.Path(codex_args_file).read_text(encoding="utf-8")]
@@ -781,6 +400,8 @@ def _handle_dispatch(
         args.dispatch_brief.resolve() if getattr(args, "dispatch_brief", None) else None
     )
     try:
+        if dispatch_brief_path is not None:
+            invoke_hook(repo_root, "validate_brief", dispatch_brief_path, repo_root)
         if not codex_args:
             prompt = _prompt_from_dispatch_brief(dispatch_brief_path)
             if not prompt:
@@ -799,7 +420,8 @@ def _handle_dispatch(
             return 1
 
     jobs_db_path = _resolve_jobs_db(args.jobs_db, repo_root)
-    job_id = uuid.uuid4().hex
+    job_id = getattr(args, "resume_job_id", None) or uuid.uuid4().hex
+    dispatch_id = uuid.uuid4().hex if getattr(args, "resume_job_id", None) else job_id
     job_change_id = args.change_id or f"dispatch-{job_id}"
     job_category = args.category or "unclassified"
     prior = dispatch.count_consecutive_codex_failures(
@@ -807,80 +429,137 @@ def _handle_dispatch(
         change_id_prefix=job_change_id,
     )
     registry = JobRegistry(jobs_db_path)
-    registry.insert(
-        JobRecord(
-            job_id=job_id,
-            change_id=job_change_id,
-            category=job_category,
-            family=None,
-            repo_root=str(repo_root),
-            codex_args=codex_args,
-            dispatch_brief_path=(
-                str(dispatch_brief_path) if dispatch_brief_path is not None else None
-            ),
-            allow_harness_self_modify=args.allow_harness_self_modify,
-            timeout_seconds=args.timeout if args.timeout is not None else 600,
-            status="running",
-            started_at=_utc_now(),
+    previous = registry.get(job_id)
+    metadata = dict(previous.ai_run_metadata or {}) if previous else {}
+    dispatch_ids = metadata.get("dispatch_ids", [])
+    if not isinstance(dispatch_ids, list):
+        dispatch_ids = []
+    previous_dispatch = metadata.get("dispatch_id")
+    dispatch_ids = list(
+        dict.fromkeys(
+            value
+            for value in [*dispatch_ids, previous_dispatch, dispatch_id]
+            if isinstance(value, str)
         )
     )
-    sub_agent_policy = load_sub_agent_policy(repo_root)
-    model, reasoning_effort, stall_timeout = _resolve_policy_runtime_options(
-        sub_agent_policy,
-        category=args.category or "",
-        model=args.model,
-        reasoning_effort=args.reasoning_effort,
-        stall_timeout=getattr(args, "stall_timeout", None),
-    )
-    repo_slug = _resolve_repo_policy_slug(repo_root)
-    backend = _resolve_dispatch_backend(
-        sub_agent_policy,
-        requested_backend=getattr(args, "execution_backend", None),
-        repo_slug=repo_slug,
-    )
-    runner = _build_dispatch_runner(
-        dispatch,
-        backend=backend,
-        repo_root=repo_root,
-        prompt=prompt,
-        timeout_seconds=args.timeout,
-        model=model,
-        reasoning_effort=reasoning_effort,
-        stall_timeout=stall_timeout,
-    )
+    metadata.update(dispatch_id=dispatch_id, dispatch_ids=dispatch_ids)
+    if getattr(args, "resume_job_id", None):
+        registry.mark_resumed(job_id, resumed_at=_utc_now())
+    else:
+        registry.insert(
+            JobRecord(
+                job_id=job_id,
+                change_id=job_change_id,
+                category=job_category,
+                family=getattr(args, "family", None),
+                repo_root=str(repo_root),
+                codex_args=codex_args,
+                dispatch_brief_path=(
+                    str(dispatch_brief_path)
+                    if dispatch_brief_path is not None
+                    else None
+                ),
+                allow_harness_self_modify=args.allow_harness_self_modify,
+                timeout_seconds=args.timeout if args.timeout is not None else 600,
+                status="running",
+                started_at=_utc_now(),
+            )
+        )
+    registry.update_ai_run_metadata(job_id, metadata)
     try:
+        sub_agent_policy = load_sub_agent_policy(repo_root)
+        model, reasoning_effort, stall_timeout = _resolve_policy_runtime_options(
+            sub_agent_policy,
+            category=args.category or "",
+            model=args.model,
+            reasoning_effort=args.reasoning_effort,
+            stall_timeout=getattr(args, "stall_timeout", None),
+        )
+        repo_slug = _resolve_repo_policy_slug(repo_root)
+        backend = _resolve_dispatch_backend(
+            sub_agent_policy,
+            requested_backend=getattr(args, "execution_backend", None),
+            repo_slug=repo_slug,
+            repo_root=repo_root,
+        )
+        registry.update_route_metadata(
+            job_id,
+            execution_backend=backend,
+            resolved_model=model,
+            resolved_reasoning_effort=reasoning_effort,
+        )
+        runner = _build_dispatch_runner(
+            dispatch,
+            backend=backend,
+            repo_root=repo_root,
+            prompt=prompt,
+            timeout_seconds=args.timeout,
+            model=model,
+            reasoning_effort=reasoning_effort,
+            stall_timeout=stall_timeout,
+        )
         outcome = dispatch.run_dispatch(
             repo_root,
-            dispatch_id=job_id,
+            dispatch_id=dispatch_id,
             brief_text=prompt,
             codex_runner=runner,
             max_codex_attempts=args.max_codex_attempts,
             prior_consecutive_codex_failures=prior,
+            **(
+                {"artifacts_root": args.artifacts_dir}
+                if getattr(args, "artifacts_dir", None)
+                else {}
+            ),
         )
 
         final = None
+        reviewer = (
+            dispatch.build_codex_review_runner(repo_root, timeout_seconds=args.timeout)
+            if local_config(repo_root).get("require_review", False)
+            else None
+        )
         if outcome.worktree is not None:
             final = dispatch.finalize_dispatch(
                 outcome.worktree,
                 repo_root,
                 outcome,
+                **({"reviewer": reviewer} if reviewer is not None else {}),
                 allowlist=getattr(args, "allow_paths", None) or [],
                 verification_commands=getattr(args, "verify_cmds", None) or [],
                 finalize_lock_timeout=args.finalize_lock_timeout,
                 expect_changes=args.expect_changes,
                 allow_harness_self_modify=args.allow_harness_self_modify,
+                **(
+                    {"artifacts_root": args.artifacts_dir}
+                    if getattr(args, "artifacts_dir", None)
+                    else {}
+                ),
             )
 
         merged = final is not None and final.action in _MERGED_FINALIZE_ACTIONS
         job_status = "completed" if merged else "failed"
-        task_exit = 0 if merged else 1
+        attempt_exit = getattr(outcome, "exit_code", None)
+        task_exit = 0 if merged else (attempt_exit or 1)
+        registry.update_ai_run_metadata(
+            job_id,
+            {
+                "model_id": getattr(outcome, "model_id", None) or model,
+                "tokens_used": dict(getattr(outcome, "tokens_used", ())),
+                "mcp_protocol": getattr(outcome, "mcp_protocol", None),
+                "dispatch_id": dispatch_id,
+                "dispatch_ids": dispatch_ids,
+            },
+        )
         if outcome.status == "blocked":
             print(
                 "[DISPATCH] blocked; "
                 "see docs/harness-engineering/codex-dispatch-failure-diagnostic.md",
                 file=sys.stderr,
             )
-        result_payload = f"artifacts=tasks/dispatch/{job_id}"
+        artifacts = getattr(args, "artifacts_dir", None) or pathlib.Path(
+            "tasks/dispatch"
+        )
+        result_payload = f"artifacts={artifacts / dispatch_id}"
         reason_payload = None
         if final is not None and final.action == "merged-but-cleanup-failed":
             reason_payload = " ".join(
@@ -913,6 +592,12 @@ def _handle_dispatch(
             stderr=reason_payload,
             completed_at=_utc_now(),
         )
+    except Exception as exc:  # noqa: BLE001
+        registry.update_status(
+            job_id, "failed", exit_code=1, stderr=str(exc), completed_at=_utc_now()
+        )
+        print(f"[mir_executor] dispatch failed: {exc}", file=sys.stderr)
+        return 1
     finally:
         registry.close()
 
@@ -925,16 +610,13 @@ def _handle_dispatch(
             f"[FINALIZE] action={final.action} reason={final.reason!r} "
             f"merged={final.merged_files}"
         )
-    return (
-        0
-        if final is not None and final.action in _MERGED_FINALIZE_ACTIONS
-        else 1
-    )
+    return task_exit
 
 
 # ---------------------------------------------------------------------------
 # Subcommand handlers
 # ---------------------------------------------------------------------------
+
 
 def _handle_execute(args: argparse.Namespace) -> int:
     """Handle the 'execute' subcommand."""
@@ -964,6 +646,7 @@ def _handle_execute(args: argparse.Namespace) -> int:
 
     # @spec CR-003 IR-002
     repo_root = args.repo_root.resolve()
+    invoke_hook(repo_root, "pre_execute", args, repo_root)
 
     executor = MirExecutor(repo_root=repo_root)
     from tools.mir_executor.policy import load_sub_agent_policy  # noqa: PLC0415
@@ -993,7 +676,7 @@ def _handle_execute(args: argparse.Namespace) -> int:
             job_id=job_id,
             change_id=args.change_id,
             category=args.category,
-            family=None,
+            family=getattr(args, "family", None),
             repo_root=str(repo_root),
             codex_args=codex_args,
             allow_harness_self_modify=args.allow_harness_self_modify,
@@ -1010,7 +693,9 @@ def _handle_execute(args: argparse.Namespace) -> int:
         try:
             executor._validate_ledger_entry(args.change_id, args.category)
         except (FileNotFoundError, KeyError, ValueError) as exc:
-            registry.update_status(job_id, "failed", stderr=str(exc), completed_at=_utc_now())
+            registry.update_status(
+                job_id, "failed", stderr=str(exc), completed_at=_utc_now()
+            )
             registry.close()
             print(f"[mir_executor] {type(exc).__name__}: {exc}", file=sys.stderr)
             return 1
@@ -1029,8 +714,11 @@ def _handle_execute(args: argparse.Namespace) -> int:
                 stall_timeout=stall_timeout,
             )
         )
+        completed = registry.get(job_id)
         registry.close()
-        return 0
+        return (
+            completed.exit_code if completed and completed.exit_code is not None else 1
+        )
 
     # Non-background (sync or async) path — BC unchanged.
     try:
@@ -1068,7 +756,9 @@ def _handle_execute(args: argparse.Namespace) -> int:
         print(f"[mir_executor] {type(exc).__name__}: {exc}", file=sys.stderr)
         return 1
     except subprocess.TimeoutExpired as exc:
-        print(f"[mir_executor] Codex timeout after {exc.timeout}s: {exc}", file=sys.stderr)
+        print(
+            f"[mir_executor] Codex timeout after {exc.timeout}s: {exc}", file=sys.stderr
+        )
         return 1
     except TimeoutError:
         print(f"[mir_executor] async timeout after {args.timeout}s", file=sys.stderr)
@@ -1078,7 +768,9 @@ def _handle_execute(args: argparse.Namespace) -> int:
         return 1
 
     print(f"[RESULT] change_id={update.change_id!r} category={update.category!r}")
-    print(f"[RESULT] codex exit_code={result.exit_code} duration={result.duration_seconds:.2f}s")
+    print(
+        f"[RESULT] codex exit_code={result.exit_code} duration={result.duration_seconds:.2f}s"
+    )
     print(f"[RESULT] command={result.command!r}")
     print(
         f"[LEDGER] previous_status={update.previous_status!r} -> new_status={update.new_status!r}"
@@ -1088,248 +780,49 @@ def _handle_execute(args: argparse.Namespace) -> int:
         print(f"[STDOUT] {result.stdout[:500]!r}")
     if result.stderr:
         print(f"[STDERR] {result.stderr[:500]!r}")
-    return 0
+    return result.exit_code
 
 
-def _blocked_reason(payload: str | None) -> str | None:
-    """Extract the additive blocked-reason marker from a stored result payload."""
-    if not payload:
-        return None
-    marker = "blocked_reason="
-    if marker not in payload:
-        return None
-    return payload.split(marker, 1)[1].split()[0] or None
+async def _run_background(**kwargs):
+    return await cli_jobs._run_background(sys.modules[__name__], **kwargs)
 
 
 def _handle_status(args: argparse.Namespace) -> int:
-    """Handle the 'status' subcommand."""
-    from tools.mir_executor.jobs import JobRegistry  # noqa: PLC0415
-
-    repo_root = args.repo_root.resolve() if args.repo_root else pathlib.Path.cwd()
-    jobs_db_path = _resolve_jobs_db(args.jobs_db, repo_root)
-
-    registry = JobRegistry(jobs_db_path)
-    job = registry.get(args.job_id)
-    registry.close()
-
-    if job is None:
-        print(f"[mir_executor] job_id not found: {args.job_id!r}", file=sys.stderr)
-        return 1
-
-    print(f"[STATUS] job_id={job.job_id}")
-    print(f"[STATUS] status={job.status}")
-    print(f"[STATUS] change_id={job.change_id!r} category={job.category!r}")
-    print(f"[STATUS] family={job.family!r} repo_root={job.repo_root!r}")
-    print(f"[STATUS] dispatch_brief_path={job.dispatch_brief_path!r}")
-    print(f"[STATUS] allow_harness_self_modify={job.allow_harness_self_modify}")
-    print(f"[STATUS] resume_count={job.resume_count} last_resumed_at={job.last_resumed_at!r}")
-    print(f"[STATUS] started_at={job.started_at} completed_at={job.completed_at}")
-    print(f"[STATUS] cancel_requested={job.cancel_requested}")
-    blocked_reason = _blocked_reason(job.stdout) or _blocked_reason(job.stderr)
-    if blocked_reason is not None:
-        print(f"[STATUS] blocked_reason={blocked_reason}")
-    return 0
+    return cli_jobs._handle_status(sys.modules[__name__], args)
 
 
 def _handle_result(args: argparse.Namespace) -> int:
-    """Handle the 'result' subcommand."""
-    from tools.mir_executor.jobs import JobRegistry  # noqa: PLC0415
-
-    repo_root = args.repo_root.resolve() if args.repo_root else pathlib.Path.cwd()
-    jobs_db_path = _resolve_jobs_db(args.jobs_db, repo_root)
-
-    registry = JobRegistry(jobs_db_path)
-    job = registry.get(args.job_id)
-    registry.close()
-
-    if job is None:
-        print(f"[mir_executor] job_id not found: {args.job_id!r}", file=sys.stderr)
-        return 1
-
-    if job.status == "running":
-        print(f"[RESULT] job_id={job.job_id} status=running (not yet completed)")
-        return 0
-
-    print(f"[RESULT] job_id={job.job_id}")
-    print(f"[RESULT] status={job.status}")
-    print(f"[RESULT] exit_code={job.exit_code}")
-    print(f"[RESULT] dispatch_brief_path={job.dispatch_brief_path!r}")
-    print(f"[RESULT] allow_harness_self_modify={job.allow_harness_self_modify}")
-    print(f"[RESULT] resume_count={job.resume_count} last_resumed_at={job.last_resumed_at!r}")
-    print(f"[RESULT] duration_seconds={job.duration_seconds}")
-    if job.stdout:
-        print(f"[STDOUT] {job.stdout[:500]!r}")
-    if job.stderr:
-        print(f"[STDERR] {job.stderr[:500]!r}")
-    return 0
+    return cli_jobs._handle_result(sys.modules[__name__], args)
 
 
 def _handle_cancel(args: argparse.Namespace) -> int:
-    """Handle the 'cancel' subcommand."""
-    from tools.mir_executor.jobs import JobRegistry  # noqa: PLC0415
-
-    repo_root = args.repo_root.resolve() if args.repo_root else pathlib.Path.cwd()
-    jobs_db_path = _resolve_jobs_db(args.jobs_db, repo_root)
-
-    registry = JobRegistry(jobs_db_path)
-    found = registry.cancel(args.job_id)
-    registry.close()
-
-    if not found:
-        print(f"[mir_executor] job_id not found: {args.job_id!r}", file=sys.stderr)
-        return 1
-
-    print(f"[CANCEL] cancel_requested=True for job_id={args.job_id}")
-    return 0
+    return cli_jobs._handle_cancel(sys.modules[__name__], args)
 
 
 def _handle_resume(args: argparse.Namespace) -> int:
-    """Handle the 'resume' subcommand."""
-    from tools.mir_executor.jobs import JobRegistry  # noqa: PLC0415
-
-    repo_root = args.repo_root.resolve() if args.repo_root else pathlib.Path.cwd()
-    jobs_db_path = _resolve_jobs_db(args.jobs_db, repo_root)
-    registry = JobRegistry(jobs_db_path)
-    job = registry.get(args.job_id)
-
-    if job is None:
-        registry.close()
-        print(f"[mir_executor] job_id not found: {args.job_id!r}", file=sys.stderr)
-        return 1
-    if not job.dispatch_brief_path:
-        registry.close()
-        print(
-            f"[mir_executor] job_id {args.job_id!r} has no dispatch_brief_path to resume from.",
-            file=sys.stderr,
-        )
-        return 1
-
-    executor = MirExecutor(
-        repo_root=pathlib.Path(job.repo_root),
-        dispatch_brief_path=pathlib.Path(job.dispatch_brief_path),
-    )
-
-    resumed_at = _utc_now()
-    registry.mark_resumed(job.job_id, resumed_at=resumed_at)
-    try:
-        if args.use_async:
-            result, update = asyncio.run(
-                executor.execute_async(
-                    change_id=job.change_id,
-                    category=job.category,
-                    codex_args=job.codex_args,
-                    timeout_seconds=args.timeout,
-                )
-            )
-        else:
-            result, update = executor.execute(
-                change_id=job.change_id,
-                category=job.category,
-                codex_args=job.codex_args,
-                timeout_seconds=args.timeout,
-            )
-    except (FileNotFoundError, KeyError, PermissionError) as exc:
-        registry.update_status(job.job_id, "failed", stderr=str(exc), completed_at=_utc_now())
-        registry.close()
-        print(f"[mir_executor] {type(exc).__name__}: {exc}", file=sys.stderr)
-        return 1
-    except subprocess.TimeoutExpired as exc:
-        registry.update_status(
-            job.job_id,
-            "timeout",
-            stderr=f"Codex timeout after {exc.timeout}s: {exc}",
-            completed_at=_utc_now(),
-        )
-        registry.close()
-        print(f"[mir_executor] Codex timeout after {exc.timeout}s: {exc}", file=sys.stderr)
-        return 1
-    except TimeoutError:
-        registry.update_status(
-            job.job_id,
-            "timeout",
-            stderr=f"async timeout after {args.timeout}s",
-            completed_at=_utc_now(),
-        )
-        registry.close()
-        print(f"[mir_executor] async timeout after {args.timeout}s", file=sys.stderr)
-        return 1
-    except ValueError as exc:
-        registry.update_status(job.job_id, "failed", stderr=str(exc), completed_at=_utc_now())
-        registry.close()
-        print(f"[mir_executor] {type(exc).__name__}: {exc}", file=sys.stderr)
-        return 1
-
-    registry.update_status(
-        job.job_id,
-        "completed" if result.exit_code == 0 else "failed",
-        exit_code=result.exit_code,
-        stdout=result.stdout,
-        stderr=result.stderr,
-        duration_seconds=result.duration_seconds,
-        completed_at=_utc_now(),
-    )
-    registry.close()
-
-    print(
-        f"[RESUME] job_id={job.job_id} dispatch_brief={job.dispatch_brief_path!r} "
-        f"allow_harness_self_modify={job.allow_harness_self_modify} resumed_at={resumed_at}"
-    )
-    print(f"[RESULT] change_id={update.change_id!r} category={update.category!r}")
-    print(f"[RESULT] codex exit_code={result.exit_code} duration={result.duration_seconds:.2f}s")
-    print(f"[RESULT] command={result.command!r}")
-    return 0
+    return cli_jobs._handle_resume(sys.modules[__name__], args)
 
 
 def _handle_list_jobs(args: argparse.Namespace) -> int:
-    """Handle the 'list-jobs' subcommand."""
-    from tools.mir_executor.jobs import JobRegistry  # noqa: PLC0415
-
-    repo_root = args.repo_root.resolve() if args.repo_root else pathlib.Path.cwd()
-    jobs_db_path = _resolve_jobs_db(args.jobs_db, repo_root)
-
-    registry = JobRegistry(jobs_db_path)
-    jobs = registry.list_jobs(status_filter=args.status)
-    registry.close()
-
-    if not jobs:
-        filter_info = f" (status={args.status!r})" if args.status else ""
-        print(f"[LIST] no jobs found{filter_info}")
-        return 0
-
-    for job in jobs:
-        print(
-            f"[JOB] job_id={job.job_id} status={job.status} "
-            f"change_id={job.change_id!r} category={job.category!r} "
-            f"dispatch_brief_path={job.dispatch_brief_path!r} "
-            f"resume_count={job.resume_count} "
-            f"started_at={job.started_at}"
-            f" blocked_reason={(_blocked_reason(job.stdout) or _blocked_reason(job.stderr))!r}"
-        )
-    return 0
+    return cli_jobs._handle_list_jobs(sys.modules[__name__], args)
 
 
 def _handle_sweep(args: argparse.Namespace) -> int:
-    """Handle the dry-run-by-default run-state sweep."""
-    from tools.mir_executor.sweep import sweep_run_state  # noqa: PLC0415
-
-    repo_root = args.repo_root.resolve()
-    jobs_db_path = _resolve_jobs_db(args.jobs_db, repo_root)
-    result = sweep_run_state(
-        repo_root,
-        jobs_db_path,
-        grace_seconds=args.grace_seconds,
-        apply=args.apply,
-    )
-    print(json.dumps(result, separators=(",", ":")))
-    return 0
+    return cli_jobs._handle_sweep(sys.modules[__name__], args)
 
 
-# ---------------------------------------------------------------------------
-# Entry point
-# ---------------------------------------------------------------------------
+def _blocked_reason(payload: str | None) -> str | None:
+    return cli_jobs._blocked_reason(payload)
+
 
 def main(argv: list[str] | None = None) -> int:
-    parser = _build_parser()
+    argv = list(sys.argv[1:] if argv is None else argv)
+    root_parser = argparse.ArgumentParser(add_help=False)
+    root_parser.add_argument(
+        "--repo-root", type=pathlib.Path, default=pathlib.Path.cwd()
+    )
+    known, _ = root_parser.parse_known_args(argv)
+    parser = _build_parser(known.repo_root.resolve())
     args = parser.parse_args(argv)
 
     if args.subcommand is None:
@@ -1337,7 +830,8 @@ def main(argv: list[str] | None = None) -> int:
         sys.exit(0)
 
     if args.subcommand == "execute":
-        rc = _handle_execute(args)
+        with writer_scope(args.repo_root.resolve()):
+            rc = _handle_execute(args)
     elif args.subcommand == "status":
         rc = _handle_status(args)
     elif args.subcommand == "result":

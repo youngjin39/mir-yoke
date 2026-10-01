@@ -1466,6 +1466,76 @@
           "reason": "No concurrent writer, database transaction, or lock boundary is changed."
         }
       }
+    },
+    {
+      "id": "executor-common-split-2026-10-01",
+      "record_status": "complete",
+      "scope": "Owner-approved common executor source, optional local behavior and explicit sync/drift tooling; repository-only commits and read-only pilots.",
+      "targets": [
+        "tools/mir_executor/",
+        "tools/executor_sync.py",
+        "config/mir-executor-common.json",
+        "config/mir-executor.local.json"
+      ],
+      "bluebrick": "Executor common source / Local behavior / Explicit sync",
+      "categories": {
+        "unit": {
+          "status": "pass",
+          "command": "uv run pytest -q",
+          "notes": "Full suite: 1417 passed. Python 3.11.16 full suite: 1417 passed. New nodes: 89 observed fail-first then pass; see tasks/reports/executor-common-fail-first.md. Pilots were read-only."
+        },
+        "integration": {
+          "status": "pass",
+          "command": "uv run pytest -q",
+          "notes": "Full suite: 1417 passed. Python 3.11.16 full suite: 1417 passed. New nodes: 89 observed fail-first then pass; see tasks/reports/executor-common-fail-first.md. Pilots were read-only."
+        },
+        "e2e": {
+          "status": "pass",
+          "command": "uv run pytest -q",
+          "notes": "Full suite: 1417 passed. Python 3.11.16 full suite: 1417 passed. New nodes: 89 observed fail-first then pass; see tasks/reports/executor-common-fail-first.md. Pilots were read-only."
+        },
+        "edge": {
+          "status": "pass",
+          "command": "uv run pytest -q",
+          "notes": "Full suite: 1417 passed. Python 3.11.16 full suite: 1417 passed. New nodes: 89 observed fail-first then pass; see tasks/reports/executor-common-fail-first.md. Pilots were read-only."
+        },
+        "architecture": {
+          "status": "pass",
+          "command": "uv run pytest -q",
+          "notes": "Full suite: 1417 passed. Python 3.11.16 full suite: 1417 passed. New nodes: 89 observed fail-first then pass; see tasks/reports/executor-common-fail-first.md. Pilots were read-only."
+        },
+        "security": {
+          "status": "pass",
+          "command": "uv run pytest -q",
+          "notes": "Full suite: 1417 passed. Python 3.11.16 full suite: 1417 passed. New nodes: 89 observed fail-first then pass; see tasks/reports/executor-common-fail-first.md. Pilots were read-only."
+        },
+        "compatibility": {
+          "status": "pass",
+          "command": "uv run pytest -q",
+          "notes": "Full suite: 1417 passed. Python 3.11.16 full suite: 1417 passed. New nodes: 89 observed fail-first then pass; see tasks/reports/executor-common-fail-first.md. Pilots were read-only."
+        },
+        "transaction_locking": {
+          "status": "pass",
+          "command": "uv run pytest -q",
+          "notes": "Full suite: 1417 passed. Python 3.11.16 full suite: 1417 passed. New nodes: 89 observed fail-first then pass; see tasks/reports/executor-common-fail-first.md. Pilots were read-only."
+        },
+        "browser": {
+          "status": "not_applicable",
+          "reason": "Bounded CLI/library compatibility and explicit sync changes; no GUI, live service, throughput or long-running workload behavior changed."
+        },
+        "availability": {
+          "status": "not_applicable",
+          "reason": "Bounded CLI/library compatibility and explicit sync changes; no GUI, live service, throughput or long-running workload behavior changed."
+        },
+        "load": {
+          "status": "not_applicable",
+          "reason": "Bounded CLI/library compatibility and explicit sync changes; no GUI, live service, throughput or long-running workload behavior changed."
+        },
+        "soak": {
+          "status": "not_applicable",
+          "reason": "Bounded CLI/library compatibility and explicit sync changes; no GUI, live service, throughput or long-running workload behavior changed."
+        }
+      }
     }
   ]
 }

@@ -17,6 +17,34 @@ from typing import Any
 DEFAULT_CODEX_BIN = "codex"
 DEFAULT_PROTOCOL_VERSION = "2024-11-05"
 
+_MCP_ENV_KEYS = {
+    "CODEX_BIN",
+    "CODEX_EVENTS_FILE",
+    "CODEX_HOME",
+    "CODEX_REAL_BIN",
+    "COLORTERM",
+    "HOME",
+    "LANG",
+    "LC_ALL",
+    "LC_CTYPE",
+    "LOGNAME",
+    "NO_COLOR",
+    "PATH",
+    "SHELL",
+    "TERM",
+    "TMPDIR",
+    "USER",
+    "MIR_CODEX_SESSION_ID",
+    "MIR_CODEX_MAIN",
+    "MIR_DISPATCH_FALLBACK_DEPTH",
+    "MIR_SUB_AGENT_POLICY",
+}
+
+
+def filtered_mcp_env(env: Mapping[str, str]) -> dict[str, str]:
+    """Return the minimal allowlisted environment needed by Codex app-server."""
+    return {key: value for key, value in env.items() if key in _MCP_ENV_KEYS}
+
 
 class CodexMcpError(RuntimeError):
     """Base class for Codex app-server client failures."""
@@ -251,7 +279,11 @@ class CodexMcpClient:
                 stall_timeout=stall_timeout,
             )
             started_turn = started.get("turn") if isinstance(started, Mapping) else None
-            if not isinstance(started_turn, Mapping) or not isinstance(started_turn.get("id"), str):
+            if (
+                not isinstance(started_turn, Mapping)
+                or not isinstance(started_turn.get("id"), str)
+                or not started_turn["id"]
+            ):
                 raise CodexMcpProtocolError("turn/start returned no turn id")
             result = self._wait_pending(
                 key,
@@ -310,18 +342,31 @@ class CodexMcpClient:
             self._pending[key] = pending
 
         self._last_activity_ts = time.monotonic()
-        try:
-            self._send(
-                {
-                    "id": request_id,
-                    "method": method,
-                    "params": dict(params),
-                }
-            )
-        except Exception:
-            with self._pending_lock:
-                self._pending.pop(key, None)
-            raise
+        message = {"id": request_id, "method": method, "params": dict(params)}
+        if timeout is None and stall_timeout is None:
+            try:
+                self._send(message)
+            except Exception:
+                with self._pending_lock:
+                    self._pending.pop(key, None)
+                raise
+        else:
+
+            def send_request() -> None:
+                try:
+                    self._send(message)
+                except Exception as exc:
+                    with self._pending_lock:
+                        if pending.error is None and not pending.event.is_set():
+                            self._pending.pop(key, None)
+                            pending.error = exc
+                            pending.event.set()
+
+            threading.Thread(
+                target=send_request,
+                name=f"codex-mcp-send-{key}",
+                daemon=True,
+            ).start()
 
         return self._wait_pending(
             key, method, pending, timeout=timeout, stall_timeout=stall_timeout
@@ -419,7 +464,12 @@ class CodexMcpClient:
                     CodexMcpProcessError(f"Codex app-server stdout read failed: {exc}")
                 )
         except CodexMcpError as exc:
-            self._reject_all_pending(exc)
+            pending_requests = self._drain_pending(exc)
+            try:
+                self._terminate_server()
+            finally:
+                for pending_request in pending_requests:
+                    pending_request.event.set()
 
     def _read_stderr(self) -> None:
         proc = self._proc
@@ -463,6 +513,10 @@ class CodexMcpClient:
         has_method = isinstance(message.get("method"), str)
 
         if has_id and (has_result or has_error):
+            if type(message["id"]) not in (int, str):
+                raise CodexMcpProtocolError("app-server response has invalid id")
+            if has_result == has_error or "method" in message:
+                raise CodexMcpProtocolError("app-server response has invalid envelope")
             pending = self._pop_pending(message["id"])
             if pending is None:
                 return
@@ -472,6 +526,9 @@ class CodexMcpClient:
                 pending.result = message.get("result")
             pending.event.set()
             return
+
+        if has_id and not has_method:
+            raise CodexMcpProtocolError("app-server response has invalid envelope")
 
         if has_method and not has_id:
             params = message.get("params", {})
@@ -499,6 +556,14 @@ class CodexMcpClient:
                 if method == "item/completed":
                     _record_completed_item(turn, params.get("item"), "item/completed item")
                 else:
+                    completed = params.get("turn")
+                    if (
+                        not isinstance(completed, Mapping)
+                        or not isinstance(completed.get("id"), str)
+                        or not completed["id"]
+                        or not isinstance(completed.get("status"), str)
+                    ):
+                        raise CodexMcpProtocolError("turn/completed returned invalid turn")
                     turn.pending.result = params
                     turn.pending.event.set()
             return
@@ -569,6 +634,6 @@ def _record_completed_item(turn: _PendingTurn, item: object, source: str) -> Non
         return
     item_id = item.get("id")
     item_text = item.get("text")
-    if not isinstance(item_id, str) or not isinstance(item_text, str):
+    if not isinstance(item_id, str) or not item_id or not isinstance(item_text, str):
         raise CodexMcpProtocolError(f"{source} has invalid agent message fields")
     turn.texts[item_id] = item_text

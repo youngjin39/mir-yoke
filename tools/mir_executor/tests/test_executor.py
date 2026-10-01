@@ -229,7 +229,7 @@ def test_run_codex_passes_lightweight_mcp_options(tmp_path, monkeypatch):
     assert result.exit_code == 0
     assert calls[0]["prompt"] == "hello"
     assert calls[0]["cwd"] == pathlib.Path.cwd().resolve()
-    assert calls[0]["sandbox"] == "danger-full-access"
+    assert calls[0]["sandbox"] == "workspace-write"
     assert calls[0]["approval_policy"] == "never"
     assert calls[0]["base_instructions"] == _MCP_DISPATCH_BASE_INSTRUCTIONS
     assert calls[0]["config"] == {"project_doc_max_bytes": 0}

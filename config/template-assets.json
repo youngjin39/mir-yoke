@@ -234,7 +234,8 @@
         "tools/mir_executor/**",
         "tools/plan_archive/**",
         "tools/run_orchestrator/**",
-        "tools/template_assets.py"
+        "tools/template_assets.py",
+        "tools/executor_sync.py"
       ],
       "reason": "Retained non-package scripts and tooling used as inspectable prior art without consumer compatibility."
     },
@@ -249,6 +250,8 @@
         "config/harness-consistency.json",
         "config/harness-consistency.schema.json",
         "config/model-routing.lock.json",
+        "config/mir-executor-common.json",
+        "config/mir-executor.local.json",
         "config/project-hooks.json",
         "config/template-assets.json",
         "config/template-assets.schema.json",
@@ -261,6 +264,7 @@
         "tests/**",
         "tools/harness_consistency/**",
         "tools/template_assets.py",
+        "tools/executor_sync.py",
         "uv.lock"
       ],
       "exclude": [],

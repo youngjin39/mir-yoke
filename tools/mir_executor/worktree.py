@@ -22,6 +22,10 @@ import tempfile
 from collections.abc import Mapping
 from dataclasses import dataclass
 
+from tools.mir_executor.codex_mcp_client import filtered_mcp_env
+from tools.mir_executor.local_hooks import local_config
+from tools.mir_executor.redaction import redact_secret_like_content, redact_structured_value
+
 
 @dataclass(frozen=True)
 class DispatchWorktree:
@@ -73,7 +77,19 @@ def _git(
 
 def _write_json(path: pathlib.Path, payload: dict) -> None:
     """Write a pretty JSON object with a trailing newline."""
-    path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    _write_private_text(
+        path,
+        json.dumps(redact_structured_value(payload), indent=2, ensure_ascii=False) + "\n",
+        redact=False,
+    )
+
+
+def _write_private_text(path: pathlib.Path, text: str, *, redact: bool = True) -> None:
+    """Persist redacted dispatch evidence with owner-only permissions."""
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8", errors="surrogatepass") as stream:
+        os.fchmod(stream.fileno(), 0o600)
+        stream.write(redact_secret_like_content(text) if redact else text)
 
 
 def _read_json_object(path: pathlib.Path) -> dict:
@@ -135,7 +151,7 @@ def create_dispatch_worktree(
     status_path = dispatch_dir / "status.json"
     result_path = dispatch_dir / "result.json"
 
-    brief_path.write_text(brief_text, encoding="utf-8", errors="surrogatepass")
+    _write_private_text(brief_path, brief_text)
     _write_json(
         status_path,
         {
@@ -269,14 +285,34 @@ def cleanup_worktree(worktree: DispatchWorktree, *, delete_branch: bool = True) 
             _AUTO_TEMP_BASES.discard(temp_base)
 
 
+def child_env(
+    main_repo_root: pathlib.Path,
+    base_env: Mapping[str, str] | None = None,
+    *,
+    filter_credentials: bool = False,
+) -> dict[str, str]:
+    """Apply local child-process filtering without changing caller destinations."""
+    source_env = os.environ if base_env is None else base_env
+    config = local_config(main_repo_root)
+    if filter_credentials or config.get("child_env_filter", False):
+        env = filtered_mcp_env(source_env)
+        for key in config.get("child_env_extra_keys", []):
+            if key in source_env:
+                env[key] = source_env[key]
+    else:
+        env = dict(source_env)
+    return env
+
+
 def dispatch_env(
     main_repo_root: pathlib.Path,
     base_env: Mapping[str, str] | None = None,
     *,
     session_id: str | None = None,
+    filter_credentials: bool = False,
 ) -> dict[str, str]:
     """Return an environment that points Codex shim events at the main repo log."""
-    env = dict(os.environ if base_env is None else base_env)
+    env = child_env(main_repo_root, base_env, filter_credentials=filter_credentials)
     events_file = pathlib.Path(main_repo_root) / "tasks" / "codex-exec-events.jsonl"
     env["CODEX_EVENTS_FILE"] = str(events_file.resolve())
     if session_id is not None:

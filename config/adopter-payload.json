@@ -580,6 +580,18 @@
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
+      "path": "config/mir-executor-common.json",
+      "sha256": "bec05a01bd506eea89c5a0de2055f7db7c2eefaf1ffce72df19088f6cc50dd66"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "config/mir-executor.local.json",
+      "sha256": "0b1d33fc9487c206d05e967f2a53b2c93763baf43c84973e1ca7627e80953ce9"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
       "path": "config/model-routing.lock.json",
       "sha256": "a9f35690861b5dfebbb2843c434d4051732bbd086c02f7a656d9ce2b26c6c0af"
     },
@@ -629,7 +641,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "config/template-assets.json",
-      "sha256": "5a53348d061fa309772de0599ba454c10ccbfab44b3fbc2cf894e44e8b7bf6e9"
+      "sha256": "09de29574ef1e642c3658bd0d356e466dc7f101c54dcbcd43d988c6c9173406e"
     },
     {
       "classification": "template-maintainer-tool",
@@ -2238,6 +2250,12 @@
       "disposition": "remove",
       "path": "docs/operations/harness-engineering-upgrade.md",
       "sha256": "b6dd8cba6ef017d316806ab3cb5dcb9994869bd76325c15e3d72359b34c1082f"
+    },
+    {
+      "classification": "reference",
+      "disposition": "remove",
+      "path": "docs/operations/mir-executor-sync.md",
+      "sha256": "779e3533b330256723ded756ab0b1c9a8f01c28bc5816ff353ceeaee7cdbb576"
     },
     {
       "classification": "reference",
@@ -4031,7 +4049,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/change_log.md",
-      "sha256": "cddd2e574a1296bc1e4e5e0d9c08838db4d9326c1dfb7b9c3e9b0f3e082b0c27"
+      "sha256": "cba07be5bd617812e358df863bd63bd4fe7ee6b3b26e5cb6a28e314aedc074fb"
     },
     {
       "classification": "reference",
@@ -4049,7 +4067,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/intent.json",
-      "sha256": "6e1d3b7609c7910a601fbba612116ba30b1d3b6cd3c85517340c7035eeeb3136"
+      "sha256": "2f083681331e0c182fbf564289abbdf401f304c0895d44a256d718d286774da6"
     },
     {
       "classification": "reference",
@@ -4073,13 +4091,19 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/plan.md",
-      "sha256": "9ebcbc1fc960e53823285a3f2033e51f38f63f621daffcd6ea79a603da2d7950"
+      "sha256": "354638dc96b78e5654fb6b728050237c9778fbbafe9911d79bf12018b9b95f33"
     },
     {
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/reports/claude-codex-harness_harness_rollout_2026-05-28.md",
       "sha256": "92cfc2536a015046836f52232eefc8ca268c754ac1675972bd3e85514c70ac9f"
+    },
+    {
+      "classification": "reference",
+      "disposition": "remove",
+      "path": "tasks/reports/executor-common-fail-first.md",
+      "sha256": "cdc438c4397b9d1bf8b1c2ddd820d8d571706d6314e084317fc143d60ab07d40"
     },
     {
       "classification": "reference",
@@ -4091,7 +4115,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/tdd.json",
-      "sha256": "6190636d328542c94aa083e26e5f49d9243e84da11eddcc5fbad618ca7a87cb5"
+      "sha256": "22da38bd549894cabd1b67f0dc7d6b8749d023b7a284fb503b3c3628de3cfe55"
     },
     {
       "classification": "reference",
@@ -4296,6 +4320,12 @@
       "disposition": "remove",
       "path": "tests/test_deny_list.py",
       "sha256": "374d1469651636210c5144b80b6af758a4274fd3f4defdddc348cc5836d282cc"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "tests/test_executor_sync.py",
+      "sha256": "cd319a193d7fc20bfcc8c5533b3d605cf6c2a1a208604564427868b6969dc6e2"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4648,6 +4678,12 @@
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
+      "path": "tools/executor_sync.py",
+      "sha256": "37a214d2bce21aca3bcc0bc87bae7850ad998bcbc4c9741a51e5e6bb3018cff0"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
       "path": "tools/harness_consistency/__init__.py",
       "sha256": "aecf07978f16c423da541dbef62c36cf2e6a93988bf00208bba1e9b7ac229106"
     },
@@ -4756,6 +4792,12 @@
     {
       "classification": "optional-consumer-tool",
       "disposition": "remove",
+      "path": "tools/mir_executor/COMMON_MANIFEST.json",
+      "sha256": "bec05a01bd506eea89c5a0de2055f7db7c2eefaf1ffce72df19088f6cc50dd66"
+    },
+    {
+      "classification": "optional-consumer-tool",
+      "disposition": "remove",
       "path": "tools/mir_executor/__init__.py",
       "sha256": "83b6955cf874dd9502b7614bf26a7a5689b0135c29e6666ad98d21a947d67dec"
     },
@@ -4769,43 +4811,73 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/cli.py",
-      "sha256": "78d47a105246fe3c04d68a2a11e0f198cad08bfe047c7d5a9358132fdeb27ede"
+      "sha256": "71ef3bba283e0565669c425e5b6dffc616b0f5a017b43ccb0a43c2d38e0e01fc"
+    },
+    {
+      "classification": "optional-consumer-tool",
+      "disposition": "remove",
+      "path": "tools/mir_executor/cli_jobs.py",
+      "sha256": "e6783cd78f152563bdc1853ab0ce30c2d6afadaefb41e58815c8ff144ad4106e"
+    },
+    {
+      "classification": "optional-consumer-tool",
+      "disposition": "remove",
+      "path": "tools/mir_executor/cli_parser.py",
+      "sha256": "de42c8cb3ef300136f7e86d482b2fe07d881e21ac4e04295de99f93e4ad17110"
     },
     {
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/codex_mcp_client.py",
-      "sha256": "68d1751a5d55951c475a19eb61d619f6a64e7055e0848358b928e7171ca84a03"
+      "sha256": "f2ce622496ed4378e05eedf89c0ca7d40d277eba552a747bebb25683521a5a27"
     },
     {
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/dispatch.py",
-      "sha256": "e202ce57762ccdfc28f1675f22c67711d5d8f42be6b56351dd7c3c46609c9d1e"
+      "sha256": "b97475ab5205ad29a4fae4984c06063b28047577113474f1fbb23b20005e1283"
     },
     {
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/executor.py",
-      "sha256": "ffeb2f84c6b9e8a990cf1b65e8b2275edc9642ec7784d9782177321696dbcf05"
+      "sha256": "a0fa421504fe67fede988698c3e8455643450482a038c96fb1072a075348dfb0"
     },
     {
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/jobs.py",
-      "sha256": "f68a705e6217d3a118f4ea058538422c7157792a505c2aedda0a7b0b9516e3f4"
+      "sha256": "6007762f4e29cff9e7b307badc29cc0f432616afe5a83e010048ac88afc7da8d"
+    },
+    {
+      "classification": "optional-consumer-tool",
+      "disposition": "remove",
+      "path": "tools/mir_executor/local.py",
+      "sha256": "c398bd016fac16f00b428a671276c46a614911acb2e4bac2f1f067f4f3cb6a6c"
+    },
+    {
+      "classification": "optional-consumer-tool",
+      "disposition": "remove",
+      "path": "tools/mir_executor/local_hooks.py",
+      "sha256": "00b070eb4fe63231d39c8d88ea677ba3a0128e18d33aefa78295ff6d681c9d69"
     },
     {
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/policy.py",
-      "sha256": "caa48d6189c33bfda5c1d416fb7e0c0f4c839fd4e07e2473399b1ea8b5a61f90"
+      "sha256": "b7880a455ace8d75b5cac6881ecc59ecd66203125dcc82cdb9b58626d201bddc"
+    },
+    {
+      "classification": "optional-consumer-tool",
+      "disposition": "remove",
+      "path": "tools/mir_executor/redaction.py",
+      "sha256": "68644bb9d9cf6c0413df64bdc7a73edfaa8688b2789e3bde394d065aecc9c1e8"
     },
     {
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/sweep.py",
-      "sha256": "b51e7e7cf6a464bd541104f0f57610b8653fc3b984c63195f8b21dc0296ccf62"
+      "sha256": "81a58812087992733c5dc0b0549319c9e7663a1d4cf005591882bc103da52c0b"
     },
     {
       "classification": "optional-consumer-tool",
@@ -4822,8 +4894,20 @@
     {
       "classification": "optional-consumer-tool",
       "disposition": "remove",
+      "path": "tools/mir_executor/tests/local/test_local.py",
+      "sha256": "8a2b5c0b0d0059b5d6be62bdf1ea0483291545f19c2fce806533bdf8ddf22d97"
+    },
+    {
+      "classification": "optional-consumer-tool",
+      "disposition": "remove",
       "path": "tools/mir_executor/tests/test_cli.py",
       "sha256": "04df19dfeecd47a5c39a637ba3d4662a04f022b1d64bc953d60acea7b62820cf"
+    },
+    {
+      "classification": "optional-consumer-tool",
+      "disposition": "remove",
+      "path": "tools/mir_executor/tests/test_cli_common.py",
+      "sha256": "893b5c69a7d440e597830138cace95ffaf99c21a6a71d173e2087ff9a6fae58b"
     },
     {
       "classification": "optional-consumer-tool",
@@ -4846,6 +4930,24 @@
     {
       "classification": "optional-consumer-tool",
       "disposition": "remove",
+      "path": "tools/mir_executor/tests/test_common_manifest.py",
+      "sha256": "deec5b757c513238c829c84d8c217a8496848fe951c6e5aee5fbc6f6391e0493"
+    },
+    {
+      "classification": "optional-consumer-tool",
+      "disposition": "remove",
+      "path": "tools/mir_executor/tests/test_common_policy_jobs.py",
+      "sha256": "8d02a73779aab5ec27a5d06db3e082ff5cee7effec95d1ffd605e98c43979a88"
+    },
+    {
+      "classification": "optional-consumer-tool",
+      "disposition": "remove",
+      "path": "tools/mir_executor/tests/test_common_transport_fixes.py",
+      "sha256": "a4e590b045d3cc5179cf56ab13734be63d03c99b6144742d528880de5e3b5551"
+    },
+    {
+      "classification": "optional-consumer-tool",
+      "disposition": "remove",
       "path": "tools/mir_executor/tests/test_degraded.py",
       "sha256": "617f52ac3ec5c3d7244f61ce651e40ab36c9b18d4f289d55874bb7ad42deb229"
     },
@@ -4853,31 +4955,37 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/tests/test_dispatch.py",
-      "sha256": "8f76392588b7a18a659a6718a9b1fd38d956d1e1f30f774d563fb7cc689270a5"
+      "sha256": "6d2b759ec013df594e5f06cdd90b29196fe06a1cf457182a9f1e5aea42a44ba1"
+    },
+    {
+      "classification": "optional-consumer-tool",
+      "disposition": "remove",
+      "path": "tools/mir_executor/tests/test_dispatch_common.py",
+      "sha256": "7c24a62a00e71ed1d6c36b8280f037e5f5bf60757b13238c9b5a5607954d46a0"
     },
     {
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/tests/test_executor.py",
-      "sha256": "8a41cf3ccc71324ba4df0fd2a9883c3a95a5afd152feb21ee546e75d2b3e4b49"
+      "sha256": "85e0d25703f0a78ae62acd2f9a17e3228753f0ba299d8bb168ffe8d564d72752"
     },
     {
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/tests/test_executor_async.py",
-      "sha256": "c7d0095548ab009271e388f3c34560452013cd7f17732fa799f61911d3fd2109"
+      "sha256": "982e2c5f1f62964553768fdd77616639f51d96909a6077925f0a34072a3509a6"
     },
     {
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/tests/test_jobs.py",
-      "sha256": "1bbbba13a19e1a7d8726c0dd94ccf54c8d3a9d514107ba6c557b2fb754b94c38"
+      "sha256": "0b032b4fb8446a68528b1906067db47fcf48db41fcc2b9de9a5516e68d41b27f"
     },
     {
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/tests/test_policy.py",
-      "sha256": "cdceedd30f7cd102b046b4f6693040cc3558845d33964a8c82b6bbbbe4c2b86a"
+      "sha256": "9b345dc7384cc8ae2501f600df1507ca62b49a55de6ebbc60887e7da02a14975"
     },
     {
       "classification": "optional-consumer-tool",
@@ -4895,7 +5003,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/worktree.py",
-      "sha256": "444e973475ef92b46cca599b20fd39525b76bfb49ae4bff343aa2deecf6fe13e"
+      "sha256": "ec47318d803723395c96d5b575793176f46a8caf10111f91e11c9c7b74baea64"
     },
     {
       "classification": "optional-consumer-tool",

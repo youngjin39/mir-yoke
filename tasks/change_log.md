@@ -2106,3 +2106,47 @@ Apply each item proportionately. Mark it done, no change needed (with evidence),
 5. Report per item, then list changed files, before/after instruction-doc sizes, checks with pass/fail counts,
    integrity evidence to rebind, owner decisions and residual risks.
 ```
+
+## Executor common split successor (2026-10-01)
+
+The user supplied a new executor-common specification and local-commit authority. The completed predecessor cursor is preserved below.
+
+```markdown
+# Plan
+
+Owner-authorized twenty-one-item maintenance skill implementation, 2026-09-24.
+Authority: owner Discord 1552387906927333458, relayed by Mir Harness; this repository only.
+This cursor is the active intent authority. Predecessor cursor is preserved verbatim
+in `tasks/change_log.md`, "Twenty-one-item maintenance skill implementation (2026-09-24)".
+
+- [x] Trace v0.10.6 registration, current scope and owner intent; preserve prior text.
+- [x] Prove missing repair, harness parity and Main-runtime probes with failing contracts.
+- [x] Update the skill and current descriptions; preserve historical release facts.
+- [x] Regenerate payload and temporary derivatives; run the full suite and documented checks.
+- [x] Record counts, fail-first proof, installation needs and bootstrap boundaries.
+
+Design: retain all twenty existing topics, strengthen items 6 and 7, and add item 21
+with concrete instruction, event, startup, capability, MCP and trust probes tied to
+runtime evidence. This edits guidance and its contracts, not runtime hooks. Existing
+registration remains valid. Current docs state twenty-one; released history stays dated.
+
+No commits, pushes, tags, stash/reset/checkout, release/version/lock binding, secrets,
+memory writes, new restrictions or removed-hook recreation. Generated Codex output
+stays temporary. Mir Harness owns subsequent installation, binding and release.
+
+Implementation is complete. Full verification: 1315 passed / 3 failed (one expected
+mir-core lock mismatch pending ADR-80 binding; two installation failures on PyPI DNS).
+Final focused checks: 33 passed / 0 failed; Ruff and generated parity pass.
+No generated Codex installation or bootstrap re-attestation is needed for this change.
+Detailed evidence and preserved inputs are in the log entry linked above.
+```
+
+Executor common implementation evidence: 89 fail-first nodes, both full suites
+1417 passed, both Ruff runs clean, Python 3.11.16 compiled 15 common files, Codex
+parity passed. The common manifest is separate from adopter inventory; Yoke local
+schema validation and verifier data remain excluded from common sync. Pilot syncs
+were read-only and compared package/config/Git-index hashes before and after.
+
+Local commit attempt was blocked: Git could not create `.git/index.lock` under the
+session's read-only Git metadata boundary. No commits or remote delivery occurred.
+The complete scoped change is retained in the working tree and a temporary patch.

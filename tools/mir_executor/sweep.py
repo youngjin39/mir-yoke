@@ -4,10 +4,13 @@ from __future__ import annotations
 
 import datetime
 import pathlib
+import re
+import shutil
 import subprocess
 from dataclasses import dataclass
 
 from tools.mir_executor.jobs import JobRecord, JobRegistry
+from tools.mir_executor.local_hooks import local_config
 
 _DISPATCH_BRANCH_PREFIX = "refs/heads/mir-dispatch/"
 
@@ -41,7 +44,9 @@ def _list_dispatch_worktrees(repo_root: pathlib.Path) -> list[_ListedWorktree]:
     worktrees: list[_ListedWorktree] = []
     for record in result.stdout.split("\0\0"):
         fields = record.strip("\0").split("\0")
-        values = {key: value for key, _, value in (field.partition(" ") for field in fields)}
+        values = {
+            key: value for key, _, value in (field.partition(" ") for field in fields)
+        }
         path_text = values.get("worktree")
         branch_ref = values.get("branch", "")
         if path_text is None or not branch_ref.startswith(_DISPATCH_BRANCH_PREFIX):
@@ -271,10 +276,7 @@ def sweep_run_state(
                             ],
                         }
                     )
-            preserved_paths = {
-                item["path"]
-                for item in preserved_worktrees
-            }
+            preserved_paths = {item["path"] for item in preserved_worktrees}
             removable_worktrees = [
                 path for path in removable_worktrees if path not in preserved_paths
             ]
@@ -291,4 +293,135 @@ def sweep_run_state(
         "removed_worktrees": removed_worktrees,
         "errors": errors,
         "apply": apply,
+    }
+
+
+ARTIFACT_RETENTION_DAYS = 30
+_JOB_ARTIFACT_ID = re.compile(r"^[0-9a-f]{32}$")
+
+
+def sweep_terminal_artifacts(
+    repo_root: pathlib.Path,
+    jobs_db: pathlib.Path,
+    *,
+    now: datetime.datetime | None = None,
+    retention_days: int | None = None,
+    apply: bool = False,
+) -> dict[str, object]:
+    """Sweep expired terminal-job artifact directories, never silently.
+
+    Ledger-driven: only a directory named exactly by a terminal job's
+    validated hex identity or recorded attempt identity under ``tasks/dispatch``
+    is ever a candidate, so
+    an owner file or foreign name in that directory can never be matched.
+    A running job, a missing ``completed_at``, or a directory symlink is
+    skipped. On ``apply`` each removal writes one ``artifact_sweeps``
+    evidence row (files, bytes, timestamp) in the jobs ledger.
+    """
+    repo_root = pathlib.Path(repo_root).resolve()
+    jobs_db = pathlib.Path(jobs_db).resolve()
+    now = now or datetime.datetime.now(datetime.UTC)
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=datetime.UTC)
+    else:
+        now = now.astimezone(datetime.UTC)
+    if retention_days is None:
+        retention_days = local_config(repo_root).get(
+            "artifact_retention_days", ARTIFACT_RETENTION_DAYS
+        )
+    if (
+        isinstance(retention_days, bool)
+        or not isinstance(retention_days, int)
+        or retention_days < 0
+    ):
+        raise ValueError("artifact_retention_days must be a non-negative integer")
+    floor = now - datetime.timedelta(days=retention_days)
+    dispatch_root = repo_root / "tasks" / "dispatch"
+    if (repo_root / "tasks").is_symlink() or dispatch_root.is_symlink():
+        return {
+            "retention_days": retention_days,
+            "expired": [],
+            "removed": [],
+            "errors": ["artifact root is a symlink"],
+        }
+
+    expired: list[str] = []
+    removed: list[str] = []
+    errors: list[str] = []
+    registry, jobs = _load_jobs(jobs_db, read_only=not apply)
+    try:
+        for job in jobs:
+            if job.status == "running" or not job.completed_at:
+                continue
+            if _JOB_ARTIFACT_ID.fullmatch(job.job_id) is None:
+                continue
+            try:
+                completed = datetime.datetime.fromisoformat(job.completed_at)
+            except ValueError:
+                errors.append(f"unparseable completed_at for {job.job_id}")
+                continue
+            if completed.tzinfo is None:
+                completed = completed.replace(tzinfo=datetime.UTC)
+            if completed >= floor:
+                continue
+            dispatch_ids = {job.job_id}
+            metadata = job.ai_run_metadata or {}
+            history = metadata.get("dispatch_ids", [])
+            if isinstance(history, list):
+                dispatch_ids.update(
+                    item
+                    for item in history
+                    if isinstance(item, str) and _JOB_ARTIFACT_ID.fullmatch(item)
+                )
+            current = metadata.get("dispatch_id")
+            if isinstance(current, str) and _JOB_ARTIFACT_ID.fullmatch(current):
+                dispatch_ids.add(current)
+            for dispatch_id in sorted(dispatch_ids):
+                artifact_dir = dispatch_root / dispatch_id
+                if artifact_dir.is_symlink() or not artifact_dir.is_dir():
+                    continue
+                expired.append(dispatch_id)
+                if not apply:
+                    continue
+                files = 0
+                size_bytes = 0
+                for entry in artifact_dir.rglob("*"):
+                    if entry.is_file() and not entry.is_symlink():
+                        files += 1
+                        size_bytes += entry.stat().st_size
+                assert registry is not None
+                # Record intent before deleting: an interruption between
+                # the two steps must leave a recorded intent and a still-present
+                # directory -- never a silently vanished one. A rerun after such
+                # a crash reuses the existing row instead of stacking duplicates.
+                already_recorded = registry.has_artifact_sweep(
+                    job.job_id, path=str(artifact_dir)
+                )
+                if not already_recorded:
+                    registry.record_artifact_sweep(
+                        job.job_id,
+                        str(artifact_dir),
+                        files,
+                        size_bytes,
+                        now.isoformat(),
+                    )
+                # Re-check the shape immediately before removal to shrink the
+                # check-to-use window.
+                if artifact_dir.is_symlink() or not artifact_dir.is_dir():
+                    errors.append(f"remove {dispatch_id}: shape changed before removal")
+                    continue
+                try:
+                    shutil.rmtree(artifact_dir)
+                except OSError as exc:
+                    errors.append(f"remove {dispatch_id}: {exc}")
+                    continue
+                removed.append(dispatch_id)
+    finally:
+        if registry is not None:
+            registry.close()
+    return {
+        "retention_days": retention_days,
+        "expired": sorted(expired),
+        "removed": sorted(removed),
+        "errors": errors,
     }
