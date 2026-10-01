@@ -70,6 +70,11 @@ process and exposes no `yoke` composer.
   reviewed agent and Claude-command allowlists into explicitly named user homes. It defaults to a
   dry run, refuses unmanaged divergence, and records exact source and target digests. Repository
   definitions retain precedence.
+- **Executor common source** — `tools/mir_executor/` is a common runtime with an optional local
+  hook adapter; `config/mir-executor-common.json` lists its files and explicit sync/drift checks
+  are in `docs/operations/mir-executor-sync.md`. Routing reads the Mir Harness-deployed
+  `config/model-routing.lock.json` first; sync acts only on an explicit target and writes neither
+  policy file.
 - **Upgrade guide** — `docs/operations/harness-engineering-upgrade.md` routes existing repositories
   through selective, target-owned harness improvements without creating another payload.
 - **Maintenance** — tests, classification, sanitization, generated checks, and the clean-room

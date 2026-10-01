@@ -1,14 +1,10 @@
-# Session Handoff — Twenty-one-item maintenance skill
+# Session Handoff — Repository maintenance pass (2026-10-02)
 
 Resume pointer: `tasks/plan.md` is the only cursor; `tasks/intent.json` records authority.
-Evidence and preserved predecessor text: `tasks/change_log.md`,
-"Twenty-one-item maintenance skill implementation (2026-09-24)".
-Items 6 and 7 are strengthened; item 21 adds concrete parity probes for either Main CLI.
-Full suite: 1315 passed / 3 failed. Final focused tests: 33 passed / 0 failed.
-Mir Harness owns ADR-80 binding (mir-core currently differs from the unchanged lock).
-Two installation checks also need working PyPI DNS. Ruff and generated parity pass.
-No Codex installation, bootstrap evidence change or re-attestation is needed.
-No new restriction, hook recreation, memory write, version bump or Git publication occurred.
+Evidence and superseded continuity text: `tasks/change_log.md`,
+"Repository maintenance pass (2026-10-02)".
+Open owner items, Mir Harness requests and unverified items are listed in that entry.
+No remote delivery, consumer write, memory write, lock edit or synced common edit occurred.
 The generated snapshot below belongs to the preceding hook run; inspect current Git status.
 
 <!-- mir:runtime-snapshot:begin -->
@@ -18,5 +14,5 @@ The generated snapshot below belongs to the preceding hook run; inspect current 
 - No open plan items.
 
 ### Working Tree
-- Working tree dirty (1 paths; inspect git status --short).
+- Working tree dirty (19 paths; inspect git status --short).
 <!-- mir:runtime-snapshot:end -->

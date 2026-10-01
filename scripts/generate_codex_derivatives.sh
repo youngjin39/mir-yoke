@@ -147,19 +147,6 @@ body_preface_without_frontmatter() {
   '
 }
 
-has_exact_heading() {
-  local file="$1"
-  local heading="$2"
-  awk -v heading="$heading" '$0 == heading { found = 1; exit } END { exit found ? 0 : 1 }' "$file"
-}
-
-is_canonical_starter_claude() {
-  local file="$1"
-  has_exact_heading "$file" "## Required Reads" \
-    && has_exact_heading "$file" "## Workflow" \
-    && has_exact_heading "$file" "## Agent / Skill / Hook Contract"
-}
-
 escape_toml_multiline() {
   perl -0pe 's/"""/\\"""/g'
 }
@@ -176,52 +163,6 @@ emit_section() {
       print
     }
   ' "$file"
-}
-
-emit_shared_policy_sections() {
-  local file="$1"
-  local first=1
-  local headings=(
-    "## Context Management"
-    "## Language Protocol"
-    "## Surgical Change Rules"
-    "## Token Efficiency"
-    "## Principles"
-  )
-
-  local heading
-  for heading in "${headings[@]}"; do
-    if [ "$first" -eq 0 ]; then
-      echo
-    fi
-    emit_section "$file" "$heading"
-    first=0
-  done
-}
-
-emit_runtime_sections() {
-  local file="$1"
-  local first=1
-  local headings=(
-    "## Required Reads"
-    "## Workflow"
-    "## Mode Classification"
-    "## Agent / Skill / Hook Contract"
-    "## Harness Defaults"
-    "## Custom Harness Rules"
-    "## Codex Derivation Layer"
-    "## Codex Use Boundary"
-    "## Skill Trigger Table"
-  )
-
-  local heading
-  for heading in "${headings[@]}"; do
-    if [ "$first" -eq 0 ]; then
-      echo
-    fi
-    emit_section "$file" "$heading"
-    first=0
-  done
 }
 
 emit_agent_sections_for_codex() {
@@ -292,39 +233,6 @@ emit_agent_sections_for_codex() {
     echo
     printf '%s\n' "$failure_block"
   fi
-}
-
-emit_codex_agent_skill_hook_contract() {
-  local file="$1"
-  emit_section "$file" "## Agent / Skill / Hook Contract" | python3 -c '
-import sys
-text = sys.stdin.read()
-replacements = {
-    "- Hooks own automatic enforcement and state:": "- Hooks describe Claude automatic behavior and the Codex mirror obligations for the same outcomes:",
-    "  - `SessionStart` loads startup context (`tasks/plan.md`, `tasks/lessons.md`, `docs/memory-map.md`, latest session snapshot when present); treat that context as authoritative, then read more only when the task requires it.": "  - [Claude] `SessionStart` loads startup context (`tasks/plan.md`, `tasks/lessons.md`, `docs/memory-map.md`, latest session snapshot when present); treat that context as authoritative, then read more only when the task requires it. [Codex] Read the same startup files manually before acting.",
-    "  - `PreCompact` creates a handoff skeleton before context reduction; review and complete it before compacting. This is advisory; the hook does not block compaction.": "  - [Claude] `PreCompact` creates a handoff skeleton before context reduction; review and complete it before compacting. This is advisory; the hook does not block compaction. [Codex] Before invoking compaction, manually create a handoff document in `tasks/handoffs/` mirroring the PreCompact contract.",
-    "  - `PreToolUse` enforces path safety before edits/commands.": "  - [Claude] `PreToolUse` enforces path safety before edits/commands. [Codex] Apply the same blocked-intent rules through the instruction contract and verifier-backed drift checks.",
-    "  - `TddGuard` enforces the test-first rule for edits to existing implementation files when related tests are detectable.": "  - [Claude] `TddGuard` enforces the test-first rule for edits to existing implementation files when related tests are detectable. [Codex] Apply the same test-first rule through the instruction contract and verifier-backed drift checks.",
-    "  - `PostToolUse` inspects edits for debug leftovers and credential leaks.": "  - [Claude] `PostToolUse` inspects edits for debug leftovers and credential leaks. [Codex] Treat the same review as mandatory manual post-edit work.",
-    "  - `SessionEnd` saves the latest session snapshot for continuity. This preserves state, not proof of completion.": "  - [Claude] `SessionEnd` saves the latest session snapshot for continuity. This preserves state, not proof of completion. [Codex] The generated trusted SessionEnd hook refreshes the same canonical handoff within the Codex timeout.",
-}
-for old, new in replacements.items():
-    text = text.replace(old, new)
-sys.stdout.write(text)
-'
-}
-
-emit_codex_required_reads() {
-  local file="$1"
-  emit_section "$file" "## Required Reads" | python3 -c '
-import sys
-text = sys.stdin.read()
-text = text.replace(
-    "12. `docs/operations/claude-runtime.md` when task flow, hooks, or memory behavior matters",
-    "12. `docs/operations/codex-runtime.md` when task flow, generated instructions, or memory behavior matters",
-)
-sys.stdout.write(text)
-'
 }
 
 write_agents_md() {

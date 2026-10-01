@@ -255,7 +255,6 @@
       ],
       "archive_exclude": ".claude/hooks/archive/",
       "manual_trigger_allowlist": [
-        ".claude/hooks/session-end.sh",
         ".claude/hooks/sub-agent-policy-gate.sh",
         ".claude/hooks/pre-merge-gate.sh",
         ".claude/hooks/tdd-guard.sh",

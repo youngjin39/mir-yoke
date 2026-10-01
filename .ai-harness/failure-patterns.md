@@ -5,7 +5,7 @@ Recurring AI mistakes the harness was built to prevent. Add new entries when the
 ## Confident output without evidence
 **Shape**: agent produces a plausible-looking summary that conflicts with the actual code or test result.
 **Trigger**: question whose answer requires reading >3 files, agent skips the read.
-**Mitigation**: gate "what is the current state" answers behind an actual `Read` / `Bash` call. The harness's session-start hook helps by pre-loading plan/lessons; everything else, the agent must fetch.
+**Mitigation**: gate "what is the current state" answers behind an actual `Read` / `Bash` call. The harness's session-start hook supplies only repository context; plan, lessons and everything else, the agent must fetch.
 
 ## Cascading "fix" beyond scope
 **Shape**: bug fix turns into a refactor that touches twelve files.

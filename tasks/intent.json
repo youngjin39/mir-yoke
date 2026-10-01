@@ -1,20 +1,10 @@
 {
-  "goal": "Implement the owner-approved mir_executor common base, optional local hooks/data and explicit sync/drift tooling test-first in mir-yoke only.",
-  "goal_type": "implementation",
-  "scope": "Current user specification; local commits only. No consumer writes, push, tags, releases, capability lock or plugins. tasks/plan.md is the intent and design authority.",
+  "goal": "Run the 2026-10-02 mir-core:repo-maintenance pass (all 21 items) on mir-yoke only under the owner instruction of 2026-10-02: re-verify prior fixes, check ADR-88 routing lock and mir_executor common v3.4 consistency, fix in-scope defects test-first, run documented gates, local commits of own files only.",
+  "goal_type": "maintenance",
+  "scope": "mir-yoke only; local commits of own files only. No push, tag, release, consumer write, secret access, model-routing lock or synced mir_executor common edits. tasks/plan.md is the intent and design authority.",
   "priority": "normal",
-  "updated": "2026-10-01",
+  "updated": "2026-10-02",
   "history": [
-    {
-      "goal": "Clean up Mir Yoke project documents under owner Discord message 1552197111624372339 (2026-09-23): align the current documentation entry points and decision index with the supported surfaces, keep one active plan, preserve historical text and existing work, and verify document references and tests without changing behavior or delivery state.",
-      "updated": "2026-09-23",
-      "status": "complete"
-    },
-    {
-      "goal": "Re-verify and minimally fix all 15 owner fleet audit items in this repository only under the owner-authorized second pass of 2026-09-23. Preserve accepted decisions, safety gates, historical text and user work; validate actual commands and generated parity; report sandbox-only installation gaps without committing or delivering changes.",
-      "updated": "2026-09-23",
-      "status": "complete"
-    },
     {
       "goal": "Re-verify all twenty repo-maintenance checklist items against actual repository state and execution evidence, then minimally repair confirmed defects within this repository only.",
       "updated": "2026-09-23",
@@ -24,7 +14,12 @@
       "goal": "Strengthen mir-core:repo-maintenance to the owner-authorized twenty-one items in this repository only; prove regressions fail first and run full verification, leaving ADR-80 release binding to Mir Harness.",
       "updated": "2026-09-24",
       "status": "complete"
+    },
+    {
+      "goal": "Implement the owner-approved mir_executor common base, optional local hooks/data and explicit sync/drift tooling test-first in mir-yoke only.",
+      "updated": "2026-10-01",
+      "status": "complete"
     }
   ],
-  "status": "commit_blocked"
+  "status": "complete"
 }

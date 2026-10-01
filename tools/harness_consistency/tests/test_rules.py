@@ -1261,3 +1261,22 @@ def test_r17_glob_pattern_citation_not_flagged(tmp_path):
     assert cited == [], (
         f"Glob-pattern citations must not produce cited_paths findings; got: {cited}"
     )
+
+
+def test_manual_trigger_allowlist_lists_only_unwired_hooks():
+    root = Path(__file__).resolve().parents[3]
+    config = json.loads((root / "config" / "harness-consistency.json").read_text(encoding="utf-8"))
+    inputs = config["rule_inputs"]["hook_file_reachability"]
+    settings_text = "\n".join(
+        (root / name).read_text(encoding="utf-8")
+        for name in inputs["settings_files"]
+        if (root / name).exists()
+    )
+
+    wired = [
+        entry
+        for entry in inputs["manual_trigger_allowlist"]
+        if Path(entry).name in settings_text
+    ]
+
+    assert wired == []

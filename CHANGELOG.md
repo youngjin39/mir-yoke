@@ -28,6 +28,10 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
   context and token efficiency, memory, embeddings, agents, skills, hooks, and runtime parity.
 - Added bounded active-fact retrieval, repository-declared historical document globs, and explicit
   `mir context sync --reindex-missing-vectors` coverage and resume behavior.
+- Added the synced `tools/mir_executor` common base (through common v3.4) with optional local
+  hooks and data, a common file manifest, and explicit sync and drift checks.
+- Committed the Mir Harness-deployed `config/model-routing.lock.json`; executor routing reads it
+  first and falls back to the rendered policy.
 
 ### Changed
 

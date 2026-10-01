@@ -35,7 +35,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": ".ai-harness/failure-patterns.md",
-      "sha256": "02488f8799fe79e441c1d4467bd088afc4a1ef154f7dc6a9062c65a01708866e"
+      "sha256": "e95e0ec66f2abd8a994ac8ef095445a0a97b2ff85487a78eaf2731157711f4e5"
     },
     {
       "classification": "reference",
@@ -467,7 +467,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "ARCHITECTURE.md",
-      "sha256": "bf097e9a47b7d1e1bfd400dc82077e82f38afe8f5ccbf926697c5cd6c1445f96"
+      "sha256": "45c934210054c46cc140ef4d06ce15158cb7d0c0a36e018bca77dd8186ea193b"
     },
     {
       "classification": "reference",
@@ -479,7 +479,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "CHANGELOG.md",
-      "sha256": "ce04cfd59ee96f887fd237d824be7b6ea82cf85fabe361813ab7f85d1db9d148"
+      "sha256": "708146ae0f766f6adf4bd2467d845a61bd789dbb175bc5f797052a608acb2964"
     },
     {
       "classification": "reference",
@@ -557,7 +557,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "config/cli-runtime-constraints.txt",
-      "sha256": "a24b792c07cac224c411703df98bee117bdaf93423722662216a5a1f010a4438"
+      "sha256": "5cd863884ac945ab89b49067dedd3de0899fa90986ad3ae2d1ecd8ffa5e419b9"
     },
     {
       "classification": "reference",
@@ -569,7 +569,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "config/harness-consistency.json",
-      "sha256": "e51f50b2121073736b6e69bc3b8dfed8a3ad4c734a9a846a14bbd57e805a10f4"
+      "sha256": "dcfeb681bf482965e6caad0db6c33abaa738b4803a06c4ee989f9a4ae7bfbaa7"
     },
     {
       "classification": "template-maintainer-tool",
@@ -593,7 +593,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "config/model-routing.lock.json",
-      "sha256": "4b63b2c31367aeb93b8f0dd3c028ab95ca666402ff82a294ac8007b752a7a03f"
+      "sha256": "f39056b33c9b5203f714ba872f00a78accc448fdedcd0cd399711bb68d449932"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3221,7 +3221,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "scripts/generate_codex_derivatives.sh",
-      "sha256": "b849e24cd02a64c90aac78ebd0ce308ea10c30a63088934a44f58400c045d7cc"
+      "sha256": "6d8560f775de1dc5d461156450e385cd5ea0b19404122ef37ba1996b4f8df684"
     },
     {
       "classification": "reference",
@@ -4043,31 +4043,31 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/archive/intent-history.json",
-      "sha256": "6c158e508a0c2fbeae876c14e627474016c8fc92a111a16674b8b73ec19291f8"
+      "sha256": "fe7458c5ab9a1a72d4123fdd1471bf3c614f05ec4a8119ff3942fc9e295a8def"
     },
     {
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/change_log.md",
-      "sha256": "cba07be5bd617812e358df863bd63bd4fe7ee6b3b26e5cb6a28e314aedc074fb"
+      "sha256": "73e5cfd3a44c91bcd6bc2698aa7e6684cb0847040ff5e03f454f1d76c5b2a91f"
     },
     {
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/checklist.md",
-      "sha256": "2c7caf08afe82b1765a2ab8caab3eb05d758ddb11c9452d385de1445db189332"
+      "sha256": "02847fe8e36c6fb557f8c101120a83ffc0ff23320719057f9daa8b99d7e1dbc3"
     },
     {
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/handoffs/session-handoff-LATEST.md",
-      "sha256": "ed90e8a0c048e0646a3b16852379c4a4caf2035fdf2f76ca107c719dbd2c2a5c"
+      "sha256": "ea19e8c037eea2971f8a673a1fb3916c4dadf90248ac9c8eb5e84e6079535f16"
     },
     {
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/intent.json",
-      "sha256": "2f083681331e0c182fbf564289abbdf401f304c0895d44a256d718d286774da6"
+      "sha256": "ab5172b7c72c95284b34d3fe841f2836a8739eaf86e4caec7a45a8b9ab3ed3c0"
     },
     {
       "classification": "reference",
@@ -4091,7 +4091,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/plan.md",
-      "sha256": "14f80b064e63c9f14f1f80e0ef6d72f93c6743e5989bbb69cb62cbe55034c36a"
+      "sha256": "aa756c824e033b5aee8b3c9e875b96a29a7f613dc4c5d6ff3171aade5eabad4c"
     },
     {
       "classification": "reference",
@@ -4745,7 +4745,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tools/harness_consistency/tests/test_rules.py",
-      "sha256": "8508818dfe50c8c818787998c42efc0fc5954e06b635950c9a0bb275e7532ad2"
+      "sha256": "af49c47ed483e0439d74ad766a9483001f936318ace9d4549b004eb2b180786f"
     },
     {
       "classification": "reference",
@@ -5177,7 +5177,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "uv.lock",
-      "sha256": "f757385a0877fa42d34435d22941d9a822c0ffbd42f5e2381e5c9974b941a9e0"
+      "sha256": "1022cd960644a75d22dbf6782404599e96b7e1c38bc0038a2a54adc306f701ec"
     }
   ],
   "generated_from": "config/template-assets.json",
