@@ -1,5 +1,32 @@
 # Plan
 
+## Active task: executor common v3.2 (2026-10-01)
+
+Authority: the current user request and supplied `spec-executor-v32.md`.
+This cursor owns the implementation plan: the invoking Git repository's optional
+`authorize_target` guard and opt-in `verifier_env` isolation only.
+Write only in mir-yoke; inspect Harness read-only. Do not commit or push.
+
+- [x] Add guard tests, observe failure at ba298f0, implement and observe pass.
+- [x] Add verifier isolation tests, observe failure, implement and observe pass.
+- [x] Update sync guide and regenerate manifests (payload is affected).
+- [x] Run full pytest, Ruff, Python 3.11 compilation and self-target sync checks.
+
+Fail-first evidence (all new nodes also run against an exported ba298f0 package):
+guard: `13 failed in 0.55s` -> `13 passed in 0.57s`;
+verifier isolation: `5 failed in 1.04s` -> `5 passed in 1.02s`.
+Guard coverage includes option registration, writer admission, root changes,
+saved and legacy resume targets, and preserved local-option help.
+Isolation covers per-verifier directories, explicit environment inputs and cleanup
+on success, failure, timeout and process errors.
+
+Final full pytest: `1580 passed in 210.20s (0:03:30)`.
+Ruff (`tools tests`): `All checks passed!`. Python 3.11.16 compiled all 15
+common manifest files. Self-target sync, Codex parity and 19 manifest/sync/adopter
+checks passed. No repository commit, push or Harness write occurred.
+
+The predecessor records below preserve earlier implementation evidence.
+
 ## Active task: executor common v3 (2026-10-01)
 
 Authority: the current user request and supplied `spec-executor-v3.md`.

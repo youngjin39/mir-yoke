@@ -203,6 +203,11 @@ def _handle_resume(api, args: argparse.Namespace) -> int:
         except (OSError, TypeError, ValueError) as exc:
             print(f"[mir_executor] resume integrity error: {exc}", file=sys.stderr)
             return 1
+    try:
+        api.authorize_target(pathlib.Path(job.repo_root), args)
+    except ValueError as exc:
+        print(f"[mir_executor] {exc}", file=sys.stderr)
+        return 1
     execute_args = api._build_parser(pathlib.Path(job.repo_root)).parse_args(
         ["execute", "--dispatch"]
     )

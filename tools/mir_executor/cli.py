@@ -48,6 +48,7 @@ from tools.mir_executor import cli_jobs
 from tools.mir_executor.cli_parser import _build_parser
 from tools.mir_executor.executor import MirExecutor
 from tools.mir_executor.local_hooks import (
+    authorize_target,
     emit_job_event,
     has_hook,
     invoke_hook,
@@ -408,8 +409,11 @@ def _resolve_execute_codex_args(args: argparse.Namespace) -> list[str]:
 def _prepare_execute_root(args: argparse.Namespace) -> pathlib.Path:
     """Let the bootstrap adapter choose the target before resolving and validating it."""
     initial = pathlib.Path(args.repo_root).resolve()
+    authorize_target(initial, args)
     invoke_hook(initial, "pre_execute", args, initial)
     root = pathlib.Path(args.repo_root).resolve()
+    if root != initial:
+        authorize_target(root, args)
     result = subprocess.run(
         ["git", "-C", str(root), "rev-parse", "--is-inside-work-tree"],
         capture_output=True, text=True, check=False,
@@ -457,6 +461,7 @@ def _handle_dispatch(
     from tools.mir_executor.policy import load_sub_agent_policy  # noqa: PLC0415
 
     try:
+        authorize_target(repo_root, args)
         if "timeout_seconds_range" in local_config(repo_root):
             validate_timeout(repo_root, args.timeout)
             validate_timeout(repo_root, getattr(args, "stall_timeout", None))
@@ -985,8 +990,21 @@ def main(argv: list[str] | None = None) -> int:
         "--repo-root", type=pathlib.Path, default=pathlib.Path.cwd()
     )
     known, _ = root_parser.parse_known_args(argv)
+    # Parse common options without importing the target's local.py first.
+    admission_parser = _build_parser(known.repo_root.resolve(), register_local_options=False)
+    admission_args, _ = admission_parser.parse_known_args(argv)
+    try:
+        authorize_target(known.repo_root.resolve(), admission_args)
+    except ValueError as exc:
+        print(f"[mir_executor] {exc}", file=sys.stderr)
+        sys.exit(1)
     parser = _build_parser(known.repo_root.resolve())
     args = parser.parse_args(argv)
+    try:
+        authorize_target(getattr(args, "repo_root", None) or pathlib.Path.cwd(), args)
+    except ValueError as exc:
+        print(f"[mir_executor] {exc}", file=sys.stderr)
+        sys.exit(1)
 
     if args.subcommand is None:
         parser.print_help()

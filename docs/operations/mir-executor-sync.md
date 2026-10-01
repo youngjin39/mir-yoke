@@ -21,7 +21,7 @@ this optional tool is not an adopter payload or a grant of consumer authority.
 - Local data: optional `config/mir-executor.local.json`. Keys are `verifiers` (ID
   to argv list), `codex_sandbox_default`, `require_review`, `max_codex_attempts_cap`,
   `artifact_retention_days`, `child_env_filter`, `child_env_extra_keys` and
-  `input_limit_bytes` and `timeout_seconds_range`. Verifiers execute registered
+  `input_limit_bytes`, `timeout_seconds_range` and `verifier_env`. Verifiers execute registered
   argv, never arbitrary shell command strings supplied by a brief.
 - Policy: Harness-deployed `config/model-routing.lock.json` and repository-owned
   `config/sub-agent-policy.json`. Sync writes neither. The lock is read first;
@@ -56,8 +56,21 @@ discover consumers, commit, push or tag.
 
 ## Add a local hook
 
-Define only needed hooks in `local.py`. The adapter loads it from the explicit
-target root so another repository's hooks cannot leak into that target.
+Define only needed hooks in `local.py`. Execution hooks load from the explicit
+target root. The sole admission exception is the optional home-owned guard below.
+
+- `authorize_target(home_root, target_root, args)` belongs to the repository
+  containing the running `tools/mir_executor` package. The package's resolved
+  location determines home, independently of CWD; its parent must be the Git root.
+  A package outside a Git root has no home guard. When home differs from the target,
+  the CLI calls this hook before importing target `local.py`, registering target
+  options, taking a target writer scope, inserting a job or dispatching. The first
+  call receives parsed common CLI options; target-specific options are registered
+  only after admission. A hook exception refuses the run with exit 1 and a clear
+  stderr message. The target's `authorize_target` is never used for admission.
+  Same-home execution and an absent home hook retain existing behavior.
+  `pre_execute` root changes and saved resume targets are checked before their
+  hooks or dispatch can run.
 
 - `register_execute_options(parser)` adds execute flags.
 - `pre_execute(args, repo_root)` validates or fills parsed options, including
@@ -194,6 +207,20 @@ database and existing SQLite `-wal`, `-shm` and `-journal` files to mode `0600`;
 new databases are created with that mode. Read-only opens do not change permissions.
 Ledger updates preserve verifier IDs in `command` and store the actual executed
 argument list separately as `executed_argv`, alongside result status and notes.
+
+## Verifier environment
+
+Local JSON `verifier_env` defaults to `"inherit"`, retaining the current verifier
+environment and credential filtering. Set it to `"isolated"` to give each verifier
+invocation a fresh temporary HOME and a temporary `UV_CACHE_DIR` inside that HOME.
+Both directories are removed after success, failure, timeout or a process exception.
+Other values are refused.
+
+The isolated environment retains only inherited PATH, LANG, all `LC_*` variables,
+TMPDIR and names explicitly listed in `child_env_extra_keys`. HOME and UV_CACHE_DIR
+always use the temporary paths, even if listed as extra keys. Provider credentials,
+Codex configuration and event destinations are absent unless explicitly allowlisted.
+This setting applies to merge-gate verifiers only; provider environments are unchanged.
 
 ## Drift checks
 

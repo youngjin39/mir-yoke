@@ -829,6 +829,27 @@ def _resolve_harness_self_modify(main_repo_root: pathlib.Path) -> bool:
         return False
 
 
+@contextmanager
+def _verifier_env(repo_root: pathlib.Path):
+    """Optionally isolate one verifier's home, cache and inherited environment."""
+    config = local_config(repo_root)
+    mode = config.get("verifier_env", "inherit")
+    if mode == "inherit":
+        yield dispatch_env(repo_root, filter_credentials=True)
+        return
+    if mode != "isolated":
+        raise ValueError('verifier_env must be "inherit" or "isolated"')
+    keys = {"PATH", "LANG", "TMPDIR", *config.get("child_env_extra_keys", [])}
+    env = {key: value for key, value in os.environ.items()
+           if key in keys or key.startswith("LC_")}
+    with tempfile.TemporaryDirectory(prefix="mir-verifier-") as home:
+        cache = pathlib.Path(home) / "uv-cache"
+        cache.mkdir()
+        env["HOME"] = home
+        env["UV_CACHE_DIR"] = str(cache)
+        yield env
+
+
 def evaluate_merge_gate(
     wt: DispatchWorktree,
     *,
@@ -884,15 +905,16 @@ def evaluate_merge_gate(
         with _isolated_verification_worktree(wt, source_commit) as verification_root:
             for cmd in verification_commands:
                 try:
-                    completed = subprocess.run(
-                        verifiers[cmd],
-                        cwd=str(verification_root),
-                        env=dispatch_env(wt.main_repo_root, filter_credentials=True),
-                        capture_output=True,
-                        text=True,
-                        stdin=subprocess.DEVNULL,
-                        timeout=verify_timeout,
-                    )
+                    with _verifier_env(wt.main_repo_root) as env:
+                        completed = subprocess.run(
+                            verifiers[cmd],
+                            cwd=str(verification_root),
+                            env=env,
+                            capture_output=True,
+                            text=True,
+                            stdin=subprocess.DEVNULL,
+                            timeout=verify_timeout,
+                        )
                 except subprocess.TimeoutExpired:
                     return MergeGate(False, "verification-timeout", changed)
                 if completed.returncode != 0:

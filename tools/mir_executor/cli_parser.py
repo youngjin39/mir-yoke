@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import pathlib
+from functools import partial
 
 from tools.mir_executor.dispatch import (
     DEFAULT_FINALIZE_LOCK_TIMEOUT,
@@ -45,10 +46,13 @@ def _nonnegative_int(value: str) -> int:
     return parsed
 
 
-def _build_parser(repo_root: pathlib.Path | None = None) -> argparse.ArgumentParser:
+def _build_parser(
+    repo_root: pathlib.Path | None = None, *, register_local_options: bool = True,
+) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="python -m tools.mir_executor",
         description="Mir Executor — isolated delegated execution with optional TDD ledger update.",
+        add_help=register_local_options,
     )
     # Global --jobs-db option available for all subcommands
     parser.add_argument(
@@ -57,7 +61,10 @@ def _build_parser(repo_root: pathlib.Path | None = None) -> argparse.ArgumentPar
         default=None,
         help="Override path to jobs.db (default: <repo_root>/tasks/jobs.db).",
     )
-    sub = parser.add_subparsers(dest="subcommand")
+    sub = parser.add_subparsers(
+        dest="subcommand",
+        parser_class=partial(argparse.ArgumentParser, add_help=register_local_options),
+    )
 
     # ------------------------------------------------------------------
     # execute subcommand
@@ -149,7 +156,8 @@ def _build_parser(repo_root: pathlib.Path | None = None) -> argparse.ArgumentPar
     )
     exec_p.add_argument("--family", default=None, help="Optional job family.")
     exec_p.add_argument("--artifacts-dir", type=pathlib.Path, default=None)
-    invoke_hook(repo_root or pathlib.Path.cwd(), "register_execute_options", exec_p)
+    if register_local_options:
+        invoke_hook(repo_root or pathlib.Path.cwd(), "register_execute_options", exec_p)
     exec_p.add_argument(
         "--async",
         "-a",

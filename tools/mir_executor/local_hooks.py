@@ -1,4 +1,4 @@
-"""One optional target-owned extension seam for the common executor."""
+"""Optional repository-owned extension hooks for the common executor."""
 from __future__ import annotations
 
 import hashlib
@@ -6,6 +6,7 @@ import importlib.util
 import json
 import math
 import pathlib
+import subprocess
 import sys
 from contextlib import contextmanager, nullcontext
 from contextvars import ContextVar
@@ -63,6 +64,26 @@ def invoke_hook(repo_root: pathlib.Path, name: str, *args: Any, **kwargs: Any) -
     if not callable(hook):
         raise TypeError(f'Executor local hook {name!r} must be callable')
     return hook(*args, **kwargs)
+
+
+def authorize_target(target_root: pathlib.Path, args: Any) -> None:
+    """Consult only the invoking package's Git root for cross-repository admission."""
+    home_root = pathlib.Path(__file__).resolve().parents[2]
+    target_root = pathlib.Path(target_root).resolve()
+    if home_root == target_root:
+        return
+    result = subprocess.run(
+        ['git', '-C', str(home_root), 'rev-parse', '--show-toplevel'],
+        capture_output=True, text=True, check=False,
+    )
+    if result.returncode != 0 or pathlib.Path(result.stdout.strip()).resolve() != home_root:
+        return
+    try:
+        invoke_hook(home_root, 'authorize_target', home_root, target_root, args)
+    except Exception as exc:  # noqa: BLE001
+        raise ValueError(
+            f'authorize_target refused {target_root}: {type(exc).__name__}: {exc}'
+        ) from exc
 
 
 _WRITER_ROOTS: ContextVar[frozenset[pathlib.Path]] = ContextVar(
