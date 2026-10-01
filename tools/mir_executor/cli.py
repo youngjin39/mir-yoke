@@ -539,6 +539,12 @@ def _handle_dispatch(
             repo_root=repo_root,
         )
         if getattr(args, "resume_job_id", None):
+            emit_job_event(repo_root, "job_resumed", {
+                "job_id": job_id, "path": "resume", "args": args,
+                "repo_root": repo_root, "jobs_db": jobs_db_path,
+                "dispatch_options": json.loads(previous.dispatch_options_json)
+                if previous and previous.dispatch_options_json is not None else None,
+            })
             registry.mark_resumed(job_id, resumed_at=_utc_now())
         else:
             pending_job.identity_json = invoke_hook(

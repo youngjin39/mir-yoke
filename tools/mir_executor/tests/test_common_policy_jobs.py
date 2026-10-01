@@ -281,3 +281,25 @@ def test_common_artifact_sweep_evidence_is_path_specific(tmp_path):
     assert registry.has_artifact_sweep("a" * 32, path="/attempt/one")
     assert not registry.has_artifact_sweep("a" * 32, path="/attempt/two")
     registry.close()
+
+
+@pytest.mark.parametrize("broken", ["lock", "local", "overlay"])
+def test_common_unreadable_policy_is_reported(tmp_path, capsys, monkeypatch, broken):
+    """Found by Hermes: a broken policy file fell back to defaults without a word."""
+    bad = tmp_path / f"{broken}.json"
+    bad.write_text("{ not json")
+    monkeypatch.setattr(policy, "model_routing_lock_path", lambda root: tmp_path / "absent.json")
+    monkeypatch.setattr(policy, "default_global_policy_path", lambda: tmp_path / "absent.json")
+    monkeypatch.delenv(policy.POLICY_ENV_VAR, raising=False)
+    if broken == "lock":
+        monkeypatch.setattr(policy, "model_routing_lock_path", lambda root: bad)
+    elif broken == "local":
+        (tmp_path / "config").mkdir()
+        (tmp_path / "config/sub-agent-policy.json").write_text("{ not json")
+    else:
+        monkeypatch.setattr(policy, "default_global_policy_path", lambda: bad)
+
+    resolved = policy.load_sub_agent_policy(tmp_path)
+
+    assert resolved.mode == "select"
+    assert "unreadable" in capsys.readouterr().err

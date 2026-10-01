@@ -112,6 +112,7 @@ def test_resume_changed_brief_refused_before_hook_or_dispatch(tmp_path, monkeypa
     brief.write_text('{"expanded_goal":"different"}')
     calls = []
     monkeypatch.setattr(cli, "invoke_hook", lambda *a: calls.append(a))
+    monkeypatch.setattr(cli, "emit_job_event", lambda *a, **kw: calls.append(a))
     monkeypatch.setattr(cli, "_handle_dispatch", lambda *a: calls.append(a) or 0)
     assert cli._handle_resume(args) == 1
     assert calls == []

@@ -91,7 +91,7 @@ def emit_job_event(
     *,
     errors: list[str] | None = None,
 ) -> None:
-    """Insertion hooks fail closed; later observer failures cannot undo execution."""
+    """Insertion/resume hooks fail closed; later failures cannot undo execution."""
     context = _JOB_EVENT_CONTEXT.get()
     payload = dict(payload)
     if context is not None and context[0] == repo_root.resolve():
@@ -102,7 +102,7 @@ def emit_job_event(
     try:
         invoke_hook(repo_root, 'on_job_event', event, payload)
     except Exception as exc:  # noqa: BLE001
-        if event == 'job_inserted':
+        if event in {'job_inserted', 'job_resumed'}:
             raise
         reason = f'on_job_event {event}: {type(exc).__name__}: {exc}'
         print(f'[mir_executor] {reason}', file=sys.stderr)

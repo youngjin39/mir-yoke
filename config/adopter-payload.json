@@ -581,7 +581,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "config/mir-executor-common.json",
-      "sha256": "aa90ad4614ae4564575c3a6530ed48a293e53b8000206992b85582fa9fde096c"
+      "sha256": "9174b569646140e99141b1b44e53a10638da7143291ee35807f1d9b8541604d6"
     },
     {
       "classification": "template-maintainer-tool",
@@ -2255,7 +2255,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "docs/operations/mir-executor-sync.md",
-      "sha256": "06e6106095e05ac6ff07dc310e2d4e5a54e753d808e833bc5954743d2393807e"
+      "sha256": "65fda2711dd6727a01543eb0e93816fef961c058c6968df13ccb462c38f76a47"
     },
     {
       "classification": "reference",
@@ -4793,7 +4793,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/COMMON_MANIFEST.json",
-      "sha256": "aa90ad4614ae4564575c3a6530ed48a293e53b8000206992b85582fa9fde096c"
+      "sha256": "9174b569646140e99141b1b44e53a10638da7143291ee35807f1d9b8541604d6"
     },
     {
       "classification": "optional-consumer-tool",
@@ -4811,7 +4811,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/cli.py",
-      "sha256": "aa5767de9b4ab24d60b1ba318d46b5ce3830260d62115e3178beff4f5012b9c2"
+      "sha256": "ef924f7c372b5aae37b8378f921bb9d2252a2ab17850f425d8442f56beb040e3"
     },
     {
       "classification": "optional-consumer-tool",
@@ -4859,13 +4859,13 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/local_hooks.py",
-      "sha256": "ba4f58b38f280209fb8b4f43cea9bed9f1206abac5697390be5ee74969a5a76c"
+      "sha256": "82d4ff616e8dbb893a24998d7f551fd371c636d4510b31e18185081463b38dd2"
     },
     {
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/policy.py",
-      "sha256": "570a5042314fc573e0bea2f674dc532b6ceff54ae91eb3545f2b8b064fcdf218"
+      "sha256": "76031d1c8cb66bb230919e8bae5da7129827997d0b2f749761967d1c44ca38bb"
     },
     {
       "classification": "optional-consumer-tool",
@@ -4937,7 +4937,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/tests/test_common_policy_jobs.py",
-      "sha256": "8d02a73779aab5ec27a5d06db3e082ff5cee7effec95d1ffd605e98c43979a88"
+      "sha256": "6ec8d11bf1bfe5a04eb5390945b0ed59a7d0da0121f8b1e9916ee2fce9fa28ab"
     },
     {
       "classification": "optional-consumer-tool",
@@ -4979,7 +4979,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/tests/test_hooks_v2.py",
-      "sha256": "0d641b454e5ca18ddbaa885e900b8c46e18d5c9dc993122622354bb5fafff788"
+      "sha256": "9377a563ce1318df743ab65ec961e643485bdb565e214b887a923c25231a04b7"
     },
     {
       "classification": "optional-consumer-tool",
@@ -4997,7 +4997,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/tests/test_resume_v2.py",
-      "sha256": "d1142e48b5fa059976e654da86125dfb893e481deeb718f7482cde17bdc639ee"
+      "sha256": "2652185a1cc429a83623aa2230ce7c5116e5991b46191b77ec581b2aff8ae358"
     },
     {
       "classification": "optional-consumer-tool",

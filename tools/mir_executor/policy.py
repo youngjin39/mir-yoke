@@ -336,5 +336,9 @@ def load_sub_agent_policy(repo_root: pathlib.Path) -> SubAgentPolicy:
         if overlay_path.exists():
             data = _merge_policy(data, _read_json_object(overlay_path))
         return _resolve_policy(data)
-    except (OSError, ValueError, json.JSONDecodeError):
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        print(
+            f"[mir policy] unreadable sub-agent policy ({exc}); using select defaults",
+            file=sys.stderr,
+        )
         return _default_policy()

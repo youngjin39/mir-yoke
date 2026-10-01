@@ -314,3 +314,67 @@ def test_should_emit_started_running_with_original_resume_job_id(target, monkeyp
     assert all(p['job_id'] == 'original-job' and p['dispatch_id'] == 'new-attempt' for p in states)
     assert [p['state'] for p in states] == ['started', 'running', 'codex_completed']
     assert old_states == ['codex_completed']
+
+
+@pytest.mark.parametrize('fail_dispatch', [False, True])
+def test_should_emit_job_resumed_with_original_id_and_options(target, monkeypatch, fail_dispatch):
+    root, hooks = target
+    brief = root / 'brief.json'
+    brief.write_text('{"expanded_goal":"task"}')
+    blocked(monkeypatch)
+    assert cli._handle_execute(arguments(root, '--dispatch', '--dispatch-brief', str(brief))) == 1
+    original = record(root)
+    hooks.events.clear()
+    wt = SimpleNamespace(main_repo_root=root, dispatch_id='unused')
+    monkeypatch.setattr(dispatch, 'write_status', lambda *a, **kw: None)
+
+    def run(*a, **kw):
+        assert hooks.events[0][0] == 'job_resumed'
+        wt.dispatch_id = kw['dispatch_id']
+        dispatch._write_dispatch_status(wt, 'running')
+        if fail_dispatch:
+            raise OSError('resume dispatch failed')
+        return dispatch.DispatchOutcome('completed', 1, False, None, wt)
+
+    monkeypatch.setattr(dispatch, 'run_dispatch', run)
+    monkeypatch.setattr(dispatch, 'finalize_dispatch', lambda *a, **kw:
+                        dispatch.FinalizeResult('merged', 'ok', ['src/main.py']))
+    args = cli._build_parser(root).parse_args([
+        'resume', '--repo-root', str(root), '--job-id', original.job_id,
+    ])
+    assert cli._handle_resume(args) == int(fail_dispatch)
+    resumed = hooks.events[0][1]
+    assert hooks.events[0][0] == 'job_resumed'
+    assert resumed['job_id'] == original.job_id and resumed['path'] == 'resume'
+    assert resumed['args'].resume_job_id == original.job_id
+    assert resumed['repo_root'] == root and resumed['jobs_db'] == root / 'tasks/jobs.db'
+    assert resumed['dispatch_options'] == json.loads(original.dispatch_options_json)
+    later = hooks.events[1:]
+    assert [event for event, _ in later] == [
+        'dispatch_state', 'dispatch_failed' if fail_dispatch else 'dispatch_finalized',
+    ]
+    assert all(payload['job_id'] == original.job_id for _, payload in later)
+    assert all(payload['dispatch_id'] != original.job_id for _, payload in later)
+
+
+def test_should_abort_resume_when_job_resumed_hook_fails(target, monkeypatch, capsys):
+    root, hooks = target
+    brief = root / 'brief.json'
+    brief.write_text('{"expanded_goal":"task"}')
+    blocked(monkeypatch)
+    cli._handle_execute(arguments(root, '--dispatch', '--dispatch-brief', str(brief)))
+    original = record(root)
+    hooks.events.clear()
+    hooks.fail_event = 'job_resumed'
+    calls = []
+    monkeypatch.setattr(dispatch, 'run_dispatch', lambda *a, **kw: calls.append(kw))
+    args = cli._build_parser(root).parse_args([
+        'resume', '--repo-root', str(root), '--job-id', original.job_id,
+    ])
+    assert cli._handle_resume(args) == 1
+    assert calls == []
+    job = record(root)
+    assert job.job_id == original.job_id and job.status == 'failed'
+    assert 'event storage unavailable' in job.stderr
+    assert 'event storage unavailable' in capsys.readouterr().err
+    assert [event for event, _ in hooks.events] == ['job_resumed', 'dispatch_failed']

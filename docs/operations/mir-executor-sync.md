@@ -97,12 +97,15 @@ Paths. A local hook owns any serialization or durable application event log.
 | Event | Minimum payload |
 | --- | --- |
 | `job_inserted` | `job_id`, `path` (`dispatch` or `background`), `args`, `repo_root`, `jobs_db` |
+| `job_resumed` | `job_id`, `path` (`resume`), `args`, `repo_root`, `jobs_db`, `dispatch_options` (stored options object, or `None` for legacy rows) |
 | `dispatch_state` | `job_id`, `dispatch_id`, `state`, `evidence` |
 | `dispatch_finalized` | `job_id`, `dispatch_id`, `status` (dispatch outcome), `finalize_action`, `merged_files`, `reason`, `review_evidence` |
 | `dispatch_failed` | `job_id`, `dispatch_id` (possibly `None`), `error_type`, `message` |
 
 Insertion events fire after each new row is inserted and before dispatch/background
 execution. A resume reuses the original row and does not emit `job_inserted`.
+It emits `job_resumed` before re-dispatching, after the brief-digest check passes.
+A refused resume emits no `job_resumed`.
 Dispatch state events accompany every existing `state_callback(state, evidence)`
 call, retaining its two-argument signature. The job context associates resumed
 attempts with the original job ID and the new dispatch ID. Direct dispatch calls
@@ -113,7 +116,7 @@ events do not add calls to the legacy state callback. Finalized events fire afte
 `review_evidence=None`. Dispatch exceptions, including worktree-creation failures,
 emit `dispatch_failed`.
 
-An exception in `job_inserted` aborts before execution and marks the inserted job
+An exception in `job_inserted` or `job_resumed` aborts before execution and marks the job
 failed. Exceptions in subsequent `on_job_event` calls are printed on stderr and
 appended to the job's reason (`JobRecord.stderr`). They do not change an already
 successful merge or its completed job status. An exception in the failure observer
