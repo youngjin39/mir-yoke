@@ -102,6 +102,7 @@ class JobRecord:
     agent_definition_sha256: str | None = None
     identity_json: str | None = None
     ai_run_metadata: dict[str, object] | None = None
+    dispatch_options_json: str | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -189,6 +190,7 @@ class JobRegistry:
                     "agent_definition_path",
                     "agent_definition_sha256",
                     "identity_json",
+                    "dispatch_options_json",
                     "ai_run_metadata",
                 ):
                     if column not in columns:
@@ -224,8 +226,8 @@ class JobRegistry:
             exit_code, stdout, stderr, duration_seconds, started_at, completed_at,
             cancel_requested, target_agent, execution_backend, resolved_model,
             resolved_reasoning_effort, agent_definition_path,
-            agent_definition_sha256, identity_json, ai_run_metadata
-        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            agent_definition_sha256, identity_json, dispatch_options_json, ai_run_metadata
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         """
         params = (
             job.job_id,
@@ -254,6 +256,7 @@ class JobRegistry:
             job.agent_definition_path,
             job.agent_definition_sha256,
             job.identity_json,
+            job.dispatch_options_json,
             json.dumps(job.ai_run_metadata, separators=(",", ":"), sort_keys=True)
             if job.ai_run_metadata is not None
             else None,
@@ -445,6 +448,9 @@ class JobRegistry:
             if "agent_definition_sha256" in columns
             else None,
             identity_json=row["identity_json"] if "identity_json" in columns else None,
+            dispatch_options_json=row["dispatch_options_json"]
+            if "dispatch_options_json" in columns
+            else None,
             resume_count=row["resume_count"] if "resume_count" in columns else 0,
             last_resumed_at=row["last_resumed_at"]
             if "last_resumed_at" in columns

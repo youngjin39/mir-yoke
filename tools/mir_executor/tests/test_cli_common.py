@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 from types import SimpleNamespace
 
 import pytest
@@ -79,6 +80,7 @@ def test_dispatch_exception_marks_job_failed(tmp_path, monkeypatch):
 
 
 def test_execute_propagates_command_exit(tmp_path, monkeypatch):
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
     class Executor:
         def __init__(self, **kw):
             pass
@@ -145,6 +147,7 @@ def test_resume_redispatches_existing_job(tmp_path, monkeypatch):
 
 
 def test_background_propagates_persisted_exit(tmp_path, monkeypatch):
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
     class Executor:
         def __init__(self, **kwargs):
             pass

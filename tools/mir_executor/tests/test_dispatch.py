@@ -1292,6 +1292,7 @@ def test_execute_without_codex_arg_source_fails_semantically(
     tmp_path: pathlib.Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
     with pytest.raises(SystemExit) as exc_info:
         cli.main(
             [
@@ -3163,6 +3164,7 @@ def test_cli_codex_args_omission_fails_outside_effective_brief_dispatch(
     mode_args: list[str],
     with_brief: bool,
 ) -> None:
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
     brief_path = _write_dispatch_brief_json(tmp_path, "Brief goal")
     argv = [
         "execute",
@@ -3187,6 +3189,7 @@ def test_cli_brief_only_dispatch_rejects_empty_expanded_goal_before_job_creation
     tmp_path: pathlib.Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
     brief_path = _write_dispatch_brief_json(tmp_path, "   ")
     jobs_db = tmp_path / "jobs.db"
 

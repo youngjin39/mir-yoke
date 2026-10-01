@@ -60,12 +60,23 @@ Define only needed hooks in `local.py`. The adapter loads it from the explicit
 target root so another repository's hooks cannot leak into that target.
 
 - `register_execute_options(parser)` adds execute flags.
-- `pre_execute(args, repo_root)` validates or fills parsed options.
+- `pre_execute(args, repo_root)` validates or fills parsed options, including
+  `args.repo_root`. It is loaded from the initial root (the bootstrap adapter).
+  Execute resolves the selected root and checks that Git recognizes it as a working
+  repository after this hook, before reading target-local input limits or dispatching.
 - `writer_scope(repo_root)` returns a context manager; default is a no-op.
 - `resolve_agent_route(repo_root, name)` returns an `AgentRoute` override.
 - `resolve_route_key(repo_root, key)` returns `(model, effort)`.
 - `validate_brief(brief, repo_root)` accepts a JSON file Path or plain prompt text.
   A file hook may return a typed object/dict containing `expanded_goal`.
+- `render_brief(validated, repo_root)` receives that validation result and returns
+  a string for dispatch `brief_text`, or `None` to retain the original prompt.
+  Plain-text validation is performed before rendering when this hook is present.
+  Without it, the existing validation calls and prompt behavior are preserved.
+- `job_identity(args, repo_root, prompt, model)` returns a JSON string or `None`.
+  Its result fills `JobRecord.identity_json` at both dispatch and background inserts;
+  `model` is the resolved model and `prompt` is the execution prompt.
+- `on_job_event(event, payload)` observes the lifecycle described below.
 - `state_callback(state, evidence)` receives dispatch state and evidence.
 - `before_run(worktree, attempt)` and `after_run(worktree, attempt, result)` wrap
   each attempt.
@@ -76,6 +87,52 @@ Have `pre_execute` reject conflicting explicit route/model flags and use
 in the deployed policy lock; application imports stay in `local.py`. Yoke's local
 hook preserves its Pydantic `DispatchBrief` schema. Common code needs no application
 imports and accepts a JSON object with a nonempty `expanded_goal`.
+
+## Lifecycle events and resume integrity
+
+`on_job_event` is optional and called through the local-hook adapter. Payloads use
+Python objects: `args` is the parsed Namespace, and repository/database paths are
+Paths. A local hook owns any serialization or durable application event log.
+
+| Event | Minimum payload |
+| --- | --- |
+| `job_inserted` | `job_id`, `path` (`dispatch` or `background`), `args`, `repo_root`, `jobs_db` |
+| `dispatch_state` | `job_id`, `dispatch_id`, `state`, `evidence` |
+| `dispatch_finalized` | `job_id`, `dispatch_id`, `status` (dispatch outcome), `finalize_action`, `merged_files`, `reason`, `review_evidence` |
+| `dispatch_failed` | `job_id`, `dispatch_id` (possibly `None`), `error_type`, `message` |
+
+Insertion events fire after each new row is inserted and before dispatch/background
+execution. A resume reuses the original row and does not emit `job_inserted`.
+Dispatch state events accompany every existing `state_callback(state, evidence)`
+call, retaining its two-argument signature. The job context associates resumed
+attempts with the original job ID and the new dispatch ID. Direct dispatch calls
+without a registered job use `job_id=None`. The new observer also receives
+`started` after worktree creation and `running` before each attempt; these extra
+events do not add calls to the legacy state callback. Finalized events fire after
+`finalize_dispatch`; durable reviewer JSON is included when available, otherwise
+`review_evidence=None`. Dispatch exceptions, including worktree-creation failures,
+emit `dispatch_failed`.
+
+An exception in `job_inserted` aborts before execution and marks the inserted job
+failed. Exceptions in subsequent `on_job_event` calls are printed on stderr and
+appended to the job's reason (`JobRecord.stderr`). They do not change an already
+successful merge or its completed job status. An exception in the failure observer
+is also recorded alongside the original dispatch error. Other existing local-hook
+error behavior is unchanged.
+
+New dispatch rows persist one nullable `dispatch_options_json` column. Opening an
+existing database for writes adds it without rewriting old rows; read-only legacy
+reads remain supported. The JSON stores the absolute brief path and SHA256, allow
+paths, verifier IDs, expect-changes, the original change ID (including `None`),
+category, resolved model/effort/backend, and retry, artifact, finalize-lock and
+stall-timeout options. Existing row fields retain timeout and harness permissions.
+
+Resume checks the stored brief digest before hooks or execution and refuses a
+changed or missing file without incrementing the resume counter or changing job
+status. It restores saved options, including verifier IDs, before re-dispatching.
+The default resume timeout remains the saved timeout, with an explicit resume
+`--timeout` override. A legacy row with no stored options retains the previous
+resume behavior. Resume does not turn a synthetic dispatch change ID into a ledger ID.
 
 ## Drift checks
 

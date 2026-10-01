@@ -1,5 +1,43 @@
 # Plan
 
+## Active task: executor common base v2 (2026-10-01)
+
+Authority: the current user request and the supplied `spec-executor-v2.md`.
+This cursor is the design authority for the v2 extension hooks and resume integrity.
+Write only in mir-yoke; consumers remain read-only. Do not commit or push.
+
+- [x] Add fail-first tests for lifecycle events, identity, rendered briefs, root selection and resume.
+- [x] Implement optional hooks with compatible defaults and additive job options storage.
+- [x] Document semantics and regenerate common manifests and affected adopter payload.
+- [x] Run focused/full pytest, Ruff, Python 3.11 compilation, sync and parity checks.
+
+Fail-first evidence: `test_hooks_v2.py` initially reported `13 failed in 0.39s`:
+7 lifecycle nodes, 2 identity nodes, 2 rendered-brief nodes and 2 root-selection nodes.
+Durable-review, started/running, effective-options and absent-render-hook regressions
+each subsequently failed in a focused run before their respective fixes.
+Resume tests first reported `4 failed in 0.11s`; after schema-only implementation,
+`2 failed, 2 passed in 0.09s` independently proved lost options and digest acceptance.
+The portable manifest test failed with common CLI drift before regeneration.
+
+Final focused pass lines:
+- Lifecycle: `9 passed, 8 deselected in 0.30s`.
+- Identity: `2 passed, 15 deselected in 0.09s`.
+- Rendered brief: `2 passed, 15 deselected in 0.09s`.
+- Root selection: `2 passed, 15 deselected in 0.10s`.
+- Resume and effective options: `6 passed, 16 deselected in 0.16s`.
+- Common manifest and adopter classification: `7 passed in 0.32s`.
+- All new v2 tests, including absent-hook compatibility: `22 passed in 0.68s`.
+
+Final full pytest: `1452 passed in 190.83s (0:03:10)`.
+Ruff (`tools tests`): `All checks passed!`. Python 3.11.16 compiled all 15
+manifest common files. Self-target sync and Codex derivative parity passed.
+`policy.py` has no diff and remains self-contained. `cli.py`: 960 lines;
+`dispatch.py`: 1211 lines. No commit, push or consumer write occurred.
+Fail-first and final suite logs are in `/tmp/mir-executor-v2-*.txt`; resume
+fail-first output is explicitly labeled as a transcription of observed tool output.
+
+The completed follow-up below is preserved as evidence, not active authority.
+
 ## Active follow-up: executor fixes (2026-10-01)
 
 Authority: the current user request and the supplied `spec-executor-fix1.md`.

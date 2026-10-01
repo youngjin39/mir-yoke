@@ -470,6 +470,7 @@ def test_cli_execute_background_returns_job_id(tmp_path, monkeypatch):
     Monkeypatches run_codex_async to avoid real Codex invocation.
     Also monkeypatches update_ledger so the test is ledger-agnostic.
     """
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
     from tools.mir_executor.executor import LedgerUpdate, MirExecutor, SubprocessResult
 
     _make_ledger(tmp_path)

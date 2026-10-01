@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import pathlib
 import sys
@@ -185,6 +186,23 @@ def _handle_resume(api, args: argparse.Namespace) -> int:
             file=sys.stderr,
         )
         return 1
+    options = None
+    if job.dispatch_options_json is not None:
+        try:
+            options = json.loads(job.dispatch_options_json)
+            if not isinstance(options, dict):
+                raise ValueError("stored dispatch options must be a JSON object")
+            brief = options.get("dispatch_brief") or job.dispatch_brief_path
+            digest = options.get("brief_sha256")
+            if brief is not None:
+                if not isinstance(brief, str) or not isinstance(digest, str):
+                    raise ValueError("stored dispatch brief requires a sha256 digest")
+                current = hashlib.sha256(pathlib.Path(brief).read_bytes()).hexdigest()
+                if current != digest:
+                    raise ValueError("dispatch brief sha256 changed; refusing resume")
+        except (OSError, TypeError, ValueError) as exc:
+            print(f"[mir_executor] resume integrity error: {exc}", file=sys.stderr)
+            return 1
     execute_args = api._build_parser(pathlib.Path(job.repo_root)).parse_args(
         ["execute", "--dispatch"]
     )
@@ -203,15 +221,34 @@ def _handle_resume(api, args: argparse.Namespace) -> int:
         args.timeout if args.timeout is not None else job.timeout_seconds
     )
     execute_args.allow_harness_self_modify = job.allow_harness_self_modify
-    # Resume uses the persisted brief, without assuming a synthetic change ID is a ledger ID.
+    if options is not None:
+        for name in (
+            "allow_paths", "verify_cmds", "expect_changes", "change_id", "category",
+            "model", "reasoning_effort", "max_codex_attempts", "execution_backend",
+            "finalize_lock_timeout", "stall_timeout",
+        ):
+            if name in options:
+                setattr(execute_args, name, options[name])
+        for name in ("dispatch_brief", "artifacts_dir"):
+            if name in options:
+                value = options[name]
+                setattr(execute_args, name, pathlib.Path(value) if value is not None else None)
+    # Legacy resume does not assume a synthetic change ID is a ledger ID.
     print(
         f"[RESUME] job_id={job.job_id} "
         f"allow_harness_self_modify={job.allow_harness_self_modify}"
     )
     with api.writer_scope(execute_args.repo_root):
-        api.invoke_hook(
-            execute_args.repo_root, "pre_execute", execute_args, execute_args.repo_root
-        )
+        if options is None:
+            api.invoke_hook(
+                execute_args.repo_root, "pre_execute", execute_args, execute_args.repo_root
+            )
+        else:
+            try:
+                execute_args.repo_root = api._prepare_execute_root(execute_args)
+            except (OSError, TypeError, ValueError) as exc:
+                print(f"[mir_executor] resume root error: {exc}", file=sys.stderr)
+                return 1
         return api._handle_dispatch(
             execute_args, execute_args.repo_root, job.codex_args
         )

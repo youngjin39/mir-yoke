@@ -6,7 +6,8 @@ import importlib.util
 import json
 import pathlib
 import sys
-from contextlib import nullcontext
+from contextlib import contextmanager, nullcontext
+from contextvars import ContextVar
 from types import ModuleType
 from typing import Any
 
@@ -47,6 +48,11 @@ def _module(repo_root: pathlib.Path) -> ModuleType | None:
     return module
 
 
+def has_hook(repo_root: pathlib.Path, name: str) -> bool:
+    module = _module(repo_root)
+    return module is not None and getattr(module, name, None) is not None
+
+
 def invoke_hook(repo_root: pathlib.Path, name: str, *args: Any, **kwargs: Any) -> Any:
     """Call a declared local hook; a missing hook returns None."""
     module = _module(repo_root)
@@ -61,3 +67,44 @@ def invoke_hook(repo_root: pathlib.Path, name: str, *args: Any, **kwargs: Any) -
 def writer_scope(repo_root: pathlib.Path) -> Any:
     scope = invoke_hook(repo_root, 'writer_scope', repo_root)
     return nullcontext() if scope is None else scope
+
+
+# The context follows nested dispatch calls without adding parameters to their public API.
+_JOB_EVENT_CONTEXT: ContextVar[tuple[pathlib.Path, str, list[str]] | None] = ContextVar(
+    'mir_executor_job_event_context', default=None
+)
+
+
+@contextmanager
+def job_event_scope(repo_root: pathlib.Path, job_id: str, errors: list[str]):
+    token = _JOB_EVENT_CONTEXT.set((repo_root.resolve(), job_id, errors))
+    try:
+        yield
+    finally:
+        _JOB_EVENT_CONTEXT.reset(token)
+
+
+def emit_job_event(
+    repo_root: pathlib.Path,
+    event: str,
+    payload: dict[str, Any],
+    *,
+    errors: list[str] | None = None,
+) -> None:
+    """Insertion hooks fail closed; later observer failures cannot undo execution."""
+    context = _JOB_EVENT_CONTEXT.get()
+    payload = dict(payload)
+    if context is not None and context[0] == repo_root.resolve():
+        payload.setdefault('job_id', context[1])
+        if errors is None:
+            errors = context[2]
+    payload.setdefault('job_id', None)
+    try:
+        invoke_hook(repo_root, 'on_job_event', event, payload)
+    except Exception as exc:  # noqa: BLE001
+        if event == 'job_inserted':
+            raise
+        reason = f'on_job_event {event}: {type(exc).__name__}: {exc}'
+        print(f'[mir_executor] {reason}', file=sys.stderr)
+        if errors is not None:
+            errors.append(reason)

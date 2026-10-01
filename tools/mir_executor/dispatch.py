@@ -31,7 +31,7 @@ from tools.mir_executor.codex_mcp_client import (
     CodexMcpTimeoutError,
 )
 from tools.mir_executor.jobs import JobRegistry
-from tools.mir_executor.local_hooks import invoke_hook, local_config
+from tools.mir_executor.local_hooks import emit_job_event, invoke_hook, local_config
 from tools.mir_executor.redaction import redact_secret_like_content, redact_structured_value
 from tools.mir_executor.worktree import (
     DispatchWorktree,
@@ -178,6 +178,9 @@ def _append_event(events_path: pathlib.Path, event: dict[str, object]) -> None:
 def _write_dispatch_status(wt: DispatchWorktree, state: str, **evidence: object) -> None:
     write_status(wt, state, **evidence)
     invoke_hook(wt.main_repo_root, "state_callback", state, evidence)
+    emit_job_event(wt.main_repo_root, "dispatch_state", {
+        "dispatch_id": wt.dispatch_id, "state": state, "evidence": evidence,
+    })
 
 
 def run_dispatch(
@@ -210,6 +213,9 @@ def run_dispatch(
         brief_text=brief_text,
         worktrees_root=worktrees_root,
     )
+    emit_job_event(main_repo_root, "dispatch_state", {
+        "dispatch_id": dispatch_id, "state": "started", "evidence": {},
+    })
     brief_path = wt.path / ".mir-dispatch" / "brief.md"
     if brief_path.exists():
         os.chmod(brief_path, 0o600)
@@ -222,6 +228,9 @@ def run_dispatch(
     attempts = 0
     attempt_budget = max_codex_attempts
     for attempt in range(1, attempt_budget + 1):
+        emit_job_event(main_repo_root, "dispatch_state", {
+            "dispatch_id": dispatch_id, "state": "running", "evidence": {"attempt": attempt},
+        })
         invoke_hook(main_repo_root, "before_run", wt, attempt)
         result = codex_runner(wt, attempt)
         invoke_hook(main_repo_root, "after_run", wt, attempt, result)

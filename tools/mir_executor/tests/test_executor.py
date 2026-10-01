@@ -528,6 +528,7 @@ def test_execute_combines_run_and_update(tmp_path, monkeypatch):
 
 
 def test_cli_execute_subcommand_invokes_executor(tmp_path, monkeypatch):
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
     calls, _init_kwargs = _install_fake_codex_mcp_client(
         monkeypatch,
         result=CodexMcpResult(
@@ -569,6 +570,7 @@ def test_cli_execute_subcommand_invokes_executor(tmp_path, monkeypatch):
 
 
 def test_cli_execute_codex_args_file_uses_raw_prompt(tmp_path, monkeypatch):
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
     prompt = 'Don\'t split "quoted text" or --flag-like words.'
     prompt_path = tmp_path / "prompt.txt"
     prompt_path.write_text(prompt, encoding="utf-8")
@@ -612,6 +614,7 @@ def test_single_part_prompt_passthrough_preserves_raw_text():
 
 
 def test_cli_execute_codex_args_file_read_error_returns_rc1(tmp_path, capsys):
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
     from tools.mir_executor.cli import main
 
     missing_path = tmp_path / "missing-prompt.txt"
@@ -737,6 +740,7 @@ def test_cli_handles_value_error_from_shlex_unclosed_quote(tmp_path, capsys):
 
 
 def test_cli_handles_not_applicable_category(tmp_path, monkeypatch, capsys):
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
     _make_ledger(
         tmp_path,
         {"e2e": {"status": "not_applicable", "reason": "no e2e surface"}},

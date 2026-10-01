@@ -34,6 +34,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import datetime
+import hashlib
 import json
 import pathlib
 import re
@@ -46,7 +47,14 @@ import uuid
 from tools.mir_executor import cli_jobs
 from tools.mir_executor.cli_parser import _build_parser
 from tools.mir_executor.executor import MirExecutor
-from tools.mir_executor.local_hooks import invoke_hook, local_config, writer_scope
+from tools.mir_executor.local_hooks import (
+    emit_job_event,
+    has_hook,
+    invoke_hook,
+    job_event_scope,
+    local_config,
+    writer_scope,
+)
 
 _DEFAULT_JOBS_DB_RELPATH = pathlib.Path("tasks") / "jobs.db"
 _MERGED_FINALIZE_ACTIONS = {
@@ -388,6 +396,47 @@ def _resolve_execute_codex_args(args: argparse.Namespace) -> list[str]:
     return shlex.split(codex_args_text)
 
 
+def _prepare_execute_root(args: argparse.Namespace) -> pathlib.Path:
+    """Let the bootstrap adapter choose the target before resolving and validating it."""
+    initial = pathlib.Path(args.repo_root).resolve()
+    invoke_hook(initial, "pre_execute", args, initial)
+    root = pathlib.Path(args.repo_root).resolve()
+    result = subprocess.run(
+        ["git", "-C", str(root), "rev-parse", "--is-inside-work-tree"],
+        capture_output=True, text=True, check=False,
+    )
+    if result.returncode != 0 or result.stdout.strip() != "true":
+        raise ValueError(f"repo root is not a git repository: {root}")
+    args.repo_root = root
+    return root
+
+
+def _dispatch_options_json(
+    args: argparse.Namespace,
+    brief_path: pathlib.Path | None,
+    model: str | None,
+    effort: str | None,
+    backend: str,
+    stall_timeout: float | None,
+) -> str:
+    options = {
+        name: getattr(args, name, None)
+        for name in (
+            "allow_paths", "verify_cmds", "expect_changes", "change_id", "category",
+            "max_codex_attempts", "finalize_lock_timeout",
+        )
+    }
+    options.update(
+        dispatch_brief=str(brief_path) if brief_path is not None else None,
+        brief_sha256=hashlib.sha256(brief_path.read_bytes()).hexdigest()
+        if brief_path is not None else None,
+        model=model, reasoning_effort=effort,
+        execution_backend=backend, stall_timeout=stall_timeout,
+        artifacts_dir=str(args.artifacts_dir.resolve()) if args.artifacts_dir else None,
+    )
+    return json.dumps(options, sort_keys=True)
+
+
 def _handle_dispatch(
     args: argparse.Namespace,
     repo_root: pathlib.Path,
@@ -405,13 +454,21 @@ def _handle_dispatch(
     )
     try:
         if dispatch_brief_path is not None:
-            invoke_hook(repo_root, "validate_brief", dispatch_brief_path, repo_root)
+            validated = invoke_hook(repo_root, "validate_brief", dispatch_brief_path, repo_root)
         if not codex_args:
             prompt = _prompt_from_dispatch_brief(dispatch_brief_path)
             if not prompt:
                 raise ValueError("DispatchBrief expanded_goal must be non-empty")
         else:
             prompt = _resolve_dispatch_prompt(codex_args, dispatch_brief_path)
+        if dispatch_brief_path is None:
+            validated = None
+        if dispatch_brief_path is None and has_hook(repo_root, "render_brief"):
+            validated = invoke_hook(repo_root, "validate_brief", prompt, repo_root)
+        rendered = invoke_hook(repo_root, "render_brief", validated, repo_root)
+        brief_text = prompt if rendered is None else rendered
+        if not isinstance(brief_text, str):
+            raise TypeError("render_brief must return str or None")
     except (OSError, TypeError, ValueError) as exc:
         print(f"[mir_executor] DispatchBrief error: {exc}", file=sys.stderr)
         return 1
@@ -447,29 +504,24 @@ def _handle_dispatch(
         )
     )
     metadata.update(dispatch_id=dispatch_id, dispatch_ids=dispatch_ids)
-    if getattr(args, "resume_job_id", None):
-        registry.mark_resumed(job_id, resumed_at=_utc_now())
-    else:
-        registry.insert(
-            JobRecord(
-                job_id=job_id,
-                change_id=job_change_id,
-                category=job_category,
-                family=getattr(args, "family", None),
-                repo_root=str(repo_root),
-                codex_args=codex_args,
-                dispatch_brief_path=(
-                    str(dispatch_brief_path)
-                    if dispatch_brief_path is not None
-                    else None
-                ),
-                allow_harness_self_modify=args.allow_harness_self_modify,
-                timeout_seconds=args.timeout if args.timeout is not None else 600,
-                status="running",
-                started_at=_utc_now(),
-            )
-        )
-    registry.update_ai_run_metadata(job_id, metadata)
+    pending_job = JobRecord(
+        job_id=job_id,
+        change_id=job_change_id,
+        category=job_category,
+        family=getattr(args, "family", None),
+        repo_root=str(repo_root),
+        codex_args=codex_args,
+        dispatch_brief_path=(
+            str(dispatch_brief_path)
+            if dispatch_brief_path is not None
+            else None
+        ),
+        allow_harness_self_modify=args.allow_harness_self_modify,
+        timeout_seconds=args.timeout if args.timeout is not None else 600,
+        status="running",
+        started_at=_utc_now(),
+    )
+    hook_errors: list[str] = []
     try:
         sub_agent_policy = load_sub_agent_policy(repo_root)
         model, reasoning_effort, stall_timeout = _resolve_policy_runtime_options(
@@ -486,6 +538,21 @@ def _handle_dispatch(
             repo_slug=repo_slug,
             repo_root=repo_root,
         )
+        if getattr(args, "resume_job_id", None):
+            registry.mark_resumed(job_id, resumed_at=_utc_now())
+        else:
+            pending_job.identity_json = invoke_hook(
+                repo_root, "job_identity", args, repo_root, prompt, model
+            )
+            pending_job.dispatch_options_json = _dispatch_options_json(
+                args, dispatch_brief_path, model, reasoning_effort, backend, stall_timeout
+            )
+            registry.insert(pending_job)
+            emit_job_event(repo_root, "job_inserted", {
+                "job_id": job_id, "path": "dispatch", "args": args,
+                "repo_root": repo_root, "jobs_db": jobs_db_path,
+            })
+        registry.update_ai_run_metadata(job_id, metadata)
         registry.update_route_metadata(
             job_id,
             execution_backend=backend,
@@ -502,19 +569,20 @@ def _handle_dispatch(
             reasoning_effort=reasoning_effort,
             stall_timeout=stall_timeout,
         )
-        outcome = dispatch.run_dispatch(
-            repo_root,
-            dispatch_id=dispatch_id,
-            brief_text=prompt,
-            codex_runner=runner,
-            max_codex_attempts=args.max_codex_attempts,
-            prior_consecutive_codex_failures=prior,
-            **(
-                {"artifacts_root": args.artifacts_dir}
-                if getattr(args, "artifacts_dir", None)
-                else {}
-            ),
-        )
+        with job_event_scope(repo_root, job_id, hook_errors):
+            outcome = dispatch.run_dispatch(
+                repo_root,
+                dispatch_id=dispatch_id,
+                brief_text=brief_text,
+                codex_runner=runner,
+                max_codex_attempts=args.max_codex_attempts,
+                prior_consecutive_codex_failures=prior,
+                **(
+                    {"artifacts_root": args.artifacts_dir}
+                    if getattr(args, "artifacts_dir", None)
+                    else {}
+                ),
+            )
 
         final = None
         reviewer = (
@@ -539,6 +607,19 @@ def _handle_dispatch(
                     else {}
                 ),
             )
+            review_path = (
+                getattr(args, "artifacts_dir", None) or repo_root / "tasks/dispatch"
+            ) / dispatch_id / "reviewer.json"
+            try:
+                review_evidence = json.loads(review_path.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                review_evidence = None
+            emit_job_event(repo_root, "dispatch_finalized", {
+                "job_id": job_id, "dispatch_id": dispatch_id,
+                "status": outcome.status, "finalize_action": final.action,
+                "merged_files": final.merged_files, "reason": final.reason,
+                "review_evidence": review_evidence,
+            }, errors=hook_errors)
 
         merged = final is not None and final.action in _MERGED_FINALIZE_ACTIONS
         job_status = "completed" if merged else "failed"
@@ -593,12 +674,19 @@ def _handle_dispatch(
             job_status,
             exit_code=task_exit,
             stdout=result_payload,
-            stderr=reason_payload,
+            stderr="; ".join(filter(None, [reason_payload, *hook_errors])) or None,
             completed_at=_utc_now(),
         )
     except Exception as exc:  # noqa: BLE001
+        if registry.get(job_id) is None:
+            registry.insert(pending_job)
+        emit_job_event(repo_root, "dispatch_failed", {
+            "job_id": job_id, "dispatch_id": dispatch_id,
+            "error_type": type(exc).__name__, "message": str(exc),
+        }, errors=hook_errors)
         registry.update_status(
-            job_id, "failed", exit_code=1, stderr=str(exc), completed_at=_utc_now()
+            job_id, "failed", exit_code=1,
+            stderr="; ".join([str(exc), *hook_errors]), completed_at=_utc_now()
         )
         print(f"[mir_executor] dispatch failed: {exc}", file=sys.stderr)
         return 1
@@ -640,6 +728,7 @@ def _handle_execute(args: argparse.Namespace) -> int:
         return 1
 
     try:
+        repo_root = _prepare_execute_root(args)
         codex_args = _resolve_execute_codex_args(args)
     except ValueError as exc:
         print(f"[mir_executor] argument parse error: {exc}", file=sys.stderr)
@@ -647,10 +736,6 @@ def _handle_execute(args: argparse.Namespace) -> int:
     except OSError as exc:
         print(f"[mir_executor] {type(exc).__name__}: {exc}", file=sys.stderr)
         return 1
-
-    # @spec CR-003 IR-002
-    repo_root = args.repo_root.resolve()
-    invoke_hook(repo_root, "pre_execute", args, repo_root)
 
     executor = MirExecutor(repo_root=repo_root)
     from tools.mir_executor.policy import load_sub_agent_policy  # noqa: PLC0415
@@ -688,7 +773,25 @@ def _handle_execute(args: argparse.Namespace) -> int:
             status="running",
             started_at=_utc_now(),
         )
-        registry.insert(job)
+        try:
+            job.identity_json = invoke_hook(
+                repo_root, "job_identity", args, repo_root,
+                _prompt_from_codex_args(codex_args), model,
+            )
+            registry.insert(job)
+            emit_job_event(repo_root, "job_inserted", {
+                "job_id": job_id, "path": "background", "args": args,
+                "repo_root": repo_root, "jobs_db": jobs_db_path,
+            })
+        except Exception as exc:  # noqa: BLE001
+            if registry.get(job_id) is None:
+                registry.insert(job)
+            registry.update_status(
+                job_id, "failed", exit_code=1, stderr=str(exc), completed_at=_utc_now()
+            )
+            registry.close()
+            print(f"[mir_executor] background insert failed: {exc}", file=sys.stderr)
+            return 1
         # Print job_id immediately — caller can record it before Codex runs.
         print(f"[BACKGROUND] job_id={job_id}")
         sys.stdout.flush()

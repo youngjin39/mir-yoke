@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import pathlib
+import subprocess
 
 import pytest
 
@@ -237,6 +238,7 @@ def test_execute_async_fast_fails_on_unknown_change_id_BEFORE_running_codex(
 # ---------------------------------------------------------------------------
 
 def test_cli_with_async_flag_dispatches_to_async_path(tmp_path, monkeypatch):
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
     calls, _init_kwargs = _install_fake_codex_mcp_client(
         monkeypatch,
         result=CodexMcpResult(
@@ -269,6 +271,7 @@ def test_cli_with_async_flag_dispatches_to_async_path(tmp_path, monkeypatch):
 # ---------------------------------------------------------------------------
 
 def test_cli_handles_asyncio_timeout_error_gracefully(tmp_path, monkeypatch, capsys):
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
     _install_fake_codex_mcp_client(
         monkeypatch,
         side_effect=CodexMcpTimeoutError("mcp timed out"),
