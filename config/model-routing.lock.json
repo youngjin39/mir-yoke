@@ -160,7 +160,7 @@
       "by_category": {
         "architecture": {
           "model": "gpt-6.1-sol",
-          "reasoning_effort": "high",
+          "reasoning_effort": "xhigh",
           "tier": "frontier"
         },
         "complex_logic": {
@@ -180,7 +180,7 @@
         },
         "final_review": {
           "model": "gpt-6.1-sol",
-          "reasoning_effort": "high",
+          "reasoning_effort": "xhigh",
           "tier": "frontier"
         },
         "implementation": {
@@ -195,7 +195,7 @@
         },
         "security": {
           "model": "gpt-6.1-sol",
-          "reasoning_effort": "high",
+          "reasoning_effort": "xhigh",
           "tier": "frontier"
         },
         "unit": {
@@ -228,5 +228,5 @@
   "schema": "mir-model-routing-lock/v1",
   "source": "config/model-routing/repos/mir-yoke.toml",
   "source_repository": "mir-harness",
-  "source_sha256": "4ef86e5656ed344c9bfbccd53f8da9c063b14df5ffa40ee3a29e10986b9656d1"
+  "source_sha256": "2f621448fb74870d913f6b75bfded52ca5a82836d542d8a3cdc5788de5afcc25"
 }
