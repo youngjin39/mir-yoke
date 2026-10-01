@@ -593,7 +593,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "config/model-routing.lock.json",
-      "sha256": "a9f35690861b5dfebbb2843c434d4051732bbd086c02f7a656d9ce2b26c6c0af"
+      "sha256": "4b63b2c31367aeb93b8f0dd3c028ab95ca666402ff82a294ac8007b752a7a03f"
     },
     {
       "classification": "template-maintainer-tool",
