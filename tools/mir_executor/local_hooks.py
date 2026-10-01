@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+import math
 import pathlib
 import sys
 from contextlib import contextmanager, nullcontext
@@ -64,9 +65,90 @@ def invoke_hook(repo_root: pathlib.Path, name: str, *args: Any, **kwargs: Any) -
     return hook(*args, **kwargs)
 
 
-def writer_scope(repo_root: pathlib.Path) -> Any:
-    scope = invoke_hook(repo_root, 'writer_scope', repo_root)
-    return nullcontext() if scope is None else scope
+_WRITER_ROOTS: ContextVar[frozenset[pathlib.Path]] = ContextVar(
+    'mir_executor_writer_roots', default=frozenset()
+)
+
+
+@contextmanager
+def writer_scope(repo_root: pathlib.Path):
+    """Acquire once per nested execution, including inherited async worker contexts."""
+    root = pathlib.Path(repo_root).resolve()
+    held = _WRITER_ROOTS.get()
+    if root in held:
+        yield
+        return
+    scope = invoke_hook(root, 'writer_scope', root)
+    with nullcontext() if scope is None else scope:
+        token = _WRITER_ROOTS.set(held | {root})
+        try:
+            yield
+        finally:
+            _WRITER_ROOTS.reset(token)
+
+
+def validate_timeout(repo_root: pathlib.Path, value: float | None) -> None:
+    """Validate optional hard timeouts against target-local inclusive bounds."""
+    def positive(number):
+        return (not isinstance(number, bool) and isinstance(number, (int, float))
+                and math.isfinite(number) and number > 0)
+
+    bounds = local_config(repo_root).get('timeout_seconds_range')
+    if bounds is not None and (
+        not isinstance(bounds, list) or len(bounds) != 2
+        or not all(positive(n) for n in bounds) or bounds[0] > bounds[1]
+    ):
+        raise ValueError('timeout_seconds_range must be [min, max], finite and positive')
+    if value is None:
+        return
+    if not positive(value):
+        raise ValueError('timeout must be finite and positive')
+    if bounds is not None and not bounds[0] <= value <= bounds[1]:
+        raise ValueError(f'timeout must be within timeout_seconds_range {bounds}')
+
+
+def after_provider_call(
+    repo_root: pathlib.Path,
+    result: Any,
+    *,
+    prompt: str,
+    model: str | None,
+    reasoning_effort: str | None,
+    attempt: int,
+    elapsed_seconds: float,
+    raw_result: Any = None,
+) -> Any:
+    """Observe one provider result and allow a target-owned budget replacement."""
+    raw = raw_result if isinstance(raw_result, dict) else getattr(raw_result, 'raw_result', {})
+    usage = getattr(raw_result, 'token_usage', None) or raw.get('usage', {})
+    if isinstance(usage, dict):
+        usage = usage.get('last', usage.get('total', usage))
+    aliases = {
+        'input_tokens': ('input_tokens', 'inputTokens', 'prompt_tokens'),
+        'output_tokens': ('output_tokens', 'outputTokens', 'completion_tokens'),
+        'total_tokens': ('total_tokens', 'totalTokens'),
+    }
+    tokens = dict(getattr(result, 'tokens_used', ()))
+    if isinstance(usage, dict):
+        for name, keys in aliases.items():
+            for key in keys:
+                value = usage.get(key)
+                if isinstance(value, int) and not isinstance(value, bool) and value >= 0:
+                    tokens[name] = value
+                    break
+    metadata = {
+        'prompt_sha256': hashlib.sha256(prompt.encode('utf-8')).hexdigest(),
+        'model': (getattr(raw_result, 'model_id', None) or raw.get('model')
+                  or getattr(result, 'model_id', None) or model),
+        'reasoning_effort': reasoning_effort,
+        'tool_version': (getattr(raw_result, 'tool_version', None) or raw.get('tool_version')
+                         or getattr(result, 'tool_version', None)),
+        'attempt': attempt,
+        'elapsed_seconds': elapsed_seconds,
+        'token_usage': tokens or None,
+    }
+    replacement = invoke_hook(repo_root, 'after_provider_call', result, metadata)
+    return result if replacement is None else replacement
 
 
 # The context follows nested dispatch calls without adding parameters to their public API.

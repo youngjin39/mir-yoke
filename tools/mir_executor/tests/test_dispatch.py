@@ -224,6 +224,12 @@ def _read_fake_record(record_path: pathlib.Path) -> dict[str, str]:
 def _patch_mcp_runner(monkeypatch, attempt_result):
     """Patch the default dispatch Codex backend and record builder calls."""
     calls: list[dict[str, object]] = []
+    # Typed brief fixtures name this agent; v3 resolves it before building a runner.
+    monkeypatch.setattr(dispatch_module, "resolve_agent_route", lambda root, name:
+                        dispatch_module.AgentRoute(
+                            name, "codex", None, None, "fixture.md", "digest",
+                            "Implement the brief.", "workspace-write",
+                        ))
 
     def fake_build_codex_mcp_runner(
         repo_root: pathlib.Path,
@@ -233,6 +239,7 @@ def _patch_mcp_runner(monkeypatch, attempt_result):
         model: str | None = None,
         reasoning_effort: str | None = None,
         stall_timeout: float | None = None,
+        agent_route: dispatch_module.AgentRoute | None = None,
     ):
         calls.append(
             {
@@ -242,6 +249,7 @@ def _patch_mcp_runner(monkeypatch, attempt_result):
                 "model": model,
                 "reasoning_effort": reasoning_effort,
                 "stall_timeout": stall_timeout,
+                "agent_route": agent_route,
             }
         )
 

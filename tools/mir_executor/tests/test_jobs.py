@@ -696,6 +696,11 @@ def test_cli_resume_replays_job_with_dispatch_brief(tmp_path, monkeypatch):
         ),
     )
     monkeypatch.setattr(dispatch, "build_codex_mcp_runner", lambda *a, **kw: object())
+    # The saved typed brief names an agent, which v3 resolves before resume execution.
+    monkeypatch.setattr(dispatch, "resolve_agent_route", lambda root, name: dispatch.AgentRoute(
+        name, "codex", "test", "high", "fixture.md", "digest", "Implement the brief.",
+        "workspace-write",
+    ))
 
     def fake_dispatch(root, **kwargs):
         calls.append((root, kwargs))

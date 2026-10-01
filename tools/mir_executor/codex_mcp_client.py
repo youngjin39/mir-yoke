@@ -73,6 +73,9 @@ class CodexMcpResult:
     content_text: str
     thread_id: str | None
     raw_result: Mapping[str, Any]
+    model_id: str | None = None
+    token_usage: Mapping[str, Any] | None = None
+    tool_version: str | None = None
 
 
 @dataclass
@@ -86,6 +89,7 @@ class _PendingRequest:
 class _PendingTurn:
     pending: _PendingRequest = field(default_factory=_PendingRequest)
     texts: dict[str, str] = field(default_factory=dict)
+    token_usage: Mapping[str, Any] | None = None
 
 
 class CodexMcpClient:
@@ -126,6 +130,7 @@ class CodexMcpClient:
         self._last_activity_ts = time.monotonic()
         self._progress_lock = threading.Lock()
         self._progress_callback: Callable[[str, object], None] | None = None
+        self._tool_version: str | None = None
 
     @property
     def is_running(self) -> bool:
@@ -197,7 +202,7 @@ class CodexMcpClient:
         self._wait_thread.start()
 
         try:
-            self._request(
+            initialized = self._request(
                 "initialize",
                 {
                     "capabilities": {},
@@ -208,6 +213,11 @@ class CodexMcpClient:
                 },
                 timeout=self._initialize_timeout,
             )
+            self._tool_version = None
+            if isinstance(initialized, Mapping):
+                version = initialized.get("userAgent")
+                if isinstance(version, str) and version.strip():
+                    self._tool_version = version.strip()
             self._notify("initialized", {})
         except Exception:
             self.close()
@@ -265,6 +275,7 @@ class CodexMcpClient:
             if not isinstance(candidate_id, str) or not candidate_id:
                 raise CodexMcpProtocolError("thread/start returned no thread id")
             thread_id = candidate_id
+            started_model = _find_model_id(started) or _find_model_id(thread)
 
             # Register before turn/start: completion notifications may precede its response.
             turn = _PendingTurn()
@@ -310,6 +321,11 @@ class CodexMcpClient:
                 content_text="\n".join(turn.texts.values()),
                 thread_id=thread_id,
                 raw_result=result,
+                model_id=_find_model_id(result) or _find_model_id(completed) or started_model,
+                token_usage=(
+                    _find_token_usage(result) or _find_token_usage(completed) or turn.token_usage
+                ),
+                tool_version=self._tool_version,
             )
         except Exception:
             self.close()
@@ -543,6 +559,14 @@ class CodexMcpClient:
                         CodexMcpError(f"Codex app-server progress callback failed: {exc}")
                     )
             method = message["method"]
+            if method == "thread/tokenUsage/updated":
+                if isinstance(params, Mapping) and isinstance(params.get("threadId"), str):
+                    with self._pending_lock:
+                        turn = self._turns.get(params.get("threadId"))
+                    usage = params.get("tokenUsage")
+                    if turn is not None and isinstance(usage, Mapping):
+                        turn.token_usage = dict(usage)
+                return
             if method not in ("item/completed", "turn/completed"):
                 return
             if not isinstance(params, Mapping):
@@ -564,6 +588,11 @@ class CodexMcpClient:
                         or not isinstance(completed.get("status"), str)
                     ):
                         raise CodexMcpProtocolError("turn/completed returned invalid turn")
+                    items = completed.get("items", [])
+                    if not isinstance(items, list):
+                        raise CodexMcpProtocolError("turn/completed returned invalid items")
+                    for item in items:
+                        _record_completed_item(turn, item, "turn/completed items")
                     turn.pending.result = params
                     turn.pending.event.set()
             return
@@ -630,10 +659,59 @@ def _json_rpc_error_message(error: object) -> str:
 def _record_completed_item(turn: _PendingTurn, item: object, source: str) -> None:
     if not isinstance(item, Mapping):
         raise CodexMcpProtocolError(f"{source} is not an object")
-    if item.get("type") != "agentMessage" or item.get("phase") == "commentary":
+    item_type = item.get("type")
+    if not isinstance(item_type, str):
+        raise CodexMcpProtocolError(f"{source} has invalid type")
+    if item_type != "agentMessage" or item.get("phase") == "commentary":
         return
     item_id = item.get("id")
     item_text = item.get("text")
     if not isinstance(item_id, str) or not item_id or not isinstance(item_text, str):
         raise CodexMcpProtocolError(f"{source} has invalid agent message fields")
     turn.texts[item_id] = item_text
+
+
+def _find_model_id(value: object) -> str | None:
+    """Read model identity from provider fields, never from generated turn items."""
+    if not isinstance(value, Mapping):
+        return None
+    for key in ("modelId", "model_id", "model"):
+        model = value.get(key)
+        if isinstance(model, str) and model.strip():
+            return model.strip()
+    for key in ("_meta", "metadata", "providerMetadata", "provider_metadata"):
+        found = _find_model_in_metadata(value.get(key))
+        if found is not None:
+            return found
+    return None
+
+
+def _find_model_in_metadata(value: object) -> str | None:
+    if isinstance(value, Mapping):
+        found = _find_model_id(value)
+        if found is not None:
+            return found
+        for nested in value.values():
+            found = _find_model_in_metadata(nested)
+            if found is not None:
+                return found
+    elif isinstance(value, list):
+        for nested in value:
+            found = _find_model_in_metadata(nested)
+            if found is not None:
+                return found
+    return None
+
+
+def _find_token_usage(value: object) -> Mapping[str, Any] | None:
+    if not isinstance(value, Mapping):
+        return None
+    for key in ("tokenUsage", "token_usage", "usage"):
+        usage = value.get(key)
+        if isinstance(usage, Mapping):
+            return dict(usage)
+    for key in ("_meta", "metadata", "providerMetadata", "provider_metadata"):
+        found = _find_token_usage(value.get(key))
+        if found is not None:
+            return found
+    return None

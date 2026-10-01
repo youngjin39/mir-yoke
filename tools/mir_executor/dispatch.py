@@ -9,7 +9,6 @@ from __future__ import annotations
 import fnmatch
 import hashlib
 import json
-import math
 import os
 import pathlib
 import shutil
@@ -17,7 +16,7 @@ import subprocess
 import tempfile
 import time
 from collections.abc import Callable, Iterator
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from dataclasses import asdict, dataclass
 
 try:
@@ -31,7 +30,14 @@ from tools.mir_executor.codex_mcp_client import (
     CodexMcpTimeoutError,
 )
 from tools.mir_executor.jobs import JobRegistry
-from tools.mir_executor.local_hooks import emit_job_event, invoke_hook, local_config
+from tools.mir_executor.local_hooks import (
+    after_provider_call,
+    emit_job_event,
+    invoke_hook,
+    local_config,
+    validate_timeout,
+    writer_scope,
+)
 from tools.mir_executor.redaction import redact_secret_like_content, redact_structured_value
 from tools.mir_executor.worktree import (
     DispatchWorktree,
@@ -62,6 +68,7 @@ class CodexAttempt:
     tokens_used: tuple[tuple[str, int], ...] = ()
     model_id: str | None = None
     mcp_protocol: str | None = None
+    tool_version: str | None = None
 
 
 @dataclass(frozen=True)
@@ -78,6 +85,7 @@ class DispatchOutcome:
     mcp_protocol: str | None = None
     stdout: str = ""
     exit_code: int | None = None
+    stderr: str = ""
 
 
 @dataclass(frozen=True)
@@ -133,16 +141,6 @@ class ReviewEvidence:
     reason: str
     content: str
     provider: str = "codex-final-reviewer"
-
-
-def _validate_timeout(value: float | None) -> None:
-    if value is not None and (
-        isinstance(value, bool)
-        or not isinstance(value, (int, float))
-        or not math.isfinite(value)
-        or value <= 0
-    ):
-        raise ValueError("timeout must be finite and positive")
 
 
 def _secure_write(path: pathlib.Path, text: str, *, append: bool = False) -> None:
@@ -206,152 +204,165 @@ def run_dispatch(
     invoke_hook(main_repo_root, "validate_brief", brief_text, main_repo_root)
     if max_codex_attempts < 1:
         raise ValueError("max_codex_attempts must be positive")
-    wt = create_dispatch_worktree(
-        main_repo_root,
-        dispatch_id,
-        base_commit=base_commit,
-        brief_text=brief_text,
-        worktrees_root=worktrees_root,
-    )
-    emit_job_event(main_repo_root, "dispatch_state", {
-        "dispatch_id": dispatch_id, "state": "started", "evidence": {},
-    })
-    brief_path = wt.path / ".mir-dispatch" / "brief.md"
-    if brief_path.exists():
-        os.chmod(brief_path, 0o600)
-    events_path = dispatch_events_path or (
-        artifacts_root / dispatch_id / "dispatch-events.jsonl"
-        if artifacts_root is not None
-        else wt.path / ".mir-dispatch" / "dispatch-events.jsonl"
-    )
-
-    attempts = 0
-    attempt_budget = max_codex_attempts
-    for attempt in range(1, attempt_budget + 1):
-        emit_job_event(main_repo_root, "dispatch_state", {
-            "dispatch_id": dispatch_id, "state": "running", "evidence": {"attempt": attempt},
-        })
-        invoke_hook(main_repo_root, "before_run", wt, attempt)
-        result = codex_runner(wt, attempt)
-        invoke_hook(main_repo_root, "after_run", wt, attempt, result)
-        attempts = attempt
-        if result.exit_code == 0:
-            _write_dispatch_status(wt, "codex_completed", attempt=attempt)
-            _append_event(
-                events_path,
-                {"kind": "codex_success", "dispatch_id": dispatch_id, "attempt": attempt},
-            )
-            return DispatchOutcome(
-                "completed",
-                attempt,
-                False,
-                None,
-                wt,
-                result.tokens_used,
-                result.model_id,
-                result.mcp_protocol,
-                result.stdout,
-                result.exit_code,
-            )
-
-        _append_event(
-            events_path,
-            {
-                "kind": "codex_failure",
-                "dispatch_id": dispatch_id,
-                "attempt": attempt,
-                "exit_code": result.exit_code,
-                "error_sig": result.error_sig,
-                "lane_unavailable": result.lane_unavailable,
-                "retryable": result.retryable,
-            },
+    with writer_scope(main_repo_root):
+        wt = create_dispatch_worktree(
+            main_repo_root,
+            dispatch_id,
+            base_commit=base_commit,
+            brief_text=brief_text,
+            worktrees_root=worktrees_root,
         )
-        if result.lane_unavailable:
-            _append_event(
-                events_path,
-                {"kind": "lane_unavailable", "dispatch_id": dispatch_id, "attempt": attempt},
-            )
-            _write_dispatch_status(wt, "blocked", reason="lane-unavailable", attempt=attempt)
-            return DispatchOutcome(
-                "blocked",
-                attempt,
-                False,
-                "lane-unavailable",
-                wt,
-                result.tokens_used,
-                result.model_id,
-                result.mcp_protocol,
-                result.stdout,
-                result.exit_code,
-            )
-        if not result.retryable:
-            reason = result.blocked_reason or "non-retryable"
+        emit_job_event(main_repo_root, "dispatch_state", {
+            "dispatch_id": dispatch_id, "state": "started", "evidence": {},
+        })
+        brief_path = wt.path / ".mir-dispatch" / "brief.md"
+        if brief_path.exists():
+            os.chmod(brief_path, 0o600)
+        events_path = dispatch_events_path or (
+            artifacts_root / dispatch_id / "dispatch-events.jsonl"
+            if artifacts_root is not None
+            else wt.path / ".mir-dispatch" / "dispatch-events.jsonl"
+        )
+
+        attempts = 0
+        attempt_budget = max_codex_attempts
+        for attempt in range(1, attempt_budget + 1):
+            emit_job_event(main_repo_root, "dispatch_state", {
+                "dispatch_id": dispatch_id, "state": "running", "evidence": {"attempt": attempt},
+            })
+            invoke_hook(main_repo_root, "before_run", wt, attempt)
+            started = time.monotonic()
+            result = codex_runner(wt, attempt)
+            if not getattr(codex_runner, "_mir_provider_hook", False):
+                result = after_provider_call(
+                    main_repo_root, result, prompt=brief_text, model=result.model_id,
+                    reasoning_effort=None, attempt=attempt,
+                    elapsed_seconds=time.monotonic() - started,
+                )
+            invoke_hook(main_repo_root, "after_run", wt, attempt, result)
+            attempts = attempt
+            if result.exit_code == 0:
+                _write_dispatch_status(wt, "codex_completed", attempt=attempt)
+                _append_event(
+                    events_path,
+                    {"kind": "codex_success", "dispatch_id": dispatch_id, "attempt": attempt},
+                )
+                return DispatchOutcome(
+                    "completed",
+                    attempt,
+                    False,
+                    None,
+                    wt,
+                    result.tokens_used,
+                    result.model_id,
+                    result.mcp_protocol,
+                    result.stdout,
+                    result.exit_code,
+                    result.stderr,
+                )
+
             _append_event(
                 events_path,
                 {
-                    "kind": "non_retryable_blocker",
+                    "kind": "codex_failure",
                     "dispatch_id": dispatch_id,
                     "attempt": attempt,
-                    "reason": reason,
+                    "exit_code": result.exit_code,
+                    "error_sig": result.error_sig,
+                    "lane_unavailable": result.lane_unavailable,
+                    "retryable": result.retryable,
                 },
             )
-            _write_dispatch_status(wt, "blocked", reason=reason, attempt=attempt)
+            if result.lane_unavailable:
+                _append_event(
+                    events_path,
+                    {"kind": "lane_unavailable", "dispatch_id": dispatch_id, "attempt": attempt},
+                )
+                _write_dispatch_status(wt, "blocked", reason="lane-unavailable", attempt=attempt)
+                return DispatchOutcome(
+                    "blocked",
+                    attempt,
+                    False,
+                    "lane-unavailable",
+                    wt,
+                    result.tokens_used,
+                    result.model_id,
+                    result.mcp_protocol,
+                    result.stdout,
+                    result.exit_code,
+                    result.stderr,
+                )
+            if not result.retryable:
+                reason = result.blocked_reason or "non-retryable"
+                _append_event(
+                    events_path,
+                    {
+                        "kind": "non_retryable_blocker",
+                        "dispatch_id": dispatch_id,
+                        "attempt": attempt,
+                        "reason": reason,
+                    },
+                )
+                _write_dispatch_status(wt, "blocked", reason=reason, attempt=attempt)
+                return DispatchOutcome(
+                    "blocked",
+                    attempt,
+                    False,
+                    reason,
+                    wt,
+                    result.tokens_used,
+                    result.model_id,
+                    result.mcp_protocol,
+                    result.stdout,
+                    result.exit_code,
+                    result.stderr,
+                )
+        _write_dispatch_status(wt, "codex_failed", attempts=attempts)
+
+        consecutive = prior_consecutive_codex_failures + 1
+        if consecutive >= outage_threshold:
+            _append_event(
+                events_path,
+                {
+                    "kind": "codex_outage_halt",
+                    "dispatch_id": dispatch_id,
+                    "consecutive_failures": consecutive,
+                    "threshold": outage_threshold,
+                },
+            )
+            _write_dispatch_status(wt, "blocked", reason="codex-outage")
             return DispatchOutcome(
                 "blocked",
-                attempt,
+                attempts,
                 False,
-                reason,
+                "codex-outage",
                 wt,
                 result.tokens_used,
                 result.model_id,
                 result.mcp_protocol,
                 result.stdout,
                 result.exit_code,
+                result.stderr,
             )
-    _write_dispatch_status(wt, "codex_failed", attempts=attempts)
 
-    consecutive = prior_consecutive_codex_failures + 1
-    if consecutive >= outage_threshold:
         _append_event(
             events_path,
-            {
-                "kind": "codex_outage_halt",
-                "dispatch_id": dispatch_id,
-                "consecutive_failures": consecutive,
-                "threshold": outage_threshold,
-            },
+            {"kind": "retry_exhausted", "dispatch_id": dispatch_id, "attempts": attempts},
         )
-        _write_dispatch_status(wt, "blocked", reason="codex-outage")
+        _write_dispatch_status(wt, "blocked", reason="retry-exhausted")
         return DispatchOutcome(
             "blocked",
             attempts,
             False,
-            "codex-outage",
+            "retry-exhausted",
             wt,
             result.tokens_used,
             result.model_id,
             result.mcp_protocol,
             result.stdout,
             result.exit_code,
+            result.stderr,
         )
-
-    _append_event(
-        events_path,
-        {"kind": "retry_exhausted", "dispatch_id": dispatch_id, "attempts": attempts},
-    )
-    _write_dispatch_status(wt, "blocked", reason="retry-exhausted")
-    return DispatchOutcome(
-        "blocked",
-        attempts,
-        False,
-        "retry-exhausted",
-        wt,
-        result.tokens_used,
-        result.model_id,
-        result.mcp_protocol,
-        result.stdout,
-        result.exit_code,
-    )
 
 
 def _last_json_line(path: pathlib.Path) -> dict[str, object]:
@@ -421,6 +432,30 @@ def _run_guarded(
     )
 
 
+def _provider_runner(
+    main_repo_root: pathlib.Path,
+    runner: Callable[[DispatchWorktree, int], CodexAttempt],
+    *,
+    prompt: str,
+    model: str | None,
+    reasoning_effort: str | None,
+    read_only: bool,
+) -> Callable[[DispatchWorktree, int], CodexAttempt]:
+    """Cover direct runner calls without repeating the hook in run_dispatch."""
+    def wrapped(wt: DispatchWorktree, attempt: int) -> CodexAttempt:
+        with nullcontext() if read_only else writer_scope(main_repo_root):
+            started = time.monotonic()
+            result = runner(wt, attempt)
+            return after_provider_call(
+                main_repo_root, result, prompt=prompt, model=model,
+                reasoning_effort=reasoning_effort, attempt=attempt,
+                elapsed_seconds=time.monotonic() - started,
+            )
+
+    wrapped._mir_provider_hook = True
+    return wrapped
+
+
 def build_codex_mcp_runner(
     main_repo_root: pathlib.Path,
     prompt: str,
@@ -433,8 +468,8 @@ def build_codex_mcp_runner(
     agent_route: AgentRoute | None = None,
 ) -> Callable[[DispatchWorktree, int], CodexAttempt]:
     """Build an app-server-backed Codex runner without ``codex exec`` argv."""
-    _validate_timeout(timeout_seconds)
-    _validate_timeout(stall_timeout)
+    validate_timeout(main_repo_root, timeout_seconds)
+    validate_timeout(main_repo_root, stall_timeout)
     sandbox = (
         agent_route.sandbox
         if agent_route and agent_route.sandbox
@@ -528,9 +563,11 @@ def build_codex_mcp_runner(
             return CodexAttempt(
                 exit_code=0,
                 stdout=result.content_text,
-                tokens_used=_mcp_tokens(result.raw_result),
-                model_id=result.raw_result.get("model", model),
+                tokens_used=_mcp_tokens({"usage": result.token_usage} if result.token_usage
+                                        else result.raw_result),
+                model_id=result.model_id or result.raw_result.get("model", model),
                 mcp_protocol="app-server",
+                tool_version=result.tool_version or result.raw_result.get("tool_version"),
             )
         except CodexMcpTimeoutError as exc:
             stderr = str(exc)
@@ -562,7 +599,10 @@ def build_codex_mcp_runner(
             retryable=not lane_unavailable,
         )
 
-    return _runner
+    return _provider_runner(
+        main_repo_root, _runner, prompt=prompt, model=model,
+        reasoning_effort=reasoning_effort, read_only=sandbox == "read-only",
+    )
 
 
 _CLAUDE_DISPATCH_PROMPT = (
@@ -623,7 +663,7 @@ def build_claude_runner(
     reasoning_effort: str | None = None,
 ) -> Callable[[DispatchWorktree, int], CodexAttempt]:
     """Build the primary headless ``claude -p`` dispatch runner."""
-    _validate_timeout(timeout_seconds)
+    validate_timeout(main_repo_root, timeout_seconds)
 
     def _runner(wt: DispatchWorktree, attempt: int) -> CodexAttempt:
         _ = attempt
@@ -636,7 +676,11 @@ def build_claude_runner(
             reasoning_effort=reasoning_effort,
         )
 
-    return _runner
+    return _provider_runner(
+        main_repo_root, _runner, prompt=_CLAUDE_DISPATCH_PROMPT, model=model,
+        reasoning_effort=reasoning_effort,
+        read_only=bool(agent_route and agent_route.sandbox == "read-only"),
+    )
 
 
 def _git(
@@ -691,7 +735,7 @@ def evaluate_merge_gate(
     source_commit: str | None = None,
 ) -> MergeGate:
     """Evaluate the deterministic ADR-60 P2 merge gate for one dispatch."""
-    _validate_timeout(verify_timeout)
+    validate_timeout(wt.main_repo_root, verify_timeout)
     if source_commit is None:
         source_commit = _git(wt.path, ["rev-parse", "HEAD"]).stdout.strip()
     changed_text = _git(
@@ -974,132 +1018,139 @@ def finalize_dispatch(
     the main working tree; the control-plane main must commit them afterward.
     """
     main_repo_root = pathlib.Path(main_repo_root)
-    allow_harness = allow_harness_self_modify or _resolve_harness_self_modify(main_repo_root)
-    if outcome.status != "completed":
-        persist_dispatch_artifacts(wt, main_repo_root, artifacts_root)
-        return FinalizeResult(
-            "preserved",
-            outcome.blocked_reason or "failed",
-            [],
-        )
-
-    try:
-        _commit_worktree_if_needed(wt)
-        source_commit = _git(wt.path, ["rev-parse", "HEAD"]).stdout.strip()
-        gate = evaluate_merge_gate(
-            wt,
-            allowlist=allowlist,
-            verification_commands=verification_commands,
-            verify_timeout=verify_timeout,
-            allow_harness_self_modify=allow_harness,
-            expect_changes=expect_changes,
-            source_commit=source_commit,
-        )
-        if not gate.approved:
+    validate_timeout(main_repo_root, verify_timeout)
+    if "timeout_seconds_range" in local_config(main_repo_root):
+        validate_timeout(main_repo_root, finalize_lock_timeout)
+    with writer_scope(main_repo_root):
+        allow_harness = allow_harness_self_modify or _resolve_harness_self_modify(main_repo_root)
+        if outcome.status != "completed":
             persist_dispatch_artifacts(wt, main_repo_root, artifacts_root)
-            return FinalizeResult("blocked", gate.reason, [])
+            return FinalizeResult(
+                "preserved",
+                outcome.blocked_reason or "failed",
+                [],
+            )
 
-        needs_review = (
-            local_config(main_repo_root).get("require_review", False)
-            if require_review is None
-            else require_review
-        )
-        if needs_review and reviewer is None:
-            persist_dispatch_artifacts(wt, main_repo_root, artifacts_root)
-            return FinalizeResult("blocked", "reviewer-missing", [])
-        if reviewer is not None:
-            evidence = reviewer(wt, gate.changed_files)
-            _secure_write(wt.path / ".mir-dispatch" / "reviewer.json", json.dumps(asdict(evidence)))
-            if not evidence.passed:
+        try:
+            _commit_worktree_if_needed(wt)
+            source_commit = _git(wt.path, ["rev-parse", "HEAD"]).stdout.strip()
+            gate = evaluate_merge_gate(
+                wt,
+                allowlist=allowlist,
+                verification_commands=verification_commands,
+                verify_timeout=verify_timeout,
+                allow_harness_self_modify=allow_harness,
+                expect_changes=expect_changes,
+                source_commit=source_commit,
+            )
+            if not gate.approved:
                 persist_dispatch_artifacts(wt, main_repo_root, artifacts_root)
-                return FinalizeResult("blocked", evidence.reason, [])
-        with _finalize_lock(main_repo_root, finalize_lock_timeout) as lock_acquired:
-            if not lock_acquired:
+                return FinalizeResult("blocked", gate.reason, [])
+
+            needs_review = (
+                local_config(main_repo_root).get("require_review", False)
+                if require_review is None
+                else require_review
+            )
+            if needs_review and reviewer is None:
                 persist_dispatch_artifacts(wt, main_repo_root, artifacts_root)
-                return FinalizeResult("blocked", "finalize-lock-timeout", [])
-
-            try:
-                main_head = _git(main_repo_root, ["rev-parse", "HEAD"]).stdout.strip()
-                if main_head != wt.base_commit:
+                return FinalizeResult("blocked", "reviewer-missing", [])
+            if reviewer is not None:
+                evidence = reviewer(wt, gate.changed_files)
+                _secure_write(
+                    wt.path / ".mir-dispatch" / "reviewer.json", json.dumps(asdict(evidence))
+                )
+                if not evidence.passed:
                     persist_dispatch_artifacts(wt, main_repo_root, artifacts_root)
-                    return FinalizeResult("blocked", "main-moved", [])
-
-                current_dispatch_head = _git(
-                    wt.path,
-                    ["rev-parse", "HEAD"],
-                ).stdout.strip()
-                if current_dispatch_head != source_commit:
+                    return FinalizeResult("blocked", evidence.reason, [])
+            with _finalize_lock(main_repo_root, finalize_lock_timeout) as lock_acquired:
+                if not lock_acquired:
                     persist_dispatch_artifacts(wt, main_repo_root, artifacts_root)
-                    return FinalizeResult("blocked", "dispatch-moved", [])
+                    return FinalizeResult("blocked", "finalize-lock-timeout", [])
 
-                if _dispatch_nonruntime_status(wt.path):
-                    persist_dispatch_artifacts(wt, main_repo_root, artifacts_root)
-                    return FinalizeResult("blocked", "dispatch-dirty", [])
+                try:
+                    main_head = _git(main_repo_root, ["rev-parse", "HEAD"]).stdout.strip()
+                    if main_head != wt.base_commit:
+                        persist_dispatch_artifacts(wt, main_repo_root, artifacts_root)
+                        return FinalizeResult("blocked", "main-moved", [])
 
-                if not gate.changed_files:
+                    current_dispatch_head = _git(
+                        wt.path,
+                        ["rev-parse", "HEAD"],
+                    ).stdout.strip()
+                    if current_dispatch_head != source_commit:
+                        persist_dispatch_artifacts(wt, main_repo_root, artifacts_root)
+                        return FinalizeResult("blocked", "dispatch-moved", [])
+
+                    if _dispatch_nonruntime_status(wt.path):
+                        persist_dispatch_artifacts(wt, main_repo_root, artifacts_root)
+                        return FinalizeResult("blocked", "dispatch-dirty", [])
+
+                    if not gate.changed_files:
+                        try:
+                            persist_dispatch_artifacts(wt, main_repo_root, artifacts_root)
+                            cleanup_worktree(wt)
+                        except Exception as exc:  # noqa: BLE001
+                            return FinalizeResult(
+                                "reviewed-but-cleanup-failed", f"post-review-error:{exc}", []
+                            )
+                        return FinalizeResult("reviewed", "approved", [])
+
+                    if _targets_dirty(main_repo_root, gate.changed_files):
+                        persist_dispatch_artifacts(wt, main_repo_root, artifacts_root)
+                        return FinalizeResult("blocked", "main-dirty", [])
+
+                    tracked_at_head = {
+                        path for path in gate.changed_files
+                        if _head_tracks_path(main_repo_root, path)
+                    }
+                    try:
+                        merge_outcome = merge_result(
+                            wt,
+                            source_commit=source_commit,
+                            approved_files=gate.changed_files,
+                            allow_harness_self_modify=allow_harness,
+                        )
+                    except Exception as exc:  # noqa: BLE001
+                        rollback_failures = _rollback_targets(
+                            main_repo_root,
+                            gate.changed_files,
+                            tracked_at_head,
+                        )
+                        try:
+                            persist_dispatch_artifacts(wt, main_repo_root, artifacts_root)
+                        except Exception:  # noqa: BLE001
+                            pass
+                        if rollback_failures:
+                            return FinalizeResult(
+                                "blocked",
+                                f"rollback-failed:merge-error:{exc}; failures={rollback_failures}",
+                                [],
+                            )
+                        return FinalizeResult("blocked", f"merge-error:{exc}", [])
+
                     try:
                         persist_dispatch_artifacts(wt, main_repo_root, artifacts_root)
                         cleanup_worktree(wt)
                     except Exception as exc:  # noqa: BLE001
                         return FinalizeResult(
-                            "reviewed-but-cleanup-failed", f"post-review-error:{exc}", []
+                            "merged-but-cleanup-failed",
+                            f"post-merge-error:{exc}",
+                            merge_outcome.merged_files,
                         )
-                    return FinalizeResult("reviewed", "approved", [])
-
-                if _targets_dirty(main_repo_root, gate.changed_files):
-                    persist_dispatch_artifacts(wt, main_repo_root, artifacts_root)
-                    return FinalizeResult("blocked", "main-dirty", [])
-
-                tracked_at_head = {
-                    path for path in gate.changed_files if _head_tracks_path(main_repo_root, path)
-                }
-                try:
-                    merge_outcome = merge_result(
-                        wt,
-                        source_commit=source_commit,
-                        approved_files=gate.changed_files,
-                        allow_harness_self_modify=allow_harness,
-                    )
+                    return FinalizeResult("merged", "approved", merge_outcome.merged_files)
                 except Exception as exc:  # noqa: BLE001
-                    rollback_failures = _rollback_targets(
-                        main_repo_root,
-                        gate.changed_files,
-                        tracked_at_head,
-                    )
                     try:
                         persist_dispatch_artifacts(wt, main_repo_root, artifacts_root)
                     except Exception:  # noqa: BLE001
                         pass
-                    if rollback_failures:
-                        return FinalizeResult(
-                            "blocked",
-                            f"rollback-failed:merge-error:{exc}; failures={rollback_failures}",
-                            [],
-                        )
-                    return FinalizeResult("blocked", f"merge-error:{exc}", [])
-
-                try:
-                    persist_dispatch_artifacts(wt, main_repo_root, artifacts_root)
-                    cleanup_worktree(wt)
-                except Exception as exc:  # noqa: BLE001
-                    return FinalizeResult(
-                        "merged-but-cleanup-failed",
-                        f"post-merge-error:{exc}",
-                        merge_outcome.merged_files,
-                    )
-                return FinalizeResult("merged", "approved", merge_outcome.merged_files)
-            except Exception as exc:  # noqa: BLE001
-                try:
-                    persist_dispatch_artifacts(wt, main_repo_root, artifacts_root)
-                except Exception:  # noqa: BLE001
-                    pass
-                return FinalizeResult("blocked", f"error:{exc}", [])
-    except Exception as exc:  # noqa: BLE001
-        try:
-            persist_dispatch_artifacts(wt, main_repo_root, artifacts_root)
-        except Exception:  # noqa: BLE001
-            pass
-        return FinalizeResult("blocked", f"error:{exc}", [])
+                    return FinalizeResult("blocked", f"error:{exc}", [])
+        except Exception as exc:  # noqa: BLE001
+            try:
+                persist_dispatch_artifacts(wt, main_repo_root, artifacts_root)
+            except Exception:  # noqa: BLE001
+                pass
+            return FinalizeResult("blocked", f"error:{exc}", [])
 
 
 def count_consecutive_codex_failures(
@@ -1137,6 +1188,8 @@ def _diagnostic_token(payload: str | None, key: str) -> str | None:
 
 def _mcp_tokens(raw_result: dict[str, object]) -> tuple[tuple[str, int], ...]:
     usage = raw_result.get("usage")
+    if isinstance(usage, dict):
+        usage = usage.get("last", usage.get("total", usage))
     source = usage if isinstance(usage, dict) else raw_result
     aliases = {
         "input_tokens": ("input_tokens", "inputTokens", "prompt_tokens"),
@@ -1147,7 +1200,7 @@ def _mcp_tokens(raw_result: dict[str, object]) -> tuple[tuple[str, int], ...]:
     for target, names in aliases.items():
         for name in names:
             value = source.get(name)
-            if isinstance(value, int) and value >= 0:
+            if isinstance(value, int) and not isinstance(value, bool) and value >= 0:
                 tokens.append((target, value))
                 break
     return tuple(tokens)
@@ -1168,7 +1221,7 @@ def build_codex_review_runner(
     client_factory: Callable[..., CodexMcpClient] = CodexMcpClient,
 ) -> Callable[[DispatchWorktree, list[str]], ReviewEvidence]:
     """Build an optional independent read-only reviewer."""
-    _validate_timeout(timeout_seconds)
+    validate_timeout(main_repo_root, timeout_seconds)
 
     def review(wt: DispatchWorktree, changed_files: list[str]) -> ReviewEvidence:
         env = dispatch_env(main_repo_root, session_id=f"{wt.dispatch_id}-review")
@@ -1177,6 +1230,8 @@ def build_codex_review_runner(
             "read-only inspection commands as needed. Changed files: "
             f"{json.dumps(changed_files)}"
         )
+        started = time.monotonic()
+        raw_result = None
         try:
             with client_factory(env=env, call_timeout=timeout_seconds) as client:
                 result = client.call_codex(
@@ -1187,14 +1242,25 @@ def build_codex_review_runner(
                     base_instructions=_MCP_REVIEW_BASE_INSTRUCTIONS,
                     timeout=timeout_seconds,
                 )
+            raw_result = result
+            mapped = CodexAttempt(0, stdout=result.content_text)
         except CodexMcpTimeoutError as exc:
-            return ReviewEvidence(False, "reviewer-timeout", str(exc))
+            mapped = CodexAttempt(124, stderr=str(exc), blocked_reason="reviewer-timeout")
         except (CodexMcpError, FileNotFoundError, OSError) as exc:
-            return ReviewEvidence(False, "reviewer-unavailable", str(exc))
+            mapped = CodexAttempt(1, stderr=str(exc), blocked_reason="reviewer-unavailable")
+        mapped = after_provider_call(
+            main_repo_root, mapped, prompt=prompt, model=None, reasoning_effort=None,
+            attempt=1, elapsed_seconds=time.monotonic() - started, raw_result=raw_result,
+        )
+        if mapped.exit_code != 0:
+            return ReviewEvidence(
+                False, mapped.blocked_reason or "reviewer-provider-failed",
+                mapped.stdout or mapped.stderr,
+            )
         try:
-            payload = json.loads(result.content_text)
+            payload = json.loads(mapped.stdout)
         except json.JSONDecodeError:
-            return ReviewEvidence(False, "reviewer-malformed", result.content_text)
+            return ReviewEvidence(False, "reviewer-malformed", mapped.stdout)
         if (
             not isinstance(payload, dict)
             or set(payload) != {"verdict", "reason", "findings"}
@@ -1203,9 +1269,9 @@ def build_codex_review_runner(
             or not isinstance(payload.get("findings"), list)
             or any(not isinstance(item, str) for item in payload["findings"])
         ):
-            return ReviewEvidence(False, "reviewer-malformed", result.content_text)
+            return ReviewEvidence(False, "reviewer-malformed", mapped.stdout)
         passed = payload["verdict"] == "pass" and not payload["findings"]
         reason = payload["reason"] or ("approved" if passed else "reviewer-rejected")
-        return ReviewEvidence(passed, reason, result.content_text)
+        return ReviewEvidence(passed, reason, mapped.stdout)
 
     return review

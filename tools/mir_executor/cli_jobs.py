@@ -233,6 +233,16 @@ def _handle_resume(api, args: argparse.Namespace) -> int:
             if name in options:
                 value = options[name]
                 setattr(execute_args, name, pathlib.Path(value) if value is not None else None)
+    from tools.mir_executor.local_hooks import local_config, validate_timeout
+
+    try:
+        if "timeout_seconds_range" in local_config(execute_args.repo_root):
+            for value in (execute_args.timeout, execute_args.stall_timeout,
+                          execute_args.finalize_lock_timeout):
+                validate_timeout(execute_args.repo_root, value)
+    except (OSError, TypeError, ValueError) as exc:
+        print(f"[mir_executor] resume timeout error: {exc}", file=sys.stderr)
+        return 1
     # Legacy resume does not assume a synthetic change ID is a ledger ID.
     print(
         f"[RESUME] job_id={job.job_id} "

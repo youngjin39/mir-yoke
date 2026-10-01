@@ -1,5 +1,25 @@
 # Plan
 
+## Active task: executor common v3 (2026-10-01)
+
+Authority: the current user request and supplied `spec-executor-v3.md`.
+This cursor is the design authority for the six specified common execution changes.
+Write only in mir-yoke; named consumers are read-only. No commit, push or tag.
+
+- [x] Per item: add regression tests, observe fail, implement and observe pass.
+- [x] Cover CLI routes, agent API, execution writer lease, strict item shape,
+      provider hook and optional timeout bounds with compatible absent defaults.
+- [x] Update sync guide and regenerate common manifests and affected payload.
+- [x] Run full pytest, Ruff, Python 3.11 compilation and self-target drift check.
+
+Evidence: `tasks/reports/executor-common-fail-first.md` owns per-item fail/pass
+results. Final full pytest: `1546 passed in 205.29s (0:03:25)`; all 88 v3 tests
+passed. Ruff, Python 3.11.16 common-file compilation, generated parity,
+self-target sync and regenerated-payload checks passed. No commit, push, tag
+or consumer write occurred.
+
+The predecessor records below are preserved as historical evidence.
+
 ## Active task: executor common base v2 (2026-10-01)
 
 Authority: the current user request and the supplied `spec-executor-v2.md`.

@@ -21,8 +21,8 @@ this optional tool is not an adopter payload or a grant of consumer authority.
 - Local data: optional `config/mir-executor.local.json`. Keys are `verifiers` (ID
   to argv list), `codex_sandbox_default`, `require_review`, `max_codex_attempts_cap`,
   `artifact_retention_days`, `child_env_filter`, `child_env_extra_keys` and
-  `input_limit_bytes`. Verifiers execute registered argv, never arbitrary shell
-  command strings supplied by a brief.
+  `input_limit_bytes` and `timeout_seconds_range`. Verifiers execute registered
+  argv, never arbitrary shell command strings supplied by a brief.
 - Policy: Harness-deployed `config/model-routing.lock.json` and repository-owned
   `config/sub-agent-policy.json`. Sync writes neither. The lock is read first;
   missing local policy is valid. Local delegation keys, per-project and monitoring
@@ -64,7 +64,13 @@ target root so another repository's hooks cannot leak into that target.
   `args.repo_root`. It is loaded from the initial root (the bootstrap adapter).
   Execute resolves the selected root and checks that Git recognizes it as a working
   repository after this hook, before reading target-local input limits or dispatching.
-- `writer_scope(repo_root)` returns a context manager; default is a no-op.
+- `writer_scope(repo_root)` returns a context manager; default is a no-op. The
+  execution layer holds it for dispatch and finalization, write-capable direct
+  provider runners, `MirExecutor.run_codex` / `run_codex_async` / `run_agent_async`,
+  and ledger writes. Read-only direct provider routes skip acquisition. Nested
+  calls share the lease through a context variable, including worker threads
+  inherited from async calls, so an existing CLI lease is acquired only once.
+  Independent execution contexts still acquire the local lease separately.
 - `resolve_agent_route(repo_root, name)` returns an `AgentRoute` override.
 - `resolve_route_key(repo_root, key)` returns `(model, effort)`.
 - `validate_brief(brief, repo_root)` accepts a JSON file Path or plain prompt text.
@@ -80,6 +86,38 @@ target root so another repository's hooks cannot leak into that target.
 - `state_callback(state, evidence)` receives dispatch state and evidence.
 - `before_run(worktree, attempt)` and `after_run(worktree, attempt, result)` wrap
   each attempt.
+- `after_provider_call(result, metadata)` observes each returned provider result,
+  including mapped provider errors and read-only reviewers. The result is a
+  `SubprocessResult` for direct executor calls or `CodexAttempt` for dispatch.
+  Return `None` to keep it, or return a replacement of the same type. A local
+  budget rule can replace `exit_code` with `2` while preserving `stdout`.
+  Metadata keys are `prompt_sha256`, `model`, `reasoning_effort`, `tool_version`,
+  `attempt`, `elapsed_seconds` and `token_usage`. The model is provider-confirmed
+  when reported, otherwise the requested model. Unknown tool versions and usage
+  are `None`; reported token counts use `input_tokens`, `output_tokens` and
+  `total_tokens`. App-server token-usage notifications and completion metadata
+  are collected, using the last turn's counters when present. Built-in runners
+  call this hook once even when invoked through `run_dispatch`; custom runners
+  are observed by `run_dispatch`. Raised exceptions retain their existing API.
+
+`timeout_seconds_range: [min, max]` optionally bounds non-null hard timeouts,
+including CLI execution, direct executor calls, dispatch/review runners,
+verification, finalization locks and restored resume options. Both endpoints must
+be finite positive numbers, ordered from minimum to maximum; bounds are inclusive.
+`None` remains an optional timeout. Resume validates saved values and explicit
+overrides before dispatch, even when its stored options skip `pre_execute`.
+Without this key, each entry point retains its previous timeout validation.
+
+A brief's `target_agent` selects the common resolver and its target-local route
+hook. CLI dispatch forwards the route to the provider builder, honors its backend,
+base instructions and sandbox, and derives `expect_changes` from the route.
+A `read-only` route uses the read-only sandbox; Claude receives `--agent`.
+Explicit model/effort options override route values; omitted route values retain
+the policy selection. `MirExecutor` accepts optional `target_agent` and
+`agent_route` constructor arguments, and `run_agent_async(codex_args,
+timeout_seconds=None)` selects the declared Codex or Claude backend. Conflicting
+agent identities fail before execution. `DispatchOutcome.stderr` preserves the
+last attempt's diagnostics for programmatic callers.
 
 For an application-specific `--route`, add the flag in `register_execute_options`.
 Have `pre_execute` reject conflicting explicit route/model flags and use

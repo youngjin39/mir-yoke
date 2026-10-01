@@ -53,6 +53,7 @@ from tools.mir_executor.local_hooks import (
     invoke_hook,
     job_event_scope,
     local_config,
+    validate_timeout,
     writer_scope,
 )
 
@@ -279,12 +280,18 @@ def _build_dispatch_runner(
     model: str | None = None,
     reasoning_effort: str | None = None,
     stall_timeout: float | None = None,
+    agent_route: object | None = None,
 ) -> object:
     """Build the runner for the resolved backend."""
     if backend == "claude":
+        runner_kwargs = {"timeout_seconds": timeout_seconds}
+        if agent_route is not None:
+            runner_kwargs["agent_route"] = agent_route
+            runner_kwargs["model"] = model
+            runner_kwargs["reasoning_effort"] = reasoning_effort
         return dispatch_module.build_claude_runner(
             repo_root,
-            timeout_seconds=timeout_seconds,
+            **runner_kwargs,
         )
     if (
         not model
@@ -302,6 +309,8 @@ def _build_dispatch_runner(
         runner_kwargs["reasoning_effort"] = reasoning_effort
     if stall_timeout is not None:
         runner_kwargs["stall_timeout"] = stall_timeout
+    if agent_route is not None:
+        runner_kwargs["agent_route"] = agent_route
     return dispatch_module.build_codex_mcp_runner(repo_root, prompt, **runner_kwargs)
 
 
@@ -447,6 +456,14 @@ def _handle_dispatch(
     from tools.mir_executor.jobs import JobRecord, JobRegistry  # noqa: PLC0415
     from tools.mir_executor.policy import load_sub_agent_policy  # noqa: PLC0415
 
+    try:
+        if "timeout_seconds_range" in local_config(repo_root):
+            validate_timeout(repo_root, args.timeout)
+            validate_timeout(repo_root, getattr(args, "stall_timeout", None))
+            validate_timeout(repo_root, args.finalize_lock_timeout)
+    except (OSError, TypeError, ValueError) as exc:
+        print(f"[mir_executor] argument parse error: {exc}", file=sys.stderr)
+        return 1
     if codex_args is None:
         codex_args = _resolve_execute_codex_args(args)
     dispatch_brief_path = (
@@ -469,6 +486,24 @@ def _handle_dispatch(
         brief_text = prompt if rendered is None else rendered
         if not isinstance(brief_text, str):
             raise TypeError("render_brief must return str or None")
+        target_agent = (
+            validated.get("target_agent")
+            if isinstance(validated, dict)
+            else getattr(validated, "target_agent", None)
+        )
+        if target_agent is None and dispatch_brief_path is not None:
+            brief_data = json.loads(dispatch_brief_path.read_text(encoding="utf-8"))
+            target_agent = (
+                brief_data.get("target_agent") if isinstance(brief_data, dict) else None
+            )
+        if target_agent is not None and (
+            not isinstance(target_agent, str) or not target_agent.strip()
+        ):
+            raise ValueError("DispatchBrief target_agent must be a non-empty string")
+        agent_route = (
+            dispatch.resolve_agent_route(repo_root, target_agent)
+            if target_agent is not None else None
+        )
     except (OSError, TypeError, ValueError) as exc:
         print(f"[mir_executor] DispatchBrief error: {exc}", file=sys.stderr)
         return 1
@@ -538,6 +573,14 @@ def _handle_dispatch(
             repo_slug=repo_slug,
             repo_root=repo_root,
         )
+        if agent_route is not None:
+            backend = agent_route.execution_backend
+            model = args.model if args.model is not None else agent_route.model or model
+            reasoning_effort = (
+                args.reasoning_effort
+                if args.reasoning_effort is not None else agent_route.reasoning_effort
+                or reasoning_effort
+            )
         if getattr(args, "resume_job_id", None):
             emit_job_event(repo_root, "job_resumed", {
                 "job_id": job_id, "path": "resume", "args": args,
@@ -574,6 +617,7 @@ def _handle_dispatch(
             model=model,
             reasoning_effort=reasoning_effort,
             stall_timeout=stall_timeout,
+            agent_route=agent_route,
         )
         with job_event_scope(repo_root, job_id, hook_errors):
             outcome = dispatch.run_dispatch(
@@ -605,7 +649,10 @@ def _handle_dispatch(
                 allowlist=getattr(args, "allow_paths", None) or [],
                 verification_commands=getattr(args, "verify_cmds", None) or [],
                 finalize_lock_timeout=args.finalize_lock_timeout,
-                expect_changes=args.expect_changes,
+                expect_changes=(
+                    dispatch.agent_route_expects_changes(agent_route)
+                    if agent_route is not None else args.expect_changes
+                ),
                 allow_harness_self_modify=args.allow_harness_self_modify,
                 **(
                     {"artifacts_root": args.artifacts_dir}
@@ -735,6 +782,9 @@ def _handle_execute(args: argparse.Namespace) -> int:
 
     try:
         repo_root = _prepare_execute_root(args)
+        if "timeout_seconds_range" in local_config(repo_root):
+            validate_timeout(repo_root, args.timeout)
+            validate_timeout(repo_root, getattr(args, "stall_timeout", None))
         codex_args = _resolve_execute_codex_args(args)
     except ValueError as exc:
         print(f"[mir_executor] argument parse error: {exc}", file=sys.stderr)

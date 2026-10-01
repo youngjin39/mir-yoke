@@ -1,3 +1,43 @@
+# Executor common v3 verification (2026-10-01)
+
+Authority: `tasks/plan.md` and the supplied `spec-executor-v3.md`.
+Baseline HEAD: `9fc39cd`. No consumer writes, commit, push or tag.
+Every pytest command uses `UV_CACHE_DIR=/tmp/mir-yoke-uv-cache uv run pytest -q`.
+
+| Item | Fail-first observations | Pass observations |
+| --- | --- | --- |
+| 1 CLI agent routes | Baseline CLI: `9 failed, 6 deselected`; omitted route options: `6 failed, 6 passed, 9 deselected` | Route selector: `15 passed, 7 deselected` |
+| 2 Agent API / stderr | Executor API: `2 failed`; dispatch stderr: `2 failed` | `-k item2`: `5 passed, 41 deselected` |
+| 3 Execution writer lease | Executor: `2 failed`; direct/nested lease: `2 failed`; ledger: `2 failed`; repeated cancellation: `2 failed, 27 deselected` | Final selector: `9 passed, 39 deselected`; repeated cancellation: `2 passed, 27 deselected` |
+| 4 Strict item shape | MCP aggregate: `10 failed, 8 passed`, including six shape failures | Shape selector: `14 passed, 4 deselected` |
+| 5 Provider hook / metadata | Executor: `4 failed`; dispatch: `3 failed`; MCP metadata: `4 failed`; notification usage: `1 failed, 23 deselected`; reviewer budget: `1 failed, 26 deselected` | Hook/metadata selector: `13 passed, 51 deselected` |
+| 6 Timeout bounds | Executor: `4 failed`; CLI: `6 failed, 9 deselected`; dispatch/config/resume: `16 failed`; stall: `2 failed, 24 deselected`; finalize preflight: `1 failed, 21 deselected` | Bounds selector: `32 passed, 36 deselected` |
+
+Parent baseline aggregate: `test_v3_execution.py` returned `23 failed in 0.89s`
+before dispatch/helper implementation. MCP's baseline includes eight compatible
+cases. The corrected route fixture was also checked against baseline CLI loaded
+from Git into memory in a separate process; no baseline file mutation was needed.
+
+Selectors, with all test files under `tools/mir_executor/tests/`:
+- Item 1: `test_v3_cli_routes.py -k 'not timeout'`.
+- Items 2/3: `test_v3_execution.py test_v3_executor.py -k item2` / `-k item3`.
+- Item 4: `test_v3_mcp.py -k 'malformed or unknown'`.
+- Item 5: the execution, executor and MCP v3 files, selecting
+  `'(item5 or collect or constructor_backward) and not malformed'`.
+- Item 6: the execution, executor and CLI v3 files, selecting `'item6 or timeout'`.
+
+All 88 new v3 tests passed in 1.78s. The initial full suite returned
+`1 failed, 1542 passed in 205.43s (0:03:25)`. Its only failure was an old resume
+fixture without a resolver for its named agent; the corrected fixture passed
+(`1 passed, 28 deselected`). Final full pytest: `1546 passed in 205.29s (0:03:25)`.
+Final Ruff (`tools tests`): `All checks passed!`. Python 3.11.16 compiled all 15
+common manifest Python files. Self-target sync reported `Common manifest: PASS`;
+Codex generated parity passed. Regenerated common manifests and adopter payload;
+portable-manifest and payload/classification checks returned `7 passed`.
+Parent execution logs are `/tmp/mir-executor-v3-*.txt`.
+
+## Preserved predecessor evidence
+
 # Executor common fail-first evidence
 
 Every new test node below was observed failing before its implementation and passing afterward.
