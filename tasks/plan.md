@@ -1,5 +1,30 @@
 # Plan
 
+## Active follow-up: executor fixes (2026-10-01)
+
+Authority: the current user request and the supplied `spec-executor-fix1.md`.
+This cursor is the design authority for three bounded common-executor fixes.
+The predecessor record below is retained as evidence; its commit permission does
+not apply to this follow-up. Write only in mir-yoke; do not commit or push.
+
+- [x] Fail first, fix and pass: blocked-dispatch hint uses the actual artifacts path.
+- [x] Fail first, fix and pass: backend resolution accepts per-project objects and ignores malformed entries.
+- [x] Fail first, fix and pass: fallback policies preserve routing and monitoring.
+- [x] Regenerate manifests and adopter payload; run focused/full pytest, Ruff and Python 3.11 compilation.
+
+Fail-first and immediate pass evidence (pytest selectors):
+- `blocked_prints_retry_diagnostic`: `2 failed, 118 deselected in 0.35s` -> `2 passed, 118 deselected in 0.23s`.
+- `should_return_backend_when_per_project`: `8 failed, 1 passed, 120 deselected in 0.30s` -> `9 passed, 120 deselected in 0.04s`.
+- `should_return_routing_and_monitoring`: `3 failed, 33 deselected in 0.07s` -> `3 passed, 33 deselected in 0.03s`.
+
+Focused executor/sync suite: `438 passed in 48.62s`. Ruff: `All checks passed!`.
+Full suite: `1430 passed in 200.40s (0:03:20)`. Adopter payload tests: `6 passed`.
+Python 3.11.16: all 15 manifest common files compiled. Codex derivatives match sources.
+Use `UV_CACHE_DIR=/tmp/mir-yoke-uv-cache` because the default cache is outside writable roots.
+All three fixes are complete. No commit, push or other-repository write occurred.
+
+## Preserved predecessor
+
 Executor common base, local split and explicit sync, 2026-10-01.
 Authority: current user task and the full owner-approved executor-common specification.
 This cursor owns the current intent; the completed predecessor is preserved in

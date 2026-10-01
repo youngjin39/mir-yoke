@@ -581,7 +581,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "config/mir-executor-common.json",
-      "sha256": "bec05a01bd506eea89c5a0de2055f7db7c2eefaf1ffce72df19088f6cc50dd66"
+      "sha256": "129d5d98b9e79c721c29262c4ab07014fd5c317965ce4881447fae115e1d69e5"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4091,7 +4091,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/plan.md",
-      "sha256": "354638dc96b78e5654fb6b728050237c9778fbbafe9911d79bf12018b9b95f33"
+      "sha256": "cec2d90bdcebdb0e7b8e7ec50a7ee12693832ee315c89c3e7e6b032998eff13d"
     },
     {
       "classification": "reference",
@@ -4793,7 +4793,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/COMMON_MANIFEST.json",
-      "sha256": "bec05a01bd506eea89c5a0de2055f7db7c2eefaf1ffce72df19088f6cc50dd66"
+      "sha256": "129d5d98b9e79c721c29262c4ab07014fd5c317965ce4881447fae115e1d69e5"
     },
     {
       "classification": "optional-consumer-tool",
@@ -4811,7 +4811,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/cli.py",
-      "sha256": "71ef3bba283e0565669c425e5b6dffc616b0f5a017b43ccb0a43c2d38e0e01fc"
+      "sha256": "b91320afdd966e3d03d674039dc63c01026e1432a5776f1bb6732a1deeb57fb2"
     },
     {
       "classification": "optional-consumer-tool",
@@ -4865,7 +4865,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/policy.py",
-      "sha256": "b7880a455ace8d75b5cac6881ecc59ecd66203125dcc82cdb9b58626d201bddc"
+      "sha256": "570a5042314fc573e0bea2f674dc532b6ceff54ae91eb3545f2b8b064fcdf218"
     },
     {
       "classification": "optional-consumer-tool",
@@ -4955,7 +4955,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/tests/test_dispatch.py",
-      "sha256": "6d2b759ec013df594e5f06cdd90b29196fe06a1cf457182a9f1e5aea42a44ba1"
+      "sha256": "0b637e2ee9447f585b88936242269e4de521b2b38f2067176a31f37aa2da90db"
     },
     {
       "classification": "optional-consumer-tool",
@@ -4985,7 +4985,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/tests/test_policy.py",
-      "sha256": "9b345dc7384cc8ae2501f600df1507ca62b49a55de6ebbc60887e7da02a14975"
+      "sha256": "3ff2358cf3895aae7967a05d387548f675fab18fb6acf0b84f1b4b7afea6eee8"
     },
     {
       "classification": "optional-consumer-tool",

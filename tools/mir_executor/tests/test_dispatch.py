@@ -3475,6 +3475,43 @@ def test_cli_dispatch_force_claude_policy_resolves_claude() -> None:
     )
 
 
+@pytest.mark.parametrize(
+    "entry,declared_backend,expected,profile_expected",
+    [
+        ("claude", "codex", "claude", "claude"),
+        ({"backend": "claude", "extra": True}, "codex", "claude", "claude"),
+        ({"backend": "codex"}, "claude", "codex", "codex"),
+        ({}, None, "codex", "claude"),
+        ({"backend": 1}, "claude", "claude", "claude"),
+        ({"backend": []}, "claude", "claude", "claude"),
+        ([], "claude", "claude", "claude"),
+        (None, "claude", "claude", "claude"),
+        (42, "claude", "claude", "claude"),
+    ],
+)
+def test_should_return_backend_when_per_project_entry_is_valid_or_malformed(
+    tmp_path: pathlib.Path,
+    entry: object,
+    declared_backend: str | None,
+    expected: str,
+    profile_expected: str,
+) -> None:
+    profile = tmp_path / ".mir" / "repo-profile.toml"
+    profile.parent.mkdir()
+    profile.write_text('[execution]\nbackend = "claude"\n', encoding="utf-8")
+    policy = type(
+        "Policy", (), {"mode": "per_project", "per_project": {"repo": entry}},
+    )()
+
+    assert cli._resolve_dispatch_backend(
+        policy, requested_backend=None, repo_slug="repo",
+        declared_backend=declared_backend,
+    ) == expected
+    assert cli._resolve_dispatch_backend(
+        policy, requested_backend=None, repo_slug="repo", repo_root=tmp_path,
+    ) == profile_expected
+
+
 def test_cli_dispatch_per_project_policy_selects_claude_for_repo_slug() -> None:
     policy = type(
         "Policy",
@@ -3711,21 +3748,30 @@ def test_cli_dispatch_claude_backend_uses_worktree_and_merge_gate(
         _cleanup_repo_dispatch_worktrees(repo)
 
 
+@pytest.mark.parametrize("custom_artifacts", [False, True])
 def test_cli_dispatch_blocked_prints_retry_diagnostic(
     tmp_path: pathlib.Path,
     monkeypatch,
     capsys,
+    custom_artifacts: bool,
 ) -> None:
     repo = _make_repo(tmp_path)
     _make_ledger(repo, change_id="X")
     db_path = tmp_path / "jobs.db"
+
+    artifacts = (
+        tmp_path / "custom-artifacts" if custom_artifacts else pathlib.Path("tasks/dispatch")
+    )
+    dispatch_ids = []
 
     def fake_run_dispatch(
         _main_repo_root: pathlib.Path,
         dispatch_id: str,
         **kwargs: object,
     ) -> DispatchOutcome:
-        _ = dispatch_id
+        dispatch_ids.append(dispatch_id)
+        if custom_artifacts:
+            assert kwargs["artifacts_root"] == artifacts
         return DispatchOutcome("blocked", 3, False, "retry-exhausted", None)
 
     monkeypatch.setattr("tools.mir_executor.dispatch.run_dispatch", fake_run_dispatch)
@@ -3746,14 +3792,15 @@ def test_cli_dispatch_blocked_prints_retry_diagnostic(
                 str(db_path),
                 "--codex-args",
                 "exec hi",
+                *(["--artifacts-dir", str(artifacts)] if custom_artifacts else []),
             ]
         )
 
     captured = capsys.readouterr()
     assert excinfo.value.code == 1
-    assert "[DISPATCH] blocked;" in captured.err
     assert (
-        "docs/harness-engineering/codex-dispatch-failure-diagnostic.md"
+        "[DISPATCH] blocked; inspect the job artifacts under "
+        f"{artifacts / dispatch_ids[0]} for the failing step"
         in captured.err
     )
 

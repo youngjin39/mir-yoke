@@ -146,7 +146,11 @@ def _resolve_dispatch_backend(
         fallback = "codex"
     per_project = getattr(sub_agent_policy, "per_project", {})
     if isinstance(per_project, dict) and repo_slug:
-        declared_backend = per_project.get(repo_slug, declared_backend)
+        project_backend = per_project.get(repo_slug)
+        if isinstance(project_backend, dict):
+            project_backend = project_backend.get("backend")
+        if isinstance(project_backend, str):
+            declared_backend = project_backend
     if declared_backend is None and repo_root is not None:
         accessor = getattr(sub_agent_policy, "delegation_project_declaration", None)
         spec = (
@@ -550,15 +554,15 @@ def _handle_dispatch(
                 "dispatch_ids": dispatch_ids,
             },
         )
-        if outcome.status == "blocked":
-            print(
-                "[DISPATCH] blocked; "
-                "see docs/harness-engineering/codex-dispatch-failure-diagnostic.md",
-                file=sys.stderr,
-            )
         artifacts = getattr(args, "artifacts_dir", None) or pathlib.Path(
             "tasks/dispatch"
         )
+        if outcome.status == "blocked":
+            print(
+                "[DISPATCH] blocked; inspect the job artifacts under "
+                f"{artifacts / dispatch_id} for the failing step",
+                file=sys.stderr,
+            )
         result_payload = f"artifacts={artifacts / dispatch_id}"
         reason_payload = None
         if final is not None and final.action == "merged-but-cleanup-failed":

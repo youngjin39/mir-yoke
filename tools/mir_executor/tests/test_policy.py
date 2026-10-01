@@ -409,6 +409,46 @@ def test_unknown_mode_value_resolves_to_select(
     assert policy.monitoring == {}
 
 
+@pytest.mark.parametrize(
+    "mode_data,unresolved,warning",
+    [
+        ({}, None, ""),
+        (
+            {"mode": "unknown"}, "unknown",
+            "[mir policy] unresolved mode: unknown; using select\n",
+        ),
+        (
+            {"mode": "per_project", "per_project": []}, "per_project",
+            "[mir policy] unresolved mode: per_project; using select\n",
+        ),
+    ],
+)
+def test_should_return_routing_and_monitoring_when_mode_falls_back(
+    tmp_path: pathlib.Path,
+    monkeypatch,
+    capsys,
+    mode_data: dict,
+    unresolved: str | None,
+    warning: str,
+) -> None:
+    monkeypatch.delenv(POLICY_ENV_VAR, raising=False)
+    routing = {"default": {"model": "test-model", "reasoning_effort": "high"}}
+    monitoring = {"stall_timeout_seconds": 42}
+    _write_policy(tmp_path, {**mode_data, "routing": routing, "monitoring": monitoring})
+
+    policy = load_sub_agent_policy(tmp_path)
+
+    assert policy.mode == "select"
+    assert policy.unresolved_mode == unresolved
+    assert policy.per_project == {}
+    assert capsys.readouterr().err == warning
+    assert policy.routing == routing
+    assert policy.monitoring == monitoring
+    assert policy.routing_default_model() == "test-model"
+    assert policy.routing_default_reasoning_effort() == "high"
+    assert policy.monitoring_stall_timeout_seconds() == 42.0
+
+
 def test_per_project_mode_returns_per_project_map(
     tmp_path: pathlib.Path,
     monkeypatch,

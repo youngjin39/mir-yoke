@@ -235,6 +235,8 @@ def _resolve_policy(data: dict[str, Any]) -> SubAgentPolicy:
         or "codex"
     )
     per_project = data.get("per_project", delegation.get("per_project", {}))
+    routing = _dict_value(data.get("routing"))
+    monitoring = _dict_value(data.get("monitoring"))
     if mode not in SUB_AGENT_POLICY_MODES or not isinstance(per_project, dict):
         unresolved = declared if isinstance(declared, str) and declared else None
         if unresolved:
@@ -245,16 +247,12 @@ def _resolve_policy(data: dict[str, Any]) -> SubAgentPolicy:
         return SubAgentPolicy(
             mode="select",
             per_project={},
+            routing=dict(routing),
+            monitoring=dict(monitoring),
             delegation=delegation,
             default_backend=default_backend,
             unresolved_mode=unresolved,
         )
-    routing = data.get("routing", {})
-    monitoring = data.get("monitoring", {})
-    if not isinstance(routing, dict):
-        routing = {}
-    if not isinstance(monitoring, dict):
-        monitoring = {}
     return SubAgentPolicy(
         mode=cast(PolicyMode, mode),
         per_project=dict(per_project),
