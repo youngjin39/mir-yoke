@@ -22,7 +22,7 @@
     },
     ".claude/agents/main-orchestrator.md": {
       "project_path": ".claude/agents/main-orchestrator.md",
-      "sha256": "4bcecf090560aa9075587111bb5d1e00dbb6b29d939a7bc99b2b4b911ec85a5d"
+      "sha256": "0c62b867733667756e22fa307c81152ec406933e1d15a1d2f5af711a89a78b08"
     },
     ".claude/agents/ontology-validator.md": {
       "project_path": ".claude/agents/ontology-validator.md",
@@ -115,7 +115,7 @@
   },
   "schema_version": 2,
   "source": {
-    "commit": "1fb35ce315f961f2da51de9b5c0033b0f9a64054",
+    "commit": "ac8cbf56f3c8a27ec22a75966b9767164b7f3876",
     "ref": "main",
     "url": "https://github.com/youngjin39/mir-yoke.git"
   },
