@@ -12,9 +12,9 @@ from typing import Any, Literal, cast
 
 POLICY_ENV_VAR = "MIR_SUB_AGENT_POLICY"
 POLICY_RELPATH = pathlib.Path("config") / "sub-agent-policy.json"
-# ADR-88 amendment: the Harness-deployed repository lock; its `policy` drives routing first.
+# Mir Harness ADR-88 amendment: the deployed repository lock; its `policy` drives routing first.
 LOCK_RELPATH = pathlib.Path("config") / "model-routing.lock.json"
-# ADR-88: rendered by Mir Harness `mir fleet model-routing`. Fallback when the repository
+# Mir Harness ADR-88: rendered by `mir fleet model-routing`. Fallback when the repository
 # has no deployed lock and the environment does not name a policy, so such a session still
 # routes by category instead of silently resolving every route to null. Resolved from the
 # account's passwd home, not $HOME, because agent sessions run with a HOME other
@@ -269,7 +269,7 @@ def default_global_policy_path() -> pathlib.Path:
 
 
 def _overlay_policy_path() -> pathlib.Path:
-    """Return the overlay named by ``MIR_SUB_AGENT_POLICY``, else the rendered policy (ADR-88).
+    """Return the env-named overlay, else the rendered policy (Mir Harness ADR-88).
 
     A variable naming a missing file (such as the retired home_server path) used to drop
     the overlay silently, so every route resolved to null; fall back and warn instead.

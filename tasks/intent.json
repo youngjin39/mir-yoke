@@ -1,10 +1,15 @@
 {
-  "goal": "Run the 2026-10-02 mir-core:repo-maintenance pass (all 21 items) on mir-yoke only under the owner instruction of 2026-10-02: re-verify prior fixes, check ADR-88 routing lock and mir_executor common v3.4 consistency, fix in-scope defects test-first, run documented gates, local commits of own files only.",
+  "goal": "Fix executor temporary-directory test cleanup, malformed agent criteria, response-ID collisions and reader failures test-first; correct policy wording; verify all six items and commit common v3.5 locally.",
   "goal_type": "maintenance",
-  "scope": "mir-yoke only; local commits of own files only. No push, tag, release, consumer write, secret access, model-routing lock or synced mir_executor common edits. tasks/plan.md is the intent and design authority.",
+  "scope": "mir-yoke only; common executor edits and a local commit authorized by the owner follow-up. No consumer writes, push, tag, release, credentials or capability-pinned changes. tasks/plan.md is the intent and design authority.",
   "priority": "normal",
   "updated": "2026-10-02",
   "history": [
+    {
+      "goal": "Run the 2026-10-02 mir-core:repo-maintenance pass (all 21 items) on mir-yoke only under the owner instruction of 2026-10-02: re-verify prior fixes, check ADR-88 routing lock and mir_executor common v3.4 consistency, fix in-scope defects test-first, run documented gates, local commits of own files only.",
+      "updated": "2026-10-02",
+      "status": "complete"
+    },
     {
       "goal": "Re-verify all twenty repo-maintenance checklist items against actual repository state and execution evidence, then minimally repair confirmed defects within this repository only.",
       "updated": "2026-09-23",

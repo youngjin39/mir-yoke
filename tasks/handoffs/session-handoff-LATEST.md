@@ -1,10 +1,14 @@
-# Session Handoff — Repository maintenance pass (2026-10-02)
+# Session Handoff — Executor common v3.5 maintenance (2026-10-02)
 
 Resume pointer: `tasks/plan.md` is the only cursor; `tasks/intent.json` records authority.
 Evidence and superseded continuity text: `tasks/change_log.md`,
-"Repository maintenance pass (2026-10-02)".
-Open owner items, Mir Harness requests and unverified items are listed in that entry.
-No remote delivery, consumer write, memory write, lock edit or synced common edit occurred.
+"Executor common v3.5 maintenance (2026-10-02)".
+The owner follow-up authorizes the previously deferred common edits and a local commit.
+Items 5-6 extend the same version; combined verification passed.
+The Mir Harness Main committed it locally after re-running the full suite
+(the Codex sandbox could not create `.git/index.lock`).
+Other open owner items remain in "Repository maintenance pass (2026-10-02)".
+No consumer write, memory write, capability lock edit or publication is authorized.
 The generated snapshot below belongs to the preceding hook run; inspect current Git status.
 
 <!-- mir:runtime-snapshot:begin -->

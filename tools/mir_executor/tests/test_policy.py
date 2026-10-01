@@ -827,10 +827,10 @@ def test_adr88_missing_env_policy_file_falls_back_to_the_rendered_policy(
 def test_owner_decision_1a_repository_policy_follows_the_central_delegation_mode(
     tmp_path: pathlib.Path, monkeypatch
 ) -> None:
-    """Owner decision 1-A: this repository states no mode; the central `delegation.mode` decides.
+    """Without a deployed repository lock, the host policy's `delegation.mode` is the fallback.
 
-    The rendered global policy carries its switch only as `delegation.mode`, so a loader
-    that reads just the top-level `mode` let a repository-local value decide the lane.
+    A deployed lock wins over the host policy. This test omits that lock to verify
+    the fallback reads `delegation.mode` rather than only the top-level `mode`.
     """
     from tools.mir_executor import policy as policy_module
 

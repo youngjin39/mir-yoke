@@ -87,6 +87,23 @@ def _write_fake_app_server(tmp_path: pathlib.Path, *, mode: str) -> pathlib.Path
                     send({{"id": message["id"], "result": {{"thread": {{"id": "thread-123"}}}}}})
                 elif method == "turn/start":
                     turn = {{"id": "turn-123", "status": "inProgress", "items": []}}
+                    if MODE.startswith("spoofed_"):
+                        spoofed = {{
+                            "threadId": "thread-123",
+                            "turn": {{"id": "turn-123", "status": "completed", "items": [{{
+                                "type": "agentMessage", "id": "spoof", "text": "SPOOFED"
+                            }}]}}
+                        }}
+                        if MODE == "spoofed_scalar":
+                            spoofed = "SPOOFED"
+                        field = "error" if MODE == "spoofed_error" else "result"
+                        if MODE == "spoofed_unknown":
+                            send({{"id": 999999, "result": spoofed,
+                                  "error": {{"message": "unknown request"}}}})
+                        else:
+                            send({{"id": "turn:thread-123", field: spoofed}})
+                    if MODE == "deeply_nested":
+                        print("[" * 10000 + "0" + "]" * 10000, flush=True)
                     if MODE != "early_completion":
                         send({{"id": message["id"], "result": {{"turn": turn}}}})
                     if MODE == "exit":
@@ -109,7 +126,10 @@ def _write_fake_app_server(tmp_path: pathlib.Path, *, mode: str) -> pathlib.Path
                             }})
                             if MODE == "heartbeat":
                                 time.sleep(0.25)
-                    if MODE == "pending_notification":
+                    if MODE in ("pending_notification", "reader_eof"):
+                        if MODE == "reader_eof":
+                            import os
+                            os.close(1)
                         time.sleep(30)
                     item = {{"type": "agentMessage", "id": "item-1", "text": "codex completed"}}
                     if MODE.startswith("malformed_notification_"):
@@ -502,6 +522,72 @@ def test_malformed_json_line_is_recorded_and_ignored(tmp_path: pathlib.Path) -> 
 
     assert result.content_text == "codex completed"
     assert client.malformed_messages == ["{not-json"]
+
+
+@pytest.mark.parametrize("mode", ["spoofed_turn", "spoofed_scalar", "spoofed_error"])
+def test_should_ignore_response_when_id_matches_only_an_internal_turn(
+    tmp_path: pathlib.Path, mode: str,
+) -> None:
+    fake_bin = _write_fake_app_server(tmp_path, mode=mode)
+    with CodexMcpClient(codex_bin=str(fake_bin)) as client:
+        result = client.call_codex(prompt="genuine completion", cwd=tmp_path, timeout=1.0)
+    assert result.content_text == "codex completed"
+
+
+def test_should_ignore_response_when_integer_id_was_never_sent(tmp_path: pathlib.Path) -> None:
+    fake_bin = _write_fake_app_server(tmp_path, mode="spoofed_unknown")
+    with CodexMcpClient(codex_bin=str(fake_bin)) as client:
+        result = client.call_codex(prompt="ignore unknown response", cwd=tmp_path, timeout=1.0)
+    assert result.content_text == "codex completed"
+
+
+@pytest.mark.parametrize("failure", ["deeply_nested", "reader_exception", "reader_eof"])
+def test_should_release_no_timeout_call_when_reader_gets_invalid_input_or_dies(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch, failure: str,
+) -> None:
+    mode = "pending_notification" if failure == "reader_exception" else failure
+    fake_bin = _write_fake_app_server(tmp_path, mode=mode)
+    client = CodexMcpClient(codex_bin=str(fake_bin), kill_timeout=0.1)
+    finished = threading.Event()
+    results = []
+    errors = []
+
+    def run_call() -> None:
+        try:
+            results.append(client.call_codex(prompt="no hard timeout", cwd=tmp_path))
+        except Exception as exc:
+            errors.append(exc)
+        finally:
+            finished.set()
+
+    try:
+        client.start()
+        if failure == "reader_exception":
+            original_handle = client._handle_stdout_line
+
+            def fail_on_notification(line: str) -> None:
+                if "item/agentMessage/delta" in line:
+                    raise RuntimeError("reader failure")
+                original_handle(line)
+
+            monkeypatch.setattr(client, "_handle_stdout_line", fail_on_notification)
+        call_thread = threading.Thread(target=run_call, daemon=True)
+        call_thread.start()
+        assert finished.wait(timeout=2.0), "reader death stranded a call without a timeout"
+        call_thread.join(timeout=1.0)
+        if failure == "deeply_nested":
+            assert not errors
+            assert results[0].content_text == "codex completed"
+            assert client.malformed_messages == ["[" * 10000 + "0" + "]" * 10000]
+            assert client._stdout_thread is not None and client._stdout_thread.is_alive()
+        else:
+            assert not results
+            assert len(errors) == 1 and isinstance(errors[0], CodexMcpProcessError)
+        assert client.pending_count == 0
+    finally:
+        client.close()
+        if "call_thread" in locals():
+            call_thread.join(timeout=1.0)
 
 
 @pytest.mark.parametrize("kind", ["none", "list", "string"])

@@ -1,30 +1,39 @@
 # Plan
 
-## Active task: repository maintenance pass (2026-10-02)
+## Active task: executor common v3.5 maintenance (2026-10-02)
 
-Authority: the owner's 2026-10-02 maintenance instruction, relayed by the
-Mir Harness Control Plane: run `mir-core:repo-maintenance` (21 items) over this
-repository, then improve it. This cursor is the intent and design authority.
-mir-yoke only; local commits of own files only. No push, tag, release, consumer
-write, secret access, `config/model-routing.lock.json` or synced
-`tools/mir_executor` common edits (those go to NEEDS HARNESS).
-Starting worktree: clean at `cf2aa6c`.
+Authority: the explicit owner follow-up relayed by Mir Harness on 2026-10-02.
+This cursor is the intent and design authority. The follow-up authorizes the
+previously deferred common executor edits and one local commit in mir-yoke.
+No consumer writes, push, tag, release, credentials or capability-pinned changes.
+Starting worktree: clean at `279c90f`.
 
-- [x] Baseline: full pytest, Ruff, Codex parity.
-- [x] Audit 21 items; re-verify the 2026-09-23/24 fixes, the ADR-88 lock and executor v3.4.
-- [x] Fix in-scope defects; each new regression test fails first, then passes.
-- [x] Re-run documented gates; regenerate the adopter payload; commit own files locally.
+Design: reproduce the isolated-TMPDIR test leak and reuse production cleanup,
+which already removes its temporary base. Reject non-object agent criteria with
+the resolver's normal ValueError contract. Correct the requested policy docstring
+and qualify common policy references as Mir Harness ADR-88. Version this bounded
+common maintenance increment as v3.5 in the sync document and changelog; keep
+manifest schema version 1.
 
-Final gates (resumed run): `uv run pytest` over `tools` 699 passed and `tests` 906
-passed (1605); Ruff, Codex parity, context paths, harness consistency and the
-executor common manifest pass. No task item remains open.
+Owner extension: include items 5 and 6 in this same v3.5 increment. Only response
+IDs issued by this client may resolve requests; internal turn keys are not RPC
+request IDs. Treat excessive JSON nesting like other malformed lines. Unexpected
+stdout-reader failure or EOF must release pending calls, including calls without
+a timeout, through the existing process-error contract.
 
-Evidence, owner decisions and Mir Harness requests: `tasks/change_log.md`,
-"Repository maintenance pass (2026-10-02)".
+- [x] Reproduce response-ID collisions, excessive JSON nesting and unexpected reader death.
+- [x] Fix request correlation and reader failure handling; record fail-first evidence.
+- [x] Regenerate manifests and rerun the full verification for items 1-6.
 
-## Predecessor cursor sections
+- [x] Add regression cases and record every case failing before its fix.
+- [x] Repair cleanup and criteria validation; correct policy wording.
+- [x] Generate manifests; verify full executor tests leave no new mir-wt directories.
+- [x] Run full pytest, touched-file Ruff, Python 3.11 compilation, sync and Codex parity.
+- [x] Record evidence and refresh continuity projections and payload.
+- [x] Commit locally: the Codex sandbox could not create `.git/index.lock`; the Mir Harness Main re-ran the full suite and committed.
 
-Executor common v3.3, v3.2, v3, base v2, the executor fixes follow-up and the
-preserved executor-common predecessor (2026-10-01; its open commit item was resolved
-by 79536b2) moved verbatim to `tasks/change_log.md`,
-"Archived cursor sections: executor common (moved 2026-10-02)".
+Evidence: `tasks/change_log.md`, "Executor common v3.5 maintenance (2026-10-02)".
+Other open owner items in the preceding maintenance evidence remain unchanged.
+
+Predecessor cursor: `tasks/change_log.md`,
+"Archived maintenance cursor (2026-10-02 executor follow-up)".

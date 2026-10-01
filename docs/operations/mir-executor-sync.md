@@ -1,5 +1,12 @@
 # Mir Executor common source and explicit sync
 
+Current common base: **v3.5**. This maintenance increment rejects non-object
+`agent_criteria` with a clear `ValueError`, clarifies Mir Harness policy references,
+and fixes repository-owned test cleanup of automatic worktree temporary bases.
+It also ignores RPC responses without an issued pending request ID, tolerates
+excessive JSON nesting, and fails pending calls when the stdout reader ends.
+The common manifest format remains schema version 1.
+
 Mir Yoke owns the common runtime in `tools/mir_executor/`. Generate its SHA-256
 file list with `python -m tools.executor_sync --generate`. The source manifest at
 `config/mir-executor-common.json` and Yoke's consumer manifest use the literal

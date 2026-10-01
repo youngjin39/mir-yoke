@@ -7,6 +7,7 @@ import pathlib
 import shlex
 import shutil
 import subprocess
+import tempfile
 
 try:
     import fcntl
@@ -310,7 +311,18 @@ def _cleanup_repo_dispatch_worktrees(repo: pathlib.Path) -> None:
             continue
         if line.startswith("branch refs/heads/mir-dispatch/") and current_path != repo.resolve():
             assert current_path is not None
-            _git(repo, "worktree", "remove", "--force", str(current_path))
+            branch = line.removeprefix("branch refs/heads/")
+            dispatch_dir = current_path / ".mir-dispatch"
+            cleanup_worktree(DispatchWorktree(
+                dispatch_id=branch.removeprefix("mir-dispatch/"),
+                main_repo_root=repo,
+                path=current_path,
+                branch=branch,
+                base_commit=_git(current_path, "rev-parse", "HEAD").stdout.strip(),
+                brief_path=dispatch_dir / "brief.md",
+                status_path=dispatch_dir / "status.json",
+                result_path=dispatch_dir / "result.json",
+            ))
             current_path = None
 
     branches = _git(repo, "branch", "--list", "mir-dispatch/*").stdout.splitlines()
@@ -323,6 +335,45 @@ def _cleanup_repo_dispatch_worktrees(repo: pathlib.Path) -> None:
 def _completed_outcome(wt: DispatchWorktree) -> DispatchOutcome:
     """Build a completed dispatch outcome for finalize tests."""
     return DispatchOutcome("completed", 1, False, None, wt)
+
+
+def test_should_remove_temp_bases_when_cli_test_worktrees_are_cleaned(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    isolated_tmp = tmp_path / "tmpdir"
+    isolated_tmp.mkdir()
+    monkeypatch.setenv("TMPDIR", str(isolated_tmp))
+    monkeypatch.setattr(tempfile, "tempdir", None)
+    before = set(isolated_tmp.glob("mir-wt-*"))
+    repo = _make_repo(tmp_path)
+    wt = create_dispatch_worktree(repo, "cli-test-temp-cleanup")
+    try:
+        assert wt.path.parent in set(isolated_tmp.glob("mir-wt-*")) - before
+        _cleanup_repo_dispatch_worktrees(repo)
+        assert set(isolated_tmp.glob("mir-wt-*")) == before
+    finally:
+        cleanup_worktree(wt)
+
+
+@pytest.mark.parametrize("criteria", [
+    None, [], "invalid", 1,
+    {"executor-agent": None}, {"executor-agent": []},
+    {"executor-agent": "invalid"}, {"executor-agent": 1},
+])
+def test_should_raise_clear_error_when_agent_criteria_is_not_an_object(
+    tmp_path: pathlib.Path, criteria: object,
+) -> None:
+    definition = tmp_path / ".claude/agents/executor-agent.md"
+    definition.parent.mkdir(parents=True)
+    definition.write_text(
+        "---\nexecution_backend: codex\n---\nExecute the owned scope.\n", encoding="utf-8",
+    )
+    lock = tmp_path / "config/model-routing.lock.json"
+    lock.parent.mkdir()
+    lock.write_text(json.dumps({"agent_criteria": criteria}), encoding="utf-8")
+
+    with pytest.raises(ValueError, match=r"model-routing lock `agent_criteria.*JSON object"):
+        dispatch_module.resolve_agent_route(tmp_path, "executor-agent")
 
 
 def test_codex_success_first_attempt(tmp_path: pathlib.Path) -> None:

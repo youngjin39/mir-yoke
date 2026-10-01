@@ -2429,3 +2429,239 @@ Evidence and preserved predecessor text: `tasks/change_log.md`, 2026-09-24.
 Generated parity passes; no Codex installation/removal or integrity rebind is pending.
 The historical ADR mapping decision remains in the prior twenty-item evidence entry, item 20.
 ```
+
+## Archived maintenance cursor (2026-10-02 executor follow-up)
+
+# Plan
+
+## Active task: repository maintenance pass (2026-10-02)
+
+Authority: the owner's 2026-10-02 maintenance instruction, relayed by the
+Mir Harness Control Plane: run `mir-core:repo-maintenance` (21 items) over this
+repository, then improve it. This cursor is the intent and design authority.
+mir-yoke only; local commits of own files only. No push, tag, release, consumer
+write, secret access, `config/model-routing.lock.json` or synced
+`tools/mir_executor` common edits (those go to NEEDS HARNESS).
+Starting worktree: clean at `cf2aa6c`.
+
+- [x] Baseline: full pytest, Ruff, Codex parity.
+- [x] Audit 21 items; re-verify the 2026-09-23/24 fixes, the ADR-88 lock and executor v3.4.
+- [x] Fix in-scope defects; each new regression test fails first, then passes.
+- [x] Re-run documented gates; regenerate the adopter payload; commit own files locally.
+
+Final gates (resumed run): `uv run pytest` over `tools` 699 passed and `tests` 906
+passed (1605); Ruff, Codex parity, context paths, harness consistency and the
+executor common manifest pass. No task item remains open.
+
+Evidence, owner decisions and Mir Harness requests: `tasks/change_log.md`,
+"Repository maintenance pass (2026-10-02)".
+
+## Predecessor cursor sections
+
+Executor common v3.3, v3.2, v3, base v2, the executor fixes follow-up and the
+preserved executor-common predecessor (2026-10-01; its open commit item was resolved
+by 79536b2) moved verbatim to `tasks/change_log.md`,
+"Archived cursor sections: executor common (moved 2026-10-02)".
+
+## Executor common v3.5 maintenance (2026-10-02)
+
+Authority: the explicit owner follow-up relayed by Mir Harness; design and intent
+authority: `tasks/plan.md`. Baseline: clean HEAD `279c90f`. The follow-up authorizes
+common changes deferred by the preceding maintenance pass and a local commit.
+No consumer writes, credentials, memory writes, capability lock edits or publication.
+
+### Changes and fail-first evidence
+
+1. Production `cleanup_worktree` already removes its tracked automatic temporary
+   base. CLI-level tests used `_cleanup_repo_dispatch_worktrees`, which
+   directly removed Git worktrees and bypassed that production cleanup. The test
+   helper now reconstructs the dispatch metadata and calls `cleanup_worktree`.
+   The isolated-TMPDIR regression counts `mir-wt-*` entries before/after and
+   verifies the created base is inside that directory.
+2. The resolver now rejects non-object `agent_criteria` and non-object selected
+   agent entries with clear `ValueError` messages, matching the existing
+   malformed-lock `policy` error wording. Missing criteria still default normally.
+3. Only the host-mode test docstring changed in `test_policy.py`: the deployed
+   repository lock wins; the host policy is a fallback when no lock is deployed.
+4. Common `policy.py` comments/docstring now name Mir Harness ADR-88 explicitly.
+   Documented the common increment as v3.5; manifest schema stays version 1.
+
+Fail-first command (before the helper and production fixes):
+
+```sh
+uv run pytest -q -p no:cacheprovider tools/mir_executor/tests/test_dispatch.py -k 'temp_bases or agent_criteria_is_not'
+```
+
+Observed: **9 failed, 134 deselected in 0.61s** (pytest exit 1).
+All nine new nodes were observed failing:
+- `test_should_remove_temp_bases_when_cli_test_worktrees_are_cleaned`: one empty
+  automatic temporary base remained after test cleanup.
+- `test_should_raise_clear_error_when_agent_criteria_is_not_an_object`:
+  `[None]`, `[criteria1]`, `[invalid]`, `[1]`, `[criteria4]`, `[criteria5]`,
+  `[criteria6]`, `[criteria7]` each raised AttributeError instead of ValueError.
+  Inputs were null/list/string/integer for the criteria map and for its selected entry.
+
+The same command after the fix returned **9 passed, 134 deselected in 0.38s**.
+No new test passed before its fix, and no collection failure is counted as evidence.
+
+### Verification
+
+- Full executor tests: `uv run pytest -q -p no:cacheprovider tools/mir_executor/tests`:
+  **608 passed in 71.97s**. Fresh isolated TMPDIR had **0** `mir-wt-*` entries
+  before and **0** afterward; **0** new entries.
+- Ruff on all four touched Python files: all checks passed.
+- Python 3.11.16 compilation: all **15** common-manifest Python files compiled.
+- `python -m tools.executor_sync --generate`: regenerated both common manifests,
+  retaining the literal `SOURCE_COMMIT` placeholder and schema version 1.
+- `python -m tools.executor_sync --help`: exit 0.
+- `python -m tools.executor_sync --check --target .`: Common manifest PASS.
+- `uv run python scripts/verify_codex_sync.py`: derivatives match Claude sources.
+- No modified path is pinned by `.mir/capability-lock.json`; no rebind is needed.
+- Full repository suite: `uv run pytest -q -p no:cacheprovider`:
+  **1614 passed in 315.35s (0:05:15)**, pytest exit 0.
+- Continuity projections and the adopter payload are refreshed for this task.
+  Final portable-manifest, sync-tool, template-classification and reference-payload
+  checks returned **26 passed in 2.00s**. Payload hashes are regenerated after
+  recording this result and checked for exact equality before local commit.
+
+### Explicit consumer resync
+
+From the tested, committed Mir Yoke checkout, for each owner-authorized target:
+
+```sh
+python -m tools.executor_sync --target /path/to/repo
+python -m tools.executor_sync --target /path/to/repo --apply
+python -m tools.executor_sync --check --target /path/to/repo
+```
+
+Sync copies common runtime files and the portable manifest test only. The
+repository-owned `test_dispatch.py` cleanup fix and `test_policy.py` docstring
+are not synced; target owners must adapt those local tests separately.
+No consumer repository was inspected or changed during this task.
+
+### Local commit blocked by filesystem permissions
+
+After verification, an explicit `git add` of the fourteen task-owned files failed:
+`Unable to create .git/index.lock: Operation not permitted`. The execution
+environment exposes `.git` read-only and does not allow permission escalation.
+No file was staged and no new commit was made; HEAD remains
+`279c90f9fbd91aeab37ed19cfdf2d9a58f1dae6c`. The worktree contains the reviewed edits.
+The owner already authorized the commit; a Git-writable session must finish it
+before this checkout is used as a consumer sync source.
+
+Prepared commit subject: `fix(executor): validate agent criteria and clean test worktree bases`.
+Material boundary trailer: `Constraint: Mir Yoke only; no consumer writes or publication.`
+Required final commit-message line:
+`Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
+
+## Executor common v3.5 extension: items 5-6 (2026-10-02)
+
+Authority: the owner's additional instruction extends the same uncommitted
+v3.5 maintenance task. `tasks/plan.md` remains the intent and design authority.
+Items 1-4 and their fail-first evidence above remain part of this change.
+No consumer writes or publication; no amendment occurred because the earlier
+local staging attempt was denied and HEAD remains `279c90f`.
+
+5. The client issues integer RPC request IDs. Responses with string IDs, including
+   internal `turn:<threadId>` wait keys, are ignored. Integer IDs not present in
+   the issued pending-request map are ignored before envelope validation. Thus an
+   unknown response cannot resolve a turn or fail genuine requests.
+6. JSON decoding RecursionError is recorded and ignored like invalid JSON.
+   The stdout reader's finalization maps unexpected exceptions and EOF to
+   CodexMcpProcessError, preserves explicit protocol errors, stops the server and
+   signals all pending calls. It also drains requests registered during teardown.
+   Normal process-exit diagnostics retain the exit code.
+
+### Additional fail-first evidence
+
+Tests use the real subprocess test server. No hard timeout is passed to the
+reader-failure calls; each test bounds its own observation and closes the client
+in finally, so red runs cannot hang the test suite.
+
+Initial definitive red command:
+
+```sh
+uv run pytest -q -p no:cacheprovider tools/mir_executor/tests/test_codex_mcp_client.py -k 'internal_turn or invalid_input_or_dies'
+```
+
+Result before either implementation fix: **6 failed, 44 deselected, 2 warnings
+in 8.65s** (exit 1).
+- Item 5: `test_should_ignore_response_when_id_matches_only_an_internal_turn`
+  failed for `[spoofed_turn]` (SPOOFED accepted), `[spoofed_scalar]`
+  (AttributeError) and `[spoofed_error]` (unissued error rejected the genuine turn).
+- Item 6: `test_should_release_no_timeout_call_when_reader_gets_invalid_input_or_dies`
+  failed for `[deeply_nested]`, `[reader_exception]` and `[reader_eof]`:
+  each left the no-timeout call pending. The nested line raised RecursionError in
+  the reader; the test uses depth 10000 because depth 5000 parses on Python 3.12.
+
+A further item-5 boundary case was added before its corresponding membership fix:
+
+```sh
+uv run pytest -q -p no:cacheprovider tools/mir_executor/tests/test_codex_mcp_client.py -k integer_id_was_never_sent
+```
+
+`test_should_ignore_response_when_integer_id_was_never_sent` failed with
+CodexMcpProtocolError for an unknown integer response envelope:
+**1 failed, 50 deselected in 0.36s** (exit 1).
+
+Final additional regression selector:
+
+```sh
+uv run pytest -q -p no:cacheprovider tools/mir_executor/tests/test_codex_mcp_client.py -k 'internal_turn or invalid_input_or_dies or integer_id_was_never_sent'
+```
+
+Result: **7 passed, 44 deselected in 1.61s**.
+Each of the seven additional new cases failed before its own fix.
+An intermediate complete transport check returned **68 passed in 15.47s**;
+final verification below includes the additional unknown-integer case.
+
+Both common manifests are regenerated for the same v3.5 increment; the manifest
+schema remains 1. The third changed common runtime module is
+`codex_mcp_client.py`; repository-owned tests remain excluded from sync.
+### Combined six-item verification
+
+- Full repository command: `uv run pytest -q -p no:cacheprovider`:
+  **1621 passed in 240.54s (0:04:00)**, exit 0.
+- Full executor command: `uv run pytest -q -p no:cacheprovider tools/mir_executor/tests`:
+  **615 passed in 72.35s (0:01:12)**. The isolated TMPDIR had 0 `mir-wt-*`
+  entries before and 0 afterward; no new directory leaked.
+- All sixteen new regression cases across items 1, 2, 5 and 6 failed before
+  their own fixes and pass in the full suite. Items 3 and 4 only change wording;
+  their existing tests and affected common-file checks pass.
+- Ruff on all six touched Python files: all checks passed.
+- Python 3.11 compilation: all 15 manifest Python files compiled.
+- `python -m tools.executor_sync --help`: exit 0.
+- Both regenerated common manifests pass self-target `executor_sync --check`.
+- `scripts/verify_codex_sync.py`: derivatives match Claude sources.
+- No modified path overlaps capability-lock pins; no rebind is needed.
+- Added tracked text is English and contains no private paths, owner IDs or
+  machine-specific identifiers. Consumers were not inspected or modified.
+
+The common version remains v3.5 for all six items; manifest schema remains 1.
+The explicit consumer resync commands above remain unchanged and require a
+tested, committed source checkout. Local staging must be retried; no commit
+exists yet because the earlier Git sandbox denied `.git/index.lock` creation.
+
+Prepared final commit message:
+
+```text
+fix(executor): harden request correlation and dispatch cleanup
+
+Reject malformed agent criteria and unissued response IDs. Ignore excessive
+JSON nesting and fail pending calls on stdout-reader failure or EOF. Reuse
+production cleanup in CLI tests and clarify Mir Harness policy precedence.
+
+Constraint: Mir Yoke only; no consumer writes, push, tag or release.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+Final closure checks for the extension: portable manifest, executor sync,
+classification and reference payload tests returned **26 passed in 1.44s**.
+The final explicit staging attempt for all sixteen task-owned files again
+returned exit 128: `Unable to create .git/index.lock: Operation not permitted`.
+No new commit or amendment was possible. The local commit remains the only open
+task; the prepared message above retains the required final Co-Authored-By line.
+HEAD is still `279c90f9fbd91aeab37ed19cfdf2d9a58f1dae6c`. The final evidence
+record is included in the regenerated adopter payload and its exact hashes are
+checked after regeneration. Temporary task scratch is removed at closure.

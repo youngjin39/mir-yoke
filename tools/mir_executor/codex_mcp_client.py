@@ -471,21 +471,31 @@ class CodexMcpClient:
         proc = self._proc
         if proc is None or proc.stdout is None:
             return
+        error: CodexMcpError | None = None
         try:
             for line in proc.stdout:
                 self._handle_stdout_line(line)
-        except (OSError, ValueError) as exc:
-            if not self._closing:
-                self._reject_all_pending(
-                    CodexMcpProcessError(f"Codex app-server stdout read failed: {exc}")
-                )
         except CodexMcpError as exc:
-            pending_requests = self._drain_pending(exc)
-            try:
-                self._terminate_server()
-            finally:
-                for pending_request in pending_requests:
-                    pending_request.event.set()
+            error = exc
+        except Exception as exc:
+            error = CodexMcpProcessError(f"Codex app-server stdout read failed: {exc}")
+        finally:
+            if not self._closing:
+                if error is None:
+                    try:
+                        code = proc.wait(timeout=self._kill_timeout)
+                    except subprocess.TimeoutExpired:
+                        error = CodexMcpProcessError("Codex app-server stdout closed")
+                    else:
+                        error = CodexMcpProcessError(f"Codex app-server exited with code {code}")
+                pending_requests = self._drain_pending(error)
+                try:
+                    self._terminate_server()
+                finally:
+                    # Also release requests registered while the server was being stopped.
+                    pending_requests.extend(self._drain_pending(error))
+                    for pending_request in pending_requests:
+                        pending_request.event.set()
 
     def _read_stderr(self) -> None:
         proc = self._proc
@@ -515,7 +525,7 @@ class CodexMcpClient:
 
         try:
             message = json.loads(text)
-        except json.JSONDecodeError:
+        except (json.JSONDecodeError, RecursionError):
             self._malformed_messages.append(text)
             return
 
@@ -531,6 +541,13 @@ class CodexMcpClient:
         if has_id and (has_result or has_error):
             if type(message["id"]) not in (int, str):
                 raise CodexMcpProtocolError("app-server response has invalid id")
+            # Outbound request IDs are integers. String IDs, including internal
+            # turn:<threadId> wait keys, never identify a request sent by this client.
+            if type(message["id"]) is not int:
+                return
+            with self._pending_lock:
+                if str(message["id"]) not in self._pending:
+                    return
             if has_result == has_error or "method" in message:
                 raise CodexMcpProtocolError("app-server response has invalid envelope")
             pending = self._pop_pending(message["id"])

@@ -237,9 +237,15 @@ def resolve_agent_route(
                 lock = _read_json_object(lock_path)
             except (OSError, ValueError):
                 pass
-        category = lock.get("agent_criteria", {}).get(target_agent, {}).get(
-            "category", "implementation",
-        )
+        criteria = lock.get("agent_criteria", {})
+        if not isinstance(criteria, dict):
+            raise ValueError("model-routing lock `agent_criteria` must be a JSON object")
+        agent_criteria = criteria.get(target_agent, {})
+        if not isinstance(agent_criteria, dict):
+            raise ValueError(
+                f"model-routing lock `agent_criteria[{target_agent}]` must be a JSON object"
+            )
+        category = agent_criteria.get("category", "implementation")
         policy_route = load_sub_agent_policy(repo_root).resolve_category(category)
         model = policy_route["model"]
         effort = effort or policy_route["reasoning_effort"]
