@@ -479,7 +479,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "CHANGELOG.md",
-      "sha256": "8cd97e10bcdc635e3f0cb85169dcba3f8a342bf86ec684e4caf332f8e91c3766"
+      "sha256": "733b6cb58f092faeb86651c0bf7cd86713224a44e34160c68b8d61d5722857d2"
     },
     {
       "classification": "reference",
@@ -581,7 +581,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "config/mir-executor-common.json",
-      "sha256": "07c6acacf676111a2dff59de03f1e37b5de3df82ef36944d5bf796887a949e3a"
+      "sha256": "d53b29dc9357eb816c9d47fbf1354f7da77e7f89a3333515cab8181119efb8f5"
     },
     {
       "classification": "template-maintainer-tool",
@@ -2255,7 +2255,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "docs/operations/mir-executor-sync.md",
-      "sha256": "81ff7ae2ff919a123db84b2a8e7280c6fa186bb22e10d913be76c489b791d8e5"
+      "sha256": "2c3b3dfccdf51c820d2961c948ae8dab51160de89f9f5fb22c446b466e72c31a"
     },
     {
       "classification": "reference",
@@ -4049,7 +4049,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/change_log.md",
-      "sha256": "5f767b70921eac5f842dc2342ad256489cf5e8cc2c5b0f0e0efdfc6496c23b6c"
+      "sha256": "14b36e9de9b8b3f6cec467d5e8026c6e1aace17cd6679b0f7709c138ff0bd2b9"
     },
     {
       "classification": "reference",
@@ -4799,7 +4799,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/COMMON_MANIFEST.json",
-      "sha256": "07c6acacf676111a2dff59de03f1e37b5de3df82ef36944d5bf796887a949e3a"
+      "sha256": "d53b29dc9357eb816c9d47fbf1354f7da77e7f89a3333515cab8181119efb8f5"
     },
     {
       "classification": "optional-consumer-tool",
@@ -4877,7 +4877,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/redaction.py",
-      "sha256": "68644bb9d9cf6c0413df64bdc7a73edfaa8688b2789e3bde394d065aecc9c1e8"
+      "sha256": "20a51dd26a07be6f1cae9354c8961d212a2a91e2a09c2914ce2de18d9380b31a"
     },
     {
       "classification": "optional-consumer-tool",
@@ -4998,6 +4998,12 @@
       "disposition": "remove",
       "path": "tools/mir_executor/tests/test_policy.py",
       "sha256": "566062c8e0301c7853090cee44313199b0c94be1f84e91af0e45b24a3200c937"
+    },
+    {
+      "classification": "optional-consumer-tool",
+      "disposition": "remove",
+      "path": "tools/mir_executor/tests/test_redaction.py",
+      "sha256": "468580caa38d4da60b45daba247eebdb332d71ad42ad5511040b32f2b49eac7e"
     },
     {
       "classification": "optional-consumer-tool",

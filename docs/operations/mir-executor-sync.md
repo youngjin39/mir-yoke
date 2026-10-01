@@ -1,6 +1,8 @@
 # Mir Executor common source and explicit sync
 
-Current common base: **v3.5**. This maintenance increment rejects non-object
+Current common base: **v3.6**. v3.6 redacts quoted secret assignments, `*_KEY`
+names, `Authorization: Basic` values and string values under a secret-named dict key.
+v3.5 rejects non-object
 `agent_criteria` with a clear `ValueError`, clarifies Mir Harness policy references,
 and fixes repository-owned test cleanup of automatic worktree temporary bases.
 It also ignores RPC responses without an issued pending request ID, tolerates

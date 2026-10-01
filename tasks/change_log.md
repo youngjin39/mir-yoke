@@ -2665,3 +2665,20 @@ task; the prepared message above retains the required final Co-Authored-By line.
 HEAD is still `279c90f9fbd91aeab37ed19cfdf2d9a58f1dae6c`. The final evidence
 record is included in the regenerated adopter payload and its exact hashes are
 checked after regeneration. Temporary task scratch is removed at closure.
+
+## Executor common v3.6: redaction coverage (2026-10-02)
+
+Authority: owner Discord 1555264868402335765 (fleet maintenance pass), relayed by the Mir
+Harness Main. Reported by the quietleaf maintenance run and reproduced by the Main:
+`redact_secret_like_content` left `"api_key": "value"`, `SECRET_KEY=value`,
+`Authorization: Basic <credential>` and quoted values with spaces visible, and
+`redact_structured_value` kept string values whose dict key names a secret.
+
+- `tools/mir_executor/redaction.py`: the secret-name pattern accepts a `_KEY` suffix, an
+  optional quote after the key, quoted values (replaced whole) and a `Basic` scheme; a dict
+  string value under a secret-named key becomes `[REDACTED]`. Unquoted assignments keep the
+  existing `key=[REDACTED]` form.
+- `tools/mir_executor/tests/test_redaction.py`: 6 cases failed before the fix (4 shapes,
+  quoted value with spaces, dict key); 5 cases passed before and after
+  (`AWS_SECRET_ACCESS_KEY`, three plain mentions, the existing unquoted format).
+- Manifests regenerated with `python -m tools.executor_sync --generate`.

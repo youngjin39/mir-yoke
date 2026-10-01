@@ -11,7 +11,7 @@
     "tools/mir_executor/jobs.py": "daa7dd5d0dc0136fc8ae8fc23ef057d33e56e5ffd3e5ee36cdff36bce379121c",
     "tools/mir_executor/local_hooks.py": "f619773d21ba5d508ad33a9afb7740e425c124965dde1a8fa76b703c5732ece0",
     "tools/mir_executor/policy.py": "635609fb3c275bdafebd845340dc3388aef861d4c8b8be91b47e47358c5d813b",
-    "tools/mir_executor/redaction.py": "68644bb9d9cf6c0413df64bdc7a73edfaa8688b2789e3bde394d065aecc9c1e8",
+    "tools/mir_executor/redaction.py": "20a51dd26a07be6f1cae9354c8961d212a2a91e2a09c2914ce2de18d9380b31a",
     "tools/mir_executor/sweep.py": "81a58812087992733c5dc0b0549319c9e7663a1d4cf005591882bc103da52c0b",
     "tools/mir_executor/tests/test_common_manifest.py": "deec5b757c513238c829c84d8c217a8496848fe951c6e5aee5fbc6f6391e0493",
     "tools/mir_executor/worktree.py": "ec47318d803723395c96d5b575793176f46a8caf10111f91e11c9c7b74baea64"

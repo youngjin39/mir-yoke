@@ -28,13 +28,16 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
   context and token efficiency, memory, embeddings, agents, skills, hooks, and runtime parity.
 - Added bounded active-fact retrieval, repository-declared historical document globs, and explicit
   `mir context sync --reindex-missing-vectors` coverage and resume behavior.
-- Added the synced `tools/mir_executor` common base (through common v3.5) with optional local
+- Added the synced `tools/mir_executor` common base (through common v3.6) with optional local
   hooks and data, a common file manifest, and explicit sync and drift checks.
 - Committed the Mir Harness-deployed `config/model-routing.lock.json`; executor routing reads it
   first and falls back to the rendered policy.
 
 ### Changed
 
+- Updated executor common v3.6 to redact quoted secret assignments (`"api_key": "..."`),
+  `*_KEY` names such as `SECRET_KEY`, `Authorization: Basic` values and string values whose
+  dict key names a secret.
 - Updated executor common v3.5 to reject malformed agent criteria with a clear error,
   qualify Mir Harness ADR-88 references, and fix repository-owned test cleanup of
   temporary worktree bases; clarified lock-first policy precedence in its test docstring.

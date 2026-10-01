@@ -10,11 +10,17 @@ _PEM_PRIVATE_KEY_BLOCK = re.compile(
     r"(?:-----END (?:[A-Z0-9 ]+ )?PRIVATE KEY-----|\Z)",
     re.IGNORECASE,
 )
-_ASSIGNMENT_SECRET = re.compile(
-    r"(?ix)\b("
+_SECRET_NAME = (
     r"(?:[a-z0-9]+[_-])*(?:api[_-]?key|access[_-]?key|authorization|bearer|password|secret|token)"
-    r")\s*(=|:)\s*(?:bearer\s+)?[^\s,;]+"
+    r"(?:[_-]?key)?"
 )
+# A quoted key keeps its quotes and a quoted value is replaced whole, so JSON-like text
+# such as `"api_key": "value"` or a value containing spaces is not left partly visible.
+_ASSIGNMENT_SECRET = re.compile(
+    rf"(?i)\b(?P<key>{_SECRET_NAME})(?P<key_quote>[\"']?)(?P<sep>\s*(?:=|:)\s*)"
+    r"(?P<value>\"[^\"]*\"|'[^']*'|(?:(?:bearer|basic)\s+)?[^\s,;]+)"
+)
+_SECRET_KEY_NAME = re.compile(rf"(?i){_SECRET_NAME}")
 _BEARER_SECRET = re.compile(r"(?i)\bbearer\s+[^\s,;]+")
 _PROVIDER_TOKEN_SECRET = re.compile(
     r"(?i)\b(?:"
@@ -40,13 +46,17 @@ def contains_secret_like_content(value: str) -> bool:
     )
 
 
+def _redact_assignment(match: re.Match[str]) -> str:
+    if not match["key_quote"]:
+        return f"{match['key']}=[REDACTED]"
+    value_quote = match["value"][0] if match["value"][0] in "\"'" else ""
+    return f"{match['key']}{match['key_quote']}{match['sep']}{value_quote}[REDACTED]{value_quote}"
+
+
 def redact_secret_like_content(value: str) -> str:
     """Redact every supported credential shape without retaining its value."""
     redacted = _PEM_PRIVATE_KEY_BLOCK.sub("[REDACTED_PRIVATE_KEY]", value)
-    redacted = _ASSIGNMENT_SECRET.sub(
-        lambda match: f"{match.group(1)}=[REDACTED]",
-        redacted,
-    )
+    redacted = _ASSIGNMENT_SECRET.sub(_redact_assignment, redacted)
     redacted = _BEARER_SECRET.sub("Bearer [REDACTED]", redacted)
     return _PROVIDER_TOKEN_SECRET.sub("[REDACTED_TOKEN]", redacted)
 
@@ -56,7 +66,13 @@ def redact_structured_value(value: object) -> object:
     if isinstance(value, str):
         return redact_secret_like_content(value)
     if isinstance(value, dict):
-        return {key: redact_structured_value(item) for key, item in value.items()}
+        return {
+            key: "[REDACTED]"
+            if isinstance(key, str) and isinstance(item, str) and item
+            and _SECRET_KEY_NAME.fullmatch(key)
+            else redact_structured_value(item)
+            for key, item in value.items()
+        }
     if isinstance(value, list):
         return [redact_structured_value(item) for item in value]
     return value
