@@ -95,7 +95,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": ".claude/agents/main-orchestrator.md",
-      "sha256": "4bcecf090560aa9075587111bb5d1e00dbb6b29d939a7bc99b2b4b911ec85a5d"
+      "sha256": "0c62b867733667756e22fa307c81152ec406933e1d15a1d2f5af711a89a78b08"
     },
     {
       "classification": "reference",
@@ -353,7 +353,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": ".codex/agents/main-orchestrator.toml",
-      "sha256": "1e92fc3824d2914ee03498fc8ef10b784e657fd3ae2cd8a241539c5f9141c0fe"
+      "sha256": "dcdfe6de3230310936f519f900167e877eff0749ed91d257507536d1b0f59cd0"
     },
     {
       "classification": "reference",
