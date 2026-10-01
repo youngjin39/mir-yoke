@@ -203,7 +203,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": ".claude/hooks/mir-stop.sh",
-      "sha256": "ec285cb5eab97c62e6f26063ce0f1a9cc16a490da0dd9cc002449b0760720910"
+      "sha256": "64700ca20839d2d88ab5c638d1ca566ad412306c5e1b31d12fd149abcddb89d3"
     },
     {
       "classification": "reference",
@@ -263,7 +263,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": ".claude/hooks/stop-failure-audit.sh",
-      "sha256": "2e5e59ea5409e4e497e238bb0d414e4278d1b36d456bfd338b18df737be48db5"
+      "sha256": "898e86453d806c1600e9c5d8059c4db34069da90102b2da4731da9e27b68c695"
     },
     {
       "classification": "reference",
@@ -4596,6 +4596,12 @@
       "disposition": "remove",
       "path": "tests/test_srr_sql_neighborhood.py",
       "sha256": "23085c524e114f5a7f5e4223381866e409ff70927e2e5988d3ea2dc351e07f1b"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "tests/test_stop_hook_mktemp.py",
+      "sha256": "3bb027d757ea2a95e3cbf09567b420513d7cc90648f64df3ff59cc2560042d07"
     },
     {
       "classification": "template-maintainer-tool",

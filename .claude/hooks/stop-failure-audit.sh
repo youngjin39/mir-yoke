@@ -13,7 +13,7 @@ SESSIONS_DIR="${CLAUDE_PROJECT_DIR:-.}/tasks/sessions"
 
 STDIN_DATA=$(cat)
 
-_PY_TMP=$(mktemp /tmp/mir-stopfailure-XXXXXX.py)
+_PY_TMP=$(mktemp /tmp/mir-stopfailure.XXXXXX)
 cat > "$_PY_TMP" <<'PYEOF'
 import json
 import os

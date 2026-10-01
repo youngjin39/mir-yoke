@@ -14,7 +14,7 @@ STDIN_DATA=$(cat)
 
 # Write the python helper to a temp file so we can both pipe STDIN_DATA and run python code.
 # This avoids the bash limitation where heredoc and pipe both claim stdin.
-_PY_TMP=$(mktemp /tmp/mir-stop-XXXXXX.py)
+_PY_TMP=$(mktemp /tmp/mir-stop.XXXXXX)
 cat > "$_PY_TMP" <<'PYEOF'
 import json
 import os
