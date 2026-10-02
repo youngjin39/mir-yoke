@@ -31,11 +31,13 @@ def test_should_pass_agent_route_when_building_dispatch_runner(tmp_path, backend
     assert calls[0]["agent_route"] is route
 
 
+@pytest.mark.parametrize("backend_flag", [None, "codex", "claude"])
+@pytest.mark.parametrize("mode", ["force_codex", "force_claude", "user_command_priority"])
 @pytest.mark.parametrize("route_options", [("route-model", "high"), (None, None)])
 @pytest.mark.parametrize("source", ["persisted", "validated_object", "validated_dict"])
 @pytest.mark.parametrize("backend", ["codex", "claude"])
 def test_should_use_agent_route_when_dispatch_brief_names_agent(
-    tmp_path, monkeypatch, source, backend, route_options,
+    tmp_path, monkeypatch, source, backend, route_options, mode, backend_flag,
 ):
     route_model, route_effort = route_options
     brief = tmp_path / "brief.json"
@@ -64,7 +66,7 @@ def test_should_use_agent_route_when_dispatch_brief_names_agent(
         )
     )
     monkeypatch.setattr(policy, "load_sub_agent_policy", lambda root: SimpleNamespace(
-        mode="force_codex", resolve_category=lambda category: {
+        mode=mode, resolve_category=lambda category: {
             "model": "policy-model", "reasoning_effort": "medium",
         },
     ))
@@ -82,12 +84,19 @@ def test_should_use_agent_route_when_dispatch_brief_names_agent(
     monkeypatch.setattr(dispatch, "finalize_dispatch", lambda *a, **kw: (
         final_calls.append(kw) or dispatch.FinalizeResult("reviewed", "passed", [])
     ))
-    args = cli._build_parser().parse_args([
+    argv = [
         "execute", "--dispatch", "--repo-root", str(tmp_path),
         "--dispatch-brief", str(brief), "--expect-changes",
-    ])
+    ]
+    if backend_flag is not None:
+        argv.extend(["--execution-backend", backend_flag])
+    args = cli._build_parser().parse_args(argv)
     assert cli._handle_dispatch(args, tmp_path) == 0
-    assert calls[0][0] == backend
+    if mode in {"force_codex", "force_claude"}:
+        expected_backend = mode.removeprefix("force_")
+    else:
+        expected_backend = backend_flag or backend
+    assert calls[0][0] == expected_backend
     assert calls[0][1]["agent_route"].target_agent == "reviewer"
     assert calls[0][1]["agent_route"].sandbox == "read-only"
     assert calls[0][1]["model"] == (route_model or "policy-model")

@@ -1,6 +1,11 @@
 # Mir Executor common source and explicit sync
 
-Current common base: **v3.6**. v3.6 redacts quoted secret assignments, `*_KEY`
+Current common base: **v3.7**. v3.7 refuses symlinks in private worktree writes
+and artifact source files/directories. Agent-route backends win over project/default
+backends; explicit `--execution-backend` requests retain policy-permitted precedence.
+Forced modes always select their forced backend, including force_codex with a
+conflicting Claude agent route.
+v3.6 redacts quoted secret assignments, `*_KEY`
 names, `Authorization: Basic` values and string values under a secret-named dict key.
 v3.5 rejects non-object
 `agent_criteria` with a clear `ValueError`, clarifies Mir Harness policy references,
@@ -149,7 +154,11 @@ CLI dispatch forwards the route to the provider builder, honors its backend,
 base instructions and sandbox, and derives `expect_changes` from the route.
 A `read-only` route uses the read-only sandbox; Claude receives `--agent`.
 Explicit model/effort options override route values; omitted route values retain
-the policy selection. `MirExecutor` accepts optional `target_agent` and
+the policy selection. Forced modes select their backend unconditionally; the agent
+backend overrides project and default backends. An explicit `--execution-backend`
+overrides the agent backend only when
+the policy permits user selection and its resolution order selects `user_command`;
+forced modes and `per_project` ignore this flag. `MirExecutor` accepts optional `target_agent` and
 `agent_route` constructor arguments, and `run_agent_async(codex_args,
 timeout_seconds=None)` selects the declared Codex or Claude backend. Conflicting
 agent identities fail before execution. `DispatchOutcome.stderr` preserves the

@@ -919,4 +919,4 @@ def test_adr88_this_repository_routes_from_its_deployed_lock() -> None:
             "model": expected["model"],
             "reasoning_effort": expected["reasoning_effort"],
         }
-    assert policy.mode == "user_command_priority"
+    assert policy.mode == lock["policy"]["delegation"]["mode"]

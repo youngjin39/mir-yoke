@@ -137,3 +137,219 @@ New regression nodes: 89.
 | `tools/mir_executor/tests/test_dispatch_common.py::test_common_nested_secret_redaction_preserves_json[status.json]` | `FAILED` (executor-dispatch-red.log) | `PASSED` (executor-dispatch-green.log) |
 | `tools/mir_executor/tests/test_dispatch_common.py::test_common_nested_secret_redaction_preserves_json[events.jsonl]` | `FAILED` (executor-dispatch-red.log) | `PASSED` (executor-dispatch-green.log) |
 | `tools/mir_executor/tests/test_dispatch_common.py::test_common_worktree_structured_status_redacts_values` | `FAILED` (executor-dispatch-red.log) | `PASSED` (executor-dispatch-green.log) |
+
+
+## Common v3.7: worktree/artifact symlinks and backend precedence (2026-10-02)
+
+Intent/design authority: `tasks/plan.md`. Baseline: clean HEAD `7f7e677`.
+Every uv command used the owner-provided external `UV_CACHE_DIR` and an external
+`TMPDIR`. Absolute scratch paths in captured output are normalized for publication.
+All runs below used `uv run pytest -q -p no:cacheprovider`.
+
+1. `tools/mir_executor/tests/test_worktree.py -k should_refuse_private_write`:
+   before **1 failed, 20 deselected in 0.08s**; after
+   **1 passed, 20 deselected in 0.03s**.
+2. `tools/mir_executor/tests/test_dispatch_common.py -k should_refuse_artifact_copy`:
+   before **12 failed, 25 deselected in 0.11s**; after
+   **12 passed, 25 deselected in 0.05s**. Six artifact names each cover a file
+   symlink and a symlinked `.mir-dispatch` directory.
+3. `tools/mir_executor/tests/test_v3_cli_routes.py -k should_use_agent_route`:
+   before **12 failed, 96 passed, 10 deselected in 2.86s**; after
+   **108 passed, 10 deselected in 2.93s**. Current source already selected agent
+   backends over policy force/default backends; only conflicting explicit user
+   flags in user_command_priority mode failed. Existing source behavior is
+   reported faithfully, rather than inventing an absent route/default failure.
+   Extended checks preserve selection order, modes and the obey_user alias.
+
+Captured fail-first output follows. Artifact/backend output retains the failure
+reason and every failed node; repetitive individual traces are omitted.
+
+### worktree baseline output
+
+```text
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_________ test_should_refuse_private_write_when_destination_is_symlink _________
+
+tmp_path = PosixPath('<test-scratch>/test_should_refuse_private_wri0')
+
+    def test_should_refuse_private_write_when_destination_is_symlink(tmp_path):
+        outside = tmp_path / "outside.txt"
+        outside.write_text("keep original\n")
+        outside.chmod(0o644)
+        destination = tmp_path / "brief.md"
+        destination.symlink_to(outside)
+
+>       with pytest.raises(OSError) as error:
+             ^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE <class 'OSError'>
+
+tools/mir_executor/tests/test_worktree.py:31: Failed
+=========================== short test summary info ============================
+FAILED tools/mir_executor/tests/test_worktree.py::test_should_refuse_private_write_when_destination_is_symlink
+1 failed, 20 deselected in 0.08s
+```
+
+### artifact baseline output
+
+```text
+>       with pytest.raises(OSError):
+             ^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE <class 'OSError'>
+
+tools/mir_executor/tests/test_dispatch_common.py:107: Failed
+=========================== short test summary info ============================
+FAILED tools/mir_executor/tests/test_dispatch_common.py::test_should_refuse_artifact_copy_when_source_is_symlink[False-reviewer.json]
+FAILED tools/mir_executor/tests/test_dispatch_common.py::test_should_refuse_artifact_copy_when_source_is_symlink[False-brief.md]
+FAILED tools/mir_executor/tests/test_dispatch_common.py::test_should_refuse_artifact_copy_when_source_is_symlink[False-status.json]
+FAILED tools/mir_executor/tests/test_dispatch_common.py::test_should_refuse_artifact_copy_when_source_is_symlink[False-result.json]
+FAILED tools/mir_executor/tests/test_dispatch_common.py::test_should_refuse_artifact_copy_when_source_is_symlink[False-events.jsonl]
+FAILED tools/mir_executor/tests/test_dispatch_common.py::test_should_refuse_artifact_copy_when_source_is_symlink[False-dispatch-events.jsonl]
+FAILED tools/mir_executor/tests/test_dispatch_common.py::test_should_refuse_artifact_copy_when_source_is_symlink[True-reviewer.json]
+FAILED tools/mir_executor/tests/test_dispatch_common.py::test_should_refuse_artifact_copy_when_source_is_symlink[True-brief.md]
+FAILED tools/mir_executor/tests/test_dispatch_common.py::test_should_refuse_artifact_copy_when_source_is_symlink[True-status.json]
+FAILED tools/mir_executor/tests/test_dispatch_common.py::test_should_refuse_artifact_copy_when_source_is_symlink[True-result.json]
+FAILED tools/mir_executor/tests/test_dispatch_common.py::test_should_refuse_artifact_copy_when_source_is_symlink[True-events.jsonl]
+FAILED tools/mir_executor/tests/test_dispatch_common.py::test_should_refuse_artifact_copy_when_source_is_symlink[True-dispatch-events.jsonl]
+12 failed, 25 deselected in 0.11s
+```
+
+### backend baseline output
+
+```text
+E       AssertionError: assert 'claude' == 'codex'
+E
+E         - codex
+E         + claude
+
+tools/mir_executor/tests/test_v3_cli_routes.py:96: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[DISPATCH] status=completed attempts=1 fell_back=False reason=None
+[FINALIZE] action=reviewed reason='passed' merged=[]
+=========================== short test summary info ============================
+FAILED tools/mir_executor/tests/test_v3_cli_routes.py::test_should_use_agent_route_when_dispatch_brief_names_agent[codex-persisted-route_options0-user_command_priority-claude]
+FAILED tools/mir_executor/tests/test_v3_cli_routes.py::test_should_use_agent_route_when_dispatch_brief_names_agent[codex-persisted-route_options1-user_command_priority-claude]
+FAILED tools/mir_executor/tests/test_v3_cli_routes.py::test_should_use_agent_route_when_dispatch_brief_names_agent[codex-validated_object-route_options0-user_command_priority-claude]
+FAILED tools/mir_executor/tests/test_v3_cli_routes.py::test_should_use_agent_route_when_dispatch_brief_names_agent[codex-validated_object-route_options1-user_command_priority-claude]
+FAILED tools/mir_executor/tests/test_v3_cli_routes.py::test_should_use_agent_route_when_dispatch_brief_names_agent[codex-validated_dict-route_options0-user_command_priority-claude]
+FAILED tools/mir_executor/tests/test_v3_cli_routes.py::test_should_use_agent_route_when_dispatch_brief_names_agent[codex-validated_dict-route_options1-user_command_priority-claude]
+FAILED tools/mir_executor/tests/test_v3_cli_routes.py::test_should_use_agent_route_when_dispatch_brief_names_agent[claude-persisted-route_options0-user_command_priority-codex]
+FAILED tools/mir_executor/tests/test_v3_cli_routes.py::test_should_use_agent_route_when_dispatch_brief_names_agent[claude-persisted-route_options1-user_command_priority-codex]
+FAILED tools/mir_executor/tests/test_v3_cli_routes.py::test_should_use_agent_route_when_dispatch_brief_names_agent[claude-validated_object-route_options0-user_command_priority-codex]
+FAILED tools/mir_executor/tests/test_v3_cli_routes.py::test_should_use_agent_route_when_dispatch_brief_names_agent[claude-validated_object-route_options1-user_command_priority-codex]
+FAILED tools/mir_executor/tests/test_v3_cli_routes.py::test_should_use_agent_route_when_dispatch_brief_names_agent[claude-validated_dict-route_options0-user_command_priority-codex]
+FAILED tools/mir_executor/tests/test_v3_cli_routes.py::test_should_use_agent_route_when_dispatch_brief_names_agent[claude-validated_dict-route_options1-user_command_priority-codex]
+12 failed, 96 passed, 10 deselected in 2.86s
+```
+
+### Final checks
+
+```text
+uv run pytest -q -p no:cacheprovider tools/mir_executor/tests
+FAILED tools/mir_executor/tests/test_policy.py::test_adr88_this_repository_routes_from_its_deployed_lock
+1 failed, 742 passed in 72.49s (0:01:12)
+
+uv run pytest -q -p no:cacheprovider
+FAILED tools/mir_executor/tests/test_policy.py::test_adr88_this_repository_routes_from_its_deployed_lock
+1 failed, 1748 passed in 232.84s (0:03:52)
+
+uv run ruff check
+All checks passed!
+
+uv run python scripts/verify_codex_sync.py
+OK: Codex derivatives match Claude sources
+
+uv run python -m tools.executor_sync --check --target .
+Common manifest: PASS
+```
+
+The sole remaining failure is an unchanged test's hardcoded expectation
+`user_command_priority` versus the committed lock's `force_codex`. Policy source,
+test, conftest, local policy and lock were verified byte-identical to HEAD.
+No routing lock or format change is made to work around that test.
+Python 3.11.16 compiled all 15 common files. The initial public-path scan failure
+was resolved by normalizing host paths; the final full-suite result above includes
+that correction. Common v3.7 is recorded in the sync guide and CHANGELOG.
+
+
+### v3.7 owner review corrections (2026-10-02)
+
+Authority: the current owner follow-up and `tasks/plan.md`. This section
+supersedes the earlier v3.7 decision to let agent backends override forced modes
+and the earlier remaining policy-test item. Earlier outputs remain historical.
+
+Restored unconditional forced-mode selection in `_resolve_dispatch_backend`.
+`force_codex` selects Codex even when the agent route declares Claude;
+`force_claude` likewise selects Claude. Explicit CLI backend selection still
+wins when the policy selects the user_command step, and the agent backend
+otherwise wins over project/default steps. The route matrix now checks these
+forced-mode semantics. The live-policy test compares its mode to the committed
+lock rather than a literal; the routing lock is not changed.
+
+Fail-first command (external UV cache and scratch environment applied):
+
+```text
+uv run pytest -q -p no:cacheprovider tools/mir_executor/tests/test_cli_common.py::test_should_return_codex_when_force_codex_conflicts_with_agent_backend
+F                                                                        [100%]
+=================================== FAILURES ===================================
+____ test_should_return_codex_when_force_codex_conflicts_with_agent_backend ____
+
+    def test_should_return_codex_when_force_codex_conflicts_with_agent_backend():
+        policy = SimpleNamespace(mode="force_codex")
+
+>       assert cli._resolve_dispatch_backend(
+            policy, requested_backend=None, agent_backend="claude",
+        ) == "codex"
+E       AssertionError: assert 'claude' == 'codex'
+E
+E         - codex
+E         + claude
+
+tools/mir_executor/tests/test_cli_common.py:42: AssertionError
+=========================== short test summary info ============================
+FAILED tools/mir_executor/tests/test_cli_common.py::test_should_return_codex_when_force_codex_conflicts_with_agent_backend
+1 failed in 0.06s
+```
+
+Final follow-up outputs (all exit 0; external UV cache and scratch applied):
+
+```text
+uv run pytest -q -p no:cacheprovider tools/mir_executor/tests/test_cli_common.py tools/mir_executor/tests/test_v3_cli_routes.py tools/mir_executor/tests/test_policy.py
+177 passed in 3.86s
+
+uv run python -m tools.executor_sync --generate
+Generated config/mir-executor-common.json: 15 files
+
+uv run python -m tools.template_assets --write-adopter-payload
+template asset classification: pass
+
+uv run pytest -q -p no:cacheprovider
+1750 passed in 248.36s (0:04:08)
+
+uv run ruff check
+All checks passed!
+
+uv run python scripts/verify_codex_sync.py
+OK: Codex derivatives match Claude sources
+
+uv run python -m tools.executor_sync --check --target .
+Common manifest: PASS
+```
+
+The fail-first regression is covered by the 177-test focused run and the full
+1750-test run. Both required corrections are complete. This follow-up changed
+CHANGELOG.md; config/adopter-payload.json; config/mir-executor-common.json;
+docs/operations/mir-executor-sync.md; tasks/change_log.md; tasks/plan.md;
+tasks/reports/executor-common-fail-first.md; tools/mir_executor/COMMON_MANIFEST.json;
+tools/mir_executor/cli.py; tools/mir_executor/tests/test_cli_common.py;
+tools/mir_executor/tests/test_policy.py; tools/mir_executor/tests/test_v3_cli_routes.py.
+Earlier v3.7 symlink implementation/tests remain intact. No commit, tag, push or
+consumer write occurred. The committed lock and generated `.codex/**` are
+unchanged. Final evidence edits are followed by the same payload generator and
+exact-payload/public-surface checks; task scratch is removed after those checks.
+No requested item remains open.
+
+Final record/payload checks: `9 passed in 0.41s` using
+`uv run pytest -q -p no:cacheprovider tests/test_template_asset_classification.py
+tests/test_public_template_surface.py`. Lock and all 15 generated `.codex/**`
+files match the follow-up baseline SHA-256 values.

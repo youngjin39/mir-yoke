@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import errno
 import json
 import pathlib
 import subprocess
@@ -12,11 +13,27 @@ from tools.mir_executor.worktree import (
     HARNESS_DENY_PREFIXES,
     LIFTABLE_HARNESS_PREFIXES,
     _is_denied_harness_path,
+    _write_private_text,
     cleanup_worktree,
     create_dispatch_worktree,
     dispatch_env,
     merge_result,
 )
+
+
+def test_should_refuse_private_write_when_destination_is_symlink(tmp_path):
+    outside = tmp_path / "outside.txt"
+    outside.write_text("keep original\n")
+    outside.chmod(0o644)
+    destination = tmp_path / "brief.md"
+    destination.symlink_to(outside)
+
+    with pytest.raises(OSError) as error:
+        _write_private_text(destination, "replacement\n")
+
+    assert error.value.errno == errno.ELOOP
+    assert outside.read_text() == "keep original\n"
+    assert outside.stat().st_mode & 0o777 == 0o644
 
 
 def _git(repo_root: pathlib.Path, *args: str) -> subprocess.CompletedProcess[str]:

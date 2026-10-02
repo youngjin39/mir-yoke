@@ -86,7 +86,8 @@ def _write_json(path: pathlib.Path, payload: dict) -> None:
 
 def _write_private_text(path: pathlib.Path, text: str, *, redact: bool = True) -> None:
     """Persist redacted dispatch evidence with owner-only permissions."""
-    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC | getattr(os, "O_NOFOLLOW", 0)
+    fd = os.open(path, flags, 0o600)
     with os.fdopen(fd, "w", encoding="utf-8", errors="surrogatepass") as stream:
         os.fchmod(stream.fileno(), 0o600)
         stream.write(redact_secret_like_content(text) if redact else text)

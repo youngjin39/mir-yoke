@@ -36,6 +36,35 @@ def test_backend_uses_policy_order_and_project_data(tmp_path):
     )
 
 
+def test_should_return_codex_when_force_codex_conflicts_with_agent_backend():
+    policy = SimpleNamespace(mode="force_codex")
+
+    assert cli._resolve_dispatch_backend(
+        policy, requested_backend=None, agent_backend="claude",
+    ) == "codex"
+
+
+@pytest.mark.parametrize("mode", ["select", "unrestricted", "obey_user", "per_project"])
+@pytest.mark.parametrize("project_first", [False, True])
+def test_should_preserve_policy_flag_precedence_when_agent_backend_is_declared(
+    tmp_path, mode, project_first,
+):
+    (tmp_path / ".mir").mkdir()
+    (tmp_path / ".mir/repo-profile.toml").write_text('[execution]\nbackend="claude"\n')
+    order = ["project_declaration", "user_command", "default_backend"] if project_first else [
+        "user_command", "project_declaration", "default_backend",
+    ]
+    policy = SimpleNamespace(mode=mode, default_backend="claude", resolution_order=order)
+    expected = (
+        "codex" if mode == "per_project" or (mode == "obey_user" and project_first)
+        else "claude"
+    )
+
+    assert cli._resolve_dispatch_backend(
+        policy, requested_backend="claude", repo_root=tmp_path, agent_backend="codex",
+    ) == expected
+
+
 def test_codex_dispatch_missing_route_fails_closed(tmp_path, monkeypatch):
     monkeypatch.setattr(dispatch, "build_codex_mcp_runner", lambda *a, **kw: "unsafe")
     with pytest.raises(ValueError, match="model.*effort"):

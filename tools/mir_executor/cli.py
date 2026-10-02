@@ -139,6 +139,7 @@ def _resolve_dispatch_backend(
     repo_slug: str | None = None,
     repo_root: pathlib.Path | None = None,
     declared_backend: str | None = None,
+    agent_backend: str | None = None,
 ) -> str:
     """Resolve backend using the policy's declared sequence and project data."""
     mode_accessor = getattr(sub_agent_policy, "effective_delegation_mode", None)
@@ -151,7 +152,7 @@ def _resolve_dispatch_backend(
         mode = "user_command_priority"
     if mode in {"force_codex", "force_claude"}:
         return mode.removeprefix("force_")
-    fallback = getattr(sub_agent_policy, "default_backend", "codex")
+    fallback = agent_backend or getattr(sub_agent_policy, "default_backend", "codex")
     if fallback not in _DISPATCH_BACKENDS:
         fallback = "codex"
     per_project = getattr(sub_agent_policy, "per_project", {})
@@ -219,7 +220,7 @@ def _resolve_dispatch_backend(
     for step in order:
         backend = candidates.get(step)
         if step in enabled and backend in _DISPATCH_BACKENDS:
-            return backend
+            return backend if step == "user_command" else agent_backend or backend
     return fallback
 
 
@@ -577,9 +578,9 @@ def _handle_dispatch(
             requested_backend=getattr(args, "execution_backend", None),
             repo_slug=repo_slug,
             repo_root=repo_root,
+            agent_backend=agent_route.execution_backend if agent_route is not None else None,
         )
         if agent_route is not None:
-            backend = agent_route.execution_backend
             model = args.model if args.model is not None else agent_route.model or model
             reasoning_effort = (
                 args.reasoning_effort

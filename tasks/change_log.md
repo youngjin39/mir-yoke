@@ -2682,3 +2682,258 @@ Harness Main. Reported by the quietleaf maintenance run and reproduced by the Ma
   quoted value with spaces, dict key); 5 cases passed before and after
   (`AWS_SECRET_ACCESS_KEY`, three plain mentions, the existing unquoted format).
 - Manifests regenerated with `python -m tools.executor_sync --generate`.
+
+## Archived cursor: before executor common v3.7 (2026-10-02)
+
+# Plan
+
+## Active task: fleet Codex transport wording (2026-10-02)
+
+Authority: owner Discord 1555375556290154528, 2026-10-02. This cursor records
+intent and is the design authority. Work only in mir-yoke; preserve history,
+compatibility identifiers, generated sources and unrelated changes. No executor
+common-code edits, protected-path writes, commits or pushes.
+
+Design: classify the requested grep inventory; update live transport guidance;
+add the exact supersession line only to current ADRs without an equivalent note.
+Preserve the dependent inactive MCP example entry and report that limitation.
+
+- [x] Inventory and minimally update eligible sources and ADR notes.
+- [x] Refresh the repository-only adopter payload and check docs, links and parity.
+- [x] Record class counts, changes, generators, checks and unresolved dependencies for reporting.
+
+Inventory (original line numbers; matching rows, not individual occurrences):
+
+- LIVE: zero requested-regex hits; supplemental `.mcp.json.example` guidance and
+  split command/args identify one live configuration source.
+- HISTORY (12): `CHANGELOG.md:187`; ADR-65:16; ADR-69:32; ADR-85:104;
+  ADR-90:40; `tasks/change_log.md`:681,943,944,945,958,960;
+  `tasks/tdd.json`:577. ADR-69 and ADR-85 already have equivalent amendments.
+- IDENTIFIER (15): `config/adopter-payload.json`:4837,4927;
+  `config/mir-executor-common.json`:8; ADR-90:38 (real `codex mcp list` client
+  command); `tasks/change_log.md`:1038,1239,2571,2584,2600,2604,2610,2620;
+  `tasks/tdd.json`:1395,1398,1403.
+
+Evidence: 18 tests passed via `uv run pytest -q tests/test_link_integrity.py
+ tests/test_decision_authority.py tests/test_template_asset_classification.py`;
+`uv run python scripts/verify_codex_sync.py` passed. No tests assert the changed
+transport wording, so the conditional full-suite gate does not apply.
+Generator: `uv run python -m tools.template_assets --write-adopter-payload`.
+Use the owner-provided external `UV_CACHE_DIR`; temporary verification files use
+an external `TMPDIR` and are removed afterward. Host paths are normalized here;
+the original cursor remains available at `7f7e677:tasks/plan.md`.
+The generator also refreshes an already-stale routing-lock digest; it does not
+modify the routing lock. The inactive example has dependants in README,
+MIGRATION, capability configuration, asset inventory, operations and ADRs;
+its removed server entry is retained under the owner's removal condition.
+
+## Previous completed task
+
+## Active task: executor common v3.5 maintenance (2026-10-02)
+
+Authority: the explicit owner follow-up relayed by Mir Harness on 2026-10-02.
+This cursor is the intent and design authority. The follow-up authorizes the
+previously deferred common executor edits and one local commit in mir-yoke.
+No consumer writes, push, tag, release, credentials or capability-pinned changes.
+Starting worktree: clean at `279c90f`.
+
+Design: reproduce the isolated-TMPDIR test leak and reuse production cleanup,
+which already removes its temporary base. Reject non-object agent criteria with
+the resolver's normal ValueError contract. Correct the requested policy docstring
+and qualify common policy references as Mir Harness ADR-88. Version this bounded
+common maintenance increment as v3.5 in the sync document and changelog; keep
+manifest schema version 1.
+
+Owner extension: include items 5 and 6 in this same v3.5 increment. Only response
+IDs issued by this client may resolve requests; internal turn keys are not RPC
+request IDs. Treat excessive JSON nesting like other malformed lines. Unexpected
+stdout-reader failure or EOF must release pending calls, including calls without
+a timeout, through the existing process-error contract.
+
+- [x] Reproduce response-ID collisions, excessive JSON nesting and unexpected reader death.
+- [x] Fix request correlation and reader failure handling; record fail-first evidence.
+- [x] Regenerate manifests and rerun the full verification for items 1-6.
+
+- [x] Add regression cases and record every case failing before its fix.
+- [x] Repair cleanup and criteria validation; correct policy wording.
+- [x] Generate manifests; verify full executor tests leave no new mir-wt directories.
+- [x] Run full pytest, touched-file Ruff, Python 3.11 compilation, sync and Codex parity.
+- [x] Record evidence and refresh continuity projections and payload.
+- [x] Commit locally: the Codex sandbox could not create `.git/index.lock`; the Mir Harness Main re-ran the full suite and committed.
+
+Evidence: `tasks/change_log.md`, "Executor common v3.5 maintenance (2026-10-02)".
+Other open owner items in the preceding maintenance evidence remain unchanged.
+
+Predecessor cursor: `tasks/change_log.md`,
+"Archived maintenance cursor (2026-10-02 executor follow-up)".
+
+## Executor common v3.7: symlink safety and backend precedence (2026-10-02)
+
+Authority: current owner task; intent/design authority: `tasks/plan.md`.
+Baseline: clean HEAD `7f7e677`, common v3.6. No commit, tag, push, release,
+consumer write, secret access or generated `.codex/**` write is authorized.
+
+- Private worktree writes now set O_NOFOLLOW before truncating/chmodding files.
+- Artifact persistence opens `.mir-dispatch` with O_DIRECTORY/O_NOFOLLOW and
+  opens each artifact relative to that directory descriptor with O_NOFOLLOW.
+  Both file and directory symlinks fail closed; absent artifacts remain optional.
+- Current CLI already gave agent-route backends precedence over policy force and
+  default backends. Its remaining defect ignored conflicting explicit backend
+  flags even in user_command_priority mode. Backend resolution now accepts the
+  agent backend and preserves policy-permitted user_command precedence while
+  agent backends win over forced, project and default policy choices.
+- Documented the common increment as v3.7. Common manifests retain schema 1,
+  the same 15 file entries and literal SOURCE_COMMIT placeholder. Routing lock
+  bytes and format are unchanged.
+
+Fail-first evidence is preserved in `tasks/reports/executor-common-fail-first.md`
+under "Common v3.7". Worktree: 1 failed -> 1 passed. Artifacts: 12 failed ->
+12 passed. CLI: 12 failed / 96 passed -> 108 passed. Focused four-file suite:
+198 passed in 9.93s. One new test line exceeded Ruff's line limit and was wrapped;
+repository-wide Ruff subsequently passed.
+
+Generators: `uv run python -m tools.executor_sync --generate` (15 common files)
+and `uv run python -m tools.template_assets --write-adopter-payload`.
+Every uv command uses the owner-provided external UV_CACHE_DIR; scratch stays
+under the owner-authorized external cache and is removed after checks.
+Initial checks: common manifest PASS; Codex derivatives match Claude sources;
+Python 3.11.16 compiled all 15 common files. Final suite evidence follows below.
+
+### Final verification and remaining item
+
+- `uv run pytest -q -p no:cacheprovider tools/mir_executor/tests`:
+  **1 failed, 742 passed in 72.49s (0:01:12)**, exit 1.
+- `uv run pytest -q -p no:cacheprovider`:
+  **1 failed, 1748 passed in 232.84s (0:03:52)**, exit 1.
+- Both final runs fail only
+  `test_policy.py::test_adr88_this_repository_routes_from_its_deployed_lock`:
+  `assert 'force_codex' == 'user_command_priority'`. The test hardcodes a mode
+  inconsistent with the committed routing lock. The test, conftest, policy.py,
+  local sub-agent policy and routing lock match HEAD byte-for-byte. Its isolated
+  rerun also failed in 0.05s. This unrelated existing assertion is left unchanged.
+- `uv run ruff check`: All checks passed!
+- `uv run python scripts/verify_codex_sync.py`:
+  OK: Codex derivatives match Claude sources.
+- `uv run python -m tools.executor_sync --check --target .`:
+  Common manifest: PASS. Manifest top-level keys, schema 1, SOURCE_COMMIT and
+  all 15 file entries are unchanged; the two common manifests are identical.
+- Python 3.11.16 compiled all 15 common files using an external pycache.
+- Portable manifest, executor sync and payload checks: 19 passed in 1.76s.
+  Public-surface and exact-payload checks after path normalization:
+  9 passed in 0.42s. The initial whole-repository run had an additional public
+  path failure caused by host paths copied from the prior cursor and new evidence;
+  these paths were normalized and the final whole-repository run passes that check.
+
+Changed paths: CHANGELOG.md; config/adopter-payload.json;
+config/mir-executor-common.json; docs/operations/mir-executor-sync.md;
+tasks/change_log.md; tasks/plan.md; tasks/reports/executor-common-fail-first.md;
+tools/mir_executor/COMMON_MANIFEST.json; tools/mir_executor/cli.py;
+tools/mir_executor/dispatch.py; tools/mir_executor/worktree.py;
+tools/mir_executor/tests/test_cli_common.py;
+tools/mir_executor/tests/test_dispatch_common.py;
+tools/mir_executor/tests/test_v3_cli_routes.py;
+tools/mir_executor/tests/test_worktree.py.
+
+No requested production fix remains open. The stale repository-owned policy
+assertion prevents a green full-suite gate; it is not distributed by executor sync.
+No commit, tag, push, release, consumer change, protected-path change or generated
+Codex installation occurred. Final evidence edits require the final adopter-payload
+refresh and its exact-content check; temporary scratch is removed afterward.
+
+## Archived cursor: before executor common v3.7 review corrections (2026-10-02)
+
+# Plan
+
+## Active task: executor common v3.7 (2026-10-02)
+
+Authority: the current owner task; this cursor owns intent and design. Fix the
+three reported executor common defects test-first within Mir Yoke only. Preserve
+lock formats, protected paths and unrelated changes. No commits, tags, pushes,
+releases, consumer writes, credentials or generated `.codex/**` writes.
+Baseline: clean HEAD `7f7e677`; prior common base v3.6.
+
+Design: refuse symlink destinations using O_NOFOLLOW in private worktree writes;
+open artifact sources without following symlinks before copying. Current CLI
+already lets agent-route backends win over policy defaults/force modes; reproduce
+that behavior and fix the remaining explicit backend flag precedence only where
+policy permits selection. Keep model/effort overrides and read-only constraints.
+Version this common increment as v3.7 in the sync guide and CHANGELOG; retain
+manifest schema 1 and routing lock bytes.
+
+- [x] Add each regression and capture baseline failure/pass evidence before fixes.
+- [x] Apply minimum fixes and rerun each regression.
+- [x] Record version/changelog; regenerate common manifests and adopter payload.
+- [x] Run executor suite, repository pytest/Ruff/parity, manifest check and Python 3.11 compilation.
+- [x] Record changed paths, exact evidence and anything left.
+
+The superseded cursor is preserved with host paths normalized in `tasks/change_log.md` under
+"Archived cursor: before executor common v3.7 (2026-10-02)".
+The original is available at `7f7e677:tasks/plan.md`.
+
+Results: focused checks passed; executor suite 742 passed / 1 failed; repository
+suite 1748 passed / 1 failed. Both failures are the same unchanged policy test:
+it hardcodes user_command_priority while the committed lock declares force_codex.
+Policy source, fixture, local policy and routing lock match HEAD byte-for-byte.
+Ruff, Codex parity, common manifest and Python 3.11 compilation passed.
+Final evidence: `tasks/change_log.md`, "Executor common v3.7", and
+`tasks/reports/executor-common-fail-first.md`, "Common v3.7".
+No commit, delivery or generated Codex write occurred. The unrelated stale policy
+assertion remains open; no requested production defect remains.
+
+
+## Executor common v3.7 owner review corrections (2026-10-02)
+
+Authority: current owner follow-up; intent/design authority: `tasks/plan.md`.
+This correction supersedes the earlier v3.7 decision that agent backends override
+forced modes. `_resolve_dispatch_backend` again returns the forced backend
+unconditionally for force_codex/force_claude. The new force_codex plus Claude
+agent-route regression failed first with `assert 'claude' == 'codex'`,
+`1 failed in 0.06s`, exit 1. Existing explicit user_command precedence and agent
+precedence over project/default steps remain. The dispatch route matrix is
+updated to expect the forced backend. The committed-lock policy test now reads
+its expected mode from the lock; lock bytes and format remain unchanged.
+The v3.7 CHANGELOG and sync guide explicitly document enforced forced modes.
+Captured fail-first and final evidence belongs to
+`tasks/reports/executor-common-fail-first.md`, "v3.7 owner review corrections".
+Final follow-up outputs (all exit 0; external UV cache and scratch applied):
+
+```text
+uv run pytest -q -p no:cacheprovider tools/mir_executor/tests/test_cli_common.py tools/mir_executor/tests/test_v3_cli_routes.py tools/mir_executor/tests/test_policy.py
+177 passed in 3.86s
+
+uv run python -m tools.executor_sync --generate
+Generated config/mir-executor-common.json: 15 files
+
+uv run python -m tools.template_assets --write-adopter-payload
+template asset classification: pass
+
+uv run pytest -q -p no:cacheprovider
+1750 passed in 248.36s (0:04:08)
+
+uv run ruff check
+All checks passed!
+
+uv run python scripts/verify_codex_sync.py
+OK: Codex derivatives match Claude sources
+
+uv run python -m tools.executor_sync --check --target .
+Common manifest: PASS
+```
+
+The fail-first regression is covered by the 177-test focused run and the full
+1750-test run. Both required corrections are complete. This follow-up changed
+CHANGELOG.md; config/adopter-payload.json; config/mir-executor-common.json;
+docs/operations/mir-executor-sync.md; tasks/change_log.md; tasks/plan.md;
+tasks/reports/executor-common-fail-first.md; tools/mir_executor/COMMON_MANIFEST.json;
+tools/mir_executor/cli.py; tools/mir_executor/tests/test_cli_common.py;
+tools/mir_executor/tests/test_policy.py; tools/mir_executor/tests/test_v3_cli_routes.py.
+Earlier v3.7 symlink implementation/tests remain intact. No commit, tag, push or
+consumer write occurred. The committed lock and generated `.codex/**` are
+unchanged. Final evidence edits are followed by the same payload generator and
+exact-payload/public-surface checks; task scratch is removed after those checks.
+No requested item remains open.
+
+Final record/payload checks: `9 passed in 0.41s` using
+`uv run pytest -q -p no:cacheprovider tests/test_template_asset_classification.py
+tests/test_public_template_surface.py`. Lock and all 15 generated `.codex/**`
+files match the follow-up baseline SHA-256 values.

@@ -7,6 +7,7 @@ import pytest
 from tools.mir_executor import dispatch
 from tools.mir_executor.codex_mcp_client import CodexMcpResult
 from tools.mir_executor.tests.test_dispatch import _cleanup, _make_repo
+from tools.mir_executor.worktree import DispatchWorktree
 
 
 def config(repo, **values):
@@ -75,6 +76,39 @@ def test_common_secure_redacted_artifacts(tmp_path):
         assert (outcome.worktree.path / ".mir-dispatch/brief.md").stat().st_mode & 0o777 == 0o600
     finally:
         _cleanup(outcome)
+
+
+@pytest.mark.parametrize("filename", [
+    "reviewer.json", "brief.md", "status.json", "result.json", "events.jsonl",
+    "dispatch-events.jsonl",
+])
+@pytest.mark.parametrize("symlink_directory", [False, True])
+def test_should_refuse_artifact_copy_when_source_is_symlink(
+    tmp_path, filename, symlink_directory,
+):
+    worktree = tmp_path / "worktree"
+    worktree.mkdir()
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    content = '{"content": "outside-worktree-marker"}\n'
+    (outside / filename).write_text(content)
+    dispatch_dir = worktree / ".mir-dispatch"
+    if symlink_directory:
+        dispatch_dir.symlink_to(outside, target_is_directory=True)
+    else:
+        dispatch_dir.mkdir()
+        (dispatch_dir / filename).symlink_to(outside / filename)
+    wt = DispatchWorktree(
+        "symlink", tmp_path, worktree, "unused", "unused",
+        dispatch_dir / "brief.md", dispatch_dir / "status.json", dispatch_dir / "result.json",
+    )
+    artifacts_root = tmp_path / "artifacts"
+
+    with pytest.raises(OSError):
+        dispatch.persist_dispatch_artifacts(wt, tmp_path, artifacts_root)
+
+    assert not (artifacts_root / wt.dispatch_id / filename).exists()
+    assert (outside / filename).read_text() == content
 
 
 def test_common_unknown_verifier_fails_closed(tmp_path):

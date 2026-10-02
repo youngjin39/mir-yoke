@@ -519,17 +519,28 @@ def persist_dispatch_artifacts(
     ) / wt.dispatch_id
     artifact_dir.mkdir(parents=True, exist_ok=True)
     dispatch_dir = wt.path / ".mir-dispatch"
-    for filename in (
-        "reviewer.json",
-        "brief.md",
-        "status.json",
-        "result.json",
-        "events.jsonl",
-        "dispatch-events.jsonl",
-    ):
-        source = dispatch_dir / filename
-        if source.exists():
-            _secure_write(artifact_dir / filename, source.read_text(encoding="utf-8"))
+    nofollow = getattr(os, "O_NOFOLLOW", 0)
+    try:
+        directory_fd = os.open(dispatch_dir, os.O_RDONLY | os.O_DIRECTORY | nofollow)
+    except FileNotFoundError:
+        return artifact_dir
+    try:
+        for filename in (
+            "reviewer.json",
+            "brief.md",
+            "status.json",
+            "result.json",
+            "events.jsonl",
+            "dispatch-events.jsonl",
+        ):
+            try:
+                fd = os.open(filename, os.O_RDONLY | nofollow, dir_fd=directory_fd)
+            except FileNotFoundError:
+                continue
+            with os.fdopen(fd, "r", encoding="utf-8") as stream:
+                _secure_write(artifact_dir / filename, stream.read())
+    finally:
+        os.close(directory_fd)
     return artifact_dir
 
 
