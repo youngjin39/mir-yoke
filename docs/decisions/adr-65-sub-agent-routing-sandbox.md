@@ -9,6 +9,8 @@ amended_by: [adr-69, adr-73]
 
 # ADR-65 — Delegated Routing and Sandbox Policy
 
+Superseded transport (2026-10-02): codex mcp-server was removed in Codex CLI 0.154; use the Codex plugin (codex@openai-codex) or codex app-server.
+
 ## Current Decision
 
 When delegation is selected:

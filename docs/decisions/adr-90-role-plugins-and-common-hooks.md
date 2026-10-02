@@ -11,6 +11,8 @@ schema: docs/templates/_schema/adr.schema.json
 
 # ADR-90 — Role Plugins and Common Hook Architecture
 
+Superseded transport (2026-10-02): codex mcp-server was removed in Codex CLI 0.154; use the Codex plugin (codex@openai-codex) or codex app-server.
+
 ## 1. Context
 
 The operator's current intent is authoritative for this work:
