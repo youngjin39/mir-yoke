@@ -580,13 +580,34 @@ def _handle_dispatch(
             repo_root=repo_root,
             agent_backend=agent_route.execution_backend if agent_route is not None else None,
         )
-        if agent_route is not None:
+        if agent_route is not None and agent_route.execution_backend == backend:
             model = args.model if args.model is not None else agent_route.model or model
             reasoning_effort = (
                 args.reasoning_effort
                 if args.reasoning_effort is not None else agent_route.reasoning_effort
                 or reasoning_effort
             )
+        mode_accessor = getattr(sub_agent_policy, "effective_delegation_mode", None)
+        mode = (
+            mode_accessor() if callable(mode_accessor)
+            else getattr(sub_agent_policy, "mode", "select")
+        )
+        if args.model is None and model and mode in {"force_codex", "force_claude"}:
+            # Category/default policy routes declare no backend; use known model names.
+            model_name = model.strip().lower()
+            model_backend = None
+            if model_name in {"sonnet", "opus", "fable", "haiku"} or model_name.startswith(
+                "claude-"
+            ):
+                model_backend = "claude"
+            elif model_name.startswith("gpt-"):
+                model_backend = "codex"
+            if model_backend is not None and model_backend != backend:
+                raise ValueError(
+                    f"{mode} cannot dispatch routed model {model!r} for backend "
+                    f"{model_backend!r} to backend {backend!r}; fix the category/default "
+                    "route or pass --model explicitly"
+                )
         if getattr(args, "resume_job_id", None):
             emit_job_event(repo_root, "job_resumed", {
                 "job_id": job_id, "path": "resume", "args": args,

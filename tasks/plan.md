@@ -1,31 +1,37 @@
 # Plan
 
-## Active task: executor common v3.7 review corrections (2026-10-02)
+## Active task: executor common v3.8 forced-mode route model guard (2026-10-02)
 
-Authority: the current owner follow-up; this cursor owns intent and design.
-Preserve the existing uncommitted v3.7 work. The owner corrects the prior decision
-that agent backends override forced modes: force_codex and force_claude must
-return their forced backend unconditionally. Explicit user backend selection
-still wins in the selected user_command step; agent routes otherwise beat
-project/default steps. The committed routing lock decides the live-policy test.
-Do not change the lock, consumers, protected paths or generated `.codex/**`.
-No commit, tag or push is authorized. Use the owner-provided external UV cache.
+Authority: owner Discord 1555426386900942934, 2026-10-02, and the current
+executor task. This single cursor owns intent and design. Baseline: clean
+HEAD `f95dcd5`, common v3.7. Work stays in Mir Yoke; no commit/tag/push,
+consumer writes, routing lock edits or generated `.codex/**` writes.
 
-- [x] Review existing diff, cursor and v3.7 evidence.
-- [x] Add the force_codex/conflicting agent-route regression; capture its failure.
-- [x] Restore forced backend resolution; update route matrix and lock-based assertion.
-- [x] Correct v3.7 guide/changelog/evidence; run both requested generators.
-- [x] Run full pytest (zero failures), Ruff, Codex parity and executor manifest check.
-- [x] Record final outputs, changed paths and remaining work; remove scratch.
+Design: only apply agent model/effort when its declared execution_backend equals
+the resolved dispatch backend. CLI model/effort overrides retain precedence.
+The policy/lock category and default routes declare model/effort, not a backend;
+resolve_category also discards any unrelated keys. Reject a recognized opposite
+backend model in forced modes before constructing or invoking the runner, unless
+the user supplied an explicit model. Recognize Claude aliases sonnet/opus/fable/haiku
+and claude-* versus Codex gpt-*; do not guess ownership of unknown model names.
+Keep manifest schema 1 and document common v3.8 following the v3.7 convention.
 
-The prior cursor is preserved in `tasks/change_log.md` under
-"Archived cursor: before executor common v3.7 review corrections (2026-10-02)".
+- [x] Add regressions and show force_codex/Claude agent model failing before the fix.
+- [x] Apply the minimum guard; verify CLI overrides, non-forced routes and bad defaults.
+- [x] Update v3.8 guide/changelog/evidence; regenerate common manifests and adopter payload.
+- [x] Run full pytest (zero failures), Ruff, Codex parity and common manifest check.
+- [x] Record final outputs, changed paths and remaining work; remove task scratch.
 
-Results: the force_codex/conflicting-agent regression failed first (`1 failed in
-0.06s`); focused tests passed (`177 passed in 3.86s`). Full pytest passed:
-`1750 passed in 248.36s (0:04:08)`, zero failures. Ruff, Codex parity and executor
-manifest checks passed; both requested generators succeeded. Final evidence:
-`tasks/reports/executor-common-fail-first.md`, "v3.7 owner review corrections",
-and the matching entry in `tasks/change_log.md`. Final record edits were followed by the
-same payload refresh and exact-content/public-surface checks: `9 passed in 0.41s`. No requested item
-remains; no commit/tag/push, consumer write, lock edit or `.codex/**` write occurred.
+The predecessor cursor is preserved in `tasks/change_log.md` under
+"Archived cursor: before executor common v3.8 (2026-10-02)".
+
+Results: fail-first observed sonnet instead of gpt-category (`1 failed in 0.07s`).
+Focused regression suite: `211 passed in 4.00s`. Full pytest: `1784 passed in
+220.99s (0:03:40)`, zero failures. Ruff, Codex parity, common manifest and Python
+3.11 compilation passed. Both requested generators passed. Evidence:
+`tasks/reports/executor-common-fail-first.md`, "Common v3.8", and the matching
+`tasks/change_log.md` entry. Final record refresh passed the exact-content/public-surface checks:
+`9 passed in 0.35s`. The closing cursor update uses the same payload refresh and
+checks. No requested implementation or acceptance item remains; no commit/tag/push,
+consumer write, lock edit or `.codex/**` write occurred. Scratch is removed after
+the closing checks.

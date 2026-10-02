@@ -2937,3 +2937,89 @@ Final record/payload checks: `9 passed in 0.41s` using
 `uv run pytest -q -p no:cacheprovider tests/test_template_asset_classification.py
 tests/test_public_template_surface.py`. Lock and all 15 generated `.codex/**`
 files match the follow-up baseline SHA-256 values.
+
+
+## Archived cursor: before executor common v3.8 (2026-10-02)
+
+# Plan
+
+## Active task: executor common v3.7 review corrections (2026-10-02)
+
+Authority: the current owner follow-up; this cursor owns intent and design.
+Preserve the existing uncommitted v3.7 work. The owner corrects the prior decision
+that agent backends override forced modes: force_codex and force_claude must
+return their forced backend unconditionally. Explicit user backend selection
+still wins in the selected user_command step; agent routes otherwise beat
+project/default steps. The committed routing lock decides the live-policy test.
+Do not change the lock, consumers, protected paths or generated `.codex/**`.
+No commit, tag or push is authorized. Use the owner-provided external UV cache.
+
+- [x] Review existing diff, cursor and v3.7 evidence.
+- [x] Add the force_codex/conflicting agent-route regression; capture its failure.
+- [x] Restore forced backend resolution; update route matrix and lock-based assertion.
+- [x] Correct v3.7 guide/changelog/evidence; run both requested generators.
+- [x] Run full pytest (zero failures), Ruff, Codex parity and executor manifest check.
+- [x] Record final outputs, changed paths and remaining work; remove scratch.
+
+The prior cursor is preserved in `tasks/change_log.md` under
+"Archived cursor: before executor common v3.7 review corrections (2026-10-02)".
+
+Results: the force_codex/conflicting-agent regression failed first (`1 failed in
+0.06s`); focused tests passed (`177 passed in 3.86s`). Full pytest passed:
+`1750 passed in 248.36s (0:04:08)`, zero failures. Ruff, Codex parity and executor
+manifest checks passed; both requested generators succeeded. Final evidence:
+`tasks/reports/executor-common-fail-first.md`, "v3.7 owner review corrections",
+and the matching entry in `tasks/change_log.md`. Final record edits were followed by the
+same payload refresh and exact-content/public-surface checks: `9 passed in 0.41s`. No requested item
+remains; no commit/tag/push, consumer write, lock edit or `.codex/**` write occurred.
+
+
+## Executor common v3.8: forced-mode route model guard (2026-10-02)
+
+Authority: owner Discord 1555426386900942934, 2026-10-02; intent and design
+are recorded in the single `tasks/plan.md` cursor. Baseline: clean `f95dcd5`.
+Agent-route model/effort now apply only when the explicit execution_backend
+matches the resolved backend. Explicit CLI model/effort keep precedence.
+Category/default routes declare no backend; resolve_category returns model/effort
+only. Forced dispatch rejects recognized opposite-backend automatic models using
+Claude aliases sonnet/opus/fable/haiku and claude-* versus Codex gpt-* before
+creating a runner. Unknown model names remain usable; explicit user models bypass
+the guard. No policy or lock changes are required.
+
+Fail-first: the force_codex plus Claude/sonnet agent regression observed
+`assert 'sonnet' == 'gpt-category'`, `1 failed in 0.07s`, exit 1 before the fix.
+Focused policy/CLI/route tests: `211 passed in 4.00s`, exit 0.
+Both generators passed: common manifest generated 15 files; adopter asset
+classification passed. Required acceptance results (all exit 0):
+
+```text
+uv run pytest -q -p no:cacheprovider
+1784 passed in 220.99s (0:03:40)
+
+uv run ruff check
+All checks passed!
+
+uv run python scripts/verify_codex_sync.py
+OK: Codex derivatives match Claude sources
+
+uv run python -m tools.executor_sync --check --target .
+Common manifest: PASS
+
+python3.11 -m compileall -q tools/mir_executor
+(no output; exit 0, external task bytecode cache)
+```
+
+The guide and CHANGELOG version the common base as v3.8; generated manifests keep
+schema 1 and SOURCE_COMMIT. Full fail-first output, changed files and final outputs
+are in `tasks/reports/executor-common-fail-first.md`, "Common v3.8". The previous
+cursor is preserved above. No commit/tag/push, consumer write, lock edit or generated
+`.codex/**` write occurred. Final record edits are followed by the payload generator
+and exact-content/public-surface checks; task scratch is removed afterward.
+
+
+Final record refresh: `uv run python -m tools.template_assets --write-adopter-payload`
+passed; `uv run pytest -q -p no:cacheprovider tests/test_template_asset_classification.py
+tests/test_public_template_surface.py` passed (`9 passed in 0.35s`, exit 0).
+The closing cursor/log update repeats the same payload refresh and checks.
+No requested implementation or acceptance item remains. Task scratch is removed
+after the closing checks; no additional delivery or Git authority is exercised.

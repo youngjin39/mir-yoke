@@ -349,7 +349,116 @@ unchanged. Final evidence edits are followed by the same payload generator and
 exact-payload/public-surface checks; task scratch is removed after those checks.
 No requested item remains open.
 
+## Common v3.8: forced-mode route model guard (2026-10-02)
+
+Authority: owner Discord 1555426386900942934, 2026-10-02, and `tasks/plan.md`.
+Baseline: clean HEAD `f95dcd5`, common v3.7. No commit/tag/push, consumer writes,
+routing lock edits or generated `.codex/**` writes are authorized.
+
+The agent route's explicit `execution_backend` now gates its model/effort:
+when it differs from the resolved backend, the category/default values already
+computed by `_resolve_policy_runtime_options` apply. CLI model and effort flags
+keep precedence. Agent definitions supply an explicit backend; Codex agent routes
+obtain their model from the lock-selected category. Category/default policy routes
+have no declared backend and `resolve_category()` returns model/effort only.
+The final automatic model is therefore checked against known Claude aliases
+sonnet/opus/fable/haiku and claude-* versus Codex gpt-* under forced modes.
+A recognized opposite-backend model fails before runner construction or invocation.
+Unknown model names are not guessed, and an explicit CLI model bypasses the guard.
+No policy schema or lock edits are required. Matching agent routes remain effective.
+
+Fail-first command (external UV cache and task scratch applied), exit 1:
+
+```text
+uv run pytest -q -p no:cacheprovider tools/mir_executor/tests/test_v3_cli_routes.py::test_should_use_category_model_when_force_codex_conflicts_with_agent_backend
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_ test_should_use_category_model_when_force_codex_conflicts_with_agent_backend _
+
+dispatch_model_options = <function dispatch_model_options.<locals>.execute at 0x10b1893a0>
+
+    def test_should_use_category_model_when_force_codex_conflicts_with_agent_backend(
+        dispatch_model_options,
+    ):
+        result, calls = dispatch_model_options("force_codex", {
+            "by_category": {"unit": {"model": "gpt-category", "reasoning_effort": "medium"}},
+        })
+        assert result == 0
+        assert calls[0]["backend"] == "codex"
+>       assert calls[0]["model"] == "gpt-category"
+E       AssertionError: assert 'sonnet' == 'gpt-category'
+E
+E         - gpt-category
+E         + sonnet
+
+tools/mir_executor/tests/test_v3_cli_routes.py:57: AssertionError
+----------------------------- Captured stdout call -----------------------------
+[DISPATCH] status=completed attempts=1 fell_back=False reason=None
+[FINALIZE] action=reviewed reason='passed' merged=[]
+=========================== short test summary info ============================
+FAILED tools/mir_executor/tests/test_v3_cli_routes.py::test_should_use_category_model_when_force_codex_conflicts_with_agent_backend
+1 failed in 0.07s
+```
+
+Focused regression command, exit 0:
+
+```text
+uv run pytest -q -p no:cacheprovider tools/mir_executor/tests/test_cli_common.py tools/mir_executor/tests/test_v3_cli_routes.py tools/mir_executor/tests/test_policy.py
+211 passed in 4.00s
+```
+
+Coverage includes the real Claude agent definition versus forced Codex category
+model; explicit model/effort (including an explicitly selected sonnet); effort-only
+override; non-forced and matching forced agent routes; category, prefer, default
+and legacy flat defaults for both forced backends; and unchanged handling of unknown
+model names. The existing dispatch matrix now expects policy model/effort whenever
+the selected backend differs from the agent backend.
+
+Final outputs (all exit 0; external UV cache and task scratch applied):
+
+```text
+uv run python -m tools.executor_sync --generate
+Generated config/mir-executor-common.json: 15 files
+
+uv run python -m tools.template_assets --write-adopter-payload
+template asset classification: pass
+
+uv run pytest -q -p no:cacheprovider
+1784 passed in 220.99s (0:03:40)
+
+uv run ruff check
+All checks passed!
+
+uv run python scripts/verify_codex_sync.py
+OK: Codex derivatives match Claude sources
+
+uv run python -m tools.executor_sync --check --target .
+Common manifest: PASS
+
+python3.11 -m compileall -q tools/mir_executor
+(no output; exit 0, bytecode cache in task scratch)
+```
+
+Changed files: CHANGELOG.md; config/adopter-payload.json;
+config/mir-executor-common.json; docs/operations/mir-executor-sync.md;
+tasks/change_log.md; tasks/plan.md; tasks/reports/executor-common-fail-first.md;
+tools/mir_executor/COMMON_MANIFEST.json; tools/mir_executor/cli.py;
+tools/mir_executor/tests/test_v3_cli_routes.py.
+The two generated manifests retain schema 1 and SOURCE_COMMIT. Git diff confirms
+routing lock and `.codex/**` are unchanged. No commit/tag/push or consumer write
+occurred. All requested acceptance commands passed. Final record edits are followed
+by adopter-payload regeneration and exact-content/public-surface tests; task scratch
+is removed after those checks.
+
 Final record/payload checks: `9 passed in 0.41s` using
 `uv run pytest -q -p no:cacheprovider tests/test_template_asset_classification.py
 tests/test_public_template_surface.py`. Lock and all 15 generated `.codex/**`
 files match the follow-up baseline SHA-256 values.
+
+
+Final record refresh: `uv run python -m tools.template_assets --write-adopter-payload`
+passed; `uv run pytest -q -p no:cacheprovider tests/test_template_asset_classification.py
+tests/test_public_template_surface.py` passed (`9 passed in 0.35s`, exit 0).
+The closing cursor/log update repeats the same payload refresh and checks.
+No requested implementation or acceptance item remains. Task scratch is removed
+after the closing checks; no additional delivery or Git authority is exercised.

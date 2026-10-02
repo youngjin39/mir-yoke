@@ -1,6 +1,16 @@
 # Mir Executor common source and explicit sync
 
-Current common base: **v3.7**. v3.7 refuses symlinks in private worktree writes
+Current common base: **v3.8**. v3.8 ignores an agent route's model and reasoning
+effort when its declared `execution_backend` differs from the resolved backend;
+the category/default route supplies those values instead. Explicit `--model` and
+`--reasoning-effort` keep precedence. Forced modes reject recognized opposite-backend
+automatic models before creating a runner. Category/default policy routes and
+`resolve_category()` declare no backend: the guard recognizes Claude aliases
+`sonnet`, `opus`, `fable`, `haiku` and `claude-*` versus Codex `gpt-*`.
+Unknown model names are not assigned a backend. An explicit `--model` bypasses
+this guard, including under force_codex. A matching-backend agent route retains
+its model/effort; a non-forced dispatch with a matching route retains prior behavior.
+v3.7 refuses symlinks in private worktree writes
 and artifact source files/directories. Agent-route backends win over project/default
 backends; explicit `--execution-backend` requests retain policy-permitted precedence.
 Forced modes always select their forced backend, including force_codex with a
