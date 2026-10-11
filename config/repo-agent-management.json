@@ -366,6 +366,13 @@
         "status": "active",
         "source_path": "plugins/mir-core/skills/memory-gc/"
       },
+      "reference-app-profile": {
+        "category": "knowledge",
+        "absorbs": [],
+        "scope": "universal",
+        "status": "active",
+        "source_path": "plugins/mir-core/skills/reference-app-profile/"
+      },
       "repo-maintenance": {
         "category": "governance",
         "absorbs": [],

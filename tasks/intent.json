@@ -1,10 +1,15 @@
 {
-  "goal": "Fix executor temporary-directory test cleanup, malformed agent criteria, response-ID collisions and reader failures test-first; correct policy wording; verify all six items and commit common v3.5 locally.",
+  "goal": "Register the already-authored reference-app-profile skill exactly like repo-maintenance and release-prepare 0.10.8 in Mir Yoke only.",
   "goal_type": "maintenance",
-  "scope": "mir-yoke only; common executor edits and a local commit authorized by the owner follow-up. No consumer writes, push, tag, release, credentials or capability-pinned changes. tasks/plan.md is the intent and design authority.",
+  "scope": "Current owner request of 2026-10-11. Preserve the skill and contract test bytes; no commits, pushes, tags, releases, other-repository writes or generated .codex writes. tasks/plan.md is the active intent and design authority.",
   "priority": "normal",
-  "updated": "2026-10-02",
+  "updated": "2026-10-11",
   "history": [
+    {
+      "goal": "Fix executor temporary-directory test cleanup, malformed agent criteria, response-ID collisions and reader failures test-first; correct policy wording; verify all six items and commit common v3.5 locally.",
+      "updated": "2026-10-02",
+      "status": "complete"
+    },
     {
       "goal": "Run the 2026-10-02 mir-core:repo-maintenance pass (all 21 items) on mir-yoke only under the owner instruction of 2026-10-02: re-verify prior fixes, check ADR-88 routing lock and mir_executor common v3.4 consistency, fix in-scope defects test-first, run documented gates, local commits of own files only.",
       "updated": "2026-10-02",

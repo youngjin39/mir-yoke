@@ -154,7 +154,7 @@ entry when the repository discovers runtime capabilities directly. Then run the 
 agent-management verifier. Follow the complete inventory, collision, activation, and rollback
 procedure in [Global Plugin Migration](global-plugin-migration.md).
 
-Mir Yoke's portable set is intentionally limited to four plugins and sixteen skills. The optional
+Mir Yoke's portable set is intentionally limited to four plugins and seventeen skills. The optional
 `mir-core:selective-relations` skill supports bounded retrieval through declared relationships. The
 `design`, `governance`, `efficiency`, `bluebricks`, `testing`, `code-review`, and
 `verify` skills already compose this upgrade workflow; an umbrella duplicate would add discovery
@@ -162,6 +162,8 @@ cost without a new capability. `mir-core:repo-maintenance` is the owner-defined 
 periodic checklist, including documented database/memory/graph repair and observed parity when either
 Claude CLI or Codex CLI is Main; it sequences those skills without restating their procedures.
 The prior description is preserved in `tasks/change_log.md` under the 2026-09-24 skill implementation.
+`mir-core:reference-app-profile` extracts shipped application metadata into a fixed, evidence-labeled
+profile for design decisions without decompilation, code tracing or target launch.
 
 #### Hooks
 

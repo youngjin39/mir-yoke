@@ -170,6 +170,15 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
   maintainer configuration already carried it; the generator, which is what every new project
   actually receives, did not.
 
+## [0.10.8] — 2026-10-11 — Reference application profile skill
+
+### Added
+
+- `mir-core:reference-app-profile` — extracts a reference program's shipped metadata (stack,
+  permissions, signing and sandbox, integrations and endpoints, security policy, storage, updates)
+  into a fixed profile with Confirmed/Inferred/Unknown labels; metadata only, no decompilation,
+  code tracing or target launch.
+
 ## [0.10.7] — 2026-09-24 — Twenty-one-item maintenance checklist
 
 ### Changed

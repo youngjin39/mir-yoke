@@ -3023,3 +3023,110 @@ tests/test_public_template_surface.py` passed (`9 passed in 0.35s`, exit 0).
 The closing cursor/log update repeats the same payload refresh and checks.
 No requested implementation or acceptance item remains. Task scratch is removed
 after the closing checks; no additional delivery or Git authority is exercised.
+
+## Reference application profile registration and 0.10.8 preparation (2026-10-11)
+
+Owner authority: current repository-only request. Preserve the already-authored skill and contract test byte-for-byte. No commits, pushes, tags, releases, consumer writes or generated `.codex/**` writes.
+
+### Superseded cursor and intent (verbatim)
+
+#### tasks/plan.md
+
+```
+# Plan
+
+## Active task: executor common v3.8 forced-mode route model guard (2026-10-02)
+
+Authority: owner Discord 1555426386900942934, 2026-10-02, and the current
+executor task. This single cursor owns intent and design. Baseline: clean
+HEAD `f95dcd5`, common v3.7. Work stays in Mir Yoke; no commit/tag/push,
+consumer writes, routing lock edits or generated `.codex/**` writes.
+
+Design: only apply agent model/effort when its declared execution_backend equals
+the resolved dispatch backend. CLI model/effort overrides retain precedence.
+The policy/lock category and default routes declare model/effort, not a backend;
+resolve_category also discards any unrelated keys. Reject a recognized opposite
+backend model in forced modes before constructing or invoking the runner, unless
+the user supplied an explicit model. Recognize Claude aliases sonnet/opus/fable/haiku
+and claude-* versus Codex gpt-*; do not guess ownership of unknown model names.
+Keep manifest schema 1 and document common v3.8 following the v3.7 convention.
+
+- [x] Add regressions and show force_codex/Claude agent model failing before the fix.
+- [x] Apply the minimum guard; verify CLI overrides, non-forced routes and bad defaults.
+- [x] Update v3.8 guide/changelog/evidence; regenerate common manifests and adopter payload.
+- [x] Run full pytest (zero failures), Ruff, Codex parity and common manifest check.
+- [x] Record final outputs, changed paths and remaining work; remove task scratch.
+
+The predecessor cursor is preserved in `tasks/change_log.md` under
+"Archived cursor: before executor common v3.8 (2026-10-02)".
+
+Results: fail-first observed sonnet instead of gpt-category (`1 failed in 0.07s`).
+Focused regression suite: `211 passed in 4.00s`. Full pytest: `1784 passed in
+220.99s (0:03:40)`, zero failures. Ruff, Codex parity, common manifest and Python
+3.11 compilation passed. Both requested generators passed. Evidence:
+`tasks/reports/executor-common-fail-first.md`, "Common v3.8", and the matching
+`tasks/change_log.md` entry. Final record refresh passed the exact-content/public-surface checks:
+`9 passed in 0.35s`. The closing cursor update uses the same payload refresh and
+checks. No requested implementation or acceptance item remains; no commit/tag/push,
+consumer write, lock edit or `.codex/**` write occurred. Scratch is removed after
+the closing checks.
+```
+
+#### tasks/intent.json
+
+```
+{
+  "goal": "Fix executor temporary-directory test cleanup, malformed agent criteria, response-ID collisions and reader failures test-first; correct policy wording; verify all six items and commit common v3.5 locally.",
+  "goal_type": "maintenance",
+  "scope": "mir-yoke only; common executor edits and a local commit authorized by the owner follow-up. No consumer writes, push, tag, release, credentials or capability-pinned changes. tasks/plan.md is the intent and design authority.",
+  "priority": "normal",
+  "updated": "2026-10-02",
+  "history": [
+    {
+      "goal": "Run the 2026-10-02 mir-core:repo-maintenance pass (all 21 items) on mir-yoke only under the owner instruction of 2026-10-02: re-verify prior fixes, check ADR-88 routing lock and mir_executor common v3.4 consistency, fix in-scope defects test-first, run documented gates, local commits of own files only.",
+      "updated": "2026-10-02",
+      "status": "complete"
+    },
+    {
+      "goal": "Re-verify all twenty repo-maintenance checklist items against actual repository state and execution evidence, then minimally repair confirmed defects within this repository only.",
+      "updated": "2026-09-23",
+      "status": "superseded"
+    },
+    {
+      "goal": "Strengthen mir-core:repo-maintenance to the owner-authorized twenty-one items in this repository only; prove regressions fail first and run full verification, leaving ADR-80 release binding to Mir Harness.",
+      "updated": "2026-09-24",
+      "status": "complete"
+    },
+    {
+      "goal": "Implement the owner-approved mir_executor common base, optional local hooks/data and explicit sync/drift tooling test-first in mir-yoke only.",
+      "updated": "2026-10-01",
+      "status": "complete"
+    }
+  ],
+  "status": "complete"
+}
+```
+
+### Implementation evidence
+
+Registered the existing skill in the alphabetical mir-core inventory, knowledge category and parity set; package contracts expect seventeen skills and version 0.10.8. Updated the predecessor release/version surfaces, migration and upgrade guide. The lifecycle-hooks acknowledgement is generated from the repository dedicated `_validate_plugin(..., package_kind="skills-hooks")` validator and its tree digest; no hook content changed. Adopter payload generator: `uv run python -m tools.template_assets --write-adopter-payload` (with the owner-required UV_CACHE_DIR environment) (exit 0). No canonical derivative input changed, so no `.codex/**` regeneration or write is required.
+
+### Initial verification and correction
+
+Full `uv run pytest -q`: exit 1, `2 failed, 1785 passed in 229.01s`. The expected pre-bind failure is `tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees`. The other failure, `tests/test_public_template_surface.py::test_should_expose_no_private_absolute_path_when_public_surfaces_are_scanned`, came from an absolute UV cache path written into this evidence log; the path is removed, retaining the command and required environment reference. Run the full suite again without bypassing or narrowing checks. Ruff: exit 0, `All checks passed!`. Codex sync: exit 0, `OK: Codex derivatives match Claude sources`. Both original untracked file hashes match their starting bytes.
+
+### Final verification
+
+All UV commands use the owner-required UV_CACHE_DIR environment.
+- `uv run pytest -q`: exit 1; tail `1 failed, 1786 passed in 216.54s (0:03:36)`.
+  Only `tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees`
+  fails at the plugin tree digest comparison (the accepted pre-release-bind test from the precedent).
+- `uv run ruff check`: exit 0; tail `All checks passed!`.
+- `uv run python scripts/verify_codex_sync.py`: exit 0; tail `OK: Codex derivatives match Claude sources`.
+- `git diff --check`: exit 0.
+
+Version 0.10.8 preparation and registration are complete. Final cursor/evidence updates are
+followed by the documented adopter payload generator and exact-payload/public-surface checks.
+The original skill and contract test hashes match; both are included in the generated payload.
+No commits, pushes, tags, releases, other-repository writes, `.codex/**` writes or capability-lock
+binding occurred. Binding and publication are left to the authorized release step.

@@ -1,37 +1,28 @@
 # Plan
 
-## Active task: executor common v3.8 forced-mode route model guard (2026-10-02)
+## Active task: reference application profile registration and 0.10.8 preparation (2026-10-11)
 
-Authority: owner Discord 1555426386900942934, 2026-10-02, and the current
-executor task. This single cursor owns intent and design. Baseline: clean
-HEAD `f95dcd5`, common v3.7. Work stays in Mir Yoke; no commit/tag/push,
-consumer writes, routing lock edits or generated `.codex/**` writes.
+Authority: the current owner request in this repository only. This single cursor owns intent and design.
+Predecessor cursor and intent are preserved verbatim in `tasks/change_log.md` under
+"Reference application profile registration and 0.10.8 preparation (2026-10-11)".
 
-Design: only apply agent model/effort when its declared execution_backend equals
-the resolved dispatch backend. CLI model/effort overrides retain precedence.
-The policy/lock category and default routes declare model/effort, not a backend;
-resolve_category also discards any unrelated keys. Reject a recognized opposite
-backend model in forced modes before constructing or invoking the runner, unless
-the user supplied an explicit model. Recognize Claude aliases sonnet/opus/fable/haiku
-and claude-* versus Codex gpt-*; do not guess ownership of unknown model names.
-Keep manifest schema 1 and document common v3.8 following the v3.7 convention.
+Design: mirror e3cb1a8 registration and e3cb1a8/4c5a85b release preparation; use the
+existing knowledge category, alphabetical capability inventory and seventeen-skill
+package expectation. Preserve the new skill and test bytes. Refresh all eight plugin
+manifests, release metadata, lifecycle package acknowledgement and generated adopter payload.
+No canonical Codex derivative source changes are needed; verify parity without installing derivatives.
 
-- [x] Add regressions and show force_codex/Claude agent model failing before the fix.
-- [x] Apply the minimum guard; verify CLI overrides, non-forced routes and bad defaults.
-- [x] Update v3.8 guide/changelog/evidence; regenerate common manifests and adopter payload.
-- [x] Run full pytest (zero failures), Ruff, Codex parity and common manifest check.
-- [x] Record final outputs, changed paths and remaining work; remove task scratch.
+- [x] Inspect both precedent commits, contracts and current inventory.
+- [x] Register the existing skill and prepare version 0.10.8 metadata and documentation.
+- [x] Regenerate digest acknowledgement and adopter payload through repository routines.
+- [x] Run full pytest, Ruff and Codex sync; report tails, exit codes and final status.
 
-The predecessor cursor is preserved in `tasks/change_log.md` under
-"Archived cursor: before executor common v3.8 (2026-10-02)".
+No commit, push, tag, release, other-repository write, protected-memory write or `.codex/**` write.
+The capability lock remains pre-release-bound; only the documented same lock test failure is acceptable.
 
-Results: fail-first observed sonnet instead of gpt-category (`1 failed in 0.07s`).
-Focused regression suite: `211 passed in 4.00s`. Full pytest: `1784 passed in
-220.99s (0:03:40)`, zero failures. Ruff, Codex parity, common manifest and Python
-3.11 compilation passed. Both requested generators passed. Evidence:
-`tasks/reports/executor-common-fail-first.md`, "Common v3.8", and the matching
-`tasks/change_log.md` entry. Final record refresh passed the exact-content/public-surface checks:
-`9 passed in 0.35s`. The closing cursor update uses the same payload refresh and
-checks. No requested implementation or acceptance item remains; no commit/tag/push,
-consumer write, lock edit or `.codex/**` write occurred. Scratch is removed after
-the closing checks.
+Completed: final full pytest returned exit 1 with 1786 passed and only the accepted
+pre-release-bind failure, `tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees`.
+Ruff and Codex sync returned exit 0. The first run also exposed a private absolute path
+in the new evidence log; it was corrected and the second full run proves that failure resolved.
+The skill and test remain byte-identical to their initial untracked files.
+No requested source work remains. Release binding and all Git publication remain outside this task.
