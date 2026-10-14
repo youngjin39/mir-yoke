@@ -3461,3 +3461,5 @@ Final closeout: mapping checker again returned 0 errors / 0 warnings; `git diff 
 Repository-local check scratch was removed. Final status contains exactly the six delivery files above.
 The final cursor check initially rejected a backtick path with a heading fragment; the pointer was
 changed to the file path plus the named heading. Recheck passed for 3 files and 37 references.
+
+2026-10-15: Owner-directed map reduction: 31,821 -> 12,268 bytes; mapping checker 0 errors / 0 warnings; canonical refs, questions, domain identities/invariants and all covered check refs preserved; ambiguous vocabulary and essential relation mappings retained.
