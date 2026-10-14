@@ -2867,13 +2867,13 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "plugins/mir-core/skills/ontology/references/mapping-guide.md",
-      "sha256": "6090e7c847ceb4aabd57ff85b30f5f9f9becf67e78f1a341411e9e8a22be8593"
+      "sha256": "585570a361363ec56dbd841ab94f1a6a62740d840ced9cbf68bf3b1d7b3d7bdf"
     },
     {
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "plugins/mir-core/skills/ontology/scripts/ontology_check.py",
-      "sha256": "ca73ac970da90c5c3840511ef0ce9bce5a8e47b83305b99fdf4517a9e51684af"
+      "sha256": "5ab9ec0cae1b9c0a2a261561d0086c15ac39481199cd27b41073a71c8a38df45"
     },
     {
       "classification": "optional-consumer-tool",
@@ -4475,7 +4475,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_ontology_skill.py",
-      "sha256": "0ae8b558906a4491e979ad781980580d3e7d42a08484a33d2e3b90f46189e4e6"
+      "sha256": "f7992089cb7edd22fff964dc5cb48a7b1f10a1190ff17a327973a45240b08e31"
     },
     {
       "classification": "template-maintainer-tool",

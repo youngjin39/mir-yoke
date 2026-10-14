@@ -173,6 +173,18 @@ class Checker:
             self.error("/contract/version_range", "invalid version_range; use >=A.B.C <X.Y.Z")
         elif not version_key(match[1]) <= version_key(contract["version"]) < version_key(match[2]):
             self.error("/contract/version_range", "version mismatch (E10): contract outside range")
+        elif version_key(declaration.get("version")) is not None:
+            validated = version_key(declaration["version"])
+            if not version_key(match[1]) <= validated < version_key(match[2]):
+                self.error("/contract/version", "validated version outside its range (E10)")
+            elif validated > version_key(contract["version"]):
+                self.error(
+                    "/contract/version", "validated version is newer than the loaded contract (E10)"
+                )
+            elif validated < version_key(contract["version"]):
+                self.warn(
+                    "/contract/version", "validated against an older contract; re-validate (E10)"
+                )
         if "sha256" in declaration:
             if declaration["sha256"] != hashlib.sha256(contract_bytes).hexdigest():
                 self.warn("/contract/sha256", "contract sha256 differs from loaded file")

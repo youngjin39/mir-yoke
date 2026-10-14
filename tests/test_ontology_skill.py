@@ -142,6 +142,8 @@ def test_valid_mapping_passes(mapping_repo: tuple[Path, dict]) -> None:
         (("entrypoints", 0), "../model.md", "ref escapes repository"),
         (("entrypoints", 0), "/model.md", "absolute ref"),
         (("contract", "version_range"), ">=2.0.0 <3.0.0", "version mismatch (E10)"),
+        (("contract", "version"), "1.0.1", "newer than the loaded contract (E10)"),
+        (("contract", "version"), "2.0.0", "validated version outside its range (E10)"),
         (("namespace",), "another-project", "namespace mismatch"),
         (("error_cases", 0, "check"), None, "covered needs a check ref"),
         (("knowledge_supply", "binding"), None, "connected needs a binding ref"),
@@ -191,6 +193,18 @@ def test_warnings_do_not_fail_mapping(mapping_repo: tuple[Path, dict]) -> None:
     report = json.loads(result.stdout)
     assert report["ok"] and not report["errors"]
     assert len(report["warnings"]) == 2
+
+
+def test_older_validated_version_is_a_warning(mapping_repo: tuple[Path, dict]) -> None:
+    repo, mapping = mapping_repo
+    contract = json.loads(CONTRACT.read_text())
+    contract["version"] = "1.1.0"
+    path = repo / "contract.json"
+    path.write_text(json.dumps(contract))
+    result = run_mapping(repo, mapping, "--contract", str(path))
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "WARN /contract/version" in result.stdout
+    assert "re-validate (E10)" in result.stdout
 
 
 def test_missing_profile_is_mapping_error(mapping_repo: tuple[Path, dict]) -> None:

@@ -11,7 +11,7 @@ All twelve top-level keys are required:
 | Key | Shape and meaning |
 | --- | --- |
 | `schema` | `mir-semantic-mapping/v1`. |
-| `contract` | `id` = `mir.common-semantics`; exact validated `version` as SemVer; accepted `version_range` as `>=A.B.C <X.Y.Z`. Optional `sha256` is the distributed file's digest. |
+| `contract` | `id` = `mir.common-semantics`; exact validated `version` as SemVer (inside its own range, never newer than the loaded contract; older warns to re-validate); accepted `version_range` as `>=A.B.C <X.Y.Z`. Optional `sha256` is the distributed file's digest. |
 | `namespace` | Owning repository Profile's `slug`, from `.mir/repo-profile.toml`. Qualify shared entity IDs with it; do not reissue existing IDs. |
 | `canonical_index` | List of repository-relative refs to the project's authoritative model sources. |
 | `concepts` | Object keyed by every common concept ID: Project, Agent, Capability, Requirement, Concept, Artifact, Decision, Task, Run, Evidence, Assessment, Policy. |
