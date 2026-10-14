@@ -18,6 +18,7 @@ SEMVER = re.compile(
     r"(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?"
 )
 VERSION_RANGE = re.compile(rf">=({CORE}) <({CORE})")
+MAPPING_BUDGET = 12288
 
 
 def version_key(value):
@@ -326,7 +327,11 @@ def main(argv=None):
             root = args.repo.resolve()
             if not root.is_dir():
                 raise OSError("repository root is not a directory")
-            mapping = json.loads((root / ".mir/ontology-map.json").read_text(encoding="utf-8"))
+            text = (root / ".mir/ontology-map.json").read_text(encoding="utf-8")
+            size = len(text.encode("utf-8"))
+            if size > MAPPING_BUDGET:
+                checker.warn("/", f"mapping is {size} bytes, over the {MAPPING_BUDGET}-byte budget")
+            mapping = json.loads(text)
             mapping_version = checker.mapping(mapping, contract, payload, root)
     except (OSError, UnicodeError, ValueError, RuntimeError) as exc:
         checker.error("", "IO problem: " + str(exc))

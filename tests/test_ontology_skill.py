@@ -207,6 +207,15 @@ def test_older_validated_version_is_a_warning(mapping_repo: tuple[Path, dict]) -
     assert "re-validate (E10)" in result.stdout
 
 
+def test_oversized_mapping_warns_but_passes(mapping_repo: tuple[Path, dict]) -> None:
+    repo, mapping = mapping_repo
+    mapping["concepts"]["Project"]["notes"] = "x" * 13000
+    result = run_mapping(repo, mapping)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "WARN /: mapping is" in result.stdout
+    assert "over the 12288-byte budget" in result.stdout
+
+
 def test_missing_profile_is_mapping_error(mapping_repo: tuple[Path, dict]) -> None:
     repo, mapping = mapping_repo
     (repo / ".mir/repo-profile.toml").unlink()

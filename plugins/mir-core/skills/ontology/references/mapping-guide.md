@@ -38,6 +38,15 @@ relations, associations and identity are distinct. A `verified_by` mapping names
 not establish a passed result. Similarity and co-mention cannot justify `same_as`.
 The checker validates relation IDs; reviewers must check the actual domain endpoints and meaning.
 
+## Size and selection
+
+Keep the map an index, at most 12,288 bytes (the checker warns above this). Keep the canonical index,
+the twelve concept refs, questions with evidence paths, domain identities and invariants, error
+cases and knowledge supply. Map vocabulary values only where a reader could misread them (for
+example `ready`, `done`, `completed`, `passed`, `active`, `verified`, `accepted`); leave obvious
+values and restated definitions in the canonical sources. Fleet evaluation (2026-10) found answer
+changes from evidence paths and identity or dependency entries, not from exhaustive vocabularies.
+
 ## Refs, domain questions and error coverage
 
 Refs are strings: `path`, `path:line` or `path#symbol`, relative to the repository root.
