@@ -26,7 +26,7 @@
     },
     ".claude/agents/ontology-validator.md": {
       "project_path": ".claude/agents/ontology-validator.md",
-      "sha256": "bdadf432c5f478f8e11b82c08c974bff0194a9351ceab84cf48427c4b92e0f2d"
+      "sha256": "1f6ce84d7dbc52914de517699eab9c70ac5494825615db951050dfb42767f9fd"
     },
     ".claude/agents/pipeline-validator.md": {
       "project_path": ".claude/agents/pipeline-validator.md",
@@ -83,29 +83,29 @@
       "sha256": "56b047474551913d6734e85c60a3f25d4944f55d28b7a2110495f9175f52ed07"
     },
     ".claude-plugin/marketplace.json": {
-      "sha256": "4127cfe68b7d3398c147497f8316ece31be315e1aa57e7e151f5c7a6d7235f2e"
+      "sha256": "160c78540dce090e87c5c0f5809c3e022d2183b743dd180ca05cd3a7b1e9d147"
     }
   },
   "plugins": {
     "mir-code": {
       "package_kind": "skills",
       "path": "plugins/mir-code",
-      "sha256": "183e6f9662cc5a1324a32e94842efeec51c9a217d4fbffdd8c146285b6e36cb6"
+      "sha256": "d45ebcab9e7dac34c0c5a820639903b4411a70c998b113785490838e4bd5ea76"
     },
     "mir-content": {
       "package_kind": "skills",
       "path": "plugins/mir-content",
-      "sha256": "adafa2471561ab610c40ddd0a93fbd3149836c7bc7b68addabde8742cb39fb15"
+      "sha256": "815a21aaf2ecc113beb9fac7a34748738cf07233d6fe65eb6a7f5b3e1f661880"
     },
     "mir-core": {
       "package_kind": "skills",
       "path": "plugins/mir-core",
-      "sha256": "d7b4ace28079927e779af7b5aec88ed0664a40faaecb2c1f9412564c94ac35ae"
+      "sha256": "ac2e568531351f5f86ca5b26e43a2aa6f71b0f7b1d5d5d016088916d24f9d418"
     },
     "mir-lifecycle-hooks": {
       "package_kind": "skills-hooks",
       "path": "plugins/mir-lifecycle-hooks",
-      "sha256": "df17c87318961f77ab7451783125d9303ee6d76ca4cab17bf7bc2a5d9e10cd50"
+      "sha256": "67e5646c8c2568aab2027542625c74898be12b863ad2ad30af6dca24e931c39e"
     }
   },
   "profile": "hybrid_pipeline",
@@ -115,7 +115,7 @@
   },
   "schema_version": 2,
   "source": {
-    "commit": "07e354dad3478a33ae245befd9e973f9cb47b0ac",
+    "commit": "cd14259e6a0d29aa2fda01e39a47900aeede9698",
     "ref": "main",
     "url": "https://github.com/youngjin39/mir-yoke.git"
   },
