@@ -3298,3 +3298,166 @@ Previous intent:
   "status": "complete"
 }
 ```
+
+
+## Superseded cursor: ontology phase B1 (2026-10-15)
+
+The phase-D request supersedes the completed phase-B1 cursor. Preserved cursor:
+
+# Plan
+
+## Active task: common semantic contract distribution, phase B1 (2026-10-14)
+
+Authority: the current owner request recorded in `tasks/intent.json`; this is the single active
+cursor and design authority. The superseded cursor and intent remain in `tasks/change_log.md`.
+
+Outcome: ship `mir-core:ontology`, a byte-identical owner contract, generic mapping and knowledge
+references, and a Python 3.9 standard-library checker. Prepare 0.11.0 without release binding.
+
+Design: keep the project-owned mapping as JSON. Concepts are keyed by common concept id;
+vocabularies, relations, questions, error cases and entrypoints are lists. References are repository
+relative strings. Deterministic checks cover structure, declared compatibility and local references;
+semantic interpretation, execution evidence and authority remain separate verification layers.
+Package scripts are inert non-executable files, invoked explicitly with Python. No runtime hook,
+automatic service connection or consumer write is introduced.
+
+- [x] Confirm package rules and read the complete owner contract.
+- [x] Write checker regression tests, run them failing, then implement and pass them.
+- [x] Add generic skill/references, workflow pointers and bounded validator guidance.
+- [x] Register the skill, refresh version/catalog metadata and prepare 0.11.0.
+- [x] Run full pytest, Ruff, Codex parity and system Python contract checks; report evidence.
+
+Constraints: write only here. Preserve canonical owner contract bytes. Do not commit, tag, push,
+bind locks, apply/attest/finalize capabilities, change user installs or write generated `.codex/**`.
+Full pytest may retain the named pre-release capability-lock failure. Agent-source changes may
+require Main-owned derivative regeneration; report that state without bypassing parity checks.
+
+Source work and required check execution are complete. Main must regenerate the ontology-validator
+Codex derivative; release capability-lock binding remains outside this task. See
+`tasks/change_log.md` under "Ontology phase B1 verification (2026-10-14)" for commands, results,
+package rules, isolation details and the exact changed-file inventory.
+
+## Ontology phase D adoption evidence (2026-10-15)
+
+Baseline: `996e9fa21ef953950daa0a6f21d4617a42ea1680`, initial worktree clean.
+Authority: phase-D owner request; `tasks/plan.md` is the active cursor/design authority.
+The mapping describes Yoke itself, not consumer runtime state. It uses only public repository-relative
+references. Contract distribution, versions, capability locks and generated runtime surfaces are unchanged.
+
+### Domain comparison procedure and scope
+
+First read canonical sources directly, before authoring the mapping. Then answer the same questions
+through `questions`, `canonical_index`, domain identity schemes, relation mappings and vocabularies.
+These are qualitative source-selection comparisons, not independent blind trials or runtime acceptance.
+No false first-pass mistake is invented. All three answers agree; the mapping changes the retrieval
+route and makes scope distinctions explicit, without demonstrated accuracy or timing improvement.
+
+Q1: Which capabilities can code-only and content consumers adopt, and which remain project-owned?
+
+- Without mapping: `config/capability-sources.json:52`, `config/capability-sources.json:116`,
+  `ARCHITECTURE.md:63`, `docs/decisions/adr-90-role-plugins-and-common-hooks.md:47`.
+- Answer: code_app selects core, code and lifecycle packages; content_workspace selects core,
+  content and lifecycle packages. Both have their own selected agent/command lists. Agents and Claude
+  commands are delivered separately; Codex command intent resolves namespaced plugin skills. Project
+  instructions, policy and coupled hook/MCP adapters stay project-owned. The global lifecycle hook is
+  the exact read-only exception. Profile selection does not authorize installation or consumer writes.
+- With mapping: Q1 -> canonical capability source + ADR-90 + architecture; `profile aliases` and
+  `plugin selected by profile` are local selection relations, not entity identity or ownership.
+  Domain identifies supplier/consumer and plugin/pack identities. Same source evidence and same answer.
+- Difference: no difference in the answer. The index supplies a bounded source route; no execution
+  or adoption claim is inferred from selection. Historical spec is unnecessary to this question.
+
+Q2: Can installed skills work without the provider checkout, and what proves runtime discovery?
+
+- Without mapping: `docs/decisions/adr-89-dual-runtime-capability-management.md:55`,
+  `scripts/verify_plugin_cli_activation.py:204`, `scripts/verify_plugin_cli_activation.py:234`,
+  `src/mir/core/capabilities/manager.py#CapabilityManager.attest`,
+  `src/mir/core/capabilities/manager.py#CapabilityManager.finalize`.
+- Answer: the supported design is host-installed namespaced skills independent of the provider
+  checkout and consumer CWD. The verifier renames its provider unavailable and compares installed
+  digests/inventories from consumer roots. Real activation additionally requires CLI installation
+  evidence, expected skill/hook observations in fresh sessions from both required runtimes and guarded
+  finalization. Source selection, package hash and catalog declaration alone do not establish it.
+  Actual live discovery in this unit is unverified; the real-CLI probe is not executed here.
+- With mapping: Q2 -> canonical ADR-89 + attest implementation + activation verifier; domain separates
+  distribution from activation; vocabulary separates attested, verified, active and incomplete.
+  Same sources and same answer, including the live-observation limit.
+- Difference: no difference in the answer. The mapping explicitly preserves declared-versus-executed
+  and byte-identity-versus-truth distinctions. No installed READY claim is made.
+
+Q3: Does shared executor delivery preserve adapters and reject dirty/unsafe delivery?
+
+- Without mapping: `tools/executor_sync.py:23`, `tools/executor_sync.py:45`,
+  `tools/executor_sync.py:90`, `docs/operations/mir-executor-sync.md:63`,
+  `tools/mir_executor/COMMON_MANIFEST.json`.
+- Answer: sync acts on one explicit target, copies only manifest-selected common files plus the
+  consumer manifest, excludes local.py and tests/local, leaves local config/policy untouched, refuses
+  dirty selected paths and symlinks, and rejects stale source hashes. Source commit identifies the
+  delivered provider revision; manifest version 1 is schema version, not executor product version.
+  This unit's read-only manifest check passes; target delivery and dirty/symlink regression execution
+  are not claimed.
+- With mapping: Q3 -> executor source and operations guide; domain identity schemes distinguish
+  source commit/file SHA256/schema version; derived_from describes target manifest provenance.
+  Same source evidence and same answer.
+- Difference: no difference in the answer. The map narrows impact to common manifest-selected files;
+  it does not establish a consumer write permission or executed delivery.
+
+### Error-case coverage
+
+Coverage is deliberately scoped. A format pass is not semantic, runtime or authorization completion.
+No new regression test: missing semantic guards have no existing enforcing implementation to exercise.
+
+| Case | Status | Actual local exercise or reason |
+| --- | --- | --- |
+| E01 | planned | Namespace mismatch fixture exists, but no cross-project entity-merge isolation test. |
+| E02 | planned | Traversal tests exist; generic common endpoint/type/scope validation is not enforced. |
+| E03 | covered | `tests/test_decision_authority.py#test_should_route_centralization_decisions_to_history_when_reading_current_authority`; decision authority routing only. |
+| E04 | planned | No direct guard against reporting a declared verified_by as passed; runtime attestation is different. |
+| E05 | planned | No general similarity/inference-to-identity guard. |
+| E06 | covered | `tests/test_relations.py#test_current_graph_is_reloaded_and_source_digest_changes`; edited graph reloads and digest changes. |
+| E07 | covered | `tests/test_public_template_authority.py#test_should_expose_only_single_root_explicit_apply_mutation_flags`; CLI no-apply default only. |
+| E08 | not_applicable | No personal knowledge plane/binding in this supplier unit; sensitive bodies and protected memory excluded. |
+| E09 | not_applicable | No knowledge-service binding/dependency in this unit; later binding must revisit outage behavior. |
+| E10 | covered | `tests/test_ontology_skill.py#test_invalid_mapping_fails_with_specific_message`; contract/mapping version and range mismatches only, not installed plugin-version alignment. |
+
+### Executed checks
+
+uv commands used a host-local cache directory (`UV_CACHE_DIR`).
+Scratch is repository-local `.mir/ontology-adoption-check-tmp`, removed after checks. The parity
+checker used its own generator in disposable output only; it did not regenerate root derivatives.
+
+- `python3 plugins/mir-core/skills/ontology/scripts/ontology_check.py mapping --repo .`
+  -> initial missing ADR-82 ref corrected; final `0 errors, 0 warnings; contract 1.0.0, mapping 1.0.0`, exit 0.
+- `python3 plugins/mir-core/skills/ontology/scripts/ontology_check.py contract`
+  -> `0 errors, 0 warnings; contract 1.0.0, mapping None`, exit 0.
+- `TMPDIR="$PWD/.mir/ontology-adoption-check-tmp" uv run pytest -q -p no:cacheprovider --basetemp="$PWD/.mir/ontology-adoption-check-tmp/pytest" tests/test_ontology_skill.py tests/test_decision_authority.py tests/test_public_template_authority.py::test_should_expose_only_single_root_explicit_apply_mutation_flags tests/test_relations.py::test_current_graph_is_reloaded_and_source_digest_changes tests/test_session_upfront_context.py tests/test_public_template_identity.py`
+  -> 67 passed in 1.78s, exit 0. Existing regression code unchanged.
+- `uv run python scripts/verify_context_paths.py CLAUDE.md ARCHITECTURE.md tasks/plan.md`
+  -> PASS: checked 3 files and 35 path references, exit 0.
+- `uv run python scripts/verify_context_paths.py`
+  -> PASS: checked 9 files and 75 path references, exit 0.
+- `TMPDIR="$PWD/.mir/ontology-adoption-check-tmp" uv run python scripts/verify_codex_sync.py`
+  -> exit 1: `FAIL: generated drift: AGENTS.md`. Sole reported drift is expected after adding the
+  canonical rule. No root .codex file or other generated derivative was changed.
+- `python3 -B tools/executor_sync.py --target . --check` -> `Common manifest: PASS`, exit 0.
+- `git check-ignore -v .mir/ontology-map.json` -> no matching rule (exit 1); no .gitignore edit needed.
+- `git diff --check` -> initial archival trailing blank line repaired; final result recorded below.
+
+### Delivery and remaining work
+
+Changed: `.mir/ontology-map.json`, `CLAUDE.md`, `ARCHITECTURE.md`, `tasks/intent.json`,
+`tasks/plan.md`, `tasks/change_log.md`. No production code, tests, distributed contract, versions,
+locks or root generated derivatives changed. No commit, publish, service action, target delivery or
+live DB operation. Memory Keeper is explicitly not_connected; binding belongs to a later unit.
+
+Main must run `bash scripts/generate_codex_derivatives.sh` and rerun parity under its own write
+scope. This generator writes .codex/**, which the phase-D worker is explicitly prohibited from writing;
+therefore worker regeneration is pending, not a passed parity claim. The real-CLI activation probe
+and executor sync regression suite create fixture Git commits; neither was run under the no-commit
+instruction. Current host discovery and delivered consumer behavior remain unverified here.
+E01/E02/E04/E05 remain planned; the covered cases above do not promise general semantic enforcement.
+
+Final closeout: mapping checker again returned 0 errors / 0 warnings; `git diff --check` passed.
+Repository-local check scratch was removed. Final status contains exactly the six delivery files above.
+The final cursor check initially rejected a backtick path with a heading fragment; the pointer was
+changed to the file path plus the named heading. Recheck passed for 3 files and 37 references.

@@ -89,6 +89,9 @@ become a target prerequisite by presence alone.
 
 ## Source of truth and generation
 
+For identity, relation or status meaning, use `mir-core:ontology` and the task-relevant entries in
+[the project ontology mapping](.mir/ontology-map.json), which indexes definitions without replacing them.
+
 The [decision index](docs/decisions/INDEX.md) records authority and the complete ADR register.
 The [specification tree](spec/STATE.md) is a completed historical v0.8 automation snapshot;
 ADR-83 defines current support. Maintainer work uses the single active

@@ -1,0 +1,889 @@
+{
+  "schema": "mir-semantic-mapping/v1",
+  "contract": {
+    "id": "mir.common-semantics",
+    "version": "1.0.0",
+    "version_range": ">=1.0.0 <2.0.0"
+  },
+  "namespace": "mir-yoke",
+  "canonical_index": [
+    ".mir/repo-profile.toml",
+    "CLAUDE.md",
+    "ARCHITECTURE.md",
+    "docs/decisions/INDEX.md",
+    "docs/decisions/adr-89-dual-runtime-capability-management.md",
+    "docs/decisions/adr-90-role-plugins-and-common-hooks.md",
+    "config/capability-sources.json",
+    "config/template-assets.json",
+    "src/mir/core/capabilities/config.py",
+    "src/mir/core/capabilities/manager.py",
+    "docs/operations/mir-executor-sync.md",
+    "tools/executor_sync.py",
+    "spec/STATE.md",
+    "spec/index.yaml",
+    "spec/graph.yaml",
+    "src/mir/core/engine/memory/migrations/001_initial.sql",
+    "tools/mir_executor/jobs.py",
+    "src/mir/core/engine/memory/relation_facts.py",
+    "src/mir/core/engine/memory/predicates.py",
+    "docs/templates/_schema/adr.schema.json",
+    "src/mir/core/contracts/provider_result.py"
+  ],
+  "concepts": {
+    "Project": {
+      "status": "mapped",
+      "local": [
+        {
+          "name": "repository Profile",
+          "ref": ".mir/repo-profile.toml"
+        }
+      ]
+    },
+    "Agent": {
+      "status": "mapped",
+      "local": [
+        {
+          "name": "project agent source",
+          "ref": ".claude/agents/main-orchestrator.md"
+        },
+        {
+          "name": "legacy AgentProfile",
+          "ref": "src/mir/core/contracts/agent_profile.py"
+        }
+      ],
+      "notes": "A delivered role definition is not evidence of a running agent; legacy profile is reference code, not consumer policy."
+    },
+    "Capability": {
+      "status": "mapped",
+      "local": [
+        {
+          "name": "plugin, agent and command selection",
+          "ref": "config/capability-sources.json"
+        }
+      ]
+    },
+    "Requirement": {
+      "status": "mapped",
+      "local": [
+        {
+          "name": "historical CR/FR/IR/QR requirements",
+          "ref": "spec/req"
+        }
+      ],
+      "notes": "Historical spec scope only, superseded-reference under ADR-83; not current adopter requirements."
+    },
+    "Concept": {
+      "status": "mapped",
+      "local": [
+        {
+          "name": "supplier/consumer and supported-surface definitions",
+          "ref": "ARCHITECTURE.md"
+        },
+        {
+          "name": "historical domain constraints",
+          "ref": "spec/concepts"
+        }
+      ]
+    },
+    "Artifact": {
+      "status": "mapped",
+      "local": [
+        {
+          "name": "classified template asset",
+          "ref": "config/template-assets.json"
+        },
+        {
+          "name": "executor distribution manifest",
+          "ref": "tools/mir_executor/COMMON_MANIFEST.json"
+        }
+      ]
+    },
+    "Decision": {
+      "status": "mapped",
+      "local": [
+        {
+          "name": "architecture decision authority",
+          "ref": "docs/decisions/INDEX.md"
+        }
+      ]
+    },
+    "Task": {
+      "status": "mapped",
+      "local": [
+        {
+          "name": "current maintainer work",
+          "ref": "tasks/plan.md"
+        },
+        {
+          "name": "reference TaskSpec",
+          "ref": "src/mir/core/contracts/task_spec.py"
+        }
+      ]
+    },
+    "Run": {
+      "status": "mapped",
+      "local": [
+        {
+          "name": "individual dispatch attempt",
+          "ref": "tools/mir_executor/dispatch.py"
+        }
+      ],
+      "notes": "An attempt is distinct from its task/job and runtime session; no live registry inspected."
+    },
+    "Evidence": {
+      "status": "mapped",
+      "local": [
+        {
+          "name": "activation/discovery observation receipt",
+          "ref": "src/mir/core/capabilities/manager.py#CapabilityManager.attest"
+        },
+        {
+          "name": "declared edge source provenance",
+          "ref": "src/mir/core/relations.py#Edge"
+        }
+      ],
+      "notes": "A declared edge or matching digest alone is not behavioral success or truth."
+    },
+    "Assessment": {
+      "status": "mapped",
+      "local": [
+        {
+          "name": "reference gate ValidationResult",
+          "ref": "src/mir/core/contracts/gate.py#ValidationResult"
+        },
+        {
+          "name": "capability health assessment",
+          "ref": "src/mir/core/capabilities/manager.py#CapabilityManager.status"
+        }
+      ]
+    },
+    "Policy": {
+      "status": "mapped",
+      "local": [
+        {
+          "name": "repository contract",
+          "ref": "CLAUDE.md"
+        },
+        {
+          "name": "protected and execution boundaries",
+          "ref": ".mir/repo-profile.toml"
+        }
+      ]
+    }
+  },
+  "vocabularies": [
+    {
+      "name": "repository Profile status",
+      "ref": ".mir/repo-profile.toml",
+      "values": {
+        "active": {
+          "local_only": "Maintained repository registration; does not establish runtime activation or verification."
+        }
+      }
+    },
+    {
+      "name": "ADR lifecycle",
+      "ref": "docs/templates/_schema/adr.schema.json",
+      "values": {
+        "proposed": {
+          "lifecycle": "proposed"
+        },
+        "draft": {
+          "lifecycle": "proposed"
+        },
+        "accepted": {
+          "lifecycle": "accepted"
+        },
+        "deferred": {
+          "local_only": "Decision postponed, not in force."
+        },
+        "superseded": {
+          "lifecycle": "superseded"
+        },
+        "rejected": {
+          "local_only": "Proposal rejected; not necessarily a previously accepted fact retracted."
+        },
+        "archived": {
+          "temporal": "historical"
+        }
+      }
+    },
+    {
+      "name": "historical spec projection",
+      "ref": "spec/STATE.md",
+      "values": {
+        "superseded-reference": {
+          "lifecycle": "superseded",
+          "temporal": "historical"
+        },
+        "done": {
+          "local_only": "Dated implementation/task completion, not current execution proof."
+        },
+        "building": {
+          "local_only": "Feature implementation in progress."
+        },
+        "planned": {
+          "lifecycle": "proposed"
+        },
+        "deprecated": {
+          "lifecycle": "deprecated"
+        },
+        "ready": {
+          "local_only": "Historical spec readiness, not a fresh passed execution."
+        },
+        "incomplete": {
+          "local_only": "Specification incomplete."
+        },
+        "blocked": {
+          "local_only": "Specification blocked by an unresolved dependency."
+        }
+      }
+    },
+    {
+      "name": "reference provider execution outcome",
+      "ref": "src/mir/core/contracts/provider_result.py",
+      "values": {
+        "success": {
+          "local_only": "Provider process succeeded; not a check verdict or acceptance."
+        },
+        "failed": {
+          "local_only": "Provider execution failed."
+        },
+        "timeout": {
+          "local_only": "Provider execution exceeded its time limit."
+        },
+        "cancelled": {
+          "local_only": "Provider execution cancelled."
+        }
+      }
+    },
+    {
+      "name": "memory fact lifecycle (schema only)",
+      "ref": "src/mir/core/engine/memory/migrations/001_initial.sql",
+      "values": {
+        "active": {
+          "local_only": "Stored fact active within validity/scope; does not establish truth or current source freshness."
+        },
+        "superseded": {
+          "lifecycle": "superseded"
+        },
+        "rejected": {
+          "local_only": "Rejected stored assertion, not usable as confirmed fact."
+        }
+      }
+    },
+    {
+      "name": "capability operation diagnostics",
+      "ref": "src/mir/core/capabilities/manager.py",
+      "values": {
+        "active": {
+          "local_only": "Finalized runtime registration; current READY additionally requires integrity, discovery and local integration."
+        },
+        "attempted": {
+          "local_only": "Capability diagnostic branch attempted; read the producing operation and criterion. Not a general lifecycle, truth, test or authority verdict."
+        },
+        "attested": {
+          "local_only": "Operator-observed catalog/hook receipt; both fresh runtime sessions and finalization remain separate."
+        },
+        "capability-home-unsafe": {
+          "local_only": "Capability diagnostic branch capability-home-unsafe; read the producing operation and criterion. Not a general lifecycle, truth, test or authority verdict."
+        },
+        "cli-missing": {
+          "local_only": "Capability diagnostic branch cli-missing; read the producing operation and criterion. Not a general lifecycle, truth, test or authority verdict."
+        },
+        "codex-home-unsafe": {
+          "local_only": "Capability diagnostic branch codex-home-unsafe; read the producing operation and criterion. Not a general lifecycle, truth, test or authority verdict."
+        },
+        "digest-mismatch": {
+          "local_only": "Capability diagnostic branch digest-mismatch; read the producing operation and criterion. Not a general lifecycle, truth, test or authority verdict."
+        },
+        "disabled": {
+          "local_only": "Capability diagnostic branch disabled; read the producing operation and criterion. Not a general lifecycle, truth, test or authority verdict."
+        },
+        "enabled": {
+          "local_only": "Capability diagnostic branch enabled; read the producing operation and criterion. Not a general lifecycle, truth, test or authority verdict."
+        },
+        "enabled-set-mismatch": {
+          "local_only": "Capability diagnostic branch enabled-set-mismatch; read the producing operation and criterion. Not a general lifecycle, truth, test or authority verdict."
+        },
+        "enrolled": {
+          "local_only": "Capability diagnostic branch enrolled; read the producing operation and criterion. Not a general lifecycle, truth, test or authority verdict."
+        },
+        "failed": {
+          "local_only": "Capability diagnostic branch failed; read the producing operation and criterion. Not a general lifecycle, truth, test or authority verdict."
+        },
+        "incomplete": {
+          "local_only": "Required activation/discovery evidence is incomplete."
+        },
+        "installed-path-missing": {
+          "local_only": "Capability diagnostic branch installed-path-missing; read the producing operation and criterion. Not a general lifecycle, truth, test or authority verdict."
+        },
+        "invalid-command": {
+          "local_only": "Capability diagnostic branch invalid-command; read the producing operation and criterion. Not a general lifecycle, truth, test or authority verdict."
+        },
+        "invalid-lock": {
+          "local_only": "Capability diagnostic branch invalid-lock; read the producing operation and criterion. Not a general lifecycle, truth, test or authority verdict."
+        },
+        "invalid-plan": {
+          "local_only": "Capability diagnostic branch invalid-plan; read the producing operation and criterion. Not a general lifecycle, truth, test or authority verdict."
+        },
+        "missing": {
+          "local_only": "Required evidence missing in the inspected runtime scope, not global absence."
+        },
+        "missing-or-duplicate": {
+          "local_only": "Capability diagnostic branch missing-or-duplicate; read the producing operation and criterion. Not a general lifecycle, truth, test or authority verdict."
+        },
+        "not-enrolled": {
+          "local_only": "Capability diagnostic branch not-enrolled; read the producing operation and criterion. Not a general lifecycle, truth, test or authority verdict."
+        },
+        "not-synced": {
+          "local_only": "No synced capability state available in this operation."
+        },
+        "ok": {
+          "local_only": "Capability diagnostic branch ok; read the producing operation and criterion. Not a general lifecycle, truth, test or authority verdict."
+        },
+        "pending": {
+          "local_only": "Capability diagnostic branch pending; read the producing operation and criterion. Not a general lifecycle, truth, test or authority verdict."
+        },
+        "restart-required": {
+          "local_only": "Capability diagnostic branch restart-required; read the producing operation and criterion. Not a general lifecycle, truth, test or authority verdict."
+        },
+        "scope-mismatch": {
+          "local_only": "Capability diagnostic branch scope-mismatch; read the producing operation and criterion. Not a general lifecycle, truth, test or authority verdict."
+        },
+        "unexpected-enabled": {
+          "local_only": "Capability diagnostic branch unexpected-enabled; read the producing operation and criterion. Not a general lifecycle, truth, test or authority verdict."
+        },
+        "verified": {
+          "local_only": "Scoped activation/discovery evidence satisfies its operation; not a semantic or product test pass."
+        },
+        "cli-evidence-missing": {
+          "local_only": "Capability diagnostic cli-evidence-missing; applies only to the producing operation and its criterion, not a universal completion or authority verdict."
+        },
+        "provider-mismatch": {
+          "local_only": "Capability diagnostic provider-mismatch; applies only to the producing operation and its criterion, not a universal completion or authority verdict."
+        },
+        "session-invalid": {
+          "local_only": "Capability diagnostic session-invalid; applies only to the producing operation and its criterion, not a universal completion or authority verdict."
+        },
+        "session-stale": {
+          "local_only": "Capability diagnostic session-stale; applies only to the producing operation and its criterion, not a universal completion or authority verdict."
+        },
+        "skills-missing": {
+          "local_only": "Capability diagnostic skills-missing; applies only to the producing operation and its criterion, not a universal completion or authority verdict."
+        },
+        "hooks-missing": {
+          "local_only": "Capability diagnostic hooks-missing; applies only to the producing operation and its criterion, not a universal completion or authority verdict."
+        },
+        "hook-attestation-invalid": {
+          "local_only": "Capability diagnostic hook-attestation-invalid; applies only to the producing operation and its criterion, not a universal completion or authority verdict."
+        }
+      }
+    },
+    {
+      "name": "executor job status",
+      "ref": "tools/mir_executor/jobs.py:70",
+      "values": {
+        "running": {
+          "local_only": "Job execution in progress."
+        },
+        "completed": {
+          "local_only": "Job execution finished successfully; no implication of deployment, owner acceptance or capability READY."
+        },
+        "cancelled": {
+          "local_only": "Job cancelled."
+        },
+        "failed": {
+          "local_only": "Job execution failed; distinct from a verification result."
+        }
+      }
+    },
+    {
+      "name": "verification claim labels",
+      "ref": "plugins/mir-core/skills/verify/SKILL.md:32",
+      "values": {
+        "passed": {
+          "verification": "passed"
+        },
+        "failed": {
+          "verification": "failed"
+        },
+        "unevaluated": {
+          "verification": "unevaluated"
+        }
+      }
+    },
+    {
+      "name": "memory relation document eligibility (code only)",
+      "ref": "src/mir/core/engine/memory/relation_facts.py:22",
+      "values": {
+        "applied-ledger-v1": {
+          "local_only": "Relation document status applied-ledger-v1 is excluded from current verification evidence by the declaration reader; this is not a process outcome."
+        },
+        "archived": {
+          "local_only": "Relation document status archived is excluded from current verification evidence by the declaration reader; this is not a process outcome."
+        },
+        "candidate": {
+          "lifecycle": "proposed"
+        },
+        "done": {
+          "local_only": "Relation document status done is excluded from current verification evidence by the declaration reader; this is not a process outcome."
+        },
+        "draft": {
+          "lifecycle": "proposed"
+        },
+        "historical": {
+          "temporal": "historical"
+        },
+        "historical-ledger": {
+          "temporal": "historical"
+        },
+        "historical-manual-snapshot": {
+          "temporal": "historical"
+        },
+        "historical-snapshot": {
+          "temporal": "historical"
+        },
+        "proposed": {
+          "lifecycle": "proposed"
+        },
+        "rejected": {
+          "local_only": "Relation document status rejected is excluded from current verification evidence by the declaration reader; this is not a process outcome."
+        },
+        "superseded": {
+          "lifecycle": "superseded"
+        },
+        "superseded-design": {
+          "local_only": "Relation document status superseded-design is excluded from current verification evidence by the declaration reader; this is not a process outcome."
+        }
+      },
+      "notes": "historical* and superseded* prefixes also exclude future matching local labels; no live document bodies or DB inspected."
+    },
+    {
+      "name": "maintainer intent lifecycle",
+      "ref": "tasks/intent.json",
+      "values": {
+        "in_progress": {
+          "local_only": "Active cursor work is in progress."
+        },
+        "complete": {
+          "local_only": "Recorded task scope finished; not global release or runtime proof."
+        },
+        "superseded": {
+          "lifecycle": "superseded"
+        }
+      }
+    }
+  ],
+  "relations": [
+    {
+      "local": "realized_by",
+      "ref": "spec/graph.yaml",
+      "common": "realized_by"
+    },
+    {
+      "local": "verified_by",
+      "ref": "spec/graph.yaml",
+      "common": "verified_by"
+    },
+    {
+      "local": "depends_on",
+      "ref": "spec/graph.yaml",
+      "common": "depends_on"
+    },
+    {
+      "local": "governed_by",
+      "ref": "spec/graph.yaml",
+      "common": "governed_by"
+    },
+    {
+      "local": "has_req",
+      "ref": "spec/graph.yaml",
+      "local_only": "Feature to requirement allocation; inverse of requirement part_of feature, preserve local direction."
+    },
+    {
+      "local": "implemented_in",
+      "ref": "spec/graph.yaml",
+      "local_only": "Module Artifact to source Artifact implementation location, not Requirement/Capability to Artifact realized_by."
+    },
+    {
+      "local": "refines",
+      "ref": "spec/graph.yaml",
+      "local_only": "Use case refines requirement within the historical spec."
+    },
+    {
+      "local": "exposes",
+      "ref": "spec/graph.yaml",
+      "local_only": "Module exposes interface in the historical spec."
+    },
+    {
+      "local": "persists_to",
+      "ref": "spec/graph.yaml",
+      "local_only": "Module persistence location, not identity or ownership."
+    },
+    {
+      "local": "constrains",
+      "ref": "spec/graph.yaml",
+      "local_only": "Requirement constrains module implementation."
+    },
+    {
+      "local": "enforces",
+      "ref": "spec/graph.yaml",
+      "local_only": "Check enforces named local invariant; declaration alone is not executed verification."
+    },
+    {
+      "local": "memory_relations.realized_by",
+      "ref": "src/mir/core/engine/memory/relation_facts.py",
+      "common": "realized_by"
+    },
+    {
+      "local": "memory_relations.verified_by",
+      "ref": "src/mir/core/engine/memory/relation_facts.py",
+      "common": "verified_by"
+    },
+    {
+      "local": "memory_relations.depends_on",
+      "ref": "src/mir/core/engine/memory/relation_facts.py",
+      "common": "depends_on"
+    },
+    {
+      "local": "memory_relations.implemented_in",
+      "ref": "src/mir/core/engine/memory/relation_facts.py",
+      "local_only": "Declared entity-to-entity implementation location; local entity types do not enforce common realized_by endpoint types."
+    },
+    {
+      "local": "ADR superseded_by",
+      "ref": "docs/decisions/adr-82-product-planes-capability-packs-and-composition.md",
+      "local_only": "Old decision points to replacing decision; inverse of supersedes, retain direction."
+    },
+    {
+      "local": "lexical call",
+      "ref": "src/mir/core/engine/memory/predicates.py",
+      "local_only": "Lexical canonicalization only; aliases call, calls, called, calling do not validate semantic relations or establish entity identity."
+    },
+    {
+      "local": "lexical depend_on",
+      "ref": "src/mir/core/engine/memory/predicates.py",
+      "local_only": "Lexical canonicalization only; aliases depend on, depends on, depended on, depending on do not validate semantic relations or establish entity identity."
+    },
+    {
+      "local": "lexical extend",
+      "ref": "src/mir/core/engine/memory/predicates.py",
+      "local_only": "Lexical canonicalization only; aliases extend, extends, extended do not validate semantic relations or establish entity identity."
+    },
+    {
+      "local": "lexical implement",
+      "ref": "src/mir/core/engine/memory/predicates.py",
+      "local_only": "Lexical canonicalization only; aliases implement, implements, implemented do not validate semantic relations or establish entity identity."
+    },
+    {
+      "local": "lexical import",
+      "ref": "src/mir/core/engine/memory/predicates.py",
+      "local_only": "Lexical canonicalization only; aliases import, imports, imported do not validate semantic relations or establish entity identity."
+    },
+    {
+      "local": "lexical reference",
+      "ref": "src/mir/core/engine/memory/predicates.py",
+      "local_only": "Lexical canonicalization only; aliases reference, references, referenced do not validate semantic relations or establish entity identity."
+    },
+    {
+      "local": "lexical use",
+      "ref": "src/mir/core/engine/memory/predicates.py",
+      "local_only": "Lexical canonicalization only; aliases use, uses, used, using do not validate semantic relations or establish entity identity."
+    },
+    {
+      "local": "profile aliases",
+      "ref": "config/capability-sources.json",
+      "local_only": "Selection alias resolves a pack key, not same_as between projects or runtime entities."
+    },
+    {
+      "local": "plugin selected by profile",
+      "ref": "config/capability-sources.json",
+      "local_only": "Profile selection of a package is adoption configuration, not structural part_of or ownership."
+    },
+    {
+      "local": "executor target manifest copied from source manifest",
+      "ref": "tools/executor_sync.py#sync",
+      "common": "derived_from"
+    }
+  ],
+  "domain": {
+    "concepts": [
+      {
+        "name": "provider and consumer",
+        "ref": "ARCHITECTURE.md"
+      },
+      {
+        "name": "capability source and profile pack",
+        "ref": "config/capability-sources.json"
+      },
+      {
+        "name": "plugin package and admitted kind",
+        "ref": "src/mir/core/capabilities/config.py"
+      },
+      {
+        "name": "distribution and activation evidence",
+        "ref": "docs/decisions/adr-89-dual-runtime-capability-management.md"
+      },
+      {
+        "name": "executor common manifest and local adapter",
+        "ref": "docs/operations/mir-executor-sync.md"
+      },
+      {
+        "name": "asset classification",
+        "ref": "config/template-assets.json"
+      }
+    ],
+    "identity_schemes": [
+      {
+        "name": "Profile slug qualifies shared IDs as mir-yoke:<local-id>; preserve local IDs",
+        "ref": ".mir/repo-profile.toml"
+      },
+      {
+        "name": "plugin name and skill namespace, profile pack key",
+        "ref": "config/capability-sources.json"
+      },
+      {
+        "name": "source commit and per-file/tree SHA256 are revision/byte identities, not truth",
+        "ref": "tools/executor_sync.py"
+      },
+      {
+        "name": "executor manifest schema version differs from executor product version",
+        "ref": "docs/operations/mir-executor-sync.md"
+      },
+      {
+        "name": "historical CR/FR/IR/QR/FEAT/MOD/UC/TASK identities",
+        "ref": "tests/test_spec_integrity.py"
+      },
+      {
+        "name": "memory entity exact unique slug; aliases separate, schema only",
+        "ref": "src/mir/core/engine/memory/migrations/001_initial.sql"
+      }
+    ],
+    "relations": [
+      {
+        "name": "realized_by",
+        "ref": "spec/graph.yaml"
+      },
+      {
+        "name": "verified_by",
+        "ref": "spec/graph.yaml"
+      },
+      {
+        "name": "depends_on",
+        "ref": "spec/graph.yaml"
+      },
+      {
+        "name": "governed_by",
+        "ref": "spec/graph.yaml"
+      },
+      {
+        "name": "has_req",
+        "ref": "spec/graph.yaml"
+      },
+      {
+        "name": "implemented_in",
+        "ref": "spec/graph.yaml"
+      },
+      {
+        "name": "refines",
+        "ref": "spec/graph.yaml"
+      },
+      {
+        "name": "exposes",
+        "ref": "spec/graph.yaml"
+      },
+      {
+        "name": "persists_to",
+        "ref": "spec/graph.yaml"
+      },
+      {
+        "name": "constrains",
+        "ref": "spec/graph.yaml"
+      },
+      {
+        "name": "enforces",
+        "ref": "spec/graph.yaml"
+      },
+      {
+        "name": "memory_relations.realized_by",
+        "ref": "src/mir/core/engine/memory/relation_facts.py"
+      },
+      {
+        "name": "memory_relations.verified_by",
+        "ref": "src/mir/core/engine/memory/relation_facts.py"
+      },
+      {
+        "name": "memory_relations.depends_on",
+        "ref": "src/mir/core/engine/memory/relation_facts.py"
+      },
+      {
+        "name": "memory_relations.implemented_in",
+        "ref": "src/mir/core/engine/memory/relation_facts.py"
+      },
+      {
+        "name": "ADR superseded_by",
+        "ref": "docs/decisions/adr-82-product-planes-capability-packs-and-composition.md"
+      },
+      {
+        "name": "lexical call",
+        "ref": "src/mir/core/engine/memory/predicates.py"
+      },
+      {
+        "name": "lexical depend_on",
+        "ref": "src/mir/core/engine/memory/predicates.py"
+      },
+      {
+        "name": "lexical extend",
+        "ref": "src/mir/core/engine/memory/predicates.py"
+      },
+      {
+        "name": "lexical implement",
+        "ref": "src/mir/core/engine/memory/predicates.py"
+      },
+      {
+        "name": "lexical import",
+        "ref": "src/mir/core/engine/memory/predicates.py"
+      },
+      {
+        "name": "lexical reference",
+        "ref": "src/mir/core/engine/memory/predicates.py"
+      },
+      {
+        "name": "lexical use",
+        "ref": "src/mir/core/engine/memory/predicates.py"
+      },
+      {
+        "name": "profile aliases",
+        "ref": "config/capability-sources.json"
+      },
+      {
+        "name": "plugin selected by profile",
+        "ref": "config/capability-sources.json"
+      },
+      {
+        "name": "executor target manifest copied from source manifest",
+        "ref": "tools/executor_sync.py#sync"
+      }
+    ],
+    "invariants": [
+      {
+        "name": "No standing consumer authority",
+        "ref": "CLAUDE.md"
+      },
+      {
+        "name": "Installation is not fresh-session dual-runtime discovery",
+        "ref": "docs/decisions/adr-89-dual-runtime-capability-management.md"
+      },
+      {
+        "name": "Exact reviewed read-only global hook; coupled hooks/MCP stay local",
+        "ref": "docs/decisions/adr-90-role-plugins-and-common-hooks.md"
+      },
+      {
+        "name": "Executor explicit target only, preserve adapters, refuse dirty/symlink paths",
+        "ref": "tools/executor_sync.py"
+      },
+      {
+        "name": "Historical spec cannot expand current supported layers",
+        "ref": "spec/STATE.md"
+      },
+      {
+        "name": "Common contract copy is a distribution, not an independent source",
+        "ref": "plugins/mir-core/skills/ontology/references/SOURCE.md"
+      }
+    ]
+  },
+  "questions": [
+    {
+      "id": "Q1",
+      "question": "Which capabilities can code-only and content consumers adopt, and which integration surfaces remain project-owned?",
+      "evidence": [
+        "config/capability-sources.json",
+        "docs/decisions/adr-90-role-plugins-and-common-hooks.md",
+        "ARCHITECTURE.md"
+      ]
+    },
+    {
+      "id": "Q2",
+      "question": "Can installed skills work without the provider checkout, and what establishes actual runtime discovery?",
+      "evidence": [
+        "scripts/verify_plugin_cli_activation.py",
+        "src/mir/core/capabilities/manager.py#CapabilityManager.attest",
+        "docs/decisions/adr-89-dual-runtime-capability-management.md"
+      ]
+    },
+    {
+      "id": "Q3",
+      "question": "Does executor delivery preserve target adapters and reject unsafe or dirty delivery?",
+      "evidence": [
+        "tools/executor_sync.py",
+        "docs/operations/mir-executor-sync.md",
+        "tools/mir_executor/COMMON_MANIFEST.json"
+      ]
+    }
+  ],
+  "error_cases": [
+    {
+      "id": "E01",
+      "status": "planned",
+      "reason": "Profile-namespace mismatch is checked, but cross-project entity merge isolation is not exercised. No live store inspected."
+    },
+    {
+      "id": "E02",
+      "status": "planned",
+      "reason": "Traversal direction has tests, but generic common endpoint types and semantic scopes are not enforced locally."
+    },
+    {
+      "id": "E03",
+      "status": "covered",
+      "reason": "Narrow scope: decision index routes centralization ADRs to history rather than current authority.",
+      "check": "tests/test_decision_authority.py#test_should_route_centralization_decisions_to_history_when_reading_current_authority"
+    },
+    {
+      "id": "E04",
+      "status": "planned",
+      "reason": "Fresh-session attestation tests enforce runtime discovery, but do not directly exercise misreporting a verified_by declaration as a passed test."
+    },
+    {
+      "id": "E05",
+      "status": "planned",
+      "reason": "No executable guard for promoting similarity/inference to same entity across all maintainer retrieval paths."
+    },
+    {
+      "id": "E06",
+      "status": "covered",
+      "reason": "Narrow scope: YAML relation graph reload recomputes provenance digest after source edits.",
+      "check": "tests/test_relations.py#test_current_graph_is_reloaded_and_source_digest_changes"
+    },
+    {
+      "id": "E07",
+      "status": "covered",
+      "reason": "Narrow scope: optional CLI mutation parsers default to no apply; capability availability does not turn dry-run into mutation. This does not test all authorization paths.",
+      "check": "tests/test_public_template_authority.py#test_should_expose_only_single_root_explicit_apply_mutation_flags"
+    },
+    {
+      "id": "E08",
+      "status": "not_applicable",
+      "reason": "No personal knowledge plane or Memory Keeper binding in this supplier mapping; protected memory and sensitive bodies are excluded."
+    },
+    {
+      "id": "E09",
+      "status": "not_applicable",
+      "reason": "No shared knowledge-service binding in this unit; local mapping and checker have no service dependency."
+    },
+    {
+      "id": "E10",
+      "status": "covered",
+      "reason": "Narrow scope: checker regression rejects contract/mapping version and compatibility-range mismatches; does not prove installed plugin version.",
+      "check": "tests/test_ontology_skill.py#test_invalid_mapping_fails_with_specific_message"
+    }
+  ],
+  "knowledge_supply": {
+    "memory_keeper": "not_connected",
+    "notes": "Memory Keeper binding is deferred to a later unit; local schema references do not establish service connectivity."
+  },
+  "entrypoints": [
+    "CLAUDE.md",
+    "ARCHITECTURE.md"
+  ]
+}

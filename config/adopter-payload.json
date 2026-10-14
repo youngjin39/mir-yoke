@@ -448,6 +448,12 @@
     {
       "classification": "reference",
       "disposition": "remove",
+      "path": ".mir/ontology-map.json",
+      "sha256": "6129c5e91117a57420de3b7ae40b0068005a97903bdfa1e985cc567b213ad5aa"
+    },
+    {
+      "classification": "reference",
+      "disposition": "remove",
       "path": ".mir/repo-profile.toml",
       "sha256": "7f555bdf2e06e27e5ebb0fc6767d9250ea9e76c9f644fc347983dbec9f2eee5f"
     },
@@ -461,13 +467,13 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "AGENTS.md",
-      "sha256": "ae26336f26c5af7e51a81733d397fa1a0a74cf6ddf2a14a58f9487a9662cb9fc"
+      "sha256": "3ba3199d03625d40d2983252b3eff8a6876e5597fce6a6e3608718ba7055bbb2"
     },
     {
       "classification": "reference",
       "disposition": "remove",
       "path": "ARCHITECTURE.md",
-      "sha256": "45c934210054c46cc140ef4d06ce15158cb7d0c0a36e018bca77dd8186ea193b"
+      "sha256": "6f18414515b8ed1516b495d5328bd45ad47e1738e7616d1b11c6dafd3e7971cc"
     },
     {
       "classification": "reference",
@@ -485,7 +491,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "CLAUDE.md",
-      "sha256": "8d9af1d3f30451071f6a2e345a5a583ee12420a6f7fef798f8544cb2b6257256"
+      "sha256": "04cdea7bdef17762c5bb8d9d440cdab807bf2e181dc86290c41f0a14c24ccf95"
     },
     {
       "classification": "reference",
@@ -4091,7 +4097,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/change_log.md",
-      "sha256": "edd68a2ffb5faa5e2090e4579ffa7112f93f075bab021a8f1fd2b3d59ea76c2a"
+      "sha256": "13ea23b815ff91071627e626d97e861c632ca23b9ef7e2a65c5fc9a00eb51a10"
     },
     {
       "classification": "reference",
@@ -4109,7 +4115,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/intent.json",
-      "sha256": "11baebd92d941eabf7e4dd149ba302bff79038d78d9c7c6994b1a1c2eaae05ea"
+      "sha256": "c1fa800a5398e41ab1c15ada68eb5c80cab0c645c2b95c3d4111c247dd46798d"
     },
     {
       "classification": "reference",
@@ -4133,7 +4139,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/plan.md",
-      "sha256": "ac56defbe3b8e3fc15eed337ee061ddb89b787708dae75288b6c89b4c653979e"
+      "sha256": "8630b3e5c99c11ec6d1ff6e066a28bea36d6fe1d17f96f01fb9084bd35814473"
     },
     {
       "classification": "reference",

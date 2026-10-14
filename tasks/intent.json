@@ -1,10 +1,16 @@
 {
-  "goal": "Add mir-core:ontology and its deterministic mapping checker (phase B1), distributing the owner contract unchanged and preparing 0.11.0.",
+  "goal": "Adopt mir.common-semantics 1.0.0 for Yoke itself: local mapping, selective entrypoints, three domain comparisons and scoped error-case evidence.",
   "goal_type": "maintenance",
-  "scope": "Owner request of 2026-10-14; repository-only writes, no commits, publication, capability lock binding, capability operations, user installs or generated .codex writes. tasks/plan.md owns active intent and design.",
+  "scope": "Current phase-D owner request; repository-only writes; no commit, generated .codex writes, release, lock binding, service operations, live databases or sensitive bodies. tasks/plan.md owns active intent and design.",
   "priority": "normal",
-  "updated": "2026-10-14",
+  "updated": "2026-10-15",
   "history": [
+    {
+      "goal": "Add mir-core:ontology and its deterministic mapping checker (phase B1), distributing the owner contract unchanged and preparing 0.11.0.",
+      "updated": "2026-10-14",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#superseded-cursor-ontology-phase-b1-2026-10-15"
+    },
     {
       "goal": "Register the already-authored reference-app-profile skill exactly like repo-maintenance and release-prepare 0.10.8 in Mir Yoke only.",
       "updated": "2026-10-11",

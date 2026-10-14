@@ -1,32 +1,28 @@
 # Plan
 
-## Active task: common semantic contract distribution, phase B1 (2026-10-14)
+## Active task: Yoke ontology adoption, phase D (2026-10-15)
 
-Authority: the current owner request recorded in `tasks/intent.json`; this is the single active
-cursor and design authority. The superseded cursor and intent remain in `tasks/change_log.md`.
+Authority: the current phase-D owner request recorded in `tasks/intent.json`; this is the single
+active cursor and design authority. Superseded phase-B1 detail remains in `tasks/change_log.md`.
+Baseline: `996e9fa21ef953950daa0a6f21d4617a42ea1680`; clean initial worktree.
 
-Outcome: ship `mir-core:ontology`, a byte-identical owner contract, generic mapping and knowledge
-references, and a Python 3.9 standard-library checker. Prepare 0.11.0 without release binding.
+Outcome: a project-owned mapping of Yoke's supplier model to contract 1.0.0, two selective
+usage entrypoints, three evidenced domain comparisons and honest E01–E10 coverage.
+Design: reference current supported-surface definitions first; label retained spec and maintainer
+contracts explicitly. Keep local identities, vocabularies and state machines. Installation,
+declaration, byte integrity, runtime observation and write authority remain separate.
 
-Design: keep the project-owned mapping as JSON. Concepts are keyed by common concept id;
-vocabularies, relations, questions, error cases and entrypoints are lists. References are repository
-relative strings. Deterministic checks cover structure, declared compatibility and local references;
-semantic interpretation, execution evidence and authority remain separate verification layers.
-Package scripts are inert non-executable files, invoked explicitly with Python. No runtime hook,
-automatic service connection or consumer write is introduced.
+- [x] Re-read authority, Profile, canonical definitions and existing checks; answer cold questions.
+- [x] Add mapping and selective pointers; review endpoints and public relative refs.
+- [x] Run mapping, context-path, instruction/parity and scoped invariant checks.
+- [x] Record question comparisons, coverage, results and Main-owned regeneration pending.
 
-- [x] Confirm package rules and read the complete owner contract.
-- [x] Write checker regression tests, run them failing, then implement and pass them.
-- [x] Add generic skill/references, workflow pointers and bounded validator guidance.
-- [x] Register the skill, refresh version/catalog metadata and prepare 0.11.0.
-- [x] Run full pytest, Ruff, Codex parity and system Python contract checks; report evidence.
+Constraints: repository-only writes; no commits, push, version bumps, lock binding, release,
+services, live DB or sensitive bodies. Do not write generated `.codex/**`. The documented generator
+writes that scope, so regeneration is deferred to Main. Checker success is format evidence only.
 
-Constraints: write only here. Preserve canonical owner contract bytes. Do not commit, tag, push,
-bind locks, apply/attest/finalize capabilities, change user installs or write generated `.codex/**`.
-Full pytest may retain the named pre-release capability-lock failure. Agent-source changes may
-require Main-owned derivative regeneration; report that state without bypassing parity checks.
-
-Source work and required check execution are complete. Main must regenerate the ontology-validator
-Codex derivative; release capability-lock binding remains outside this task. See
-`tasks/change_log.md` under "Ontology phase B1 verification (2026-10-14)" for commands, results,
-package rules, isolation details and the exact changed-file inventory.
+Repository-local mapping and evidence work are complete. Harness Main regenerated the derivatives,
+trimmed CLAUDE.md back to its 3600-byte budget (ontology pointer merged into the Sources line), refreshed
+`config/adopter-payload.json`; codex sync OK; full suite 1833 passed, 1 expected failure (capability lock
+not bound until release). Evidence and remaining semantic coverage are recorded in
+`tasks/change_log.md` under "Ontology phase D adoption evidence (2026-10-15)". Memory Keeper binding is deferred.
