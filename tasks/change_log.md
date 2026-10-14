@@ -3107,6 +3107,103 @@ the closing checks.
 }
 ```
 
+## Ontology phase B1 verification (2026-10-14)
+
+Authority: `tasks/plan.md`, the single active cursor, and the owner request recorded in
+`tasks/intent.json`. The contract distribution remains owner-controlled, version 1.0.0. Its exact
+SHA-256 is recorded in `plugins/mir-core/skills/ontology/references/SOURCE.md`. The byte comparison
+passed in the actual worktree. No contract bytes were edited.
+
+Package findings: `src/mir/core/capabilities/manager.py` rejects Git mode 100755, symlinks and
+submodules during export, and executable permission bits and symlinks during tree hashing.
+Its role-plugin root/manifest allowlists forbid active root components, not inert files nested
+inside skills. `_validate_plugin` imposes no extension restriction on nested scripts/references.
+`tests/test_plugin_skill_packages.py` proves isolated package validation. ADR-89 section 2.3 and
+ADR-90 sections 2.1/2.3 retain the active-component boundary. No hook, command or MCP registration
+was added. The checker has mode 0644. Python and JSON assets are admitted without weakening rules.
+
+Verification:
+
+- Test-first checker run: 40 failures before implementation. Two malformed-contract regressions
+  and one symlink-loop regression were also observed failing before their fixes.
+- `uv run pytest -q tests/test_ontology_skill.py`: 45 passed in the actual worktree, including
+  the byte-identical owner contract test, schema/value/ref boundaries, SemVer and Python 3.9 syntax.
+- `uv run pytest -q tests/test_ontology_skill.py tests/test_template_asset_classification.py tests/test_advanced_reference_templates.py`:
+  58 passed before the public-path-only test edit.
+- `uv run pytest -q tests/test_ontology_skill.py tests/test_public_template_surface.py`:
+  48 passed after that edit; owner-source comparison still passed.
+- Marketplace version regression: observed failing with old marketplace entries, then passed after
+  aligning all four entries to 0.11.0. Existing capability materialization regression also passed.
+- Full `uv run pytest -q`: exit 1; 1830 passed, 1 skipped, 1 failed in 219.30 seconds. The only failure
+  was `tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees`,
+  the expected pre-release lock mismatch. The skip was the owner-source comparison because the
+  isolated public copy had no adjacent owner source; that test passed in the actual worktree.
+- `uv run ruff check`: exit 0, all checks passed.
+- `uv run python scripts/verify_codex_sync.py`: exit 1, only generated drift at
+  `.codex/agents/ontology-validator.toml`.
+- `python3 plugins/mir-core/skills/ontology/scripts/ontology_check.py contract`: exit 0,
+  0 errors and 0 warnings. Host `python3` is 3.14.6; `/usr/bin/python3` is 3.9.6 and the same command
+  also passed there. Valid mappings, the documentation example, and structured JSON/exit 2 for a
+  symlink loop were separately exercised on Python 3.9.6.
+- Final worktree metadata/public checks:
+  `uv run pytest -q tests/test_ontology_skill.py tests/test_template_asset_classification.py tests/test_advanced_reference_templates.py tests/test_public_template_surface.py`:
+  61 passed after the evidence and payload refresh. Ruff also passed again.
+- `git diff --check`: passed before this evidence update and checked again at closeout.
+
+All uv commands used the owner-specified shared cache. Full-suite isolation stayed inside this
+repository: an ignored `.mir/runtime/` verification copy, scratch outside that copy, its dev
+extras installed with `uv sync --extra dev`, and `GIT_CEILING_DIRECTORIES` at the scratch boundary
+prevented fixtures from inheriting the real worktree. The 36 authored/metadata files matched the
+completed test copy byte-for-byte before evidence updates. Earlier attempts exposed recursive
+fixture copies, inherited Git discovery and missing isolated dev dependencies; those were corrected
+without changing tests or package rules. A real marketplace-version omission and the new test's
+public-path spelling were corrected before the final full run. Temporary artifacts are removed at
+closeout. No daemon or emulator was started.
+
+Remaining: Main must regenerate the ontology-validator Codex derivative, refresh the adopter
+payload and rerun parity. Capability-lock binding and release delivery remain separate.
+No commit, tag, push, capability apply/attest/finalize, user-plugin install or original `.codex/**`
+write was performed. `uv.lock` changed only the local package version; the capability lock did not.
+
+Changed files (36; repository-relative):
+
+- `.claude-plugin/marketplace.json`.
+- `.claude/agents/ontology-validator.md`.
+- `CHANGELOG.md`.
+- `MIGRATION.md`.
+- `VERSION`.
+- `config/adopter-payload.json`.
+- `config/capability-sources.json`.
+- `config/repo-agent-management.json`.
+- `plugins/mir-code/.claude-plugin/plugin.json`.
+- `plugins/mir-code/.codex-plugin/plugin.json`.
+- `plugins/mir-code/skills/bluebricks/SKILL.md`.
+- `plugins/mir-content/.claude-plugin/plugin.json`.
+- `plugins/mir-content/.codex-plugin/plugin.json`.
+- `plugins/mir-content/skills/knowledge/SKILL.md`.
+- `plugins/mir-core/.claude-plugin/plugin.json`.
+- `plugins/mir-core/.codex-plugin/plugin.json`.
+- `plugins/mir-core/skills/design/SKILL.md`.
+- `plugins/mir-core/skills/ontology/SKILL.md`.
+- `plugins/mir-core/skills/ontology/references/SOURCE.md`.
+- `plugins/mir-core/skills/ontology/references/common-contract.json`.
+- `plugins/mir-core/skills/ontology/references/knowledge-supply.md`.
+- `plugins/mir-core/skills/ontology/references/mapping-guide.md`.
+- `plugins/mir-core/skills/ontology/scripts/ontology_check.py`.
+- `plugins/mir-core/skills/selective-relations/SKILL.md`.
+- `plugins/mir-core/skills/spec-architect/SKILL.md`.
+- `plugins/mir-core/skills/verify/SKILL.md`.
+- `plugins/mir-lifecycle-hooks/.claude-plugin/plugin.json`.
+- `plugins/mir-lifecycle-hooks/.codex-plugin/plugin.json`.
+- `pyproject.toml`.
+- `scripts/verify_codex_sync.py`.
+- `tasks/change_log.md`.
+- `tasks/intent.json`.
+- `tasks/plan.md`.
+- `tests/test_ontology_skill.py`.
+- `tests/test_plugin_skill_packages.py`.
+- `uv.lock`.
+
 ### Implementation evidence
 
 Registered the existing skill in the alphabetical mir-core inventory, knowledge category and parity set; package contracts expect seventeen skills and version 0.10.8. Updated the predecessor release/version surfaces, migration and upgrade guide. The lifecycle-hooks acknowledgement is generated from the repository dedicated `_validate_plugin(..., package_kind="skills-hooks")` validator and its tree digest; no hook content changed. Adopter payload generator: `uv run python -m tools.template_assets --write-adopter-payload` (with the owner-required UV_CACHE_DIR environment) (exit 0). No canonical derivative input changed, so no `.codex/**` regeneration or write is required.
@@ -3130,3 +3227,74 @@ followed by the documented adopter payload generator and exact-payload/public-su
 The original skill and contract test hashes match; both are included in the generated payload.
 No commits, pushes, tags, releases, other-repository writes, `.codex/**` writes or capability-lock
 binding occurred. Binding and publication are left to the authorized release step.
+
+## Superseded cursor: reference application profile preparation (2026-10-14)
+
+# Plan
+
+## Active task: reference application profile registration and 0.10.8 preparation (2026-10-11)
+
+Authority: the current owner request in this repository only. This single cursor owns intent and design.
+Predecessor cursor and intent are preserved verbatim in `tasks/change_log.md` under
+"Reference application profile registration and 0.10.8 preparation (2026-10-11)".
+
+Design: mirror e3cb1a8 registration and e3cb1a8/4c5a85b release preparation; use the
+existing knowledge category, alphabetical capability inventory and seventeen-skill
+package expectation. Preserve the new skill and test bytes. Refresh all eight plugin
+manifests, release metadata, lifecycle package acknowledgement and generated adopter payload.
+No canonical Codex derivative source changes are needed; verify parity without installing derivatives.
+
+- [x] Inspect both precedent commits, contracts and current inventory.
+- [x] Register the existing skill and prepare version 0.10.8 metadata and documentation.
+- [x] Regenerate digest acknowledgement and adopter payload through repository routines.
+- [x] Run full pytest, Ruff and Codex sync; report tails, exit codes and final status.
+
+No commit, push, tag, release, other-repository write, protected-memory write or `.codex/**` write.
+The capability lock remains pre-release-bound; only the documented same lock test failure is acceptable.
+
+Completed: final full pytest returned exit 1 with 1786 passed and only the accepted
+pre-release-bind failure, `tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees`.
+Ruff and Codex sync returned exit 0. The first run also exposed a private absolute path
+in the new evidence log; it was corrected and the second full run proves that failure resolved.
+The skill and test remain byte-identical to their initial untracked files.
+No requested source work remains. Release binding and all Git publication remain outside this task.
+
+Previous intent:
+
+```json
+{
+  "goal": "Register the already-authored reference-app-profile skill exactly like repo-maintenance and release-prepare 0.10.8 in Mir Yoke only.",
+  "goal_type": "maintenance",
+  "scope": "Current owner request of 2026-10-11. Preserve the skill and contract test bytes; no commits, pushes, tags, releases, other-repository writes or generated .codex writes. tasks/plan.md is the active intent and design authority.",
+  "priority": "normal",
+  "updated": "2026-10-11",
+  "history": [
+    {
+      "goal": "Fix executor temporary-directory test cleanup, malformed agent criteria, response-ID collisions and reader failures test-first; correct policy wording; verify all six items and commit common v3.5 locally.",
+      "updated": "2026-10-02",
+      "status": "complete"
+    },
+    {
+      "goal": "Run the 2026-10-02 mir-core:repo-maintenance pass (all 21 items) on mir-yoke only under the owner instruction of 2026-10-02: re-verify prior fixes, check ADR-88 routing lock and mir_executor common v3.4 consistency, fix in-scope defects test-first, run documented gates, local commits of own files only.",
+      "updated": "2026-10-02",
+      "status": "complete"
+    },
+    {
+      "goal": "Re-verify all twenty repo-maintenance checklist items against actual repository state and execution evidence, then minimally repair confirmed defects within this repository only.",
+      "updated": "2026-09-23",
+      "status": "superseded"
+    },
+    {
+      "goal": "Strengthen mir-core:repo-maintenance to the owner-authorized twenty-one items in this repository only; prove regressions fail first and run full verification, leaving ADR-80 release binding to Mir Harness.",
+      "updated": "2026-09-24",
+      "status": "complete"
+    },
+    {
+      "goal": "Implement the owner-approved mir_executor common base, optional local hooks/data and explicit sync/drift tooling test-first in mir-yoke only.",
+      "updated": "2026-10-01",
+      "status": "complete"
+    }
+  ],
+  "status": "complete"
+}
+```

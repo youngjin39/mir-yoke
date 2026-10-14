@@ -13,6 +13,11 @@ Role: Content structure and ontology consistency check on changed content defini
 ## Distinct Scope (ADR-15 §S3)
 Covers content taxonomy correctness (term definitions, parent-child hierarchy consistency, synonym/alias mapping integrity) and ontology coherence (no orphan concepts, no circular inheritance, controlled vocabulary adherence) on changed content structure files only. codex-final-reviewer reviews holistic design-vs-implementation consistency; quality-agent reviews general code quality. This agent inspects content ontology and taxonomy files exclusively — no pipeline, no UI, no security scanning.
 
+Contract mappings are checked first by `ontology_check.py` from `mir-core:ontology` against
+the project-owned `.mir/ontology-map.json`; report its deterministic findings before interpreting
+content taxonomy. A format pass does not establish domain consistency or authority. Keep the
+content-taxonomy scope: do not become a universal validator or duplicate specialist reviewers.
+
 ## Protocol
 1. Receive fork context = changed content definition files (e.g., ontology YAML/JSON, taxonomy CSV, controlled vocabulary files) + master ontology reference doc if available.
 2. Validate term hierarchy for orphan nodes and circular inheritance.

@@ -1,28 +1,32 @@
 # Plan
 
-## Active task: reference application profile registration and 0.10.8 preparation (2026-10-11)
+## Active task: common semantic contract distribution, phase B1 (2026-10-14)
 
-Authority: the current owner request in this repository only. This single cursor owns intent and design.
-Predecessor cursor and intent are preserved verbatim in `tasks/change_log.md` under
-"Reference application profile registration and 0.10.8 preparation (2026-10-11)".
+Authority: the current owner request recorded in `tasks/intent.json`; this is the single active
+cursor and design authority. The superseded cursor and intent remain in `tasks/change_log.md`.
 
-Design: mirror e3cb1a8 registration and e3cb1a8/4c5a85b release preparation; use the
-existing knowledge category, alphabetical capability inventory and seventeen-skill
-package expectation. Preserve the new skill and test bytes. Refresh all eight plugin
-manifests, release metadata, lifecycle package acknowledgement and generated adopter payload.
-No canonical Codex derivative source changes are needed; verify parity without installing derivatives.
+Outcome: ship `mir-core:ontology`, a byte-identical owner contract, generic mapping and knowledge
+references, and a Python 3.9 standard-library checker. Prepare 0.11.0 without release binding.
 
-- [x] Inspect both precedent commits, contracts and current inventory.
-- [x] Register the existing skill and prepare version 0.10.8 metadata and documentation.
-- [x] Regenerate digest acknowledgement and adopter payload through repository routines.
-- [x] Run full pytest, Ruff and Codex sync; report tails, exit codes and final status.
+Design: keep the project-owned mapping as JSON. Concepts are keyed by common concept id;
+vocabularies, relations, questions, error cases and entrypoints are lists. References are repository
+relative strings. Deterministic checks cover structure, declared compatibility and local references;
+semantic interpretation, execution evidence and authority remain separate verification layers.
+Package scripts are inert non-executable files, invoked explicitly with Python. No runtime hook,
+automatic service connection or consumer write is introduced.
 
-No commit, push, tag, release, other-repository write, protected-memory write or `.codex/**` write.
-The capability lock remains pre-release-bound; only the documented same lock test failure is acceptable.
+- [x] Confirm package rules and read the complete owner contract.
+- [x] Write checker regression tests, run them failing, then implement and pass them.
+- [x] Add generic skill/references, workflow pointers and bounded validator guidance.
+- [x] Register the skill, refresh version/catalog metadata and prepare 0.11.0.
+- [x] Run full pytest, Ruff, Codex parity and system Python contract checks; report evidence.
 
-Completed: final full pytest returned exit 1 with 1786 passed and only the accepted
-pre-release-bind failure, `tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees`.
-Ruff and Codex sync returned exit 0. The first run also exposed a private absolute path
-in the new evidence log; it was corrected and the second full run proves that failure resolved.
-The skill and test remain byte-identical to their initial untracked files.
-No requested source work remains. Release binding and all Git publication remain outside this task.
+Constraints: write only here. Preserve canonical owner contract bytes. Do not commit, tag, push,
+bind locks, apply/attest/finalize capabilities, change user installs or write generated `.codex/**`.
+Full pytest may retain the named pre-release capability-lock failure. Agent-source changes may
+require Main-owned derivative regeneration; report that state without bypassing parity checks.
+
+Source work and required check execution are complete. Main must regenerate the ontology-validator
+Codex derivative; release capability-lock binding remains outside this task. See
+`tasks/change_log.md` under "Ontology phase B1 verification (2026-10-14)" for commands, results,
+package rules, isolation details and the exact changed-file inventory.

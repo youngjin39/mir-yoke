@@ -105,6 +105,8 @@ domain-specific rules. Do not assert a domain by guessing. Per-domain difference
 
 ## Pipeline
 
+When identity, relation or status meaning affects the task, apply `mir-core:ontology` using the project-owned mapping.
+
 The step order is fixed. Do not enter a later step without the earlier output. If only one step is
 requested, run that step but reconstruct the prior output from the input first and then apply that
 step's gate.

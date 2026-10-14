@@ -26,6 +26,8 @@ are optional; use direct search when the answer location is already known or the
 the supported declared relationships.
 
 ## Workflow
+
+When identity, relation or status meaning affects the task, apply `mir-core:ontology` using the project-owned mapping.
 1. Define the exact task boundary.
 2. Identify the affected module or bluebrick.
 3. Answer WHAT / HOW / HOW NOT / WHERE / WHY for the relevant boundary.

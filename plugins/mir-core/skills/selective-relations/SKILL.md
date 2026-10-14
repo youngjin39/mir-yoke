@@ -45,6 +45,8 @@ install, upgrade, or substitute another local runtime merely to make SRR availab
 
 ## Retrieve declared evidence
 
+When identity, relation or status meaning affects the task, apply `mir-core:ontology` using the project-owned mapping.
+
 When the repository has a compatible adapter and maintained declared relation source or view, read
 [the retrieval reference](references/selective-relations.md) before using it. It defines the portable
 reader's four supported purposes, bounded commands, current-view requirement, and fallback behavior.

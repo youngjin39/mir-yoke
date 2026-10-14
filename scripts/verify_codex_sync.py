@@ -22,6 +22,7 @@ PLUGIN_SKILLS = {
         "efficiency",
         "governance",
         "memory-gc",
+        "ontology",
         "reference-app-profile",
         "repo-maintenance",
         "selective-relations",

@@ -170,6 +170,20 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
   maintainer configuration already carried it; the generator, which is what every new project
   actually receives, did not.
 
+## [0.11.0] — 2026-10-14 — Ontology semantic contract skill
+
+### Added
+
+- Added the optional `mir-core:ontology` skill for explicit semantic contracts covering identity,
+  relation and status meaning, provenance, impact analysis, and project-owned mappings.
+- Added a Python 3.9 standard-library mapping checker and a byte-identical distribution of the
+  owner-managed common semantic contract within the skill package. The checker uses explicit
+  local inputs and produces deterministic findings; the contract owner remains authoritative.
+
+### Changed
+
+- Aligned all four dual-runtime plugin versions and the optional CLI package to `0.11.0`.
+
 ## [0.10.8] — 2026-10-11 — Reference application profile skill
 
 ### Added

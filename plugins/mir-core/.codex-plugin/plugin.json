@@ -1,7 +1,7 @@
 {
   "name": "mir-core",
-  "version": "0.10.8",
-  "description": "Portable Mir architecture, governance, memory, and verification skills.",
+  "version": "0.11.0",
+  "description": "Portable Mir architecture, ontology, governance, memory, and verification skills.",
   "author": {
     "name": "Harness Contributors",
     "url": "https://github.com/youngjin39"
@@ -14,7 +14,7 @@
   "interface": {
     "displayName": "Mir Core",
     "shortDescription": "Shared architecture and harness policy skills.",
-    "longDescription": "Mir Core provides portable design, spec architecture, governance, memory maintenance, and evidence-based verification skills.",
+    "longDescription": "Mir Core provides portable design, spec architecture, ontology, governance, memory maintenance, and evidence-based verification skills.",
     "developerName": "Harness Contributors",
     "category": "Developer Tools",
     "capabilities": ["Architecture", "Governance", "Memory", "Verification"],

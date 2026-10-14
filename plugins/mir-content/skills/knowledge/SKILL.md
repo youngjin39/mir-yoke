@@ -5,6 +5,8 @@ description: "Ingest and lint knowledge in a repository-owned or explicitly conf
 
 # Knowledge
 
+When identity, relation or status meaning affects the task, apply `mir-core:ontology` using the project-owned mapping.
+
 1. Locate the repository-owned or explicitly configured knowledge destination, schema, ownership,
    and write authority. If none exists, propose a local artifact or ask for a destination; do not
    assume a shared service.

@@ -23,6 +23,8 @@ description: "Evidence-based verification (verification gate, spec compliance, s
 - A required check that cannot be evaluated — missing tool, unrunnable command, unreadable output — counts as a failure, not a pass.
 
 ## Workflow
+
+When identity, relation or status meaning affects the task, apply `mir-core:ontology` using the project-owned mapping.
 1. Convert the requested outcome into a checklist of observable claims, including explicit non-goals and protected boundaries.
 2. Map each claim to the smallest check that can fail: focused test, static check, generated parity check, runtime probe, or direct artifact inspection.
 3. Run checks against the final worktree state and capture command, exit status, and relevant output. A missing tool or unreadable result is not a pass.

@@ -24,6 +24,8 @@ description: "Proportional design guidance (brainstorming, planning, design anal
 - deep-interview — Requirements clarification. Ambiguity gating.
 
 ## Workflow
+
+When identity, relation or status meaning affects the task, apply `mir-core:ontology` using the project-owned mapping.
 1. Identify which absorbed legacy intent applies (design vs. plan vs. interview etc.).
 2. Understand the real flow and stop at the first sufficient Ponytail rung: remove unnecessary work, reuse project code, use built-ins, justify a dependency, and write minimum custom code last.
 3. Use only the design, parallel analysis, or independent review needed to resolve consequential uncertainty.

@@ -82,7 +82,7 @@ Discard an uncommitted Project Agent Kit adaptation in the target or restore the
 commit. For an explicitly invoked CLI transaction, use that command's recorded rollback/recovery
 contract. Installing the CLI does not itself mutate a target.
 
-Current version: `0.10.8`. See `CHANGELOG.md` for release details.
+Current version: `0.11.0`. See `CHANGELOG.md` for release details.
 
 Version 0.10.0 adds opt-in `memory_relations` ingestion and read-only `mir relations query|bundle --memory`
 query/bundle selection using the existing memory schema. No automatic corpus backfill, database
@@ -127,3 +127,10 @@ changes for adopters.
 
 Version 0.10.8 adds the optional `mir-core:reference-app-profile` skill for evidence-labeled
 reference application metadata profiles. Nothing else changes.
+
+Version 0.11.0 adds the optional `mir-core:ontology` skill and its self-contained, read-only
+semantic contract checker. Projects explicitly map their own identity, relations, status meaning,
+and provenance through `.mir/ontology-map.json` to the distributed common contract. The contract
+owner remains authoritative; each project owns its mapping and domain model. The package does not discover or modify consumers,
+install a runtime, or migrate existing memory or knowledge data. Existing package admission rules
+and target-local integration ownership remain unchanged.

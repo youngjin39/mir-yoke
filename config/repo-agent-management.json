@@ -366,6 +366,13 @@
         "status": "active",
         "source_path": "plugins/mir-core/skills/memory-gc/"
       },
+      "ontology": {
+        "category": "knowledge",
+        "absorbs": [],
+        "scope": "universal",
+        "status": "active",
+        "source_path": "plugins/mir-core/skills/ontology/"
+      },
       "reference-app-profile": {
         "category": "knowledge",
         "absorbs": [],
