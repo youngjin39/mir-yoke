@@ -964,7 +964,9 @@ def test_should_fall_back_to_account_home_when_home_is_an_agent_home(tmp_path, m
     account = tmp_path / "account"
     (account / ".mir").mkdir(parents=True)
     (account / ".mir/knowledge-supply.json").write_text(
-        json.dumps({"memory_keeper": {"command": [sys.executable, "-c", "pass"], "cwd": str(account)}})
+        json.dumps(
+            {"memory_keeper": {"command": [sys.executable, "-c", "pass"], "cwd": str(account)}}
+        )
     )
     repo = tmp_path / "repo"
     repo.mkdir()
