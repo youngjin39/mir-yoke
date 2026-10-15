@@ -8,23 +8,9 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
-## [v0.13.0] — 2026-10-16 — Canonical ontology runner and strict reference validation
-
-### Fixed
-
-- Validate common relation IDs and version-gated endpoints in `domain.relations` using the same
-  rules as top-level relations; entries without `common` retain ref-only validation.
-- `mk_query.py` no longer reports a delivered pack as unavailable when a sandbox answers
-  EPERM while the client reaps the server's process group.
 
 ### Added
 
-- Added a byte-identical consumer ontology runner that selects active Claude/Codex distributions,
-  rejects runtime version disagreement and missing active paths, and explains selection with `--which`.
-- Resolve symbol anchors in every mapping ref; retain informational legacy line counts and reject
-  line refs into changed files during strict Git impact. Re-anchored Yoke's own map.
-- Added Yoke's checkout ontology runner, pytest mapping/strict-impact gate and optional
-  on-demand MK guidance, with scoped error-case checks and soft-outage independence.
 - Added the dual-runtime `mir-lifecycle-hooks` plugin with one exact, read-only `SessionStart`
   reminder and the `runtime-continuity` skill.
 - Added a dry-run-first user-runtime installer for centrally authored Claude/Codex agents and
@@ -184,6 +170,28 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
   project no longer indexes its own `docs/_archive/` as current material. The template and the
   maintainer configuration already carried it; the generator, which is what every new project
   actually receives, did not.
+
+## [0.13.0] — 2026-10-16 — Canonical ontology runner and strict reference validation
+
+### Fixed
+
+- Validate common relation IDs and version-gated endpoints in `domain.relations` using the same
+  rules as top-level relations; entries without `common` retain ref-only validation.
+- `mk_query.py` no longer reports a delivered pack as unavailable when a sandbox answers
+  EPERM while the client reaps the server's process group.
+
+### Added
+
+- Added a byte-identical consumer ontology runner that selects active Claude/Codex distributions,
+  rejects runtime version disagreement and missing active paths, and explains selection with `--which`.
+- Resolve symbol anchors in every mapping ref; retain informational legacy line counts and reject
+  line refs into changed files during strict Git impact. Re-anchored Yoke's own map.
+- Added Yoke's checkout ontology runner, pytest mapping/strict-impact gate and optional
+  on-demand MK guidance, with scoped error-case checks and soft-outage independence.
+
+### Changed
+
+- Aligned all four dual-runtime plugin versions and the optional CLI package to `0.13.0`.
 
 ## [0.12.0] — 2026-10-15 — Ontology contract 1.1.0, impact and on-demand knowledge supply
 
