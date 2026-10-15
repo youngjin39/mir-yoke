@@ -6,6 +6,7 @@ import argparse
 import json
 import math
 import os
+import pwd
 import queue
 import signal
 import subprocess
@@ -20,15 +21,18 @@ class Unavailable(Exception):
     """A bounded, non-sensitive reason local work can report and continue past."""
 
 
+def config_path():
+    explicit = os.environ.get("MIR_KNOWLEDGE_SUPPLY_CONFIG")
+    if explicit:
+        return Path(explicit).expanduser().resolve()
+    # Launchers may give each agent its own HOME; fall back to the account home.
+    candidates = [Path.home(), Path(pwd.getpwuid(os.getuid()).pw_dir)]
+    paths = [(home / ".mir/knowledge-supply.json").resolve() for home in candidates]
+    return next((path for path in paths if path.is_file()), paths[0])
+
+
 def load_config(repo):
-    path = (
-        Path(
-            os.environ.get("MIR_KNOWLEDGE_SUPPLY_CONFIG")
-            or Path.home() / ".mir/knowledge-supply.json"
-        )
-        .expanduser()
-        .resolve()
-    )
+    path = config_path()
     if repo == path or repo in path.parents:
         raise Unavailable("configuration must be host-local, outside the repository")
     if any(part.startswith(".env") or part == "secrets" for part in path.parts):

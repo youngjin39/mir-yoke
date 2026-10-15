@@ -866,6 +866,7 @@ def test_should_use_only_python39_stdlib_in_mk_client():
         "math",
         "os",
         "pathlib",
+        "pwd",
         "queue",
         "signal",
         "subprocess",
@@ -952,3 +953,29 @@ def test_should_report_deleted_map_as_strict_validation_failure(mapping_repo):
         assert result.returncode == (1 if strict else 0), result.stdout
         report = json.loads(result.stdout)
         assert report["revalidate"] and not report["ok"]
+
+
+def test_should_fall_back_to_account_home_when_home_is_an_agent_home(tmp_path, monkeypatch):
+    import importlib.util
+    import types
+
+    agent_home = tmp_path / "agent-home"
+    agent_home.mkdir()
+    account = tmp_path / "account"
+    (account / ".mir").mkdir(parents=True)
+    (account / ".mir/knowledge-supply.json").write_text(
+        json.dumps({"memory_keeper": {"command": [sys.executable, "-c", "pass"], "cwd": str(account)}})
+    )
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    monkeypatch.setenv("HOME", str(agent_home))
+    monkeypatch.delenv("MIR_KNOWLEDGE_SUPPLY_CONFIG", raising=False)
+    spec = importlib.util.spec_from_file_location("mk_query_home", MK_CLIENT)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    monkeypatch.setattr(
+        module.pwd, "getpwuid", lambda uid: types.SimpleNamespace(pw_dir=str(account))
+    )
+    command, _cwd, timeout = module.load_config(repo.resolve())
+    assert command == [sys.executable, "-c", "pass"]
+    assert timeout == 30

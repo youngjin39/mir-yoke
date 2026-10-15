@@ -2879,7 +2879,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "plugins/mir-core/skills/ontology/scripts/mk_query.py",
-      "sha256": "97b39a88e65f777a06d5df115ad48d1eac99d820dc188dc5e3fd018b01317913"
+      "sha256": "237516771fd669d3fc1da752d4e13b7ce75ac65ee04eed24bb81510e0e684b90"
     },
     {
       "classification": "optional-consumer-tool",
@@ -4493,7 +4493,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_ontology_skill.py",
-      "sha256": "ca7c126796f464b5c2fb286c932292327f72a39e98b1562724abab7029891cbf"
+      "sha256": "22554f5725b99e8c62b8b4f7b5598102e600c9ee712fd9449bbda6d9a13ccd61"
     },
     {
       "classification": "template-maintainer-tool",
