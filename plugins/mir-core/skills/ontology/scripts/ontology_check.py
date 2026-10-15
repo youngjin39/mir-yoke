@@ -95,6 +95,29 @@ class Checker:
             return
         if not target.exists():
             self.error(at, "ref path does not exist")
+            return
+        return target
+
+    def covered_check(self, value, at, root):
+        target = self.ref(value, at, root)
+        if target is None:
+            return
+        if not target.is_file():
+            self.error(at, "check ref must name a file")
+            return
+        path, separator, name = value.partition("#")
+        line = re.search(r":(\d+)$", path)
+        text = target.read_text(encoding="utf-8")
+        if line:
+            number = int(line[1])
+            if number < 1:
+                self.error(at, "check line must be positive")
+            elif number > len(text.splitlines()):
+                self.error(at, "check line exceeds file line count")
+        if separator and (not name or name.rsplit(".", 1)[-1] not in text):
+            self.error(at, "check name not found")
+        if target.suffix.lower() in (".md", ".txt", ".rst"):
+            self.warn(at, "covered needs a repeatable check; a document is not one")
 
     def refs(self, value, at, root):
         for i, ref in enumerate(self.array(value, at)):
@@ -292,6 +315,8 @@ class Checker:
                 self.error(at + "/status", "invalid error case status")
             if status == "covered" and "check" not in case:
                 self.error(at + "/check", "covered needs a check ref")
+            elif status == "covered":
+                self.covered_check(case["check"], at + "/check", root)
             elif "check" in case:
                 self.ref(case["check"], at + "/check", root)
         supply = self.object(mapping.get("knowledge_supply"), "/knowledge_supply")

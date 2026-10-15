@@ -1,28 +1,25 @@
 # Plan
 
-## Active task: Yoke ontology adoption, phase D (2026-10-15)
+## Active task: covered-check resolution and MK consumer guide (2026-10-15)
 
-Authority: the current phase-D owner request recorded in `tasks/intent.json`; this is the single
-active cursor and design authority. Superseded phase-B1 detail remains in `tasks/change_log.md`.
-Baseline: `996e9fa21ef953950daa0a6f21d4617a42ea1680`; clean initial worktree.
+Authority: current Harness central-run owner request (Discord decision "1, 2"), recorded in
+`tasks/intent.json`. This is the single active cursor and design authority.
 
-Outcome: a project-owned mapping of Yoke's supplier model to contract 1.0.0, two selective
-usage entrypoints, three evidenced domain comparisons and honest E01–E10 coverage.
-Design: reference current supported-surface definitions first; label retained spec and maintainer
-contracts explicitly. Keep local identities, vocabularies and state machines. Installation,
-declaration, byte integrity, runtime observation and write authority remain separate.
+Outcome: covered checks resolve real repository-local files, lines and names; the public MK
+consumer guide matches the implemented stdio tools and ContextPack fields.
+Design: reuse safe ref resolution, tighten only covered checks, preserve the owner contract,
+and follow MK code over the stale lifetime-reader statement in its consumer contract.
 
-- [x] Re-read authority, Profile, canonical definitions and existing checks; answer cold questions.
-- [x] Add mapping and selective pointers; review endpoints and public relative refs.
-- [x] Run mapping, context-path, instruction/parity and scoped invariant checks.
-- [x] Record question comparisons, coverage, results and Main-owned regeneration pending.
+- [x] Prove new covered-ref regressions fail before implementation.
+- [x] Implement checks and compact interface-based consumer guidance.
+- [x] Refresh adopter payload; run focused tests, parity and all 16 read-only map checks.
+- [x] Record results, changed files and Main-owned work remaining.
 
-Constraints: repository-only writes; no commits, push, version bumps, lock binding, release,
-services, live DB or sensitive bodies. Do not write generated `.codex/**`. The documented generator
-writes that scope, so regeneration is deferred to Main. Checker success is format evidence only.
+Constraints: repository-only writes; no commits, installs, services, database access, credentials,
+or generated `.codex/**` writes. Other repositories are read-only evidence sources.
 
-Repository-local mapping and evidence work are complete. Harness Main regenerated the derivatives,
-trimmed CLAUDE.md back to its 3600-byte budget (ontology pointer merged into the Sources line), refreshed
-`config/adopter-payload.json`; codex sync OK; full suite 1833 passed, 1 expected failure (capability lock
-not bound until release). Evidence and remaining semantic coverage are recorded in
-`tasks/change_log.md` under "Ontology phase D adoption evidence (2026-10-15)". Memory Keeper binding is deferred.
+Completed: fail-first 8 failed / 60 passed; checker 68 passed; affected package, asset/payload
+and reference checks 91 passed. Codex parity is current; no regeneration was needed.
+All 16 read-only map checks ran: 15 clean, quietleaf E10 has 1 error and 1 warning.
+The consumer correction is out of scope. Evidence: `tasks/change_log.md`,
+"Covered-check resolution and MK guide (2026-10-15)".

@@ -52,7 +52,10 @@ changes from evidence paths and identity or dependency entries, not from exhaust
 Refs are strings: `path`, `path:line` or `path#symbol`, relative to the repository root.
 The path must exist under that root, including after symlink resolution. Absolute paths, parent
 traversal and backslash paths are rejected. List refs may also be wrapped as `{"ref": "path"}`.
-The checker checks path existence, not whether a line or symbol resolves or proves the claim.
+For `covered` checks, the checker also requires a file, an existing one-based line or a name
+whose last dotted segment occurs in the file text; `.md`, `.txt` and `.rst` checks warn that
+covered needs a repeatable check, since a document is not one. Other refs check path existence only;
+resolving a check does not execute it or prove its claim.
 
 Questions should expose real decisions in the domain, with evidence that can answer them:
 which note is current after a revision; which citations need review after a source changes;

@@ -1,5 +1,36 @@
 # Change log
 
+## Covered-check resolution and MK guide (2026-10-15)
+
+Authority: the owner request in `tasks/intent.json`; design authority: `tasks/plan.md`.
+Covered checks now resolve files, one-based lines and last dotted name segments. Documentation
+checks warn; absolute paths, traversal and escaping symlinks remain errors. Contract unchanged.
+The 58-line MK guide follows federation mcp_server.py, serve.py and assemble.py, with
+intake_fleet.py confirming the content Metadata status/valid_to line. The consumer contract's
+lifetime-reader paragraph is stale: code releases connections and leases per call; the existing
+test_mcp_call_lifetime.py release-between-calls case corroborates it. MK tests were read only.
+
+Verification, with the requested UV cache:
+- `uv run pytest -q tests/test_ontology_skill.py`: fail-first 8 failed, 60 passed;
+  after implementation 68 passed.
+- `uv run pytest -q tests/test_ontology_skill.py tests/test_plugin_skill_packages.py
+  tests/test_template_asset_classification.py tests/test_advanced_reference_templates.py`:
+  91 passed, including isolated packages and exact adopter payload equality.
+- `uv run python -m tools.template_assets --write-adopter-payload`: pass.
+- `uv run python scripts/verify_codex_sync.py`: OK; no generated writes or regeneration needed.
+- `uv run ruff check tests/test_ontology_skill.py
+  plugins/mir-core/skills/ontology/scripts/ontology_check.py`: pass.
+
+Read-only invocation: `python3 plugins/mir-core/skills/ontology/scripts/ontology_check.py
+mapping --repo <root>`. All used contract/mapping 1.0.0.
+
+All 16 fleet mappings (names kept out of this public log): 15 clean; quietleaf 1 error, 1 warning.
+
+quietleaf `/error_cases/9/check` references
+`tasks/reports/ontology-adoption-2026-10-14.md#e10-negative-check`: check name not found,
+plus "covered needs a repeatable check; a document is not one". Consumer left untouched.
+No commit, push, install, service operation, live database access or generated writes.
+
 One bullet per non-trivial change. Newest at the top.
 
 - 2026-09-06: aligned Yoke's current purpose as the Harness-managed central capability supply
@@ -3463,3 +3494,34 @@ The final cursor check initially rejected a backtick path with a heading fragmen
 changed to the file path plus the named heading. Recheck passed for 3 files and 37 references.
 
 2026-10-15: Owner-directed map reduction: 31,821 -> 12,268 bytes; mapping checker 0 errors / 0 warnings; canonical refs, questions, domain identities/invariants and all covered check refs preserved; ambiguous vocabulary and essential relation mappings retained.
+
+## Superseded cursor: ontology phase D closeout (2026-10-15)
+
+# Plan
+
+## Active task: Yoke ontology adoption, phase D (2026-10-15)
+
+Authority: the current phase-D owner request recorded in `tasks/intent.json`; this is the single
+active cursor and design authority. Superseded phase-B1 detail remains in `tasks/change_log.md`.
+Baseline: `996e9fa21ef953950daa0a6f21d4617a42ea1680`; clean initial worktree.
+
+Outcome: a project-owned mapping of Yoke's supplier model to contract 1.0.0, two selective
+usage entrypoints, three evidenced domain comparisons and honest E01–E10 coverage.
+Design: reference current supported-surface definitions first; label retained spec and maintainer
+contracts explicitly. Keep local identities, vocabularies and state machines. Installation,
+declaration, byte integrity, runtime observation and write authority remain separate.
+
+- [x] Re-read authority, Profile, canonical definitions and existing checks; answer cold questions.
+- [x] Add mapping and selective pointers; review endpoints and public relative refs.
+- [x] Run mapping, context-path, instruction/parity and scoped invariant checks.
+- [x] Record question comparisons, coverage, results and Main-owned regeneration pending.
+
+Constraints: repository-only writes; no commits, push, version bumps, lock binding, release,
+services, live DB or sensitive bodies. Do not write generated `.codex/**`. The documented generator
+writes that scope, so regeneration is deferred to Main. Checker success is format evidence only.
+
+Repository-local mapping and evidence work are complete. Harness Main regenerated the derivatives,
+trimmed CLAUDE.md back to its 3600-byte budget (ontology pointer merged into the Sources line), refreshed
+`config/adopter-payload.json`; codex sync OK; full suite 1833 passed, 1 expected failure (capability lock
+not bound until release). Evidence and remaining semantic coverage are recorded in
+`tasks/change_log.md` under "Ontology phase D adoption evidence (2026-10-15)". Memory Keeper binding is deferred.

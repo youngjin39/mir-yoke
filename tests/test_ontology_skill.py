@@ -28,6 +28,7 @@ CONCEPTS = (
 def mapping_repo(tmp_path: Path) -> tuple[Path, dict]:
     (tmp_path / ".mir").mkdir()
     (tmp_path / ".mir/repo-profile.toml").write_text('[repo]\nslug = "example-notes"\n')
+    (tmp_path / "check.py").write_text("def test_x():\n    pass\n")
     (tmp_path / "model.md").write_text("# Model\nGeneric model and checks.\n")
     mapping = {
         "schema": "mir-semantic-mapping/v1",
@@ -65,7 +66,7 @@ def mapping_repo(tmp_path: Path) -> tuple[Path, dict]:
             }
             for i in range(1, 4)
         ],
-        "error_cases": [{"id": "E01", "status": "covered", "check": "model.md:2"}],
+        "error_cases": [{"id": "E01", "status": "covered", "check": "check.py:2"}],
         "knowledge_supply": {"memory_keeper": "connected", "binding": "model.md"},
         "entrypoints": ["model.md"],
     }
@@ -330,3 +331,64 @@ def test_symlink_loop_ref_reports_io_json(mapping_repo: tuple[Path, dict]) -> No
     assert result.returncode == 2
     assert "IO problem" in json.loads(result.stdout)["errors"][0]["message"]
     assert not result.stderr
+
+
+@pytest.mark.parametrize(
+    "ref", ["check.py", "check.py:1", "check.py:2", "check.py#test_x", "check.py#Class.test_x"]
+)
+def test_should_accept_existing_covered_check(mapping_repo, ref):
+    repo, mapping = mapping_repo
+    mapping["error_cases"][0]["check"] = ref
+    result = run_mapping(repo, mapping, "--json")
+    assert result.returncode == 0, result.stdout
+    assert json.loads(result.stdout)["warnings"] == []
+
+
+@pytest.mark.parametrize(
+    ("ref", "message"),
+    [
+        ("missing.py", "ref path does not exist"),
+        ("check.py:3", "check line exceeds file line count"),
+        ("check.py:999999", "check line exceeds file line count"),
+        ("check.py:0", "check line must be positive"),
+        ("check.py#Class.test_missing", "check name not found"),
+        ("/check.py", "absolute ref"),
+        ("C:/check.py", "absolute ref"),
+        ("../check.py", "ref escapes repository"),
+        ("nested/../check.py", "ref escapes repository"),
+        (".", "check ref must name a file"),
+    ],
+)
+def test_should_reject_invalid_covered_check(mapping_repo, ref, message):
+    repo, mapping = mapping_repo
+    mapping["error_cases"][0]["check"] = ref
+    result = run_mapping(repo, mapping, "--json")
+    assert result.returncode == 1, result.stdout
+    assert any(
+        finding["pointer"] == "/error_cases/0/check" and message in finding["message"]
+        for finding in json.loads(result.stdout)["errors"]
+    )
+
+
+@pytest.mark.parametrize("suffix", [".md", ".txt", ".rst"])
+def test_should_warn_when_covered_check_is_document(mapping_repo, suffix):
+    repo, mapping = mapping_repo
+    (repo / ("check" + suffix)).write_text("test_x\n")
+    mapping["error_cases"][0]["check"] = "check" + suffix + "#Class.test_x"
+    result = run_mapping(repo, mapping, "--json")
+    assert result.returncode == 0, result.stdout
+    assert json.loads(result.stdout)["warnings"] == [
+        {
+            "pointer": "/error_cases/0/check",
+            "message": "covered needs a repeatable check; a document is not one",
+        }
+    ]
+
+
+def test_should_reject_covered_check_symlink_escape(mapping_repo):
+    repo, mapping = mapping_repo
+    (repo / "outside").symlink_to(ROOT, target_is_directory=True)
+    mapping["error_cases"][0]["check"] = "outside/tests/test_ontology_skill.py"
+    result = run_mapping(repo, mapping)
+    assert result.returncode == 1
+    assert "ERROR /error_cases/0/check: ref escapes repository" in result.stdout
