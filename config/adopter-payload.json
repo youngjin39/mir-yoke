@@ -443,13 +443,13 @@
       "classification": "reference",
       "disposition": "remove",
       "path": ".mir/capability-lock.json",
-      "sha256": "de6723be00537ed2df1cc5ab0d4a2daa67f74f04d0eba3f002582d35eb9a70bc"
+      "sha256": "4f50bb58a7c0bdadf4f040241982fe83d185b6242117d18608b9f5e478ac39b0"
     },
     {
       "classification": "reference",
       "disposition": "remove",
       "path": ".mir/ontology-map.json",
-      "sha256": "22b77cb9bf7b2e6a5cc994f72632f35a51ed6ba477df2511a29da62358c8956c"
+      "sha256": "ee2ca84035dc1bdab8ac354eac9bd935723de95a749d101948375ae228d604f7"
     },
     {
       "classification": "reference",
@@ -485,7 +485,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "CHANGELOG.md",
-      "sha256": "fb31d4c524aa7a8fcbfae95417173a9bd93df82d93329f6279e92340953bf1ec"
+      "sha256": "aa7b72bbfef39e3722514c72e26e55fa3cae951ea6ba123a046def99082e07bc"
     },
     {
       "classification": "reference",
@@ -2267,7 +2267,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "docs/operations/ontology-verification.md",
-      "sha256": "92cdaebae8fc005a8ce670b75b6fb6299d75e330c7026fef72f0a451ec328b4b"
+      "sha256": "04d74a130d2c8c2135ee673fa5a50a61ef51c4c058b497230193f6a99d829251"
     },
     {
       "classification": "reference",
@@ -2855,7 +2855,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "plugins/mir-core/skills/ontology/SKILL.md",
-      "sha256": "f861df21371f21d737496f96031b5190e19b2e119d4228dab04ef8d91163105a"
+      "sha256": "6d3d24597a292d94e5334cd1d1db3495568309c1fc91437429b98b4a17b48d52"
     },
     {
       "classification": "optional-consumer-tool",
@@ -2879,19 +2879,25 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "plugins/mir-core/skills/ontology/references/mapping-guide.md",
-      "sha256": "e05de2b45d7d16fcb123b1b227dbf9d2e8d2fbd4f63e3ff13d1497e6476bb09b"
+      "sha256": "caec61467598d863e50dff8932b7786036316d83334409f869bb6595d715e837"
+    },
+    {
+      "classification": "optional-consumer-tool",
+      "disposition": "remove",
+      "path": "plugins/mir-core/skills/ontology/scripts/mir_ontology_runner.py",
+      "sha256": "5941ed716fb34d25aaa51e8c1c70e9e8cc40ce664311e6a2f7908c333abb31c0"
     },
     {
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "plugins/mir-core/skills/ontology/scripts/mk_query.py",
-      "sha256": "107909a74d61ef399dba4650cb338008983a35fb18c715fb5b3ffccf0a3f79f8"
+      "sha256": "fa08cc1184440987766473ee6757f8bc78bd813baf2bf68790b763035924d60f"
     },
     {
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "plugins/mir-core/skills/ontology/scripts/ontology_check.py",
-      "sha256": "99ab446b9ec0a829c7999c24753bf6336cfc0438e801623ba652465e2d395d91"
+      "sha256": "462de8b3871ada333cb70275a12b6b0766c6f706df9487194ce2bd8e603cfe25"
     },
     {
       "classification": "optional-consumer-tool",
@@ -3268,6 +3274,12 @@
     {
       "classification": "reference",
       "disposition": "remove",
+      "path": "scripts/check_ontology_fleet.py",
+      "sha256": "5f0c6734c87aa9bc4c33c2f842eb3b37077c1a4bc8aafb453c8380bb40c901bf"
+    },
+    {
+      "classification": "reference",
+      "disposition": "remove",
       "path": "scripts/codex-shim.sh",
       "sha256": "d06699b6545b1b83599213318488d06f5b4a05930952a530406b662cdda5ea74"
     },
@@ -3317,7 +3329,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "scripts/mir_ontology.py",
-      "sha256": "d4d615df43a1cb44c337ff62b66bfeb250d318f2640b362590d6cd9aac39b647"
+      "sha256": "2b91a648f068c99e3e6947b89ff9062ac4b6c46a6aecec209fcad4c6c2d3a602"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4115,7 +4127,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/change_log.md",
-      "sha256": "46c0a576d4d0551676e7a786a7c9986aa62648e371954fdc6a366cb8f9b5ee57"
+      "sha256": "9a0688c6746f1ae70baf922cfa275f3a8378a5725fe24a7c50fe7c60c07b231e"
     },
     {
       "classification": "reference",
@@ -4133,7 +4145,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/intent.json",
-      "sha256": "3db425d6e54c79eb7cb6d2951da97b4249458d61b050bd94a454d06594409fb5"
+      "sha256": "710476c351a4b6bfa3dc367c5fe4a9d0826d7d94c910e37a59489c9506e399cd"
     },
     {
       "classification": "reference",
@@ -4157,7 +4169,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/plan.md",
-      "sha256": "6e74d4bac56aabb8c7d305bf047fe0a6e22f5afb6a2753dd53fee615826d3faa"
+      "sha256": "c726194f726603f11df6cbace4c25da154b227edb4e1bb92f902a3bcf70a5ff7"
     },
     {
       "classification": "reference",
@@ -4343,7 +4355,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_capability_security.py",
-      "sha256": "77c7f18dbb45c3557cf7ff63a1b43ef0cace8eb9f5a1608385a40185680b202b"
+      "sha256": "284afed9b1b824f70a6f24f935d441a028b8b719e54ba5ec44bb2a5c36e0baf0"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4510,8 +4522,14 @@
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
+      "path": "tests/test_ontology_runner.py",
+      "sha256": "ec09c1b53c4011643a6d410fb5e900b5771b54141759d21a5042672af24019c4"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
       "path": "tests/test_ontology_skill.py",
-      "sha256": "f46a8223bab654a28d1abe10ab0df9d9f46ed167557bafb82d5940ac82fcc1b7"
+      "sha256": "3f4f19c7e4b742c2f5c6cb067652422da2fde0c2153021ffa9be8032d643b648"
     },
     {
       "classification": "template-maintainer-tool",

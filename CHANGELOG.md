@@ -8,8 +8,17 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+### Fixed
+
+- `mk_query.py` no longer reports a delivered pack as unavailable when a sandbox answers
+  EPERM while the client reaps the server's process group.
+
 ### Added
 
+- Added a byte-identical consumer ontology runner that selects active Claude/Codex distributions,
+  rejects runtime version disagreement and missing active paths, and explains selection with `--which`.
+- Resolve symbol anchors in every mapping ref; retain informational legacy line counts and reject
+  line refs into changed files during strict Git impact. Re-anchored Yoke's own map.
 - Added Yoke's checkout ontology runner, pytest mapping/strict-impact gate and optional
   on-demand MK guidance, with scoped error-case checks and soft-outage independence.
 - Added the dual-runtime `mir-lifecycle-hooks` plugin with one exact, read-only `SessionStart`

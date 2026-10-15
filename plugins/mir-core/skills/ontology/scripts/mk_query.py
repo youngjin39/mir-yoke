@@ -164,7 +164,8 @@ def call(command, cwd, timeout, tool, arguments, client_name):
         if os.name == "posix":
             try:
                 os.killpg(child.pid, signal.SIGKILL if timed_out else signal.SIGTERM)
-            except ProcessLookupError:
+            except (ProcessLookupError, PermissionError):
+                # A sandbox may answer EPERM instead of ESRCH once the group is gone.
                 pass
         elif child.poll() is None:
             child.kill()
@@ -176,7 +177,7 @@ def call(command, cwd, timeout, tool, arguments, client_name):
         if os.name == "posix":
             try:
                 os.killpg(child.pid, signal.SIGKILL)
-            except ProcessLookupError:
+            except (ProcessLookupError, PermissionError):
                 pass
         worker.join(timeout=0.2)
         child.stdin.close()

@@ -56,6 +56,12 @@ python3 scripts/ontology_check.py lookup --repo "$PROJECT_ROOT" "current artifac
 
 The default contract is the sibling `references/common-contract.json`; `--contract PATH`
 selects another owner-provided distribution explicitly. The checker reads files and writes nothing.
+Prefer `path#symbol` refs: every anchor must resolve to a declaration, test name, heading or key.
+Use line refs only for content without a symbol. Mapping preserves 1.x line compatibility with an
+informational count; strict Git impact rejects line refs into changed files and requires re-anchoring.
+Consumers copy the [canonical runner](scripts/mir_ontology_runner.py) byte-identically to
+`scripts/mir_ontology.py`; the [mapping guide](references/mapping-guide.md) defines updates,
+active runtime selection, disagreement failures and read-only `--which` inspection.
 Each text finding is `ERROR|WARN <json-pointer>: message`, followed by counts and versions.
 JSON reports `ok`, `errors`, `warnings`, `contract_version` and `mapping_version`; findings carry
 `pointer` and `message`. Exit 0 means no errors (warnings may remain), 1 means invalid records,

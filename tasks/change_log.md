@@ -3844,3 +3844,306 @@ package/common tests have 21 passes and asset tests have 6 passes. Codex parity 
 Main still owns the 1.1.0 contract copy/SOURCE digest, any required derivative regeneration,
 version choice and consumer rollout. Read-only Harness lookup exposed four wildcard-array
 endpoint errors; its writer must resolve them. No real MK or database was opened.
+
+## Superseded cursor: completed P4 before Closure W2 (2026-10-15)
+
+# Plan
+
+## Active task: P4 ontology work path (2026-10-15)
+
+Authority: current P4 owner request in `tasks/intent.json`; this is the single active
+cursor and design authority. Prior P2 cursor is preserved in `tasks/change_log.md`.
+
+Outcome: map 1.1.0 validates at 0/0 within 12,288 bytes; pytest runs mapping and strict
+Git impact; a thin checkout runner connects optional MK lookup; no planned errors remain.
+Design: reuse released scripts unchanged; exercise own-map failures in an independent
+committed Git fixture. No generated writes, live MK, databases, commits or delivery.
+
+- [x] Add fail-first runner/gate and missing-config regressions.
+- [x] Connect runner, map and instructions within budgets.
+- [x] Run full pytest, lint, checker and read-only derivative parity; record evidence.
+
+Completed at the code/test boundary. Final full-suite process exited 0; exact receipts,
+scoped error statuses and the separately observed derivative update are in `tasks/change_log.md`.
+No live MK or delivery operation is authorized or needed for this bounded task.
+
+## Closure W2 implementation and fail-first evidence (2026-10-15)
+
+Authority: current W2 owner request in `tasks/intent.json`; design/cursor: `tasks/plan.md`.
+This extends completed P4. Scope is the named audit rows 5-2.9a, E10, 5-4.9,
+5-3.10a and section 6 D at Yoke's code/test boundary. No consumer rollout is claimed.
+
+Implementation:
+- Applied the exact `mk_query.py` patch and regression from branch commit `36131bd`.
+  No Git merge/commit was attempted under the sandbox's explicit no-commit instruction.
+  Retained its Unreleased Fixed wording; released sections and versions are unchanged.
+- Added the canonical Python 3.9 stdlib consumer runner and copy/update guidance. It prefers
+  explicit overrides, checks both runtime records in both homes, refuses active disagreement,
+  missing paths and ambiguous unpinned Codex caches, and warns only on no-active fallback.
+  Real Codex metadata has enabled=true without a version; its sole cache is unambiguous.
+- Extended the existing shared ref resolver to validate symbol declarations, test names,
+  Markdown headings, structured JSON keys and TOML keys/tables in every declared ref field,
+  including local domain extensions. Comments/prose do not establish symbols. Covered checks
+  retain line-bound checks and dotted last-segment compatibility. Mapping reports informational
+  line_ref_count; strict Git impact rejects line refs into changed files.
+- Re-anchored all three own-map line refs; size 12,274 bytes, no legacy lines remain.
+  Documented the distinct checkout runner and byte-identical consumer runner.
+
+Fail-first commands (all uv commands use the owner-specified external UV_CACHE_DIR):
+- `uv run pytest -q tests/test_ontology_skill.py -k 'sandbox_denies or unresolved_symbols_in_every or declarations_and_reject or legacy_lines_as_information or empty_or_unresolved or reanchor_changed' --basetemp=.pytest_cache/w2-red --tb=short`
+  returned 41 failed / 127 deselected before checker/EPERM implementation.
+- Worker ran all original runner regressions against the exact prior newest-cache consumer:
+  `uv run pytest tests/test_ontology_runner.py -q --basetemp=.pytest_cache/ontology-runner-all-red --tb=no`:
+  24 failed / 0 passed. Restored implementation: 24 passed.
+- Review exposed quoted-comment symbol false positives. Expanded removed-symbol cases and added
+  a Python-comment regression: `uv run pytest -q tests/test_ontology_skill.py -k 'declarations_and_reject or python_comments' --basetemp=.pytest_cache/w2-review-red --tb=no`:
+  24 failed / 145 deselected before the suffix/JSON fix; then focused checker/gate/runner: 201 passed.
+- SemVer edge regressions (empty identifiers/numeric prerelease leading zeros): selected 9 tests
+  failed against both the intermediate runner and a scratch copy of the prior consumer.
+  Final worker runner suite: 33 passed. Every one of the 75 new test cases failed before its fix.
+- Read-only independent review found these two issues; both were corrected and reread with no
+  outstanding finding. Python 3.9 grammar, release/prerelease ordering and structural keys passed.
+
+Initial full-suite attempt and comparison (not a passing gate):
+- `TMPDIR=$PWD/.pytest_cache/w2-tmp uv run pytest -q --basetemp=.pytest_cache/w2-full --tb=short`
+  was interrupted with exit 130 after 289 passed / 2 failed in 223.65s. Existing broad ROOT-copy
+  fixtures included the nested scratch tree and live database filenames; the recursive copy
+  made this unsafe to continue. The initial fixture may have copied the live memory file;
+  no SQLite connection/query or live intake was run. The owned temporary tree was removed.
+- One failure was NEW plugin-tree digest drift from W2 edits. HEAD's archived public plugins
+  matched all four original lock digests. Refreshed only local managed mir-core SHA256 using
+  the existing _tree_digest; no source pin, version, registration or installed state changed.
+- The other was the broad-copy fixture. HEAD's original AST has no ignore filter; an isolated
+  synthetic reproduction copied scratch and a DB-named sentinel without reading any live DB.
+  Both whole-root fixtures now exclude scratch, VCS/venv/bytecode, secret names and DB names.
+  Their existing tests pass: 2 passed / 103 deselected in 4.96s. Git-diff fixtures are committed
+  independent repositories; the two earlier write-tree fixtures now also commit their baselines.
+- Intermediate failures in old expected JSON shape/document-name fixtures, planned-symbol fixture
+  and the first oversized own-map candidate were caused by these edits and repaired, not labeled
+  pre-existing. Final own map directly passed mapping at 0/0 and strict impact with no stale refs.
+
+Read-only real-home `python3 plugins/mir-core/skills/ontology/scripts/mir_ontology_runner.py --which`:
+version: 0.12.0
+path: ~/.claude/plugins/cache/mir-yoke/mir-core/0.12.0/skills/ontology/scripts/ontology_check.py
+reason: active Claude record
+
+Full Ruff and read-only Codex sync passed before final review fixes; final rerun follows below.
+No generated derivative was written; parity needs no regeneration unless Main changes upstream
+instruction sources later. Adopter payload is refreshed for candidate source bytes.
+Final full-suite, final lint/sync receipts and closeout remain pending at this entry.
+
+### W2 full-suite comparison and remaining verification boundary
+
+The first complete run (`uv run pytest -q --basetemp=.pytest_cache/w2-full-final --tb=short`,
+with repository-local TMPDIR and the owner-specified external UV_CACHE_DIR) returned exit 1:
+**1989 passed / 8 failed in 326.11s**. All 75 new cases passed in that run.
+One failure was NEW: a literal host cache path in this evidence entry violated public sanitization.
+HEAD's log was clean; the new literal was removed and the candidate inventory refreshed.
+Public-surface, classification and reference-template checks then returned 16 passed in 0.62s.
+
+The other seven failures were reproduced against byte-identical HEAD tests and production code
+under the same repository-local temporary-path constraint:
+- `tests/test_project_agent_kit_release_evidence.py::test_release_evidence_requires_one_claude_and_one_codex_run`
+- `tests/test_project_agent_kit_release_evidence.py::test_release_evidence_recomputes_artifact_hashes`
+- `tests/test_project_agent_kit_release_evidence.py::test_release_evidence_rejects_unobserved_git_configuration`
+- `tests/test_project_agent_kit_release_evidence.py::test_release_evidence_rejects_missing_memory_rehydration_observation`
+- `tests/test_project_agent_kit_release_evidence.py::test_observer_rejects_a_hook_that_skips_missing_memory`
+- `tests/test_project_agent_kit_release_evidence.py::test_release_evidence_rejects_sensitive_runtime_transcript`
+- `tools/mir_executor/tests/test_hooks_v2.py::test_should_refuse_non_git_selected_root`
+
+The six clean-room tests fail before running a target because `prepare` rejects an existing Git
+worktree; observer state must also be outside the provider. The executor test's supposed non-Git
+sibling inherits the outer repository. These are HEAD-reproduced failures for this temporary layout,
+not a claim that HEAD fails when tested outside a worktree. Source equality was asserted using
+Git's HEAD file contents for the entire clean-room test module, both observer/verifier helpers,
+the executor test module and executor CLI. Selected reruns returned 6 failed / 25 deselected
+and 1 failed with the same messages. No product check was weakened, skipped or marked xfail.
+A fully green gate needs owner-authorized scratch outside the repository; this task forbids it.
+
+The earlier broad-copy comparison was strengthened: a synthetic dangling scratch link reproduces
+HEAD's copytree IOError, while the current filter passes on the identical synthetic tree and omits
+the DB-named sentinel. The local managed lock change is exactly one SHA256 value; all four current
+plugin trees match it and all four HEAD trees match the original lock.
+
+Main independently reran all final new cases against baseline copies without swapping canonical
+files: 42 checker/EPERM cases failed against HEAD, and 33 runner cases failed against the prior
+newest-cache consumer. Thus the complete final set of 75 cases has direct fail-first evidence.
+No new code failure is being labeled pre-existing. Final complete-run receipt follows below.
+
+Final CLI compatibility inspection added trailing `--soft` support for MK feedback as well as
+query. The selected regression failed before this last fix (1 failed / 3 passed / 30 deselected),
+then the runner suite passed 34 cases. Parent's baseline-copy rerun failed all 34 cases.
+The final set is therefore 76 new fail-first cases (42 checker/EPERM and 34 runner).
+The in-progress closeout rerun was interrupted with exit 130 to include this last case in the
+next complete collection; no complete-run count is claimed for that interrupted process.
+Ruff passed after the fix; refreshed only the same local mir-core digest and candidate inventory.
+
+### W2 final receipt and changed files
+
+Final complete invocation (owner-specified external UV_CACHE_DIR throughout):
+`TMPDIR=$PWD/.pytest_cache/w2-final-tmp uv run pytest -q --basetemp=.pytest_cache/w2-full-final-verified --tb=short`
+returned exit 1: **1991 passed / 7 failed in 225.51s**. The failures are exactly the seven
+HEAD-reproduced, repository-local temporary-layout cases listed above. The gate is not green.
+All 76 new regression cases passed in this full run.
+
+A last assignment-boundary probe failed first because the quoted-TOML-key branch also accepted
+an equality expression. Added the same negative lookahead already used by ordinary assignments:
+`anchor_name == other` now fails resolution, while `anchor_name = other` resolves.
+The final affected command after that one-character-pattern correction was:
+`uv run pytest -q tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees tests/test_ontology_skill.py tests/test_mir_ontology.py tests/test_ontology_runner.py --basetemp=.pytest_cache/w2-final-focus --tb=short`:
+**212 passed in 16.52s**, exit 0.
+
+Other final evidence:
+- `uv run ruff check`: All checks passed, exit 0.
+- `uv run python scripts/verify_codex_sync.py`: OK: Codex derivatives match Claude sources, exit 0.
+- `uv run python scripts/mir_ontology.py mapping`: INFO 0 line-number refs; 0 errors, 0 warnings;
+  contract 1.1.0, mapping 1.1.0, exit 0. Own map remains 12,274 bytes.
+- `uv run python scripts/mir_ontology.py impact --git-diff HEAD --strict`: no stale refs, exit 0;
+  selected checks only and requested map re-validation.
+- `python3 plugins/mir-core/skills/ontology/scripts/mir_ontology_runner.py --which`: version 0.12.0,
+  path `~/.claude/plugins/cache/mir-yoke/mir-core/0.12.0/skills/ontology/scripts/ontology_check.py`
+  (home prefix normalized here), reason `active Claude record`, exit 0.
+- Python 3.9 grammar: runner, checker and MK client pass. Configured document budgets pass.
+- `git diff --check`: clean. `mk_query.py` bytes equal branch commit 36131bd exactly.
+- Public-surface/classification/reference-template checks after removing the new literal host
+  path: 16 passed. Final candidate inventory is regenerated after these durable record updates.
+
+Changed files (17):
+- `.mir/capability-lock.json` (only local mir-core tree SHA256)
+- `.mir/ontology-map.json`
+- `CHANGELOG.md` (Unreleased only)
+- `config/adopter-payload.json`
+- `docs/operations/ontology-verification.md`
+- `plugins/mir-core/skills/ontology/SKILL.md`
+- `plugins/mir-core/skills/ontology/references/mapping-guide.md`
+- `plugins/mir-core/skills/ontology/scripts/mir_ontology_runner.py` (new)
+- `plugins/mir-core/skills/ontology/scripts/mk_query.py`
+- `plugins/mir-core/skills/ontology/scripts/ontology_check.py`
+- `scripts/mir_ontology.py`
+- `tasks/change_log.md`
+- `tasks/intent.json`
+- `tasks/plan.md`
+- `tests/test_capability_security.py` (safe existing ROOT-copy fixtures)
+- `tests/test_ontology_runner.py` (new)
+- `tests/test_ontology_skill.py`
+
+Remaining: Main needs owner-authorized scratch outside the repository to obtain a green gate for
+the seven unchanged tests. The cursor/intent is blocked only on that verification boundary.
+No generated derivative currently needs regeneration; no generated instruction/runtime artifact
+was written. Main retains release/version binding, actual branch merge/commit, installed-plugin
+updates and byte-identical consumer rollout. No commit, push, tag, release, restart, live intake
+or MK call was performed. The earlier broad-copy caveat remains material: it may have copied
+the live memory file before interruption; no SQLite connection/query was run. Owned test scratch
+is removed at closeout; shared uv cache is preserved.
+
+
+## Superseded cursor: Closure W2 before W2b (2026-10-15)
+
+```markdown
+# Plan
+
+## Active task: Closure W2 (2026-10-15)
+
+Authority: current W2 owner request in `tasks/intent.json`; this is the single active
+cursor and design authority. The completed P4 cursor is preserved in `tasks/change_log.md`.
+The explicit W2 follow-up extends completed P4; it does not reopen delivery authority.
+
+Outcome: active-runtime consumer distribution selection, resolvable symbol refs and strict
+changed-line rejection, own map 0/0 under 12,288 bytes, and EPERM-safe child cleanup.
+Design: one portable runner copied byte-identically by consumers; reuse the common ref resolver
+for covered and ordinary refs; apply the EPERM branch patch without a merge commit.
+
+- [x] Prove runner, symbol and EPERM regressions fail before implementation.
+- [x] Implement bounded canonical changes, re-anchor own map, update public guidance/Unreleased.
+- [x] Run full pytest, ruff, read-only Codex sync, own mapping/impact and real runner --which.
+- [x] Record exact evidence and Main-owned regeneration/delivery follow-up.
+
+No generated writes, live MK/databases, services, commits, pushes, tags, releases or consumer writes.
+
+Code boundary complete; a fully green verification gate is blocked by repository-only scratch.
+Final full pytest: 1991 passed / 7 HEAD-reproduced layout failures. Final affected checks: 212 passed.
+Ruff, Codex parity, own mapping 0/0, strict impact, Python 3.9 grammar and document budgets pass.
+Main must rerun the seven outside-worktree checks with authorized external scratch. No generated
+derivative currently needs regeneration. No merge commit or consumer/version delivery was performed.
+The initial broad-copy fixture may have copied the live memory file before its unsafe scope was
+noticed; it was stopped and hardened. No SQLite connection/query or live intake was run.
+Exact commands, comparisons and changed-file inventory: `tasks/change_log.md`, Closure W2.
+```
+
+
+## Closure W2b anchor compatibility and verification (2026-10-15)
+
+Authority: current W2b owner instruction recorded in `tasks/intent.json`; design authority:
+`tasks/plan.md`. Existing uncommitted W2 changes are the baseline and remain preserved.
+The supplied own-map hash remains ee2ca84035dc1bdab8ac354eac9bd935723de95a749d101948375ae228d604f7.
+No bootstrap receipt exists, so there is no pinned-file edit blocker.
+
+Extended the shared resolver with GitHub heading slugs and collision suffixes, JSON pointer
+traversal (optional leading slash, arrays, ~0/~1 escapes), Kotlin/Dart word modifiers and
+annotations, generic Kotlin functions and object declarations, and shell function forms.
+Markdown comments/fences and Kotlin/Dart comments cannot preserve a removed declaration;
+prose and prefix names are rejected. Existing Python/TS/JS and dotted-name compatibility
+is retained, including the historical declaration-in-document warning case.
+Added the documented explicit-root `scripts/check_ontology_fleet.py`: read-only mapping
+checks, no discovery, consumer runner execution, consumer writes or MK calls, nonzero on errors.
+No private host paths were added to plugins.
+
+Fail-first evidence (all uv commands used the owner-specified external UV_CACHE_DIR;
+all W2b pytest runs used TMPDIR outside the worktree and disabled bytecode):
+- Initial added forms: 22 failed, 169 deselected against unchanged W2; then 22 passed.
+- Added escaped single-key pointer and stronger prose negatives: 13 failed / 10 passed
+  before the boundary correction; no failure was labeled pre-existing.
+- Final regression matrix imported the existing test module with CHECKER explicitly set to
+  the byte-identical saved pre-W2b checker, using `pytest.main(["-q",
+  "tests/test_ontology_skill.py", "-k", "fleet_anchor_forms", "--tb=no"])`:
+  **23 failed / 169 deselected**. Every final new test has direct fail-first evidence;
+  both existing keyword shell forms are additionally exercised within the failing shell cases.
+- `uv run pytest -q tests/test_ontology_skill.py --tb=short`: **192 passed in 30.33s**.
+  A new intermediate Markdown early-return regression failed one existing document case;
+  HEAD checker comparison of its three suffixes passed 3/3, and the corrected current suite
+  passed all 192. This was a new regression and was repaired.
+
+Full-suite evidence:
+- `uv run pytest -q --tb=short`, with external TMPDIR and PYTHONDONTWRITEBYTECODE=1:
+  initial run **2019 passed / 1 failed in 281.07s**. The slim-integration failure reported
+  preserved ontology_check.py content after the source changed during the run and its
+  inventory digest lagged. It was not classified as pre-existing.
+- Same failing test in an independent committed HEAD clone, with the same external UV cache
+  and TMPDIR: **1 passed in 6.37s**. An initial comparison attempt omitted the external UV
+  cache variable and failed during derivative generation; the corrected command above passed.
+- Refreshed the inventory and reran the FULL suite against stable implementation bytes:
+  `uv run pytest -q --tb=short`: **2021 passed in 242.45s**, exit 0, no failures or skips.
+- `uv run ruff check`: all checks passed. `uv run python scripts/verify_codex_sync.py`:
+  OK, Codex derivatives match Claude sources. `uv run python scripts/verify_context_paths.py`:
+  9 files / 77 references passed. `git diff --check`: passed.
+- Both changed Python scripts parse under Python 3.9 grammar.
+  `python3 scripts/mir_ontology.py impact --git-diff HEAD --strict`: exit 0, no stale refs;
+  printed checks are selection only. Own mapping: 0 errors / 0 warnings, contract/map 1.1.0.
+- No plugins/__pycache__ directories existed before digest calculation or after full pytest.
+  Used the repository's `mir.core.capabilities.manager._tree_digest` as W2 did, updating only
+  the local managed mir-core SHA256 to
+  6cc00a931039ddce1dac83319785dcb33d934e501716fe9047bccdeea643000d.
+  Final independent digest comparison matched. Refreshed candidate inventory with
+  `uv run python -m tools.template_assets --write-adopter-payload`.
+- Instruction sizes remain CLAUDE 3,587 bytes / AGENTS 3,676 bytes; neither was edited.
+
+Read-only fleet invocation: `python3 scripts/check_ontology_fleet.py ROOT ...`, supplying
+all 15 owner-listed repository roots plus Yoke explicitly. Aggregate exit 1 is intentional
+because of the one genuinely unresolved target below. Every warning count is zero.
+
+Result: every requested consumer map and Yoke's own map report 0 warnings. All but one report
+0 errors. One consumer map names a symbol its target file does not declare (one similarly named
+declaration exists). No fuzzy or prefix fallback was added. The fix belongs to that consumer's
+owner. Kotlin `fun <T>` declarations, Markdown heading slugs, JSON pointers and shell functions now
+resolve.
+
+W2b changed files: plugins/mir-core/skills/ontology/scripts/ontology_check.py;
+tests/test_ontology_skill.py; scripts/check_ontology_fleet.py;
+docs/operations/ontology-verification.md; .mir/capability-lock.json;
+config/adopter-payload.json; tasks/intent.json; tasks/plan.md; tasks/change_log.md.
+The other W2 working-tree files remain preserved. No generated instruction/runtime derivative
+was written; no regeneration is currently required (read-only parity passed). No version bump,
+released changelog edit, consumer write, live database/intake/MK call, service operation,
+commit in the owner repository, push, tag or release was performed. Only isolated Git test
+fixtures created their own commits. Final bookkeeping is followed by inventory refresh and
+focused exact-payload/public-surface checks; full code evidence above remains the complete suite.

@@ -1,10 +1,16 @@
 {
-  "goal": "Complete P4 Yoke ontology pytest gate, on-demand MK runner and scoped E01-E10 closure without generated writes or live operations.",
+  "goal": "Closure W2b: resolve existing fleet Markdown slugs, JSON pointers, modified declarations and shell functions without accepting mere mentions.",
   "goal_type": "maintenance",
-  "scope": "Current P4 owner request; repository-only writes; no generated instruction/runtime derivatives, release changes, commits, installs, real MK, live databases or credentials.",
+  "scope": "Current W2b owner instruction; preserve W2 changes, repository code/test boundary, read-only fleet verification, no generated derivatives or delivery.",
   "priority": "normal",
   "updated": "2026-10-15",
   "history": [
+    {
+      "goal": "Closure W2: canonical active-distribution ontology runner, symbol-anchored refs and EPERM cleanup fix.",
+      "updated": "2026-10-15",
+      "status": "blocked",
+      "evidence": "tasks/change_log.md#superseded-cursor-closure-w2-before-w2b-2026-10-15"
+    },
     {
       "goal": "Implement the owner-approved mir_executor common base, optional local hooks/data and explicit sync/drift tooling test-first in mir-yoke only.",
       "updated": "2026-10-01",
@@ -20,6 +26,12 @@
       "goal": "Implement P2 ontology endpoints, impact, lookup and the on-demand Memory Keeper stdio client.",
       "updated": "2026-10-15",
       "status": "superseded"
+    },
+    {
+      "goal": "Complete P4 Yoke ontology pytest gate, on-demand MK runner and scoped E01-E10 closure without generated writes or live operations.",
+      "updated": "2026-10-15",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#superseded-cursor-completed-p4-before-closure-w2-2026-10-15"
     }
   ],
   "status": "complete"

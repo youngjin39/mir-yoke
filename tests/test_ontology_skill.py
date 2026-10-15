@@ -144,6 +144,7 @@ def test_valid_mapping_passes(mapping_repo: tuple[Path, dict]) -> None:
         "warnings": [],
         "contract_version": "1.0.0",
         "mapping_version": "1.0.0",
+        "line_ref_count": 2,
     }
 
 
@@ -389,7 +390,7 @@ def test_should_reject_invalid_covered_check(mapping_repo, ref, message):
 @pytest.mark.parametrize("suffix", [".md", ".txt", ".rst"])
 def test_should_warn_when_covered_check_is_document(mapping_repo, suffix):
     repo, mapping = mapping_repo
-    (repo / ("check" + suffix)).write_text("test_x\n")
+    (repo / ("check" + suffix)).write_text("def test_x(): pass\n")
     mapping["error_cases"][0]["check"] = "check" + suffix + "#Class.test_x"
     result = run_mapping(repo, mapping, "--json")
     assert result.returncode == 0, result.stdout
@@ -560,7 +561,7 @@ def test_should_fail_strict_when_mapping_is_invalid_without_stale_refs(mapping_r
 def test_should_include_staged_unstaged_deletions_and_rename_sources(mapping_repo):
     repo, mapping = mapping_repo
     run_mapping(repo, mapping)
-    # An alternate index and empty tree exercise Git without creating any commit.
+    # Keep the alternate index inside an independently committed fixture repository.
     import os
 
     env = {**os.environ, "GIT_INDEX_FILE": str(repo / ".git/fixture-index")}
@@ -572,7 +573,9 @@ def test_should_include_staged_unstaged_deletions_and_rename_sources(mapping_rep
 
     git("init", "-q")
     git("add", ".")
-    tree = git("write-tree")
+    git("-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid",
+        "-c", "commit.gpgsign=false", "commit", "-qm", "Fixture baseline")
+    tree = "HEAD"
     (repo / "model.md").rename(repo / "renamed model.md")
     git("add", "-A")
     (repo / "check.py").write_text("def test_x():\n    return 1\n")
@@ -894,7 +897,9 @@ def test_should_include_paths_when_staged_and_unstaged_edits_cancel(mapping_repo
 
     git("init", "-q")
     git("add", ".")
-    tree = git("write-tree")
+    git("-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid",
+        "-c", "commit.gpgsign=false", "commit", "-qm", "Fixture baseline")
+    tree = "HEAD"
     original = (repo / "model.md").read_text()
     (repo / "model.md").write_text("staged different text")
     git("add", "model.md")
@@ -911,6 +916,7 @@ def test_should_include_paths_when_staged_and_unstaged_edits_cancel(mapping_repo
 
 def test_should_treat_planned_check_as_an_ordinary_ref(mapping_repo):
     repo, mapping = mapping_repo
+    (repo / "check.py").write_text("def future_check(): pass\n")
     mapping["error_cases"][0].update(status="planned", check="check.py#future_check")
     assert run_mapping(repo, mapping).returncode == 0
     result = run_query(repo, "impact", "--paths", "model.md", "--strict", "--json")
@@ -992,3 +998,189 @@ def test_should_not_pass_secrets_or_unrelated_environment_to_the_server(mk_clien
     names = set(json.loads((host / "env.json").read_text()))
     assert "PATH" in names
     assert not names & {"OMLX_API_KEY", "SOME_SERVICE_TOKEN", "MIR_KNOWLEDGE_SUPPLY_CONFIG"}
+
+
+def test_should_return_pack_when_sandbox_denies_signalling_the_reaped_group(tmp_path, monkeypatch):
+    import importlib.util
+
+    # Under the Codex seatbelt, killpg on a group whose leader has exited fails with
+    # EPERM instead of ESRCH; cleanup must not turn a delivered pack into "unavailable".
+    monkeypatch.chdir(tmp_path)
+    spec = importlib.util.spec_from_file_location("mk_query_eperm", MK_CLIENT)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    def deny(pid, sig):
+        raise PermissionError(1, "Operation not permitted")
+
+    monkeypatch.setattr(module.os, "killpg", deny)
+    result = module.call(
+        [sys.executable, str(FAKE_MCP), "normal"], str(tmp_path), 5,
+        "federation_serve", {"query": "ontology"}, "repo-agent",
+    )
+    assert result["schema_version"] == "mir-context-pack-v1"
+
+
+@pytest.mark.parametrize("field", [
+    ("canonical_index", 0), ("concepts", "Artifact", "local", 0, "ref"),
+    ("vocabularies", 0, "ref"), ("relations", 0, "ref"),
+    ("domain", "concepts", 0, "ref"), ("domain", "relations", 0, "ref"),
+    ("domain", "invariants", 0, "ref"), ("questions", 0, "evidence", 0),
+    ("error_cases", 0, "check"), ("knowledge_supply", "binding"), ("entrypoints", 0),
+    ("domain", "identity_schemes", 0, "ref"),
+])
+def test_should_reject_unresolved_symbols_in_every_ref_field(mapping_repo, field):
+    repo, mapping = mapping_repo
+    mapping["domain"]["identity_schemes"] = [{"ref": "model.md#Model"}]
+    cursor = mapping
+    for key in field[:-1]:
+        cursor = cursor[key]
+    cursor[field[-1]] = "check.py#missing_symbol"
+    result = run_mapping(repo, mapping, "--json")
+    assert result.returncode == 1, result.stdout
+    assert any("symbol anchor not found" in e["message"]
+               for e in json.loads(result.stdout)["errors"])
+
+
+@pytest.mark.parametrize("source, anchor", [
+    *((f"{keyword} anchor_name() {{}}\n", "anchor_name") for keyword in
+      ("def", "class", "function", "const", "let", "var", "interface", "type", "enum",
+       "struct", "fn", "func", "val", "fun")),
+    ("anchor_name = 1\n", "anchor_name"), ("anchor_name: str\n", "anchor_name"),
+    ("async def test_anchor_name(): pass\n", "test_anchor_name"),
+    ('test("anchor name", () => {});\n', "anchor name"),
+    ("## Anchor heading ##\n", "Anchor heading"),
+    ('{"anchor_name": 1}\n', "anchor_name"),
+    ('anchor_name = "value"\n', "anchor_name"),
+    ('[anchor.table]\n', "anchor.table"),
+    ('[[anchor.table]]\n', "anchor.table"),
+])
+def test_should_resolve_declarations_and_reject_removed_symbols(mapping_repo, source, anchor):
+    repo, mapping = mapping_repo
+    suffix = ".md" if source.startswith("##") else ".json" if source.startswith("{") else ".txt"
+    target = repo / ("symbols" + suffix)
+    target.write_text(source)
+    mapping["entrypoints"] = [target.name + "#" + anchor]
+    valid = run_mapping(repo, mapping, "--json")
+    assert valid.returncode == 0, valid.stdout
+    # Mentioning the name as prose/comment must not keep a moved definition valid.
+    target.write_text('// "' + anchor + '": only an old comment\n')
+    missing = run_mapping(repo, mapping, "--json")
+    assert missing.returncode == 1, missing.stdout
+
+
+def test_should_report_legacy_lines_as_information_without_warnings(mapping_repo):
+    repo, mapping = mapping_repo
+    report = json.loads(run_mapping(repo, mapping, "--json").stdout)
+    assert report["errors"] == report["warnings"] == []
+    assert report["line_ref_count"] == 2
+    assert "INFO 2 line-number refs" in run_mapping(repo, mapping).stdout
+
+
+@pytest.mark.parametrize("anchor", ["", "test_missing"])
+def test_should_reject_empty_or_unresolved_covered_symbols(mapping_repo, anchor):
+    repo, mapping = mapping_repo
+    (repo / "check.py").write_text("# test_missing is only a comment\ndef test_x(): pass\n")
+    mapping["error_cases"][0]["check"] = "check.py#" + anchor
+    result = run_mapping(repo, mapping)
+    assert result.returncode == 1, result.stdout
+    assert "symbol anchor not found" in result.stdout
+
+
+@pytest.mark.parametrize("kind", ["line", "symbol"])
+def test_should_reanchor_changed_lines_and_resolve_changed_symbols(mapping_repo, kind):
+    repo, mapping = mapping_repo
+    mapping["vocabularies"][0]["ref"] = "model.md#Model"
+    mapping["error_cases"][0]["check"] = "check.py#test_x"
+    mapping["entrypoints"] = ["check.py:1" if kind == "line" else "check.py#test_x"]
+    run_mapping(repo, mapping)
+    for args in (("init", "-q"), ("add", "."),
+                 ("-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid",
+                  "-c", "commit.gpgsign=false", "commit", "-qm", "Fixture baseline")):
+        subprocess.run(["git", "-C", str(repo), *args], check=True, capture_output=True)
+    # An unchanged legacy line stays compatible even under strict Git impact.
+    before = run_query(repo, "impact", "--git-diff", "HEAD", "--strict", "--json")
+    assert before.returncode == 0, before.stdout
+    (repo / "check.py").write_text("# moved down\ndef test_x(): pass\n")
+    moved = run_query(repo, "impact", "--git-diff", "HEAD", "--strict", "--json")
+    if kind == "line":
+        assert moved.returncode == 1, moved.stdout
+        assert "re-anchor to a symbol: /entrypoints/0" in moved.stdout
+    else:
+        assert moved.returncode == 0, moved.stdout
+        (repo / "check.py").write_text("def test_other(): pass\n")
+        missing = run_query(repo, "impact", "--git-diff", "HEAD", "--strict", "--json")
+        assert missing.returncode == 1, missing.stdout
+        assert "symbol anchor not found" in missing.stdout
+
+
+
+def test_should_not_resolve_python_comments_as_markdown_headings(mapping_repo):
+    repo, mapping = mapping_repo
+    (repo / "check.py").write_text("# removed_name\ndef test_x(): pass\n")
+    mapping["entrypoints"] = ["check.py#removed_name"]
+    result = run_mapping(repo, mapping)
+    assert result.returncode == 1, result.stdout
+
+
+@pytest.mark.parametrize("suffix, source, anchor", [
+    (".md", "## Authority and scope\n", "authority-and-scope"),
+    (".md", "## 6. Component Model\n", "6-component-model"),
+    (".md", "## Ninth inspection round (2026-10-12)\n",
+     "ninth-inspection-round-2026-10-12"),
+    (".md", "## Repeat\n## Repeat\n", "repeat-1"),
+    (".md", "## Repeat\n## Repeat-1\n## Repeat\n", "repeat-2"),
+    (".json", '{"$defs": {"source_artifact": {}}}', "$defs/source_artifact"),
+    (".json", '{"a": {"b": {"c": null}}}', "/a/b/c"),
+    (".json", '{"a/b": {"~name": [false]}}', "a~1b/~0name/0"),
+    (".json", '{"a/b": {}}', "a~1b"),
+    (".kt", "data class AnchorName(val x: Int)\n", "AnchorName"),
+    (".kt", "sealed class AnchorName\n", "AnchorName"),
+    (".kt", "abstract class AnchorName\n", "AnchorName"),
+    (".dart", "final class AnchorName {}\n", "AnchorName"),
+    (".kt", "override fun anchorName() {}\n", "anchorName"),
+    (".kt", "suspend fun anchorName() {}\n", "anchorName"),
+    (".kt", "private suspend fun anchorName() {}\n", "anchorName"),
+    (".kt", "internal data class AnchorName(val x: Int)\n", "AnchorName"),
+    (".dart", "abstract interface class AnchorName {}\n", "AnchorName"),
+    (".dart", "@Deprecated('old') final class AnchorName {}\n", "AnchorName"),
+    (".kt", "@Synchronized internal fun <T> anchorName(block: () -> T): T = block()\n",
+     "anchorName"),
+    (".kt", "object AnchorName {}\n", "AnchorName"),
+    (".sh", "anchor_name() {\n  :\n}\n", "anchor_name"),
+    (".sh", "anchor_name () {\n  :\n}\n", "anchor_name"),
+])
+def test_should_resolve_fleet_anchor_forms_and_reject_mentions(
+    mapping_repo, suffix, source, anchor,
+):
+    repo, mapping = mapping_repo
+    target = repo / ("fleet" + suffix)
+    mapping["entrypoints"] = [target.name + "#" + anchor]
+    target.write_text(source)
+    valid = run_mapping(repo, mapping, "--json")
+    assert valid.returncode == 0, valid.stdout
+    if suffix == ".sh":
+        for declaration in ("function anchor_name {", "function anchor_name() {"):
+            target.write_text(declaration + "\n  :\n}\n")
+            assert run_mapping(repo, mapping).returncode == 0
+    # Removal must invalidate the same anchor, even if a comment/prose still mentions it.
+    mentions = ([f"Prose mentions {anchor}.\n",
+                 f"<!--\n{source}\n-->\n", f"```md\n{source}\n```\n"] if suffix == ".md"
+                else [json.dumps({"mention": anchor}),
+                      '{"elsewhere": {"c": null}, "a": {"b": {"wrong": null}}}']
+                if suffix == ".json" else [f"# {anchor}\n", f"// {source}"])
+    if suffix in (".kt", ".dart"):
+        mentions.extend([f"/*\n{source}\n*/\n",
+                         f"A class {anchor} appears in prose.\n"])
+    for mention in mentions:
+        target.write_text(mention)
+        missing = run_mapping(repo, mapping, "--json")
+        assert missing.returncode == 1, (mention, missing.stdout)
+        assert "symbol anchor not found" in missing.stdout
+    # Prefix names and malformed/out-of-range pointers must never count as the exact anchor.
+    invalid = ("/a/b/../c", "/a/b/c/child", "a~2b/~0name/0", "a~1b/~0name/01",
+               "a~1b/~0name/-", "a~1b/~0name/1") if suffix == ".json" else (anchor + "_missing",)
+    target.write_text(source)
+    for missing_anchor in invalid:
+        mapping["entrypoints"] = [target.name + "#" + missing_anchor]
+        assert run_mapping(repo, mapping).returncode == 1

@@ -1,4 +1,4 @@
-"""Thin repository-owned entrypoint for the released ontology scripts (Python 3.9+)."""
+"""Yoke checkout entrypoint; consumers copy the canonical installed runner (Python 3.9+)."""
 
 import os
 import subprocess

@@ -1,6 +1,6 @@
 # Maintainer ontology verification
 
-The pytest gate in `tests/test_mir_ontology.py` runs the released checker through
+The pytest gate in `tests/test_mir_ontology.py` runs the checkout checker through
 `scripts/mir_ontology.py` against Yoke's own map:
 
 ```sh
@@ -13,7 +13,10 @@ selection declares work, not a passed execution. Run selected tests separately a
 their results. Use `uv run pytest -s tests/test_mir_ontology.py` to see successful gate output.
 The gate does not use MK. `lookup "<question>"` supplies bounded local navigation.
 `MIR_ONTOLOGY_CHECKER` optionally selects a checker; otherwise this supply repository
-uses its released checkout scripts. Missing distributions exit 2.
+uses its checkout scripts. Missing distributions exit 2. Consumers instead copy the
+[canonical installed runner](../../plugins/mir-core/skills/ontology/scripts/mir_ontology_runner.py)
+byte-identically, following its [selection and update rules](../../plugins/mir-core/skills/ontology/references/mapping-guide.md).
+All own-map refs with symbols use anchors; strict Git impact rejects legacy line refs into changed files.
 
 Optional cross-project retrieval: `python3 scripts/mir_ontology.py mk query "<question>" --soft`.
 Host-local configuration and lifecycle are owned by the released
@@ -32,3 +35,16 @@ Surface checks retained from the startup instructions:
 
 Full maintainer commands remain `uv run pytest`, `uv run ruff check`, and
 `uv run python scripts/verify_codex_sync.py`. Use the owner-specified external uv cache.
+
+Fleet compatibility uses the checkout checker against explicitly supplied repository roots:
+
+```sh
+python3 scripts/check_ontology_fleet.py "$REPO_A" "$REPO_B"
+```
+
+This one-shot script prints each map's error/warning counts and findings, and requires zero
+errors for every supplied root. It never discovers consumers, executes their runners, writes
+to them or calls MK. Supply host-specific paths at invocation time. Symbol refs support
+GitHub heading slugs (including duplicate suffixes), JSON pointers with optional leading slash
+and RFC 6901 escapes, modified/annotated declarations and shell functions. A missing declaration
+remains an error even when a longer name or prose mentions it.

@@ -56,10 +56,18 @@ changes from evidence paths and identity or dependency entries, not from exhaust
 Refs are strings: `path`, `path:line` or `path#symbol`, relative to the repository root.
 The path must exist under that root, including after symlink resolution. Absolute paths, parent
 traversal and backslash paths are rejected. List refs may also be wrapped as `{"ref": "path"}`.
-For `covered` checks, the checker also requires a file, an existing one-based line or a name
-whose last dotted segment occurs in the file text; `.md`, `.txt` and `.rst` checks warn that
-covered needs a repeatable check, since a document is not one. Other refs check path existence only;
-resolving a check does not execute it or prove its claim.
+Prefer `#symbol` for every ref field. The shared resolver requires a definition, assignment,
+test name, Markdown heading text, JSON key, or TOML key/table with that name; an arbitrary prose
+mention is insufficient. Dotted check names retain last-segment compatibility. An unresolved or
+empty anchor is an error. Examples: `src/model.py#Artifact`, `tests/test_model.py#test_identity`,
+`docs/model.md#Identity rules`, `config/model.toml#repo`.
+Use line refs only for content without a symbol. Mapping retains 1.x line compatibility and
+reports an informational count (`line_ref_count` in JSON), with no warning. Git impact reports
+`re-anchor to a symbol: <entry>` for a line ref into any changed file; `--strict` fails even if
+that line still exists. A symbol ref into a changed file remains valid while its declaration resolves.
+For `covered` checks the checker also requires a file and validates one-based line bounds;
+`.md`, `.txt` and `.rst` checks warn that covered needs a repeatable check. Resolving a check
+does not execute it or prove its claim.
 
 Questions should expose real decisions in the domain, with evidence that can answer them:
 which note is current after a revision; which citations need review after a source changes;
@@ -137,6 +145,22 @@ only that source bytes are unchanged. Neither outcome establishes truth or autho
 
 
 ## Existing verification and retrieval paths
+
+Consumers copy `scripts/mir_ontology_runner.py` from this skill directory to their own
+`scripts/mir_ontology.py` **byte-identically**. To update, replace the whole consumer file from
+the approved plugin distribution and verify byte equality; keep local behavior outside the copy.
+The supply repository may keep its own checkout runner, explicitly selecting its checkout checker.
+It does not use consumer runtime selection.
+
+The consumer runner honors `MIR_ONTOLOGY_CHECKER` first (the file must exist). Otherwise it reads
+active Claude `installed_plugins.json` records and the enabled Codex plugin table in `config.toml`,
+checking the process home and account home. Claude supplies `version` and `installPath`; Codex's
+current record has `enabled = true` without a version, so exactly one cached version must exist.
+An explicit Codex `version` selects that cache directory. Multiple unpinned Codex versions are
+ambiguous and fail closed. Active version disagreement exits 2 with `runtime distributions disagree`;
+an active missing path also exits 2. Only when no active record exists does newest-cache fallback
+apply, with a stderr warning naming the version. `python3 scripts/mir_ontology.py --which` prints
+the version, checker path and selection reason without running the checker or MK.
 
 From the installed skill directory, add selection to the repository's existing verify path:
 

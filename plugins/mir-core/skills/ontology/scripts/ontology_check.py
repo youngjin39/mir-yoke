@@ -50,6 +50,8 @@ class Checker:
     def __init__(self):
         self.errors = []
         self.warnings = []
+        self.checked_refs = set()
+        self.line_refs = set()
 
     def error(self, at, message):
         self.errors.append({"pointer": at, "message": message})
@@ -76,8 +78,12 @@ class Checker:
         return True
 
     def ref(self, value, at, root):
+        self.checked_refs.add(at)
         if not self.text(value, at, "needs a ref"):
             return
+        path, separator, name = value.partition("#")
+        if re.search(r":\d+$", path):
+            self.line_refs.add(at)
         raw_path = re.sub(r":\d+$", "", value.split("#", 1)[0])
         if PurePosixPath(raw_path).is_absolute() or PureWindowsPath(raw_path).is_absolute():
             self.error(at, "absolute ref is not allowed")
@@ -97,6 +103,11 @@ class Checker:
         if not target.exists():
             self.error(at, "ref path does not exist")
             return
+        if separator and (
+            not target.is_file()
+            or not resolves_symbol(target.read_text(encoding="utf-8"), name, target.suffix.lower())
+        ):
+            self.error(at, "symbol anchor not found (check name not found): " + name)
         return target
 
     def covered_check(self, value, at, root):
@@ -106,7 +117,7 @@ class Checker:
         if not target.is_file():
             self.error(at, "check ref must name a file")
             return
-        path, separator, name = value.partition("#")
+        path = value.split("#", 1)[0]
         line = re.search(r":(\d+)$", path)
         text = target.read_text(encoding="utf-8")
         if line:
@@ -115,8 +126,6 @@ class Checker:
                 self.error(at, "check line must be positive")
             elif number > len(text.splitlines()):
                 self.error(at, "check line exceeds file line count")
-        if separator and (not name or name.rsplit(".", 1)[-1] not in text):
-            self.error(at, "check name not found")
         if target.suffix.lower() in (".md", ".txt", ".rst"):
             self.warn(at, "covered needs a repeatable check; a document is not one")
 
@@ -353,7 +362,101 @@ class Checker:
             elif supply["binding"] not in ("on_demand_stdio", "resident_stdio"):
                 self.error("/knowledge_supply/binding", "invalid binding value")
         self.refs(mapping.get("entrypoints"), "/entrypoints", root)
+        # Local extensions (for example domain identity schemes) use the same resolver.
+        for at, entry in map_entries(mapping):
+            for location, ref in entry_refs(entry, at):
+                if location not in self.checked_refs:
+                    self.ref(ref, location, root)
         return declaration.get("version")
+
+
+def resolves_symbol(text, name, suffix):
+    """Resolve declared names, not arbitrary mentions; keep dotted check-name compatibility."""
+    if not name:
+        return False
+    candidates = {name, name.rsplit(".", 1)[-1]}
+    if suffix in (".md", ".markdown", ".mdx"):
+        text = re.sub(r"<!--[\s\S]*?-->", "", text)
+        seen = set()
+        fence = None
+        unfenced = []
+        for line in text.splitlines():
+            marker = re.match(r"^ {0,3}(`{3,}|~{3,})", line)
+            if marker:
+                if fence is None:
+                    fence = marker[1]
+                elif marker[1][0] == fence[0] and len(marker[1]) >= len(fence):
+                    fence = None
+                continue
+            if fence is not None:
+                continue
+            unfenced.append(line)
+            heading = re.match(r"^ {0,3}#{1,6}\s+(.+?)\s*#*\s*$", line)
+            if heading:
+                title = heading[1]
+                slug = re.sub(r"[^\w -]", "", title.lower()).replace(" ", "-")
+                unique, count = slug, 0
+                while unique in seen:
+                    count += 1
+                    unique = slug + "-" + str(count)
+                seen.add(unique)
+                if name == unique or title in candidates:
+                    return True
+        text = "\n".join(unfenced)
+    if suffix == ".json":
+        try:
+            document = json.loads(text)
+        except ValueError:
+            return False
+        if "/" in name or "~" in name:
+            value = document
+            for part in name.removeprefix("/").split("/"):
+                if re.search(r"~(?![01])", part):
+                    return False
+                key = part.replace("~1", "/").replace("~0", "~")
+                if isinstance(value, dict) and key in value:
+                    value = value[key]
+                elif (isinstance(value, list) and re.fullmatch(NUMBER, key)
+                      and int(key) < len(value)):
+                    value = value[int(key)]
+                else:
+                    return False
+            return True
+        values = [document]
+        while values:
+            value = values.pop()
+            if isinstance(value, dict):
+                if candidates.intersection(value):
+                    return True
+                values.extend(value.values())
+            elif isinstance(value, list):
+                values.extend(value)
+        return False
+    modifiers = r"(?:(?:export|default|public|private|protected|static|async|pub|open)\s+)*"
+    if suffix in (".kt", ".kts", ".dart"):
+        text = re.sub(r"/\*[\s\S]*?\*/|//[^\n]*", "", text)
+        modifiers = r"(?:(?:\w+|@[\w.]+(?:\([^\n]*?\))?)\s+)*"
+    for candidate in candidates:
+        symbol = re.escape(candidate)
+        boundary = r"(?![\w$])"
+        if suffix in (".kt", ".kts", ".dart"):
+            boundary = r"(?=\s*(?:[({:<=>]|\b(?:extends|implements|with)\b|$))"
+        definitions = (
+            rf"^\s*{modifiers}"
+            r"(?:def|class|function|const|let|var|interface|type|enum|struct|fn|func|val|fun|object)"
+            rf"\s+(?:<[^>\n]+>\s*)?{symbol}{boundary}"
+        )
+        assignment = rf"^\s*{symbol}\s*(?::|=(?!=))"
+        toml_key = rf"^\s*[\"']?{symbol}[\"']?\s*=(?!=)"
+        table = rf"^\s*\[\[?\s*{symbol}\s*\]\]?\s*(?:#.*)?$"
+        test = rf"^\s*(?:test|it|describe)\s*\(\s*[\"']{symbol}[\"']"
+        patterns = [definitions, assignment, toml_key, table, test]
+        if suffix in (".sh", ".bash", ".zsh"):
+            patterns.append(rf"^\s*(?:function\s+)?{symbol}\s*\(\s*\)\s*\{{")
+            patterns.append(rf"^\s*function\s+{symbol}\s*\{{")
+        if any(re.search(pattern, text, re.MULTILINE) for pattern in patterns):
+            return True
+    return False
 
 
 def map_entries(mapping):
@@ -464,7 +567,7 @@ def changed_paths(args, root):
     return sorted(paths - {""})
 
 
-def impact(mapping, root, changed):
+def impact(mapping, root, changed, git_diff=False):
     affected = []
     affected_paths = set()
     stale = []
@@ -475,6 +578,13 @@ def impact(mapping, root, changed):
             affected_paths.update(ref_path(ref) for _, ref in refs)
         for location, ref in refs:
             check = Checker()
+            if git_diff and re.search(r":\d+$", ref.split("#", 1)[0]) and touches(
+                ref_path(ref), changed
+            ):
+                stale.append({
+                    "pointer": location, "ref": ref,
+                    "message": "re-anchor to a symbol: " + at,
+                })
             try:
                 if (
                     at.startswith("/error_cases/")
@@ -588,7 +698,9 @@ def main(argv=None):
             if not isinstance(mapping, dict):
                 mapping = {}
             if args.command == "impact":
-                selection = impact(mapping, root, selection["changed_paths"])
+                selection = impact(
+                    mapping, root, selection["changed_paths"], git_diff=args.git_diff is not None
+                )
             elif args.command == "lookup":
                 selection = lookup(mapping, args.query, args.limit)
     except (OSError, UnicodeError, ValueError, RuntimeError, subprocess.TimeoutExpired) as exc:
@@ -600,6 +712,7 @@ def main(argv=None):
         "warnings": checker.warnings,
         "contract_version": contract_version,
         "mapping_version": mapping_version,
+        "line_ref_count": len(checker.line_refs),
     }
     if args.command in ("impact", "lookup"):
         report.update(selection or {})
@@ -637,6 +750,8 @@ def main(argv=None):
     if getattr(args, "json", False):
         print(json.dumps(report))
     else:
+        if args.command == "mapping":
+            print(f"INFO {len(checker.line_refs)} line-number refs (1.x compatibility)")
         for label, findings in (("ERROR", checker.errors), ("WARN", checker.warnings)):
             for finding in findings:
                 print(label + " " + finding["pointer"] + ": " + finding["message"])

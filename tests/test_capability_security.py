@@ -839,7 +839,13 @@ def test_adr89_pending_peer_catchup_uses_receipt_bound_candidate_config(
     codex_home = tmp_path / "codex-home"
     runner = runtime_runner(home / "active", codex_home)
     source_b = tmp_path / "provider-b"
-    shutil.copytree(ROOT, source_b)
+    shutil.copytree(
+        ROOT, source_b,
+        ignore=shutil.ignore_patterns(
+            ".git", ".venv", ".pytest_cache", "__pycache__",
+            ".env*", "secrets", "*.db*", "*.sqlite*",
+        ),
+    )
     source_config = source_b / "config" / "capability-sources.json"
     payload = json.loads(source_config.read_text(encoding="utf-8"))
     payload["profiles"]["packs"]["code_app"]["plugins"].append("mir-content")
@@ -885,7 +891,13 @@ def test_adr89_rollback_restores_provider_with_its_prior_bound_config(
     codex_home = tmp_path / "codex-home"
     runner = runtime_runner(home / "active", codex_home)
     source_b = tmp_path / "provider-b"
-    shutil.copytree(ROOT, source_b, ignore=shutil.ignore_patterns(".git", ".venv"))
+    shutil.copytree(
+        ROOT, source_b,
+        ignore=shutil.ignore_patterns(
+            ".git", ".venv", ".pytest_cache", "__pycache__",
+            ".env*", "secrets", "*.db*", "*.sqlite*",
+        ),
+    )
     source_config = source_b / "config" / "capability-sources.json"
     payload = json.loads(source_config.read_text(encoding="utf-8"))
     payload["commands"]["allowlist"][".claude/commands/analyze-design.md"] = "mir-core:verify"
