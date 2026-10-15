@@ -1,5 +1,127 @@
 # Change log
 
+## P4 ontology work path (2026-10-15)
+
+Authority: current P4 owner request in `tasks/intent.json`; design/cursor: `tasks/plan.md`.
+Added `scripts/mir_ontology.py`, a stdlib checkout dispatcher with an explicit checker
+override, root-bound local commands and normalized MK `--soft`. Released checker, client,
+contract and versions are unchanged. Pytest now consumes Yoke's own map using mapping
+and strict Git impact; selection prints checks without claiming execution.
+The map retains canonical identities/refs and its existing 1.1.0/range declaration.
+Whitespace and scoped new reasons keep it at 12,245 bytes. CLAUDE is 3,598 bytes;
+surface commands moved intact to `docs/operations/ontology-verification.md`, retaining
+the sub-agent routing pointer. MK connection declares supported on-demand transport,
+not observed availability; no real MK, intake, live database or credentials were used.
+
+Fail-first evidence (`UV_CACHE_DIR` set to the owner-provided external cache for every uv command):
+- `uv run pytest -q tests/test_mir_ontology.py --basetemp=.pytest_cache/p4-red`:
+  1 failure/4 setup errors before the runner existed.
+- Same suite with `--basetemp=.pytest_cache/p4-red-ready`: **5 failed** at assertions
+  with the unconnected runner; independent Git fixtures now initialized/committed.
+- Runner implementation: **5 passed**. Each negative case starts with a passing gate,
+  then deletes ARCHITECTURE or changes the map version; the wired gate rejects both.
+- Extended own-map cases reverse a relation and substitute a disallowed Run endpoint;
+  a changed declared check contains a raising sentinel, but selection never executes it.
+  Repeated the disconnected-runner baseline for these three additions: **3 failed**;
+  restored the runner byte-for-byte: **8 passed in 2.67s**. E02/E04 now reference these
+  own-domain checks rather than only the existing generic checker regressions.
+- Added zero-warning gate assertion, ran the single gate test against the temporarily
+  oversized map: **1 failed**, reporting 12,307 bytes and 1 warning; trimmed only new
+  reasons/formatting, then checker returned **0 errors, 0 warnings**.
+- `uv run pytest -q tests/test_mir_ontology.py tests/test_ontology_skill.py
+  --basetemp=.pytest_cache/p4-final-affected2`: **132 passed in 8.91s**.
+- `uv run pytest -q tests/test_codex_derivation_script.py tests/test_plugin_skill_packages.py
+  tests/test_template_asset_classification.py tests/test_advanced_reference_templates.py
+  --basetemp=.pytest_cache/p4-package-final`: **34 passed in 3.80s** after payload refresh.
+- `uv run ruff check`: **All checks passed**.
+- `uv run python scripts/verify_context_paths.py`: **9 files, 75 references passed**
+  after disposable fixtures were removed; `git diff --check`: passed.
+- Explicit `MIR_ONTOLOGY_CHECKER=<checkout checker>` runner mapping: **0/0**, 1.1.0;
+  strict Git impact: exit 0, no stale refs, checks-to-run section and re-validate prompt.
+- Read-only `uv run python scripts/verify_codex_sync.py`: **FAIL: generated drift: AGENTS.md**.
+  HEAD CLAUDE is embedded in HEAD AGENTS; working AGENTS equals HEAD. This is newly
+  expected source/derivative drift, not a pre-existing failure. Main must regenerate.
+
+Full-suite execution is being recorded below. The first direct in-repository basetemp
+run was interrupted: an existing test copies ROOT recursively into its own scratch.
+No pre-existing-failure claim is made. The replacement uses a disposable committed
+current-source Git fixture inside `.pytest_cache/`, with basetemp as its sibling;
+all writes remain inside this repository and no real index or commit is touched.
+
+Final error-case scope:
+| ID | Status | Evidence/scope |
+| --- | --- | --- |
+| E01 | not_applicable | Map navigation never merges cross-project entities. |
+| E02 | covered | Own-map gate rejects reversed direction and disallowed endpoints. |
+| E03 | covered | Existing current-versus-historical decision index test. |
+| E04 | covered | Own-map changed-check selection leaves a raising sentinel unexecuted. |
+| E05 | not_applicable | Lexical map navigation has no vector/inferred identity promotion. |
+| E06 | covered | Existing graph source-digest refresh test. |
+| E07 | covered | Existing explicit-apply authority/parser test. |
+| E08 | covered | Existing synthetic MK personal-namespace refusal test. |
+| E09 | covered | Runner soft missing-config query followed by a passing local gate. |
+| E10 | covered | Wired own-map gate rejects stale refs and incompatible versions. |
+
+No generated instruction/runtime derivatives were modified by this executor. Main owns
+`scripts/generate_codex_derivatives.sh`, then adopter-payload refresh and parity recheck.
+No live availability/ingestion claim or owner decision is inferred from these tests.
+
+Later working-tree observation: a separate writer compacted the two new instruction
+lines and regenerated AGENTS. Those edits were preserved, not reproduced or reverted.
+Latest CLAUDE: 3,587 bytes; AGENTS: 3,676 bytes. A new read-only
+`uv run python scripts/verify_codex_sync.py` returned **OK: Codex derivatives match Claude sources**;
+this supersedes the earlier parity blocker. Updated affected suite:
+`uv run pytest -q tests/test_mir_ontology.py tests/test_ontology_skill.py
+--basetemp=.pytest_cache/p4-last-affected`: **135 passed in 10.50s**.
+
+Full-suite isolation corrections: the initial source fixture with an artificial commit
+finished with 11 failures, 1,907 passes and 1 skip (185.09s): stale inventory, missing
+source ancestry and Git/provider-boundary artifacts. It was not treated as HEAD evidence.
+The replacement is a local clone preserving the original HEAD, overlaid with current
+sources, with its adopter payload refreshed. Tests use a sibling basetemp and
+`GIT_CEILING_DIRECTORIES=<owner repo>` so non-Git fixture paths cannot inherit the outer
+repository. A completed run then reported **2 failed, 1,919 passed, 1 skipped in 234.49s**:
+the new evidence log exposed a local cache path (removed), and a reused fixture contained
+ontology interpreter bytecode that the exact plugin-tree digest correctly rejected.
+Removed only those disposable ontology caches and set `PYTHONDONTWRITEBYTECODE=1`.
+The original-root capability-lock and public-path tests then both passed (**2 passed in 0.22s**).
+There is no asserted pre-existing source failure: plugin sources and lock match HEAD,
+and the clean-cache lock check passes. Final full-suite output follows below.
+
+Changed files owned by this task: `.mir/ontology-map.json`, `scripts/mir_ontology.py`,
+`tests/test_mir_ontology.py`, `CLAUDE.md`, `docs/operations/ontology-verification.md`,
+`CHANGELOG.md`, `config/adopter-payload.json`, `tasks/intent.json`,
+`tasks/archive/intent-history.json`, `tasks/plan.md`, `tasks/change_log.md`,
+`tasks/handoffs/session-handoff-LATEST.md`. The separate AGENTS regeneration was preserved.
+The runner also parses under Python's 3.9 grammar. No source contract, released checker,
+client behaviour, package version, consumer repository or original Git history changed.
+
+Final full-suite invocation: from the owner repository, with `GIT_CEILING_DIRECTORIES=$PWD`,
+`PYTHONDONTWRITEBYTECODE=1` and the requested external UV cache, `uv run python` changed
+directory to the current-source local clone and called
+`pytest.main(["-q", "--basetemp=<owner repo>/.pytest_cache/p4-clean-final"])`.
+The execution session returned **exit_code: 0**, observed after completion. Its redirected
+scratch output path disappeared before the summary line could be read; the cause was not
+established. No final pass/skip count is claimed from that missing output. The earlier
+failed full-run counts above remain historical, not the final result.
+
+Final current-source boundary checks (latest instruction/derivative edits included):
+`uv run pytest -q` on the two capability-lock/public-path checks, followed by
+`tests/test_mir_ontology.py tests/test_ontology_skill.py tests/test_codex_derivation_script.py
+tests/test_plugin_skill_packages.py tests/test_template_asset_classification.py
+tests/test_advanced_reference_templates.py`, with bytecode disabled and repository-local
+basetemp: **171 passed in 13.61s**. An initial combined recheck had 170 passes and the
+same ignored ontology bytecode-tree failure; removing that disposable cache made the
+entire current-source boundary set pass. No lock or released source was edited to hide it.
+Exact adopter-payload hashes must be refreshed after bookkeeping byte changes.
+
+Final read-only receipts: `scripts/verify_context_paths.py` passed **9 files / 77 refs**;
+`scripts/verify_codex_sync.py` returned **OK**; `ruff check` and `git diff --check` passed.
+With the explicit checkout checker override, runner mapping returned **0 errors, 0 warnings**
+at contract/mapping **1.1.0** and strict Git impact exited **0**, printed checks-to-run,
+reported no stale refs and requested map revalidation. There is no remaining derivative
+regeneration requirement in the observed working tree; this executor still made no generated writes.
+
 ## Covered-check resolution and MK guide (2026-10-15)
 
 Authority: the owner request in `tasks/intent.json`; design authority: `tasks/plan.md`.
@@ -3694,3 +3816,31 @@ returned 124 passed / 1 owner-distribution parity failure in 7.18s. The aggregat
 is 151 passed / 1 pending owner-parity failure (124 ontology + 21 package/common + 6 asset passes).
 The final bounded scratch directories were removed; no fake MCP child remains after the
 lifecycle assertions. No production service, database, credentials or generated Codex file was used.
+
+## Superseded cursor: P2 executable paths before P4 (2026-10-15)
+
+
+Authority: the current P2 owner request recorded in `tasks/intent.json`; this is the single
+active cursor and design authority. The prior completed cursor is preserved in `tasks/change_log.md`.
+
+Outcome: version-gated endpoint validation; bounded impact/check selection and lookup; an
+on-demand stdlib MCP client with failure independence, fake-server lifecycle evidence and public docs.
+Design: extend the existing checker without full-tree scans; select checks but never execute them;
+load host-local MK configuration explicitly and bound/reap every child. Preserve 1.0.0 mappings.
+
+- [x] Add regressions and record fail-first evidence for endpoints, impact, lookup and MK.
+- [x] Implement consumer commands and update supported public guidance.
+- [x] Refresh adopter payload; run focused/package/asset checks, lint and read-only parity.
+- [x] Exercise Yoke impact/lookup and read-only Harness lookup; record output and remaining Main work.
+
+Constraints: write only here; no commits, push, release, installation, real MK or databases;
+never read credentials or edit `.codex/**` or the owner-distributed common contract. Main owns
+the contract copy, generated derivatives and version bump. Use the external uv cache.
+
+Bounded P2 implementation and requested checks are complete. Evidence and exact impact/lookup
+receipts: `tasks/change_log.md`, "P2 ontology executable consumer paths (2026-10-15)".
+The ontology tests have 124 passes and one pending owner-contract byte-parity failure;
+package/common tests have 21 passes and asset tests have 6 passes. Codex parity and lint pass.
+Main still owns the 1.1.0 contract copy/SOURCE digest, any required derivative regeneration,
+version choice and consumer rollout. Read-only Harness lookup exposed four wildcard-array
+endpoint errors; its writer must resolve them. No real MK or database was opened.

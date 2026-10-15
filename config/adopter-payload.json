@@ -443,13 +443,13 @@
       "classification": "reference",
       "disposition": "remove",
       "path": ".mir/capability-lock.json",
-      "sha256": "2657b8b95ed8d7a46e2f80a7ff744a4cd5c18524b58c5b4cb693a35b2bbb0e2f"
+      "sha256": "de6723be00537ed2df1cc5ab0d4a2daa67f74f04d0eba3f002582d35eb9a70bc"
     },
     {
       "classification": "reference",
       "disposition": "remove",
       "path": ".mir/ontology-map.json",
-      "sha256": "d162a73e942751501ff40900f9e42f8ab179426af0be2868a7f9c5603c7ca4bc"
+      "sha256": "22b77cb9bf7b2e6a5cc994f72632f35a51ed6ba477df2511a29da62358c8956c"
     },
     {
       "classification": "reference",
@@ -467,7 +467,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "AGENTS.md",
-      "sha256": "3ba3199d03625d40d2983252b3eff8a6876e5597fce6a6e3608718ba7055bbb2"
+      "sha256": "9cc2db14131e6b8deaa2330ff23a57e8e8ca7060b59505e9df2a6ff7937cc5d0"
     },
     {
       "classification": "reference",
@@ -485,13 +485,13 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "CHANGELOG.md",
-      "sha256": "b28e648f93a3fd535458e07329bdfebef9bc8f4a299de4a67975304eccf87e32"
+      "sha256": "fb31d4c524aa7a8fcbfae95417173a9bd93df82d93329f6279e92340953bf1ec"
     },
     {
       "classification": "reference",
       "disposition": "remove",
       "path": "CLAUDE.md",
-      "sha256": "04cdea7bdef17762c5bb8d9d440cdab807bf2e181dc86290c41f0a14c24ccf95"
+      "sha256": "35dab75fc513d72be95761772838eddc4af3574bb88107a1284f782cf68d6d3a"
     },
     {
       "classification": "reference",
@@ -2266,6 +2266,12 @@
     {
       "classification": "reference",
       "disposition": "remove",
+      "path": "docs/operations/ontology-verification.md",
+      "sha256": "92cdaebae8fc005a8ce670b75b6fb6299d75e330c7026fef72f0a451ec328b4b"
+    },
+    {
+      "classification": "reference",
+      "disposition": "remove",
       "path": "docs/operations/preservation-first-reconciliation.md",
       "sha256": "09a5dd3e787367743586220b7f19d45bacfa69910e1ba70baa367a96d9985bad"
     },
@@ -3308,6 +3314,12 @@
       "sha256": "bedadabbfa6800a16b33b854fa6293405d9d620d59bcbf8aa13da35f4a416223"
     },
     {
+      "classification": "reference",
+      "disposition": "remove",
+      "path": "scripts/mir_ontology.py",
+      "sha256": "d4d615df43a1cb44c337ff62b66bfeb250d318f2640b362590d6cd9aac39b647"
+    },
+    {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "scripts/observe_project_agent_kit.py",
@@ -4097,13 +4109,13 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/archive/intent-history.json",
-      "sha256": "fe7458c5ab9a1a72d4123fdd1471bf3c614f05ec4a8119ff3942fc9e295a8def"
+      "sha256": "8cbc9f6df64e0cb395d2304295cb81d3bac93c18e01434115a7f4826b6645c0e"
     },
     {
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/change_log.md",
-      "sha256": "6579860195df0c3492a57303295a5b4e7fba9c4e0ce54df2b2be00acbf980ff6"
+      "sha256": "46c0a576d4d0551676e7a786a7c9986aa62648e371954fdc6a366cb8f9b5ee57"
     },
     {
       "classification": "reference",
@@ -4115,13 +4127,13 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/handoffs/session-handoff-LATEST.md",
-      "sha256": "616c7a3ef852be3fe2bd12bd180816144da2220cedd1f555aa5653df70872b45"
+      "sha256": "363fe72ac58443dc64da4797b2fd8c3f5ea159e67633295dd9e7aa4ccbc474bd"
     },
     {
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/intent.json",
-      "sha256": "ffcb2200249d3c35881aee46c116b71d843670b4ad9949ef0ead0f0001fad64b"
+      "sha256": "3db425d6e54c79eb7cb6d2951da97b4249458d61b050bd94a454d06594409fb5"
     },
     {
       "classification": "reference",
@@ -4145,7 +4157,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/plan.md",
-      "sha256": "a3e371ec4b28fbce649845dfd6f4e3f61b3a9ce5648b38cd4d1113e020ad5ac9"
+      "sha256": "6e74d4bac56aabb8c7d305bf047fe0a6e22f5afb6a2753dd53fee615826d3faa"
     },
     {
       "classification": "reference",
@@ -4482,6 +4494,12 @@
       "disposition": "remove",
       "path": "tests/test_minimal_starter.py",
       "sha256": "0592248fed3785c99f0c43c7550fbe94ecd2768dfc1d7b75635d99e93212fcc6"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "tests/test_mir_ontology.py",
+      "sha256": "d2b31faf2049922a5f2822991d071095a6c3669602dfd8438d0c23684fc77ea5"
     },
     {
       "classification": "template-maintainer-tool",

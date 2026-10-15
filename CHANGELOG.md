@@ -10,6 +10,8 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ### Added
 
+- Added Yoke's checkout ontology runner, pytest mapping/strict-impact gate and optional
+  on-demand MK guidance, with scoped error-case checks and soft-outage independence.
 - Added the dual-runtime `mir-lifecycle-hooks` plugin with one exact, read-only `SessionStart`
   reminder and the `runtime-continuity` skill.
 - Added a dry-run-first user-runtime installer for centrally authored Claude/Codex agents and

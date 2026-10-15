@@ -1,48 +1,10 @@
 {
-  "goal": "Implement P2 ontology endpoints, impact, lookup and the on-demand Memory Keeper stdio client.",
+  "goal": "Complete P4 Yoke ontology pytest gate, on-demand MK runner and scoped E01-E10 closure without generated writes or live operations.",
   "goal_type": "maintenance",
-  "scope": "Current P2 owner request; repository-only writes; no generated .codex or common-contract edits, commits, installs, real MK, databases or credentials.",
+  "scope": "Current P4 owner request; repository-only writes; no generated instruction/runtime derivatives, release changes, commits, installs, real MK, live databases or credentials.",
   "priority": "normal",
   "updated": "2026-10-15",
   "history": [
-    {
-      "goal": "Adopt mir.common-semantics 1.0.0 for Yoke itself: local mapping, selective entrypoints, three domain comparisons and scoped error-case evidence.",
-      "updated": "2026-10-15",
-      "status": "complete",
-      "evidence": "tasks/change_log.md#superseded-cursor-ontology-phase-d-closeout-2026-10-15"
-    },
-    {
-      "goal": "Add mir-core:ontology and its deterministic mapping checker (phase B1), distributing the owner contract unchanged and preparing 0.11.0.",
-      "updated": "2026-10-14",
-      "status": "complete",
-      "evidence": "tasks/change_log.md#superseded-cursor-ontology-phase-b1-2026-10-15"
-    },
-    {
-      "goal": "Register the already-authored reference-app-profile skill exactly like repo-maintenance and release-prepare 0.10.8 in Mir Yoke only.",
-      "updated": "2026-10-11",
-      "status": "complete",
-      "evidence": "tasks/change_log.md#superseded-cursor-reference-application-profile-preparation-2026-10-14"
-    },
-    {
-      "goal": "Fix executor temporary-directory test cleanup, malformed agent criteria, response-ID collisions and reader failures test-first; correct policy wording; verify all six items and commit common v3.5 locally.",
-      "updated": "2026-10-02",
-      "status": "complete"
-    },
-    {
-      "goal": "Run the 2026-10-02 mir-core:repo-maintenance pass (all 21 items) on mir-yoke only under the owner instruction of 2026-10-02: re-verify prior fixes, check ADR-88 routing lock and mir_executor common v3.4 consistency, fix in-scope defects test-first, run documented gates, local commits of own files only.",
-      "updated": "2026-10-02",
-      "status": "complete"
-    },
-    {
-      "goal": "Re-verify all twenty repo-maintenance checklist items against actual repository state and execution evidence, then minimally repair confirmed defects within this repository only.",
-      "updated": "2026-09-23",
-      "status": "superseded"
-    },
-    {
-      "goal": "Strengthen mir-core:repo-maintenance to the owner-authorized twenty-one items in this repository only; prove regressions fail first and run full verification, leaving ADR-80 release binding to Mir Harness.",
-      "updated": "2026-09-24",
-      "status": "complete"
-    },
     {
       "goal": "Implement the owner-approved mir_executor common base, optional local hooks/data and explicit sync/drift tooling test-first in mir-yoke only.",
       "updated": "2026-10-01",
@@ -53,6 +15,11 @@
       "updated": "2026-10-15",
       "status": "complete",
       "evidence": "tasks/change_log.md#superseded-cursor-covered-check-resolution-and-mk-guide-2026-10-15"
+    },
+    {
+      "goal": "Implement P2 ontology endpoints, impact, lookup and the on-demand Memory Keeper stdio client.",
+      "updated": "2026-10-15",
+      "status": "superseded"
     }
   ],
   "status": "complete"

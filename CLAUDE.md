@@ -33,9 +33,8 @@ and not a universal installer, and has no standing authority over consumers.
 
 - Work directly on bounded changes; scale design, delegation and review with uncertainty.
 - Finish when affected supported-surface contracts, generated parity and smallest relevant checks pass; broaden only for affected maintainer code or release coupling.
-- Starter/recipe: `uv run pytest -q tests/test_project_agent_kit.py tests/test_minimal_starter.py`.
-- CLI: include `tests/test_installed_cli.py` and the affected command test. Plugins: run isolated package and common-contract tests.
-- Checks: `uv run pytest`, `uv run ruff check`, `uv run python scripts/verify_codex_sync.py`.
+- Checks: `uv run pytest`, `uv run ruff check`, `scripts/verify_codex_sync.py`; surface/ontology: `docs/operations/ontology-verification.md`.
+- Cross-project: `python3 scripts/mir_ontology.py mk query "<q>" --soft`; cited evidence, not authority; else continue locally; children get parent-supplied excerpts only.
 - Repository-only SRR invocation and prior wording: `tasks/change_log.md`, 2026-09-23 preserved inputs.
 
 ## Role policy (template summary)
