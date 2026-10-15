@@ -443,7 +443,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": ".mir/capability-lock.json",
-      "sha256": "58331388626751bdd4f3a4da536024917f0d3d395157b8bfadbc28c4f87a363e"
+      "sha256": "2657b8b95ed8d7a46e2f80a7ff744a4cd5c18524b58c5b4cb693a35b2bbb0e2f"
     },
     {
       "classification": "reference",
@@ -2879,7 +2879,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "plugins/mir-core/skills/ontology/scripts/mk_query.py",
-      "sha256": "237516771fd669d3fc1da752d4e13b7ce75ac65ee04eed24bb81510e0e684b90"
+      "sha256": "107909a74d61ef399dba4650cb338008983a35fb18c715fb5b3ffccf0a3f79f8"
     },
     {
       "classification": "optional-consumer-tool",
@@ -4103,7 +4103,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/change_log.md",
-      "sha256": "d50fed2bd92185d44628bbe8a432d1d44ccc3ec0d4f1017bd7df81b572e5c98d"
+      "sha256": "6579860195df0c3492a57303295a5b4e7fba9c4e0ce54df2b2be00acbf980ff6"
     },
     {
       "classification": "reference",
@@ -4247,7 +4247,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/fixtures/ontology_mcp_server.py",
-      "sha256": "8e6f847236de7ba6a73e7c81dfc13a3354024d1cf89d29ee301fa40ea8f8bcfe"
+      "sha256": "bd249674a556a2667ad1b9b851cca2f1567b49d8ffa5992608bf808e0a3a7cc6"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4493,7 +4493,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_ontology_skill.py",
-      "sha256": "4660e465dfe97b05f8e5fcd56bc31f97e19536f7e49aa1a95aed60aefedf6a5d"
+      "sha256": "f46a8223bab654a28d1abe10ab0df9d9f46ed167557bafb82d5940ac82fcc1b7"
     },
     {
       "classification": "template-maintainer-tool",

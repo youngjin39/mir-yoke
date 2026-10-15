@@ -83,29 +83,29 @@
       "sha256": "56b047474551913d6734e85c60a3f25d4944f55d28b7a2110495f9175f52ed07"
     },
     ".claude-plugin/marketplace.json": {
-      "sha256": "160c78540dce090e87c5c0f5809c3e022d2183b743dd180ca05cd3a7b1e9d147"
+      "sha256": "ee3631b744eee00b3297011977b4b3137c4fb72ce81927dffdbca42ac8ba1a69"
     }
   },
   "plugins": {
     "mir-code": {
       "package_kind": "skills",
       "path": "plugins/mir-code",
-      "sha256": "d45ebcab9e7dac34c0c5a820639903b4411a70c998b113785490838e4bd5ea76"
+      "sha256": "cefc2975c9caddd3869798539629ee5f1029852288d8ff18f22860df2db9b48f"
     },
     "mir-content": {
       "package_kind": "skills",
       "path": "plugins/mir-content",
-      "sha256": "815a21aaf2ecc113beb9fac7a34748738cf07233d6fe65eb6a7f5b3e1f661880"
+      "sha256": "030a4627c1501bbf2bc65f7f9187e3d687a5797199399c5eef7cd23d1d007dd8"
     },
     "mir-core": {
       "package_kind": "skills",
       "path": "plugins/mir-core",
-      "sha256": "ac2e568531351f5f86ca5b26e43a2aa6f71b0f7b1d5d5d016088916d24f9d418"
+      "sha256": "6e5871df223ba7509337d6f4a7775b55d44e70dd360229ff04bc14830111b2fd"
     },
     "mir-lifecycle-hooks": {
       "package_kind": "skills-hooks",
       "path": "plugins/mir-lifecycle-hooks",
-      "sha256": "67e5646c8c2568aab2027542625c74898be12b863ad2ad30af6dca24e931c39e"
+      "sha256": "bb088de740af927d57f5591929dc94ce7f9aa7f6a981d57e306d98367f61e771"
     }
   },
   "profile": "hybrid_pipeline",
@@ -115,7 +115,7 @@
   },
   "schema_version": 2,
   "source": {
-    "commit": "6d99d859971e54508fd7dd7a5262a46509a552aa",
+    "commit": "bbc3248410182a03e6e3a60adb54e71104344655",
     "ref": "main",
     "url": "https://github.com/youngjin39/mir-yoke.git"
   },
