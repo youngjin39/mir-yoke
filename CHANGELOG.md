@@ -10,6 +10,8 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ### Fixed
 
+- Validate common relation IDs and version-gated endpoints in `domain.relations` using the same
+  rules as top-level relations; entries without `common` retain ref-only validation.
 - `mk_query.py` no longer reports a delivered pack as unavailable when a sandbox answers
   EPERM while the client reaps the server's process group.
 

@@ -1,26 +1,27 @@
 # Plan
 
-## Active task: Closure W2b (2026-10-15)
+## Active task: Domain common relation audit fix (2026-10-15)
 
-Authority: current W2b owner request recorded in `tasks/intent.json`; this is the single
-active cursor and design authority. The preceding W2 cursor is preserved in `tasks/change_log.md`.
+Authority: the current owner request is recorded in `tasks/intent.json`; this document is
+the single active cursor and design record. Previous cursor details are preserved in
+`tasks/change_log.md#superseded-cursor-closure-w2b-before-domain-relation-audit-fix-2026-10-15`.
 
-Outcome: resolve declared fleet anchor forms, retain strict missing-name rejection, provide
-an explicit-root fleet check, and run the complete suite with scratch outside the worktree.
-Design: extend the existing resolver with heading slugs, RFC 6901 traversal, declaration
-modifiers/annotations/generic functions and shell declaration forms. Preserve ordinary names.
-A real missing declaration remains an error and is reported without consumer edits.
+Outcome: common declarations in `domain.relations` receive the same relation-ID and
+version-gated endpoint validation as top-level relations. The mapping guide permits only
+common concept IDs or a contract-allowed wildcard; local concept IDs remain invalid.
+Entries without `common` retain ref-only validation. Extract and reuse the existing validator.
 
-- [x] Prove each new anchor regression fails against unchanged W2 code.
-- [x] Implement the bounded resolver change and document an explicit-root fleet check.
-- [x] Run full pytest, compare any failures with HEAD, run lint/parity and fleet checks.
-- [x] Refresh the cache-free mir-core digest and adopter inventory; record exact evidence.
+- [x] Capture baseline results for the 16 owner-listed maps and prove new regressions fail at HEAD.
+- [x] Share the relation validation, add the guide line and unreleased changelog entry.
+- [x] Run focused/full pytest, lint, read-only parity, mapping/impact and all 16 maps; report new pointers.
+- [x] Refresh cache-free mir-core digest and adopter payload; record evidence and remaining work.
 
-No generated writes, consumer writes, live operations, version bumps, commits or delivery.
+No generated derivatives, consumer writes, database inspection, commits or delivery.
 
-Code/test boundary complete: full pytest 2,021 passed; Ruff, read-only Codex parity,
-context paths, Python 3.9 grammar and strict impact pass. Fleet results are 14 requested
-roots at 0/0 and one consumer at 1 error/0 warnings: its Artifact ref names an undeclared symbol,
-which the target does not declare. Yoke is also 0/0. Consumer correction remains Main/owner
-work; the matcher must not accept a different declaration. No derivative regeneration
-is currently needed. Exact commands and per-root receipts: `tasks/change_log.md`, Closure W2b.
+Completed implementation and verification: 18 fail-first regressions against the byte-identical
+HEAD checker; 217 focused tests and 2,046 full-suite tests passed. All 16 explicit owner-listed
+maps report 0 errors and 0 warnings before and after; there are no new finding pointers.
+Ruff, read-only Codex parity, contract, own mapping, strict impact and Python 3.9 grammar pass.
+The mir-core digest and adopter inventory are refreshed; final inventory/public checks follow
+bookkeeping. No consumer correction or generated regeneration is needed. Evidence:
+`tasks/change_log.md#domain-common-relation-audit-fix-2026-10-15`.

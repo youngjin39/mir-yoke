@@ -447,16 +447,24 @@ def contract11(mapping_repo):
         ("from", [None]),
     ],
 )
-def test_should_reject_invalid_endpoints_at_11(contract11, side, value):
+@pytest.mark.parametrize("section", ["relations", "domain"])
+def test_should_reject_invalid_endpoints_at_11(contract11, side, value, section):
     repo, mapping, contract = contract11
+    relation = mapping["relations"][0]
+    at = "/relations/0/"
+    if section == "domain":
+        mapping["domain"]["relations"] = [relation]
+        at = "/domain" + at
     if value is None:
-        del mapping["relations"][0][side]
+        del relation[side]
     else:
-        mapping["relations"][0][side] = value
+        relation[side] = value
+    if section == "domain":
+        mapping["relations"] = []
     result = run_mapping(repo, mapping, "--contract", str(contract), "--json")
     assert result.returncode == 1, result.stdout
     assert any(
-        e["pointer"].startswith("/relations/0/" + side) for e in json.loads(result.stdout)["errors"]
+        e["pointer"].startswith(at + side) for e in json.loads(result.stdout)["errors"]
     )
 
 
@@ -469,9 +477,67 @@ def test_should_reject_invalid_endpoints_at_11(contract11, side, value):
         {"local_only": "Local meaning needs no endpoints."},
     ],
 )
-def test_should_accept_allowed_endpoints_at_11(contract11, relation):
+@pytest.mark.parametrize("section", ["relations", "domain"])
+def test_should_accept_allowed_endpoints_at_11(contract11, relation, section):
     repo, mapping, contract = contract11
-    mapping["relations"] = [{"local": "example", **relation}]
+    entry = {"local": "example", "name": "example", "ref": "model.md", **relation}
+    if section == "domain":
+        mapping["domain"]["relations"] = [entry]
+    else:
+        mapping["relations"] = [entry]
+    result = run_mapping(repo, mapping, "--contract", str(contract))
+    assert result.returncode == 0, result.stdout
+
+
+@pytest.mark.parametrize("version", ["1.0.0", "1.1.0"])
+@pytest.mark.parametrize("common", ["unknown_relation", None, ["part_of"]])
+def test_should_reject_unknown_common_when_declared_in_domain_relation(contract11, version, common):
+    repo, mapping, contract = contract11
+    mapping["contract"]["version"] = version
+    mapping["knowledge_supply"] = {"memory_keeper": "not_connected"}
+    mapping["domain"]["relations"][0].update(
+        common=common, **{"from": ["Project"], "to": ["Project"]}
+    )
+    result = run_mapping(repo, mapping, "--contract", str(contract), "--json")
+    assert result.returncode == 1, result.stdout
+    assert {"pointer": "/domain/relations/0/common", "message": "unknown relation"} in json.loads(
+        result.stdout
+    )["errors"]
+
+
+def test_should_reject_local_concept_endpoint_when_declared_in_domain_relation(contract11):
+    repo, mapping, contract = contract11
+    mapping["domain"]["concepts"][0]["id"] = "Note"
+    mapping["domain"]["relations"][0].update(
+        common="depends_on", **{"from": ["Note"], "to": ["Artifact"]}
+    )
+    result = run_mapping(repo, mapping, "--contract", str(contract), "--json")
+    assert result.returncode == 1, result.stdout
+    errors = json.loads(result.stdout)["errors"]
+    assert {"pointer": "/domain/relations/0/from/0", "message": "endpoint not allowed"} in errors
+
+
+@pytest.mark.parametrize("valid_ref", [True, False])
+def test_should_check_only_ref_when_domain_relation_has_no_common(contract11, valid_ref):
+    repo, mapping, contract = contract11
+    mapping["domain"]["relations"] = [
+        {"ref": "model.md" if valid_ref else "missing.md", "from": [], "to": ["Unknown"]}
+    ]
+    result = run_mapping(repo, mapping, "--contract", str(contract), "--json")
+    assert result.returncode == (0 if valid_ref else 1), result.stdout
+    errors = json.loads(result.stdout)["errors"]
+    assert [error["pointer"] for error in errors] == (
+        [] if valid_ref else ["/domain/relations/0/ref"]
+    )
+
+
+def test_should_preserve_legacy_endpoints_when_domain_relation_declares_common(contract11):
+    repo, mapping, contract = contract11
+    mapping["contract"]["version"] = "1.0.0"
+    mapping["knowledge_supply"] = {"memory_keeper": "not_connected"}
+    mapping["domain"]["relations"][0].update(
+        common="realized_by", **{"from": ["Unknown"], "to": []}
+    )
     result = run_mapping(repo, mapping, "--contract", str(contract))
     assert result.returncode == 0, result.stdout
 
@@ -797,13 +863,19 @@ def test_should_report_invalid_map_in_impact_without_traceback(mapping_repo, raw
         assert not result.stderr
 
 
-def test_should_reject_wildcard_array_even_for_unrestricted_relation(contract11):
+@pytest.mark.parametrize("section", ["relations", "domain"])
+def test_should_reject_wildcard_array_even_for_unrestricted_relation(contract11, section):
     repo, mapping, contract = contract11
     mapping["relations"][0].update(common="depends_on", **{"from": ["*"], "to": "*"})
+    at = "/relations/0/from"
+    if section == "domain":
+        mapping["domain"]["relations"] = mapping["relations"]
+        mapping["relations"] = []
+        at = "/domain" + at
     result = run_mapping(repo, mapping, "--contract", str(contract), "--json")
     assert result.returncode == 1
     assert any(
-        e["pointer"].startswith("/relations/0/from") for e in json.loads(result.stdout)["errors"]
+        e["pointer"].startswith(at) for e in json.loads(result.stdout)["errors"]
     )
 
 

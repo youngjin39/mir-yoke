@@ -189,6 +189,27 @@ class Checker:
                 self.text(value, pointer("/mapping/" + key, i))
         return contract
 
+    def common_relation(self, relation, at, contract, endpoints_required):
+        endpoint_rules = {entry["id"]: entry for entry in contract["relations"]}
+        common = relation["common"]
+        if not isinstance(common, str) or common not in endpoint_rules:
+            self.error(at + "/common", "unknown relation")
+        elif endpoints_required:
+            concept_ids = {entry["id"] for entry in contract["concepts"]}
+            for side in ("from", "to"):
+                value = relation.get(side)
+                allowed = endpoint_rules[common][side]
+                values = ["*"] if value == "*" else self.array(value, at + "/" + side)
+                if not values:
+                    self.error(at + "/" + side, "needs non-empty endpoints")
+                for j, endpoint in enumerate(values):
+                    if (
+                        not isinstance(endpoint, str)
+                        or (endpoint not in concept_ids and value != "*")
+                        or ("*" not in allowed and endpoint not in allowed)
+                    ):
+                        self.error(pointer(at + "/" + side, j), "endpoint not allowed")
+
     def mapping(self, raw, contract, contract_bytes, root):
         mapping = self.object(raw, "")
         for key in contract["mapping"]["required_keys"]:
@@ -280,8 +301,6 @@ class Checker:
                         not isinstance(value, str) or value not in contract["axes"][axis]["values"]
                     ):
                         self.error(pointer(value_at, axis), "unknown axis value")
-        relation_ids = {entry["id"] for entry in contract["relations"]}
-        endpoint_rules = {entry["id"]: entry for entry in contract["relations"]}
         validated = version_key(declaration.get("version"))
         endpoints_required = validated is not None and validated >= version_key("1.1.0")
         for i, raw_relation in enumerate(self.array(mapping.get("relations"), "/relations")):
@@ -291,24 +310,7 @@ class Checker:
             if ("common" in relation) == ("local_only" in relation):
                 self.error(at, "relation needs either common or local_only")
             elif "common" in relation:
-                common = relation["common"]
-                if not isinstance(common, str) or common not in relation_ids:
-                    self.error(at + "/common", "unknown relation")
-                elif endpoints_required:
-                    concept_ids = {entry["id"] for entry in contract["concepts"]}
-                    for side in ("from", "to"):
-                        value = relation.get(side)
-                        allowed = endpoint_rules[common][side]
-                        values = ["*"] if value == "*" else self.array(value, at + "/" + side)
-                        if not values:
-                            self.error(at + "/" + side, "needs non-empty endpoints")
-                        for j, endpoint in enumerate(values):
-                            if (
-                                not isinstance(endpoint, str)
-                                or (endpoint not in concept_ids and value != "*")
-                                or ("*" not in allowed and endpoint not in allowed)
-                            ):
-                                self.error(pointer(at + "/" + side, j), "endpoint not allowed")
+                self.common_relation(relation, at, contract, endpoints_required)
             else:
                 self.text(relation["local_only"], at + "/local_only")
             if "ref" in relation:
@@ -320,6 +322,8 @@ class Checker:
                 entry_at = pointer(at, i)
                 entry = self.object(raw_entry, entry_at)
                 self.ref(entry.get("ref"), entry_at + "/ref", root)
+                if key == "relations" and "common" in entry:
+                    self.common_relation(entry, entry_at, contract, endpoints_required)
         questions = self.array(mapping.get("questions"), "/questions")
         if not questions:
             self.error("/questions", "at least one question is required")

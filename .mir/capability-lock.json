@@ -100,7 +100,7 @@
     "mir-core": {
       "package_kind": "skills",
       "path": "plugins/mir-core",
-      "sha256": "b0b139a352b5ca727deb218329ff5d6f45ee77686922c0f2fe1c8f6c5327b08c"
+      "sha256": "9989c59d723059aa0eb337a43af939dcbbc259b8dbace08bb3975068a28e61f4"
     },
     "mir-lifecycle-hooks": {
       "package_kind": "skills-hooks",

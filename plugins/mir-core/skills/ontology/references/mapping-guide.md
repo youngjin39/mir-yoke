@@ -41,6 +41,7 @@ relation's `from`/`to`: a contract `"*"` allows any common concept or wildcard, 
 endpoints cannot be widened. Arrays containing unknown IDs or empty arrays are invalid.
 For example, `realized_by` allows `"from": ["Requirement", "Capability"], "to": ["Artifact"]`.
 Legacy 1.0.0 endpoint declarations remain optional. Reviewers still check actual domain meaning.
+`domain.relations` entries declaring `common` follow these same rules; entries without it retain ref-only validation.
 
 ## Size and selection
 

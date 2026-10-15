@@ -4147,3 +4147,143 @@ released changelog edit, consumer write, live database/intake/MK call, service o
 commit in the owner repository, push, tag or release was performed. Only isolated Git test
 fixtures created their own commits. Final bookkeeping is followed by inventory refresh and
 focused exact-payload/public-surface checks; full code evidence above remains the complete suite.
+
+## Superseded cursor: Closure W2b before domain relation audit fix (2026-10-15)
+
+Preserved intent:
+
+```json
+{
+  "goal": "Closure W2b: resolve existing fleet Markdown slugs, JSON pointers, modified declarations and shell functions without accepting mere mentions.",
+  "goal_type": "maintenance",
+  "scope": "Current W2b owner instruction; preserve W2 changes, repository code/test boundary, read-only fleet verification, no generated derivatives or delivery.",
+  "priority": "normal",
+  "updated": "2026-10-15",
+  "history": [
+    {
+      "goal": "Closure W2: canonical active-distribution ontology runner, symbol-anchored refs and EPERM cleanup fix.",
+      "updated": "2026-10-15",
+      "status": "blocked",
+      "evidence": "tasks/change_log.md#superseded-cursor-closure-w2-before-w2b-2026-10-15"
+    },
+    {
+      "goal": "Implement the owner-approved mir_executor common base, optional local hooks/data and explicit sync/drift tooling test-first in mir-yoke only.",
+      "updated": "2026-10-01",
+      "status": "complete"
+    },
+    {
+      "goal": "Resolve covered ontology check refs and document the actual Memory Keeper consumer API.",
+      "updated": "2026-10-15",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#superseded-cursor-covered-check-resolution-and-mk-guide-2026-10-15"
+    },
+    {
+      "goal": "Implement P2 ontology endpoints, impact, lookup and the on-demand Memory Keeper stdio client.",
+      "updated": "2026-10-15",
+      "status": "superseded"
+    },
+    {
+      "goal": "Complete P4 Yoke ontology pytest gate, on-demand MK runner and scoped E01-E10 closure without generated writes or live operations.",
+      "updated": "2026-10-15",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#superseded-cursor-completed-p4-before-closure-w2-2026-10-15"
+    }
+  ],
+  "status": "complete"
+}
+```
+
+Preserved plan:
+
+# Plan
+
+## Active task: Closure W2b (2026-10-15)
+
+Authority: current W2b owner request recorded in `tasks/intent.json`; this is the single
+active cursor and design authority. The preceding W2 cursor is preserved in `tasks/change_log.md`.
+
+Outcome: resolve declared fleet anchor forms, retain strict missing-name rejection, provide
+an explicit-root fleet check, and run the complete suite with scratch outside the worktree.
+Design: extend the existing resolver with heading slugs, RFC 6901 traversal, declaration
+modifiers/annotations/generic functions and shell declaration forms. Preserve ordinary names.
+A real missing declaration remains an error and is reported without consumer edits.
+
+- [x] Prove each new anchor regression fails against unchanged W2 code.
+- [x] Implement the bounded resolver change and document an explicit-root fleet check.
+- [x] Run full pytest, compare any failures with HEAD, run lint/parity and fleet checks.
+- [x] Refresh the cache-free mir-core digest and adopter inventory; record exact evidence.
+
+No generated writes, consumer writes, live operations, version bumps, commits or delivery.
+
+Code/test boundary complete: full pytest 2,021 passed; Ruff, read-only Codex parity,
+context paths, Python 3.9 grammar and strict impact pass. Fleet results are 14 requested
+roots at 0/0 and one consumer at 1 error/0 warnings: its Artifact ref names an undeclared symbol,
+which the target does not declare. Yoke is also 0/0. Consumer correction remains Main/owner
+work; the matcher must not accept a different declaration. No derivative regeneration
+is currently needed. Exact commands and per-root receipts: `tasks/change_log.md`, Closure W2b.
+
+## Domain common relation audit fix (2026-10-15)
+
+Authority: current owner request in `tasks/intent.json`; active cursor/design record:
+`tasks/plan.md`. Initial working tree was clean. Own map SHA256 matched the supplied
+ee2ca84035dc1bdab8ac354eac9bd935723de95a749d101948375ae228d604f7
+before work and was not changed.
+
+Extracted the existing common relation ID and version-gated endpoint validation into
+`Checker.common_relation`; both top-level relations and `domain.relations` with `common`
+call it. Domain entries without `common` retain ref-only checks. The existing mapping guide
+permits common concept IDs and contract-allowed wildcards, so local domain concept IDs remain
+invalid even for unrestricted relation endpoints. One guide line documents the added domain
+validation; the unreleased changelog records the fix. Semantic evidence: mapping-guide.md,
+"Required keys and shapes", and common-contract.json relation endpoint definitions.
+
+All uv runs used the owner-specified external UV cache. Pytest used TMPDIR outside the
+repository and PYTHONDONTWRITEBYTECODE=1. No plugin bytecode directories existed before
+digest generation or after the full suite.
+
+Fail-first: verified the unchanged checker was byte-identical to `git show HEAD:` for its
+path before adding regressions. Against that checker the selected final cases reported
+**18 failed / 22 passed / 177 deselected**. Failures cover domain unknown IDs (including
+malformed values) at 1.0.0/1.1.0 and invalid/missing/restricted/local/wildcard-array endpoints
+at 1.1.0. Positive controls cover allowed endpoints, ref-only entries and legacy endpoints.
+An initial legacy positive control retained a 1.1.0 binding interpreted as a legacy ref;
+corrected that test fixture to not_connected before recording accepted fail-first evidence.
+Selector: `uv run pytest -q tests/test_ontology_skill.py -k 'invalid_endpoints_at_11 or
+allowed_endpoints_at_11 or unknown_common_when_declared_in_domain_relation or
+local_concept_endpoint_when_declared_in_domain_relation or
+check_only_ref_when_domain_relation_has_no_common or
+preserve_legacy_endpoints_when_domain_relation_declares_common or
+wildcard_array_even_for_unrestricted_relation' --tb=line`.
+
+Validation:
+- `uv run pytest -q tests/test_ontology_skill.py --tb=short`: 217 passed in 15.67s;
+  final rerun after test-only line-length corrections: 217 passed in 15.75s.
+- `uv run pytest -q --tb=short`: **2,046 passed in 243.60s**, exit 0, no failures or skips.
+  Checker/guide bytes stayed fixed throughout the run and afterward. Only test formatting,
+  bookkeeping and dependent inventory refresh followed the full run.
+- `uv run ruff check`: all checks passed after correcting two new test lines above 100 chars.
+- `uv run python scripts/verify_codex_sync.py`: OK, derivatives match; only temporary output
+  outside the checkout was generated. No checked-in Codex derivatives were written.
+- `python3 plugins/mir-core/skills/ontology/scripts/ontology_check.py contract`: 0/0.
+- `python3 scripts/mir_ontology.py mapping`: 0 errors / 0 warnings, map/contract 1.1.0.
+- `python3 scripts/mir_ontology.py impact --git-diff HEAD --strict`: exit 0, no stale refs;
+  selected checks are navigation only; the focused ontology suite executed the selected test.
+- Changed checker parses under Python 3.9 grammar; `git diff --check` passed.
+
+Read-only 16-map comparison used exactly the owner's explicit root list, with no discovery:
+`python3 plugins/mir-core/skills/ontology/scripts/ontology_check.py mapping --repo ROOT`
+for each root, both before and after the checker change. Every baseline and post-change
+invocation exited 0, with 0 errors / 0 warnings. **New findings: none; no new pointers.**
+No consumer repository was edited.
+
+Refreshed only mir-core's managed lock SHA256 using
+`mir.core.capabilities.manager._tree_digest`:
+`9989c59d723059aa0eb337a43af939dcbbc259b8dbace08bb3975068a28e61f4`.
+Refreshed `config/adopter-payload.json` with
+`uv run python -m tools.template_assets --write-adopter-payload`; final bookkeeping is
+followed by another refresh and focused exact-inventory/public-surface checks.
+Changed files: checker, mapping guide, ontology tests, CHANGELOG.md, managed capability lock,
+adopter payload, tasks/intent.json, tasks/plan.md and this evidence log.
+No checked-in generated derivatives or consumer files were written. No secrets or live
+databases were read. No owner-repository commit, push, tag, release or live service operation
+was performed. No implementation or consumer work remains.
