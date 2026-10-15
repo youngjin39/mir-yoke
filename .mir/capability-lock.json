@@ -100,7 +100,7 @@
     "mir-core": {
       "package_kind": "skills",
       "path": "plugins/mir-core",
-      "sha256": "6e5871df223ba7509337d6f4a7775b55d44e70dd360229ff04bc14830111b2fd"
+      "sha256": "6449af2849a5b3e589ce31ce11de53ed74972f8144bea2e3a074f3baa1aaabb9"
     },
     "mir-lifecycle-hooks": {
       "package_kind": "skills-hooks",
@@ -110,14 +110,13 @@
   },
   "profile": "hybrid_pipeline",
   "registration": {
-    "finalized_at": "2026-10-14T16:25:00.475338+00:00",
-    "status": "active"
+    "status": "restart-required"
   },
   "schema_version": 2,
   "source": {
-    "commit": "bbc3248410182a03e6e3a60adb54e71104344655",
+    "commit": "afe4acef15c05519037cabc187cbc01fae0d55ed",
     "ref": "main",
     "url": "https://github.com/youngjin39/mir-yoke.git"
   },
-  "synced_at": "2026-10-14T16:21:09.930971+00:00"
+  "synced_at": "2026-10-15T07:47:30.486374+00:00"
 }
