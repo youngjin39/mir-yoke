@@ -8,6 +8,7 @@ from pathlib import Path
 
 mode = sys.argv[1]
 Path("pid").write_text(str(os.getpid()))
+Path("env.json").write_text(json.dumps(sorted(os.environ)))
 for line in sys.stdin:
     message = json.loads(line)
     with Path("messages.jsonl").open("a") as log:

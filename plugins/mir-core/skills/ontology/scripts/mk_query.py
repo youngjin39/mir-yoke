@@ -15,6 +15,8 @@ import threading
 from pathlib import Path
 
 MAX_MESSAGE = 4 * 1024 * 1024
+# The server gets only what it needs to start; secrets and tokens never cross over.
+CHILD_ENV = ("PATH", "HOME", "USER", "LOGNAME", "LANG", "LC_ALL", "LC_CTYPE", "TMPDIR")
 
 
 class Unavailable(Exception):
@@ -131,6 +133,7 @@ def call(command, cwd, timeout, tool, arguments, client_name):
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL,
+            env={name: os.environ[name] for name in CHILD_ENV if name in os.environ},
             start_new_session=(os.name == "posix"),
         )
     except (OSError, ValueError):

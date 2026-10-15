@@ -981,3 +981,14 @@ def test_should_fall_back_to_account_home_when_home_is_an_agent_home(tmp_path, m
     command, _cwd, timeout = module.load_config(repo.resolve())
     assert command == [sys.executable, "-c", "pass"]
     assert timeout == 30
+
+
+def test_should_not_pass_secrets_or_unrelated_environment_to_the_server(mk_client, monkeypatch):
+    run, config, host, repo = mk_client
+    monkeypatch.setenv("OMLX_API_KEY", "fixture-secret")
+    monkeypatch.setenv("SOME_SERVICE_TOKEN", "fixture-secret")
+    result = run(extra=("query", "ontology"))
+    assert result.returncode == 0, result.stderr
+    names = set(json.loads((host / "env.json").read_text()))
+    assert "PATH" in names
+    assert not names & {"OMLX_API_KEY", "SOME_SERVICE_TOKEN", "MIR_KNOWLEDGE_SUPPLY_CONFIG"}
