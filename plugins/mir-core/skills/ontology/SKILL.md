@@ -50,6 +50,8 @@ with Python 3.9 or newer from the installed skill directory:
 python3 scripts/ontology_check.py contract
 python3 scripts/ontology_check.py mapping --repo "$PROJECT_ROOT"
 python3 scripts/ontology_check.py mapping --repo "$PROJECT_ROOT" --json
+python3 scripts/ontology_check.py impact --repo "$PROJECT_ROOT" --git-diff HEAD --strict
+python3 scripts/ontology_check.py lookup --repo "$PROJECT_ROOT" "current artifact identity" --limit 3
 ```
 
 The default contract is the sibling `references/common-contract.json`; `--contract PATH`
@@ -59,6 +61,36 @@ JSON reports `ok`, `errors`, `warnings`, `contract_version` and `mapping_version
 `pointer` and `message`. Exit 0 means no errors (warnings may remain), 1 means invalid records,
 and 2 means a usage or IO problem. An E10 version mismatch is an error; a differing optional
 contract hash is a warning. Report warnings and scope rather than presenting them as resolved.
+
+For mappings validated against 1.1.0 or newer, common relation entries require `from`/`to`
+common concept IDs (arrays or `"*"`) permitted by the contract's endpoints. Legacy 1.0.0 mappings
+retain their endpoint behavior. This is structural validation; review actual domain meaning too.
+
+Wire `impact` into the repository's existing verify path after edits: review affected entries,
+run the selected **checks to run** using the repository's own runner, repair **stale refs**, then
+run `mapping` when prompted to **re-validate**. `--paths path ...` selects explicit changes;
+`--git-diff [BASE]` defaults to `HEAD` and includes staged and unstaged changes. It never executes
+checks or scans the repository tree. Normal selection exits 0; `--strict` exits 1 for stale refs
+or invalid mappings; usage/IO failures exit 2. `--json` provides bounded machine-readable reports.
+Checks are selected when their file changes or their ref shares a source path with an affected
+entry. This navigation does not infer undeclared dependencies or prove executed verification (E04).
+
+`lookup` supplies up to three term-matching questions, concepts and domain entries with evidence
+refs and the declared contract id/version. Use `--limit N` to change the bound or `--json` for
+scripts. It reads the map without dumping it and requires no Harness CLI.
+
+For external context, the supported consumer path is the stdlib [MK client](scripts/mk_query.py):
+
+```sh
+python3 scripts/mk_query.py --repo "$PROJECT_ROOT" --soft query "bounded question" --k 3
+```
+
+It reads host-local configuration, initializes an on-demand MCP stdio child, calls
+`federation_serve`, prints the ContextPack JSON, then terminates and reaps the child. No resident
+server or database access is needed in the consumer. `--soft` makes unavailable or empty supply
+exit 0 so local work remains independent (E09); otherwise those outcomes exit 2. Use the
+[knowledge supply guide](references/knowledge-supply.md) for configuration, refusal handling,
+provenance and explicit feedback. Never add host paths, credentials or config to a repository.
 
 ## Four verification layers
 

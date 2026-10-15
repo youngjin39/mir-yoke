@@ -6,6 +6,7 @@ import argparse
 import hashlib
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path, PurePosixPath, PureWindowsPath
 
@@ -271,6 +272,9 @@ class Checker:
                     ):
                         self.error(pointer(value_at, axis), "unknown axis value")
         relation_ids = {entry["id"] for entry in contract["relations"]}
+        endpoint_rules = {entry["id"]: entry for entry in contract["relations"]}
+        validated = version_key(declaration.get("version"))
+        endpoints_required = validated is not None and validated >= version_key("1.1.0")
         for i, raw_relation in enumerate(self.array(mapping.get("relations"), "/relations")):
             at = pointer("/relations", i)
             relation = self.object(raw_relation, at)
@@ -281,6 +285,21 @@ class Checker:
                 common = relation["common"]
                 if not isinstance(common, str) or common not in relation_ids:
                     self.error(at + "/common", "unknown relation")
+                elif endpoints_required:
+                    concept_ids = {entry["id"] for entry in contract["concepts"]}
+                    for side in ("from", "to"):
+                        value = relation.get(side)
+                        allowed = endpoint_rules[common][side]
+                        values = ["*"] if value == "*" else self.array(value, at + "/" + side)
+                        if not values:
+                            self.error(at + "/" + side, "needs non-empty endpoints")
+                        for j, endpoint in enumerate(values):
+                            if (
+                                not isinstance(endpoint, str)
+                                or (endpoint not in concept_ids and value != "*")
+                                or ("*" not in allowed and endpoint not in allowed)
+                            ):
+                                self.error(pointer(at + "/" + side, j), "endpoint not allowed")
             else:
                 self.text(relation["local_only"], at + "/local_only")
             if "ref" in relation:
@@ -322,12 +341,194 @@ class Checker:
         supply = self.object(mapping.get("knowledge_supply"), "/knowledge_supply")
         if supply.get("memory_keeper") not in contract["mapping"]["knowledge_supply_values"]:
             self.error("/knowledge_supply/memory_keeper", "invalid knowledge supply value")
-        if supply.get("memory_keeper") == "connected" and "binding" not in supply:
+        if (
+            supply.get("memory_keeper") == "connected"
+            and "binding" not in supply
+            and not endpoints_required
+        ):
             self.error("/knowledge_supply/binding", "connected needs a binding ref")
         elif "binding" in supply:
-            self.ref(supply["binding"], "/knowledge_supply/binding", root)
+            if not endpoints_required:
+                self.ref(supply["binding"], "/knowledge_supply/binding", root)
+            elif supply["binding"] not in ("on_demand_stdio", "resident_stdio"):
+                self.error("/knowledge_supply/binding", "invalid binding value")
         self.refs(mapping.get("entrypoints"), "/entrypoints", root)
         return declaration.get("version")
+
+
+def map_entries(mapping):
+    """Yield bounded, selectable entries; preserve JSON pointers for maintenance."""
+    for section in (
+        "canonical_index",
+        "concepts",
+        "relations",
+        "domain",
+        "questions",
+        "error_cases",
+        "vocabularies",
+        "entrypoints",
+        "knowledge_supply",
+    ):
+        value = mapping.get(section)
+        if section == "domain" and isinstance(value, dict):
+            for kind, entries in value.items():
+                if isinstance(entries, list):
+                    for i, entry in enumerate(entries):
+                        yield pointer(pointer("/domain", kind), i), entry
+        elif section == "concepts" and isinstance(value, dict):
+            for key, entry in value.items():
+                yield pointer("/concepts", key), entry
+        elif isinstance(value, list):
+            for i, entry in enumerate(value):
+                yield pointer("/" + section, i), entry
+        elif section == "knowledge_supply" and isinstance(value, dict):
+            yield "/knowledge_supply", value
+
+
+def entry_refs(entry, at):
+    """Read only declared refs, never interpret free text as a path."""
+    if isinstance(entry, str):
+        yield at, entry
+    elif isinstance(entry, list):
+        for i, item in enumerate(entry):
+            yield from entry_refs(item, pointer(at, i))
+    elif isinstance(entry, dict):
+        for key, value in entry.items():
+            location = pointer(at, key)
+            if key in ("ref", "check") and isinstance(value, str):
+                yield location, value
+            elif key == "binding" and isinstance(value, str):
+                if value not in ("on_demand_stdio", "resident_stdio"):
+                    yield location, value
+            elif key == "evidence" and isinstance(value, list):
+                yield from entry_refs(value, location)
+            elif isinstance(value, (dict, list)):
+                # Strings in other lists (endpoints, axis values) are not refs.
+                if isinstance(value, dict):
+                    yield from entry_refs(value, location)
+                else:
+                    for i, item in enumerate(value):
+                        if isinstance(item, (dict, list)):
+                            yield from entry_refs(item, pointer(location, i))
+
+
+def ref_path(ref):
+    return re.sub(r":\d+$", "", ref.split("#", 1)[0])
+
+
+def touches(path, changed):
+    path = PurePosixPath(path).as_posix().removeprefix("./")
+    return any(item == path or item.startswith(path.rstrip("/") + "/") for item in changed)
+
+
+def changed_paths(args, root):
+    if args.paths is not None:
+        paths = []
+        for raw in args.paths:
+            path = Path(raw)
+            if path.is_absolute():
+                path = path.relative_to(root)
+            if ".." in path.parts:
+                raise ValueError("changed paths must stay within the repository")
+            paths.append(path.as_posix())
+        return sorted(set(paths))
+    # Union staged-versus-base and unstaged paths: net worktree diffs can hide
+    # staged edits reverted in the worktree. No rename folding; preserve both names.
+    if args.git_diff.startswith("-"):
+        raise ValueError("git diff BASE must be a revision, not an option")
+    paths = set()
+    for revision in (["--cached", args.git_diff], []):
+        result = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(root),
+                "diff",
+                "--no-ext-diff",
+                "--no-textconv",
+                "--no-renames",
+                "--name-only",
+                "-z",
+                *revision,
+                "--",
+            ],
+            capture_output=True,
+            timeout=10,
+            check=False,
+        )
+        if result.returncode:
+            raise ValueError(
+                "git diff failed: " + result.stderr.decode("utf-8", errors="replace").strip()
+            )
+        paths.update(result.stdout.decode("utf-8", errors="surrogateescape").split("\0"))
+    return sorted(paths - {""})
+
+
+def impact(mapping, root, changed):
+    affected = []
+    affected_paths = set()
+    stale = []
+    for at, entry in map_entries(mapping):
+        refs = list(entry_refs(entry, at))
+        if any(touches(ref_path(ref), changed) for _, ref in refs):
+            affected.append({"pointer": at, "refs": [ref for _, ref in refs]})
+            affected_paths.update(ref_path(ref) for _, ref in refs)
+        for location, ref in refs:
+            check = Checker()
+            try:
+                if (
+                    at.startswith("/error_cases/")
+                    and location.endswith("/check")
+                    and isinstance(entry, dict)
+                    and entry.get("status") == "covered"
+                ):
+                    check.covered_check(ref, location, root)
+                else:
+                    check.ref(ref, location, root)
+            except (OSError, UnicodeError, ValueError, RuntimeError):
+                check.error(location, "ref could not be resolved")
+            for finding in check.errors:
+                stale.append({**finding, "ref": ref})
+    checks = set()
+    cases = mapping.get("error_cases", [])
+    for case in cases if isinstance(cases, list) else []:
+        if isinstance(case, dict) and case.get("status") == "covered":
+            ref = case.get("check")
+            if isinstance(ref, str) and (
+                touches(ref_path(ref), changed)
+                or any(touches(path, [ref_path(ref)]) for path in affected_paths)
+            ):
+                checks.add(ref)
+    return {
+        "changed_paths": changed,
+        "affected_entries": affected,
+        "checks_to_run": sorted(checks),
+        "stale_refs": stale,
+        "revalidate": ".mir/ontology-map.json" in changed,
+    }
+
+
+def lookup(mapping, query, limit):
+    terms = set(re.findall(r"[^\W_]+", query.casefold(), re.UNICODE))
+    matches = []
+    for at, entry in map_entries(mapping):
+        if not at.startswith(("/questions/", "/concepts/", "/domain/")):
+            continue
+        text = json.dumps(entry, ensure_ascii=False)
+        words = set(re.findall(r"[^\W_]+", (at + " " + text).casefold(), re.UNICODE))
+        score = len(terms & words)
+        if score:
+            refs = list(dict.fromkeys(ref for _, ref in entry_refs(entry, at)))
+            matches.append({"pointer": at, "score": score, "entry": entry, "evidence": refs})
+    matches.sort(key=lambda entry: -entry["score"])
+    return {"contract": mapping.get("contract", {}), "matches": matches[:limit]}
+
+
+def positive_int(raw):
+    value = int(raw)
+    if value < 1:
+        raise argparse.ArgumentTypeError("must be positive")
+    return value
 
 
 def main(argv=None):
@@ -335,30 +536,62 @@ def main(argv=None):
     commands = parser.add_subparsers(dest="command", required=True)
     contract_parser = commands.add_parser("contract", help="check the distributed contract")
     mapping_parser = commands.add_parser("mapping", help="check a project-owned mapping")
-    for command in (contract_parser, mapping_parser):
+    impact_parser = commands.add_parser(
+        "impact", help="select affected entries and checks; never run them"
+    )
+    lookup_parser = commands.add_parser("lookup", help="retrieve bounded local map evidence")
+    for command in (contract_parser, mapping_parser, impact_parser, lookup_parser):
         command.add_argument("--contract", type=Path, default=DEFAULT_CONTRACT)
-    mapping_parser.add_argument("--repo", type=Path, required=True)
-    mapping_parser.add_argument("--json", action="store_true")
+    for command in (mapping_parser, impact_parser, lookup_parser):
+        command.add_argument("--repo", type=Path, required=True)
+        command.add_argument("--json", action="store_true")
+    changes = impact_parser.add_mutually_exclusive_group(required=True)
+    changes.add_argument("--paths", nargs="+")
+    changes.add_argument("--git-diff", nargs="?", const="HEAD", metavar="BASE")
+    impact_parser.add_argument("--strict", action="store_true")
+    lookup_parser.add_argument("query")
+    lookup_parser.add_argument("--limit", type=positive_int, default=3)
     args = parser.parse_args(argv)
     checker = Checker()
     contract_version = None
     mapping_version = None
     io_problem = False
+    selection = None
     try:
         payload = args.contract.read_bytes()
         contract = checker.contract(json.loads(payload))
         contract_version = contract.get("version")
-        if args.command == "mapping" and not checker.errors:
+        if args.command != "contract" and not checker.errors:
             root = args.repo.resolve()
             if not root.is_dir():
                 raise OSError("repository root is not a directory")
-            text = (root / ".mir/ontology-map.json").read_text(encoding="utf-8")
+            if args.command == "impact":
+                selection = impact({}, root, changed_paths(args, root))
+            try:
+                text = (root / ".mir/ontology-map.json").read_text(encoding="utf-8")
+            except FileNotFoundError:
+                if args.command != "impact":
+                    raise
+                checker.error("", "mapping file is missing")
+                text = "{}"
             size = len(text.encode("utf-8"))
             if size > MAPPING_BUDGET:
                 checker.warn("/", f"mapping is {size} bytes, over the {MAPPING_BUDGET}-byte budget")
-            mapping = json.loads(text)
+            try:
+                mapping = json.loads(text)
+            except json.JSONDecodeError:
+                if args.command != "impact":
+                    raise
+                checker.error("", "mapping is invalid JSON")
+                mapping = {}
             mapping_version = checker.mapping(mapping, contract, payload, root)
-    except (OSError, UnicodeError, ValueError, RuntimeError) as exc:
+            if not isinstance(mapping, dict):
+                mapping = {}
+            if args.command == "impact":
+                selection = impact(mapping, root, selection["changed_paths"])
+            elif args.command == "lookup":
+                selection = lookup(mapping, args.query, args.limit)
+    except (OSError, UnicodeError, ValueError, RuntimeError, subprocess.TimeoutExpired) as exc:
         checker.error("", "IO problem: " + str(exc))
         io_problem = True
     report = {
@@ -368,6 +601,39 @@ def main(argv=None):
         "contract_version": contract_version,
         "mapping_version": mapping_version,
     }
+    if args.command in ("impact", "lookup"):
+        report.update(selection or {})
+        if getattr(args, "json", False):
+            print(json.dumps(report))
+        elif selection is not None:
+            if args.command == "impact":
+                print("affected entries:")
+                for entry in selection["affected_entries"]:
+                    print("  " + entry["pointer"] + ": " + ", ".join(entry["refs"]))
+                print("checks to run (selection only):")
+                for ref in selection["checks_to_run"]:
+                    print("  " + ref)
+                print("stale refs:")
+                for entry in selection["stale_refs"]:
+                    print("  " + entry["pointer"] + ": " + entry["ref"] + ": " + entry["message"])
+                if selection["revalidate"]:
+                    print("map changed: re-validate")
+            else:
+                declaration = selection["contract"]
+                print(str(declaration.get("id")) + " " + str(declaration.get("version")))
+                for entry in selection["matches"]:
+                    print(entry["pointer"] + ": " + json.dumps(entry["entry"], ensure_ascii=False))
+                    print("  evidence: " + ", ".join(entry["evidence"]))
+        if not getattr(args, "json", False):
+            for finding in checker.errors:
+                print("ERROR " + finding["pointer"] + ": " + finding["message"])
+        if io_problem:
+            return 2
+        return int(
+            args.command == "impact"
+            and args.strict
+            and (bool(checker.errors) or bool((selection or {}).get("stale_refs")))
+        )
     if getattr(args, "json", False):
         print(json.dumps(report))
     else:

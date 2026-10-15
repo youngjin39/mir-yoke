@@ -16,11 +16,11 @@ All twelve top-level keys are required:
 | `canonical_index` | List of repository-relative refs to the project's authoritative model sources. |
 | `concepts` | Object keyed by every common concept ID: Project, Agent, Capability, Requirement, Concept, Artifact, Decision, Task, Run, Evidence, Assessment, Policy. |
 | `vocabularies` | List of objects with `name`, `ref`, `values`; each local value maps to an object of common axis/value pairs or `{"local_only": "reason"}`. |
-| `relations` | List with `local` relation name and exactly one of `common` (contract relation ID) or `local_only` (reason). Optional `ref` locates its definition. |
+| `relations` | List with `local` relation name and exactly one of `common` (contract relation ID) or `local_only` (reason). Optional `ref` locates its definition. Validated version >=1.1.0 requires `from` and `to` on common entries: nonempty arrays of common concept IDs, or `"*"`, allowed by the contract endpoints. `local_only` needs none. |
 | `domain` | Object with lists `concepts`, `relations`, `invariants`; each item carries a `ref` to the project-owned definition. Extra domain fields may remain local. |
 | `questions` | List with at least one item, preferably about three real domain questions. Each has `id`, `question`, `evidence` (list of refs). Below three produces a warning. |
 | `error_cases` | List with contract case `id` and status `covered`, `planned` or `not_applicable`; `covered` requires a `check` ref. |
-| `knowledge_supply` | `memory_keeper` = `connected`, `parent_supplied` or `not_connected`; `connected` requires a `binding` ref to the project-owned interface definition. |
+| `knowledge_supply` | `memory_keeper` = `connected`, `parent_supplied` or `not_connected`; Optional `binding` names `on_demand_stdio` or `resident_stdio` in 1.1.0. Legacy 1.0.0 connected mappings retain existing binding refs. |
 | `entrypoints` | List of refs to existing model-reading, maintenance or verification entrypoints. |
 
 A concept entry has `status: mapped` with a non-empty `local` list of `{name, ref}`, or
@@ -36,7 +36,11 @@ Use `local_only` for local distinctions without a common counterpart; never comb
 Relation mappings preserve direction, endpoint concepts, scope and kind. Declarations, execution
 relations, associations and identity are distinct. A `verified_by` mapping names a check; it does
 not establish a passed result. Similarity and co-mention cannot justify `same_as`.
-The checker validates relation IDs; reviewers must check the actual domain endpoints and meaning.
+For validated version >=1.1.0, the checker validates declared endpoint types against the loaded
+relation's `from`/`to`: a contract `"*"` allows any common concept or wildcard, while specific
+endpoints cannot be widened. Arrays containing unknown IDs or empty arrays are invalid.
+For example, `realized_by` allows `"from": ["Requirement", "Capability"], "to": ["Artifact"]`.
+Legacy 1.0.0 endpoint declarations remain optional. Reviewers still check actual domain meaning.
 
 ## Size and selection
 
@@ -130,3 +134,30 @@ Run the checker after mapping, Profile, reference or contract changes. Revalidat
 before changing the validated version. Update or invalidate only records dependent on changed
 sources. A warning about the optional hash says the distribution differs; a matching hash says
 only that source bytes are unchanged. Neither outcome establishes truth or authority.
+
+
+## Existing verification and retrieval paths
+
+From the installed skill directory, add selection to the repository's existing verify path:
+
+```sh
+python3 scripts/ontology_check.py impact --repo "$PROJECT_ROOT" --git-diff HEAD --strict
+python3 scripts/ontology_check.py mapping --repo "$PROJECT_ROOT"
+python3 scripts/ontology_check.py lookup --repo "$PROJECT_ROOT" "artifact identity" --limit 3
+python3 scripts/mk_query.py --repo "$PROJECT_ROOT" --soft query "bounded external question"
+```
+
+Run selected checks with the repository's runner and record their actual results. `impact`
+selects map entries and covered checks by changed/shared referenced paths, reports missing refs
+(including deleted/renamed paths and broken covered-check lines/names), and requests `re-validate`
+when the map changes. It does not execute checks. `--paths P ...` replaces Git selection;
+`--git-diff [BASE]` includes index/worktree changes and defaults to `HEAD`. Selection exits 0;
+`--strict` exits 1 for stale refs or invalid maps. Usage/IO errors exit 2.
+
+`lookup` returns only term-matching questions, common concepts and domain identities with their
+evidence and declared contract id/version; default limit is three. Both commands accept `--json`.
+Local lookup and verification need no MK availability. Configure external retrieval only through
+host-local configuration described in [knowledge-supply.md](knowledge-supply.md). The supported
+client prints ContextPack JSON, bounds the wait and reaps its on-demand server. Do not store
+host configuration or credentials in the map. Mark missing external evidence without failing
+unrelated local work; neither retrieval nor a declared check proves a passed result.

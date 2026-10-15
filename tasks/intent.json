@@ -1,7 +1,7 @@
 {
-  "goal": "Resolve covered ontology check refs and document the actual Memory Keeper consumer API.",
+  "goal": "Implement P2 ontology endpoints, impact, lookup and the on-demand Memory Keeper stdio client.",
   "goal_type": "maintenance",
-  "scope": "Harness central-run owner request; repository-only writes, read-only fleet checks; no generated .codex writes, commits, installs, servers, databases or credentials.",
+  "scope": "Current P2 owner request; repository-only writes; no generated .codex or common-contract edits, commits, installs, real MK, databases or credentials.",
   "priority": "normal",
   "updated": "2026-10-15",
   "history": [
@@ -47,6 +47,12 @@
       "goal": "Implement the owner-approved mir_executor common base, optional local hooks/data and explicit sync/drift tooling test-first in mir-yoke only.",
       "updated": "2026-10-01",
       "status": "complete"
+    },
+    {
+      "goal": "Resolve covered ontology check refs and document the actual Memory Keeper consumer API.",
+      "updated": "2026-10-15",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#superseded-cursor-covered-check-resolution-and-mk-guide-2026-10-15"
     }
   ],
   "status": "complete"

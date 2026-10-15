@@ -1,7 +1,7 @@
 {
   "schema": "mir-semantic-contract/v1",
   "contract_id": "mir.common-semantics",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "status": "accepted",
   "purpose": "Shared meaning for project, agent, work, evidence and authority terms so agents interpret intent, plan, choose tools, analyse change impact, verify results, retrieve knowledge and hand off work consistently. Each project keeps its own domain model, identifiers, state machines, storage and procedures, and maps them to this contract.",
   "compatibility": {
@@ -140,7 +140,10 @@
     "required_keys": ["schema", "contract", "namespace", "canonical_index", "concepts", "vocabularies", "relations", "domain", "questions", "error_cases", "knowledge_supply", "entrypoints"],
     "concept_entry_status": ["mapped", "absent", "not_applicable"],
     "relation_entry_target": "a relation id from this contract, or local_only with a reason",
+    "relation_entry_endpoints": "From mapping version 1.1.0, each relation entry naming common also declares from and to for its local source and target: non-empty arrays of common concept ids, or *. Each value must be allowed by the common relation's corresponding from/to; * in the contract allows any concept. local_only entries need no endpoints. Mappings validated against 1.0.0 remain valid.",
+    "error_case_check": "A covered error case names a repeatable check in the repository, resolving to a check file, a one-based line or a test name. A document is not a check.",
     "vocabulary_value_target": "one or more axis values from this contract, or local_only with a reason",
+    "knowledge_supply_bindings": ["on_demand_stdio", "resident_stdio"],
     "knowledge_supply_values": ["connected", "parent_supplied", "not_connected"]
   }
 }

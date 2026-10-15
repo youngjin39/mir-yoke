@@ -3525,3 +3525,172 @@ trimmed CLAUDE.md back to its 3600-byte budget (ontology pointer merged into the
 `config/adopter-payload.json`; codex sync OK; full suite 1833 passed, 1 expected failure (capability lock
 not bound until release). Evidence and remaining semantic coverage are recorded in
 `tasks/change_log.md` under "Ontology phase D adoption evidence (2026-10-15)". Memory Keeper binding is deferred.
+
+## Superseded cursor: covered-check resolution and MK guide (2026-10-15)
+
+# Plan
+
+## Active task: covered-check resolution and MK consumer guide (2026-10-15)
+
+Authority: current Harness central-run owner request (Discord decision "1, 2"), recorded in
+`tasks/intent.json`. This is the single active cursor and design authority.
+
+Outcome: covered checks resolve real repository-local files, lines and names; the public MK
+consumer guide matches the implemented stdio tools and ContextPack fields.
+Design: reuse safe ref resolution, tighten only covered checks, preserve the owner contract,
+and follow MK code over the stale lifetime-reader statement in its consumer contract.
+
+- [x] Prove new covered-ref regressions fail before implementation.
+- [x] Implement checks and compact interface-based consumer guidance.
+- [x] Refresh adopter payload; run focused tests, parity and all 16 read-only map checks.
+- [x] Record results, changed files and Main-owned work remaining.
+
+Constraints: repository-only writes; no commits, installs, services, database access, credentials,
+or generated `.codex/**` writes. Other repositories are read-only evidence sources.
+
+Completed: fail-first 8 failed / 60 passed; checker 68 passed; affected package, asset/payload
+and reference checks 91 passed. Codex parity is current; no regeneration was needed.
+All 16 read-only map checks ran: 15 clean, quietleaf E10 has 1 error and 1 warning.
+The consumer correction is out of scope. Evidence: `tasks/change_log.md`,
+"Covered-check resolution and MK guide (2026-10-15)".
+## P2 ontology executable consumer paths (2026-10-15)
+
+Authority: current P2 request, recorded in `tasks/intent.json`; design authority:
+`tasks/plan.md`. Implementation is bounded to this repository.
+
+Implemented:
+- Validated mapping version >=1.1.0 requires nonempty common-concept endpoint arrays or
+  a scalar wildcard, constrained by the loaded relation. Local-only and 1.0.0 relations
+  retain their behavior. 1.1.0 optional binding values are validated; legacy binding refs remain.
+- `impact` selects affected entries and covered checks by changed/shared ref paths, checks
+  stale refs, and requests map revalidation. It never executes checks. Git selection unions
+  staged-versus-base and unstaged paths, retaining deletions/renames and cancelling edits.
+  JSON errors and invalid map structure remain reportable with strict exit 1.
+- `lookup` returns bounded term-matching questions, concepts and domain identities with evidence.
+- `mk_query.py` uses only stdlib and host-local launch config, MCP stdio initialize/initialized/
+  tools-call, structured or text JSON results, explicit feedback and telemetry-only client names.
+  Soft failure preserves unrelated local work; every owned child is terminated/reaped, including
+  initialization/serve timeouts. POSIX process groups also cover launchers. Refusals are preserved.
+- Public skill/mapping/supply guidance and exact adopter inventory are updated. No install,
+  version change, contract edit, generated Codex write, real MK launch, database access or commit.
+- Package test explicitly models its provider root so repository-local scratch is valid, while
+  preserving checks rejecting provider paths and symlinked/out-of-runtime installations.
+
+Fail-first receipts:
+- Initial ontology run: 43 failed / 68 passed before implementing the new commands and endpoints.
+- Extra invalid-JSON/nonobject/null-list, wildcard-array and empty-response cases: 6 failed.
+- Cancelling staged/unstaged changes: 1 failed before unioning the two Git diffs.
+- Planned-check symbol resolution, refusal with empty nodes, and legacy binding gating each
+  failed before their corrections. All corresponding regressions now pass.
+- Package/payload run before payload regeneration and fixture isolation: 3 failed / 148 passed
+  (owner contract parity, provider-root assumption, stale payload). Provider-root and payload
+  failures are fixed; the owner parity failure remains intentionally visible.
+
+Verification (all uv invocations use the owner-requested external UV_CACHE_DIR; scratch stays
+under repository-local ignored pytest cache):
+- `uv run pytest -q tests/test_ontology_skill.py` (repo-local basetemp, short traceback):
+  123 passed / 1 failed, 7.13s. Only `test_contract_distribution_is_byte_identical_to_owner`
+  fails: Yoke's protected-by-request distribution is 1.0.0, while the parallel owner source
+  is now 1.1.0. This is an honest pending delivery check, not a skipped or weakened assertion.
+- `uv run pytest -q tests/test_plugin_skill_packages.py tests/test_common_skill_contracts.py`:
+  21 passed, 0.13s. Package-only rerun after preserving unrelated formatting: 10 passed, 0.11s.
+- `uv run pytest -q tests/test_template_asset_classification.py`: 6 passed, 0.33s after refresh.
+- `uv run python -m tools.template_assets --write-adopter-payload`: pass.
+- `uv run python -m tools.template_assets --json`: 877/877 classified; no unknown,
+  duplicate or prohibited assets. New script/fixture are automatically classified.
+- `uv run python scripts/verify_codex_sync.py`: exit 0,
+  `OK: Codex derivatives match Claude sources`; no regeneration or generated writes.
+- `uv run ruff check` on checker, client, fixture and both changed Python test files: pass.
+- `git diff --check`: pass. New scripts are regular nonexecutable mode 0644.
+- Independent read-only review found planned-check and legacy-binding defects; both were
+  corrected with regressions. The final source review reported no unresolved concrete finding.
+
+Actual read-only command receipts follow. The Harness lookup explicitly selects the owner
+1.1.0 contract so its newer map is checked against the correct distribution. No consumer writes.
+
+Command (exit 0):
+
+```sh
+uv run python plugins/mir-core/skills/ontology/scripts/ontology_check.py impact --repo . --git-diff HEAD~3
+```
+
+```text
+affected entries:
+  /concepts/Task: tasks/plan.md, src/mir/core/contracts/task_spec.py
+  /error_cases/9: tests/test_ontology_skill.py#test_invalid_mapping_fails_with_specific_message
+  /vocabularies/9: tasks/intent.json
+checks to run (selection only):
+  tests/test_ontology_skill.py#test_invalid_mapping_fails_with_specific_message
+stale refs:
+map changed: re-validate
+```
+
+Command (exit 0):
+
+```sh
+uv run python plugins/mir-core/skills/ontology/scripts/ontology_check.py lookup --repo . 'capability authority' --limit 3
+```
+
+```text
+mir.common-semantics 1.0.0
+/concepts/Capability: {"status": "mapped", "local": [{"name": "Capability selection", "ref": "config/capability-sources.json"}]}
+  evidence: config/capability-sources.json
+/concepts/Decision: {"status": "mapped", "local": [{"name": "ADR authority", "ref": "docs/decisions/INDEX.md"}]}
+  evidence: docs/decisions/INDEX.md
+/concepts/Assessment: {"status": "mapped", "local": [{"name": "ValidationResult", "ref": "src/mir/core/contracts/gate.py#ValidationResult"}, {"name": "Capability health", "ref": "src/mir/core/capabilities/manager.py#CapabilityManager.status"}]}
+  evidence: src/mir/core/contracts/gate.py#ValidationResult, src/mir/core/capabilities/manager.py#CapabilityManager.status
+```
+
+Command (exit 0):
+
+```sh
+uv run python plugins/mir-core/skills/ontology/scripts/ontology_check.py lookup --repo "$HARNESS_ROOT" --contract "$HARNESS_ROOT/config/ontology/common-contract.json" 'capability authority' --limit 3
+```
+
+```text
+mir.common-semantics 1.1.0
+/concepts/Capability: {"status": "mapped", "local": [{"name": "catalog skills, agents, commands", "ref": "config/repo-agent-management.json"}, {"name": "copied executor manifest", "ref": "tools/mir_executor/COMMON_MANIFEST.json"}]}
+  evidence: config/repo-agent-management.json, tools/mir_executor/COMMON_MANIFEST.json
+/domain/invariants/2: {"id": "observations-grant-no-write-authority", "ref": "ARCHITECTURE.md", "check": "tests/test_control_plane_contract.py"}
+  evidence: ARCHITECTURE.md, tests/test_control_plane_contract.py
+/questions/1: {"id": "Q2", "question": "Does a capability belong to Yoke, Harness-local tooling or a consumer, and which delivered version applies?", "evidence": ["config/repo-agent-management.json", "tools/mir_executor/COMMON_MANIFEST.json", "ARCHITECTURE.md"]}
+  evidence: config/repo-agent-management.json, tools/mir_executor/COMMON_MANIFEST.json, ARCHITECTURE.md
+ERROR /relations/4/from/0: endpoint not allowed
+ERROR /relations/4/to/0: endpoint not allowed
+ERROR /relations/5/from/0: endpoint not allowed
+ERROR /relations/6/from/0: endpoint not allowed
+```
+
+The Harness result includes four endpoint errors at `/relations/4/from/0`,
+`/relations/4/to/0`, `/relations/5/from/0`, `/relations/6/from/0`: those entries
+use arrays containing `"*"`, while the supplied contract text permits arrays of concept IDs
+or a scalar `"*"`. The Harness owner must resolve them; external files were not changed.
+Lookup returns navigation results with validation findings and does not claim map validity.
+
+Changed delivery files:
+- `plugins/mir-core/skills/ontology/SKILL.md`
+- `plugins/mir-core/skills/ontology/references/mapping-guide.md`
+- `plugins/mir-core/skills/ontology/references/knowledge-supply.md`
+- `plugins/mir-core/skills/ontology/scripts/ontology_check.py`
+- `plugins/mir-core/skills/ontology/scripts/mk_query.py` (new)
+- `tests/test_ontology_skill.py`
+- `tests/test_plugin_skill_packages.py`
+- `tests/fixtures/ontology_mcp_server.py` (new)
+- `config/adopter-payload.json`
+- `tasks/intent.json`, `tasks/plan.md`, `tasks/change_log.md`
+
+Main-owned follow-up: copy the owner 1.1.0 contract byte for byte, update its SOURCE digest,
+refresh the adopter inventory after those changes and rerun parity/full requested tests;
+regenerate Codex derivatives only if its source changes demand it; choose the version bump.
+Resolve the reported Harness mapping findings through its writer. Real host configuration,
+real MK access and consumer rollout were explicitly outside this sandbox task. No standing
+consumer authority, install, commit, push, tag or release is implied.
+
+Final boundary regression: deleting the map initially returned IO exit 2; its new test failed
+first. Impact now reports the missing map and revalidation with normal exit 0 / strict exit 1,
+while the existing mapping command retains its IO exit behavior. Final ontology-only command:
+`uv run pytest -q tests/test_ontology_skill.py --basetemp=.pytest_cache/p2-ontology-final --tb=short`
+returned 124 passed / 1 owner-distribution parity failure in 7.18s. The aggregate focused result
+is 151 passed / 1 pending owner-parity failure (124 ontology + 21 package/common + 6 asset passes).
+The final bounded scratch directories were removed; no fake MCP child remains after the
+lifecycle assertions. No production service, database, credentials or generated Codex file was used.

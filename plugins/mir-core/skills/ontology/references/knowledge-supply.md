@@ -1,12 +1,39 @@
 # Consuming Memory Keeper context packs
 
-Use only the project's configured MK binding for a bounded question; start with local sources.
-This guide follows `src/mir/federation/{mcp_server,serve,assemble}.py` in Memory Keeper.
-The supported transport is same-host stdio; remote access is unsupported. Generic launch form:
+Start with local authoritative sources and `ontology_check.py lookup`. For external context,
+use the supported stdlib [consumer client](../scripts/mk_query.py) from the installed skill:
 
 ```sh
-uv run --project <memory-keeper-checkout> python -m mir.federation.mcp_server --binding federation
+python3 scripts/mk_query.py --repo "$PROJECT_ROOT" --soft query "bounded question" --k 3
+python3 scripts/mk_query.py --repo "$PROJECT_ROOT" feedback "federation:42" used
 ```
+
+The client reads `$MIR_KNOWLEDGE_SUPPLY_CONFIG`, else `~/.mir/knowledge-supply.json`. The file
+must be host-local, outside the consumer repository, and contain only launch configuration:
+
+```json
+{"memory_keeper":{"command":["python3","-m","mir.federation.mcp_server","--binding","federation"],"cwd":"<absolute-host-local-checkout>","timeout_sec":30}}
+```
+
+Replace the placeholder locally; use the host's existing interpreter/environment. Do not commit
+this file, host paths, private names or credentials. Repository-local configuration is refused.
+In a 1.1.0 mapping, `knowledge_supply` may declare
+`{"memory_keeper":"connected","binding":"on_demand_stdio"}`; this labels transport, not access.
+The contract also accepts `resident_stdio`; this client always owns an on-demand child.
+
+It sends MCP `initialize`, `notifications/initialized`, then `tools/call federation_serve` over
+newline-delimited JSON-RPC stdio. It prints the JSON ContextPack, closes the child and always reaps
+it; on timeout it kills the owned process group on POSIX. Same-host stdio is the supported
+transport; remote access is unsupported. `--client-name` overrides the default
+`<repo-dir-name>-agent` telemetry label and grants no authentication or authority.
+
+Missing config, spawn/transport/MCP errors and deadlines print
+`{"status":"unavailable","reason":"..."}`. An empty pack prints
+`{"status":"empty","reason":"..."}`. Both exit 0 with `--soft`, else 2; local work can continue.
+Structured refusal objects pass through unchanged. A personal-namespace MCP error is unavailable;
+the client never retries through a broader binding. Feedback is explicit and has MK-side effects.
+
+This guide follows the MK federation MCP server, serve and assembly interfaces.
 
 ## Tools
 

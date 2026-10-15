@@ -166,7 +166,11 @@ def test_bluebricks_relation_reference_survives_isolated_plugin_copy(tmp_path: P
 
 def test_activation_path_must_be_a_real_copy_inside_the_runtime_home(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    # Model the provider explicitly; repo-local pytest scratch is also supported.
+    provider = tmp_path / "provider"
+    monkeypatch.setattr("scripts.verify_plugin_cli_activation.ROOT", provider)
     runtime_home = tmp_path / "runtime-home"
     installed = runtime_home / "plugins" / "mir-core"
     installed.mkdir(parents=True)
@@ -183,6 +187,10 @@ def test_activation_path_must_be_a_real_copy_inside_the_runtime_home(
     linked.symlink_to(outside, target_is_directory=True)
     with pytest.raises(RuntimeError, match="symlinked installed path"):
         _validate_installed_path(linked, runtime_home)
+
+    provider.mkdir()
+    with pytest.raises(RuntimeError, match="resolves into the provider checkout"):
+        _validate_installed_path(provider, tmp_path)
 
 
 def test_manifest_versions_match_repository_release() -> None:
