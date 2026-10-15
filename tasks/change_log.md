@@ -4366,3 +4366,158 @@ Final inventory/behavior confirmation:
 Disposable task scratch is removed at closeout. Changed files: `.mir/ontology-map.json`,
 `tasks/intent.json`, `tasks/plan.md`, `tasks/change_log.md`, `config/adopter-payload.json`.
 No remaining implementation work or derivatives to regenerate.
+
+
+## Superseded cursor: covered-label fix before 0.13.0 preparation (2026-10-16)
+
+Preserved intent:
+
+```json
+{
+  "goal": "Correct E03 and E07 covered check references using existing executable behavior tests.",
+  "goal_type": "maintenance",
+  "scope": "Owner-requested covered-label re-review: only the two mapping rows and task records; run ontology tests, every mapped test and installed/checkout mapping plus strict impact; exclude live-memory consistency and generated writes.",
+  "priority": "normal",
+  "updated": "2026-10-16",
+  "history": [
+    {
+      "goal": "Validate declared common relations under domain.relations using the shared common relation validator.",
+      "updated": "2026-10-15",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#domain-common-relation-audit-fix-2026-10-15"
+    },
+    {
+      "goal": "Closure W2b: resolve existing fleet Markdown slugs, JSON pointers, modified declarations and shell functions without accepting mere mentions.",
+      "updated": "2026-10-15",
+      "status": "complete"
+    },
+    {
+      "goal": "Closure W2: canonical active-distribution ontology runner, symbol-anchored refs and EPERM cleanup fix.",
+      "updated": "2026-10-15",
+      "status": "blocked",
+      "evidence": "tasks/change_log.md#superseded-cursor-closure-w2-before-w2b-2026-10-15"
+    },
+    {
+      "goal": "Implement the owner-approved mir_executor common base, optional local hooks/data and explicit sync/drift tooling test-first in mir-yoke only.",
+      "updated": "2026-10-01",
+      "status": "complete"
+    },
+    {
+      "goal": "Resolve covered ontology check refs and document the actual Memory Keeper consumer API.",
+      "updated": "2026-10-15",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#superseded-cursor-covered-check-resolution-and-mk-guide-2026-10-15"
+    },
+    {
+      "goal": "Implement P2 ontology endpoints, impact, lookup and the on-demand Memory Keeper stdio client.",
+      "updated": "2026-10-15",
+      "status": "superseded"
+    },
+    {
+      "goal": "Complete P4 Yoke ontology pytest gate, on-demand MK runner and scoped E01-E10 closure without generated writes or live operations.",
+      "updated": "2026-10-15",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#superseded-cursor-completed-p4-before-closure-w2-2026-10-15"
+    }
+  ],
+  "status": "complete"
+}
+```
+
+## Active task: Covered-label fix (2026-10-16)
+
+Authority: the current owner request recorded in `tasks/intent.json`; this is the single
+active cursor and design record. Prior cursor details are preserved in
+`tasks/change_log.md#superseded-cursor-domain-relation-audit-before-covered-label-fix-2026-10-16`.
+
+Outcome: E03 and E07 retain `covered` only with symbol-anchored tests that exercise their
+error cases, and reasons describing that tested scope. Reuse the owner-suggested existing
+tests; no behavior changes or new tests are needed. Keep the map at most 12,288 bytes.
+
+- [x] Confirm supplied map hash, installed 1.1.0 contract definitions and candidate behavior.
+- [x] Re-point E03/E07 checks and scope reasons; preserve every unrelated mapping entry.
+- [x] Run ontology tests and every mapped check with temporary fixture databases only.
+- [x] Pass installed and checkout mapping (0/0) and strict Git impact; record evidence.
+
+Skip `tests/test_harness_consistency.py`, `harness_consistency run`, memory render/sync,
+context sync and any gate wrapping them. Run individual allowed gate steps only.
+No commits, generated derivatives, live databases, service operations or consumer writes.
+
+Completed: 262 ontology and mapped-check tests passed. Installed and checkout checkers each
+reported mapping 0 errors / 0 warnings and strict impact exit 0 with no stale refs; both
+contract self-checks returned 0/0. The map is 12,275 bytes. Refs and evidence:
+`tasks/change_log.md#covered-label-fix-2026-10-16`.
+
+The dependent adopter inventory is refreshed after bookkeeping and checked separately.
+No generated instruction/runtime derivatives need regeneration because their sources did
+not change. Full suite and live-memory steps are intentionally excluded by owner scope.
+
+## 0.13.0 release preparation (2026-10-16)
+
+Authority: owner-requested version-only working-tree preparation, recorded in
+`tasks/intent.json`; `tasks/plan.md` is the single active cursor/design record.
+Mirrored bbc3248 release metadata, retaining the existing ontology map and runner fixtures.
+Moved the complete Unreleased body under
+`## [v0.13.0] — 2026-10-16 — Canonical ontology runner and strict reference validation`,
+leaving Unreleased empty. MIGRATION describes byte-identical runner replacement,
+symbol-anchored refs, strict impact and common-relation validation under domain.relations.
+The release metadata test now checks the requested v-prefixed heading.
+
+The lifecycle-hooks acknowledgement was computed by the existing dedicated
+`mir.core.capabilities.manager._validate_plugin(..., package_kind="skills-hooks")` validator:
+`235032d02dfd490ff01bfcae067f82803acfa2c649b0b6067a8808633fc0946a`.
+The documented generator is `uv run python -m tools.template_assets --write-adopter-payload`.
+No generated instruction/runtime source changed, and no checked-in Codex derivatives were written.
+
+Executed evidence (all uv commands used the owner-required external UV_CACHE_DIR; test and
+generator scratch used external TMPDIR):
+
+- Before edits: `uv run pytest --ignore=tests/test_harness_consistency.py`:
+  2,045 passed in 243.01 seconds, exit 0.
+- Prepared tree: the same full command: 2,044 passed, 1 failed in 218.16 seconds, exit 1.
+  The only failure is
+  `tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees`
+  at line 360. The changed mir-code tree digest is
+  `42c0a6753558f50969e86d4d1a362afe28d92dd0813902f4c93084595619424c`;
+  the unchanged lock expects
+  `cefc2975c9caddd3869798539629ee5f1029852288d8ff18f22860df2db9b48f`.
+  This failure is new relative to HEAD. Main owns the commit-bound lock refresh;
+  preparation does not weaken or deselect this assertion.
+- `uv run ruff check`: All checks passed, exit 0.
+- `uv run python scripts/verify_codex_sync.py`:
+  OK: Codex derivatives match Claude sources, exit 0; generation uses isolated scratch only.
+- `uv run python -m tools.template_assets --json`: all 883 assets classified once;
+  no unclassified, duplicate or prohibited assets, exit 0.
+- `uv run python tests/test_no_korean_in_user_facing.py`,
+  `uv run python tests/test_link_integrity.py`,
+  `uv run python tests/test_schema_validity.py`: PASS, exit 0 each.
+- `python3 scripts/mir_ontology.py mapping`: 0 errors, 0 warnings; contract and mapping 1.1.0.
+- `python3 scripts/mir_ontology.py impact --git-diff --strict`: exit 0, no stale refs;
+  no covered checks selected for these changed paths. Selection is not execution evidence.
+- The full run includes passing public-template-surface tests. `git diff --check`: exit 0.
+- After final cursor/evidence updates and payload regeneration:
+  `uv run pytest -q tests/test_public_template_surface.py tests/test_release_metadata.py tests/test_plugin_skill_packages.py tests/test_template_asset_classification.py tests/test_mir_ontology.py`:
+  28 passed in 2.98 seconds, exit 0. Mapping remained 0/0 and strict impact exit 0.
+
+Remaining Main work, not performed here:
+
+1. Review and commit implementation preparation (commit A).
+2. Bind the capability lock to exact commit A and validated plugin/marketplace digests,
+   regenerate the adopter payload, then commit that binding separately (commit B), per ADR-80.
+3. Rerun full verification, including the lock assertion, and the documented
+   `uv run python scripts/verify_release_readiness.py --current-clean-tree` after committing.
+   Under the current no-live-database constraint, do not run a wrapper containing harness
+   consistency; that gate needs separate Main authority or the allowed individual steps.
+4. Tag commit B as v0.13.0 and push the release branch and tag. The release workflow validates
+   the clean tree and publishes with `gh release create` using `--verify-tag --generate-notes`.
+5. Perform authorized `mir capability update --project-root <target> --apply --json`.
+   Start fresh Claude and Codex sessions, observe every selected namespaced skill and the
+   trusted `mir-lifecycle-hooks:SessionStart` output; run `mir capability attest` separately
+   for `claude-code` and `codex-cli-desktop`, supplying actual observed skills/hook and --apply.
+   Then `mir capability finalize --project-root <target> --apply --after-restart --json`
+   and `mir capability status --project-root <target> --json`.
+
+Release procedure evidence: ADR-80; `.github/workflows/release.yml`;
+`docs/operations/global-plugin-migration.md` sections 3 and 4;
+`src/mir/cli/capability.py` command options. No commit, tag, push, publishing, runtime-home
+operation, capability apply/attest/finalize, live database, memory or context sync was performed.

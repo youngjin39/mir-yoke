@@ -1,49 +1,17 @@
 {
-  "goal": "Correct E03 and E07 covered check references using existing executable behavior tests.",
+  "goal": "Prepare the Mir Yoke 0.13.0 release working tree with version metadata and migration notes only.",
   "goal_type": "maintenance",
-  "scope": "Owner-requested covered-label re-review: only the two mapping rows and task records; run ontology tests, every mapped test and installed/checkout mapping plus strict impact; exclude live-memory consistency and generated writes.",
+  "scope": "Owner-authorized release preparation only. Mirror bbc3248 version surfaces, refresh the validated lifecycle-hooks digest and generated adopter payload, preserve ontology mapping and runner fixtures. No commits, tags, pushes, publishing, capability operations, runtime-home writes, live databases, memory/context synchronization or generated Codex writes.",
   "priority": "normal",
   "updated": "2026-10-16",
   "history": [
     {
-      "goal": "Validate declared common relations under domain.relations using the shared common relation validator.",
-      "updated": "2026-10-15",
+      "goal": "Correct E03 and E07 covered check references using existing executable behavior tests.",
+      "updated": "2026-10-16",
       "status": "complete",
-      "evidence": "tasks/change_log.md#domain-common-relation-audit-fix-2026-10-15"
-    },
-    {
-      "goal": "Closure W2b: resolve existing fleet Markdown slugs, JSON pointers, modified declarations and shell functions without accepting mere mentions.",
-      "updated": "2026-10-15",
-      "status": "complete"
-    },
-    {
-      "goal": "Closure W2: canonical active-distribution ontology runner, symbol-anchored refs and EPERM cleanup fix.",
-      "updated": "2026-10-15",
-      "status": "blocked",
-      "evidence": "tasks/change_log.md#superseded-cursor-closure-w2-before-w2b-2026-10-15"
-    },
-    {
-      "goal": "Implement the owner-approved mir_executor common base, optional local hooks/data and explicit sync/drift tooling test-first in mir-yoke only.",
-      "updated": "2026-10-01",
-      "status": "complete"
-    },
-    {
-      "goal": "Resolve covered ontology check refs and document the actual Memory Keeper consumer API.",
-      "updated": "2026-10-15",
-      "status": "complete",
-      "evidence": "tasks/change_log.md#superseded-cursor-covered-check-resolution-and-mk-guide-2026-10-15"
-    },
-    {
-      "goal": "Implement P2 ontology endpoints, impact, lookup and the on-demand Memory Keeper stdio client.",
-      "updated": "2026-10-15",
-      "status": "superseded"
-    },
-    {
-      "goal": "Complete P4 Yoke ontology pytest gate, on-demand MK runner and scoped E01-E10 closure without generated writes or live operations.",
-      "updated": "2026-10-15",
-      "status": "complete",
-      "evidence": "tasks/change_log.md#superseded-cursor-completed-p4-before-closure-w2-2026-10-15"
+      "evidence": "tasks/change_log.md#superseded-cursor-covered-label-fix-before-0130-preparation-2026-10-16"
     }
   ],
-  "status": "complete"
+  "status": "complete",
+  "evidence": "tasks/change_log.md#0130-release-preparation-2026-10-16"
 }

@@ -82,7 +82,7 @@ Discard an uncommitted Project Agent Kit adaptation in the target or restore the
 commit. For an explicitly invoked CLI transaction, use that command's recorded rollback/recovery
 contract. Installing the CLI does not itself mutate a target.
 
-Current version: `0.11.0`. See `CHANGELOG.md` for release details.
+Current version: `0.13.0`. See `CHANGELOG.md` for release details.
 
 Version 0.10.0 adds opt-in `memory_relations` ingestion and read-only `mir relations query|bundle --memory`
 query/bundle selection using the existing memory schema. No automatic corpus backfill, database
@@ -139,3 +139,21 @@ Version 0.12.0 distributes contract 1.1.0. Mappings validated against 1.0.0 stay
 re-validate; to adopt 1.1.0, declare `from`/`to` on each relation that names a common relation.
 Covered error cases must name a resolvable repeatable check. New optional `impact` and `lookup`
 subcommands and the `mk_query.py` client change nothing until a project wires them in.
+
+Version 0.13.0 keeps contract 1.1.0. Consumers that adopt the ontology runner must copy
+`plugins/mir-core/skills/ontology/scripts/mir_ontology_runner.py` from the approved distribution
+to their own `scripts/mir_ontology.py` byte-identically. Replace the whole file on update,
+verify byte equality and keep project-specific behavior outside the copy. The runner rejects
+active Claude/Codex version disagreement, ambiguous unpinned Codex caches and missing active
+paths; `--which` explains the selected distribution. Yoke retains its separate checkout runner.
+
+Replace mapping line refs with resolvable `#symbol` anchors wherever a definition exists,
+including covered error-case checks. Mapping still accepts legacy line refs and reports their
+count, but strict Git impact rejects line refs into changed files, stale refs and invalid maps.
+Run mapping and `impact --git-diff --strict`, then execute the selected checks separately;
+impact selection does not execute them or establish a passing result.
+
+Review `domain.relations` entries that declare `common`: common IDs and version-gated endpoint
+rules now match top-level relations. Under validated contract 1.1.0, declare compatible `from`
+and `to` endpoint types. Entries without `common` retain ref-only validation. No database
+migration, memory re-ingestion or automatic consumer update is required.

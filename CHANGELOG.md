@@ -8,6 +8,8 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.0] — 2026-10-16 — Canonical ontology runner and strict reference validation
+
 ### Fixed
 
 - Validate common relation IDs and version-gated endpoints in `domain.relations` using the same

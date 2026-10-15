@@ -16,4 +16,4 @@ def test_release_version_is_consistent() -> None:
     changelog = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
 
     assert version == project["project"]["version"] == package["version"]
-    assert f"## [{version}]" in changelog
+    assert f"## [v{version}]" in changelog
