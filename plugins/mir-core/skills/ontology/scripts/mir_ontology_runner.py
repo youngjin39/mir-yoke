@@ -22,7 +22,7 @@ SEMVER = re.compile(
 )
 
 
-def version_key(version: str) -> tuple:
+def version_key(version: str) -> tuple[object, ...]:
     """Order release versions above prereleases without trusting cache mtimes."""
     match = SEMVER.fullmatch(version)
     if match is None:
@@ -150,7 +150,7 @@ def select_distribution() -> tuple[str, Path, str]:
         version, checker, reason = active[0]
         return version, checker.resolve(), reason
 
-    candidates = []
+    candidates: list[tuple[str, Path, str]] = []
     for home in homes:
         for runtime in (".codex", ".claude"):
             candidates.extend(
@@ -174,7 +174,7 @@ def find_checker() -> Path:
     return select_distribution()[1]
 
 
-def main(argv=None) -> int:
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--which", action="store_true", help="show selected version, path and reason"

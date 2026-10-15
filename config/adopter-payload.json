@@ -443,7 +443,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": ".mir/capability-lock.json",
-      "sha256": "4f50bb58a7c0bdadf4f040241982fe83d185b6242117d18608b9f5e478ac39b0"
+      "sha256": "325684e1d79ec530c2592293b7e99a3d32c64b7ca374bcd86bc6e3a247562a60"
     },
     {
       "classification": "reference",
@@ -2885,7 +2885,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "plugins/mir-core/skills/ontology/scripts/mir_ontology_runner.py",
-      "sha256": "5941ed716fb34d25aaa51e8c1c70e9e8cc40ce664311e6a2f7908c333abb31c0"
+      "sha256": "fe4c885c9501cf297c062b99e33333cecd3e664de452fedcffbe1fed5a9e6891"
     },
     {
       "classification": "optional-consumer-tool",
