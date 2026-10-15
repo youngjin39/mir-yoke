@@ -1,10 +1,16 @@
 {
-  "goal": "Validate declared common relations under domain.relations using the shared common relation validator.",
+  "goal": "Correct E03 and E07 covered check references using existing executable behavior tests.",
   "goal_type": "maintenance",
-  "scope": "Owner-requested final audit fix: fail-first regressions, documented common-only endpoints, read-only 16-map comparison, full tests with external scratch, lock and payload refresh; no generated derivatives or delivery.",
+  "scope": "Owner-requested covered-label re-review: only the two mapping rows and task records; run ontology tests, every mapped test and installed/checkout mapping plus strict impact; exclude live-memory consistency and generated writes.",
   "priority": "normal",
-  "updated": "2026-10-15",
+  "updated": "2026-10-16",
   "history": [
+    {
+      "goal": "Validate declared common relations under domain.relations using the shared common relation validator.",
+      "updated": "2026-10-15",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#domain-common-relation-audit-fix-2026-10-15"
+    },
     {
       "goal": "Closure W2b: resolve existing fleet Markdown slugs, JSON pointers, modified declarations and shell functions without accepting mere mentions.",
       "updated": "2026-10-15",

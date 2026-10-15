@@ -1,27 +1,29 @@
 # Plan
 
-## Active task: Domain common relation audit fix (2026-10-15)
+## Active task: Covered-label fix (2026-10-16)
 
-Authority: the current owner request is recorded in `tasks/intent.json`; this document is
-the single active cursor and design record. Previous cursor details are preserved in
-`tasks/change_log.md#superseded-cursor-closure-w2b-before-domain-relation-audit-fix-2026-10-15`.
+Authority: the current owner request recorded in `tasks/intent.json`; this is the single
+active cursor and design record. Prior cursor details are preserved in
+`tasks/change_log.md#superseded-cursor-domain-relation-audit-before-covered-label-fix-2026-10-16`.
 
-Outcome: common declarations in `domain.relations` receive the same relation-ID and
-version-gated endpoint validation as top-level relations. The mapping guide permits only
-common concept IDs or a contract-allowed wildcard; local concept IDs remain invalid.
-Entries without `common` retain ref-only validation. Extract and reuse the existing validator.
+Outcome: E03 and E07 retain `covered` only with symbol-anchored tests that exercise their
+error cases, and reasons describing that tested scope. Reuse the owner-suggested existing
+tests; no behavior changes or new tests are needed. Keep the map at most 12,288 bytes.
 
-- [x] Capture baseline results for the 16 owner-listed maps and prove new regressions fail at HEAD.
-- [x] Share the relation validation, add the guide line and unreleased changelog entry.
-- [x] Run focused/full pytest, lint, read-only parity, mapping/impact and all 16 maps; report new pointers.
-- [x] Refresh cache-free mir-core digest and adopter payload; record evidence and remaining work.
+- [x] Confirm supplied map hash, installed 1.1.0 contract definitions and candidate behavior.
+- [x] Re-point E03/E07 checks and scope reasons; preserve every unrelated mapping entry.
+- [x] Run ontology tests and every mapped check with temporary fixture databases only.
+- [x] Pass installed and checkout mapping (0/0) and strict Git impact; record evidence.
 
-No generated derivatives, consumer writes, database inspection, commits or delivery.
+Skip `tests/test_harness_consistency.py`, `harness_consistency run`, memory render/sync,
+context sync and any gate wrapping them. Run individual allowed gate steps only.
+No commits, generated derivatives, live databases, service operations or consumer writes.
 
-Completed implementation and verification: 18 fail-first regressions against the byte-identical
-HEAD checker; 217 focused tests and 2,046 full-suite tests passed. All 16 explicit owner-listed
-maps report 0 errors and 0 warnings before and after; there are no new finding pointers.
-Ruff, read-only Codex parity, contract, own mapping, strict impact and Python 3.9 grammar pass.
-The mir-core digest and adopter inventory are refreshed; final inventory/public checks follow
-bookkeeping. No consumer correction or generated regeneration is needed. Evidence:
-`tasks/change_log.md#domain-common-relation-audit-fix-2026-10-15`.
+Completed: 262 ontology and mapped-check tests passed. Installed and checkout checkers each
+reported mapping 0 errors / 0 warnings and strict impact exit 0 with no stale refs; both
+contract self-checks returned 0/0. The map is 12,275 bytes. Refs and evidence:
+`tasks/change_log.md#covered-label-fix-2026-10-16`.
+
+The dependent adopter inventory is refreshed after bookkeeping and checked separately.
+No generated instruction/runtime derivatives need regeneration because their sources did
+not change. Full suite and live-memory steps are intentionally excluded by owner scope.

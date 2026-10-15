@@ -4287,3 +4287,82 @@ adopter payload, tasks/intent.json, tasks/plan.md and this evidence log.
 No checked-in generated derivatives or consumer files were written. No secrets or live
 databases were read. No owner-repository commit, push, tag, release or live service operation
 was performed. No implementation or consumer work remains.
+
+## Superseded cursor: domain relation audit before covered-label fix (2026-10-16)
+
+## Active task: Domain common relation audit fix (2026-10-15)
+
+Authority: the current owner request is recorded in `tasks/intent.json`; this document is
+the single active cursor and design record. Previous cursor details are preserved in
+`tasks/change_log.md#superseded-cursor-closure-w2b-before-domain-relation-audit-fix-2026-10-15`.
+
+Outcome: common declarations in `domain.relations` receive the same relation-ID and
+version-gated endpoint validation as top-level relations. The mapping guide permits only
+common concept IDs or a contract-allowed wildcard; local concept IDs remain invalid.
+Entries without `common` retain ref-only validation. Extract and reuse the existing validator.
+
+- [x] Capture baseline results for the 16 owner-listed maps and prove new regressions fail at HEAD.
+- [x] Share the relation validation, add the guide line and unreleased changelog entry.
+- [x] Run focused/full pytest, lint, read-only parity, mapping/impact and all 16 maps; report new pointers.
+- [x] Refresh cache-free mir-core digest and adopter payload; record evidence and remaining work.
+
+No generated derivatives, consumer writes, database inspection, commits or delivery.
+
+Completed implementation and verification: 18 fail-first regressions against the byte-identical
+HEAD checker; 217 focused tests and 2,046 full-suite tests passed. All 16 explicit owner-listed
+maps report 0 errors and 0 warnings before and after; there are no new finding pointers.
+Ruff, read-only Codex parity, contract, own mapping, strict impact and Python 3.9 grammar pass.
+The mir-core digest and adopter inventory are refreshed; final inventory/public checks follow
+bookkeeping. No consumer correction or generated regeneration is needed. Evidence:
+`tasks/change_log.md#domain-common-relation-audit-fix-2026-10-15`.
+
+## Covered-label fix (2026-10-16)
+
+Authority: current owner request recorded in `tasks/intent.json`; single cursor and design
+record: `tasks/plan.md`. Baseline working tree was clean, with map SHA256
+`ee2ca84035dc1bdab8ac354eac9bd935723de95a749d101948375ae228d604f7`.
+No bootstrap receipt exists to pin the edited files.
+
+Reviewed E03/ST-3 and E07/AUTH-1/AUTH-2 in the installed mir-core 0.12.0 distribution's
+`skills/ontology/references/common-contract.json` (contract 1.1.0; source digest
+`b2f1ecd01aaa88d41caac2bc2481e7f4c5a429cff3983aaa85ddfb0fc2f1b93f`).
+Only the two `error_cases` checks and their scoped reasons changed; both retain `covered`.
+
+| Row | Action and check ref | Executed behavior and scope |
+| --- | --- | --- |
+| E03 | Re-pointed to `tests/test_adr53_phase3a_search.py#test_search_default_excludes_semantic_historical_documents` | Scans current, superseded and mirrored documents into a temporary fixture database; default search returns only current.md, while explicit include_history returns all three. Tests obsolete-material exclusion, rather than decision-index wording. |
+| E07 | Re-pointed to `tests/test_public_template_authority.py#test_should_make_zero_writes_when_existing_repository_contract_is_missing` | Calls adoption --apply on a temporary target without its repository contract; asserts exit 2, no reported changed paths and an unchanged filesystem. Tests refusal of mutation without the required contract, rather than parser defaults; other authorization paths are outside this claim. |
+
+Existing tests already exercise the behavior, so no new tests or fail-first additions were
+needed. Map size: **12,275 bytes**, below 12,288. Every other mapping entry is unchanged.
+
+Validation (UV_CACHE_DIR used the owner-specified external cache; pytest TMPDIR and
+--basetemp used disposable repository-local scratch; bytecode writing was disabled):
+
+- `uv run pytest -q tests/test_mir_ontology.py tests/test_ontology_skill.py tests/test_ontology_runner.py tests/test_adr53_phase3a_search.py::test_search_default_excludes_semantic_historical_documents tests/test_public_template_authority.py::test_should_make_zero_writes_when_existing_repository_contract_is_missing tests/test_relations.py::test_current_graph_is_reloaded_and_source_digest_changes --ignore=tests/test_harness_consistency.py --basetemp=<scratch>/pytest --tb=short`: **262 passed in 19.22s**, exit 0. Includes every check now named in the map (all parameterizations).
+- `MIR_ONTOLOGY_CHECKER=<installed mir-core checker> python3 scripts/mir_ontology.py mapping`: **0 errors, 0 warnings; contract 1.1.0, mapping 1.1.0**, exit 0.
+- `MIR_ONTOLOGY_CHECKER=<checkout checker> python3 scripts/mir_ontology.py mapping`: same **0/0**, exit 0; informational 0 line-number refs.
+- `MIR_ONTOLOGY_CHECKER=<installed mir-core checker> python3 scripts/mir_ontology.py impact --git-diff --strict`: exit 0, no stale refs, map re-validation requested; affected Task/intent entries only, no selected executable checks.
+- `MIR_ONTOLOGY_CHECKER=<checkout checker> python3 scripts/mir_ontology.py impact --git-diff --strict`: same result, exit 0.
+- `python3 <checker> contract` for both installed and checkout distributions: **0 errors, 0 warnings**, exit 0.
+- `git diff --check`: passed before final bookkeeping; final verification follows below.
+
+Updated `tasks/intent.json`, `tasks/plan.md` and this evidence log, preserving the previous
+cursor above. Refreshed `config/adopter-payload.json` after bookkeeping because the existing
+exact inventory includes the changed map and task files; validated the inventory separately.
+No instruction/runtime derivative regeneration is required: their sources are unchanged.
+
+Skipped by owner instruction: FULL suite; `tests/test_harness_consistency.py`;
+`harness_consistency run`; memory render/sync; context sync; any wrapping gate. No live
+memory database, intake, credentials, generated derivatives, consumer files, service
+operations were accessed or changed. No owner-repository commit was created. Git fixture
+commits occur only inside the tests' disposable independent repositories. No behavior work remains.
+
+Final inventory/behavior confirmation:
+- `uv run python -m tools.template_assets --write-adopter-payload`: template asset classification: pass.
+- `uv run pytest -q tests/test_template_asset_classification.py tests/test_adr53_phase3a_search.py::test_search_default_excludes_semantic_historical_documents tests/test_public_template_authority.py::test_should_make_zero_writes_when_existing_repository_contract_is_missing --ignore=tests/test_harness_consistency.py --basetemp=<scratch>/final --tb=short`: **8 passed in 0.49s**, exit 0. Both changed-row tests pass again through the normal pytest runner.
+- Refresh the payload once more after this evidence entry; the final exact-inventory assertion,
+  both mapping/strict-impact invocations and whitespace check follow without further source edits.
+Disposable task scratch is removed at closeout. Changed files: `.mir/ontology-map.json`,
+`tasks/intent.json`, `tasks/plan.md`, `tasks/change_log.md`, `config/adopter-payload.json`.
+No remaining implementation work or derivatives to regenerate.
