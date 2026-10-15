@@ -170,6 +170,26 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
   maintainer configuration already carried it; the generator, which is what every new project
   actually receives, did not.
 
+## [0.12.0] — 2026-10-15 — Ontology contract 1.1.0, impact and on-demand knowledge supply
+
+### Added
+
+- `ontology_check.py impact`: changed paths select affected map entries, the covered checks to run
+  and stale refs; `--strict` fails on stale refs or an invalid map, for repository verify paths.
+- `ontology_check.py lookup`: a bounded query over map questions, concepts and identities.
+- `mk_query.py`: a standard-library, on-demand Memory Keeper stdio client (one query per spawn,
+  host-local configuration only, soft degradation on missing configuration, timeout, error or
+  empty result).
+
+### Changed
+
+- Distributes contract `mir.common-semantics` 1.1.0 (additive): mappings validated against 1.1.0
+  declare `from`/`to` concept types on common relations, checked against the contract.
+- A covered error case must resolve to an existing file, line or test name; a document warns.
+- The checker warns when a mapping exceeds the 12,288-byte index budget; Yoke's own map shrank to it.
+- The knowledge-supply guide follows Memory Keeper's real `federation_serve`/`feedback` interface.
+- Aligned all four dual-runtime plugin versions and the optional CLI package to `0.12.0`.
+
 ## [0.11.0] — 2026-10-14 — Ontology semantic contract skill
 
 ### Added

@@ -134,3 +134,8 @@ and provenance through `.mir/ontology-map.json` to the distributed common contra
 owner remains authoritative; each project owns its mapping and domain model. The package does not discover or modify consumers,
 install a runtime, or migrate existing memory or knowledge data. Existing package admission rules
 and target-local integration ownership remain unchanged.
+
+Version 0.12.0 distributes contract 1.1.0. Mappings validated against 1.0.0 stay valid and warn to
+re-validate; to adopt 1.1.0, declare `from`/`to` on each relation that names a common relation.
+Covered error cases must name a resolvable repeatable check. New optional `impact` and `lookup`
+subcommands and the `mk_query.py` client change nothing until a project wires them in.
