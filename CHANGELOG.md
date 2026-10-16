@@ -171,6 +171,22 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
   maintainer configuration already carried it; the generator, which is what every new project
   actually receives, did not.
 
+## [v0.13.2] — 2026-10-17 — Portable default work method
+
+### Added
+
+- The `runtime-continuity` skill packages the portable seven-step default work method
+  (`references/default-work-method.md`): intent, design, TDD, eval with a request matrix,
+  develop, repeat until tests pass, finish only when every matrix cell has current evidence.
+
+### Changed
+
+- The shared `mir-lifecycle-hooks` SessionStart line also states the method order and the
+  completion rule, so every adopting computer and runtime, including delegated Codex threads,
+  receives it once; the reviewed handler budget is 1024 bytes.
+- `mir-core:design` points to the method order.
+- Aligned all four dual-runtime plugin versions and the optional CLI package to `0.13.2`.
+
 ## [v0.13.1] — 2026-10-16 — Invariant checks and isolated distribution rehearsal
 
 ### Fixed

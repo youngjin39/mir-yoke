@@ -82,7 +82,7 @@ Discard an uncommitted Project Agent Kit adaptation in the target or restore the
 commit. For an explicitly invoked CLI transaction, use that command's recorded rollback/recovery
 contract. Installing the CLI does not itself mutate a target.
 
-Current version: `0.13.1`. See `CHANGELOG.md` for release details.
+Current version: `0.13.2`. See `CHANGELOG.md` for release details.
 
 Version 0.10.0 adds opt-in `memory_relations` ingestion and read-only `mir relations query|bundle --memory`
 query/bundle selection using the existing memory schema. No automatic corpus backfill, database
@@ -170,3 +170,10 @@ or remove the optional `check` field if the invariant has no declared executable
 Run `python3 scripts/mir_ontology.py mapping` and
 `python3 scripts/mir_ontology.py impact --git-diff --strict`, then execute the selected checks.
 No database migration, memory re-ingestion or automatic consumer update is required.
+
+Version 0.13.2 is a patch release and keeps `mir.common-semantics` contract 1.1.0. The
+`mir-lifecycle-hooks` SessionStart line now also states the seven-step default work method and
+the completion rule, and its `runtime-continuity` skill packages the full method as
+`references/default-work-method.md`. A user-level instruction file that already carries the same
+method text should drop it so the method is injected once. No database migration, memory
+re-ingestion or automatic consumer update is required.
