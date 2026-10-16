@@ -18,6 +18,8 @@ from datetime import UTC, datetime
 from importlib.resources import files
 from pathlib import Path, PurePosixPath
 
+from mir.core.adoption.runtime import _is_transient
+
 from .config import CapabilityConfig, CapabilityConfigError, CapabilityPack, load_capability_config
 
 _SHA = re.compile(r"^[0-9a-f]{40}$")
@@ -404,12 +406,15 @@ def _tree_digest(root: Path) -> str:
     for path in sorted(root.rglob("*")):
         if path.is_symlink():
             raise CapabilityError(f"capability tree contains a symlink: {path}")
-        relative = path.relative_to(root).as_posix()
-        digest.update(relative.encode())
+        is_file = path.is_file()
+        if is_file and path.stat().st_mode & 0o111:
+            raise CapabilityError(f"capability tree contains executable content: {path}")
+        relative_path = path.relative_to(root)
+        if _is_transient(relative_path):
+            continue
+        digest.update(relative_path.as_posix().encode())
         digest.update(b"\0")
-        if path.is_file():
-            if path.stat().st_mode & 0o111:
-                raise CapabilityError(f"capability tree contains executable content: {path}")
+        if is_file:
             digest.update(path.read_bytes())
         digest.update(b"\0")
     return digest.hexdigest()

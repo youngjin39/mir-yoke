@@ -413,7 +413,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": ".github/workflows/validate.yml",
-      "sha256": "5c4ac3517274c7713457f63aa33417bf104ffadebab945625f4ac217561b7b51"
+      "sha256": "e25671c8e2001ef19c943982fcb3a346a00151fc1eddf806d7f53d8659bf26c9"
     },
     {
       "classification": "reference",
@@ -443,7 +443,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": ".mir/capability-lock.json",
-      "sha256": "41b0ff9fc7190037ec0e8a9fddda9eb88d8d3432398ff99540828e34e309e508"
+      "sha256": "1fb7f129fd56cca3c7d3f9a3b8ce01d973272a9bd6a8fb5d3746b88b05360cd7"
     },
     {
       "classification": "reference",
@@ -485,7 +485,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "CHANGELOG.md",
-      "sha256": "5c225bb430f6f507f03348a72dcefa055ff93b3be4a356a17c08fbb9b2a701b2"
+      "sha256": "1717b127e28daf7f4cacb0281095d27e79f9f211b4c13ee3906ed0b5d88d8e12"
     },
     {
       "classification": "reference",
@@ -3773,7 +3773,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "src/mir/core/capabilities/manager.py",
-      "sha256": "e770d54024cae3d91bd78d3fbf1035575abe4a1ba368c2148306f3df0d719d8c"
+      "sha256": "121376a58b2a2c2773f9532252b222822013db1c9c2fdae17a79ced916647177"
     },
     {
       "classification": "optional-consumer-tool",
@@ -4127,7 +4127,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/change_log.md",
-      "sha256": "86cd274930d15d4edfefba3288c93cf7bd37f51bf23ca8c3c5d029dc5568ee1a"
+      "sha256": "639f39e0485a3a8f744996890b27257303e1ff2bef0af84e2ebbd6129d84e56c"
     },
     {
       "classification": "reference",
@@ -4145,7 +4145,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/intent.json",
-      "sha256": "02f2b46697e8e505d9f9c22da2881eb6f79651231613931234e2dea7658fc44f"
+      "sha256": "63b91bcebfccd338638045d2f0dc3900e8f67b120f1bd8395fd28c658c34b04c"
     },
     {
       "classification": "reference",
@@ -4169,7 +4169,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/plan.md",
-      "sha256": "ed26c069fdce2675a41365be63d2291e8ec2dfd2b8d6aedb0067952fd8af75be"
+      "sha256": "aa9835becdcd8df7810a2e2595bd787a761c88a60bf6b9e181934583b4025b31"
     },
     {
       "classification": "reference",
@@ -4193,7 +4193,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/tdd.json",
-      "sha256": "22da38bd549894cabd1b67f0dc7d6b8749d023b7a284fb503b3c3628de3cfe55"
+      "sha256": "e4baf65559fc6b2a5c286d827d18aee4abff8e9abecd702c4f79201264558ff9"
     },
     {
       "classification": "reference",
@@ -4349,7 +4349,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_capability_cli.py",
-      "sha256": "e81a7faa6336a4971bb88b869fa0c7a0c4e7349bdd10918609f09466c8eed4a2"
+      "sha256": "8f652a28e7560ed11a4e5adfc48fb411272f6efbdc56c8019d297d2c26c4a30d"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4427,7 +4427,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_harness_consistency.py",
-      "sha256": "ad7cf61e6bbe6d6db6fc092f41f9ad8edb8ce270e24eb35fd7f36fe0aeb37ad3"
+      "sha256": "0b353c33bd69bfa32dae8589d0ed416373bca4862d65adc161434c0bcf0f9140"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4613,7 +4613,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_release_metadata.py",
-      "sha256": "d22bcd8ca000f6db54b8df789c5896826f15db67edd43815f8b8e8cbc00b8140"
+      "sha256": "4b246686c5a47fd710199897d1813c63f41c290b1ea04d06f9f406aaa79d63f4"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4847,13 +4847,19 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tools/harness_consistency/tests/test_generate.py",
-      "sha256": "58b10c4e05c0d8c7df4abdd54726feff0cab4d752ca82d959513b94283fbb6c8"
+      "sha256": "1307caddcbf5c69a0aa5102cfc3ec3b02a1b8a22c2eac2431fc23bb0325e2573"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "tools/harness_consistency/tests/test_memory_guard.py",
+      "sha256": "13511a5ab0c61c3f0590c41f7135eb108ba1ab583a479cd65993379bde5ffb9a"
     },
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tools/harness_consistency/tests/test_rules.py",
-      "sha256": "af49c47ed483e0439d74ad766a9483001f936318ace9d4549b004eb2b180786f"
+      "sha256": "91f3decb87730a79892919e4c1969e4c039b4b2cb11379f4940c1956e55d1b15"
     },
     {
       "classification": "reference",

@@ -1,5 +1,78 @@
 # Change log
 
+## Automatic memory render guard (2026-10-16)
+
+Authority: current owner section-A request in `tasks/intent.json`; active design and
+cursor: `tasks/plan.md`. The previously completed release preparation cursor is
+superseded; its outcome and pending Main delivery steps remain in the dated release
+preparation entry below.
+
+The shared `tests/test_harness_consistency.py` now passes a temporary copy of the
+repository default manifest with only `generated_marker_rerender` (R11) disabled,
+and prints the reason. The default manifest and production runner are unchanged.
+An intercepted-command regression checks exact manifest equality apart from R11,
+the original root, and preservation of the committed manifest without running a
+single live-root rule. The shared file has no repository-specific tool imports.
+
+Local tool tests no longer rerender from the live root. Matching/default-run R11
+coverage uses a fake `.mir/memory.db` and observable fake render module in tmp;
+the existing synthetic drift test remains. Runner equivalence uses a synthetic
+failing ADR. The real-root green execution test was consolidated into the existing
+synthetic green-manifest test, including schema validation. Searched shell scripts
+and workflows contain no consistency-tool gate invocation requiring an edit.
+
+Evidence so far (all uv commands use the owner-specified external cache; scratch is
+external and every pytest command includes the required consistency-file deselect):
+
+- Fail-first: `uv run pytest -q tools/harness_consistency/tests/test_memory_guard.py
+  --deselect tests/test_harness_consistency.py --basetemp=<scratch>/red`:
+  **1 failed**, asserting HEAD lacked `--manifest`; subprocess was intercepted.
+  An earlier setup-only attempt had **1 error** because scratch parents were absent;
+  created the owned scratch directory before the accepted failing assertion.
+- After fix: `uv run pytest -q tools/harness_consistency/tests
+  tests/test_public_template_surface.py --deselect tests/test_harness_consistency.py
+  --basetemp=<scratch>/focused --tb=short`: **69 passed in 1.14s**.
+- `uv run ruff check`: **All checks passed**.
+- `uv run python scripts/verify_codex_sync.py`: **OK**, read-only parity check.
+- Payload check initially reported **1 failed, 5 passed** after source changes;
+  `uv run python -m tools.template_assets --write-adopter-payload --json` safely
+  rebuilt its hashes: **884 classified**, no missing/duplicate/prohibited assets.
+  Its diff also refreshes already-stale HEAD hashes for the capability lock and
+  changelog; neither of those source files was changed by this task.
+- Supplied ontology-map SHA-256 matched before edits; the map is unchanged.
+
+Full-suite evidence:
+
+- `uv run pytest -q --deselect tests/test_harness_consistency.py
+  --basetemp=<scratch>/full --tb=short` with external TMPDIR:
+  **2,042 passed, 3 failed, 1 deselected in 347.51s**. The early
+  `test_should_remove_reference_snapshot_when_adopter_payload_is_built` saw stale
+  inventory before regeneration; source tests were unchanged during execution.
+- The remaining failures are
+  `tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees`
+  (plugin tree digest mismatch) and
+  `tests/test_release_metadata.py::test_release_version_is_consistent`
+  (missing `## [v0.13.0]` heading). A focused rerun reproduced **2 failed in 0.08s**.
+  `git diff --exit-code -- .mir/capability-lock.json plugins CHANGELOG.md
+  pyproject.toml tests/test_capability_cli.py tests/test_release_metadata.py` returned
+  **0**, establishing unchanged HEAD inputs for both failures. Leave these release
+  issues intact; this bounded request does not authorize release-state repair.
+- After final bookkeeping/payload regeneration:
+  `uv run pytest -q tools/harness_consistency/tests tests/test_public_template_surface.py
+  tests/test_template_asset_classification.py tests/test_advanced_reference_templates.py
+  --deselect tests/test_harness_consistency.py --basetemp=<scratch>/final --tb=short`:
+  **82 passed in 1.04s**. This verifies the repaired early inventory failure as well
+  as all affected tests and the required public scan. Final Ruff also passed.
+  The full suite is not claimed green. After this evidence-only update, regenerate
+  the inventory once more and check the two inventory suites plus the public scan.
+
+No live DB, memory/context synchronization, secrets, commit/push, or generated
+instruction/runtime derivative write was performed. The ontology map retains the
+supplied SHA-256. Main must run `uv run pytest -q tests/test_harness_consistency.py`
+on the host with the external uv cache and external temporary directory; then rerun
+the full suite after resolving the two release-state failures. No Codex regeneration
+is needed for these test-only source changes; read-only parity already passed.
+
 ## P4 ontology work path (2026-10-15)
 
 Authority: current P4 owner request in `tasks/intent.json`; design/cursor: `tasks/plan.md`.
@@ -4521,3 +4594,172 @@ Release procedure evidence: ADR-80; `.github/workflows/release.yml`;
 `docs/operations/global-plugin-migration.md` sections 3 and 4;
 `src/mir/cli/capability.py` command options. No commit, tag, push, publishing, runtime-home
 operation, capability apply/attest/finalize, live database, memory or context sync was performed.
+
+
+## Superseded cursor: memory render guard before local and CI fixes (2026-10-16)
+
+The completed section A intent and cursor are preserved here before the owner-authorized follow-up.
+
+```json
+{
+  "goal": "Prevent automatic consistency tests from rendering live agent memory.",
+  "goal_type": "maintenance",
+  "scope": "Section A: shared consistency test and local tool tests only; synthetic fixtures, unchanged explicit-run defaults, no live databases, commits or generated derivatives.",
+  "priority": "normal",
+  "updated": "2026-10-16",
+  "history": [
+    {
+      "goal": "Prepare the Mir Yoke 0.13.0 release working tree with version metadata and migration notes only.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#0130-release-preparation-2026-10-16"
+    },
+    {
+      "goal": "Correct E03 and E07 covered check references using existing executable behavior tests.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#superseded-cursor-covered-label-fix-before-0130-preparation-2026-10-16"
+    }
+  ],
+  "status": "complete",
+  "evidence": "tasks/change_log.md#automatic-memory-render-guard-2026-10-16"
+}
+```
+
+# Plan
+
+## Active task: memory render guard (2026-10-16)
+
+Authority: the current owner request recorded in `tasks/intent.json`; this is the single
+active cursor and design record. Prior completed release preparation and its remaining
+Main steps are preserved in `tasks/change_log.md#0130-release-preparation-2026-10-16`.
+
+Outcome: automatic consistency tests never render live agent memory. The shared test
+passes a temporary copy of the default manifest with only R11 disabled. Synthetic
+fixtures retain matching/drift rendering, default-run and green-manifest coverage.
+Keep the default manifest and explicit-run behavior unchanged.
+
+- [x] Inspect relevant tests, gate references, default manifest and accepted reference fix.
+- [x] Demonstrate HEAD failure with an intercepted subprocess; never run live-root rules.
+- [x] Guard the shared test and replace live-root renderer/tool tests with synthetic fixtures.
+- [x] Run full pytest with required deselect; record results and Main's host check.
+
+Hard limits: one writer; no commits/pushes, live databases, secrets, memory/context sync,
+live-root consistency/gate invocation or generated instruction/runtime derivatives.
+Every pytest command deselects `tests/test_harness_consistency.py`.
+
+Fail-first: shared test command inspection failed because HEAD used no `--manifest`.
+After the fix: affected tool tests plus public-template-surface checks passed (69);
+Ruff and read-only Codex parity passed. Full suite: 2,042 passed, 3 failed, 1 deselected.
+One inventory failure was observed before payload regeneration; final inventory checks
+are recorded in the evidence entry. The other two failures reproduce on unchanged
+HEAD inputs: capability lock/plugin digest and the missing v0.13.0 changelog heading.
+These are outside this section-A change. Main must run the shared test on the host
+and rerun the full suite after resolving the two release-state failures.
+
+
+## Local and CI validation fixes (2026-10-16)
+
+Authority: the owner requested local and validate-workflow-equivalent validation while
+keeping Actions enabled. `tasks/intent.json` and the single cursor/design record at
+`tasks/plan.md` own this bounded follow-up. The existing, Main-reviewed section A memory
+guard remains intact, including its untracked synthetic regression test.
+
+Root causes and minimum corrections:
+
+1. Release headings: `git log -p -- CHANGELOG.md` shows that `06ca2f9` added a v-prefixed
+   0.13.0 heading and changed the metadata test; `eb5aeaa` deliberately restored the existing
+   unprefixed heading without restoring the assertion. `v0.12.0:tests/test_release_metadata.py`
+   and `scripts/extract_changelog_entry.py#extract_entry` both require unprefixed headings.
+   Restored that exact assertion, kept one accepted form, and aligned the changelog preamble.
+   The historical v0.12.0 passing claim is recorded in `afe4ace`; it was not rerun here.
+2. Capability digests: `_tree_digest` hashed transient directories and files, so importing
+   ontology scripts changed the digest of an otherwise unchanged managed tree. Reused
+   `mir.core.adoption.runtime._is_transient` for `__pycache__`, `.pytest_cache`, `.ruff_cache`,
+   `.pyc` and `.pyo`. `_validate_plugin` (bind/materialize) and installed status verification
+   share the same digest helper; the lock test already imports this production helper.
+   Symlinks and executable files are rejected before cache exclusion. Package admission
+   allowlists remain unchanged. No plugin source or capability lock was refreshed.
+3. CI ancestry: checkout's default shallow history omits the lock's `be51f1d` source commit.
+   A local depth-one clone reproduced Git exit 128 (`Not a valid commit name`); the full
+   fresh clone returned 0 for the identical `merge-base --is-ancestor` command. Set
+   `fetch-depth: 0` only on `public_cli`, preserving workflow triggers and all assertions.
+4. CI inventory: a pristine local HEAD clone reproduced `supported_contracts` as 60 passed,
+   one failed. There were no missing/extra file paths, mode, ordering or environment
+   differences in the generated payload. Exactly two stored hashes were stale:
+   `.mir/capability-lock.json` (stored `41b0ff9f...`, actual `1fb7f129...`) and `CHANGELOG.md`
+   (stored `5c225bb4...`, actual `5a8b166f...`). The payload was last generated in `be51f1d`,
+   before the later changelog and lock edits. Regenerated with the existing generator after
+   candidate/bookkeeping changes; retained the exact payload equality test.
+
+Fail-first and verification evidence (external UV cache and scratch used throughout;
+every pytest invocation includes `--deselect tests/test_harness_consistency.py`):
+
+- Initial release-metadata and repository-lock tests: two failures, reproducing both reports.
+- Added cache regression against unchanged HEAD manager: five failed, including a planted
+  `__pycache__` in a temporary tree. After the fix, ordinary source changes still affect the
+  digest. Review exposed an executable-cache bypass in the first implementation; its five
+  cases failed before moving the permission check ahead of the exclusion, then the cache,
+  repository-lock and existing unsafe-plugin matrix passed (nine tests). Final tests also
+  cover symlink cache entries and all pass in the complete suite.
+- Focused capability/release/runtime/security selection: 164 passed before the review
+  adjustment; the final complete suite supersedes that intermediate implementation evidence.
+- An intermediate complete run overlapped deliberate review/bookkeeping edits: 2,048 passed,
+  two failed (provider snapshot changed during its probe and inventory changed during hashing),
+  one deselected. It is superseded, not accepted as final evidence. The final implementation
+  was held stable for the following complete run.
+- `uv run pytest --deselect tests/test_harness_consistency.py`: **2,050 passed, one deselected**,
+  234.76 seconds, exit 0. This includes public-template-surface and section A synthetic tests.
+- `uv run ruff check`: all checks passed, exit 0.
+- `uv run python scripts/verify_codex_sync.py`: derivatives match sources, exit 0;
+  the checker renders only to isolated scratch, with no repository `.codex/**` writes.
+- `git diff --check`: exit 0. Independent read-only implementation review: no remaining findings.
+- All four committed plugin digests matched after the change: mir-code `42c0a675...`,
+  mir-content `7fe3624d...`, mir-core `97122b8d...`, mir-lifecycle-hooks `235032d0...`.
+  `.mir/capability-lock.json` remained byte-identical to HEAD.
+
+Fresh-clone validation: cloned local HEAD `eb164fa` into isolated external scratch, first
+reproduced the failure without overlays, then copied only the complete candidate files
+(including section A's untracked test). No ignored files, live databases, credentials or
+runtime homes were copied. Commands came directly from `.github/workflows/validate.yml`;
+pytest adds only the mandatory deselection. macOS host, CPython 3.12.13. npm's global prefix
+and cache were isolated on external storage, preserving installed user CLIs. The initial
+local static setup lacked pip (exit 127); seeded pip in the scratch virtualenv, then reran
+its exact install command successfully, matching the Actions setup-python prerequisite.
+
+| Validate job | Exact command | Result |
+|---|---|---|
+| supported_contracts | `uv sync --extra dev --frozen` | PASS; exit 0 |
+| supported_contracts | `uv run pytest -q tests/test_project_agent_kit.py tests/test_minimal_starter.py tests/test_public_template_identity.py tests/test_decision_authority.py tests/test_template_asset_classification.py tests/test_plugin_skill_packages.py tests/test_common_skill_contracts.py --deselect tests/test_harness_consistency.py` | 61 passed in 0.61s; exit 0 |
+| supported_contracts | `uv run python scripts/verify_codex_sync.py` | PASS; exit 0 |
+| supported_contracts | `uv run ruff check` | PASS; exit 0 |
+| public_cli | `uv sync --extra dev --frozen` | PASS; exit 0 |
+| public_cli | `uv run pytest -q tests/test_installed_cli.py tests/test_bootstrap_cli.py tests/test_bootstrap_adoption_cli.py tests/test_existing_repository_adoption.py tests/test_greenfield_slim_integration.py tests/test_setup_wrappers.py tests/test_adr53_phase1_schema.py tests/test_adr53_phase2_population.py tests/test_adr53_phase3a_search.py tests/test_adr53_phase3b_context_cli.py tests/test_memory_doctor.py tests/test_migrations.py tests/test_loop_cli.py tests/test_loop_driver.py tests/test_capability_cli.py tests/test_capability_security.py tests/test_run_python_cli.py tests/test_runtime_manifest.py tools/mir_executor/tests --deselect tests/test_harness_consistency.py` | 1109 passed in 106.19s (0:01:46); exit 0 |
+| portable_plugins | `uv sync --extra dev --frozen` | PASS; exit 0 |
+| portable_plugins | `npm install --global @anthropic-ai/claude-code@2.1.223 @openai/codex@0.146.1` | PASS; exit 0 |
+| portable_plugins | `uv run pytest -q tests/test_plugin_skill_packages.py tests/test_common_skill_contracts.py --deselect tests/test_harness_consistency.py` | 21 passed in 0.13s; exit 0 |
+| portable_plugins | `uv run python scripts/verify_plugin_cli_activation.py` | PASS; two consumers, both CLIs, all four plugin digests and skill inventories; exit 0 |
+| static_public_checks | `pip install jsonschema pytest` | PASS; exit 0 |
+| static_public_checks | `python tests/test_schema_validity.py` | PASS; exit 0 |
+| static_public_checks | `python tests/test_link_integrity.py` | PASS; exit 0 |
+| static_public_checks | `python tests/test_hook_executability.py` | PASS; exit 0 |
+| static_public_checks | `python tests/test_no_korean_in_user_facing.py` | PASS; exit 0 |
+| static_public_checks | `python tests/test_phase_doc_completeness.py` | PASS; exit 0 |
+
+Changed in this follow-up: `.github/workflows/validate.yml`, `CHANGELOG.md`,
+`src/mir/core/capabilities/manager.py`, `tests/test_capability_cli.py`,
+`tests/test_release_metadata.py`, `config/adopter-payload.json`, `tasks/intent.json`,
+`tasks/plan.md`, `tasks/tdd.json`, and this evidence log. Preserved section A changes:
+`tests/test_harness_consistency.py`, `tools/harness_consistency/tests/test_generate.py`,
+`tools/harness_consistency/tests/test_rules.py`, and untracked
+`tools/harness_consistency/tests/test_memory_guard.py`.
+
+Ontology scope and evidence: `.mir/ontology-map.json` remains unchanged at SHA-256
+`9b9d8eab4b8ab065ccd1e92840fc92503520d4ef75964bf52615c25e99500eda`, declaring
+`mir.common-semantics@1.1.0`. Source/test refs above support the implementation claims;
+no mapping meaning or consumer authority changed.
+
+Remaining Main verification: actual GitHub Actions Ubuntu/macOS matrices after authorized
+delivery, plus the guarded shared consistency test on the host (excluded in this sandbox).
+Generated parity passes without regeneration. No commit, push, tag, GitHub access, lock
+binding/refresh, live memory database, secret read, or consumer write was performed.

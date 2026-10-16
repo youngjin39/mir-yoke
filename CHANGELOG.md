@@ -4,10 +4,16 @@ All notable changes to `mir-yoke` will be documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) from `v0.1.0` onward.
 
-Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are kept for historical reference. All future entries use the `## [vN.M.X] — YYYY-MM-DD — title` format.
+Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are kept for historical reference. All future entries use the `## [N.M.X] — YYYY-MM-DD — title` format.
 
 ## [Unreleased]
 
+### Fixed
+
+- Restored release metadata checks to the established unprefixed changelog version headings.
+- Excluded transient Python bytecode and test/lint caches from capability tree digests while
+  preserving existing clean-tree lock digests.
+- Enabled full Git history for public CLI CI checks and refreshed stale adopter inventory hashes.
 
 ### Added
 

@@ -1,10 +1,22 @@
 {
-  "goal": "Prepare the Mir Yoke 0.13.0 release working tree with version metadata and migration notes only.",
+  "goal": "Make local validation and fresh-checkout validate workflow commands pass while retaining the memory render guard.",
   "goal_type": "maintenance",
-  "scope": "Owner-authorized release preparation only. Mirror bbc3248 version surfaces, refresh the validated lifecycle-hooks digest and generated adopter payload, preserve ontology mapping and runner fixtures. No commits, tags, pushes, publishing, capability operations, runtime-home writes, live databases, memory/context synchronization or generated Codex writes.",
+  "scope": "Release heading consistency, transient-safe capability digests, history-aware checkout, deterministic adopter inventory and bounded verification.",
   "priority": "normal",
   "updated": "2026-10-16",
   "history": [
+    {
+      "goal": "Prevent automatic consistency tests from rendering live agent memory.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#automatic-memory-render-guard-2026-10-16"
+    },
+    {
+      "goal": "Prepare the Mir Yoke 0.13.0 release working tree with version metadata and migration notes only.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#0130-release-preparation-2026-10-16"
+    },
     {
       "goal": "Correct E03 and E07 covered check references using existing executable behavior tests.",
       "updated": "2026-10-16",
@@ -13,5 +25,5 @@
     }
   ],
   "status": "complete",
-  "evidence": "tasks/change_log.md#0130-release-preparation-2026-10-16"
+  "evidence": "tasks/change_log.md#local-and-ci-validation-fixes-2026-10-16"
 }

@@ -142,30 +142,6 @@ def test_build_manifest_localizes_metadata_without_private_profile_rendering(
     assert all(surface["file"] != "CLAUDE.md" for surface in surfaces)
 
 
-def test_build_manifest_green_real_repo_runs_pass() -> None:
-    manifest = build_manifest(
-        PROJECT_ROOT,
-        PROJECT_ROOT / "config" / "repos" / "mir-yoke.json",
-        green=True,
-    )
-
-    result = run_with_manifest(PROJECT_ROOT, manifest)
-    enabled_error_rule_ids = {
-        rule["id"]
-        for rule in manifest["rules"]
-        if rule["enabled"] and rule["severity"] == "ERROR"
-    }
-    error_finding_rule_ids = {
-        finding["rule_id"]
-        for finding in result["findings"]
-        if finding["severity"] == "ERROR"
-    }
-
-    jsonschema.validate(instance=manifest, schema=_schema())
-    assert result["overall"] == "pass"
-    assert enabled_error_rule_ids.isdisjoint(error_finding_rule_ids)
-
-
 def test_build_manifest_green_minimal_repo_disables_missing_prerequisites(
     tmp_path: Path,
 ) -> None:
@@ -207,16 +183,25 @@ def test_build_manifest_green_minimal_repo_disables_missing_prerequisites(
 
     assert result["overall"] == "pass"
     assert disabled_rule_ids >= {"R2", "R5"}
+    jsonschema.validate(instance=manifest, schema=_schema())
 
 
-def test_run_with_manifest_matches_run_for_committed_manifest() -> None:
-    manifest = json.loads(
-        (PROJECT_ROOT / "config" / "harness-consistency.json").read_text(
-            encoding="utf-8",
-        )
-    )
+def test_run_with_manifest_matches_run_for_synthetic_manifest(tmp_path: Path) -> None:
+    manifest = {
+        "repo": {"slug": "fixture"},
+        "rules": [{"id": "R5", "name": "adr_status_enum",
+                   "enabled": True, "severity": "ERROR"}],
+        "rule_inputs": {"adr_status_enum": {
+            "adr_glob": "adr-*.md", "enum_schema": "enum.json", "enum_key": "statuses",
+        }},
+    }
+    _write_json(tmp_path / "config/harness-consistency.json", manifest)
+    _write_json(tmp_path / "enum.json", {"statuses": ["accepted"]})
+    (tmp_path / "adr-001.md").write_text("---\nstatus: invalid\n---\n", encoding="utf-8")
 
-    assert run_with_manifest(PROJECT_ROOT, manifest) == run(PROJECT_ROOT)
+    result = run_with_manifest(tmp_path, manifest)
+    assert result == run(tmp_path)
+    assert result["summary"]["error"] == 1
 
 
 def test_generate_parser_accepts_green_flag() -> None:

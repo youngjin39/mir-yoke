@@ -23,6 +23,7 @@ from tools.harness_consistency.rules import (
     single_family_source,
     wired_gate_liveness,
 )
+from tools.harness_consistency.runner import run
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
@@ -656,14 +657,38 @@ def test_hook_tier_declaration_reports_missing_expected_tier(tmp_path: Path) -> 
     assert findings[0].location == "pre-tool-use.sh"
 
 
-def test_generated_marker_rerender_real_repo_green_or_warn_only() -> None:
-    findings = generated_marker_rerender(
-        PROJECT_ROOT,
-        _manifest_inputs("generated_marker_rerender"),
+def test_generated_marker_rerender_matches_synthetic_memory(tmp_path: Path) -> None:
+    block = "<!-- generated:start -->\nfresh\n<!-- generated:end -->\n"
+    (tmp_path / "surface.md").write_text(block, encoding="utf-8")
+    (tmp_path / ".mir").mkdir()
+    (tmp_path / ".mir/memory.db").touch()
+    (tmp_path / "stub_render.py").write_text(
+        "from pathlib import Path\n"
+        "Path('.mir/memory.db').read_bytes()\n"
+        "Path('rendered').touch()\n"
+        f"print({block!r})\n",
+        encoding="utf-8",
     )
+    inputs = {"surfaces": [{
+            "file": "surface.md", "source": ".mir/memory.db",
+            "render_module": "stub_render", "render_args": [],
+            "marker_begin": "<!-- generated:start -->",
+            "marker_end": "<!-- generated:end -->",
+            "skip_if_source_absent": True,
+        }]}
+    findings = generated_marker_rerender(tmp_path, inputs)
 
-    assert all(finding.rule_id == "R11" for finding in findings)
-    assert all(finding.severity == "WARN" for finding in findings)
+    assert findings == []
+    assert (tmp_path / "rendered").exists()
+    (tmp_path / "rendered").unlink()
+    _write_json(tmp_path / "config/harness-consistency.json", {
+        "repo": {"slug": "fixture"},
+        "rules": [{"id": "R11", "name": "generated_marker_rerender",
+                   "enabled": True, "severity": "WARN"}],
+        "rule_inputs": {"generated_marker_rerender": inputs},
+    })
+    assert run(tmp_path)["overall"] == "pass"
+    assert (tmp_path / "rendered").exists(), "explicit default-manifest runs must keep R11"
 
 
 def test_generated_marker_rerender_reports_drift(tmp_path: Path) -> None:

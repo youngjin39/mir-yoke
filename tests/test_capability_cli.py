@@ -344,6 +344,43 @@ def test_profiles_are_canonical_and_have_distinct_inventories() -> None:
     } <= set(config.required_project_paths)
 
 
+@pytest.mark.parametrize(
+    "transient",
+    [
+        "skills/__pycache__/module.cpython-312.pyc",
+        "skills/module.pyc",
+        "skills/module.pyo",
+        "skills/.pytest_cache/v/cache/nodeids",
+        "skills/.ruff_cache/0.14/checks",
+    ],
+)
+def test_should_preserve_tree_digest_when_runtime_caches_are_created(
+    tmp_path: Path, transient: str
+) -> None:
+    plugin = tmp_path / "plugin"
+    skill = plugin / "skills" / "SKILL.md"
+    skill.parent.mkdir(parents=True)
+    skill.write_text("# Skill\n", encoding="utf-8")
+    clean_digest = _tree_digest(plugin)
+
+    cache = plugin / transient
+    cache.parent.mkdir(parents=True, exist_ok=True)
+    cache.write_bytes(b"transient cache")
+
+    assert _tree_digest(plugin) == clean_digest
+    skill.write_text("# Changed skill\n", encoding="utf-8")
+    assert _tree_digest(plugin) != clean_digest
+
+    cache.chmod(0o755)
+    with pytest.raises(CapabilityError, match="executable content"):
+        _tree_digest(plugin)
+
+    cache.unlink()
+    cache.symlink_to(skill)
+    with pytest.raises(CapabilityError, match="symlink"):
+        _tree_digest(plugin)
+
+
 # @spec QR-003
 def test_repository_lock_is_portable_and_matches_managed_trees() -> None:
     lock = json.loads((ROOT / ".mir" / "capability-lock.json").read_text(encoding="utf-8"))

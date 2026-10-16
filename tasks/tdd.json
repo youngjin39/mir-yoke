@@ -1536,6 +1536,81 @@
           "reason": "Bounded CLI/library compatibility and explicit sync changes; no GUI, live service, throughput or long-running workload behavior changed."
         }
       }
+    },
+    {
+      "id": "local-ci-validation-fixes-2026-10-16",
+      "record_status": "complete",
+      "scope": "Restore strict release metadata consistency, ignore transient capability caches, fetch CLI test history and regenerate stale adopter inventory.",
+      "targets": [
+        "src/mir/core/capabilities/manager.py",
+        "tests/test_capability_cli.py",
+        "tests/test_release_metadata.py",
+        ".github/workflows/validate.yml",
+        "config/adopter-payload.json"
+      ],
+      "bluebrick": "Capability integrity / Release metadata / Public CI validation",
+      "fail_first": {
+        "command": "uv run pytest -q tests/test_capability_cli.py::test_should_preserve_tree_digest_when_runtime_caches_are_created --deselect tests/test_harness_consistency.py",
+        "result": "5 failed against unchanged HEAD manager; all transient variants changed the digest."
+      },
+      "categories": {
+        "unit": {
+          "status": "pass",
+          "command": "uv run pytest --deselect tests/test_harness_consistency.py",
+          "notes": "Five cache variants failed against HEAD, then passed; ordinary source drift still changes the digest."
+        },
+        "integration": {
+          "status": "pass",
+          "command": "uv run pytest --deselect tests/test_harness_consistency.py",
+          "notes": "Final fixed implementation: 2,050 passed, one required deselection; existing lifecycle, integrity and concurrency checks retained."
+        },
+        "edge": {
+          "status": "pass",
+          "command": "uv run pytest --deselect tests/test_harness_consistency.py",
+          "notes": "Final full suite covers all five transient variants, executable transient rejection and symlink transient rejection."
+        },
+        "architecture": {
+          "status": "covered_existing",
+          "command": "uv run pytest --deselect tests/test_harness_consistency.py",
+          "notes": "Final fixed implementation: 2,050 passed, one required deselection; existing lifecycle, integrity and concurrency checks retained."
+        },
+        "compatibility": {
+          "status": "pass",
+          "command": "uv run pytest --deselect tests/test_harness_consistency.py",
+          "notes": "All four committed plugin digests still match; unprefixed release-heading convention and fresh-checkout workflow commands pass."
+        },
+        "security": {
+          "status": "pass",
+          "command": "uv run pytest --deselect tests/test_harness_consistency.py",
+          "notes": "Final fixed implementation: 2,050 passed, one required deselection; existing lifecycle, integrity and concurrency checks retained."
+        },
+        "transaction_locking": {
+          "status": "covered_existing",
+          "command": "uv run pytest --deselect tests/test_harness_consistency.py",
+          "notes": "Final fixed implementation: 2,050 passed, one required deselection; existing lifecycle, integrity and concurrency checks retained."
+        },
+        "e2e": {
+          "status": "pass",
+          "command": "uv run python scripts/verify_plugin_cli_activation.py",
+          "notes": "Fresh candidate clone: pinned Claude Code 2.1.223 and Codex CLI 0.146.1 report matching plugins/skills/digests from two isolated consumer directories."
+        },
+        "browser": {
+          "status": "not_applicable",
+          "reason": "Bounded local CLI hashing, metadata and CI checkout fixes; no GUI, running service, throughput or sustained workload behavior changes."
+        },
+        "availability": {
+          "status": "not_applicable",
+          "reason": "Bounded local CLI hashing, metadata and CI checkout fixes; no GUI, running service, throughput or sustained workload behavior changes."
+        },
+        "load": {
+          "status": "not_applicable",
+          "reason": "Bounded local CLI hashing, metadata and CI checkout fixes; no GUI, running service, throughput or sustained workload behavior changes."
+        },
+        "soak": {
+          "status": "not_applicable",
+          "reason": "Bounded local CLI hashing, metadata and CI checkout fixes; no GUI, running service, throughput or sustained workload behavior changes."
+        }
+      }
     }
   ]
 }

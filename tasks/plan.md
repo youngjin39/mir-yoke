@@ -1,30 +1,33 @@
 # Plan
 
-## Active task: 0.13.0 release preparation (2026-10-16)
+## Active task: local and CI validation fixes (2026-10-16)
 
-Authority: the current owner request recorded in `tasks/intent.json`; this is the single
-active cursor and design record. Prior cursor details are preserved in
-`tasks/change_log.md#superseded-cursor-covered-label-fix-before-0130-preparation-2026-10-16`.
+Authority: the owner request recorded in `tasks/intent.json`; this is the single active
+cursor and design record. Preserve the completed memory render guard (section A), whose
+cursor is archived in `tasks/change_log.md#superseded-cursor-memory-render-guard-before-local-and-ci-fixes-2026-10-16`.
 
-Outcome: one consistent 0.13.0 release version, a dated changelog with empty Unreleased,
-consumer migration instructions, a validated lifecycle-hooks digest acknowledgement and
-an exactly generated adopter payload. Preserve runtime behavior, the ontology map and fixtures.
-The release metadata assertion must accept the requested v-prefixed release heading.
+Outcome: strict release metadata and committed capability digests agree with supported
+sources; runtime caches do not affect bind/verify; every validate job command has fresh
+checkout evidence, with actual Actions and platform limits stated explicitly.
 
-- [x] Read bbc3248, post-v0.12.0 history, migration and release contracts; verify the supplied map hash.
-- [x] Align release metadata, notes and digest; regenerate only the adopter payload.
-- [x] Run full pytest excluding live-memory harness consistency, compare failures with HEAD,
-      and run Ruff, generated parity, public-surface, mapping 0/0 and strict-impact checks.
-- [x] Record results and leave the working tree for Main's ADR-80 commit/bind-lock/release sequence.
+- [x] Reproduce release, cache and fresh-checkout inventory failures; inspect release history.
+- [x] Apply minimum fixes, prove cache fail-first and unchanged committed lock digests.
+- [x] Run focused checks, full pytest with required deselect, lint and read-only parity.
+- [x] Overlay only final candidate changes onto fresh HEAD clone; run each validate command.
+- [x] Record root causes, commands/counts and remaining Main verification; regenerate payload.
 
-No commits, tags, pushes, publishing, capability update/attest/finalize, live databases,
-memory render/sync, context sync, user-runtime writes or generated Codex writes.
+Limits: one writer; no commits, pushes, tags, GitHub access, capability lock refresh,
+live memory databases, secrets or generated `.codex/**` writes. Every pytest command uses
+`--deselect tests/test_harness_consistency.py`. UV cache and scratch remain on external
+storage. Ontology map remains unchanged at the owner-supplied SHA-256; semantic assertions
+must cite map entries or direct source/test evidence. No cross-project authority is inferred.
 
-Preparation is complete; release readiness is pending Main's lock binding. Before edits,
-HEAD passed all 2,045 allowed tests. The prepared tree passed 2,044 and failed one:
-`tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees`
-detects the version-changed plugin trees against the unchanged 0.12.0 lock. This is a new
-failure introduced by preparation, not a pre-existing failure. Keep the test and lock intact;
-Main must bind the committed implementation under ADR-80 and rerun the full suite.
-Ruff, generated parity, classification, sanitization, links, schemas, mapping 0/0 and strict
-impact passed. Final bookkeeping/payload checks are recorded in the release evidence entry.
+Completed: the fixed implementation passed 2,050 tests with one required deselection.
+Fresh HEAD plus the complete candidate overlay passed all four validate job command sets
+on macOS/Python 3.12, including the pinned real CLI activation probe. See
+`tasks/change_log.md#local-and-ci-validation-fixes-2026-10-16` for commands, counts and causes.
+The committed capability lock and generated Codex files remain unchanged.
+
+Main must verify actual Ubuntu/macOS Actions matrix results after authorized delivery and
+run the guarded shared consistency test separately on the host. This sandbox did not
+run Actions, publish, commit, or access a live memory database.
