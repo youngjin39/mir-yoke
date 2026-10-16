@@ -6020,3 +6020,223 @@ successful closure: 19/22. One cell remains OWNER; two cells remain BLOCKED.
   Final ontology mapping: 0 errors / 0 warnings; strict impact exits 0 and names
   /concepts/Task plus /vocabularies/9, with no stale refs or selected checks.
   `git diff --check`: passed with no output.
+
+
+## Portable default work method (2026-10-17)
+
+Authority: current parent-supplied owner direction to make the default method portable across computers and both runtimes, including delegated Codex threads. The supplied runtime observation and method excerpt are evidence, not independent authority.
+
+Delivery disposition: "reviewed and committed by Mir Harness Main" describes the required Main acceptance step; this delegated writer does not commit. Release: owner Discord 1560695634611409009 authorized this change alone as 0.13.2 (push, tag, host activation); item-22 stays held (D1).
+
+### Superseded active cursor (verbatim)
+
+```markdown
+# Plan
+
+## Active task: repository maintenance (2026-10-16)
+
+Authority: the current owner maintenance brief, recorded in `tasks/intent.json`.
+The parent-supplied Harness directive is evidence of scope, not independent authority.
+
+Outcome: verify each of the 22 items against current main, improve evidenced gaps,
+and record checks and remaining owner/Main work in the existing evidence log.
+
+- [x] Inspect current contracts, continuity, memory snapshot, routing and runtime boundaries.
+- [x] Assess all items; retain superseded continuity text verbatim in the evidence log.
+- [x] Execute full pytest, Ruff, read-only parity, ontology and synthetic runtime checks.
+- [x] Record all 22 assessments and align the status projection and resume pointer.
+
+Assessment coverage: 22/22 cells have evidence checked in this run; 19/22 cells
+are PASS or IMPROVED, one retains owner D1, and two await generated inventory
+rebinding. Full pytest: 2058 passed / 4 failed; after removing this run's stray
+bytecode, the four-test recheck returned 1 passed / 3 inventory-related failures.
+Main acceptance: Mir Harness Main (2026-10-17) regenerated the adopter inventory (`python -m tools.template_assets --write-adopter-payload`) and re-ran the host gate: 2062 passed, ruff clean; items 16 and 18 PASS, 21/22 complete, D1 remains owner-only.
+
+Limits: no commit, push, release, consumer write, live database write, secret read,
+`uv sync`, service restart, generated `.codex/**` edit or generated-file refresh.
+Scratch is confined to the owner-specified external task directory.
+
+Evidence: `tasks/change_log.md#matrix-pass-2026-10-16`.
+Prior cursor and projections: the superseded continuity text in that section.
+Historical passes: `tasks/change_log.md#repository-maintenance-2026-10-16` and
+`tasks/change_log.md#independent-review-corrections-2026-10-16`.
+
+Main disposition (Mir Harness, 2026-10-16): the repo-maintenance item-22 skill change, its test and the adopter-payload rehash are held on local branch `maint/repo-maintenance-item-22` (b181541), not main, by Main/owner choice D1 pending an owner-approved release merge. ADR-86 permits reconciling the lock to a committed implementation without requiring a release.
+Recommendation for D1: retain the hold until the owner authorizes the release merge.
+
+Next action: matrix pass 2026-10-16: reviewed and committed by Mir Harness Main.
+```
+
+### Fail-first evidence
+
+Before changing the hook or skills, ran the two affected node IDs in
+`tests/test_plugin_skill_packages.py` with `uv run pytest -q -p no:cacheprovider`,
+the requested external UV_CACHE_DIR, external TMPDIR and bytecode disabled.
+Result: **2 failed in 0.10s** (exit 1).
+
+```text
+FAILED test_lifecycle_hook_plugin_uses_one_exact_shared_hook_file
+E AssertionError: existing continuity-only stdout differs from the requested method message.
+FAILED test_should_package_portable_default_work_method_in_order
+E AssertionError: assert reference.is_file()
+2 failed in 0.10s
+```
+
+The displayed errors summarize the real pytest output; no production change
+preceded this run. Assertions cover exact stdout, the byte budget, the reference
+in an isolated package copy, ordered table rows, portable content and skill pointers.
+
+### Superseded intent (verbatim)
+
+```json
+{
+  "goal": "Re-verify Mir Yoke against the owner-directed 22-item repository maintenance checklist and apply minimal evidenced improvements.",
+  "goal_type": "maintenance",
+  "scope": "This repository matrix pass only; no commit, release, consumer write, live database write, secret access, service restart, uv sync or generated-file refresh. Mir Harness Main owns delivery and generated inventory rebinding.",
+  "priority": "normal",
+  "updated": "2026-10-16",
+  "history": [
+    {
+      "goal": "Fix the five Linux release-runner test failures without weakening their behavioral guarantees.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#linux-release-runner-fixtures-2026-10-16"
+    },
+    {
+      "goal": "Prepare the Mir Yoke 0.13.1 release working tree with version metadata and migration notes only.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#0131-release-preparation-2026-10-16"
+    },
+    {
+      "goal": "Close ontology impact and isolated distribution gaps and scope E06/E08 evidence.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#ontology-gap-development-2026-10-16"
+    },
+    {
+      "goal": "Make local validation and fresh-checkout validate workflow commands pass while retaining the memory render guard.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#local-and-ci-validation-fixes-2026-10-16"
+    },
+    {
+      "goal": "Prevent automatic consistency tests from rendering live agent memory.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#automatic-memory-render-guard-2026-10-16"
+    },
+    {
+      "goal": "Prepare the Mir Yoke 0.13.0 release working tree with version metadata and migration notes only.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#0130-release-preparation-2026-10-16"
+    },
+    {
+      "goal": "Correct E03 and E07 covered check references using existing executable behavior tests.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#superseded-cursor-covered-label-fix-before-0130-preparation-2026-10-16"
+    },
+    {
+      "goal": "Retain repeatable Yoke-domain selection/evidence use and resolve declared relation target-freshness ownership.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#ontology-rejudgment-g08g13-2026-10-16"
+    }
+  ],
+  "status": "complete",
+  "evidence": "tasks/change_log.md#matrix-pass-2026-10-16",
+  "authority": "Current owner maintenance brief; parent-supplied Mir Harness directive dated 2026-10-16 (ADR-91)."
+}
+```
+
+### Implementation and evaluation
+
+- Added the portable seven-step table, proportional application and inapplicability
+  rule, role ownership and repository-declared cross-cutting practices to the existing
+  lifecycle skill package. No host paths, private decision citations, assumed CLI,
+  fleet or memory store appear in the reference.
+- Kept the original MESSAGE sentence and appended one sentence with the seven-step
+  order, fresh evidence completion rule and reference name. MESSAGE is **395 UTF-8
+  bytes**, stdout including LF is **396 bytes**; the handler source is 597 bytes.
+  Both runtimes still discover the same hooks/hooks.json and handler.
+- Added one design pointer, with no duplicated table. Verify needs no additional
+  pointer for this bounded change.
+- Updated the capability validator's exact reviewed handler literal to match;
+  its separate source-size ceiling is 1024 bytes while the stdout test requires
+  fewer than 600 bytes. Exact source equality and all other admission checks remain.
+  This source coupling was exposed by the first implementation check (2 failed,
+  9 passed in 0.21s), before updating the validator.
+- Packaging and security iteration: 90 passed, 29 failed in 6.53s. Every failure
+  was a stale active-package acknowledgement or an expectation masked by it.
+- Full first gate: `uv run pytest -q -p no:cacheprovider` returned exit 1,
+  **1994 passed, 70 failed in 266.42s**. One is the supplied pre-existing
+  capability-lock test; 68 concern the newly stale lifecycle acknowledgement;
+  one public-surface failure detected forbidden path prefixes in the new test
+  source. Changed only the new assertion spelling to construct the same prefixes
+  at runtime, following the existing public-surface test. The scanner is unchanged.
+- After that correction, `uv run pytest -q -p no:cacheprovider
+  tests/test_plugin_skill_packages.py tests/test_public_template_surface.py`:
+  **14 passed in 0.23s**. The full gate is rerun below against this correction.
+- `uv run ruff check`: exit 0, All checks passed.
+- `uv run python scripts/verify_codex_sync.py`: exit 0, Codex derivatives match
+  Claude sources; generation for comparison used external temporary output only.
+  No repository .codex files or instruction derivatives were written.
+- `python3 scripts/verify_context_paths.py`: 9 files / 77 path references passed.
+- `python3 scripts/mir_ontology.py mapping`: 0 errors / 0 warnings, 1.1.0;
+  strict Git impact: exit 0, no stale refs or selected checks. The map's
+  /concepts/Task and /vocabularies/9 cover task records; /concepts/Evidence,
+  /concepts/Assessment and /vocabularies/5 cover operation-scoped capability
+  diagnostics. A passing format check is not runtime acceptance or release proof.
+  The unchanged map SHA-256 is
+  c20fbf3bdb910d3872b1f66730b56e0f34e8fa00c707e91eedd458c25a374340.
+
+### Packaging boundary and remaining Main work
+
+The documented command `uv run python -m tools.template_assets --write-adopter-payload`
+regenerates the adopter inventory, includes the new reference and refreshes affected
+file hashes. No skill names, package names, versions or manifests changed; catalog
+and generated derivative parity need no new entries. Re-run the same inventory
+command after final records and after any subsequent Main changes.
+
+A separate admission record in config/capability-sources.json now needs review:
+active_package_digest_acknowledgements.mir-lifecycle-hooks still records
+0a5e1ba21fd2bd284af2ac483f0764e594b7deadcfe76052d799c277a86d20e1,
+but the actual tree is
+589b09e6d612e89ed2f4723efc054ee11ce318b8cc33343ad3b9578173a96ee3.
+The admission rule requires a reviewed acknowledgement (the lifecycle-hook
+architecture decision, section 2.3). No dedicated acknowledgement generator was
+found in the CLI, scripts or tools. The earlier release-preparation record documents
+using mir.core.capabilities.manager._tree_digest, but the current request restricts
+hash changes to documented generator commands. A question about using that existing
+routine is pending; the acknowledgement has not been hand-edited or bypassed.
+This is a newly affected record, separate from the pre-existing capability-lock issue.
+
+Main must review the diff, resolve the acknowledgement update procedure, update that
+record after review and regenerate the inventory, then rerun the full default suite.
+The unchanged .mir/capability-lock.json still needs binding to the committed source
+at the authorized D1 release step, followed by another inventory refresh and gate.
+Current mir-core tree digest is
+ddf58c3d36d3093ce2421f0c2a340550f2b1332d1ce38fdc7b6b41a4cd01accf.
+Fresh-session discovery on other computers is parent-supplied transport evidence;
+local tests establish package/output contracts only. Runtime delivery, trust and
+new native-session observations remain with authorized Main operations.
+
+### Request matrix
+
+| Deliverable | State | Evidence |
+| --- | --- | --- |
+| 1 Portable method and skill link | PASS | Seven ordered rows, isolated-copy assertions and manual content review. |
+| 2 Bounded identical message | PASS | Exact stdout test; 395 bytes, 396 with LF; shared hook registration unchanged. |
+| 3 Design pointer | PASS | One skill-qualified reference; asserted by packaging test. |
+| 4 Fail-first tests | PASS | Initial 2 failures precede implementation; corrected package/public checks 14 passed. |
+| 5 Generated records and release rebindings | PARTIAL | Adopter inventory regenerated; admission acknowledgement pending procedure clarification; capability lock remains D1. |
+| 6 Plan/change-log records | PASS | Single cursor, preserved prior cursor/intent, this evidence log and Main disposition. |
+
+Coverage: 6/6 cells examined; **5/6 complete**, open cell 5 is the admission
+acknowledgement. Delivery disposition: **reviewed and committed by Mir Harness Main**
+is the required next Main action, not a claim that this writer committed.
+No commit, push, tag, release, consumer write, secret read, live database write or
+repository .codex write occurred. Owner D1 remains unchanged: retain the branch
+hold until the owner authorizes the release merge (recommended).

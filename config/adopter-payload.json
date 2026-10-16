@@ -557,7 +557,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "config/capability-sources.json",
-      "sha256": "f77b60b5b7016a49bb80038a16aba57ccc717f7dbb96344ebaf42d4d9ff69e74"
+      "sha256": "3c2dfd3f57b2d7c180ceb73d564c91026c9c59b3534f17d2929290dff0cdd8df"
     },
     {
       "classification": "reference",
@@ -2837,7 +2837,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "plugins/mir-core/skills/design/SKILL.md",
-      "sha256": "d537a417deadde0095a6b6c661c7334293faed9e533642582e6c6fd2ec003a79"
+      "sha256": "10a2811959eb3804a5924b4802d5eac97e370452c62e750545958831930829b4"
     },
     {
       "classification": "optional-consumer-tool",
@@ -3011,13 +3011,19 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "plugins/mir-lifecycle-hooks/hooks/runtime_continuity.py",
-      "sha256": "472a523c2203a295f9db01c4f2f0d1e441e927a3ae22e35695ea1af8af98e7e7"
+      "sha256": "5a61e0309e433ad5dd1cd3d0f859a327e4fa07fe948fc87796d3e5873086421e"
     },
     {
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "plugins/mir-lifecycle-hooks/skills/runtime-continuity/SKILL.md",
-      "sha256": "b169685e8cd18511f63160ae7b871925408c5cfb909d6d9c244efe74efe93dea"
+      "sha256": "efa8f36e2673fb4d23dc0e14e7457f02be61bd1b5ba68b42bfce75fb99b91a93"
+    },
+    {
+      "classification": "optional-consumer-tool",
+      "disposition": "remove",
+      "path": "plugins/mir-lifecycle-hooks/skills/runtime-continuity/references/default-work-method.md",
+      "sha256": "381aca75dab9ebe1e66c39f12ac7d1af00cf908d77d3ac361ea5e94a382546da"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3779,7 +3785,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "src/mir/core/capabilities/manager.py",
-      "sha256": "121376a58b2a2c2773f9532252b222822013db1c9c2fdae17a79ced916647177"
+      "sha256": "7695f8619b783e2b7c93cf4b6490b6135be2bfd64e9e6fcfa297ea93d4b09d7e"
     },
     {
       "classification": "optional-consumer-tool",
@@ -4133,7 +4139,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/change_log.md",
-      "sha256": "2d2295e0e2d1fc28f0b9d6be76f77a6dd63beab65a1ef5867dd8451e46842dc5"
+      "sha256": "3a1ef5c2320c8a7c9bfa5fd76970afd7e3674a87d78de30d1993fa2b36f8fde2"
     },
     {
       "classification": "reference",
@@ -4151,7 +4157,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/intent.json",
-      "sha256": "98d50132747696b7cf272ff6061132e099856a0376599a7137318886560f01de"
+      "sha256": "12b80fc1098f7e95d4844856552bfdf8262c94b707c1478bcafef4efd5a0f142"
     },
     {
       "classification": "reference",
@@ -4175,7 +4181,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/plan.md",
-      "sha256": "7017d9898c88b45de6f1c41a491ae235b41c9a9d9e65a9dab2162a6703fccdfd"
+      "sha256": "eec9c437c224ef78235db4516fa8eb6b30c75198bcdcee4ed5e0edc70bcb8287"
     },
     {
       "classification": "reference",
@@ -4547,7 +4553,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_plugin_skill_packages.py",
-      "sha256": "3287932b1b21c1f5ae2c9f1b78bbbbf004b4deb6bcf2162c765a0fbc3ed49342"
+      "sha256": "eae120e6daa89c0cfd0e8bded885b425b566d2c823fd0c4ce55c2dac957fbbb5"
     },
     {
       "classification": "template-maintainer-tool",

@@ -25,6 +25,8 @@ description: "Proportional design guidance (brainstorming, planning, design anal
 
 ## Workflow
 
+Follow the method order in the `mir-lifecycle-hooks:runtime-continuity` skill's `references/default-work-method.md`, applying each step proportionally.
+
 When identity, relation or status meaning affects the task, apply `mir-core:ontology` using the project-owned mapping.
 1. Identify which absorbed legacy intent applies (design vs. plan vs. interview etc.).
 2. Understand the real flow and stop at the first sufficient Ponytail rung: remove unnecessary work, reuse project code, use built-ins, justify a dependency, and write minimum custom code last.

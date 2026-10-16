@@ -1,34 +1,50 @@
 # Plan
 
-## Active task: repository maintenance (2026-10-16)
+## Active task: portable default work method (2026-10-17)
 
-Authority: the current owner maintenance brief, recorded in `tasks/intent.json`.
-The parent-supplied Harness directive is evidence of scope, not independent authority.
+Authority: the current parent-supplied owner direction, recorded in `tasks/intent.json`.
+Intent: make the default work method available on any adopting computer through
+one shared lifecycle message and a portable skill reference, including delegated
+Codex sessions. The parent observation establishes the selected transport only;
+local checks cannot prove new native-session discovery.
 
-Outcome: verify each of the 22 items against current main, improve evidenced gaps,
-and record checks and remaining owner/Main work in the existing evidence log.
+Request matrix (deliverables 1-6):
+- [x] 1. Portable seven-step reference and runtime-continuity skill link.
+- [x] 2. Shared bounded MESSAGE, preserving its existing sentence; record bytes.
+- [x] 3. One design-skill pointer to the method order.
+- [x] 4. Fail-first packaging, ordered-step, portability and byte-budget tests.
+- [x] 5. Documented inventory regeneration; identify release-time rebindings.
+- [x] 6. Plan and change-log evidence with the Main delivery disposition.
 
-- [x] Inspect current contracts, continuity, memory snapshot, routing and runtime boundaries.
-- [x] Assess all items; retain superseded continuity text verbatim in the evidence log.
-- [x] Execute full pytest, Ruff, read-only parity, ontology and synthetic runtime checks.
-- [x] Record all 22 assessments and align the status projection and resume pointer.
+Writer limits (historical): stay on `maint/repo-maintenance-item-22`; no commit, push, tag, release,
+consumer writes, secrets, live memory writes or generated `.codex/**` writes.
+Use the specified external uv cache and external task scratch.
 
-Assessment coverage: 22/22 cells have evidence checked in this run; 19/22 cells
-are PASS or IMPROVED, one retains owner D1, and two await generated inventory
-rebinding. Full pytest: 2058 passed / 4 failed; after removing this run's stray
-bytecode, the four-test recheck returned 1 passed / 3 inventory-related failures.
-Main acceptance: Mir Harness Main (2026-10-17) regenerated the adopter inventory (`python -m tools.template_assets --write-adopter-payload`) and re-ran the host gate: 2062 passed, ruff clean; items 16 and 18 PASS, 21/22 complete, D1 remains owner-only.
+Evidence: `tasks/change_log.md#portable-default-work-method-2026-10-17`.
+Delivery disposition: reviewed and committed by Mir Harness Main.
+This is the required Main follow-up, not a claim that this writer committed.
+Main disposition (2026-10-17): owner Discord 1560695634611409009 authorized pushing this change alone, releasing it as 0.13.2 and activating it on the managing host. Main moved it from `maint/repo-maintenance-item-22` onto `main`, refreshed the lifecycle-hooks digest acknowledgement with the dedicated validator from a cache-free copy (589b09e6…), and regenerated the adopter payload on `main`. The item-22, verify and runner changes stay held on that branch (D1).
 
-Limits: no commit, push, release, consumer write, live database write, secret read,
-`uv sync`, service restart, generated `.codex/**` edit or generated-file refresh.
-Scratch is confined to the owner-specified external task directory.
+### Bounded design
 
-Evidence: `tasks/change_log.md#matrix-pass-2026-10-16`.
-Prior cursor and projections: the superseded continuity text in that section.
-Historical passes: `tasks/change_log.md#repository-maintenance-2026-10-16` and
-`tasks/change_log.md#independent-review-corrections-2026-10-16`.
+This cursor is the design authority for this change. Keep the hook a constant-only,
+read-only emitter shared by both runtimes; put the full method in its existing
+skill package. Link from design by skill name, without a cross-package file path.
+The known paths and fixed output make direct execution sufficient; no delegation,
+new runtime machinery, standalone decision record or memory/graph write is needed.
+The historical spec snapshot is not the authority for this package change.
 
-Main disposition (Mir Harness, 2026-10-16): the repo-maintenance item-22 skill change, its test and the adopter-payload rehash are held on local branch `maint/repo-maintenance-item-22` (b181541), not main, by Main/owner choice D1 pending an owner-approved release merge. ADR-86 permits reconciling the lock to a committed implementation without requiring a release.
-Recommendation for D1: retain the hold until the owner authorizes the release merge.
+Evaluation: exact shared output and byte budget; isolated packaged reference,
+ordered steps and portability constraints; full default suite, Ruff and whitespace.
+The lock is rebound in the 0.13.2 bind commit. Regenerate only
+the adopter inventory through its documented generator after final records.
 
-Next action: matrix pass 2026-10-16: reviewed and committed by Mir Harness Main.
+### Current acceptance
+
+5/6 deliverables complete; cell 5 is open because the lifecycle package digest
+acknowledgement is stale and its update procedure awaits clarification under the
+request's generator-only constraint. The adopter inventory is generated; the
+capability lock remains for the authorized D1 binding. MESSAGE: 395 bytes (396
+including LF). Full first gate: 1994 passed / 70 failed; the public-prefix test
+source issue was corrected and its package/public recheck passed 14/14.
+See the evidence log for the final gate and Main's exact remaining actions.

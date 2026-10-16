@@ -1,10 +1,16 @@
 {
-  "goal": "Re-verify Mir Yoke against the owner-directed 22-item repository maintenance checklist and apply minimal evidenced improvements.",
+  "goal": "Make the default work method portable across adopting computers and both runtimes, including delegated Codex sessions.",
   "goal_type": "maintenance",
-  "scope": "This repository matrix pass only; no commit, release, consumer write, live database write, secret access, service restart, uv sync or generated-file refresh. Mir Harness Main owns delivery and generated inventory rebinding.",
+  "scope": "This repository only: portable lifecycle skill reference, bounded shared MESSAGE, design pointer, fail-first tests, documented inventory regeneration and records. No commit, push, tag, release, consumer write, secret read, live memory write or generated .codex/** write.",
   "priority": "normal",
-  "updated": "2026-10-16",
+  "updated": "2026-10-17",
   "history": [
+    {
+      "goal": "Re-verify Mir Yoke against the owner-directed 22-item repository maintenance checklist and apply minimal evidenced improvements.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#matrix-pass-2026-10-16"
+    },
     {
       "goal": "Fix the five Linux release-runner test failures without weakening their behavioral guarantees.",
       "updated": "2026-10-16",
@@ -54,7 +60,7 @@
       "evidence": "tasks/change_log.md#ontology-rejudgment-g08g13-2026-10-16"
     }
   ],
-  "status": "complete",
-  "evidence": "tasks/change_log.md#matrix-pass-2026-10-16",
-  "authority": "Current owner maintenance brief; parent-supplied Mir Harness directive dated 2026-10-16 (ADR-91)."
+  "status": "in_progress",
+  "evidence": "tasks/change_log.md#portable-default-work-method-2026-10-17",
+  "authority": "Current parent-supplied owner direction: same effect on every adopting computer, both runtimes and delegated Codex threads; Mir Harness Main owns review, re-run and commit; owner Discord 1560695634611409009 authorized push, the 0.13.2 release and host activation for this change alone."
 }

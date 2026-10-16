@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -93,7 +94,7 @@ def test_lifecycle_hook_plugin_uses_one_exact_shared_hook_file() -> None:
     }
     handler = plugin_root / "hooks" / "runtime_continuity.py"
     assert handler.stat().st_mode & 0o111 == 0
-    assert len(handler.read_bytes()) <= 512
+    assert len(handler.read_bytes()) <= 1024
     assert _validate_plugin(plugin_root, "mir-lifecycle-hooks", package_kind="skills-hooks")
     completed = subprocess.run(
         ["python3", str(handler)], capture_output=True, text=True, check=True
@@ -101,9 +102,40 @@ def test_lifecycle_hook_plugin_uses_one_exact_shared_hook_file() -> None:
     assert completed.stderr == ""
     assert completed.stdout == (
         "Mir lifecycle continuity: preserve the active task intent and verify state "
-        "before continuing.\n"
+        "before continuing. Default work method: 1 Method/intent -> 2 Design -> "
+        "3 TDD -> 4 Eval -> 5 Develop -> 6 Repeat 3-5 until tests pass -> 7 Finish; "
+        "done only when every request-matrix cell has evidence checked now, otherwise "
+        "report N/M and open cells (details: runtime-continuity skill, "
+        "references/default-work-method.md).\n"
     )
-    assert len(completed.stdout.encode("utf-8")) <= 512
+    assert len(completed.stdout.encode("utf-8")) < 600
+
+
+def test_should_package_portable_default_work_method_in_order(tmp_path: Path) -> None:
+    isolated = tmp_path / "mir-lifecycle-hooks"
+    shutil.copytree(ROOT / "plugins" / "mir-lifecycle-hooks", isolated)
+    skill = isolated / "skills" / "runtime-continuity"
+    reference = skill / "references" / "default-work-method.md"
+
+    assert reference.is_file()
+    text = reference.read_text(encoding="utf-8")
+    steps = re.findall(r"^\| ([1-7]) \| ([^|]+) \|", text, flags=re.MULTILINE)
+    assert [(number, name.strip()) for number, name in steps] == [
+        ("1", "Method and intent"),
+        ("2", "Design"),
+        ("3", "TDD"),
+        ("4", "Eval"),
+        ("5", "Develop"),
+        ("6", "Repeat"),
+        ("7", "Finish"),
+    ]
+    for prefix in ("Users", "Volumes"):
+        assert f"/{prefix}/" not in text
+    assert re.search(r"\bADR[- ]?\d+", text, flags=re.IGNORECASE) is None
+    assert "(references/default-work-method.md)" in (skill / "SKILL.md").read_text()
+    design = (ROOT / "plugins" / "mir-core" / "skills" / "design" / "SKILL.md").read_text()
+    assert "mir-lifecycle-hooks:runtime-continuity" in design
+    assert "references/default-work-method.md" in design
 
 
 def test_marketplaces_publish_identical_plugin_names() -> None:

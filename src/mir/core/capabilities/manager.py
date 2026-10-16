@@ -75,6 +75,10 @@ _HOOK_HANDLER_SOURCE = '''"""Render bounded, target-independent lifecycle contin
 
 MESSAGE = (
     "Mir lifecycle continuity: preserve the active task intent and verify state before continuing."
+    " Default work method: 1 Method/intent -> 2 Design -> 3 TDD -> 4 Eval -> 5 Develop -> "
+    "6 Repeat 3-5 until tests pass -> 7 Finish; done only when every request-matrix cell has "
+    "evidence checked now, otherwise report N/M and open cells (details: runtime-continuity "
+    "skill, references/default-work-method.md)."
 )
 
 
@@ -509,7 +513,7 @@ def _validate_plugin(plugin_root: Path, expected_name: str, *, package_kind: str
             raise CapabilityError(f"shared hook handler is missing or linked: {expected_name}")
         if handler.read_text(encoding="utf-8") != _HOOK_HANDLER_SOURCE:
             raise CapabilityError("shared hook handler is not the reviewed read-only handler")
-        if len(handler.read_bytes()) > 512:
+        if len(handler.read_bytes()) > 1024:
             raise CapabilityError("shared hook handler exceeds bounded output contract")
     skill_files = list((plugin_root / "skills").glob("*/SKILL.md"))
     if not skill_files:
