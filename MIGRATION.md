@@ -82,7 +82,7 @@ Discard an uncommitted Project Agent Kit adaptation in the target or restore the
 commit. For an explicitly invoked CLI transaction, use that command's recorded rollback/recovery
 contract. Installing the CLI does not itself mutate a target.
 
-Current version: `0.13.0`. See `CHANGELOG.md` for release details.
+Current version: `0.13.1`. See `CHANGELOG.md` for release details.
 
 Version 0.10.0 adds opt-in `memory_relations` ingestion and read-only `mir relations query|bundle --memory`
 query/bundle selection using the existing memory schema. No automatic corpus backfill, database
@@ -157,3 +157,16 @@ Review `domain.relations` entries that declare `common`: common IDs and version-
 rules now match top-level relations. Under validated contract 1.1.0, declare compatible `from`
 and `to` endpoint types. Entries without `common` retain ref-only validation. No database
 migration, memory re-ingestion or automatic consumer update is required.
+
+Version 0.13.1 is a patch release and keeps `mir.common-semantics` contract 1.1.0.
+After updating the approved ontology distribution, strict impact may list additional
+`checks_to_run` from affected `domain.invariants` entries with a declared `check`.
+Run those checks separately; selection does not execute them or establish a passing result.
+Invariants without a check are reported as undeclared check links; no test link is inferred.
+
+Mapping validation now reports an error when a declared invariant `check` ref does not
+resolve. Correct its repository-relative path and `#symbol` anchor to an existing check,
+or remove the optional `check` field if the invariant has no declared executable check.
+Run `python3 scripts/mir_ontology.py mapping` and
+`python3 scripts/mir_ontology.py impact --git-diff --strict`, then execute the selected checks.
+No database migration, memory re-ingestion or automatic consumer update is required.

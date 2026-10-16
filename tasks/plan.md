@@ -1,29 +1,28 @@
 # Plan
 
-## Active task: ontology gap development (2026-10-16)
+## Active task: 0.13.1 release preparation (2026-10-16)
 
-Authority: current owner brief; this single cursor records intent and design.
-Preserve prior completed validation evidence in `tasks/change_log.md`.
+Authority: the current owner release brief recorded in `tasks/intent.json`.
+This is the single active cursor and design record. Prior completed cursor details
+remain in `tasks/change_log.md#superseded-cursor-ontology-gaps-before-0131-preparation-2026-10-16`.
 
-Outcome: affected invariants select declared checks without execution (G04); the
-capability manager supports fixture-only supplier/two-consumer distribution and
-rollback (G05); E06/E08 claims match their actual producer/consumer scope.
+Outcome: consistent 0.13.1 version metadata, focused release notes with the carried
+Unreleased backlog preserved, consumer migration guidance and regenerated adopter hashes.
+No implementation or common-contract version changes are authorized.
 
-- [x] Reproduce gaps with isolated fail-first tests and inspect E06/E08 boundaries.
-- [x] Implement minimal selection and fixture interface changes; narrow map claims.
-- [x] Run focused tests, mapping, strict impact, lint and public-surface checks.
-- [x] Record files, commands/counts, canonical runner digest and Main follow-ups.
+- [x] Compare HEAD checks and mirror the 06ca2f9 version surfaces.
+- [x] Update release notes, migration guidance and lifecycle-hooks digest acknowledgement.
+- [x] Generate adopter payload; run allowed full tests, lint, generated parity and ontology checks.
+- [x] Record results and exact remaining Main delivery steps.
 
-Limits: one writer; no commits, network, live databases, consumer writes or live
-updater. Do not write generated `.codex/**`. Every pytest command deselects
-`tests/test_harness_consistency.py`. Use external uv cache and fixture scratch.
-Harness owns its separate rehearsal script; release and consumer sync stay with Main.
+Limits: no commits, tags, pushes, publishing, capability update/attest/finalize,
+consumer or user-runtime writes, live databases, memory/context synchronization,
+or generated `.codex/**` writes. Exclude `tests/test_harness_consistency.py`.
+Use the owner-specified external uv cache and external fixture scratch.
+Main owns commit, lock binding, derivative regeneration if needed, tagging and delivery.
 
-Implementation and bounded verification are complete. Expanded checks returned 462 passed
-and one release-binding failure because the candidate mir-core tree differs from the
-existing committed capability lock. Mapping/strict impact, lint, public surface and
-read-only generated parity passed. The canonical consumer runner is unchanged.
-
-Evidence and exact digests: `tasks/change_log.md#ontology-gap-development-2026-10-16`.
-Main owns the separate rehearsal script, release/lock binding, consumer sync and full host
-verification (including the excluded consistency test). No live updater or delivery ran.
+Preparation is complete; release delivery remains with Main. HEAD and the prepared tree
+both returned 2,058 passed and one capability-lock binding failure. No new failure appeared.
+Lint, generated parity, sanitization, links, schemas, mapping 0/0 and strict impact passed.
+The Unreleased backlog is byte-identical to eb5aeaa and the 21-file change set matches 06ca2f9.
+Evidence and remaining Main steps: `tasks/change_log.md#0131-release-preparation-2026-10-16`.

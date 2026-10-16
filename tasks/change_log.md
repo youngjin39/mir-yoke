@@ -1,5 +1,75 @@
 # Change log
 
+## 0.13.1 release preparation (2026-10-16)
+
+Authority: current owner release-preparation brief in `tasks/intent.json`; active cursor
+and bounded design: `tasks/plan.md`. This records preparation only, not release or runtime proof.
+
+Mirrored the exact 21-file set from 06ca2f9. VERSION, package metadata, the editable
+package version line in uv.lock, all eight plugin manifests and marketplace versions
+now say 0.13.1. Refreshed the lifecycle-hooks acknowledgement using the existing
+`mir.core.capabilities.manager._tree_digest` implementation:
+`0a5e1ba21fd2bd284af2ac483f0764e594b7deadcfe76052d799c277a86d20e1`.
+Generated only `config/adopter-payload.json` with
+`uv run python -m tools.template_assets --write-adopter-payload`; classification passed.
+No generated Codex or instruction files were changed. No lock binding or delivery ran.
+
+CHANGELOG moves the ec3372c fixes into the requested dated `[v0.13.1]` section and
+adds the 22ff9a8 invariant-check selection and isolated distribution/rollback rehearsal.
+The carried Unreleased block is byte-identical to eb5aeaa. The release heading test and
+format note follow the owner's explicit v-prefixed heading request. MIGRATION describes
+additional selected invariant checks, correction/removal of unresolved optional check refs,
+and separate execution of selected checks. Contract 1.1.0 remains unchanged.
+
+Semantic evidence: `tests/test_ontology_skill.py#test_should_select_declared_invariant_checks_without_execution`,
+`tests/test_ontology_skill.py#test_should_reject_invalid_declared_invariant_check`, and
+`docs/operations/ontology-distribution-rehearsal.md`. The unchanged project map declares
+contract 1.1.0 at `/contract` and selection-only verification at `/error_cases/3` (E04).
+Map SHA-256 remains `331ac91cd1d8ddd22558c11549395c62c06f2ad9616294470aec795ca44abe40`.
+
+Verification (all uv invocations use the owner-specified external cache; fixture TMPDIR
+is external; UV_FROZEN is not set; live-root consistency is excluded):
+
+- HEAD: `uv run pytest --ignore=tests/test_harness_consistency.py`: exit 1,
+  **2,058 passed, 1 failed in 290.33s**.
+- Prepared tree: same command: exit 1, **2,058 passed, 1 failed in 240.83s**.
+- The only failure in both runs is
+  `tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees`,
+  asserting current plugin tree digests equal the unchanged committed lock. It already
+  fails at HEAD after 22ff9a8; preparation changes the versioned tree digests further.
+  No new failure appeared. Preserve the test and bind the committed tree under ADR-80.
+- `uv run ruff check`: exit 0, `All checks passed!`.
+- `uv run python scripts/verify_codex_sync.py`: exit 0,
+  `OK: Codex derivatives match Claude sources`; generated comparison uses temporary output.
+- `uv run python tests/test_no_korean_in_user_facing.py`: exit 0, PASS.
+- `uv run python tests/test_link_integrity.py`: exit 0, PASS.
+- `uv run python tests/test_schema_validity.py`: exit 0, PASS.
+- `python3 scripts/mir_ontology.py mapping`: exit 0, **0 errors, 0 warnings**;
+  contract/mapping 1.1.0, zero line refs.
+- `python3 scripts/mir_ontology.py impact --git-diff --strict`: exit 0; affected
+  entries reported, no selected checks, undeclared check links or stale refs.
+- `git diff --check`: exit 0. File-set equality with 06ca2f9 and Unreleased byte
+  equality with eb5aeaa were explicitly asserted.
+
+After closing the task records, regenerate adopter hashes and rerun the focused
+public-surface, release metadata, plugin package, asset inventory and ontology gates;
+the final response reports those results. No implementation changes follow the full run.
+
+Remaining Main steps:
+
+1. Review and commit the prepared release tree.
+2. Bind the capability lock to that committed implementation in a separate commit
+   under ADR-80; refresh the adopter inventory after the lock changes.
+3. Rerun full allowed tests and the clean-tree release gate against the bound candidate.
+   Codex parity already passes; regenerate derivatives only if their canonical sources change.
+4. Tag v0.13.1, push the implementation/lock commits and tag, and publish the public release.
+5. Perform the separately authorized consumer sync and runtime registration/discovery
+   verification. Revalidate each consumer map, run strict impact and execute its selected
+   checks; installation or check selection alone is not passing evidence.
+
+No commit, tag, push, publish, capability update/attest/finalize, consumer write,
+user-runtime-home write, live database access or memory/context synchronization was performed.
+
 ## Automatic memory render guard (2026-10-16)
 
 Authority: current owner section-A request in `tasks/intent.json`; active design and
@@ -4907,3 +4977,75 @@ Final follow-up checks after strengthening reverse-update peer preservation:
 - Final `uv run --offline ruff check` and `git diff --check`: passed.
 - A direct system-Python payload probe lacked `jsonschema`; the repository's uv environment
   passed the actual six classification tests. Adopter payload is regenerated after this log update.
+
+## Superseded cursor: ontology gaps before 0.13.1 preparation (2026-10-16)
+
+# Plan
+
+## Active task: ontology gap development (2026-10-16)
+
+Authority: current owner brief; this single cursor records intent and design.
+Preserve prior completed validation evidence in `tasks/change_log.md`.
+
+Outcome: affected invariants select declared checks without execution (G04); the
+capability manager supports fixture-only supplier/two-consumer distribution and
+rollback (G05); E06/E08 claims match their actual producer/consumer scope.
+
+- [x] Reproduce gaps with isolated fail-first tests and inspect E06/E08 boundaries.
+- [x] Implement minimal selection and fixture interface changes; narrow map claims.
+- [x] Run focused tests, mapping, strict impact, lint and public-surface checks.
+- [x] Record files, commands/counts, canonical runner digest and Main follow-ups.
+
+Limits: one writer; no commits, network, live databases, consumer writes or live
+updater. Do not write generated `.codex/**`. Every pytest command deselects
+`tests/test_harness_consistency.py`. Use external uv cache and fixture scratch.
+Harness owns its separate rehearsal script; release and consumer sync stay with Main.
+
+Implementation and bounded verification are complete. Expanded checks returned 462 passed
+and one release-binding failure because the candidate mir-core tree differs from the
+existing committed capability lock. Mapping/strict impact, lint, public surface and
+read-only generated parity passed. The canonical consumer runner is unchanged.
+
+Evidence and exact digests: `tasks/change_log.md#ontology-gap-development-2026-10-16`.
+Main owns the separate rehearsal script, release/lock binding, consumer sync and full host
+verification (including the excluded consistency test). No live updater or delivery ran.
+
+Previous intent:
+
+```json
+{
+  "goal": "Close ontology impact and isolated distribution gaps and scope E06/E08 evidence.",
+  "goal_type": "maintenance",
+  "scope": "G04, G05 Yoke fixture interface, PARTIAL 7.E06 and 7.E08; repository only.",
+  "priority": "normal",
+  "updated": "2026-10-16",
+  "history": [
+    {
+      "goal": "Make local validation and fresh-checkout validate workflow commands pass while retaining the memory render guard.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#local-and-ci-validation-fixes-2026-10-16"
+    },
+    {
+      "goal": "Prevent automatic consistency tests from rendering live agent memory.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#automatic-memory-render-guard-2026-10-16"
+    },
+    {
+      "goal": "Prepare the Mir Yoke 0.13.0 release working tree with version metadata and migration notes only.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#0130-release-preparation-2026-10-16"
+    },
+    {
+      "goal": "Correct E03 and E07 covered check references using existing executable behavior tests.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#superseded-cursor-covered-label-fix-before-0130-preparation-2026-10-16"
+    }
+  ],
+  "status": "complete",
+  "evidence": "tasks/change_log.md#ontology-gap-development-2026-10-16"
+}
+```

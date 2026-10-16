@@ -4,16 +4,10 @@ All notable changes to `mir-yoke` will be documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) from `v0.1.0` onward.
 
-Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are kept for historical reference. All future entries use the `## [N.M.X] — YYYY-MM-DD — title` format.
+Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are kept for historical reference. All future entries use the `## [vN.M.X] — YYYY-MM-DD — title` format.
 
 ## [Unreleased]
 
-### Fixed
-
-- Restored release metadata checks to the established unprefixed changelog version headings.
-- Excluded transient Python bytecode and test/lint caches from capability tree digests while
-  preserving existing clean-tree lock digests.
-- Enabled full Git history for public CLI CI checks and refreshed stale adopter inventory hashes.
 
 ### Added
 
@@ -176,6 +170,30 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
   project no longer indexes its own `docs/_archive/` as current material. The template and the
   maintainer configuration already carried it; the generator, which is what every new project
   actually receives, did not.
+
+## [v0.13.1] — 2026-10-16 — Invariant checks and isolated distribution rehearsal
+
+### Fixed
+
+- Validate declared `domain.invariants[].check` refs during mapping; unresolved refs now report
+  mapping errors instead of silently omitting verification links.
+- Excluded transient Python bytecode and test/lint caches from capability tree digests while
+  preserving existing clean-tree lock digests.
+- Enabled full Git history for public CLI CI checks and refreshed stale adopter inventory hashes.
+- Prevented automatic consistency tests from rendering live agent memory; render coverage uses
+  synthetic fixtures.
+
+### Added
+
+- Ontology impact selects declared checks for affected domain invariants in `checks_to_run`,
+  deduplicates them and reports missing check links without executing checks.
+- Added isolated supplier/two-consumer distribution and rollback rehearsal coverage and
+  `docs/operations/ontology-distribution-rehearsal.md`.
+
+### Changed
+
+- Aligned all four dual-runtime plugin versions and the optional CLI package to `0.13.1`.
+- Release metadata checks recognize the explicit `v0.13.1` changelog heading.
 
 ## [0.13.0] — 2026-10-16 — Canonical ontology runner and strict reference validation
 
