@@ -1,6 +1,6 @@
 ---
 name: repo-maintenance
-description: "Periodic maintenance checkup of an agent-operated repository across twenty-one fixed items: consistency, operating base, documents, archiving, context, database/memory/graph inspection and repair, Claude/Codex harness consistency, skills and agents, instruction docs, rules and lessons, architecture, delegation and routing, continuity, work-context retrieval, token efficiency, test health, code/security/dependencies, integrity evidence, runtime behavior, open decisions, and parity when either CLI is Main.\n\nTrigger: repository maintenance, periodic check, repo checkup, fleet maintenance, clean up and improve the repository"
+description: "Periodic maintenance checkup of an agent-operated repository across twenty-two fixed items: consistency, operating base, documents, archiving, context, database/memory/graph inspection and repair, Claude/Codex harness consistency, skills and agents, instruction docs, rules and lessons, architecture, delegation and routing, continuity, work-context retrieval, token efficiency, test health, code/security/dependencies, integrity evidence, runtime behavior, open decisions, parity when either CLI is Main, and proportionate Agent/Loop/Graph/Ontology engineering.\n\nTrigger: repository maintenance, periodic check, repo checkup, fleet maintenance, clean up and improve the repository"
 ---
 
 # Repository Maintenance
@@ -50,13 +50,15 @@ Apply each item proportionately. Mark it done, no change needed (with evidence),
     - Codex hook trust is current; untrusted or modified hooks block Codex-side enforcement. Refresh it through a documented trust command when the control plane provides one; otherwise record the gap without creating a new gate.
     - Prefer a synthetic payload or fresh session observation for these probes (item 19). Static docs are not proof; report unavailable runtime evidence as blocked or an evidenced exemption.
 
+22. Agent, Loop, Graph and Ontology engineering: assess each axis against the repository's declared surfaces and observed use. Record a verdict and evidence per axis, with the smallest useful improvement or an explicit reason no change is needed; avoid adding unused machinery.
+
 ## Workflow
 1. Record the request in the repository's active cursor, then read its contract and profile.
 2. Start from a clean or snapshotted worktree so changes can be attributed.
 3. Run the checklist. When available, use `mir-core:governance`, `mir-core:verify`, `mir-code:testing` and
    `mir-code:code-review` for item procedures. For many repositories, handle each one under its own contract.
 4. Verify with the repository's documented tests and gates. Re-run them yourself before accepting delegated work.
-5. Report against all twenty-one items using the evidence below.
+5. Report against all twenty-two items using the evidence below.
 
 ## Report
 Report per item, then list changed files, before/after instruction-doc sizes, checks with pass/fail counts,

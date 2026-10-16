@@ -11,13 +11,13 @@ ROOT = Path(__file__).resolve().parents[1]
 SKILL = ROOT / "plugins" / "mir-core" / "skills" / "repo-maintenance" / "SKILL.md"
 
 
-def test_repo_maintenance_skill_keeps_the_twenty_one_item_checklist() -> None:
+def test_repo_maintenance_skill_keeps_the_twenty_two_item_checklist() -> None:
     text = SKILL.read_text(encoding="utf-8")
     assert re.search(r"^name: repo-maintenance$", text, re.MULTILINE)
     checklist = text.split("## Checklist", 1)[1].split("## Workflow", 1)[0]
     numbers = [int(match) for match in re.findall(r"^(\d+)\. ", checklist, re.MULTILINE)]
-    assert numbers == list(range(1, 22))
-    assert "twenty-one fixed items" in text.split("\n---", 1)[0]
+    assert numbers == list(range(1, 23))
+    assert "twenty-two fixed items" in text.split("\n---", 1)[0]
 
 
 def test_repo_maintenance_skill_never_fabricates_provenance_or_weakens_guards() -> None:

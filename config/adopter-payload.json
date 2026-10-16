@@ -2915,7 +2915,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "plugins/mir-core/skills/repo-maintenance/SKILL.md",
-      "sha256": "e0f30f40363d2132150b2b7332ece1d14f1944147240eb735577c25eb67be251"
+      "sha256": "9a2e99d78678c4be1349c0cd890c8055a05893deb7fcaa1dd2a46021d00b00ad"
     },
     {
       "classification": "optional-consumer-tool",
@@ -4637,7 +4637,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_repo_maintenance_skill.py",
-      "sha256": "53ae47abd20d7e2781e8085b774c39dc80dde0643f4b6260beafe9575109516a"
+      "sha256": "adf64599fba9aac0d9bc503a0d75a04a9e5ad9ecb26ddcc7c9c07332325dc3ba"
     },
     {
       "classification": "template-maintainer-tool",
