@@ -2891,7 +2891,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "plugins/mir-core/skills/ontology/scripts/mir_ontology_runner.py",
-      "sha256": "fe4c885c9501cf297c062b99e33333cecd3e664de452fedcffbe1fed5a9e6891"
+      "sha256": "f10d7116298f98c9df53ac0b4165f54199b2d1a893653dced36614c0bcf4b6be"
     },
     {
       "classification": "optional-consumer-tool",
@@ -2987,7 +2987,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "plugins/mir-core/skills/verify/SKILL.md",
-      "sha256": "c13788780586f7a7e2404ee5d731e7fc55c6d0b8f87cb66f98caafbead243393"
+      "sha256": "86a2339d2cd5044832638a7cbf399c14232096cdf686d85d1988941f31302b4b"
     },
     {
       "classification": "optional-consumer-tool",
@@ -4746,6 +4746,12 @@
       "disposition": "remove",
       "path": "tests/test_user_runtime_agent_command_install.py",
       "sha256": "549faaf4a1c4910e7742863c37a33d6b2794cc2bba752307eb7772ea4c84138d"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "tests/test_verify_skill.py",
+      "sha256": "2ce588829d490fc6789fc3f911924ac59d696583b2cfdcda61fbe1cda9101463"
     },
     {
       "classification": "template-maintainer-tool",

@@ -123,6 +123,18 @@ def codex_active(home: Path) -> list[tuple[str, Path, str]]:
     return [(version, cache_root(home, ".codex") / version / CHECKER, "active Codex configuration")]
 
 
+def select_active_distribution(active: list[tuple[str, Path, str]]) -> tuple[str, Path, str]:
+    if len({version for version, _, _ in active}) != 1:
+        raise OSError(
+            "runtime distributions disagree: " + ", ".join(sorted({v for v, _, _ in active}))
+        )
+    for _, checker, _ in active:
+        if not checker.is_file():
+            raise OSError(f"active ontology distribution is missing: {checker}")
+    version, checker, reason = active[0]
+    return version, checker.resolve(), reason
+
+
 def select_distribution() -> tuple[str, Path, str]:
     explicit = os.environ.get("MIR_ONTOLOGY_CHECKER")
     if explicit is not None:
@@ -140,15 +152,7 @@ def select_distribution() -> tuple[str, Path, str]:
         active.extend(claude_active(home))
         active.extend(codex_active(home))
     if active:
-        if len({version for version, _, _ in active}) != 1:
-            raise OSError(
-                "runtime distributions disagree: " + ", ".join(sorted({v for v, _, _ in active}))
-            )
-        for _, checker, _ in active:
-            if not checker.is_file():
-                raise OSError(f"active ontology distribution is missing: {checker}")
-        version, checker, reason = active[0]
-        return version, checker.resolve(), reason
+        return select_active_distribution(active)
 
     candidates: list[tuple[str, Path, str]] = []
     for home in homes:

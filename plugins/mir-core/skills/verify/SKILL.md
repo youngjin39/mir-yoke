@@ -25,9 +25,9 @@ description: "Evidence-based verification (verification gate, spec compliance, s
 ## Workflow
 
 When identity, relation or status meaning affects the task, apply `mir-core:ontology` using the project-owned mapping.
-1. Convert the requested outcome into a checklist of observable claims, including explicit non-goals and protected boundaries.
+1. Convert the requested outcome into a checklist of observable claims (for a request over several targets or items, one claim per target × item), including explicit non-goals and protected boundaries.
 2. Map each claim to the smallest check that can fail: focused test, static check, generated parity check, runtime probe, or direct artifact inspection.
 3. Run checks against the final worktree state and capture command, exit status, and relevant output. A missing tool or unreadable result is not a pass.
 4. Inspect the diff for unintended scope, stale generated files, missing tests, secret exposure, and platform-specific assumptions.
 5. Compare implementation to the governing requirement or spec and label each claim passed, failed, or unevaluated.
-6. Report completion only when all required claims pass. Report residual risk and unrun checks explicitly.
+6. Report completion only when all required claims pass; otherwise report `N/M` with the open claims. Finish every claim an agent can finish; deliver owner-only decisions, each with a recommendation, after the rest. Report residual risk and unrun checks explicitly.
