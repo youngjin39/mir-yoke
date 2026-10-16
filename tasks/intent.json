@@ -1,7 +1,7 @@
 {
   "goal": "Re-verify Mir Yoke against the owner-directed 22-item repository maintenance checklist and apply minimal evidenced improvements.",
   "goal_type": "maintenance",
-  "scope": "This repository writer pass only; the commit-bound integrity gate and native runtime trust evidence remain for Harness Main. No commit, release, consumer write, live database write, secret access or generated .codex edit.",
+  "scope": "This repository matrix pass only; no commit, release, consumer write, live database write, secret access, service restart, uv sync or generated-file refresh. Mir Harness Main owns delivery and generated inventory rebinding.",
   "priority": "normal",
   "updated": "2026-10-16",
   "history": [
@@ -55,6 +55,6 @@
     }
   ],
   "status": "complete",
-  "evidence": "tasks/change_log.md#repository-maintenance-2026-10-16",
+  "evidence": "tasks/change_log.md#matrix-pass-2026-10-16",
   "authority": "Current owner maintenance brief; parent-supplied Mir Harness directive dated 2026-10-16 (ADR-91)."
 }
