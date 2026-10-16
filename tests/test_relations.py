@@ -88,6 +88,28 @@ def test_should_not_reuse_removed_verification_edge_after_graph_changes(tmp_path
     assert [edge["target"] for edge in second["edges"]] == ["tests/check.py::current"]
 
 
+def test_target_only_edit_is_not_graph_execution_evidence(tmp_path: Path, monkeypatch) -> None:
+    """The declared graph consumer neither reads nor caches target-derived results."""
+    target = tmp_path / "check.py"
+    target.write_text("def check(): return True\n")
+    _graph(tmp_path, "edges:\n  - [FR-X, verified_by, check.py::check]\n")
+    first = query_relations("FR-X", "verification", root=tmp_path)
+    target.write_text("def check(): return False\n")
+    original_open = Path.open
+
+    def no_target_read(path, *args, **kwargs):
+        assert path != target, "Declaration consumer must not read target contents"
+        return original_open(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "open", no_target_read)
+    second = query_relations("FR-X", "verification", root=tmp_path)
+    assert first == second
+    assert second["scope"] == "declared_spec_relations_only"
+    assert set(second["edges"][0]) == {"source", "relation", "target", "source_line"}
+    target.unlink()
+    assert query_relations("FR-X", "verification", root=tmp_path)["edges"] == []
+
+
 @pytest.mark.parametrize("anchor", ["../bad", "/bad", "secrets/key.txt", ".env"])
 def test_unsafe_or_unknown_anchors_fail(tmp_path: Path, anchor: str) -> None:
     _graph(tmp_path, "edges:\n  - [A, has_req, B]\n")

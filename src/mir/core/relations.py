@@ -403,7 +403,12 @@ def query_relations(
     _source_metadata: dict[str, Any] | None = None,
     _nodes: set[str] | None = None,
 ) -> dict[str, Any]:
-    """Return explicitly declared, safety-checked graph edges for one purpose."""
+    """Return explicitly declared, safety-checked graph edges for one purpose.
+
+    The digest identifies graph bytes only. Targets are checked for availability,
+    not read for content or execution results. No target-derived evidence is cached;
+    a verified_by edge declares a check and never establishes that it passed.
+    """
     if not isinstance(purpose, str) or purpose not in _FORWARD:
         raise RelationError("purpose must be implementation, impact, verification, or dependencies")
     resolved_depth = _resolve_depth(purpose, depth)

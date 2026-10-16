@@ -449,7 +449,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": ".mir/ontology-map.json",
-      "sha256": "331ac91cd1d8ddd22558c11549395c62c06f2ad9616294470aec795ca44abe40"
+      "sha256": "c20fbf3bdb910d3872b1f66730b56e0f34e8fa00c707e91eedd458c25a374340"
     },
     {
       "classification": "reference",
@@ -4097,7 +4097,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "src/mir/core/relations.py",
-      "sha256": "9935a872f23e274d711a471510b36fd1e27e93cae45db49092031065183e9e1e"
+      "sha256": "7dad16430965e56dbc561ef86f50c05620c29cf925728da47ad3d6443cc87d9b"
     },
     {
       "classification": "starter",
@@ -4133,7 +4133,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/change_log.md",
-      "sha256": "62bb6b84ae1990690b2b3da5a64e0fc4378f126bcf701a151fe97763f405a839"
+      "sha256": "ede176e26f4b9771812db7a17018864367997c1573bb4fefc273dd94e3741440"
     },
     {
       "classification": "reference",
@@ -4151,7 +4151,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/intent.json",
-      "sha256": "57222e11d689cfcb482704e8f1041463d03acf9e32b3967c049f68d5fa67d16e"
+      "sha256": "159b8f6d15d16ff231faa34e0feee1030648513490dd28de1993de0d579ae4f2"
     },
     {
       "classification": "reference",
@@ -4175,7 +4175,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/plan.md",
-      "sha256": "ce69da6149f1f7be8296b27a083fbdf6af0040d0285279604220b3944a41cfb7"
+      "sha256": "ac8cec6d969fe90e63d4a946f203bcbdab9f142aa8894d7b8a4906dd21224a8f"
     },
     {
       "classification": "reference",
@@ -4517,7 +4517,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_mir_ontology.py",
-      "sha256": "d2b31faf2049922a5f2822991d071095a6c3669602dfd8438d0c23684fc77ea5"
+      "sha256": "fb1ea45efc5af74c05fc39e6dcfa218f9522df6ba312eb37f762aa1d2291a391"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4613,7 +4613,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_relations.py",
-      "sha256": "e42b7a4788409ed6dbf2636a64352ed190f7dede90a2527480322fa1830d0ea6"
+      "sha256": "8057c9329b5e29a3d9d510f01b5f0e25bb89c98266b3ea21859e192ac636e892"
     },
     {
       "classification": "template-maintainer-tool",

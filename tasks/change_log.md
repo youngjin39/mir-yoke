@@ -5239,3 +5239,170 @@ configuration/endpoint simulation; no Linux CI job was started. Main owns any
 subsequent CI rerun, commit or release. Generated Codex files, capability state,
 live memory and runtime homes are unchanged. Task-owned scratch is removed after
 final verification.
+
+
+## Superseded cursor before ontology rejudgment (2026-10-16)
+
+Linux release-runner test fixes (2026-10-16)
+
+Authority: the current owner brief recorded in `tasks/intent.json`.
+This is the single active cursor and design record. The previous completed cursor
+is preserved in `tasks/change_log.md#superseded-cursor-0131-preparation-before-linux-test-fixes-2026-10-16`.
+
+Outcome: identify and fix all five failures from release run 38847178888 while
+retaining BootstrapGate trust checks and case-sensitive relation selection.
+
+- [x] Read the failed log, distinguish product defects from platform-dependent fixtures, and reproduce the relevant assumptions.
+- [x] Apply minimal fixes and verify the five cases and both affected modules.
+- [x] Run full pytest excluding the consistency module, Ruff and read-only Codex parity.
+- [x] Review the final diff and record causes, commands, results and remaining Main work.
+
+Limits: no commits, tags, pushes, releases, capability operations, runtime-home
+writes, live databases, memory render/sync, secrets or generated `.codex/**` writes.
+Use the owner-specified external uv cache and external fixture scratch.
+
+Completed: five original cases reproduce before the fixture fixes and pass afterward;
+both affected modules pass (45 tests). The full suite with injected runner-style
+system Git LFS config passes (2,059 tests; consistency module excluded). Ruff,
+Codex parity, mapping (0 errors/warnings) and strict impact pass. Regenerated
+adopter SHA256 entries retain the same paths, classifications and dispositions.
+Production code, the ontology map and checked-in Codex derivatives are unchanged.
+
+Evidence: `tasks/change_log.md#linux-release-runner-fixtures-2026-10-16`.
+Actual Linux CI execution and authorized delivery remain with Main; no commit,
+push, tag, release or live capability operation ran here.
+
+
+## Ontology rejudgment G08/G13 (2026-10-16)
+
+Authority: current owner brief and the common development instructions at
+the Harness re-judgment development brief (`rejudgment-dev/common.md`).
+Intent/design authority: `tasks/plan.md`, with structured intent in `tasks/intent.json`.
+Initial tree was clean. Supplied map digest matched
+`331ac91cd1d8ddd22558c11549395c62c06f2ad9616294470aec795ca44abe40`.
+No live stores, network, secrets, runtime homes or generated Codex files were used or changed.
+Fixture-only Git baselines are created by the existing test fixture; repository commits are forbidden.
+
+### G08 bounded domain scenario and per-item findings
+
+All twelve missing-proof findings were confirmed: existing tests exercised the gate,
+errors and forwarding, but retained no Q1 domain answer plus bounded child receipt.
+One scenario now uses the unchanged `/questions/0` (Q1), its exact three sources,
+real checkout `scripts/mir_ontology.py lookup`, and real config loader in a Python
+`-I` child outside the supplier working directory. It sends one map entry (not the
+full map), source bodies/hashes, contract, map/checker/implementation/instruction
+hashes, a bounded instruction excerpt and runtime version. Packet size is <64 KiB.
+Child output is asserted equal to the parent packet; altered contract version and
+source hashes fail. This is a child-process protocol rehearsal, NOT an actual
+Claude/Codex agent handoff, installed-plugin or live-runtime observation.
+
+The same question, source bodies/hashes and runtime are used with and without the
+selected map entry. Both arms produce the SAME profile answer. The measured map
+contribution is the explicit Q1 evidence association, not improved answer quality.
+The child resolves code -> code_app and content -> content_workspace using the
+real config implementation, and reports target-local integration ownership and
+hook/MCP delivery from the source. ADR-90 is a policy evidence basis, not authority
+to install or write. The existing ADR-90 invariant (`/domain/invariants/2`) now
+links this scenario as a check; editing ADR-90 selects it through strict impact.
+Source/question identity, evidence hashes and uncertainty are explicit assertions.
+
+| Item | Scoped retained result; remaining limit |
+| --- | --- |
+| 1.1 | Q1 intent is profile adoption plus integration ownership; selected question is exact. No agent understanding claim. |
+| 1.2 | Config implementation selects code/content packs and target-local delivery; ADR-90 supplies design evidence. No target write. |
+| 1.3 | Real lookup followed by real impact selects the linked check without executing it. No autonomous agent planning claim. |
+| 1.6 | Q1 retrieves exactly its three local evidence sources; MK and live memory remain untested. |
+| 1.7 | Python child receives and uses the bounded versioned packet; actual agent handoff remains unobserved. |
+| 1.goal | One Yoke-domain selection/evidence rehearsal covers these uses; not all acting agents or all hosts. |
+| 2.6.2 | Printed receipt pins source/map/contract/runtime and retains interpretation scope and uncertainty. |
+| 5-2.10 | Isolated source fixture can answer Q1 outside supplier cwd. Installation, loading, tools and domain use are separate; this adds only synthetic domain use. |
+| 5-2.done | Synthetic domain result added; existing rollback/distribution evidence is not reinterpreted as fresh runtime proof. |
+| 5-4.10 | Identical source/question arms plus bad-version/bad-hash negatives; answer unchanged, evidence association differs. |
+| 5-4.5 | Real selective lookup plus actual Python child packet equality; no live agent execution claimed. |
+| 5-4.done | Local Q1/domain-invariant link is exercised; runtime/memory/agent-quality unknowns remain explicit. |
+
+These rows are development evidence, not LIVE, ACCEPTED, or a rejudgment status
+promotion. Broader actual-agent/runtime observations remain with Main/owner.
+
+### G13 inspected producer/consumer boundary
+
+Finding confirmed: target contents are not hashed by the declared YAML consumer.
+Local non-applicability applies to target-derived cache invalidation because there
+is no such cache in this path. Inspected boundaries:
+
+- `src/mir/core/relations.py#_load_graph` reads current graph bytes and produces Edge declarations plus graph digest.
+- `src/mir/core/relations.py#query_relations` validates endpoint safety/availability and traverses declarations. `_result` supplies no execution result or target-content digest.
+- `src/mir/core/relations.py#bundle_relations` shares the graph only within one call; it stores no downstream result cache.
+- `src/mir/cli/relations.py#main` queries, renders and exits; the memory route is explicitly separate.
+- `src/mir/core/memory_relations.py` separately verifies relation SOURCE hashes/provenance. That is not cached test-target execution evidence and is not widened by this finding.
+
+The existing graph-reload/digest and removed-verification-edge tests are retained.
+A new target-only edit regression prohibits target reads, observes unchanged
+DECLARATIONS after the edit, asserts declaration-only scope/edge fields, then
+removes the target and observes exclusion. It does NOT call unchanged declarations
+fresh execution evidence. The query docstring and E06 reason record the boundary.
+No product cache or freshness API was added. No fail-first behavior claim applies
+to this non-applicability proof: it passes existing behavior by design.
+
+### Fail-first and intermediate checks
+
+- New G08 scenario before adding its invariant check link: **1 failed** at the
+  missing selected check after a domain-source change (exit 1). All preceding
+  lookup, same-source comparison, child provenance and error assertions passed.
+- After wiring the map: **2 passed** (G08 scenario + target-only boundary proof).
+- First broader focused run: **7 failed, 25 passed** due solely to map byte-budget
+  warnings; subsequent run reproduced the budget issue. Map descriptions and
+  whitespace were compacted within the existing 12,288-byte budget; gate unchanged.
+- Ruff initially reported three E501 lines, then passed after wrapping.
+- Bare Codex parity invocation initially failed to access its default uv cache;
+  rerun with owner-specified UV_CACHE_DIR passed without changing derivatives.
+- Focused ontology/relations/CLI run: **45 passed in 4.03s** before final provenance
+  assertions. Final commands/results follow below.
+
+### Pinned scenario receipt
+
+Question: Which capabilities can code-only and content consumers adopt, and which integration surfaces remain project-owned?
+Contract: `mir.common-semantics@1.1.0`; selection: `/questions/0`.
+Runtime: isolated Python fixture, Python 3.12.13, Clang 17.0.0, macOS.
+Final map SHA256: `c20fbf3bdb910d3872b1f66730b56e0f34e8fa00c707e91eedd458c25a374340`.
+
+| Evidence | SHA256 |
+| --- | --- |
+| config/capability-sources.json | f77b60b5b7016a49bb80038a16aba57ccc717f7dbb96344ebaf42d4d9ff69e74 |
+| docs/decisions/adr-90-role-plugins-and-common-hooks.md | 32dc4d8240e102a5e155f681681d8b7a4a09c7522df42d8fbf88b9e392bde1b6 |
+| ARCHITECTURE.md | 6f18414515b8ed1516b495d5328bd45ad47e1738e7616d1b11c6dafd3e7971cc |
+| ontology_check.py | d4383a8b30f92463f73f6dcbe0840737296701a4a66d3a6bd4f4adb0c42ee528 |
+| ontology/SKILL.md | fc497e961e4e748c9217896c6e8c8ce7a69ecca46e672da03edc7b3c5d87d80a |
+| src/mir/core/capabilities/config.py | 59472973939249bfdc899c2512e19c6ec1dbdd37164805ee333e00a07543a767 |
+
+Result: code_app = mir-core, mir-code, mir-lifecycle-hooks; content_workspace =
+mir-core, mir-content, mir-lifecycle-hooks. Integrations remain target-local-only.
+Uncertainty: no installation, loading, tools, live agent or runtime discovery observed.
+
+### Final validation and remaining Main work
+
+All uv commands used `a shared `UV_CACHE_DIR``.
+
+- `uv run pytest -q tests/test_mir_ontology.py tests/test_relations.py tests/test_cli_relations.py tests/test_advanced_reference_templates.py tests/test_greenfield_slim_integration.py tests/test_template_asset_classification.py --deselect tests/test_harness_consistency.py --basetemp=<scratch>`:
+  **63 passed in 17.63s**, exit 0, on the final test/source/map state.
+- `uv run ruff check`: **All checks passed!**, exit 0.
+- `python3 scripts/mir_ontology.py mapping`: **0 errors, 0 warnings**, exit 0.
+- `python3 scripts/mir_ontology.py impact --git-diff --strict`: exit 0;
+  selects the new scenario and existing covered checks; no stale refs or
+  undeclared affected invariant check links.
+- `a shared `UV_CACHE_DIR` python3 scripts/verify_codex_sync.py`:
+  **OK: Codex derivatives match Claude sources**, exit 0; no regeneration needed.
+- `git diff --check`: exit 0.
+- `uv run python -m tools.template_assets --write-adopter-payload`: exit 0;
+  only the seven dependent file hashes change, with paths/classifications/dispositions preserved.
+
+The inventory is regenerated once more after this evidence-only append and its
+focused inventory/ontology checks are rerun. Full pytest was not run for this
+bounded map/test/documentation change. Main should replay mapping, strict impact
+and the selected tests after integration; no generated Codex change is pending.
+Actual Claude/Codex child execution, supported-runtime installation/loading/tool
+observations, live retrieval, other hosts and old resident sessions remain outside
+this authorized synthetic scope. No owner decision is needed to ship this bounded
+development evidence; broader acceptance requires separate observations.
+No repository commit, push or release ran. Task-owned external scratch is removed
+after verification; no daemon or emulator was started.

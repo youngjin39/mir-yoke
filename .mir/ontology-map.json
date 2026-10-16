@@ -1,12 +1,8 @@
 {
-"schema": "mir-semantic-mapping/v1",
-"contract": {
-"id": "mir.common-semantics",
-"version": "1.1.0",
-"version_range": ">=1.0.0 <2.0.0"
-},
-"namespace": "mir-yoke",
-"canonical_index": [
+"schema":"mir-semantic-mapping/v1",
+"contract":{"id":"mir.common-semantics","version":"1.1.0","version_range":">=1.0.0 <2.0.0"},
+"namespace":"mir-yoke",
+"canonical_index":[
 ".mir/repo-profile.toml",
 "CLAUDE.md",
 "ARCHITECTURE.md",
@@ -29,7 +25,7 @@
 "docs/templates/_schema/adr.schema.json",
 "src/mir/core/contracts/provider_result.py"
 ],
-"concepts": {
+"concepts":{
 "Project": {"status":"mapped","local":[{"name":"Profile","ref":".mir/repo-profile.toml"}]},
 "Agent": {"status":"mapped","local":[{"name":"Agent source","ref":".claude/agents/main-orchestrator.md"},{"name":"Legacy AgentProfile","ref":"src/mir/core/contracts/agent_profile.py"}]},
 "Capability": {"status":"mapped","local":[{"name":"Capability selection","ref":"config/capability-sources.json"}]},
@@ -43,7 +39,7 @@
 "Assessment": {"status":"mapped","local":[{"name":"ValidationResult","ref":"src/mir/core/contracts/gate.py#ValidationResult"},{"name":"Capability health","ref":"src/mir/core/capabilities/manager.py#CapabilityManager.status"}]},
 "Policy": {"status":"mapped","local":[{"name":"Repository contract","ref":"CLAUDE.md"},{"name":"Profile boundaries","ref":".mir/repo-profile.toml"}]}
 },
-"vocabularies": [
+"vocabularies":[
 {"name":"repository Profile status","ref":".mir/repo-profile.toml","values":{"active":{"local_only":"Repository registration, not runtime activation or verification."}}},
 {"name":"ADR lifecycle","ref":"docs/templates/_schema/adr.schema.json","values":{"accepted":{"lifecycle":"accepted"},"rejected":{"local_only":"Rejected proposal, not retraction of an accepted fact."}}},
 {"name":"historical spec projection","ref":"spec/STATE.md","values":{"done":{"local_only":"Historical completion, not current execution proof."},"ready":{"local_only":"Historical spec readiness, not a fresh test pass."}}},
@@ -80,7 +76,7 @@
 ],
 "identity_schemes": [{"name":"Profile slug qualifies shared IDs as mir-yoke:<local-id>; preserve local IDs","ref":".mir/repo-profile.toml"},{"name":"plugin name and skill namespace, profile pack key","ref":"config/capability-sources.json"},{"name":"source commit and per-file/tree SHA256 are revision/byte identities, not truth","ref":"tools/executor_sync.py"},{"name":"executor manifest schema version differs from executor product version","ref":"docs/operations/mir-executor-sync.md"},{"name":"historical CR/FR/IR/QR/FEAT/MOD/UC/TASK identities","ref":"tests/test_spec_integrity.py"},{"name":"memory entity exact unique slug; aliases separate, schema only","ref":"src/mir/core/engine/memory/migrations/001_initial.sql"}],
 "relations": [{"name":"ADR superseded_by","ref":"docs/decisions/adr-82-product-planes-capability-packs-and-composition.md"},{"name":"profile aliases","ref":"config/capability-sources.json"},{"name":"plugin selected by profile","ref":"config/capability-sources.json"},{"name":"executor target manifest copied from source manifest","ref":"tools/executor_sync.py#sync"}],
-"invariants": [{"name":"No standing consumer authority","ref":"CLAUDE.md"},{"name":"Installation is not fresh-session dual-runtime discovery","ref":"docs/decisions/adr-89-dual-runtime-capability-management.md"},{"name":"Exact reviewed read-only global hook; coupled hooks/MCP stay local","ref":"docs/decisions/adr-90-role-plugins-and-common-hooks.md"},{"name":"Executor explicit target only, preserve adapters, refuse dirty/symlink paths","ref":"tools/executor_sync.py"},{"name":"Historical spec cannot expand current supported layers","ref":"spec/STATE.md"},{"name":"Common contract copy is a distribution, not an independent source","ref":"plugins/mir-core/skills/ontology/references/SOURCE.md"}]
+"invariants": [{"name":"No standing consumer authority","ref":"CLAUDE.md"},{"name":"Installation is not fresh-session dual-runtime discovery","ref":"docs/decisions/adr-89-dual-runtime-capability-management.md"},{"name":"Reviewed read-only hook; coupled hooks/MCP local","ref":"docs/decisions/adr-90-role-plugins-and-common-hooks.md","check":"tests/test_mir_ontology.py#test_should_use_own_domain_evidence_in_bounded_handoff"},{"name":"Executor explicit target only, preserve adapters, refuse dirty/symlink paths","ref":"tools/executor_sync.py"},{"name":"Historical spec cannot expand current supported layers","ref":"spec/STATE.md"},{"name":"Common contract copy is a distribution, not an independent source","ref":"plugins/mir-core/skills/ontology/references/SOURCE.md"}]
 },
 "questions": [
 {"id":"Q1","question":"Which capabilities can code-only and content consumers adopt, and which integration surfaces remain project-owned?","evidence":["config/capability-sources.json","docs/decisions/adr-90-role-plugins-and-common-hooks.md","ARCHITECTURE.md"]},
@@ -93,7 +89,7 @@
 {"id":"E03","status":"covered","reason":"Scope: default search excludes superseded/mirrored documents; history is opt-in.","check":"tests/test_adr53_phase3a_search.py#test_search_default_excludes_semantic_historical_documents"},
 {"id":"E04","status":"covered","reason":"Selection only, no execution/pass claims.","check":"tests/test_mir_ontology.py#test_should_select_own_checks_without_execution"},
 {"id":"E05","status":"not_applicable","reason":"Lexical navigation has no vector/inferred identity or fact promotion."},
-{"id":"E06","status":"covered","reason":"Scope: graph reload/digest; no target-content freshness or cached-evidence validation.","check":"tests/test_relations.py#test_current_graph_is_reloaded_and_source_digest_changes"},
+{"id":"E06","status":"covered","reason":"YAML: no target cache; reload only.","check":"tests/test_relations.py#test_current_graph_is_reloaded_and_source_digest_changes"},
 {"id":"E07","status":"covered","reason":"Scope: adoption --apply without a repository contract fails with zero writes.","check":"tests/test_public_template_authority.py#test_should_make_zero_writes_when_existing_repository_contract_is_missing"},
 {"id":"E08","status":"not_applicable","reason":"Supplier owns personal-data authorization; this client only forwards synthetic refusals."},
 {"id":"E09","status":"covered","reason":"Missing config; local gate passes.","check":"tests/test_mir_ontology.py#test_should_continue_local_gate_when_mk_config_is_missing"},

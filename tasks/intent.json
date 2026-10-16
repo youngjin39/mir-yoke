@@ -1,10 +1,16 @@
 {
-  "goal": "Fix the five Linux release-runner test failures without weakening their behavioral guarantees.",
+  "goal": "Retain repeatable Yoke-domain selection/evidence use and resolve declared relation target-freshness ownership.",
   "goal_type": "maintenance",
-  "scope": "BootstrapGate fixture trust and case-sensitive SRR locator fixtures; investigate release run 38847178888. No delivery, capability operations, runtime-home writes, live databases, memory render/sync or generated Codex writes.",
+  "scope": "G08 shared synthetic Q1 scenario and G13 declared YAML consumer. No live runtime, actual agent-quality, LIVE or ACCEPTED claims.",
   "priority": "normal",
   "updated": "2026-10-16",
   "history": [
+    {
+      "goal": "Fix the five Linux release-runner test failures without weakening their behavioral guarantees.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#linux-release-runner-fixtures-2026-10-16"
+    },
     {
       "goal": "Prepare the Mir Yoke 0.13.1 release working tree with version metadata and migration notes only.",
       "updated": "2026-10-16",
@@ -43,5 +49,5 @@
     }
   ],
   "status": "complete",
-  "evidence": "tasks/change_log.md#linux-release-runner-fixtures-2026-10-16"
+  "evidence": "tasks/change_log.md#ontology-rejudgment-g08-g13-2026-10-16"
 }

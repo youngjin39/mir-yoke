@@ -6,6 +6,7 @@ import re
 import shutil
 import subprocess
 import sys
+from hashlib import sha256
 from pathlib import Path
 
 import pytest
@@ -124,3 +125,134 @@ def test_should_forward_lookup_and_report_missing_distribution(own_repo):
     result = run(own_repo, "mapping")
     assert result.returncode == 2
     assert "ontology distribution" in result.stderr
+
+
+def test_should_use_own_domain_evidence_in_bounded_handoff(own_repo):
+    """Selection/evidence rehearsal, not a live agent or runtime quality comparison."""
+    mapping_path = own_repo / ".mir/ontology-map.json"
+    mapping = json.loads(mapping_path.read_text())
+    question = mapping["questions"][0]
+    assert question["id"] == "Q1"
+    selected = run(own_repo, "lookup", question["question"], "--limit", "1", "--json")
+    assert selected.returncode == 0, selected.stderr
+    lookup = json.loads(selected.stdout)
+    match, = lookup["matches"]
+    assert match["pointer"] == "/questions/0"
+    assert match["entry"] == question
+    assert match["evidence"] == question["evidence"]
+    assert lookup["contract"]["version"] == "1.1.0"
+
+    # Same source bytes and question for both arms; the map adds provenance,
+    # not a fabricated improvement in the raw profile answer.
+    sources = {ref: (own_repo / ref).read_text() for ref in question["evidence"]}
+    instruction = own_repo / "plugins/mir-core/skills/ontology/SKILL.md"
+    apply_step = instruction.read_text().split("5. Apply the finding", 1)[1].split("6.", 1)[0]
+    packet = {
+        "question": question["question"], "sources": sources,
+        "source_sha256": {ref: sha256(text.encode()).hexdigest()
+                          for ref, text in sources.items()},
+        "contract": lookup["contract"],
+        "map_sha256": sha256(mapping_path.read_bytes()).hexdigest(),
+        "selection": match,
+        "instruction": "plugins/mir-core/skills/ontology/SKILL.md",
+        "instruction_sha256": sha256(instruction.read_bytes()).hexdigest(),
+        "instruction_excerpt": "5. Apply the finding" + apply_step,
+        "implementation_sha256": sha256(
+            (own_repo / "src/mir/core/capabilities/config.py").read_bytes()
+        ).hexdigest(),
+        "runtime": {"kind": "isolated-python-fixture", "version": sys.version},
+        "checker_sha256": sha256(
+            (own_repo / "plugins/mir-core/skills/ontology/scripts/ontology_check.py").read_bytes()
+        ).hexdigest(),
+    }
+    # The child receives only Q1 and three bounded source bodies, not the map,
+    # supplier checkout, MK, credentials, installation or live discovery receipts.
+    child = r'''
+import json, runpy, sys
+from hashlib import sha256
+from pathlib import Path
+p = json.load(sys.stdin)
+assert p["contract"]["id"] == "mir.common-semantics"
+assert p["contract"]["version"] == "1.1.0"
+assert "existing design, implementation, knowledge or review" in p["instruction_excerpt"]
+assert "grant no authority" in p["instruction_excerpt"]
+implementation = Path("src/mir/core/capabilities/config.py").read_bytes()
+assert sha256(implementation).hexdigest() == p["implementation_sha256"]
+assert len(p["sources"]) == 3
+for ref, text in p["sources"].items():
+    assert sha256(text.encode()).hexdigest() == p["source_sha256"][ref]
+    assert Path(ref).read_text() == text
+config = runpy.run_path("src/mir/core/capabilities/config.py")["load_capability_config"](
+    Path("config/capability-sources.json"))
+profiles = {}
+for alias in ("code", "content"):
+    name, pack = config.resolve_profile(alias)
+    profiles[alias] = {"profile": name, "plugins": list(pack.plugins)}
+selection = p["selection"]
+if selection is not None:
+    assert selection["entry"]["question"] == p["question"]
+    assert selection["evidence"] == list(p["sources"])
+    assert "Repository-unique instructions" in p["sources"][selection["evidence"][1]]
+print(json.dumps({
+    "received": p, "profiles": profiles,
+    "integration_owner": config.component_policy["project_integration"],
+    "integration_delivery": {key: value["delivery"]
+                             for key, value in config.project_integrations.items()},
+    "evidence_basis": [] if selection is None else selection["evidence"],
+    "scope": "synthetic selection/evidence only",
+    "uncertainty": ["No installation, loading, tools, live agent or runtime discovery observed"],
+}))
+'''
+
+    def receive(payload):
+        return subprocess.run(
+            [sys.executable, "-I", "-c", child], cwd=own_repo,
+            input=json.dumps(payload), capture_output=True, text=True,
+        )
+
+    baseline = receive({**packet, "selection": None})
+    handed = receive(packet)
+    assert baseline.returncode == handed.returncode == 0, baseline.stderr + handed.stderr
+    without_map, with_map = json.loads(baseline.stdout), json.loads(handed.stdout)
+    assert with_map["received"] == packet  # Actual child-received version/provenance.
+    for key in ("question", "sources", "source_sha256", "runtime"):
+        assert without_map["received"][key] == with_map["received"][key]
+    assert without_map["profiles"] == with_map["profiles"] == {
+        "code": {"profile": "code_app",
+                 "plugins": ["mir-core", "mir-code", "mir-lifecycle-hooks"]},
+        "content": {"profile": "content_workspace",
+                    "plugins": ["mir-core", "mir-content", "mir-lifecycle-hooks"]},
+    }
+    assert without_map["evidence_basis"] == []
+    assert with_map["evidence_basis"] == question["evidence"]
+    assert with_map["integration_owner"] == "target-local-only"
+    assert with_map["integration_delivery"] == {
+        "hooks": "target-local-generated", "mcp_servers": "target-local-opt-in-generated",
+    }
+    assert with_map["scope"] == "synthetic selection/evidence only"
+    assert len(json.dumps(packet).encode()) < 64 * 1024
+    assert with_map["uncertainty"] == without_map["uncertainty"]
+    incompatible = {**packet, "contract": {**packet["contract"], "version": "99.0.0"}}
+    assert receive(incompatible).returncode != 0
+    assert receive({**packet, "source_sha256": dict.fromkeys(sources, "stale")}).returncode != 0
+
+    # The existing maintainer workflow must select this proof after its domain
+    # source changes. It selects a check; it does not execute or accept it.
+    source = own_repo / "docs/decisions/adr-90-role-plugins-and-common-hooks.md"
+    source.write_text(source.read_text() + "\n")
+    impact = run(own_repo, "impact", "--git-diff", "--strict")
+    assert impact.returncode == 0, impact.stdout + impact.stderr
+    check = "tests/test_mir_ontology.py#test_should_use_own_domain_evidence_in_bounded_handoff"
+    assert check in impact.stdout
+    assert "/domain/invariants/2" in impact.stdout
+    print(json.dumps({
+        "question": packet["question"], "map_sha256": packet["map_sha256"],
+        "contract": packet["contract"], "runtime": packet["runtime"],
+        "source_sha256": packet["source_sha256"],
+        "checker_sha256": packet["checker_sha256"],
+        "instruction_sha256": packet["instruction_sha256"],
+        "implementation_sha256": packet["implementation_sha256"],
+        "selection": match["pointer"], "profiles": with_map["profiles"],
+        "integration_owner": with_map["integration_owner"],
+        "scope": with_map["scope"], "uncertainty": with_map["uncertainty"],
+    }, sort_keys=True))
