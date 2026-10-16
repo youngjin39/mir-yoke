@@ -186,9 +186,12 @@ def test_depth_probe_does_not_open_beyond_depth_source(
 def test_canonical_file_anchor_matches_stored_locator_spelling_but_not_case(
     tmp_path: Path,
 ) -> None:
-    (tmp_path / "src").mkdir()
+    # Both spellings must exist even when the filesystem distinguishes their case.
+    for locator in ("src/a.py", "SRC/A.PY"):
+        path = tmp_path / locator
+        path.parent.mkdir(exist_ok=True)
+        path.write_text("", encoding="utf-8")
     (tmp_path / "tests").mkdir()
-    (tmp_path / "src" / "a.py").write_text("", encoding="utf-8")
     (tmp_path / "tests" / "check.py").write_text("", encoding="utf-8")
     _seed(
         tmp_path,
@@ -206,6 +209,8 @@ def test_canonical_file_anchor_matches_stored_locator_spelling_but_not_case(
     direct_sources = {edge["source"] for edge in direct["edges"]}
     assert "././src/a.py::run" in direct_sources
     assert "SRC/A.PY::run" not in direct_sources
+    uppercase = query_memory_relations("SRC/A.PY", "verification", root=tmp_path)
+    assert {edge["source"] for edge in uppercase["edges"]} == {"SRC/A.PY::run"}
     bundle = bundle_memory_relations(
         ["src/a.py"], ["implementation", "verification"], root=tmp_path
     )
@@ -297,9 +302,14 @@ def test_locator_variants_resolve_bare_and_exact_symbols(
 def test_uppercase_only_implementation_owner_does_not_match_lowercase_anchor(
     tmp_path: Path,
 ) -> None:
-    (tmp_path / "src").mkdir()
-    (tmp_path / "src" / "a.py").write_text("", encoding="utf-8")
+    # Keep both the queried endpoint and the declared endpoint valid on Linux.
+    for locator in ("src/a.py", "SRC/A.PY"):
+        path = tmp_path / locator
+        path.parent.mkdir(exist_ok=True)
+        path.write_text("", encoding="utf-8")
     _seed(tmp_path, ("owner", [("MOD", "implemented_in", "SRC/A.PY::run")]))
+    owner = query_memory_relations("MOD", "implementation", root=tmp_path)
+    assert {edge["target"] for edge in owner["edges"]} == {"SRC/A.PY::run"}
     result = bundle_memory_relations(
         ["src/a.py"], ["implementation", "verification"], root=tmp_path
     )

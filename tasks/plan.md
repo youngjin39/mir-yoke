@@ -1,28 +1,30 @@
 # Plan
 
-## Active task: 0.13.1 release preparation (2026-10-16)
+## Active task: Linux release-runner test fixes (2026-10-16)
 
-Authority: the current owner release brief recorded in `tasks/intent.json`.
-This is the single active cursor and design record. Prior completed cursor details
-remain in `tasks/change_log.md#superseded-cursor-ontology-gaps-before-0131-preparation-2026-10-16`.
+Authority: the current owner brief recorded in `tasks/intent.json`.
+This is the single active cursor and design record. The previous completed cursor
+is preserved in `tasks/change_log.md#superseded-cursor-0131-preparation-before-linux-test-fixes-2026-10-16`.
 
-Outcome: consistent 0.13.1 version metadata, focused release notes with the carried
-Unreleased backlog preserved, consumer migration guidance and regenerated adopter hashes.
-No implementation or common-contract version changes are authorized.
+Outcome: identify and fix all five failures from release run 38847178888 while
+retaining BootstrapGate trust checks and case-sensitive relation selection.
 
-- [x] Compare HEAD checks and mirror the 06ca2f9 version surfaces.
-- [x] Update release notes, migration guidance and lifecycle-hooks digest acknowledgement.
-- [x] Generate adopter payload; run allowed full tests, lint, generated parity and ontology checks.
-- [x] Record results and exact remaining Main delivery steps.
+- [x] Read the failed log, distinguish product defects from platform-dependent fixtures, and reproduce the relevant assumptions.
+- [x] Apply minimal fixes and verify the five cases and both affected modules.
+- [x] Run full pytest excluding the consistency module, Ruff and read-only Codex parity.
+- [x] Review the final diff and record causes, commands, results and remaining Main work.
 
-Limits: no commits, tags, pushes, publishing, capability update/attest/finalize,
-consumer or user-runtime writes, live databases, memory/context synchronization,
-or generated `.codex/**` writes. Exclude `tests/test_harness_consistency.py`.
+Limits: no commits, tags, pushes, releases, capability operations, runtime-home
+writes, live databases, memory render/sync, secrets or generated `.codex/**` writes.
 Use the owner-specified external uv cache and external fixture scratch.
-Main owns commit, lock binding, derivative regeneration if needed, tagging and delivery.
 
-Preparation is complete; release delivery remains with Main. HEAD and the prepared tree
-both returned 2,058 passed and one capability-lock binding failure. No new failure appeared.
-Lint, generated parity, sanitization, links, schemas, mapping 0/0 and strict impact passed.
-The Unreleased backlog is byte-identical to eb5aeaa and the 21-file change set matches 06ca2f9.
-Evidence and remaining Main steps: `tasks/change_log.md#0131-release-preparation-2026-10-16`.
+Completed: five original cases reproduce before the fixture fixes and pass afterward;
+both affected modules pass (45 tests). The full suite with injected runner-style
+system Git LFS config passes (2,059 tests; consistency module excluded). Ruff,
+Codex parity, mapping (0 errors/warnings) and strict impact pass. Regenerated
+adopter SHA256 entries retain the same paths, classifications and dispositions.
+Production code, the ontology map and checked-in Codex derivatives are unchanged.
+
+Evidence: `tasks/change_log.md#linux-release-runner-fixtures-2026-10-16`.
+Actual Linux CI execution and authorized delivery remain with Main; no commit,
+push, tag, release or live capability operation ran here.

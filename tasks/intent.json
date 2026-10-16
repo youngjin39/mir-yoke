@@ -1,10 +1,16 @@
 {
-  "goal": "Prepare the Mir Yoke 0.13.1 release working tree with version metadata and migration notes only.",
+  "goal": "Fix the five Linux release-runner test failures without weakening their behavioral guarantees.",
   "goal_type": "maintenance",
-  "scope": "Mirror 06ca2f9 release surfaces; preserve the carried Unreleased backlog and contract 1.1.0. Refresh lifecycle-hooks digest acknowledgement and generated adopter payload. No commits, delivery, capability operations, runtime-home writes, live databases, memory/context synchronization or generated Codex writes.",
+  "scope": "BootstrapGate fixture trust and case-sensitive SRR locator fixtures; investigate release run 38847178888. No delivery, capability operations, runtime-home writes, live databases, memory render/sync or generated Codex writes.",
   "priority": "normal",
   "updated": "2026-10-16",
   "history": [
+    {
+      "goal": "Prepare the Mir Yoke 0.13.1 release working tree with version metadata and migration notes only.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#0131-release-preparation-2026-10-16"
+    },
     {
       "goal": "Close ontology impact and isolated distribution gaps and scope E06/E08 evidence.",
       "updated": "2026-10-16",
@@ -37,5 +43,5 @@
     }
   ],
   "status": "complete",
-  "evidence": "tasks/change_log.md#0131-release-preparation-2026-10-16"
+  "evidence": "tasks/change_log.md#linux-release-runner-fixtures-2026-10-16"
 }

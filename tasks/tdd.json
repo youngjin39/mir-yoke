@@ -2,6 +2,73 @@
   "version": 1,
   "changes": [
     {
+      "id": "linux-release-runner-fixtures-2026-10-16",
+      "record_status": "complete",
+      "scope": "Isolate provider trust fixtures from host Git LFS config and create both case-variant SRR endpoints; preserve product behavior. Regenerate dependent adopter SHA256 inventory.",
+      "bluebrick": "BootstrapGate provider trust fixtures / SRR case-sensitive locator selection",
+      "design_ref": "tasks/plan.md",
+      "categories": {
+        "unit": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_bootstrap_start_gate.py tests/test_srr_sql_neighborhood.py",
+          "notes": "45 passed with injected system and global LFS filters. Five original cases: 5 failed before, 5 passed after under LFS injection and exact-case endpoint existence simulation. Local hostile trust negatives remain active."
+        },
+        "integration": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_bootstrap_start_gate.py tests/test_srr_sql_neighborhood.py",
+          "notes": "45 passed with injected system and global LFS filters. Five original cases: 5 failed before, 5 passed after under LFS injection and exact-case endpoint existence simulation. Local hostile trust negatives remain active."
+        },
+        "edge": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_bootstrap_start_gate.py tests/test_srr_sql_neighborhood.py",
+          "notes": "45 passed with injected system and global LFS filters. Five original cases: 5 failed before, 5 passed after under LFS injection and exact-case endpoint existence simulation. Local hostile trust negatives remain active."
+        },
+        "architecture": {
+          "status": "not_applicable",
+          "reason": "Test-fixture-only change; production architecture and relation/trust contracts are unchanged."
+        },
+        "compatibility": {
+          "status": "pass",
+          "command": "uv run pytest -q --ignore=tests/test_harness_consistency.py",
+          "notes": "2059 passed in 219.53s with runner-style system Git LFS configuration injected. macOS execution plus exact-case endpoint existence simulation; actual Linux CI was not rerun."
+        },
+        "security": {
+          "status": "covered_existing",
+          "command": "uv run pytest -q tests/test_bootstrap_start_gate.py tests/test_srr_sql_neighborhood.py",
+          "notes": "45 passed with injected system and global LFS filters. Five original cases: 5 failed before, 5 passed after under LFS injection and exact-case endpoint existence simulation. Local hostile trust negatives remain active."
+        },
+        "transaction_locking": {
+          "status": "not_applicable",
+          "reason": "Test-fixture-only change; no production transaction, load, deployment, UI or runtime lifecycle behavior changes."
+        },
+        "load": {
+          "status": "not_applicable",
+          "reason": "Test-fixture-only change; no production transaction, load, deployment, UI or runtime lifecycle behavior changes."
+        },
+        "e2e": {
+          "status": "not_applicable",
+          "reason": "Test-fixture-only change; no production transaction, load, deployment, UI or runtime lifecycle behavior changes."
+        },
+        "browser": {
+          "status": "not_applicable",
+          "reason": "Test-fixture-only change; no production transaction, load, deployment, UI or runtime lifecycle behavior changes."
+        },
+        "availability": {
+          "status": "not_applicable",
+          "reason": "Test-fixture-only change; no production transaction, load, deployment, UI or runtime lifecycle behavior changes."
+        },
+        "soak": {
+          "status": "not_applicable",
+          "reason": "Test-fixture-only change; no production transaction, load, deployment, UI or runtime lifecycle behavior changes."
+        }
+      },
+      "targets": [
+        "tests/test_bootstrap_start_gate.py",
+        "tests/test_srr_sql_neighborhood.py",
+        "config/adopter-payload.json"
+      ]
+    },
+    {
       "id": "srr-selective-scope-completion-2026-09-21",
       "record_status": "complete",
       "scope": "Focus SRR on implementation, verification and direct dependencies; resolve omitted dependency depth to one per query/facet while preserving explicit overrides.",

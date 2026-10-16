@@ -5049,3 +5049,193 @@ Previous intent:
   "evidence": "tasks/change_log.md#ontology-gap-development-2026-10-16"
 }
 ```
+
+
+## Superseded cursor: 0.13.1 preparation before Linux test fixes (2026-10-16)
+
+The completed release-preparation cursor is preserved before the owner-authorized Linux failure investigation.
+
+# Plan
+
+## Active task: 0.13.1 release preparation (2026-10-16)
+
+Authority: the current owner release brief recorded in `tasks/intent.json`.
+This is the single active cursor and design record. Prior completed cursor details
+remain in `tasks/change_log.md#superseded-cursor-ontology-gaps-before-0131-preparation-2026-10-16`.
+
+Outcome: consistent 0.13.1 version metadata, focused release notes with the carried
+Unreleased backlog preserved, consumer migration guidance and regenerated adopter hashes.
+No implementation or common-contract version changes are authorized.
+
+- [x] Compare HEAD checks and mirror the 06ca2f9 version surfaces.
+- [x] Update release notes, migration guidance and lifecycle-hooks digest acknowledgement.
+- [x] Generate adopter payload; run allowed full tests, lint, generated parity and ontology checks.
+- [x] Record results and exact remaining Main delivery steps.
+
+Limits: no commits, tags, pushes, publishing, capability update/attest/finalize,
+consumer or user-runtime writes, live databases, memory/context synchronization,
+or generated `.codex/**` writes. Exclude `tests/test_harness_consistency.py`.
+Use the owner-specified external uv cache and external fixture scratch.
+Main owns commit, lock binding, derivative regeneration if needed, tagging and delivery.
+
+Preparation is complete; release delivery remains with Main. HEAD and the prepared tree
+both returned 2,058 passed and one capability-lock binding failure. No new failure appeared.
+Lint, generated parity, sanitization, links, schemas, mapping 0/0 and strict impact passed.
+The Unreleased backlog is byte-identical to eb5aeaa and the 21-file change set matches 06ca2f9.
+Evidence and remaining Main steps: `tasks/change_log.md#0131-release-preparation-2026-10-16`.
+
+Previous intent:
+
+```json
+{
+  "goal": "Prepare the Mir Yoke 0.13.1 release working tree with version metadata and migration notes only.",
+  "goal_type": "maintenance",
+  "scope": "Mirror 06ca2f9 release surfaces; preserve the carried Unreleased backlog and contract 1.1.0. Refresh lifecycle-hooks digest acknowledgement and generated adopter payload. No commits, delivery, capability operations, runtime-home writes, live databases, memory/context synchronization or generated Codex writes.",
+  "priority": "normal",
+  "updated": "2026-10-16",
+  "history": [
+    {
+      "goal": "Close ontology impact and isolated distribution gaps and scope E06/E08 evidence.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#ontology-gap-development-2026-10-16"
+    },
+    {
+      "goal": "Make local validation and fresh-checkout validate workflow commands pass while retaining the memory render guard.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#local-and-ci-validation-fixes-2026-10-16"
+    },
+    {
+      "goal": "Prevent automatic consistency tests from rendering live agent memory.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#automatic-memory-render-guard-2026-10-16"
+    },
+    {
+      "goal": "Prepare the Mir Yoke 0.13.0 release working tree with version metadata and migration notes only.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#0130-release-preparation-2026-10-16"
+    },
+    {
+      "goal": "Correct E03 and E07 covered check references using existing executable behavior tests.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#superseded-cursor-covered-label-fix-before-0130-preparation-2026-10-16"
+    }
+  ],
+  "status": "complete",
+  "evidence": "tasks/change_log.md#0131-release-preparation-2026-10-16"
+}
+```
+
+
+## Linux release-runner fixtures (2026-10-16)
+
+Authority: current owner brief recorded in `tasks/intent.json`; design/cursor:
+`tasks/plan.md`. Investigated failed release run 38847178888 with
+`gh run view 38847178888 -R youngjin39/mir-yoke --log-failed` (exit 0).
+
+### Root causes and bounded changes
+
+- `test_missing_receipt_allows_setup_and_bootstrap_commands`: a trusted provider
+  fixture inherited host Git filters and was rejected by
+  `.claude/hooks/_lib/bootstrap-gate.sh#_mir_bootstrap_has_unsafe_git_extensions`.
+- `test_adoption_recovery_allows_only_pinned_official_detached_worktree`: the
+  same inherited configuration rejected the provider before pinned recovery.
+- `test_worktree_add_accepts_the_persistent_provider_root`: overriding the fixture
+  HOME did not suppress system Git config, so the same trust check rejected it.
+- `test_canonical_file_anchor_matches_stored_locator_spelling_but_not_case`:
+  only `src/a.py` existed, while ingest also declared `SRC/A.PY`. Linux correctly
+  rejected the missing case-variant endpoint before the selection assertions.
+- `test_uppercase_only_implementation_owner_does_not_match_lowercase_anchor`:
+  its uppercase implementation endpoint was likewise missing on Linux.
+
+The runner image installs Git LFS ([image installation source](https://github.com/actions/runner-images/blob/ubuntu24/20261012.334/images/ubuntu/scripts/build/install-git-lfs.sh));
+its [Debian postinstall](https://github.com/git-lfs/git-lfs/blob/main/debian/postinst)
+runs `git lfs install --skip-repo --system`. Inherited LFS configuration is the
+reproduced cause and the image's likely source; the original runner's Git config
+was not printed in its failed log. This is not evidence of a Git-version or
+realpath defect.
+
+`tests/test_bootstrap_start_gate.py` now opts only these three provider tests into
+an `isolated_git_config` fixture (`GIT_CONFIG_NOSYSTEM=1`,
+`GIT_CONFIG_GLOBAL=os.devnull`). Local hostile filter/fsmonitor/attributes,
+dirty provider, wrong pin, aliases and non-executed hook assertions remain active.
+`tests/test_srr_sql_neighborhood.py` explicitly creates both file spellings and
+adds positive evidence that the uppercase relation exists and is queryable,
+while preserving the negative lowercase-match assertions. Both spellings may
+refer to one physical file on a case-insensitive filesystem; SQL identity remains
+case-sensitive. Production validation/selection code and ontology are unchanged.
+
+Semantic basis: `.mir/ontology-map.json#/relations/7` defines the local
+`memory_relations.implemented_in` location relation; endpoint existence is enforced
+by `src/mir/core/relations.py#_validate_endpoint`. Case-sensitive SQL comparison
+is explicit in `src/mir/core/memory_relations.py#_locator_nodes` and
+`src/mir/core/memory_relations.py#_implemented_in_rows`.
+
+### Executed focused evidence
+
+All uv commands used the owner-specified external UV_CACHE_DIR. Fixture scratch,
+TMPDIR and pytest `--basetemp` were external and task-owned. No live memory file
+or runtime-home file was used. Public command examples omit host-specific paths.
+
+- Read-only baseline copies from HEAD, injected system/global LFS config and an
+  external pytest probe tracking exact case of explicitly written fixture files:
+  **5 failed** at the same trust/endpoint assertions as CI. The probe simulates
+  endpoint existence only; it is not a Linux filesystem or a production change.
+- The five named tests with the same injected config/probe: **5 passed in 4.42s**.
+- `uv run pytest -q tests/test_bootstrap_start_gate.py tests/test_srr_sql_neighborhood.py`
+  with system/global LFS injection: **45 passed in 12.43s**.
+- `uv run ruff check`: exit 0, `All checks passed!`.
+- `uv run python scripts/verify_codex_sync.py`: exit 0,
+  `OK: Codex derivatives match Claude sources`. Checked-in generated files were
+  not changed; verification generated comparison files only in external scratch.
+- `uv run python scripts/mir_ontology.py impact --git-diff HEAD --strict`: exit 0,
+  affected Task/intent entries only; no selected checks or stale refs.
+
+Full-suite and final artifact evidence follows after execution. Actual Linux CI
+execution and owner delivery remain outside this sandbox task.
+
+
+### Dependent adopter inventory refresh
+
+Initial full command `uv run pytest -q --ignore=tests/test_harness_consistency.py`
+returned **3 failed, 2056 passed in 233.07s** (exit 1). The original five CI
+failures passed. The remaining failures were the exact adopter inventory checks
+and a slim integration check that preserved the edited plan as user-owned because
+its recorded SHA256 was stale. The stale entries covered the six files changed
+here plus `.mir/capability-lock.json`, whose hash was already stale after HEAD
+`effbe4c` (that commit changed only the capability lock). The lock itself is unchanged.
+
+Regenerate `config/adopter-payload.json` with the existing canonical command
+`uv run python -m tools.template_assets --write-adopter-payload`; this updates only
+dependent content hashes and does not execute adoption, capability or release work.
+
+
+### Final full-suite evidence and remaining work
+
+- `uv run python -m tools.template_assets --write-adopter-payload`: exit 0,
+  `template asset classification: pass`. Only seven SHA256 entries changed;
+  all paths, classifications and dispositions are preserved.
+- `uv run pytest -q tests/test_advanced_reference_templates.py tests/test_greenfield_slim_integration.py tests/test_template_asset_classification.py`:
+  **18 passed in 9.55s** after regenerating the dependent inventory.
+- `uv run pytest -q --ignore=tests/test_harness_consistency.py` with external
+  fixture scratch/TMPDIR and `GIT_CONFIG_SYSTEM` pointing to an external file
+  containing the standard four Git LFS filter settings:
+  **2059 passed in 219.53s (0:03:39)**, exit 0. This includes all five original cases.
+- `uv run python scripts/mir_ontology.py mapping`: exit 0,
+  **0 errors, 0 warnings; contract 1.1.0, mapping 1.1.0**.
+- Strict impact and `git diff --check` pass. The ontology SHA256 remains
+  `331ac91cd1d8ddd22558c11549395c62c06f2ad9616294470aec795ca44abe40`.
+
+After final cursor/evidence edits and adopter-hash regeneration, the bounded
+public-surface, inventory, slim integration and ontology tests returned
+**29 passed in 12.30s**. Ruff again returned `All checks passed!`; read-only Codex
+parity again returned `OK: Codex derivatives match Claude sources` (both exit 0).
+No production or test-source changes follow the green full run. Actual execution was macOS with targeted Linux-like
+configuration/endpoint simulation; no Linux CI job was started. Main owns any
+subsequent CI rerun, commit or release. Generated Codex files, capability state,
+live memory and runtime homes are unchanged. Task-owned scratch is removed after
+final verification.

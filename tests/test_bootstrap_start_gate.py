@@ -7,8 +7,18 @@ import shutil
 import subprocess
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[1]
 HOOKS = ROOT / ".claude" / "hooks"
+
+
+@pytest.fixture
+def isolated_git_config(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Provider trust checks reject filters, including Git LFS in host configuration.
+    # These tests declare their own trusted and hostile repository-local settings.
+    monkeypatch.setenv("GIT_CONFIG_NOSYSTEM", "1")
+    monkeypatch.setenv("GIT_CONFIG_GLOBAL", os.devnull)
 
 
 def _copy_hooks(project: Path) -> Path:
@@ -83,6 +93,7 @@ def test_missing_receipt_allows_phase2_spec_evidence(tmp_path: Path) -> None:
     assert completed.returncode == 0, completed.stderr
 
 
+@pytest.mark.usefixtures("isolated_git_config")
 def test_missing_receipt_allows_setup_and_bootstrap_commands(tmp_path: Path) -> None:
     for command in (
         './setup.sh --profile content_workspace --purpose "Career records" --stack markdown',
@@ -144,6 +155,7 @@ def test_missing_receipt_allows_setup_and_bootstrap_commands(tmp_path: Path) -> 
     assert dirty_source.returncode == 2
 
 
+@pytest.mark.usefixtures("isolated_git_config")
 def test_adoption_recovery_allows_only_pinned_official_detached_worktree(
     tmp_path: Path,
 ) -> None:
@@ -1286,6 +1298,7 @@ def test_rg_rejects_both_pre_and_pre_glob(tmp_path: Path) -> None:
         assert result.returncode == 2, command
 
 
+@pytest.mark.usefixtures("isolated_git_config")
 def test_worktree_add_accepts_the_persistent_provider_root(tmp_path: Path) -> None:
     """A pin under $TMPDIR is destroyed by OS cleanup, so the durable root is allowed too.
 

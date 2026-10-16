@@ -443,7 +443,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": ".mir/capability-lock.json",
-      "sha256": "a71f4480a0153ffc246435cc78f523b1515dc676b25a8ded9900b9cfab19b655"
+      "sha256": "c7161670972d3e05969cbbe6f46f1186e814777d34f1673bb6847501c0716d68"
     },
     {
       "classification": "reference",
@@ -4133,7 +4133,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/change_log.md",
-      "sha256": "14629e27fde9449b805a287fa97f5ab31789637bda467684e236bd8114c54941"
+      "sha256": "62bb6b84ae1990690b2b3da5a64e0fc4378f126bcf701a151fe97763f405a839"
     },
     {
       "classification": "reference",
@@ -4151,7 +4151,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/intent.json",
-      "sha256": "154e34c0a3c1cdabc9f2f35deda87be28dfc1110936e4cd9254c767ab62995bd"
+      "sha256": "57222e11d689cfcb482704e8f1041463d03acf9e32b3967c049f68d5fa67d16e"
     },
     {
       "classification": "reference",
@@ -4175,7 +4175,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/plan.md",
-      "sha256": "72d87e312d34c9e78287db427e697bebf6b5d0aa62289a86c266ca2abfa79ca3"
+      "sha256": "ce69da6149f1f7be8296b27a083fbdf6af0040d0285279604220b3944a41cfb7"
     },
     {
       "classification": "reference",
@@ -4199,7 +4199,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/tdd.json",
-      "sha256": "e4baf65559fc6b2a5c286d827d18aee4abff8e9abecd702c4f79201264558ff9"
+      "sha256": "0cf7e2c14e3e850436553343fb61277f16a73ae92f95805192ba3654644e756b"
     },
     {
       "classification": "reference",
@@ -4349,7 +4349,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_bootstrap_start_gate.py",
-      "sha256": "e37ae2f6345aeca0f74136d6699ead9b7988e586c8b1336db19a5cb2345f2287"
+      "sha256": "aa3826f022dc0c9e4aaa87c61f98ca0f1c596115f77a2a09c70d0431d52403d7"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4709,7 +4709,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_srr_sql_neighborhood.py",
-      "sha256": "23085c524e114f5a7f5e4223381866e409ff70927e2e5988d3ea2dc351e07f1b"
+      "sha256": "d41e759b2731346b7a728fa3a0a7e36ddf93bc0afafc410933ed654984e42d7e"
     },
     {
       "classification": "template-maintainer-tool",
