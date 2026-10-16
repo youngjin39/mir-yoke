@@ -14,5 +14,5 @@ No commit, release, live database write or generated `.codex/**` edit is authori
 - No open plan items.
 
 ### Working Tree
-- Working tree dirty (8 paths; inspect git status --short).
+- Historical pre-commit snapshot (2026-10-16): working tree dirty (8 paths); see `tasks/change_log.md#independent-review-corrections-2026-10-16`. Inspect `git status --short` for current state.
 <!-- mir:runtime-snapshot:end -->

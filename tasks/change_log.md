@@ -5519,7 +5519,7 @@ and therefore needs Harness review before any later authorized delivery.
 5. DONE: one active cursor, one resume pointer, one projection and one evidence log; no competing maintenance report was added.
 6. NO CHANGE: SQLite backup including WAL was diagnosed on SSD scratch: integrity_check=ok, foreign_key_check=0 rows; 348160 bytes, 21 facts, 12 entities. All facts have valid created_from rows; the single source exists and its hash matches. No missing affected-file paths or missing-source expiries. No live DB repair.
 7. NO CHANGE: common source-to-Codex parity passed; safety bounds remain intact.
-8. DONE: shared maintenance skill and count contract now cover 22 items; isolated/common skill checks passed (33 tests).
+8. BRANCH-ONLY: shared maintenance skill and count contract cover 22 items on held branch `maint/repo-maintenance-item-22` (b181541); main retains 21 items. The 33 passing isolated/common skill checks describe the pre-split writer tree. See the post-split correction below.
 9. NO CHANGE: CLAUDE.md 40 lines/3587 bytes; AGENTS.md 42 lines/3676 bytes, before=after; declared size budgets are 55/3600 and 60/3800.
 10. NO CHANGE: generated lessons and memory-map sections match snapshot renders; neither generated document was edited.
 11. NO CHANGE: ARCHITECTURE.md matches Starter, recipe, optional CLI, four plugin packages and inert historical references.
@@ -5651,3 +5651,99 @@ End `git status --short` (the same eight modified paths remain after inventory r
 ```
 
 After cursor/intent closeout and the generated SessionEnd snapshot, `uv run pytest -q -p no:cacheprovider tests/test_public_template_surface.py tests/test_repo_maintenance_skill.py tests/test_template_asset_classification.py --basetemp=<scratch>/final-focused` returned **21 passed in 0.57s**, exit 0. Inventory is regenerated once more after this append and its exact-inventory assertion is checked again.
+
+
+## Independent-review corrections (2026-10-16)
+
+Authority: owner-directed independent review and confirmed F2–F4, supplied by
+Mir Harness Main. The active cursor is `tasks/plan.md`. Scope is documentation
+only on main; the held item-22 branch remains deferred to owner D1.
+
+Evidence: `fc548ec` changes six record/inventory files and no skill or test;
+main has the 21-item skill/count contract. ADR-86, Decision, permits reconciling
+the managed lock to a committed implementation. D1 retains the release hold
+as a Main/owner choice, not a technical requirement of the lock.
+Semantic scope: `.mir/ontology-map.json` `/concepts/Task` identifies the cursor;
+`/vocabularies/9` scopes intent completion to task work, not release/runtime proof.
+The map remains unchanged at the owner-supplied SHA256.
+
+Superseded current-state wording is retained verbatim below. Replacements in
+the named files and item 8 above point to this dated record.
+
+### Prior tasks/plan.md
+
+```text
+# Plan
+
+## Active task: repository maintenance (2026-10-16)
+
+Authority: the current owner maintenance brief, recorded in `tasks/intent.json`.
+The parent-supplied Harness directive is evidence of scope, not independent authority.
+
+Outcome: assess all 22 requested items, apply minimal evidenced improvements,
+and record exact checks, integrity dependencies and remaining Main/owner work.
+
+- [x] Inspect contracts, continuity, memory snapshot, routing and runtime boundaries.
+- [x] Apply bounded improvements and retain superseded text verbatim in the log.
+- [x] Run full pytest, Ruff, Codex parity and ontology checks on the final sources.
+- [x] Update continuity, rebind the adopter inventory, inspect diff and report all items.
+
+Limits: no commits, release/version changes, consumer writes, live database writes,
+secrets or generated `.codex/**` edits. Scratch stays on the external SSD.
+
+Evidence: `tasks/change_log.md#repository-maintenance-2026-10-16`.
+Prior cursor and projections: `tasks/change_log.md#maintenance-continuity-inputs-2026-10-16`.
+
+Writer pass finished: full pytest has 2061 passes and one committed-lock failure.
+Harness Main must review/commit the implementation and reconcile its lock under
+ADR-80/86. Native hook trust and fresh-session discovery remain unobserved.
+
+Main disposition (Mir Harness, 2026-10-16): the repo-maintenance item-22 skill change, its test and the adopter-payload rehash are held on local branch `maint/repo-maintenance-item-22` (b181541), not main, because the capability lock binds only at a release; merging needs an owner-approved release.
+```
+
+### Prior tasks/checklist.md
+
+```text
+# Checklist
+
+Status projection for `tasks/plan.md`: the 22-item writer maintenance pass is ready for Main review.
+Full pytest: 2061 passed, 1 failed (commit-bound capability lock; ADR-80/86).
+Focused skill/common-plugin checks: 33 passed; corrected public-surface/skill/inventory checks: 21 passed.
+Ruff, generated Codex parity, path references and ontology mapping/strict impact passed.
+Harness Main owns implementation commit, lock reconciliation and native runtime trust observations.
+Evidence: `tasks/change_log.md#repository-maintenance-2026-10-16`.
+Prior projection: `tasks/change_log.md#maintenance-continuity-inputs-2026-10-16`.
+```
+
+### Prior tasks/handoffs/session-handoff-LATEST.md
+
+```text
+# Session Handoff
+
+Resume pointer: `tasks/plan.md` is the only active cursor; `tasks/intent.json` records authority.
+Read `tasks/checklist.md` for status and
+`tasks/change_log.md#repository-maintenance-2026-10-16` for this pass.
+Superseded handoff text is preserved verbatim at
+`tasks/change_log.md#maintenance-continuity-inputs-2026-10-16`.
+No commit, release, live database write or generated `.codex/**` edit is authorized.
+
+<!-- mir:runtime-snapshot:begin -->
+## Runtime Snapshot (Generated)
+
+### Active Plan Items
+- No open plan items.
+
+### Working Tree
+- Working tree dirty (8 paths; inspect git status --short).
+<!-- mir:runtime-snapshot:end -->
+```
+
+### Prior checklist evidence item 8
+
+8. DONE: shared maintenance skill and count contract now cover 22 items; isolated/common skill checks passed (33 tests).
+
+### Correction checks
+
+- Before and after the documentation correction: `uv run pytest -q -p no:cacheprovider tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees tests/test_repo_maintenance_skill.py tests/test_public_template_surface.py --basetemp=<scratch>`: 16 passed, 0 failed on each run (0.51s / 0.25s). UV_CACHE_DIR used the owner-specified external cache; scratch stayed on the external SSD.
+- Python assertions: intent JSON parses, corrected fragment resolves to the existing heading, `/vocabularies/9` names the maintainer intent lifecycle, and the supplied map digest is unchanged: 4 passed, 0 failed.
+- `git diff --check`: passed. No code/test finding or fail-first case applies. No full-suite rerun, generator, commit, release or held-branch edit was performed. Main owns review/commit; owner D1 retains the held-branch decision.
