@@ -1,10 +1,16 @@
 {
-  "goal": "Make local validation and fresh-checkout validate workflow commands pass while retaining the memory render guard.",
+  "goal": "Close ontology impact and isolated distribution gaps and scope E06/E08 evidence.",
   "goal_type": "maintenance",
-  "scope": "Release heading consistency, transient-safe capability digests, history-aware checkout, deterministic adopter inventory and bounded verification.",
+  "scope": "G04, G05 Yoke fixture interface, PARTIAL 7.E06 and 7.E08; repository only.",
   "priority": "normal",
   "updated": "2026-10-16",
   "history": [
+    {
+      "goal": "Make local validation and fresh-checkout validate workflow commands pass while retaining the memory render guard.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#local-and-ci-validation-fixes-2026-10-16"
+    },
     {
       "goal": "Prevent automatic consistency tests from rendering live agent memory.",
       "updated": "2026-10-16",
@@ -25,5 +31,5 @@
     }
   ],
   "status": "complete",
-  "evidence": "tasks/change_log.md#local-and-ci-validation-fixes-2026-10-16"
+  "evidence": "tasks/change_log.md#ontology-gap-development-2026-10-16"
 }

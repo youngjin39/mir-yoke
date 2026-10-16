@@ -77,6 +77,17 @@ def test_current_graph_is_reloaded_and_source_digest_changes(tmp_path: Path) -> 
     )
 
 
+def test_should_not_reuse_removed_verification_edge_after_graph_changes(tmp_path: Path) -> None:
+    (tmp_path / "tests").mkdir()
+    (tmp_path / "tests/check.py").write_text("")
+    _graph(tmp_path, "edges:\n  - [FR-X, verified_by, tests/check.py::old]\n")
+    first = query_relations("FR-X", "verification", root=tmp_path)
+    _graph(tmp_path, "edges:\n  - [FR-X, verified_by, tests/check.py::current]\n")
+    second = query_relations("FR-X", "verification", root=tmp_path)
+    assert first["source"]["sha256"] != second["source"]["sha256"]
+    assert [edge["target"] for edge in second["edges"]] == ["tests/check.py::current"]
+
+
 @pytest.mark.parametrize("anchor", ["../bad", "/bad", "secrets/key.txt", ".env"])
 def test_unsafe_or_unknown_anchors_fail(tmp_path: Path, anchor: str) -> None:
     _graph(tmp_path, "edges:\n  - [A, has_req, B]\n")

@@ -4763,3 +4763,147 @@ Remaining Main verification: actual GitHub Actions Ubuntu/macOS matrices after a
 delivery, plus the guarded shared consistency test on the host (excluded in this sandbox).
 Generated parity passes without regeneration. No commit, push, tag, GitHub access, lock
 binding/refresh, live memory database, secret read, or consumer write was performed.
+
+
+## Superseded cursor: local and CI fixes before ontology gap development (2026-10-16)
+
+# Plan
+
+## Active task: local and CI validation fixes (2026-10-16)
+
+Authority: the owner request recorded in `tasks/intent.json`; this is the single active
+cursor and design record. Preserve the completed memory render guard (section A), whose
+cursor is archived in `tasks/change_log.md#superseded-cursor-memory-render-guard-before-local-and-ci-fixes-2026-10-16`.
+
+Outcome: strict release metadata and committed capability digests agree with supported
+sources; runtime caches do not affect bind/verify; every validate job command has fresh
+checkout evidence, with actual Actions and platform limits stated explicitly.
+
+- [x] Reproduce release, cache and fresh-checkout inventory failures; inspect release history.
+- [x] Apply minimum fixes, prove cache fail-first and unchanged committed lock digests.
+- [x] Run focused checks, full pytest with required deselect, lint and read-only parity.
+- [x] Overlay only final candidate changes onto fresh HEAD clone; run each validate command.
+- [x] Record root causes, commands/counts and remaining Main verification; regenerate payload.
+
+Limits: one writer; no commits, pushes, tags, GitHub access, capability lock refresh,
+live memory databases, secrets or generated `.codex/**` writes. Every pytest command uses
+`--deselect tests/test_harness_consistency.py`. UV cache and scratch remain on external
+storage. Ontology map remains unchanged at the owner-supplied SHA-256; semantic assertions
+must cite map entries or direct source/test evidence. No cross-project authority is inferred.
+
+Completed: the fixed implementation passed 2,050 tests with one required deselection.
+Fresh HEAD plus the complete candidate overlay passed all four validate job command sets
+on macOS/Python 3.12, including the pinned real CLI activation probe. See
+`tasks/change_log.md#local-and-ci-validation-fixes-2026-10-16` for commands, counts and causes.
+The committed capability lock and generated Codex files remain unchanged.
+
+Main must verify actual Ubuntu/macOS Actions matrix results after authorized delivery and
+run the guarded shared consistency test separately on the host. This sandbox did not
+run Actions, publish, commit, or access a live memory database.
+
+## Ontology gap development (2026-10-16)
+
+Authority and design: current owner brief, recorded in `tasks/intent.json` and the single
+`tasks/plan.md` cursor. Scope is G04, the supplier-side G05 fixture interface, and rows
+7.E06/7.E08. No network, live database, memory sync, consumer write, runtime updater,
+commit, push, release or checkout `.codex/**` regeneration was performed.
+
+### Reproduction and changes
+
+- G04 reproduced. `impact` previously selected covered error-case checks only. The new
+  focused tests failed before the checker edit: 4 failed / 1 passed (two omitted invariant
+  checks, accepted directory check and accepted non-string check; missing paths already failed).
+  After the edit: 5 passed. Optional `domain.invariants[].check` now uses covered-check
+  validation; affected invariant checks are selected and exact duplicate refs collapse.
+  Unaffected invariants stay absent. `undeclared_check_links` explicitly reports affected
+  invariants with no declared check; no missing dependency is inferred. The public skill
+  and mapping guide document this selection-only behavior. Source and consumer fixtures
+  include an ADR-style definition and a source module; byte-copied canonical consumer runners
+  forward the new JSON report without requiring runner changes. Sentinel check code never runs.
+- G05: the missing round-trip evidence was confirmed; a manager implementation defect did
+  not reproduce. Existing `CapabilityManager` constructor injection and `sync`/`update`
+  already support offline suppliers and explicit temporary consumers. No production manager
+  change or transport-policy relaxation was needed. The new fixture uses immutable revision
+  exports, a temporary supplier/provider, two consumer profiles (`code_app`, `infra_runtime`),
+  and stub runtimes. It exercises contract 1.1.0 -> 1.1.1 -> 1.1.0 through real package
+  validation/digest binding, compatibility impact, explicit local apply, map revalidation and
+  package/map rollback. Peer locks/maps and unrelated files are preserved. Contract 2.0.0
+  is rejected for both consumers before apply (impact exit 1); injected incomplete derivative
+  rollback raises `local rollback was incomplete`, rather than reporting success. These are
+  expected negative receipts, not newly fixed production defects. All three fixture scenarios
+  passed with the production manager unchanged. The separate caller-owned rehearsal must
+  treat those outcomes as failures; `docs/operations/ontology-distribution-rehearsal.md`
+  specifies the transport and ownership interface. Orchestration remains outside this repository.
+- 7.E06: the broader stale-evidence guarantee did not reproduce as an implemented local
+  mechanism. `src/mir/core/relations.py#_load_graph` hashes graph bytes; queries reload edges,
+  not referenced target contents. Existing coverage remains intact and a negative regression
+  proves that a removed verification edge is not reused on the next query. The map entry
+  `/error_cases/5` now explicitly limits coverage to graph reload/digest and excludes target
+  content freshness/cached-evidence validation. The new regression passes with unchanged
+  relation code; no absent cache-validation product was invented.
+- 7.E08: personal-data isolation was not established by the cited check. The real client
+  `plugins/mir-core/skills/ontology/scripts/mk_query.py#exchange` forwards structured supplier
+  output; `main` prints it. The supplier owns namespace authorization. Map `/error_cases/7`
+  is now `not_applicable` within that transport scope, with a verified reason. The existing
+  synthetic refusal forwarding test remains unchanged and passes. No privacy-policy layer
+  or claim of live supplier isolation was added.
+
+### Verification receipts
+
+Commands use the owner-specified external UV cache and fixture TMPDIR/basetemp. Every pytest
+invocation includes `--deselect tests/test_harness_consistency.py`; no full-suite result is claimed.
+
+- Initial focused G04 run: 4 failed, 1 passed. An earlier attempt had five setup errors because
+  the requested scratch parent was missing; creating that parent allowed actual fail-first checks.
+- Expanded check:
+  `uv run --offline pytest -q tests/test_ontology_skill.py tests/test_ontology_runner.py tests/test_mir_ontology.py tests/test_capability_cli.py tests/test_capability_security.py tests/test_relations.py tests/test_public_template_surface.py tests/test_plugin_skill_packages.py --deselect tests/test_harness_consistency.py --basetemp "$TASK_SCRATCH/pytest" --tb=short`
+  returned **462 passed, 1 failed**. The sole failure is
+  `tests/test_capability_cli.py#test_repository_lock_is_portable_and_matches_managed_trees`:
+  the existing lock binds the prior committed mir-core package digest, while this candidate
+  changes that package. The package lock is deliberately left for Main's separate release
+  binding. No check was bypassed or assertion weakened.
+- An intermediate expanded run returned 445 passed / 8 failed: seven own-map gate failures
+  resulted from the larger wording exceeding the map byte budget. Minimal wording restored
+  the budget; all seven then passed. The eighth was the same release-binding failure above.
+- Focused corrected own-map/rehearsal selection: 10 passed.
+- `uv run --offline pytest -q -s tests/test_capability_security.py -k rehearse_ontology --deselect tests/test_harness_consistency.py --basetemp "$TASK_SCRATCH/pytest" --tb=short`:
+  3 passed. Printed receipts retain sync/update/rollback operations, revision and package
+  digest, plus per-consumer impact/mapping command exits. Candidate package digest:
+  `77d4efcceafcd1e9ed46e3ed17881249d76e66e67a8d376655fb7fb7fde9eaa5`;
+  restored baseline package digest:
+  `4adaffed4173cc10284a733ec6e64cc33e3a567cb1af063a1aca505dc6437e0e`.
+- `uv run --offline ruff check`: passed. Read-only
+  `uv run --offline python scripts/verify_codex_sync.py`: passed, no checkout regeneration.
+- `python3 scripts/mir_ontology.py mapping`: 0 errors / 0 warnings, contract/mapping 1.1.0.
+- `python3 scripts/mir_ontology.py impact --git-diff --strict`: exit 0, no stale refs.
+- Public-surface and isolated plugin-package checks passed in the expanded run above.
+
+### Distribution identities and Main follow-up
+
+Original map SHA-256 was the owner-supplied
+`9b9d8eab4b8ab065ccd1e92840fc92503520d4ef75964bf52615c25e99500eda`.
+New map SHA-256 is `331ac91cd1d8ddd22558c11549395c62c06f2ad9616294470aec795ca44abe40`.
+The canonical runner bytes did not need changing; its candidate SHA-256 is
+`fe4c885c9501cf297c062b99e33333cecd3e664de452fedcffbe1fed5a9e6891`.
+The changed checker SHA-256 is
+`d4383a8b30f92463f73f6dcbe0840737296701a4a66d3a6bd4f4adb0c42ee528`.
+No copy into any consumer was performed.
+
+Main must run its separately owned end-to-end rehearsal against this documented fixture
+interface, perform authorized release/lock binding and consumer delivery separately, then
+rerun the lock gate and full host suite including the guarded consistency check. No additional
+product feature decision is required for the bounded changes. The working tree is not fully
+green until the release-binding failure is resolved by Main.
+
+Changed sources: `.mir/ontology-map.json`, ontology skill/guide/checker, the new rehearsal
+interface document, `tests/test_ontology_skill.py`, `tests/test_capability_security.py`,
+`tests/test_relations.py`, and cursor/intent/this log. The documented adopter-payload generator
+refreshes `config/adopter-payload.json` after final bookkeeping; it has no database candidates.
+
+Final follow-up checks after strengthening reverse-update peer preservation:
+- Combined G04/G05 selection (`-k 'rehearse_ontology or declared_invariant'`): 8 passed.
+- `uv run --offline pytest -q tests/test_public_template_surface.py --deselect tests/test_harness_consistency.py`: 3 passed after final documentation/bookkeeping.
+- `uv run --offline pytest -q tests/test_template_asset_classification.py --deselect tests/test_harness_consistency.py`: 6 passed, including exact adopter-payload parity.
+- Final `uv run --offline ruff check` and `git diff --check`: passed.
+- A direct system-Python payload probe lacked `jsonschema`; the repository's uv environment
+  passed the actual six classification tests. Adopter payload is regenerated after this log update.

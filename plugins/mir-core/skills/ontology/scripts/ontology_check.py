@@ -322,6 +322,8 @@ class Checker:
                 entry_at = pointer(at, i)
                 entry = self.object(raw_entry, entry_at)
                 self.ref(entry.get("ref"), entry_at + "/ref", root)
+                if key == "invariants" and "check" in entry:
+                    self.covered_check(entry["check"], entry_at + "/check", root)
                 if key == "relations" and "common" in entry:
                     self.common_relation(entry, entry_at, contract, endpoints_required)
         questions = self.array(mapping.get("questions"), "/questions")
@@ -575,11 +577,21 @@ def impact(mapping, root, changed, git_diff=False):
     affected = []
     affected_paths = set()
     stale = []
+    checks = set()
+    undeclared = []
     for at, entry in map_entries(mapping):
         refs = list(entry_refs(entry, at))
         if any(touches(ref_path(ref), changed) for _, ref in refs):
             affected.append({"pointer": at, "refs": [ref for _, ref in refs]})
             affected_paths.update(ref_path(ref) for _, ref in refs)
+            if at.startswith("/domain/invariants/") and isinstance(entry, dict):
+                if isinstance(entry.get("check"), str):
+                    checks.add(entry["check"])
+                elif "check" not in entry:
+                    undeclared.append({
+                        "pointer": at, "ref": entry.get("ref"),
+                        "message": "no check declared; no test link inferred",
+                    })
         for location, ref in refs:
             check = Checker()
             if git_diff and re.search(r":\d+$", ref.split("#", 1)[0]) and touches(
@@ -591,10 +603,11 @@ def impact(mapping, root, changed, git_diff=False):
                 })
             try:
                 if (
-                    at.startswith("/error_cases/")
-                    and location.endswith("/check")
+                    location.endswith("/check")
                     and isinstance(entry, dict)
-                    and entry.get("status") == "covered"
+                    and (at.startswith("/domain/invariants/") or (
+                        at.startswith("/error_cases/") and entry.get("status") == "covered"
+                    ))
                 ):
                     check.covered_check(ref, location, root)
                 else:
@@ -603,7 +616,6 @@ def impact(mapping, root, changed, git_diff=False):
                 check.error(location, "ref could not be resolved")
             for finding in check.errors:
                 stale.append({**finding, "ref": ref})
-    checks = set()
     cases = mapping.get("error_cases", [])
     for case in cases if isinstance(cases, list) else []:
         if isinstance(case, dict) and case.get("status") == "covered":
@@ -617,6 +629,7 @@ def impact(mapping, root, changed, git_diff=False):
         "changed_paths": changed,
         "affected_entries": affected,
         "checks_to_run": sorted(checks),
+        "undeclared_check_links": undeclared,
         "stale_refs": stale,
         "revalidate": ".mir/ontology-map.json" in changed,
     }
@@ -730,6 +743,9 @@ def main(argv=None):
                 print("checks to run (selection only):")
                 for ref in selection["checks_to_run"]:
                     print("  " + ref)
+                print("undeclared check links (no inference):")
+                for entry in selection["undeclared_check_links"]:
+                    print("  " + entry["pointer"] + ": " + entry["message"])
                 print("stale refs:")
                 for entry in selection["stale_refs"]:
                     print("  " + entry["pointer"] + ": " + entry["ref"] + ": " + entry["message"])

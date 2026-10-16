@@ -1256,3 +1256,53 @@ def test_should_resolve_fleet_anchor_forms_and_reject_mentions(
     for missing_anchor in invalid:
         mapping["entrypoints"] = [target.name + "#" + missing_anchor]
         assert run_mapping(repo, mapping).returncode == 1
+
+
+@pytest.mark.parametrize("source", ["docs/adr-091.md", "src/consumer.py"])
+def test_should_select_declared_invariant_checks_without_execution(
+    mapping_repo, source, monkeypatch,
+):
+    repo, mapping = mapping_repo
+    target = repo / source
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text("# Definition\n")
+    (repo / "unaffected.md").write_text("# Other\n")
+    (repo / "checks.py").write_text(
+        "from pathlib import Path\nPath('ran-invariant').touch()\n"
+        "def test_invariant(): pass\ndef test_other(): pass\n"
+    )
+    check = "checks.py#test_invariant"
+    mapping["domain"]["invariants"] = [
+        {"ref": source, "check": check},
+        {"ref": source, "check": check},
+        {"ref": "unaffected.md", "check": "checks.py#test_other"},
+        {"ref": source},
+    ]
+    run_mapping(repo, mapping)
+    # Exercise the byte-copied consumer runner against the candidate checker too.
+    runner = repo / "scripts/mir_ontology.py"
+    runner.parent.mkdir()
+    runner.write_bytes((SKILL / "scripts/mir_ontology_runner.py").read_bytes())
+    monkeypatch.setenv("MIR_ONTOLOGY_CHECKER", str(CHECKER))
+    result = subprocess.run(
+        [sys.executable, str(runner), "impact", "--paths", source, "--strict", "--json"],
+        capture_output=True, text=True,
+    )
+    assert result.returncode == 0, result.stdout
+    report = json.loads(result.stdout)
+    assert report["checks_to_run"] == [check]
+    assert report["undeclared_check_links"] == [{
+        "pointer": "/domain/invariants/3", "ref": source,
+        "message": "no check declared; no test link inferred",
+    }]
+    assert not (repo / "ran-invariant").exists()
+
+
+@pytest.mark.parametrize("check", ["missing.py#test_x", ".", 7])
+def test_should_reject_invalid_declared_invariant_check(mapping_repo, check):
+    repo, mapping = mapping_repo
+    mapping["domain"]["invariants"][0]["check"] = check
+    result = run_mapping(repo, mapping, "--json")
+    assert result.returncode == 1, result.stdout
+    assert any(e["pointer"] == "/domain/invariants/0/check"
+               for e in json.loads(result.stdout)["errors"])

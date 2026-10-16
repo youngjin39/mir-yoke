@@ -17,7 +17,7 @@ All twelve top-level keys are required:
 | `concepts` | Object keyed by every common concept ID: Project, Agent, Capability, Requirement, Concept, Artifact, Decision, Task, Run, Evidence, Assessment, Policy. |
 | `vocabularies` | List of objects with `name`, `ref`, `values`; each local value maps to an object of common axis/value pairs or `{"local_only": "reason"}`. |
 | `relations` | List with `local` relation name and exactly one of `common` (contract relation ID) or `local_only` (reason). Optional `ref` locates its definition. Validated version >=1.1.0 requires `from` and `to` on common entries: nonempty arrays of common concept IDs, or `"*"`, allowed by the contract endpoints. `local_only` needs none. |
-| `domain` | Object with lists `concepts`, `relations`, `invariants`; each item carries a `ref` to the project-owned definition. Extra domain fields may remain local. |
+| `domain` | Object with lists `concepts`, `relations`, `invariants`; each item carries a `ref` to the project-owned definition. Invariants may declare an optional executable `check` ref. Extra domain fields may remain local. |
 | `questions` | List with at least one item, preferably about three real domain questions. Each has `id`, `question`, `evidence` (list of refs). Below three produces a warning. |
 | `error_cases` | List with contract case `id` and status `covered`, `planned` or `not_applicable`; `covered` requires a `check` ref. |
 | `knowledge_supply` | `memory_keeper` = `connected`, `parent_supplied` or `not_connected`; Optional `binding` names `on_demand_stdio` or `resident_stdio` in 1.1.0. Legacy 1.0.0 connected mappings retain existing binding refs. |
@@ -69,6 +69,11 @@ that line still exists. A symbol ref into a changed file remains valid while its
 For `covered` checks the checker also requires a file and validates one-based line bounds;
 `.md`, `.txt` and `.rst` checks warn that covered needs a repeatable check. Resolving a check
 does not execute it or prove its claim.
+Optional `domain.invariants[].check` refs use the same file/anchor validation as covered checks.
+Impact selects that check when any ref in its invariant is affected and deduplicates exact refs.
+Unaffected invariants remain unselected. Affected invariants without `check` are reported in
+`undeclared_check_links`; the checker never searches for or invents missing test links.
+
 
 Questions should expose real decisions in the domain, with evidence that can answer them:
 which note is current after a revision; which citations need review after a source changes;

@@ -1567,3 +1567,163 @@ def test_git_export_rejects_remote_link_submodule_and_executable_modes(
             ["plugins/mir-core"],
             tmp_path / "checkout",
         )
+
+
+class RevisionFixtureGit(CopyGit):
+    """Offline supplier with immutable revisions, including exports of prior bytes."""
+
+    def __init__(self, revisions: dict[str, Path], commit: str) -> None:
+        super().__init__(revisions[commit], commit)
+        self.revisions = revisions
+
+    def export(self, url, ref, commit, paths, destination):
+        self.source = self.revisions[commit]
+        super().export(url, ref, commit, paths, destination)
+
+
+@pytest.mark.parametrize("failure", [None, "candidate", "rollback"])
+def test_should_rehearse_ontology_distribution_and_rollback_in_fixtures(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, failure: str | None,
+) -> None:
+    """Exercise manager delivery; semantic preflight/map rollback belong to its caller."""
+    import sys
+
+    baseline = tmp_path / "supplier-a"
+    config = load_capability_config(ROOT / "config/capability-sources.json")
+    paths = [
+        "config/capability-sources.json", ".claude-plugin/marketplace.json",
+        ".agents/plugins/marketplace.json", *config.plugins.values(),
+        *config.agents, *config.commands,
+    ]
+    CopyGit().export("", "", "a" * 40, paths, baseline)
+    candidate = tmp_path / "supplier-b"
+    shutil.copytree(baseline, candidate)
+    relative_contract = Path("plugins/mir-core/skills/ontology/references/common-contract.json")
+    contract = json.loads((candidate / relative_contract).read_text())
+    contract["version"] = "2.0.0" if failure == "candidate" else "1.1.1"
+    (candidate / relative_contract).write_text(json.dumps(contract))
+    transport = RevisionFixtureGit({"a" * 40: baseline, "b" * 40: candidate}, "a" * 40)
+    home, codex = tmp_path / "provider", tmp_path / "codex"
+    runner = runtime_runner(home / "active", codex)
+    managers = [CapabilityManager(
+        make_project(tmp_path, name), capability_home=home,
+        user_home=tmp_path / "user", codex_home=codex, git=transport,
+        command_runner=runner, which=lambda executable: f"/fake/{executable}",
+    ) for name in ("first", "second")]
+    profiles = ("code_app", "infra_runtime")
+    maps = []
+    receipts = []
+    for manager, profile in zip(managers, profiles, strict=True):
+        root = manager.project_root
+        (root / ".mir").mkdir(exist_ok=True)
+        (root / ".mir/repo-profile.toml").write_text(f'[repo]\nslug = "{root.name}"\n')
+        (root / "model.md").write_text(f"# {root.name}\n")
+        (root / "unrelated.txt").write_text(profile)
+        mapping = {
+            "schema": "mir-semantic-mapping/v1",
+            "contract": {"id": "mir.common-semantics", "version": "1.1.0",
+                         "version_range": ">=1.0.0 <2.0.0"},
+            "namespace": root.name, "canonical_index": ["model.md"],
+            "concepts": {item["id"]: {"status": "absent", "reason": "Fixture only."}
+                         for item in contract["concepts"]},
+            "vocabularies": [], "relations": [],
+            "domain": {"concepts": [], "relations": [], "invariants": []},
+            "questions": [{"id": f"Q{i}", "question": "Which local model?",
+                           "evidence": ["model.md"]} for i in range(3)],
+            "error_cases": [], "knowledge_supply": {"memory_keeper": "not_connected"},
+            "entrypoints": ["model.md"],
+        }
+        path = root / ".mir/ontology-map.json"
+        path.write_text(json.dumps(mapping))
+        maps.append(path)
+        assert manager.sync(profile, apply=True)["applied"]
+        receipts.append({"consumer": root.name, "operation": "sync", "applied": True})
+    checker = candidate / "plugins/mir-core/skills/ontology/scripts/ontology_check.py"
+
+    def verify(root, command, distribution, *args):
+        result = subprocess.run(
+            [sys.executable, str(checker), command, "--repo", str(root),
+             "--contract", str(distribution / relative_contract), "--json", *args],
+            text=True, capture_output=True, check=False,
+        )
+        report = json.loads(result.stdout)
+        receipts.append({"consumer": root.name, "command": command,
+                         "exit": result.returncode, "ok": report["ok"]})
+        return result.returncode, report
+
+    before_package = _tree_digest(home / "active")
+    before_locks = [manager.lock_path.read_bytes() for manager in managers]
+    before_maps = [path.read_bytes() for path in maps]
+    before_registry = managers[0].registry_path.read_bytes()
+    before_digest = json.loads(before_locks[0])["plugins"]["mir-core"]["sha256"]
+    for manager in managers:
+        code, report = verify(manager.project_root, "impact", candidate,
+                              "--paths", "model.md", "--strict")
+        if failure == "candidate":
+            assert code == 1 and not report["ok"]
+            assert any("version mismatch" in e["message"] for e in report["errors"])
+        else:
+            assert code == 0 and report["ok"]
+    if failure == "candidate":
+        assert _tree_digest(home / "active") == before_package
+        assert managers[0].registry_path.read_bytes() == before_registry
+    else:
+        transport.commit = "b" * 40
+        if failure == "rollback":
+            def fail_derivatives(*, raise_on_error=True):
+                if raise_on_error:
+                    raise CapabilityError("fixture apply failure")
+                return False
+
+            monkeypatch.setattr(managers[0], "_regenerate_agent_derivatives", fail_derivatives)
+            with pytest.raises(CapabilityError, match="local rollback was incomplete"):
+                managers[0].update(profiles[0], apply=True)
+            receipts.append({"operation": "update", "error": "local rollback was incomplete"})
+            assert _tree_digest(home / "active") == before_package
+            assert managers[0].registry_path.read_bytes() == before_registry
+        else:
+            for i, (manager, profile) in enumerate(zip(managers, profiles, strict=True)):
+                peer = managers[1 - i]
+                peer_lock, peer_map = peer.lock_path.read_bytes(), maps[1 - i].read_bytes()
+                preview = manager.update(profile)
+                assert preview["ready_to_apply"] and preview["dry_run"]
+                assert manager.update(profile, apply=True)["applied"]
+                lock = json.loads(manager.lock_path.read_text())
+                receipts.append({"consumer": manager.project_root.name, "operation": "update",
+                                 "commit": lock["source"]["commit"],
+                                 "sha256": lock["plugins"]["mir-core"]["sha256"]})
+                receipt = json.loads(manager.active_receipt_path.read_text())
+                assert receipt["plugins"]["mir-core"] == lock["plugins"]["mir-core"]["sha256"]
+                assert lock["plugins"]["mir-core"]["sha256"] != before_digest
+                assert lock["plugins"]["mir-core"]["sha256"] == _tree_digest(
+                    home / "active/plugins/mir-core"
+                )
+                mapping = json.loads(maps[i].read_text())
+                mapping["contract"]["version"] = "1.1.1"
+                maps[i].write_text(json.dumps(mapping))
+                assert verify(manager.project_root, "mapping", home / "active")[0] == 0
+                assert peer.lock_path.read_bytes() == peer_lock
+                assert maps[1 - i].read_bytes() == peer_map
+            transport.commit = "a" * 40
+            for i, (manager, profile) in enumerate(zip(managers, profiles, strict=True)):
+                peer = managers[1 - i]
+                peer_lock, peer_map = peer.lock_path.read_bytes(), maps[1 - i].read_bytes()
+                assert manager.update(profile, apply=True)["applied"]
+                maps[i].write_bytes(before_maps[i])
+                assert verify(manager.project_root, "mapping", home / "active")[0] == 0
+                assert peer.lock_path.read_bytes() == peer_lock
+                assert maps[1 - i].read_bytes() == peer_map
+            assert _tree_digest(home / "active") == before_package
+            for manager in managers:
+                lock = json.loads(manager.lock_path.read_text())
+                assert lock["source"]["commit"] == "a" * 40
+                receipts.append({"consumer": manager.project_root.name, "operation": "rollback",
+                                 "commit": lock["source"]["commit"],
+                                 "sha256": lock["plugins"]["mir-core"]["sha256"]})
+                assert lock["plugins"]["mir-core"]["sha256"] == before_digest
+    for i, manager in enumerate(managers):
+        if failure is not None:
+            assert manager.lock_path.read_bytes() == before_locks[i]
+        assert maps[i].read_bytes() == before_maps[i]
+        assert (manager.project_root / "unrelated.txt").read_text() == profiles[i]
+    print(json.dumps({"scenario": failure or "round-trip", "receipts": receipts}))

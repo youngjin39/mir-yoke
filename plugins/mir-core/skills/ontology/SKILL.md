@@ -78,8 +78,11 @@ run `mapping` when prompted to **re-validate**. `--paths path ...` selects expli
 `--git-diff [BASE]` defaults to `HEAD` and includes staged and unstaged changes. It never executes
 checks or scans the repository tree. Normal selection exits 0; `--strict` exits 1 for stale refs
 or invalid mappings; usage/IO failures exit 2. `--json` provides bounded machine-readable reports.
-Checks are selected when their file changes or their ref shares a source path with an affected
-entry. This navigation does not infer undeclared dependencies or prove executed verification (E04).
+Covered error-case checks are selected when their file changes or their ref shares a source path
+with an affected entry. An affected `domain.invariants` entry also selects its optional declared
+`check`; duplicate refs collapse. Affected invariants without a check appear under
+`undeclared_check_links` (text: **undeclared check links**). Selection never infers missing test
+links or proves executed verification (E04).
 
 `lookup` supplies up to three term-matching questions, concepts and domain entries with evidence
 refs and the declared contract id/version. Use `--limit N` to change the bound or `--json` for

@@ -93,9 +93,9 @@
 {"id":"E03","status":"covered","reason":"Scope: default search excludes superseded/mirrored documents; history is opt-in.","check":"tests/test_adr53_phase3a_search.py#test_search_default_excludes_semantic_historical_documents"},
 {"id":"E04","status":"covered","reason":"Selection only, no execution/pass claims.","check":"tests/test_mir_ontology.py#test_should_select_own_checks_without_execution"},
 {"id":"E05","status":"not_applicable","reason":"Lexical navigation has no vector/inferred identity or fact promotion."},
-{"id":"E06","status":"covered","reason":"Scope: graph reload recomputes source digest after edits.","check":"tests/test_relations.py#test_current_graph_is_reloaded_and_source_digest_changes"},
+{"id":"E06","status":"covered","reason":"Scope: graph reload/digest; no target-content freshness or cached-evidence validation.","check":"tests/test_relations.py#test_current_graph_is_reloaded_and_source_digest_changes"},
 {"id":"E07","status":"covered","reason":"Scope: adoption --apply without a repository contract fails with zero writes.","check":"tests/test_public_template_authority.py#test_should_make_zero_writes_when_existing_repository_contract_is_missing"},
-{"id":"E08","status":"covered","reason":"Synthetic client refusal only.","check":"tests/test_ontology_skill.py#test_should_pass_personal_namespace_refusal_unchanged"},
+{"id":"E08","status":"not_applicable","reason":"Supplier owns personal-data authorization; this client only forwards synthetic refusals."},
 {"id":"E09","status":"covered","reason":"Missing config; local gate passes.","check":"tests/test_mir_ontology.py#test_should_continue_local_gate_when_mk_config_is_missing"},
 {"id":"E10","status":"covered","reason":"Checkout gate rejects stale refs/version.","check":"tests/test_mir_ontology.py#test_should_fail_gate_when_own_map_is_stale_or_incompatible"}
 ],
