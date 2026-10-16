@@ -5406,3 +5406,248 @@ this authorized synthetic scope. No owner decision is needed to ship this bounde
 development evidence; broader acceptance requires separate observations.
 No repository commit, push or release ran. Task-owned external scratch is removed
 after verification; no daemon or emulator was started.
+
+
+## Maintenance continuity inputs (2026-10-16)
+
+Verbatim superseded continuity text, preserved before the owner-directed maintenance pass.
+
+### Prior tasks/plan.md
+
+```markdown
+# Plan
+
+## Active task: ontology rejudgment G08/G13 (2026-10-16)
+
+Authority: the current owner brief, including the common rejudgment development
+instructions. This cursor records the requested intent before implementation.
+
+Outcome: one repeatable synthetic Yoke-domain selection/evidence scenario through
+the real map and lookup/impact runner, and an inspected G13 target-freshness boundary.
+This proves selection/evidence use only, not agent quality, LIVE or ACCEPTED.
+
+- [x] Retain fail-first evidence and bounded child-process provenance assertions.
+- [x] Record G13 local non-applicability without inventing a cache product.
+- [x] Run focused tests, lint, mapping and strict impact; record remaining Main work.
+
+Limits: no network, live databases, memory operations, commits, delivery,
+runtime-home writes or generated `.codex/**` edits. Use external fixture scratch
+and a shared `UV_CACHE_DIR`.
+
+Evidence: `tasks/change_log.md#ontology-rejudgment-g08-g13-2026-10-16`.
+```
+
+### Prior tasks/checklist.md
+
+```markdown
+# Checklist
+
+Status projection for `tasks/plan.md`: executor common v3.5 now includes all six items.
+All sixteen new regression cases failed before their fixes, then passed.
+Combined full pytest: 1621 passed; executor tests: 615 passed, with zero new
+mir-wt temporary directories. Ruff, Python 3.11 compilation, sync and Codex parity
+passed. Committed locally by the Mir Harness Main after its own full re-run
+(the Codex sandbox could not create `.git/index.lock`).
+Evidence: `tasks/change_log.md`, "Executor common v3.5 maintenance (2026-10-02)".
+```
+
+### Prior tasks/handoffs/session-handoff-LATEST.md
+
+```markdown
+# Session Handoff — P4 ontology work path (2026-10-15)
+
+Resume pointer: `tasks/plan.md` is the only cursor; `tasks/intent.json` records authority.
+Evidence and superseded continuity text: `tasks/change_log.md`,
+"P4 ontology work path (2026-10-15)".
+Checkout runner, pytest mapping/strict-impact gate, optional MK instruction and scoped
+E01-E10 closure are implemented. Map: 1.1.0, 0/0, 12,245 bytes; CLAUDE: 3,587 bytes.
+Final affected/package/derivation/assets and integrity checks: 171 passed. Full-suite evidence is
+in the change log. Separately updated CLAUDE/AGENTS were preserved; read-only parity
+now passes. This executor did not write generated derivatives. No commit or delivery is authorized.
+The corrected full-suite process exited 0; its final summary file was unavailable when read.
+No real MK, intake, live database, consumer write or capability lock edit was performed.
+The generated snapshot below belongs to the preceding hook run; inspect current Git status.
+
+<!-- mir:runtime-snapshot:begin -->
+## Runtime Snapshot (Generated)
+
+### Active Plan Items
+- No open plan items.
+
+### Working Tree
+- Working tree clean.
+<!-- mir:runtime-snapshot:end -->
+```
+
+### Prior maintenance skill count wording
+
+```text
+description: "Periodic maintenance checkup of an agent-operated repository across twenty-one fixed items: consistency, operating base, documents, archiving, context, database/memory/graph inspection and repair, Claude/Codex harness consistency, skills and agents, instruction docs, rules and lessons, architecture, delegation and routing, continuity, work-context retrieval, token efficiency, test health, code/security/dependencies, integrity evidence, runtime behavior, open decisions, and parity when either CLI is Main.\n\nTrigger: repository maintenance, periodic check, repo checkup, fleet maintenance, clean up and improve the repository"
+5. Report against all twenty-one items using the evidence below.
+```
+
+
+## Repository maintenance (2026-10-16)
+
+Authority: the current owner brief, recorded in `tasks/intent.json`; the single
+active cursor is `tasks/plan.md`. The parent-supplied Harness directive dated
+2026-10-16 (ADR-91) supplies scope evidence, not independent authority.
+Start `git status --short`: empty. No pre-existing dirty paths.
+No commit, push, tag, release, version change, live database write, secret read,
+consumer write, runtime-home installation or generated `.codex/**` edit is part of this pass.
+
+### Bounded improvements
+
+The checklist and handoff pointed to 2026-10-02 and 2026-10-15 while the cursor
+pointed to completed 2026-10-16 ontology work. The current intent, cursor, status
+projection and resume pointer now describe this pass. Their superseded text is
+preserved verbatim under "Maintenance continuity inputs (2026-10-16)" above.
+Previous intent entries remain in `tasks/intent.json`.
+
+The portable maintenance skill still specified 21 items. Add the owner-requested
+Agent/Loop/Graph/Ontology assessment as item 22 and update its existing count
+contract test. No new gate, runtime hook or execution restriction was introduced.
+The prior count wording is preserved above. This changes a shared plugin source
+and therefore needs Harness review before any later authorized delivery.
+
+### Checklist evidence
+
+1. DONE: current path verification passed (9 files, 77 refs); Codex generation parity passed.
+2. NO CHANGE: active hook registrations and capability manifests retain ADR-90 boundaries; retired composition remains under reference templates.
+3. DONE: current continuity documents now describe the maintenance brief; historical spec remains explicitly superseded-reference (`spec/STATE.md`).
+4. DONE: prior cursor, checklist and handoff text, plus replaced skill count wording, are preserved verbatim in this evidence log.
+5. DONE: one active cursor, one resume pointer, one projection and one evidence log; no competing maintenance report was added.
+6. NO CHANGE: SQLite backup including WAL was diagnosed on SSD scratch: integrity_check=ok, foreign_key_check=0 rows; 348160 bytes, 21 facts, 12 entities. All facts have valid created_from rows; the single source exists and its hash matches. No missing affected-file paths or missing-source expiries. No live DB repair.
+7. NO CHANGE: common source-to-Codex parity passed; safety bounds remain intact.
+8. DONE: shared maintenance skill and count contract now cover 22 items; isolated/common skill checks passed (33 tests).
+9. NO CHANGE: CLAUDE.md 40 lines/3587 bytes; AGENTS.md 42 lines/3676 bytes, before=after; declared size budgets are 55/3600 and 60/3800.
+10. NO CHANGE: generated lessons and memory-map sections match snapshot renders; neither generated document was edited.
+11. NO CHANGE: ARCHITECTURE.md matches Starter, recipe, optional CLI, four plugin packages and inert historical references.
+12. NO CHANGE: generated routing lock matches the supplied policy: gpt-6.1-sol/medium default, narrow/unit gpt-6-luna/high, cap 8, depth 2, no full-history forks. Central source freshness was not independently checked; lock unchanged.
+13. DONE: owner intent is recorded in the canonical intent/cursor; stale projections were replaced with pointers and retained in history.
+14. NO CHANGE: ontology lookup returned /questions/0 (Q1) and its capability config, ADR-90 and architecture evidence; local retrieval works without MK.
+15. NO CHANGE: both registered SessionStart commands executed successfully with identical 550-byte stdout and no stderr, SHA256 a3b6e93ee355a65eb3f8d159b87b145ac3744d65421febf861a862a85d2ffd88. Startup intentionally carries safety/profile context, with task context retrieved on demand.
+16. SKIPPED (commit-bound closure): final full pytest returned 2061 passed, 1 failed in 299.13s; the changed plugin cannot match the old committed lock before Main commits the implementation and rebinds it under ADR-80/86. The guard remains mandatory. Cache and fixture scratch are external; pytest cache provider is disabled.
+17. NO CHANGE: uv audit --frozen found no known vulnerabilities or adverse project statuses in 28 locked packages. Installed-package freshness check found 14 newer versions; no dependency changes. License metadata inspected for 26 installed packages (MIT/BSD/Apache/MPL/PSF); optional sqlite-vec and platform-only colorama are not installed. Credential-signature scan covered 885 tracked text files, excluding protected secrets; all four hits are explicit test fixtures at tests/test_capability_security.py:530,540,550 and tools/mir_executor/tests/test_v31_regressions.py:66. Values were not reported. This is a bounded scan, not a comprehensive security certification.
+18. SKIPPED (lock rebinding pending): adopter inventory is regenerated through tools.template_assets after source/evidence changes. Published capability lock is preserved; new mir-core source digest needs Harness-owned delivery/rebinding.
+19. NO CHANGE: observed uv 0.11.3, Claude Code 2.1.301 and Codex CLI 0.159.2; both plugin inventories list all four Mir packages enabled at 0.13.1. Direct execution of both configured SessionStart commands matches. These observations do not prove fresh-session skill invocation or native hook trust.
+20. NO CHANGE: no new accepted-decision conflict or owner policy decision was found. Runtime trust and future delivery work are listed once under remaining work below.
+21. SKIPPED (partial evidence only): source/generated rules, registrations, absent project MCP binding and direct SessionStart outputs match. Native Codex hook trust and actual fresh Claude/Codex session discovery/enforcement could not be inspected through this noninteractive writer. No trust hash was written.
+22. DONE: Agent uses the shared contract, generated routing and four enabled packages; continuity drift is repaired. Loop remains an optional explicit CLI surface (`tests/test_loop_cli.py`, `tests/test_loop_driver.py`), with no standing process started. Graph uses the source-backed memory declaration and bounded YAML reader; CR-006 implementation retrieval returned 7 edges, with 5 unavailable historical file endpoints explicitly skipped. The memory-only SRR anchor is not a YAML identity. Ontology uses the unchanged 1.1.0 map and Q1 lookup/strict impact; the smallest shared improvement is the explicit four-axis checklist item. No graph/cache/service was added.
+
+### Semantic scope
+
+Map SHA256 remains `c20fbf3bdb910d3872b1f66730b56e0f34e8fa00c707e91eedd458c25a374340`;
+contract `mir.common-semantics@1.1.0`.
+Map `/questions/0` supplies Q1's evidence refs.
+`/vocabularies/2` marks spec readiness as historical; `/vocabularies/4`
+does not equate stored active facts with truth/freshness; `/vocabularies/5`
+separates capability diagnostics from READY; `/vocabularies/9` scopes intent
+completion to the task. `/domain/invariants` retains no standing consumer authority.
+Snapshot source inspection, not the active label, established source existence/hash match.
+No MK or parent ContextPack was used to establish a new semantic claim.
+
+### Executed checks and intermediate results
+
+All uv commands use the owner-specified external `UV_CACHE_DIR`.
+All temporary output uses the owner-specified external task scratch via `TMPDIR`.
+
+- Fail first: `uv run pytest -q -p no:cacheprovider tests/test_repo_maintenance_skill.py --basetemp=<scratch>/fail-first`: 1 failed, 11 passed; item 22 was absent before the skill fix.
+- After fix: `uv run pytest -q -p no:cacheprovider tests/test_repo_maintenance_skill.py tests/test_common_skill_contracts.py tests/test_plugin_skill_packages.py --basetemp=<scratch>/skill-fixed`: 33 passed.
+- First full run, started before skill/test edits: 2 failed, 2060 passed in 385.52s. It had collected the old 21-item contract and also observed the intermediate stale adopter inventory. This is not final-state evidence; a clean final collection was started after both fixes.
+- `uv run ruff check`: all checks passed.
+- `uv run python scripts/verify_codex_sync.py`: Codex derivatives match Claude sources; only temporary generator output was produced.
+- `python3 scripts/mir_ontology.py mapping`: 0 errors, 0 warnings.
+- `python3 scripts/mir_ontology.py impact --git-diff --strict`: exit 0; Task/intent affected, no stale refs or undeclared check links; selection is not execution.
+- `python3 scripts/verify_context_paths.py`: 9 files, 77 refs passed.
+- `uv run python scripts/verify_repo_agent_management.py`: schema, wiring, catalog, pack, specialist and repositories-dir checks passed; dispatch audit had 0 entries.
+- `uv audit --frozen`: exit 0, 28 packages, no known vulnerabilities or adverse statuses (OSV service; experimental CLI warning).
+- `uv pip list --outdated --format json`: 14 installed packages have newer versions; this does not establish compatibility with declared upper bounds.
+- SQLite `.backup` succeeded; opening the WAL-mode backup with the sqlite3 CLI initially returned unable-to-open. An immutable read-only connection to that stable backup passed integrity and FK checks. No live DB diagnostic writes were used.
+- `uv run mir memory render --db <snapshot> --target all`: exit 0; both generated sections match. `uv run mir memory reconcile-missing --db <snapshot> --project-root . --dry-run`: exit 0, would_expire=0. Both ran only on the backup; optional sqlite-vec was unavailable, so they used FTS5.
+- Initial YAML retrieval with the memory-only SRR anchor returned unknown anchor; corrected `uv run mir relations query CR-006 --purpose implementation --json` exited 0 with 7 edges and the historical-endpoint notice above.
+- `claude plugin list --json` and `codex plugin list --json`: exit 0, four Mir packages enabled each. Codex also warned that PATH aliases could not be created under the sandbox; no native trust inference follows.
+- A first multiline edit command was rejected by the existing shell screening hook; the quoted Python invocation succeeded. The hook was not changed or bypassed.
+
+### Integrity and remaining work
+
+`config/adopter-payload.json` is regenerated with
+`uv run python -m tools.template_assets --write-adopter-payload`; classifications,
+paths and dispositions are preserved, only dependent file hashes change.
+
+The published local capability receipt matches the original mir-core tree digest
+`1d4d89c5f05a78da485faa4e653ebff362f3c7a41f27b902636f12422e13ec9c`.
+The edited source tree digest is
+`0752773c635ae2ad86be46c5ff8447a8d28874b07f8039550fb14437c27b1b11`.
+ADR-80 section 7 and ADR-86's commit-bound managed-configuration rule require a committed implementation before lock reconciliation. Do not restamp a published-revision receipt with uncommitted source bytes.
+Harness Main owns any later approved revision, delivery, sync/finalization and
+runtime discovery receipts. No version bump or release is included here.
+
+No owner decision is needed for these bounded edits. Harness must inspect native
+hook trust and fresh-session discovery/enforcement before claiming full live Main
+parity. Either retain this limited evidence or obtain those runtime observations;
+only the broader parity claim is blocked. No safety gate or new restriction is added.
+
+Dependency upgrades (14 newer installed packages) and optional/platform-only license
+metadata remain separate compatibility work. No optional vector package was installed.
+The isolated activation verifier was not run because this pass does not install into runtime homes or expand commit authority; read-only host inventory probes were used. Fixture Git operations inside the required pytest suite remain test setup, not a repository commit.
+The release-readiness delivery workflow was not invoked; maintainer checks run directly.
+
+
+### Final-state failures diagnosed before closeout
+
+The second full collection completed with **2060 passed, 2 failed in 336.71s**:
+`tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees`
+reported the old/new mir-core digest difference above, and
+`tests/test_public_template_surface.py::test_should_expose_no_private_absolute_path_when_public_surfaces_are_scanned`
+found newly recorded host paths in this log. Those paths have been generalized to
+owner-specified cache/scratch variables to preserve the public contract.
+The lock assertion is not weakened or skipped in the suite. ADR-80 section 7 and
+ADR-86 require Main's committed implementation before lock reconciliation.
+This writer has no commit authority, so that exact remaining failure belongs to
+INTEGRITY/NEEDS HARNESS. A final full run follows the public-log correction.
+
+`uv run python <installed-skill-creator>/scripts/quick_validate.py plugins/mir-core/skills/repo-maintenance`
+also exited 0 (`Skill is valid!`).
+
+After public-log correction and inventory regeneration, the focused public-surface, maintenance-skill and adopter-inventory run passed **21 tests in 0.42s**.
+
+The documented `bash .claude/hooks/session-end.sh` ran with the explicit repository root and exited 0. It refreshed the canonical handoff's generated runtime snapshot through `pre-compact.sh`, reporting the two still-open verification/closeout items and 8 dirty paths. Generated snapshot contents were produced by the hook, not hand-edited.
+
+
+### Final writer closeout
+
+- Final full command: `uv run pytest -q -p no:cacheprovider --basetemp=<scratch>/pytest-closeout`.
+  **2061 passed, 1 failed in 299.13s**, exit 1. The sole failure is
+  `tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees`.
+  It compares edited mir-core bytes with the prior committed lock. This gate is
+  still failing, not waived; Main must follow ADR-80/86 before claiming closure.
+- The public-path failure is fixed; the final full suite contains no other failure.
+- Snapshot `uv run mir memory query SRR --limit 3 --db <snapshot>` exited 0
+  with one relevant FTS result. No live database was queried or written by this probe.
+- Live memory DB remains 348160 bytes with its original 2026-09-21 modification time;
+  its WAL remains 0 bytes with its original 2026-10-16 00:56 modification time.
+- Final source instruction sizes are unchanged (CLAUDE 40 lines/3587 bytes;
+  AGENTS 42 lines/3676 bytes). `git diff -- .codex .codex-sync AGENTS.md uv.lock VERSION`
+  is empty. No binaries/interpreters, services, emulators or daemons were changed/started.
+- Current intent/cursor mark only this bounded writer pass complete.
+  Committed-object integrity and live native Main parity remain explicitly unverified.
+- The canonical runtime snapshot is refreshed again through SessionEnd after
+  checking off the cursor. Inventory regeneration and affected public/skill/inventory
+  checks follow this evidence update; final command results are reported to Main.
+- Scratch is removed after the checks; no owner-repository commit, push or release ran.
+
+End `git status --short` (the same eight modified paths remain after inventory refresh):
+
+```text
+ M config/adopter-payload.json
+ M plugins/mir-core/skills/repo-maintenance/SKILL.md
+ M tasks/change_log.md
+ M tasks/checklist.md
+ M tasks/handoffs/session-handoff-LATEST.md
+ M tasks/intent.json
+ M tasks/plan.md
+ M tests/test_repo_maintenance_skill.py
+```
+
+After cursor/intent closeout and the generated SessionEnd snapshot, `uv run pytest -q -p no:cacheprovider tests/test_public_template_surface.py tests/test_repo_maintenance_skill.py tests/test_template_asset_classification.py --basetemp=<scratch>/final-focused` returned **21 passed in 0.57s**, exit 0. Inventory is regenerated once more after this append and its exact-inventory assertion is checked again.

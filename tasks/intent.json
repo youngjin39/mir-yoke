@@ -1,7 +1,7 @@
 {
-  "goal": "Retain repeatable Yoke-domain selection/evidence use and resolve declared relation target-freshness ownership.",
+  "goal": "Re-verify Mir Yoke against the owner-directed 22-item repository maintenance checklist and apply minimal evidenced improvements.",
   "goal_type": "maintenance",
-  "scope": "G08 shared synthetic Q1 scenario and G13 declared YAML consumer. No live runtime, actual agent-quality, LIVE or ACCEPTED claims.",
+  "scope": "This repository writer pass only; the commit-bound integrity gate and native runtime trust evidence remain for Harness Main. No commit, release, consumer write, live database write, secret access or generated .codex edit.",
   "priority": "normal",
   "updated": "2026-10-16",
   "history": [
@@ -46,8 +46,15 @@
       "updated": "2026-10-16",
       "status": "complete",
       "evidence": "tasks/change_log.md#superseded-cursor-covered-label-fix-before-0130-preparation-2026-10-16"
+    },
+    {
+      "goal": "Retain repeatable Yoke-domain selection/evidence use and resolve declared relation target-freshness ownership.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#ontology-rejudgment-g08-g13-2026-10-16"
     }
   ],
   "status": "complete",
-  "evidence": "tasks/change_log.md#ontology-rejudgment-g08-g13-2026-10-16"
+  "evidence": "tasks/change_log.md#repository-maintenance-2026-10-16",
+  "authority": "Current owner maintenance brief; parent-supplied Mir Harness directive dated 2026-10-16 (ADR-91)."
 }

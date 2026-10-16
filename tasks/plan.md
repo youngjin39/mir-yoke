@@ -1,20 +1,26 @@
 # Plan
 
-## Active task: ontology rejudgment G08/G13 (2026-10-16)
+## Active task: repository maintenance (2026-10-16)
 
-Authority: the current owner brief, including the common rejudgment development
-instructions. This cursor records the requested intent before implementation.
+Authority: the current owner maintenance brief, recorded in `tasks/intent.json`.
+The parent-supplied Harness directive is evidence of scope, not independent authority.
 
-Outcome: one repeatable synthetic Yoke-domain selection/evidence scenario through
-the real map and lookup/impact runner, and an inspected G13 target-freshness boundary.
-This proves selection/evidence use only, not agent quality, LIVE or ACCEPTED.
+Outcome: assess all 22 requested items, apply minimal evidenced improvements,
+and record exact checks, integrity dependencies and remaining Main/owner work.
 
-- [x] Retain fail-first evidence and bounded child-process provenance assertions.
-- [x] Record G13 local non-applicability without inventing a cache product.
-- [x] Run focused tests, lint, mapping and strict impact; record remaining Main work.
+- [x] Inspect contracts, continuity, memory snapshot, routing and runtime boundaries.
+- [x] Apply bounded improvements and retain superseded text verbatim in the log.
+- [x] Run full pytest, Ruff, Codex parity and ontology checks on the final sources.
+- [x] Update continuity, rebind the adopter inventory, inspect diff and report all items.
 
-Limits: no network, live databases, memory operations, commits, delivery,
-runtime-home writes or generated `.codex/**` edits. Use external fixture scratch
-and a shared `UV_CACHE_DIR`.
+Limits: no commits, release/version changes, consumer writes, live database writes,
+secrets or generated `.codex/**` edits. Scratch stays on the external SSD.
 
-Evidence: `tasks/change_log.md#ontology-rejudgment-g08-g13-2026-10-16`.
+Evidence: `tasks/change_log.md#repository-maintenance-2026-10-16`.
+Prior cursor and projections: `tasks/change_log.md#maintenance-continuity-inputs-2026-10-16`.
+
+Writer pass finished: full pytest has 2061 passes and one committed-lock failure.
+Harness Main must review/commit the implementation and reconcile its lock under
+ADR-80/86. Native hook trust and fresh-session discovery remain unobserved.
+
+Main disposition (Mir Harness, 2026-10-16): the repo-maintenance item-22 skill change, its test and the adopter-payload rehash are held on local branch `maint/repo-maintenance-item-22` (b181541), not main, because the capability lock binds only at a release; merging needs an owner-approved release.

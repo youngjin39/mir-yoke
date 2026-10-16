@@ -1,9 +1,9 @@
 # Checklist
 
-Status projection for `tasks/plan.md`: executor common v3.5 now includes all six items.
-All sixteen new regression cases failed before their fixes, then passed.
-Combined full pytest: 1621 passed; executor tests: 615 passed, with zero new
-mir-wt temporary directories. Ruff, Python 3.11 compilation, sync and Codex parity
-passed. Committed locally by the Mir Harness Main after its own full re-run
-(the Codex sandbox could not create `.git/index.lock`).
-Evidence: `tasks/change_log.md`, "Executor common v3.5 maintenance (2026-10-02)".
+Status projection for `tasks/plan.md`: the 22-item writer maintenance pass is ready for Main review.
+Full pytest: 2061 passed, 1 failed (commit-bound capability lock; ADR-80/86).
+Focused skill/common-plugin checks: 33 passed; corrected public-surface/skill/inventory checks: 21 passed.
+Ruff, generated Codex parity, path references and ontology mapping/strict impact passed.
+Harness Main owns implementation commit, lock reconciliation and native runtime trust observations.
+Evidence: `tasks/change_log.md#repository-maintenance-2026-10-16`.
+Prior projection: `tasks/change_log.md#maintenance-continuity-inputs-2026-10-16`.
