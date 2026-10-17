@@ -1,65 +1,13 @@
 # Plan
 
-## Active task: ontology reachability (2026-10-17)
+## Active task: 0.13.4 release preparation (2026-10-17)
 
-Authority: owner Discord 1560995198857777253 and Mir Harness directive
-`ontology-engineering-settlement-2026-10-17`, both parent-supplied. The directive
-and pilot report remain in Mir Harness; they have not been independently inspected.
-This single active cursor records intent and is the bounded design authority.
+Authority: owner Discord 1561020393568079954 (2026-10-17), via Mir Harness Main, and directive `ontology-engineering-settlement-2026-10-17` (parent-supplied). This cursor is the intent and bounded design authority for commit A content only. The release brief supersedes the previous no-version-change restriction. Previous cursor: `tasks/change_log.md#superseded-cursor-before-0134-release-preparation-2026-10-17`.
 
-Make `mir-core:ontology` reachable from ordinary meaning-sensitive requests and
-agent handoffs. Preserve selective lookup, add the minimum parent/child packet,
-and update at most one existing bluebricks routing line. Add fail-first regression
-coverage and an Unreleased note; run full pytest, Ruff, Codex parity and context
-path checks. Check supported generators without writing repository `.codex/**`.
+Mirror e20d6fa release surfaces at 0.13.4. Move only the ontology-reachability note from Unreleased, follow the migration-entry pattern, refresh the lifecycle acknowledgement from a cache-free copy, and regenerate the adopter payload. Generate Codex derivatives in external scratch; repository `.codex/**` writes remain Main-owned. No capability-lock changes, commits, tags, pushes, publishing or activation here.
 
-No commit, push, tag, release, version bump, release/attestation record change,
-activation, restart, consumer write, secret access or live database access.
-Use the external uv cache. Main owns `.codex/**` regeneration and final acceptance.
+Request matrix: (1) version surfaces and cache-free acknowledgement, (2) release and migration notes, (3) adopter generation and scratch Codex parity, (4) required verification with only the repository lock failure expected, (5) records and Main handoff. Existing release/package checks cover these metadata-only edits; no new implementation tests or tasks/tdd.json changes are needed.
 
-Parent-supplied pilot evidence: Mir Harness
-`tasks/reports/ontology-engineering/settlement-2026-10-17/pilot/report.md` describes
-30 sessions: ontology loaded but not invoked in 15 Claude sessions, map read in
-8/15 Codex sessions, and six handoff briefs missing current semantic/evidence pins.
-These are reported observations, not locally re-derived results or new authority.
+Main remaining: review and regenerate repository Codex derivatives, commit A, bind `.mir/capability-lock.json` to A in separate commit B, then rerun the lock check and perform authorized tag, push, publish, capability update/attest/finalize.
 
-Evidence log: `tasks/change_log.md#ontology-reachability-2026-10-17`.
-Previous cursor and intent are preserved verbatim at
-`tasks/change_log.md#superseded-cursor-before-ontology-reachability-2026-10-17`.
-
-### Bounded design and evaluation
-
-This cursor is the design authority. Extend the existing description, provenance
-reference and single bluebricks route; add no skill, hook, gate or command.
-Static regressions cover eight trigger groups, eight handoff packet groups and
-the existing design route. They pin guidance, not actual runtime invocation rates.
-Keep the body rule to retrieve only relevant sources and needed evidence.
-
-Request matrix: (1) selective ordinary triggers, (2) minimum parent/child packet,
-(3) one bluebricks route, (4) supported generated parity and Unreleased note with
-version/release records unchanged, (5) fail-first and the full requested gate.
-Packet semantics follow the distributed common contract's four axes and the
-project map `/contract`, `/namespace`, `/error_cases/3` (selection is not execution).
-The map digest matches the parent-supplied pin; it is not being edited.
-
-### Acceptance
-
-4/5 cells closed. Final new regression selection: 17 failed before source edits,
-then 17 passed. An additional handoff-link assertion failed eight packet cases
-before its one-line cue fix, then the new selection passed 17/17 again.
-The final source full suite passed 2080 tests and failed one release-bound plugin
-tree digest assertion; lock/attestation changes are forbidden here. All five
-cells were evaluated; the full-gate cell remains open for Main. Ruff, Codex
-scratch-generation parity, context paths, mapping and
-strict impact passed. Main owns lock refresh under separate release authority;
-no tests have been weakened or excluded. Actual runtime invocation improvement
-is not claimed. Evidence remains in the single log linked above.
-
-Main acceptance (2026-10-17, Mir Harness): every hunk reviewed. On the host the 17 new
-ontology-skill tests fail against the previous skill files and pass now (239 in the module).
-Full pytest: 2080 passed, 1 expected failure,
-`test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees`, because
-the plugin trees no longer match the 0.13.3 lock. The lock is rebound only by the release
-procedure. Ruff, Codex parity and the context-path check (77) pass. Committed on branch
-`feat/ontology-reachability`, so `main` stays at the released lock. Release, push and activation
-wait on the owner's decision, because the capability source is the public repository.
+Evidence: `tasks/change_log.md#0134-release-preparation-2026-10-17`. All five request-matrix cells were evaluated; 4/5 are closed. The full-gate cell remains open only for Main to bind the release lock in B. Full pytest: 2080 passed, 1 expected repository-lock failure in 240.27s. Ruff, scratch Codex generation/parity, context paths (77) and Korean-text checks (5) passed. Final record-dependent adopter hashes are regenerated and checked separately. No repository Codex files or capability lock were changed.

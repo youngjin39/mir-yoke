@@ -1,5 +1,97 @@
 # Change log
 
+## 0.13.4 release preparation (2026-10-17)
+
+Authority: owner Discord 1561020393568079954 (2026-10-17), via Mir Harness Main, and directive `ontology-engineering-settlement-2026-10-17`, parent-supplied. Intent and bounded design authority: `tasks/plan.md`. This records commit A content preparation only, not a commit, release or activation.
+
+Mirrored the exact 19-file set of e20d6fa. VERSION, pyproject, the editable uv.lock package version, four marketplace entries, all eight plugin manifests and both package-test expectations now say 0.13.4. `uv lock --offline` resolved 29 packages and changed only the editable package version. Moved only the ontology-reachability note out of Unreleased into the dated v0.13.4 section; followed the predecessor MIGRATION current-version and appended-entry pattern.
+
+Refreshed the lifecycle-hooks acknowledgement with `_validate_plugin(..., package_kind="skills-hooks")` from a temporary copy excluding Python/cache artifacts: `2eb397e2a934165a2c1b4734453f6bddda540ed8a66f29101ed239672a2b1e82`. The hook source is unchanged. Generated the adopter payload with `uv run python -m tools.template_assets --write-adopter-payload --json`: 887 tracked/classified files, no unclassified, duplicate or prohibited entries.
+
+Semantic evidence: unchanged `.mir/ontology-map.json` `/contract` declares `mir.common-semantics@1.1.0`, `/namespace` is `mir-yoke`, and `/error_cases/3` separates selection from execution. Its SHA-256 matches the brief: `c20fbf3bdb910d3872b1f66730b56e0f34e8fa00c707e91eedd458c25a374340`. Released guidance comes from c600b27 and the ontology-reachability record below; no runtime invocation-rate improvement is claimed.
+
+Verification: all uv invocations use the host external-SSD uv cache; test/generator scratch uses the task-owned external SSD directory.
+
+- Fail-first: package expectations changed before manifests; `uv run pytest -q tests/test_plugin_skill_packages.py -k "dual_runtime_manifests_share_one_skill_tree or marketplace"`: 1 failed, 2 passed, 8 deselected. Failure compared 0.13.3 manifests with 0.13.4.
+- `uv run pytest -q`: exit 1; 2080 passed, 1 failed in 240.27s. The sole failure is `tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees` at the unchanged-lock/plugin-tree digest assertion (line 397). Expected until Main binds A in B; no test was weakened or excluded.
+- `uv run ruff check`: exit 0, all checks passed.
+- `CODEX_DERIVATION_OUTPUT_ROOT=<external scratch>/derivatives bash scripts/generate_codex_derivatives.sh`: exit 0. No canonical derivative input changed. `uv run python scripts/verify_codex_sync.py`: exit 0, derivatives match Claude sources. Repository `.codex/**` was not written. The initial generator call lacked the external uv-cache variable and failed cache initialization; rerun with the required variable passed.
+- `uv run python scripts/verify_context_paths.py`: exit 0; 9 files and 77 references passed.
+- `uv run pytest -q tests/test_no_korean_in_user_facing.py`: exit 0; 5 passed.
+- `git diff --check`: exit 0. File-set comparison with e20d6fa: equal, 19 files. `.mir/capability-lock.json`, `.mir/ontology-map.json` and repository `.codex/**` have no diff.
+
+Request matrix: 5/5 evaluated, 4/5 closed. Only the full-gate cell remains open for the release lock. After closing the records, regenerated adopter hashes and ran `uv run pytest -q tests/test_release_metadata.py tests/test_plugin_skill_packages.py tests/test_no_korean_in_user_facing.py tests/test_template_asset_classification.py`: exit 0, 23 passed in 0.61s. Final inventory is refreshed again after recording this evidence and checked for exact equality. Main owns repository derivative regeneration/review, commit A, separate lock-binding commit B, final lock verification, tag/push/publish and capability update/attest/finalize. No commit or delivery operation ran here.
+
+## Superseded cursor before 0.13.4 release preparation (2026-10-17)
+
+```markdown
+# Plan
+
+## Active task: ontology reachability (2026-10-17)
+
+Authority: owner Discord 1560995198857777253 and Mir Harness directive
+`ontology-engineering-settlement-2026-10-17`, both parent-supplied. The directive
+and pilot report remain in Mir Harness; they have not been independently inspected.
+This single active cursor records intent and is the bounded design authority.
+
+Make `mir-core:ontology` reachable from ordinary meaning-sensitive requests and
+agent handoffs. Preserve selective lookup, add the minimum parent/child packet,
+and update at most one existing bluebricks routing line. Add fail-first regression
+coverage and an Unreleased note; run full pytest, Ruff, Codex parity and context
+path checks. Check supported generators without writing repository `.codex/**`.
+
+No commit, push, tag, release, version bump, release/attestation record change,
+activation, restart, consumer write, secret access or live database access.
+Use the external uv cache. Main owns `.codex/**` regeneration and final acceptance.
+
+Parent-supplied pilot evidence: Mir Harness
+`tasks/reports/ontology-engineering/settlement-2026-10-17/pilot/report.md` describes
+30 sessions: ontology loaded but not invoked in 15 Claude sessions, map read in
+8/15 Codex sessions, and six handoff briefs missing current semantic/evidence pins.
+These are reported observations, not locally re-derived results or new authority.
+
+Evidence log: `tasks/change_log.md#ontology-reachability-2026-10-17`.
+Previous cursor and intent are preserved verbatim at
+`tasks/change_log.md#superseded-cursor-before-ontology-reachability-2026-10-17`.
+
+### Bounded design and evaluation
+
+This cursor is the design authority. Extend the existing description, provenance
+reference and single bluebricks route; add no skill, hook, gate or command.
+Static regressions cover eight trigger groups, eight handoff packet groups and
+the existing design route. They pin guidance, not actual runtime invocation rates.
+Keep the body rule to retrieve only relevant sources and needed evidence.
+
+Request matrix: (1) selective ordinary triggers, (2) minimum parent/child packet,
+(3) one bluebricks route, (4) supported generated parity and Unreleased note with
+version/release records unchanged, (5) fail-first and the full requested gate.
+Packet semantics follow the distributed common contract's four axes and the
+project map `/contract`, `/namespace`, `/error_cases/3` (selection is not execution).
+The map digest matches the parent-supplied pin; it is not being edited.
+
+### Acceptance
+
+4/5 cells closed. Final new regression selection: 17 failed before source edits,
+then 17 passed. An additional handoff-link assertion failed eight packet cases
+before its one-line cue fix, then the new selection passed 17/17 again.
+The final source full suite passed 2080 tests and failed one release-bound plugin
+tree digest assertion; lock/attestation changes are forbidden here. All five
+cells were evaluated; the full-gate cell remains open for Main. Ruff, Codex
+scratch-generation parity, context paths, mapping and
+strict impact passed. Main owns lock refresh under separate release authority;
+no tests have been weakened or excluded. Actual runtime invocation improvement
+is not claimed. Evidence remains in the single log linked above.
+
+Main acceptance (2026-10-17, Mir Harness): every hunk reviewed. On the host the 17 new
+ontology-skill tests fail against the previous skill files and pass now (239 in the module).
+Full pytest: 2080 passed, 1 expected failure,
+`test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees`, because
+the plugin trees no longer match the 0.13.3 lock. The lock is rebound only by the release
+procedure. Ruff, Codex parity and the context-path check (77) pass. Committed on branch
+`feat/ontology-reachability`, so `main` stays at the released lock. Release, push and activation
+wait on the owner's decision, because the capability source is the public repository.
+```
+
 ## Ontology reachability (2026-10-17)
 
 Authority: owner Discord 1560995198857777253 and Mir Harness directive

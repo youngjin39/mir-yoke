@@ -82,7 +82,7 @@ Discard an uncommitted Project Agent Kit adaptation in the target or restore the
 commit. For an explicitly invoked CLI transaction, use that command's recorded rollback/recovery
 contract. Installing the CLI does not itself mutate a target.
 
-Current version: `0.13.3`. See `CHANGELOG.md` for release details.
+Current version: `0.13.4`. See `CHANGELOG.md` for release details.
 
 Version 0.10.0 adds opt-in `memory_relations` ingestion and read-only `mir relations query|bundle --memory`
 query/bundle selection using the existing memory schema. No automatic corpus backfill, database
@@ -184,3 +184,8 @@ engineering), `mir-core:verify` requires a request matrix before a completion cl
 ontology runner moves its active-distribution checks into `select_active_distribution` with no
 behavior change. Consumers that keep a byte copy of the ontology runner refresh that copy from the
 active distribution after updating. No database migration or memory re-ingestion is required.
+
+Version 0.13.4 is a patch release and keeps `mir.common-semantics` contract 1.1.0.
+The `mir-core:ontology` guidance names ordinary meaning-sensitive requests and the minimum
+parent/child handoff packet; the existing bluebricks route points to that packet.
+No database migration, memory re-ingestion or automatic consumer update is required.

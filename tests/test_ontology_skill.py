@@ -69,6 +69,11 @@ def test_should_pin_minimum_parent_child_handoff_packet(terms: tuple[str, ...]) 
         assert term in handoff, f"handoff packet misses: {term}"
 
 
+def test_should_forbid_forcing_a_connection_during_supply_outage() -> None:
+    guide = " ".join((SKILL / "references/knowledge-supply.md").read_text(encoding="utf-8").split())
+    assert "do not unset, override or edit the supply configuration or environment" in guide
+
+
 def test_should_route_meaning_sensitive_design_and_handoffs_to_ontology() -> None:
     skill = (ROOT / "plugins/mir-code/skills/bluebricks/SKILL.md").read_text(encoding="utf-8")
     routes = [line for line in skill.splitlines() if "`mir-core:ontology`" in line]

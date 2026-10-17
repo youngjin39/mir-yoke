@@ -80,7 +80,9 @@ available hashes/observation times. Do not describe an inherited pack as a fresh
 Consumers must bound their wait: the tools have no end-to-end timeout argument. Empty results,
 timeout, stale evidence or MK being down do not prove absence. Continue local work; mark only
 judgments needing missing external knowledge as lacking evidence. Retain conflicts for the owner.
-Do not install services or broaden access to fill gaps. Abandoning a call does not prove it stopped.
+Do not install services or broaden access to fill gaps. An unavailable result is the answer for this
+session: do not unset, override or edit the supply configuration or environment to force a connection.
+Abandoning a call does not prove it stopped.
 The implementation releases the store connection and reader lease after each call, including
 failure; the consumer contract's older lifetime-reader statement does not describe current code.
 
