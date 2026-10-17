@@ -1,23 +1,27 @@
 # Plan
 
-## Active task: ontology handoff packet (2026-10-18)
+## Active task: 0.13.5 release preparation (2026-10-18)
 
-Intent authority: current Mir Harness Main writer brief, recorded in this single active cursor.
-Make the six-field handoff packet visible in the ontology skill body, preserve owner authority,
-and report actual client results/reasons and the applied configuration source.
-Prior plan and intent are preserved in
-`tasks/change_log.md#superseded-cursor-before-ontology-handoff-packet-2026-10-18`.
+Intent authority: current Mir Harness Main writer brief, owner Discord 1561054690681032776
+(2026-10-18) and directive `ontology-engineering-settlement-2026-10-17`, parent-supplied.
+This single active cursor is the bounded design authority for commit A content preparation.
+Release the ontology handoff-packet change `f25e508`; mirror preparation commit `8a9fa95`.
+Previous cursor: `tasks/change_log.md#superseded-cursor-before-0135-release-preparation-2026-10-18`.
 
-Bounded design: add a compact Handoff section without changing the description, add one sentence
-to knowledge-supply guidance, add fail-first tests in the existing style and an Unreleased note,
-and regenerate the adopter payload through the documented command. No version bump, commit,
-release, network call, live DB write or repository `.codex/**` write is authorized.
+Bounded design: align the same release/version surfaces, move only the handoff note into
+v0.13.5, follow the migration-entry pattern, refresh the lifecycle acknowledgement from a
+cache-free copy, regenerate adopter payload after final records, and generate Codex derivatives
+in external scratch. Do not write repository `.codex/**` or `.mir/capability-lock.json`.
+No commits, tags, pushes, publishing, activation, consumer writes or live database writes.
+Existing package/release checks cover these metadata-only edits; no new logic tests are needed.
 
-Request matrix: (1) body packet/self-check/authority, (2) actual client result/config guidance,
-(3) tests, changelog and required generated payload. Evidence:
-`tasks/change_log.md#ontology-handoff-packet-2026-10-18`.
+Request matrix: (1) version surfaces and acknowledgement, (2) changelog/migration,
+(3) adopter generation and scratch Codex parity, (4) required verification with only the
+repository lock failure expected until B, (5) records and Main handoff.
+Completion: 5/5 evaluated, 4/5 closed. Full pytest: 2092 passed, 1 expected lock failure
+until B. Ruff, scratch Codex generation/parity, context paths, public surface and focused
+release/package checks passed. Final records are included in regenerated adopter hashes.
+Evidence: `tasks/change_log.md#0135-release-preparation-2026-10-18`.
 
-Completion: 3/3 done. Fail-first 11 failures became 11 passes; ontology/package gates passed
-271 tests, adopter/classification checks passed 28 tests, and Ruff and Codex parity passed.
-Final record hashes are included in adopter regeneration and exact inventory verification.
-No owner decision or delivery action is part of this task.
+Main remaining: review/regenerate repository derivatives, commit A, bind the lock in separate
+commit B, verify the final lock and full gate, tag/push/publish, capability update/attest/finalize.

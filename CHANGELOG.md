@@ -36,8 +36,6 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ### Changed
 
-- Put the six-field ontology handoff packet, missing-pin self-check and owner authority limits
-  in the skill body; require actual knowledge-client results, reasons and applied config sources.
 - Updated executor common v3.8 to ignore agent-route model/effort when the route's
   declared backend differs from the resolved dispatch backend. Explicit user model/effort
   overrides retain precedence. Forced modes reject automatically routed models recognized
@@ -172,6 +170,14 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
   project no longer indexes its own `docs/_archive/` as current material. The template and the
   maintainer configuration already carried it; the generator, which is what every new project
   actually receives, did not.
+
+## [v0.13.5] — 2026-10-18 — Ontology handoff packet
+
+### Changed
+
+- Put the six-field ontology handoff packet, missing-pin self-check and owner authority limits
+  in the skill body; require actual knowledge-client results, reasons and applied config sources.
+- Aligned all four dual-runtime plugin versions and the optional CLI package to `0.13.5`.
 
 ## [v0.13.4] — 2026-10-17 — Ontology reachability
 

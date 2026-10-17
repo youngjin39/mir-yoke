@@ -1,5 +1,71 @@
 # Change log
 
+## 0.13.5 release preparation (2026-10-18)
+
+Intent and bounded design authority: `tasks/plan.md`, recording the Mir Harness Main writer
+brief. Owner Discord 1561054690681032776 (2026-10-18) and directive
+`ontology-engineering-settlement-2026-10-17` are parent-supplied authority context, not
+independently retrieved messages. Qualified target: `mir-yoke:release-0.13.5-commit-a`.
+Lifecycle: prepared content; temporal: current working tree; epistemic: locally checked;
+verification: required checks executed, repository-lock gate open until Main's commit B.
+
+Verified pins: repository root `.`; HEAD `f25e508372c869585cb04d060fe5b3977e8b3a84`;
+reference preparation commit `8a9fa95126b2b92420c344c3eaef88bddd801a6c`;
+map `.mir/ontology-map.json` SHA-256
+`c20fbf3bdb910d3872b1f66730b56e0f34e8fa00c707e91eedd458c25a374340`.
+Map `/namespace` and `/contract` declare `mir-yoke` and `mir.common-semantics@1.1.0`.
+Observation: local session on 2026-10-18. Released guidance is verified in
+`plugins/mir-core/skills/ontology/SKILL.md#handoff` and
+`plugins/mir-core/skills/ontology/references/knowledge-supply.md#agent-handoff-and-delegation`;
+this preparation does not establish real-agent adherence or fresh runtime adoption.
+
+Mirrored the predecessor's release-only 19-file set (excluding its two guidance/test fixes):
+VERSION, pyproject, editable uv.lock package, four marketplace versions, eight plugin manifests,
+and both package-test expectations now use 0.13.5. `uv lock --offline` resolved 29 packages;
+only the editable package version changed in uv.lock. Moved only the handoff note from
+Unreleased into v0.13.5 and followed the MIGRATION current-version/appended-entry pattern.
+No contract version or implementation change was made.
+
+Refreshed the lifecycle-hooks acknowledgement using `_validate_plugin` with
+`package_kind="skills-hooks"` on a temporary copy excluding Python/cache artifacts:
+`8eb85c9394a5d53c23b19e09fd1c383a2d7c80f74b970e842137c4b601401670`.
+Hook source is unchanged. The documented adopter generator classified all 887 tracked files
+with no unclassified, duplicate or prohibited entries; inventory contains 886 file hashes.
+Generated Codex derivatives in external scratch; repository `.codex/**` was not written.
+
+Verification uses the required external SSD uv cache and task-local external SSD temporary
+storage. No private host paths are recorded here.
+
+- Fail-first: `uv run pytest -q tests/test_plugin_skill_packages.py -k 'dual_runtime_manifests_share_one_skill_tree or marketplace'`:
+  exit 1, 1 failed, 2 passed, 8 deselected in 0.07s, before manifest updates.
+- `uv run pytest -q`: exit 1, **2092 passed, 1 failed in 252.97s**. Sole failure:
+  `tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees`,
+  unchanged-lock/plugin-tree digest assertion at line 397. Expected until Main binds A in B;
+  no test was excluded or weakened.
+- `uv run ruff check`: exit 0, all checks passed.
+- `CODEX_DERIVATION_OUTPUT_ROOT=<external scratch>/derivatives bash scripts/generate_codex_derivatives.sh`:
+  exit 0. `uv run python scripts/verify_codex_sync.py`: exit 0,
+  Codex derivatives match Claude sources.
+- `uv run python scripts/verify_context_paths.py`: exit 0, 9 files and 77 references passed.
+- `uv run pytest -q tests/test_no_korean_in_user_facing.py`: exit 0, 5 passed in 0.22s.
+- `uv run pytest -q tests/test_release_metadata.py tests/test_plugin_skill_packages.py tests/test_no_korean_in_user_facing.py tests/test_template_asset_classification.py tests/test_public_template_surface.py`:
+  exit 0, 26 passed in 0.69s before final records.
+- `python3 plugins/mir-core/skills/ontology/scripts/ontology_check.py impact --repo . --git-diff HEAD --strict --json`:
+  exit 0, no errors, warnings, stale refs or selected extra checks.
+- `git diff --check`: exit 0. Changed-file set matches the predecessor's release-only set:
+  19 files. Capability lock, ontology map and repository Codex derivatives have no diff.
+
+Request matrix: **5/5 evaluated, 4/5 closed**. The full-gate cell remains open only for the
+repository lock. Final records are followed by
+`uv run python -m tools.template_assets --write-adopter-payload --json`, exact payload-hash
+comparison and the same 26-test focused gate; results are reported in the writer handoff.
+Main owns repository derivative regeneration/review, commit A, separate lock-binding commit B,
+final lock/full-gate verification, tag/push/publish and capability update/attest/finalize.
+No commit, lock bind, delivery, activation, consumer write, live database write or secret read
+ran here. Unknowns: final A/B identities, delivery/runtime results and exact observation time;
+all remain Main-owned. Self-check: qualified target, status axes, pins, evidence/provenance,
+unknowns and bounded authority are recorded; private absolute root is deliberately omitted.
+
 ## Ontology handoff packet (2026-10-18)
 
 Intent and bounded design authority: `tasks/plan.md`, recording the current Mir Harness Main
@@ -7114,4 +7180,32 @@ Evidence: `tasks/change_log.md#0134-release-preparation-2026-10-17`. All five re
   "evidence": "tasks/change_log.md#ontology-reachability-2026-10-17",
   "authority": "Owner Discord 1560995198857777253; parent-supplied Mir Harness directive ontology-engineering-settlement-2026-10-17."
 }
+```
+
+## Superseded cursor before 0.13.5 release preparation (2026-10-18)
+
+```markdown
+# Plan
+
+## Active task: ontology handoff packet (2026-10-18)
+
+Intent authority: current Mir Harness Main writer brief, recorded in this single active cursor.
+Make the six-field handoff packet visible in the ontology skill body, preserve owner authority,
+and report actual client results/reasons and the applied configuration source.
+Prior plan and intent are preserved in
+`tasks/change_log.md#superseded-cursor-before-ontology-handoff-packet-2026-10-18`.
+
+Bounded design: add a compact Handoff section without changing the description, add one sentence
+to knowledge-supply guidance, add fail-first tests in the existing style and an Unreleased note,
+and regenerate the adopter payload through the documented command. No version bump, commit,
+release, network call, live DB write or repository `.codex/**` write is authorized.
+
+Request matrix: (1) body packet/self-check/authority, (2) actual client result/config guidance,
+(3) tests, changelog and required generated payload. Evidence:
+`tasks/change_log.md#ontology-handoff-packet-2026-10-18`.
+
+Completion: 3/3 done. Fail-first 11 failures became 11 passes; ontology/package gates passed
+271 tests, adopter/classification checks passed 28 tests, and Ruff and Codex parity passed.
+Final record hashes are included in adopter regeneration and exact inventory verification.
+No owner decision or delivery action is part of this task.
 ```
