@@ -30,7 +30,7 @@ transport; remote access is unsupported. `--client-name` overrides the default
 Missing config, spawn/transport/MCP errors and deadlines print
 `{"status":"unavailable","reason":"..."}`. An empty pack prints
 `{"status":"empty","reason":"..."}`. Both exit 0 with `--soft`, else 2; local work can continue.
-Structured refusal objects pass through unchanged. A personal-namespace MCP error is unavailable;
+Structured refusals retain their status; query nodes and citations outside requested namespaces (or the federation set below by default), including unlabelled entries, are dropped with `namespace_filtered` without echoing their content. A personal-namespace MCP error is unavailable;
 the client never retries through a broader binding. Feedback is explicit and has MK-side effects.
 Report the client's actual result and reason, including which config source applied, rather than
 inferring defaults or connection state.
@@ -72,7 +72,7 @@ This guide follows the MK federation MCP server, serve and assembly interfaces.
 - `gaps` describe unmet facets (`facet`, `why_unmet`, `suggested_source`); `sufficiency` reports
   `sufficient`, `grounded_count`, `coverage`, `covered_facets`, `missing_facets`,
   `single_channel_supported`. These assess this query's inspected evidence, not global completeness.
-  Read `degradation` (`scope`, `reasons`), `retrieval_summary`, and `next_actions` for limitations;
+  Read the `degradation` list of `{scope, reasons}` objects, `retrieval_summary`, and `next_actions` for limitations;
   `pack_id`, `top_rrf`, `total_tokens_est` identify/rank/size the pack, not its authority.
 
 ## Preserve independence and provenance

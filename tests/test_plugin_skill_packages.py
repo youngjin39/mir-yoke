@@ -11,6 +11,7 @@ from pathlib import Path
 import pytest
 
 from mir.core.capabilities.manager import _validate_plugin
+from scripts import verify_plugin_cli_activation as activation
 from scripts.verify_codex_sync import PLUGIN_SKILLS, validate_plugin_skill_providers
 from scripts.verify_plugin_cli_activation import _validate_installed_path
 
@@ -223,6 +224,51 @@ def test_activation_path_must_be_a_real_copy_inside_the_runtime_home(
     provider.mkdir()
     with pytest.raises(RuntimeError, match="resolves into the provider checkout"):
         _validate_installed_path(provider, tmp_path)
+
+
+@pytest.mark.parametrize("scope", ["user", "project", "local", None])
+def test_should_reject_non_user_claude_install_scope(tmp_path, monkeypatch, capsys, scope):
+    provider = tmp_path / "provider"
+    for relative in (".claude-plugin/marketplace.json", ".agents/plugins/marketplace.json"):
+        path = provider / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("{}")
+    skill = provider / "plugins/mir-core/skills/ontology/SKILL.md"
+    skill.parent.mkdir(parents=True)
+    skill.write_text("Synthetic skill")
+    monkeypatch.setattr(activation, "ROOT", provider)
+    monkeypatch.setattr(activation, "PLUGIN_NAMES", ("mir-core",))
+    monkeypatch.setattr(activation, "PLUGIN_SKILLS", {"mir-core": ("ontology",)})
+    monkeypatch.setattr(activation.shutil, "which", lambda name: name)
+    calls = []
+
+    def synthetic_cli(argv, environment, cwd):
+        calls.append((argv[0], cwd.name))
+        if argv[1:4] == ["plugin", "list", "--json"]:
+            runtime = argv[0]
+            home = Path(environment["HOME" if runtime == "claude" else "CODEX_HOME"])
+            installed = home / "plugins/mir-core"
+            if not installed.exists():
+                shutil.copytree(skill.parents[2], installed)
+            entry = {"name": "mir-core", "enabled": True, "installPath": str(installed)}
+            if runtime == "claude" and scope is not None:
+                entry["scope"] = scope
+            return json.dumps([entry])
+        return ""
+
+    monkeypatch.setattr(activation, "_run", synthetic_cli)
+    if scope == "user":
+        assert activation.main() == 0
+        assert json.loads(capsys.readouterr().out)["consumer_count"] == 2
+        assert [(runtime, cwd) for runtime, cwd in calls if runtime != "git"][-4:] == [
+            ("claude", "consumer-a"),
+            ("codex", "consumer-a"),
+            ("claude", "consumer-b"),
+            ("codex", "consumer-b"),
+        ]
+    else:
+        with pytest.raises(RuntimeError, match="claude.*user scope.*mir-core"):
+            activation.main()
 
 
 def test_manifest_versions_match_repository_release() -> None:

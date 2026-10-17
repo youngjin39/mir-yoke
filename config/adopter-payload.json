@@ -443,13 +443,13 @@
       "classification": "reference",
       "disposition": "remove",
       "path": ".mir/capability-lock.json",
-      "sha256": "51b0357ae319b48bfbd5fb07f60d0f1e90b0fad43b16b85a80da72d5dd965a04"
+      "sha256": "c9dedd41978bdbb0436ad5150703376f0d25b060819466f3663747b1c23d466f"
     },
     {
       "classification": "reference",
       "disposition": "remove",
       "path": ".mir/ontology-map.json",
-      "sha256": "c20fbf3bdb910d3872b1f66730b56e0f34e8fa00c707e91eedd458c25a374340"
+      "sha256": "516c5b160c0fa49de51e4a0dc6f14c6e6a955d1baf72cc75dc2c93de7ea23e79"
     },
     {
       "classification": "reference",
@@ -485,7 +485,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "CHANGELOG.md",
-      "sha256": "8f6cef53b1131bf2054ee6c5a05271d68e39b8a359007f27aaf8b91b0f170ff9"
+      "sha256": "ae0912af422565be24d0457cae0129f7d512a8846bd8b1ef8903a8240402dd10"
     },
     {
       "classification": "reference",
@@ -2879,7 +2879,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "plugins/mir-core/skills/ontology/references/knowledge-supply.md",
-      "sha256": "e83d7437e6111f7055597c8c012dc917fcde0d700ef28f41629b5819732c2927"
+      "sha256": "d35665f810f5ae42070773ea345bd61b247edf92483629cc48b1e6de369d894b"
     },
     {
       "classification": "optional-consumer-tool",
@@ -2897,7 +2897,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "plugins/mir-core/skills/ontology/scripts/mk_query.py",
-      "sha256": "fa08cc1184440987766473ee6757f8bc78bd813baf2bf68790b763035924d60f"
+      "sha256": "a9c9939c25ccd2dbbf922087d5cf6aa08ce4b72a940f1421d7224e70bbf664d6"
     },
     {
       "classification": "optional-consumer-tool",
@@ -3371,7 +3371,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "scripts/verify_plugin_cli_activation.py",
-      "sha256": "b0302e32929d030979b1660ceecc9775a7ead5ad4165508ee4b6b70f311cc197"
+      "sha256": "99c9e0881c4cdc4caa6c5ac4884c415d11fee4b3809fae263fd6f11b7f3c326f"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4139,7 +4139,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/change_log.md",
-      "sha256": "b4c974b1016b67f40ec1a4190a12eee87aa332db8dc15497bfc70684f5d2c947"
+      "sha256": "06a146b63d89ab1c1bf09d424e852e9b6034bb12ef54299f9ce886145897dc99"
     },
     {
       "classification": "reference",
@@ -4181,7 +4181,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/plan.md",
-      "sha256": "96edc65c30df1733a9e07f61d9abe7e90572a85f148c91cff973445562482eb9"
+      "sha256": "b51e73427931b9816795931f88ac0fabd1ee3efe7be70bd35b74db6a9204809f"
     },
     {
       "classification": "reference",
@@ -4283,7 +4283,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/fixtures/ontology_mcp_server.py",
-      "sha256": "bd249674a556a2667ad1b9b851cca2f1567b49d8ffa5992608bf808e0a3a7cc6"
+      "sha256": "a45a317daf0909aa74de2a4b9abfd9af151b240484996af2b533dd260f19d90a"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4541,7 +4541,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_ontology_skill.py",
-      "sha256": "39f7c369eb6378bad214718196c5b05e6ddc201ca19f74156e4342ff6ef1ff5e"
+      "sha256": "c7ceb6898082715c00e1732653b2a548c56df2fd83f4fc15a4cbf422d7d88813"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4553,7 +4553,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_plugin_skill_packages.py",
-      "sha256": "90fe55a4be499e9d8cde390cf25d111741472d743483e8a8a3b169f683d9905a"
+      "sha256": "65c6ca96762dca30b852d302e3f46cfd50d5f27ed8e27d7ac49dc1030318d349"
     },
     {
       "classification": "template-maintainer-tool",

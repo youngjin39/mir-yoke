@@ -830,6 +830,7 @@ def test_should_return_pack_and_reap_server(mk_client, mode):
     result = run(mode, extra=("query", "ontology", "--namespaces", "ns:core", "--k", "2"))
     assert result.returncode == 0, result.stderr
     assert json.loads(result.stdout)["schema_version"] == "mir-context-pack-v1"
+    assert json.loads(result.stdout)["degradation"] == []
     messages = [json.loads(line) for line in (host / "messages.jsonl").read_text().splitlines()]
     assert messages[0]["params"]["clientInfo"]["name"] == "repo-agent"
     assert messages[1]["method"] == "notifications/initialized"
@@ -874,6 +875,101 @@ def test_should_pass_personal_namespace_refusal_unchanged(mk_client):
         "reason": "personal namespace is unavailable",
         "namespace": "ns:personal",
     }
+
+
+@pytest.mark.parametrize(
+    "namespaces",
+    [(), ("ns:engineering",), ("ns:engineering", "ns:core")],
+)
+@pytest.mark.parametrize("mode", ["namespace_pack", "namespace_pack_text"])
+@pytest.mark.parametrize("status", [None, "refused"])
+@pytest.mark.parametrize(
+    "degradation",
+    [None, [], [{"scope": "retrieval", "reasons": ["vector_search_failed"]}]],
+    ids=["absent", "empty", "existing"],
+)
+def test_should_fence_namespaces(mk_client, namespaces, mode, status, degradation):
+    run, config, host, repo = mk_client
+    allowed = set(namespaces or ("ns:core", "ns:shared-ops", "ns:fleet-ops", "ns:skills"))
+    labels = [
+        "ns:engineering",
+        "ns:core",
+        "ns:shared-ops",
+        "ns:fleet-ops",
+        "ns:skills",
+        "ns:personal",
+        "ns:private",
+        "ns:unknown",
+        None,
+    ]
+    nodes = [
+        {"node_id": i, "namespace": label, "content": f"SYNTHETIC-CONTENT-{i}"}
+        for i, label in enumerate(labels, 1)
+    ]
+    citations = [
+        {"node_ref": f"federation:{i}", "namespace": label, "source_ref": f"SYNTHETIC-SOURCE-{i}"}
+        for i, label in enumerate(labels, 1)
+    ]
+    pack = {
+        "schema_version": "mir-context-pack-v1",
+        "nodes": nodes,
+        "citations": citations,
+    }
+    if degradation is not None:
+        pack["degradation"] = degradation
+    if status is not None:
+        pack["status"] = status
+    (host / "pack.json").write_text(json.dumps(pack))
+    extra = ("query", "ontology", *(("--namespaces", *namespaces) if namespaces else ()))
+    result = run(mode, extra=extra)
+    assert result.returncode == 0, result.stderr
+    report = json.loads(result.stdout)
+    assert report.get("status") == status
+    assert report["nodes"] == [node for node in nodes if node["namespace"] in allowed]
+    assert report["citations"] == [c for c in citations if c["namespace"] in allowed]
+    assert report["degradation"] == [
+        *(degradation or []),
+        {"scope": "client", "reasons": ["namespace_filtered"]},
+    ]
+    for node, citation in zip(nodes, citations, strict=True):
+        if node["namespace"] not in allowed:
+            assert node["content"] not in result.stdout
+            assert citation["source_ref"] not in result.stdout
+    assert result.stderr == ""
+
+
+@pytest.mark.parametrize("soft", [True, False])
+@pytest.mark.parametrize(
+    "degradation",
+    [None, [], [{"scope": "retrieval", "reasons": ["vector_search_failed"]}]],
+    ids=["absent", "empty", "existing"],
+)
+def test_should_keep_empty_contract_when_namespace_filter_removes_all_nodes(
+    mk_client, soft, degradation,
+):
+    run, config, host, repo = mk_client
+    pack = {
+        "nodes": [{"namespace": "ns:personal", "content": "SYNTHETIC-DROPPED"}],
+        "citations": [{"namespace": "ns:personal", "source_ref": "SYNTHETIC-CITATION"}],
+    }
+    if degradation is not None:
+        pack["degradation"] = degradation
+    (host / "pack.json").write_text(json.dumps(pack))
+    result = run(
+        "namespace_pack", soft=soft,
+        extra=("query", "ontology", "--namespaces", "ns:engineering"),
+    )
+    assert result.returncode == (0 if soft else 2), result.stderr
+    report = json.loads(result.stdout)
+    assert report["status"] == "empty"
+    assert report["reason"] == "ContextPack contains no nodes"
+    assert report["degradation"] == [
+        *(degradation or []),
+        {"scope": "client", "reasons": ["namespace_filtered"]},
+    ]
+    assert "SYNTHETIC-DROPPED" not in result.stdout
+    assert "SYNTHETIC-CITATION" not in result.stdout
+    assert result.stderr == ""
 
 
 def test_should_degrade_without_config_or_on_spawn_failure(mk_client, monkeypatch):

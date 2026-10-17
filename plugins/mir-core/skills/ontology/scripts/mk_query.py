@@ -17,6 +17,7 @@ from pathlib import Path
 MAX_MESSAGE = 4 * 1024 * 1024
 # The server gets only what it needs to start; secrets and tokens never cross over.
 CHILD_ENV = ("PATH", "HOME", "USER", "LOGNAME", "LANG", "LC_ALL", "LC_CTYPE", "TMPDIR")
+FEDERATION_NAMESPACES = ("ns:core", "ns:shared-ops", "ns:fleet-ops", "ns:skills")
 
 
 class Unavailable(Exception):
@@ -184,6 +185,28 @@ def call(command, cwd, timeout, tool, arguments, client_name):
         child.stdout.close()
 
 
+def fence_namespaces(pack, namespaces):
+    """Keep only explicitly scoped evidence; never echo excluded content or refs."""
+    allowed = namespaces or FEDERATION_NAMESPACES
+    dropped = False
+    for field in ("nodes", "citations"):
+        if field not in pack:
+            continue
+        entries = pack[field]
+        kept = [
+            entry
+            for entry in entries
+            if isinstance(entry, dict) and entry.get("namespace") in allowed
+        ]
+        dropped = dropped or len(kept) != len(entries)
+        pack[field] = kept
+    if dropped:
+        pack.setdefault("degradation", []).append(
+            {"scope": "client", "reasons": ["namespace_filtered"]}
+        )
+    return dropped
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo", type=Path, default=Path.cwd())
@@ -220,12 +243,18 @@ def main(argv=None):
         result = call(
             command, cwd, timeout, tool, arguments, args.client_name or repo.name + "-agent"
         )
+        filtered = False
+        if args.command == "query":
+            filtered = fence_namespaces(result, args.namespaces)
         if (
             args.command == "query"
             and result.get("status") != "refused"
             and (not result or result.get("nodes") == [])
         ):
-            print(json.dumps({"status": "empty", "reason": "ContextPack contains no nodes"}))
+            empty = {"status": "empty", "reason": "ContextPack contains no nodes"}
+            if filtered:
+                empty["degradation"] = result["degradation"]
+            print(json.dumps(empty))
             return 0 if args.soft else 2
         print(json.dumps(result, ensure_ascii=False))
         return 0

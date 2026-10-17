@@ -1,5 +1,176 @@
 # Change log
 
+## Namespace fence and activation scope (2026-10-18)
+
+Intent/design authority: `tasks/plan.md`, recording the current Mir Harness Main writer brief.
+Owner Discord 1561086355767824457 and the Harness run
+`ontology-engineering-settlement-2026-10-17` are parent-supplied authority context, not messages
+independently retrieved here. Qualified target: `mir-yoke:namespace-fence-and-activation-scope`.
+Lifecycle: source changes prepared; temporal: current working tree; epistemic: locally checked;
+verification: full suite has only the release-coupled repository-lock mismatch documented below.
+
+Verified pins: portable repository root `.`; HEAD `6abc3ff28e3b80e154adaa599142bc1a8848ab8c`.
+The supplied map SHA-256 matched before edits:
+`c20fbf3bdb910d3872b1f66730b56e0f34e8fa00c707e91eedd458c25a374340`.
+Current `.mir/ontology-map.json` SHA-256:
+`516c5b160c0fa49de51e4a0dc6f14c6e6a955d1baf72cc75dc2c93de7ea23e79`.
+Map `/namespace` and `/contract` retain `mir-yoke` and `mir.common-semantics@1.1.0`.
+Current source SHA-256 pins:
+
+- `plugins/mir-core/skills/ontology/scripts/mk_query.py`:
+  `a9c9939c25ccd2dbbf922087d5cf6aa08ce4b72a940f1421d7224e70bbf664d6`.
+- `scripts/verify_plugin_cli_activation.py`:
+  `99c9e0881c4cdc4caa6c5ac4884c415d11fee4b3809fae263fd6f11b7f3c326f`.
+
+Observation: local session on 2026-10-18. Read the parent-supplied Harness settlement
+`tasks/reports/ontology-engineering/settlement-2026-10-17/final-report.md` lines 37, 43 and
+67-69, and the J3/J4 report defect sections. These explain the prior gaps, not edit authority.
+Verified locally that the old client printed supplier nodes unchanged and that ADR-89 section
+2.2 requires rejecting returned Claude scopes other than `user`. Map `/questions/1` indexes
+that activation evidence; `/error_cases/7` now links only the synthetic client namespace fence.
+It does not establish supplier authorization or end-to-end private-data protection.
+
+The client now filters both nodes and citations against explicit requested namespaces, or the
+four federation namespaces in the guide when omitted. Unknown and unlabelled entries are
+dropped. It appends a separate `{"scope":"client","reasons":["namespace_filtered"]}`
+object to the degradation list, preserving supplier
+diagnostics without echoing discarded content or source references. All-dropped results retain
+the exact empty status/reason and soft/hard exits, plus degradation. Every query response is
+fenced, including a supplier response labelled `refused`; refusal status and content-free
+refusals remain unchanged. Feedback is untouched. The verifier now compares the single enabled
+Claude record's scope to `user` before validating its path/digest; Codex needs no scope field.
+Updated the guide in one line and added two Unreleased fixes without changing versions.
+
+Fail-first evidence (all uv commands used the owner-specified external SSD cache, `--offline`,
+and external SSD temporary storage; no live supplier, network or runtime activation was used):
+
+- Before implementation:
+  `uv run --offline pytest -q tests/test_ontology_skill.py tests/test_plugin_skill_packages.py -k 'outside_allowed_namespaces or namespace_filter_removes_all_nodes or non_user_claude_install_scope' --tb=short`:
+  exit 1, **11 failed, 1 passed, 262 deselected in 0.71s**. Six cases leaked synthetic
+  out-of-scope nodes/citations, two missed filtered-empty behavior, and three accepted
+  project/local/missing Claude scope. The user-scope positive control passed.
+  After the first fix: **12 passed, 262 deselected in 0.53s**.
+- Review added the supplier-status bypass negative. Before removing the refusal exemption:
+  `uv run --offline pytest -q tests/test_ontology_skill.py -k 'fence_namespaces and refused' --tb=short`:
+  exit 1, **6 failed, 259 deselected in 0.47s**. They now pass in the final suite.
+- The new namespace test was renamed to `test_should_fence_namespaces` and its E08 reason
+  shortened to retain the existing 12 KiB mapping budget. An intermediate run exposed
+  **7 failed, 310 passed** solely from that budget warning; no gate was weakened.
+- The initial payload verification exposed **1 failed, 36 passed** because generated hashes
+  were stale; documented payload regeneration restored the boundary checks below.
+
+Original-pass verification read directly from executed output:
+
+- `uv run --offline pytest -q tests/test_ontology_skill.py tests/test_ontology_runner.py tests/test_mir_ontology.py tests/test_plugin_skill_packages.py --tb=short`:
+  exit 0, **323 passed in 19.64s**. Includes the current 18 namespace/scope cases, process
+  cleanup, isolated skill execution, Python 3.9 stdlib, unavailable/empty, refusal and feedback.
+- `uv run --offline pytest -q tests/test_template_asset_classification.py tests/test_adopter_slim.py tests/test_no_korean_in_user_facing.py tests/test_release_metadata.py tests/test_public_template_surface.py --tb=short`:
+  exit 0, **37 passed** after payload regeneration.
+- `uv run --offline ruff check`: exit 0, all checks passed.
+- `python3 scripts/mir_ontology.py mapping`: exit 0, **0 errors, 0 warnings**, contract/map 1.1.0.
+- `python3 scripts/mir_ontology.py impact --git-diff --strict`: exit 0, no stale refs;
+  selects the executed namespace regression. Selection itself is not execution evidence.
+- `uv run --offline python scripts/verify_codex_sync.py`: exit 0,
+  **Codex derivatives match Claude sources**; generation occurred in external scratch only.
+- `uv run --offline python scripts/verify_context_paths.py`: exit 0, **9 files/77 references**.
+- `uv run --offline python -m tools.template_assets --write-adopter-payload --json`: exit 0,
+  **887 tracked/classified**, no unclassified, duplicate or prohibited entries. This refreshes
+  the existing stale capability-lock inventory hash without changing the lock itself; final
+  record hashes use the same generator.
+- `uv run --offline pytest -q tests/test_capability_cli.py -k repository_lock_is_portable_and_matches_managed_trees --tb=short`:
+  exit 1, **1 failed, 55 deselected in 0.08s** at line 397: modified mir-core tree digest
+  `9d2a0dbe427fb4c86adb9bf2213d68e75560da690f53c2683fa67dcfc57bcb32` differs from locked
+  `340987bee8b04046f3be57c1a2d04929164099802e8769fe1d53e79636c4a53f`.
+  Main must rebind the plugin tree during the later 0.13.6 release; this writer did not alter it.
+- `git diff --check`: exit 0. Full pytest was not run in the original bounded pass;
+  the continuation below runs it at Main's explicit request.
+
+Degradation-shape correction, continuing this same entry under Main's writer brief:
+
+- Read-only local evidence: `memory-keeper:src/mir/federation/assemble.py#ContextPack`
+  types `degradation` as `list[dict[str, Any]]`; `ContextPack.to_dict` emits it unchanged.
+  `memory-keeper:src/mir/federation/mcp_server.py#_validate_context_pack_response` checks
+  an array of objects with string `scope` and list-of-string `reasons`.
+  Observed locally on 2026-10-18, source SHA-256s respectively
+  `2182fab222452b679d735814f1b2887bb2a721ec59afbc818ebbab5eeb9b98aa` and
+  `ed305322cb1107f29c24a297c6e4e96ba717ede87cbe292fa97bef1b0f2ffdaa`.
+  This verifies payload shape only, not supplier authority. The earlier client digest was
+  `69cee15aa1dc1478dfdb53f58ed370f7d7308ea4a71c79e5cafa47df9b5f7669`.
+- Fixture packs now include `degradation: []`; namespace regressions cover absent, empty and
+  existing supplier lists, structured/text transport, default/explicit namespaces, refused
+  status, no echo and both filtered-empty exits. Exact list equality proves supplier objects
+  remain unchanged and the client record is appended separately.
+- Fail-first command:
+  `uv run --offline pytest -q tests/test_ontology_skill.py -k 'fence_namespaces and existing' -x --tb=short`:
+  exit 1, **1 failed, 281 deselected in 0.15s**. Output at `mk_query.py:205`:
+  `AttributeError: 'list' object has no attribute 'setdefault'`.
+- After the minimal append fix:
+  `uv run --offline pytest -q tests/test_ontology_skill.py -k 'fence_namespaces or namespace_filter_removes_all_nodes or return_pack_and_reap_server' --tb=short`:
+  exit 0, **44 passed, 249 deselected in 2.42s**.
+- `uv run --offline ruff check plugins/mir-core/skills/ontology/scripts/mk_query.py tests/fixtures/ontology_mcp_server.py tests/test_ontology_skill.py`:
+  exit 0, all checks passed. Mapping: **0 errors, 0 warnings**; strict impact: exit 0,
+  no stale refs. The guide now explicitly describes a list of `{scope, reasons}` objects.
+- `uv run --offline python -m tools.template_assets --write-adopter-payload --json`:
+  exit 0, **887 tracked/classified**, no unclassified, duplicate or prohibited entries.
+- `uv run --offline pytest -q`: exit 1, **2138 passed, 1 failed in 244.93s (0:04:04)**.
+  The sole failure is
+  `tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees`
+  at line 397. Current mir-core tree digest
+  `d14c42468453164f5ef7c6484c45ac5324a50baa3667bd70412a40a4f4e194db`
+  differs from locked `340987bee8b04046f3be57c1a2d04929164099802e8769fe1d53e79636c4a53f`.
+  Per Main's brief, leave this release-bind gate unchanged. Exact adopter payload parity
+  passed within that suite. Final-record procedure: regenerate the payload after these
+  bookkeeping edits and rerun the exact parity check.
+- Continuation matrix: **5/5 requested writer outcomes evidenced** (fail-first, append and
+  preservation/client contracts, guide shape, payload binding, full-suite result reporting).
+  The inherited release-lock gate remains open for Main. This continuation changed only
+  `mk_query.py`, the synthetic fixture, `test_ontology_skill.py`, the guide, this entry,
+  `tasks/plan.md` and generated `config/adopter-payload.json`; other earlier changes remain intact.
+
+Original-pass request matrix: **5/5 evaluated, 4/5 closed**. Cells 1-4 (namespace/citation isolation,
+unchanged client contracts, returned user scope, reference/Unreleased notes) have passing
+evidence. Cell 5 is open only for Main's release-coupled lock gate; lint, ontology, package,
+surface, generated parity and canonical records are checked. No recommendation was already
+satisfied or stopped as incorrect. Changed files: the two scripts, two test modules, synthetic
+MCP fixture, guide, changelog, E08 map entry, plan/evidence log and generated adopter payload.
+No commits, repository `.codex/**` writes, lock writes, version bump, tag/release, restarts,
+consumer/secret/private-body access or live database/service writes occurred. Unknowns:
+actual post-release runtime adoption and supplier-side authorization remain untested. The
+packet fields/pins are present; exact observation time is limited to the local date, and the
+host root is represented portably rather than published. Main owns remaining release work.
+
+## Superseded cursor before namespace fence and activation scope (2026-10-18)
+
+```markdown
+# Plan
+
+## Active task: 0.13.5 release preparation (2026-10-18)
+
+Intent authority: current Mir Harness Main writer brief, owner Discord 1561054690681032776
+(2026-10-18) and directive `ontology-engineering-settlement-2026-10-17`, parent-supplied.
+This single active cursor is the bounded design authority for commit A content preparation.
+Release the ontology handoff-packet change `f25e508`; mirror preparation commit `8a9fa95`.
+Previous cursor: `tasks/change_log.md#superseded-cursor-before-0135-release-preparation-2026-10-18`.
+
+Bounded design: align the same release/version surfaces, move only the handoff note into
+v0.13.5, follow the migration-entry pattern, refresh the lifecycle acknowledgement from a
+cache-free copy, regenerate adopter payload after final records, and generate Codex derivatives
+in external scratch. Do not write repository `.codex/**` or `.mir/capability-lock.json`.
+No commits, tags, pushes, publishing, activation, consumer writes or live database writes.
+Existing package/release checks cover these metadata-only edits; no new logic tests are needed.
+
+Request matrix: (1) version surfaces and acknowledgement, (2) changelog/migration,
+(3) adopter generation and scratch Codex parity, (4) required verification with only the
+repository lock failure expected until B, (5) records and Main handoff.
+Completion: 5/5 evaluated, 4/5 closed. Full pytest: 2092 passed, 1 expected lock failure
+until B. Ruff, scratch Codex generation/parity, context paths, public surface and focused
+release/package checks passed. Final records are included in regenerated adopter hashes.
+Evidence: `tasks/change_log.md#0135-release-preparation-2026-10-18`.
+
+Main remaining: review/regenerate repository derivatives, commit A, bind the lock in separate
+commit B, verify the final lock and full gate, tag/push/publish, capability update/attest/finalize.
+```
+
 ## 0.13.5 release preparation (2026-10-18)
 
 Intent and bounded design authority: `tasks/plan.md`, recording the Mir Harness Main writer

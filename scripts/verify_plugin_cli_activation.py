@@ -223,6 +223,10 @@ raise SystemExit(0)
                         raise RuntimeError(
                             f"{runtime} did not report exactly one enabled {plugin}"
                         )
+                    if runtime == "claude" and matches[0].get("scope") != "user":
+                        raise RuntimeError(
+                            f"claude did not report user scope for {plugin}"
+                        )
                     installed = _path(matches[0])
                     if installed is None:
                         raise RuntimeError(

@@ -96,6 +96,10 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ### Fixed
 
+- Filtered MK client response nodes and citations by requested namespaces, defaulting to the
+  documented federation set, with a content-free degradation reason and unchanged empty exits.
+- Rejected Claude activation inventories whose installed package scope is missing or differs
+  from `user`, as required by ADR-89.
 - Used each host's default `hooks/hooks.json` discovery instead of also declaring the conventional
   path in plugin manifests, preventing Claude from loading the common hook twice while preserving
   stable Codex hook discovery.

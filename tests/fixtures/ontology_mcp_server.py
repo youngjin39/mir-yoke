@@ -49,11 +49,14 @@ for line in sys.stdin:
                 "reason": "personal namespace is unavailable",
                 "namespace": "ns:personal",
             }
+        elif mode in ("namespace_pack", "namespace_pack_text"):
+            pack = json.loads(Path("pack.json").read_text())
         else:
             pack = {
                 "schema_version": "mir-context-pack-v1",
-                "nodes": [] if mode == "empty" else [{"title": "Fixture"}],
+                "nodes": [] if mode == "empty" else [{"title": "Fixture", "namespace": "ns:core"}],
                 "citations": [],
+                "degradation": [],
             }
         if mode == "refusal_empty":
             pack["nodes"] = []
@@ -62,7 +65,7 @@ for line in sys.stdin:
         result = {"content": [{"type": "text", "text": json.dumps(pack)}]}
         if mode == "empty_content":
             result["content"] = []
-        if mode not in ("text", "empty_content"):
+        if mode not in ("text", "empty_content", "namespace_pack_text"):
             result["structuredContent"] = pack
         if mode == "tool_error":
             result["isError"] = True
