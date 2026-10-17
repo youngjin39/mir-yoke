@@ -36,6 +36,8 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ### Changed
 
+- Put the six-field ontology handoff packet, missing-pin self-check and owner authority limits
+  in the skill body; require actual knowledge-client results, reasons and applied config sources.
 - Updated executor common v3.8 to ignore agent-route model/effort when the route's
   declared backend differs from the resolved dispatch backend. Explicit user model/effort
   overrides retain precedence. Forced modes reject automatically routed models recognized

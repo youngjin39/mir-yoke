@@ -32,6 +32,8 @@ Missing config, spawn/transport/MCP errors and deadlines print
 `{"status":"empty","reason":"..."}`. Both exit 0 with `--soft`, else 2; local work can continue.
 Structured refusal objects pass through unchanged. A personal-namespace MCP error is unavailable;
 the client never retries through a broader binding. Feedback is explicit and has MK-side effects.
+Report the client's actual result and reason, including which config source applied, rather than
+inferring defaults or connection state.
 
 This guide follows the MK federation MCP server, serve and assembly interfaces.
 

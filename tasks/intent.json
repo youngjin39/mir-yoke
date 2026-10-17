@@ -1,9 +1,9 @@
 {
-  "goal": "Make mir-core:ontology reachable from ordinary meaning-sensitive work and agent handoffs.",
+  "goal": "Make the ontology handoff packet visible in the skill body without enlarging owner authority.",
   "goal_type": "maintenance",
   "scope": "Supplier-owned Mir Yoke sources only; no commit, delivery, version bump, release/attestation changes, activation, restart, secrets, live DB access or repository .codex/** writes.",
   "priority": "normal",
-  "updated": "2026-10-17",
+  "updated": "2026-10-18",
   "history": [
     {
       "goal": "Re-verify all 22 repository-maintenance items against current evidence and apply minimal evidenced improvements.",
@@ -73,7 +73,7 @@
       "evidence": "tasks/change_log.md#ontology-rejudgment-g08g13-2026-10-16"
     }
   ],
-  "status": "in_progress",
-  "evidence": "tasks/change_log.md#ontology-reachability-2026-10-17",
-  "authority": "Owner Discord 1560995198857777253; parent-supplied Mir Harness directive ontology-engineering-settlement-2026-10-17."
+  "status": "complete",
+  "evidence": "tasks/change_log.md#ontology-handoff-packet-2026-10-18",
+  "authority": "Current Mir Harness Main writer brief; single active cursor: tasks/plan.md."
 }

@@ -1,5 +1,59 @@
 # Change log
 
+## Ontology handoff packet (2026-10-18)
+
+Intent and bounded design authority: `tasks/plan.md`, recording the current Mir Harness Main
+writer brief. Qualified target: `mir-yoke:ontology-handoff-guidance`. Lifecycle: implemented;
+temporal: current working tree; epistemic: locally checked source/test evidence;
+verification: bounded documentation and package checks passed, not agent adoption evidence.
+
+Parent-supplied judge evidence inspected locally on 2026-10-18: report-J1.md:82 (missing pins/time),
+report-J2.md:46,53,57 (incomplete packets, authority enlargement and config-source inference),
+report-J3.md:55,63 (packet gaps and unauthorized child actions), report-J4.md:48,60-62
+(handoff reference not read and authority enlargement). These are motivating evidence, not
+permission to edit consumers or run their agents. No private bodies or live services were read.
+
+Pins checked: repository root `.` (Mir Yoke); HEAD `ecf8291c87b9fff4620ff37123bb5809429b06fb`;
+source `plugins/mir-core/skills/ontology/SKILL.md` working-tree SHA-256
+`8f58621801a62d6115781a2c5ef92c498a77edf9246fe39f9984620eb88111ea`;
+`.mir/ontology-map.json` SHA-256
+`c20fbf3bdb910d3872b1f66730b56e0f34e8fa00c707e91eedd458c25a374340`.
+Map `/namespace` and `/contract` declare `mir-yoke` and `mir.common-semantics@1.1.0`.
+Distributed contract SHA-256:
+`b2f1ecd01aaa88d41caac2bc2481e7f4c5a429cff3983aaa85ddfb0fc2f1b93f`.
+The existing six-field source is `references/knowledge-supply.md#agent-handoff-and-delegation`
+under the ontology skill. It now appears directly in the body with a final missing-field/pin
+self-check, child provenance labels and no expansion of owner authority. Frontmatter is unchanged.
+The guide adds one sentence requiring actual client outcome/reason and the applied config source.
+
+Fail-first (before the documentation fix):
+`uv run pytest -q tests/test_ontology_skill.py -k 'carry_handoff_guards or report_actual_client'`
+exited 1: **11 failed, 240 deselected in 0.19s**. Ten cases failed on missing `## Handoff`;
+the client-outcome test failed on the absent reporting sentence. After the minimal fix,
+the same command exited 0: **11 passed, 240 deselected in 0.03s**.
+
+Verification (external SSD uv cache and task-local external SSD temporary directory):
+
+- `uv run pytest -q tests/test_ontology_skill.py tests/test_mir_ontology.py tests/test_plugin_skill_packages.py`:
+  exit 0, **271 passed in 19.45s**, including mapping and strict impact gates.
+- `uv run pytest -q tests/test_template_asset_classification.py tests/test_adopter_slim.py`:
+  exit 0, **28 passed in 4.06s** after documented payload regeneration.
+- `uv run ruff check`: exit 0, **All checks passed!**
+- `uv run python scripts/verify_codex_sync.py`: exit 0,
+  **OK: Codex derivatives match Claude sources**. No repository `.codex/**` writes.
+- `uv run python -m tools.template_assets --write-adopter-payload --json`: exit 0,
+  **887 tracked/classified**, no unclassified, duplicate or prohibited entries.
+  Regeneration also corrects a pre-existing stale capability-lock inventory hash;
+  the capability lock itself is unchanged. Final record hashes are refreshed with the same command.
+- `git diff --check`: exit 0 after removing a trailing blank line from the cursor.
+
+Request matrix: **3/3 done** (body packet/authority, actual result/config guidance, tests/changelog/payload).
+No already-satisfied or owner-decision item. Unknown: whether future real-agent briefs will carry
+the packet; these tests enforce the supplied guidance, not agent adherence. Owner authority permits
+only this bounded source/test/document/payload update; no commits, release, activation, network,
+live database writes, consumer writes or repository `.codex/**` writes. Self-check: all packet fields
+are present; absolute host root and exact observation time remain unspecified beyond local date.
+
 ## 0.13.4 release preparation (2026-10-17)
 
 Authority: owner Discord 1561020393568079954 (2026-10-17), via Mir Harness Main, and directive `ontology-engineering-settlement-2026-10-17`, parent-supplied. Intent and bounded design authority: `tasks/plan.md`. This records commit A content preparation only, not a commit, release or activation.
@@ -6956,4 +7010,108 @@ native sessions/current base-hook trust. Parent fresh evidence is scoped in the 
 D1 is delivered in v0.13.3 by patch equivalence; no owner choice remains.
 Evidence: tasks/change_log.md#matrix-pass-2026-10-17.
 Prior projection: tasks/change_log.md#superseded-continuity-before-matrix-pass-2026-10-17.
+```
+
+## Superseded cursor before ontology handoff packet (2026-10-18)
+
+### Previous plan (verbatim)
+
+```markdown
+# Plan
+
+## Active task: 0.13.4 release preparation (2026-10-17)
+
+Authority: owner Discord 1561020393568079954 (2026-10-17), via Mir Harness Main, and directive `ontology-engineering-settlement-2026-10-17` (parent-supplied). This cursor is the intent and bounded design authority for commit A content only. The release brief supersedes the previous no-version-change restriction. Previous cursor: `tasks/change_log.md#superseded-cursor-before-0134-release-preparation-2026-10-17`.
+
+Mirror e20d6fa release surfaces at 0.13.4. Move only the ontology-reachability note from Unreleased, follow the migration-entry pattern, refresh the lifecycle acknowledgement from a cache-free copy, and regenerate the adopter payload. Generate Codex derivatives in external scratch; repository `.codex/**` writes remain Main-owned. No capability-lock changes, commits, tags, pushes, publishing or activation here.
+
+Request matrix: (1) version surfaces and cache-free acknowledgement, (2) release and migration notes, (3) adopter generation and scratch Codex parity, (4) required verification with only the repository lock failure expected, (5) records and Main handoff. Existing release/package checks cover these metadata-only edits; no new implementation tests or tasks/tdd.json changes are needed.
+
+Main remaining: review and regenerate repository Codex derivatives, commit A, bind `.mir/capability-lock.json` to A in separate commit B, then rerun the lock check and perform authorized tag, push, publish, capability update/attest/finalize.
+
+Evidence: `tasks/change_log.md#0134-release-preparation-2026-10-17`. All five request-matrix cells were evaluated; 4/5 are closed. The full-gate cell remains open only for Main to bind the release lock in B. Full pytest: 2080 passed, 1 expected repository-lock failure in 240.27s. Ruff, scratch Codex generation/parity, context paths (77) and Korean-text checks (5) passed. Final record-dependent adopter hashes are regenerated and checked separately. No repository Codex files or capability lock were changed.
+```
+
+### Previous intent (verbatim)
+
+```json
+{
+  "goal": "Make mir-core:ontology reachable from ordinary meaning-sensitive work and agent handoffs.",
+  "goal_type": "maintenance",
+  "scope": "Supplier-owned Mir Yoke sources only; no commit, delivery, version bump, release/attestation changes, activation, restart, secrets, live DB access or repository .codex/** writes.",
+  "priority": "normal",
+  "updated": "2026-10-17",
+  "history": [
+    {
+      "goal": "Re-verify all 22 repository-maintenance items against current evidence and apply minimal evidenced improvements.",
+      "updated": "2026-10-17",
+      "status": "superseded",
+      "archive": "tasks/change_log.md#superseded-cursor-before-ontology-reachability-2026-10-17"
+    },
+    {
+      "goal": "Make the default work method portable across adopting computers and both runtimes, including delegated Codex sessions.",
+      "updated": "2026-10-17",
+      "evidence": "tasks/change_log.md#portable-default-work-method-2026-10-17",
+      "status": "superseded",
+      "archive": "tasks/change_log.md#superseded-continuity-before-matrix-pass-2026-10-17"
+    },
+    {
+      "goal": "Re-verify Mir Yoke against the owner-directed 22-item repository maintenance checklist and apply minimal evidenced improvements.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#matrix-pass-2026-10-16"
+    },
+    {
+      "goal": "Fix the five Linux release-runner test failures without weakening their behavioral guarantees.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#linux-release-runner-fixtures-2026-10-16"
+    },
+    {
+      "goal": "Prepare the Mir Yoke 0.13.1 release working tree with version metadata and migration notes only.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#0131-release-preparation-2026-10-16"
+    },
+    {
+      "goal": "Close ontology impact and isolated distribution gaps and scope E06/E08 evidence.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#ontology-gap-development-2026-10-16"
+    },
+    {
+      "goal": "Make local validation and fresh-checkout validate workflow commands pass while retaining the memory render guard.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#local-and-ci-validation-fixes-2026-10-16"
+    },
+    {
+      "goal": "Prevent automatic consistency tests from rendering live agent memory.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#automatic-memory-render-guard-2026-10-16"
+    },
+    {
+      "goal": "Prepare the Mir Yoke 0.13.0 release working tree with version metadata and migration notes only.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#0130-release-preparation-2026-10-16"
+    },
+    {
+      "goal": "Correct E03 and E07 covered check references using existing executable behavior tests.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#superseded-cursor-covered-label-fix-before-0130-preparation-2026-10-16"
+    },
+    {
+      "goal": "Retain repeatable Yoke-domain selection/evidence use and resolve declared relation target-freshness ownership.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#ontology-rejudgment-g08g13-2026-10-16"
+    }
+  ],
+  "status": "in_progress",
+  "evidence": "tasks/change_log.md#ontology-reachability-2026-10-17",
+  "authority": "Owner Discord 1560995198857777253; parent-supplied Mir Harness directive ontology-engineering-settlement-2026-10-17."
+}
 ```

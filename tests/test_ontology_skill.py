@@ -69,6 +69,38 @@ def test_should_pin_minimum_parent_child_handoff_packet(terms: tuple[str, ...]) 
         assert term in handoff, f"handoff packet misses: {term}"
 
 
+@pytest.mark.parametrize(
+    "terms",
+    [
+        ("writing or receiving", "brief", "six fields"),
+        ("qualified target", "namespace", "local id"),
+        ("status per axis", "lifecycle", "temporal", "epistemic", "verification"),
+        ("current pins", "repository root", "head", "source path@revision", "hash",
+         "map/contract", "id", "version", "digest"),
+        ("evidence", "provenance", "observation time"),
+        ("explicit unknowns", "authority", "may / may not"),
+        ("finish", "self-check", "every missing field or pin", "unknown"),
+        ("copy the current owner authority without enlarging it",),
+        ("never grants edits, tests, commands or writes the owner did not grant",),
+        ("verified-in-repo", "parent-supplied", "references/knowledge-supply.md"),
+    ],
+)
+def test_should_carry_handoff_guards_in_skill_body(terms: tuple[str, ...]) -> None:
+    skill = (SKILL / "SKILL.md").read_text(encoding="utf-8")
+    assert "## Handoff" in skill
+    handoff = " ".join(skill.split("## Handoff", 1)[1].split("\n## ", 1)[0].lower().split())
+    for term in terms:
+        assert term in handoff, f"skill body handoff misses: {term}"
+
+
+def test_should_report_actual_client_outcome_and_applied_config_source() -> None:
+    guide = " ".join((SKILL / "references/knowledge-supply.md").read_text(encoding="utf-8").split())
+    assert (
+        "Report the client's actual result and reason, including which config source applied, "
+        "rather than inferring defaults or connection state."
+    ) in guide
+
+
 def test_should_forbid_forcing_a_connection_during_supply_outage() -> None:
     guide = " ".join((SKILL / "references/knowledge-supply.md").read_text(encoding="utf-8").split())
     assert "do not unset, override or edit the supply configuration or environment" in guide

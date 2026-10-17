@@ -39,6 +39,17 @@ Do not invent a competing contract, install a service or restructure the project
    version compatibility when the contract changes; do not claim a newer validated version
    until its mapping has actually been reviewed and checked.
 
+## Handoff
+
+When writing or receiving a handoff/brief, carry six fields: **qualified target** (namespace + local id);
+**status per axis** (lifecycle, temporal, epistemic, verification); **current pins** (repository root,
+HEAD, source path@revision or content hash, map/contract id + version + digest); **evidence** with
+provenance and observation time; **explicit unknowns**; **authority** (may / may not).
+Copy the current owner authority without enlarging it: a brief never grants edits, tests, commands
+or writes the owner did not grant. Mark each item `verified-in-repo` or `parent-supplied`;
+see the [handoff details](references/knowledge-supply.md#agent-handoff-and-delegation).
+Finish with a self-check that names every missing field or pin as an unknown.
+
 ## Deterministic checker
 
 Read the [mapping guide](references/mapping-guide.md) when authoring or changing a mapping.
