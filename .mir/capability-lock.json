@@ -110,7 +110,8 @@
   },
   "profile": "hybrid_pipeline",
   "registration": {
-    "status": "restart-required"
+    "finalized_at": "2026-10-17T19:48:29.599876+00:00",
+    "status": "active"
   },
   "schema_version": 2,
   "source": {
