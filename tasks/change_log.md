@@ -1,5 +1,67 @@
 # Change log
 
+## 0.13.6 release preparation (2026-10-18)
+
+Intent and bounded design authority: `tasks/plan.md`, recording the current Mir Harness Main
+writer brief. Owner Discord 1561086355767824457 and earlier delivery direction are
+parent-supplied context, not independently retrieved messages. Qualified target:
+`mir-yoke:release-0.13.6-commit-a`. Lifecycle: prepared content; temporal: current working
+tree; epistemic: locally checked; verification: full offline suite checked; only the explicitly deferred repository-lock gate is open.
+
+Verified HEAD: `b42ec20c944d77b84acf0202a2da99794e61e4f6`; reference preparation: `5276401`.
+Verified map `.mir/ontology-map.json` SHA-256:
+`516c5b160c0fa49de51e4a0dc6f14c6e6a955d1baf72cc75dc2c93de7ea23e79`.
+Map `/namespace` and `/contract` declare `mir-yoke` and `mir.common-semantics@1.1.0`.
+Map `/concepts/Task` identifies this cursor; `/concepts/Capability` identifies capability
+selection, not runtime adoption. Release behavior evidence is the unchanged source/test commit
+`b42ec20` and its two CHANGELOG Fixed items; metadata preparation adds no behavior or contract
+change and establishes no fresh runtime activation.
+
+Mirrored the predecessor's exact 19-file release preparation set. VERSION, pyproject,
+editable project entry only in uv.lock, four marketplace versions, eight plugin manifests and
+two package-test expectations now use 0.13.6. Moved only b42ec20's two Fixed notes from
+Unreleased into v0.13.6 dated 2026-10-18; updated MIGRATION current version and appended notes.
+Validated lifecycle-hooks on a cache-free temporary copy using `_validate_plugin` with
+`package_kind="skills-hooks"`; acknowledgement is now
+`661680ec231a6c9b0de72ca6d689b44f377bde6cdf3fbab8a63e00d35235f79c`.
+No hook source changed. The documented generator classified all 887 tracked files without
+unclassified, duplicate or prohibited entries. Final records require payload regeneration.
+
+All uv commands use the required external SSD cache; temporary suite/validation storage is
+on the external SSD. Commands below use `uv run --offline` where applicable.
+
+- Fail-first package version checks: 2 failed, 13 deselected in 0.06s before version edits.
+- Focused release/package/public-surface/classification checks: 30 passed in 0.71s.
+- `uv run --offline ruff check`: exit 0, all checks passed.
+- `uv run --offline python scripts/verify_codex_sync.py`: exit 0, Codex derivatives match
+  Claude sources. This verifier generates only in temporary storage; no repository derivative
+  write was made.
+- `uv run --offline python scripts/verify_context_paths.py`: exit 0, 9 files and 77 references.
+- `uv run --offline python scripts/mir_ontology.py impact --git-diff --strict`: exit 0,
+  no stale refs or selected extra checks.
+- `git diff --check`: exit 0. Exact changed-file set equals `5276401` (19 files).
+  Capability lock, ontology map and repository `.codex/**` have no diff.
+
+Initial full offline suite: 2137 passed, 2 failed in 224.22s. Besides the expected lock
+failure, exact adopter inventory comparison failed because this writer edited records after
+payload generation while the suite was running. Regenerate payload before rerunning the full
+suite, and regenerate/check again after final result recording. No product-code fix is needed.
+Full-suite rerun: `uv run --offline pytest -q`, exit 1, **2138 passed, 1 failed in 234.69s**.
+Sole failure: `tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees`
+at line 397 (unchanged lock versus modified plugin tree), explicitly deferred to Main commit B.
+No tests were excluded or weakened. Request matrix: 5/5 evaluated, 4/5 closed; full-gate cell
+remains open only for this lock binding. Version-surface assertions also verified uv.lock differs
+only in the editable project version and the map hash matches the supplied pin.
+
+After these final record updates, run the documented
+`uv run --offline python -m tools.template_assets --write-adopter-payload --json`, exact
+inventory comparison, the same 30-test focused gate and `git diff --check`. Final evidence is
+reported in the writer response without another record mutation, avoiding stale payload hashes. Main owns repository derivative
+regeneration/review, commit A, separate lock-binding commit B, final lock/full-gate verification,
+and any subsequent authorized delivery. No commit, tag, push, external network, lock binding,
+activation, consumer write, live database write or secret read was performed by this writer.
+Final A/B identities and delivery/runtime outcomes remain unknown and Main-owned.
+
 ## Namespace fence and activation scope (2026-10-18)
 
 Intent/design authority: `tasks/plan.md`, recording the current Mir Harness Main writer brief.
@@ -7379,4 +7441,58 @@ Completion: 3/3 done. Fail-first 11 failures became 11 passes; ontology/package 
 271 tests, adopter/classification checks passed 28 tests, and Ruff and Codex parity passed.
 Final record hashes are included in adopter regeneration and exact inventory verification.
 No owner decision or delivery action is part of this task.
+```
+
+## Superseded cursor before 0.13.6 release preparation (2026-10-18)
+
+```markdown
+# Plan
+
+## Active task: namespace fence and activation scope (2026-10-18)
+
+Intent authority: current Mir Harness Main writer brief, owner Discord 1561086355767824457
+(2026-10-18), active Harness run `ontology-engineering-settlement-2026-10-17`, parent-supplied.
+This single active cursor is the bounded design authority for this task.
+Previous cursor: `tasks/change_log.md#superseded-cursor-before-namespace-fence-and-activation-scope-2026-10-18`.
+
+Implement only the MK client's fail-closed output namespace fence, the Claude activation
+verifier's explicit returned `user` scope check, and their regression tests/reference/changelog.
+Keep unavailable/empty exit contracts, content-free refusals and feedback behavior. No version
+bump, commit, push, tag, release, network, activation, live database, secret/consumer access,
+or repository `.codex/**` writes. Main owns derivative regeneration and the later 0.13.6 release.
+
+Bounded design: retain only nodes/citations within explicit requested namespaces, otherwise
+`ns:core`, `ns:shared-ops`, `ns:fleet-ops`, `ns:skills`; missing namespace fails closed.
+Record a content-free filtering reason in degradation, including when all nodes are dropped.
+Apply the fence to every query response, preserving refusal status.
+Compare the single enabled Claude inventory record's scope to `user` before path/digest checks.
+Use the existing synthetic MCP fixture and isolated synthetic CLI inventory; run tests first.
+
+Request matrix: (1) requested/default namespace and citation isolation plus degradation,
+(2) unchanged empty/unavailable/refusal/feedback contracts, (3) user-scope positive/negative
+inventory verification, (4) one-line reference and Unreleased notes, (5) relevant verification,
+canonical records and generated-parity assessment within the sandbox constraints.
+Previous pass: 5/5 evaluated, 4/5 closed. Behavior tests: 323 passed; surface checks: 37 passed.
+Cell 5 remains open only for the release-coupled capability-lock digest gate (1 failure).
+Ruff, mapping/strict impact, context paths and scratch-only Codex parity passed.
+Main remaining: bind the modified plugin tree in the later 0.13.6 release, then rerun the
+repository-lock check and release gate. No lock or repository Codex derivatives were written.
+Evidence: `tasks/change_log.md#namespace-fence-and-activation-scope-2026-10-18`.
+
+Continuation authority: Main's current namespace-fence degradation-shape writer brief.
+Use MK's real `degradation` list shape in the fixture and fail-first regressions. When filtering
+drops nodes or citations, append a separate `{"scope":"client","reasons":["namespace_filtered"]}`
+entry, creating the list only when absent and preserving every supplier entry. Keep no-echo,
+refusal and filtered-empty contracts. Clarify the guide's shape clause, refresh adopter payload
+digests with the documented generator, and run the full suite offline. Update the existing
+evidence entry; leave the release lock and repository `.codex/**` files to Main.
+Continuation matrix: (1) recorded fail-first, (2) list append/preservation and client contracts,
+(3) accurate guide clause, (4) payload parity, (5) full-suite evidence and remaining lock gate.
+Continuation status: 5/5 writer requests evidenced. Fail-first reproduced the list `setdefault`
+AttributeError (1 failed, 281 deselected); corrected regressions passed (44 passed, 249 deselected).
+Full suite: 2138 passed, 1 failed in 244.93s. The only failure is the explicitly deferred
+`test_repository_lock_is_portable_and_matches_managed_trees`; Main owns release binding.
+Payload generation passed for all 887 classified files before the full suite; regenerate after
+these final evidence edits and check exact parity again. Mapping/strict impact and scoped Ruff
+passed. No release-lock or repository `.codex/**` writes were made.
 ```

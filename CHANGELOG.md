@@ -96,10 +96,6 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ### Fixed
 
-- Filtered MK client response nodes and citations by requested namespaces, defaulting to the
-  documented federation set, with a content-free degradation reason and unchanged empty exits.
-- Rejected Claude activation inventories whose installed package scope is missing or differs
-  from `user`, as required by ADR-89.
 - Used each host's default `hooks/hooks.json` discovery instead of also declaring the conventional
   path in plugin manifests, preventing Claude from loading the common hook twice while preserving
   stable Codex hook discovery.
@@ -174,6 +170,19 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
   project no longer indexes its own `docs/_archive/` as current material. The template and the
   maintainer configuration already carried it; the generator, which is what every new project
   actually receives, did not.
+
+## [v0.13.6] — 2026-10-18 — Namespace fence and activation scope
+
+### Fixed
+
+- Filtered MK client response nodes and citations by requested namespaces, defaulting to the
+  documented federation set, with a content-free degradation reason and unchanged empty exits.
+- Rejected Claude activation inventories whose installed package scope is missing or differs
+  from `user`, as required by ADR-89.
+
+### Changed
+
+- Aligned all four dual-runtime plugin versions and the optional CLI package to `0.13.6`.
 
 ## [v0.13.5] — 2026-10-18 — Ontology handoff packet
 
