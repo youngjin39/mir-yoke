@@ -171,6 +171,21 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
   maintainer configuration already carried it; the generator, which is what every new project
   actually receives, did not.
 
+## [v0.13.3] — 2026-10-17 — Item 22 and the request matrix
+
+### Added
+
+- `mir-core:repo-maintenance` adds checklist item 22: proportionate Agent, Loop, Graph and
+  Ontology engineering.
+
+### Changed
+
+- `mir-core:verify` turns a request over several targets or items into one claim per target ×
+  item and reports `N/M` with the open claims instead of a completion claim.
+- The ontology runner extracts its active-distribution checks into `select_active_distribution`
+  (no behavior change); consumers refresh their byte copy of the runner.
+- Aligned all four dual-runtime plugin versions and the optional CLI package to `0.13.3`.
+
 ## [v0.13.2] — 2026-10-17 — Portable default work method
 
 ### Added

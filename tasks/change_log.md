@@ -1,5 +1,20 @@
 # Change log
 
+## 0.13.3 release (2026-10-17)
+
+Authority: owner Discord 1560822145624580200 (via Mir Harness Main) for D1: release the held
+item-22 skill, the verify request-matrix rule and the runner extraction together, with push,
+tag and release. Reviewed and committed by Mir Harness Main.
+
+Main cherry-picked 26d2f42 (repo-maintenance item 22) and 1a24dc0 (verify request matrix,
+`select_active_distribution` extraction) from `maint/repo-maintenance-item-22` onto 0.13.2
+`main`, then bumped VERSION, package metadata, the uv.lock editable line, all eight plugin
+manifests and the marketplace to 0.13.3, refreshed the lifecycle-hooks acknowledgement with
+`_validate_plugin` from a cache-free copy (`4b1993f3…35c4`) and regenerated
+`config/adopter-payload.json`. The lock is bound to the prep commit from its git-archive tree in
+the following commit. Consumers that keep a byte copy of the ontology runner refresh it after
+activation.
+
 ## 0.13.1 release preparation (2026-10-16)
 
 Authority: current owner release-preparation brief in `tasks/intent.json`; active cursor

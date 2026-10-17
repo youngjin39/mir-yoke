@@ -25,6 +25,8 @@ Delivery disposition: reviewed and committed by Mir Harness Main.
 This is the required Main follow-up, not a claim that this writer committed.
 Main disposition (2026-10-17): owner Discord 1560695634611409009 authorized pushing this change alone, releasing it as 0.13.2 and activating it on the managing host. Main moved it from `maint/repo-maintenance-item-22` onto `main`, refreshed the lifecycle-hooks digest acknowledgement with the dedicated validator from a cache-free copy (589b09e6…), and regenerated the adopter payload on `main`. The item-22, verify and runner changes stay held on that branch (D1).
 
+D1 disposition (2026-10-17): owner Discord 1560822145624580200 accepted the recommendation to release the held item-22 skill, the verify request-matrix rule and the runner distribution-check extraction together. Main cherry-picked 26d2f42 and 1a24dc0 from `maint/repo-maintenance-item-22` onto `main` (history rewrite of the shared branch is not used), prepared 0.13.3, rebound the lock from the git-archive tree, tagged and activated it; evidence: `tasks/change_log.md#0133-release-2026-10-17`. Consumers refresh their ontology-runner byte copy after activation.
+
 ### Bounded design
 
 This cursor is the design authority for this change. Keep the hook a constant-only,
