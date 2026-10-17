@@ -1,6 +1,6 @@
 ---
 name: ontology
-description: "Apply a project-owned ontology mapping to the common semantic contract. Use for ontology, semantic contract, identity, same entity, relation meaning, status meaning, provenance, impact analysis, or a mapping file."
+description: "Apply the project-owned ontology mapping and common semantic contract when an answer depends on whether two names are the same thing; who knew or believed what at a given time versus what is true; whether something is current, proposed, historical, retracted or superseded; whether evidence is still valid after its source changed; whether being able to act means being allowed to; a relation's direction or scope; or writing or receiving a handoff/brief for another agent. Use selectively, not for every task."
 ---
 
 # Ontology and Shared Meaning
@@ -22,7 +22,7 @@ Do not invent a competing contract, install a service or restructure the project
    relation requires reviewed evidence; preserve existing IDs and record replacements.
 3. Retrieve only evidence needed to answer the task. Start with local authoritative sources.
    Use a knowledge service only through the project's configured interface; consult the
-   [knowledge supply guidance](references/knowledge-supply.md) for context packs and outages.
+   [knowledge supply guidance](references/knowledge-supply.md) for context packs, agent handoffs and outages.
    Record source, revision or hash, observation time, method, basis and conclusion scope when
    available. Distinguish direct retrieval from a parent-supplied pack.
 4. Check identity, separate status axes, relation direction/endpoints/scope and authority.

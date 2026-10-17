@@ -24,6 +24,62 @@ CONCEPTS = (
 ).split()
 
 
+@pytest.mark.parametrize(
+    "terms",
+    [
+        ("two names", "same thing"),
+        ("knew", "believed", "given time", "true"),
+        ("current", "proposed", "historical", "retracted", "superseded"),
+        ("evidence", "valid", "source changed"),
+        ("able", "allowed"),
+        ("relation", "direction", "scope"),
+        ("writing", "receiving", "handoff", "brief", "another agent"),
+        ("selectively", "not for every task"),
+    ],
+)
+def test_should_describe_ordinary_meaning_sensitive_requests(terms: tuple[str, ...]) -> None:
+    text = (SKILL / "SKILL.md").read_text(encoding="utf-8")
+    frontmatter = text.split("---", 2)[1]
+    description = json.loads(frontmatter.split("description:", 1)[1].strip()).lower()
+    for term in terms:
+        assert term in description, f"description misses ordinary trigger: {term}"
+
+
+@pytest.mark.parametrize(
+    "terms",
+    [
+        ("parent sends", "child checks", "minimum packet"),
+        ("qualified target", "namespace", "local id"),
+        ("status per axis", "lifecycle", "temporal", "epistemic", "verification"),
+        ("current pins", "repository root", "head", "source path@revision", "hash",
+         "map", "contract", "digest"),
+        ("evidence", "provenance", "observation time"),
+        ("explicit unknowns", "missing", "conflicting"),
+        ("authority", "may", "may not"),
+        ("each item", "verified-in-repo", "parent-supplied", "recheck", "changed"),
+    ],
+)
+def test_should_pin_minimum_parent_child_handoff_packet(terms: tuple[str, ...]) -> None:
+    skill = (SKILL / "SKILL.md").read_text(encoding="utf-8")
+    assert "(references/knowledge-supply.md)" in skill
+    assert "for context packs, agent handoffs and outages" in " ".join(skill.split())
+    guide = (SKILL / "references/knowledge-supply.md").read_text(encoding="utf-8")
+    handoff = " ".join(guide.split("### Agent handoff and delegation", 1)[1].lower().split())
+    for term in terms:
+        assert term in handoff, f"handoff packet misses: {term}"
+
+
+def test_should_route_meaning_sensitive_design_and_handoffs_to_ontology() -> None:
+    skill = (ROOT / "plugins/mir-code/skills/bluebricks/SKILL.md").read_text(encoding="utf-8")
+    routes = [line for line in skill.splitlines() if "`mir-core:ontology`" in line]
+    assert len(routes) == 1
+    for term in ("identity", "lifecycle", "evidence", "handoff"):
+        assert term in routes[0]
+    ontology = (SKILL / "SKILL.md").read_text(encoding="utf-8")
+    assert "only the relevant sources" in ontology
+    assert "Retrieve only evidence needed to answer the task" in ontology
+
+
 @pytest.fixture
 def mapping_repo(tmp_path: Path) -> tuple[Path, dict]:
     (tmp_path / ".mir").mkdir()

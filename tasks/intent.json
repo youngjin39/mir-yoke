@@ -1,10 +1,16 @@
 {
-  "goal": "Re-verify all 22 repository-maintenance items against current evidence and apply minimal evidenced improvements.",
+  "goal": "Make mir-core:ontology reachable from ordinary meaning-sensitive work and agent handoffs.",
   "goal_type": "maintenance",
-  "scope": "Mir Yoke only; no commit, push, tag, release, restart, secret access, consumer write, live memory write or generated .codex/** write. Preserve the pre-existing dirty handoff.",
+  "scope": "Supplier-owned Mir Yoke sources only; no commit, delivery, version bump, release/attestation changes, activation, restart, secrets, live DB access or repository .codex/** writes.",
   "priority": "normal",
   "updated": "2026-10-17",
   "history": [
+    {
+      "goal": "Re-verify all 22 repository-maintenance items against current evidence and apply minimal evidenced improvements.",
+      "updated": "2026-10-17",
+      "status": "superseded",
+      "archive": "tasks/change_log.md#superseded-cursor-before-ontology-reachability-2026-10-17"
+    },
     {
       "goal": "Make the default work method portable across adopting computers and both runtimes, including delegated Codex sessions.",
       "updated": "2026-10-17",
@@ -68,6 +74,6 @@
     }
   ],
   "status": "in_progress",
-  "evidence": "tasks/change_log.md#matrix-pass-2026-10-17",
-  "authority": "Owner Discord 1560953913631318118 (2026-10-17), parent-supplied Mir Harness fleet maintenance directive."
+  "evidence": "tasks/change_log.md#ontology-reachability-2026-10-17",
+  "authority": "Owner Discord 1560995198857777253; parent-supplied Mir Harness directive ontology-engineering-settlement-2026-10-17."
 }

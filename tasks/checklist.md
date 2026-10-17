@@ -1,10 +1,10 @@
 # Checklist
 
-Status projection for tasks/plan.md: 22/22 evaluated, 19/22 closed.
-Full pytest: 2064 passed, 0 failed; Ruff, official Codex parity, context paths
-and ontology mapping/strict impact passed. The adopter inventory is regenerated.
-Items 13, 19 and 21 require Main: curate the excluded dirty handoff and confirm
-native sessions/current base-hook trust. Parent fresh evidence is scoped in the log.
-D1 is delivered in v0.13.3 by patch equivalence; no owner choice remains.
-Evidence: tasks/change_log.md#matrix-pass-2026-10-17.
-Prior projection: tasks/change_log.md#superseded-continuity-before-matrix-pass-2026-10-17.
+Status projection for `tasks/plan.md`: ontology reachability, 2026-10-17.
+5/5 request cells evaluated; 4/5 closed. New regressions: 17 fail-first, then 17 passed;
+additional link-reachability assertion: eight fail-first, then 17 passed overall.
+Final source full suite: 2080 passed, one capability-lock tree digest failure.
+Ruff, Codex parity, context paths and ontology checks
+passed. Main owns the separately authorized lock refresh and acceptance.
+Evidence: `tasks/change_log.md#ontology-reachability-2026-10-17`.
+Previous projection is archived with the superseded cursor in the same evidence log.

@@ -83,3 +83,25 @@ judgments needing missing external knowledge as lacking evidence. Retain conflic
 Do not install services or broaden access to fill gaps. Abandoning a call does not prove it stopped.
 The implementation releases the store connection and reader lease after each call, including
 failure; the consumer contract's older lifetime-reader statement does not describe current code.
+
+### Agent handoff and delegation
+
+For a handoff or brief to another agent, the parent sends and the child checks this minimum packet,
+using only task-relevant mapping entries and sources:
+
+- **Qualified target:** namespace + local id, including the project-owned sub-namespace if used.
+- **Status per axis:** lifecycle, temporal, epistemic and verification, preserving local meanings
+  and keeping what an actor knew or believed at a given time separate from what is true.
+- **Current pins:** repository root, HEAD, source path@revision or content hash, and map/contract
+  id, version and digest. Identify which source each pin covers.
+- **Evidence:** claim, source and provenance (direct retrieval or inherited evidence), observation
+  time, method and conclusion scope. Retain source revision/hash and citations.
+- **Explicit unknowns:** missing pins, unavailable or conflicting evidence, and unresolved meanings.
+- **Authority:** what the child may / may not do under the current owner instructions and policy.
+  A parent's ability to perform an action does not itself authorize the child to perform it.
+
+The child marks each item `verified-in-repo` or `parent-supplied`; record the checked source and
+observation time for the former, and preserve the parent's attribution and time for the latter.
+Missing fields stay explicit unknowns, not assumed current facts. Recheck affected claims when
+HEAD, a pinned source or the map/contract changed; do not relabel inherited evidence as verified
+without a local check. Verify only what the task needs and current authority permits.

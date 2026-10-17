@@ -1,5 +1,106 @@
 # Change log
 
+## Ontology reachability (2026-10-17)
+
+Authority: owner Discord 1560995198857777253 and Mir Harness directive
+`ontology-engineering-settlement-2026-10-17`, parent-supplied; the external originals
+were not independently fetched. Intent and bounded design authority: `tasks/plan.md`.
+Pilot observations in the writer brief are parent-supplied evidence, not runtime
+results of this change. No commit, delivery, activation or release is authorized.
+
+Changed the ontology description to name ordinary meaning-sensitive situations,
+retaining selective source lookup in the body. Extended the existing provenance
+reference with a minimum handoff packet and one existing bluebricks route. No new
+skill, gate, hook or command. Static regressions pin guidance; actual invocation
+rates require a separate runtime pilot and are not claimed here.
+
+Description before (213 characters):
+
+> Apply a project-owned ontology mapping to the common semantic contract. Use for ontology, semantic contract, identity, same entity, relation meaning, status meaning, provenance, impact analysis, or a mapping file.
+
+Description after (510 characters):
+
+> Apply the project-owned ontology mapping and common semantic contract when an answer depends on whether two names are the same thing; who knew or believed what at a given time versus what is true; whether something is current, proposed, historical, retracted or superseded; whether evidence is still valid after its source changed; whether being able to act means being allowed to; a relation's direction or scope; or writing or receiving a handoff/brief for another agent. Use selectively, not for every task.
+
+Description checks: inspected package/common-skill tests, capability validation and
+Codex generator/verifier; no explicit numeric skill-description ceiling is declared
+there. The description remains one quoted scalar and 510 characters.
+
+Semantic evidence: the unchanged map `.mir/ontology-map.json` `/contract` pins
+`mir.common-semantics@1.1.0`; `/namespace` qualifies Yoke identities;
+`/concepts/Task` maps this cursor; `/vocabularies/7` separates verification claims,
+and `/error_cases/3` (E04) distinguishes selection from execution. SHA-256 matches
+the supplied pin `c20fbf3bdb910d3872b1f66730b56e0f34e8fa00c707e91eedd458c25a374340`.
+The distributed `plugins/mir-core/skills/ontology/references/common-contract.json`
+`/axes` declares lifecycle, temporal, epistemic and verification. Packet guidance
+preserves those meanings and explicitly separates actor belief from truth.
+
+Verification uses the owner-specified external uv cache and task-owned external TMPDIR.
+
+- Fail-first: after adding only tests, the first selection produced 16 failed,
+  1 passed, 222 deselected; existing provenance covered one field group. Tightened
+  the reference-section boundary before implementation; the final new selection
+  produced **17 failed, 222 deselected** (exit 1, 0.07s).
+- Command: `uv run pytest -q tests/test_ontology_skill.py -k
+  'ordinary_meaning_sensitive or minimum_parent_child or meaning_sensitive_design'`.
+  After source changes: **17 passed, 222 deselected** (exit 0, 0.03s).
+- Focused package/skill command: `uv run pytest -q tests/test_ontology_skill.py
+  tests/test_common_skill_contracts.py tests/test_plugin_skill_packages.py`:
+  **261 passed** (exit 0, 16.40s).
+- First full `uv run pytest -q`: **2079 passed, 2 failed** (exit 1, 241.06s).
+  The release-bound plugin tree digest assertion and public absolute-path scan
+  failed. Removed the newly introduced host path from this log; retained the
+  existing privacy test and capability lock unchanged. Follow-up results below.
+- Privacy correction plus asset-classification checks: `uv run pytest -q
+  tests/test_public_template_surface.py::test_should_expose_no_private_absolute_path_when_public_surfaces_are_scanned
+  tests/test_template_asset_classification.py`: **7 passed** (exit 0, 0.36s).
+- `uv run ruff check`: exit 0, all checks passed.
+- `uv run python scripts/verify_codex_sync.py`: exit 0, derivatives match Claude
+  sources. This invokes the documented generator in disposable external output;
+  plugin skills share one source tree, so no repository `.codex/**` write is needed.
+- `uv run python scripts/verify_context_paths.py`: exit 0, 9 files / 77 refs.
+- `python3 scripts/mir_ontology.py mapping`: exit 0, 0 errors / 0 warnings,
+  contract and mapping 1.1.0. `impact --git-diff HEAD --strict`: exit 0,
+  only `/concepts/Task` and `/vocabularies/9` affected, no checks or stale refs.
+- `uv run python -m tools.template_assets --write-adopter-payload`: exit 0;
+  refreshed source inventory hashes only in `config/adopter-payload.json`.
+  No released version, lock, attestation or release record changed.
+- `git diff --check`: exit 0. All changes are supplier-owned source, tests,
+  continuity records and the generated source inventory.
+
+- Second full `uv run pytest -q`: **2080 passed, 1 failed** (exit 1, 220.55s).
+  The privacy failure is closed; only the unchanged release-bound plugin tree
+  digest assertion remains.
+- Final review added an explicit handoff cue to the existing reference link in
+  the ontology workflow. Before changing that line, the new link-reachability
+  assertion failed all eight packet cases (8 failed, 231 deselected, exit 1).
+  After the one-line cue change, the complete new selection again produced
+  **17 passed, 222 deselected** (exit 0, 0.03s). Selective lookup remains unchanged.
+- Final source-revision `uv run pytest -q`: **2080 passed, 1 failed** (exit 1,
+  230.49s). Sole failure:
+  `tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees`
+  at line 397: edited plugin trees do not match the unchanged released lock.
+  No source changes followed this run; only final continuity evidence and its
+  generated inventory hashes were refreshed.
+- Final-source Ruff, Codex scratch-generation parity and context paths passed
+  again; mapping/strict impact again reported no errors, warnings or stale refs.
+
+Current request matrix (5/5 evaluated, 4/5 closed):
+
+| Cell | Evidence | Status |
+| --- | --- | --- |
+| Selective ordinary triggers | Eight new description cases; selective body rule retained | closed |
+| Minimum handoff packet | Eight new packet cases; common contract `/axes` | closed |
+| One design routing line | New bluebricks case; one-line source diff | closed |
+| Derivatives / Unreleased / version boundary | Scratch Codex generation and inventory generation; version/lock unchanged | closed |
+| Fail-first / full requested gate | 17 red then 17 green; final full suite 2080 passed, 1 release-bound lock failure | open for Main |
+
+Main owns final acceptance and any separate committed-source capability lock
+refresh/release. The current `mir-code` and `mir-core` trees differ from their
+release-bound lock digests; no test was weakened or excluded to conceal that.
+Current HEAD at inspection: `2b8908790d4b8b14b97ba56172c7ff4410c2ef51`.
+
+
 ## 0.13.3 release (2026-10-17)
 
 Authority: owner Discord 1560822145624580200 (via Mir Harness Main) for D1: release the held
@@ -6628,3 +6729,139 @@ The open cells are 13 (excluded dirty handoff), 19 and 21 (native runtime/trust)
   tasks/plan.md, tasks/intent.json, tasks/checklist.md, tasks/change_log.md,
   config/adopter-payload.json. The sixth dirty path is the excluded existing handoff.
   git diff --check passes. Final inventory is regenerated after this evidence write.
+
+## Superseded cursor before ontology reachability (2026-10-17)
+
+### Previous active cursor (verbatim)
+
+```markdown
+# Plan
+
+## Active task: repository maintenance re-verification (2026-10-17)
+
+Authority: owner Discord 1560953913631318118 (2026-10-17), relayed by Mir Harness Main;
+parent-supplied directive `tasks/directives/repo-maintenance-fleet-2026-10-17.md`
+in Mir Harness. This cursor is the intent and bounded design authority.
+
+Re-verify all 22 `mir-core:repo-maintenance` items against evidence observed now,
+then make the smallest useful improvement. Prior verdicts are a baseline only.
+Preserve accepted ADRs, owner decisions and unrelated work. No commit, delivery,
+restart, secret read, consumer write, live DB write or generated `.codex/**` write.
+Existing dirty `tasks/handoffs/session-handoff-LATEST.md` is excluded from edits.
+
+### Bounded design and evaluation
+
+Inspect declared surfaces, take a WAL-inclusive scratch snapshot for memory checks,
+use synthetic hooks plus explicitly parent-supplied fresh-session evidence, and
+record 22 dated matrix rows in `tasks/change_log.md#matrix-pass-2026-10-17`.
+Use existing checks first; any behavior fix requires observed fail-first coverage.
+Documentation-only continuity corrections need direct consistency checks.
+Run the full pytest/Ruff gate, read-only parity checks and ontology mapping/impact.
+Main owns forbidden generated writes, host-only probes and final acceptance/commit.
+
+### Current acceptance
+
+22/22 evaluated; 19/22 closed. Full pytest: 2064 passed, no failures.
+Items 13, 19 and 21 need Main: curate the preserved dirty handoff and confirm
+actual runtime/base-hook trust in fresh sessions. Current status projection:
+`tasks/checklist.md`; sole evidence log: `tasks/change_log.md`; existing resume
+pointer: `tasks/handoffs/session-handoff-LATEST.md` (preserved for Main).
+D1 is contained in v0.13.3 by patch equivalence: both branch-only commits are
+reported by git cherry with '-'; the branch itself is not an ancestor. No owner
+choice remains. Current gate results and all 22 rows are in the evidence log.
+Prior cursor, intent and checklist are preserved verbatim in
+`tasks/change_log.md#superseded-continuity-before-matrix-pass-2026-10-17`.
+```
+
+### Previous intent (verbatim)
+
+```json
+{
+  "goal": "Re-verify all 22 repository-maintenance items against current evidence and apply minimal evidenced improvements.",
+  "goal_type": "maintenance",
+  "scope": "Mir Yoke only; no commit, push, tag, release, restart, secret access, consumer write, live memory write or generated .codex/** write. Preserve the pre-existing dirty handoff.",
+  "priority": "normal",
+  "updated": "2026-10-17",
+  "history": [
+    {
+      "goal": "Make the default work method portable across adopting computers and both runtimes, including delegated Codex sessions.",
+      "updated": "2026-10-17",
+      "evidence": "tasks/change_log.md#portable-default-work-method-2026-10-17",
+      "status": "superseded",
+      "archive": "tasks/change_log.md#superseded-continuity-before-matrix-pass-2026-10-17"
+    },
+    {
+      "goal": "Re-verify Mir Yoke against the owner-directed 22-item repository maintenance checklist and apply minimal evidenced improvements.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#matrix-pass-2026-10-16"
+    },
+    {
+      "goal": "Fix the five Linux release-runner test failures without weakening their behavioral guarantees.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#linux-release-runner-fixtures-2026-10-16"
+    },
+    {
+      "goal": "Prepare the Mir Yoke 0.13.1 release working tree with version metadata and migration notes only.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#0131-release-preparation-2026-10-16"
+    },
+    {
+      "goal": "Close ontology impact and isolated distribution gaps and scope E06/E08 evidence.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#ontology-gap-development-2026-10-16"
+    },
+    {
+      "goal": "Make local validation and fresh-checkout validate workflow commands pass while retaining the memory render guard.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#local-and-ci-validation-fixes-2026-10-16"
+    },
+    {
+      "goal": "Prevent automatic consistency tests from rendering live agent memory.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#automatic-memory-render-guard-2026-10-16"
+    },
+    {
+      "goal": "Prepare the Mir Yoke 0.13.0 release working tree with version metadata and migration notes only.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#0130-release-preparation-2026-10-16"
+    },
+    {
+      "goal": "Correct E03 and E07 covered check references using existing executable behavior tests.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#superseded-cursor-covered-label-fix-before-0130-preparation-2026-10-16"
+    },
+    {
+      "goal": "Retain repeatable Yoke-domain selection/evidence use and resolve declared relation target-freshness ownership.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#ontology-rejudgment-g08g13-2026-10-16"
+    }
+  ],
+  "status": "in_progress",
+  "evidence": "tasks/change_log.md#matrix-pass-2026-10-17",
+  "authority": "Owner Discord 1560953913631318118 (2026-10-17), parent-supplied Mir Harness fleet maintenance directive."
+}
+```
+
+### Previous status projection (verbatim)
+
+```markdown
+# Checklist
+
+Status projection for tasks/plan.md: 22/22 evaluated, 19/22 closed.
+Full pytest: 2064 passed, 0 failed; Ruff, official Codex parity, context paths
+and ontology mapping/strict impact passed. The adopter inventory is regenerated.
+Items 13, 19 and 21 require Main: curate the excluded dirty handoff and confirm
+native sessions/current base-hook trust. Parent fresh evidence is scoped in the log.
+D1 is delivered in v0.13.3 by patch equivalence; no owner choice remains.
+Evidence: tasks/change_log.md#matrix-pass-2026-10-17.
+Prior projection: tasks/change_log.md#superseded-continuity-before-matrix-pass-2026-10-17.
+```

@@ -36,6 +36,9 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ### Changed
 
+- Made `mir-core:ontology` discoverable from ordinary questions about identity, knowledge,
+  current or historical status, evidence validity, authority, relation direction and agent handoffs;
+  documented the minimum parent/child handoff packet and extended the existing bluebricks route.
 - Updated executor common v3.8 to ignore agent-route model/effort when the route's
   declared backend differs from the resolved dispatch backend. Explicit user model/effort
   overrides retain precedence. Forced modes reject automatically routed models recognized
