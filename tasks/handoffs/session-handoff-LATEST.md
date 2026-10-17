@@ -2,14 +2,15 @@
 
 Resume pointer: `tasks/plan.md` is the only active cursor; `tasks/intent.json` records authority.
 Read `tasks/checklist.md` for status and
-`tasks/change_log.md#matrix-pass-2026-10-16` for this pass.
+`tasks/change_log.md#matrix-pass-2026-10-17` for the latest pass.
 Superseded handoff text is preserved verbatim at
-`tasks/change_log.md#matrix-pass-2026-10-16`.
+`tasks/change_log.md#matrix-pass-2026-10-16` and
+`tasks/change_log.md#superseded-continuity-before-matrix-pass-2026-10-17`.
 No commit, release, live database write or generated `.codex/**` edit is authorized.
-Assessment coverage is 22/22; successful closure is 21/22 after Main acceptance
-(inventory rebound, host gate 2062 passed); D1 remains in the canonical cursor. Parent-supplied
-native-session evidence and current synthetic probes are distinguished in the log.
-Next action: matrix pass 2026-10-16: reviewed and committed by Mir Harness Main.
+Matrix pass 2026-10-17: 22/22 evaluated; Mir Harness Main re-ran the host gate,
+confirmed hook trust and fresh-session delivery, and committed locally (not pushed).
+D1 is contained in v0.13.3 by patch equivalence; no owner choice remains.
+Next action: none for this pass.
 
 <!-- mir:runtime-snapshot:begin -->
 ## Runtime Snapshot (Generated)
@@ -18,5 +19,5 @@ Next action: matrix pass 2026-10-16: reviewed and committed by Mir Harness Main.
 - No open plan items.
 
 ### Working Tree
-- Working tree dirty (10 paths; inspect git status --short).
+- Working tree dirty (1 paths; inspect git status --short).
 <!-- mir:runtime-snapshot:end -->

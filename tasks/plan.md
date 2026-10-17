@@ -1,52 +1,36 @@
 # Plan
 
-## Active task: portable default work method (2026-10-17)
+## Active task: repository maintenance re-verification (2026-10-17)
 
-Authority: the current parent-supplied owner direction, recorded in `tasks/intent.json`.
-Intent: make the default work method available on any adopting computer through
-one shared lifecycle message and a portable skill reference, including delegated
-Codex sessions. The parent observation establishes the selected transport only;
-local checks cannot prove new native-session discovery.
+Authority: owner Discord 1560953913631318118 (2026-10-17), relayed by Mir Harness Main;
+parent-supplied directive `tasks/directives/repo-maintenance-fleet-2026-10-17.md`
+in Mir Harness. This cursor is the intent and bounded design authority.
 
-Request matrix (deliverables 1-6):
-- [x] 1. Portable seven-step reference and runtime-continuity skill link.
-- [x] 2. Shared bounded MESSAGE, preserving its existing sentence; record bytes.
-- [x] 3. One design-skill pointer to the method order.
-- [x] 4. Fail-first packaging, ordered-step, portability and byte-budget tests.
-- [x] 5. Documented inventory regeneration; identify release-time rebindings.
-- [x] 6. Plan and change-log evidence with the Main delivery disposition.
+Re-verify all 22 `mir-core:repo-maintenance` items against evidence observed now,
+then make the smallest useful improvement. Prior verdicts are a baseline only.
+Preserve accepted ADRs, owner decisions and unrelated work. No commit, delivery,
+restart, secret read, consumer write, live DB write or generated `.codex/**` write.
+Existing dirty `tasks/handoffs/session-handoff-LATEST.md` is excluded from edits.
 
-Writer limits (historical): stay on `maint/repo-maintenance-item-22`; no commit, push, tag, release,
-consumer writes, secrets, live memory writes or generated `.codex/**` writes.
-Use the specified external uv cache and external task scratch.
+### Bounded design and evaluation
 
-Evidence: `tasks/change_log.md#portable-default-work-method-2026-10-17`.
-Delivery disposition: reviewed and committed by Mir Harness Main.
-This is the required Main follow-up, not a claim that this writer committed.
-Main disposition (2026-10-17): owner Discord 1560695634611409009 authorized pushing this change alone, releasing it as 0.13.2 and activating it on the managing host. Main moved it from `maint/repo-maintenance-item-22` onto `main`, refreshed the lifecycle-hooks digest acknowledgement with the dedicated validator from a cache-free copy (589b09e6…), and regenerated the adopter payload on `main`. The item-22, verify and runner changes stay held on that branch (D1).
-
-D1 disposition (2026-10-17): owner Discord 1560822145624580200 accepted the recommendation to release the held item-22 skill, the verify request-matrix rule and the runner distribution-check extraction together. Main cherry-picked 26d2f42 and 1a24dc0 from `maint/repo-maintenance-item-22` onto `main` (history rewrite of the shared branch is not used), prepared 0.13.3, rebound the lock from the git-archive tree, tagged and activated it; evidence: `tasks/change_log.md#0133-release-2026-10-17`. Consumers refresh their ontology-runner byte copy after activation.
-
-### Bounded design
-
-This cursor is the design authority for this change. Keep the hook a constant-only,
-read-only emitter shared by both runtimes; put the full method in its existing
-skill package. Link from design by skill name, without a cross-package file path.
-The known paths and fixed output make direct execution sufficient; no delegation,
-new runtime machinery, standalone decision record or memory/graph write is needed.
-The historical spec snapshot is not the authority for this package change.
-
-Evaluation: exact shared output and byte budget; isolated packaged reference,
-ordered steps and portability constraints; full default suite, Ruff and whitespace.
-The lock is rebound in the 0.13.2 bind commit. Regenerate only
-the adopter inventory through its documented generator after final records.
+Inspect declared surfaces, take a WAL-inclusive scratch snapshot for memory checks,
+use synthetic hooks plus explicitly parent-supplied fresh-session evidence, and
+record 22 dated matrix rows in `tasks/change_log.md#matrix-pass-2026-10-17`.
+Use existing checks first; any behavior fix requires observed fail-first coverage.
+Documentation-only continuity corrections need direct consistency checks.
+Run the full pytest/Ruff gate, read-only parity checks and ontology mapping/impact.
+Main owns forbidden generated writes, host-only probes and final acceptance/commit.
 
 ### Current acceptance
 
-5/6 deliverables complete; cell 5 is open because the lifecycle package digest
-acknowledgement is stale and its update procedure awaits clarification under the
-request's generator-only constraint. The adopter inventory is generated; the
-capability lock remains for the authorized D1 binding. MESSAGE: 395 bytes (396
-including LF). Full first gate: 1994 passed / 70 failed; the public-prefix test
-source issue was corrected and its package/public recheck passed 14/14.
-See the evidence log for the final gate and Main's exact remaining actions.
+22/22 evaluated; 19/22 closed. Full pytest: 2064 passed, no failures.
+Items 13, 19 and 21 need Main: curate the preserved dirty handoff and confirm
+actual runtime/base-hook trust in fresh sessions. Current status projection:
+`tasks/checklist.md`; sole evidence log: `tasks/change_log.md`; existing resume
+pointer: `tasks/handoffs/session-handoff-LATEST.md` (preserved for Main).
+D1 is contained in v0.13.3 by patch equivalence: both branch-only commits are
+reported by git cherry with '-'; the branch itself is not an ancestor. No owner
+choice remains. Current gate results and all 22 rows are in the evidence log.
+Prior cursor, intent and checklist are preserved verbatim in
+`tasks/change_log.md#superseded-continuity-before-matrix-pass-2026-10-17`.

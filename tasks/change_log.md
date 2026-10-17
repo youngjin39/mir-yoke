@@ -6255,3 +6255,376 @@ is the required next Main action, not a claim that this writer committed.
 No commit, push, tag, release, consumer write, secret read, live database write or
 repository .codex write occurred. Owner D1 remains unchanged: retain the branch
 hold until the owner authorizes the release merge (recommended).
+
+
+## Superseded continuity before matrix pass 2026-10-17
+
+Preserved verbatim; current cursor: `tasks/plan.md`.
+
+### tasks/plan.md
+
+```markdown
+# Plan
+
+## Active task: portable default work method (2026-10-17)
+
+Authority: the current parent-supplied owner direction, recorded in `tasks/intent.json`.
+Intent: make the default work method available on any adopting computer through
+one shared lifecycle message and a portable skill reference, including delegated
+Codex sessions. The parent observation establishes the selected transport only;
+local checks cannot prove new native-session discovery.
+
+Request matrix (deliverables 1-6):
+- [x] 1. Portable seven-step reference and runtime-continuity skill link.
+- [x] 2. Shared bounded MESSAGE, preserving its existing sentence; record bytes.
+- [x] 3. One design-skill pointer to the method order.
+- [x] 4. Fail-first packaging, ordered-step, portability and byte-budget tests.
+- [x] 5. Documented inventory regeneration; identify release-time rebindings.
+- [x] 6. Plan and change-log evidence with the Main delivery disposition.
+
+Writer limits (historical): stay on `maint/repo-maintenance-item-22`; no commit, push, tag, release,
+consumer writes, secrets, live memory writes or generated `.codex/**` writes.
+Use the specified external uv cache and external task scratch.
+
+Evidence: `tasks/change_log.md#portable-default-work-method-2026-10-17`.
+Delivery disposition: reviewed and committed by Mir Harness Main.
+This is the required Main follow-up, not a claim that this writer committed.
+Main disposition (2026-10-17): owner Discord 1560695634611409009 authorized pushing this change alone, releasing it as 0.13.2 and activating it on the managing host. Main moved it from `maint/repo-maintenance-item-22` onto `main`, refreshed the lifecycle-hooks digest acknowledgement with the dedicated validator from a cache-free copy (589b09e6…), and regenerated the adopter payload on `main`. The item-22, verify and runner changes stay held on that branch (D1).
+
+D1 disposition (2026-10-17): owner Discord 1560822145624580200 accepted the recommendation to release the held item-22 skill, the verify request-matrix rule and the runner distribution-check extraction together. Main cherry-picked 26d2f42 and 1a24dc0 from `maint/repo-maintenance-item-22` onto `main` (history rewrite of the shared branch is not used), prepared 0.13.3, rebound the lock from the git-archive tree, tagged and activated it; evidence: `tasks/change_log.md#0133-release-2026-10-17`. Consumers refresh their ontology-runner byte copy after activation.
+
+### Bounded design
+
+This cursor is the design authority for this change. Keep the hook a constant-only,
+read-only emitter shared by both runtimes; put the full method in its existing
+skill package. Link from design by skill name, without a cross-package file path.
+The known paths and fixed output make direct execution sufficient; no delegation,
+new runtime machinery, standalone decision record or memory/graph write is needed.
+The historical spec snapshot is not the authority for this package change.
+
+Evaluation: exact shared output and byte budget; isolated packaged reference,
+ordered steps and portability constraints; full default suite, Ruff and whitespace.
+The lock is rebound in the 0.13.2 bind commit. Regenerate only
+the adopter inventory through its documented generator after final records.
+
+### Current acceptance
+
+5/6 deliverables complete; cell 5 is open because the lifecycle package digest
+acknowledgement is stale and its update procedure awaits clarification under the
+request's generator-only constraint. The adopter inventory is generated; the
+capability lock remains for the authorized D1 binding. MESSAGE: 395 bytes (396
+including LF). Full first gate: 1994 passed / 70 failed; the public-prefix test
+source issue was corrected and its package/public recheck passed 14/14.
+See the evidence log for the final gate and Main's exact remaining actions.
+```
+
+### tasks/intent.json
+
+```json
+{
+  "goal": "Make the default work method portable across adopting computers and both runtimes, including delegated Codex sessions.",
+  "goal_type": "maintenance",
+  "scope": "This repository only: portable lifecycle skill reference, bounded shared MESSAGE, design pointer, fail-first tests, documented inventory regeneration and records. No commit, push, tag, release, consumer write, secret read, live memory write or generated .codex/** write.",
+  "priority": "normal",
+  "updated": "2026-10-17",
+  "history": [
+    {
+      "goal": "Re-verify Mir Yoke against the owner-directed 22-item repository maintenance checklist and apply minimal evidenced improvements.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#matrix-pass-2026-10-16"
+    },
+    {
+      "goal": "Fix the five Linux release-runner test failures without weakening their behavioral guarantees.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#linux-release-runner-fixtures-2026-10-16"
+    },
+    {
+      "goal": "Prepare the Mir Yoke 0.13.1 release working tree with version metadata and migration notes only.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#0131-release-preparation-2026-10-16"
+    },
+    {
+      "goal": "Close ontology impact and isolated distribution gaps and scope E06/E08 evidence.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#ontology-gap-development-2026-10-16"
+    },
+    {
+      "goal": "Make local validation and fresh-checkout validate workflow commands pass while retaining the memory render guard.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#local-and-ci-validation-fixes-2026-10-16"
+    },
+    {
+      "goal": "Prevent automatic consistency tests from rendering live agent memory.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#automatic-memory-render-guard-2026-10-16"
+    },
+    {
+      "goal": "Prepare the Mir Yoke 0.13.0 release working tree with version metadata and migration notes only.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#0130-release-preparation-2026-10-16"
+    },
+    {
+      "goal": "Correct E03 and E07 covered check references using existing executable behavior tests.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#superseded-cursor-covered-label-fix-before-0130-preparation-2026-10-16"
+    },
+    {
+      "goal": "Retain repeatable Yoke-domain selection/evidence use and resolve declared relation target-freshness ownership.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#ontology-rejudgment-g08g13-2026-10-16"
+    }
+  ],
+  "status": "in_progress",
+  "evidence": "tasks/change_log.md#portable-default-work-method-2026-10-17",
+  "authority": "Current parent-supplied owner direction: same effect on every adopting computer, both runtimes and delegated Codex threads; Mir Harness Main owns review, re-run and commit; owner Discord 1560695634611409009 authorized push, the 0.13.2 release and host activation for this change alone."
+}
+```
+
+### tasks/checklist.md
+
+```markdown
+# Checklist
+
+Status projection for `tasks/plan.md`: matrix evidence checked for 22/22 items;
+19/22 PASS or IMPROVED at writer time, owner D1 remains. Mir Harness Main (2026-10-17) regenerated the adopter inventory (`python -m tools.template_assets --write-adopter-payload`) and re-ran the host gate: 2062 passed, ruff clean; items 16 and 18 PASS, 21/22 complete, D1 remains owner-only.
+Full pytest: 2058 passed / 4 failed. Removing this run's stray renderer bytecode
+resolved one failure; the four-test recheck returned 1 passed / 3 inventory failures.
+Ruff, 77 path references, ontology mapping/strict impact and read-only parity passed.
+Native fresh-session/trust observations are parent-supplied; local synthetic
+SessionStart/UserPromptSubmit outputs match across both runtimes.
+The canonical D1 disposition is in `tasks/plan.md`; no held branch was edited.
+Evidence and verbatim prior projection: `tasks/change_log.md#matrix-pass-2026-10-16`.
+Next action: matrix pass 2026-10-16: reviewed and committed by Mir Harness Main.
+```
+
+### tasks/handoffs/session-handoff-LATEST.md
+
+Main moved this resume-pointer text on acceptance (verbatim):
+
+```markdown
+Read `tasks/checklist.md` for status and
+`tasks/change_log.md#matrix-pass-2026-10-16` for this pass.
+Superseded handoff text is preserved verbatim at
+`tasks/change_log.md#matrix-pass-2026-10-16`.
+No commit, release, live database write or generated `.codex/**` edit is authorized.
+Assessment coverage is 22/22; successful closure is 21/22 after Main acceptance
+(inventory rebound, host gate 2062 passed); D1 remains in the canonical cursor. Parent-supplied
+native-session evidence and current synthetic probes are distinguished in the log.
+Next action: matrix pass 2026-10-16: reviewed and committed by Mir Harness Main.
+```
+
+## Matrix pass 2026-10-17
+
+Authority: owner Discord 1560953913631318118 (2026-10-17), relayed by Mir Harness
+Main with its fleet directive. Intent/design authority: tasks/plan.md.
+Yesterday's verdicts were treated as a baseline, never as current proof.
+Start revision: 61f74e6. The sole pre-existing dirty path,
+tasks/handoffs/session-handoff-LATEST.md, retains its initial bytes.
+
+### Evidence checked now
+
+All uv commands use UV_CACHE_DIR="$OWNER_UV_CACHE".
+Scratch/TMPDIR, Ruff cache and pytest basetemp use the external directory
+$MAINTENANCE_SCRATCH (owner-specified external SSD).
+Python probes use PYTHONDONTWRITEBYTECODE=1; pytest disables cacheprovider.
+Official parity uses disposable generated output there; checked-in Codex is unchanged.
+
+- Contract/profile/architecture/spec read, with ADR-86/90 boundaries: historical spec
+  remains superseded-reference; no consumer authority, discovery or write.
+- python3 scripts/verify_context_paths.py: 9 files / 77 refs PASS.
+  Read-only asset classification: 887/887, no unclassified/duplicate/prohibited entries.
+- uv run python scripts/verify_codex_sync.py: PASS, "OK: Codex derivatives match
+  Claude sources". Additional pure validators found zero issues; all 17 manifest
+  mappings resolve, root bodies match and the nested Starter pair passes.
+  Twelve agent names/descriptions match; Codex mirrors omit model pins.
+  In-memory render_hooks equals both configurations; all 11 hook scripts exist.
+  StopFailure is intentionally Claude-only; SessionEnd timeouts are 60s/3s.
+  No project MCP file or Codex MCP table is declared.
+- uv run python scripts/verify_repo_agent_management.py: all schema, wiring,
+  catalog, pack, specialist and repositories_dir checks PASS; 0 non-compliant dispatches.
+  Effective Main/default/nine category routes match current Harness central TOML.
+  Tiers, native_spawn, pins and delegation compare exactly; cap 8/depth 2.
+  SHA256 of central bytes then repository bytes matches routing source_sha256:
+  74d4018756fcf6d8b839643fc3243582baa51a62d4fd03ad45e8364fd86a8362.
+  An initial probe compared the wrong JSON levels; corrected schema-aware checks pass.
+- Current versions: Claude 2.1.302, Codex 0.163.0. Each plugin list reports four
+  enabled Mir packages at 0.13.3. All 46 package source files match each runtime
+  installation byte-for-byte; all 18 skills have name/description frontmatter.
+  Codex reported a PATH-alias permission warning but its commands exited 0.
+- Synthetic stdin executed the registered SessionStart commands with CODEX_THREAD_ID
+  removed and MIR_RUNTIME set per runtime: exit 0, empty stderr, identical 550 B
+  beginning "="; SHA256 a3b6e93ee355a65eb3f8d159b87b145ac3744d65421febf861a862a85d2ffd88.
+  Nontrivial UserPromptSubmit: identical 119 B, exit 0, empty stderr; SHA256
+  5e28830d3e9dd05df38a66f279adb3afc338c9fcb0ae78572b5cd706f181f4d5.
+  The initial empty-prompt probe returned 0 B under its documented short-prompt skip.
+- Shared continuity hook in both environments: identical 396 B including LF,
+  beginning "M"; SHA256 e06c666f1501e00ec07e0f31f8d7cdd21d16f48ff284de7ba7f19d91cbbc1853.
+  All outputs stay below 10 KB and avoid Codex's "[" first-byte problem.
+  Repository startup is intentionally task-blind (ADR-53); task retrieval is
+  on demand. Its SessionStart script has no native-memory-index branch.
+- Parent-supplied fresh-session evidence, not re-observed here: Mir Harness
+  tasks/reports/method-delivery-2026-10-17/ reports method delivery to fresh Claude
+  and delegated Codex in all 16 repositories; native-memory index reaches Codex in
+  every repository with that branch and adds nothing to Claude. Main must check
+  actual loaded base registration/trust and fresh-session acceptance.
+  The inspected host ~/.codex/hooks.json exposes no direct SessionStart groups;
+  this alone does not establish which base-hook wiring the host actually loads.
+- Stable DB/WAL/SHM copies on scratch passed live before/after size/mtime/hash
+  equality. SQLite online backup of that scratch copy yielded an isolated
+  348160 B snapshot. Immutable snapshot: integrity_check=ok, FK=0; 21 facts,
+  12 entities, 1 content item, 0 conflicts/fact_links/missing source or entity refs.
+  The source docs/knowledge/srr-code-relations.md matches stored text_hash
+  f47eaa303dddfe54aaa6b9d6bd6f15812d4f3b46b97442bdf3aa352cad02b827.
+  Snapshot render functions match tracked memory-map/lessons sections.
+  uv run mir memory query SRR --limit 3 --db <snapshot>: "SRR code relations".
+  uv run mir memory reconcile-missing --dry-run --project-root . --db <snapshot>:
+  would_expire=0. Optional sqlite-vec is absent; supported FTS5 works.
+  No live DB connection, apply, checkpoint, repair or projection write occurred.
+- uv run mir relations query CR-006 --purpose implementation --json: 7 edges,
+  not truncated; 5 unavailable historical endpoints explicitly skipped.
+  Scope declared_spec_relations_only; graph SHA256
+  a26d2f530c0acd26cad958982ec89acaea7a21f7b2fc8232266c0730ee1829a5.
+  uv run mir loop --help: exit 0; optional explicit CLI; no standing process started.
+- python3 scripts/mir_ontology.py mapping: 0 errors/0 warnings, contract/map 1.1.0.
+  impact --git-diff --strict: exit 0, Task/intent vocabulary affected, no selected
+  checks, stale refs or undeclared check links. Q1 lookup returns three relevant refs.
+  Semantic anchors: map /concepts/Agent, /concepts/Task, /relations,
+  /vocabularies/2, /vocabularies/4, /vocabularies/9, /domain/invariants, /questions/0.
+  Historical readiness, stored validity, task status and current proof stay separate.
+- uv audit --frozen: 28 packages, no known vulnerabilities/adverse statuses.
+  uv pip list --outdated --format json: 14 newer versions observed; no upgrade.
+  License metadata inspected for 27 installed distributions including this project.
+  Bounded signature scan: 887 tracked text files excluding protected secrets/DBs;
+  eight matches are seven explicit fixture lines and one archived filename false positive.
+  No credential values recorded; this is not a comprehensive security certification.
+- CLAUDE.md before=after 40 lines/3587 B; AGENTS.md 42 lines/3676 B.
+  Single cursor/projection/resume/log retained. The three replaced continuity
+  documents compare verbatim with the archived originals above.
+- D1: git cherry v0.13.3 maint/repo-maintenance-item-22 reports "-" for both
+  26d2f42 and 1a24dc0; cherry-pick-aware right-only log is empty.
+  The branch is not a literal ancestor, but all unique patches are included.
+  Item-22/verify/runner sources have no diff against v0.13.3.
+  Canonical runner SHA256 f10d7116298f98c9df53ac0b4165f54199b2d1a893653dced36614c0bcf4b6be.
+  The root runner is intentionally a checkout adapter, not a consumer byte copy.
+
+### Per-item matrix
+
+Assessment 22/22; closure 19/22. Items 13, 19 and 21 require Main.
+
+| # | verdict | evidence checked now | change |
+|---|---|---|---|
+| 1 | PASS | Profile/architecture read; 77 refs; 887 assets; official parity PASS. | No source contract drift. |
+| 2 | PASS | Eleven hook scripts; matching render; four enabled packages; no project MCP. | No dead-entry repair needed. |
+| 3 | IMPROVED | Cursor retained stale 5/6 acceptance; checklist still retained delivered D1. | Intent/cursor/checklist now describe this pass and observed containment. |
+| 4 | IMPROVED | Three replaced continuity documents match archived originals verbatim. | Existing log preserves superseded text with pointers. |
+| 5 | PASS | CLAUDE 40/3587 B; AGENTS 42/3676 B; single cursor/projection/resume/log. | No startup growth or competing report. |
+| 6 | PASS | WAL-inclusive scratch snapshot ok/FK 0; 21 facts/12 entities; valid source; expiry 0. | No repair; live DB/WAL/SHM unchanged. |
+| 7 | PASS | Official parity and exact hook render PASS; safety bounds retained. | No new constraint or owner-removed hook. |
+| 8 | PASS | 18 skills; 12 mirrors; 46 files equal per runtime; item 22 present; D1 included. | Stale hold removed only from current status; history preserved. |
+| 9 | PASS | Official root/nested/agent derivatives match; instruction sizes unchanged. | No instruction/checked-in Codex write. |
+| 10 | PASS | Snapshot projection matches memory-map/lessons; canonical ADR/rule homes read. | No rule/lesson deletion or duplicate home. |
+| 11 | PASS | Architecture matches four-file Starter, Kit, optional CLI, four packages and inert references. | No architectural machinery added. |
+| 12 | PASS | Combined source SHA, effective routes and four policy sections match; management PASS. | No routing or pin change. |
+| 13 | NEEDS MAIN | Single roles retained; excluded dirty handoff still states yesterday/D1. | Main must curate that existing handoff; writer preserved its initial hash. |
+| 14 | PASS | Q1 resolves three refs; snapshot FTS5 SRR query returns relevant title. | No live MK dependency added. |
+| 15 | PASS | Method 396 B/startup 550 B/prompt 119 B match across runtimes; docs unchanged. | No context growth. |
+| 16 | PASS | Clean full suite: 2064/2064 PASS; related focused contracts 41/41 PASS; earlier failures and corrections recorded below. | Inventory regenerated and public-log paths generalized; no implementation behavior change. |
+| 17 | PASS | Audit 28 packages clean; 27 license records; scan hits only fixtures/archive filename. | No dependency upgrade or guard relaxation. |
+| 18 | IMPROVED | Initial inventory differed in lock, dirty handoff and four own records; lock test PASS. | Official adopter generator refreshes hashes; capability/routing locks unchanged. |
+| 19 | NEEDS MAIN | Current CLI/plugins, installed bytes and synthetic hooks PASS; parent fresh evidence scoped above. | Main must confirm loaded base hooks/trust and fresh-session acceptance. |
+| 20 | PASS | D1 patch containment checked against v0.13.3; ADR-86/90 boundaries unchanged. | No new owner choice; operational follow-up is not a policy decision. |
+| 21 | NEEDS MAIN | Equal rules/workflows/hooks/synthetic outputs; no project MCP. | Current host trust and fresh sessions require Main; parent evidence remains separate. |
+| 22 | PASS | Agent: 18 skills/12 mirrors/routes; Loop: method tests/help; Graph: healthy snapshot/7 edges; Ontology: mapping/impact/Q1. | Existing supplier surfaces suffice; continuity/inventory repairs are the smallest useful improvement. |
+
+### Integrity and Main follow-up
+
+No capability source changed. No capability-lock/receipt/signature rebind is needed.
+The existing commit-bound lock regression passes. Unchanged SHA256:
+- Map: c20fbf3bdb910d3872b1f66730b56e0f34e8fa00c707e91eedd458c25a374340.
+- Capability lock: a6bb9709f319177648891e18d28e2010538b9c2778d8d940e43aa56ca9cba378.
+- Routing lock: 2211b125f2ade567c5b08e712e8b6052adc901739ce6b2a41b804b6e051fce65.
+
+Main must curate the existing dirty handoff, then refresh its inventory hash with
+UV_CACHE_DIR="$OWNER_UV_CACHE" uv run python -m tools.template_assets --write-adopter-payload.
+Main owns current Codex hook trust/base registration/fresh-session probes, review
+and any separately authorized commit. OWNER: none; D1 is delivered by patch equivalence.
+No commit/push/tag/release/restart/deploy, secret/consumer/live-DB write was performed.
+
+### Fail-first and gate commands
+
+FAIL-FIRST: no implementation behavior changed; regression-test authoring is
+not applicable. The existing inventory/slim assertions failed before their
+documented regeneration; no assertion or guard was weakened.
+
+- Full baseline command: uv run pytest -q -p no:cacheprovider --basetemp=<scratch>/pytest-full:
+  2061 passed / 3 failed in 319.05s. The three failures were:
+  tests/test_advanced_reference_templates.py::test_should_remove_reference_snapshot_when_adopter_payload_is_built;
+  tests/test_greenfield_slim_integration.py::test_should_leave_minimal_starter_and_project_owned_changes_when_candidate_is_slimmed;
+  tests/test_template_asset_classification.py::test_should_match_exact_adopter_payload_when_release_inventory_is_generated.
+  Direct inventory comparison named six stale entries: capability lock (already
+  committed), excluded dirty handoff, and this pass's four task documents.
+  No sandbox-induced failing test was observed.
+- Focused command: uv run pytest -q -p no:cacheprovider
+  tests/test_repo_maintenance_skill.py tests/test_verify_skill.py
+  tests/test_compact_lifecycle_hooks.py tests/test_common_harness_template.py
+  tests/test_mir_ontology.py
+  tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees
+  --basetemp=<scratch>/pytest-focused: 41 passed in 7.46s.
+- uv run ruff check --cache-dir <scratch>/ruff: all checks passed.
+- Official adopter generator and final full gate follow after these record writes.
+
+
+### Public-log fail-first correction
+
+The unpublished evidence draft accidentally included host-absolute paths in
+three new lines. The existing public-surface test reproduced this before correction:
+uv run pytest -q -p no:cacheprovider
+tests/test_public_template_surface.py::test_should_expose_no_private_absolute_path_when_public_surfaces_are_scanned
+--basetemp=<scratch>/public-red: 1 failed in 0.07s, naming tasks/change_log.md.
+The log now uses OWNER_UV_CACHE and MAINTENANCE_SCRATCH placeholders; the actual
+commands still used the owner's specified external paths. This is a correction
+to this pass's draft, not removal of a historical rule, decision or lesson.
+
+- Public-log correction recheck: same public-surface node plus
+  tests/test_template_asset_classification.py::test_should_match_exact_adopter_payload_when_release_inventory_is_generated,
+  --basetemp=<scratch>/public-green: 2 passed in 0.19s after official regeneration.
+- Second full command (same options, --basetemp=<scratch>/pytest-final):
+  2063 passed / 1 failed in 275.30s. Its sole failure was the public-surface node
+  observed before the correction above; the original three inventory failures passed.
+  A clean full run is being executed after the corrected record and regenerated inventory.
+
+
+### Final full gate and disposition
+
+After the public-log correction and official inventory regeneration, the same full
+command with --basetemp=<scratch>/pytest-clean passed: 2064 passed / 0 failed
+in 236.08s. No test was excluded; default tests/ and tools/ discovery remained active.
+The intentional live-memory render exclusion inside the existing consistency test
+was retained; memory projections were verified independently on the WAL snapshot.
+
+Ruff, 77 context references, ontology mapping (0/0) and strict impact also passed
+after the correction. No sandbox-induced test failure remains. The final remaining
+record edits only project these observed results; inventory is regenerated afterward.
+Assessment is 22/22, closure 19/22 (16 PASS, 3 IMPROVED, 3 NEEDS MAIN).
+The open cells are 13 (excluded dirty handoff), 19 and 21 (native runtime/trust).
+
+- After outcome-only cursor/checklist/log writes and inventory regeneration, the
+  four affected nodes (public path, advanced reference inventory, greenfield slim,
+  exact adopter inventory), with --basetemp=<scratch>/final-records, passed:
+  4 passed in 4.58s. No implementation/source behavior changed after the clean run.
+- Final assertions: exactly 22 ordered rows (16 PASS/3 IMPROVED/3 NEEDS MAIN);
+  all three superseded continuity documents remain verbatim; initial handoff
+  SHA256 preserved; live DB/WAL/SHM content, size and mtime unchanged;
+  map and capability/routing digests unchanged. Exactly five own files changed:
+  tasks/plan.md, tasks/intent.json, tasks/checklist.md, tasks/change_log.md,
+  config/adopter-payload.json. The sixth dirty path is the excluded existing handoff.
+  git diff --check passes. Final inventory is regenerated after this evidence write.

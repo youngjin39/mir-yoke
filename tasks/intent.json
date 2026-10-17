@@ -1,10 +1,17 @@
 {
-  "goal": "Make the default work method portable across adopting computers and both runtimes, including delegated Codex sessions.",
+  "goal": "Re-verify all 22 repository-maintenance items against current evidence and apply minimal evidenced improvements.",
   "goal_type": "maintenance",
-  "scope": "This repository only: portable lifecycle skill reference, bounded shared MESSAGE, design pointer, fail-first tests, documented inventory regeneration and records. No commit, push, tag, release, consumer write, secret read, live memory write or generated .codex/** write.",
+  "scope": "Mir Yoke only; no commit, push, tag, release, restart, secret access, consumer write, live memory write or generated .codex/** write. Preserve the pre-existing dirty handoff.",
   "priority": "normal",
   "updated": "2026-10-17",
   "history": [
+    {
+      "goal": "Make the default work method portable across adopting computers and both runtimes, including delegated Codex sessions.",
+      "updated": "2026-10-17",
+      "evidence": "tasks/change_log.md#portable-default-work-method-2026-10-17",
+      "status": "superseded",
+      "archive": "tasks/change_log.md#superseded-continuity-before-matrix-pass-2026-10-17"
+    },
     {
       "goal": "Re-verify Mir Yoke against the owner-directed 22-item repository maintenance checklist and apply minimal evidenced improvements.",
       "updated": "2026-10-16",
@@ -61,6 +68,6 @@
     }
   ],
   "status": "in_progress",
-  "evidence": "tasks/change_log.md#portable-default-work-method-2026-10-17",
-  "authority": "Current parent-supplied owner direction: same effect on every adopting computer, both runtimes and delegated Codex threads; Mir Harness Main owns review, re-run and commit; owner Discord 1560695634611409009 authorized push, the 0.13.2 release and host activation for this change alone."
+  "evidence": "tasks/change_log.md#matrix-pass-2026-10-17",
+  "authority": "Owner Discord 1560953913631318118 (2026-10-17), parent-supplied Mir Harness fleet maintenance directive."
 }
