@@ -7616,3 +7616,356 @@ and checked exactly after this update. Main owns final repository derivatives, A
 lock/full-gate verification and subsequent delivery.
 Evidence: `tasks/change_log.md#0136-release-preparation-2026-10-18`.
 ```
+
+## Superseded continuity before delta re-verification 2026-10-18
+
+### Prior tasks/plan.md
+
+```text
+# Plan
+
+## Active task: 0.13.7 release preparation (2026-10-18)
+
+Intent authority: Mir Harness Main writer brief, continuation of owner Discord
+1561203611252297729, parent-supplied. Prepare content for release change `df9f720`
+by mirroring the file set and method of preparation commit `5f5574b`. Main owns
+commit, lock binding, tag, push and attestation.
+
+Design: update all version surfaces and pinned tests, move the `df9f720` Unreleased
+note into a dated `v0.13.7` section, add the migration note, update lifecycle-hooks
+acknowledgement only if its package bytes changed, then regenerate adopter payload last.
+Preserve the previous cursor verbatim in `tasks/change_log.md`.
+
+Boundaries: content only. No commit, tag, push, `mir capability` commands,
+`.mir/capability-lock.json`, repository `.codex/**`, or private absolute paths in tracked
+files. Do not set `MIR_CAPABILITY_HOME`; use the supplied UV cache setting. Keep scratch
+only in the approved task scratch directory and remove it at task end.
+
+Request matrix: (1) exact release version surfaces and 0.13.6 preparation parity,
+(2) changelog and migration notes, (3) generated adopter payload parity,
+(4) full `uv run pytest -q -p no:cacheprovider` with only the managed-lock test allowed
+to fail, (5) Ruff and `git diff --check`, (6) changed-file and remaining-work report.
+Status: 6/6 evaluated and closed. Version surfaces, release notes, package acknowledgement
+and generated payload match. Full suite: 2138 passed, 1 expected managed-lock failure.
+Ruff and `git diff --check` passed. The managed-lock binding remains Main-owned.
+Evidence: tasks/change_log.md#0137-release-preparation-2026-10-18.
+
+Previous cursor: tasks/change_log.md#superseded-cursor-before-0137-release-preparation-2026-10-18.
+
+```
+
+### Prior tasks/intent.json
+
+```text
+{
+  "goal": "Make the ontology handoff packet visible in the skill body without enlarging owner authority.",
+  "goal_type": "maintenance",
+  "scope": "Supplier-owned Mir Yoke sources only; no commit, delivery, version bump, release/attestation changes, activation, restart, secrets, live DB access or repository .codex/** writes.",
+  "priority": "normal",
+  "updated": "2026-10-18",
+  "history": [
+    {
+      "goal": "Re-verify all 22 repository-maintenance items against current evidence and apply minimal evidenced improvements.",
+      "updated": "2026-10-17",
+      "status": "superseded",
+      "archive": "tasks/change_log.md#superseded-cursor-before-ontology-reachability-2026-10-17"
+    },
+    {
+      "goal": "Make the default work method portable across adopting computers and both runtimes, including delegated Codex sessions.",
+      "updated": "2026-10-17",
+      "evidence": "tasks/change_log.md#portable-default-work-method-2026-10-17",
+      "status": "superseded",
+      "archive": "tasks/change_log.md#superseded-continuity-before-matrix-pass-2026-10-17"
+    },
+    {
+      "goal": "Re-verify Mir Yoke against the owner-directed 22-item repository maintenance checklist and apply minimal evidenced improvements.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#matrix-pass-2026-10-16"
+    },
+    {
+      "goal": "Fix the five Linux release-runner test failures without weakening their behavioral guarantees.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#linux-release-runner-fixtures-2026-10-16"
+    },
+    {
+      "goal": "Prepare the Mir Yoke 0.13.1 release working tree with version metadata and migration notes only.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#0131-release-preparation-2026-10-16"
+    },
+    {
+      "goal": "Close ontology impact and isolated distribution gaps and scope E06/E08 evidence.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#ontology-gap-development-2026-10-16"
+    },
+    {
+      "goal": "Make local validation and fresh-checkout validate workflow commands pass while retaining the memory render guard.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#local-and-ci-validation-fixes-2026-10-16"
+    },
+    {
+      "goal": "Prevent automatic consistency tests from rendering live agent memory.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#automatic-memory-render-guard-2026-10-16"
+    },
+    {
+      "goal": "Prepare the Mir Yoke 0.13.0 release working tree with version metadata and migration notes only.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#0130-release-preparation-2026-10-16"
+    },
+    {
+      "goal": "Correct E03 and E07 covered check references using existing executable behavior tests.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#superseded-cursor-covered-label-fix-before-0130-preparation-2026-10-16"
+    },
+    {
+      "goal": "Retain repeatable Yoke-domain selection/evidence use and resolve declared relation target-freshness ownership.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#ontology-rejudgment-g08g13-2026-10-16"
+    }
+  ],
+  "status": "complete",
+  "evidence": "tasks/change_log.md#ontology-handoff-packet-2026-10-18",
+  "authority": "Current Mir Harness Main writer brief; single active cursor: tasks/plan.md."
+}
+
+```
+
+### Prior tasks/checklist.md
+
+```text
+# Checklist
+
+Status projection for `tasks/plan.md`: ontology reachability, 2026-10-17.
+5/5 request cells evaluated; 4/5 closed. New regressions: 17 fail-first, then 17 passed;
+additional link-reachability assertion: eight fail-first, then 17 passed overall.
+Final source full suite: 2080 passed, one capability-lock tree digest failure.
+Ruff, Codex parity, context paths and ontology checks
+passed. Main owns the separately authorized lock refresh and acceptance.
+Evidence: `tasks/change_log.md#ontology-reachability-2026-10-17`.
+Previous projection is archived with the superseded cursor in the same evidence log.
+
+```
+
+### Prior tasks/handoffs/session-handoff-LATEST.md
+
+```text
+# Session Handoff
+
+Resume pointer: `tasks/plan.md` is the only active cursor; `tasks/intent.json` records authority.
+Read `tasks/checklist.md` for status and
+`tasks/change_log.md#matrix-pass-2026-10-17` for the latest pass.
+Superseded handoff text is preserved verbatim at
+`tasks/change_log.md#matrix-pass-2026-10-16` and
+`tasks/change_log.md#superseded-continuity-before-matrix-pass-2026-10-17`.
+No commit, release, live database write or generated `.codex/**` edit is authorized.
+Matrix pass 2026-10-17: 22/22 evaluated; Mir Harness Main re-ran the host gate,
+confirmed hook trust and fresh-session delivery, and committed locally (not pushed).
+D1 is contained in v0.13.3 by patch equivalence; no owner choice remains.
+Next action: none for this pass.
+
+<!-- mir:runtime-snapshot:begin -->
+## Runtime Snapshot (Generated)
+
+### Active Plan Items
+- No open plan items.
+
+### Working Tree
+- Working tree dirty (1 paths; inspect git status --short).
+<!-- mir:runtime-snapshot:end -->
+
+```
+
+## Delta re-verification 2026-10-18
+
+Authority: owner Discord 1561379127401910383 (2026-10-18), relayed by Mir Harness
+Main, parent-supplied. Intent/design authority: the single tasks/plan.md cursor.
+Qualified target: mir-yoke:delta-re-verification-2026-10-18, repository root `.`.
+Observed HEAD: b6dcd628f171ca17507912028b89f72922451269; acceptance: 2b89087.
+The initially clean worktree permits attribution of all six changed source/record
+paths to this task. No consumer, secret, live DB/memory, service or delivery write.
+
+### Current evidence and semantic scope
+
+- `git diff --stat 2b89087..HEAD`: 32 paths, 1481 insertions, 113 deletions.
+  This includes the 0.13.4 chain as well as the brief's 0.13.5 through 0.13.7.
+  Reviewed changed Python: namespace fence, Claude user-scope activation check,
+  shared lifecycle MESSAGE and its capability-manager copy; related tests and
+  version/package/map/document changes were inspected. No runtime code fix was needed.
+- Map SHA256: 516c5b160c0fa49de51e4a0dc6f14c6e6a955d1baf72cc75dc2c93de7ea23e79,
+  unchanged from the supplied pin. Contract mir.common-semantics@1.1.0; distribution
+  SHA256: b2f1ecd01aaa88d41caac2bc2481e7f4c5a429cff3983aaa85ddfb0fc2f1b93f.
+  Semantic anchors: /concepts/Task, /vocabularies/9, /domain/identity_schemes/2-3,
+  /domain/invariants/0-3, /questions/1-2 and /error_cases/7 (E08).
+  These separate task completion, byte identity, execution evidence and authority.
+  E08 is specifically the client namespace fence, not supplier-wide authorization.
+- `python3 scripts/mir_ontology.py mapping`: 0 errors, 0 warnings; contract 1.1.0,
+  mapping 1.1.0. Strict working-tree impact selects Task/intent only, no checks,
+  undeclared check links or stale refs. Selection is not executed proof.
+- The requested root `python3 scripts/mir_ontology.py --which` exits 2 with usage.
+  This is the documented checkout adapter, not the consumer runner. The canonical
+  `python3 plugins/mir-core/skills/ontology/scripts/mir_ontology_runner.py --which`
+  reports version 0.13.7, reason `active Claude record`, installed ontology checker.
+  Preserve this accepted supplier/consumer difference; no runner rewrite is needed.
+- Local lookup returns Q1, Project and Task anchors. Offline
+  `uv run mir relations query CR-006 --purpose implementation --json` returns
+  seven edges, truncated=false, five explicitly skipped historical endpoints;
+  graph SHA256 a26d2f530c0acd26cad958982ec89acaea7a21f7b2fc8232266c0730ee1829a5.
+  This is declared_spec_relations_only, not live-memory or MK evidence.
+- Official Codex verifier: `OK: Codex derivatives match Claude sources`; context
+  verifier: `PASS: checked 9 files and 77 path references`. Repository generated
+  instructions, .codex, .agents, lessons and memory maps were not modified.
+  CLAUDE.md before=after 40 lines/3587 B; AGENTS.md 42/3676 B; Starter pair
+  8/443 B and 10/567 B. Relevant instruction/routing/architecture/memory paths have
+  no acceptance-to-HEAD diff. No live DB connection or integrity claim is made.
+- Synthetic lifecycle execution under MIR_RUNTIME=claude and codex: identical
+  stdout, empty stderr, 592 B, SHA256
+  1d83a1ff21ed0c65514d1036ca5e7aa6a32eb6cb5a381f651a7e218646793b2a.
+  The 330-test delta suite exercises isolated packages, synthetic MCP, namespace
+  refusal/fencing, activation user-scope and source hook equality. This does not
+  re-observe native fresh-session discovery or current Codex host hook trust.
+
+### F1 fail-first and change
+
+`tools/mir_executor/tests/test_codex_mcp_client.py` now permits optional fake
+thread/start delay. The environment-default test covers 0 and 1.25 seconds.
+Initialize itself has a separate ten-second budget, so delaying initialize would
+not reproduce the one-second call budget. The deterministic delay exercises the
+actual thread/start deadline after startup.
+
+The smallest command before and after the fix:
+
+```sh
+uv run pytest -q -p no:cacheprovider tools/mir_executor/tests/test_codex_mcp_client.py::test_client_uses_codex_bin_environment_default --basetemp="$MAINTENANCE_SCRATCH/env"
+```
+
+Before: `1 failed, 1 passed in 1.74s`; the delayed case raises
+`CodexMcpTimeoutError: Codex app-server request 'thread/start' timed out after 0.999999s`.
+After: `2 passed in 1.91s`. Module: `52 passed in 16.72s`.
+Success-path calls and message-record polling share SUCCESS_TIMEOUT=10.0;
+immediate successful paths incur no added sleep. Only the delayed regression waits.
+Seven existing timeout/stall/unbounded/heartbeat test function bodies are
+AST-identical to HEAD, including the 0.05s timeout/stall kill/reject cases and
+the stubborn-process kill test. Production timeout defaults are unchanged.
+Changed test SHA256: 357ae9738de71d555b58c27e2b62fb7f6b220592ba744789523dedb68bcb07a2.
+
+### Executor distribution and observed cleanup candidates
+
+`tools/executor_sync.py#generate_manifest` selects package-level Python modules
+and only tests/test_common_manifest.py. Both committed manifests agree, contain
+15 paths and exclude test_codex_mcp_client.py. Self-target check prints
+`Common manifest: PASS`. Therefore no executor-sync consumer receives this file;
+manually copied tests, if any, are unknown and no consumer was discovered or read.
+Common base v3.8, manifest schema 1, SOURCE_COMMIT and their file hashes need no
+change. Evidence: docs/operations/mir-executor-sync.md, manifest file lists and
+map /domain/identity_schemes/2-3, /questions/2. No consumer sync was attempted.
+
+One stash remains: `preserve local SRR overlap before verified v0.10.4 integration`
+(144307f, 2026-09-21). Its six tracked paths were compared with HEAD: both reference
+documents match exactly; the current skill adds ontology guidance, current tests
+move the old-console PATH injection onto the query and change quoting, and asset
+classification retains the stashed knowledge rule plus newer entries. The stashed
+untracked docs/knowledge/srr-code-relations.md matches HEAD exactly. The stale
+adopter payload is derived data. Release commit 3c14880 is an ancestor of HEAD.
+No unique implementation recovery need was found in this bounded comparison.
+Retaining the stash offers rollback convenience; removal reduces stale recovery
+state. Recommendation: Main may remove it only under separate cleanup authority.
+
+The supplied external yoke-head worktree registration is detached at 62a1956 and
+explicitly `prunable: gitdir file points to non-existent location`. It cannot serve
+as an active checkout at that path. Keeping it retains stale metadata; pruning
+removes the registration. Recommendation: Main may prune under separate cleanup
+authority. Neither stash nor worktree registration was changed; other worktrees
+were not investigated or touched.
+
+### Per-item matrix
+
+All 22 items assessed against the delta; 19/22 have bounded repository closure.
+Items 18, 19 and 21 remain Main-owned. Six request cells are assessed, 4/6 closed;
+request 5 (accepted full gate) and 6 (generated integrity refresh) remain open.
+No all-green full-gate acceptance is claimed.
+
+| Item | Verdict | Evidence checked now |
+| --- | --- | --- |
+| 1. Consistency | PASS | 32-path delta reviewed; versions/map/package contracts, official Codex parity and 77 references checked. |
+| 2. Operating base | PASS | Shared hook and activation delta exercised; no removed feature or dead entry introduced. |
+| 3. Documents | IMPROVED | Cursor, intent, projection and resume pointer no longer name three different completed tasks. |
+| 4. Archiving | IMPROVED | Four previous continuity texts preserved verbatim in this log; current files link here. |
+| 5. Context | PASS | One cursor retained; CLAUDE/AGENTS and Starter sizes unchanged; no always-loaded growth. |
+| 6. Database/memory/graph | NO CHANGE NEEDED | No delta in memory implementation, knowledge sources, projections or graph; offline graph digest/edges match baseline. No live-store probe or write. |
+| 7. Harness | PASS | Shared MESSAGE remains equal through package tests; source parity passes; no guard relaxed. |
+| 8. Skills/agents | PASS | Ontology/bluebricks handoff delta and four versioned packages covered by 330 passing delta tests; agent definitions unchanged. |
+| 9. Instruction docs | NO CHANGE NEEDED | Root/nested instruction paths unchanged since acceptance; sizes 40/3587 B and 42/3676 B; official parity passes. |
+| 10. Rules/lessons | NO CHANGE NEEDED | No delta in generated lessons/memory map or rule homes; neither projection edited. |
+| 11. Architecture | NO CHANGE NEEDED | No ARCHITECTURE, Starter/Kit, routing or supported-layer delta; historical spec remains superseded-reference. |
+| 12. Delegation | NO CHANGE NEEDED | No model-routing lock, local policy or agent-definition delta; no sub-agent or policy write needed. |
+| 13. Continuity | IMPROVED | Four roles point to this one cursor/log; originals archived 4/4; old generated snapshot explicitly historical. |
+| 14. Work context | PASS | Local lookup returns Q1/Project/Task; offline CR-006 query returns seven scoped edges with explicit historical skips. |
+| 15. Token efficiency | PASS | Instruction sizes unchanged; executable shared context 592 B and identical per runtime. |
+| 16. Test health | IMPROVED | F1 deterministically fails at old budget and passes at new budget; module 52/52, timeout-path bodies unchanged; full gate result below. |
+| 17. Code/security/dependencies | PASS | Changed runtime Python inspected; namespace refusal/fence and activation scope tests pass; dependency requirements unchanged, uv.lock changes only own version. No fresh advisory audit claimed. |
+| 18. Integrity evidence | OWNER | Read-only inventory comparison names exactly this task's six changed paths; generated adopter payload refresh belongs to Main. Common/capability/routing locks unchanged. |
+| 19. Runtime behavior | OWNER | Source hooks execute and isolated package/MCP tests pass; native fresh sessions and host trust were not re-observed. |
+| 20. Open decisions | PASS | No accepted decision contradicted; stash/prunable registration observations and two cleanup alternatives recorded once above. |
+| 21. Main-runtime parity | OWNER | Generated source parity and identical synthetic context verified; fresh Claude/Codex acceptance/trust is Main-owned, not implied by static parity. |
+| 22. Agent/Loop/Graph/Ontology | PASS | Agent: package/skill authority tests; Loop: equal executable method; Graph: offline seven-edge retrieval; Ontology: unchanged pin, 1.1.0 mapping/impact/lookup and fence tests. No new machinery. |
+
+### Commands, results and remaining work
+
+All uv commands use the owner-specified external UV_CACHE_DIR. TMPDIR, pytest
+basetemp and Ruff cache use external MAINTENANCE_SCRATCH. Pytest disables its cache
+provider and PYTHONDONTWRITEBYTECODE=1; full tests/ and tools/ discovery is retained.
+
+- Delta tests: `uv run pytest -q -p no:cacheprovider tests/test_ontology_skill.py tests/test_plugin_skill_packages.py tests/test_mir_ontology.py tests/test_executor_sync.py tools/mir_executor/tests/test_common_manifest.py --basetemp="$MAINTENANCE_SCRATCH/delta"`: 330 passed in 34.67s.
+- Full gate: `uv run pytest -q -p no:cacheprovider --basetemp="$MAINTENANCE_SCRATCH/full"`:
+  2135 passed, 5 failed in 329.39s. Three are stale adopter inventory effects:
+  test_advanced_reference_templates.py::test_should_remove_reference_snapshot_when_adopter_payload_is_built;
+  test_greenfield_slim_integration.py::test_should_leave_minimal_starter_and_project_owned_changes_when_candidate_is_slimmed;
+  test_template_asset_classification.py::test_should_match_exact_adopter_payload_when_release_inventory_is_generated.
+  Two observer tests failed with `provider or declared outside state changed during
+  the clean-room run`: test_project_agent_kit_release_evidence.py::test_release_evidence_recomputes_artifact_hashes
+  and ::test_release_evidence_rejects_sensitive_runtime_transcript. This writer
+  edited provider record files while the full suite was running, invalidating
+  those snapshot comparisons. This was execution overlap, not a sandbox failure.
+  The exact two nodes rerun with all repository edits paused passed: 2 passed in
+  21.09s, --basetemp="$MAINTENANCE_SCRATCH/observer-stable". All subsequent checks
+  are read-only; Main must run the full gate with no concurrent provider writes
+  after the generated inventory refresh. The original full failure is retained.
+- `uv run ruff check --cache-dir "$MAINTENANCE_SCRATCH/ruff"`: all checks passed after wrapping one overlong changed test line.
+- `uv run python scripts/verify_codex_sync.py`: derivatives match Claude sources; verification generates only disposable scratch outputs.
+- `python3 scripts/verify_context_paths.py`: 9 files / 77 references pass.
+- `python3 -m tools.executor_sync --check --target .`: Common manifest PASS.
+- Read-only adopter inventory build names exactly six changed paths. An initial
+  bare-python probe lacked jsonschema; rerunning through `uv run python` succeeded.
+  No generated inventory was written. Main command after all final record edits:
+  `uv run python -m tools.template_assets --write-adopter-payload`, then rerun the
+  documented full gate and Ruff. No common manifest/version or capability-lock
+  rebind is required for this test-only change.
+- Initial tooling attempts were rejected before execution: a multiline Bash
+  write failed PreToolUse screening and a scratch apply_patch path outside the
+  project failed its path rule. Short archive and repository-scoped edits succeeded
+  under the existing rules; no sandbox, screening rule or gate was weakened.
+- Public-surface and continuity tests after record edits:
+  `uv run pytest -q -p no:cacheprovider tests/test_public_template_surface.py tests/test_closeout_hooks.py tests/test_compact_lifecycle_hooks.py --basetemp="$MAINTENANCE_SCRATCH/records"`:
+  18 passed in 3.21s.
+- REGENERATE: config/adopter-payload.json. The preserved generated resume snapshot
+  can be refreshed by Main through the existing pre-compact snapshot procedure;
+  its current pointer labels it historical. No generated Codex refresh is needed.
+
+Status axes: lifecycle=writer-assessment-finished, Main acceptance pending; temporal=current
+2026-10-18 delta; epistemic=verified-in-repo for commands above, parent-supplied for
+owner authority and fleet baseline; verification=partial until Main regeneration
+and native-session acceptance. Explicit unknowns: manually copied consumer tests,
+current native Claude/Codex trust/discovery, and future cleanup authorization.
+Authority: this writer may inspect/fix bounded repository sources and run gates;
+may not commit/deliver, change consumers, generated instructions/agents, credentials,
+live stores or services. Self-check: supplied root/HEAD/map/contract pins and all
+six packet fields are recorded; absolute host paths are intentionally not published.

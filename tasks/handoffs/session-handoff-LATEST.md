@@ -1,16 +1,16 @@
 # Session Handoff
 
-Resume pointer: `tasks/plan.md` is the only active cursor; `tasks/intent.json` records authority.
-Read `tasks/checklist.md` for status and
-`tasks/change_log.md#matrix-pass-2026-10-17` for the latest pass.
-Superseded handoff text is preserved verbatim at
-`tasks/change_log.md#matrix-pass-2026-10-16` and
-`tasks/change_log.md#superseded-continuity-before-matrix-pass-2026-10-17`.
-No commit, release, live database write or generated `.codex/**` edit is authorized.
-Matrix pass 2026-10-17: 22/22 evaluated; Mir Harness Main re-ran the host gate,
-confirmed hook trust and fresh-session delivery, and committed locally (not pushed).
-D1 is contained in v0.13.3 by patch equivalence; no owner choice remains.
-Next action: none for this pass.
+Resume pointer: tasks/plan.md is the sole active cursor; tasks/intent.json records
+owner Discord 1561379127401910383 and bounded authority. Current projection:
+tasks/checklist.md. Evidence: tasks/change_log.md#delta-re-verification-2026-10-18.
+Previous pointer: tasks/change_log.md#superseded-continuity-before-delta-re-verification-2026-10-18.
+Six request cells assessed, four closed. Main regenerates the adopter inventory,
+reruns the full gate with provider writes paused and confirms native sessions/trust.
+See the log for the retained full failure and stable observer recheck.
+Main owns review and delivery; no commit,
+consumer write, generated Codex edit, secret read or live database write is authorized.
+The generated snapshot below is historical and preserved under the generated-write
+boundary. Read tasks/checklist.md for current status.
 
 <!-- mir:runtime-snapshot:begin -->
 ## Runtime Snapshot (Generated)

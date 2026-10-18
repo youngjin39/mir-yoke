@@ -1,29 +1,35 @@
 # Plan
 
-## Active task: 0.13.7 release preparation (2026-10-18)
+## Active task: delta re-verification 2026-10-18
 
-Intent authority: Mir Harness Main writer brief, continuation of owner Discord
-1561203611252297729, parent-supplied. Prepare content for release change `df9f720`
-by mirroring the file set and method of preparation commit `5f5574b`. Main owns
-commit, lock binding, tag, push and attestation.
+Intent authority: owner Discord 1561379127401910383 (2026-10-18), relayed by
+Mir Harness Main; parent-supplied bounded writer brief. This single cursor is
+the authority for this task design. Main owns review, gate reruns and delivery.
 
-Design: update all version surfaces and pinned tests, move the `df9f720` Unreleased
-note into a dated `v0.13.7` section, add the migration note, update lifecycle-hooks
-acknowledgement only if its package bytes changed, then regenerate adopter payload last.
-Preserve the previous cursor verbatim in `tasks/change_log.md`.
+Scope: Mir Yoke only, acceptance 2b89087 through b6dcd62 plus F1 fake app-server
+success-test timing. No commit/push/tag/release, generated instruction/Codex/agent
+writes, consumers, service changes, secret reads or live memory/database writes.
+Use owner-specified external UV cache and task scratch; remove scratch at finish.
 
-Boundaries: content only. No commit, tag, push, `mir capability` commands,
-`.mir/capability-lock.json`, repository `.codex/**`, or private absolute paths in tracked
-files. Do not set `MIR_CAPABILITY_HOME`; use the supplied UV cache setting. Keep scratch
-only in the approved task scratch directory and remove it at task end.
+Design: assess the 22 maintenance items only against changed surfaces. Preserve
+superseded continuity verbatim in the existing log. Add deterministic fake-server
+delay to reproduce the old one-second success budget, then give successful calls
+a shared load-tolerant budget; retain short timeout/stall kill/reject tests.
+Inspect executor manifests and declared consumer evidence, stash metadata and
+stale worktree registration read-only. Do not discover or modify consumers.
 
-Request matrix: (1) exact release version surfaces and 0.13.6 preparation parity,
-(2) changelog and migration notes, (3) generated adopter payload parity,
-(4) full `uv run pytest -q -p no:cacheprovider` with only the managed-lock test allowed
-to fail, (5) Ruff and `git diff --check`, (6) changed-file and remaining-work report.
-Status: 6/6 evaluated and closed. Version surfaces, release notes, package acknowledgement
-and generated payload match. Full suite: 2138 passed, 1 expected managed-lock failure.
-Ruff and `git diff --check` passed. The managed-lock binding remains Main-owned.
-Evidence: tasks/change_log.md#0137-release-preparation-2026-10-18.
-
-Previous cursor: tasks/change_log.md#superseded-cursor-before-0137-release-preparation-2026-10-18.
+Request matrix: (1) 22-row delta evidence, (2) deterministic fail-first and F1 fix,
+(3) common-base/consumer/version/hash finding, (4) stash/worktree observation,
+(5) full pytest/Ruff/Codex parity and ontology mapping/impact, (6) continuity,
+integrity refresh and final changed-file/remaining-work report.
+Status: 6/6 assessed, 4/6 closed. F1 fail-first 1 failed/1 passed, then 2/2 passed;
+module 52/52, delta contracts 330/330, record checks 18/18. Full gate 2135 passed,
+5 failed: three stale generated-inventory effects; two provider-snapshot failures
+caused by concurrent record edits passed 2/2 with writes paused. Ruff, Codex parity,
+77 references, common manifest, mapping (0 errors/0 warnings) and strict impact pass.
+Items 18/19/21 remain Main-owned (19/22 bounded repository closure). Requests 5/6
+remain open: regenerate config/adopter-payload.json after final records, run the
+full gate without concurrent provider writes, and re-observe native sessions/trust.
+Do not regenerate repository Codex files; their parity already passes.
+Evidence: tasks/change_log.md#delta-re-verification-2026-10-18.
+Previous continuity: tasks/change_log.md#superseded-continuity-before-delta-re-verification-2026-10-18.

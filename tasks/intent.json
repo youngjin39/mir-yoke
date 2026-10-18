@@ -1,7 +1,7 @@
 {
-  "goal": "Make the ontology handoff packet visible in the skill body without enlarging owner authority.",
+  "goal": "Re-verify the 22-item maintenance delta since 2b89087 and fix F1 success-path test load sensitivity.",
   "goal_type": "maintenance",
-  "scope": "Supplier-owned Mir Yoke sources only; no commit, delivery, version bump, release/attestation changes, activation, restart, secrets, live DB access or repository .codex/** writes.",
+  "scope": "Mir Yoke bounded writer only; no commit, generated instruction/Codex/agent writes, consumer writes, secrets, live DB/memory writes or delivery.",
   "priority": "normal",
   "updated": "2026-10-18",
   "history": [
@@ -73,7 +73,7 @@
       "evidence": "tasks/change_log.md#ontology-rejudgment-g08g13-2026-10-16"
     }
   ],
-  "status": "complete",
-  "evidence": "tasks/change_log.md#ontology-handoff-packet-2026-10-18",
-  "authority": "Current Mir Harness Main writer brief; single active cursor: tasks/plan.md."
+  "status": "pending_main_acceptance",
+  "evidence": "tasks/change_log.md#delta-re-verification-2026-10-18",
+  "authority": "Owner Discord 1561379127401910383 (2026-10-18), relayed by Mir Harness Main; parent-supplied. Single active cursor: tasks/plan.md."
 }

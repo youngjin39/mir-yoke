@@ -22,6 +22,10 @@ from tools.mir_executor.codex_mcp_client import (
     CodexMcpTimeoutError,
 )
 
+# Successful calls need scheduling headroom on loaded hosts. Timeout and stall
+# regressions below retain their deliberately short budgets.
+SUCCESS_TIMEOUT = 10.0
+
 
 def test_default_codex_command_is_portable(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("CODEX_BIN", raising=False)
@@ -32,7 +36,9 @@ def test_default_codex_command_is_portable(monkeypatch: pytest.MonkeyPatch) -> N
     assert "/Users" not in client._codex_bin
 
 
-def _write_fake_app_server(tmp_path: pathlib.Path, *, mode: str) -> pathlib.Path:
+def _write_fake_app_server(
+    tmp_path: pathlib.Path, *, mode: str, thread_start_delay: float = 0.0
+) -> pathlib.Path:
     record_path = tmp_path / "messages.jsonl"
     server_py = tmp_path / "fake_codex_server.py"
     server_py.write_text(
@@ -77,6 +83,8 @@ def _write_fake_app_server(tmp_path: pathlib.Path, *, mode: str) -> pathlib.Path
                 elif method == "initialized":
                     continue
                 elif method == "thread/start":
+                    if {thread_start_delay!r}:
+                        time.sleep({thread_start_delay!r})
                     if MODE == "thread_timeout":
                         time.sleep(30)
                     if MODE == "rpc_error":
@@ -220,7 +228,7 @@ def _read_messages(path: pathlib.Path) -> list[dict]:
 
 
 def _wait_for_messages(record_path: pathlib.Path, count: int) -> list[dict]:
-    deadline = time.monotonic() + 2.0
+    deadline = time.monotonic() + SUCCESS_TIMEOUT
     while time.monotonic() < deadline:
         messages = _read_messages(record_path)
         if len(messages) >= count:
@@ -236,7 +244,7 @@ def test_initialize_handshake_sends_initialized_notification(tmp_path: pathlib.P
     client = CodexMcpClient(codex_bin=str(fake_bin))
     try:
         client.start()
-        result = client.call_codex(prompt="hello", cwd=tmp_path, timeout=1.0)
+        result = client.call_codex(prompt="hello", cwd=tmp_path, timeout=SUCCESS_TIMEOUT)
     finally:
         client.close()
 
@@ -254,7 +262,7 @@ def test_call_codex_maps_content_and_thread_id(tmp_path: pathlib.Path) -> None:
     record_path = tmp_path / "messages.jsonl"
 
     with CodexMcpClient(codex_bin=str(fake_bin)) as client:
-        result = client.call_codex(prompt="implement s1", cwd=tmp_path, timeout=1.0)
+        result = client.call_codex(prompt="implement s1", cwd=tmp_path, timeout=SUCCESS_TIMEOUT)
 
     assert result.content_text == "codex completed"
     assert result.thread_id == "thread-123"
@@ -284,7 +292,7 @@ def test_call_codex_includes_base_instructions_and_config(tmp_path: pathlib.Path
             cwd=tmp_path,
             base_instructions="SLIM",
             config={"project_doc_max_bytes": 0},
-            timeout=1.0,
+            timeout=SUCCESS_TIMEOUT,
         )
 
     tool_call = _wait_for_messages(record_path, 3)[2]
@@ -311,7 +319,7 @@ def test_call_codex_includes_model_with_base_instructions_and_config(
             model="high",
             base_instructions="SLIM",
             config={"project_doc_max_bytes": 0},
-            timeout=1.0,
+            timeout=SUCCESS_TIMEOUT,
         )
 
     tool_call = _wait_for_messages(record_path, 3)[2]
@@ -336,7 +344,7 @@ def test_call_codex_base_instructions_without_config_omits_config(
             prompt="implement s1",
             cwd=tmp_path,
             base_instructions="SLIM",
-            timeout=1.0,
+            timeout=SUCCESS_TIMEOUT,
         )
 
     arguments = _wait_for_messages(record_path, 3)[2]["params"]
@@ -344,15 +352,19 @@ def test_call_codex_base_instructions_without_config_omits_config(
     assert "config" not in arguments
 
 
+@pytest.mark.parametrize("thread_start_delay", [0.0, 1.25])
 def test_client_uses_codex_bin_environment_default(
     tmp_path: pathlib.Path,
     monkeypatch: pytest.MonkeyPatch,
+    thread_start_delay: float,
 ) -> None:
-    fake_bin = _write_fake_app_server(tmp_path, mode="success")
+    fake_bin = _write_fake_app_server(
+        tmp_path, mode="success", thread_start_delay=thread_start_delay
+    )
     monkeypatch.setenv("CODEX_BIN", str(fake_bin))
 
     with CodexMcpClient() as client:
-        result = client.call_codex(prompt="env bin", cwd=tmp_path, timeout=1.0)
+        result = client.call_codex(prompt="env bin", cwd=tmp_path, timeout=SUCCESS_TIMEOUT)
 
     assert result.thread_id == "thread-123"
 
@@ -438,7 +450,7 @@ def test_progress_callback_is_invoked_for_notifications(tmp_path: pathlib.Path) 
         result = client.call_codex(
             prompt="notify",
             cwd=tmp_path,
-            timeout=1.0,
+            timeout=SUCCESS_TIMEOUT,
             progress_callback=lambda method, params: progress.append((method, params)),
         )
 
@@ -518,7 +530,9 @@ def test_malformed_json_line_is_recorded_and_ignored(tmp_path: pathlib.Path) -> 
     fake_bin = _write_fake_app_server(tmp_path, mode="malformed")
 
     with CodexMcpClient(codex_bin=str(fake_bin)) as client:
-        result = client.call_codex(prompt="after malformed", cwd=os.fspath(tmp_path), timeout=1.0)
+        result = client.call_codex(
+            prompt="after malformed", cwd=os.fspath(tmp_path), timeout=SUCCESS_TIMEOUT
+        )
 
     assert result.content_text == "codex completed"
     assert client.malformed_messages == ["{not-json"]
@@ -530,14 +544,18 @@ def test_should_ignore_response_when_id_matches_only_an_internal_turn(
 ) -> None:
     fake_bin = _write_fake_app_server(tmp_path, mode=mode)
     with CodexMcpClient(codex_bin=str(fake_bin)) as client:
-        result = client.call_codex(prompt="genuine completion", cwd=tmp_path, timeout=1.0)
+        result = client.call_codex(
+            prompt="genuine completion", cwd=tmp_path, timeout=SUCCESS_TIMEOUT
+        )
     assert result.content_text == "codex completed"
 
 
 def test_should_ignore_response_when_integer_id_was_never_sent(tmp_path: pathlib.Path) -> None:
     fake_bin = _write_fake_app_server(tmp_path, mode="spoofed_unknown")
     with CodexMcpClient(codex_bin=str(fake_bin)) as client:
-        result = client.call_codex(prompt="ignore unknown response", cwd=tmp_path, timeout=1.0)
+        result = client.call_codex(
+            prompt="ignore unknown response", cwd=tmp_path, timeout=SUCCESS_TIMEOUT
+        )
     assert result.content_text == "codex completed"
 
 
@@ -670,7 +688,7 @@ def test_should_return_text_once_when_completion_order_varies(
 ) -> None:
     fake_bin = _write_fake_app_server(tmp_path, mode=mode)
     with CodexMcpClient(codex_bin=str(fake_bin)) as client:
-        result = client.call_codex(prompt="hello", cwd=tmp_path, timeout=1.0)
+        result = client.call_codex(prompt="hello", cwd=tmp_path, timeout=SUCCESS_TIMEOUT)
         assert client.pending_count == 0
     assert result.content_text == "codex completed"
     assert result.thread_id == "thread-123"
@@ -738,7 +756,7 @@ def test_should_pass_thread_settings_to_app_server(tmp_path: pathlib.Path) -> No
             approval_policy="on-request",
             model="gpt-6-luna",
             config={"model_reasoning_effort": "low"},
-            timeout=1,
+            timeout=SUCCESS_TIMEOUT,
         )
     params = _read_messages(tmp_path / "messages.jsonl")[2]["params"]
     assert params == {
