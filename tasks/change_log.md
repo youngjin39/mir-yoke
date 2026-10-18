@@ -1,5 +1,43 @@
 # Change log
 
+## Always-delivered handoff authority (2026-10-18)
+
+Intent and bounded design authority: tasks/plan.md; current Main writer brief and owner
+Discord 1561203611252297729 are parent-supplied. Probe counts in the brief were not
+independently reproduced. Verified repository HEAD: b19984bac4de2d0be61fee4cf4b9e270f7797414.
+Qualified target: mir-yoke:always-delivered-handoff-authority. Lifecycle: implemented;
+temporal: current working tree; epistemic: locally checked; verification: targeted checks
+pass, full-suite green pending Main's lock update. Observed on 2026-10-18.
+Map SHA-256 matches the supplied 516c5b160c0fa49de51e4a0dc6f14c6e6a955d1baf72cc75dc2c93de7ea23e79;
+map /concepts/Task identifies the cursor and /contract declares mir.common-semantics@1.1.0.
+The unchanged ontology SKILL.md Handoff section supplies the six fields and authority rule.
+
+One sentence appended to MESSAGE; validator source pin and package digest acknowledgement
+updated to the validated hook tree a12ee8de9b487c9aab61eb6f0e1eefc34ee79c55c095abb950800f19ee76faeb.
+This is source-byte validation; fresh runtime delivery/attestation remains unknown and Main-owned.
+No commit, tag, push, capability command, lock, version, release heading, consumer, live-memory
+or repository .codex/** edit. Output remains bounded; handler is 814 bytes (limit 1024).
+
+All uv commands used the host's shared external-volume UV cache and a task-scoped TMPDIR.
+- Fail-first: uv run pytest -q tests/test_plugin_skill_packages.py::test_lifecycle_hook_plugin_uses_one_exact_shared_hook_file
+  yielded 1 failed in 0.14s, specifically for the missing sentence.
+- After implementation: package tests 15 passed; final focused package, digest and asset tests
+  (test_plugin_skill_packages.py, test_capability_security.py::test_capability_source_declares_the_reviewed_active_hook_package,
+  test_template_asset_classification.py) yielded 22 passed in 0.49s.
+- Initial uv run pytest -q: 2070 passed, 69 failed in 239.76s; stale source digest acknowledgement
+  caused capability failures. Updated that pinned digest; no runtime registration was performed.
+- Final uv run pytest -q: 2138 passed, 1 failed in 227.43s. Sole failure:
+  tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees,
+  existing lock digest versus changed plugin tree. Lock edits are explicitly reserved to Main.
+- uv run ruff check: all checks passed. git diff --check: exit 0.
+- uv run python scripts/mir_ontology.py impact --git-diff --strict: exit 0, no stale refs.
+
+After these record edits, regenerate payload with
+uv run python -m tools.template_assets --write-adopter-payload --json, rerun the 22 focused
+checks and diff check, then delete scratch. No further record mutation after generation.
+Request matrix: 4/4 evaluated, 3/4 closed. Main owns lock refresh, full-gate rerun, repository
+derivatives if needed, delivery and actual runtime attestation; those outcomes remain unknown.
+
 ## 0.13.6 release preparation (2026-10-18)
 
 Intent and bounded design authority: `tasks/plan.md`, recording the current Mir Harness Main
@@ -7495,4 +7533,37 @@ Full suite: 2138 passed, 1 failed in 244.93s. The only failure is the explicitly
 Payload generation passed for all 887 classified files before the full suite; regenerate after
 these final evidence edits and check exact parity again. Mapping/strict impact and scoped Ruff
 passed. No release-lock or repository `.codex/**` writes were made.
+```
+
+## Superseded cursor before always-delivered handoff authority (2026-10-18)
+
+```markdown
+# Plan
+
+## Active task: 0.13.6 release preparation (2026-10-18)
+
+Intent authority: current Mir Harness Main writer brief, owner Discord 1561086355767824457
+and earlier delivery direction, parent-supplied. This single active cursor owns the bounded
+preparation design; this writer is authorized for content only, without commit or delivery.
+Release change `b42ec20`; mirror the 19-file preparation set and method of `5276401`.
+Previous cursor: `tasks/change_log.md#superseded-cursor-before-0136-release-preparation-2026-10-18`.
+
+Bounded design: align release versions and lifecycle-hooks acknowledgement, move only the
+namespace-fence/Claude user-scope Fixed notes into v0.13.6 dated 2026-10-18, append migration
+notes, and regenerate adopter payload after final records using the documented command.
+Existing tests cover metadata edits; no new behavior or tests are needed. Use the existing
+request matrix here instead of changing the unrelated historical tasks/tdd.json ledger.
+No network, commit, tag, push, activation, consumer or live database write. Preserve
+`.mir/capability-lock.json` and repository `.codex/**`; Main owns their later handling.
+
+Request matrix: (1) version surfaces and acknowledgement, (2) changelog/migration,
+(3) adopter payload parity, (4) full offline suite with only the deferred repository-lock
+failure permitted, (5) canonical records and changed-file handoff.
+Completion: 5/5 evaluated, 4/5 closed. Full offline suite: 2138 passed, 1 failed in 234.69s;
+only `test_repository_lock_is_portable_and_matches_managed_trees` remains open until Main
+binds the lock in commit B. Focused checks passed 30 tests; Ruff, Codex parity, context paths
+and strict ontology impact passed. Final record hashes are regenerated into adopter payload
+and checked exactly after this update. Main owns final repository derivatives, A/B commits,
+lock/full-gate verification and subsequent delivery.
+Evidence: `tasks/change_log.md#0136-release-preparation-2026-10-18`.
 ```

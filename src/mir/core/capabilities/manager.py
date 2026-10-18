@@ -79,6 +79,9 @@ MESSAGE = (
     "6 Repeat 3-5 until tests pass -> 7 Finish; done only when every request-matrix cell has "
     "evidence checked now, otherwise report N/M and open cells (details: runtime-continuity "
     "skill, references/default-work-method.md)."
+    " Handoffs/briefs for another agent copy only owner-granted authority "
+    "(never add edits, tests, commands or writes) and carry the mir-core:ontology "
+    "handoff fields, naming missing fields as unknowns."
 )
 
 
