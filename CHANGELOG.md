@@ -8,6 +8,10 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.8] — 2026-10-19 — Inline handoff fields
+
+### Changed
+
 - Named all six ontology handoff fields inline in SessionStart, including status axes,
   current pins and a final self-check naming missing fields or pins as unknowns.
 

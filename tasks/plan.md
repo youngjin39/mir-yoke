@@ -1,33 +1,41 @@
 # Plan
 
-## Active task: inline SessionStart handoff fields (2026-10-19)
+## Active task: 0.13.8 release preparation (2026-10-19)
 
-Intent authority: owner Discord 1561401861251268689 item 3, relayed by Mir Harness
-Main in a parent-supplied feature-only brief. This single cursor owns the design.
-Main owns commit, release preparation, lock binding, tag, push and attestation.
+Intent authority: owner Discord 1561401861251268689 item 3 (release Yoke 0.13.8),
+parent-supplied by Mir Harness Main. This single active cursor owns the bounded design.
+Verified release HEAD: 1297279307f7bbc854bef926c72898abcd77fc70.
+Predecessor: preparation commit 94500c4 and its evidence in tasks/change_log.md.
 
-Scope: mirror df9f720's eight files. Feature only; no version bump, release heading,
-lock write, capability command, commit, tag, push, consumer or generated Codex write.
+Scope: mirror the predecessor's 19 files. No commit, tag, push, network, capability
+command, capability-lock, consumer or repository .codex/** write. Main owns lock
+binding, tag, push, provider update and attestation.
 
-Design: inline all six fields from plugins/mir-core/skills/ontology/SKILL.md#Handoff,
-including four status axes, current pins and a missing-field/pin self-check.
-Preserve owner-authority wording; compress only the replacement clause to keep
-stdout <800 bytes and handler <=1024 bytes. Match the reviewed-byte mirror and
-refresh the digest acknowledgement. Archive the old cursor verbatim in the log.
+Design: bump package, lock, marketplace and all eight plugin manifest versions;
+update existing version assertions; date the Unreleased note; add the patch migration
+note; refresh the lifecycle-hooks digest acknowledgement; archive the superseded
+cursor verbatim; record verification; regenerate adopter payload last. Existing
+version assertions supply fail-first coverage. No behavior change is needed.
+The historical TDD ledger is unchanged; this cursor and log own the release matrix.
 Semantic evidence: .mir/ontology-map.json#/contract declares
 mir.common-semantics@1.1.0; verified map SHA256 is
 516c5b160c0fa49de51e4a0dc6f14c6e6a955d1baf72cc75dc2c93de7ea23e79.
 
-Request matrix: (1) exact-output fail-first; (2) six fields, unchanged authority,
-byte bounds, exact mirror and digest; (3) Unreleased note, archived cursor,
-evidence and final adopter payload; (4) full pytest, Ruff and diff checks.
-Status: 4/4 feature cells complete. Fail-first: 1 failed in 0.12s; package module:
-15 passed in 0.15s. Full pytest: 1 failed, 2139 passed in 240.50s (0:04:00).
-Only failure: test_repository_lock_is_portable_and_matches_managed_trees,
-the explicitly accepted Main-owned lock binding. Ruff passed; diff check passed;
-ontology mapping passed with 0 errors/0 warnings and strict impact has no stale refs.
-Stdout is 799 bytes including newline; handler is 1014 bytes. Final payload is
-regenerated after these records. Main retains release preparation and delivery.
+Request matrix: (1) package/manifest/version-test parity; (2) changelog and migration;
+(3) lifecycle digest acknowledgement; (4) cursor archive, evidence and final adopter
+payload; (5) full pytest, Ruff and diff checks, with only the Main-owned repository
+lock-binding failure accepted.
+Status: 5/5 preparation cells complete, using the explicitly accepted Main-owned
+lock-binding exception. Fail-first: 2 failed in 0.06s; package module: 15 passed in
+0.14s. Initial offline full suite: 2 failed, 2138 passed in 232.99s; the additional
+installed-CLI failure came from its empty isolated dependency cache. Repacked existing
+cached dependencies into a temporary local wheel directory without downloads or test
+changes; installed-CLI retry: 1 passed in 2.80s. Final offline full suite: 1 failed,
+2139 passed in 241.75s. Only remaining failure:
+test_repository_lock_is_portable_and_matches_managed_trees.
+Ruff and diff checks passed; ontology mapping has 0 errors/0 warnings and strict
+impact has no stale refs. Final records precede adopter payload regeneration.
+Full-suite green remains pending Main's lock binding; delivery is not performed.
 
-Evidence: tasks/change_log.md#inline-sessionstart-handoff-fields-2026-10-19.
-Previous cursor: tasks/change_log.md#superseded-cursor-before-inline-handoff-fields-2026-10-19.
+Evidence: tasks/change_log.md#0138-release-preparation-2026-10-19.
+Previous cursor: tasks/change_log.md#superseded-cursor-before-0138-release-preparation-2026-10-19.

@@ -1,5 +1,95 @@
 # Change log
 
+## 0.13.8 release preparation (2026-10-19)
+
+Intent and bounded design authority: tasks/plan.md; owner Discord 1561401861251268689
+item 3 (release Yoke 0.13.8), parent-supplied by Mir Harness Main. Qualified target:
+mir-yoke:release-0.13.8. Lifecycle: prepared; temporal: current working tree;
+epistemic: verified-in-repo; verification: preparation checked with the explicitly
+accepted Main-owned lock-binding failure. Observation date: 2026-10-19.
+Verified repository pin: HEAD 1297279307f7bbc854bef926c72898abcd77fc70; root is this
+checkout. Method and scope follow preparation commit 94500c4 and its evidence below.
+Semantic evidence: .mir/ontology-map.json#/contract declares mir.common-semantics@1.1.0;
+/concepts/Task identifies the active cursor. Verified map SHA256:
+516c5b160c0fa49de51e4a0dc6f14c6e6a955d1baf72cc75dc2c93de7ea23e79.
+
+Prepared VERSION, pyproject, uv.lock, marketplace and all eight plugin manifests at
+0.13.8; updated both existing package-version assertions; moved the Unreleased note
+to the dated v0.13.8 heading; added the matching patch migration note; refreshed the
+lifecycle-hooks digest acknowledgement to
+159ad412a90c412f2a70f056a1afef1c5cf7188f775bd2d2d080bb18cef6f21c.
+Archived the superseded cursor verbatim. The changed-file set matches the predecessor's
+19 files. Contract distribution and database code are unchanged; this metadata-only
+patch requires no DB migration, memory re-ingestion or automatic consumer update.
+
+Verification commands use the owner-specified UV_CACHE_DIR environment value, omitted
+here to keep public records portable. UV_OFFLINE=1 prevents downloads. Fail-first:
+the two release-version assertions failed in 0.06s before the version bump.
+`uv run pytest -q -p no:cacheprovider tests/test_plugin_skill_packages.py`:
+15 passed in 0.14s. Initial `uv run pytest -q -p no:cacheprovider`:
+2 failed, 2138 passed in 232.99s. Failure names:
+`test_repository_lock_is_portable_and_matches_managed_trees` and
+`test_should_run_copied_tool_when_repository_python_is_not_on_path`.
+The latter's isolated empty cache could not resolve httpx while offline. Provisioned
+a temporary wheel directory from existing local cached dependency files, without
+downloads or repository test changes. With UV_NO_INDEX=1 and UV_FIND_LINKS selecting
+that directory, `uv run pytest -q -p no:cacheprovider tests/test_installed_cli.py`:
+1 passed in 2.80s. The full-suite retry used those same offline settings and external
+TMPDIR: **1 failed, 2139 passed in 241.75s (0:04:01)**. Only remaining failure:
+`test_repository_lock_is_portable_and_matches_managed_trees`, because managed plugin
+tree digests differ from the unchanged Main-owned capability lock.
+
+`uv run ruff check`: All checks passed. `git diff --check`: passed.
+Ontology `mapping --repo .`: 0 errors, 0 warnings; contract/mapping 1.1.0.
+Ontology `impact --repo . --git-diff HEAD --strict`: no stale refs.
+Final public-surface verification and adopter-payload hash parity are checked after
+these records; `uv run python -m tools.template_assets --write-adopter-payload` is
+the final artifact mutation. Preparation matrix: 5/5 checked with the authorized
+lock-binding exception; full-suite green is not claimed.
+
+Authority boundary: no commit, tag, push, capability command, capability-lock,
+consumer or repository .codex/** write; no network use. Main owns lock binding,
+tag, push, provider update and attestation. Unknowns: final release commit/tag,
+provider revision, runtime delivery and attestation remain Main-owned and unverified.
+The semantic contract distribution is unchanged; no newer compatibility is claimed.
+
+## Superseded cursor before 0.13.8 release preparation (2026-10-19)
+
+# Plan
+
+## Active task: inline SessionStart handoff fields (2026-10-19)
+
+Intent authority: owner Discord 1561401861251268689 item 3, relayed by Mir Harness
+Main in a parent-supplied feature-only brief. This single cursor owns the design.
+Main owns commit, release preparation, lock binding, tag, push and attestation.
+
+Scope: mirror df9f720's eight files. Feature only; no version bump, release heading,
+lock write, capability command, commit, tag, push, consumer or generated Codex write.
+
+Design: inline all six fields from plugins/mir-core/skills/ontology/SKILL.md#Handoff,
+including four status axes, current pins and a missing-field/pin self-check.
+Preserve owner-authority wording; compress only the replacement clause to keep
+stdout <800 bytes and handler <=1024 bytes. Match the reviewed-byte mirror and
+refresh the digest acknowledgement. Archive the old cursor verbatim in the log.
+Semantic evidence: .mir/ontology-map.json#/contract declares
+mir.common-semantics@1.1.0; verified map SHA256 is
+516c5b160c0fa49de51e4a0dc6f14c6e6a955d1baf72cc75dc2c93de7ea23e79.
+
+Request matrix: (1) exact-output fail-first; (2) six fields, unchanged authority,
+byte bounds, exact mirror and digest; (3) Unreleased note, archived cursor,
+evidence and final adopter payload; (4) full pytest, Ruff and diff checks.
+Status: 4/4 feature cells complete. Fail-first: 1 failed in 0.12s; package module:
+15 passed in 0.15s. Full pytest: 1 failed, 2139 passed in 240.50s (0:04:00).
+Only failure: test_repository_lock_is_portable_and_matches_managed_trees,
+the explicitly accepted Main-owned lock binding. Ruff passed; diff check passed;
+ontology mapping passed with 0 errors/0 warnings and strict impact has no stale refs.
+Stdout is 799 bytes including newline; handler is 1014 bytes. Final payload is
+regenerated after these records. Main retains release preparation and delivery.
+
+Evidence: tasks/change_log.md#inline-sessionstart-handoff-fields-2026-10-19.
+Previous cursor: tasks/change_log.md#superseded-cursor-before-inline-handoff-fields-2026-10-19.
+
+
 ## Inline SessionStart handoff fields (2026-10-19)
 
 Intent authority: owner Discord 1561401861251268689 item 3, parent-supplied by
