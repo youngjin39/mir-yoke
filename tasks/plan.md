@@ -31,5 +31,9 @@ Items 18/19/21 remain Main-owned (19/22 bounded repository closure). Requests 5/
 remain open: regenerate config/adopter-payload.json after final records, run the
 full gate without concurrent provider writes, and re-observe native sessions/trust.
 Do not regenerate repository Codex files; their parity already passes.
+Main acceptance (2026-10-19): adopter payload regenerated; host pytest 2140 passed, ruff clean;
+`mir codex-trust` found=0; no runtime-affecting change since the 0.13.7 attestation (test file and
+records only), so items 18/19/21 close on that evidence. Prunable yoke-head registration pruned.
+The stash stays for an owner decision. 6/6 closed; committed dfa6b80 and this follow-up.
 Evidence: tasks/change_log.md#delta-re-verification-2026-10-18.
 Previous continuity: tasks/change_log.md#superseded-continuity-before-delta-re-verification-2026-10-18.
