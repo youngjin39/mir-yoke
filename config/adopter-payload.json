@@ -485,7 +485,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "CHANGELOG.md",
-      "sha256": "0ce6b9b5083e7f21ee215b8b5fb4aefcf3c1ef5c6ca582fc4857f827d702a91b"
+      "sha256": "7374f1c3cae320168fa26ecf8b9595518f76f241104c09597d877f34790ee6e7"
     },
     {
       "classification": "reference",
@@ -2885,7 +2885,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "plugins/mir-core/skills/ontology/references/mapping-guide.md",
-      "sha256": "9a6347faef3a019209cb92dc1d243fb7dc4fdb9bc805c435a48d9b4e0d1a8729"
+      "sha256": "bda40586d89fdce2b652eaa932c1737f1f78da09e6f49025e3abd39983159cdd"
     },
     {
       "classification": "optional-consumer-tool",
@@ -2903,7 +2903,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "plugins/mir-core/skills/ontology/scripts/ontology_check.py",
-      "sha256": "d4383a8b30f92463f73f6dcbe0840737296701a4a66d3a6bd4f4adb0c42ee528"
+      "sha256": "5f96c6e8ce6d21b1e9ea097e581d139f62d9fc1c486ce6df68e3e75f6752903d"
     },
     {
       "classification": "optional-consumer-tool",
@@ -4139,7 +4139,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/change_log.md",
-      "sha256": "9f2347f5167086959a42cd356aa6f3efd13604cc81814b2a8943c701b122fa2b"
+      "sha256": "be690a7f87bd00f1eeae4c00734918e8ac9553dc7208c7d8172ed60e01e94816"
     },
     {
       "classification": "reference",
@@ -4181,7 +4181,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/plan.md",
-      "sha256": "57aeb2707e229bedf7f827745dc150059a238732b9fb0794f3f733ac8eb11c83"
+      "sha256": "0adc714e119d49962513af97747a35f27a1d254f1e7d63543695d5512075d4e6"
     },
     {
       "classification": "reference",
@@ -4541,7 +4541,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_ontology_skill.py",
-      "sha256": "c7ceb6898082715c00e1732653b2a548c56df2fd83f4fc15a4cbf422d7d88813"
+      "sha256": "4bf3eb8f6affb984242f9422a8e15d7dc9ba1575432a23a8399af3c3b5aa0224"
     },
     {
       "classification": "template-maintainer-tool",

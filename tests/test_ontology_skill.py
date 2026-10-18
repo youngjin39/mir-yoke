@@ -320,11 +320,19 @@ def test_older_validated_version_is_a_warning(mapping_repo: tuple[Path, dict]) -
 
 def test_oversized_mapping_warns_but_passes(mapping_repo: tuple[Path, dict]) -> None:
     repo, mapping = mapping_repo
-    mapping["concepts"]["Project"]["notes"] = "x" * 13000
+    mapping["concepts"]["Project"]["notes"] = "x" * 33000
     result = run_mapping(repo, mapping)
     assert result.returncode == 0, result.stdout + result.stderr
     assert "WARN /: mapping is" in result.stdout
-    assert "over the 12288-byte budget" in result.stdout
+    assert "over the 32768-byte budget" in result.stdout
+
+
+def test_growing_mapping_under_budget_does_not_warn(mapping_repo: tuple[Path, dict]) -> None:
+    repo, mapping = mapping_repo
+    mapping["concepts"]["Project"]["notes"] = "x" * 16000
+    result = run_mapping(repo, mapping)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "WARN /: mapping is" not in result.stdout
 
 
 def test_missing_profile_is_mapping_error(mapping_repo: tuple[Path, dict]) -> None:

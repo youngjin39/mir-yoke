@@ -45,7 +45,7 @@ Legacy 1.0.0 endpoint declarations remain optional. Reviewers still check actual
 
 ## Size and selection
 
-Keep the map an index, at most 12,288 bytes (the checker warns above this). Keep the canonical index,
+Keep the map an index, at most 32,768 bytes (the checker warns above this). Keep the canonical index,
 the twelve concept refs, questions with evidence paths, domain identities and invariants, error
 cases and knowledge supply. Map vocabulary values only where a reader could misread them (for
 example `ready`, `done`, `completed`, `passed`, `active`, `verified`, `accepted`); leave obvious

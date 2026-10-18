@@ -19,7 +19,7 @@ SEMVER = re.compile(
     r"(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?"
 )
 VERSION_RANGE = re.compile(rf">=({CORE}) <({CORE})")
-MAPPING_BUDGET = 12288
+MAPPING_BUDGET = 32768
 
 
 def version_key(value):
