@@ -8,6 +8,10 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.9] — 2026-10-19 — Mapping budget 32 KiB
+
+### Changed
+
 - Raised the ontology mapping size warning from 12,288 to 32,768 bytes so growing agent
   repositories keep meaning instead of compressing maps to the limit; what to keep is unchanged.
 

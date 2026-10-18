@@ -36,7 +36,7 @@
     "forbidden_provider_components": ["agents", "commands", "apps", "scripts", "permissions", "runtime-policy"]
   },
   "active_package_digest_acknowledgements": {
-    "mir-lifecycle-hooks": "159ad412a90c412f2a70f056a1afef1c5cf7188f775bd2d2d080bb18cef6f21c"
+    "mir-lifecycle-hooks": "e133abff0789c5c3ce28f640934ffa0e3071c98b838540004f27f8ee06b928b1"
   },
   "profiles": {
     "aliases": {

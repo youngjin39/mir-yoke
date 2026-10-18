@@ -1,5 +1,89 @@
 # Change log
 
+## 0.13.9 release preparation (2026-10-19)
+
+Intent and bounded design authority: tasks/plan.md; owner Discord 1561414827409281077
+(release the 32 KiB mapping budget), parent-supplied by Mir Harness Main. Qualified
+target: mir-yoke:release-0.13.9. Lifecycle: prepared; temporal: current working tree;
+epistemic: verified-in-repo; verification: checked with the explicitly accepted
+Main-owned lock-binding failure.
+Observation date: 2026-10-19. Verified repository pin:
+HEAD 10aaea939fde220cc10d0ac890e45c6505781093; root is this checkout.
+Method and scope follow preparation commit c1b6ba6 and its evidence below.
+Semantic evidence: .mir/ontology-map.json#/contract declares mir.common-semantics@1.1.0;
+/concepts/Task identifies the active cursor. Verified map SHA256:
+516c5b160c0fa49de51e4a0dc6f14c6e6a955d1baf72cc75dc2c93de7ea23e79.
+Contract distribution: plugins/mir-core/skills/ontology/references/common-contract.json,
+SHA256 b2f1ecd01aaa88d41caac2bc2481e7f4c5a429cff3983aaa85ddfb0fc2f1b93f.
+
+Prepared VERSION, pyproject, uv.lock, marketplace and all eight plugin manifests at
+0.13.9; updated both existing package-version assertions; moved the Unreleased note
+to the dated v0.13.9 heading; added the matching patch migration note; refreshed the
+lifecycle-hooks digest acknowledgement to
+e133abff0789c5c3ce28f640934ffa0e3071c98b838540004f27f8ee06b928b1.
+Archived the superseded cursor verbatim and verified it against HEAD:tasks/plan.md.
+The changed-file set matches the predecessor's 19 files. Contract
+distribution and database code are unchanged; this metadata-only patch requires
+no DB migration, memory re-ingestion or automatic consumer update.
+
+Verification commands use the owner-specified UV_CACHE_DIR value, omitted here to
+keep public records portable. UV_OFFLINE=1 prevents downloads; TMPDIR selects
+external task scratch. Fail-first package module: 2 failed, 13 passed in 0.18s;
+failure names: test_dual_runtime_manifests_share_one_skill_tree and
+test_manifest_versions_match_repository_release. After the bump,
+`uv run pytest -q -p no:cacheprovider tests/test_plugin_skill_packages.py`:
+15 passed in 0.15s. Initial `uv run pytest -q -p no:cacheprovider`:
+5 failed, 2136 passed in 233.51s (0:03:53). Every initial failure:
+- test_should_remove_reference_snapshot_when_adopter_payload_is_built
+- test_repository_lock_is_portable_and_matches_managed_trees
+- test_should_leave_minimal_starter_and_project_owned_changes_when_candidate_is_slimmed
+- test_should_run_copied_tool_when_repository_python_is_not_on_path
+- test_should_match_exact_adopter_payload_when_release_inventory_is_generated
+
+Three failures precede the required adopter inventory refresh. The installed-CLI
+test isolates its dependency cache and cannot resolve httpx offline. Repacked 68
+existing cached dependency wheels into temporary external scratch without downloads
+or test changes. With UV_NO_INDEX=1 and UV_FIND_LINKS selecting that wheel directory,
+`uv run pytest -q -p no:cacheprovider tests/test_installed_cli.py`:
+1 passed in 2.90s. The full-suite retry used these same offline settings after
+adopter payload regeneration: **1 failed, 2140 passed in 229.00s (0:03:48)**.
+Only remaining failure: test_repository_lock_is_portable_and_matches_managed_trees.
+Its managed plugin tree digests differ from the unchanged Main-owned capability
+lock. All four other initial failures were resolved; full-suite green is not claimed.
+
+`uv run ruff check`: All checks passed. `git diff --check`: passed.
+`uv run pytest -q -p no:cacheprovider tests/test_public_template_surface.py`:
+3 passed in 0.06s. Ontology `mapping --repo .`: 0 errors, 0 warnings;
+contract/mapping 1.1.0. Ontology `impact --repo . --git-diff HEAD --strict`:
+no stale refs. Preparation matrix: 5/5 checked with the authorized lock-binding
+exception. These final records precede the final artifact mutation:
+`uv run python -m tools.template_assets --write-adopter-payload`. Final public-surface,
+payload hash parity, Ruff and diff checks run afterward without changing artifacts.
+
+Authority boundary: no commit, tag, push, capability command, capability-lock,
+consumer or repository .codex/** write; no network use. Main owns lock binding,
+tag, push, provider update and attestation. Unknowns: final release commit/tag,
+provider revision, consumer map checks, runtime delivery and attestation remain
+Main-owned and unverified. Self-check: all requested handoff fields and source,
+HEAD, map and contract pins are present; final delivery pins remain unknown.
+
+## Superseded cursor before 0.13.9 release preparation (2026-10-19)
+
+# Plan
+
+## Active task: ontology mapping budget 32 KiB (2026-10-19)
+
+Intent authority: owner Discord 1561414331802058836 (raise the map budget with headroom),
+parent-supplied by Mir Harness Main. Design: change `MAPPING_BUDGET` and the mapping guide
+sentence to 32,768 bytes, keep the warning-only behavior and the keep-list, test first,
+then release 0.13.9 through the ADR-80 chain (prepare, bind, tag, update, attest, finalize).
+
+Request matrix: (1) fail-first budget tests; (2) checker/guide/changelog parity;
+(3) release chain; (4) consumer maps re-checked under the new budget.
+Status: (1)-(2) done (2 failed -> 294 passed); (3)-(4) pending.
+Evidence: tasks/change_log.md#0139-mapping-budget-change-2026-10-19.
+Previous cursor: tasks/change_log.md#superseded-cursor-before-the-0139-mapping-budget-change-2026-10-19.
+
 ## 0.13.8 release preparation (2026-10-19)
 
 Intent and bounded design authority: tasks/plan.md; owner Discord 1561401861251268689

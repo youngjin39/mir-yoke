@@ -82,7 +82,7 @@ Discard an uncommitted Project Agent Kit adaptation in the target or restore the
 commit. For an explicitly invoked CLI transaction, use that command's recorded rollback/recovery
 contract. Installing the CLI does not itself mutate a target.
 
-Current version: `0.13.8`. See `CHANGELOG.md` for release details.
+Current version: `0.13.9`. See `CHANGELOG.md` for release details.
 
 Version 0.10.0 adds opt-in `memory_relations` ingestion and read-only `mir relations query|bundle --memory`
 query/bundle selection using the existing memory schema. No automatic corpus backfill, database
@@ -205,3 +205,8 @@ No database migration, memory re-ingestion or automatic consumer update is requi
 Version 0.13.7 is a patch release and keeps `mir.common-semantics` contract 1.1.0. The always-delivered SessionStart reminder preserves owner-granted handoff authority and requires the ontology handoff fields, naming missing fields as unknowns. No database migration, memory re-ingestion or automatic consumer update is required.
 
 Version 0.13.8 is a patch release and keeps `mir.common-semantics@1.1.0` unchanged. The SessionStart reminder names all six ontology handoff fields inline, including status axes, current pins and a final self-check naming missing fields or pins as unknowns. No database migration, memory re-ingestion or automatic consumer update is required.
+
+Version 0.13.9 is a patch release and keeps `mir.common-semantics@1.1.0` unchanged.
+The ontology mapping size warning budget increases from 12,288 to 32,768 bytes;
+warning-only behavior and mapping preservation guidance remain unchanged.
+No database migration, memory re-ingestion or automatic consumer update is required.

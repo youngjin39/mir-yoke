@@ -1,6 +1,6 @@
 {
   "name": "mir-core",
-  "version": "0.13.8",
+  "version": "0.13.9",
   "description": "Portable Mir architecture, ontology, governance, memory, and verification skills.",
   "author": {
     "name": "Harness Contributors",
