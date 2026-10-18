@@ -71,7 +71,7 @@ _HOOKS_SCHEMA = {
         ]
     }
 }
-_HOOK_HANDLER_SOURCE = '''"""Render bounded, target-independent lifecycle continuity context."""
+_HOOK_HANDLER_SOURCE = '''"""Render lifecycle continuity context."""
 
 MESSAGE = (
     "Mir lifecycle continuity: preserve the active task intent and verify state before continuing."
@@ -81,7 +81,10 @@ MESSAGE = (
     "skill, references/default-work-method.md)."
     " Handoffs/briefs for another agent copy only owner-granted authority "
     "(never add edits, tests, commands or writes) and carry the mir-core:ontology "
-    "handoff fields, naming missing fields as unknowns."
+    "handoff fields: qualified target; lifecycle/temporal/epistemic/verification status; "
+    "pins (root, HEAD, source path@rev/hash, map/contract id+version+digest); "
+    "evidence provenance+time; unknowns; may/may-not authority; "
+    "self-check: missing fields/pins=unknowns."
 )
 
 

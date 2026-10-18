@@ -1,5 +1,63 @@
 # Change log
 
+## Inline SessionStart handoff fields (2026-10-19)
+
+Intent authority: owner Discord 1561401861251268689 item 3, parent-supplied by
+Mir Harness Main. Feature-only scope mirrors df9f720; Main owns commit, release
+preparation, lock binding, tag, push and attestation. No consumer authority is added.
+
+Direct semantic evidence: plugins/mir-core/skills/ontology/SKILL.md#Handoff names
+qualified target, four-axis status, current pins, provenance/time evidence,
+unknowns and may/may-not authority, ending with a missing-field/pin self-check.
+The map contract is .mir/ontology-map.json#/contract, mir.common-semantics@1.1.0;
+map SHA256 516c5b160c0fa49de51e4a0dc6f14c6e6a955d1baf72cc75dc2c93de7ea23e79
+was verified directly. Initial HEAD: db209e5a7494788c7d0e25c612cacc440c5dfee9.
+Observation date: 2026-10-19. The parent probe report is motivation, not authority
+or independently re-observed probe evidence.
+
+Updated both exact-output assertions first. Fail-first command:
+`uv run pytest -q -p no:cacheprovider tests/test_plugin_skill_packages.py::test_lifecycle_hook_plugin_uses_one_exact_shared_hook_file`
+reported `1 failed in 0.12s` on the old output. After changing the handler and its
+exact reviewed-byte mirror, the module command
+`uv run pytest -q -p no:cacheprovider tests/test_plugin_skill_packages.py`
+reported `15 passed in 0.15s`. All uv commands use the owner-specified external cache.
+
+The replacement clause is compressed for the unchanged byte bounds: stdout is
+799 bytes including its newline; handler is 1014 bytes. The handler/mirror docstring
+is shortened to fit, without behavior changes. The owner-authority half is unchanged.
+Refreshed lifecycle-hooks package digest acknowledgement:
+83f0cfb6b233386b54bb90fc4068f391f78c95b2610f648d0b77db1f9c23aea0.
+Added the Unreleased note and archived the previous cursor verbatim below.
+Verification (with provider writes paused):
+- `uv run pytest -q -p no:cacheprovider`:
+  `1 failed, 2139 passed in 240.50s (0:04:00)`.
+  Only failure: `tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees`.
+  The unchanged lock binds digest 2781da6a41b0cac9539fbd55ac2ee7af6eaa98bbe44eff0d72130a508cdaa565;
+  the changed package is 83f0cfb6b233386b54bb90fc4068f391f78c95b2610f648d0b77db1f9c23aea0.
+  This is the brief's accepted pre-binding failure; Main owns rebinding.
+- `uv run ruff check`: `All checks passed!`.
+- `git diff --check`: exit 0, no output.
+- `python3 scripts/mir_ontology.py impact --repo . --git-diff HEAD --strict`:
+  exit 0, no stale refs or selected checks.
+- `python3 scripts/mir_ontology.py mapping --repo .`:
+  `0 errors, 0 warnings; contract 1.1.0, mapping 1.1.0`.
+- Direct comparison verified the archived cursor is byte-identical to HEAD's
+  previous cursor and MESSAGE before the replacement clause is unchanged.
+
+Final operation after these record edits:
+`uv run python -m tools.template_assets --write-adopter-payload`.
+The eight changed files match df9f720's scope. Feature request matrix: 4/4 complete
+under the explicitly accepted lock exception. No commit, version bump, lock write,
+release heading, capability command, tag, push, consumer or generated Codex write.
+Release preparation, lock binding and delivery remain Main-owned.
+
+After the final record edits and payload regeneration, the payload/record boundary
+check `uv run pytest -q -p no:cacheprovider tests/test_template_asset_classification.py tests/test_adopter_slim.py`
+reported `28 passed in 4.02s`; Ruff and diff checks passed again. An incidental
+runtime-snapshot dirty-path count changed during verification; restored that single
+line to its initial content to keep the requested eight-file scope, then regenerated
+the payload again. No task-specific scratch or daemon was created.
+
 ## 0.13.7 release preparation (2026-10-18)
 
 Intent authority: Mir Harness Main writer brief, continuation of owner Discord
@@ -7969,3 +8027,45 @@ Authority: this writer may inspect/fix bounded repository sources and run gates;
 may not commit/deliver, change consumers, generated instructions/agents, credentials,
 live stores or services. Self-check: supplied root/HEAD/map/contract pins and all
 six packet fields are recorded; absolute host paths are intentionally not published.
+
+## Superseded cursor before inline handoff fields (2026-10-19)
+
+# Plan
+
+## Active task: delta re-verification 2026-10-18
+
+Intent authority: owner Discord 1561379127401910383 (2026-10-18), relayed by
+Mir Harness Main; parent-supplied bounded writer brief. This single cursor is
+the authority for this task design. Main owns review, gate reruns and delivery.
+
+Scope: Mir Yoke only, acceptance 2b89087 through b6dcd62 plus F1 fake app-server
+success-test timing. No commit/push/tag/release, generated instruction/Codex/agent
+writes, consumers, service changes, secret reads or live memory/database writes.
+Use owner-specified external UV cache and task scratch; remove scratch at finish.
+
+Design: assess the 22 maintenance items only against changed surfaces. Preserve
+superseded continuity verbatim in the existing log. Add deterministic fake-server
+delay to reproduce the old one-second success budget, then give successful calls
+a shared load-tolerant budget; retain short timeout/stall kill/reject tests.
+Inspect executor manifests and declared consumer evidence, stash metadata and
+stale worktree registration read-only. Do not discover or modify consumers.
+
+Request matrix: (1) 22-row delta evidence, (2) deterministic fail-first and F1 fix,
+(3) common-base/consumer/version/hash finding, (4) stash/worktree observation,
+(5) full pytest/Ruff/Codex parity and ontology mapping/impact, (6) continuity,
+integrity refresh and final changed-file/remaining-work report.
+Status: 6/6 assessed, 4/6 closed. F1 fail-first 1 failed/1 passed, then 2/2 passed;
+module 52/52, delta contracts 330/330, record checks 18/18. Full gate 2135 passed,
+5 failed: three stale generated-inventory effects; two provider-snapshot failures
+caused by concurrent record edits passed 2/2 with writes paused. Ruff, Codex parity,
+77 references, common manifest, mapping (0 errors/0 warnings) and strict impact pass.
+Items 18/19/21 remain Main-owned (19/22 bounded repository closure). Requests 5/6
+remain open: regenerate config/adopter-payload.json after final records, run the
+full gate without concurrent provider writes, and re-observe native sessions/trust.
+Do not regenerate repository Codex files; their parity already passes.
+Main acceptance (2026-10-19): adopter payload regenerated; host pytest 2140 passed, ruff clean;
+`mir codex-trust` found=0; no runtime-affecting change since the 0.13.7 attestation (test file and
+records only), so items 18/19/21 close on that evidence. Prunable yoke-head registration pruned.
+The stash stays for an owner decision. 6/6 closed; committed dfa6b80 and this follow-up.
+Evidence: tasks/change_log.md#delta-re-verification-2026-10-18.
+Previous continuity: tasks/change_log.md#superseded-continuity-before-delta-re-verification-2026-10-18.

@@ -1,39 +1,33 @@
 # Plan
 
-## Active task: delta re-verification 2026-10-18
+## Active task: inline SessionStart handoff fields (2026-10-19)
 
-Intent authority: owner Discord 1561379127401910383 (2026-10-18), relayed by
-Mir Harness Main; parent-supplied bounded writer brief. This single cursor is
-the authority for this task design. Main owns review, gate reruns and delivery.
+Intent authority: owner Discord 1561401861251268689 item 3, relayed by Mir Harness
+Main in a parent-supplied feature-only brief. This single cursor owns the design.
+Main owns commit, release preparation, lock binding, tag, push and attestation.
 
-Scope: Mir Yoke only, acceptance 2b89087 through b6dcd62 plus F1 fake app-server
-success-test timing. No commit/push/tag/release, generated instruction/Codex/agent
-writes, consumers, service changes, secret reads or live memory/database writes.
-Use owner-specified external UV cache and task scratch; remove scratch at finish.
+Scope: mirror df9f720's eight files. Feature only; no version bump, release heading,
+lock write, capability command, commit, tag, push, consumer or generated Codex write.
 
-Design: assess the 22 maintenance items only against changed surfaces. Preserve
-superseded continuity verbatim in the existing log. Add deterministic fake-server
-delay to reproduce the old one-second success budget, then give successful calls
-a shared load-tolerant budget; retain short timeout/stall kill/reject tests.
-Inspect executor manifests and declared consumer evidence, stash metadata and
-stale worktree registration read-only. Do not discover or modify consumers.
+Design: inline all six fields from plugins/mir-core/skills/ontology/SKILL.md#Handoff,
+including four status axes, current pins and a missing-field/pin self-check.
+Preserve owner-authority wording; compress only the replacement clause to keep
+stdout <800 bytes and handler <=1024 bytes. Match the reviewed-byte mirror and
+refresh the digest acknowledgement. Archive the old cursor verbatim in the log.
+Semantic evidence: .mir/ontology-map.json#/contract declares
+mir.common-semantics@1.1.0; verified map SHA256 is
+516c5b160c0fa49de51e4a0dc6f14c6e6a955d1baf72cc75dc2c93de7ea23e79.
 
-Request matrix: (1) 22-row delta evidence, (2) deterministic fail-first and F1 fix,
-(3) common-base/consumer/version/hash finding, (4) stash/worktree observation,
-(5) full pytest/Ruff/Codex parity and ontology mapping/impact, (6) continuity,
-integrity refresh and final changed-file/remaining-work report.
-Status: 6/6 assessed, 4/6 closed. F1 fail-first 1 failed/1 passed, then 2/2 passed;
-module 52/52, delta contracts 330/330, record checks 18/18. Full gate 2135 passed,
-5 failed: three stale generated-inventory effects; two provider-snapshot failures
-caused by concurrent record edits passed 2/2 with writes paused. Ruff, Codex parity,
-77 references, common manifest, mapping (0 errors/0 warnings) and strict impact pass.
-Items 18/19/21 remain Main-owned (19/22 bounded repository closure). Requests 5/6
-remain open: regenerate config/adopter-payload.json after final records, run the
-full gate without concurrent provider writes, and re-observe native sessions/trust.
-Do not regenerate repository Codex files; their parity already passes.
-Main acceptance (2026-10-19): adopter payload regenerated; host pytest 2140 passed, ruff clean;
-`mir codex-trust` found=0; no runtime-affecting change since the 0.13.7 attestation (test file and
-records only), so items 18/19/21 close on that evidence. Prunable yoke-head registration pruned.
-The stash stays for an owner decision. 6/6 closed; committed dfa6b80 and this follow-up.
-Evidence: tasks/change_log.md#delta-re-verification-2026-10-18.
-Previous continuity: tasks/change_log.md#superseded-continuity-before-delta-re-verification-2026-10-18.
+Request matrix: (1) exact-output fail-first; (2) six fields, unchanged authority,
+byte bounds, exact mirror and digest; (3) Unreleased note, archived cursor,
+evidence and final adopter payload; (4) full pytest, Ruff and diff checks.
+Status: 4/4 feature cells complete. Fail-first: 1 failed in 0.12s; package module:
+15 passed in 0.15s. Full pytest: 1 failed, 2139 passed in 240.50s (0:04:00).
+Only failure: test_repository_lock_is_portable_and_matches_managed_trees,
+the explicitly accepted Main-owned lock binding. Ruff passed; diff check passed;
+ontology mapping passed with 0 errors/0 warnings and strict impact has no stale refs.
+Stdout is 799 bytes including newline; handler is 1014 bytes. Final payload is
+regenerated after these records. Main retains release preparation and delivery.
+
+Evidence: tasks/change_log.md#inline-sessionstart-handoff-fields-2026-10-19.
+Previous cursor: tasks/change_log.md#superseded-cursor-before-inline-handoff-fields-2026-10-19.

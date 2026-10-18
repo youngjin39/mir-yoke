@@ -104,7 +104,10 @@ def test_lifecycle_hook_plugin_uses_one_exact_shared_hook_file() -> None:
     assert (
         "Handoffs/briefs for another agent copy only owner-granted authority "
         "(never add edits, tests, commands or writes) and carry the mir-core:ontology "
-        "handoff fields, naming missing fields as unknowns."
+        "handoff fields: qualified target; lifecycle/temporal/epistemic/verification status; "
+        "pins (root, HEAD, source path@rev/hash, map/contract id+version+digest); "
+        "evidence provenance+time; unknowns; may/may-not authority; "
+        "self-check: missing fields/pins=unknowns."
     ) in completed.stdout
     assert completed.stdout == (
         "Mir lifecycle continuity: preserve the active task intent and verify state "
@@ -115,7 +118,10 @@ def test_lifecycle_hook_plugin_uses_one_exact_shared_hook_file() -> None:
         "references/default-work-method.md). "
         "Handoffs/briefs for another agent copy only owner-granted authority "
         "(never add edits, tests, commands or writes) and carry the mir-core:ontology "
-        "handoff fields, naming missing fields as unknowns.\n"
+        "handoff fields: qualified target; lifecycle/temporal/epistemic/verification status; "
+        "pins (root, HEAD, source path@rev/hash, map/contract id+version+digest); "
+        "evidence provenance+time; unknowns; may/may-not authority; "
+        "self-check: missing fields/pins=unknowns.\n"
     )
     assert len(completed.stdout.encode("utf-8")) < 800
 
