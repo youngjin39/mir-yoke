@@ -8,6 +8,14 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.7] — 2026-10-18 — Handoff authority
+
+### Changed
+
+- Extended the always-delivered SessionStart reminder to preserve owner-granted handoff
+  authority and require the ontology handoff fields with missing fields named as unknowns.
+
+
 
 ### Added
 
@@ -36,8 +44,6 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ### Changed
 
-- Extended the always-delivered SessionStart reminder to preserve owner-granted handoff
-  authority and require the ontology handoff fields with missing fields named as unknowns.
 - Updated executor common v3.8 to ignore agent-route model/effort when the route's
   declared backend differs from the resolved dispatch backend. Explicit user model/effort
   overrides retain precedence. Forced modes reject automatically routed models recognized

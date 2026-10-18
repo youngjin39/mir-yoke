@@ -1,23 +1,29 @@
 # Plan
 
-## Active task: always-delivered handoff authority (2026-10-18)
+## Active task: 0.13.7 release preparation (2026-10-18)
 
-Intent authority: current Mir Harness Main writer brief, owner Discord
-1561203611252297729, parent-supplied. This single active cursor owns the bounded design:
-append one short sentence to SessionStart MESSAGE preserving owner-granted authority
-and requiring mir-core:ontology handoff fields with missing fields named as unknowns.
-The ontology Handoff section already agrees and remains unchanged.
+Intent authority: Mir Harness Main writer brief, continuation of owner Discord
+1561203611252297729, parent-supplied. Prepare content for release change `df9f720`
+by mirroring the file set and method of preparation commit `5f5574b`. Main owns
+commit, lock binding, tag, push and attestation.
 
-Design: extend the existing output test first, update the hook and reviewed-byte validator
-pin and package digest acknowledgement, and regenerate adopter payload through
-tools.template_assets after final records.
-The validator literal has no documented generator. Keep injected text bounded.
-No commit, tag, push, mir capability command, lock, version, release-heading, consumer,
-live-memory or repository .codex/** write. Main owns delivery and attestation.
+Design: update all version surfaces and pinned tests, move the `df9f720` Unreleased
+note into a dated `v0.13.7` section, add the migration note, update lifecycle-hooks
+acknowledgement only if its package bytes changed, then regenerate adopter payload last.
+Preserve the previous cursor verbatim in `tasks/change_log.md`.
 
-Request matrix: (1) fail-first assertion, (2) hook/source-pin parity, (3) Unreleased note
-and generated payload parity, (4) full pytest, Ruff and diff evidence.
-Status: 4/4 evaluated, 3/4 closed; full-suite green remains Main-owned pending lock refresh.
-Evidence: tasks/change_log.md#always-delivered-handoff-authority-2026-10-18.
+Boundaries: content only. No commit, tag, push, `mir capability` commands,
+`.mir/capability-lock.json`, repository `.codex/**`, or private absolute paths in tracked
+files. Do not set `MIR_CAPABILITY_HOME`; use the supplied UV cache setting. Keep scratch
+only in the approved task scratch directory and remove it at task end.
 
-Previous cursor: tasks/change_log.md#superseded-cursor-before-always-delivered-handoff-authority-2026-10-18.
+Request matrix: (1) exact release version surfaces and 0.13.6 preparation parity,
+(2) changelog and migration notes, (3) generated adopter payload parity,
+(4) full `uv run pytest -q -p no:cacheprovider` with only the managed-lock test allowed
+to fail, (5) Ruff and `git diff --check`, (6) changed-file and remaining-work report.
+Status: 6/6 evaluated and closed. Version surfaces, release notes, package acknowledgement
+and generated payload match. Full suite: 2138 passed, 1 expected managed-lock failure.
+Ruff and `git diff --check` passed. The managed-lock binding remains Main-owned.
+Evidence: tasks/change_log.md#0137-release-preparation-2026-10-18.
+
+Previous cursor: tasks/change_log.md#superseded-cursor-before-0137-release-preparation-2026-10-18.

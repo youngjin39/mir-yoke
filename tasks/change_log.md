@@ -1,5 +1,54 @@
 # Change log
 
+## 0.13.7 release preparation (2026-10-18)
+
+Intent authority: Mir Harness Main writer brief, continuation of owner Discord
+1561203611252297729, parent-supplied. Release change `df9f720`; method and file scope
+mirror preparation commit `5f5574b`. Semantic contract remains `mir.common-semantics@1.1.0`,
+as declared at `.mir/ontology-map.json#/contract`. Main owns commit, lock binding, tag, push
+and attestation.
+
+Prepared 0.13.7 across VERSION, pyproject, uv.lock, marketplace and all eight plugin manifests;
+updated the package-version test; moved the SessionStart handoff authority note from Unreleased
+to the dated v0.13.7 heading; added the matching migration note; refreshed the lifecycle-hooks
+digest acknowledgement; and regenerated adopter payload after the records. Together with the
+active cursor and this evidence record, the preparation matches the predecessor's 19-file set.
+
+Verification: `uv run pytest -q -p no:cacheprovider` completed with 2138 passed and one failure,
+only `test_repository_lock_is_portable_and_matches_managed_trees`, because Main has not bound the
+new lifecycle-hooks tree in `.mir/capability-lock.json`. `uv run ruff check` passed. `git diff
+--check` passed. The full-suite public-surface test initially found private paths in the new
+cursor; those references were removed and the public-surface check was rerun successfully.
+Adopter payload generation passed after the final cursor and evidence edits.
+
+No commit, tag, push, capability command, lock write or repository `.codex/**` write was made.
+
+## Superseded cursor before 0.13.7 release preparation (2026-10-18)
+
+# Plan
+
+## Active task: always-delivered handoff authority (2026-10-18)
+
+Intent authority: current Mir Harness Main writer brief, owner Discord
+1561203611252297729, parent-supplied. This single active cursor owns the bounded design:
+append one short sentence to SessionStart MESSAGE preserving owner-granted authority
+and requiring mir-core:ontology handoff fields with missing fields named as unknowns.
+The ontology Handoff section already agrees and remains unchanged.
+
+Design: extend the existing output test first, update the hook and reviewed-byte validator
+pin and package digest acknowledgement, and regenerate adopter payload through
+tools.template_assets after final records.
+The validator literal has no documented generator. Keep injected text bounded.
+No commit, tag, push, mir capability command, lock, version, release-heading, consumer,
+live-memory or repository .codex/** write. Main owns delivery and attestation.
+
+Request matrix: (1) fail-first assertion, (2) hook/source-pin parity, (3) Unreleased note
+and generated payload parity, (4) full pytest, Ruff and diff evidence.
+Status: 4/4 evaluated, 3/4 closed; full-suite green remains Main-owned pending lock refresh.
+Evidence: tasks/change_log.md#always-delivered-handoff-authority-2026-10-18.
+
+Previous cursor: tasks/change_log.md#superseded-cursor-before-always-delivered-handoff-authority-2026-10-18.
+
 ## Always-delivered handoff authority (2026-10-18)
 
 Intent and bounded design authority: tasks/plan.md; current Main writer brief and owner

@@ -82,7 +82,7 @@ Discard an uncommitted Project Agent Kit adaptation in the target or restore the
 commit. For an explicitly invoked CLI transaction, use that command's recorded rollback/recovery
 contract. Installing the CLI does not itself mutate a target.
 
-Current version: `0.13.6`. See `CHANGELOG.md` for release details.
+Current version: `0.13.7`. See `CHANGELOG.md` for release details.
 
 Version 0.10.0 adds opt-in `memory_relations` ingestion and read-only `mir relations query|bundle --memory`
 query/bundle selection using the existing memory schema. No automatic corpus backfill, database
@@ -201,3 +201,5 @@ The MK client filters response nodes and citations by requested namespaces, usin
 federation set by default, and appends a content-free namespace-filtering degradation entry.
 Claude activation verification requires an explicit installed-package `user` scope.
 No database migration, memory re-ingestion or automatic consumer update is required.
+
+Version 0.13.7 is a patch release and keeps `mir.common-semantics` contract 1.1.0. The always-delivered SessionStart reminder preserves owner-granted handoff authority and requires the ontology handoff fields, naming missing fields as unknowns. No database migration, memory re-ingestion or automatic consumer update is required.
