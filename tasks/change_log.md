@@ -1,5 +1,131 @@
 # Change log
 
+## New-machine global setup guide (2026-10-19)
+
+Intent authority: current owner brief relayed by Mir Harness Main (parent-supplied).
+Qualified target: mir-yoke:new-machine-global-setup; single active cursor: tasks/plan.md.
+Prior cursor archived verbatim below ("Superseded cursor before new-machine setup guide") and in Git at
+`cecbe4e4f5eaf005808af391752c8884bb4afcef:tasks/plan.md`; the release preparation
+record above that revision remains historical evidence, not this task's authority.
+Scope: public docs, minimal routing and the required generated adopter inventory;
+no home, consumer, plugin, implementation, setup behavior, version/lock, generated
+Codex, commit or delivery writes. Lifecycle: implemented; temporal: current working
+tree; epistemic: verified-in-repo except owner intent (parent-supplied); verification:
+bounded checks passed. Observed 2026-10-19 in the supplied worktree, branch
+`docs/new-machine-setup`, HEAD/base `cecbe4e4f5eaf005808af391752c8884bb4afcef`.
+
+Design follows the owner's nine-cell matrix in tasks/plan.md: one guide, five routing
+surfaces, existing checks, and no implementation changes. The guide covers four OS
+lanes, prerequisite sources, both user-scope plugin mechanisms, optional user-runtime
+agents, merged global instructions/settings, optional MCP parity and placeholder-only
+MK configuration, fresh-session proof, and AI-first setup checks. The five routing
+files are README.md, llms.txt, BOOTSTRAP.md, recipes/project-agent-kit/README.md and
+global-rules/README.md. config/adopter-payload.json is regenerated only by
+`uv run python -m tools.template_assets --write-adopter-payload` (parser/writer:
+tools/template_assets.py:155-179), because the existing inventory hashes changed docs.
+No .codex files were regenerated in this worktree; the parity checker uses temporary
+output. No new tests or TDD ledger are warranted for this reversible docs-only work.
+
+Command verification: all 15 command families below returned successful `--help`
+on the macOS maintainer host. No installation/registration/attestation was applied.
+
+| Documented command | Source or checked documentation location |
+| --- | --- |
+| `uv run mir capability status`, `sync` (proposal and `--apply`) | src/mir/cli/capability.py:19 and :58 |
+| `uv run mir capability attest` (both runtimes, repeated skills and hook) | src/mir/cli/capability.py:38 |
+| `uv run mir capability finalize --apply --after-restart` | src/mir/cli/capability.py:30 |
+| `claude plugin marketplace add --scope user`, `plugin install --scope user` | src/mir/core/capabilities/manager.py:3158 and :3165 |
+| `codex plugin marketplace add --json`, `plugin add --json` | src/mir/core/capabilities/manager.py:3169 and :3176 |
+| Both `plugin list --json` commands | scripts/verify_plugin_cli_activation.py:213 |
+| `python3 scripts/install_user_runtime_agents.py --claude-home ... --codex-home ... [--apply]` | scripts/install_user_runtime_agents.py:525 |
+| Both `mcp add` commands (HTTP and stdio) | Help-checked examples: docs/operations/new-machine-setup.md:141 and :156; Codex schema also checked against official MCP documentation linked there. |
+| `claude mcp list`, `codex mcp list --json` | docs/decisions/adr-90-role-plugins-and-common-hooks.md:40-41; help checked, no live inventory read. |
+
+Additional source checks: global hook setting at scripts/generate_codex_derivatives.sh:280;
+Windows guidance-only exit at setup.ps1:17-21; optional MK schema at
+plugins/mir-core/skills/ontology/references/knowledge-supply.md:11-30. The activation
+verifier was source-reviewed, not executed: it creates isolated install fixtures and
+is not a live-session substitute. Official Codex MCP reference retrieved on the
+observation date: https://learn.chatgpt.com/docs/extend/mcp?surface=cli.
+
+Fail-first guide existence assertion: 1 expected failure. Initial focused pytest:
+1 failed, 35 passed in 3.52s; sole failure was stale generated adopter inventory.
+Initial context verification rejected the new README anchor as a literal path;
+routing now links the file directly without changing the verifier. After inventory
+regeneration the exact focused command passed **36 tests in 3.38s**:
+`uv run pytest -q -p no:cacheprovider tests/test_project_agent_kit.py tests/test_minimal_starter.py tests/test_public_template_surface.py tests/test_template_asset_classification.py tests/test_mir_ontology.py`.
+All uv invocations use the owner-specified external UV_CACHE_DIR; temporary generator
+output uses external task scratch, without publishing host paths here.
+`uv run ruff check`: all checks passed. `uv run python scripts/verify_codex_sync.py`:
+Codex derivatives match Claude sources. `python3 scripts/verify_context_paths.py`:
+7 files / 67 references passed. Direct documentation checks: all 5 routes present,
+14 local guide links/anchors resolve, and 7 edited public documents pass the bounded
+host-path/owner-message-ID scan. `git diff --check`: passed. These records precede
+the final adopter regeneration and repeat read-only verification.
+
+Semantic evidence: .mir/ontology-map.json#/contract = mir.common-semantics@1.1.0;
+/concepts/Task maps the cursor; /domain/invariants and /questions/1 (Q2) distinguish
+installation, fresh discovery and local authority. `mapping`: 0 errors / 0 warnings;
+strict `impact --git-diff`: only /concepts/Task affected, no stale refs or selected
+checks. Map SHA256:
+516c5b160c0fa49de51e4a0dc6f14c6e6a955d1baf72cc75dc2c93de7ea23e79.
+Contract distribution: plugins/mir-core/skills/ontology/references/common-contract.json,
+SHA256 b2f1ecd01aaa88d41caac2bc2481e7f4c5a429cff3983aaa85ddfb0fc2f1b93f.
+Guide SHA256: 5bd33427359e55ea48936ae0b723177a466d35203c215c0f44e5ed7168da8350.
+No owner/ADR conflict: global checking does not make optional host installation a
+Starter/Kit gate; native Windows stays guidance-only. ADR-76's historical single-
+runtime policy is superseded by current ADR-89 dual-runtime requirements.
+
+Self-check: qualified target, status axes, current root/HEAD, source hash,
+map/contract pins, provenance/time and may/may-not authority are recorded. Runtime
+home values, selected external services/MK command, fresh-session installation/hook/
+MCP observations, Linux/WSL/Windows execution and final delivery revision remain
+unknown or outside this docs task. No real-home writes, secrets, live memory, commit,
+push or tag. No generated Codex changes remain for Main because canonical agent
+sources were unchanged. Full suite and live installer probe were not run: bounded
+docs/Starter/Kit/inventory/ontology checks are the relevant scope. Matrix: 9/9
+requested documentation cells checked; no product/runtime readiness is claimed.
+
+## Superseded cursor before new-machine setup guide (2026-10-19)
+
+# Plan
+
+## Active task: 0.13.9 release preparation (2026-10-19)
+
+Intent authority: owner Discord 1561414827409281077 (release the 32 KiB mapping
+budget), parent-supplied by Mir Harness Main. This cursor owns the bounded design.
+Follow preparation commit c1b6ba6 and its tasks/change_log.md evidence for release
+change 10aaea9: bump package and plugin metadata, version assertions, changelog and
+migration note; refresh the lifecycle-hooks digest acknowledgement; regenerate the
+adopter payload as the final artifact mutation. Archive the prior cursor verbatim.
+
+Request matrix: (1) version metadata and assertions; (2) dated changelog and patch
+migration note; (3) digest acknowledgement; (4) cursor preservation and evidence;
+(5) final adopter payload and required verification. Status: 5/5 preparation cells
+checked with the explicitly accepted Main-owned lock-binding exception.
+Use the existing release assertions for fail-first and the full suite for evaluation;
+no new behavior, architecture or database migration is introduced. No TDD ledger
+change is needed for this metadata-only preparation, matching c1b6ba6's scope.
+
+Acceptance evidence: package fail-first 2 failed, 13 passed; after bump 15 passed.
+Initial offline full suite: 5 failed, 2136 passed in 233.51s. After adopter payload
+refresh and local cached dependency wheel provisioning, final offline full suite:
+1 failed, 2140 passed in 229.00s. Only remaining failure:
+test_repository_lock_is_portable_and_matches_managed_trees. Ruff and diff checks
+passed; public-surface tests: 3 passed; ontology mapping: 0 errors/0 warnings;
+strict impact: no stale refs. Final records precede final adopter regeneration and
+read-only checks. Evidence: tasks/change_log.md#0139-release-preparation-2026-10-19.
+Full-suite green and delivery remain pending Main's authorized release work.
+
+Semantic evidence: .mir/ontology-map.json#/contract declares mir.common-semantics@1.1.0;
+/concepts/Task maps this active cursor. Verified map SHA256:
+516c5b160c0fa49de51e4a0dc6f14c6e6a955d1baf72cc75dc2c93de7ea23e79.
+No contract-distribution change, DB migration, memory re-ingestion or automatic
+consumer update. Network, commits, tags, pushes, mir capability commands,
+capability-lock, .codex/** and consumer writes are forbidden. Main owns lock binding,
+tag, push, provider update and attestation; consumer map checks remain outside this
+preparation. Previous cursor: tasks/change_log.md#superseded-cursor-before-0139-release-preparation-2026-10-19.
+
 ## 0.13.9 release preparation (2026-10-19)
 
 Intent and bounded design authority: tasks/plan.md; owner Discord 1561414827409281077

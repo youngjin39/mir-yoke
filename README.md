@@ -19,6 +19,10 @@ target-specific authorization.
 - [Current maintainer plan](tasks/plan.md) is the single active cursor. Completed work and the
   outstanding owner decision are recorded in the [change log](tasks/change_log.md).
 
+Before forming a project on another computer, the AI must run the
+[new-machine global setup check](docs/operations/new-machine-setup.md).
+Propose missing user-scope setup for confirmation; global adoption remains optional.
+
 ## Supported layers
 
 ### 1. Minimal Starter compatibility

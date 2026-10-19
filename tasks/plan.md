@@ -1,37 +1,37 @@
 # Plan
 
-## Active task: 0.13.9 release preparation (2026-10-19)
+## Active task: New-machine global setup guide (2026-10-19)
 
-Intent authority: owner Discord 1561414827409281077 (release the 32 KiB mapping
-budget), parent-supplied by Mir Harness Main. This cursor owns the bounded design.
-Follow preparation commit c1b6ba6 and its tasks/change_log.md evidence for release
-change 10aaea9: bump package and plugin metadata, version assertions, changelog and
-migration note; refresh the lifecycle-hooks digest acknowledgement; regenerate the
-adopter payload as the final artifact mutation. Archive the prior cursor verbatim.
+Intent authority: current owner brief relayed by Mir Harness Main (parent-supplied).
+This is the single active cursor and bounded design authority. Guide a user or AI
+through the user-scope layer on macOS, Linux, WSL and native Windows, and route
+new-project entrypoints through that check. Preserve ADR-79 platform lanes,
+ADR-81/83 optional host adoption, ADR-85 operator policy and ADR-89/90 delivery.
+The prior cursor remains recoverable at the Git pin recorded in
+[tasks/change_log.md](change_log.md#new-machine-global-setup-guide-2026-10-19).
 
-Request matrix: (1) version metadata and assertions; (2) dated changelog and patch
-migration note; (3) digest acknowledgement; (4) cursor preservation and evidence;
-(5) final adopter payload and required verification. Status: 5/5 preparation cells
-checked with the explicitly accepted Main-owned lock-binding exception.
-Use the existing release assertions for fail-first and the full suite for evaluation;
-no new behavior, architecture or database migration is introduced. No TDD ledger
-change is needed for this metadata-only preparation, matching c1b6ba6's scope.
+Design: one concise operations guide, five routing edits, docs-only evidence.
+Request matrix: (1) OS/prerequisites; (2) dual-runtime user-scope plugins and
+optional agents; (3) merged global instructions; (4) settings ownership;
+(5) optional MCP parity and MK supply; (6) fresh-session verification;
+(7) AI preflight and five routes; (8) command/source validation and platform
+limits; (9) bounded checks, sanitization and final evidence. Status: 9/9 documentation cells checked.
+Fail-first: the guide-existence assertion failed before writing. No behavior
+change or new regression test is needed. Evaluate with existing Starter/Kit,
+public-surface, classification, ontology and derivative checks plus source review.
 
-Acceptance evidence: package fail-first 2 failed, 13 passed; after bump 15 passed.
-Initial offline full suite: 5 failed, 2136 passed in 233.51s. After adopter payload
-refresh and local cached dependency wheel provisioning, final offline full suite:
-1 failed, 2140 passed in 229.00s. Only remaining failure:
-test_repository_lock_is_portable_and_matches_managed_trees. Ruff and diff checks
-passed; public-surface tests: 3 passed; ontology mapping: 0 errors/0 warnings;
-strict impact: no stale refs. Final records precede final adopter regeneration and
-read-only checks. Evidence: tasks/change_log.md#0139-release-preparation-2026-10-19.
-Full-suite green and delivery remain pending Main's authorized release work.
-
-Semantic evidence: .mir/ontology-map.json#/contract declares mir.common-semantics@1.1.0;
-/concepts/Task maps this active cursor. Verified map SHA256:
+Semantic pins: .mir/ontology-map.json#/contract = mir.common-semantics@1.1.0;
+/concepts/Task identifies this cursor; /domain/invariants distinguishes install
+from discovery and keeps coupled hooks/MCP local. Map SHA256:
 516c5b160c0fa49de51e4a0dc6f14c6e6a955d1baf72cc75dc2c93de7ea23e79.
-No contract-distribution change, DB migration, memory re-ingestion or automatic
-consumer update. Network, commits, tags, pushes, mir capability commands,
-capability-lock, .codex/** and consumer writes are forbidden. Main owns lock binding,
-tag, push, provider update and attestation; consumer map checks remain outside this
-preparation. Previous cursor: tasks/change_log.md#superseded-cursor-before-0139-release-preparation-2026-10-19.
+Only authorized docs and the required generated adopter inventory may change;
+Main owns generated Codex files. No commit,
+home/consumer writes, secrets, plugin/src/setup behavior or version/lock changes.
+
+Acceptance: focused pytest 36 passed; Ruff, generated Codex parity, context paths
+(7 files / 67 refs), 5 routes / 14 local guide links, public-surface sanitization,
+map 0 errors / 0 warnings, strict impact and diff checks passed. Stale adopter
+hashes were repaired by the documented generator; final records precede its final
+run and read-only verification. Full evidence and explicit runtime/OS unknowns:
+[tasks/change_log.md](change_log.md#new-machine-global-setup-guide-2026-10-19).
+No ADR conflict; installation is optional and native Windows receives no ready receipt.

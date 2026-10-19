@@ -6,6 +6,10 @@ every repository you work in — not just this project.
 - `CLAUDE.global.md` — merge into `~/.claude/CLAUDE.md` (Claude Code, global).
 - `AGENTS.global.md` — merge into `~/.codex/AGENTS.md` (Codex CLI, global).
 
+For OS-specific paths, settings, user-scope plugins, MCP parity and fresh-session
+verification, use the [new-machine global setup guide](../docs/operations/new-machine-setup.md).
+Show the merged changes, back up existing files and obtain confirmation before writing.
+
 ## Why
 
 Claude Code and Codex CLI each merge a **global** rules file with the **project-local** one. This

@@ -1,6 +1,7 @@
 # Mir Yoke — AI routing index
 
 ## Start here
+- `docs/operations/new-machine-setup.md` — first check OS and global instructions/settings/plugins/MCP before forming a project; propose missing setup and obtain confirmation before home writes
 - `README.md` — Harness-managed central capability supply purpose, supported surfaces, and short new-project prompt
 - `BOOTSTRAP.md` — choose Minimal Starter, standard Project Agent Kit, or optional installed CLI
 - `recipes/project-agent-kit/README.md` — standard empty-target Project Agent Kit procedure

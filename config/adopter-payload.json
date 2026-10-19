@@ -479,7 +479,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "BOOTSTRAP.md",
-      "sha256": "d3ea0c489046e891d8c1ad516f47b4bfc8ea1fcdf4ca043a682b24cd2f978411"
+      "sha256": "46f14b084718deabfecd4ea0065460f3a0388eb9382d3cdd2c528fc8a54cea31"
     },
     {
       "classification": "reference",
@@ -515,7 +515,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "README.md",
-      "sha256": "94094b6c65082a3cfb824d8212b0ba2f3c6f80c2937275eb65f87079cadac722"
+      "sha256": "3e816ef233ef042e2b294b6e366dfb163f387c1945792972f22930371d0e855e"
     },
     {
       "classification": "reference",
@@ -2266,6 +2266,12 @@
     {
       "classification": "reference",
       "disposition": "remove",
+      "path": "docs/operations/new-machine-setup.md",
+      "sha256": "5bd33427359e55ea48936ae0b723177a466d35203c215c0f44e5ed7168da8350"
+    },
+    {
+      "classification": "reference",
+      "disposition": "remove",
       "path": "docs/operations/ontology-distribution-rehearsal.md",
       "sha256": "40591d044de32e17cf87408f202f6c92439aa20888cdf60ac04aeae3231008a6"
     },
@@ -2729,7 +2735,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "global-rules/README.md",
-      "sha256": "5c3709a24129ff5e098a7068ae92ea670414b4d095f91f78114c63389ad71096"
+      "sha256": "1d982091e3a55dbf45b8489be1a338f11bf558b7f42be6d11dac74a1d082bef5"
     },
     {
       "classification": "reference",
@@ -2747,7 +2753,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "llms.txt",
-      "sha256": "e81cebcd790d2aad041ae3c1ac6326781b62057bbf8e227de955740b7d8898cf"
+      "sha256": "3285bcc3b5d13a8810f9d71223fa80c55468a7c4cf3f36086c373ffa53b115cb"
     },
     {
       "classification": "optional-consumer-tool",
@@ -3035,7 +3041,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "recipes/project-agent-kit/README.md",
-      "sha256": "21c09f260a2babcf59f2a72cac15230488a3d8d61654e931a8d7f3d5f9334214"
+      "sha256": "53dae7c91a0a39cb675807876c1c4cc07c5033d4b4a92d7b9083ac1a12a19f4d"
     },
     {
       "classification": "reference",
@@ -4139,7 +4145,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/change_log.md",
-      "sha256": "e000a63b9adc0c9b0de766db4a4339d81caeb46d1a160ab56418fb59eb8a01b8"
+      "sha256": "5bf73a6c14f0a55573290f757387b61bfd2b1357ca6e082898f27c2b77974186"
     },
     {
       "classification": "reference",
@@ -4181,7 +4187,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/plan.md",
-      "sha256": "638be34a84e86e87417e3ca098fa0839ebf2a7050214b234367d397c6495fbe8"
+      "sha256": "83fe65a4b100f8306c2d63e1710fb090c9496c04622380d9632fe2e250b7dfdf"
     },
     {
       "classification": "reference",

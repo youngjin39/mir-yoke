@@ -9,6 +9,11 @@ inside another Git worktree, or a target with repository-owned files must use th
 `starter/` adoption flow instead. The recipe does not copy Mir Yoke's Git history, mutate Mir Yoke,
 discover other repositories, or run `yoke plan` or `yoke apply`.
 
+Before forming the project, run the [new-machine global setup check](../../docs/operations/new-machine-setup.md).
+Inspect the OS and global layer first. Propose missing setup with backups and a merged
+plan; obtain separate confirmation before home writes. Those writes are outside this
+recipe's target-only authority, and optional host adoption does not add a Kit gate.
+
 ## Required input
 
 The same request must supply concrete project purpose and goals; the bracketed placeholder in

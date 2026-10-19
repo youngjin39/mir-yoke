@@ -3,6 +3,10 @@
 Mir Yoke provides three separate entrypoints. None grants standing provider authority, and the
 minimum compatibility path does not require a specification tree merely to begin.
 
+Before forming a project, run the [new-machine global setup check](docs/operations/new-machine-setup.md).
+Propose missing global setup and obtain confirmation before user-home writes; keep
+optional host adoption separate from the chosen layer below.
+
 ## Existing repository: Minimal Starter
 
 Use `starter/` as reference material. The active agent first records the target root, Git status,
