@@ -8424,3 +8424,98 @@ meaning-preserving attempts; four further maps sit at 12,287-12,288 B. `MAPPING_
 mapping guide move to 32,768 B; the keep-list is unchanged; the check stays a warning.
 Fail-first: the updated oversize test and the new under-budget test failed (2 failed);
 after the change `tests/test_ontology_skill.py` 294 passed.
+
+## Mapping handoff pins (2026-10-20)
+
+Intent authority: Mir Harness owner Discord 1562070585855447051, 2026-10-20,
+approving the bounded experiment after fleet-reverify-2026-10-20 (parent-supplied).
+Design authority: tasks/plan.md, the single active cursor; previous cursor archived
+verbatim below. Qualified target: mir-yoke:plugins/mir-core/skills/ontology,
+mapping report and Handoff section. Lifecycle: implemented; temporal: this working
+tree at base HEAD d67b9638d37c88705583ffdef34ce315ba7a0623; epistemic: directly
+verified except owner approval and Harness observations (parent-supplied);
+verification: requested checks executed, with one explicitly accepted failure.
+
+Report adds mapping_path (repository-relative), mapping_sha256, contract_id and
+contract_sha256 without removing existing fields or changing other command reports.
+Digests use loaded bytes; validation retains prior newline normalization and size
+counting. Missing sources retain IO exit 2 and nullable pins. Text retains its
+summary and adds one full-digest line. Handoff gains one short report hint;
+Unreleased records the addition. No version, lock or installed runtime changes.
+
+Semantic evidence: .mir/ontology-map.json#/contract = mir.common-semantics@1.1.0;
+/concepts/Task maps this cursor. Map SHA-256:
+516c5b160c0fa49de51e4a0dc6f14c6e6a955d1baf72cc75dc2c93de7ea23e79.
+Loaded source contract: plugins/mir-core/skills/ontology/references/common-contract.json,
+SHA-256 b2f1ecd01aaa88d41caac2bc2481e7f4c5a429cff3983aaa85ddfb0fc2f1b93f.
+These pins were verified in this checkout on 2026-10-20. Parent-supplied evidence:
+Mir Harness tasks/reports/ontology-engineering/settlement-2026-10-17/after/report-p3-c1-2026-10-20.md
+observed 8/8 incomplete handoff pins. It is evidence, not additional authority;
+its underlying cause and any later agent-behavior improvement remain unknown.
+
+All uv commands used the owner-specified external UV_CACHE_DIR; pytest temporary
+files used external task scratch. Commands and observed results:
+
+- Fail-first: `uv run pytest -q -p no:cacheprovider tests/test_ontology_skill.py -k "valid_mapping_passes or byte_exact_pins or nullable_pins"`
+  produced 7 failed / 293 deselected before implementation. Initial invocation
+  had 7 setup errors because the scratch parent was missing; after creating it,
+  all 7 failures were behavior assertions, not setup errors.
+- Focused: `uv run pytest -q -p no:cacheprovider tests/test_ontology_skill.py tests/test_plugin_skill_packages.py tests/test_public_template_surface.py tests/test_template_asset_classification.py`
+  initially 323 passed / 1 stale adopter inventory failure; after regeneration,
+  324 passed in 18.95s. Coverage includes text/JSON, default/selected contracts,
+  CRLF/trailing whitespace byte hashes, nullable missing sources and skill budgets.
+- Full suite (once): `uv run pytest -q -p no:cacheprovider` produced 2146 passed /
+  1 failed in 244.29s. Sole failure:
+  tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees,
+  the owner-accepted managed-tree digest mismatch deferred to release binding.
+- `uv run ruff check`: all checks passed. `git diff --check`: passed.
+- `uv run python -m tools.template_assets --write-adopter-payload`: classification
+  passed. Repeat as the final artifact mutation after these records, then perform
+  the read-only inventory regression and final diff/status checks.
+
+Matrix: 5/5 requested cells checked, with the explicit repository-lock exception.
+Existing tasks/handoffs/session-handoff-LATEST.md was not edited; the generated
+inventory necessarily includes its pre-existing current digest. Generated Codex
+files, capability lock, map, contract and installed runtime remain unchanged.
+Authority stays within the supplied checkout edits/checks; no commit, delivery,
+network, Memory Keeper, other-repository or user-runtime writes occurred.
+
+## Superseded cursor before mapping handoff pins (2026-10-20)
+
+# Plan
+
+## Active task: New-machine global setup guide (2026-10-19)
+
+Intent authority: current owner brief relayed by Mir Harness Main (parent-supplied).
+This is the single active cursor and bounded design authority. Guide a user or AI
+through the user-scope layer on macOS, Linux, WSL and native Windows, and route
+new-project entrypoints through that check. Preserve ADR-79 platform lanes,
+ADR-81/83 optional host adoption, ADR-85 operator policy and ADR-89/90 delivery.
+The prior cursor remains recoverable at the Git pin recorded in
+[tasks/change_log.md](change_log.md#new-machine-global-setup-guide-2026-10-19).
+
+Design: one concise operations guide, five routing edits, docs-only evidence.
+Request matrix: (1) OS/prerequisites; (2) dual-runtime user-scope plugins and
+optional agents; (3) merged global instructions; (4) settings ownership;
+(5) optional MCP parity and MK supply; (6) fresh-session verification;
+(7) AI preflight and five routes; (8) command/source validation and platform
+limits; (9) bounded checks, sanitization and final evidence. Status: 9/9 documentation cells checked.
+Fail-first: the guide-existence assertion failed before writing. No behavior
+change or new regression test is needed. Evaluate with existing Starter/Kit,
+public-surface, classification, ontology and derivative checks plus source review.
+
+Semantic pins: .mir/ontology-map.json#/contract = mir.common-semantics@1.1.0;
+/concepts/Task identifies this cursor; /domain/invariants distinguishes install
+from discovery and keeps coupled hooks/MCP local. Map SHA256:
+516c5b160c0fa49de51e4a0dc6f14c6e6a955d1baf72cc75dc2c93de7ea23e79.
+Only authorized docs and the required generated adopter inventory may change;
+Main owns generated Codex files. No commit,
+home/consumer writes, secrets, plugin/src/setup behavior or version/lock changes.
+
+Acceptance: focused pytest 36 passed; Ruff, generated Codex parity, context paths
+(7 files / 67 refs), 5 routes / 14 local guide links, public-surface sanitization,
+map 0 errors / 0 warnings, strict impact and diff checks passed. Stale adopter
+hashes were repaired by the documented generator; final records precede its final
+run and read-only verification. Full evidence and explicit runtime/OS unknowns:
+[tasks/change_log.md](change_log.md#new-machine-global-setup-guide-2026-10-19).
+No ADR conflict; installation is optional and native Windows receives no ready receipt.

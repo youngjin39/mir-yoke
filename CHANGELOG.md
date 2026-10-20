@@ -8,6 +8,11 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+### Added
+
+- Extended ontology `mapping` reports with the map path, loaded contract ID and full
+  file SHA-256 digests alongside existing versions, with a Handoff hint for obtaining pins.
+
 ## [v0.13.9] — 2026-10-19 — Mapping budget 32 KiB
 
 ### Changed

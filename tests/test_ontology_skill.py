@@ -237,8 +237,80 @@ def test_valid_mapping_passes(mapping_repo: tuple[Path, dict]) -> None:
         "warnings": [],
         "contract_version": "1.0.0",
         "mapping_version": "1.0.0",
+        "mapping_path": ".mir/ontology-map.json",
+        "mapping_sha256": hashlib.sha256(
+            (mapping_repo[0] / ".mir/ontology-map.json").read_bytes()
+        ).hexdigest(),
+        "contract_id": "mir.common-semantics",
+        "contract_sha256": hashlib.sha256(
+            (mapping_repo[0] / "legacy-contract.json").read_bytes()
+        ).hexdigest(),
         "line_ref_count": 2,
     }
+
+
+@pytest.mark.parametrize("json_output", [False, True])
+@pytest.mark.parametrize("explicit_contract", [False, True])
+def test_should_report_byte_exact_pins_when_mapping_is_loaded(
+    mapping_repo: tuple[Path, dict], json_output: bool, explicit_contract: bool
+) -> None:
+    repo, mapping = mapping_repo
+    map_path = repo / ".mir/ontology-map.json"
+    # CRLF and trailing whitespace make re-serialized JSON an incorrect digest source.
+    map_path.write_bytes((json.dumps(mapping, indent=2) + "\n ").replace("\n", "\r\n").encode())
+    contract_path = CONTRACT
+    args = ["--json"] if json_output else []
+    if explicit_contract:
+        contract_path = repo / "selected-contract.json"
+        contract_path.write_bytes(CONTRACT.read_bytes() + b"\r\n ")
+        args.extend(["--contract", str(contract_path)])
+    result = subprocess.run(
+        [sys.executable, str(CHECKER), "mapping", "--repo", str(repo), *args],
+        capture_output=True, text=True, check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    pins = {
+        "mapping_path": ".mir/ontology-map.json",
+        "mapping_version": "1.0.0",
+        "mapping_sha256": hashlib.sha256(map_path.read_bytes()).hexdigest(),
+        "contract_id": "mir.common-semantics",
+        "contract_version": json.loads(contract_path.read_bytes())["version"],
+        "contract_sha256": hashlib.sha256(contract_path.read_bytes()).hexdigest(),
+    }
+    if json_output:
+        report = json.loads(result.stdout)
+        assert {key: report[key] for key in pins} == pins
+    else:
+        for value in pins.values():
+            assert value in result.stdout
+
+
+@pytest.mark.parametrize("missing", ["mapping", "contract"])
+def test_should_report_nullable_pins_when_source_is_missing(
+    mapping_repo: tuple[Path, dict], missing: str
+) -> None:
+    repo, mapping = mapping_repo
+    args = []
+    if missing == "contract":
+        (repo / ".mir/ontology-map.json").write_text(json.dumps(mapping))
+        args = ["--contract", str(repo / "absent-contract.json")]
+    result = subprocess.run(
+        [sys.executable, str(CHECKER), "mapping", "--repo", str(repo), "--json", *args],
+        capture_output=True, text=True, check=False,
+    )
+    assert result.returncode == 2
+    report = json.loads(result.stdout)
+    assert not report["ok"]
+    assert report["mapping_path"] is None
+    assert report["mapping_sha256"] is None
+    assert report["mapping_version"] is None
+    if missing == "contract":
+        assert report["contract_id"] is None
+        assert report["contract_sha256"] is None
+        assert report["contract_version"] is None
+    else:
+        assert report["contract_id"] == "mir.common-semantics"
+        assert report["contract_sha256"] == hashlib.sha256(CONTRACT.read_bytes()).hexdigest()
 
 
 @pytest.mark.parametrize(

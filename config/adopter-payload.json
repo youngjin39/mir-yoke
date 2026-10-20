@@ -485,7 +485,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "CHANGELOG.md",
-      "sha256": "7720b2aabafc3c7dcb71346176464d4c55681652392912edb3a2b3a8662cf09b"
+      "sha256": "51093c3f9256e2177943e85c8888bd1c6e5643c8f4d0374e3f2f67228c9b5ae6"
     },
     {
       "classification": "reference",
@@ -2867,7 +2867,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "plugins/mir-core/skills/ontology/SKILL.md",
-      "sha256": "8f58621801a62d6115781a2c5ef92c498a77edf9246fe39f9984620eb88111ea"
+      "sha256": "2aef3d8b9d701ded765cebaca20718e4d3f9f17abbf087a808795c1690448287"
     },
     {
       "classification": "optional-consumer-tool",
@@ -2909,7 +2909,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "plugins/mir-core/skills/ontology/scripts/ontology_check.py",
-      "sha256": "5f96c6e8ce6d21b1e9ea097e581d139f62d9fc1c486ce6df68e3e75f6752903d"
+      "sha256": "b6e6538b64cf9e4604a79a83dcd5749f1e880992ee4402371d5e27e6fbaada74"
     },
     {
       "classification": "optional-consumer-tool",
@@ -4145,7 +4145,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/change_log.md",
-      "sha256": "5bf73a6c14f0a55573290f757387b61bfd2b1357ca6e082898f27c2b77974186"
+      "sha256": "ab3de2e4946d3c724961b167bbcdad2ff24a203aac2435c4150abca93d59326a"
     },
     {
       "classification": "reference",
@@ -4157,7 +4157,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/handoffs/session-handoff-LATEST.md",
-      "sha256": "90d24afa65270f9efecac494552cbf3aba7d687f1a15a1d5ac2666d04b0dab19"
+      "sha256": "557103c991d56f062a733fa3ae6889588a973ab5a57c205d013edf75a57a69af"
     },
     {
       "classification": "reference",
@@ -4187,7 +4187,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/plan.md",
-      "sha256": "83fe65a4b100f8306c2d63e1710fb090c9496c04622380d9632fe2e250b7dfdf"
+      "sha256": "3126a8ae8c0c339bd3bb3548687687836815b51a0567b55f419e3499bee1613c"
     },
     {
       "classification": "reference",
@@ -4547,7 +4547,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_ontology_skill.py",
-      "sha256": "4bf3eb8f6affb984242f9422a8e15d7dc9ba1575432a23a8399af3c3b5aa0224"
+      "sha256": "f560805e93b569ca079cd26e43456b6254cfd271594fa343e003d6d6fc5b9065"
     },
     {
       "classification": "template-maintainer-tool",

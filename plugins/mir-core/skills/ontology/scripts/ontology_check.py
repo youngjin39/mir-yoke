@@ -682,12 +682,18 @@ def main(argv=None):
     checker = Checker()
     contract_version = None
     mapping_version = None
+    mapping_path = None
+    mapping_sha256 = None
+    contract_id = None
+    contract_sha256 = None
     io_problem = False
     selection = None
     try:
         payload = args.contract.read_bytes()
         contract = checker.contract(json.loads(payload))
         contract_version = contract.get("version")
+        contract_id = contract.get("contract_id")
+        contract_sha256 = hashlib.sha256(payload).hexdigest()
         if args.command != "contract" and not checker.errors:
             root = args.repo.resolve()
             if not root.is_dir():
@@ -695,7 +701,12 @@ def main(argv=None):
             if args.command == "impact":
                 selection = impact({}, root, changed_paths(args, root))
             try:
-                text = (root / ".mir/ontology-map.json").read_text(encoding="utf-8")
+                path = root / ".mir/ontology-map.json"
+                mapping_payload = path.read_bytes()
+                # Preserve read_text's newline normalization for validation and size warnings.
+                text = mapping_payload.decode("utf-8").replace("\r\n", "\n").replace("\r", "\n")
+                mapping_path = path.relative_to(root).as_posix()
+                mapping_sha256 = hashlib.sha256(mapping_payload).hexdigest()
             except FileNotFoundError:
                 if args.command != "impact":
                     raise
@@ -731,6 +742,13 @@ def main(argv=None):
         "mapping_version": mapping_version,
         "line_ref_count": len(checker.line_refs),
     }
+    if args.command == "mapping":
+        report.update(
+            mapping_path=mapping_path,
+            mapping_sha256=mapping_sha256,
+            contract_id=contract_id,
+            contract_sha256=contract_sha256,
+        )
     if args.command in ("impact", "lookup"):
         report.update(selection or {})
         if getattr(args, "json", False):
@@ -772,6 +790,10 @@ def main(argv=None):
     else:
         if args.command == "mapping":
             print(f"INFO {len(checker.line_refs)} line-number refs (1.x compatibility)")
+            print(
+                f"INFO mapping {mapping_path} sha256 {mapping_sha256}; "
+                f"contract {contract_id} sha256 {contract_sha256}"
+            )
         for label, findings in (("ERROR", checker.errors), ("WARN", checker.warnings)):
             for finding in findings:
                 print(label + " " + finding["pointer"] + ": " + finding["message"])
