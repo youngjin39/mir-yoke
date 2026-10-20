@@ -219,6 +219,7 @@ def test_checker_uses_python39_syntax_and_standard_library_only() -> None:
         "__future__",
         "argparse",
         "hashlib",
+        "datetime",
         "json",
         "pathlib",
         "re",
@@ -1575,3 +1576,173 @@ def test_should_reject_invalid_declared_invariant_check(mapping_repo, check):
     assert result.returncode == 1, result.stdout
     assert any(e["pointer"] == "/domain/invariants/0/check"
                for e in json.loads(result.stdout)["errors"])
+
+
+@pytest.fixture
+def handoff_repo(mapping_repo):
+    repo, mapping = mapping_repo
+    run_mapping(repo, mapping)
+
+    def git(*args):
+        return subprocess.run(
+            ["git", "-C", str(repo), *args], check=True, capture_output=True, text=True,
+        ).stdout.strip()
+
+    git("init", "-q")
+    git("add", ".")
+    git("-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid",
+        "commit", "-qm", "fixture")
+    (repo / "later.md").write_text("Later unrelated change.\n")
+    git("add", "later.md")
+    git("-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid",
+        "commit", "-qm", "unrelated change")
+    return repo, git("rev-parse", "HEAD")
+
+
+def handoff_command(repo, *args):
+    return subprocess.run(
+        [sys.executable, str(CHECKER), "mapping", "--repo", str(repo),
+         "--contract", str(repo / "legacy-contract.json"), *args],
+        capture_output=True, text=True,
+    )
+
+
+@pytest.mark.parametrize("json_output", [False, True])
+@pytest.mark.parametrize("modified", [False, True])
+def test_should_supply_handoff_pins_and_preserve_existing_output(
+    handoff_repo, json_output, modified,
+):
+    from datetime import UTC, datetime
+
+    repo, head = handoff_repo
+    source = repo / "model.md"
+    if modified:
+        source.write_bytes(source.read_bytes() + b"\r\ncurrent bytes\r\n")
+    args = ["--json"] if json_output else []
+    baseline = handoff_command(repo, *args)
+    before = datetime.now(UTC)
+    result = handoff_command(repo, *args, "--handoff", "model.md", str(repo / "check.py"))
+    after = datetime.now(UTC)
+    assert result.returncode == baseline.returncode == 0, result.stderr
+    if json_output:
+        report = json.loads(result.stdout)
+        block = report.pop("handoff")
+        assert json.dumps(report) + "\n" == baseline.stdout
+    else:
+        prefix, raw = result.stdout.split("handoff pins:\n", 1)
+        assert prefix == baseline.stdout
+        expected = json.loads(handoff_command(repo, "--json").stdout)
+        assert baseline.stdout == (
+            "INFO 2 line-number refs (1.x compatibility)\n"
+            f"INFO mapping .mir/ontology-map.json sha256 {expected['mapping_sha256']}; "
+            f"contract mir.common-semantics sha256 {expected['contract_sha256']}\n"
+            "0 errors, 0 warnings; contract 1.0.0, mapping 1.0.0\n"
+        )
+        block = json.loads(raw)
+    assert block["repository_root"] == str(repo.resolve())
+    assert block["head"] == head
+    assert block["dirty"] is modified
+    assert before <= datetime.fromisoformat(block["observed_at"].replace("Z", "+00:00")) <= after
+    assert block["unknowns"] == []
+    source_revision = subprocess.run(
+        ["git", "-C", str(repo), "rev-parse", "HEAD^"],
+        check=True, capture_output=True, text=True,
+    ).stdout.strip()
+    assert source_revision != head
+    assert block["sources"] == [
+        {"path": name, "revision": source_revision,
+         "sha256": hashlib.sha256((repo / name).read_bytes()).hexdigest(),
+         "modified_vs_head": modified if name == "model.md" else False}
+        for name in ("model.md", "check.py")
+    ]
+    for key, value in json.loads(handoff_command(repo, "--json").stdout).items():
+        if key.startswith(("mapping_", "contract_")):
+            assert block[key] == value
+
+
+@pytest.mark.parametrize("json_output", [False, True])
+def test_should_list_unknown_handoff_paths_without_failing(handoff_repo, json_output):
+    repo, _ = handoff_repo
+    (repo / "new.md").write_bytes(b"untracked\r\n")
+    outside = repo.parent / "outside.md"
+    outside.write_text("outside")
+    (repo / "escape.md").symlink_to(outside)
+    result = handoff_command(
+        repo, *(["--json"] if json_output else []), "--handoff",
+        "new.md", "missing.md", str(outside), "escape.md",
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    block = (json.loads(result.stdout)["handoff"] if json_output
+             else json.loads(result.stdout.split("handoff pins:\n", 1)[1]))
+    assert block["dirty"] is True
+    assert block["sources"][0]["revision"] == "untracked"
+    assert block["sources"][0]["sha256"] == hashlib.sha256(b"untracked\r\n").hexdigest()
+    assert len(block["sources"]) == 4
+    for source in block["sources"][1:]:
+        assert source["sha256"] is None
+        assert any(source["path"] in reason for reason in block["unknowns"])
+
+
+@pytest.mark.parametrize("git_state", ["unavailable", "not-a-repo", "unborn"])
+def test_should_report_unknown_git_pins_without_failing(mapping_repo, monkeypatch, git_state):
+    repo, mapping = mapping_repo
+    run_mapping(repo, mapping)
+    if git_state == "unavailable":
+        monkeypatch.setenv("PATH", "")
+    elif git_state == "unborn":
+        subprocess.run(["git", "init", "-q", str(repo)], check=True, capture_output=True)
+    result = handoff_command(repo, "--json", "--handoff", "model.md")
+    assert result.returncode == 0, result.stdout + result.stderr
+    block = json.loads(result.stdout)["handoff"]
+    assert block["head"] is None
+    expected_digest = hashlib.sha256((repo / "model.md").read_bytes()).hexdigest()
+    assert block["sources"][0]["sha256"] == expected_digest
+    assert any("head" in reason for reason in block["unknowns"])
+    if git_state != "unborn":
+        assert block["dirty"] is None
+        assert block["sources"][0]["revision"] is None
+
+
+@pytest.mark.parametrize("consumer", [False, True])
+def test_should_forward_handoff_through_both_shims(mapping_repo, monkeypatch, consumer):
+    repo, mapping = mapping_repo
+    if consumer:
+        run_mapping(repo, mapping)
+        runner = repo / "scripts/mir_ontology.py"
+        runner.parent.mkdir()
+        runner.write_bytes((SKILL / "scripts/mir_ontology_runner.py").read_bytes())
+    else:
+        repo = ROOT
+        runner = ROOT / "scripts/mir_ontology.py"
+    monkeypatch.setenv("MIR_ONTOLOGY_CHECKER", str(CHECKER))
+    result = subprocess.run(
+        [sys.executable, str(runner), "mapping", "--json", "--handoff", "scripts/mir_ontology.py"],
+        capture_output=True, text=True,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    block = json.loads(result.stdout)["handoff"]
+    assert block["repository_root"] == str(repo.resolve())
+    assert block["sources"][0]["sha256"] == hashlib.sha256(runner.read_bytes()).hexdigest()
+
+
+def test_should_name_handoff_pin_command_in_skill():
+    handoff = (SKILL / "SKILL.md").read_text().split("## Handoff", 1)[1].split("\n## ", 1)[0]
+    assert "`mapping --handoff <paths>`" in handoff
+
+
+@pytest.mark.parametrize("missing_map", [False, True])
+def test_should_allow_handoff_without_paths_and_preserve_validation_exit(mapping_repo, missing_map):
+    repo, mapping = mapping_repo
+    run_mapping(repo, mapping)
+    if missing_map:
+        (repo / ".mir/ontology-map.json").unlink()
+    baseline = handoff_command(repo, "--json")
+    result = handoff_command(repo, "--json", "--handoff")
+    assert result.returncode == baseline.returncode == (2 if missing_map else 0)
+    report = json.loads(result.stdout)
+    block = report.pop("handoff")
+    assert report == json.loads(baseline.stdout)
+    assert block["sources"] == []
+    if missing_map:
+        assert block["mapping_sha256"] is None
+        assert any("mapping_sha256" in reason for reason in block["unknowns"])

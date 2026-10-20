@@ -1,5 +1,146 @@
 # Change log
 
+## One-command ontology handoff pins (2026-10-21)
+
+Intent/design authority: tasks/plan.md; owner Discord 1562120317504061453,
+2026-10-20, approval of stages 1 and 2 (parent-supplied by Mir Harness Main),
+and the current bounded implementation request. Qualified target:
+mir-yoke:ontology-mapping-handoff and mir-yoke:runtime-continuity-message.
+Lifecycle: implemented; temporal: current working tree; epistemic:
+verified-in-repo for local checks, parent-supplied for approval and uptake report;
+verification: checked with the accepted Main-owned lock-binding exception.
+Root: this checkout; base HEAD c70c47029607689eab344ca2998b6f72ec710844.
+Observation: 2026-10-20T15:20:21.290593+00:00.
+
+Semantic evidence: .mir/ontology-map.json#/contract declares
+mir.common-semantics@1.1.0; /concepts/Task identifies the cursor. Verified map
+SHA256 516c5b160c0fa49de51e4a0dc6f14c6e6a955d1baf72cc75dc2c93de7ea23e79.
+Contract distribution: plugins/mir-core/skills/ontology/references/common-contract.json,
+SHA256 b2f1ecd01aaa88d41caac2bc2481e7f4c5a429cff3983aaa85ddfb0fc2f1b93f.
+Current source SHA256 pins (uncommitted bytes, never shortened):
+- `plugins/mir-core/skills/ontology/scripts/ontology_check.py`: `602098bd5f779f2524e4d1d0985826968a0d30c93b46eb1bd0f249e651cec475`.
+- `plugins/mir-core/skills/ontology/SKILL.md`: `a94b568481a5bd8d99aa4602170df0eb132f9e7af91d488ce44b83afdac50208`.
+- `plugins/mir-lifecycle-hooks/hooks/runtime_continuity.py`: `bdf8d6a557d9937ba4af19f37e0802c5998bde6be3c6b8cd7fdb059888860061`.
+- `src/mir/core/capabilities/manager.py`: `ca6d89233c04bc3e0ba6ecd1438283014f44759f3735dc8322ba3edd465069d5`.
+- `config/capability-sources.json`: `a4cfaa519ab1b75661a25bcb331e373bb344934271d834a1e18a55fa2e037c50`.
+
+Added optional mapping --handoff [PATH ...] with appended pasteable text JSON
+and one JSON handoff object: absolute root, full HEAD, dirty state, current file
+byte digests, last-touch revisions, HEAD comparisons, existing map/contract pins,
+UTC observation and explicit unknowns. Git calls disable optional locks and use
+literal pathspecs; missing, outside, untracked and unavailable inputs do not alter
+mapping exit status. No paths is supported. No flag preserves existing output.
+Changed exactly the requested MESSAGE clauses and one Handoff guidance sentence;
+updated the manager's existing exact reviewed-handler source. No shim redesign:
+both this checkout's shim and the byte-copied consumer template forward the flag.
+Unreleased entry added; previous cursor archived verbatim and compared with
+HEAD:tasks/plan.md. No map, contract, version or installed-runtime changes.
+
+Commands below use UV_CACHE_DIR supplied by the owner, UV_OFFLINE=1, and external
+TMPDIR scratch. Full/surface installed-CLI checks additionally use UV_NO_INDEX=1
+and UV_FIND_LINKS pointing to 74 wheels repacked from existing local cache files;
+no downloads or repository dependency changes. Temporary scratch is removed after
+final verification.
+
+- Fail first, unchanged implementation:
+  `uv run pytest -q -p no:cacheprovider tests/test_ontology_skill.py tests/test_plugin_skill_packages.py`:
+  **13 failed, 314 passed in 20.12s**. Failures: four text/JSON clean/modified
+  pin cases, two unknown-path cases, three unavailable/not-repo/unborn Git cases,
+  two shim cases, one Handoff guidance case and one exact SessionStart case.
+- Same modules after implementation: **327 passed in 21.15s**.
+- Expanded focused run (additional last-touch/no-path/error-exit checks):
+  `uv run pytest -q -p no:cacheprovider tests/test_ontology_skill.py tests/test_plugin_skill_packages.py tests/test_ontology_runner.py tests/test_mir_ontology.py`:
+  **372 passed in 24.81s**. Digests use hashlib.sha256 of actual file bytes;
+  temporary Git fixtures distinguish HEAD from the earlier source-touch commit.
+- Initial surface/install run:
+  `uv run pytest -q -p no:cacheprovider tests/test_installed_cli.py tests/test_public_template_surface.py tests/test_template_asset_classification.py`:
+  **10 passed in 3.48s**.
+- One full suite: `uv run pytest -q -p no:cacheprovider`:
+  **70 failed, 2091 passed in 239.98s**. Modules: capability_cli (40 failures),
+  capability_security (29), no_korean_in_user_facing (1). Of these, 68 arose
+  from the stale hook digest acknowledgement (67 raised CapabilityError; one
+  assertion checked the digest); one was the known Main-owned lock mismatch;
+  one was the approval quotation in the cursor triggering the public English
+  policy check. Recorded approval in English and refreshed only the reviewed
+  hook acknowledgement to ab0a25b219658003b46b980bc28fa2e192f5aeae5d9fbfb1ddde27ac5efae883.
+- Re-ran every failing module after correction:
+  `uv run pytest -q -p no:cacheprovider tests/test_capability_cli.py tests/test_capability_security.py tests/test_no_korean_in_user_facing.py`:
+  **1 failed, 168 passed in 15.77s**. Sole remaining failure:
+  `test_repository_lock_is_portable_and_matches_managed_trees`. No full-suite
+  rerun, as requested; a green full suite on final bytes is not claimed.
+- `uv run ruff check`: all checks passed. `git diff --check`: passed.
+- Local `python3 scripts/mir_ontology.py mapping --handoff` with the two target
+  Python source paths: 0 errors, 0 warnings, complete current pins. Compared
+  HEAD/current checker stdout, stderr and exit status without --handoff for four
+  text/JSON success/IO cases: byte-identical. Compared MESSAGE against precisely
+  the requested replacements: exact; stdout including newline is **784 bytes**.
+
+Final artifact mutation after these records:
+`uv run python -m tools.template_assets --write-adopter-payload`; follow with
+read-only surface/payload/language checks, Ruff and diff checks. Those subsequent
+outputs are reported in the delivery response rather than mutating this record
+and invalidating the final inventory again.
+
+Authority preserved: no commit, tag, push, release preparation, network, capability
+commands, capability-lock writes, .codex/** writes, other-repository operations,
+Memory Keeper or handoff-file edits. Existing handoff bytes preserved (SHA256
+557103c991d56f062a733fa3ae6889588a973ab5a57c205d013edf75a57a69af).
+Unknowns: behavioral uptake and cause of prior non-uptake, future release/delivery
+pins, Main lock binding and full-suite result after that binding. Self-check:
+missing fields/pins are unknowns; local source/map/contract pins are present.
+
+
+## Superseded cursor before handoff pin block (2026-10-21)
+
+# Plan
+
+## Active task: 0.13.10 release preparation (2026-10-20)
+
+Intent authority: owner Discord 1562070585855447051, 2026-10-20, approved for
+release (parent-supplied by Mir Harness Main). This cursor owns the bounded design.
+Qualified target: mir-yoke:release-0.13.10; root: this checkout; verified base HEAD
+48219720496a2f827c1c92e579e6aa19463679ca. Mirror preparation commit 3c79805 and its
+0.13.9 evidence for release change 4821972. No new behavior.
+
+Request matrix: (1) package/plugin metadata and existing version assertions;
+(2) dated changelog and patch migration note; (3) lifecycle-hooks digest
+acknowledgement if required; (4) verbatim cursor archive and evidence;
+(5) final adopter payload and required verification. Status: 5/5 preparation cells checked
+with the explicitly accepted Main-owned lock-binding exception.
+Design: fail-first using the existing version assertions, bump metadata, refresh
+the affected digest, run focused/full checks, finalize records, then regenerate
+adopter payload as the final artifact mutation. Follow with read-only checks.
+No separate TDD ledger mutation is needed for this metadata-only preparation,
+matching 3c79805. Full-suite lock-binding failure is explicitly accepted.
+
+Semantic evidence: .mir/ontology-map.json#/contract declares
+mir.common-semantics@1.1.0; /concepts/Task identifies this cursor. Verified map SHA256:
+516c5b160c0fa49de51e4a0dc6f14c6e6a955d1baf72cc75dc2c93de7ea23e79.
+Contract source: plugins/mir-core/skills/ontology/references/common-contract.json,
+SHA256 b2f1ecd01aaa88d41caac2bc2481e7f4c5a429cff3983aaa85ddfb0fc2f1b93f.
+
+Authority: only requested checkout edits and authorized local checks. No commit,
+tag, push, network, capability commands, capability-lock, .codex/**, other
+repositories, Memory Keeper or handoff writes. Preserve the existing handoff diff.
+Main owns lock binding and delivery; final release/tag/provider pins remain unknown.
+Lifecycle: prepared; temporal: current working tree; epistemic: verified-in-repo;
+verification: checked with the authorized lock-binding exception. Approval is
+parent-supplied; local file and check results are directly observed on 2026-10-20.
+Self-check: all required handoff fields and current source/map/contract pins are
+present; final delivery pins and post-bind verification remain unknown.
+Previous cursor: tasks/change_log.md#superseded-cursor-before-01310-release-preparation-2026-10-20.
+Evidence: tasks/change_log.md#01310-release-preparation-2026-10-20.
+
+Acceptance evidence: fail-first package module 2 failed, 13 passed in 0.16s;
+after bump 15 passed in 0.13s. Offline full suite: 2146 passed, 1 failed in
+243.33s, solely test_repository_lock_is_portable_and_matches_managed_trees.
+Isolated installed-CLI test: 1 passed in 2.99s using 45 locally repacked cached
+wheels, without downloads. Ruff and diff checks passed; ontology mapping:
+0 errors/0 warnings; strict impact: no stale refs. Prior cursor archive matches
+HEAD:tasks/plan.md verbatim; the 19 preparation files match 3c79805's file set.
+These records precede final adopter regeneration and read-only payload/surface,
+Ruff and diff checks. Full-suite green and delivery remain pending Main's work.
+
 ## 0.13.10 release preparation (2026-10-20)
 
 Intent and bounded design authority: tasks/plan.md; owner Discord 1562070585855447051,

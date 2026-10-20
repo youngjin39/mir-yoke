@@ -49,7 +49,7 @@ Copy the current owner authority without enlarging it: a brief never grants edit
 or writes the owner did not grant. Mark each item `verified-in-repo` or `parent-supplied`;
 see the [handoff details](references/knowledge-supply.md#agent-handoff-and-delegation).
 Finish with a self-check that names every missing field or pin as an unknown.
-The `mapping` report (`--json`) supplies map/contract identity, version and full digest pins.
+Use `mapping --handoff <paths>` (also `--json`) for the ready-to-paste pins block.
 
 ## Deterministic checker
 

@@ -8,6 +8,7 @@ import json
 import re
 import subprocess
 import sys
+from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath, PureWindowsPath
 
 DEFAULT_CONTRACT = Path(__file__).resolve().parent.parent / "references/common-contract.json"
@@ -658,11 +659,86 @@ def positive_int(raw):
     return value
 
 
+def handoff_pins(repo, paths, report):
+    """Collect best-effort, read-only pins without changing mapping validation."""
+    unknowns = []
+    pins = {
+        "repository_root": None,
+        "head": None,
+        "dirty": None,
+        "sources": [],
+        **{key: report[key] for key in (
+            "mapping_path", "mapping_version", "mapping_sha256",
+            "contract_id", "contract_version", "contract_sha256",
+        )},
+        "observed_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),  # noqa: UP017 - Python 3.9
+        "unknowns": unknowns,
+    }
+    for key, value in pins.items():
+        if value is None and key not in ("repository_root", "head", "dirty"):
+            unknowns.append(key + ": unavailable")
+    try:
+        root = repo.resolve()
+        pins["repository_root"] = str(root)
+    except (OSError, RuntimeError) as exc:
+        unknowns.append("repository_root: " + str(exc))
+        unknowns.extend(["head: unavailable", "dirty: unavailable"])
+        unknowns.extend(str(path) + ": repository root unavailable" for path in paths)
+        return pins
+
+    def git(label, *args):
+        try:
+            result = subprocess.run(
+                ["git", "--no-optional-locks", "--literal-pathspecs", "-C", str(root), *args],
+                capture_output=True, check=False, timeout=5,
+            )
+            if result.returncode == 0:
+                return result.stdout
+            unknowns.append(label + ": git command failed")
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            unknowns.append(label + ": " + str(exc))
+        return None
+
+    head = git("head", "rev-parse", "--verify", "HEAD")
+    pins["head"] = head.decode("ascii").strip() if head is not None else None
+    status = git("dirty", "status", "--porcelain", "--untracked-files=all")
+    pins["dirty"] = bool(status) if status is not None else None
+    for raw in paths:
+        source = {"path": raw, "revision": None, "sha256": None, "modified_vs_head": None}
+        pins["sources"].append(source)
+        try:
+            path = (root / raw).resolve()
+            relative = path.relative_to(root).as_posix()
+        except (OSError, ValueError, RuntimeError) as exc:
+            unknowns.append(raw + ": outside repository or unresolved: " + str(exc))
+            continue
+        source["path"] = relative
+        try:
+            payload = path.read_bytes()
+        except (OSError, ValueError) as exc:
+            unknowns.append(relative + ": file unavailable: " + str(exc))
+            continue
+        source["sha256"] = hashlib.sha256(payload).hexdigest()
+        revision = git(relative + ".revision", "log", "-1", "--format=%H", "--", relative)
+        if revision is not None:
+            source["revision"] = revision.decode("ascii").strip() or "untracked"
+        if source["revision"] == "untracked":
+            unknowns.append(relative + ".modified_vs_head: untracked")
+        elif pins["head"] is not None:
+            original = git(relative + ".modified_vs_head", "show", "HEAD:" + relative)
+            if original is not None:
+                source["modified_vs_head"] = payload != original
+        else:
+            unknowns.append(relative + ".modified_vs_head: HEAD unavailable")
+    return pins
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
     contract_parser = commands.add_parser("contract", help="check the distributed contract")
     mapping_parser = commands.add_parser("mapping", help="check a project-owned mapping")
+    mapping_parser.add_argument("--handoff", nargs="*", metavar="PATH")
     impact_parser = commands.add_parser(
         "impact", help="select affected entries and checks; never run them"
     )
@@ -749,6 +825,8 @@ def main(argv=None):
             contract_id=contract_id,
             contract_sha256=contract_sha256,
         )
+        if args.handoff is not None:
+            report["handoff"] = handoff_pins(args.repo, args.handoff, report)
     if args.command in ("impact", "lookup"):
         report.update(selection or {})
         if getattr(args, "json", False):
@@ -801,6 +879,9 @@ def main(argv=None):
             f"{len(checker.errors)} errors, {len(checker.warnings)} warnings; "
             f"contract {contract_version}, mapping {mapping_version}"
         )
+        if "handoff" in report:
+            print("handoff pins:")
+            print(json.dumps(report["handoff"], indent=2))
     return 2 if io_problem else int(bool(checker.errors))
 
 

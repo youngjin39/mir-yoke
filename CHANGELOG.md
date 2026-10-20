@@ -8,6 +8,15 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+### Added
+
+- Added opt-in ontology `mapping --handoff <paths>` text/JSON blocks with repository,
+  source and map/contract pins, UTC observation time and explicit unknowns.
+
+### Changed
+
+- Named the one-command handoff pins block in SessionStart and ontology Handoff guidance.
+
 ## [v0.13.10] — 2026-10-20 — Mapping handoff pins
 
 ### Added

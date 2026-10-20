@@ -103,9 +103,10 @@ def test_lifecycle_hook_plugin_uses_one_exact_shared_hook_file() -> None:
     assert completed.stderr == ""
     assert (
         "Handoffs/briefs for another agent copy only owner-granted authority "
-        "(never add edits, tests, commands or writes) and carry the mir-core:ontology "
-        "handoff fields: qualified target; lifecycle/temporal/epistemic/verification status; "
-        "pins (root, HEAD, source path@rev/hash, map/contract id+version+digest); "
+        "(never add edits, tests, commands or writes) and carry: "
+        "qualified target; lifecycle/temporal/epistemic/verification status; "
+        "pins = paste the output of `python3 scripts/mir_ontology.py mapping --handoff "
+        "<source paths>`; "
         "evidence provenance+time; unknowns; may/may-not authority; "
         "self-check: missing fields/pins=unknowns."
     ) in completed.stdout
@@ -117,9 +118,10 @@ def test_lifecycle_hook_plugin_uses_one_exact_shared_hook_file() -> None:
         "report N/M and open cells (details: runtime-continuity skill, "
         "references/default-work-method.md). "
         "Handoffs/briefs for another agent copy only owner-granted authority "
-        "(never add edits, tests, commands or writes) and carry the mir-core:ontology "
-        "handoff fields: qualified target; lifecycle/temporal/epistemic/verification status; "
-        "pins (root, HEAD, source path@rev/hash, map/contract id+version+digest); "
+        "(never add edits, tests, commands or writes) and carry: "
+        "qualified target; lifecycle/temporal/epistemic/verification status; "
+        "pins = paste the output of `python3 scripts/mir_ontology.py mapping --handoff "
+        "<source paths>`; "
         "evidence provenance+time; unknowns; may/may-not authority; "
         "self-check: missing fields/pins=unknowns.\n"
     )
