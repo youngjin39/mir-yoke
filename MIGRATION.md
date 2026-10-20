@@ -82,7 +82,7 @@ Discard an uncommitted Project Agent Kit adaptation in the target or restore the
 commit. For an explicitly invoked CLI transaction, use that command's recorded rollback/recovery
 contract. Installing the CLI does not itself mutate a target.
 
-Current version: `0.13.10`. See `CHANGELOG.md` for release details.
+Current version: `0.13.11`. See `CHANGELOG.md` for release details.
 
 Version 0.10.0 adds opt-in `memory_relations` ingestion and read-only `mir relations query|bundle --memory`
 query/bundle selection using the existing memory schema. No automatic corpus backfill, database
@@ -215,3 +215,8 @@ Version 0.13.10 is a patch release and keeps `mir.common-semantics@1.1.0` unchan
 Ontology mapping reports include the map path, loaded contract ID and full file
 SHA-256 digests alongside existing versions, with a Handoff hint for obtaining pins.
 No database migration, memory re-ingestion or automatic consumer update is required.
+
+Version 0.13.11 is a patch release and keeps `mir.common-semantics@1.1.0` unchanged.
+The ontology mapping command can emit one-command handoff pins in text or JSON, and
+the SessionStart reminder names that block. No database migration, memory re-ingestion
+or automatic consumer update is required.

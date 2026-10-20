@@ -8,6 +8,8 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.11] — 2026-10-21 — One-command handoff pins
+
 ### Added
 
 - Added opt-in ontology `mapping --handoff <paths>` text/JSON blocks with repository,
