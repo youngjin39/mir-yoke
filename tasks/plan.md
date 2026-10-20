@@ -1,41 +1,48 @@
 # Plan
 
-## Active task: Mapping handoff pins (2026-10-20)
+## Active task: 0.13.10 release preparation (2026-10-20)
 
-Intent authority: Mir Harness owner Discord 1562070585855447051, 2026-10-20,
-approving the bounded experiment after fleet-reverify-2026-10-20 (parent-supplied).
-This single active cursor is the design authority. Work only in this Yoke checkout;
-base HEAD d67b9638d37c88705583ffdef34ce315ba7a0623. The previous cursor is archived
-verbatim in tasks/change_log.md#superseded-cursor-before-mapping-handoff-pins-2026-10-20.
+Intent authority: owner Discord 1562070585855447051, 2026-10-20, approved for
+release (parent-supplied by Mir Harness Main). This cursor owns the bounded design.
+Qualified target: mir-yoke:release-0.13.10; root: this checkout; verified base HEAD
+48219720496a2f827c1c92e579e6aa19463679ca. Mirror preparation commit 3c79805 and its
+0.13.9 evidence for release change 4821972. No new behavior.
 
-Design: extend only the mapping report with repository-relative mapping_path,
-mapping_sha256, contract_id and contract_sha256 beside existing versions; hash the
-loaded file bytes without shortening digests. Preserve existing fields, validation,
-exit behavior and absent-file handling. Add one short Handoff sentence and an
-Unreleased changelog entry. Tests precede implementation.
+Request matrix: (1) package/plugin metadata and existing version assertions;
+(2) dated changelog and patch migration note; (3) lifecycle-hooks digest
+acknowledgement if required; (4) verbatim cursor archive and evidence;
+(5) final adopter payload and required verification. Status: 5/5 preparation cells checked
+with the explicitly accepted Main-owned lock-binding exception.
+Design: fail-first using the existing version assertions, bump metadata, refresh
+the affected digest, run focused/full checks, finalize records, then regenerate
+adopter payload as the final artifact mutation. Follow with read-only checks.
+No separate TDD ledger mutation is needed for this metadata-only preparation,
+matching 3c79805. Full-suite lock-binding failure is explicitly accepted.
 
-Request matrix: (1) JSON and text pins with byte-exact SHA-256 and explicit contract
-selection; (2) missing files preserve IO exits and nullable pins; (3) one-sentence
-skill guidance within budget; (4) cursor archive and changelog; (5) focused and full
-pytest, Ruff, diff checks and required adopter inventory parity. Status: 5/5 checked;
-the owner-accepted repository-lock mismatch remains deferred to release binding.
-
-Semantic evidence: .mir/ontology-map.json#/contract identifies
-mir.common-semantics@1.1.0; /concepts/Task identifies this cursor. Map SHA-256:
+Semantic evidence: .mir/ontology-map.json#/contract declares
+mir.common-semantics@1.1.0; /concepts/Task identifies this cursor. Verified map SHA256:
 516c5b160c0fa49de51e4a0dc6f14c6e6a955d1baf72cc75dc2c93de7ea23e79.
-Loaded source contract: plugins/mir-core/skills/ontology/references/common-contract.json,
-SHA-256 b2f1ecd01aaa88d41caac2bc2481e7f4c5a429cff3983aaa85ddfb0fc2f1b93f
-(verified-in-repo). Harness observed 8/8 incomplete handoff pins; evidence and
-approval are parent-supplied. Cause and later agent behavior remain unknown.
+Contract source: plugins/mir-core/skills/ontology/references/common-contract.json,
+SHA256 b2f1ecd01aaa88d41caac2bc2481e7f4c5a429cff3983aaa85ddfb0fc2f1b93f.
 
-Authority: edit only task-required checkout files and run owner-authorized checks;
-refresh adopter payload last if public-surface tests require it. No commit, release,
-version bump, lock, generated Codex, installed runtime, handoff, network, memory or
-other-repository writes. Preserve the existing handoff modification.
+Authority: only requested checkout edits and authorized local checks. No commit,
+tag, push, network, capability commands, capability-lock, .codex/**, other
+repositories, Memory Keeper or handoff writes. Preserve the existing handoff diff.
+Main owns lock binding and delivery; final release/tag/provider pins remain unknown.
+Lifecycle: prepared; temporal: current working tree; epistemic: verified-in-repo;
+verification: checked with the authorized lock-binding exception. Approval is
+parent-supplied; local file and check results are directly observed on 2026-10-20.
+Self-check: all required handoff fields and current source/map/contract pins are
+present; final delivery pins and post-bind verification remain unknown.
+Previous cursor: tasks/change_log.md#superseded-cursor-before-01310-release-preparation-2026-10-20.
+Evidence: tasks/change_log.md#01310-release-preparation-2026-10-20.
 
-Acceptance: fail-first 7 failed / 293 deselected; focused checks 324 passed;
-full suite 2146 passed / 1 failed, solely the owner-accepted repository-lock test.
-Ruff and diff checks passed. Final records precede the last adopter regeneration
-and read-only inventory check. Evidence and commands:
-tasks/change_log.md#mapping-handoff-pins-2026-10-20.
-No agent-behavior improvement is established; Harness measures that separately.
+Acceptance evidence: fail-first package module 2 failed, 13 passed in 0.16s;
+after bump 15 passed in 0.13s. Offline full suite: 2146 passed, 1 failed in
+243.33s, solely test_repository_lock_is_portable_and_matches_managed_trees.
+Isolated installed-CLI test: 1 passed in 2.99s using 45 locally repacked cached
+wheels, without downloads. Ruff and diff checks passed; ontology mapping:
+0 errors/0 warnings; strict impact: no stale refs. Prior cursor archive matches
+HEAD:tasks/plan.md verbatim; the 19 preparation files match 3c79805's file set.
+These records precede final adopter regeneration and read-only payload/surface,
+Ruff and diff checks. Full-suite green and delivery remain pending Main's work.

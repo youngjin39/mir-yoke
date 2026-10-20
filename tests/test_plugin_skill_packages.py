@@ -45,7 +45,7 @@ def test_dual_runtime_manifests_share_one_skill_tree() -> None:
         claude = _json(plugin_root / ".claude-plugin" / "plugin.json")
         codex = _json(plugin_root / ".codex-plugin" / "plugin.json")
         assert claude["name"] == codex["name"] == plugin_name
-        assert claude["version"] == codex["version"] == "0.13.9"
+        assert claude["version"] == codex["version"] == "0.13.10"
         assert codex["skills"] == "./skills/"
         assert isinstance(codex["interface"]["defaultPrompt"], list)
         assert 1 <= len(codex["interface"]["defaultPrompt"]) <= 3
@@ -287,7 +287,7 @@ def test_should_reject_non_user_claude_install_scope(tmp_path, monkeypatch, caps
 
 def test_manifest_versions_match_repository_release() -> None:
     version = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
-    assert version == "0.13.9"
+    assert version == "0.13.10"
     for plugin_name in PLUGIN_SKILLS:
         plugin_root = ROOT / "plugins" / plugin_name
         assert _json(plugin_root / ".claude-plugin" / "plugin.json")["version"] == version

@@ -8,6 +8,8 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.10] — 2026-10-20 — Mapping handoff pins
+
 ### Added
 
 - Extended ontology `mapping` reports with the map path, loaded contract ID and full
