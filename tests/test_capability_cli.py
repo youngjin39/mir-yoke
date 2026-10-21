@@ -506,7 +506,9 @@ def test_sync_materializes_exact_lock_and_requires_restart(tmp_path: Path) -> No
     }
     hook_surfaces = status["managed_surfaces"]["hooks"]
     assert hook_surfaces["delivery"] == "host-plugin-and-target-local-generated"
-    assert hook_surfaces["global_plugins"] == {"mir-lifecycle-hooks": ["SessionStart"]}
+    assert hook_surfaces["global_plugins"] == {
+        "mir-lifecycle-hooks": ["SessionStart", "UserPromptSubmit", "Stop"]
+    }
     assert hook_surfaces["repository_coupled"]["delivery"] == ("target-local-generated")
     assert status["managed_surfaces"]["mcp_servers"]["plugin_package_kind"] == "reserved"
 

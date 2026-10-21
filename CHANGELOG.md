@@ -18,9 +18,9 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 - Registered both events in the common hook definition and amended ADR-90/schema-4
   exact handler admission. Documented detection, English/Korean authority checks,
   read/inspect defaults, exclusions, prompt hashes, budgets and runtime limits.
-- Main review: Korean detection also covers instruction-text (`지시문`/`인계문`) requests and
+- Main review: Korean detection also covers instruction-text (jisimun/ingyemun) requests and
   the object-first "pass to another agent" form; prose prohibitions are copied per sentence and
-  cover the `~지 말` forms. Checked against the ten round-e P3 owner texts (10/10 detected).
+  cover the -ji mal forms. Checked against the ten round-e P3 owner texts (10/10 detected).
 
 ### Delivery boundary
 
