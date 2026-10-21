@@ -256,3 +256,14 @@ print(json.dumps({
         "integration_owner": with_map["integration_owner"],
         "scope": with_map["scope"], "uncertainty": with_map["uncertainty"],
     }, sort_keys=True))
+
+
+def test_should_forward_h1_inventory_in_checkout_without_mk():
+    result = run(ROOT, "mapping", "--json", "--handoff", "scripts/mir_ontology.py")
+    assert result.returncode == 0, result.stdout + result.stderr
+    report = json.loads(result.stdout)
+    assert report["mapping_version"] == report["contract_version"] == "1.1.0"
+    block = report["handoff"]
+    assert block["sources"][0]["sha256"] == sha256(RUNNER.read_bytes()).hexdigest()
+    assert any(item["pointer"] == "/sources/0/sha256" for item in block["pin_inventory"])
+    assert result.stderr == ""

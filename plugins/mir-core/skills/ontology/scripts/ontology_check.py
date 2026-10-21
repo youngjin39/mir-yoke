@@ -659,6 +659,41 @@ def positive_int(raw):
     return value
 
 
+def finalize_handoff_pins(pins, paths):
+    """Inventory pin availability without IO, authority claims or input mutation."""
+    inventory = []
+    unknowns = list(pins["unknowns"])
+
+    def add(pin, pointer, kind, required, value):
+        available = value not in (None, "", "untracked")
+        inventory.append({
+            "pin": pin, "pointer": pointer, "kind": kind, "required": required,
+            "availability": "available" if available else "unknown",
+        })
+        reason = pin + ": unavailable"
+        if required and not available and reason not in unknowns:
+            unknowns.append(reason)
+
+    for pin, key, kind in (
+        ("repository_root", "repository_root", "path"),
+        ("head", "head", "commit"),
+        ("mapping.identity", "mapping_path", "path"),
+        ("mapping.version", "mapping_version", "version"),
+        ("mapping.digest", "mapping_sha256", "sha256"),
+        ("contract.identity", "contract_id", "id"),
+        ("contract.version", "contract_version", "version"),
+        ("contract.digest", "contract_sha256", "sha256"),
+    ):
+        add(pin, "/" + key, kind, True, pins[key])
+    for index, _ in enumerate(paths):
+        source = pins["sources"][index] if index < len(pins["sources"]) else {}
+        add(f"sources[{index}].digest", f"/sources/{index}/sha256", "sha256", True,
+            source.get("sha256"))
+        add(f"sources[{index}].revision", f"/sources/{index}/revision",
+            "last_change_commit", False, source.get("revision"))
+    return {**pins, "unknowns": unknowns, "pin_inventory": inventory}
+
+
 def handoff_pins(repo, paths, report):
     """Collect best-effort, read-only pins without changing mapping validation."""
     unknowns = []
@@ -684,7 +719,7 @@ def handoff_pins(repo, paths, report):
         unknowns.append("repository_root: " + str(exc))
         unknowns.extend(["head: unavailable", "dirty: unavailable"])
         unknowns.extend(str(path) + ": repository root unavailable" for path in paths)
-        return pins
+        return finalize_handoff_pins(pins, paths)
 
     def git(label, *args):
         try:
@@ -722,6 +757,8 @@ def handoff_pins(repo, paths, report):
         revision = git(relative + ".revision", "log", "-1", "--format=%H", "--", relative)
         if revision is not None:
             source["revision"] = revision.decode("ascii").strip() or "untracked"
+            if source["revision"] != "untracked":
+                source["revision_kind"] = "last_change_commit"
         if source["revision"] == "untracked":
             unknowns.append(relative + ".modified_vs_head: untracked")
         elif pins["head"] is not None:
@@ -730,7 +767,7 @@ def handoff_pins(repo, paths, report):
                 source["modified_vs_head"] = payload != original
         else:
             unknowns.append(relative + ".modified_vs_head: HEAD unavailable")
-    return pins
+    return finalize_handoff_pins(pins, paths)
 
 
 def main(argv=None):

@@ -1,3 +1,174 @@
+## H1 handoff inventory and 0.13.12 preparation (2026-10-21)
+
+Intent/design authority: tasks/plan.md; owner Discord 1562370913666601052 item 4,
+parent-supplied by Mir Harness Main in the bounded H1 brief. Qualified target:
+mir-yoke:handoff-h1-release-0.13.12. The parent-supplied H1 diagnosis specifies
+the exact three wording diffs, additive inventory, Y1-Y5 and release step 1.
+Lifecycle: prepared for release; temporal: current working tree;
+epistemic: verified-in-repo locally, parent-supplied approval/design;
+verification: 7/8 request cells closed; full gate has only the Main-owned lock exception.
+Observed 2026-10-21.
+Root: this checkout. Verified clean base HEAD:
+a5a54ac6feb2f8381b0956a1b1b69c4a536c891f.
+Map .mir/ontology-map.json@1.1.0, SHA256:
+516c5b160c0fa49de51e4a0dc6f14c6e6a955d1baf72cc75dc2c93de7ea23e79.
+Contract mir.common-semantics@1.1.0, source
+plugins/mir-core/skills/ontology/references/common-contract.json, SHA256:
+b2f1ecd01aaa88d41caac2bc2481e7f4c5a429cff3983aaa85ddfb0fc2f1b93f.
+
+Current source pins, locally observed with Git log and SHA256 of file bytes:
+
+- `plugins/mir-core/skills/ontology/SKILL.md`: last_change_commit `7d32416a09a675bc3950f2a05a3c10cecc6d6ad7`; current-byte SHA256 `445289a287d587c7a0ed78dbd343b204367cb7fd2578c93fc3ca6e1220b7818b`.
+- `plugins/mir-core/skills/ontology/references/knowledge-supply.md`: last_change_commit `b42ec20c944d77b84acf0202a2da99794e61e4f6`; current-byte SHA256 `b67a06cdc8e83f8a8bde31aa95e00fd5416ee63ba6df764b527eaf98c538c5fc`.
+- `plugins/mir-lifecycle-hooks/hooks/runtime_continuity.py`: last_change_commit `7d32416a09a675bc3950f2a05a3c10cecc6d6ad7`; current-byte SHA256 `060b07634d566caadb4ab64f336c2a7806fcf5508bc7c0ebf37d55b1c6dfc5f4`.
+- `plugins/mir-core/skills/ontology/scripts/ontology_check.py`: last_change_commit `7d32416a09a675bc3950f2a05a3c10cecc6d6ad7`; current-byte SHA256 `bff0aac5f840dffd013de2bf877220d824f63662cd609f680cdce9ed46a3a547`.
+- `src/mir/core/capabilities/manager.py`: last_change_commit `7d32416a09a675bc3950f2a05a3c10cecc6d6ad7`; current-byte SHA256 `2cd63f10f061a9b1b17a350ed99b26eaf6b713d01ef1afad90d17cb69e395274`.
+- `config/capability-sources.json`: last_change_commit `faae56a031afd780a7857e9636091b0a86b00e53`; current-byte SHA256 `8f5cd619fce4b9d5e778c19df9eeaa2947823e12c6a6aa041e758cc077596619`.
+
+Applied all three proposed wording diffs exactly; no wording deviations. Manager
+mirrors the exact reviewed handler. The lifecycle method/completion prefix stays
+byte-identical; output including newline is 783 bytes, handler 984 bytes.
+One pure finalizer builds availability inventory on both returns, copies unknowns,
+preserves existing reasons and identifies unavailable required pins individually.
+Only actual Git-log commits receive revision_kind. Early root-resolution failure
+preserves the existing empty sources list; inventory pointers name unavailable
+requested source locations without inventing source values. Existing runners need
+no product changes. Static synthetic scope/data fixtures prove wording presence,
+never actual agent adherence.
+
+Prepared VERSION, pyproject.toml, uv.lock editable version, four marketplace entries,
+eight plugin manifests and version assertions at 0.13.12; added dated CHANGELOG and
+MIGRATION entries. Final lifecycle tree digest acknowledgement:
+217b52146e8aa3bbf0cffeb923fabada22de881cedf111360e6c29fdf22d61de.
+No schema/database migration, automatic checker or consumer update is introduced.
+Main review (Mir Harness, 2026-10-21): re-wrapped the hook MESSAGE literal at word
+boundaries in the hook and its manager mirror; emitted bytes unchanged (sha256
+a096d137…2fef2b, 783 bytes; source 991 bytes); the acknowledgement above is recomputed
+with manager._tree_digest after that edit.
+The prior cursor is archived verbatim below; tasks/tdd.json records these checks.
+
+Fail-first before product edits (both exit 1):
+- `uv run pytest -q -p no:cacheprovider tests/test_ontology_skill.py tests/test_plugin_skill_packages.py tests/test_capability_security.py`: 34 failed, 425 passed in 35.84s.
+- `uv run pytest -q -p no:cacheprovider tests/test_ontology_runner.py::test_should_forward_h1_handoff_json_argv_without_mk_lookup tests/test_mir_ontology.py::test_should_forward_h1_inventory_in_checkout_without_mk`: 2 failed in 0.33s.
+
+Every new test failed before implementation. An earlier forwarding-only regression
+assertion passed against unchanged behavior; final Y2 also exercises the real
+checker and failed on missing inventory before product edits. The root-failure
+test's pointer reader was corrected to treat absent source records as unavailable,
+preserving early-return fields instead of requiring invented source records.
+
+Exact failing node output (new and revised existing cases):
+
+```text
+FAILED tests/test_ontology_skill.py::test_should_carry_handoff_guards_in_skill_body[terms6]
+FAILED tests/test_ontology_skill.py::test_should_carry_handoff_guards_in_skill_body[terms7]
+FAILED tests/test_ontology_skill.py::test_should_carry_handoff_guards_in_skill_body[terms8]
+FAILED tests/test_ontology_skill.py::test_should_supply_handoff_pins_and_preserve_existing_output[False-False]
+FAILED tests/test_ontology_skill.py::test_should_supply_handoff_pins_and_preserve_existing_output[False-True]
+FAILED tests/test_ontology_skill.py::test_should_supply_handoff_pins_and_preserve_existing_output[True-False]
+FAILED tests/test_ontology_skill.py::test_should_supply_handoff_pins_and_preserve_existing_output[True-True]
+FAILED tests/test_ontology_skill.py::test_should_forward_handoff_through_both_shims[False]
+FAILED tests/test_ontology_skill.py::test_should_forward_handoff_through_both_shims[True]
+FAILED tests/test_ontology_skill.py::test_should_inventory_h1_sources_with_text_json_parity[tracked]
+FAILED tests/test_ontology_skill.py::test_should_inventory_h1_sources_with_text_json_parity[untracked]
+FAILED tests/test_ontology_skill.py::test_should_inventory_h1_sources_with_text_json_parity[missing]
+FAILED tests/test_ontology_skill.py::test_should_inventory_h1_sources_with_text_json_parity[outside]
+FAILED tests/test_ontology_skill.py::test_should_inventory_h1_sources_with_text_json_parity[symlink]
+FAILED tests/test_ontology_skill.py::test_should_inventory_h1_unavailable_and_zero_source_cases[missing-map]
+FAILED tests/test_ontology_skill.py::test_should_inventory_h1_unavailable_and_zero_source_cases[no-git]
+FAILED tests/test_ontology_skill.py::test_should_inventory_h1_unavailable_and_zero_source_cases[unborn]
+FAILED tests/test_ontology_skill.py::test_should_inventory_h1_unavailable_and_zero_source_cases[no-sources]
+FAILED tests/test_ontology_skill.py::test_should_inventory_h1_unavailable_and_zero_source_cases[no-git-binary]
+FAILED tests/test_ontology_skill.py::test_should_finalize_h1_inventory_when_root_resolution_fails
+FAILED tests/test_ontology_skill.py::test_should_state_h1_whole_envelope_and_permission_rules[without abbreviation or manual retyping]
+FAILED tests/test_ontology_skill.py::test_should_state_h1_whole_envelope_and_permission_rules[last-change commit]
+FAILED tests/test_ontology_skill.py::test_should_state_h1_whole_envelope_and_permission_rules[Neither is a Git blob ID]
+FAILED tests/test_ontology_skill.py::test_should_state_h1_whole_envelope_and_permission_rules[list each unavailable root, HEAD, task source]
+FAILED tests/test_ontology_skill.py::test_should_state_h1_whole_envelope_and_permission_rules[otherwise retain `parent-supplied`]
+FAILED tests/test_ontology_skill.py::test_should_state_h1_whole_envelope_and_permission_rules[Keep operative requirements within owner authority]
+FAILED tests/test_ontology_skill.py::test_should_state_h1_whole_envelope_and_permission_rules[entire forwarded artifact]
+FAILED tests/test_ontology_skill.py::test_should_state_h1_whole_envelope_and_permission_rules[headings, quotes, examples and enclosing instructions]
+FAILED tests/test_ontology_skill.py::test_should_state_h1_whole_envelope_and_permission_rules[without reproducing excluded content]
+FAILED tests/test_plugin_skill_packages.py::test_dual_runtime_manifests_share_one_skill_tree
+FAILED tests/test_plugin_skill_packages.py::test_lifecycle_hook_plugin_uses_one_exact_shared_hook_file
+FAILED tests/test_plugin_skill_packages.py::test_manifest_versions_match_repository_release
+FAILED tests/test_plugin_skill_packages.py::test_should_keep_h1_hook_print_only_and_permission_aware
+FAILED tests/test_capability_security.py::test_should_bind_h1_exact_hook_source_and_final_package_version
+FAILED tests/test_ontology_runner.py::test_should_forward_h1_handoff_json_argv_without_mk_lookup
+FAILED tests/test_mir_ontology.py::test_should_forward_h1_inventory_in_checkout_without_mk
+```
+
+After implementation, affected five modules: 504 passed in 38.44s, exit 0.
+Command: `uv run pytest -q -p no:cacheprovider tests/test_ontology_skill.py tests/test_ontology_runner.py tests/test_mir_ontology.py tests/test_plugin_skill_packages.py tests/test_capability_security.py`.
+Y1-Y5 passed: full hashes, revision typing, text/JSON parity, unchanged mapping-only
+output/exits, CRLF bytes, spaces, unknown inputs, read-only behavior, zero sources,
+early root failure, exact mirror, stale digest refusal and no additional integrations.
+Ruff found two long test lines; both were wrapped. Final Ruff: All checks passed.
+Installed-CLI check: 1 passed in 5.56s, exit 0. Offline wheels were repacked only
+from existing cached files, without downloads; UV_OFFLINE=1, UV_NO_INDEX=1 and
+UV_FIND_LINKS supply the isolated installed-CLI cache. Scratch stays external.
+
+Direct generation met the sandbox's protected .codex write boundary. The documented
+generator with CODEX_DERIVATION_OUTPUT_ROOT in permitted scratch returned exit 0;
+all generated bytes match the checkout (zero differences). No manual generated edits.
+Initial parity omitted the explicit UV cache and failed on the inherited unwritable
+cache. Retry with the required shared cache: exit 0,
+`OK: Codex derivatives match Claude sources`. Adopter payload regenerated with
+`uv run python -m tools.template_assets --write-adopter-payload`: classification pass.
+
+Full offline suite: `uv run pytest -q -p no:cacheprovider`, exit 1:
+1 failed, 2184 passed in 385.69s (0:06:25). Only failure:
+`tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees`,
+at line 397: current managed plugin tree digest differs from the unchanged Main-owned lock.
+No other failure. Full-suite green is not claimed. UV_CACHE_DIR selects the required
+shared cache; TMPDIR selects external task scratch. Main must bind the lock separately.
+Request matrix: 7/8 closed; only the full-gate cell is open for this expected lock mismatch.
+Final source code was unchanged after this full run. Post-record focused checks:
+`uv run pytest -q -p no:cacheprovider tests/test_template_asset_classification.py tests/test_release_metadata.py tests/test_plugin_skill_packages.py tests/test_capability_security.py::test_capability_source_declares_the_reviewed_active_hook_package tests/test_capability_security.py::test_should_bind_h1_exact_hook_source_and_final_package_version`:
+25 passed in 2.73s, exit 0. Final Codex parity: OK (exit 0); Ruff:
+All checks passed (exit 0); git diff --check: exit 0. Record-dependent adopter hashes
+are regenerated after this final record update and checked for exact equality.
+
+Changed files (29):
+
+- `.claude-plugin/marketplace.json`
+- `CHANGELOG.md`
+- `MIGRATION.md`
+- `VERSION`
+- `config/adopter-payload.json`
+- `config/capability-sources.json`
+- `plugins/mir-code/.claude-plugin/plugin.json`
+- `plugins/mir-code/.codex-plugin/plugin.json`
+- `plugins/mir-content/.claude-plugin/plugin.json`
+- `plugins/mir-content/.codex-plugin/plugin.json`
+- `plugins/mir-core/.claude-plugin/plugin.json`
+- `plugins/mir-core/.codex-plugin/plugin.json`
+- `plugins/mir-core/skills/ontology/SKILL.md`
+- `plugins/mir-core/skills/ontology/references/knowledge-supply.md`
+- `plugins/mir-core/skills/ontology/scripts/ontology_check.py`
+- `plugins/mir-lifecycle-hooks/.claude-plugin/plugin.json`
+- `plugins/mir-lifecycle-hooks/.codex-plugin/plugin.json`
+- `plugins/mir-lifecycle-hooks/hooks/runtime_continuity.py`
+- `pyproject.toml`
+- `src/mir/core/capabilities/manager.py`
+- `tasks/change_log.md`
+- `tasks/plan.md`
+- `tasks/tdd.json`
+- `tests/test_capability_security.py`
+- `tests/test_mir_ontology.py`
+- `tests/test_ontology_runner.py`
+- `tests/test_ontology_skill.py`
+- `tests/test_plugin_skill_packages.py`
+- `uv.lock`
+
+Authority: bounded checkout edits/local checks/generator-only derivatives. No commit,
+tag, push, network, direct capability operation, capability-lock change, manual Codex
+edit, other repository write, Memory Keeper, secret or memory-database access.
+Main owns lock binding, release/tag/provider pins and delivery. Unknowns: Main's
+binding/delivery and actual fresh recipient sessions; no runtime uptake is claimed.
+Self-check: qualified target, four status axes, pins, provenance/time, authority,
+explicit unknowns and the request matrix are accounted for.
+
 ## 0.13.11 release preparation (2026-10-21)
 
 Intent and bounded design authority: tasks/plan.md; owner Discord 1562120317504061453,
@@ -8879,3 +9050,53 @@ Final adopter inventory regeneration follows these records; read-only public
 surface/payload, language, Ruff and diff checks must pass before delivery.
 Evidence and full source pins:
 tasks/change_log.md#one-command-ontology-handoff-pins-2026-10-21.
+
+## Superseded cursor before H1 and 0.13.12 preparation (2026-10-21)
+
+```markdown
+# Plan
+
+## Active task: 0.13.11 release preparation (2026-10-21)
+
+Intent authority: owner Discord 1562120317504061453, 2026-10-20, approved for
+release (parent-supplied by Mir Harness Main). This cursor owns the bounded design.
+Qualified target: mir-yoke:release-0.13.11 (patch), for release change 7d32416.
+Root: this checkout; verified base HEAD 7d32416. Mirror preparation commit 43b60d5
+and the 0.13.10 release preparation record for this release. No new behavior.
+
+Request matrix: (1) package/plugin metadata and existing version assertions;
+(2) dated changelog and matching patch migration note; (3) lifecycle-hooks digest
+acknowledgement if required; (4) verbatim cursor archive and evidence; (5) final
+adopter payload and requested verification. Status: 5/5 checked; the unchanged Main-owned lock is the only open verification item.
+Design: fail-first on the existing version assertions, bump metadata, refresh the
+affected digest if required, run focused/full checks, finalize records, then
+regenerate adopter payload as the final artifact mutation. Follow with read-only
+checks. No separate TDD ledger mutation is needed for this metadata-only preparation,
+matching 43b60d5. The expected Main-owned lock-binding failure is accepted.
+
+Semantic evidence: .mir/ontology-map.json#/contract declares
+mir.common-semantics@1.1.0; /concepts/Task identifies this cursor. Verified map SHA256:
+516c5b160c0fa49de51e4a0dc6f14c6e6a955d1baf72cc75dc2c93de7ea23e79.
+Contract source: plugins/mir-core/skills/ontology/references/common-contract.json.
+
+Authority: requested checkout edits and authorized local checks only. No commit,
+tag, push, network, capability commands, capability-lock, .codex/**, other
+repositories, Memory Keeper or handoff writes. Preserve the existing handoff diff.
+Main owns lock binding and delivery; final release/tag/provider pins remain unknown.
+Lifecycle: prepared for release; temporal: current working tree; epistemic: verified
+locally; verification: checked with the explicitly accepted Main-owned lock exception. Approval is parent-supplied; local pins are observed.
+Observation date: 2026-10-21. Previous cursor is archived verbatim in
+ tasks/change_log.md#superseded-cursor-before-01311-release-preparation-2026-10-21.
+
+Current evidence: fail-first package module had
+2 expected version failures and 13 passes (0.17s); after metadata bump, 15 passed
+(0.14s). Package plus lifecycle-hooks digest check: 16 passed (0.15s). The changed
+hook tree digest required acknowledgement d4ebd7a654e73a40592dad4aef0ac55062ec3c3245b8d4e19c7525cc7e94a6b6.
+Full suite before final payload regeneration: 4 failed, 2157 passed (248.34s).
+Three failures are stale adopter payload checks expected to resolve after the requested
+final regeneration; one is test_repository_lock_is_portable_and_matches_managed_trees,
+whose Main-owned lock remains unchanged pending Main binding. Ruff passed. After final adopter regeneration, targeted adopter-payload modules plus lifecycle digest
+and package tests passed: 34 passed in 11.18s. Ruff and git diff --check passed after
+regeneration. The full suite is not claimed after regeneration; its only known remaining
+failure is the explicitly accepted unchanged Main-owned lock-binding test.
+```

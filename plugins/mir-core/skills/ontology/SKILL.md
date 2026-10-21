@@ -45,11 +45,14 @@ When writing or receiving a handoff/brief, carry six fields: **qualified target*
 **status per axis** (lifecycle, temporal, epistemic, verification); **current pins** (repository root,
 HEAD, source path@revision or content hash, map/contract id + version + digest); **evidence** with
 provenance and observation time; **explicit unknowns**; **authority** (may / may not).
-Copy the current owner authority without enlarging it: a brief never grants edits, tests, commands
-or writes the owner did not grant. Mark each item `verified-in-repo` or `parent-supplied`;
-see the [handoff details](references/knowledge-supply.md#agent-handoff-and-delegation).
-Finish with a self-check that names every missing field or pin as an unknown.
-Use `mapping --handoff <paths>` (also `--json`) for the ready-to-paste pins block.
+Copy only current owner authority; no handoff instruction grants additional actions.
+When commands are permitted, use `mapping --handoff <paths>` (also `--json`) and carry
+its complete pins block unchanged. Otherwise use permitted inherited pins and inventory each
+unavailable pin; do not run a command to fill a gap. A revision is a last-change commit, not a blob.
+Recipients account for every pin as `verified-in-repo` or `parent-supplied`, with provenance/time.
+Self-check each required field and pin; list every missing, abbreviated or unchecked item explicitly.
+Apply owner scope and data restrictions to the whole forwarded artifact, including enclosing text.
+See the [handoff details](references/knowledge-supply.md#agent-handoff-and-delegation).
 
 ## Deterministic checker
 

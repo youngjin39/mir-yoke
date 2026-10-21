@@ -79,9 +79,9 @@ def test_should_pin_minimum_parent_child_handoff_packet(terms: tuple[str, ...]) 
          "map/contract", "id", "version", "digest"),
         ("evidence", "provenance", "observation time"),
         ("explicit unknowns", "authority", "may / may not"),
-        ("finish", "self-check", "every missing field or pin", "unknown"),
-        ("copy the current owner authority without enlarging it",),
-        ("never grants edits, tests, commands or writes the owner did not grant",),
+        ("self-check", "each required field and pin", "every missing", "unchecked"),
+        ("copy only current owner authority",),
+        ("no handoff instruction grants additional actions",),
         ("verified-in-repo", "parent-supplied", "references/knowledge-supply.md"),
     ],
 )
@@ -1650,7 +1650,7 @@ def test_should_supply_handoff_pins_and_preserve_existing_output(
     ).stdout.strip()
     assert source_revision != head
     assert block["sources"] == [
-        {"path": name, "revision": source_revision,
+        {"path": name, "revision": source_revision, "revision_kind": "last_change_commit",
          "sha256": hashlib.sha256((repo / name).read_bytes()).hexdigest(),
          "modified_vs_head": modified if name == "model.md" else False}
         for name in ("model.md", "check.py")
@@ -1722,6 +1722,7 @@ def test_should_forward_handoff_through_both_shims(mapping_repo, monkeypatch, co
     assert result.returncode == 0, result.stdout + result.stderr
     block = json.loads(result.stdout)["handoff"]
     assert block["repository_root"] == str(repo.resolve())
+    assert_h1_inventory(block, ["scripts/mir_ontology.py"])
     assert block["sources"][0]["sha256"] == hashlib.sha256(runner.read_bytes()).hexdigest()
 
 
@@ -1746,3 +1747,143 @@ def test_should_allow_handoff_without_paths_and_preserve_validation_exit(mapping
     if missing_map:
         assert block["mapping_sha256"] is None
         assert any("mapping_sha256" in reason for reason in block["unknowns"])
+
+
+# H1 Y1: inventories describe availability, never verification or permission.
+def assert_h1_inventory(block, requested):
+    inventory = block["pin_inventory"]
+    assert len({item["pointer"] for item in inventory}) == len(inventory)
+    expected = {
+        "/repository_root": ("repository_root", "path", True),
+        "/head": ("head", "commit", True),
+        "/mapping_path": ("mapping.identity", "path", True),
+        "/mapping_version": ("mapping.version", "version", True),
+        "/mapping_sha256": ("mapping.digest", "sha256", True),
+        "/contract_id": ("contract.identity", "id", True),
+        "/contract_version": ("contract.version", "version", True),
+        "/contract_sha256": ("contract.digest", "sha256", True),
+    }
+    for index in range(len(requested)):
+        expected[f"/sources/{index}/sha256"] = (f"sources[{index}].digest", "sha256", True)
+        expected[f"/sources/{index}/revision"] = (
+            f"sources[{index}].revision", "last_change_commit", False,
+        )
+    assert {item["pointer"] for item in inventory} == set(expected)
+    for item in inventory:
+        pin, kind, required = expected[item["pointer"]]
+        assert (item["pin"], item["kind"], item["required"]) == (pin, kind, required)
+        value = block
+        for token in item["pointer"].strip("/").split("/"):
+            if isinstance(value, list):
+                value = value[int(token)] if int(token) < len(value) else None
+            else:
+                value = value.get(token) if isinstance(value, dict) else None
+        available = value not in (None, "", "untracked")
+        assert item["availability"] == ("available" if available else "unknown")
+        assert set(item) == {"pin", "pointer", "kind", "required", "availability"}
+        if required and not available:
+            assert any(pin + ":" in reason for reason in block["unknowns"])
+        if available and kind in ("commit", "last_change_commit", "sha256"):
+            assert len(value) == (64 if kind == "sha256" else 40)
+    for source in block["sources"]:
+        assert source.get("revision_kind") == (
+            "last_change_commit" if source["revision"] not in (None, "untracked") else None
+        )
+
+
+@pytest.mark.parametrize("state", ["tracked", "untracked", "missing", "outside", "symlink"])
+def test_should_inventory_h1_sources_with_text_json_parity(handoff_repo, state):
+    repo, _ = handoff_repo
+    source = repo / "source with spaces.md"
+    source.write_bytes(b"original\n")
+    if state == "tracked":
+        subprocess.run(["git", "-C", str(repo), "add", source.name], check=True)
+        subprocess.run([
+            "git", "-C", str(repo), "-c", "user.name=Fixture", "-c",
+            "user.email=fixture@example.invalid", "commit", "-qm", "space path",
+        ], check=True, capture_output=True)
+    source.write_bytes(b"modified\r\nbytes\r\n")
+    if state == "missing":
+        source.unlink()
+    elif state in ("outside", "symlink"):
+        outside = repo.parent / "outside with spaces.md"
+        outside.write_bytes(b"excluded synthetic bytes")
+        source.unlink()
+        if state == "symlink":
+            source.symlink_to(outside)
+        else:
+            source = outside
+    paths = [str(source)]
+    before = {p.relative_to(repo): p.read_bytes() for p in repo.rglob("*") if p.is_file()}
+    text = handoff_command(repo, "--handoff", *paths)
+    result = handoff_command(repo, "--json", "--handoff", *paths)
+    assert result.returncode == text.returncode == 0
+    block = json.loads(result.stdout)["handoff"]
+    text_block = json.loads(text.stdout.split("handoff pins:\n", 1)[1])
+    assert_h1_inventory(block, paths)
+    block.pop("observed_at")
+    text_block.pop("observed_at")
+    assert block == text_block
+    if state in ("tracked", "untracked"):
+        assert block["sources"][0]["sha256"] == hashlib.sha256(source.read_bytes()).hexdigest()
+    else:
+        assert block["sources"][0]["sha256"] is None
+    after = {p.relative_to(repo): p.read_bytes() for p in repo.rglob("*") if p.is_file()}
+    assert before == after
+
+
+@pytest.mark.parametrize(
+    "state", ["missing-map", "no-git", "unborn", "no-sources", "no-git-binary"],
+)
+def test_should_inventory_h1_unavailable_and_zero_source_cases(mapping_repo, monkeypatch, state):
+    repo, mapping = mapping_repo
+    run_mapping(repo, mapping)
+    if state == "missing-map":
+        (repo / ".mir/ontology-map.json").unlink()
+    elif state == "unborn":
+        subprocess.run(["git", "init", "-q", str(repo)], check=True, capture_output=True)
+    elif state == "no-git-binary":
+        monkeypatch.setenv("PATH", "")
+    paths = [] if state == "no-sources" else ["model.md", "missing source.md"]
+    baseline = handoff_command(repo, "--json")
+    result = handoff_command(repo, "--json", "--handoff", *paths)
+    assert result.returncode == baseline.returncode == (2 if state == "missing-map" else 0)
+    report = json.loads(result.stdout)
+    block = report.pop("handoff")
+    assert report == json.loads(baseline.stdout)
+    assert_h1_inventory(block, paths)
+
+
+def test_should_finalize_h1_inventory_when_root_resolution_fails():
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("h1_checker", CHECKER)
+    checker = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(checker)
+
+    class UnresolvedRoot:
+        def resolve(self):
+            raise OSError("synthetic root unavailable")
+
+    report = dict.fromkeys(("mapping_path", "mapping_version", "mapping_sha256",
+                            "contract_id", "contract_version", "contract_sha256"))
+    paths = ["task source.md", "second.md"]
+    block = checker.handoff_pins(UnresolvedRoot(), paths, report)
+    assert_h1_inventory(block, paths)
+    assert any("synthetic root unavailable" in reason for reason in block["unknowns"])
+    assert checker.finalize_handoff_pins(block, paths) == block
+
+
+@pytest.mark.parametrize("rule", [
+    "without abbreviation or manual retyping", "last-change commit", "Neither is a Git blob ID",
+    "list each unavailable root, HEAD, task source", "otherwise retain `parent-supplied`",
+    "Keep operative requirements within owner authority", "entire forwarded artifact",
+    "headings, quotes, examples and enclosing instructions", "without reproducing excluded content",
+])
+def test_should_state_h1_whole_envelope_and_permission_rules(rule):
+    guide = " ".join((SKILL / "references/knowledge-supply.md").read_text().split())
+    assert rule in guide
+    allowed, forbidden = "SYNTHETIC_ALLOWED", "SYNTHETIC_EXCLUDED"
+    artifact = f"Heading: {allowed}\n[Excluded content omitted under owner scope.]"
+    assert allowed in artifact and forbidden not in artifact
+    # Static guidance coverage only; this does not establish actual agent adherence.

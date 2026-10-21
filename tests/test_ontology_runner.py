@@ -318,3 +318,26 @@ def test_invalid_active_semver_is_rejected(runner, runtime, version):
         codex(home, version)
     with pytest.raises(OSError, match="invalid active"):
         module.find_checker()
+
+
+def test_should_forward_h1_handoff_json_argv_without_mk_lookup(tmp_path, monkeypatch):
+    repo = tmp_path / "consumer with spaces"
+    scripts = repo / "scripts"
+    scripts.mkdir(parents=True)
+    copied = scripts / "mir_ontology.py"
+    copied.write_bytes(RUNNER.read_bytes())
+    checker = tmp_path / "checker.py"
+    checker.write_text("import json, sys\nprint(json.dumps(sys.argv[1:]))\n")
+    monkeypatch.setenv("MIR_ONTOLOGY_CHECKER", str(checker))
+    args = ["mapping", "--json", "--handoff", "source with spaces.md", "missing.md"]
+    result = subprocess.run([sys.executable, str(copied), *args], capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+    assert json.loads(result.stdout) == ["mapping", "--repo", str(repo), *args[1:]]
+    assert result.stderr == ""
+    monkeypatch.setenv("MIR_ONTOLOGY_CHECKER", str(RUNNER.with_name("ontology_check.py")))
+    result = subprocess.run([sys.executable, str(copied), *args], capture_output=True, text=True)
+    assert result.returncode == 2  # Missing mapping remains an IO error through the runner.
+    block = json.loads(result.stdout)["handoff"]
+    assert all(item["availability"] == "unknown" for item in block["pin_inventory"]
+               if item["pointer"].startswith("/sources/"))
+    assert len(block["pin_inventory"]) == 12

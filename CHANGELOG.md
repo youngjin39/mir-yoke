@@ -8,6 +8,19 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.12] — 2026-10-21 — Complete handoff pin inventory
+
+### Added
+
+- Added opt-in handoff pin availability inventories and explicit last-change commit
+  typing while preserving mapping validation and existing pin values.
+
+### Changed
+
+- Clarified permission-aware pin acquisition, complete pin forwarding, recipient
+  attribution and owner data restrictions across the entire handoff artifact.
+- Kept the fixed SessionStart reminder and its reviewed source mirror within budget.
+
 ## [v0.13.11] — 2026-10-21 — One-command handoff pins
 
 ### Added

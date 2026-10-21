@@ -109,3 +109,20 @@ observation time for the former, and preserve the parent's attribution and time 
 Missing fields stay explicit unknowns, not assumed current facts. Recheck affected claims when
 HEAD, a pinned source or the map/contract changed; do not relabel inherited evidence as verified
 without a local check. Verify only what the task needs and current authority permits.
+
+Use the complete generated pin values without abbreviation or manual retyping. A source's
+`revision` is its last-change commit; `sha256` covers current file bytes. Neither is a Git blob ID.
+The pin inventory names every required pin and records unavailable values individually. An empty
+source list does not prove that the task needs no sources: name any omitted task source as unknown.
+Each recipient inventories every supplied pin: `verified-in-repo` requires an allowed check,
+source/method and observation time; otherwise retain `parent-supplied`, the parent's time and an
+explicit unchecked state. A full inherited value need not be repeated if the exact parent block
+is available in the passed artifact.
+
+If commands or needed paths are forbidden, do not acquire pins through them. Preserve available
+inherited values and list each unavailable root, HEAD, task source, mapping identity/version/digest
+and contract identity/version/digest. A self-check is this actual inventory, not advice to check later.
+Keep operative requirements within owner authority; label ungranted work as a conditional proposal.
+Apply owner data/allowlist restrictions to the entire forwarded artifact, including headings,
+quotes, examples and enclosing instructions. Excluding a value from an inner payload does not
+permit forwarding it elsewhere. Use an omission note without reproducing excluded content.

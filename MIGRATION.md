@@ -1,5 +1,14 @@
 # Migration Guide
 
+## 0.13.12 handoff pin inventory
+
+The optional `mapping --handoff` block adds `pin_inventory` and types Git-derived
+source revisions as `last_change_commit`. Existing pin values, validation, exit
+codes and mapping-only output remain unchanged. Inventories describe availability,
+not verification or permission; unavailable required pins stay individually unknown.
+No schema/database migration, automatic command execution or consumer update is required.
+
+
 ## Unreleased capability-source schema 4
 
 The tracked `config/capability-sources.json` now uses `schema_version: 4`, retaining the explicit

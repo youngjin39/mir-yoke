@@ -2,6 +2,81 @@
   "version": 1,
   "changes": [
     {
+      "id": "handoff-h1-release-0.13.12-2026-10-21",
+      "record_status": "complete",
+      "scope": "Exact H1 wording, additive handoff inventory and last-change revision typing; 0.13.12 metadata and generated payload. Main owns capability lock and delivery.",
+      "bluebrick": "Ontology handoff checker / lifecycle hook reviewed source / release surfaces",
+      "design_ref": "tasks/plan.md",
+      "categories": {
+        "unit": {
+          "status": "pass",
+          "command": "uv run pytest -q -p no:cacheprovider tests/test_ontology_skill.py tests/test_ontology_runner.py tests/test_mir_ontology.py tests/test_plugin_skill_packages.py tests/test_capability_security.py",
+          "notes": "504 passed in 38.44s; fail-first: 34 failed/425 passed plus 2 failed. Static scope wording does not establish actual agent adherence."
+        },
+        "integration": {
+          "status": "pass",
+          "command": "uv run pytest -q -p no:cacheprovider tests/test_ontology_skill.py tests/test_ontology_runner.py tests/test_mir_ontology.py tests/test_plugin_skill_packages.py tests/test_capability_security.py",
+          "notes": "504 passed in 38.44s; fail-first: 34 failed/425 passed plus 2 failed. Static scope wording does not establish actual agent adherence."
+        },
+        "edge": {
+          "status": "pass",
+          "command": "uv run pytest -q -p no:cacheprovider tests/test_ontology_skill.py tests/test_ontology_runner.py tests/test_mir_ontology.py tests/test_plugin_skill_packages.py tests/test_capability_security.py",
+          "notes": "504 passed in 38.44s; fail-first: 34 failed/425 passed plus 2 failed. Static scope wording does not establish actual agent adherence."
+        },
+        "architecture": {
+          "status": "pass",
+          "command": "uv run pytest -q -p no:cacheprovider tests/test_ontology_skill.py tests/test_ontology_runner.py tests/test_mir_ontology.py tests/test_plugin_skill_packages.py tests/test_capability_security.py",
+          "notes": "504 passed in 38.44s; fail-first: 34 failed/425 passed plus 2 failed. Static scope wording does not establish actual agent adherence."
+        },
+        "compatibility": {
+          "status": "fail",
+          "command": "uv run pytest -q -p no:cacheprovider",
+          "notes": "Exit 1: 2184 passed, 1 failed in 385.69s. Only test_repository_lock_is_portable_and_matches_managed_trees: unchanged Main-owned lock needs binding; no other failure. Full-suite green not claimed."
+        },
+        "security": {
+          "status": "pass",
+          "command": "uv run pytest -q -p no:cacheprovider tests/test_ontology_skill.py tests/test_ontology_runner.py tests/test_mir_ontology.py tests/test_plugin_skill_packages.py tests/test_capability_security.py",
+          "notes": "504 passed in 38.44s; fail-first: 34 failed/425 passed plus 2 failed. Static scope wording does not establish actual agent adherence."
+        },
+        "transaction_locking": {
+          "status": "not_applicable",
+          "reason": "Read-only opt-in checker metadata and fixed print-only wording; no transaction, load, UI, resident service or long-running behavior change."
+        },
+        "load": {
+          "status": "not_applicable",
+          "reason": "Read-only opt-in checker metadata and fixed print-only wording; no transaction, load, UI, resident service or long-running behavior change."
+        },
+        "e2e": {
+          "status": "not_applicable",
+          "reason": "Read-only opt-in checker metadata and fixed print-only wording; no transaction, load, UI, resident service or long-running behavior change."
+        },
+        "browser": {
+          "status": "not_applicable",
+          "reason": "Read-only opt-in checker metadata and fixed print-only wording; no transaction, load, UI, resident service or long-running behavior change."
+        },
+        "availability": {
+          "status": "pass",
+          "command": "uv run pytest -q -p no:cacheprovider tests/test_ontology_skill.py tests/test_ontology_runner.py tests/test_mir_ontology.py tests/test_plugin_skill_packages.py tests/test_capability_security.py",
+          "notes": "504 passed in 38.44s; fail-first: 34 failed/425 passed plus 2 failed. Static scope wording does not establish actual agent adherence."
+        },
+        "soak": {
+          "status": "not_applicable",
+          "reason": "Read-only opt-in checker metadata and fixed print-only wording; no transaction, load, UI, resident service or long-running behavior change."
+        }
+      },
+      "targets": [
+        "plugins/mir-core/skills/ontology",
+        "plugins/mir-lifecycle-hooks",
+        "src/mir/core/capabilities/manager.py",
+        "config/capability-sources.json",
+        "tests/test_ontology_skill.py",
+        "tests/test_ontology_runner.py",
+        "tests/test_mir_ontology.py",
+        "tests/test_plugin_skill_packages.py",
+        "tests/test_capability_security.py"
+      ]
+    },
+    {
       "id": "linux-release-runner-fixtures-2026-10-16",
       "record_status": "complete",
       "scope": "Isolate provider trust fixtures from host Git LFS config and create both case-variant SRR endpoints; preserve product behavior. Regenerate dependent adopter SHA256 inventory.",

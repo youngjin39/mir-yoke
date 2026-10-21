@@ -1,45 +1,44 @@
 # Plan
 
-## Active task: 0.13.11 release preparation (2026-10-21)
+## Active task: H1 handoff inventory and 0.13.12 preparation (2026-10-21)
 
-Intent authority: owner Discord 1562120317504061453, 2026-10-20, approved for
-release (parent-supplied by Mir Harness Main). This cursor owns the bounded design.
-Qualified target: mir-yoke:release-0.13.11 (patch), for release change 7d32416.
-Root: this checkout; verified base HEAD 7d32416. Mirror preparation commit 43b60d5
-and the 0.13.10 release preparation record for this release. No new behavior.
-
-Request matrix: (1) package/plugin metadata and existing version assertions;
-(2) dated changelog and matching patch migration note; (3) lifecycle-hooks digest
-acknowledgement if required; (4) verbatim cursor archive and evidence; (5) final
-adopter payload and requested verification. Status: 5/5 checked; the unchanged Main-owned lock is the only open verification item.
-Design: fail-first on the existing version assertions, bump metadata, refresh the
-affected digest if required, run focused/full checks, finalize records, then
-regenerate adopter payload as the final artifact mutation. Follow with read-only
-checks. No separate TDD ledger mutation is needed for this metadata-only preparation,
-matching 43b60d5. The expected Main-owned lock-binding failure is accepted.
-
-Semantic evidence: .mir/ontology-map.json#/contract declares
-mir.common-semantics@1.1.0; /concepts/Task identifies this cursor. Verified map SHA256:
+Intent authority: owner Discord 1562370913666601052 item 4, parent-supplied by
+Mir Harness Main in the bounded fix-yoke-h1 brief. This cursor owns the design.
+Qualified target: mir-yoke:handoff-h1-release-0.13.12. Verified clean base HEAD:
+a5a54ac6feb2f8381b0956a1b1b69c4a536c891f.
+Design source: parent-supplied diagnosis-supply-handoff-2026-10-21.md sections H1,
+Exact Yoke wording diff proposals, Additive mapping --handoff output change,
+Required Yoke tests Y1-Y5 and release step 1. Apply the three exact wording diffs;
+mirror the hook; add one pure finalizer for inventory on every handoff return.
+Preserve existing pins, validation, non-handoff output, exit codes and authority.
+Request matrix: Y1 inventory/edge/read-only; Y2 both runners; Y3 exact print-only
+hook/budgets; Y4 mirror/digest/security; Y5 scope/data wording; release metadata;
+generated parity; final gates. Status: 7/8 closed. Only full-gate green remains open for Main-owned lock binding.
+Method: fail-first tests, implement bounded change, evaluate affected checks,
+prepare patch metadata and digest, regenerate derivatives and adopter payload,
+run full local gates and record real results. Main owns final lock binding.
+Semantic evidence: .mir/ontology-map.json#/concepts/Task identifies this cursor;
+contract mir.common-semantics@1.1.0, mapping@1.1.0. Map SHA256:
 516c5b160c0fa49de51e4a0dc6f14c6e6a955d1baf72cc75dc2c93de7ea23e79.
-Contract source: plugins/mir-core/skills/ontology/references/common-contract.json.
+Contract SHA256: b2f1ecd01aaa88d41caac2bc2481e7f4c5a429cff3983aaa85ddfb0fc2f1b93f.
+Lifecycle: prepared for release; temporal: current working tree; epistemic: local base pins
+verified-in-repo, design/approval parent-supplied; verification: expected lock exception.
+Authority: bounded checkout edits, local checks, canonical-source generation only.
+No commit/tag/push/network/capability commands, capability-lock edits, manual Codex
+edits, other repository writes, Memory Keeper, secrets or memory database access.
+Unknowns: Main binding, release/tag/provider pins, delivery and actual fresh recipient uptake.
+Previous cursor is archived verbatim in tasks/change_log.md under
+Superseded cursor before H1 and 0.13.12 preparation (2026-10-21).
 
-Authority: requested checkout edits and authorized local checks only. No commit,
-tag, push, network, capability commands, capability-lock, .codex/**, other
-repositories, Memory Keeper or handoff writes. Preserve the existing handoff diff.
-Main owns lock binding and delivery; final release/tag/provider pins remain unknown.
-Lifecycle: prepared for release; temporal: current working tree; epistemic: verified
-locally; verification: checked with the explicitly accepted Main-owned lock exception. Approval is parent-supplied; local pins are observed.
-Observation date: 2026-10-21. Previous cursor is archived verbatim in
- tasks/change_log.md#superseded-cursor-before-01311-release-preparation-2026-10-21.
-
-Current evidence: fail-first package module had
-2 expected version failures and 13 passes (0.17s); after metadata bump, 15 passed
-(0.14s). Package plus lifecycle-hooks digest check: 16 passed (0.15s). The changed
-hook tree digest required acknowledgement d4ebd7a654e73a40592dad4aef0ac55062ec3c3245b8d4e19c7525cc7e94a6b6.
-Full suite before final payload regeneration: 4 failed, 2157 passed (248.34s).
-Three failures are stale adopter payload checks expected to resolve after the requested
-final regeneration; one is test_repository_lock_is_portable_and_matches_managed_trees,
-whose Main-owned lock remains unchanged pending Main binding. Ruff passed. After final adopter regeneration, targeted adopter-payload modules plus lifecycle digest
-and package tests passed: 34 passed in 11.18s. Ruff and git diff --check passed after
-regeneration. The full suite is not claimed after regeneration; its only known remaining
-failure is the explicitly accepted unchanged Main-owned lock-binding test.
+Evidence: tasks/change_log.md#h1-handoff-inventory-and-01312-preparation-2026-10-21
+owns exact fail-first nodes and source pins. Before implementation: 34 failed/425 passed
+(exit 1), plus 2 failed (exit 1). After: 504 affected tests passed (exit 0).
+Full offline suite: 2184 passed, 1 expected unchanged-lock failure in 385.69s (exit 1).
+Installed CLI: 1 passed (exit 0). Hook: 783 output bytes, 984 source bytes; exact wording
+and byte-identical method/completion prefix. Lifecycle tree acknowledgement:
+4fc38964da96bb8ccce65286d860d4cfe4d7a8555f302be574fabc250a558963.
+Ruff passed. Scratch generation matched all checkout bytes; Codex parity passed.
+Main-owned capability lock is byte-identical to HEAD; no delivery operation ran.
+Post-record release/payload/package/digest checks: 25 passed in 2.73s (exit 0).
+Final Codex parity, Ruff and diff checks passed. Adopter hashes are regenerated after
+this final evidence update; exact equality is checked read-only before returning.
