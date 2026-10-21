@@ -8,6 +8,16 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.13] — 2026-10-21 — Bound handoff authority to the current grant
+
+### Changed
+
+- Bound handoff may-lists to the owner's current grant by verb, with ungranted
+  actions listed separately and author restrictions enforced while composing briefs.
+- Required full HEADs and digests, individual map/contract identity pins and a final
+  per-field and per-pin completeness and verification inventory.
+- Preserved existing handoff rules and the fixed SessionStart reminder.
+
 ## [v0.13.12] — 2026-10-21 — Complete handoff pin inventory
 
 ### Added

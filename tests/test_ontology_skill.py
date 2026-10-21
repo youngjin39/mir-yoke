@@ -93,6 +93,29 @@ def test_should_carry_handoff_guards_in_skill_body(terms: tuple[str, ...]) -> No
         assert term in handoff, f"skill body handoff misses: {term}"
 
 
+@pytest.mark.parametrize("relative", ["SKILL.md", "references/knowledge-supply.md"])
+@pytest.mark.parametrize(
+    "terms",
+    [
+        ("may-list", "owner's current grant", "by verb"),
+        ("review/brief-only", "read and report only"),
+        ("edit, test, command, write, deploy or delegation", "needs a separate owner grant",
+         "never under may"),
+        ("author", "no command", "no file or scratch write"),
+        ("full 40-hex head", "full digests", "never abbreviate"),
+        ("map and contract", "id + version + digest", "unavailable"),
+        ("end the brief", "per-field and per-pin inventory",
+         "present / missing / abbreviated / unchecked"),
+    ],
+)
+def test_should_bound_handoff_authority_and_inventory_by_owner_grant(relative, terms):
+    text = (SKILL / relative).read_text(encoding="utf-8")
+    heading = "## Handoff" if relative == "SKILL.md" else "### Agent handoff and delegation"
+    handoff = " ".join(text.split(heading, 1)[1].split("\n## ", 1)[0].lower().split())
+    for term in terms:
+        assert term in handoff, f"{relative} handoff misses: {term}"
+
+
 def test_should_report_actual_client_outcome_and_applied_config_source() -> None:
     guide = " ".join((SKILL / "references/knowledge-supply.md").read_text(encoding="utf-8").split())
     assert (

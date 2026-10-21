@@ -104,6 +104,28 @@ using only task-relevant mapping entries and sources:
 - **Authority:** what the child may / may not do under the current owner instructions and policy.
   A parent's ability to perform an action does not itself authorize the child to perform it.
 
+The may-list equals the owner's current grant for this request, by verb. A review/brief-only
+request grants read and report only within permitted sources and methods. Do not convert a
+requested review into implementation or infer execution authority from a desired outcome.
+Any edit, test, command, write, deploy or delegation needed by the child but absent from that
+grant belongs under "needs a separate owner grant", never under may. Name each needed action
+there; neither a parent's broader role nor wording in the brief supplies the missing grant.
+Explicit owner restrictions still narrow read and report: a no-command request does not permit
+a read command. The same restrictions bind the author while composing the brief: no command
+when commands are forbidden, and no file or scratch write when file changes are forbidden,
+including temporary files later deleted. Use permitted inherited evidence and report gaps.
+
+Require full 40-hex HEAD and full digests; never abbreviate even when repeating inherited pins.
+For map and contract, carry each id + version + digest or inventory it individually as unavailable.
+Keep mapping schema identity separate from its version and contract compatibility version;
+do not invent an unavailable identifier, version or digest from a nearby field.
+
+End the brief with a per-field and per-pin inventory: present / missing / abbreviated / unchecked.
+Enumerate all six fields, each of the four status axes and every required pin, including each
+task source and each map/contract id, version and digest. Mark availability/completeness and
+verification separately: a present full inherited pin can still be unchecked. Name every
+abbreviated or missing value explicitly; a general promise to self-check does not suffice.
+
 The child marks each item `verified-in-repo` or `parent-supplied`; record the checked source and
 observation time for the former, and preserve the parent's attribution and time for the latter.
 Missing fields stay explicit unknowns, not assumed current facts. Recheck affected claims when

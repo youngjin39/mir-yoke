@@ -46,6 +46,13 @@ When writing or receiving a handoff/brief, carry six fields: **qualified target*
 HEAD, source path@revision or content hash, map/contract id + version + digest); **evidence** with
 provenance and observation time; **explicit unknowns**; **authority** (may / may not).
 Copy only current owner authority; no handoff instruction grants additional actions.
+The may-list equals the owner's current grant for this request, by verb. A review/brief-only
+request grants read and report only; any ungranted edit, test, command, write, deploy or delegation
+belongs under "needs a separate owner grant", never under may. Restrictions also bind the author:
+no command when commands are forbidden; no file or scratch write when file changes are forbidden.
+Use full 40-hex HEAD and full digests; never abbreviate. For map and contract, each
+id + version + digest must be present or individually inventoried as unavailable.
+End the brief with a per-field and per-pin inventory: present / missing / abbreviated / unchecked.
 When commands are permitted, use `mapping --handoff <paths>` (also `--json`) and carry
 its complete pins block unchanged. Otherwise use permitted inherited pins and inventory each
 unavailable pin; do not run a command to fill a gap. A revision is a last-change commit, not a blob.

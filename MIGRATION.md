@@ -1,5 +1,14 @@
 # Migration Guide
 
+## 0.13.13 handoff authority and final inventory
+
+Handoff authors must copy the current request's owner-granted actions by verb.
+Review/brief-only requests permit only allowed reading and reporting; ungranted
+commands, tests, edits, writes, deployment or delegation need a separate owner grant.
+Author restrictions apply during brief composition, including scratch files.
+Carry full HEADs and digests and end with individual field/pin inventory states.
+No schema/database migration, automatic execution or consumer update is required.
+
 ## 0.13.12 handoff pin inventory
 
 The optional `mapping --handoff` block adds `pin_inventory` and types Git-derived

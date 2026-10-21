@@ -9100,3 +9100,134 @@ and package tests passed: 34 passed in 11.18s. Ruff and git diff --check passed 
 regeneration. The full suite is not claimed after regeneration; its only known remaining
 failure is the explicitly accepted unchanged Main-owned lock-binding test.
 ```
+
+
+## Superseded cursor before authority handoff and 0.13.13 preparation (2026-10-21)
+
+# Plan
+
+## Active task: H1 handoff inventory and 0.13.12 preparation (2026-10-21)
+
+Intent authority: owner Discord 1562370913666601052 item 4, parent-supplied by
+Mir Harness Main in the bounded fix-yoke-h1 brief. This cursor owns the design.
+Qualified target: mir-yoke:handoff-h1-release-0.13.12. Verified clean base HEAD:
+a5a54ac6feb2f8381b0956a1b1b69c4a536c891f.
+Design source: parent-supplied diagnosis-supply-handoff-2026-10-21.md sections H1,
+Exact Yoke wording diff proposals, Additive mapping --handoff output change,
+Required Yoke tests Y1-Y5 and release step 1. Apply the three exact wording diffs;
+mirror the hook; add one pure finalizer for inventory on every handoff return.
+Preserve existing pins, validation, non-handoff output, exit codes and authority.
+Request matrix: Y1 inventory/edge/read-only; Y2 both runners; Y3 exact print-only
+hook/budgets; Y4 mirror/digest/security; Y5 scope/data wording; release metadata;
+generated parity; final gates. Status: 7/8 closed. Only full-gate green remains open for Main-owned lock binding.
+Method: fail-first tests, implement bounded change, evaluate affected checks,
+prepare patch metadata and digest, regenerate derivatives and adopter payload,
+run full local gates and record real results. Main owns final lock binding.
+Semantic evidence: .mir/ontology-map.json#/concepts/Task identifies this cursor;
+contract mir.common-semantics@1.1.0, mapping@1.1.0. Map SHA256:
+516c5b160c0fa49de51e4a0dc6f14c6e6a955d1baf72cc75dc2c93de7ea23e79.
+Contract SHA256: b2f1ecd01aaa88d41caac2bc2481e7f4c5a429cff3983aaa85ddfb0fc2f1b93f.
+Lifecycle: prepared for release; temporal: current working tree; epistemic: local base pins
+verified-in-repo, design/approval parent-supplied; verification: expected lock exception.
+Authority: bounded checkout edits, local checks, canonical-source generation only.
+No commit/tag/push/network/capability commands, capability-lock edits, manual Codex
+edits, other repository writes, Memory Keeper, secrets or memory database access.
+Unknowns: Main binding, release/tag/provider pins, delivery and actual fresh recipient uptake.
+Previous cursor is archived verbatim in tasks/change_log.md under
+Superseded cursor before H1 and 0.13.12 preparation (2026-10-21).
+
+Evidence: tasks/change_log.md#h1-handoff-inventory-and-01312-preparation-2026-10-21
+owns exact fail-first nodes and source pins. Before implementation: 34 failed/425 passed
+(exit 1), plus 2 failed (exit 1). After: 504 affected tests passed (exit 0).
+Full offline suite: 2184 passed, 1 expected unchanged-lock failure in 385.69s (exit 1).
+Installed CLI: 1 passed (exit 0). Hook: 783 output bytes, 984 source bytes; exact wording
+and byte-identical method/completion prefix. Lifecycle tree acknowledgement:
+4fc38964da96bb8ccce65286d860d4cfe4d7a8555f302be574fabc250a558963.
+Ruff passed. Scratch generation matched all checkout bytes; Codex parity passed.
+Main-owned capability lock is byte-identical to HEAD; no delivery operation ran.
+Post-record release/payload/package/digest checks: 25 passed in 2.73s (exit 0).
+Final Codex parity, Ruff and diff checks passed. Adopter hashes are regenerated after
+this final evidence update; exact equality is checked read-only before returning.
+
+## Authority handoff and 0.13.13 preparation (2026-10-21)
+
+Intent/design authority: tasks/plan.md; owner Discord 1562445005166223525 item 2,
+relayed by Mir Harness Main. Batch F observations are parent-supplied evidence,
+not local executions or independent authority. Scope: mir-yoke only.
+
+Additive wording preserves every original Handoff line. The skill and reference
+bind may-lists to the current request by verb, require separate grants for ungranted
+actions, bind authors to command/file restrictions, require full HEAD/digests and
+individual map/contract identities, and end briefs with an actual inventory.
+SessionStart output/source and the manager mirror are unchanged. Version metadata,
+eight manifests, lifecycle acknowledgement and adopter payload prepare 0.13.13.
+No delivery binding, commit, tag, push, user-runtime install or activation occurred.
+
+Verification used the owner-supplied UV cache, offline mode and external scratch:
+
+- `uv run pytest -q tests/test_ontology_skill.py -k bound_handoff_authority_and_inventory_by_owner_grant`:
+  14 failed / 334 deselected before wording; 14 passed / 334 deselected after.
+- `uv run pytest -q tests/test_ontology_skill.py tests/test_ontology_runner.py tests/test_mir_ontology.py tests/test_plugin_skill_packages.py tests/test_capability_security.py tests/test_release_metadata.py`:
+  initially 516 passed / 3 failed from old version expectations; after updating
+  those expectations, 519 passed in 74.44s (exit 0).
+- `uv run pytest -q`: 2196 passed / 3 failed in 385.44s (exit 1). Failures:
+  unchanged managed-tree lock, empty isolated offline cache in installed-CLI test,
+  and a host path in new TDD commands. An earlier full attempt was interrupted
+  after the focused version failures. Full suite was not rerun after corrections.
+- Removed host paths and retained original ledger formatting.
+  `uv run pytest -q tests/test_public_template_surface.py tests/test_template_asset_classification.py tests/test_common_skill_contracts.py`:
+  20 passed in 0.52s. An earlier mistyped test filename collected no tests.
+- Installed-CLI retries exposed cached cp312 wheels versus default Python 3.14,
+  then missing hatchling in its isolated cache. Repacked existing installed/cache
+  distributions into scratch wheels without downloads. With `UV_OFFLINE=1`,
+  `UV_NO_INDEX=1`, `UV_PYTHON=3.12`, `UV_PYTHON_DOWNLOADS=never` and `UV_FIND_LINKS`
+  pointing to those wheels, `uv run pytest -q tests/test_installed_cli.py`:
+  1 passed in 3.09s. Tool installation stayed in the test fixture. Scratch is
+  removed at closeout; no live installation or activation was performed.
+- `uv run ruff check`, `git diff --check` and `scripts/verify_codex_sync.py` passed.
+  The first parity call omitted the UV cache environment and failed before
+  generation; the corrected call passed. Only scratch derivatives were generated.
+- `python3 scripts/mir_ontology.py mapping --handoff <source paths>`: 0 errors,
+  0 warnings. `impact --git-diff HEAD --strict`: no stale refs. The selected
+  namespace-fence test passed within the focused set.
+- SKILL.md: 10068 bytes; unchanged hook output: 783 bytes; hook source: 991 bytes.
+  No existing meaning was deleted or compressed for a budget.
+
+Qualified target: mir-yoke:handoff-authority-release-0.13.13.
+Status axes: lifecycle=prepared; temporal=current checkout; epistemic=local checks
+plus attributed parent evidence; verification=7/8 cells closed with lock exception.
+Authority: prepared changes may be reviewed under the current owner grant; this
+record supplies no additional action grant. Main owns authorized delivery binding.
+Unknowns: future release/provider pins, actual recipient adherence and remeasurement.
+Only the unchanged Main-owned capability lock remains unresolved. No full-suite
+green claim is made. Final payload regeneration follows this record and precedes
+read-only surface, release, digest and parity checks.
+Semantic evidence: .mir/ontology-map.json#/concepts/Task (cursor), #/concepts/Policy
+(repository authority) and #/domain/invariants (no standing consumer authority).
+
+Pins observed locally at 2026-10-21T12:56:17.891738Z, verified-in-repo:
+
+- HEAD: acda442ce4baa14c591896cdcf5f1cf01e02aee3.
+- plugins/mir-core/skills/ontology/SKILL.md SHA256:
+  d8c94ff806e8e10d337117c328083f9b6cfefabbf67b9a5c42695c1f089842eb.
+- plugins/mir-core/skills/ontology/references/knowledge-supply.md SHA256:
+  76c4c68dd0bc59932074d2f1c5526dab67242c3be4e848473c55786f1e0f2fe5.
+- Both sources' last-change commit: 998161a195bd3efd7310fe6128d2d12e3aa063aa;
+  their current content hashes include the working changes.
+- Map identity: .mir/ontology-map.json; version: 1.1.0; SHA256:
+  516c5b160c0fa49de51e4a0dc6f14c6e6a955d1baf72cc75dc2c93de7ea23e79.
+- Contract identity: mir.common-semantics; version: 1.1.0; SHA256:
+  b2f1ecd01aaa88d41caac2bc2481e7f4c5a429cff3983aaa85ddfb0fc2f1b93f.
+- Lifecycle acknowledgement (checked after the manifest bump):
+  332ee402d4a7ed5a9903bde406a64d21149c0edc7696a410c0da33c202968b26.
+- Repository root: available in private execution context, omitted here under
+  public sanitization. The generated block remains unchanged in tool evidence.
+
+Final per-field and per-pin inventory: qualified target present; lifecycle present;
+temporal present; epistemic present; verification present with exception; evidence
+provenance/time present; unknowns present; authority present. HEAD, each source
+path/revision/hash, map identity/version/digest and contract identity/version/digest
+are present, full and verified-in-repo. Repository root is omitted from this public
+record as explained. Owner grant and batch F remain parent-supplied, unchecked
+locally. No abbreviated pins remain. Future release pins and recipient behavior
+remain unavailable/unchecked.

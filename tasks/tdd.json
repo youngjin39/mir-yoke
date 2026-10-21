@@ -2,6 +2,70 @@
   "version": 1,
   "changes": [
     {
+      "id": "handoff-authority-release-0.13.13-2026-10-21",
+      "record_status": "in_progress",
+      "scope": "Additive owner-grant handoff guidance, full pins, final inventory and 0.13.13 preparation. Main owns delivery binding.",
+      "bluebrick": "Ontology handoff guidance / release surfaces",
+      "design_ref": "tasks/plan.md",
+      "categories": {
+        "unit": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_ontology_skill.py tests/test_ontology_runner.py tests/test_mir_ontology.py tests/test_plugin_skill_packages.py tests/test_capability_security.py tests/test_release_metadata.py",
+          "notes": "519 focused tests passed in 74.44s. New wording cases: 14 fail-first, then 14 pass. Static wording checks do not prove agent adherence."
+        },
+        "integration": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_ontology_skill.py tests/test_ontology_runner.py tests/test_mir_ontology.py tests/test_plugin_skill_packages.py tests/test_capability_security.py tests/test_release_metadata.py",
+          "notes": "519 focused tests passed in 74.44s. New wording cases: 14 fail-first, then 14 pass. Static wording checks do not prove agent adherence."
+        },
+        "edge": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_ontology_skill.py tests/test_ontology_runner.py tests/test_mir_ontology.py tests/test_plugin_skill_packages.py tests/test_capability_security.py tests/test_release_metadata.py",
+          "notes": "519 focused tests passed in 74.44s. New wording cases: 14 fail-first, then 14 pass. Static wording checks do not prove agent adherence."
+        },
+        "architecture": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_ontology_skill.py tests/test_ontology_runner.py tests/test_mir_ontology.py tests/test_plugin_skill_packages.py tests/test_capability_security.py tests/test_release_metadata.py",
+          "notes": "519 focused tests passed in 74.44s. New wording cases: 14 fail-first, then 14 pass. Static wording checks do not prove agent adherence."
+        },
+        "compatibility": {
+          "status": "fail",
+          "command": "uv run pytest -q",
+          "notes": "Full offline suite: 2196 passed, 3 failed in 385.44s. Surface fix: 20 passed. Isolated installed-CLI: 1 passed using local wheels and Python 3.12. Only unchanged Main-owned lock unresolved; no full-suite green claim."
+        },
+        "security": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_ontology_skill.py tests/test_ontology_runner.py tests/test_mir_ontology.py tests/test_plugin_skill_packages.py tests/test_capability_security.py tests/test_release_metadata.py",
+          "notes": "519 focused tests passed in 74.44s. New wording cases: 14 fail-first, then 14 pass. Static wording checks do not prove agent adherence."
+        },
+        "availability": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_ontology_skill.py tests/test_ontology_runner.py tests/test_mir_ontology.py tests/test_plugin_skill_packages.py tests/test_capability_security.py tests/test_release_metadata.py",
+          "notes": "519 focused tests passed in 74.44s. New wording cases: 14 fail-first, then 14 pass. Static wording checks do not prove agent adherence."
+        },
+        "transaction_locking": {
+          "status": "not_applicable",
+          "reason": "Additive handoff prose and release metadata only; no transactions, UI, load or service behavior changes."
+        },
+        "load": {
+          "status": "not_applicable",
+          "reason": "Additive handoff prose and release metadata only; no transactions, UI, load or service behavior changes."
+        },
+        "e2e": {
+          "status": "not_applicable",
+          "reason": "Additive handoff prose and release metadata only; no transactions, UI, load or service behavior changes."
+        },
+        "browser": {
+          "status": "not_applicable",
+          "reason": "Additive handoff prose and release metadata only; no transactions, UI, load or service behavior changes."
+        },
+        "soak": {
+          "status": "not_applicable",
+          "reason": "Additive handoff prose and release metadata only; no transactions, UI, load or service behavior changes."
+        }
+      }
+    },
+    {
       "id": "handoff-h1-release-0.13.12-2026-10-21",
       "record_status": "complete",
       "scope": "Exact H1 wording, additive handoff inventory and last-change revision typing; 0.13.12 metadata and generated payload. Main owns capability lock and delivery.",
