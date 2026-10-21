@@ -114,9 +114,9 @@
   },
   "schema_version": 2,
   "source": {
-    "commit": "11be6e1019f830a1d7edff3b104a37b14e7185bf",
+    "commit": "727525778dc80a8c9b116f5910dce3fd4150d535",
     "ref": "main",
     "url": "https://github.com/youngjin39/mir-yoke.git"
   },
-  "synced_at": "2026-10-21T16:51:33.518169+00:00"
+  "synced_at": "2026-10-21T17:13:22.699468+00:00"
 }
