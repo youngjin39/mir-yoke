@@ -443,7 +443,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": ".mir/capability-lock.json",
-      "sha256": "cdbb3397e242b927d8bea1e81c9977f00de296761c616c3ec071b300e558967c"
+      "sha256": "1a860db73f31b15dd770b111b26e7cdfd6c10a893be3bd529d8bc6ffd257f651"
     },
     {
       "classification": "reference",
