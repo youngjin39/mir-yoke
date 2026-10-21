@@ -68,7 +68,35 @@ _HOOKS_SCHEMA = {
                     }
                 ]
             }
-        ]
+        ],
+        "UserPromptSubmit": [
+            {
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": (
+                            'python3 "${CLAUDE_PLUGIN_ROOT}/skills/runtime-continuity/'
+                            'scripts/handoff_packet.py"'
+                        ),
+                        "timeout": 8,
+                    }
+                ]
+            }
+        ],
+        "Stop": [
+            {
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": (
+                            'python3 "${CLAUDE_PLUGIN_ROOT}/skills/runtime-continuity/'
+                            'scripts/handoff_packet.py"'
+                        ),
+                        "timeout": 8,
+                    }
+                ]
+            }
+        ],
     }
 }
 _HOOK_HANDLER_SOURCE = '''"""Render lifecycle continuity context."""
@@ -94,6 +122,8 @@ def main() -> None:
 if __name__ == "__main__":
     main()
 '''
+# ADR-90 amendment (2026-10-22): exact reviewed stateless handoff implementation.
+_HANDOFF_HANDLER_SHA256 = "ea45f827173d253540a2e0490ab86c792bbc7a899f9a562f439e1dc09f5682b5"
 _ACTIVE_PACKAGE_CREDENTIAL_PATTERNS = (
     re.compile(rb"https?://[^\s/@]+@", re.IGNORECASE),
     re.compile(rb"-----BEGIN [A-Z ]*PRIVATE KEY-----"),
@@ -516,10 +546,17 @@ def _validate_plugin(plugin_root: Path, expected_name: str, *, package_kind: str
         handler = plugin_root / "hooks" / "runtime_continuity.py"
         if handler.is_symlink() or not handler.is_file():
             raise CapabilityError(f"shared hook handler is missing or linked: {expected_name}")
-        if handler.read_text(encoding="utf-8") != _HOOK_HANDLER_SOURCE:
+        if handler.read_bytes() != _HOOK_HANDLER_SOURCE.encode("utf-8"):
             raise CapabilityError("shared hook handler is not the reviewed read-only handler")
         if len(handler.read_bytes()) > 1024:
             raise CapabilityError("shared hook handler exceeds bounded output contract")
+        handoff_handler = (
+            plugin_root / "skills" / "runtime-continuity" / "scripts" / "handoff_packet.py"
+        )
+        if handoff_handler.is_symlink() or not handoff_handler.is_file():
+            raise CapabilityError(f"shared handoff handler is missing or linked: {expected_name}")
+        if hashlib.sha256(handoff_handler.read_bytes()).hexdigest() != _HANDOFF_HANDLER_SHA256:
+            raise CapabilityError("shared handoff handler is not the reviewed stateless handler")
     skill_files = list((plugin_root / "skills").glob("*/SKILL.md"))
     if not skill_files:
         raise CapabilityError(f"plugin has no skills: {expected_name}")

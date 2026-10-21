@@ -10,6 +10,28 @@
           }
         ]
       }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/skills/runtime-continuity/scripts/handoff_packet.py\"",
+            "timeout": 8
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/skills/runtime-continuity/scripts/handoff_packet.py\"",
+            "timeout": 8
+          }
+        ]
+      }
     ]
   }
 }

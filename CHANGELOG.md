@@ -8,6 +8,27 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.14] — 2026-10-22 — Mechanical handoff packet preparation
+
+### Added
+
+- Prepared deterministic, offline UserPromptSubmit pin/owner-boundary supply and
+  one-shot Stop packet checks for Claude/Codex native hook payloads, with fail-open
+  warnings, stateless transcript-tail recomputation and per-field/per-pin self-checks.
+- Registered both events in the common hook definition and amended ADR-90/schema-4
+  exact handler admission. Documented detection, English/Korean authority checks,
+  read/inspect defaults, exclusions, prompt hashes, budgets and runtime limits.
+- Main review: Korean detection also covers instruction-text (`지시문`/`인계문`) requests and
+  the object-first "pass to another agent" form; prose prohibitions are copied per sentence and
+  cover the `~지 말` forms. Checked against the ten round-e P3 owner texts (10/10 detected).
+
+### Delivery boundary
+
+- SessionStart remains the fixed reminder with its 2-second budget. Source event
+  registration is prepared; Main owns generated surfaces, digest acknowledgements
+  and lock binding before activation. No adapter or persistent state is required.
+- No live-runtime or behavioral probe result is claimed by offline packet tests.
+
 ## [v0.13.13] — 2026-10-21 — Bound handoff authority to the current grant
 
 ### Changed

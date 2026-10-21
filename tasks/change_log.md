@@ -9231,3 +9231,391 @@ are present, full and verified-in-repo. Repository root is omitted from this pub
 record as explained. Owner grant and batch F remain parent-supplied, unchecked
 locally. No abbreviated pins remain. Future release pins and recipient behavior
 remain unavailable/unchecked.
+
+
+## Superseded cursor: authority handoff 0.13.13 (2026-10-22)
+
+# Plan
+
+## Active task: Authority handoff guidance and 0.13.13 preparation (2026-10-21)
+
+Intent authority: owner Discord 1562445005166223525 item 2, parent-supplied by
+Mir Harness Main in the current brief. This cursor owns the bounded design.
+Qualified target: mir-yoke:handoff-authority-release-0.13.13.
+Verified base HEAD: acda442ce4baa14c591896cdcf5f1cf01e02aee3 (initially clean).
+
+Design: preserve all existing Handoff rules; add verb-exact owner-grant may-list,
+review/brief read-and-report boundary, separate-grant actions, author restrictions,
+full HEAD/digest requirements and a final per-field/per-pin inventory in the skill
+and reference. Keep SessionStart unchanged: it already points to ontology Handoff.
+Prepare release metadata; refresh the lifecycle tree acknowledgement for versioned
+manifests and regenerate adopter payload last. No checker behavior changes needed.
+
+Request matrix: authority wording; author restrictions; full pins; final inventory;
+release metadata/digest/payload; focused fail-first checks; full suite; parity/bytes.
+Status: 7/8 closed. Full-suite green remains open for Main-owned lock binding.
+Evidence: tasks/change_log.md, Authority handoff and 0.13.13 preparation heading.
+TDD ledger: tasks/tdd.json. Evidence log: tasks/change_log.md.
+Semantic evidence: .mir/ontology-map.json#/concepts/Task maps this cursor;
+#/domain/invariants names the no-standing-consumer-authority invariant.
+Parent-supplied batch F observations are evidence, not authority or local executions.
+
+Authority: bounded checkout edits, local tests, release metadata and adopter payload.
+No network, other repositories, credentials/protected files, delivery digest binding,
+capability update/attest, commit/tag/push or generated .codex writes.
+Unknowns: Main release binding, actual recipient adherence and post-release remeasurement.
+Lifecycle: preparation; temporal: current working tree; epistemic: base checked locally,
+owner grant and batch F inherited; verification: checked with explicit lock exception.
+Previous cursor is preserved verbatim in tasks/change_log.md under the matching
+Superseded cursor heading.
+
+Results: new rules 14 fail-first -> 14 pass; focused packages 519 pass.
+Full offline suite: 2196 passed, 3 failed in 385.44s. Public-path issue fixed and
+20 surface/payload/common-skill tests passed. Isolated installed-CLI check passed
+with local cached wheels and Python 3.12; no network or live activation occurred.
+Only unchanged Main-owned capability lock remains unresolved. Full suite was not
+rerun after these focused corrections; no full-suite green claim.
+Codex parity, Ruff, ontology mapping/strict impact and diff checks passed.
+SKILL.md: 10068 bytes; unchanged hook output: 783 bytes; hook source: 991 bytes.
+Final evidence records precede adopter payload regeneration and read-only checks.
+
+## Mechanical handoff packet preparation, 0.13.14 (2026-10-22)
+
+Intent authority: current owner writer brief, recorded in tasks/plan.md. External
+measurements remain parent-supplied. Base HEAD checked locally:
+22125d66642c5cc87234ed610012af2e83fa776b.
+Map .mir/ontology-map.json SHA256:
+516c5b160c0fa49de51e4a0dc6f14c6e6a955d1baf72cc75dc2c93de7ea23e79.
+Contract mir.common-semantics@1.1.0 SHA256:
+b2f1ecd01aaa88d41caac2bc2481e7f4c5a429cff3983aaa85ddfb0fc2f1b93f.
+Semantic evidence: map /concepts/Task names the cursor; /domain/invariants names
+the no-standing-consumer-authority and reviewed-hook/target-adapter boundaries.
+Implementation evidence: config/project-hooks.json lists both runtime events;
+capabilities/config.py and capabilities/manager.py admit exactly fixed SessionStart.
+
+Design: candidate UserPromptSubmit supplies the existing runner's unchanged pins
+and verbatim labeled owner boundary; candidate Stop checks final assistant packets
+once. Explicit target-owned state retains exact pins, authority and repair guard;
+native transcript prompt hashes prevent reuse of stale grants. Narrow imperative
+handoff/brief + agent-recipient detection excludes quoted examples and negatives.
+May-items use ordered normalized lexical containment; the entire enclosing text
+is checked for exclusions and obvious extra permissions. Require six fields,
+four status axes, unchanged pins, provenance/time and individual self-checks.
+Block once; errors/retries warn and fail open. Runner deadline: 5s, including
+process-group cleanup; candidate event budget: 8s. Ordinary turns add no text.
+Rule details and false-negative/positive limits: runtime-continuity reference
+handoff-packet.md. Existing ontology command suffices; no ontology skill change.
+
+Delivery: candidate registration remains under the skill reference, unbound.
+Active hooks.json/runtime_continuity.py remain identical to HEAD; SessionStart
+stays at 2s. Main owns ADR-90/event/schema review, target adapter admission and
+delivery metadata. Native payload fixtures are evidence, not live parity proof.
+Missing events/fields, rewritten/truncated prompts and tool/file handoffs without
+final text are explicit gaps. No network, live agent/probe, Memory Keeper,
+binding, commit, tag, push or release was performed.
+
+Executed TDD (external owner-selected UV_CACHE_DIR and pytest scratch):
+
+- Before implementation, `uv run --offline pytest -q tests/test_mechanical_handoff.py`:
+  **28 failed, 2 passed** (missing implementation/registration definition).
+- Boundary fail-first batches: **7 failed, 32 passed**, then **7 failed, 46 passed**.
+  Further focused fail-first runs: **1 failed, 52 deselected** (owner context on
+  supply failure), **1 failed, 53 deselected** (ordinary Stop/missing adapter).
+  Each preceded its corresponding repair. First green: 30 passed; next: 39 passed.
+- Latest focused command: `uv run --offline pytest -q tests/test_mechanical_handoff.py
+  tests/test_plugin_skill_packages.py tests/test_release_metadata.py
+  tests/test_no_korean_in_user_facing.py tests/test_project_agent_kit_release_evidence.py`:
+  **107 passed in 61.89s**, including 54 mechanical tests and real local runner supply.
+  Covers both native transcript shapes, retry guards, malformed payload/state,
+  exclusions, protected/escaping paths, authority enlargement and runner timeout.
+- Full command: `UV_OFFLINE=1 uv run --offline pytest -q`:
+  **76 failed, 2176 passed in 338.84s**. Breakdown: 69 active tree acknowledgement
+  failures (including two digest assertions); one managed-tree capability-lock
+  mismatch; three stale adopter-payload/surface failures; one empty isolated
+  offline dependency cache; one source-language failure; one observer detecting
+  changed provider/outside state while implementation edits continued.
+- Corrected literal Unicode source encoding, retaining runtime detection. Stopped
+  edits before observer rerun. Both test files now pass in the latest 107-test run.
+  No full-suite green or post-correction full rerun is claimed. Remaining delivery
+  metadata failures were not bypassed. Offline install lacked httpx in its isolated
+  cache; no network was enabled to fill it.
+- `uv run --offline ruff check`: All checks passed!
+- `python3 scripts/verify_codex_sync.py` with explicit UV_CACHE_DIR/offline:
+  OK: Codex derivatives match Claude sources. No derivatives were written.
+  First invocation inherited an inaccessible default cache; the explicit selected
+  cache corrected that invocation.
+- `python3 scripts/mir_ontology.py impact --git-diff HEAD --strict`: exit 0;
+  /concepts/Task affected, no selected checks or stale refs.
+- `python3 scripts/mir_ontology.py mapping --handoff` with SessionStart source,
+  new packet script and candidate hook definition: 0 errors, 0 warnings; map and
+  contract 1.1.0. New source revisions remain untracked/unavailable, with full
+  content hashes, until Main accepts them.
+- `git diff --check`: pass. No diff in active hooks, generated .codex or
+  tasks/handoffs/session-handoff-LATEST.md.
+
+Request matrix: **9/11** closed. Current bounded evidence covers detection/silence;
+pin supply; owner boundary; envelope/pins/evidence; authority/exclusions; individual
+self-checks; one-shot/error/budgets; both native payload adapters (offline only);
+and version metadata/focused checks/lint/parity.
+
+Open cells:
+
+1. Additional event admission/registration and adapter delivery: Main owns review
+   of ADR-90 and exact event/package/schema gates. Candidate is concrete but is not
+   registered by the active plugin definition. Live host behavior is unverified.
+2. Full-suite green: Main owns permitted lock/acknowledgement and adopter-inventory
+   refresh. Isolated CLI install also needs offline local dependency provisioning.
+
+Recommendation: review and admit the explicit adapter/state design, integrate
+candidate events, regenerate delivery evidence, then rerun the full suite. Do not
+claim activation or recipient adherence from this preparation.
+Lifecycle: prepared candidate; temporal: current checkout; epistemic: local
+executions plus labeled inherited context; verification: focused pass/full-suite
+incomplete. Unknowns: live host payload changes, recipient behavior and additional
+consumer protections. Evidence is direct local execution; closeout observation:
+2026-10-21T15:32:59Z (2026-10-22 in the owner's timezone).
+
+Changed files (23):
+
+- `plugins/mir-lifecycle-hooks/skills/runtime-continuity/scripts/handoff_packet.py`
+- `plugins/mir-lifecycle-hooks/skills/runtime-continuity/references/handoff-hooks.json`
+- `plugins/mir-lifecycle-hooks/skills/runtime-continuity/references/handoff-packet.md`
+- `plugins/mir-lifecycle-hooks/skills/runtime-continuity/SKILL.md`
+- `tests/test_mechanical_handoff.py`, `tests/test_plugin_skill_packages.py`,
+  `tests/test_capability_security.py`
+- `VERSION`, `pyproject.toml`, `uv.lock`, `CHANGELOG.md`
+- `.claude-plugin/marketplace.json`
+- `.claude-plugin/plugin.json` and `.codex-plugin/plugin.json` below each of
+  `plugins/mir-core`, `plugins/mir-code`, `plugins/mir-content`,
+  `plugins/mir-lifecycle-hooks` (eight manifests)
+- `tasks/plan.md`, `tasks/change_log.md`, `tasks/tdd.json`
+
+Final closeout after cursor/ledger updates: mechanical/plugin/release/sanitization
+selection passed **76 tests in 12.74s**; Ruff, Codex parity and diff checks passed.
+HEAD and map digest still match the full pins above. Writer scratch is removed.
+
+## Superseded preparation cursor before stateless rework (2026-10-22)
+
+The following cursor is historical. The current owner addendum supersedes its
+adapter/state and pending-admission design.
+
+```markdown
+# Plan
+
+## Owner addendum: stateless common hooks (2026-10-22)
+
+Current intent/design authority: the current writer brief's addendum, owner decision
+1562495356552355994 (parent-supplied). It supersedes the adapter/state design below;
+the previous record remains historical evidence until closeout archives it.
+Register UserPromptSubmit and Stop in the common hook inventory for both runtimes;
+preserve SessionStart. No adapter, environment runner override, or persisted state.
+Stop recomputes from the explicit transcript tail (1 MiB), exact prompt identity,
+final assistant text and a fresh root-local runner call (argv only, deadline 5 s).
+Use stop_hook_active to block once. Errors warn and fail open. Ordinary prompts
+perform detection only. Without explicit grants allow read/inspect only; check
+English/Korean authority and forward explicit prohibitions. Amend ADR-90 and the
+exact schema-4 inventory, with R19 regression evidence. Keep 0.13.14 unbound.
+Current request matrix: 0/11 freshly verified; prior counts below are historical.
+No commits, binding, generated .codex writes, network, other-repository edits,
+real agents/probes, protected data access, or session-handoff-LATEST.md edits.
+
+## Active task: Mechanical handoff packet, 0.13.14 preparation (2026-10-22)
+
+Intent authority: current owner writer brief. The Discord A decision and Harness
+measurements are parent-supplied evidence, not independently verified authority.
+Qualified target: mir-yoke:mechanical-handoff-packet.
+Verified base: 22125d66642c5cc87234ed610012af2e83fa776b, initially clean.
+Map SHA256: 516c5b160c0fa49de51e4a0dc6f14c6e6a955d1baf72cc75dc2c93de7ea23e79.
+Semantic evidence: .mir/ontology-map.json#/concepts/Task names this cursor;
+#/domain/invariants requires no standing consumer authority and target adapters.
+
+Design authority: this cursor records the current writer brief. Implement deterministic
+UserPromptSubmit supply and one-shot Stop checking for Claude/Codex native hook
+payloads. Preserve the fixed SessionStart and its 2-second budget. ADR-90 and the
+exact active-package validator admit only that fixed hook. Prepare an unbound hook
+registration definition alongside the skill, with explicit target-owned adapter/state
+opt-in. Main must review admission and bind it; do not silently widen the validator.
+No runtime parity claim beyond repository-evidenced event shapes and offline tests.
+Design/limits: plugins/mir-lifecycle-hooks/skills/runtime-continuity/references/handoff-packet.md.
+
+Request matrix: 9/11 closed; per-cell evidence is in tasks/change_log.md under
+Mechanical handoff packet preparation, 0.13.14. Open: Main-owned event admission
+and full-suite green after delivery metadata/cache refresh. Latest focused checks:
+107 passed. Full suite: 2176 passed / 76 failed before two focused corrections.
+Ruff, Codex parity, strict ontology impact and diff checks pass. No post-correction
+full rerun or live-runtime verification claim.
+TDD/evidence sink: tasks/change_log.md (fail-first and executed results).
+tasks/tdd.json records this preparation and preserves previous records.
+
+May: bounded plugin/test/release metadata edits and local offline verification.
+May not: commit/push/release/bind, network/MK, real agents/probes, other repositories,
+protected paths, generated .codex writes, or session-handoff-LATEST.md changes.
+Lifecycle: prepared, unbound candidate; temporal: current checkout; epistemic: local
+code/fixtures verified, external measurements inherited; verification: focused pass,
+full-suite incomplete. Active hooks, bindings and generated files remain untouched.
+Unknowns: active admission/binding and live host behavior require Main; target adapter
+configuration is consumer-owned. Superseded cursor preserved in tasks/change_log.md.
+```
+
+## Stateless common handoff rework, 0.13.14 (2026-10-22)
+
+Intent/design authority: the current writer brief's stateless addendum; the single
+active cursor is tasks/plan.md. Previous candidate design above is historical.
+Qualified target: mir-yoke:mechanical-handoff-packet. HEAD verified-in-repo:
+22125d66642c5cc87234ed610012af2e83fa776b. Observation: 2026-10-21T16:19:31Z.
+Map verified-in-repo SHA256:
+516c5b160c0fa49de51e4a0dc6f14c6e6a955d1baf72cc75dc2c93de7ea23e79;
+contract mir.common-semantics@1.1.0, SHA256
+b2f1ecd01aaa88d41caac2bc2481e7f4c5a429cff3983aaa85ddfb0fc2f1b93f.
+Semantic evidence: .mir/ontology-map.json#/concepts/Task,
+#/domain/invariants/2, and ADR-90's dated amendment. External measurements and
+owner decision identifiers remain parent-supplied evidence, not repository facts.
+
+### Design and scope
+
+- Register UserPromptSubmit supply and Stop checking in the common hooks.json,
+  auto-discovered by both runtime manifests. Preserve exact SessionStart source,
+  registration and 2-second budget. Each new event has an 8-second host budget.
+- Remove the candidate adapter registration file. No persisted state, state
+  directory, adapter registration, environment runner override or write operation.
+- Resolve the root by upward nearest .git marker from explicit native cwd. Run
+  only scripts/mir_ontology.py mapping --handoff with argv, no shell; deadline 5 s,
+  kill/reap process group on timeout. Missing root/runner warns and skips.
+- Stop reads at most the last 1 MiB of explicit transcript_path, recomputes the
+  last native prompt's SHA256, final assistant, owner boundary and fresh pins.
+  Ignore assistant payload hints and stale previous-turn text. Native bool
+  stop_hook_active guarantees one repair request; missing guard warns/skips.
+- Explicit authority uses normalized lexical containment; otherwise read/inspect
+  only. English/Korean action/prohibition classes and false-positive/negative
+  limits are in the packet reference. Literal exclusions cover the whole artifact.
+- Check all envelope axes, individual pin and field inventories, unknown reasons,
+  evidence provenance/time, authority and exclusions. Diagnostics name JSON
+  pointers for changed pins and redact excluded values. Errors warn/fail open.
+- Stateless limit: supplied observed_at is ISO-format checked, while all other
+  canonical JSON bytes must match fresh pins. No state can attest the initial
+  timestamp or unchanged supply bytes after repository mutation. Live-host
+  delivery, event availability and retry semantics remain unverified.
+- ADR-90's 2026-10-22 amendment and schema-4 exact admission include both new
+  events. The reviewed handler SHA256 is
+  07d925a363d75416d818341b124b09b2874e99494fb716c9020bb431e5f3b3f9.
+  No package digest acknowledgement, capability lock or runtime binding changed.
+
+### Executed verification
+
+Every uv invocation used the owner's configured external shared cache and offline
+mode. Scratch/TMPDIR and pytest basetemp were on external task scratch. Commands
+below omit only machine-specific scratch/output paths for public sanitization.
+
+1. Fail-first: `uv run --offline pytest -q tests/test_mechanical_handoff.py`:
+   **18 failed, 64 passed in 1.51 s**, before stateless implementation. Failures
+   covered missing common registration, no-adapter supply, default read authority,
+   forwarded Korean prohibition, fresh Stop pins and prompt hash/tail behavior.
+   Additional fail-first `-k 'changed_pin or korean_handoff_prohibition'`:
+   **2 failed, 88 deselected**, before pin-pointer/negative-request repairs.
+   Admission writer separately reported 6 failed/4 passed before its changes;
+   that red count is parent-supplied, not a parent-observed log.
+2. Mechanical green: **90 passed in 7.37 s**. Includes Claude/Codex native shapes,
+   a real local mapping runner, both authority modes, exclusions, missing pins,
+   per-gap self-checks, timeout, malformed transcript, truncated tail, stale hash,
+   native retry guard and ordinary-turn silence/no runner.
+3. Direct admission rerun: `uv run --offline pytest -q
+   tests/test_capability_security.py -k r19`:
+   **18 passed, 109 deselected in 3.93 s**. Parent inspected the actual source diff
+   and reran this after finalizing the exact handler digest.
+4. Focused suite: mechanical + capability-security + plugin-skill + release
+   metadata + sanitization files: **209 passed, 30 failed in 50.23 s**. All failures
+   were the pre-bind acknowledgement gate or its two exact equality assertions.
+5. Full suite: `uv run --offline pytest -q`:
+   **2232 passed, 75 failed in 329.95 s**. **69** failures are expected stale active
+   package acknowledgements (67 raised gates, two equality assertions).
+6. One new public-surface failure came from an absolute cache path in the TDD
+   command record. Removed the machine-specific path, then reran mechanical,
+   R19, plugin, release, sanitization/public-surface and ontology selections:
+   **143 passed, 109 deselected in 25.66 s**. Exact selection:
+   `uv run --offline pytest -q tests/test_mechanical_handoff.py
+   tests/test_capability_security.py tests/test_plugin_skill_packages.py
+   tests/test_release_metadata.py tests/test_no_korean_in_user_facing.py
+   tests/test_public_template_surface.py tests/test_mir_ontology.py
+   --deselect=tests/test_capability_security.py::test_capability_source_declares_the_reviewed_active_hook_package
+   --deselect=tests/test_capability_security.py::test_should_bind_h1_exact_hook_source_and_final_package_version
+   -k 'not test_capability_security or r19'`.
+   No post-correction full rerun or full-green result is claimed.
+7. `uv run --offline ruff check`: **All checks passed!**
+   `python3 scripts/verify_codex_sync.py`: **OK: Codex derivatives match Claude sources**.
+   `python3 scripts/mir_ontology.py impact --git-diff HEAD --strict`: exit 0,
+   no stale refs; its four selected ontology checks also passed in final selection.
+   `python3 scripts/mir_ontology.py mapping --handoff` with hooks.json, packet
+   handler and ADR-90 paths: **0 errors, 0 warnings**, map/contract 1.1.0.
+   The untracked handler has a full content hash but no last-change commit yet.
+   `git diff --check`: pass.
+
+### Every remaining non-acknowledgement failure
+
+- `tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees`:
+  the tracked capability lock still pins the prior plugin trees. This work
+  intentionally does not bind or refresh that lock.
+- `tests/test_advanced_reference_templates.py::test_should_remove_reference_snapshot_when_adopter_payload_is_built`:
+  regenerated adopter payload differs from persisted config/adopter-payload.json
+  after source/manifests changed.
+- `tests/test_greenfield_slim_integration.py::test_should_leave_minimal_starter_and_project_owned_changes_when_candidate_is_slimmed`:
+  the same stale remove-inventory hashes classify changed manifests and validator
+  files as preserved content, so slim correctly refuses deletion.
+- `tests/test_template_asset_classification.py::test_should_match_exact_adopter_payload_when_release_inventory_is_generated`:
+  the persisted release payload inventory has old source hashes.
+- `tests/test_installed_cli.py::test_should_run_copied_tool_when_repository_python_is_not_on_path`:
+  the test replaces UV_CACHE_DIR with an empty isolated cache; offline dependency
+  resolution cannot find httpx. No network was enabled and no dependencies fetched.
+
+### Request matrix and Main boundary
+
+10/11 cells complete with current evidence: detection/silence; stateless supply;
+transcript/hash/tail; authority/prohibitions; envelope/full pins; exclusions and
+per-gap inventory; retry/error/budget; both runtime fixture shapes; ADR-90 R19 and
+exact inventory; version metadata/lint/parity. Full-suite green is open for the
+acknowledgement, lock, adopter inventory and isolated dependency-cache causes above.
+All requested checks were run; remaining failures are disclosed, not bypassed.
+
+Main decisions: review the timestamp attestation limit; refresh package digest
+acknowledgements, managed lock and adopter inventory during authorized delivery;
+provision local offline install dependencies if that test must pass without network;
+then perform separately authorized native-host observations. Do not infer runtime
+activation or recipient adherence from this prepared source.
+Lifecycle: prepared/unbound. Temporal: current checkout. Epistemic: direct local
+verification plus labeled inherited context. Verification: focused pass/full green open.
+No commit, bind, tag, push, release, generated .codex write, protected-file access,
+other-repository write or live-agent/probe run was performed. The session handoff
+file and SessionStart handler remain untouched.
+
+### Changed files (27, including inherited 0.13.14 preparation)
+
+- plugins/mir-lifecycle-hooks/hooks/hooks.json
+- plugins/mir-lifecycle-hooks/skills/runtime-continuity/scripts/handoff_packet.py
+- plugins/mir-lifecycle-hooks/skills/runtime-continuity/references/handoff-packet.md
+- plugins/mir-lifecycle-hooks/skills/runtime-continuity/SKILL.md
+- docs/decisions/adr-90-role-plugins-and-common-hooks.md
+- config/capability-sources.json
+- src/mir/core/capabilities/config.py
+- src/mir/core/capabilities/manager.py
+- tests/test_mechanical_handoff.py
+- tests/test_capability_security.py
+- tests/test_plugin_skill_packages.py
+- VERSION, CHANGELOG.md, pyproject.toml, uv.lock
+- .claude-plugin/marketplace.json
+- plugins/mir-core/.claude-plugin/plugin.json
+- plugins/mir-core/.codex-plugin/plugin.json
+- plugins/mir-code/.claude-plugin/plugin.json
+- plugins/mir-code/.codex-plugin/plugin.json
+- plugins/mir-content/.claude-plugin/plugin.json
+- plugins/mir-content/.codex-plugin/plugin.json
+- plugins/mir-lifecycle-hooks/.claude-plugin/plugin.json
+- plugins/mir-lifecycle-hooks/.codex-plugin/plugin.json
+- tasks/plan.md, tasks/change_log.md, tasks/tdd.json
+
+The earlier untracked references/handoff-hooks.json was removed in favor of the
+common registration; it is not a tracked deletion in the final changed-file count.
+
+Final documentation-only closeout: public-surface, sanitization and release
+metadata selection **9 passed in 0.53 s** after this evidence entry and cursor/ledger
+updates. Ruff, Codex parity and diff checks passed again. HEAD, map and handler
+hashes still match the full pins above; SessionStart, .codex and session handoff
+have no diff. Task scratch is removed after these checks.

@@ -1,43 +1,46 @@
 # Plan
 
-## Active task: Authority handoff guidance and 0.13.13 preparation (2026-10-21)
+## Active task: Stateless mechanical handoff hooks, 0.13.14 (2026-10-22)
 
-Intent authority: owner Discord 1562445005166223525 item 2, parent-supplied by
-Mir Harness Main in the current brief. This cursor owns the bounded design.
-Qualified target: mir-yoke:handoff-authority-release-0.13.13.
-Verified base HEAD: acda442ce4baa14c591896cdcf5f1cf01e02aee3 (initially clean).
+Intent/design authority: current owner writer brief and addendum (decision
+1562495356552355994, parent-supplied). The previous adapter/state cursor is
+preserved in tasks/change_log.md and is superseded by this addendum.
+Qualified target: mir-yoke:mechanical-handoff-packet.
+Verified HEAD: 22125d66642c5cc87234ed610012af2e83fa776b.
+Verified map SHA256:
+516c5b160c0fa49de51e4a0dc6f14c6e6a955d1baf72cc75dc2c93de7ea23e79.
+Contract: mir.common-semantics@1.1.0. Semantic sources:
+.mir/ontology-map.json#/concepts/Task and #/domain/invariants/2;
+docs/decisions/adr-90-role-plugins-and-common-hooks.md#Amendment: 2026-10-22.
+No inherited external measurement is treated as authority.
 
-Design: preserve all existing Handoff rules; add verb-exact owner-grant may-list,
-review/brief read-and-report boundary, separate-grant actions, author restrictions,
-full HEAD/digest requirements and a final per-field/per-pin inventory in the skill
-and reference. Keep SessionStart unchanged: it already points to ontology Handoff.
-Prepare release metadata; refresh the lifecycle tree acknowledgement for versioned
-manifests and regenerate adopter payload last. No checker behavior changes needed.
+Design: common UserPromptSubmit supply and Stop check; unchanged SessionStart.
+No adapter, persisted state, writes, network or model. Root-local runner only,
+argv and 5-second deadline. Explicit native transcript tail at most 1 MiB,
+exact prompt SHA256 guard, final assistant text, fresh pins, stop_hook_active
+one-shot repair. Missing evidence/errors warn/fail open. Explicit grants use
+lexical containment; no explicit sections defaults to read/inspect only.
+English/Korean authority/prohibition patterns and detection limits are documented
+in plugins/mir-lifecycle-hooks/skills/runtime-continuity/references/handoff-packet.md.
+Stateless limitation: fresh pin observation time differs from supplied time;
+the latter is format-checked, all other canonical pin bytes are compared freshly.
+ADR-90/schema-4 exact event and handler admission is implemented (R19).
 
-Request matrix: authority wording; author restrictions; full pins; final inventory;
-release metadata/digest/payload; focused fail-first checks; full suite; parity/bytes.
-Status: 7/8 closed. Full-suite green remains open for Main-owned lock binding.
-Evidence: tasks/change_log.md, Authority handoff and 0.13.13 preparation heading.
-TDD ledger: tasks/tdd.json. Evidence log: tasks/change_log.md.
-Semantic evidence: .mir/ontology-map.json#/concepts/Task maps this cursor;
-#/domain/invariants names the no-standing-consumer-authority invariant.
-Parent-supplied batch F observations are evidence, not authority or local executions.
+Current evidence: fail-first 18 failed/64 passed; added boundaries 2 failed;
+mechanical green 90 passed. Direct R19 rerun: 18 passed. Focused suite:
+209 passed/30 expected pre-bind acknowledgement failures. Full suite:
+2232 passed/75 failed in 329.95 s: 69 acknowledgement failures, managed lock (1),
+stale adopter payload (3), empty isolated offline dependency cache (1), and a
+new ledger absolute path (1). The ledger path was corrected; final relevant
+selection including public-surface tests passed 143 tests (109 deselected).
+No post-correction full-suite rerun is claimed. Ruff, Codex parity and strict
+ontology impact pass. Matrix: 10/11 complete; full-suite green remains open.
+All requested checks were executed and every remaining cause is inventoried
+in tasks/change_log.md. This is prepared source, not binding or activation.
+Evidence sink: tasks/change_log.md; structured ledger: tasks/tdd.json.
 
-Authority: bounded checkout edits, local tests, release metadata and adopter payload.
-No network, other repositories, credentials/protected files, delivery digest binding,
-capability update/attest, commit/tag/push or generated .codex writes.
-Unknowns: Main release binding, actual recipient adherence and post-release remeasurement.
-Lifecycle: preparation; temporal: current working tree; epistemic: base checked locally,
-owner grant and batch F inherited; verification: checked with explicit lock exception.
-Previous cursor is preserved verbatim in tasks/change_log.md under the matching
-Superseded cursor heading.
-
-Results: new rules 14 fail-first -> 14 pass; focused packages 519 pass.
-Full offline suite: 2196 passed, 3 failed in 385.44s. Public-path issue fixed and
-20 surface/payload/common-skill tests passed. Isolated installed-CLI check passed
-with local cached wheels and Python 3.12; no network or live activation occurred.
-Only unchanged Main-owned capability lock remains unresolved. Full suite was not
-rerun after these focused corrections; no full-suite green claim.
-Codex parity, Ruff, ontology mapping/strict impact and diff checks passed.
-SKILL.md: 10068 bytes; unchanged hook output: 783 bytes; hook source: 991 bytes.
-Final evidence records precede adopter payload regeneration and read-only checks.
+May: bounded plugin/tests/ADR/validator/release metadata edits and offline checks.
+May not: commit/push/tag/release/bind; generated .codex writes; network/MK;
+real agents/probes; other repositories; protected data; session-handoff-LATEST edits.
+Main owns binding, digest acknowledgements, generated derivatives and live-host
+verification. No activation or native-host parity claim.

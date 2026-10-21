@@ -13,6 +13,10 @@ schema: docs/templates/_schema/adr.schema.json
 
 Superseded transport (2026-10-02): codex mcp-server was removed in Codex CLI 0.154; use the Codex plugin (codex@openai-codex) or codex app-server.
 
+The 2026-10-22 amendment below supersedes the SessionStart-only admission and target-adapter
+requirement only for its two exact stateless handoff events. The original decision is preserved
+as historical rationale.
+
 ## 1. Context
 
 The operator's current intent is authoritative for this work:
@@ -156,3 +160,35 @@ comment and issue drafts live in
   marketplace and are discovered from two independent consumer directories.
 - Decision and documentation tests pin this ADR as the current authority and prevent a hook or MCP
   package from being claimed before its runtime and admission gates exist.
+
+## Amendment: 2026-10-22
+
+The current user addendum authorizes exactly two additional common hooks, `UserPromptSubmit` and
+`Stop`, in `plugins/mir-lifecycle-hooks/hooks/hooks.json`. The existing `SessionStart` registration,
+handler bytes, timeout and output remain unchanged. Both new events invoke exactly
+`python3 "${CLAUDE_PLUGIN_ROOT}/skills/runtime-continuity/scripts/handoff_packet.py"` with a hook
+timeout of 8 seconds. No other event, matcher, command or executable component is admitted.
+
+The shared handoff handler is stateless and requires no target adapter. It performs no state
+discovery, no writes, no network calls and no LLM calls. It reads only an explicitly supplied
+transcript path and at most its final 1 MiB. It never recursively scans transcripts or invents a
+session-state directory. It derives the repository root by `git rev-parse` or upward repository-root
+discovery and may locate only the root `scripts/mir_ontology.py` runner. The runner is invoked with
+an argument array, without a shell, with a subprocess deadline of 5 seconds. Git root discovery is
+the only other permitted subprocess operation; the reviewed implementation may use upward
+discovery instead. Missing or ambiguous evidence produces bounded guidance without expanding
+authority. Project-coupled enforcement, persistent session state and all writes still require
+project-owned adapters and remain outside this admission.
+
+Schema 4 must declare exactly `SessionStart`, `UserPromptSubmit`, `Stop` in that order. Package
+validation pins the exact shared hook JSON, the original `SessionStart` source, and a reviewed
+SHA-256 of the complete stateless handoff handler. A semantic resemblance to that handler never
+admits arbitrary code. Existing inventory, symlink, non-executable mode and credential rejection
+checks remain in force.
+
+This amendment does not acknowledge the changed active package or bind it to a runtime. The tracked
+`active_package_digest_acknowledgements` value must remain unchanged until separately reviewed;
+the changed package must fail its digest acknowledgement gate before any runtime registration.
+Runtime locks, active receipts, fresh-session observations and rollback evidence retain their
+existing requirements. External runtime measurements are evidence only and do not confer source
+or semantic authority.

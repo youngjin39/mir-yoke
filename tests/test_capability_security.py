@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -389,12 +390,99 @@ def test_capability_source_declares_the_reviewed_active_hook_package() -> None:
     config = load_capability_config(ROOT / "config" / "capability-sources.json")
 
     assert config.plugin_kinds["mir-lifecycle-hooks"] == "skills-hooks"
-    assert config.plugin_hooks == {"mir-lifecycle-hooks": ("SessionStart",)}
+    assert config.plugin_hooks == {
+        "mir-lifecycle-hooks": ("SessionStart", "UserPromptSubmit", "Stop")
+    }
     assert config.provider_local_agents == (".claude/agents/template-sync-validator.md",)
     assert config.component_policy["admitted_package_kinds"] == ["skills", "skills-hooks"]
     assert config.component_policy["reserved_active_package_kinds"] == ["mcp"]
     acknowledgement = config.active_digest_acknowledgements["mir-lifecycle-hooks"]
     assert acknowledgement == _tree_digest(ROOT / "plugins" / "mir-lifecycle-hooks")
+
+
+def test_r19_adr90_amendment_admits_only_stateless_handoff_hooks() -> None:
+    text = (ROOT / "docs/decisions/adr-90-role-plugins-and-common-hooks.md").read_text()
+    amendment = text.split("## Amendment: 2026-10-22", 1)[1]
+    for invariant in (
+        "UserPromptSubmit", "Stop", "SessionStart", "stateless", "no target adapter",
+        "no writes", "no network", "no LLM", "1 MiB", "5 seconds", "8 seconds",
+        "scripts/mir_ontology.py", "git rev-parse", "SHA-256",
+        "active_package_digest_acknowledgements",
+    ):
+        assert invariant in amendment
+
+
+@pytest.mark.parametrize(
+    "hooks",
+    [
+        ["SessionStart"],
+        ["SessionStart", "UserPromptSubmit"],
+        ["SessionStart", "UserPromptSubmit", "Stop", "PreToolUse"],
+        ["SessionStart", "Stop", "UserPromptSubmit"],
+    ],
+)
+def test_r19_schema4_rejects_hook_event_inventory_drift(tmp_path: Path, hooks: list[str]) -> None:
+    config = mutated_config(
+        tmp_path,
+        lambda value: value["plugins"]["mir-lifecycle-hooks"].update(hooks=hooks),
+    )
+    with pytest.raises(CapabilityConfigError, match="must declare exactly"):
+        load_capability_config(config)
+
+
+def test_r19_stateless_handoff_handler_has_an_exact_reviewed_digest() -> None:
+    from mir.core.capabilities.manager import _HANDOFF_HANDLER_SHA256
+
+    handler = (
+        ROOT / "plugins/mir-lifecycle-hooks/skills/runtime-continuity/scripts/handoff_packet.py"
+    )
+    assert hashlib.sha256(handler.read_bytes()).hexdigest() == _HANDOFF_HANDLER_SHA256
+
+
+@pytest.mark.parametrize("event", ["UserPromptSubmit", "Stop"])
+@pytest.mark.parametrize("mutation", ["command", "timeout", "matcher", "extra-event"])
+def test_r19_active_package_rejects_shared_handoff_registration_drift(
+    tmp_path: Path, event: str, mutation: str
+) -> None:
+    plugin = tmp_path / "mir-lifecycle-hooks"
+    shutil.copytree(ROOT / "plugins/mir-lifecycle-hooks", plugin)
+    hooks_path = plugin / "hooks/hooks.json"
+    payload = json.loads(hooks_path.read_text())
+    registration = payload["hooks"][event][0]
+    if mutation == "command":
+        registration["hooks"][0]["command"] += " --unreviewed"
+    elif mutation == "timeout":
+        registration["hooks"][0]["timeout"] = 9
+    elif mutation == "matcher":
+        registration["matcher"] = "*"
+    else:
+        payload["hooks"]["PreToolUse"] = payload["hooks"][event]
+    hooks_path.write_text(json.dumps(payload))
+    with pytest.raises(CapabilityError, match="shared hook schema drift"):
+        _validate_plugin(plugin, "mir-lifecycle-hooks", package_kind="skills-hooks")
+
+
+@pytest.mark.parametrize("mutation", ["missing", "linked", "modified", "executable"])
+def test_r19_active_package_rejects_unreviewed_handoff_handler(
+    tmp_path: Path, mutation: str
+) -> None:
+    plugin = tmp_path / "mir-lifecycle-hooks"
+    shutil.copytree(ROOT / "plugins/mir-lifecycle-hooks", plugin)
+    handler = plugin / "skills/runtime-continuity/scripts/handoff_packet.py"
+    if mutation == "missing":
+        handler.unlink()
+    elif mutation == "linked":
+        original = handler.read_bytes()
+        handler.unlink()
+        sibling = tmp_path / "handler.py"
+        sibling.write_bytes(original)
+        handler.symlink_to(sibling)
+    elif mutation == "modified":
+        handler.write_bytes(handler.read_bytes() + b"\n# unreviewed change\n")
+    else:
+        handler.chmod(0o755)
+    with pytest.raises(CapabilityError, match="handoff handler|executable content"):
+        _validate_plugin(plugin, "mir-lifecycle-hooks", package_kind="skills-hooks")
 
 
 @pytest.mark.parametrize("mutation", ["missing", "selected", "unknown"])
@@ -1737,7 +1825,9 @@ def test_should_bind_h1_exact_hook_source_and_final_package_version():
     assert handler.read_bytes() == _HOOK_HANDLER_SOURCE.encode()
     assert "else inventory unavailable pins" in _HOOK_HANDLER_SOURCE
     for runtime in (".claude-plugin", ".codex-plugin"):
-        assert json.loads((plugin / runtime / "plugin.json").read_text())["version"] == "0.13.13"
+        assert json.loads((plugin / runtime / "plugin.json").read_text())["version"] == "0.13.14"
     config = load_capability_config(ROOT / "config/capability-sources.json")
     assert config.active_digest_acknowledgements["mir-lifecycle-hooks"] == _tree_digest(plugin)
-    assert config.plugin_hooks == {"mir-lifecycle-hooks": ("SessionStart",)}
+    assert config.plugin_hooks == {
+        "mir-lifecycle-hooks": ("SessionStart", "UserPromptSubmit", "Stop")
+    }

@@ -2,6 +2,96 @@
   "version": 1,
   "changes": [
     {
+      "id": "stateless-handoff-rework-2026-10-22",
+      "record_status": "in_progress",
+      "scope": "Current owner addendum: common stateless handoff events, ADR-90 R19, exact admission; unbound 0.13.14.",
+      "bluebrick": "Read-only lifecycle packet supply and checking",
+      "design_ref": "tasks/plan.md",
+      "fail_first": {
+        "command": "uv run --offline pytest -q tests/test_mechanical_handoff.py",
+        "result": "18 failed, 64 passed before stateless changes; further pin-pointer/Korean-negative boundaries: 2 failed, 88 deselected. Admission agent observed 6 failed, 4 passed before its changes."
+      },
+      "categories": {
+        "unit": {"status": "pass", "command": "uv run --offline pytest -q tests/test_mechanical_handoff.py", "notes": "90 passed in 7.37s; both native shapes offline, fresh runner, no state."},
+        "integration": {"status": "pass", "command": "uv run --offline pytest -q tests/test_mechanical_handoff.py", "notes": "Real repository-local mapping runner supplied full pins offline; no live agents."},
+        "edge": {"status": "pass", "command": "uv run --offline pytest -q tests/test_mechanical_handoff.py", "notes": "Prompt/hash/tail, errors, timeout, retry, exclusions and unknown inventory."},
+        "architecture": {"status": "pass", "command": "uv run --offline pytest -q tests/test_capability_security.py -k r19", "notes": "Direct rerun: 18 passed, 109 deselected; exact event/schema/handler admission and dated amendment."},
+        "compatibility": {"status": "fail", "command": "uv run --offline pytest -q", "notes": "2232 passed, 75 failed in 329.95s. 69 expected acknowledgement failures; 1 lock, 3 adopter payload, 1 empty offline install cache, 1 new ledger path. Path corrected; final relevant selection 143 passed, 109 deselected. No full rerun after that documentation-only correction."},
+        "security": {"status": "pass", "command": "uv run --offline pytest -q tests/test_mechanical_handoff.py", "notes": "Explicit/default lexical authority, English/Korean actions, protected sources and excluded canary."},
+        "transaction_locking": {"status": "not_applicable", "reason": "Handler has no writes or persisted transactions; existing package acknowledgement gate is preserved."},
+        "e2e": {"status": "not_applicable", "reason": "Owner forbids live agents/probes and runtime binding; offline native payload fixtures only."},
+        "browser": {"status": "not_applicable", "reason": "No GUI surface."},
+        "availability": {"status": "pass", "command": "uv run --offline pytest -q tests/test_mechanical_handoff.py", "notes": "5-second runner timeout, fail-open warnings and one-shot retry guard."},
+        "load": {"status": "not_applicable", "reason": "Bounded 1 MiB transcript and hook input; no resident service."},
+        "soak": {"status": "not_applicable", "reason": "No persistent state or background runner."}
+      }
+    },
+    {
+      "id": "mechanical-handoff-packet-0.13.14-2026-10-22",
+      "record_status": "in_progress",
+      "scope": "Historical adapter/state candidate, superseded by stateless-handoff-rework-2026-10-22; retained as evidence.",
+      "bluebrick": "Lifecycle handoff packet and explicit target adapter",
+      "design_ref": "tasks/plan.md",
+      "categories": {
+        "unit": {
+          "status": "pass",
+          "command": "uv run --offline pytest -q tests/test_mechanical_handoff.py tests/test_plugin_skill_packages.py tests/test_release_metadata.py tests/test_no_korean_in_user_facing.py tests/test_project_agent_kit_release_evidence.py",
+          "notes": "107 passed in 61.89s, including 54 mechanical tests. See tasks/change_log.md for fail-first runs and bounded evidence. Offline fixtures and real local runner only, no live parity or broad certification."
+        },
+        "integration": {
+          "status": "pass",
+          "command": "uv run --offline pytest -q tests/test_mechanical_handoff.py tests/test_plugin_skill_packages.py tests/test_release_metadata.py tests/test_no_korean_in_user_facing.py tests/test_project_agent_kit_release_evidence.py",
+          "notes": "107 passed in 61.89s, including 54 mechanical tests. See tasks/change_log.md for fail-first runs and bounded evidence. Offline fixtures and real local runner only, no live parity or broad certification."
+        },
+        "edge": {
+          "status": "pass",
+          "command": "uv run --offline pytest -q tests/test_mechanical_handoff.py tests/test_plugin_skill_packages.py tests/test_release_metadata.py tests/test_no_korean_in_user_facing.py tests/test_project_agent_kit_release_evidence.py",
+          "notes": "107 passed in 61.89s, including 54 mechanical tests. See tasks/change_log.md for fail-first runs and bounded evidence. Offline fixtures and real local runner only, no live parity or broad certification."
+        },
+        "architecture": {
+          "status": "pass",
+          "command": "uv run --offline pytest -q tests/test_mechanical_handoff.py tests/test_plugin_skill_packages.py tests/test_release_metadata.py tests/test_no_korean_in_user_facing.py tests/test_project_agent_kit_release_evidence.py",
+          "notes": "107 passed in 61.89s, including 54 mechanical tests. See tasks/change_log.md for fail-first runs and bounded evidence. Offline fixtures and real local runner only, no live parity or broad certification."
+        },
+        "compatibility": {
+          "status": "fail",
+          "command": "UV_OFFLINE=1 uv run --offline pytest -q",
+          "notes": "2176 passed, 76 failed; latest 107 focused passed after source-language and observer corrections. Main delivery metadata and isolated offline cache remain open. No full-suite green claim."
+        },
+        "security": {
+          "status": "pass",
+          "command": "uv run --offline pytest -q tests/test_mechanical_handoff.py tests/test_plugin_skill_packages.py tests/test_release_metadata.py tests/test_no_korean_in_user_facing.py tests/test_project_agent_kit_release_evidence.py",
+          "notes": "107 passed in 61.89s, including 54 mechanical tests. See tasks/change_log.md for fail-first runs and bounded evidence. Offline fixtures and real local runner only, no live parity or broad certification."
+        },
+        "availability": {
+          "status": "pass",
+          "command": "uv run --offline pytest -q tests/test_mechanical_handoff.py tests/test_plugin_skill_packages.py tests/test_release_metadata.py tests/test_no_korean_in_user_facing.py tests/test_project_agent_kit_release_evidence.py",
+          "notes": "107 passed in 61.89s, including 54 mechanical tests. See tasks/change_log.md for fail-first runs and bounded evidence. Offline fixtures and real local runner only, no live parity or broad certification."
+        },
+        "transaction_locking": {
+          "status": "pass",
+          "command": "uv run --offline pytest -q tests/test_mechanical_handoff.py tests/test_plugin_skill_packages.py tests/test_release_metadata.py tests/test_no_korean_in_user_facing.py tests/test_project_agent_kit_release_evidence.py",
+          "notes": "107 passed in 61.89s, including 54 mechanical tests. See tasks/change_log.md for fail-first runs and bounded evidence. Offline fixtures and real local runner only, no live parity or broad certification."
+        },
+        "load": {
+          "status": "not_applicable",
+          "notes": "No throughput service; input and time budgets have unit coverage."
+        },
+        "e2e": {
+          "status": "not_applicable",
+          "notes": "Real agents and live host runs are forbidden by the brief."
+        },
+        "browser": {
+          "status": "not_applicable",
+          "notes": "No UI changed."
+        },
+        "soak": {
+          "status": "not_applicable",
+          "notes": "No resident process or soak requirement."
+        }
+      }
+    },
+    {
       "id": "handoff-authority-release-0.13.13-2026-10-21",
       "record_status": "in_progress",
       "scope": "Additive owner-grant handoff guidance, full pins, final inventory and 0.13.13 preparation. Main owns delivery binding.",
