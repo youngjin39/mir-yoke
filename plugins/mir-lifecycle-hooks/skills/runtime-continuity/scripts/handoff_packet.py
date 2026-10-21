@@ -38,6 +38,12 @@ ACTION = re.compile(
     r'\uc704\ud0c1|\ud638\ucd9c|\ubc30\ud3ec)', re.I,
 )
 READ = re.compile(r'\b(?:read|inspect)\b|(?:\uc77d|\uc5f4\ub78c)', re.I)
+# A packet may be translated or relabelled: forwarded pin keys or a handoff heading also count.
+PACKET = re.compile(
+    r'qualified target\s*:|handoff pins:|\bmay[ -]not\s*:|"(?:pin_inventory|mapping_sha256)"\s*:|'
+    r'^#{1,6}[^\n]*(?:handoff|brief|\ud578\ub4dc\uc624\ud504|\uc9c0\uc2dc\ubb38|\ube0c\ub9ac\ud504|\uc778\uacc4)',
+    re.I | re.M,
+)
 
 
 def detect(prompt: str) -> bool:
@@ -435,7 +441,7 @@ def stop(event: dict) -> None:
     prompt, body = transcript_turn(event)
     if not detect(prompt):
         return
-    if not re.search(r'(?i)qualified target\s*:|handoff pins:|\bmay[ -]not\s*:', body):
+    if not PACKET.search(body):
         return  # no emitted packet, e.g. a clarification
     if not isinstance(event.get('stop_hook_active'), bool):
         warning('native retry guard unavailable; packet check skipped to prevent a loop.')

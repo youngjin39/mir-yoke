@@ -8,6 +8,15 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.15] — 2026-10-22 — Handoff Stop check recognizes translated packets
+
+### Fixed
+
+- The Stop check skipped a packet whose labels were translated (round f, quietleaf: Korean
+  headings, pins re-fenced without the `handoff pins:` marker, enlarged authority). A packet is
+  now also recognized by forwarded pin keys (`pin_inventory`, `mapping_sha256`) or a handoff
+  heading line, so such packets get the one-shot repair. Plain replies stay untouched.
+
 ## [v0.13.14] — 2026-10-22 — Mechanical handoff packet preparation
 
 ### Added

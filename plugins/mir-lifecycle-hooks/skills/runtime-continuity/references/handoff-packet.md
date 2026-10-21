@@ -109,7 +109,9 @@ Arbitrary prose, tools and actual actions are outside this lexical checker.
 
 ## Packet check and one-shot repair
 
-Recognize an emitted packet by `Qualified target:`, `handoff pins:` or `May not:`.
+Recognize an emitted packet by `Qualified target:`, `handoff pins:`, `May not:`,
+a forwarded `pin_inventory`/`mapping_sha256` key or a handoff/brief heading line
+(English or Korean), so translated or relabelled packets are still checked.
 Require namespace:local-id; nonempty Lifecycle, Temporal, Epistemic, Verification;
 full pins; Evidence provenance and ISO-8601 observation time; Unknowns; May;
 May not; Self-check. Preserve each owner prohibition except those containing

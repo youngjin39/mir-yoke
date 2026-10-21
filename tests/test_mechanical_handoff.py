@@ -579,3 +579,15 @@ def test_should_reject_grants_in_non_may_labeled_enclosing_authority():
     state = {'pins': PINS, 'owner': hook.owner_sections(PROMPT)}
     defects = hook.check_packet(packet() + '\nThe recipient may execute checks.', state)
     assert 'extra may: execute checks' in defects
+
+
+def test_should_check_translated_packet_without_english_labels(runtime):
+    run, _, _ = runtime
+    run('UserPromptSubmit', prompt=PROMPT)
+    pins = PINS.split('handoff pins:\n', 1)[1]
+    translated = ('## \ud578\ub4dc\uc624\ud504 \uc9c0\uc2dc\ubb38: example\n'
+                  '### 0. pins\n```json\n' + pins + '\n```\n'
+                  '### 7. \uad8c\ud55c\n- \ud5c8\uc6a9: \ud30c\uc77c \uc218\uc815\n')
+    result = json.loads(run('Stop', last_assistant_message=translated).stdout)
+    assert result['decision'] == 'block'
+    assert 'missing qualified target' in result['reason']
