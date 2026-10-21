@@ -27,7 +27,9 @@ operation is read-only/offline; the target owns its local runner implementation.
 Native payloads use `hook_event_name`, `cwd` and prompt-submit `prompt`. Stop
 requires `transcript_path` and boolean `stop_hook_active`. Read only the final
 1 MiB of that explicit regular JSONL file; discard a partial leading record.
-Never scan session directories or use `last_assistant_message` as a fallback.
+Never scan session directories. When the native Stop payload carries a nonempty
+`last_assistant_message`, check it instead of the tail's assistant text: round f
+showed the transcript can lag behind the final message (5/10 Claude runs).
 Support Claude `user`/`assistant` message records and Codex `event_msg.user_message`
 and `response_item` user/assistant text records (`final_answer` or absent phase).
 Ignore Claude meta/tool-result records and Codex commentary. A new native user

@@ -172,7 +172,8 @@ timeout of 8 seconds. No other event, matcher, command or executable component i
 The shared handoff handler is stateless and requires no target adapter. It performs no state
 discovery, no writes, no network calls and no LLM calls. It reads only an explicitly supplied
 transcript path and at most its final 1 MiB. It never recursively scans transcripts or invents a
-session-state directory. It derives the repository root by `git rev-parse` or upward repository-root
+session-state directory. At Stop it checks the native payload's `last_assistant_message` when present
+and nonempty (the transcript can lag behind the final message), else the tail's final assistant text. It derives the repository root by `git rev-parse` or upward repository-root
 discovery and may locate only the root `scripts/mir_ontology.py` runner. The runner is invoked with
 an argument array, without a shell, with a subprocess deadline of 5 seconds. Git root discovery is
 the only other permitted subprocess operation; the reviewed implementation may use upward

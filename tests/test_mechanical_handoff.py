@@ -591,3 +591,19 @@ def test_should_check_translated_packet_without_english_labels(runtime):
     result = json.loads(run('Stop', last_assistant_message=translated).stdout)
     assert result['decision'] == 'block'
     assert 'missing qualified target' in result['reason']
+
+
+def test_should_check_native_final_message_when_transcript_lags(runtime):
+    run, _, repo = runtime
+    run('UserPromptSubmit', prompt=PROMPT)
+    transcript = repo / 'native-session.jsonl'
+    with transcript.open('a') as stream:
+        stream.write(json.dumps({'type': 'assistant', 'message': {
+            'content': 'Reading the sources now.'}}) + '\n')
+    payload = {'hook_event_name': 'Stop', 'cwd': str(repo), 'session_id': 'session-1',
+               'stop_hook_active': False, 'transcript_path': str(transcript),
+               'last_assistant_message': packet().replace(PINS, '')}
+    env = {**os.environ, 'PYTHONDONTWRITEBYTECODE': '1'}
+    result = subprocess.run([sys.executable, str(HANDLER)], input=json.dumps(payload),
+                            text=True, capture_output=True, env=env, check=False)
+    assert json.loads(result.stdout)['decision'] == 'block'

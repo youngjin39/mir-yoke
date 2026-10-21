@@ -439,6 +439,10 @@ def transcript_turn(event: dict) -> tuple[str, str]:
 
 def stop(event: dict) -> None:
     prompt, body = transcript_turn(event)
+    # The transcript can lag behind the turn's final message; the native payload carries it.
+    native = event.get('last_assistant_message')
+    if isinstance(native, str) and native.strip():
+        body = native
     if not detect(prompt):
         return
     if not PACKET.search(body):

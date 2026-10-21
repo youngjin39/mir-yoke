@@ -8,6 +8,15 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.16] — 2026-10-22 — Handoff Stop check reads the native final message
+
+### Fixed
+
+- In round f, 5 of 10 Claude runs ended without the Stop check: the transcript did not yet hold
+  the turn's final message, so the handler saw an earlier progress note and treated the turn as
+  having no packet. Stop now checks the native payload's `last_assistant_message` when it is
+  present and nonempty, and falls back to the transcript tail otherwise.
+
 ## [v0.13.15] — 2026-10-22 — Handoff Stop check recognizes translated packets
 
 ### Fixed
