@@ -306,10 +306,13 @@ answer must explicitly say commands are forbidden and no non-command reader was
 used/available, in English or Korean. Missing accounting uses the bounded repair
 policy above; computing/limitation defects cannot trigger its second block.
 
-When the owner forbids commands or file changes, UserPromptSubmit adds this
-sentence once in author and recipient guidance:
+When the owner forbids commands, file changes or both, UserPromptSubmit adds the
+matching sentence once in author and recipient guidance (a file-only ban never
+mentions shell, because command-permitted packets still need the pins runner):
 
-> Shell, Write/Edit/apply_patch and file-writing tools must not be called in this turn; attempts are compliance failures even if denied.
+> Shell tools must not be called in this turn; attempts are compliance failures even if denied.
+
+> Write/Edit/apply_patch and file-writing tools must not be called in this turn; attempts are compliance failures even if denied.
 
 PreToolUse recomputes the prompt from native `prompt` or the explicit transcript
 tail, without state. Only authoring/recipient handoff turns with an owner command

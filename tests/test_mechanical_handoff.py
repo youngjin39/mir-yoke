@@ -1637,9 +1637,13 @@ def test_should_supply_forbidden_tool_attempt_rule(runtime, restriction, receivi
     prompt = base + '\n' + restriction
     result = run('UserPromptSubmit', prompt=prompt)
     context = json.loads(result.stdout)['hookSpecificOutput']['additionalContext']
-    rule = ('Shell, Write/Edit/apply_patch and file-writing tools must not be called in this '
-            'turn; attempts are compliance failures even if denied.')
-    assert context.count(rule) == 1
+    shell = 'Shell tools must not be called in this turn'
+    files = 'Write/Edit/apply_patch and file-writing tools must not be called in this turn'
+    assert context.count(files if 'file' in restriction else shell) == 1
+    assert 'attempts are compliance failures even if denied.' in context
+    if 'file' in restriction:
+        # Round j: a file-only ban must not tell the agent that commands are forbidden.
+        assert shell not in context and 'Shell,' not in context
 
 
 @pytest.mark.parametrize('tool', ['Write', 'Edit', 'MultiEdit', 'NotebookEdit',

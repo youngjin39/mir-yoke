@@ -8,6 +8,16 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.23] — 2026-10-23 — File-only bans no longer read as command bans
+
+### Fixed
+
+- 0.13.22 supplied one sentence naming shell and file-writing tools whenever the owner forbade
+  commands or file changes. Round j P3 agents at three command-permitted targets (owner forbids
+  file changes only) read it as a shell ban, ran no pins runner and could not pin cited sources.
+  The supply now names shell tools only under a command ban and file-writing tools only under a
+  file-change ban.
+
 ## [v0.13.22] — 2026-10-23 — Round-i handoff checker defects (prepared source)
 
 ### Fixed

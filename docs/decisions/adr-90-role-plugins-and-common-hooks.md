@@ -355,3 +355,10 @@ fixtures do not prove live-host delivery, activation, tool success or semantic
 truth. Main owns versions, handler SHA admission, tree digests, payloads, locks,
 generated derivatives, bindings and fresh-host verification. This amendment
 changes none of that release metadata.
+
+## 2026-10-23c amendment — separate shell and file-tool supply sentences
+
+The forbidden-tool supply sentence is split: a command ban adds the shell sentence, a file-change
+ban adds the file-writing-tool sentence. A file-only ban must not suggest that commands are
+forbidden, because command-permitted handoffs still need the pins runner (round j regression,
+Yoke 0.13.22). PreToolUse denial rules are unchanged.

@@ -68,10 +68,9 @@ UNQUOTED_EXCLUSION = re.compile(
     r'\b(?i:do not (?:forward|include))\s+([A-Z][A-Z0-9_]{3,})(?![A-Za-z0-9_])|'
     r'(?<![A-Za-z0-9_])([A-Z][A-Z0-9_]{3,})\s+(?i:must not be forwarded)\b'
 )
-FORBIDDEN_TOOL_RULE = (
-    'Shell, Write/Edit/apply_patch and file-writing tools must not be called in this '
-    'turn; attempts are compliance failures even if denied.'
-)
+SHELL_TOOL_RULE = 'Shell tools must not be called in this turn'
+FILE_TOOL_RULE = 'Write/Edit/apply_patch and file-writing tools must not be called in this turn'
+ATTEMPT_RULE = '; attempts are compliance failures even if denied.'
 RECEIVED_PINS = re.compile(r'\b(?:handoff )?pins:\s*(?:```(?:json)?\s*)?', re.I)
 BASE_PINS = ['repository_root', 'head', 'mapping.identity', 'mapping.version',
              'mapping.digest', 'contract.identity', 'contract.version', 'contract.digest']
@@ -405,9 +404,11 @@ def files_restricted(owner: dict) -> bool:
 
 
 def tool_attempt_rule(owner: dict) -> str:
-    if restricted('May not: ' + owner['may_not']) or files_restricted(owner):
-        return FORBIDDEN_TOOL_RULE + '\n'
-    return ''
+    # A file-only ban must not read as a command ban: command-permitted packets need the runner.
+    rules = [rule for rule, active in (
+        (SHELL_TOOL_RULE, restricted('May not: ' + owner['may_not'])),
+        (FILE_TOOL_RULE, files_restricted(owner))) if active]
+    return ''.join(rule + ATTEMPT_RULE + '\n' for rule in rules)
 
 
 def namespace_defects(body: str, root: Path) -> list[str]:
