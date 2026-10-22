@@ -58,7 +58,8 @@ PACKET = re.compile(
 
 # Relative file paths; Korean particles may follow a path directly.
 CITED = re.compile(r'(?<![\w./~:-])\.?[\w-][\w.-]*(?:/[\w.-]+)*\.[A-Za-z0-9]+(?![A-Za-z0-9_/-])')
-SHELL_TOOLS = {'bash', 'shell', 'shell_command', 'exec_command'}
+SHELL_TOOLS = {'bash', 'shell', 'shell_command', 'exec_command', 'js', 'js_reset',
+               'node_repl', 'python', 'python_repl', 'js_repl', 'javascript_repl'}
 WRITE_TOOLS = {'write', 'edit', 'multiedit', 'notebookedit', 'apply_patch'}
 QUOTED = re.compile(r'`([^`\n]+)`|"([^"\n]+)"|(?<!\w)\'([^\'\n]+)\'(?!\w)')
 UNQUOTED_EXCLUSION = re.compile(
@@ -68,7 +69,8 @@ UNQUOTED_EXCLUSION = re.compile(
     r'\b(?i:do not (?:forward|include))\s+([A-Z][A-Z0-9_]{3,})(?![A-Za-z0-9_])|'
     r'(?<![A-Za-z0-9_])([A-Z][A-Z0-9_]{3,})\s+(?i:must not be forwarded)\b'
 )
-SHELL_TOOL_RULE = 'Shell tools must not be called in this turn'
+SHELL_TOOL_RULE = ('Shell tools and code interpreters (for example node_repl or a Python REPL) '
+                   'must not be called in this turn')
 FILE_TOOL_RULE = 'Write/Edit/apply_patch and file-writing tools must not be called in this turn'
 ATTEMPT_RULE = '; attempts are compliance failures even if denied.'
 RECEIVED_PINS = re.compile(r'\b(?:handoff )?pins:\s*(?:```(?:json)?\s*)?', re.I)
@@ -711,24 +713,30 @@ def tool_calls(rows: list[dict]) -> list[tuple[str, dict]]:
         elif (row.get('type') == 'response_item' and payload.get('type') == 'custom_tool_call'
               and tool_kind(payload.get('name', '')) == 'exec'):
             calls.append((payload['name'], {'input': payload.get('input', '')}))
-            calls.extend(code_shell_calls(payload.get('input', '')))
+    for name, arguments in list(calls):
+        if tool_kind(name) == 'exec':
+            calls.extend(code_shell_calls(arguments.get('input', arguments.get('code', ''))))
     return calls
 
 
 def code_shell_calls(code: str) -> list[tuple[str, dict]]:
-    """Extract static nested shell arguments without evaluating JavaScript.
+    """Count static nested shell/interpreter calls without evaluating JavaScript.
 
     Tokenization excludes comments and quoted decoy calls. Dynamic expressions
-    and interpolated templates supply no command/computation evidence.
+    still count as calls, but supply no command/computation evidence.
     """
     token_pattern = (r'//[^\n]*|/\*[\s\S]*?\*/|"(?:\\.|[^"\\])*"|'
                      r"'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`|[\w$]+|[^\s]")
     tokens = [match[0] for match in re.finditer(token_pattern, code)
               if not match[0].startswith(('//', '/*'))]
     calls = []
-    for i in range(len(tokens) - 4):
-        if not (tokens[i:i + 2] == ['tools', '.'] and tokens[i + 2] in SHELL_TOOLS
-                and tokens[i + 3:i + 5] == ['(', '{']):
+    for i in range(len(tokens) - 3):
+        if not (tokens[i:i + 2] == ['tools', '.'] and tool_kind(tokens[i + 2]) in SHELL_TOOLS
+                and tokens[i + 3] == '('):
+            continue
+        arguments = {}
+        calls.append((tokens[i + 2], arguments))
+        if tokens[i + 4:i + 5] != ['{']:
             continue
         depth = 1
         for j in range(i + 5, len(tokens) - 3):
@@ -754,12 +762,14 @@ def code_shell_calls(code: str) -> list[tuple[str, dict]]:
 
             command = re.sub(r'\\(u[0-9a-fA-F]{4}|x[0-9a-fA-F]{2}|\r?\n|.)',
                              unescape, literal[1:-1])
-            calls.append((tokens[i + 2], {'command': command}))
+            arguments['command'] = command
     return calls
 
 
 def tool_kind(name: str) -> str:
-    return name.rsplit('.', 1)[-1].lower()
+    kind = name.rsplit('.', 1)[-1].lower()
+    repl = re.search(r'(?:^|__)(node_repl|python(?:_repl)?|js_repl|javascript_repl)(?:__|$)', kind)
+    return repl[1] if repl else kind
 
 
 def pin_claims(text: str) -> list[tuple[str, str]]:
@@ -835,6 +845,16 @@ def verification_defects(text: str, body: str, event: dict, no_commands: bool = 
     calls, reads, commands = turn_tools(event)
     root = repository_root(event)
     plain = re.sub(r'[*`]', '', body)
+    command_tools = sorted({name for name, _ in calls if name in SHELL_TOOLS})
+    if no_commands and command_tools and not any(
+        re.search(r'compliance failure|\uc9c0\uc2dc\s*\uc704\ubc18|\uc900\uc218\s*\uc2e4\ud328',
+                  line, re.I)
+        and re.search(r'interpreter|shell|command|\uc778\ud130\ud504\ub9ac\ud130|\uba85\ub839|'
+                      + '|'.join(re.escape(name) for name in command_tools), line, re.I)
+        for line in plain.splitlines()
+    ):
+        defects.append('command-ban compliance failure must be stated for tool calls: '
+                       + ', '.join(command_tools))
     verified_paths = set()
     for name, label in pin_claims(plain):
         if label.lower() != 'verified-in-repo':
@@ -966,20 +986,27 @@ def recipient_check(prompt: str, body: str, event: dict) -> list[str]:
         plain, re.I
     ):
         defects.append('no local check and no stated limitation')
-    if restricted(prompt) and not any(reads) and not (
+    if (restricted(prompt) and not any(reads)
+            and not any(name in SHELL_TOOLS for name, _ in calls) and not (
         (re.search(r'commands?[^\n]*(?:forbidden|prohibited|not (?:run|allowed))', plain, re.I)
          and re.search(r'no (?:non-command )?reader[^\n]*(?:used|available)', plain, re.I))
         or (re.search(r'\uba85\ub839[^\n]*(?:\uae08\uc9c0|\uc2e4\ud589\ud558\uc9c0)', plain)
             and re.search(r'(?:\uc77d\uae30\s*\ub3c4\uad6c|\ub9ac\ub354)'
                           r'[^\n]*(?:\uc5c6|\uc0ac\uc6a9\ud558\uc9c0|\ubabb)', plain))
-    ):
+    )):
         defects.append('state commands forbidden and no non-command reader was used/available')
     return defects
 
 
 def pretool(event: dict) -> None:
     tool = tool_kind(event['tool_name'])
-    if tool not in SHELL_TOOLS | WRITE_TOOLS:
+    command = tool in SHELL_TOOLS
+    if tool == 'exec':
+        arguments = event.get('tool_input', {})
+        code = (arguments if isinstance(arguments, str)
+                else arguments.get('input', arguments.get('code', '')))
+        command = bool(code_shell_calls(code))
+    if not command and tool not in WRITE_TOOLS:
         return
     prompt = event.get('prompt')
     if not isinstance(prompt, str) or not prompt:
@@ -987,8 +1014,8 @@ def pretool(event: dict) -> None:
     if not (detect(prompt) or recipient(prompt)):
         return
     reason = None
-    if tool in SHELL_TOOLS and restricted(prompt):
-        reason = 'Owner forbids commands in this handoff turn; shell tool denied.'
+    if command and restricted(prompt):
+        reason = 'Owner forbids commands in this handoff turn; shell/interpreter tool denied.'
     elif tool in WRITE_TOOLS and files_restricted(owner_sections(prompt)):
         reason = 'Owner forbids file changes in this handoff turn; file-writing tool denied.'
     if reason:
@@ -1030,7 +1057,7 @@ def prior_blocks(event: dict) -> int | None:
 def deterministic(defects: list[str]) -> list[str]:
     return [defect for defect in defects if defect.startswith((
         'missing cited-source pins', 'abbreviated hex', 'missing recipient pin label',
-        'excluded item #', 'qualified target namespace '))]
+        'excluded item #', 'qualified target namespace ', 'command-ban compliance failure'))]
 
 
 def block(defects: list[str], retry: bool, receiving: bool, owner: dict) -> None:

@@ -391,3 +391,37 @@ The admitted event inventory, read-only/offline behavior and Python 3.9 support
 stay unchanged. Main owns versions, handler admission SHA, tree digests, payloads,
 locks, generated derivatives, activation and release verification. This amendment
 performs none of that release chain.
+
+## Amendment: 2026-10-23e
+
+Design authority is the owner 0.13.25 interpreter-tools writer brief under
+decision 1562929295997796426 and `tasks/plan.md#Current` in Mir Harness. The
+bounded writer scope leaves that cursor unchanged. Round-l Main adjudication
+and judge finding L-D02 are defect evidence, not additional authority; fixtures
+use synthetic tool inputs and paths rather than captured personal content.
+
+- Under an owner command ban, count code interpreters as commands alongside
+  shells. Cover direct JS/reset and Python/JS REPL tools, including MCP names,
+  and static nested `tools.<shell/interpreter>(` calls in code-mode `exec`.
+  Reuse static tokenization without evaluating JavaScript. Dynamic arguments
+  still count as calls but supply no computation evidence. Comments, quoted
+  decoys, read-only discovery and non-interpreter tools do not trigger the ban.
+- PreToolUse denies those calls only in command-forbidden handoff author or
+  recipient turns, using the existing deny JSON/stderr/exit-2 contract. No
+  configuration or hook-registration change is introduced.
+- The command-ban supply sentence names shell tools and code interpreters.
+  Preserve the 0.13.23 split and the unchanged file-only prohibition sentence.
+- Stop requires the artifact to disclose interpreter/shell execution under a
+  command ban as a compliance failure. Such calls supply no non-command reader
+  evidence; their paths/pins cannot justify `verified-in-repo`. Do not demand
+  an untrue no-reader statement after a forbidden call. A permitted reader
+  cannot erase the failure. Add missing failure disclosure to the deterministic
+  second-block set while preserving the existing two-block maximum.
+
+These checks establish lexical tool provenance and disclosure, not semantic
+truth, tool success or authorization, consistent with
+`.mir/ontology-map.json#/domain/invariants/2`. The admitted events, stateless
+read-only/offline behavior and Python 3.9 support remain unchanged. Main owns
+versions, handler SHA admission, tree digests, payloads, locks, generated
+derivatives, activation and release verification; this source-only amendment
+performs none of that release chain.

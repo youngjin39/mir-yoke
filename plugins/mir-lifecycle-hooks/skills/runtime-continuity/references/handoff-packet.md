@@ -217,7 +217,8 @@ next Stop; no third block is emitted. No persistent counter is used.
 
 The second block names only deterministic defects: missing cited-source digests
 or revisions, abbreviated hex pins, missing recipient pin labels, qualified-target
-namespace mismatches and excluded items. A mismatch first exposed after a target-label
+namespace mismatches, excluded items and undisclosed command-ban compliance failures.
+A mismatch first exposed after a target-label
 repair can therefore trigger the one second/final block. Field headings, extra grants,
 computing evidence and limitation prose
 are first-block checks only. A missing/nonboolean retry flag warns/skips because
@@ -258,8 +259,8 @@ value's own line. This subset requires no English field labels and accepts
 translated packets and Korean permission labels. It does not require fresh
 pins, English status headings or prompt hashes; the current owner prompt still
 governs the subset if an old prompt hash appears. The same two-block bound
-applies; only exclusions, abbreviated pins and qualified-target namespace mismatches
-can trigger its second block.
+applies; only exclusions, abbreviated pins, qualified-target namespace mismatches
+and undisclosed command-ban compliance failures can trigger its second block.
 
 ## Recipient accounting and owner no-command guard
 
@@ -298,6 +299,9 @@ The root `mapping --handoff` runner also counts as a map reference. Claude
 Codex `response_item.custom_tool_call` named `exec` (including a dotted name)
 counts as a tool call; its static nested `tools.exec_command` and other supported
 shell calls expose literal `cmd`/`command` arguments, paths and computations.
+Static nested shell and interpreter calls count as commands even with dynamic
+arguments or no arguments. Recognize the same nested calls in native `tool_use`
+and `function_call` exec inputs. Interpreter code supplies no Read/Grep/Glob evidence.
 Tokenize JavaScript without executing it; ignore comments and quoted decoy calls.
 Single/double quotes and static backtick strings are supported, with escapes
 decoded. Dynamic expressions, variable-built commands and interpolated templates
@@ -316,23 +320,39 @@ no-command reference rules above instead of requiring computing commands;
 `contract.*` still requires a reference to the contract file itself.
 If commands are permitted but no tool call exists, explicitly
 state a local-check limitation; otherwise report `no local check and no stated limitation`.
-If commands are forbidden and no reader was used, the final
+If commands are forbidden and neither a reader nor a command tool was called, the final
 answer must explicitly say commands are forbidden and no non-command reader was
-used/available, in English or Korean. Missing accounting uses the bounded repair
-policy above; computing/limitation defects cannot trigger its second block.
+used/available, in English or Korean. If a shell or interpreter was called under
+the ban, the artifact must instead state that execution as a `compliance failure`
+(or Korean instruction-violation/compliance-failure wording). The acknowledgement
+must mention commands, an interpreter, a shell or a recorded command tool on the
+same line. This is lexical disclosure checking, not semantic acceptance. Its reads
+do not count as non-command reads, and paths/pins supported only by that call must
+not be labelled `verified-in-repo`. Stop requests failure disclosure rather than
+asking for an untrue statement that no reader was used. A separate permitted reader
+does not erase the failure. Undisclosed failures join the deterministic second-block
+set; computing/limitation defects remain first-block checks only.
 
 When the owner forbids commands, file changes or both, UserPromptSubmit adds the
 matching sentence once in author and recipient guidance (a file-only ban never
 mentions shell, because command-permitted packets still need the pins runner):
 
-> Shell tools must not be called in this turn; attempts are compliance failures even if denied.
+> Shell tools and code interpreters (for example node_repl or a Python REPL) must not be called in this turn; attempts are compliance failures even if denied.
 
 > Write/Edit/apply_patch and file-writing tools must not be called in this turn; attempts are compliance failures even if denied.
 
 PreToolUse recomputes the prompt from native `prompt` or the explicit transcript
 tail, without state. Only authoring/recipient handoff turns with an owner command
 prohibition deny shell tools: `Bash`, `shell`, `shell_command`, `exec_command`,
-including dotted names such as `functions.exec_command`. Owner file-change
+including dotted names such as `functions.exec_command`. The same ban covers
+code interpreters: `js`, `js_reset`, `mcp__node_repl__js` and Python/JS REPL
+names, including MCP names containing `node_repl`, `python`, `python_repl`,
+`js_repl` or `javascript_repl` namespace segments. Code-mode `exec` is denied
+only when its static input contains a supported `tools.<shell/interpreter>(`
+call. Use the same tokenization as command evidence: ignore comments and quoted
+decoys, never evaluate JavaScript. Calls that only list/filter `ALL_TOOLS` or
+call non-interpreter tools pass this command guard. Dynamic tool names and
+indirect aliases are outside this static recognition. Owner file-change
 prohibitions also deny `Write`, `Edit`, `MultiEdit`, `NotebookEdit` and Codex
 `apply_patch`, including dotted names. Read/Grep/Glob and ordinary turns pass.
 Only unqualified file-write bans activate this guard, such as `May not: write files.`,

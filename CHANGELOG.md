@@ -8,6 +8,19 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.25] — 2026-10-23 — Interpreter tools under command bans
+
+### Fixed
+
+- Count and deny direct code interpreters and static nested shell/interpreter
+  calls in code-mode exec during command-forbidden handoff turns. Preserve
+  read-only tool discovery, non-interpreter calls and command-permitted turns.
+- Name interpreters in command-ban guidance while preserving the separate,
+  unchanged file-only prohibition sentence from 0.13.23.
+- Require forbidden execution to be disclosed as a compliance failure at Stop,
+  including the bounded second repair. Interpreter reads cannot justify verified
+  paths/pins; do not demand a false no-reader statement after such execution.
+
 ## [v0.13.24] — 2026-10-23 — Round-j handoff checker defects
 
 ### Fixed

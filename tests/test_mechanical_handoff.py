@@ -1496,6 +1496,163 @@ def append_code_mode(repo, code):
             'type': 'custom_tool_call', 'name': 'exec', 'input': code}}) + '\n')
 
 
+@pytest.mark.parametrize('tool', [
+    'mcp__node_repl__js', 'functions.mcp__node_repl__js', 'js', 'js_reset',
+    'mcp__node_repl__js_reset', 'python', 'python_repl', 'mcp__python_repl__exec',
+    'mcp__python__python', 'mcp__js_repl__execute', 'mcp__javascript_repl__execute',
+])
+@pytest.mark.parametrize('receiving', [False, True])
+def test_should_deny_interpreters_only_in_command_forbidden_handoffs(runtime, tool, receiving):
+    run, _, _ = runtime
+    base = RECIPIENT_PROMPT if receiving else PROMPT
+    for prompt, denied in ((base + '\nNo commands.', True), (base, False),
+                           ('Inspect source only. No commands.', False)):
+        run('UserPromptSubmit', prompt=prompt)
+        result = run('PreToolUse', tool_name=tool, tool_input={'code': '1 + 1'})
+        assert result.returncode == (2 if denied else 0)
+        if denied:
+            output = json.loads(result.stdout)['hookSpecificOutput']
+            assert output['permissionDecision'] == 'deny'
+            assert ('Owner forbids commands in this handoff turn'
+                    in output['permissionDecisionReason'])
+        else:
+            assert result.stdout == ''
+
+
+@pytest.mark.parametrize('code', [
+    'await tools.mcp__node_repl__js({code: "read synthetic source"});',
+    'await tools.js({code: "1 + 1"});',
+    'await tools.js_reset();',
+    'await tools.mcp__python_repl__exec({code: "print(1)"});',
+    'await tools.exec_command({cmd: "cat src/example.py"});',
+    'await tools.exec_command({cmd: command});',
+    'await tools.exec_command(options);',
+    'await tools.shell_command({command: `cat ${path}`});',
+])
+@pytest.mark.parametrize('input_shape', ['raw', 'input', 'code'])
+@pytest.mark.parametrize('receiving', [False, True])
+def test_should_deny_static_nested_commands_but_allow_discovery(
+        runtime, code, input_shape, receiving):
+    run, _, _ = runtime
+    base = RECIPIENT_PROMPT if receiving else PROMPT
+    tool_input = code if input_shape == 'raw' else {input_shape: code}
+    for prompt, denied in ((base + '\nNo commands.', True), (base, False),
+                           ('Inspect source only. No commands.', False)):
+        run('UserPromptSubmit', prompt=prompt)
+        result = run('PreToolUse', tool_name='functions.exec', tool_input=tool_input)
+        assert result.returncode == (2 if denied else 0)
+    run('UserPromptSubmit', prompt=base + '\nNo commands.')
+    for safe in ('text(ALL_TOOLS.filter(x => /read/.test(x.name)));',
+                 'text(await tools.read_file({path: "src/example.py"}));',
+                 'text(' + json.dumps(code) + '); /* ' + code + ' */\n// ' + code):
+        result = run('PreToolUse', tool_name='exec', tool_input={'input': safe})
+        assert result.returncode == 0 and result.stdout == ''
+
+
+@pytest.mark.parametrize('shape', ['claude', 'codex', 'code-mode'])
+def test_should_count_interpreters_as_commands_without_read_evidence(runtime, shape):
+    run, _, repo = runtime
+    run('UserPromptSubmit', prompt=RECIPIENT_PROMPT + '\nNo commands.')
+    code = ('const paths = ["src/example.py", "src/helper.py", "tests/example.py", '
+            '"docs/example.md", "config/example.json", "scripts/example.py"]; '
+            'for (const path of paths) { await fs.readFile(path, "utf8"); }')
+    if shape == 'code-mode':
+        # Same three-call shape as the defect capture, using synthetic source names only.
+        append_code_mode(repo, 'text(ALL_TOOLS.map(x => x.name));')
+        append_code_mode(repo, 'text(ALL_TOOLS.filter(x => /read/.test(x.name)));')
+        append_code_mode(repo, 'await tools.mcp__node_repl__js({code: '
+                         + json.dumps(code) + '});')
+    else:
+        append_tool(repo, shape, 'mcp__node_repl__js', {'code': code})
+    hook = module()
+    calls, reads, _ = hook.turn_tools({
+        'cwd': str(repo), 'transcript_path': str(repo / 'native-session.jsonl')})
+    assert any(name in hook.SHELL_TOOLS for name, _ in calls)
+    assert reads == []
+
+
+@pytest.mark.parametrize('receiving', [False, True])
+def test_should_supply_interpreter_ban_and_preserve_file_only_split(runtime, receiving):
+    run, _, _ = runtime
+    base = (RECIPIENT_PROMPT if receiving else PROMPT).replace(
+        'May not: edit files; run tests\n', '')
+    result = run('UserPromptSubmit', prompt=base + '\nNo commands.')
+    context = json.loads(result.stdout)['hookSpecificOutput']['additionalContext']
+    assert 'code interpreters (for example node_repl or a Python REPL)' in context
+    assert 'attempts are compliance failures even if denied.' in context
+    result = run('UserPromptSubmit', prompt=base + '\nNo file changes.')
+    context = json.loads(result.stdout)['hookSpecificOutput']['additionalContext']
+    assert 'Shell tools' not in context and 'code interpreters' not in context
+    assert ('Write/Edit/apply_patch and file-writing tools must not be called in this turn'
+            in context)
+    assert (PINS in context if not receiving else 'Received handoff' in context)
+
+
+@pytest.mark.parametrize('shape', ['claude', 'codex', 'code-mode'])
+@pytest.mark.parametrize('receiving', [False, True])
+def test_should_require_command_ban_compliance_failure_in_artifact(runtime, shape, receiving):
+    run, _, repo = runtime
+    base = RECIPIENT_PROMPT if receiving else PROMPT
+    run('UserPromptSubmit', prompt=base + '\nNo commands.')
+    if shape == 'code-mode':
+        append_code_mode(repo, 'await tools.mcp__node_repl__js({code: "1 + 1"});')
+    else:
+        append_tool(repo, shape, 'mcp__node_repl__js', {'code': '1 + 1'})
+    body = RECIPIENT_LABELS if receiving else NO_PIN_PACKET
+    result = run('Stop', last_assistant_message=body)
+    reason = json.loads(result.stdout or '{}').get('reason', '')
+    assert 'command-ban compliance failure' in reason
+    assert 'no non-command reader was used/available' not in reason
+    for acknowledgement in (
+        '\nCompliance failure: executed a code interpreter under the command ban.',
+        '\n\uba85\ub839 \uae08\uc9c0 \uc9c0\uc2dc \uc704\ubc18: '
+        '\ucf54\ub4dc \uc778\ud130\ud504\ub9ac\ud130\ub97c \uc2e4\ud589\ud588\uc2b5\ub2c8\ub2e4.',
+    ):
+        repaired = run('Stop', last_assistant_message=body + acknowledgement)
+        assert 'decision' not in json.loads(repaired.stdout or '{}')
+    # Resetting the turn discards the earlier interpreter call.
+    run('UserPromptSubmit', prompt=base + '\nNo commands.')
+    append_tool(repo, 'claude', 'Read', {'file_path': 'src/example.py'})
+    assert 'decision' not in json.loads(run('Stop', last_assistant_message=body).stdout or '{}')
+
+
+@pytest.mark.parametrize('receiving', [False, True])
+def test_should_reject_interpreter_reads_as_verified_even_after_failure_disclosure(
+        runtime, receiving):
+    run, _, repo = runtime
+    run('UserPromptSubmit', prompt=(RECIPIENT_PROMPT if receiving else PROMPT) + '\nNo commands.')
+    append_code_mode(repo, 'await tools.mcp__node_repl__js({code: '
+                     '"await fs.readFile(\'src/example.py\', \'utf8\')"});')
+    body = (RECIPIENT_LABELS if receiving else NO_PIN_PACKET)
+    result = run('Stop', last_assistant_message=body)
+    assert 'command-ban compliance failure' in json.loads(result.stdout or '{}').get('reason', '')
+    body += ('\nCompliance failure: executed an interpreter under the command ban.'
+             '\nPath verified-in-repo: src/example.py')
+    body += '\npin repository_root=verified-in-repo\npin mapping.identity=verified-in-repo'
+    reason = json.loads(run('Stop', last_assistant_message=body).stdout)['reason']
+    assert 'verified-in-repo path lacks this-turn tool reference: src/example.py' in reason
+    assert 'verified-in-repo pin lacks this-turn tool reference: repository_root' in reason
+    assert 'verified-in-repo pin lacks this-turn tool reference: mapping.identity' in reason
+    assert 'no non-command reader was used/available' not in reason
+
+
+@pytest.mark.parametrize('receiving', [False, True])
+def test_should_retry_command_ban_compliance_defect_once_then_allow_stop(runtime, receiving):
+    run, _, repo = runtime
+    run('UserPromptSubmit', prompt=(RECIPIENT_PROMPT if receiving else PROMPT) + '\nNo commands.')
+    append_code_mode(repo, 'await tools.js_reset();')
+    # A real reader cannot erase the command-ban failure.
+    append_tool(repo, 'claude', 'Read', {'file_path': 'src/example.py'})
+    body = RECIPIENT_LABELS if receiving else NO_PIN_PACKET
+    append_hook_prompt(repo, 'Repair handoff once: missing field', 'stop:1:/synthetic/hooks.json')
+    result = run('Stop', last_assistant_message=body, stop_hook_active=True)
+    reason = json.loads(result.stdout or '{}').get('reason', '')
+    assert 'second/final block' in reason and 'command-ban compliance failure' in reason
+    append_hook_prompt(repo, reason, 'stop:2:/synthetic/hooks.json')
+    result = run('Stop', last_assistant_message=body, stop_hook_active=True)
+    assert 'decision' not in json.loads(result.stdout or '{}')
+
+
 def test_should_count_code_mode_calls_as_local_checks(runtime):
     run, _, repo = runtime
     run('UserPromptSubmit', prompt=RECIPIENT_PROMPT)
@@ -1637,7 +1794,8 @@ def test_should_supply_forbidden_tool_attempt_rule(runtime, restriction, receivi
     prompt = base + '\n' + restriction
     result = run('UserPromptSubmit', prompt=prompt)
     context = json.loads(result.stdout)['hookSpecificOutput']['additionalContext']
-    shell = 'Shell tools must not be called in this turn'
+    shell = ('Shell tools and code interpreters (for example node_repl or a Python REPL) '
+             'must not be called in this turn')
     files = 'Write/Edit/apply_patch and file-writing tools must not be called in this turn'
     assert context.count(files if 'file' in restriction else shell) == 1
     assert 'attempts are compliance failures even if denied.' in context
