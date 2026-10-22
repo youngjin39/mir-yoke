@@ -362,3 +362,32 @@ The forbidden-tool supply sentence is split: a command ban adds the shell senten
 ban adds the file-writing-tool sentence. A file-only ban must not suggest that commands are
 forbidden, because command-permitted handoffs still need the pins runner (round j regression,
 Yoke 0.13.22). PreToolUse denial rules are unchanged.
+
+## Amendment: 2026-10-23d
+
+Design authority is the owner 0.13.24 round-j checker-defect writer brief
+(decision 1562831233971392553, parent-supplied), under `Current` in the Harness
+active cursor. The bounded writer scope leaves that cursor unchanged. Round-j
+defects D02-D04 are evidence for these source changes; fixtures contain synthetic
+values rather than captured personal content.
+
+- Share the qualified-target label form across recipient detection, author target
+  checks and namespace checks. Korean examples here use Unicode escapes.
+  Accept parenthetical bilingual forms, including
+  `\ub300\uc0c1(Qualified target):`, `Qualified target (\ub300\uc0c1):` and bold equivalents.
+  Recipient supply and Stop still require individual labels for all eight base pins.
+- Include qualified-target namespace mismatches in the deterministic second-block
+  subset for author, recipient and no-command checks. A mismatch first exposed by
+  repairing a target label gets the existing one second/final block; two recorded
+  blocks always allow the next Stop.
+- Accept recipient base/source pin labels split across Markdown table cells,
+  preserving the same computation and reader-reference requirements. Ignore version
+  strings, qualified IDs and structured pin keys during verified-path scanning.
+  Prose `reason`/`reasons`/`\uc774\uc720` and summary `sha256`/`revision` headers are not pins.
+
+These remain lexical declaration/provenance checks, not semantic truth or execution
+success proofs, consistent with `.mir/ontology-map.json#/domain/invariants/2`.
+The admitted event inventory, read-only/offline behavior and Python 3.9 support
+stay unchanged. Main owns versions, handler admission SHA, tree digests, payloads,
+locks, generated derivatives, activation and release verification. This amendment
+performs none of that release chain.

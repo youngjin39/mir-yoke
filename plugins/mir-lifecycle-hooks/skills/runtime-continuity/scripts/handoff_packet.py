@@ -74,6 +74,11 @@ ATTEMPT_RULE = '; attempts are compliance failures even if denied.'
 RECEIVED_PINS = re.compile(r'\b(?:handoff )?pins:\s*(?:```(?:json)?\s*)?', re.I)
 BASE_PINS = ['repository_root', 'head', 'mapping.identity', 'mapping.version',
              'mapping.digest', 'contract.identity', 'contract.version', 'contract.digest']
+TARGET_NAME = r'(?:qualified target|\ub300\uc0c1)\b(?:[ \t]*\([^\n)]*\))?'
+PIN_KEY = (r'(?:repository_root|head|(?:mapping|contract)\.(?:identity|version|digest)|'
+           r'sources\[\d+\]\.(?:digest|sha256|revision))')
+NON_PIN_NAMES = {'lifecycle', 'temporal', 'epistemic', 'verification', 'evidence', 'unknowns',
+                 'reason', 'reasons', '\uc774\uc720', 'sha256', 'revision'}
 COMPLETE_ARTIFACT_RULE = (
     'Re-send the complete corrected artifact as your final message; it replaces the previous '
     'one, so do not send only the changed sections.'
@@ -94,8 +99,7 @@ def recipient(prompt: str) -> bool:
     plain = re.sub(r'[*`]', '', prompt)
     lines = plain.splitlines()
     target_label = (r'^\s*(?:#{1,6}\s+(?:\d+[.)]\s*)?'
-                    r'(?:qualified target\b|\ub300\uc0c1\b)|'
-                    r'(?:[-+]\s*)?(?:qualified target|\ub300\uc0c1)\s*(?::|$))')
+                    + TARGET_NAME + r'|(?:[-+]\s*)?' + TARGET_NAME + r'\s*(?::|$))')
     target = any(
         re.search(target_label, line, re.I)
         and re.search(r'(?<![\w:/])[\w.-]+:[\w./-]+', '\n'.join(lines[i:i + 4]))
@@ -277,7 +281,7 @@ def check_packet(body: str, state: dict) -> list[str]:
     # Inspect the entire enclosing artifact, not only a fenced packet or its first section.
     plain = re.sub(r'(?m)^[ \t]*[-+][ \t]+', '',
                    re.sub(r'[*`#]', '', body.replace(pins, '')))
-    if not re.search(r'(?im)^\s*qualified target:\s*[\w.-]+:[\w./-]+', plain):
+    if not re.search(r'(?im)^\s*' + TARGET_NAME + r'\s*:\s*[\w.-]+:[\w./-]+', plain):
         defects.append('missing qualified target (namespace:local-id)')
     for axis in ('lifecycle', 'temporal', 'epistemic', 'verification'):
         if not re.search(rf'(?im)^[ \t]*{axis}:[ \t]*\S[^\n]*', plain):
@@ -426,7 +430,7 @@ def namespace_defects(body: str, root: Path) -> list[str]:
         return []
     plain = re.sub(r'[*`]', '', body)
     targets = re.findall(r'(?im)^\s*(?:#{1,6}\s+|[-+]\s+)?'
-                         r'(?:qualified target|\ub300\uc0c1)\s*:\s*([\w.-]+):[\w./-]+', plain)
+                         + TARGET_NAME + r'\s*:\s*([\w.-]+):[\w./-]+', plain)
     return [f'qualified target namespace {target} differs from map namespace {namespace}'
             for target in dict.fromkeys(targets) if target != namespace and target not in aliases]
 
@@ -762,8 +766,24 @@ def pin_claims(text: str) -> list[tuple[str, str]]:
     plain = re.sub(r'[*`]', '', text)
     claims = re.findall(r'(?im)(?<![\w.-])(?:pin )?([\w.\[\]-]+)\s*[=:]\s*'
                         r'(verified-in-repo|parent-supplied|unavailable)\b', plain)
-    return [(name, label) for name, label in claims if name.lower() not in {
-        'lifecycle', 'temporal', 'epistemic', 'verification', 'evidence', 'unknowns'}]
+    for line in plain.splitlines():
+        if '|' not in line:
+            continue
+        cells = [cell.strip() for cell in line.strip().strip('|').split('|')]
+        names = [cell for cell in cells if re.fullmatch(PIN_KEY, cell, re.I)]
+        labels = [cell for cell in cells if re.fullmatch(
+            r'verified-in-repo|parent-supplied|unavailable', cell, re.I)]
+        if len(names) == 1 and len(labels) == 1:
+            claims.append((names[0], labels[0]))
+    return [(name, label) for name, label in claims if name.lower() not in NON_PIN_NAMES]
+
+
+def claimed_paths(text: str) -> list[str]:
+    """Separate file references from qualified IDs, versions and structured pin keys."""
+    plain = re.sub(r'(?<![\w:/])[\w.-]+:[\w./-]+', '', text)
+    plain = re.sub(r'(?<![\w./-])' + PIN_KEY + r'(?![\w./-])', '', plain, flags=re.I)
+    return [value for value in CITED.findall(plain)
+            if not re.fullmatch(r'v?\d+(?:\.\d+)+(?:[-+][\w.-]+)?', value, re.I)]
 
 
 def received_data(text: str) -> dict:
@@ -834,7 +854,7 @@ def verification_defects(text: str, body: str, event: dict, no_commands: bool = 
         line = next((line for line in plain.splitlines() if name in line
                      and 'verified-in-repo' in line.lower()), '')
         # Pin identifiers (mapping.digest etc.) are not file paths.
-        explicit = [value for value in CITED.findall(line) if value != name]
+        explicit = [value for value in claimed_paths(line) if value != name]
         if not path and explicit:
             path = explicit[0]
         if no_commands:
@@ -871,7 +891,7 @@ def verification_defects(text: str, body: str, event: dict, no_commands: bool = 
     names = {name for name, _ in pin_claims(plain)}
     for line in plain.splitlines():
         if 'verified-in-repo' in line.lower():
-            verified_paths.update(value for value in CITED.findall(line) if value not in names)
+            verified_paths.update(value for value in claimed_paths(line) if value not in names)
     for path in sorted(verified_paths):
         referenced = path_referenced(path, reads, [] if no_commands else commands, root)
         if not no_commands and path == '.mir/ontology-map.json':
@@ -924,10 +944,14 @@ def recipient_check(prompt: str, body: str, event: dict) -> list[str]:
     for index, _ in enumerate(data.get('sources', [])):
         names.extend([f'sources[{index}].digest', f'sources[{index}].revision'])
     names.extend(name for name, _ in pin_claims(prompt))
-    names.extend(re.findall(r'(?i)\bpin\s+([\w.\[\]-]+)\s*[=:]', prompt))
+    names.extend(name for name in re.findall(r'(?i)\bpin\s+([\w.\[\]-]+)\s*[=:]', prompt)
+                 if name.lower() not in NON_PIN_NAMES)
     if not data:
-        names.extend(line.split(':', 1)[0].strip(' -*`') for line in prompt.splitlines()
-                     if re.search(r'sha256[^\n]*[0-9a-f]{64}', line, re.I))
+        for line in prompt.splitlines():
+            name = re.match(r'^\s*(?:[-*]\s*)?`?([\w./\[\]-]+)`?\s*:', line)
+            if (name and name[1].lower() not in NON_PIN_NAMES
+                    and re.search(r'sha256[^\n]*[0-9a-f]{64}', line, re.I)):
+                names.append(name[1])
     labels = {name: label.lower() for name, label in pin_claims(body)}
     for name in dict.fromkeys(names):
         if name not in labels:
@@ -1006,7 +1030,7 @@ def prior_blocks(event: dict) -> int | None:
 def deterministic(defects: list[str]) -> list[str]:
     return [defect for defect in defects if defect.startswith((
         'missing cited-source pins', 'abbreviated hex', 'missing recipient pin label',
-        'excluded item #'))]
+        'excluded item #', 'qualified target namespace '))]
 
 
 def block(defects: list[str], retry: bool, receiving: bool, owner: dict) -> None:

@@ -8,6 +8,18 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.24] — 2026-10-23 — Round-j handoff checker defects
+
+### Fixed
+
+- Accept parenthetical bilingual qualified-target labels in recipient detection,
+  author target checks and namespace checks; retain individual base-pin accounting.
+- Include qualified-target namespace mismatches in the bounded second/final repair,
+  including mismatches first exposed after repairing the target label.
+- Accept recipient pin labels in Markdown table cells. Exclude version strings,
+  qualified IDs and structured pin keys from verified-path scanning, and keep reason
+  prose and summary sha256/revision headers out of pin-label requirements.
+
 ## [v0.13.23] — 2026-10-23 — File-only bans no longer read as command bans
 
 ### Fixed

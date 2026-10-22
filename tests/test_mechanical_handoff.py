@@ -1666,3 +1666,126 @@ def test_should_deny_file_write_tools_in_file_forbidden_handoff(runtime, tool, r
         run('UserPromptSubmit', prompt=allowed_prompt)
         allowed = run('PreToolUse', tool_name=tool, tool_input={})
         assert allowed.returncode == 0 and allowed.stdout == ''
+
+
+@pytest.mark.parametrize('label', [
+    '\ub300\uc0c1(Qualified target):', 'Qualified target (\ub300\uc0c1):',
+    '**\ub300\uc0c1 (Qualified target):**', '**Qualified target(\ub300\uc0c1)**:',
+    '## \ub300\uc0c1 (Qualified target):',
+])
+def test_should_require_base_pins_for_parenthetical_recipient_target(runtime, label):
+    run, _, _ = runtime
+    prompt = RECIPIENT_PROMPT.replace('Qualified target:', label)
+    assert module().recipient(prompt)
+    assert 'Received handoff:' in run('UserPromptSubmit', prompt=prompt).stdout
+    output = json.loads(run('Stop', last_assistant_message='Done.').stdout)
+    for name in PIN_NAMES[:8]:
+        assert 'missing recipient pin label: ' + name in output['reason']
+
+
+@pytest.mark.parametrize('label', [
+    '\ub300\uc0c1(Qualified target):', 'Qualified target (\ub300\uc0c1):',
+    '**\ub300\uc0c1 (Qualified target):**',
+])
+def test_should_check_parenthetical_author_target_and_namespace(tmp_path, label):
+    hook = module()
+    (tmp_path / '.mir').mkdir()
+    mapping = tmp_path / '.mir/ontology-map.json'
+    mapping.write_text(json.dumps({'namespace': 'example'}))
+    body = packet().replace('Qualified target:', label)
+    state = {'pins': PINS, 'owner': hook.owner_sections(PROMPT), 'root': tmp_path}
+    assert hook.check_packet(body, state) == []
+    mapping.write_text(json.dumps({'namespace': 'local-project'}))
+    assert hook.namespace_defects(body, tmp_path) == [
+        'qualified target namespace example differs from map namespace local-project']
+
+
+@pytest.mark.parametrize('shape', ['claude', 'codex'])
+@pytest.mark.parametrize('mode', ['author', 'no-command', 'recipient'])
+def test_should_block_namespace_first_exposed_after_repair_only_twice(runtime, shape, mode):
+    run, _, repo = runtime
+    (repo / '.mir').mkdir()
+    mapping = repo / '.mir/ontology-map.json'
+    original = json.dumps({'namespace': 'local-project'})
+    mapping.write_text(original)
+    prompt = RECIPIENT_PROMPT if mode == 'recipient' else PROMPT
+    if mode == 'no-command':
+        prompt += 'No commands.'
+    run('UserPromptSubmit', prompt=prompt)
+    first_body = ('Done.' if mode == 'recipient' else
+                  packet().replace('Qualified target:', 'Target identity:') + '\nHEAD: abcdef123')
+    first = json.loads(run('Stop', last_assistant_message=first_body).stdout)
+    assert first['decision'] == 'block'
+    assert 'differs from map namespace' not in first['reason']
+    append_block(repo, shape, first['reason'])
+    body = (packet() if mode != 'recipient' else
+            'Qualified target: example:review\n' + RECIPIENT_LABELS)
+    second = json.loads(run('Stop', last_assistant_message=body, stop_hook_active=True).stdout
+                        or '{}')
+    assert second.get('decision') == 'block', second
+    assert ('qualified target namespace example differs from map namespace local-project'
+            in second['reason'])
+    append_block(repo, shape, second['reason'])
+    third = run('Stop', last_assistant_message=body, stop_hook_active=True)
+    assert 'decision' not in json.loads(third.stdout or '{}')
+    assert mapping.read_text() == original
+
+
+def test_should_parse_pin_labels_in_separate_markdown_cells():
+    body = ('| Pin | Value | Label | Reason |\n| --- | --- | --- | --- |\n'
+            '| `head` | ' + 'a' * 40 + ' | **verified-in-repo** | git |\n'
+            '| mapping.digest | ' + 'b' * 64 + ' | parent-supplied | inherited |\n'
+            '| unavailable | sources[3].revision | no history | |\n')
+    assert module().pin_claims(body) == [
+        ('head', 'verified-in-repo'), ('mapping.digest', 'parent-supplied'),
+        ('sources[3].revision', 'unavailable')]
+
+
+@pytest.mark.parametrize('no_commands', [False, True])
+def test_should_accept_recipient_pin_table_with_computation_or_reader(runtime, no_commands):
+    run, _, repo = runtime
+    prompt = RECIPIENT_PROMPT + ('\nNo commands.' if no_commands else '')
+    run('UserPromptSubmit', prompt=prompt)
+    body = '| Pin | Value | Label |\n| --- | --- | --- |\n'
+    for name in PIN_NAMES:
+        label = 'verified-in-repo' if name in {'head', 'mapping.version'} else 'parent-supplied'
+        value = ('1.1.0' if name == 'mapping.version' else
+                 'a' * 40 if name == 'head' else 'inherited')
+        body += f'| {name} | {value} | {label} |\n'
+    rejected = json.loads(run('Stop', last_assistant_message=body).stdout)
+    assert 'lacks this-turn' in rejected['reason']
+    assert 'missing recipient pin label' not in rejected['reason']
+    if no_commands:
+        append_tool(repo, 'claude', 'Read', {'file_path': '.git/HEAD'})
+        append_tool(repo, 'claude', 'Read', {'file_path': '.mir/ontology-map.json'})
+    else:
+        append_code_mode(repo, 'await tools.exec_command({cmd:"git rev-parse HEAD; '
+                         'python3 scripts/mir_ontology.py mapping --handoff src/example.py"});')
+    assert run('Stop', last_assistant_message=body).stdout == ''
+
+
+@pytest.mark.parametrize('text', [
+    'Reason: parent-supplied\nreasons=unavailable\n\uc774\uc720: parent-supplied',
+    'sha256: parent-supplied ' + 'a' * 64 + '\nrevision=unavailable',
+    '| sha256 | revision |\n| ' + 'b' * 64 + ' | parent-supplied |',
+])
+def test_should_never_require_non_pin_prose_or_summary_headers(runtime, text):
+    run, _, _ = runtime
+    assert module().pin_claims(text) == []
+    run('UserPromptSubmit', prompt=RECIPIENT_PROMPT + '\n' + text)
+    assert run('Stop', last_assistant_message=RECIPIENT_LABELS).stdout == ''
+
+
+@pytest.mark.parametrize('token', [
+    '1.1.0', 'mir.common-semantics:review/item.v1', 'mapping.digest',
+    'contract.version', 'sources[3].revision',
+])
+def test_should_ignore_non_path_tokens_but_require_real_verified_path(runtime, token):
+    run, _, repo = runtime
+    run('UserPromptSubmit', prompt=RECIPIENT_PROMPT)
+    append_tool(repo, 'claude', 'Read', {'file_path': 'src/example.py'})
+    body = RECIPIENT_LABELS + '\nSummary verified-in-repo: ' + token
+    assert run('Stop', last_assistant_message=body).stdout == ''
+    result = run('Stop', last_assistant_message=body + ' docs/unchecked.md')
+    assert ('verified-in-repo path lacks this-turn tool reference: docs/unchecked.md'
+            in json.loads(result.stdout)['reason'])

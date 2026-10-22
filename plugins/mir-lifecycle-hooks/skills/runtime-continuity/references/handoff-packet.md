@@ -169,6 +169,10 @@ An optional `namespace_aliases` array admits an alias only as an object with
 similar names and capability-pack aliases confer no namespace equivalence.
 This is a declaration check, not verification of the review evidence. Missing,
 unreadable or malformed maps fail open for this check; no runner or write is needed.
+Author target checks, recipient detection and namespace checks share the target label
+form. Korean examples here use Unicode escapes. Accept parenthetical bilingual labels
+such as `\ub300\uc0c1(Qualified target):`,
+`Qualified target (\ub300\uc0c1):` and `**\ub300\uc0c1 (Qualified target):**`.
 
 Stop recomputes the prompt SHA256 from the last native user prompt. A mismatched
 full hash warns/skips rather than using stale authority; a missing hash is a
@@ -212,8 +216,10 @@ count retain the warning/allow behavior. Two recorded blocks always allow the
 next Stop; no third block is emitted. No persistent counter is used.
 
 The second block names only deterministic defects: missing cited-source digests
-or revisions, abbreviated hex pins, missing recipient pin labels and excluded
-items. Field headings, extra grants, computing evidence and limitation prose
+or revisions, abbreviated hex pins, missing recipient pin labels, qualified-target
+namespace mismatches and excluded items. A mismatch first exposed after a target-label
+repair can therefore trigger the one second/final block. Field headings, extra grants,
+computing evidence and limitation prose
 are first-block checks only. A missing/nonboolean retry flag warns/skips because
 bounded behavior cannot otherwise be guaranteed without state. Non-packet
 responses (including clarification) are untouched. Stop cannot undo earlier tool
@@ -252,7 +258,8 @@ value's own line. This subset requires no English field labels and accepts
 translated packets and Korean permission labels. It does not require fresh
 pins, English status headings or prompt hashes; the current owner prompt still
 governs the subset if an old prompt hash appears. The same two-block bound
-applies; only exclusions and abbreviated pins can trigger its second block.
+applies; only exclusions, abbreviated pins and qualified-target namespace mismatches
+can trigger its second block.
 
 ## Recipient accounting and owner no-command guard
 
@@ -269,8 +276,16 @@ all eight base pins (`repository_root`, `head`, `mapping.identity|version|digest
 `verified-in-repo`, `parent-supplied` or `unavailable`, for example
 `pin sources[0].digest=parent-supplied`. Both `handoff pins:` and `Pins:` JSON
 blocks are accepted, including a JSON fence. For sha256-line packets, use the line's
-name before its first colon. Pins without values still require a label. Labels
-account for claims; they do not prove hashes.
+name before its first colon. Markdown table rows also count when one cell names a
+base/source pin (for example `head`, `mapping.digest` or `sources[3].revision`) and
+another cell contains its label, with optional emphasis/backticks. Column order is
+irrelevant. Pins without values still require a label. Prose words `reason`, `reasons`
+and `\uc774\uc720` (Unicode escapes), and summary `sha256`/`revision` headers are not pin names and never add
+label requirements. Labels account for claims; they do not prove hashes.
+
+Verified-path scanning excludes version strings such as `1.1.0`, qualified IDs
+such as `namespace:local-id`, and structured base/source pin keys. Actual file
+references on the same line still require a tool reference.
 
 Each source path claimed `verified-in-repo`, including paths inferred from the
 packet's source pin names, must have a tool reference in this turn's transcript:
