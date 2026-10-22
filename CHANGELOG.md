@@ -8,6 +8,18 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.17] — 2026-10-22 — Handoff Stop check asks for each cited source pin
+
+### Changed
+
+- In round f, five packets cited code and test files without their digests because the owner
+  prompts named no `Sources:` and the supplied pin block therefore had no source entries. Stop now
+  runs the repository runner once more for the existing repository files a packet cites beyond
+  the supplied sources (protected, excluded, symlinked, map and runner paths skipped; at most 32)
+  and blocks once, naming each file whose sha256 or last-change revision is absent. Supply asks
+  for these pins up front. Both runner calls share the 8-second hook budget; a late second call
+  fails open with the usual warning.
+
 ## [v0.13.16] — 2026-10-22 — Handoff Stop check reads the native final message
 
 ### Fixed

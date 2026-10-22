@@ -177,7 +177,9 @@ and nonempty (the transcript can lag behind the final message), else the tail's 
 discovery and may locate only the root `scripts/mir_ontology.py` runner. The runner is invoked with
 an argument array, without a shell, with a subprocess deadline of 5 seconds. Git root discovery is
 the only other permitted subprocess operation; the reviewed implementation may use upward
-discovery instead. Missing or ambiguous evidence produces bounded guidance without expanding
+discovery instead. Stop may invoke the runner a second time, only for existing repository files the emitted
+packet cites beyond the supplied sources, to require each one's digest and last-change revision; both
+calls share the 8-second hook budget. Missing or ambiguous evidence produces bounded guidance without expanding
 authority. Project-coupled enforcement, persistent session state and all writes still require
 project-owned adapters and remain outside this admission.
 

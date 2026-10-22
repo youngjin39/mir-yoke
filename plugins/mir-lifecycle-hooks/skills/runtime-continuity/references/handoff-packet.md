@@ -132,6 +132,12 @@ The final packet must still carry the original complete supplied block; if pins
 are stale, regenerate the packet from current evidence rather than silently
 altering individual values. This limitation follows from stateless recomputation.
 
+Every other existing repository file the packet cites (relative path; protected, excluded,
+symlinked, map and runner paths skipped; at most 32) must carry its own sha256 and
+last-change revision. Stop runs the runner once more for those paths within the shared
+budget and names each file whose digest or revision is absent. Supply asks for them up
+front. Add them to the packet's source list, not as a second pins block.
+
 Self-check individually lists `field NAME=present/missing/abbreviated/unchecked`
 for qualified target, four status axes, evidence, unknowns, may and may not;
 `pin NAME=parent-supplied/verified-in-repo/missing/abbreviated/unchecked` for each

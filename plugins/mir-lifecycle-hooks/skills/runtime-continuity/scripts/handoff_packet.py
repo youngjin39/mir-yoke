@@ -10,9 +10,11 @@ import signal
 import stat
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 LIMIT = 1024 * 1024
+STARTED = time.monotonic()
 WARNING = 'Mir handoff WARNING: '
 STAMP = r'\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?(?:Z|[+-]\d\d:\d\d)'
 LABEL = re.compile(
@@ -44,6 +46,9 @@ PACKET = re.compile(
     r'^#{1,6}[^\n]*(?:handoff|brief|\ud578\ub4dc\uc624\ud504|\uc9c0\uc2dc\ubb38|\ube0c\ub9ac\ud504|\uc778\uacc4)',
     re.I | re.M,
 )
+
+# Relative file paths; Korean particles may follow a path directly.
+CITED = re.compile(r'(?<![\w./~:-])\.?[\w-][\w.-]*(?:/[\w.-]+)*\.[A-Za-z0-9]+(?![A-Za-z0-9_/-])')
 
 
 def detect(prompt: str) -> bool:
@@ -235,6 +240,8 @@ def context_text(owner: dict, pins: str | None = None, prompt: str | None = None
         'Self-check (field NAME=present/missing/abbreviated/unchecked; '
         'pin NAME=parent-supplied/verified-in-repo/missing/abbreviated/unchecked, individually, '
         'plus each exact unknown pin reason). Preserve the entire pins block above unchanged. '
+        'For every other repository file you cite, add its sha256 and last-change revision from '
+        '`python3 scripts/mir_ontology.py mapping --handoff <paths>` sources. '
         'Inspect the whole forwarded artifact, including enclosing text.\n'
     )
 
@@ -293,19 +300,40 @@ def repository_root(event: dict) -> Path:
     raise ValueError('repository root unavailable')
 
 
-def run_pins(event: dict, owner: dict) -> str:
+def cited_paths(body: str, owner: dict, root: Path) -> list[str]:
+    """Repository files the packet names that the supplied pins do not already cover."""
+    covered = {*source_paths(owner, root), '.mir/ontology-map.json', 'scripts/mir_ontology.py'}
+    paths = []
+    for raw in CITED.findall(body):
+        if raw in covered or raw in paths or any(item in raw for item in owner['excluded']):
+            continue
+        parts = Path(raw).parts
+        if any(part.startswith('.env') or part in {'secrets', '..'} for part in parts):
+            continue
+        if raw.startswith('.mir/memory.db'):
+            continue
+        path = root / raw
+        if path.is_symlink() or not path.is_file():
+            continue
+        paths.append(raw)
+    return paths[:32]
+
+
+def run_pins(event: dict, owner: dict, paths: list[str] | None = None, timeout: float = 5) -> str:
     root = repository_root(event)
     runner = root / 'scripts/mir_ontology.py'
     if runner.is_symlink() or not runner.is_file():
         raise ValueError('repository pin runner unavailable')
+    if paths is None:
+        paths = source_paths(owner, root)
     process = subprocess.Popen(
-        [sys.executable, str(runner), 'mapping', '--handoff', *source_paths(owner, root)],
+        [sys.executable, str(runner), 'mapping', '--handoff', *paths],
         cwd=root, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
         start_new_session=True,
         env={**os.environ, 'PYTHONDONTWRITEBYTECODE': '1', 'GIT_OPTIONAL_LOCKS': '0'},
     )
     try:
-        stdout, _ = process.communicate(timeout=5)
+        stdout, _ = process.communicate(timeout=timeout)
     except subprocess.TimeoutExpired:
         os.killpg(process.pid, signal.SIGKILL)
         process.communicate()
@@ -463,6 +491,21 @@ def stop(event: dict) -> None:
     owner = owner_sections(prompt)
     pins = run_pins(event, owner)
     defects = check_packet(body, {'pins': pins, 'owner': owner})
+    # Every cited repository file needs its own digest and last-change revision.
+    cited = cited_paths(body, owner, repository_root(event))
+    if cited:
+        # Both runner calls share the 8-second host budget; a late second call fails open.
+        budget = max(0.5, 6.5 - (time.monotonic() - STARTED))
+        found = json.loads(run_pins(event, owner, cited, budget).split('handoff pins:\n', 1)[1])
+        unpinned = [source['path'] for source in found.get('sources', [])
+                    if source.get('sha256') and (
+                        source['sha256'] not in body
+                        or (re.fullmatch(r'[0-9a-f]{40}', source.get('revision') or '')
+                            and source['revision'] not in body))]
+        if unpinned:
+            defects.append('missing cited-source pins (add sha256 and last-change revision for '
+                           'each from `python3 scripts/mir_ontology.py mapping --handoff <paths>` '
+                           'sources; no second pins block): ' + ', '.join(unpinned))
     if not guard:
         defects.append('missing Prompt SHA256 (copy the supplied full prompt hash)')
     if defects:

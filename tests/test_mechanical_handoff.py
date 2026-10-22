@@ -607,3 +607,23 @@ def test_should_check_native_final_message_when_transcript_lags(runtime):
     result = subprocess.run([sys.executable, str(HANDLER)], input=json.dumps(payload),
                             text=True, capture_output=True, env=env, check=False)
     assert json.loads(result.stdout)['decision'] == 'block'
+
+
+def test_should_require_digest_and_revision_for_each_cited_source(runtime):
+    run, _, repo = runtime
+    (repo / 'src').mkdir()
+    (repo / 'src/cited.py').write_text('VALUE = 1\n')
+    cited = PINS.replace('src/example.py', 'src/cited.py').replace('d' * 40, '1' * 40).replace(
+        'e' * 64, '2' * 64)
+    (repo / 'scripts/mir_ontology.py').write_text(
+        'import sys\n'
+        f'print({cited!r} if sys.argv[3:] == ["src/cited.py"] else {PINS!r})\n'
+    )
+    run('UserPromptSubmit', prompt=PROMPT)
+    body = packet() + 'Inspect src/cited.py\uc758 VALUE and src/absent.py.\n'
+    result = json.loads(run('Stop', last_assistant_message=body).stdout)
+    assert result['decision'] == 'block'
+    assert 'missing cited-source pins' in result['reason']
+    assert 'src/cited.py' in result['reason'] and 'src/absent.py' not in result['reason']
+    pinned = packet() + 'Inspect src/cited.py sha256 ' + '2' * 64 + ' revision ' + '1' * 40 + '.\n'
+    assert 'decision' not in json.loads(run('Stop', last_assistant_message=pinned).stdout or '{}')
