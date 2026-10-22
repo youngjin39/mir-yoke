@@ -1,10 +1,10 @@
 # Mechanical handoff packet
 
-Design authority: the current owner writer brief for the 0.13.20 residual handoff
-gaps (2026-10-22, decision 1562831233971392553, parent-supplied), recorded in the
+Design authority: the current owner writer brief for the 0.13.21 handoff repair
+completeness (2026-10-23, decision 1562831233971392553, parent-supplied), recorded in the
 Harness active cursor's `Current` section. The bounded writer scope leaves that
 cursor unchanged. This extends the stateless design recorded in `tasks/plan.md`;
-ADR-90 amendments 2026-10-22, 2026-10-22b and 2026-10-22c admit the bounded events
+ADR-90 amendments 2026-10-22, 2026-10-22b, 2026-10-22c and 2026-10-23 admit the bounded events
 and checks. Installation grants no agent authority. Semantic evidence remains
 `.mir/ontology-map.json#/domain/invariants/2` and its referenced ADR-90.
 
@@ -190,6 +190,15 @@ bounded behavior cannot otherwise be guaranteed without state. Non-packet
 responses (including clarification) are untouched. Stop cannot undo earlier tool
 publication or inspect file artifacts.
 
+Every block reason (first author block, recipient block and second/final block)
+ends with the following sentence. UserPromptSubmit supplies the same rule once,
+including recipient and no-command guidance:
+
+> Re-send the complete corrected artifact as your final message; it replaces the previous one, so do not send only the changed sections.
+
+The final message is the complete replacement artifact. This is an instruction
+change only; no heuristic attempts to detect partial repairs.
+
 ## No-command Stop subset
 
 When the owner forbids commands, retain the unavailable-pin warning
@@ -199,6 +208,13 @@ exclusions, extra may grants using the same lexical rules, and unsupported
 `verified-in-repo` claims. Every such pin/path needs a this-turn Read/Grep/Glob
 reference to its path; a declaration in the mapping is not a reader reference
 to the contract file. An unresolved pin path cannot be claimed verified.
+For `head`, a this-turn Read of `<root>/.git/HEAD` counts, optionally accompanied
+by a Read of the ref file it names. For `repository_root`, any this-turn
+Read/Grep/Glob path inside the repository root counts. Relative paths resolve
+against that root; an unrelated path outside it does not count, including a
+sibling repository whose name starts with the same root string. These rules
+also apply to recipient accounting when commands are forbidden. They establish
+reference provenance, not the resolved commit value or hash computation.
 
 Reject 7–39 hex characters presented as a full HEAD, revision, commit or digest,
 including `path@revision` and Markdown pin-table columns, unless explicitly
@@ -231,16 +247,22 @@ Each source path claimed `verified-in-repo`, including paths inferred from the
 packet's source pin names, must have a tool reference in this turn's transcript:
 Claude `Read`/`Grep`/`Glob` with a matching `file_path`/`path`/`pattern`, or shell
 command text containing the path.
+`repository_root` accepts a this-turn Read/Grep/Glob path inside the root using
+the same containment rule as the no-command subset.
 The root `mapping --handoff` runner also counts as a map reference. Claude
 `tool_use` and Codex `response_item.function_call` records are recognized; a new
 native user prompt discards earlier references. A digest pin additionally needs
 a this-turn command computing SHA256 over that path: `shasum -a 256`, `sha256sum`,
 `openssl dgst -sha256`, `hashlib.sha256`, or the root `mapping --handoff` runner.
 A revision needs `git log`/`git rev-list` naming its path or that runner naming
-the source. HEAD needs `git rev-parse` or the runner. The runner also covers map
+the source. When commands are permitted, HEAD needs `git rev-parse` or the runner.
+The runner also covers map
 and contract pins. A Read alone verifies neither hashes nor revision history.
 This checks command/reference provenance, not tool success, comparison results
-or semantic truth. If commands are permitted but no tool call exists, explicitly
+or semantic truth. When commands are forbidden, recipient accounting uses the
+no-command reference rules above instead of requiring computing commands;
+`contract.*` still requires a reference to the contract file itself.
+If commands are permitted but no tool call exists, explicitly
 state a local-check limitation; otherwise report `no local check and no stated limitation`.
 If commands are forbidden and no reader was used, the final
 answer must explicitly say commands are forbidden and no non-command reader was
@@ -261,7 +283,8 @@ establish fresh live-host delivery or activation.
 
 ## Delivery boundary
 
-0.13.20 source prepares the residual checks. Python 3.9 remains supported with
+0.13.21 source prepares complete repair guidance and root/HEAD reference fixes.
+Python 3.9 remains supported with
 optional `tomllib`; absent parsing still skips only the Profile glob filter.
 Main still owns generated Codex
 surfaces, digest acknowledgement, locks/binding and any live-host verification.

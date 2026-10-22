@@ -270,3 +270,37 @@ Python 3.9 support and optional tomllib remain mandatory. This source-only
 amendment does not update versions, handler admission SHA, tree digests, payloads,
 locks, generated derivatives or live runtime bindings. Main owns that release
 chain and fresh-host verification. Offline fixtures establish no activation.
+
+## Amendment: 2026-10-23
+
+Design authority is the owner 0.13.21 handoff repair completeness writer brief
+(decision 1562831233971392553, parent-supplied), under `Current` in the Harness
+active cursor. The bounded writer scope leaves that cursor unchanged. Round-i
+captures supplied by the owner showed section-only repair replies and a
+no-command HEAD/root reader-reference false positive; those observations are
+evidence, not additional authority.
+
+Every Stop block reason, including the first author block, recipient block and
+second/final block, must end with this sentence. UserPromptSubmit supplies it
+once in author, no-command and recipient guidance:
+
+> Re-send the complete corrected artifact as your final message; it replaces the previous one, so do not send only the changed sections.
+
+The forwarded final message must contain the complete corrected artifact.
+This adds instructions only; no partial-answer detection heuristic is admitted.
+
+In the no-command subset, a this-turn Read of `<root>/.git/HEAD` references
+`head`, optionally with the ref file it names. Any this-turn Read/Grep/Glob
+path inside the repository root references `repository_root`; unrelated files
+outside that root do not count. Recipient accounting uses these same rules
+when commands are forbidden, without requiring a computing command. With
+commands permitted, digest/revision/HEAD computation requirements remain.
+Claims for `contract.*` still require the contract file's own reference; reading
+the map does not suffice. These checks establish lexical reference provenance,
+not digest equality or semantic truth, consistent with
+`.mir/ontology-map.json#/domain/invariants/2`.
+
+The event inventory, retry bound, read-only/offline behavior and Python 3.9
+support remain unchanged. Main owns versions, handler admission SHA, tree
+digests, payloads, locks, generated derivatives, runtime binding and fresh-host
+verification. This source-only amendment performs none of that release chain.

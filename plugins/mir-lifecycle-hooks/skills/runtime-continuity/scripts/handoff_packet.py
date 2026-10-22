@@ -62,12 +62,16 @@ SHELL_TOOLS = {'bash', 'shell', 'shell_command', 'exec_command'}
 RECEIVED_PINS = re.compile(r'\b(?:handoff )?pins:\s*(?:```(?:json)?\s*)?', re.I)
 BASE_PINS = ['repository_root', 'head', 'mapping.identity', 'mapping.version',
              'mapping.digest', 'contract.identity', 'contract.version', 'contract.digest']
+COMPLETE_ARTIFACT_RULE = (
+    'Re-send the complete corrected artifact as your final message; it replaces the previous '
+    'one, so do not send only the changed sections.'
+)
 RECEIPT_RULE = (
     'Received handoff: label every pin verified-in-repo, parent-supplied or unavailable; '
     'every path claimed verified-in-repo needs a this turn Read/Grep/Glob or shell reference. '
     'Digest/revision/HEAD claims need this-turn digest/git computation or mapping --handoff; '
     'a file read alone does not verify them. State a limitation if no local tool was used, '
-    'or if commands are forbidden and no reader was used.'
+    'or if commands are forbidden and no reader was used. ' + COMPLETE_ARTIFACT_RULE
 )
 
 
@@ -323,7 +327,8 @@ def context_text(owner: dict, pins: str | None = None, prompt: str | None = None
         'plus each exact unknown pin reason). Preserve the entire pins block above unchanged. '
         'For every other repository file you cite, add its sha256 and last-change revision from '
         '`python3 scripts/mir_ontology.py mapping --handoff <paths>` sources. '
-        'Inspect the whole forwarded artifact, including enclosing text.\n'
+        'Inspect the whole forwarded artifact, including enclosing text. '
+        + COMPLETE_ARTIFACT_RULE + '\n'
     )
 
 
@@ -676,6 +681,17 @@ def verification_defects(text: str, body: str, event: dict, no_commands: bool = 
     for name, label in pin_claims(plain):
         if label.lower() != 'verified-in-repo':
             continue
+        if name == 'repository_root':
+            referenced = any(
+                os.path.commonpath([str(root), os.path.abspath(root / value)]) == str(root)
+                for value in reads if value
+            ) or (not no_commands and any(
+                str(root) in command or re.search(r'\bmapping\s+--handoff\b', command)
+                for command in commands
+            ))
+            if not referenced:
+                defects.append('verified-in-repo pin lacks this-turn tool reference: ' + name)
+            continue
         path = paths.get(name)
         line = next((line for line in plain.splitlines() if name in line
                      and 'verified-in-repo' in line.lower()), '')
@@ -684,7 +700,12 @@ def verification_defects(text: str, body: str, event: dict, no_commands: bool = 
         if not path and explicit:
             path = explicit[0]
         if no_commands:
-            if not path or not path_referenced(path, reads, [], root):
+            pin_reads = reads
+            if name == 'head':
+                path = '.git/HEAD'
+                pin_reads = [str(args.get('file_path', args.get('path', '')))
+                             for tool, args in calls if tool == 'read']
+            if not path or not path_referenced(path, pin_reads, [], root):
                 defects.append('verified-in-repo pin lacks this-turn tool reference: ' + name)
             continue
         typed = name == 'head' or name.endswith(('.digest', '.revision', '.sha256'))
@@ -772,7 +793,7 @@ def recipient_check(prompt: str, body: str, event: dict) -> list[str]:
     for name in dict.fromkeys(names):
         if name not in labels:
             defects.append('missing recipient pin label: ' + name)
-    defects.extend(verification_defects(prompt, body, event))
+    defects.extend(verification_defects(prompt, body, event, no_commands=restricted(prompt)))
     plain = re.sub(r'[*`]', '', body)
     calls, reads, _ = turn_tools(event)
     if not restricted(prompt) and not calls and not re.search(
@@ -843,7 +864,8 @@ def block(defects: list[str], retry: bool, receiving: bool, owner: dict) -> None
     if defects:
         prefix = ('Repair handoff deterministic defects (second/final block): ' if retry else
                   'Repair recipient accounting once: ' if receiving else 'Repair handoff once: ')
-        print(json.dumps({'decision': 'block', 'reason': prefix + '; '.join(defects)}))
+        print(json.dumps({'decision': 'block', 'reason': prefix + '; '.join(defects)
+                          + '. ' + COMPLETE_ARTIFACT_RULE}))
 
 
 def stop(event: dict) -> None:

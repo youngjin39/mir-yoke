@@ -780,6 +780,105 @@ def test_should_require_reader_limitation_when_recipient_commands_forbidden(runt
     assert run('Stop', last_assistant_message=RECIPIENT_LABELS).stdout == ''
 
 
+COMPLETE_ARTIFACT_RULE = (
+    'Re-send the complete corrected artifact as your final message; it replaces the previous '
+    'one, so do not send only the changed sections.'
+)
+
+
+@pytest.mark.parametrize('retry', [False, True])
+@pytest.mark.parametrize('receiving', [False, True])
+def test_should_end_every_block_reason_with_complete_artifact_rule(capsys, retry, receiving):
+    hook = module()
+    hook.block(['abbreviated hex value: head'], retry, receiving, hook.owner_sections(PROMPT))
+    reason = json.loads(capsys.readouterr().out)['reason']
+    assert reason.endswith(COMPLETE_ARTIFACT_RULE)
+    assert reason.count(COMPLETE_ARTIFACT_RULE) == 1
+
+
+@pytest.mark.parametrize('mode', ['author', 'no-command', 'recipient'])
+def test_should_supply_complete_artifact_rule_once(runtime, mode):
+    run, _, _ = runtime
+    prompt = RECIPIENT_PROMPT if mode == 'recipient' else PROMPT
+    if mode == 'no-command':
+        prompt += '\nNo commands.'
+    result = run('UserPromptSubmit', prompt=prompt)
+    context = json.loads(result.stdout)['hookSpecificOutput']['additionalContext']
+    assert context.count(COMPLETE_ARTIFACT_RULE) == 1
+
+
+@pytest.mark.parametrize('receiving', [False, True])
+@pytest.mark.parametrize('shape', ['claude', 'codex'])
+@pytest.mark.parametrize('absolute', [False, True])
+def test_should_accept_only_current_turn_head_read_inside_root(
+    runtime, receiving, shape, absolute,
+):
+    run, _, repo = runtime
+    prompt = (RECIPIENT_PROMPT if receiving else PROMPT) + '\nNo commands.'
+    body = (RECIPIENT_LABELS if receiving else NO_PIN_PACKET) + '\npin head=verified-in-repo'
+    head = str(repo / '.git/HEAD') if absolute else '.git/HEAD'
+    run('UserPromptSubmit', prompt=prompt)
+    append_tool(repo, shape, 'Read', {'file_path': head})
+    assert 'decision' not in json.loads(run('Stop', last_assistant_message=body).stdout or '{}')
+    # Neither an old-turn read, another repository nor a non-Read tool verifies HEAD.
+    for tool, path in [('Read', str(repo) + '-other/.git/HEAD'),
+                       ('Read', '../other/.git/HEAD'),
+                       ('Read', 'src/example.py'), ('Grep', head), ('Glob', head)]:
+        run('UserPromptSubmit', prompt=prompt)
+        append_tool(repo, shape, tool, {'file_path' if tool == 'Read' else 'path': path})
+        output = json.loads(run('Stop', last_assistant_message=body).stdout)
+        assert 'verified-in-repo pin lacks this-turn tool reference: head' in output['reason']
+
+
+@pytest.mark.parametrize('mode', ['author-no-command', 'recipient-no-command', 'recipient'])
+@pytest.mark.parametrize('tool', ['Read', 'Grep', 'Glob'])
+@pytest.mark.parametrize('absolute', [False, True])
+def test_should_accept_only_current_turn_repository_root_reader_inside_root(
+    runtime, mode, tool, absolute,
+):
+    run, _, repo = runtime
+    receiving = mode.startswith('recipient')
+    prompt = RECIPIENT_PROMPT if receiving else PROMPT
+    if mode.endswith('no-command'):
+        prompt += '\nNo commands.'
+    body = ((RECIPIENT_LABELS if receiving else NO_PIN_PACKET)
+            + '\npin repository_root=verified-in-repo')
+    key = 'file_path' if tool == 'Read' else 'path'
+    path = str(repo / 'src/example.py') if absolute else 'src/example.py'
+    run('UserPromptSubmit', prompt=prompt)
+    append_tool(repo, 'claude', tool, {key: path})
+    assert 'decision' not in json.loads(run('Stop', last_assistant_message=body).stdout or '{}')
+    for outside in [str(repo) + '-other/src/example.py', '../other/src/example.py']:
+        run('UserPromptSubmit', prompt=prompt)
+        append_tool(repo, 'claude', tool, {key: outside})
+        output = json.loads(run('Stop', last_assistant_message=body).stdout)
+        assert ('verified-in-repo pin lacks this-turn tool reference: repository_root'
+                in output['reason'])
+
+
+@pytest.mark.parametrize('receiving', [False, True])
+def test_should_accept_head_and_root_reads_but_require_contract_file_reference(runtime, receiving):
+    run, _, repo = runtime
+    prompt = ((RECIPIENT_PROMPT if receiving else PROMPT)
+              + '\nNo commands.\ncontract_path: schema/contract.json')
+    labels = (RECIPIENT_LABELS if receiving else NO_PIN_PACKET)
+    body = labels + '\npin head=verified-in-repo\npin repository_root=verified-in-repo'
+    run('UserPromptSubmit', prompt=prompt)
+    append_tool(repo, 'claude', 'Read', {'file_path': str(repo / '.git/HEAD')})
+    append_tool(repo, 'claude', 'Read', {'file_path': '.mir/ontology-map.json'})
+    assert 'decision' not in json.loads(run('Stop', last_assistant_message=body).stdout or '{}')
+    claims = '\n'.join('pin contract.' + key + '=verified-in-repo'
+                       for key in ['identity', 'version', 'digest'])
+    output = json.loads(run('Stop', last_assistant_message=body + '\n' + claims).stdout)
+    for key in ['identity', 'version', 'digest']:
+        assert ('verified-in-repo pin lacks this-turn tool reference: contract.' + key
+                in output['reason'])
+    # Author no-command packets resolve their contract path from the final artifact.
+    body += '\ncontract_path: schema/contract.json\n' + claims
+    append_tool(repo, 'claude', 'Read', {'file_path': 'schema/contract.json'})
+    assert 'decision' not in json.loads(run('Stop', last_assistant_message=body).stdout or '{}')
+
+
 @pytest.mark.parametrize('tool', ['Bash', 'shell', 'exec_command', 'functions.exec_command',
                                  'functions.shell_command'])
 @pytest.mark.parametrize('recipient', [False, True])

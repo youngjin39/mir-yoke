@@ -8,6 +8,20 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.21] — 2026-10-23 — Complete handoff repairs (prepared source)
+
+### Fixed
+
+- End every Stop repair reason with an explicit instruction to resend the
+  complete corrected final artifact; supply the same rule once on prompt submit.
+  This changes instructions only, without heuristics for partial answers.
+- Accept this-turn HEAD-file Reads and repository-local Read/Grep/Glob references
+  for HEAD/root pins when commands are forbidden, including recipient accounting.
+  Reject unrelated outside-root reads and retain contract-file reference checks
+  and computation requirements when commands are permitted.
+- Leave versions, handler SHA admission, tree digests, payloads, locks and generated
+  derivatives unchanged for Main's release chain. Offline tests do not prove activation.
+
 ## [v0.13.20] — 2026-10-22 — Residual handoff checks (prepared source)
 
 ### Fixed
