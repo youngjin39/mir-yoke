@@ -225,10 +225,10 @@ def load_capability_config(path: Path) -> CapabilityConfig:
         plugin_skills[name] = tuple(skills)
         if package_kind == "skills-hooks":
             hooks = metadata.get("hooks")
-            if hooks != ["SessionStart", "UserPromptSubmit", "Stop"]:
+            if hooks != ["SessionStart", "UserPromptSubmit", "PreToolUse", "Stop"]:
                 raise CapabilityConfigError(
                     f"active hook plugin {name!r} must declare exactly "
-                    "SessionStart, UserPromptSubmit, Stop"
+                    "SessionStart, UserPromptSubmit, PreToolUse, Stop"
                 )
             plugin_hooks[name] = tuple(hooks)
     all_skills = [skill for skills in plugin_skills.values() for skill in skills]

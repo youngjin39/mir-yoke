@@ -1,13 +1,15 @@
 # Mechanical handoff packet
 
-Design authority: the current owner brief and its stateless rework addendum,
-recorded in the repository-owned `tasks/plan.md`. The dated 2026-10-22 ADR-90
-amendment admits this exact implementation. Installation grants no agent authority.
+Design authority: the current owner writer brief for the 0.13.18 handoff defects
+(2026-10-22, decision 1562776549806178315, parent-supplied). It extends the
+stateless design recorded in `tasks/plan.md`; ADR-90 amendments 2026-10-22 and
+2026-10-22b admit the bounded events. Installation grants no agent authority.
 
 ## Events, runtime evidence and budgets
 
 Both plugin manifests auto-discover the common `hooks/hooks.json`. It registers
-UserPromptSubmit (supply) and Stop (check), each with an 8-second host budget and
+UserPromptSubmit (supply), PreToolUse (owner no-command guard) and Stop (check),
+each with an 8-second host budget and
 the exact `skills/runtime-continuity/scripts/handoff_packet.py` handler. SessionStart
 and its 2-second timeout stay unchanged. Ordinary prompt-submit turns do detection
 only: no output, path discovery, runner call or file operation. Stop must read the
@@ -59,13 +61,18 @@ not a general natural-language intent classifier.
 
 Parse case-insensitive `May:`, `May not:`/`May-not:`, `Sources:`, `Exclude:`/
 `Do not forward:` with optional Markdown heading/bold/bullets and bullet
-continuations. Repeated sections accumulate, preserving spelling. Fenced or
+continuations. Parenthesized heading qualifiers and standalone headings are
+accepted; `Not read` / `Protected` sections also identify denied citation scope.
+Repeated sections accumulate, preserving spelling. Fenced or
 quoted examples are ignored. Unmarked pasted material cannot be attributed
 reliably. Sources are explicit semicolon/comma/newline-separated paths (at most
 16), relative to the repository root; never harvest paths from arbitrary prose.
 Refuse escaping paths, `.env*`, `secrets`, `.mir/memory.db*`, resolved symlink
-targets in these locations, and excluded source values. Additional target-local
-protected paths are not inferred.
+targets in these locations, and excluded source values. The cited-path collector
+also reads `.mir/repo-profile.toml`, when present, and skips glob matches from
+`paths.protected_paths`, `paths.secret_paths` and `boundaries.secrets`. An absent,
+unreadable or malformed profile fails open; built-in exclusions still apply.
+It does not open protected files.
 
 Explicit prose prohibitions (`do not`, `don't`, `never`, no commands/file changes/
 scratch writes, commands/writes forbidden/prohibited) and Korean negative/forbidden
@@ -73,7 +80,11 @@ forms such as `sujeonghaji malgo` are copied verbatim into May not. Recognition
 uses the native Korean spelling, not this transliteration. It is conservative
 and sentence-based (a period followed by whitespace, the line end or Hangul ends
 a sentence, so `CONTEXT.md` stays whole): only the prohibiting sentence is
-copied, and unsupported negations (for example `-ji anko`) are missed. Command prohibitions skip the runner. A prohibition
+copied. Korean command prohibitions include native spellings of `-ji anko`,
+`myeongnyeong silhaeng eopsi`, `-ji ma` and `-ji malgo`. A request to include
+the prohibition scope, or an attributed negative subordinate clause, is not
+itself copied as a prohibition. Recognition remains lexical, not a general
+language parser. Command prohibitions skip both supply and Stop runners. A prohibition
 on file/scratch writes does not skip this read-only, stateless hook.
 
 ## Supply and authority check
@@ -89,9 +100,14 @@ are not inferred. Refuse supply if pins contain excluded data.
 
 With explicit authority sections, split candidate grants on semicolons/newlines;
 normalize case, spacing and punctuation, preserving word/path order. Each
-candidate must be a contiguous lexical substring of an owner grant, and cannot
+action candidate must be a contiguous lexical substring of an owner grant, and cannot
 contain an explicit denied item. `none`, `no permissions`, `unavailable` grant
-nothing. Without explicit sections, require a read/inspect verb and reject action
+nothing. Safe read/inspect text without action verbs is accepted, including
+read-only synthetic-source descriptions. Explicitly conditional future grants
+(`only after a separate owner grant`, `if/once explicit owner authorization`)
+and explicit Korean separate-approval conditions do not confer current authority
+and are skipped. Possibility statements are not permission grants. Separate current grants on
+the same line remain checked. Without explicit sections, require a read/inspect verb and reject action
 classes below. Preserve owner wording: containment can reject safe paraphrases
 and can miss a shorter phrase that loses a scope restriction. It is not semantic
 authorization proof.
@@ -107,7 +123,12 @@ or filenames containing these words can be false positives; euphemisms, synonyms
 and novel inflections can be false negatives. Unsupported grants without a
 read/inspect verb are rejected by default. Also inspect enclosing English
 `you/recipient/agent may ...` statements and recognized Korean permission endings.
-Arbitrary prose, tools and actual actions are outside this lexical checker.
+May-not qualifiers are not scanned as positive inline grants. Colon labels
+accept bullets and bold markup; envelope fields also accept bullet markers.
+Evidence provenance/time keywords are case-insensitive and may share one line.
+Restriction comparison normalizes whitespace, case, punctuation and bullet
+markers. Self-check field and pin names may omit the literal `field`/`pin` prefix.
+Arbitrary semantic paraphrases remain outside this lexical checker.
 
 ## Packet check and one-shot repair
 
@@ -137,6 +158,8 @@ symlinked, map and runner paths skipped; at most 32) must carry its own sha256 a
 last-change revision. Stop runs the runner once more for those paths within the shared
 budget and names each file whose digest or revision is absent. Supply asks for them up
 front. Add them to the packet's source list, not as a second pins block.
+Paths in the owner's May not or the packet's May not / Not read / Protected
+sections, and explicitly not-read prose, are not harvested as citations.
 
 Self-check individually lists `field NAME=present/missing/abbreviated/unchecked`
 for qualified target, four status axes, evidence, unknowns, may and may not;
@@ -149,10 +172,46 @@ When `stop_hook_active=true`, warn and allow completion without running the
 supplier or blocking again. A missing/nonboolean retry flag warns/skips because
 one-shot behavior cannot otherwise be guaranteed without state. Non-packet
 responses (including clarification) are untouched. Stop cannot undo earlier tool
-publication, inspect file artifacts or prove recipient behavior.
+publication or inspect file artifacts.
+
+## Recipient accounting and owner no-command guard
+
+A current prompt with `Qualified target: namespace:local-id` plus a pins block
+or full sha256 pin lines is a received packet, unless `detect()` already
+recognizes an authoring request. UserPromptSubmit supplies the one-sentence
+recipient rule without invoking a runner. At Stop the recipient must label
+every supplied `pin_inventory[].pin` (or the core/source fallback names) as
+`verified-in-repo`, `parent-supplied` or `unavailable`, for example
+`pin sources[0].digest=parent-supplied`. Both `handoff pins:` and `Pins:` JSON
+blocks are accepted, including a JSON fence. For sha256-line packets, use the line's
+name before its first colon. Labels account for claims; they do not prove hashes.
+
+Each source path claimed `verified-in-repo`, including paths inferred from the
+packet's source pin names, must have a tool reference in this turn's transcript:
+Claude `Read` with `file_path`/`path`, or shell command text containing the path.
+The root `mapping --handoff` runner also counts as a map reference. Claude
+`tool_use` and Codex `response_item.function_call` records are recognized; a new
+native user prompt discards earlier references. This checks reference provenance,
+not tool success or whether digest bytes were compared (D05 remains a semantic
+evidence limit). If commands are forbidden and no reader was used, the final
+answer must explicitly say commands are forbidden and no non-command reader was
+used/available, in English or Korean. Missing accounting blocks once; the same
+boolean `stop_hook_active` guard prevents a second block.
+
+PreToolUse recomputes the prompt from native `prompt` or the explicit transcript
+tail, without state. Only authoring/recipient handoff turns with an owner command
+prohibition deny shell tools: `Bash`, `shell`, `shell_command`, `exec_command`,
+including dotted names such as `functions.exec_command`. Non-shell tools and
+ordinary turns pass. Any payload/transcript error fails open with a warning.
+Denial emits `hookSpecificOutput` with `hookEventName=PreToolUse`,
+`permissionDecision=deny` and `permissionDecisionReason`, plus stderr and exit 2.
+Claude consumes the deny JSON; exit 2 is the shared blocking convention used by
+both local CLI guards (`pre-tool-use.sh` and `env-read-gate.sh`). Offline fixtures
+check native transcript shapes and this exit/output contract; they do not
+establish fresh live-host delivery or activation.
 
 ## Delivery boundary
 
-0.13.14 source prepares the admitted inventory. Main still owns generated Codex
+0.13.18 source prepares the amended inventory. Main still owns generated Codex
 surfaces, digest acknowledgement, locks/binding and any live-host verification.
 This work performs no bind, tag, push or release. A prepared version is not activation.

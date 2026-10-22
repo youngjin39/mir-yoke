@@ -8,6 +8,24 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.18] — 2026-10-22 — Handoff owner boundaries and recipient accounting
+
+### Fixed
+
+- Recognize Korean no-command constructions for both supply and Stop runners; omit denied,
+  not-read and profile-protected/secret paths from cited-source harvesting.
+- Avoid prohibition-scope and negative-subordinate-clause false positives. Accept equivalent
+  colon/bullet labels, same-line evidence/time, optional field/pin prefixes and normalized
+  restrictions; keep read-only and explicitly future-authorized wording out of extra grants.
+
+### Added
+
+- One-shot recipient pin-label and this-turn tool-reference checks, with explicit reader
+  limitations when commands are forbidden, and one-sentence prompt-submit guidance.
+- Shared stateless PreToolUse shell denial for owner no-command handoff turns, admitted by
+  ADR-90 amendment 2026-10-22b. Offline tests cover native transcript shapes and deny output;
+  Main still owns release metadata, handler/digest admission and live-runtime verification.
+
 ## [v0.13.17] — 2026-10-22 — Handoff Stop check asks for each cited source pin
 
 ### Changed

@@ -69,6 +69,15 @@ def test_should_pin_minimum_parent_child_handoff_packet(terms: tuple[str, ...]) 
         assert term in handoff, f"handoff packet misses: {term}"
 
 
+def test_should_require_every_dependent_field_to_state_a_changed_meaning() -> None:
+    skill = " ".join((SKILL / "SKILL.md").read_text(encoding="utf-8").split())
+    step = skill.split("6. Maintain dependencies after a source change", 1)[1]
+    step = step.split("## Handoff", 1)[0]
+    for term in ("meaning changes", "every field", "local name", "endpoints", "every relation",
+                 "current meaning or be removed"):
+        assert term in step, f"source-change step misses: {term}"
+
+
 @pytest.mark.parametrize(
     "terms",
     [

@@ -24,7 +24,7 @@
       "path": "plugins/mir-lifecycle-hooks",
       "package_kind": "skills-hooks",
       "skills": ["runtime-continuity"],
-      "hooks": ["SessionStart", "UserPromptSubmit", "Stop"]
+      "hooks": ["SessionStart", "UserPromptSubmit", "PreToolUse", "Stop"]
     }
   },
   "plugin_component_policy": {
@@ -36,7 +36,7 @@
     "forbidden_provider_components": ["agents", "commands", "apps", "scripts", "permissions", "runtime-policy"]
   },
   "active_package_digest_acknowledgements": {
-    "mir-lifecycle-hooks": "6a67da5e6bab5ae92556743b36e5315e8cd365e5e6d6d65974ef06dd332ea800"
+    "mir-lifecycle-hooks": "8da68466a096a2b7f23e727bcd81e159271d88b71073456533da6ae46665aa26"
   },
   "profiles": {
     "aliases": {

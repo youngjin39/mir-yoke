@@ -391,7 +391,7 @@ def test_capability_source_declares_the_reviewed_active_hook_package() -> None:
 
     assert config.plugin_kinds["mir-lifecycle-hooks"] == "skills-hooks"
     assert config.plugin_hooks == {
-        "mir-lifecycle-hooks": ("SessionStart", "UserPromptSubmit", "Stop")
+        "mir-lifecycle-hooks": ("SessionStart", "UserPromptSubmit", "PreToolUse", "Stop")
     }
     assert config.provider_local_agents == (".claude/agents/template-sync-validator.md",)
     assert config.component_policy["admitted_package_kinds"] == ["skills", "skills-hooks"]
@@ -412,12 +412,24 @@ def test_r19_adr90_amendment_admits_only_stateless_handoff_hooks() -> None:
         assert invariant in amendment
 
 
+def test_r19_adr90_amendment_2026_10_22b_admits_only_the_no_command_guard() -> None:
+    text = (ROOT / "docs/decisions/adr-90-role-plugins-and-common-hooks.md").read_text()
+    amendment = " ".join(text.split("## Amendment: 2026-10-22b", 1)[1].split())
+    for invariant in (
+        "PreToolUse", "no-command guard", "handoff_packet.py",
+        "SessionStart`, `UserPromptSubmit`, `PreToolUse`, `Stop", "8-second",
+        "denies only shell tools", "fail open", "no persistent authority state",
+    ):
+        assert invariant in amendment
+
+
 @pytest.mark.parametrize(
     "hooks",
     [
         ["SessionStart"],
         ["SessionStart", "UserPromptSubmit"],
         ["SessionStart", "UserPromptSubmit", "Stop", "PreToolUse"],
+        ["SessionStart", "UserPromptSubmit", "Stop"],
         ["SessionStart", "Stop", "UserPromptSubmit"],
     ],
 )
@@ -439,7 +451,7 @@ def test_r19_stateless_handoff_handler_has_an_exact_reviewed_digest() -> None:
     assert hashlib.sha256(handler.read_bytes()).hexdigest() == _HANDOFF_HANDLER_SHA256
 
 
-@pytest.mark.parametrize("event", ["UserPromptSubmit", "Stop"])
+@pytest.mark.parametrize("event", ["UserPromptSubmit", "PreToolUse", "Stop"])
 @pytest.mark.parametrize("mutation", ["command", "timeout", "matcher", "extra-event"])
 def test_r19_active_package_rejects_shared_handoff_registration_drift(
     tmp_path: Path, event: str, mutation: str
@@ -456,7 +468,7 @@ def test_r19_active_package_rejects_shared_handoff_registration_drift(
     elif mutation == "matcher":
         registration["matcher"] = "*"
     else:
-        payload["hooks"]["PreToolUse"] = payload["hooks"][event]
+        payload["hooks"]["PostToolUse"] = payload["hooks"][event]
     hooks_path.write_text(json.dumps(payload))
     with pytest.raises(CapabilityError, match="shared hook schema drift"):
         _validate_plugin(plugin, "mir-lifecycle-hooks", package_kind="skills-hooks")
@@ -1825,9 +1837,9 @@ def test_should_bind_h1_exact_hook_source_and_final_package_version():
     assert handler.read_bytes() == _HOOK_HANDLER_SOURCE.encode()
     assert "else inventory unavailable pins" in _HOOK_HANDLER_SOURCE
     for runtime in (".claude-plugin", ".codex-plugin"):
-        assert json.loads((plugin / runtime / "plugin.json").read_text())["version"] == "0.13.17"
+        assert json.loads((plugin / runtime / "plugin.json").read_text())["version"] == "0.13.18"
     config = load_capability_config(ROOT / "config/capability-sources.json")
     assert config.active_digest_acknowledgements["mir-lifecycle-hooks"] == _tree_digest(plugin)
     assert config.plugin_hooks == {
-        "mir-lifecycle-hooks": ("SessionStart", "UserPromptSubmit", "Stop")
+        "mir-lifecycle-hooks": ("SessionStart", "UserPromptSubmit", "PreToolUse", "Stop")
     }

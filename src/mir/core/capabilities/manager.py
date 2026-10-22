@@ -83,6 +83,20 @@ _HOOKS_SCHEMA = {
                 ]
             }
         ],
+        "PreToolUse": [
+            {
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": (
+                            'python3 "${CLAUDE_PLUGIN_ROOT}/skills/runtime-continuity/'
+                            'scripts/handoff_packet.py"'
+                        ),
+                        "timeout": 8,
+                    }
+                ]
+            }
+        ],
         "Stop": [
             {
                 "hooks": [
@@ -123,7 +137,7 @@ if __name__ == "__main__":
     main()
 '''
 # ADR-90 amendment (2026-10-22): exact reviewed stateless handoff implementation.
-_HANDOFF_HANDLER_SHA256 = "23e1a52fd629d41c5b97d59b7777cb7e36c88b6b615202695511445369d59847"
+_HANDOFF_HANDLER_SHA256 = "ad129bd0ce69d9152df87746ad92aadab654e84d81370eae9738a147462a55e3"
 _ACTIVE_PACKAGE_CREDENTIAL_PATTERNS = (
     re.compile(rb"https?://[^\s/@]+@", re.IGNORECASE),
     re.compile(rb"-----BEGIN [A-Z ]*PRIVATE KEY-----"),

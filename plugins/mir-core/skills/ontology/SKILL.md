@@ -35,7 +35,9 @@ Do not invent a competing contract, install a service or restructure the project
    workflow. Preserve local vocabulary and domain invariants. Capability, access, confidence,
    semantic compatibility and passing checks grant no authority; follow current owner policy.
 6. Maintain dependencies after a source change: update or invalidate only dependent relations,
-   mappings, derived knowledge and evidence. Preserve unaffected records. Recheck declared
+   mappings, derived knowledge and evidence. When a source's meaning changes, re-read every
+   field of each dependent entry (local name, label, endpoints, derivation, notes) and every
+   relation naming it; each must state the current meaning or be removed. Preserve unaffected records. Recheck declared
    version compatibility when the contract changes; do not claim a newer validated version
    until its mapping has actually been reviewed and checked.
 

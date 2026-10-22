@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import fnmatch
 import hashlib
 import json
 import os
@@ -11,6 +12,7 @@ import stat
 import subprocess
 import sys
 import time
+import tomllib
 from pathlib import Path
 
 LIMIT = 1024 * 1024
@@ -19,15 +21,18 @@ WARNING = 'Mir handoff WARNING: '
 STAMP = r'\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?(?:Z|[+-]\d\d:\d\d)'
 LABEL = re.compile(
     r'^\s*(?:#{1,6}\s+|[-*]\s+)?(?:\*\*)?'
-    r'(May not|May-not|May|Sources|Exclude|Do not forward)(?:\*\*)?\s*:\s*(.*)$',
+    r'(May not|May-not|May|Sources|Exclude|Do not forward|Not read|Protected)'
+    r'(?:\*\*)?\s*(?:\([^\n)]*\)\s*)?(?::\s*(?:\*\*)?(.*)|$)',
     re.IGNORECASE,
 )
 # Literal Korean forms are escaped to keep distributed source English/ASCII.
 PROHIBITION = re.compile(
     r'\b(?:do not|don.t|never|no (?:commands|file changes|scratch writes))\b|'
     r'\b(?:commands|writes) (?:are )?(?:forbidden|prohibited)\b|'
-    r'(?:\uc9c0\s*\ub9d0|\uc9c0\s*\ub9c8(?:\uc138\uc694|\ub77c)|'
-    r'\uae08\uc9c0|\ud558\uba74\s*\uc548)', re.I,
+    r'(?:\uc9c0\s*\ub9d0(?!\ub77c\ub294|\ub77c\uace0)|'
+    r'\uc9c0\s*\ub9c8(?:\uc138\uc694|\ub77c)?|'
+    r'\uc9c0\s*\uc54a\uace0|\uc2e4\ud589\s*\uc5c6\uc774|'
+    r'\uae08\uc9c0(?!\s*\ubc94\uc704|\ub41c)|\ud558\uba74\s*\uc548)', re.I,
 )
 ACTION = re.compile(
     r'\b(?:edit\w*|modif\w*|chang\w*|writ\w*|creat\w*|delet\w*|remov\w*|'
@@ -49,6 +54,21 @@ PACKET = re.compile(
 
 # Relative file paths; Korean particles may follow a path directly.
 CITED = re.compile(r'(?<![\w./~:-])\.?[\w-][\w.-]*(?:/[\w.-]+)*\.[A-Za-z0-9]+(?![A-Za-z0-9_/-])')
+SHELL_TOOLS = {'bash', 'shell', 'shell_command', 'exec_command'}
+RECEIVED_PINS = re.compile(r'\b(?:handoff )?pins:\s*(?:```(?:json)?\s*)?', re.I)
+RECEIPT_RULE = (
+    'Received handoff: label every pin verified-in-repo, parent-supplied or unavailable; '
+    'every path claimed verified-in-repo needs a Read or shell reference in this turn, '
+    'and if commands are forbidden and no reader was used, state that limitation.'
+)
+
+
+def recipient(prompt: str) -> bool:
+    """A supplied qualified packet with pins, excluding requests to author one."""
+    plain = re.sub(r'[*`]', '', prompt)
+    return not detect(prompt) and bool(
+        re.search(r'qualified target\s*:\s*[\w.-]+:[\w./-]+', plain, re.I)
+        and re.search(r'handoff pins:|\bpins\s*:|sha256[^\n]*[0-9a-f]{64}', plain, re.I))
 
 
 def detect(prompt: str) -> bool:
@@ -105,7 +125,8 @@ def owner_sections(prompt: str) -> dict:
             label, value = match.groups()
             active = {'may': 'may', 'may not': 'may_not', 'may-not': 'may_not',
                       'sources': 'sources', 'exclude': 'excluded',
-                      'do not forward': 'excluded'}[label.lower()]
+                      'do not forward': 'excluded', 'not read': 'may_not',
+                      'protected': 'may_not'}[label.lower()]
             if active in {'may', 'may_not'}:
                 explicit = True
             if value:
@@ -128,7 +149,18 @@ def owner_sections(prompt: str) -> dict:
 
 
 def normalized(text: str) -> str:
-    return ' '.join(re.findall(r'[\w./-]+', text.casefold())).rstrip('.')
+    return ' '.join(re.findall(r'\w+', text.casefold()))
+
+
+def future_grant(text: str) -> bool:
+    match = re.search(r'\b(?:only after|if|once) (?:a )?'
+                      r'(?:separate|explicit|future|new) owner '
+                      r'(?:grant|authoriz\w*|approval|permission)\b', text, re.I)
+    if not match:
+        match = re.search(r'(?:\ubcc4\ub3c4|\uba85\uc2dc\uc801)[^.!?;\n]*'
+                          r'(?:\uc2b9\uc778|\ud5c8\uac00)[^.!?;\n]*'
+                          r'(?:\ud6c4|\uc804|\ud574\uc57c|\uc154\uc57c|\uc788\uc5b4\uc57c)', text)
+    return bool(match and not re.search(r'[.!?;](?:\s|$)', text[:match.start()]))
 
 
 def items(text: str) -> list[str]:
@@ -150,7 +182,8 @@ def check_packet(body: str, state: dict) -> list[str]:
     for index, excluded in enumerate(state['owner']['excluded'], 1):
         if excluded in body:
             defects.append(f'excluded item #{index} appears in forwarded artifact')
-    plain = re.sub(r'[*`#]', '', body.replace(pins, ''))
+    plain = re.sub(r'(?m)^[ \t]*[-+][ \t]+', '',
+                   re.sub(r'[*`#]', '', body.replace(pins, '')))
     if not re.search(r'(?im)^\s*qualified target:\s*[\w.-]+:[\w./-]+', plain):
         defects.append('missing qualified target (namespace:local-id)')
     for axis in ('lifecycle', 'temporal', 'epistemic', 'verification'):
@@ -158,16 +191,17 @@ def check_packet(body: str, state: dict) -> list[str]:
             defects.append('missing ' + axis + ' status')
     evidence = re.search(r'(?im)^[ \t]*evidence:[ \t]*(.+)', plain)
     if not evidence or not (
-        re.search(r'\b(?:parent-supplied|verified-in-repo|source|provenance)\b', evidence[1])
+        re.search(r'\b(?:parent-supplied|verified-in-repo|source|provenance)\b', evidence[1], re.I)
         and re.search(STAMP, evidence[1])
     ):
         defects.append('missing evidence provenance/time (source and ISO-8601 observation time)')
     for field in ('unknowns', 'self-check'):
         if not re.search(rf'(?im)^[ \t]*{field}:[ \t]*\S[^\n]*', plain):
             defects.append('missing ' + field)
-    owner = owner_sections(plain)
+    owner = owner_sections(re.sub(r'[`#]', '', body.replace(pins, '')))
     for label in ('may', 'may not'):
-        if not re.search(rf'(?im)^\s*{label.replace(" ", "[ -]")}:', plain):
+        if not re.search(rf'(?im)^\s*{label.replace(" ", "[ -]")}'
+                         r'\s*(?:\([^\n)]*\)\s*)?:', plain):
             defects.append('missing ' + label)
     for denied_item in items(state['owner']['may_not']):
         if any(value in denied_item for value in state['owner']['excluded']):
@@ -176,18 +210,31 @@ def check_packet(body: str, state: dict) -> list[str]:
             defects.append('missing owner restriction: ' + denied_item)
     grant = ' ; '.join(normalized(item) for item in items(state['owner']['may']))
     denied = [normalized(item) for item in items(state['owner']['may_not'])]
-    inline = re.findall(r'(?im)\b(?:you|recipient|agent) may (?!not\b)([^\n!?]+)', plain)
-    inline += re.findall(
+    grant_prose = '\n'.join(sentence for line in plain.splitlines() if not LABEL.match(line)
+                            for sentence in re.split(r'(?<=[.!?])\s+', line)
+                            if not future_grant(sentence))
+    inline = re.findall(r'(?im)\b(?:you|recipient|agent) may (?!not\b)([^\n!?]+)', grant_prose)
+    korean = re.findall(
         r'(?m)^([^\n]*(?:\ud574\ub3c4\s*\ub429\ub2c8\ub2e4|'
-        r'\ud560\s*\uc218\s*\uc788\uc2b5\ub2c8\ub2e4|\ud5c8\uc6a9\ub429\ub2c8\ub2e4)[^\n]*)', plain)
-    for item in items(owner['may']) + inline:
+        r'\ud560\s*\uc218\s*\uc788\uc2b5\ub2c8\ub2e4|'
+        r'\ud5c8\uc6a9\ub429\ub2c8\ub2e4)[^\n]*)', grant_prose)
+    inline += [item for item in korean if ACTION.search(item) or READ.search(item)]
+    grants = [sentence for item in items(owner['may'])
+              for sentence in re.split(r'(?<=[.!?])\s+', item)]
+    for item in grants + inline:
         item = item.rstrip('.')
         candidate = normalized(item)
         if candidate in {'none', 'no permissions', 'unavailable'}:
             continue
+        if re.match(r'^This (?:packet|handoff|document) (?:does not grant|grants no) '
+                    r'(?:current )?authority\b', item, re.I):
+            continue
+        if future_grant(item):
+            continue
         permitted = (f' {candidate} ' in f' {grant} '
                      if state['owner'].get('explicit_authority', True)
                      else bool(READ.search(item)) and not ACTION.search(item))
+        permitted = permitted or (bool(READ.search(item)) and not ACTION.search(item))
         if (not candidate or not permitted
                 or any(deny and f' {deny} ' in f' {candidate} ' for deny in denied)):
             defects.append('extra may: ' + item)
@@ -197,7 +244,7 @@ def check_packet(body: str, state: dict) -> list[str]:
     inventory = self_check[1] if self_check else ''
     for field in ('qualified target', 'lifecycle', 'temporal', 'epistemic', 'verification',
                   'evidence', 'unknowns', 'may', 'may not'):
-        if not re.search(rf'\bfield {field}\s*[=:]\s*'
+        if not re.search(rf'(?<![\w.-])(?:field )?{field}\s*[=:]\s*'
                          r'(?:present|missing|abbreviated|unchecked)\b', inventory, re.I):
             defects.append('missing self-check field: ' + field)
     names = [entry['pin'] for entry in pin_data.get('pin_inventory', [])]
@@ -207,8 +254,8 @@ def check_packet(body: str, state: dict) -> list[str]:
         for index, _ in enumerate(pin_data.get('sources', [])):
             names.extend([f'sources[{index}].digest', f'sources[{index}].revision'])
     for name in names:
-        if not re.search(rf'pin {re.escape(name)}\s*[=:]\s*'
-                         r'(?:parent-supplied|verified-in-repo|missing|abbreviated|unchecked)\b',
+        if not re.search(rf'(?<![\w.-])(?:pin )?{re.escape(name)}\s*[=:]\s*'
+                         r'(?:parent-supplied|verified-in-repo|unavailable|missing|abbreviated|unchecked)\b',
                          inventory, re.I):
             defects.append('missing self-check pin: ' + name)
     for gap in pin_data.get('unknowns', []):
@@ -262,11 +309,12 @@ def restricted(prompt: str) -> bool:
     return bool(re.search(
         r'\b(?:run|execute) (?:any )?(?:commands|shell|python)\b', deny
     ) or re.search(
-        r'\b(?:no commands|commands (?:are )?forbidden'
+        r'\b(?:no commands|commands (?:are )?(?:forbidden|prohibited)'
         r'|do not (?:run|execute) (?:any )?commands)\b',
         prompt.casefold(),
     ) or re.search(r'(?:\uba85\ub839|\ucee4\ub9e8\ub4dc|\uc250|\ud30c\uc774\uc36c)'
-                   r'.*(?:\ud558\uc9c0\s*\ub9d0|\uae08\uc9c0)', owner['may_not']))
+                   r'[^\n.!?]*(?:\uc9c0\s*(?:\ub9d0|\ub9c8|\uc54a\uace0)|'
+                   r'\uc2e4\ud589\s*\uc5c6\uc774|\uae08\uc9c0)', owner['may_not']))
 
 
 def source_paths(owner: dict, root: Path) -> list[str]:
@@ -303,9 +351,28 @@ def repository_root(event: dict) -> Path:
 def cited_paths(body: str, owner: dict, root: Path) -> list[str]:
     """Repository files the packet names that the supplied pins do not already cover."""
     covered = {*source_paths(owner, root), '.mir/ontology-map.json', 'scripts/mir_ontology.py'}
+    denied = set(CITED.findall(owner['may_not']))
+    denied.update(CITED.findall(owner_sections(body)['may_not']))
+    for line in body.splitlines():
+        if re.search(r'\b(?:not[- ]read|did not read|not opened|protected (?:scope|paths?))\b',
+                     line, re.I):
+            denied.update(CITED.findall(line))
+    protected = []
+    try:
+        with (root / '.mir/repo-profile.toml').open('rb') as stream:
+            profile = tomllib.load(stream)
+        protected = (profile.get('paths', {}).get('protected_paths', [])
+                     + profile.get('paths', {}).get('secret_paths', [])
+                     + profile.get('boundaries', {}).get('secrets', []))
+        if not isinstance(protected, list) or not all(isinstance(p, str) for p in protected):
+            protected = []
+    except (OSError, ValueError, TypeError, AttributeError):
+        pass  # An absent/unreadable/malformed profile must not break the hook.
     paths = []
     for raw in CITED.findall(body):
-        if raw in covered or raw in paths or any(item in raw for item in owner['excluded']):
+        if (raw in covered or raw in denied or raw in paths
+                or any(item in raw for item in owner['excluded'])
+                or any(fnmatch.fnmatchcase(raw, pattern) for pattern in protected)):
             continue
         parts = Path(raw).parts
         if any(part.startswith('.env') or part in {'secrets', '..'} for part in parts):
@@ -353,6 +420,10 @@ def supply(event: dict) -> None:
     prompt = event.get('prompt', '')
     if not isinstance(prompt, str):
         raise ValueError('invalid prompt')
+    if recipient(prompt):
+        print(json.dumps({'hookSpecificOutput': {'hookEventName': 'UserPromptSubmit',
+                         'additionalContext': RECEIPT_RULE}}))
+        return
     if not detect(prompt):
         return  # detection only: no filesystem, runner, or output on ordinary prompts
     owner = owner_sections(prompt)
@@ -433,8 +504,8 @@ def message_text(message: dict) -> str:
     )
 
 
-def transcript_turn(event: dict) -> tuple[str, str]:
-    prompt, body = None, ''
+def current_turn(event: dict) -> tuple[str, list[dict]]:
+    prompt, rows = None, []
     for row in transcript_records(event):
         payload = row.get('payload', {})
         found = None
@@ -450,7 +521,17 @@ def transcript_turn(event: dict) -> tuple[str, str]:
         elif row.get('type') == 'event_msg' and payload.get('type') == 'user_message':
             found = payload['message']
         if found is not None:
-            prompt, body = found, ''  # no assistant from a prior user turn may be reused
+            prompt, rows = found, []
+        rows.append(row)
+    if not isinstance(prompt, str):
+        raise ValueError('current prompt unavailable within transcript tail')
+    return prompt, rows
+
+
+def transcript_turn(event: dict) -> tuple[str, str]:
+    prompt, rows = current_turn(event)
+    body = ''
+    for row in rows:
         message = (row.get('message', {}) if row.get('type') == 'assistant'
                    else row.get('payload', {}))
         if row.get('type') == 'assistant' or (
@@ -460,9 +541,102 @@ def transcript_turn(event: dict) -> tuple[str, str]:
             text = message_text(message)
             if text:
                 body = text
-    if not isinstance(prompt, str):
-        raise ValueError('current prompt unavailable within transcript tail')
     return prompt, body
+
+
+def tool_calls(rows: list[dict]) -> list[tuple[str, dict]]:
+    calls = []
+    for row in rows:
+        if row.get('type') == 'assistant':
+            content = row.get('message', {}).get('content', [])
+            if isinstance(content, list):
+                calls.extend((item['name'], item.get('input', {})) for item in content
+                             if item.get('type') == 'tool_use')
+        payload = row.get('payload', {})
+        if row.get('type') == 'response_item' and payload.get('type') == 'function_call':
+            arguments = payload.get('arguments', {})
+            if isinstance(arguments, str):
+                arguments = json.loads(arguments)
+            calls.append((payload['name'], arguments))
+    return calls
+
+
+def tool_kind(name: str) -> str:
+    return name.rsplit('.', 1)[-1].lower()
+
+
+def recipient_check(prompt: str, body: str, event: dict) -> list[str]:
+    """Check declared accounting and tool references, never attest pin bytes."""
+    defects = []
+    paths = {'mapping.digest': '.mir/ontology-map.json',
+             'mapping.version': '.mir/ontology-map.json',
+             'mapping.identity': '.mir/ontology-map.json'}
+    marker = RECEIVED_PINS.search(prompt)
+    if marker:
+        data, _ = json.JSONDecoder().raw_decode(prompt[marker.end():])
+        names = [entry['pin'] for entry in data.get('pin_inventory', [])]
+        if not names:
+            names = ['repository_root', 'head', 'mapping.identity', 'mapping.version',
+                     'mapping.digest', 'contract.identity', 'contract.version', 'contract.digest']
+            for index, _source in enumerate(data.get('sources', [])):
+                names.extend([f'sources[{index}].digest', f'sources[{index}].revision'])
+        for index, source in enumerate(data.get('sources', [])):
+            for key in ('digest', 'revision'):
+                paths[f'sources[{index}].{key}'] = source['path']
+    else:
+        names = [line.split(':', 1)[0].strip(' -*`') for line in prompt.splitlines()
+                 if re.search(r'sha256[^\n]*[0-9a-f]{64}', line, re.I)]
+    plain = re.sub(r'[*`]', '', body)
+    verified_paths = set()
+    for name in names:
+        match = re.search(rf'(?im)(?<![\w.-])(?:pin )?{re.escape(name)}\s*[=:]\s*'
+                          r'(verified-in-repo|parent-supplied|unavailable)\b', plain)
+        if not match:
+            defects.append('missing recipient pin label: ' + name)
+        elif match[1].lower() == 'verified-in-repo' and name in paths:
+            # Inferred source paths also count when only a pin name appears in the answer.
+            verified_paths.add(paths[name])
+    _, rows = current_turn(event)
+    calls = [(tool_kind(name), arguments) for name, arguments in tool_calls(rows)]
+    reads = [str(arguments.get('file_path', arguments.get('path', '')))
+             for name, arguments in calls if name == 'read']
+    commands = [arguments.get('command', arguments.get('cmd', ''))
+                for name, arguments in calls if name in SHELL_TOOLS]
+    root = repository_root(event)
+    for line in plain.splitlines():
+        if 'verified-in-repo' in line.lower():
+            verified_paths.update(CITED.findall(line))
+    for path in sorted(verified_paths):
+        referenced = any(os.path.abspath(root / value) == os.path.abspath(root / path)
+                         for value in reads if value)
+        referenced = referenced or any(path in command for command in commands)
+        if path == '.mir/ontology-map.json':
+            referenced = referenced or any('mapping --handoff' in command for command in commands)
+        if not referenced:
+            defects.append('verified-in-repo path lacks this-turn tool reference: ' + path)
+    if restricted(prompt) and not any(reads) and not (
+        (re.search(r'commands?[^\n]*(?:forbidden|prohibited|not (?:run|allowed))', plain, re.I)
+         and re.search(r'no (?:non-command )?reader[^\n]*(?:used|available)', plain, re.I))
+        or (re.search(r'\uba85\ub839[^\n]*(?:\uae08\uc9c0|\uc2e4\ud589\ud558\uc9c0)', plain)
+            and re.search(r'(?:\uc77d\uae30\s*\ub3c4\uad6c|\ub9ac\ub354)'
+                          r'[^\n]*(?:\uc5c6|\uc0ac\uc6a9\ud558\uc9c0|\ubabb)', plain))
+    ):
+        defects.append('state commands forbidden and no non-command reader was used/available')
+    return defects
+
+
+def pretool(event: dict) -> None:
+    if tool_kind(event['tool_name']) not in SHELL_TOOLS:
+        return
+    prompt = event.get('prompt')
+    if not isinstance(prompt, str) or not prompt:
+        prompt, _ = transcript_turn(event)
+    if (detect(prompt) or recipient(prompt)) and restricted(prompt):
+        reason = 'Owner forbids commands in this handoff turn; shell tool denied.'
+        print(json.dumps({'hookSpecificOutput': {'hookEventName': 'PreToolUse',
+                          'permissionDecision': 'deny', 'permissionDecisionReason': reason}}))
+        print(reason, file=sys.stderr)
+        raise SystemExit(2)  # Both CLI shell hooks honour exit 2; Claude also consumes deny JSON.
 
 
 def stop(event: dict) -> None:
@@ -471,15 +645,22 @@ def stop(event: dict) -> None:
     native = event.get('last_assistant_message')
     if isinstance(native, str) and native.strip():
         body = native
-    if not detect(prompt):
+    receiving = recipient(prompt)
+    if not detect(prompt) and not receiving:
         return
-    if not PACKET.search(body):
+    if not receiving and not PACKET.search(body):
         return  # no emitted packet, e.g. a clarification
     if not isinstance(event.get('stop_hook_active'), bool):
         warning('native retry guard unavailable; packet check skipped to prevent a loop.')
         return
     if event['stop_hook_active']:
         warning('repair already requested; allowing stop without another block.')
+        return
+    if receiving:
+        defects = recipient_check(prompt, body, event)
+        if defects:
+            print(json.dumps({'decision': 'block',
+                              'reason': 'Repair recipient accounting once: ' + '; '.join(defects)}))
         return
     guard = re.search(r'(?im)^Prompt SHA256: ([0-9a-f]{64})\s*$', body)
     if guard and guard[1] != hashlib.sha256(prompt.encode()).hexdigest():
@@ -526,7 +707,11 @@ def main() -> None:
             supply(event)
         elif event.get('hook_event_name') == 'Stop':
             stop(event)
+        elif event.get('hook_event_name') == 'PreToolUse':
+            pretool(event)
     except Exception:
+        if isinstance(event, dict) and event.get('hook_event_name') == 'PreToolUse':
+            return  # fail open silently: the guard runs on every shell call
         owner = None
         if (isinstance(event, dict) and event.get('hook_event_name') == 'UserPromptSubmit'
                 and isinstance(event.get('prompt'), str) and detect(event['prompt'])):

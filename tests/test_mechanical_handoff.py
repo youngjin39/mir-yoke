@@ -161,7 +161,7 @@ def runtime(tmp_path):
                    'stop_hook_active': False, **extra}
         result = subprocess.run([sys.executable, str(HANDLER)], input=json.dumps(payload),
                                 text=True, capture_output=True, env=env, check=False)
-        assert result.returncode == 0, result.stderr
+        assert result.returncode in {0, 2}, result.stderr
         return result
 
     return run, state, repo
@@ -257,8 +257,8 @@ def test_should_fail_open_visibly_for_bad_payload_or_missing_native_cwd():
 
 def test_should_register_common_events_without_changing_session_start():
     active = json.loads((ROOT / 'plugins/mir-lifecycle-hooks/hooks/hooks.json').read_text())
-    assert set(active['hooks']) == {'SessionStart', 'UserPromptSubmit', 'Stop'}
-    for name in ('UserPromptSubmit', 'Stop'):
+    assert set(active['hooks']) == {'SessionStart', 'UserPromptSubmit', 'Stop', 'PreToolUse'}
+    for name in ('UserPromptSubmit', 'Stop', 'PreToolUse'):
         command = active['hooks'][name][0]['hooks'][0]
         assert command['timeout'] == 8
         assert 'handoff_packet.py' in command['command']
@@ -627,3 +627,322 @@ def test_should_require_digest_and_revision_for_each_cited_source(runtime):
     assert 'src/cited.py' in result['reason'] and 'src/absent.py' not in result['reason']
     pinned = packet() + 'Inspect src/cited.py sha256 ' + '2' * 64 + ' revision ' + '1' * 40 + '.\n'
     assert 'decision' not in json.loads(run('Stop', last_assistant_message=pinned).stdout or '{}')
+
+@pytest.mark.parametrize('restriction', [
+    (
+        '\uba85\ub839\uc744 \uc2e4\ud589\ud558\uc9c0 \uc54a\uace0 \ub2f5\ubcc0'
+        '\ud574 \uc8fc\uc138\uc694.'
+    ), (
+        '\uba85\ub839 \uc2e4\ud589 \uc5c6\uc774 \uac80\ud1a0\ud574 \uc8fc\uc138'
+        '\uc694.'
+    ),
+    (
+        '\uba85\ub839\uc740 \uc2e4\ud589\ud558\uc9c0 \ub9c8.'
+    ), (
+        '\uba85\ub839\uc744 \uc2e4\ud589\ud558\uc9c0 \ub9d0\uace0 \uc77d\uae30'
+        '\ub9cc \ud558\uc138\uc694.'
+    ),
+])
+def test_should_skip_both_runners_for_korean_command_prohibitions(runtime, restriction):
+    run, _, repo = runtime
+    (repo / 'scripts/mir_ontology.py').write_text('raise AssertionError("runner called")\n')
+    prompt = PROMPT + restriction
+    supplied = run('UserPromptSubmit', prompt=prompt)
+    assert 'owner forbids commands' in supplied.stdout
+    body = packet().replace(hashlib.sha256(PROMPT.encode()).hexdigest(),
+                            hashlib.sha256(prompt.encode()).hexdigest())
+    stopped = run('Stop', last_assistant_message=body + '\nInspect src/cited.py')
+    assert 'owner forbids commands' in stopped.stdout
+
+
+def test_should_not_extract_positive_request_with_negative_subordinate_clause():
+    hook = module()
+    task = (
+        '\ub2e4\ub978 \uc5d0\uc774\uc804\ud2b8\uc5d0\uac8c \uc2e4\uc81c \ub370'
+        '\uc774\ud130\ub97c \uc218\uc815\ud558\uc9c0 \ub9d0\ub77c\ub294 \uc81c'
+        '\uc57d\uc744 \uc9c0\ud0ac \ud578\ub4dc\uc624\ud504\ub97c \uc791\uc131'
+        '\ud574 \uc8fc\uc138\uc694.'
+    )
+    assert hook.owner_sections(task)['may_not'] == ''
+    restriction = (
+        '\uba85\ub839\uc744 \uc2e4\ud589\ud558\uc9c0 \ub9d0\uace0 \ub2f5\ubcc0'
+        '\ub9cc \ud574 \uc8fc\uc138\uc694.'
+    )
+    assert restriction in hook.owner_sections(task + '\n' + restriction)['may_not']
+
+
+@pytest.mark.parametrize('variant', ['labels', 'evidence', 'inventory', 'restriction',
+                                   'read-only', 'future', 'qualifier'])
+def test_should_accept_equivalent_packet_labels_and_safe_authority(variant):
+    hook = module()
+    body = packet()
+    if variant == 'labels':
+        body = body.replace('May:', '- **May:**').replace('May not:', '- **May not:**')
+        body = body.replace('Lifecycle:', '- Lifecycle:')
+    elif variant == 'evidence':
+        body = body.replace('Evidence: parent-supplied prompt; observed',
+                            'Evidence: Source: prompt; Time:')
+    elif variant == 'inventory':
+        body = body.replace('field ', '').replace('pin ', '')
+    elif variant == 'restriction':
+        body = body.replace('May not: edit files; run tests',
+                            'May not: EDIT-FILES!; **Run tests.**')
+    elif variant == 'read-only':
+        body = body.replace('May: read src/example.py; report findings',
+                            'May: read-only inspection of synthetic source; report findings')
+    elif variant == 'future':
+        body += '\nOnly after a separate owner grant, the recipient may run tests.\n'
+    else:
+        body += '\nMay not: the recipient may edit files only after a separate owner grant.\n'
+    assert hook.check_packet(body, {'pins': PINS, 'owner': hook.owner_sections(PROMPT)}) == []
+
+
+@pytest.mark.parametrize('profile', ['valid', 'broken', 'absent'])
+def test_should_exclude_denied_and_profile_protected_citations(tmp_path, profile):
+    hook = module()
+    for name in ['src/allowed.py', 'docs/denied.md', 'docs/packet.md', 'docs/not-read.md',
+                 'android/key.properties', 'private/nested/token.txt']:
+        path = tmp_path / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text('must not hash protected contents\n')
+    if profile != 'absent':
+        (tmp_path / '.mir').mkdir()
+        (tmp_path / '.mir/repo-profile.toml').write_text(
+            '[paths]\nprotected_paths = ["android/*.properties"]\n'
+            '[boundaries]\nsecrets = ["private/**"]\n' if profile == 'valid' else 'broken = [')
+    owner = hook.owner_sections('May not: read docs/denied.md\n')
+    body = ('Inspect src/allowed.py.\nNot read: docs/not-read.md\n'
+            'May not:\n- read docs/packet.md\n'
+            'Unknowns: docs/denied.md android/key.properties private/nested/token.txt\n')
+    expected = ['src/allowed.py']
+    if profile != 'valid':
+        expected += ['android/key.properties', 'private/nested/token.txt']
+    assert hook.cited_paths(body, owner, tmp_path) == expected
+
+
+RECIPIENT_PROMPT = 'Review this received handoff.\n' + packet()
+RECIPIENT_LABELS = '\n'.join('pin ' + name + '=parent-supplied' for name in PIN_NAMES)
+
+
+def append_tool(repo, shape, name, arguments):
+    if shape == 'claude':
+        row = {'type': 'assistant', 'message': {'content': [
+            {'type': 'tool_use', 'id': 'tool-1', 'name': name, 'input': arguments}]}}
+    else:
+        row = {'type': 'response_item', 'payload': {
+            'type': 'function_call', 'name': name, 'arguments': json.dumps(arguments)}}
+    with (repo / 'native-session.jsonl').open('a') as stream:
+        stream.write(json.dumps(row) + '\n')
+
+
+def test_should_supply_recipient_rule_and_block_missing_labels_once(runtime):
+    run, _, _ = runtime
+    supplied = run('UserPromptSubmit', prompt=RECIPIENT_PROMPT)
+    assert 'verified-in-repo' in supplied.stdout and 'this turn' in supplied.stdout
+    blocked = run('Stop', last_assistant_message='Review complete.')
+    assert json.loads(blocked.stdout)['decision'] == 'block'
+    retry = run('Stop', last_assistant_message='Review complete.', stop_hook_active=True)
+    assert 'decision' not in json.loads(retry.stdout or '{}')
+    assert run('Stop', last_assistant_message=RECIPIENT_LABELS).stdout == ''
+
+
+@pytest.mark.parametrize(('shape', 'tool', 'arguments'), [
+    ('claude', 'Read', {'file_path': 'src/example.py'}),
+    ('claude', 'Bash', {'command': 'cat src/example.py'}),
+    ('codex', 'functions.exec_command', {'cmd': 'cat src/example.py'}),
+    ('codex', 'exec_command', {
+        'cmd': 'python3 scripts/mir_ontology.py mapping --handoff src/example.py'}),
+])
+def test_should_require_current_turn_tool_reference_for_verified_path(
+    runtime, shape, tool, arguments,
+):
+    run, _, repo = runtime
+    run('UserPromptSubmit', prompt=RECIPIENT_PROMPT)
+    body = RECIPIENT_LABELS.replace('pin sources[0].digest=parent-supplied',
+                                    'pin sources[0].digest=verified-in-repo src/example.py')
+    blocked = run('Stop', last_assistant_message=body)
+    assert json.loads(blocked.stdout)['decision'] == 'block'
+    append_tool(repo, shape, tool, arguments)
+    assert run('Stop', last_assistant_message=body).stdout == ''
+    run('UserPromptSubmit', prompt=RECIPIENT_PROMPT)
+    assert json.loads(run('Stop', last_assistant_message=body).stdout)['decision'] == 'block'
+
+
+def test_should_require_reader_limitation_when_recipient_commands_forbidden(runtime):
+    run, _, repo = runtime
+    run('UserPromptSubmit', prompt=RECIPIENT_PROMPT + '\nNo commands.')
+    blocked = run('Stop', last_assistant_message=RECIPIENT_LABELS)
+    assert json.loads(blocked.stdout)['decision'] == 'block'
+    answer = RECIPIENT_LABELS + '\nCommands forbidden; no non-command reader was used.'
+    assert run('Stop', last_assistant_message=answer).stdout == ''
+    append_tool(repo, 'claude', 'Read', {'file_path': 'src/example.py'})
+    assert run('Stop', last_assistant_message=RECIPIENT_LABELS).stdout == ''
+
+
+@pytest.mark.parametrize('tool', ['Bash', 'shell', 'exec_command', 'functions.exec_command',
+                                 'functions.shell_command'])
+@pytest.mark.parametrize('recipient', [False, True])
+def test_should_deny_shell_in_command_forbidden_handoff_turn(runtime, tool, recipient):
+    run, _, _ = runtime
+    prompt = RECIPIENT_PROMPT if recipient else PROMPT
+    run('UserPromptSubmit', prompt=prompt + (
+        '\n\uba85\ub839 \uc2e4\ud589 \uc5c6\uc774 \ub2f5\ubcc0\ud574 \uc8fc\uc138'
+        '\uc694.'
+    ))
+    denied = run('PreToolUse', tool_name=tool,
+                 tool_input={'command': 'echo skip', 'cmd': 'echo skip'})
+    assert denied.returncode == 2
+    assert json.loads(denied.stdout)['hookSpecificOutput']['permissionDecision'] == 'deny'
+
+
+@pytest.mark.parametrize(('prompt', 'tool'), [
+    ('Fix this bug. No commands.', 'Bash'), (PROMPT, 'Bash'),
+    (PROMPT + 'No commands.', 'Read'),
+])
+def test_should_allow_tools_outside_no_command_shell_guard(runtime, prompt, tool):
+    run, _, _ = runtime
+    run('UserPromptSubmit', prompt=prompt)
+    result = run('PreToolUse', tool_name=tool, tool_input={'command': 'echo skip'})
+    assert result.returncode == 0 and result.stdout == ''
+
+
+def test_should_fail_open_pretool_on_missing_transcript_and_use_native_prompt(runtime):
+    run, _, repo = runtime
+    missing = run('PreToolUse', tool_name='Bash', transcript_path=str(repo / 'absent.jsonl'))
+    assert missing.returncode == 0 and 'decision' not in json.loads(missing.stdout or '{}')
+    assert missing.stdout == '' and missing.stderr == ''  # silent: runs on every shell call
+    denied = run('PreToolUse', prompt=PROMPT + 'No commands.', tool_name='Bash',
+                 tool_input={'command': 'echo skip'})
+    assert denied.returncode == 2
+
+
+def test_should_not_treat_prohibition_scope_inventory_as_owner_prohibition():
+    prompt = (
+        '\ub300\uc0c1\uacfc \ud604\uc7ac \uc0c1\ud0dc, \ud5c8\uc6a9 \ubc94\uc704'
+        '\uc640 \uae08\uc9c0 \ubc94\uc704\ub97c \ud3ec\ud568\ud574\uc11c \ub2e4'
+        '\ub978 \uc5d0\uc774\uc804\ud2b8\uc5d0\uac8c \ub118\uae38 \uc9c0\uc2dc'
+        '\ubb38\uc744 \uc791\uc131\ud574\uc918.'
+    )
+    assert module().owner_sections(prompt)['may_not'] == ''
+
+
+def test_should_exclude_not_read_prose_and_heading_only_denied_scope(tmp_path):
+    for name in ['docs/unread.md', 'docs/protected.md']:
+        path = tmp_path / name
+        path.parent.mkdir(exist_ok=True)
+        path.write_text('not to be hashed')
+    owner = module().owner_sections('May: read and report')
+    body = 'I did not read docs/unread.md.\n### May not\n- read docs/protected.md\n'
+    assert module().cited_paths(body, owner, tmp_path) == []
+
+
+def test_should_accept_korean_recipient_reader_limitation(runtime):
+    run, _, _ = runtime
+    run('UserPromptSubmit', prompt=RECIPIENT_PROMPT + (
+        '\n\uba85\ub839 \uc2e4\ud589 \uc5c6\uc774 \ub2f5\ubcc0\ud574 \uc8fc\uc138'
+        '\uc694.'
+    ))
+    answer = (RECIPIENT_LABELS
+              + (
+                  '\n\uba85\ub839 \uc2e4\ud589\uc774 \uae08\uc9c0\ub418\uc5b4 \ube44\uba85'
+                  '\ub839 \ud30c\uc77c \uc77d\uae30 \ub3c4\uad6c\ub97c \uc0ac\uc6a9\ud558'
+                  '\uc9c0 \ubabb\ud588\uc2b5\ub2c8\ub2e4.'
+              ))
+    assert run('Stop', last_assistant_message=answer).stdout == ''
+
+
+def test_should_check_extensionless_verified_source_pin(runtime):
+    run, _, _ = runtime
+    run('UserPromptSubmit', prompt=RECIPIENT_PROMPT.replace('src/example.py', 'src/README'))
+    body = RECIPIENT_LABELS.replace('pin sources[0].digest=parent-supplied',
+                                    'pin sources[0].digest=verified-in-repo')
+    result = run('Stop', last_assistant_message=body)
+    assert json.loads(result.stdout)['decision'] == 'block'
+
+
+def test_should_not_hide_current_grant_beside_future_condition():
+    hook = module()
+    body = packet() + '\nYou may edit files. Only after a separate owner grant, run tests.'
+    assert any(defect.startswith('extra may: edit files') for defect in hook.check_packet(
+        body, {'pins': PINS, 'owner': hook.owner_sections(PROMPT)}))
+
+
+def test_should_parse_qualified_may_not_heading_without_adding_grants():
+    hook = module()
+    body = packet().replace(
+        'May not: edit files; run tests',
+        'May not (\ubcc4\ub3c4 owner \uc2b9\uc778\uc774 \uc788\uc5b4\uc57c '
+        '\uac00\ub2a5):\n- edit files\n- run tests')
+    assert hook.check_packet(body, {'pins': PINS, 'owner': hook.owner_sections(PROMPT)}) == []
+
+
+@pytest.mark.parametrize('text', [
+    (
+        '\uc77d\uae30\ub9cc \ud5c8\uc6a9\ub429\ub2c8\ub2e4. \uc2e4\uc81c \uc218'
+        '\uc815, \uac80\uc99d \uc2e4\ud589, \ucee4\ubc0b\uc740 \uba85\uc2dc\uc801'
+        '\uc73c\ub85c \uc2b9\uc778\ud574 \uc8fc\uc154\uc57c \uc9c4\ud589\ud560 '
+        '\uc218 \uc788\uc2b5\ub2c8\ub2e4.'
+    ),
+    (
+        '\uc800\uc7a5\uc18c \uc77d\uae30\uc640 \uc870\uc0ac(read/inspect only). '
+        '\ud3b8\uc9d1\uacfc \ud14c\uc2a4\ud2b8\ub294 owner/Main\uc774 \uba85\uc2dc'
+        '\uc801\uc73c\ub85c \uc2b9\uc778\ud574\uc57c\ub9cc \uc720\ud6a8\ud558\ub2e4'
+        '.'
+    ),
+    (
+        '\uae30\ub85d\ub41c \uacb0\uc815\uacfc \ucda9\ub3cc\ud560 \uc218 \uc788'
+        '\uc2b5\ub2c8\ub2e4. \uc804\uc774 \uc815\ucc45 \ud14c\uc2a4\ud2b8\uae4c'
+        '\uc9c0 \uc6d0\ud558\uc2dc\uba74 \uadf8 \uc815\ucc45\uc744 \uba3c\uc800 '
+        '\uc218\ub77d\ud574\uc57c \ud569\ub2c8\ub2e4.'
+    ),
+])
+def test_should_accept_korean_read_only_future_and_policy_caveats(text):
+    hook = module()
+    body = packet() + '\n' + text
+    assert hook.check_packet(body, {'pins': PINS, 'owner': hook.owner_sections(PROMPT)}) == []
+
+
+@pytest.mark.parametrize('marker', ['Pins:', '**Qualified target:**'])
+def test_should_check_recipient_with_alternate_packet_markup(runtime, marker):
+    run, _, _ = runtime
+    prompt = (RECIPIENT_PROMPT.replace('handoff pins:', marker) if marker == 'Pins:'
+              else RECIPIENT_PROMPT.replace('Qualified target:', marker))
+    run('UserPromptSubmit', prompt=prompt)
+    assert json.loads(run('Stop', last_assistant_message='Done.').stdout)['decision'] == 'block'
+    assert run('Stop', last_assistant_message=RECIPIENT_LABELS).stdout == ''
+
+
+def test_should_reject_same_suffix_reader_from_another_repository(runtime):
+    run, _, repo = runtime
+    run('UserPromptSubmit', prompt=RECIPIENT_PROMPT)
+    append_tool(repo, 'claude', 'Read', {'file_path': '/another-repo/src/example.py'})
+    body = RECIPIENT_LABELS.replace('sources[0].digest=parent-supplied',
+                                    'sources[0].digest=verified-in-repo')
+    assert json.loads(run('Stop', last_assistant_message=body).stdout)['decision'] == 'block'
+
+
+@pytest.mark.parametrize('restriction', ['Commands are prohibited.', 'Commands prohibited.'])
+def test_should_skip_runners_for_english_prohibited_commands(runtime, restriction):
+    run, _, _ = runtime
+    result = run('UserPromptSubmit', prompt=PROMPT + restriction)
+    assert 'owner forbids commands' in result.stdout
+
+
+def test_should_accept_read_only_may_with_separate_future_sentences():
+    hook = module()
+    body = packet().replace('May: read src/example.py; report findings',
+                            'May: read/inspect only. Edit and tests are valid only after '
+                            'a separate owner grant. This packet does not grant authority.')
+    assert hook.check_packet(body, {'pins': PINS, 'owner': hook.owner_sections(PROMPT)}) == []
+
+
+@pytest.mark.parametrize('shape', ['claude', 'codex'])
+def test_should_recompute_pretool_owner_from_both_native_transcript_shapes(runtime, shape):
+    run, _, repo = runtime
+    transcript = repo / 'pretool.jsonl'
+    prompt = PROMPT + 'No commands.'
+    row = ({'type': 'user', 'message': {'content': prompt}} if shape == 'claude' else
+           {'type': 'event_msg', 'payload': {'type': 'user_message', 'message': prompt}})
+    transcript.write_text(json.dumps(row) + '\n')
+    denied = run('PreToolUse', transcript_path=str(transcript), tool_name='Bash')
+    assert denied.returncode == 2

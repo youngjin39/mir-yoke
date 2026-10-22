@@ -195,3 +195,35 @@ the changed package must fail its digest acknowledgement gate before any runtime
 Runtime locks, active receipts, fresh-session observations and rollback evidence retain their
 existing requirements. External runtime measurements are evidence only and do not confer source
 or semantic authority.
+
+## Amendment: 2026-10-22b
+
+The owner writer brief for the 0.13.18 handoff defects (decision 1562776549806178315,
+parent-supplied) admits one additional common event, `PreToolUse`, only for the stateless
+owner no-command guard in the same `handoff_packet.py` handler. The exact event order becomes
+`SessionStart`, `UserPromptSubmit`, `PreToolUse`, `Stop`; each added event uses the existing
+8-second command registration. This supersedes the earlier amendment's three-event-only
+inventory, not its unchanged SessionStart, read-only, offline or no-state boundaries.
+
+PreToolUse reads the native prompt or explicit transcript tail, recomputes authoring/recipient
+handoff detection and the owner's command prohibition, and denies only shell tools in those
+turns. It emits `hookSpecificOutput.permissionDecision=deny` with event name and reason, plus
+stderr and exit 2. Claude's native deny JSON and the shared exit-2 blocking convention used by
+the local Claude/Codex guards are the output contract. Names include `Bash`, `shell`,
+`shell_command`, `exec_command` and their dotted forms. Errors fail open; no command is executed
+to make the decision, and no persistent authority state is introduced.
+
+UserPromptSubmit also supplies a one-sentence recipient accounting rule for received qualified
+packets with pins. Stop checks individual `verified-in-repo` / `parent-supplied` / `unavailable`
+labels, this-turn Read/shell references for verified paths, and explicit reader limitations when
+commands are forbidden. It retains the one-shot `stop_hook_active` guard. Reference presence
+does not prove digest-byte verification or semantic correctness. The cited-source collector
+omits denied/not-read/protected scope and read-only profile protected/secret glob matches;
+profile parsing errors fail open. Korean command negations and equivalent packet labels are
+handled lexically without admitting a model or general permission evaluator.
+
+This amendment prepares source only. Main owns handler SHA admission, package/tree digests,
+payloads, locks, versions, generated derivatives and runtime binding; those release-chain
+updates are deliberately absent from this writer change. Existing exact-admission checks must
+reject the changed inventory until Main performs that chain. Offline fixtures do not establish
+fresh live-host delivery or activation in either runtime.
