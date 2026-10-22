@@ -83,29 +83,29 @@
       "sha256": "56b047474551913d6734e85c60a3f25d4944f55d28b7a2110495f9175f52ed07"
     },
     ".claude-plugin/marketplace.json": {
-      "sha256": "adba0edfd7c472a490cb9cb84bb17b8c7ba73b14fb25df921af07981919e9b19"
+      "sha256": "2751ee0c6d84c2f9e838002e22c55fe547fb796cf130729ba83b123d711e05ef"
     }
   },
   "plugins": {
     "mir-code": {
       "package_kind": "skills",
       "path": "plugins/mir-code",
-      "sha256": "cbefdeeac076669609a74b31a6d709dc708649a54ea4868c17bed109c4509479"
+      "sha256": "544b06d31d96732db7fa53a1f6b62e250e9142cd8a25b4b3a8039040a52bc635"
     },
     "mir-content": {
       "package_kind": "skills",
       "path": "plugins/mir-content",
-      "sha256": "12f88ae7cfdbdafc72601c0d81056c09ef851bd6f0957ef2d6ec6570c97e78e3"
+      "sha256": "52eb566e0dac18b438d1eb5ae305a5dc16d09846bd971b210ddfdd82890478e3"
     },
     "mir-core": {
       "package_kind": "skills",
       "path": "plugins/mir-core",
-      "sha256": "8460bba3508c69967a982f738f5e868156d7610676179694c71f20e5864a0c6d"
+      "sha256": "280ec96d531c92cfc56bc4f6e6409862a9f6f3b8f800f2e75265f15977391461"
     },
     "mir-lifecycle-hooks": {
       "package_kind": "skills-hooks",
       "path": "plugins/mir-lifecycle-hooks",
-      "sha256": "9712b8369ba75d645b0d2e4fa3967b46a321cf335a4744dab16004fc97fe66b0"
+      "sha256": "df2b1e40dcc0eb661d829e2e5f452bdd5b758c7e9e661004deeef99b9ed897d6"
     }
   },
   "profile": "hybrid_pipeline",
