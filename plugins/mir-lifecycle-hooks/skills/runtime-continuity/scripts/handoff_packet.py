@@ -12,8 +12,12 @@ import stat
 import subprocess
 import sys
 import time
-import tomllib
 from pathlib import Path
+
+try:
+    import tomllib
+except ImportError:  # Claude may run hooks with macOS /usr/bin/python3 (3.9).
+    tomllib = None
 
 LIMIT = 1024 * 1024
 STARTED = time.monotonic()
@@ -359,6 +363,8 @@ def cited_paths(body: str, owner: dict, root: Path) -> list[str]:
             denied.update(CITED.findall(line))
     protected = []
     try:
+        if tomllib is None:
+            raise OSError('profile parser unavailable')
         with (root / '.mir/repo-profile.toml').open('rb') as stream:
             profile = tomllib.load(stream)
         protected = (profile.get('paths', {}).get('protected_paths', [])

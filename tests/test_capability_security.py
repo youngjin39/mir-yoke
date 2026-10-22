@@ -1837,7 +1837,7 @@ def test_should_bind_h1_exact_hook_source_and_final_package_version():
     assert handler.read_bytes() == _HOOK_HANDLER_SOURCE.encode()
     assert "else inventory unavailable pins" in _HOOK_HANDLER_SOURCE
     for runtime in (".claude-plugin", ".codex-plugin"):
-        assert json.loads((plugin / runtime / "plugin.json").read_text())["version"] == "0.13.18"
+        assert json.loads((plugin / runtime / "plugin.json").read_text())["version"] == "0.13.19"
     config = load_capability_config(ROOT / "config/capability-sources.json")
     assert config.active_digest_acknowledgements["mir-lifecycle-hooks"] == _tree_digest(plugin)
     assert config.plugin_hooks == {

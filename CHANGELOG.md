@@ -8,6 +8,15 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.19] — 2026-10-22 — Handoff hooks run on Python 3.9
+
+- `handoff_packet.py` imported `tomllib` (Python 3.11+) unconditionally. Claude runs plugin hooks with the first
+  `python3` on PATH, which is macOS `/usr/bin/python3` 3.9 on the Mir host, so every 0.13.18 UserPromptSubmit,
+  PreToolUse and Stop call crashed at import and failed open (observed in all seven Claude round-h captures). The
+  import is now optional; without it the profile protected-path filter is skipped and every other check runs.
+- Regression test blocks `tomllib` and runs all three events; the handoff suite also passes with the handler on
+  `/usr/bin/python3` (67 failures before the fix).
+
 ## [v0.13.18] — 2026-10-22 — Handoff owner boundaries and recipient accounting
 
 ### Fixed

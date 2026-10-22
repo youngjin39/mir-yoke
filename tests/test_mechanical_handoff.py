@@ -946,3 +946,28 @@ def test_should_recompute_pretool_owner_from_both_native_transcript_shapes(runti
     transcript.write_text(json.dumps(row) + '\n')
     denied = run('PreToolUse', transcript_path=str(transcript), tool_name='Bash')
     assert denied.returncode == 2
+
+
+def test_should_run_all_events_on_interpreters_without_tomllib(runtime):
+    """macOS /usr/bin/python3 (3.9) runs Claude hooks: a 3.11-only import must not crash them."""
+    run, _, repo = runtime
+    guard = ("import runpy, sys; sys.modules['tomllib'] = None; "
+             f"sys.argv = [{str(HANDLER)!r}]; "
+             f"runpy.run_path({str(HANDLER)!r}, run_name='__main__')")
+    transcript = repo / 'native-session.jsonl'
+    transcript.write_text(json.dumps({'type': 'user', 'message': {'content': PROMPT}}) + '\n')
+    for payload in (
+        {'hook_event_name': 'UserPromptSubmit', 'prompt': PROMPT},
+        {'hook_event_name': 'PreToolUse', 'tool_name': 'Bash', 'tool_input': {'command': 'ls'}},
+        {'hook_event_name': 'Stop', 'stop_hook_active': False, 'last_assistant_message': packet()},
+    ):
+        payload.update(cwd=str(repo), session_id='session-1', transcript_path=str(transcript))
+        result = subprocess.run([sys.executable, '-c', guard], input=json.dumps(payload),
+                                text=True, capture_output=True, check=False)
+        assert 'Traceback' not in result.stderr, result.stderr
+        assert result.returncode in {0, 2}
+    supplied = subprocess.run(
+        [sys.executable, '-c', guard], text=True, capture_output=True, check=False,
+        input=json.dumps({'hook_event_name': 'UserPromptSubmit', 'prompt': PROMPT, 'cwd': str(repo),
+                          'session_id': 'session-1', 'transcript_path': str(transcript)}))
+    assert 'Mechanical handoff packet' in supplied.stdout
