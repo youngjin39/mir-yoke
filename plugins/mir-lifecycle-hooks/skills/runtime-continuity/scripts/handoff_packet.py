@@ -59,6 +59,19 @@ PACKET = re.compile(
 # Relative file paths; Korean particles may follow a path directly.
 CITED = re.compile(r'(?<![\w./~:-])\.?[\w-][\w.-]*(?:/[\w.-]+)*\.[A-Za-z0-9]+(?![A-Za-z0-9_/-])')
 SHELL_TOOLS = {'bash', 'shell', 'shell_command', 'exec_command'}
+WRITE_TOOLS = {'write', 'edit', 'multiedit', 'notebookedit', 'apply_patch'}
+QUOTED = re.compile(r'`([^`\n]+)`|"([^"\n]+)"|(?<!\w)\'([^\'\n]+)\'(?!\w)')
+UNQUOTED_EXCLUSION = re.compile(
+    r'(?<![A-Za-z0-9_])([A-Z][A-Z0-9_]{3,})'
+    r'(?:\ub294|\uc740|\ub97c|\uc744|\uc774|\uac00)?\s*'
+    r'(?:\uc804\ub2ec|\ud3ec\ud568)\ud558\uc9c0\s*(?:\uc54a|\ub9d0)|'
+    r'\b(?i:do not (?:forward|include))\s+([A-Z][A-Z0-9_]{3,})(?![A-Za-z0-9_])|'
+    r'(?<![A-Za-z0-9_])([A-Z][A-Z0-9_]{3,})\s+(?i:must not be forwarded)\b'
+)
+FORBIDDEN_TOOL_RULE = (
+    'Shell, Write/Edit/apply_patch and file-writing tools must not be called in this '
+    'turn; attempts are compliance failures even if denied.'
+)
 RECEIVED_PINS = re.compile(r'\b(?:handoff )?pins:\s*(?:```(?:json)?\s*)?', re.I)
 BASE_PINS = ['repository_root', 'head', 'mapping.identity', 'mapping.version',
              'mapping.digest', 'contract.identity', 'contract.version', 'contract.digest']
@@ -138,6 +151,7 @@ def owner_sections(prompt: str) -> dict:
     active = None
     fenced = False
     explicit = False
+    excluded = []
     for line in prompt.splitlines():
         if line.lstrip().startswith(('```', '~~~')):
             fenced = not fenced
@@ -145,6 +159,16 @@ def owner_sections(prompt: str) -> dict:
             continue
         if fenced or line.lstrip().startswith('>'):
             continue
+        for literal in QUOTED.finditer(line):
+            before, after = line[:literal.start()], line[literal.end():]
+            if (re.search(r'\b(?:do not|don.t|never)\s+(?:include|forward|copy)\b[^.!?;]*$'
+                          r'|\bauthor-only\s+marker\s*$', before, re.I)
+                    or re.match(r'(?:\ub294|\uc740|\ub97c|\uc744)?\s*'
+                                r'(?:\uc804\ub2ec|\ud3ec\ud568|\ubcf5\uc0ac)\ud558\uc9c0\s*'
+                                r'(?:\ub9c8|\ub9d0)', after)):
+                excluded.append(next(value for value in literal.groups() if value is not None))
+        for literal in UNQUOTED_EXCLUSION.finditer(QUOTED.sub(' ', line)):
+            excluded.append(next(value for value in literal.groups() if value is not None))
         match = LABEL.match(line)
         if match:
             label, value = match.groups()
@@ -168,8 +192,9 @@ def owner_sections(prompt: str) -> dict:
         'may': '\n'.join(values['may']), 'may_not': '\n'.join(values['may_not']),
         'sources': '\n'.join(values['sources']),
         'explicit_authority': explicit,
-        'excluded': [item.strip().strip('`') for line in values['excluded']
-                     for item in re.split(r';|\n', line) if item.strip()],
+        'excluded': list(dict.fromkeys(
+            [item.strip().strip('`') for line in values['excluded']
+             for item in re.split(r';|\n', line) if item.strip()] + excluded)),
     }
 
 
@@ -239,6 +264,8 @@ def authority_defects(body: str, boundary: dict) -> list[str]:
 def check_packet(body: str, state: dict) -> list[str]:
     """Conservative format/lexical checks, never a semantic permission decision."""
     defects = []
+    if state.get('root') is not None:
+        defects.extend(namespace_defects(body, state['root']))
     pins = state['pins']
     if not re.search(r'(?m)^handoff pins:$', body) and supplied_json_present(body, pins):
         defects.append("supplied pins header altered (keep the literal 'handoff pins:' line)")
@@ -328,7 +355,7 @@ def context_text(owner: dict, pins: str | None = None, prompt: str | None = None
         'For every other repository file you cite, add its sha256 and last-change revision from '
         '`python3 scripts/mir_ontology.py mapping --handoff <paths>` sources. '
         'Inspect the whole forwarded artifact, including enclosing text. '
-        + COMPLETE_ARTIFACT_RULE + '\n'
+        + COMPLETE_ARTIFACT_RULE + '\n' + tool_attempt_rule(owner)
     )
 
 
@@ -344,16 +371,63 @@ def warning(message: str, owner: dict | None = None) -> None:
 
 def restricted(prompt: str) -> bool:
     owner = owner_sections(prompt)
-    deny = normalized(owner['may_not'])
+    # Quoted command examples are not a prohibition on all commands. Never scan
+    # raw packet/fenced/blockquote text after owner_sections has excluded it.
+    prohibition = QUOTED.sub(' ', owner['may_not'])
+    deny = normalized(prohibition)
     return bool(re.search(
         r'\b(?:run|execute) (?:any )?(?:commands|shell|python)\b', deny
     ) or re.search(
         r'\b(?:no commands|commands (?:are )?(?:forbidden|prohibited)'
         r'|do not (?:run|execute) (?:any )?commands)\b',
-        prompt.casefold(),
+        prohibition.casefold(),
     ) or re.search(r'(?:\uba85\ub839|\ucee4\ub9e8\ub4dc|\uc250|\ud30c\uc774\uc36c)'
                    r'[^\n.!?]*(?:\uc9c0\s*(?:\ub9d0|\ub9c8|\uc54a\uace0)|'
-                   r'\uc2e4\ud589\s*\uc5c6\uc774|\uae08\uc9c0)', owner['may_not']))
+                   r'\uc2e4\ud589\s*\uc5c6\uc774|\uae08\uc9c0)', prohibition))
+
+
+def files_restricted(owner: dict) -> bool:
+    # Keep separate prohibitions separate: a scoped edit ban does not waive a
+    # blanket ban elsewhere, and never bans every file-writing tool by itself.
+    for clause in re.split(r';|\n|(?<=[.!?])(?:\s+|$)', QUOTED.sub(' ', owner['may_not'])):
+        deny = normalized(clause)
+        if re.search(r'\b(?:outside|other than|except|beyond|besides|under|in|not listed|only)\b|'
+                     r'(?:\uc678|\ubc16|\uc774\uc678|\uc81c\uc678|\ubc94\uc704\s*\ubc16)', deny):
+            continue
+        if re.search(
+            r'\b(?:no (?:file changes|scratch writes)|(?:edit|modify|change|write|create|delete) '
+            r'(?:any )?files?|file (?:changes|writes) (?:are )?(?:forbidden|prohibited))\b|'
+            r'(?:\ud30c\uc77c|\uc2a4\ud06c\ub798\uce58)[^\n.!?]*'
+            r'(?:\uc218\uc815|\ubcc0\uacbd|\ud3b8\uc9d1|\uc4f0\uae30|\uc791\uc131|\uc0dd\uc131|\uc0ad\uc81c)',
+            deny):
+            return True
+    return False
+
+
+def tool_attempt_rule(owner: dict) -> str:
+    if restricted('May not: ' + owner['may_not']) or files_restricted(owner):
+        return FORBIDDEN_TOOL_RULE + '\n'
+    return ''
+
+
+def namespace_defects(body: str, root: Path) -> list[str]:
+    """Read only the local declaration; malformed/missing maps fail open."""
+    try:
+        data = json.loads((root / '.mir/ontology-map.json').read_text())
+        namespace = data.get('namespace')
+        if not isinstance(namespace, str) or not namespace:
+            return []
+        aliases = {entry['namespace'] for entry in data.get('namespace_aliases', [])
+                   if isinstance(entry, dict) and entry.get('reviewed') is True
+                   and isinstance(entry.get('namespace'), str)
+                   and isinstance(entry.get('evidence'), str) and entry['evidence'].strip()}
+    except (OSError, ValueError, AttributeError, TypeError):
+        return []
+    plain = re.sub(r'[*`]', '', body)
+    targets = re.findall(r'(?im)^\s*(?:#{1,6}\s+|[-+]\s+)?'
+                         r'(?:qualified target|\ub300\uc0c1)\s*:\s*([\w.-]+):[\w./-]+', plain)
+    return [f'qualified target namespace {target} differs from map namespace {namespace}'
+            for target in dict.fromkeys(targets) if target != namespace and target not in aliases]
 
 
 def source_paths(owner: dict, root: Path) -> list[str]:
@@ -463,7 +537,8 @@ def supply(event: dict) -> None:
         raise ValueError('invalid prompt')
     if recipient(prompt):
         print(json.dumps({'hookSpecificOutput': {'hookEventName': 'UserPromptSubmit',
-                         'additionalContext': RECEIPT_RULE}}))
+                         'additionalContext': RECEIPT_RULE + '\n'
+                         + tool_attempt_rule(owner_sections(prompt))}}))
         return
     if not detect(prompt):
         return  # detection only: no filesystem, runner, or output on ordinary prompts
@@ -559,6 +634,20 @@ def message_text(message: dict) -> str:
     )
 
 
+def hook_prompts(row: dict) -> list[tuple[str, str]]:
+    """Codex emits two views of the same native feedback, keyed by hook run ID."""
+    payload = row.get('payload', {})
+    if row.get('type') == 'response_item' and payload.get('role') == 'user':
+        match = re.fullmatch(r'\s*<hook_prompt\s+hook_run_id="([^"]+)">'
+                             r'([\s\S]*)</hook_prompt>\s*', message_text(payload))
+        return [(match[1], match[2])] if match else []
+    if (row.get('type') == 'event_msg' and payload.get('type') == 'item_completed'
+            and payload.get('item', {}).get('type') == 'HookPrompt'):
+        return [(item.get('hookRunId', ''), item.get('text', ''))
+                for item in payload['item'].get('fragments', [])]
+    return []
+
+
 def current_turn(event: dict) -> tuple[str, list[dict]]:
     prompt, rows = None, []
     for row in transcript_records(event):
@@ -571,7 +660,8 @@ def current_turn(event: dict) -> tuple[str, list[dict]]:
                 item.get('type') == 'text' for item in content
             ):
                 found = message_text(message)
-        elif row.get('type') == 'response_item' and payload.get('role') == 'user':
+        elif (row.get('type') == 'response_item' and payload.get('role') == 'user'
+              and not hook_prompts(row)):
             found = message_text(payload)
         elif row.get('type') == 'event_msg' and payload.get('type') == 'user_message':
             found = payload['message']
@@ -613,6 +703,53 @@ def tool_calls(rows: list[dict]) -> list[tuple[str, dict]]:
             if isinstance(arguments, str):
                 arguments = json.loads(arguments)
             calls.append((payload['name'], arguments))
+        elif (row.get('type') == 'response_item' and payload.get('type') == 'custom_tool_call'
+              and tool_kind(payload.get('name', '')) == 'exec'):
+            calls.append((payload['name'], {'input': payload.get('input', '')}))
+            calls.extend(code_shell_calls(payload.get('input', '')))
+    return calls
+
+
+def code_shell_calls(code: str) -> list[tuple[str, dict]]:
+    """Extract static nested shell arguments without evaluating JavaScript.
+
+    Tokenization excludes comments and quoted decoy calls. Dynamic expressions
+    and interpolated templates supply no command/computation evidence.
+    """
+    token_pattern = (r'//[^\n]*|/\*[\s\S]*?\*/|"(?:\\.|[^"\\])*"|'
+                     r"'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`|[\w$]+|[^\s]")
+    tokens = [match[0] for match in re.finditer(token_pattern, code)
+              if not match[0].startswith(('//', '/*'))]
+    calls = []
+    for i in range(len(tokens) - 4):
+        if not (tokens[i:i + 2] == ['tools', '.'] and tokens[i + 2] in SHELL_TOOLS
+                and tokens[i + 3:i + 5] == ['(', '{']):
+            continue
+        depth = 1
+        for j in range(i + 5, len(tokens) - 3):
+            if tokens[j] == '}':
+                depth -= 1
+            elif tokens[j] == '{':
+                depth += 1
+            if depth == 0:
+                break
+            if (depth != 1 or tokens[j].strip('"\'') not in {'cmd', 'command'}
+                    or tokens[j + 1] != ':' or tokens[j + 3] not in {',', '}'}):
+                continue
+            literal = tokens[j + 2]
+            if literal[0] not in {'"', "'", '`'} or '${' in literal:
+                continue
+
+            def unescape(match):
+                value = match[1]
+                if value.startswith(('u', 'x')) and len(value) > 1:
+                    return chr(int(value[1:], 16))
+                return {'n': '\n', 'r': '\r', 't': '\t', 'b': '\b', 'f': '\f',
+                        'v': '\v', '\n': '', '\r\n': ''}.get(value, value)
+
+            command = re.sub(r'\\(u[0-9a-fA-F]{4}|x[0-9a-fA-F]{2}|\r?\n|.)',
+                             unescape, literal[1:-1])
+            calls.append((tokens[i + 2], {'command': command}))
     return calls
 
 
@@ -773,12 +910,13 @@ def abbreviated_hex(body: str) -> list[str]:
 
 def no_command_check(prompt: str, body: str, event: dict) -> list[str]:
     return (authority_defects(body, owner_sections(prompt)) + abbreviated_hex(body)
-            + verification_defects(body, body, event, no_commands=True))
+            + verification_defects(body, body, event, no_commands=True)
+            + namespace_defects(body, repository_root(event)))
 
 
 def recipient_check(prompt: str, body: str, event: dict) -> list[str]:
     """Check declared accounting and tool references, never attest pin bytes."""
-    defects = []
+    defects = namespace_defects(body, repository_root(event))
     data = received_data(prompt)
     names = list(BASE_PINS)
     names.extend(entry['pin'] for entry in data.get('pin_inventory', []))
@@ -815,13 +953,20 @@ def recipient_check(prompt: str, body: str, event: dict) -> list[str]:
 
 
 def pretool(event: dict) -> None:
-    if tool_kind(event['tool_name']) not in SHELL_TOOLS:
+    tool = tool_kind(event['tool_name'])
+    if tool not in SHELL_TOOLS | WRITE_TOOLS:
         return
     prompt = event.get('prompt')
     if not isinstance(prompt, str) or not prompt:
         prompt, _ = transcript_turn(event)
-    if (detect(prompt) or recipient(prompt)) and restricted(prompt):
+    if not (detect(prompt) or recipient(prompt)):
+        return
+    reason = None
+    if tool in SHELL_TOOLS and restricted(prompt):
         reason = 'Owner forbids commands in this handoff turn; shell tool denied.'
+    elif tool in WRITE_TOOLS and files_restricted(owner_sections(prompt)):
+        reason = 'Owner forbids file changes in this handoff turn; file-writing tool denied.'
+    if reason:
         print(json.dumps({'hookSpecificOutput': {'hookEventName': 'PreToolUse',
                           'permissionDecision': 'deny', 'permissionDecisionReason': reason}}))
         print(reason, file=sys.stderr)
@@ -832,7 +977,14 @@ def prior_blocks(event: dict) -> int | None:
     """Count only this handler's native feedback, never assistant-quoted decisions."""
     _, rows = current_turn(event)
     count = 0
+    seen = set()
     for row in rows:
+        for run_id, text in hook_prompts(row):
+            if (run_id.lower().startswith('stop:') and run_id not in seen
+                    and re.match(r'Repair (?:handoff once|recipient accounting once|'
+                                 r'handoff deterministic defects \(second/final block\)):', text)):
+                seen.add(run_id)
+                count += 1
         payload = row.get('payload', {})
         record = row if row.get('type') == 'system' else payload
         feedback = (row.get('type') == 'system' and row.get('subtype') == 'hook_response'
@@ -908,7 +1060,8 @@ def stop(event: dict) -> None:
         warning('current prompt hash changed; packet check skipped to avoid stale authority.')
         return
     pins = run_pins(event, owner)
-    defects = check_packet(body, {'pins': pins, 'owner': owner}) + abbreviated_hex(body)
+    defects = check_packet(body, {'pins': pins, 'owner': owner,
+                                 'root': repository_root(event)}) + abbreviated_hex(body)
     # Every cited repository file needs its own digest and last-change revision.
     cited = cited_paths(body, owner, repository_root(event))
     if cited:

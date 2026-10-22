@@ -304,3 +304,54 @@ The event inventory, retry bound, read-only/offline behavior and Python 3.9
 support remain unchanged. Main owns versions, handler admission SHA, tree
 digests, payloads, locks, generated derivatives, runtime binding and fresh-host
 verification. This source-only amendment performs none of that release chain.
+
+## Amendment: 2026-10-23b
+
+Design authority is the owner 0.13.22 round-i checker-defect writer brief
+(decision 1562831233971392553, parent-supplied), under `Current` in the Harness
+active cursor. The bounded writer scope leaves that cursor unchanged. The
+round-i report and selected Codex rollout shapes are defect evidence, not
+additional authority. Regression fixtures use synthetic literals and paths.
+
+Extend the admitted stateless handler within its existing event inventory:
+
+- Preserve explicit Exclude sections and additionally extract quoted/backticked
+  literals in English/Korean exclusion prose and English author-only markers.
+  The follow-up owner review also requires unquoted uppercase identifiers after
+  English do-not-forward/include verbs or before `must not be forwarded`, and
+  before Korean do-not-forward/include verbs with optional topic/object/subject
+  particles. Allowed identifiers in the same sentence remain unexcluded.
+  Redact exclusion values in repair diagnostics across the entire artifact.
+- Account for Codex `custom_tool_call` `exec` and static nested shell command
+  literals without evaluating JavaScript. Dynamic/interpolated commands remain
+  unsupported evidence; outer tool calls still count as local tools.
+- Retain the original owner prompt and tools across Codex user `<hook_prompt>`
+  feedback. Count matching Stop repair feedback from that message or the
+  `event_msg/item_completed` `HookPrompt` view once per hook run ID, preserving
+  the existing two-block maximum.
+- Decide command prohibitions from owner prohibition sentences with quoted
+  literals removed, not fenced/quoted packet command examples. The sentence
+  `Do not run the "Never run" commands above` does not forbid revision/digest checks.
+  Unlabelled English owner prohibitions still apply without a May-not section.
+- Read the local map namespace and reject a differing qualified target in
+  author, recipient and no-command checks. Only map-declared `namespace_aliases`
+  objects with a namespace, `reviewed: true` and nonempty evidence admit an
+  exception. This checks declarations, not review truth; parse/IO errors fail open.
+- Supply one sentence prohibiting shell, Write/Edit/apply_patch and file-writing
+  tool attempts whenever commands or file changes are owner-forbidden; denied
+  attempts still violate compliance. For owner file-change prohibitions,
+  PreToolUse denies Write/Edit/MultiEdit/NotebookEdit and Codex apply_patch with
+  the existing deny JSON/stderr/exit-2 form. Ordinary turns and readers pass.
+  Only unqualified file-write bans trigger this guard and the supplied instruction.
+  Restrictions on files outside/other than/except/beyond/besides/under/in a scope,
+  files not listed, or only a scope (including Korean equivalents) do not ban all
+  writes. Evaluate separate prohibition clauses independently; a scoped ban cannot
+  mask an additional blanket ban. No scoped-path enforcement is added.
+
+The existing unfiltered PreToolUse registration already delivers those tool
+names, so `hooks/hooks.json` needs no matcher change. The handler remains
+read-only/offline and Python 3.9-compatible with optional tomllib. Offline
+fixtures do not prove live-host delivery, activation, tool success or semantic
+truth. Main owns versions, handler SHA admission, tree digests, payloads, locks,
+generated derivatives, bindings and fresh-host verification. This amendment
+changes none of that release metadata.

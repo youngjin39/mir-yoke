@@ -8,6 +8,26 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.22] — 2026-10-23 — Round-i handoff checker defects (prepared source)
+
+### Fixed
+
+- Extract quoted English/Korean prose exclusions and unquoted uppercase identifiers
+  with explicit do-not-forward/include wording, retaining explicit Exclude sections,
+  allowed identifiers and redacted whole-artifact diagnostics.
+- Account for Codex code-mode exec calls and static nested shell commands;
+  preserve owner scope and tools across native HookPrompt retries, deduplicating
+  feedback by hook run ID within the existing two-block bound.
+- Ignore quoted/fenced command examples when deciding owner command bans while
+  retaining unlabelled English owner prohibitions.
+- Reject qualified-target namespaces that differ from the local map unless a
+  reviewed alias is declared; read only and fail open on map errors.
+- Supply forbidden-tool attempt guidance and deny file-writing tools on
+  handoff turns with unqualified file-change bans. Scoped file prohibitions
+  preserve legitimate edits. Existing PreToolUse registration suffices.
+- Leave versions, handler SHA admission, tree digests, payloads, locks and generated
+  derivatives to Main's release chain. Offline fixtures establish no activation.
+
 ## [v0.13.21] — 2026-10-23 — Complete handoff repairs (prepared source)
 
 ### Fixed

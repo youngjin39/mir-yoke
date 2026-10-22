@@ -1360,3 +1360,305 @@ def test_should_always_allow_third_stop_even_if_native_retry_flag_resets(runtime
 ])
 def test_should_recognize_only_qualified_target_heading_or_label(target, expected):
     assert module().recipient(target + '\nUnknowns: none\nLifecycle: current') is expected
+
+
+@pytest.mark.parametrize('sentence', [
+    'Do not include `SYNTHETIC-AUTHOR-MARKER` in the handoff.',
+    'Do not forward "SYNTHETIC-AUTHOR-MARKER" to the recipient.',
+    "Do not copy 'SYNTHETIC-AUTHOR-MARKER' into the final answer.",
+    '`SYNTHETIC-AUTHOR-MARKER`\ub294 \uc804\ub2ec\ud558\uc9c0 \ub9c8.',
+    '`SYNTHETIC-AUTHOR-MARKER`\ub97c \ud3ec\ud568\ud558\uc9c0 \ub9d0\uace0 '
+    '\uc791\uc131\ud574 \uc8fc\uc138\uc694.',
+    'The author-only marker `SYNTHETIC-AUTHOR-MARKER` stays here.',
+])
+def test_should_extract_natural_language_exclusions_and_redact_diagnostics(sentence):
+    hook = module()
+    owner = hook.owner_sections(PROMPT + sentence)
+    assert owner['excluded'] == ['PRIVATE-CANARY-42', 'SYNTHETIC-AUTHOR-MARKER']
+    defects = hook.authority_defects(packet() + '\nSYNTHETIC-AUTHOR-MARKER', owner)
+    assert 'excluded item #2 appears in forwarded artifact' in defects
+    assert all('SYNTHETIC-AUTHOR-MARKER' not in defect for defect in defects)
+    assert hook.owner_sections('Do not copy unquoted words.')['excluded'] == []
+    assert hook.owner_sections('Read `public.py`; do not edit it.')['excluded'] == []
+    assert hook.owner_sections('> Do not forward `example`.')['excluded'] == []
+
+
+@pytest.mark.parametrize('particle', ['', '\ub294', '\uc740', '\ub97c', '\uc744',
+                                      '\uc774', '\uac00'])
+@pytest.mark.parametrize('verb', [
+    '\uc804\ub2ec\ud558\uc9c0 \uc54a\ub294', '\uc804\ub2ec\ud558\uc9c0 \ub9d0\uace0',
+    '\ud3ec\ud568\ud558\uc9c0 \uc54a\ub294', '\ud3ec\ud568\ud558\uc9c0 \ub9d0\uace0',
+])
+def test_should_extract_only_unquoted_korean_excluded_identifier(particle, verb):
+    hook = module()
+    sentence = ('\uac1c\ubc1c\uc6a9 SYNTHETIC_ALLOWED_42\ub294 \ud5c8\uc6a9\ud558\uace0 '
+                'SYNTHETIC_PRIVATE_42' + particle + ' ' + verb + ' payload \uc124\uacc4')
+    owner = hook.owner_sections(sentence)
+    assert owner['excluded'] == ['SYNTHETIC_PRIVATE_42']
+    defects = hook.authority_defects('Wrapper: SYNTHETIC_PRIVATE_42', owner)
+    assert 'excluded item #1 appears in forwarded artifact' in defects
+    assert all('SYNTHETIC_PRIVATE_42' not in defect for defect in defects)
+
+
+@pytest.mark.parametrize('sentence', [
+    'Allow SYNTHETIC_ALLOWED_42; do not forward SYNTHETIC_PRIVATE_42.',
+    'Allow SYNTHETIC_ALLOWED_42; do not include SYNTHETIC_PRIVATE_42.',
+    'SYNTHETIC_ALLOWED_42 is allowed; SYNTHETIC_PRIVATE_42 must not be forwarded.',
+])
+def test_should_extract_only_unquoted_english_excluded_identifier(sentence):
+    hook = module()
+    owner = hook.owner_sections(sentence)
+    assert owner['excluded'] == ['SYNTHETIC_PRIVATE_42']
+    assert hook.authority_defects('SYNTHETIC_PRIVATE_42', owner) == [
+        'excluded item #1 appears in forwarded artifact']
+
+
+@pytest.mark.parametrize('sentence', [
+    'SYNTHETIC_ALLOWED_42\ub294 \ud5c8\uc6a9\ud569\ub2c8\ub2e4.',
+    'Do not forward ordinary_words.',
+    'Do not include abcSYNTHETIC_PRIVATE_42.',
+    'Do not forward SYNTHETIC_PRIVATE_42suffix.',
+    '> Do not forward SYNTHETIC_PRIVATE_42.',
+    '```\nDo not include SYNTHETIC_PRIVATE_42.\n```',
+])
+def test_should_ignore_allowed_or_non_identifier_exclusion_examples(sentence):
+    assert module().owner_sections(sentence)['excluded'] == []
+
+
+@pytest.mark.parametrize(('restriction', 'expected'), [
+    ('May not: modify files outside probes/.', False),
+    ('May not: edit files other than the handler.', False),
+    ('May not: change files under config/**.', False),
+    ('May not: write files except the handler.', False),
+    ('May not: modify files beyond probes/.', False),
+    ('May not: edit files besides the handler.', False),
+    ('May not: change files in config/**.', False),
+    ('May not: write files not listed here.', False),
+    ('May not: write files; only outside probes/.', True),
+    ('May not: only write files in config/**.', False),
+    ('May not: probes/ \uc678 \ud30c\uc77c \uc218\uc815.', False),
+    ('May not: probes/ \ubc16 \ud30c\uc77c \uc218\uc815.', False),
+    ('May not: handler \uc774\uc678 \ud30c\uc77c \uc218\uc815.', False),
+    ('May not: handler \uc81c\uc678 \ud30c\uc77c \uc218\uc815.', False),
+    ('May not: probes/ \ubc94\uc704 \ubc16 \ud30c\uc77c \uc218\uc815.', False),
+    ('May not: write files.', True),
+    ('No file changes', True),
+    ('\ud30c\uc77c \uc218\uc815 \uae08\uc9c0', True),
+    ('\ud30c\uc77c\uc744 \uc218\uc815\ud558\uc9c0 \ub9d0\uace0', True),
+    ('May not: modify files outside probes/. No file changes.', True),
+    ('May not: write files; edit files other than the handler.', True),
+    ('May not: change files under config/**; write files.', True),
+    ('No file changes.\nMay not: edit files other than the handler.', True),
+])
+def test_should_restrict_files_only_for_unqualified_bans(restriction, expected):
+    hook = module()
+    owner = hook.owner_sections(restriction)
+    assert hook.files_restricted(owner) is expected
+    assert bool(hook.tool_attempt_rule(owner)) is expected
+
+
+@pytest.mark.parametrize('restriction', [
+    'May not: modify files outside probes/.',
+    'May not: edit files other than the handler.',
+    'May not: change files under config/**.',
+])
+@pytest.mark.parametrize('tool', ['Write', 'Edit', 'functions.apply_patch'])
+@pytest.mark.parametrize('receiving', [False, True])
+def test_should_allow_file_tools_when_owner_only_prohibits_scoped_edits(
+        runtime, restriction, tool, receiving):
+    run, _, _ = runtime
+    base = (RECIPIENT_PROMPT if receiving else PROMPT).replace(
+        'May not: edit files; run tests\n', '')
+    run('UserPromptSubmit', prompt=base + '\n' + restriction)
+    result = run('PreToolUse', tool_name=tool, tool_input={})
+    assert result.returncode == 0 and result.stdout == ''
+
+
+@pytest.mark.parametrize('sentence', [
+    'Do not run commands; answer from the sources.',
+    'No commands. Read only.',
+])
+def test_should_detect_unlabelled_english_command_bans(runtime, sentence):
+    hook = module()
+    prompt = 'Write a handoff for another agent.\n' + sentence
+    assert sentence.split(';')[0].split('.')[0] in hook.owner_sections(prompt)['may_not']
+    assert hook.restricted(prompt)
+    run, _, _ = runtime
+    run('UserPromptSubmit', prompt=prompt)
+    denied = run('PreToolUse', tool_name='functions.exec_command', tool_input={'cmd': 'pwd'})
+    assert denied.returncode == 2
+    assert json.loads(denied.stdout)['hookSpecificOutput']['permissionDecision'] == 'deny'
+
+
+def append_code_mode(repo, code):
+    with (repo / 'native-session.jsonl').open('a') as stream:
+        stream.write(json.dumps({'type': 'response_item', 'payload': {
+            'type': 'custom_tool_call', 'name': 'exec', 'input': code}}) + '\n')
+
+
+def test_should_count_code_mode_calls_as_local_checks(runtime):
+    run, _, repo = runtime
+    run('UserPromptSubmit', prompt=RECIPIENT_PROMPT)
+    append_code_mode(repo, 'text(await tools.exec_command({cmd:"pwd"}));')
+    body = RECIPIENT_LABELS.split('\nNo local check', 1)[0]
+    assert run('Stop', last_assistant_message=body).stdout == ''
+
+
+@pytest.mark.parametrize('code', [
+    'const r = await tools.exec_command({cmd:"shasum -a 256 src/example.py\\n'
+    'git log -1 src/example.py\\ngit rev-parse HEAD"}); text(r.output);',
+    "await tools.exec_command({cmd:'shasum -a 256 src/example.py; "
+    "git log -1 src/example.py; git rev-parse HEAD'});",
+    'await Promise.allSettled([tools.exec_command({cmd:`shasum -a 256 src/example.py; '
+    'git log -1 src/example.py; git rev-parse HEAD`})]);',
+])
+def test_should_expose_code_mode_commands_to_pin_verification(runtime, code):
+    run, _, repo = runtime
+    run('UserPromptSubmit', prompt=RECIPIENT_PROMPT)
+    append_code_mode(repo, code)
+    body = RECIPIENT_LABELS
+    for name in ('head', 'sources[0].digest', 'sources[0].revision'):
+        body = body.replace(name + '=parent-supplied', name + '=verified-in-repo')
+    body += '\nVerified: src/example.py verified-in-repo'
+    assert run('Stop', last_assistant_message=body).stdout == ''
+    # Merely quoting a shell call inside JS text/comments cannot supply computation.
+    run('UserPromptSubmit', prompt=RECIPIENT_PROMPT)
+    append_code_mode(repo, 'text(' + json.dumps(code) + '); /* ' + code + ' */')
+    result = run('Stop', last_assistant_message=body)
+    assert 'lacks this-turn computation' in json.loads(result.stdout)['reason']
+
+
+def append_hook_prompt(repo, reason, run_id, shape='both'):
+    text = f'<hook_prompt hook_run_id="{run_id}">{reason}</hook_prompt>'
+    rows = []
+    if shape in {'response', 'both'}:
+        rows.append({'type': 'response_item', 'payload': {
+            'type': 'message', 'id': run_id, 'role': 'user',
+            'content': [{'type': 'input_text', 'text': text}]}})
+    if shape in {'event', 'both'}:
+        rows.append({'type': 'event_msg', 'payload': {'type': 'item_completed', 'item': {
+            'type': 'HookPrompt', 'id': run_id,
+            'fragments': [{'text': reason, 'hookRunId': run_id}]}}})
+    with (repo / 'native-session.jsonl').open('a') as stream:
+        stream.write(''.join(json.dumps(row) + '\n' for row in rows))
+
+
+@pytest.mark.parametrize('shape', ['response', 'event', 'both'])
+def test_should_preserve_owner_and_count_codex_hook_prompt_once(runtime, shape):
+    run, _, repo = runtime
+    run('UserPromptSubmit', prompt=PROMPT + 'No commands.')
+    (repo / 'native-session.jsonl').write_text(json.dumps({
+        'type': 'response_item', 'payload': {'type': 'message', 'role': 'user',
+        'content': [{'type': 'input_text', 'text': PROMPT + 'No commands.'}]}}) + '\n')
+    append_tool(repo, 'codex', 'Read', {'file_path': 'src/example.py'})
+    body = NO_PIN_PACKET + '\nPRIVATE-CANARY-42'
+    first = json.loads(run('Stop', last_assistant_message=body).stdout)
+    append_hook_prompt(repo, first['reason'], 'stop:1:/synthetic/hooks/hooks.json', shape)
+    event = {'cwd': str(repo), 'transcript_path': str(repo / 'native-session.jsonl')}
+    hook = module()
+    assert hook.prior_blocks(event) == 1
+    assert hook.current_turn(event)[0] == PROMPT + 'No commands.'
+    assert hook.turn_tools(event)[1] == ['src/example.py']
+    second = json.loads(run('Stop', last_assistant_message=body, stop_hook_active=True).stdout)
+    assert second.get('decision') == 'block'
+    append_hook_prompt(repo, second['reason'], 'stop:2:/synthetic/hooks/hooks.json', shape)
+    assert hook.prior_blocks(event) == 2
+    third = run('Stop', last_assistant_message=body, stop_hook_active=True)
+    assert 'decision' not in json.loads(third.stdout or '{}')
+    run('UserPromptSubmit', prompt=PROMPT)
+    assert hook.prior_blocks(event) is None
+
+
+@pytest.mark.parametrize('quoted', [
+    'Do not run the "Never run" commands above.',
+    '> Do not run commands.\n```\nNo commands.\n```',
+    'The packet says "Do not run commands"; compare revisions and digests.',
+])
+def test_should_allow_revision_checks_despite_quoted_command_examples(runtime, quoted):
+    run, _, _ = runtime
+    prompt = RECIPIENT_PROMPT + '\n' + quoted + '\nCompare the local revision and digest.'
+    assert not module().restricted(prompt)
+    run('UserPromptSubmit', prompt=prompt)
+    result = run('PreToolUse', tool_name='functions.exec_command',
+                 tool_input={'cmd': 'git rev-parse HEAD'})
+    assert result.returncode == 0 and result.stdout == ''
+    assert module().restricted(prompt + '\nDo not run commands.')
+
+
+@pytest.mark.parametrize('mode', ['author', 'no-command', 'recipient'])
+def test_should_reject_target_namespace_mismatch_read_only(runtime, mode):
+    run, _, repo = runtime
+    (repo / '.mir').mkdir()
+    mapping = repo / '.mir/ontology-map.json'
+    original = json.dumps({'namespace': 'local-project'})
+    mapping.write_text(original)
+    prompt = RECIPIENT_PROMPT if mode == 'recipient' else PROMPT
+    if mode == 'no-command':
+        prompt += 'No commands.'
+    run('UserPromptSubmit', prompt=prompt)
+    body = (packet() if mode != 'recipient' else
+            'Qualified target: example:review\n' + RECIPIENT_LABELS)
+    result = run('Stop', last_assistant_message=body)
+    defect = 'qualified target namespace example differs from map namespace local-project'
+    assert defect in json.loads(result.stdout)['reason']
+    assert mapping.read_text() == original
+    # Matching namespaces and parse errors must not invent a namespace defect.
+    for content in (json.dumps({'namespace': 'example'}), '{bad json', '[]', '{}'):
+        mapping.write_text(content)
+        result = run('Stop', last_assistant_message=body)
+        assert 'differs from map namespace' not in result.stdout
+
+
+def test_should_accept_only_reviewed_namespace_aliases(runtime):
+    run, _, repo = runtime
+    (repo / '.mir').mkdir()
+    mapping = repo / '.mir/ontology-map.json'
+    alias = {'namespace': 'example', 'reviewed': False, 'evidence': 'docs/review.md'}
+    data = {'namespace': 'local-project', 'namespace_aliases': [alias]}
+    mapping.write_text(json.dumps(data))
+    run('UserPromptSubmit', prompt=PROMPT + 'No commands.')
+    result = run('Stop', last_assistant_message=NO_PIN_PACKET)
+    assert 'differs from map namespace' in json.loads(result.stdout)['reason']
+    alias['reviewed'] = True
+    mapping.write_text(json.dumps(data))
+    result = run('Stop', last_assistant_message=NO_PIN_PACKET)
+    assert 'differs from map namespace' not in result.stdout
+    alias['evidence'] = ''
+    mapping.write_text(json.dumps(data))
+    assert 'differs from map namespace' in run('Stop', last_assistant_message=NO_PIN_PACKET).stdout
+
+
+@pytest.mark.parametrize('restriction', ['No commands.', 'No file changes.'])
+@pytest.mark.parametrize('receiving', [False, True])
+def test_should_supply_forbidden_tool_attempt_rule(runtime, restriction, receiving):
+    run, _, _ = runtime
+    base = (RECIPIENT_PROMPT if receiving else PROMPT).replace(
+        'May not: edit files; run tests\n', '')
+    prompt = base + '\n' + restriction
+    result = run('UserPromptSubmit', prompt=prompt)
+    context = json.loads(result.stdout)['hookSpecificOutput']['additionalContext']
+    rule = ('Shell, Write/Edit/apply_patch and file-writing tools must not be called in this '
+            'turn; attempts are compliance failures even if denied.')
+    assert context.count(rule) == 1
+
+
+@pytest.mark.parametrize('tool', ['Write', 'Edit', 'MultiEdit', 'NotebookEdit',
+                                 'apply_patch', 'functions.apply_patch'])
+@pytest.mark.parametrize('receiving', [False, True])
+def test_should_deny_file_write_tools_in_file_forbidden_handoff(runtime, tool, receiving):
+    run, _, _ = runtime
+    base = (RECIPIENT_PROMPT if receiving else PROMPT).replace(
+        'May not: edit files; run tests\n', '')
+    prompt = base + '\nNo file changes.'
+    run('UserPromptSubmit', prompt=prompt)
+    denied = run('PreToolUse', tool_name=tool, tool_input={})
+    assert denied.returncode == 2
+    output = json.loads(denied.stdout)['hookSpecificOutput']
+    assert output['hookEventName'] == 'PreToolUse' and output['permissionDecision'] == 'deny'
+    assert 'file changes' in output['permissionDecisionReason']
+    # Only the handoff's owner restriction activates this guard.
+    for allowed_prompt in ('Fix this bug. No file changes.',
+                           'Write a handoff for another agent.\nMay: edit files'):
+        run('UserPromptSubmit', prompt=allowed_prompt)
+        allowed = run('PreToolUse', tool_name=tool, tool_input={})
+        assert allowed.returncode == 0 and allowed.stdout == ''

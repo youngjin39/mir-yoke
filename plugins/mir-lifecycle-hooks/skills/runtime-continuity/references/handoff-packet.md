@@ -1,17 +1,17 @@
 # Mechanical handoff packet
 
-Design authority: the current owner writer brief for the 0.13.21 handoff repair
-completeness (2026-10-23, decision 1562831233971392553, parent-supplied), recorded in the
+Design authority: the current owner writer brief for the 0.13.22 round-i checker
+defects (2026-10-23, decision 1562831233971392553, parent-supplied), recorded in the
 Harness active cursor's `Current` section. The bounded writer scope leaves that
 cursor unchanged. This extends the stateless design recorded in `tasks/plan.md`;
-ADR-90 amendments 2026-10-22, 2026-10-22b, 2026-10-22c and 2026-10-23 admit the bounded events
+ADR-90 amendments through 2026-10-23b admit the bounded events
 and checks. Installation grants no agent authority. Semantic evidence remains
 `.mir/ontology-map.json#/domain/invariants/2` and its referenced ADR-90.
 
 ## Events, runtime evidence and budgets
 
 Both plugin manifests auto-discover the common `hooks/hooks.json`. It registers
-UserPromptSubmit (supply), PreToolUse (owner no-command guard) and Stop (check),
+UserPromptSubmit (supply), PreToolUse (owner command/file-write guards) and Stop (check),
 each with an 8-second host budget and
 the exact `skills/runtime-continuity/scripts/handoff_packet.py` handler. SessionStart
 and its 2-second timeout stay unchanged. Ordinary prompt-submit turns do detection
@@ -38,7 +38,9 @@ showed the transcript can lag behind the final message (5/10 Claude runs).
 Support Claude `user`/`assistant` message records and Codex `event_msg.user_message`
 and `response_item` user/assistant text records (`final_answer` or absent phase).
 Ignore Claude meta/tool-result records and Codex commentary. A new native user
-prompt clears any prior assistant candidate. The last native prompt and final
+prompt clears any prior assistant candidate. Codex repair messages wrapped
+in `<hook_prompt hook_run_id="...">` are native feedback, not new owner prompts;
+retain the original scope and current-turn tool evidence. The last native prompt and final
 assistant must be in the bounded tail. A missing prompt, malformed/truncated tail,
 missing retry flag, runner error/timeout, or other hook error fails open with
 stderr plus a visible `systemMessage`. Do not echo exceptions or child stderr.
@@ -87,8 +89,14 @@ copied. Korean command prohibitions include native spellings of `-ji anko`,
 `myeongnyeong silhaeng eopsi`, `-ji ma` and `-ji malgo`. A request to include
 the prohibition scope, or an attributed negative subordinate clause, is not
 itself copied as a prohibition. Recognition remains lexical, not a general
-language parser. Command prohibitions skip both supply and Stop runners. A prohibition
+language parser. Only owner prohibition sentences determine a command ban, after
+removing quoted/backticked literals. Fences and blockquotes stay ignored. A packet's
+`Do not run the "Never run" commands above` sentence refers to listed examples;
+it does not forbid local revision/digest comparisons. Command prohibitions skip
+both supply and Stop runners. A prohibition
 on file/scratch writes does not skip this read-only, stateless hook.
+Unlabelled owner prose such as `Do not run commands; answer from the sources.`
+or `No commands. Read only.` still establishes a command ban.
 
 ## Supply and authority check
 
@@ -98,8 +106,17 @@ Copy both verbatim. Separately inject the owner's may/may-not text as
 **copy verbatim; do not add permissions**. No explicit authority sections means
 read/inspect authority only. Explicit sections confer only the labeled grant.
 Exclusion literals remain author context and must never enter forwarded text.
-Exclusions are literal, semicolon-separated values; natural-language exclusions
-are not inferred. Refuse supply if pins contain excluded data.
+The explicit Exclude section retains literal, semicolon-separated values.
+Also extract quoted/backticked literals following English `do not include/forward/copy`
+or `author-only marker`, or preceding Korean forms of `do not forward/include/copy`.
+Unquoted identifiers matching `[A-Z][A-Z0-9_]{3,}` are also excluded after
+`do not forward/include` or before `must not be forwarded`. Korean identifiers
+may directly precede an optional topic/object/subject particle and
+`\uc804\ub2ec\ud558\uc9c0 \uc54a` / `\uc804\ub2ec\ud558\uc9c0 \ub9d0` /
+`\ud3ec\ud568\ud558\uc9c0 \uc54a` / `\ud3ec\ud568\ud558\uc9c0 \ub9d0`.
+An allowed identifier elsewhere in the sentence is not excluded. Other unquoted
+prose is not inferred as an exclusion. Use synthetic stand-ins in tests;
+never copy author-only content from a capture. Refuse supply if pins contain excluded data.
 
 With explicit authority sections, split candidate grants on semicolons/newlines;
 normalize case, spacing and punctuation, preserving word/path order. Each
@@ -144,6 +161,15 @@ May not; Self-check. Preserve each owner prohibition except those containing
 excluded literals. Reject exclusions anywhere in the final artifact, including
 wrappers and restrictions; redact excluded values in diagnostics.
 
+Read the local `.mir/ontology-map.json` namespace for author, recipient and
+no-command checks. A differing qualified-target namespace produces
+`qualified target namespace <ns> differs from map namespace <map>`.
+An optional `namespace_aliases` array admits an alias only as an object with
+`namespace`, `reviewed: true` and a nonempty `evidence` string. Plain aliases,
+similar names and capability-pack aliases confer no namespace equivalence.
+This is a declaration check, not verification of the review evidence. Missing,
+unreadable or malformed maps fail open for this check; no runner or write is needed.
+
 Stop recomputes the prompt SHA256 from the last native user prompt. A mismatched
 full hash warns/skips rather than using stale authority; a missing hash is a
 repairable field defect. Stop reruns the supplier. Every pin field and canonical
@@ -177,7 +203,10 @@ On clear defects, Stop emits `decision=block` with missing/extra items. When
 `stop_hook_active=true`, a second block is permitted only if current-turn native
 transcript rows establish exactly one previous block from this handler. Count
 Claude system `hook_response` or Codex `event_msg.hook_response` Stop output, or
-Claude meta-user feedback, bearing this handler's repair reason. Assistant text
+Claude meta-user feedback, bearing this handler's repair reason. Codex
+`response_item` user `<hook_prompt>` and `event_msg/item_completed` `HookPrompt`
+fragments bearing a Stop run ID and this handler's repair prefix also count;
+deduplicate their two views by `hook_run_id`/`hookRunId`. Assistant text
 quoting a decision is not evidence. Unknown record shapes or an indeterminate
 count retain the warning/allow behavior. Two recorded blocks always allow the
 next Stop; no third block is emitted. No persistent counter is used.
@@ -250,7 +279,15 @@ command text containing the path.
 `repository_root` accepts a this-turn Read/Grep/Glob path inside the root using
 the same containment rule as the no-command subset.
 The root `mapping --handoff` runner also counts as a map reference. Claude
-`tool_use` and Codex `response_item.function_call` records are recognized; a new
+`tool_use` and Codex `response_item.function_call` records are recognized.
+Codex `response_item.custom_tool_call` named `exec` (including a dotted name)
+counts as a tool call; its static nested `tools.exec_command` and other supported
+shell calls expose literal `cmd`/`command` arguments, paths and computations.
+Tokenize JavaScript without executing it; ignore comments and quoted decoy calls.
+Single/double quotes and static backtick strings are supported, with escapes
+decoded. Dynamic expressions, variable-built commands and interpolated templates
+provide no computation evidence. The outer call still counts for the local-tool
+inventory. A new
 native user prompt discards earlier references. A digest pin additionally needs
 a this-turn command computing SHA256 over that path: `shasum -a 256`, `sha256sum`,
 `openssl dgst -sha256`, `hashlib.sha256`, or the root `mapping --handoff` runner.
@@ -269,11 +306,27 @@ answer must explicitly say commands are forbidden and no non-command reader was
 used/available, in English or Korean. Missing accounting uses the bounded repair
 policy above; computing/limitation defects cannot trigger its second block.
 
+When the owner forbids commands or file changes, UserPromptSubmit adds this
+sentence once in author and recipient guidance:
+
+> Shell, Write/Edit/apply_patch and file-writing tools must not be called in this turn; attempts are compliance failures even if denied.
+
 PreToolUse recomputes the prompt from native `prompt` or the explicit transcript
 tail, without state. Only authoring/recipient handoff turns with an owner command
 prohibition deny shell tools: `Bash`, `shell`, `shell_command`, `exec_command`,
-including dotted names such as `functions.exec_command`. Non-shell tools and
-ordinary turns pass. Any payload/transcript error fails open with a warning.
+including dotted names such as `functions.exec_command`. Owner file-change
+prohibitions also deny `Write`, `Edit`, `MultiEdit`, `NotebookEdit` and Codex
+`apply_patch`, including dotted names. Read/Grep/Glob and ordinary turns pass.
+Only unqualified file-write bans activate this guard, such as `May not: write files.`,
+`No file changes`, `\ud30c\uc77c \uc218\uc815 \uae08\uc9c0` or `\ud30c\uc77c\uc744 \uc218\uc815\ud558\uc9c0 \ub9d0\uace0`.
+A scoped prohibition (`outside`, `other than`, `except`, `beyond`, `besides`,
+`under`, `in`, `not listed`, `only`, `\uc678`, `\ubc16`, `\uc774\uc678`, `\uc81c\uc678`, `\ubc94\uc704 \ubc16`)
+does not ban all writes or supply the forbidden-tool sentence. Check separate
+sentences, semicolon items and lines independently so a scoped prohibition
+does not hide an additional unqualified ban. This guard does not enforce paths.
+The shell guard does not classify arbitrary tools that might write files;
+the supplied instruction covers those attempts. Payload/transcript errors in
+PreToolUse fail open silently, as the guard runs on every matching tool call.
 Denial emits `hookSpecificOutput` with `hookEventName=PreToolUse`,
 `permissionDecision=deny` and `permissionDecisionReason`, plus stderr and exit 2.
 Claude consumes the deny JSON; exit 2 is the shared blocking convention used by
@@ -283,7 +336,8 @@ establish fresh live-host delivery or activation.
 
 ## Delivery boundary
 
-0.13.21 source prepares complete repair guidance and root/HEAD reference fixes.
+0.13.22 source prepares round-i exclusions, code-mode accounting, retry feedback,
+quoted-command handling, namespace checks and file-write guards.
 Python 3.9 remains supported with
 optional `tomllib`; absent parsing still skips only the Profile glob filter.
 Main still owns generated Codex
