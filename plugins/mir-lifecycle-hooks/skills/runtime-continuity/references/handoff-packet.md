@@ -1,9 +1,12 @@
 # Mechanical handoff packet
 
-Design authority: the current owner writer brief for the 0.13.18 handoff defects
-(2026-10-22, decision 1562776549806178315, parent-supplied). It extends the
-stateless design recorded in `tasks/plan.md`; ADR-90 amendments 2026-10-22 and
-2026-10-22b admit the bounded events. Installation grants no agent authority.
+Design authority: the current owner writer brief for the 0.13.20 residual handoff
+gaps (2026-10-22, decision 1562831233971392553, parent-supplied), recorded in the
+Harness active cursor's `Current` section. The bounded writer scope leaves that
+cursor unchanged. This extends the stateless design recorded in `tasks/plan.md`;
+ADR-90 amendments 2026-10-22, 2026-10-22b and 2026-10-22c admit the bounded events
+and checks. Installation grants no agent authority. Semantic evidence remains
+`.mir/ontology-map.json#/domain/invariants/2` and its referenced ADR-90.
 
 ## Events, runtime evidence and budgets
 
@@ -130,7 +133,7 @@ Restriction comparison normalizes whitespace, case, punctuation and bullet
 markers. Self-check field and pin names may omit the literal `field`/`pin` prefix.
 Arbitrary semantic paraphrases remain outside this lexical checker.
 
-## Packet check and one-shot repair
+## Packet check and bounded repair
 
 Recognize an emitted packet by `Qualified target:`, `handoff pins:`, `May not:`,
 a forwarded `pin_inventory`/`mapping_sha256` key or a handoff/brief heading line
@@ -152,6 +155,9 @@ hooks. Changed source/HEAD/map/contract pins are named by JSON pointer for repai
 The final packet must still carry the original complete supplied block; if pins
 are stale, regenerate the packet from current evidence rather than silently
 altering individual values. This limitation follows from stateless recomputation.
+When the supplied JSON is present but its header became a Markdown heading or
+another label, report `supplied pins header altered (keep the literal 'handoff pins:' line)`.
+The header must be a complete literal line immediately before the JSON.
 
 Every other existing repository file the packet cites (relative path; protected, excluded,
 symlinked, map and runner paths skipped; at most 32) must carry its own sha256 and
@@ -167,36 +173,79 @@ for qualified target, four status axes, evidence, unknowns, may and may not;
 `pin_inventory[].pin`. Each exact unknown pin reason must appear individually.
 These labels are claims, not proof of evidence truth.
 
-On clear defects, Stop emits `decision=block` with missing/extra items once.
-When `stop_hook_active=true`, warn and allow completion without running the
-supplier or blocking again. A missing/nonboolean retry flag warns/skips because
-one-shot behavior cannot otherwise be guaranteed without state. Non-packet
+On clear defects, Stop emits `decision=block` with missing/extra items. When
+`stop_hook_active=true`, a second block is permitted only if current-turn native
+transcript rows establish exactly one previous block from this handler. Count
+Claude system `hook_response` or Codex `event_msg.hook_response` Stop output, or
+Claude meta-user feedback, bearing this handler's repair reason. Assistant text
+quoting a decision is not evidence. Unknown record shapes or an indeterminate
+count retain the warning/allow behavior. Two recorded blocks always allow the
+next Stop; no third block is emitted. No persistent counter is used.
+
+The second block names only deterministic defects: missing cited-source digests
+or revisions, abbreviated hex pins, missing recipient pin labels and excluded
+items. Field headings, extra grants, computing evidence and limitation prose
+are first-block checks only. A missing/nonboolean retry flag warns/skips because
+bounded behavior cannot otherwise be guaranteed without state. Non-packet
 responses (including clarification) are untouched. Stop cannot undo earlier tool
 publication or inspect file artifacts.
 
+## No-command Stop subset
+
+When the owner forbids commands, retain the unavailable-pin warning
+`pins/check unavailable: owner forbids commands; no runner performed.` and never
+invoke either runner. Stop still checks the whole emitted artifact for owner
+exclusions, extra may grants using the same lexical rules, and unsupported
+`verified-in-repo` claims. Every such pin/path needs a this-turn Read/Grep/Glob
+reference to its path; a declaration in the mapping is not a reader reference
+to the contract file. An unresolved pin path cannot be claimed verified.
+
+Reject 7–39 hex characters presented as a full HEAD, revision, commit or digest,
+including `path@revision` and Markdown pin-table columns, unless explicitly
+inventoried as `abbreviated`. The inventory must identify the pin, or label the
+value's own line. This subset requires no English field labels and accepts
+translated packets and Korean permission labels. It does not require fresh
+pins, English status headings or prompt hashes; the current owner prompt still
+governs the subset if an old prompt hash appears. The same two-block bound
+applies; only exclusions and abbreviated pins can trigger its second block.
+
 ## Recipient accounting and owner no-command guard
 
-A current prompt with `Qualified target: namespace:local-id` plus a pins block
-or full sha256 pin lines is a received packet, unless `detect()` already
-recognizes an authoring request. UserPromptSubmit supplies the one-sentence
+A qualified-target heading/label (`Qualified target` or native Korean `daesang`) followed
+on the same or next three lines by `namespace:local-id`, plus a pins block or
+full sha256 pin lines, is a received packet. Without pins, require at least two
+other handoff-field categories: status axes / `sangtae`, pins / `pin`, unknowns /
+`mihwagin`, authority / may / may not / `heoyong` / `geumji` (native Korean
+spellings, shown here as transliterations). Authoring `detect()` takes
+precedence. UserPromptSubmit supplies the
 recipient rule without invoking a runner. At Stop the recipient must label
-every supplied `pin_inventory[].pin` (or the core/source fallback names) as
+all eight base pins (`repository_root`, `head`, `mapping.identity|version|digest`,
+`contract.identity|version|digest`) and every named packet/source/inventory pin as
 `verified-in-repo`, `parent-supplied` or `unavailable`, for example
 `pin sources[0].digest=parent-supplied`. Both `handoff pins:` and `Pins:` JSON
 blocks are accepted, including a JSON fence. For sha256-line packets, use the line's
-name before its first colon. Labels account for claims; they do not prove hashes.
+name before its first colon. Pins without values still require a label. Labels
+account for claims; they do not prove hashes.
 
 Each source path claimed `verified-in-repo`, including paths inferred from the
 packet's source pin names, must have a tool reference in this turn's transcript:
-Claude `Read` with `file_path`/`path`, or shell command text containing the path.
+Claude `Read`/`Grep`/`Glob` with a matching `file_path`/`path`/`pattern`, or shell
+command text containing the path.
 The root `mapping --handoff` runner also counts as a map reference. Claude
 `tool_use` and Codex `response_item.function_call` records are recognized; a new
-native user prompt discards earlier references. This checks reference provenance,
-not tool success or whether digest bytes were compared (D05 remains a semantic
-evidence limit). If commands are forbidden and no reader was used, the final
+native user prompt discards earlier references. A digest pin additionally needs
+a this-turn command computing SHA256 over that path: `shasum -a 256`, `sha256sum`,
+`openssl dgst -sha256`, `hashlib.sha256`, or the root `mapping --handoff` runner.
+A revision needs `git log`/`git rev-list` naming its path or that runner naming
+the source. HEAD needs `git rev-parse` or the runner. The runner also covers map
+and contract pins. A Read alone verifies neither hashes nor revision history.
+This checks command/reference provenance, not tool success, comparison results
+or semantic truth. If commands are permitted but no tool call exists, explicitly
+state a local-check limitation; otherwise report `no local check and no stated limitation`.
+If commands are forbidden and no reader was used, the final
 answer must explicitly say commands are forbidden and no non-command reader was
-used/available, in English or Korean. Missing accounting blocks once; the same
-boolean `stop_hook_active` guard prevents a second block.
+used/available, in English or Korean. Missing accounting uses the bounded repair
+policy above; computing/limitation defects cannot trigger its second block.
 
 PreToolUse recomputes the prompt from native `prompt` or the explicit transcript
 tail, without state. Only authoring/recipient handoff turns with an owner command
@@ -212,6 +261,8 @@ establish fresh live-host delivery or activation.
 
 ## Delivery boundary
 
-0.13.18 source prepares the amended inventory. Main still owns generated Codex
+0.13.20 source prepares the residual checks. Python 3.9 remains supported with
+optional `tomllib`; absent parsing still skips only the Profile glob filter.
+Main still owns generated Codex
 surfaces, digest acknowledgement, locks/binding and any live-host verification.
 This work performs no bind, tag, push or release. A prepared version is not activation.

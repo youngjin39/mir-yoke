@@ -227,3 +227,46 @@ payloads, locks, versions, generated derivatives and runtime binding; those rele
 updates are deliberately absent from this writer change. Existing exact-admission checks must
 reject the changed inventory until Main performs that chain. Offline fixtures do not establish
 fresh live-host delivery or activation in either runtime.
+
+## Amendment: 2026-10-22c
+
+Design authority is the owner residual-gap writer brief for 0.13.20 (decision
+1562831233971392553, parent-supplied), recorded under `Current` in the Harness
+active cursor. The writer may change only this handler, its offline tests,
+reference, this ADR and CHANGELOG; the cursor remains owner-managed. The task
+implements G1–G5 within the existing stateless event inventory and 8-second
+budget. No event, runner authority, network access or persistent state is added.
+
+Stop performs a no-runner subset even when commands are forbidden: exclusions
+anywhere in the artifact, extra lexical may grants, verified-in-repo claims
+without this-turn Read/Grep/Glob path references, and full-value hex pins
+abbreviated to 7–39 characters without an explicit abbreviated inventory. This
+subset does not require English field labels and retains the unavailable-pin
+warning. A stale author prompt hash does not bypass the current owner boundary
+in this subset. Both runner calls remain forbidden in this mode.
+
+Recipient detection accepts English/Korean qualified-target headings or labels
+with a namespace-qualified token on the same or next three lines. Without a
+pins block, require two other handoff-field categories (status, pins, unknowns,
+authority). Authoring detection takes precedence. Supply reaches these packets;
+Stop requires all eight base pin labels plus every pin the packet names.
+Verified digests require this-turn SHA256 computing commands naming the path;
+verified source revisions require git log/rev-list naming the path; HEAD requires
+git rev-parse. The mapping --handoff runner also supplies the corresponding
+computation evidence. Reading a file alone cannot verify its digest or history.
+With no tool call and commands permitted, require an explicit local-check
+limitation. These checks establish lexical evidence provenance, not tool success
+or semantic truth, consistent with `.mir/ontology-map.json#/domain/invariants/2`.
+
+The previous one-shot guard is amended only when current-turn native transcript
+feedback determines exactly one previous block from this handler: Stop may block
+one more time for missing cited-source pins, abbreviated hex, missing recipient
+labels or excluded items. A third block is forbidden; unknown counts retain the
+warning/allow behavior. Assistant quotations do not count as native feedback.
+The supplied JSON must retain the complete literal `handoff pins:` header line;
+altering it into a Markdown heading produces a specific repair diagnostic.
+
+Python 3.9 support and optional tomllib remain mandatory. This source-only
+amendment does not update versions, handler admission SHA, tree digests, payloads,
+locks, generated derivatives or live runtime bindings. Main owns that release
+chain and fresh-host verification. Offline fixtures establish no activation.

@@ -8,6 +8,22 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.20] — 2026-10-22 — Residual handoff checks (prepared source)
+
+### Fixed
+
+- Check excluded content, extra grants, unsupported verified pin/path claims and
+  abbreviated full-value hex pins without a runner when commands are forbidden;
+  translated field headings do not create missing-English-label defects.
+- Supply recipient accounting for qualified English/Korean packets without pins;
+  require all eight base labels and every named pin, computing evidence for
+  verified digests/revisions/HEAD, and a limitation when no local tool was used.
+- Permit a second deterministic repair block only with exactly one prior native
+  handler block in the current turn; never block a third time. Preserve supplied
+  pins headers literally, including when fresh observation times differ.
+- Preserve Python 3.9 support and optional `tomllib`. Version and integrity
+  metadata remain unchanged pending Main's release chain.
+
 ## [v0.13.19] — 2026-10-22 — Handoff hooks run on Python 3.9
 
 - `handoff_packet.py` imported `tomllib` (Python 3.11+) unconditionally. Claude runs plugin hooks with the first

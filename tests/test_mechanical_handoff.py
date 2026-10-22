@@ -15,6 +15,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 SKILL = ROOT / 'plugins/mir-lifecycle-hooks/skills/runtime-continuity'
 HANDLER = SKILL / 'scripts/handoff_packet.py'
+HANDLER_PYTHON = os.environ.get('MIR_HANDOFF_TEST_PYTHON', sys.executable)
 PROMPT = (
     'Write a handoff for another agent.\n'
     'Sources: src/example.py\n'
@@ -159,7 +160,7 @@ def runtime(tmp_path):
         extra.setdefault('transcript_path', str(transcript))
         payload = {'hook_event_name': event, 'cwd': str(repo), 'session_id': 'session-1',
                    'stop_hook_active': False, **extra}
-        result = subprocess.run([sys.executable, str(HANDLER)], input=json.dumps(payload),
+        result = subprocess.run([HANDLER_PYTHON, str(HANDLER)], input=json.dumps(payload),
                                 text=True, capture_output=True, env=env, check=False)
         assert result.returncode in {0, 2}, result.stderr
         return result
@@ -249,7 +250,7 @@ def test_should_not_check_non_packet_outputs_or_loop_on_native_retry(runtime):
 def test_should_fail_open_visibly_for_bad_payload_or_missing_native_cwd():
     env = {key: value for key, value in os.environ.items() if key != 'MIR_HANDOFF_STATE_DIR'}
     for payload in [json.dumps({'hook_event_name': 'UserPromptSubmit', 'prompt': PROMPT}), '{']:
-        result = subprocess.run([sys.executable, str(HANDLER)], input=payload,
+        result = subprocess.run([HANDLER_PYTHON, str(HANDLER)], input=payload,
                                 text=True, capture_output=True, env=env, check=False)
         assert result.returncode == 0
         assert 'WARNING' in result.stdout + result.stderr
@@ -286,7 +287,7 @@ def test_should_ignore_packet_when_current_transcript_prompt_hash_differs(runtim
     run('UserPromptSubmit', prompt=PROMPT)
     transcript = repo / 'session.jsonl'
     transcript.write_text(json.dumps({'type': 'user', 'message': {
-        'role': 'user', 'content': 'Prepare a brief for another agent. No commands.',
+        'role': 'user', 'content': 'Prepare a brief for another agent. Inspect only.',
     }}) + '\n')
     result = run('Stop', transcript_path=str(transcript), last_assistant_message=packet())
     assert result.returncode == 0 and 'decision' not in json.loads(result.stdout or '{}')
@@ -397,7 +398,7 @@ def test_should_supply_real_repository_runner_pins_without_network(tmp_path):
                    + '\nMay: read and report\nMay not: edit project files\n')}
     env = {**os.environ, 'MIR_HANDOFF_STATE_DIR': str(state), 'PYTHONDONTWRITEBYTECODE': '1'}
     env.pop('MIR_HANDOFF_RUNNER', None)
-    result = subprocess.run([sys.executable, str(HANDLER)], input=json.dumps(payload),
+    result = subprocess.run([HANDLER_PYTHON, str(HANDLER)], input=json.dumps(payload),
                             text=True, capture_output=True, env=env, check=False, timeout=8)
     assert result.returncode == 0 and result.stderr == ''
     context = json.loads(result.stdout)['hookSpecificOutput']['additionalContext']
@@ -604,7 +605,7 @@ def test_should_check_native_final_message_when_transcript_lags(runtime):
                'stop_hook_active': False, 'transcript_path': str(transcript),
                'last_assistant_message': packet().replace(PINS, '')}
     env = {**os.environ, 'PYTHONDONTWRITEBYTECODE': '1'}
-    result = subprocess.run([sys.executable, str(HANDLER)], input=json.dumps(payload),
+    result = subprocess.run([HANDLER_PYTHON, str(HANDLER)], input=json.dumps(payload),
                             text=True, capture_output=True, env=env, check=False)
     assert json.loads(result.stdout)['decision'] == 'block'
 
@@ -721,7 +722,8 @@ def test_should_exclude_denied_and_profile_protected_citations(tmp_path, profile
 
 
 RECIPIENT_PROMPT = 'Review this received handoff.\n' + packet()
-RECIPIENT_LABELS = '\n'.join('pin ' + name + '=parent-supplied' for name in PIN_NAMES)
+RECIPIENT_LABELS = ('\n'.join('pin ' + name + '=parent-supplied' for name in PIN_NAMES)
+                    + '\nNo local check was performed; pins are parent-supplied.')
 
 
 def append_tool(repo, shape, name, arguments):
@@ -758,8 +760,7 @@ def test_should_require_current_turn_tool_reference_for_verified_path(
 ):
     run, _, repo = runtime
     run('UserPromptSubmit', prompt=RECIPIENT_PROMPT)
-    body = RECIPIENT_LABELS.replace('pin sources[0].digest=parent-supplied',
-                                    'pin sources[0].digest=verified-in-repo src/example.py')
+    body = RECIPIENT_LABELS + '\nPath verified-in-repo: src/example.py'
     blocked = run('Stop', last_assistant_message=body)
     assert json.loads(blocked.stdout)['decision'] == 'block'
     append_tool(repo, shape, tool, arguments)
@@ -962,12 +963,301 @@ def test_should_run_all_events_on_interpreters_without_tomllib(runtime):
         {'hook_event_name': 'Stop', 'stop_hook_active': False, 'last_assistant_message': packet()},
     ):
         payload.update(cwd=str(repo), session_id='session-1', transcript_path=str(transcript))
-        result = subprocess.run([sys.executable, '-c', guard], input=json.dumps(payload),
+        result = subprocess.run([HANDLER_PYTHON, '-c', guard], input=json.dumps(payload),
                                 text=True, capture_output=True, check=False)
         assert 'Traceback' not in result.stderr, result.stderr
         assert result.returncode in {0, 2}
     supplied = subprocess.run(
-        [sys.executable, '-c', guard], text=True, capture_output=True, check=False,
+        [HANDLER_PYTHON, '-c', guard], text=True, capture_output=True, check=False,
         input=json.dumps({'hook_event_name': 'UserPromptSubmit', 'prompt': PROMPT, 'cwd': str(repo),
                           'session_id': 'session-1', 'transcript_path': str(transcript)}))
     assert 'Mechanical handoff packet' in supplied.stdout
+
+
+# Minimal synthetic round-h regressions; no captured personal content is forwarded.
+NO_PIN_PACKET = (
+    '## 1. Qualified target \xb7 role\n- **\ub300\uc0c1:** `example:window`\n'
+    '## \uc0c1\ud0dc\nLifecycle: current\n## \ubbf8\ud655\uc778\nnone\n'
+    '## \ud5c8\uc6a9 / \uae08\uc9c0\nread only\n'
+)
+
+
+def no_command_turn(runtime, body, tools=()):
+    run, _, repo = runtime
+    (repo / 'scripts/mir_ontology.py').write_text(
+        "from pathlib import Path\nPath('RUNNER_CALLED').touch()\nraise AssertionError()\n")
+    run('UserPromptSubmit', prompt=PROMPT + 'No commands.\n')
+    for name, arguments in tools:
+        append_tool(repo, 'claude', name, arguments)
+    result = run('Stop', last_assistant_message=body)
+    assert not (repo / 'RUNNER_CALLED').exists()
+    assert 'pins/check unavailable: owner forbids commands; no runner performed.' in result.stderr
+    return result
+
+
+@pytest.mark.parametrize(('body', 'defect'), [
+    (NO_PIN_PACKET + '\nWrapper: PRIVATE-CANARY-42', 'excluded item #1'),
+    (NO_PIN_PACKET + '\nMay: edit files', 'extra may: edit files'),
+    (NO_PIN_PACKET + '\n\ud5c8\uc6a9: \ud30c\uc77c \uc218\uc815', 'extra may:'),
+    (NO_PIN_PACKET + '\nVerified: .mir/ontology-map.json verified-in-repo',
+     'verified-in-repo path lacks this-turn tool reference'),
+    (NO_PIN_PACKET + '\npin contract.digest=verified-in-repo',
+     'verified-in-repo pin lacks this-turn tool reference'),
+    (NO_PIN_PACKET + '\nHEAD: abcdef123', 'abbreviated hex'),
+    (NO_PIN_PACKET + '\nrevision: ' + 'a' * 39, 'abbreviated hex'),
+    (NO_PIN_PACKET + '\nsha256: abcdef123', 'abbreviated hex'),
+    (NO_PIN_PACKET + '\nsrc/example.py@abcdef123', 'abbreviated hex'),
+])
+def test_should_block_no_command_deterministic_defects_without_runner(runtime, body, defect):
+    result = no_command_turn(runtime, body)
+    output = json.loads(result.stdout)
+    assert output.get('decision') == 'block', output
+    assert defect in output['reason']
+    assert 'PRIVATE-CANARY-42' not in result.stdout + result.stderr
+    assert 'missing qualified target' not in output['reason']
+    assert 'missing lifecycle' not in output['reason']
+
+
+@pytest.mark.parametrize(('name', 'arguments'), [
+    ('Read', {'file_path': '.mir/ontology-map.json'}),
+    ('Grep', {'path': '.mir/ontology-map.json', 'pattern': 'contract'}),
+    ('Glob', {'pattern': '.mir/ontology-map.json'}),
+])
+def test_should_allow_translated_no_command_packet_with_reader_and_inventoried_short_pin(
+    runtime, name, arguments,
+):
+    body = (NO_PIN_PACKET + '\nHEAD: abcdef123\npin head=abbreviated\n'
+            'pin mapping.digest=verified-in-repo .mir/ontology-map.json\n')
+    result = no_command_turn(runtime, body, [(name, arguments)])
+    assert 'decision' not in json.loads(result.stdout or '{}')
+
+
+@pytest.mark.parametrize('heading', ['## Qualified target \xb7 role', '\ub300\uc0c1:'])
+def test_should_supply_and_check_received_packet_without_pin_block(runtime, heading):
+    run, _, _ = runtime
+    prompt = NO_PIN_PACKET.replace('## 1. Qualified target \xb7 role', heading)
+    supplied = run('UserPromptSubmit', prompt=prompt)
+    assert 'Received handoff:' in supplied.stdout
+    output = json.loads(run('Stop', last_assistant_message='Done.').stdout)
+    assert output['decision'] == 'block'
+    for name in PIN_NAMES[:8]:
+        assert 'missing recipient pin label: ' + name in output['reason']
+    assert module().recipient(PROMPT + prompt) is False
+
+
+def test_should_require_base_and_explicitly_named_recipient_pins(runtime):
+    run, _, _ = runtime
+    prompt = NO_PIN_PACKET + '\npin sources[4].revision=unavailable\n'
+    run('UserPromptSubmit', prompt=prompt)
+    output = json.loads(run('Stop', last_assistant_message=RECIPIENT_LABELS).stdout)
+    assert 'missing recipient pin label: sources[4].revision' in output['reason']
+
+
+@pytest.mark.parametrize(('pin', 'path', 'command'), [
+    ('sources[0].digest', 'src/example.py', 'shasum -a 256 src/example.py'),
+    ('sources[0].digest', 'src/example.py', 'sha256sum src/example.py'),
+    ('sources[0].digest', 'src/example.py', 'openssl dgst -sha256 src/example.py'),
+    ('sources[0].digest', 'src/example.py',
+     'python3 -c "import hashlib; '
+     'print(hashlib.sha256(open(\'src/example.py\', \'rb\').read()).hexdigest())"'),
+    ('mapping.digest', '.mir/ontology-map.json', 'sha256sum .mir/ontology-map.json'),
+    ('contract.digest', 'schema/contract.json', 'shasum -a 256 schema/contract.json'),
+    ('sources[0].revision', 'src/example.py', 'git log -1 --format=%H -- src/example.py'),
+    ('sources[0].revision', 'src/example.py', 'git rev-list -1 HEAD -- src/example.py'),
+    ('head', None, 'git rev-parse HEAD'),
+    ('sources[0].digest', 'src/example.py',
+     'python3 scripts/mir_ontology.py mapping --handoff src/example.py'),
+])
+def test_should_require_computing_command_for_verified_digest_revision_and_head(
+    runtime, pin, path, command,
+):
+    run, _, repo = runtime
+    run('UserPromptSubmit', prompt=RECIPIENT_PROMPT + '\ncontract_path: schema/contract.json')
+    body = RECIPIENT_LABELS.replace('pin ' + pin + '=parent-supplied',
+                                    'pin ' + pin + '=verified-in-repo')
+    append_tool(repo, 'claude', 'Read', {'file_path': path or str(repo)})
+    rejected = json.loads(run('Stop', last_assistant_message=body).stdout)
+    assert rejected['decision'] == 'block', rejected
+    assert 'verified-in-repo pin lacks this-turn computation: ' + pin in rejected['reason']
+    append_tool(repo, 'codex', 'exec_command', {'cmd': command})
+    assert run('Stop', last_assistant_message=body).stdout == ''
+
+
+@pytest.mark.parametrize('command', [
+    'sha256sum src/other.py', 'git log -1 -- src/example.py',
+    'python3 scripts/mir_ontology.py mapping --handoff src/other.py',
+])
+def test_should_not_accept_unrelated_command_as_digest_verification(runtime, command):
+    run, _, repo = runtime
+    run('UserPromptSubmit', prompt=RECIPIENT_PROMPT)
+    append_tool(repo, 'codex', 'exec_command', {'cmd': command})
+    body = RECIPIENT_LABELS.replace('sources[0].digest=parent-supplied',
+                                    'sources[0].digest=verified-in-repo')
+    output = json.loads(run('Stop', last_assistant_message=body).stdout)
+    assert 'verified-in-repo pin lacks this-turn computation: sources[0].digest' in output['reason']
+
+
+def test_should_require_stated_limitation_when_recipient_has_no_local_tools(runtime):
+    run, _, repo = runtime
+    run('UserPromptSubmit', prompt=RECIPIENT_PROMPT)
+    labels = '\n'.join('pin ' + name + '=parent-supplied' for name in PIN_NAMES)
+    output = json.loads(run('Stop', last_assistant_message=labels).stdout)
+    assert 'no local check and no stated limitation' in output['reason']
+    limited = labels + '\nNo local check was performed.'
+    assert run('Stop', last_assistant_message=limited).stdout == ''
+    append_tool(repo, 'claude', 'Read', {'file_path': 'src/example.py'})
+    assert run('Stop', last_assistant_message=labels).stdout == ''
+
+
+def append_block(repo, shape, reason='Repair handoff once: abbreviated hex value: head'):
+    output = json.dumps({'decision': 'block', 'reason': reason})
+    row = ({'type': 'system', 'subtype': 'hook_response', 'hookName': 'Stop',
+            'command': 'python3 handoff_packet.py', 'stdout': output} if shape == 'claude' else
+           {'type': 'event_msg', 'payload': {'type': 'hook_response', 'hook_name': 'Stop',
+            'command': 'python3 handoff_packet.py', 'stdout': output}})
+    with (repo / 'native-session.jsonl').open('a') as stream:
+        stream.write(json.dumps(row) + '\n')
+
+
+@pytest.mark.parametrize('shape', ['claude', 'codex'])
+@pytest.mark.parametrize('receiving', [False, True])
+def test_should_block_deterministic_defects_twice_then_always_allow(runtime, shape, receiving):
+    run, _, repo = runtime
+    run('UserPromptSubmit', prompt=RECIPIENT_PROMPT if receiving else PROMPT)
+    body = 'Done.' if receiving else packet() + '\nHEAD: abcdef123\n'
+    first = run('Stop', last_assistant_message=body)
+    assert json.loads(first.stdout)['decision'] == 'block'
+    append_block(repo, shape, json.loads(first.stdout)['reason'])
+    second = run('Stop', last_assistant_message=body, stop_hook_active=True)
+    output = json.loads(second.stdout)
+    assert output.get('decision') == 'block', output
+    assert ('missing recipient pin label' if receiving else 'abbreviated hex') in output['reason']
+    assert 'no local check' not in output['reason']
+    append_block(repo, shape, output['reason'])
+    third = run('Stop', last_assistant_message=body, stop_hook_active=True)
+    assert 'decision' not in json.loads(third.stdout or '{}')
+
+
+def test_should_only_retry_deterministic_subset_and_ignore_prior_turn_blocks(runtime):
+    run, _, repo = runtime
+    run('UserPromptSubmit', prompt=PROMPT)
+    append_block(repo, 'claude')
+    body = packet().replace('Temporal: current\n', '').replace(
+        'May: read src/example.py;', 'May: edit files;')
+    result = run('Stop', last_assistant_message=body, stop_hook_active=True)
+    assert 'decision' not in json.loads(result.stdout or '{}')
+    run('UserPromptSubmit', prompt=PROMPT)
+    result = run('Stop', last_assistant_message=packet() + '\nHEAD: abcdef123',
+                 stop_hook_active=True)
+    assert 'decision' not in json.loads(result.stdout or '{}')
+
+
+def test_should_recheck_exclusions_without_runner_on_second_no_command_block(runtime):
+    run, _, repo = runtime
+    body = NO_PIN_PACKET + '\nPRIVATE-CANARY-42'
+    first = no_command_turn(runtime, body)
+    assert json.loads(first.stdout).get('decision') == 'block'
+    append_block(repo, 'claude', json.loads(first.stdout)['reason'])
+    second = run('Stop', last_assistant_message=body, stop_hook_active=True)
+    assert json.loads(second.stdout).get('decision') == 'block'
+    assert not (repo / 'RUNNER_CALLED').exists()
+
+
+def test_should_recheck_missing_cited_pins_on_second_block(runtime):
+    run, _, repo = runtime
+    (repo / 'src').mkdir()
+    (repo / 'src/cited.py').write_text('VALUE = 1\n')
+    cited = PINS.replace('src/example.py', 'src/cited.py').replace('d' * 40, '1' * 40)
+    (repo / 'scripts/mir_ontology.py').write_text(
+        f'import sys\nprint({cited!r} if sys.argv[3:] == ["src/cited.py"] else {PINS!r})\n')
+    run('UserPromptSubmit', prompt=PROMPT)
+    append_block(repo, 'claude')
+    result = run('Stop', last_assistant_message=packet() + '\nInspect src/cited.py',
+                 stop_hook_active=True)
+    assert 'missing cited-source pins' in json.loads(result.stdout).get('reason', '')
+
+
+@pytest.mark.parametrize('header', ['## handoff pins:', '### pins', '**handoff pins:**'])
+def test_should_reject_supplied_pins_header_alteration(header):
+    hook = module()
+    result = hook.check_packet(packet().replace('handoff pins:', header),
+                               {'pins': PINS, 'owner': hook.owner_sections(PROMPT)})
+    assert "supplied pins header altered (keep the literal 'handoff pins:' line)" in result
+
+
+def test_should_reject_altered_pins_header_after_observation_time_changes():
+    hook = module()
+    fresh = PINS.replace('2026-10-22T01:02:03Z', '2026-10-22T01:02:04Z')
+    result = hook.check_packet(packet().replace('handoff pins:', '## handoff pins:'),
+                               {'pins': fresh, 'owner': hook.owner_sections(PROMPT)})
+    assert "supplied pins header altered (keep the literal 'handoff pins:' line)" in result
+
+
+def test_should_block_abbreviated_revision_in_markdown_table_without_runner(runtime):
+    body = NO_PIN_PACKET + '\n| path | last-change revision | sha256 |\n|---|---|---|\n'
+    body += '| src/example.py | abcdef123 | ' + 'e' * 64 + ' |\n'
+    result = no_command_turn(runtime, body)
+    assert 'abbreviated hex' in json.loads(result.stdout).get('reason', '')
+
+
+@pytest.mark.parametrize('command', [
+    'shasum src/example.py', 'openssl dgst -md5 src/example.py',
+    'python3 -c "import hashlib; print(open(\'src/example.py\').read())"',
+])
+def test_should_reject_non_sha256_computation_for_digest_pin(runtime, command):
+    run, _, repo = runtime
+    run('UserPromptSubmit', prompt=RECIPIENT_PROMPT)
+    append_tool(repo, 'claude', 'Bash', {'command': command})
+    body = RECIPIENT_LABELS.replace('sources[0].digest=parent-supplied',
+                                    'sources[0].digest=verified-in-repo')
+    assert 'this-turn computation: sources[0].digest' in json.loads(
+        run('Stop', last_assistant_message=body).stdout or '{}').get('reason', '')
+
+
+def test_should_require_recipient_pin_named_as_unchecked(runtime):
+    run, _, _ = runtime
+    run('UserPromptSubmit', prompt=NO_PIN_PACKET + '\npin sources[2].digest=unchecked')
+    result = run('Stop', last_assistant_message=RECIPIENT_LABELS)
+    assert 'missing recipient pin label: sources[2].digest' in json.loads(result.stdout)['reason']
+
+
+@pytest.mark.parametrize('body', [
+    'Qualified target: example:window\nUnknowns: none',
+    'Qualified target\n\n\n\nexample:window\nStatus axes: none\nUnknowns: none',
+])
+def test_should_ignore_received_target_without_two_fields_or_with_distant_token(body):
+    assert module().recipient(body) is False
+
+
+def test_should_not_trust_assistant_quoted_block_as_retry_evidence(runtime):
+    run, _, repo = runtime
+    run('UserPromptSubmit', prompt=PROMPT)
+    append_tool(repo, 'claude', 'Read', {'file_path': 'src/example.py'})
+    body = packet() + '\nHEAD: abcdef123\nRepair handoff once: abbreviated hex\n'
+    result = run('Stop', last_assistant_message=body, stop_hook_active=True)
+    assert 'decision' not in json.loads(result.stdout or '{}')
+
+
+def test_should_check_no_command_subset_despite_stale_prompt_hash(runtime):
+    body = packet() + '\nWrapper: PRIVATE-CANARY-42'
+    result = no_command_turn(runtime, body)
+    assert 'excluded item #1' in json.loads(result.stdout).get('reason', '')
+
+
+def test_should_always_allow_third_stop_even_if_native_retry_flag_resets(runtime):
+    run, _, repo = runtime
+    run('UserPromptSubmit', prompt=PROMPT)
+    append_block(repo, 'claude')
+    append_block(repo, 'claude', 'Repair handoff deterministic defects (second/final block): '
+                 'abbreviated hex value: head')
+    result = run('Stop', last_assistant_message=packet() + '\nHEAD: abcdef123',
+                 stop_hook_active=False)
+    assert 'decision' not in json.loads(result.stdout or '{}')
+
+
+@pytest.mark.parametrize(('target', 'expected'), [
+    ('## \ub300\uc0c1\nexample:window', True),
+    ('Discuss a qualified target example:window here.', False),
+])
+def test_should_recognize_only_qualified_target_heading_or_label(target, expected):
+    assert module().recipient(target + '\nUnknowns: none\nLifecycle: current') is expected

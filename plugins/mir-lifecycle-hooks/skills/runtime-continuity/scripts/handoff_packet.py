@@ -60,19 +60,36 @@ PACKET = re.compile(
 CITED = re.compile(r'(?<![\w./~:-])\.?[\w-][\w.-]*(?:/[\w.-]+)*\.[A-Za-z0-9]+(?![A-Za-z0-9_/-])')
 SHELL_TOOLS = {'bash', 'shell', 'shell_command', 'exec_command'}
 RECEIVED_PINS = re.compile(r'\b(?:handoff )?pins:\s*(?:```(?:json)?\s*)?', re.I)
+BASE_PINS = ['repository_root', 'head', 'mapping.identity', 'mapping.version',
+             'mapping.digest', 'contract.identity', 'contract.version', 'contract.digest']
 RECEIPT_RULE = (
     'Received handoff: label every pin verified-in-repo, parent-supplied or unavailable; '
-    'every path claimed verified-in-repo needs a Read or shell reference in this turn, '
-    'and if commands are forbidden and no reader was used, state that limitation.'
+    'every path claimed verified-in-repo needs a this turn Read/Grep/Glob or shell reference. '
+    'Digest/revision/HEAD claims need this-turn digest/git computation or mapping --handoff; '
+    'a file read alone does not verify them. State a limitation if no local tool was used, '
+    'or if commands are forbidden and no reader was used.'
 )
 
 
 def recipient(prompt: str) -> bool:
-    """A supplied qualified packet with pins, excluding requests to author one."""
+    """A qualified packet with pins or two other fields; authoring takes precedence."""
+    if detect(prompt):
+        return False
     plain = re.sub(r'[*`]', '', prompt)
-    return not detect(prompt) and bool(
-        re.search(r'qualified target\s*:\s*[\w.-]+:[\w./-]+', plain, re.I)
-        and re.search(r'handoff pins:|\bpins\s*:|sha256[^\n]*[0-9a-f]{64}', plain, re.I))
+    lines = plain.splitlines()
+    target_label = (r'^\s*(?:#{1,6}\s+(?:\d+[.)]\s*)?'
+                    r'(?:qualified target\b|\ub300\uc0c1\b)|'
+                    r'(?:[-+]\s*)?(?:qualified target|\ub300\uc0c1)\s*(?::|$))')
+    target = any(
+        re.search(target_label, line, re.I)
+        and re.search(r'(?<![\w:/])[\w.-]+:[\w./-]+', '\n'.join(lines[i:i + 4]))
+        for i, line in enumerate(lines))
+    fields = sum(bool(re.search(pattern, plain, re.I)) for pattern in (
+        r'\b(?:status axes|lifecycle|temporal|epistemic|verification)\b|\uc0c1\ud0dc',
+        r'\bpins\b|\ud540', r'\bunknowns\b|\ubbf8\ud655\uc778',
+        r'\bmay(?:[ -]not)?\s*:|\bauthority\b|\ud5c8\uc6a9|\uae08\uc9c0'))
+    return bool(target and (fields >= 2 or re.search(
+        r'handoff pins:|\bpins\s*:|sha256[^\n]*[0-9a-f]{64}', plain, re.I)))
 
 
 def detect(prompt: str) -> bool:
@@ -172,10 +189,55 @@ def items(text: str) -> list[str]:
             if value.strip().lstrip('-* ').strip()]
 
 
+def authority_defects(body: str, boundary: dict) -> list[str]:
+    """Shared lexical grant/exclusion check, independent of packet field language."""
+    defects = [f'excluded item #{i} appears in forwarded artifact'
+               for i, value in enumerate(boundary['excluded'], 1) if value in body]
+    plain = re.sub(r'[*`#]', '', body)
+    plain = re.sub(r'(?m)^(\s*(?:[-+]\s*)?)\ud5c8\uc6a9\s*:', r'\1May:', plain)
+    plain = re.sub(r'(?m)^(\s*(?:[-+]\s*)?)\uae08\uc9c0\s*:', r'\1May not:', plain)
+    owner = owner_sections(plain)
+    grant = ' ; '.join(normalized(item) for item in items(boundary['may']))
+    denied = [normalized(item) for item in items(boundary['may_not'])]
+    grant_prose = '\n'.join(sentence for line in plain.splitlines() if not LABEL.match(line)
+                            for sentence in re.split(r'(?<=[.!?])\s+', line)
+                            if not future_grant(sentence))
+    inline = re.findall(r'(?im)\b(?:you|recipient|agent) may (?!not\b)([^\n!?]+)', grant_prose)
+    korean = re.findall(
+        r'(?m)^([^\n]*(?:\ud574\ub3c4\s*\ub429\ub2c8\ub2e4|'
+        r'\ud560\s*\uc218\s*\uc788\uc2b5\ub2c8\ub2e4|'
+        r'\ud5c8\uc6a9\ub429\ub2c8\ub2e4)[^\n]*)', grant_prose)
+    inline += [item for item in korean if ACTION.search(item) or READ.search(item)]
+    grants = [sentence for item in items(owner['may'])
+              for sentence in re.split(r'(?<=[.!?])\s+', item)]
+    for item in grants + inline:
+        item = item.rstrip('.')
+        candidate = normalized(item)
+        if candidate in {'none', 'no permissions', 'unavailable'}:
+            continue
+        if re.match(r'^This (?:packet|handoff|document) (?:does not grant|grants no) '
+                    r'(?:current )?authority\b', item, re.I):
+            continue
+        if future_grant(item):
+            continue
+        permitted = (f' {candidate} ' in f' {grant} '
+                     if boundary.get('explicit_authority', True)
+                     else bool(READ.search(item)) and not ACTION.search(item))
+        permitted = permitted or (bool(READ.search(item)) and not ACTION.search(item))
+        if (not candidate or not permitted
+                or any(deny and f' {deny} ' in f' {candidate} ' for deny in denied)):
+            defects.append('extra may: ' + item)
+    for i, value in enumerate(boundary['excluded'], 1):
+        defects = [defect.replace(value, f'[excluded item #{i}]') for defect in defects]
+    return defects
+
+
 def check_packet(body: str, state: dict) -> list[str]:
     """Conservative format/lexical checks, never a semantic permission decision."""
     defects = []
     pins = state['pins']
+    if not re.search(r'(?m)^handoff pins:$', body) and supplied_json_present(body, pins):
+        defects.append("supplied pins header altered (keep the literal 'handoff pins:' line)")
     if body.count('handoff pins:') > 1:
         defects.append('duplicate supplied pins blocks')
     if not matching_pins(body, pins):
@@ -183,9 +245,6 @@ def check_packet(body: str, state: dict) -> list[str]:
         defects.append('missing/changed supplied pins (copy the entire supplied block unchanged): '
                        + ', '.join(differences))
     # Inspect the entire enclosing artifact, not only a fenced packet or its first section.
-    for index, excluded in enumerate(state['owner']['excluded'], 1):
-        if excluded in body:
-            defects.append(f'excluded item #{index} appears in forwarded artifact')
     plain = re.sub(r'(?m)^[ \t]*[-+][ \t]+', '',
                    re.sub(r'[*`#]', '', body.replace(pins, '')))
     if not re.search(r'(?im)^\s*qualified target:\s*[\w.-]+:[\w./-]+', plain):
@@ -212,36 +271,7 @@ def check_packet(body: str, state: dict) -> list[str]:
             continue  # author-only literal; never require forwarding excluded data
         if normalized(denied_item) not in normalized(owner['may_not']):
             defects.append('missing owner restriction: ' + denied_item)
-    grant = ' ; '.join(normalized(item) for item in items(state['owner']['may']))
-    denied = [normalized(item) for item in items(state['owner']['may_not'])]
-    grant_prose = '\n'.join(sentence for line in plain.splitlines() if not LABEL.match(line)
-                            for sentence in re.split(r'(?<=[.!?])\s+', line)
-                            if not future_grant(sentence))
-    inline = re.findall(r'(?im)\b(?:you|recipient|agent) may (?!not\b)([^\n!?]+)', grant_prose)
-    korean = re.findall(
-        r'(?m)^([^\n]*(?:\ud574\ub3c4\s*\ub429\ub2c8\ub2e4|'
-        r'\ud560\s*\uc218\s*\uc788\uc2b5\ub2c8\ub2e4|'
-        r'\ud5c8\uc6a9\ub429\ub2c8\ub2e4)[^\n]*)', grant_prose)
-    inline += [item for item in korean if ACTION.search(item) or READ.search(item)]
-    grants = [sentence for item in items(owner['may'])
-              for sentence in re.split(r'(?<=[.!?])\s+', item)]
-    for item in grants + inline:
-        item = item.rstrip('.')
-        candidate = normalized(item)
-        if candidate in {'none', 'no permissions', 'unavailable'}:
-            continue
-        if re.match(r'^This (?:packet|handoff|document) (?:does not grant|grants no) '
-                    r'(?:current )?authority\b', item, re.I):
-            continue
-        if future_grant(item):
-            continue
-        permitted = (f' {candidate} ' in f' {grant} '
-                     if state['owner'].get('explicit_authority', True)
-                     else bool(READ.search(item)) and not ACTION.search(item))
-        permitted = permitted or (bool(READ.search(item)) and not ACTION.search(item))
-        if (not candidate or not permitted
-                or any(deny and f' {deny} ' in f' {candidate} ' for deny in denied)):
-            defects.append('extra may: ' + item)
+    defects.extend(authority_defects(body.replace(pins, ''), state['owner']))
     # Missing pin values remain unknown: require an explicit self-check for each gap.
     pin_data = json.loads(pins.split('handoff pins:\n', 1)[1])
     self_check = re.search(r'(?ims)^\s*self-check:\s*(.*)', plain)
@@ -445,9 +475,10 @@ def supply(event: dict) -> None:
 def matching_pins(body: str, fresh: str) -> bool:
     """Keep original observation time; all other bytes must match the fresh runner."""
     marker = 'handoff pins:\n'
-    if marker not in body:
+    header = re.search(r'(?m)^handoff pins:\n', body)
+    if not header:
         return False
-    raw = body.split(marker, 1)[1]
+    raw = body[header.end():]
     try:
         supplied, end = json.JSONDecoder().raw_decode(raw)
         current = json.loads(fresh[len(marker):])
@@ -459,6 +490,19 @@ def matching_pins(body: str, fresh: str) -> bool:
         return raw[:end] == json.dumps(current, indent=2)
     except (ValueError, AttributeError, TypeError):
         return False
+
+
+def supplied_json_present(body: str, fresh: str) -> bool:
+    current = json.loads(fresh.split('handoff pins:\n', 1)[1])
+    for match in re.finditer(r'\{\s*"repository_root"\s*:', body):
+        try:
+            supplied, _ = json.JSONDecoder().raw_decode(body[match.start():])
+            expected = {**current, 'observed_at': supplied.get('observed_at')}
+            if supplied == expected:
+                return True
+        except ValueError:
+            continue
+    return False
 
 
 def pin_differences(body: str, fresh: str) -> list[str]:
@@ -571,55 +615,173 @@ def tool_kind(name: str) -> str:
     return name.rsplit('.', 1)[-1].lower()
 
 
-def recipient_check(prompt: str, body: str, event: dict) -> list[str]:
-    """Check declared accounting and tool references, never attest pin bytes."""
-    defects = []
-    paths = {'mapping.digest': '.mir/ontology-map.json',
-             'mapping.version': '.mir/ontology-map.json',
-             'mapping.identity': '.mir/ontology-map.json'}
-    marker = RECEIVED_PINS.search(prompt)
+def pin_claims(text: str) -> list[tuple[str, str]]:
+    plain = re.sub(r'[*`]', '', text)
+    claims = re.findall(r'(?im)(?<![\w.-])(?:pin )?([\w.\[\]-]+)\s*[=:]\s*'
+                        r'(verified-in-repo|parent-supplied|unavailable)\b', plain)
+    return [(name, label) for name, label in claims if name.lower() not in {
+        'lifecycle', 'temporal', 'epistemic', 'verification', 'evidence', 'unknowns'}]
+
+
+def received_data(text: str) -> dict:
+    marker = RECEIVED_PINS.search(text)
     if marker:
-        data, _ = json.JSONDecoder().raw_decode(prompt[marker.end():])
-        names = [entry['pin'] for entry in data.get('pin_inventory', [])]
-        if not names:
-            names = ['repository_root', 'head', 'mapping.identity', 'mapping.version',
-                     'mapping.digest', 'contract.identity', 'contract.version', 'contract.digest']
-            for index, _source in enumerate(data.get('sources', [])):
-                names.extend([f'sources[{index}].digest', f'sources[{index}].revision'])
-        for index, source in enumerate(data.get('sources', [])):
-            for key in ('digest', 'revision'):
-                paths[f'sources[{index}].{key}'] = source['path']
-    else:
-        names = [line.split(':', 1)[0].strip(' -*`') for line in prompt.splitlines()
-                 if re.search(r'sha256[^\n]*[0-9a-f]{64}', line, re.I)]
-    plain = re.sub(r'[*`]', '', body)
-    verified_paths = set()
-    for name in names:
-        match = re.search(rf'(?im)(?<![\w.-])(?:pin )?{re.escape(name)}\s*[=:]\s*'
-                          r'(verified-in-repo|parent-supplied|unavailable)\b', plain)
-        if not match:
-            defects.append('missing recipient pin label: ' + name)
-        elif match[1].lower() == 'verified-in-repo' and name in paths:
-            # Inferred source paths also count when only a pin name appears in the answer.
-            verified_paths.add(paths[name])
+        try:
+            data, _ = json.JSONDecoder().raw_decode(text[marker.end():])
+            if isinstance(data, dict):
+                return data
+        except ValueError:
+            pass  # A prose pins inventory is also a valid received packet.
+    return {}
+
+
+def pin_paths(text: str, data: dict) -> dict:
+    paths = {f'mapping.{key}': data.get('mapping_path', '.mir/ontology-map.json')
+             for key in ('identity', 'version', 'digest')}
+    contract = data.get('contract_path') or re.search(
+        r'contract_path\s*:\s*[`\"]?([^\s`\"]+)', text, re.I)
+    if contract:
+        path = contract if isinstance(contract, str) else contract[1]
+        paths.update({f'contract.{key}': path for key in ('identity', 'version', 'digest')})
+    for index, source in enumerate(data.get('sources', [])):
+        for key in ('digest', 'revision'):
+            paths[f'sources[{index}].{key}'] = source['path']
+    return paths
+
+
+def turn_tools(event: dict) -> tuple[list[tuple[str, dict]], list[str], list[str]]:
     _, rows = current_turn(event)
     calls = [(tool_kind(name), arguments) for name, arguments in tool_calls(rows)]
-    reads = [str(arguments.get('file_path', arguments.get('path', '')))
-             for name, arguments in calls if name == 'read']
+    reads = [str(arguments.get('file_path', arguments.get('path',
+                 arguments.get('pattern', ''))))
+             for name, arguments in calls if name in {'read', 'grep', 'glob'}]
     commands = [arguments.get('command', arguments.get('cmd', ''))
                 for name, arguments in calls if name in SHELL_TOOLS]
+    return calls, reads, commands
+
+
+def path_referenced(path: str, reads: list[str], commands: list[str], root: Path) -> bool:
+    return any(os.path.abspath(root / value) == os.path.abspath(root / path)
+               for value in reads if value) or any(path in command for command in commands)
+
+
+def verification_defects(text: str, body: str, event: dict, no_commands: bool = False) -> list[str]:
+    """References establish provenance; typed pin claims additionally need computation."""
+    defects = []
+    paths = pin_paths(text, received_data(text))
+    calls, reads, commands = turn_tools(event)
     root = repository_root(event)
+    plain = re.sub(r'[*`]', '', body)
+    verified_paths = set()
+    for name, label in pin_claims(plain):
+        if label.lower() != 'verified-in-repo':
+            continue
+        path = paths.get(name)
+        line = next((line for line in plain.splitlines() if name in line
+                     and 'verified-in-repo' in line.lower()), '')
+        # Pin identifiers (mapping.digest etc.) are not file paths.
+        explicit = [value for value in CITED.findall(line) if value != name]
+        if not path and explicit:
+            path = explicit[0]
+        if no_commands:
+            if not path or not path_referenced(path, reads, [], root):
+                defects.append('verified-in-repo pin lacks this-turn tool reference: ' + name)
+            continue
+        typed = name == 'head' or name.endswith(('.digest', '.revision', '.sha256'))
+        computed = False
+        for command in commands:
+            runner = bool(re.search(r'\bmapping\s+--handoff\b', command))
+            referenced = bool(path and path in command)
+            if runner and (name in BASE_PINS or referenced):
+                computed = True
+            elif name == 'head' and re.search(r'\bgit\s+rev-parse\b', command):
+                computed = True
+            elif referenced and name.endswith('.revision') and re.search(
+                r'\bgit\s+(?:log|rev-list)\b', command
+            ):
+                computed = True
+            elif referenced and name.endswith(('.digest', '.sha256')) and re.search(
+                r'\bsha256sum\b|\bshasum\s+[^\n;|]*?(?:-a\s*256|--algorithm[= ]256)\b|'
+                r'\bopenssl\s+dgst\s+[^\n;|]*?-sha256\b|\bhashlib\.sha256\s*\(', command
+            ):
+                computed = True
+        if typed and not computed:
+            defects.append('verified-in-repo pin lacks this-turn computation: ' + name)
+        elif not typed and path:
+            verified_paths.add(path)
+    names = {name for name, _ in pin_claims(plain)}
     for line in plain.splitlines():
         if 'verified-in-repo' in line.lower():
-            verified_paths.update(CITED.findall(line))
+            verified_paths.update(value for value in CITED.findall(line) if value not in names)
     for path in sorted(verified_paths):
-        referenced = any(os.path.abspath(root / value) == os.path.abspath(root / path)
-                         for value in reads if value)
-        referenced = referenced or any(path in command for command in commands)
-        if path == '.mir/ontology-map.json':
+        referenced = path_referenced(path, reads, [] if no_commands else commands, root)
+        if not no_commands and path == '.mir/ontology-map.json':
             referenced = referenced or any('mapping --handoff' in command for command in commands)
         if not referenced:
             defects.append('verified-in-repo path lacks this-turn tool reference: ' + path)
+    return defects
+
+
+def abbreviated_hex(body: str) -> list[str]:
+    defects = []
+    plain = re.sub(r'[*`\"#]', '', body)
+    pattern = (r'(?i)(?<![\w.])([\w.\[\]-]*(?:head|revision|commit|digest|sha256))'
+               r'\s*(?:[:=@]|is)?\s*([0-9a-f]{7,39})(?![\w])|'
+               r'([\w./-]+)@([0-9a-f]{7,39})(?![\w])')
+    columns = []
+    for line in plain.splitlines():
+        for match in re.finditer(pattern, line):
+            name = match[1] or match[3]
+            inventoried = re.search(rf'(?i)(?<![\w.])(?:pin )?{re.escape(name)}\s*[=:]\s*'
+                                    r'abbreviated\b', plain)
+            if not re.search(r'\babbreviated\b', line, re.I) and not inventoried:
+                defects.append('abbreviated hex value: ' + name)
+        if '|' not in line:
+            columns = []
+            continue
+        cells = [cell.strip() for cell in line.strip().strip('|').split('|')]
+        if any(re.search(r'head|revision|commit|digest|sha256', cell, re.I) for cell in cells):
+            columns = [i for i, cell in enumerate(cells)
+                       if re.search(r'head|revision|commit|digest|sha256', cell, re.I)]
+        elif not re.search(r'\babbreviated\b', line, re.I):
+            for i in columns:
+                if i < len(cells) and re.fullmatch(r'[0-9a-f]{7,39}', cells[i], re.I):
+                    defects.append('abbreviated hex value in pins table')
+    return defects
+
+
+def no_command_check(prompt: str, body: str, event: dict) -> list[str]:
+    return (authority_defects(body, owner_sections(prompt)) + abbreviated_hex(body)
+            + verification_defects(body, body, event, no_commands=True))
+
+
+def recipient_check(prompt: str, body: str, event: dict) -> list[str]:
+    """Check declared accounting and tool references, never attest pin bytes."""
+    defects = []
+    data = received_data(prompt)
+    names = list(BASE_PINS)
+    names.extend(entry['pin'] for entry in data.get('pin_inventory', []))
+    for index, _ in enumerate(data.get('sources', [])):
+        names.extend([f'sources[{index}].digest', f'sources[{index}].revision'])
+    names.extend(name for name, _ in pin_claims(prompt))
+    names.extend(re.findall(r'(?i)\bpin\s+([\w.\[\]-]+)\s*[=:]', prompt))
+    if not data:
+        names.extend(line.split(':', 1)[0].strip(' -*`') for line in prompt.splitlines()
+                     if re.search(r'sha256[^\n]*[0-9a-f]{64}', line, re.I))
+    labels = {name: label.lower() for name, label in pin_claims(body)}
+    for name in dict.fromkeys(names):
+        if name not in labels:
+            defects.append('missing recipient pin label: ' + name)
+    defects.extend(verification_defects(prompt, body, event))
+    plain = re.sub(r'[*`]', '', body)
+    calls, reads, _ = turn_tools(event)
+    if not restricted(prompt) and not calls and not re.search(
+        r'no (?:local (?:check|verification)|(?:local )?tools?)[^\n]*|'
+        r'(?:not|could not|unable to) verif[^\n]*locally|'
+        r'(?:\ub85c\uceec|\ub3c4\uad6c)[^\n]*(?:\uc54a|\ubabb|\uc5c6|\uc548|\ud558\uc9c0)',
+        plain, re.I
+    ):
+        defects.append('no local check and no stated limitation')
     if restricted(prompt) and not any(reads) and not (
         (re.search(r'commands?[^\n]*(?:forbidden|prohibited|not (?:run|allowed))', plain, re.I)
          and re.search(r'no (?:non-command )?reader[^\n]*(?:used|available)', plain, re.I))
@@ -645,6 +807,45 @@ def pretool(event: dict) -> None:
         raise SystemExit(2)  # Both CLI shell hooks honour exit 2; Claude also consumes deny JSON.
 
 
+def prior_blocks(event: dict) -> int | None:
+    """Count only this handler's native feedback, never assistant-quoted decisions."""
+    _, rows = current_turn(event)
+    count = 0
+    for row in rows:
+        payload = row.get('payload', {})
+        record = row if row.get('type') == 'system' else payload
+        feedback = (row.get('type') == 'system' and row.get('subtype') == 'hook_response'
+                    or row.get('type') == 'event_msg' and payload.get('type') == 'hook_response')
+        meta = row.get('type') == 'user' and row.get('isMeta')
+        if not feedback and not meta:
+            continue
+        text = (message_text(row.get('message', {})) if meta else
+                str(record.get('stdout', record.get('output', ''))))
+        if re.search(r'Repair (?:handoff once|recipient accounting once|'
+                     r'handoff deterministic defects \(second/final block\)):', text):
+            if feedback and record.get('hookName', record.get('hook_name', '')) != 'Stop':
+                continue
+            count += 1
+    return count or None
+
+
+def deterministic(defects: list[str]) -> list[str]:
+    return [defect for defect in defects if defect.startswith((
+        'missing cited-source pins', 'abbreviated hex', 'missing recipient pin label',
+        'excluded item #'))]
+
+
+def block(defects: list[str], retry: bool, receiving: bool, owner: dict) -> None:
+    if retry:
+        defects = deterministic(defects)
+    for index, value in enumerate(owner['excluded'], 1):
+        defects = [defect.replace(value, f'[excluded item #{index}]') for defect in defects]
+    if defects:
+        prefix = ('Repair handoff deterministic defects (second/final block): ' if retry else
+                  'Repair recipient accounting once: ' if receiving else 'Repair handoff once: ')
+        print(json.dumps({'decision': 'block', 'reason': prefix + '; '.join(defects)}))
+
+
 def stop(event: dict) -> None:
     prompt, body = transcript_turn(event)
     # The transcript can lag behind the turn's final message; the native payload carries it.
@@ -654,30 +855,38 @@ def stop(event: dict) -> None:
     receiving = recipient(prompt)
     if not detect(prompt) and not receiving:
         return
-    if not receiving and not PACKET.search(body):
+    if not receiving and not PACKET.search(body) and not recipient(body):
         return  # no emitted packet, e.g. a clarification
     if not isinstance(event.get('stop_hook_active'), bool):
         warning('native retry guard unavailable; packet check skipped to prevent a loop.')
         return
-    if event['stop_hook_active']:
+    retry = event['stop_hook_active']
+    previous = prior_blocks(event)
+    if (previous is not None and previous >= 2) or (retry and previous != 1):
         warning('repair already requested; allowing stop without another block.')
         return
+    owner = owner_sections(prompt)
     if receiving:
-        defects = recipient_check(prompt, body, event)
-        if defects:
-            print(json.dumps({'decision': 'block',
-                              'reason': 'Repair recipient accounting once: ' + '; '.join(defects)}))
+        defects = recipient_check(prompt, body, event) + abbreviated_hex(body)
+        defects.extend(authority_defects(body, owner))
+        block(defects, retry, True, owner)
+        return
+    if restricted(prompt):
+        message = 'pins/check unavailable: owner forbids commands; no runner performed.'
+        print(WARNING + message, file=sys.stderr)
+        defects = no_command_check(prompt, body, event)
+        selected = deterministic(defects) if retry else defects
+        if selected:
+            block(selected, retry, False, owner)
+        else:
+            print(json.dumps({'systemMessage': WARNING + message}))
         return
     guard = re.search(r'(?im)^Prompt SHA256: ([0-9a-f]{64})\s*$', body)
     if guard and guard[1] != hashlib.sha256(prompt.encode()).hexdigest():
         warning('current prompt hash changed; packet check skipped to avoid stale authority.')
         return
-    if restricted(prompt):
-        warning('pins/check unavailable: owner forbids commands; no runner performed.')
-        return
-    owner = owner_sections(prompt)
     pins = run_pins(event, owner)
-    defects = check_packet(body, {'pins': pins, 'owner': owner})
+    defects = check_packet(body, {'pins': pins, 'owner': owner}) + abbreviated_hex(body)
     # Every cited repository file needs its own digest and last-change revision.
     cited = cited_paths(body, owner, repository_root(event))
     if cited:
@@ -695,9 +904,7 @@ def stop(event: dict) -> None:
                            'sources; no second pins block): ' + ', '.join(unpinned))
     if not guard:
         defects.append('missing Prompt SHA256 (copy the supplied full prompt hash)')
-    if defects:
-        print(json.dumps({'decision': 'block',
-                          'reason': 'Repair handoff once: ' + '; '.join(defects)}))
+    block(defects, retry, False, owner)
 
 
 def main() -> None:
