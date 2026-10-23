@@ -38,6 +38,13 @@ skills; 15 passed with both). Owner kept fluent-korean as a Korean-language skil
 with the exact body-hash exemption (Discord 1563250595219898399, parent-supplied).
 Commit, ADR-80 bind, tag/push, provider update and attestation await the owner.
 
+Main acceptance and release (2026-10-24, owner Discord 1563261254473355326 approving options 1, 2 and 3, parent-supplied):
+- Commits: 4f1c924 source; bind 50411d8 (full suite 2725 passed), tagged v0.13.27, pushed, GitHub release created.
+- Provider update from the enrolled 0.13.26 provider-update lock (cfbf106) was accepted (dry run ready_to_apply, then applied); recorded in bda4e97.
+- Claude headless session 5a8b843a: runtime init catalog listed all 21 `mir-*` skills; SessionStart printed the Mir continuity line; UserPromptSubmit 5, PreToolUse 5 and Stop 6 runs against 4 non-plugin registrations each.
+- Codex sessions: 01a16a1c showed the 21-skill catalog, SessionStart and the UserPromptSubmit packet; 01a16a1d showed the Stop hook_prompt under `mir-lifecycle-hooks/0.13.27`; 01a16a1e-c885 showed all four, including the PreToolUse denial "Owner forbids commands in this handoff turn" for a permitted-looking `echo attest-probe` (agents told only "No commands." obeyed the ban, so the hook never ran).
+- Attest: both runtimes runtime_verified with no missing skills or hooks. Finalize: registration active, status ready.
+
 ### First slice: preserved preparation record
 
 Authority: owner Discord 1563243323047547173 (parent-supplied), current writer
