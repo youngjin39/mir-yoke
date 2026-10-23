@@ -8,6 +8,16 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.26] — 2026-10-23 — Behaviour scenarios
+
+### Changed
+
+- Add changed-flow behaviour scenarios to the portable default work method and
+  its existing request matrix, preserving proportional guidance without a new gate.
+- Map scenarios to executed production and platform checks in testing; review
+  missing or invalid rows, producer mocks, concrete defects and state/async fixes.
+- Add a short scenario reminder to both identical SessionStart message sources.
+
 ## [v0.13.25] — 2026-10-23 — Interpreter tools under command bans
 
 ### Fixed

@@ -156,7 +156,7 @@ wheels = [
 
 [[package]]
 name = "mir-harness"
-version = "0.13.25"
+version = "0.13.26"
 source = { editable = "." }
 dependencies = [
     { name = "httpx" },

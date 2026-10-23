@@ -1,10 +1,17 @@
 {
-  "goal": "Re-verify all 23 repository-maintenance items since the 2026-10-18 acceptance and apply only minimal confirmed improvements.",
+  "goal": "Prepare the portable ADR-92 behaviour-scenario amendment in the default work method, testing and code-review skills with fail-first contract evidence.",
   "goal_type": "maintenance",
-  "scope": "Mir Yoke bounded writer only; no commit, generated instruction/Codex/agent writes, consumer writes, secrets, live DB/memory writes or delivery.",
+  "scope": "Mir Yoke prepared source only; Main owns Codex regeneration and release. No commit, network, other-repository writes, live databases, versions or capability lock/digest admission changes.",
   "priority": "normal",
   "updated": "2026-10-23",
   "history": [
+    {
+      "goal": "Re-verify all 23 repository-maintenance items since the 2026-10-18 acceptance and apply only minimal confirmed improvements.",
+      "updated": "2026-10-23",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#repo-maintenance-2026-10-23",
+      "authority": "Owner Discord 1562969123871522900 (2026-10-23), relayed by Mir Harness Main; parent-supplied. Single active cursor: tasks/plan.md."
+    },
     {
       "goal": "Re-verify the 22-item maintenance delta since 2b89087 and fix F1 success-path test load sensitivity.",
       "updated": "2026-10-18",
@@ -79,7 +86,7 @@
       "evidence": "tasks/change_log.md#ontology-rejudgment-g08g13-2026-10-16"
     }
   ],
-  "status": "complete",
-  "evidence": "tasks/change_log.md#repo-maintenance-2026-10-23",
-  "authority": "Owner Discord 1562969123871522900 (2026-10-23), relayed by Mir Harness Main; parent-supplied. Single active cursor: tasks/plan.md."
+  "status": "in_progress",
+  "evidence": "tasks/change_log.md#behaviour-scenarios-prepared-source-2026-10-23",
+  "authority": "Current owner-approved writer brief relayed by Main (parent-supplied); single active cursor: tasks/plan.md."
 }

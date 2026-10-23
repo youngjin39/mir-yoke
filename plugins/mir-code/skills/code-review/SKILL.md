@@ -16,7 +16,7 @@ allowed-tools: Read, Grep, Glob, Bash
 ## Workflow
 
 1. Read the user request, the current task plan when present, and `git diff` to pin the intended scope and protected boundaries.
-2. Identify changed behavior, its callers and consumers, persistent-state boundaries, permission changes, and platform assumptions.
+2. Check behaviour scenarios first: missing rows for touched flows (entry point, failure or late result, lifecycle, concurrency, platform), unreachable rows, wrong expected outcomes, and mocks that disagree with their real producer. Identify changed behavior, its callers and consumers, persistent-state boundaries, permission changes, and platform assumptions.
 3. Inspect each changed file for correctness, error handling, security, naming, duplication, unnecessary complexity, transaction safety, and source-of-truth drift.
 4. Run or inspect the smallest relevant verification. Record missing tools or unrunnable checks as unevaluated, never as passes.
 5. Re-read every cited line before including the finding. Remove pattern matches that do not reproduce in context.
@@ -30,6 +30,11 @@ A direct single-pass review is sufficient only when the diff is at most ten line
 
 ## Finding format
 
+A defect states the concrete input, the wrong outcome and the violated
+requirement. Put preferences in a separate suggestion list with status
+`user-confirm`; they are not defects. A fix to a finding gets rows for the flow
+it changes and is reviewed again when it changes state or asynchronous behaviour.
+
 | File:Line | Severity | Finding | Evidence | Scope status | Alternative | Recommendation |
 |---|---|---|---|---|---|---|
 | `path:line` | P0/P1/P2 | Concrete defect | Verified source and impact | fix-now/reroute/escalate/user-confirm | Specific alternative | Preferred action and reason |
@@ -42,6 +47,7 @@ A direct single-pass review is sufficient only when the diff is at most ten line
 - Public interfaces, schemas, generated files, and their consumers stay in sync.
 - The change does not silently widen permissions or external-write authority.
 - New behavior has proportionate regression evidence.
+- Every scenario row has executed evidence or is reported open.
 - The diff contains no unrelated cleanup or pre-existing user work.
 
 ## Banned verdict language

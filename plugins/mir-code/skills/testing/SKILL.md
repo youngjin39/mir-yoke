@@ -17,6 +17,14 @@ context: fork
 6. Follow local test patterns and add only meaningful edge or boundary cases.
 7. Run the selected commands. On failure, inspect the cause before deciding whether to fix, change approach, or return control.
 
+## Behaviour scenarios
+
+When behaviour scenarios exist, map each row to a test through the production
+route or a named platform check. Assert the expected visible and durable outcome,
+and cover the opposite or neighbouring state. Use controlled completion order for
+async rows. Where a producer is mocked, add one real-boundary check to confirm the
+mock agrees with its real producer.
+
 ## Rules
 - Test names: `should_return_X_when_Y`.
 - Edge cases: null, empty, boundary, error, concurrent.
@@ -26,6 +34,8 @@ context: fork
 - `not_applicable` requires a concrete reason.
 - `pass` and `covered_existing` require runnable commands.
 - Browser and E2E evidence is needed only when those user-facing boundaries are affected.
+- A scenario row not executed at its boundary stays open and is reported in the request matrix.
+- A test that expects the reported defect is not regression evidence.
 
 ## GUI Testing (Computer Use)
 When the project has GUI components and computer-use MCP is enabled:

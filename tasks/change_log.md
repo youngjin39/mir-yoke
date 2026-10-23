@@ -10057,3 +10057,328 @@ Archive containment: four original continuity files preserved 4/4; generated
 resume snapshot identical; protected DB/WAL/SHM/journal signatures unchanged.
 HEAD remains fd3c2bb30dd3cd44539304f4a756144a77678c3d.
 The following final rebind/check covers this last evidence-only append as well.
+
+## Superseded cursor before behaviour scenarios (2026-10-23)
+
+```markdown
+# Plan
+
+## Active task: repo-maintenance-2026-10-23
+
+2026-10-23: run `repo-maintenance-2026-10-23`; authority: owner Discord 1562969123871522900, relayed by Mir Harness Main in the current writer brief (parent-supplied).
+
+This single active cursor is the design authority. Re-verify checklist items 1–22
+and repository-local ontology item 23 against current evidence since acceptance
+`db209e5`. Apply only confirmed minimal fixes with fail-first behavior evidence.
+Keep all historical rules and continuity text in the existing evidence log.
+No commits, delivery, generated Codex edits, consumer writes, secrets, live-store
+writes, service changes, versions, locks or provider-receipt edits are authorized.
+Main owns generated Codex refreshes, fresh sessions, trust application and acceptance.
+Main acceptance 2026-10-23 (8d5737d): certifi 2026.10.19 with regenerated CLI constraints and adopter payload; host pytest 2689 passed, ruff clean, Codex sync OK, mapping 0/0.
+
+Evidence and the dated 23-row matrix: tasks/change_log.md#repo-maintenance-2026-10-23.
+Previous continuity preserved verbatim: tasks/change_log.md#superseded-continuity-before-repo-maintenance-2026-10-23-2026-10-23.
+
+Writer result: 23/23 assessed; 21/23 have bounded repository closure. Items 19
+and 21 need Main fresh-session/trust evidence. Full pytest: 2689 passed; Ruff,
+Codex parity, mapping and strict impact pass. Documentation counts and continuity
+were repaired; no behavior changed. Record checks pass; the documented adopter
+payload generator covers the edited bytes. Main re-runs gates and reviews every hunk.
+```
+
+```json
+{
+  "goal": "Re-verify all 23 repository-maintenance items since the 2026-10-18 acceptance and apply only minimal confirmed improvements.",
+  "goal_type": "maintenance",
+  "scope": "Mir Yoke bounded writer only; no commit, generated instruction/Codex/agent writes, consumer writes, secrets, live DB/memory writes or delivery.",
+  "priority": "normal",
+  "updated": "2026-10-23",
+  "history": [
+    {
+      "goal": "Re-verify the 22-item maintenance delta since 2b89087 and fix F1 success-path test load sensitivity.",
+      "updated": "2026-10-18",
+      "status": "superseded",
+      "archive": "tasks/change_log.md#superseded-continuity-before-repo-maintenance-2026-10-23-2026-10-23"
+    },
+    {
+      "goal": "Re-verify all 22 repository-maintenance items against current evidence and apply minimal evidenced improvements.",
+      "updated": "2026-10-17",
+      "status": "superseded",
+      "archive": "tasks/change_log.md#superseded-cursor-before-ontology-reachability-2026-10-17"
+    },
+    {
+      "goal": "Make the default work method portable across adopting computers and both runtimes, including delegated Codex sessions.",
+      "updated": "2026-10-17",
+      "evidence": "tasks/change_log.md#portable-default-work-method-2026-10-17",
+      "status": "superseded",
+      "archive": "tasks/change_log.md#superseded-continuity-before-matrix-pass-2026-10-17"
+    },
+    {
+      "goal": "Re-verify Mir Yoke against the owner-directed 22-item repository maintenance checklist and apply minimal evidenced improvements.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#matrix-pass-2026-10-16"
+    },
+    {
+      "goal": "Fix the five Linux release-runner test failures without weakening their behavioral guarantees.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#linux-release-runner-fixtures-2026-10-16"
+    },
+    {
+      "goal": "Prepare the Mir Yoke 0.13.1 release working tree with version metadata and migration notes only.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#0131-release-preparation-2026-10-16"
+    },
+    {
+      "goal": "Close ontology impact and isolated distribution gaps and scope E06/E08 evidence.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#ontology-gap-development-2026-10-16"
+    },
+    {
+      "goal": "Make local validation and fresh-checkout validate workflow commands pass while retaining the memory render guard.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#local-and-ci-validation-fixes-2026-10-16"
+    },
+    {
+      "goal": "Prevent automatic consistency tests from rendering live agent memory.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#automatic-memory-render-guard-2026-10-16"
+    },
+    {
+      "goal": "Prepare the Mir Yoke 0.13.0 release working tree with version metadata and migration notes only.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#0130-release-preparation-2026-10-16"
+    },
+    {
+      "goal": "Correct E03 and E07 covered check references using existing executable behavior tests.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#superseded-cursor-covered-label-fix-before-0130-preparation-2026-10-16"
+    },
+    {
+      "goal": "Retain repeatable Yoke-domain selection/evidence use and resolve declared relation target-freshness ownership.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#ontology-rejudgment-g08g13-2026-10-16"
+    }
+  ],
+  "status": "complete",
+  "evidence": "tasks/change_log.md#repo-maintenance-2026-10-23",
+  "authority": "Owner Discord 1562969123871522900 (2026-10-23), relayed by Mir Harness Main; parent-supplied. Single active cursor: tasks/plan.md."
+}
+```
+
+## Behaviour scenarios prepared source (2026-10-23)
+
+Qualified target: mir-yoke:default-work-method-behaviour-scenarios.
+Design authority: tasks/plan.md, the single active cursor; requirement: ADR-92,
+2026-10-23 amendment items 1–9, supplied by the current owner-approved Main brief.
+Owner approval is parent-supplied. The named amendment and forensic README were
+read directly this turn; the latter is evidence, not authority or causal proof.
+Map semantics: /concepts/Task identifies the cursor; /concepts/Policy identifies
+CLAUDE.md and the Profile; /domain/identity_schemes distinguishes source byte
+identity from truth. No map meaning or contract version changes.
+
+Design: retain every existing method/skill sentence's meaning; extend the existing
+matrix with applicable changed-flow rows, production/platform evidence, reviewer
+challenges, concrete defect claims, preference suggestions and fix re-review.
+Documentation/configuration scenarios are not applicable with a reason in the
+cursor; source/output contracts provide the requested regression evidence.
+No new blocking gate, runtime agent or review count is introduced.
+
+Fail-first command: `uv run pytest -q -p no:cacheprovider tests/test_common_skill_contracts.py -k behaviour_scenario --basetemp="$TMPDIR/red"`.
+Before source edits: **20 failed, 11 deselected in 0.15s**, exit 1. Nine method
+cases lack the new section, five testing cases lack boundary rules, four review
+cases lack scenario-first rules, and both real hook-output checks lack the hint.
+After edits: `uv run pytest -q -p no:cacheprovider tests/test_common_skill_contracts.py tests/test_plugin_skill_packages.py --basetemp="$TMPDIR/green"`:
+**47 passed in 1.98s**, exit 0. Initial Ruff runs caught longer string literals;
+reflow adjacent literals in the pinned test and both handlers without changing
+output. Final Ruff follows.
+
+SessionStart only changes `2 Design` to `2 Design (+scenarios)` in both identical
+sources: +13 ASCII bytes, 782 -> 795 bytes excluding newline, within the existing
+800-byte output check. The final exact comparison checks all other message text.
+Handler SHA admission, versions, capability sources/lock and tags are unchanged.
+Prepared-source CHANGELOG entry is not a release/version bump.
+
+Required whole-suite, Ruff, Codex comparison and final payload results follow.
+Checked-in `.codex/**` regeneration remains Main-owned by explicit writer limit;
+the official verifier generates disposable comparison output in task scratch.
+All uv commands use the owner-specified external UV_CACHE_DIR with UV_OFFLINE=1;
+TMPDIR, pytest basetemp and Ruff cache stay within approved task scratch.
+No live memory/DB, network, secrets, other-repository writes or delivery is allowed.
+
+### Whole-suite diagnosis and offline installation evidence
+
+First full command: `uv run pytest -q -p no:cacheprovider --basetemp="$TMPDIR/full"`:
+**2638 passed, 71 failed in 325.68s**, exit 1 (2709 total).
+All 71 traceback sections were inspected by cause, with zero unclassified cases:
+40 failures in tests/test_capability_cli.py, 30 in tests/test_capability_security.py,
+and one in tests/test_installed_cli.py.
+
+Expected release-owned digest failures (70): 67 fail with
+`active package digest acknowledgement is stale: mir-lifecycle-hooks`, two assert
+the lifecycle package digest against the existing acknowledgement, and
+`test_repository_lock_is_portable_and_matches_managed_trees` asserts the changed
+mir-code tree against the existing lock. The two direct lifecycle assertions are
+`test_capability_source_declares_the_reviewed_active_hook_package` and
+`test_should_bind_h1_exact_hook_source_and_final_package_version`.
+
+Computed tree identities (not release approval):
+- mir-code lock: `675a14a89470a55012faecadd8f132fd9c32428a8673610fc5f9479c8b28d155`;
+  current: `dde8c2221ab35ee3029da822754b0c9a1e67dc7a32575033ee73ab731a3b0ff7`.
+- lifecycle acknowledgement: `17f4c5bb077ff4ad2425c3a19c0f925fcefd4ded27a6a003d4ba029d30fbcb6e`;
+  current: `26d6e0033b7e65da4f53b81f33d80a161515991c826d5f65b65893a19e05ec1b`.
+No capability lock, source acknowledgement or handler admission hash was edited.
+The focused lock test independently fails at the expected tree assertion:
+**1 failed in 0.11s**. One earlier diagnostic selector named a nonexistent test:
+exit 4, no tests ran; it is not verification evidence.
+
+The additional installed-CLI failure is not a digest failure: its isolated empty
+UV_CACHE_DIR cannot resolve httpx under the owner's no-network limit. Repacked
+existing compatible cached wheel contents into approved task scratch and supplied
+UV_FIND_LINKS with UV_NO_INDEX=1 and UV_OFFLINE=1. An initial retry selected Python
+3.14 while the cached native wheels target 3.12 (**1 failed in 1.24s**); selected
+the same supported Python 3.12 as the test environment. The next retry identified
+missing cached build dependency tomlkit (**1 failed in 0.26s**); supplied its
+existing cached wheel too. No dependency declaration, release version or test was changed.
+Final command: `uv run pytest -q -p no:cacheprovider tests/test_installed_cli.py --basetemp="$TMPDIR/offline-install-builddeps"`,
+with UV_PYTHON=3.12 and the offline wheelhouse: **1 passed in 14.02s**, exit 0.
+The complete suite is repeated under this now-verified offline environment.
+
+Before/after UTF-8 byte sizes (direct filesystem reads):
+
+| Source | Before | After |
+| --- | ---: | ---: |
+| plugins/mir-lifecycle-hooks/skills/runtime-continuity/references/default-work-method.md | 3031 | 5373 |
+| plugins/mir-code/skills/testing/SKILL.md | 1902 | 2454 |
+| plugins/mir-code/skills/code-review/SKILL.md | 3046 | 3645 |
+| SessionStart MESSAGE (no newline, both sources) | 782 | 795 |
+| plugins/mir-lifecycle-hooks/hooks/runtime_continuity.py (file) | 991 | 1004 |
+
+Exact comparison against the pre-edit message confirms only the 13-byte Design
+hint changed. Existing hook file/output limits and all previous wording survive.
+Ruff passes. Official Codex verification passes with disposable generation only;
+checked-in derivatives remain untouched. Strict ontology impact passes, with no
+stale refs, no inferred execution and no undeclared check links.
+
+### Final offline whole-suite result and complete digest failure inventory
+
+Command: uv run pytest -q -p no:cacheprovider --basetemp="$TMPDIR/full-offline".
+Environment: owner-specified external UV_CACHE_DIR; UV_OFFLINE=1,
+UV_NO_INDEX=1, UV_PYTHON=3.12 and UV_FIND_LINKS set to the scratch wheelhouse.
+Result: **2639 passed, 70 failed in 409.54s**, exit 1 (2709 total).
+All 70 failure sections match the unchanged release-owned digest identities:
+67 stale lifecycle acknowledgements, two lifecycle digest assertions and one
+mir-code lock assertion; zero unclassified failures. Installed CLI now passes
+inside the full suite. No defect was fixed by weakening a test or its boundary.
+
+~~~text
+FAILED tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees
+FAILED tests/test_capability_cli.py::test_sync_materializes_exact_lock_and_requires_restart
+FAILED tests/test_capability_cli.py::test_should_report_and_lock_commands_when_sync_applies
+FAILED tests/test_capability_cli.py::test_provider_update_refreshes_selected_native_plugin_caches
+FAILED tests/test_capability_cli.py::test_rollback_removes_candidate_only_plugin_and_refreshes_previous_caches
+FAILED tests/test_capability_cli.py::test_profile_materializes_only_its_selected_agent_pack
+FAILED tests/test_capability_cli.py::test_should_keep_global_plugin_union_for_two_consumers
+FAILED tests/test_capability_cli.py::test_should_report_healthy_provider_for_global_only_consumer_without_local_config
+FAILED tests/test_capability_cli.py::test_should_mark_global_only_provider_unhealthy_when_active_config_digest_drifts
+FAILED tests/test_capability_cli.py::test_global_only_status_reports_common_skill_collision_without_tree_snapshot
+FAILED tests/test_capability_cli.py::test_should_mark_global_only_provider_unhealthy_when_receipt_source_drifts
+FAILED tests/test_capability_cli.py::test_global_only_status_rejects_missing_or_symlinked_bound_active_config
+FAILED tests/test_capability_cli.py::test_enrolled_status_accepts_genuine_legacy_active_config_fallback
+FAILED tests/test_capability_cli.py::test_global_only_status_requires_host_runtime_activation
+FAILED tests/test_capability_cli.py::test_should_find_global_only_provider_from_codex_marketplace_without_home_argument
+FAILED tests/test_capability_cli.py::test_should_serialize_concurrent_sync_before_preserving_both_consumers
+FAILED tests/test_capability_cli.py::test_should_restore_exact_plugin_set_when_profile_update_rolls_back
+FAILED tests/test_capability_cli.py::test_rollback_rejects_inflated_schema2_prior_consumer_union_before_commands
+FAILED tests/test_capability_cli.py::test_apply_rejects_symlinked_codex_before_derivative_generation
+FAILED tests/test_capability_cli.py::test_apply_rejects_symlinked_codex_hooks_before_derivative_generation
+FAILED tests/test_capability_cli.py::test_apply_rejects_replaced_project_root_before_generator_execution
+FAILED tests/test_capability_cli.py::test_should_restore_local_state_when_apply_is_interrupted
+FAILED tests/test_capability_cli.py::test_check_is_read_only_for_project_and_capability_home
+FAILED tests/test_capability_cli.py::test_finalize_requires_runtime_path_hash_evidence
+FAILED tests/test_capability_cli.py::test_finalize_requires_fresh_observation_of_selected_plugin_hooks
+FAILED tests/test_capability_cli.py::test_claude_plugin_id_is_normalized_for_runtime_evidence
+FAILED tests/test_capability_cli.py::test_claude_project_scoped_plugin_cannot_satisfy_central_activation
+FAILED tests/test_capability_cli.py::test_codex_source_path_without_persistent_install_is_rejected
+FAILED tests/test_capability_cli.py::test_codex_hidden_cli_entry_cannot_bypass_persistent_enabled_set
+FAILED tests/test_capability_cli.py::test_codex_probe_rejects_symlinked_cache_component
+FAILED tests/test_capability_cli.py::test_codex_probe_rejects_parent_swapped_after_home_anchor
+FAILED tests/test_capability_cli.py::test_codex_probe_and_install_reject_replaced_home_identity
+FAILED tests/test_capability_cli.py::test_attest_requires_expected_skills_and_new_session
+FAILED tests/test_capability_cli.py::test_apply_attestation_and_finalization_revalidate_state_inside_apply_guard[attest]
+FAILED tests/test_capability_cli.py::test_apply_attestation_and_finalization_revalidate_state_inside_apply_guard[finalize]
+FAILED tests/test_capability_cli.py::test_missing_claude_cli_prevents_successful_registration
+FAILED tests/test_capability_cli.py::test_sync_apply_fails_when_required_codex_cli_is_missing
+FAILED tests/test_capability_cli.py::test_sync_apply_fails_ready_when_supported_clis_are_missing
+FAILED tests/test_capability_cli.py::test_failed_reregistration_restores_provider_agents_and_state
+FAILED tests/test_capability_cli.py::test_rollback_rejects_tampered_previous_marketplace_before_commands
+FAILED tests/test_capability_security.py::test_legacy_consumers_enroll_bindings_one_at_a_time_without_registry_deadlock
+FAILED tests/test_capability_security.py::test_partial_or_invented_legacy_enrollment_state_is_rejected[partial]
+FAILED tests/test_capability_security.py::test_partial_or_invented_legacy_enrollment_state_is_rejected[mismatched]
+FAILED tests/test_capability_security.py::test_partial_or_invented_legacy_enrollment_state_is_rejected[invented]
+FAILED tests/test_capability_security.py::test_schema4_sync_requires_update_for_legacy_lock_missing_selected_plugin
+FAILED tests/test_capability_security.py::test_capability_home_identity_change_blocks_state_and_runtime_use[directory]
+FAILED tests/test_capability_security.py::test_capability_home_identity_change_blocks_state_and_runtime_use[symlink]
+FAILED tests/test_capability_security.py::test_capability_source_declares_the_reviewed_active_hook_package
+FAILED tests/test_capability_security.py::test_standalone_collision_fails_without_deleting_it
+FAILED tests/test_capability_security.py::test_agent_divergence_refuses_remote_update
+FAILED tests/test_capability_security.py::test_initial_sync_refuses_an_existing_unlocked_agent
+FAILED tests/test_capability_security.py::test_should_refuse_remote_update_when_managed_command_diverges
+FAILED tests/test_capability_security.py::test_should_refuse_existing_command_symlink_on_first_sync
+FAILED tests/test_capability_security.py::test_adr89_should_advance_provider_and_leave_peer_local_integration_pending
+FAILED tests/test_capability_security.py::test_adr89_pending_peer_catchup_uses_receipt_bound_candidate_config
+FAILED tests/test_capability_security.py::test_adr89_rollback_restores_provider_with_its_prior_bound_config
+FAILED tests/test_capability_security.py::test_provider_integrity_does_not_read_peer_local_lock_state
+FAILED tests/test_capability_security.py::test_fake_registry_consumer_blocks_status_apply_and_rollback_registration
+FAILED tests/test_capability_security.py::test_minimal_forged_existing_consumer_lock_is_not_authentic
+FAILED tests/test_capability_security.py::test_complete_forged_consumer_binding_cannot_enlarge_registry_union
+FAILED tests/test_capability_security.py::test_current_consumer_binding_ledger_mutation_blocks_status_apply_and_rollback[missing]
+FAILED tests/test_capability_security.py::test_current_consumer_binding_ledger_mutation_blocks_status_apply_and_rollback[world-readable]
+FAILED tests/test_capability_security.py::test_current_consumer_binding_ledger_mutation_blocks_status_apply_and_rollback[symlink]
+FAILED tests/test_capability_security.py::test_new_receipt_cannot_downgrade_away_all_materialized_digest_binding
+FAILED tests/test_capability_security.py::test_schema2_state_cannot_downgrade_by_removing_both_binding_fields
+FAILED tests/test_capability_security.py::test_should_reject_simultaneous_state_schema_downgrade_under_schema3
+FAILED tests/test_capability_security.py::test_should_rehearse_ontology_distribution_and_rollback_in_fixtures[None]
+FAILED tests/test_capability_security.py::test_should_rehearse_ontology_distribution_and_rollback_in_fixtures[candidate]
+FAILED tests/test_capability_security.py::test_should_rehearse_ontology_distribution_and_rollback_in_fixtures[rollback]
+FAILED tests/test_capability_security.py::test_should_bind_h1_exact_hook_source_and_final_package_version
+~~~
+
+### Final review, status axes and writer boundary
+
+Normal bounded-diff review: no demonstrated defect or preference suggestion.
+Compared amendment items 1–9 against all three documents and the two identical
+SessionStart sources; every prior sentence keeps its meaning. Scenario checks
+run through actual hook subprocesses, and the embedded handler matches the plugin.
+Previous cursor and intent are preserved verbatim (2/2 checked against HEAD).
+
+Request matrix: 6/7 repository-closed; Main-owned cell 7 (checked-in Codex
+regeneration) remains open under the explicit writer prohibition, although the
+official disposable-generation comparison passes with zero drift. Cell 5 records
+the permitted digest failures, not a green whole-suite claim. Main owns digest
+acknowledgement/lock refresh, acceptance and release; this writer grants none.
+
+Status axes: lifecycle=prepared; temporal=current; epistemic=direct local
+evidence for files/checks, parent-supplied for owner approval; verification=partial
+(6/7, with every known failure named above). Source pin provenance: the local
+ontology mapping handoff command computed full HEAD, source revisions and hashes,
+map identity/version/hash and contract identity/version/hash this turn. Each is
+verified-in-repo; external owner approval remains parent-supplied. No missing,
+abbreviated or unchecked local pin was reported. External ADR/forensic revision
+and digest are unavailable; only their named content was read. No native delivery,
+new-session trust, fleet activation or release acceptance was exercised.
+
+After this last record edit, run the documented adopter-payload generator and
+the exact payload regression, plus final Ruff, strict ontology impact and diff
+checks. Their observed result is reported to Main. The approved task scratch is
+removed after checks; no service or emulator was started. No commit, network,
+secret/live-database access, other-repository write or protected/generated Codex
+edit was performed.

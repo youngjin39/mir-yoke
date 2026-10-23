@@ -45,7 +45,7 @@ def test_dual_runtime_manifests_share_one_skill_tree() -> None:
         claude = _json(plugin_root / ".claude-plugin" / "plugin.json")
         codex = _json(plugin_root / ".codex-plugin" / "plugin.json")
         assert claude["name"] == codex["name"] == plugin_name
-        assert claude["version"] == codex["version"] == "0.13.25"
+        assert claude["version"] == codex["version"] == "0.13.26"
         assert codex["skills"] == "./skills/"
         assert isinstance(codex["interface"]["defaultPrompt"], list)
         assert 1 <= len(codex["interface"]["defaultPrompt"]) <= 3
@@ -145,7 +145,8 @@ def test_lifecycle_hook_plugin_uses_one_exact_shared_hook_file() -> None:
     assert completed.stderr == ""
     assert completed.stdout == (
         'Mir lifecycle continuity: preserve the active task intent and verify state before '
-        'continuing. Default work method: 1 Method/intent -> 2 Design -> 3 TDD -> 4 Eval -> 5 '
+        'continuing. Default work method: 1 Method/intent -> 2 Design (+scenarios) -> 3 TDD '
+        '-> 4 Eval -> 5 '
         'Develop -> 6 Repeat 3-5 until tests pass -> 7 Finish; done only when every request-'
         'matrix cell has evidence checked now, otherwise report N/M and open cells (details: '
         'runtime-continuity skill, references/default-work-method.md). Handoffs: qualified '
@@ -319,7 +320,7 @@ def test_should_reject_non_user_claude_install_scope(tmp_path, monkeypatch, caps
 
 def test_manifest_versions_match_repository_release() -> None:
     version = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
-    assert version == "0.13.25"
+    assert version == "0.13.26"
     for plugin_name in PLUGIN_SKILLS:
         plugin_root = ROOT / "plugins" / plugin_name
         assert _json(plugin_root / ".claude-plugin" / "plugin.json")["version"] == version
