@@ -32,6 +32,13 @@ Request matrix:
 Execution: only the gapfill-1024 scratch boundary is writable. No capability-lock
 edit, commit, tag, push, consumer operation or upstream execution.
 
+Main acceptance and release (2026-10-24, owner Discord 1563281668465364993 approving option 1, parent-supplied):
+- Commits: e92f386 source; bind 5411daf (full suite 2732 passed), tagged v0.13.28, pushed, GitHub release created.
+- Provider update from the enrolled 0.13.27 provider-update lock (bda4e97); recorded in eee3ff0.
+- Claude headless session 0a5cafb4: init catalog listed all 21 `mir-*` skills; SessionStart printed the Mir continuity line; UserPromptSubmit 5, PreToolUse 5 and Stop 6 runs against 4 non-plugin registrations each.
+- Codex session 01a16a62 (0.13.28 cache): all 21 skills, SessionStart, the UserPromptSubmit packet, the PreToolUse denial "Owner forbids commands in this handoff turn" and the Stop hook_prompt under `mir-lifecycle-hooks/0.13.28`.
+- Attest: both runtimes runtime_verified with no missing skills or hooks. Finalize: registration active, status ready.
+
 ## Preparation result (2026-10-24)
 
 Request matrix: 5/5 preparation cells have checked evidence; release binding remains
