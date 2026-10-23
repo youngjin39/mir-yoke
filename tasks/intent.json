@@ -79,7 +79,7 @@
       "evidence": "tasks/change_log.md#ontology-rejudgment-g08g13-2026-10-16"
     }
   ],
-  "status": "pending_main_acceptance",
+  "status": "complete",
   "evidence": "tasks/change_log.md#repo-maintenance-2026-10-23",
   "authority": "Owner Discord 1562969123871522900 (2026-10-23), relayed by Mir Harness Main; parent-supplied. Single active cursor: tasks/plan.md."
 }

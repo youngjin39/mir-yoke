@@ -11,6 +11,7 @@ Keep all historical rules and continuity text in the existing evidence log.
 No commits, delivery, generated Codex edits, consumer writes, secrets, live-store
 writes, service changes, versions, locks or provider-receipt edits are authorized.
 Main owns generated Codex refreshes, fresh sessions, trust application and acceptance.
+Main acceptance 2026-10-23 (8d5737d): certifi 2026.10.19 with regenerated CLI constraints and adopter payload; host pytest 2689 passed, ruff clean, Codex sync OK, mapping 0/0.
 
 Evidence and the dated 23-row matrix: tasks/change_log.md#repo-maintenance-2026-10-23.
 Previous continuity preserved verbatim: tasks/change_log.md#superseded-continuity-before-repo-maintenance-2026-10-23-2026-10-23.
