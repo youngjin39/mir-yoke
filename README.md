@@ -52,7 +52,7 @@ immutable release:
 
 ```bash
 uv tool install --force --link-mode copy \
-  "git+https://github.com/youngjin39/mir-yoke.git@v0.10.8"
+  "git+https://github.com/youngjin39/mir-yoke.git@v0.13.27"
 mir --help
 ```
 
@@ -93,6 +93,10 @@ capability; older installations continue with ordinary source search.
 Version 0.9.2 adds on-demand project/code and dynamic-memory applicability guidance. It prefers
 existing fact/link/provenance storage and separates verified relations from similarity candidates;
 it does not add a database writer or automatic extraction to the portable reader.
+
+Version 0.13.27 also adds owner-requested `mir-core:memory-evaluation` and optional
+methodology references in testing, efficiency and governance for controlled experiments,
+instruction changes and trace-derived skill patches. These additions ship guidance only.
 
 ### Platform use
 

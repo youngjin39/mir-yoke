@@ -21,3 +21,5 @@ description: "Token/context efficiency analysis + AI readiness cartography.\n\nT
 4. Distinguish observed counts from estimates. State the formula and confidence for every cost or savings estimate.
 5. Rank actions by expected saved effort divided by implementation risk, and preserve exact commands, paths, identifiers, and safety warnings.
 6. Keep concise output as the baseline, but expand wherever ambiguity would weaken review, verification, or operational safety.
+
+For on-demand instruction-change comparisons, read [the optional reference](references/instruction-change-evaluation.md).

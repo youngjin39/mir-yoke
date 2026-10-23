@@ -8,6 +8,23 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.27] — 2026-10-24 — Common writing skills
+
+### Added
+
+- Add `mir-content:no-ai-slop` from petergyang/no-ai-slop at 000650b (MIT),
+  preserving edit/detect behaviour and the upstream eval under references.
+- Add `mir-content:fluent-korean` from the approved snflkd policy at ce8683f
+  (MIT), retaining every Korean-output rule and the attribution notice.
+- Register both skills for Claude Code and Codex through the shared plugin tree;
+  existing profile packs and global policies remain unchanged.
+
+- Second slice: add optional controlled-experiment, instruction-change evaluation
+  and trace-derived skill-patch references to testing, efficiency and governance.
+- Add owner-requested `mir-core:memory-evaluation` with evidence, privacy and
+  accuracy/latency comparisons. All five borrows are fresh methodology text only;
+  no runtime, autonomous adoption or model-judged hard gate is introduced.
+
 ## [v0.13.26] — 2026-10-23 — Behaviour scenarios
 
 ### Changed

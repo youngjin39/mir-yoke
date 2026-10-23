@@ -100,7 +100,7 @@ Discard an uncommitted Project Agent Kit adaptation in the target or restore the
 commit. For an explicitly invoked CLI transaction, use that command's recorded rollback/recovery
 contract. Installing the CLI does not itself mutate a target.
 
-Current version: `0.13.11`. See `CHANGELOG.md` for release details.
+Current version: `0.13.27`. See `CHANGELOG.md` for release details.
 
 Version 0.10.0 adds opt-in `memory_relations` ingestion and read-only `mir relations query|bundle --memory`
 query/bundle selection using the existing memory schema. No automatic corpus backfill, database
@@ -238,3 +238,14 @@ Version 0.13.11 is a patch release and keeps `mir.common-semantics@1.1.0` unchan
 The ontology mapping command can emit one-command handoff pins in text or JSON, and
 the SessionStart reminder names that block. No database migration, memory re-ingestion
 or automatic consumer update is required.
+
+Version 0.13.27 adds the optional `mir-content:no-ai-slop` and
+`mir-content:fluent-korean` skills for draft editing/detection and Korean output.
+Both runtimes share the plugin skill tree. Existing profile packs are unchanged:
+`hybrid_pipeline` and `content_workspace` include `mir-content`; `code_app` and
+`infra_runtime` exclude it. Global policies and existing user-scope installations
+are not automatically changed. No database migration is required.
+The second 0.13.27 slice adds optional references for controlled experiments,
+instruction-change evaluation and trace-derived skill patches, plus owner-requested
+`mir-core:memory-evaluation`. These are guidance only; no store migration, runtime
+installation, automatic memory write or consumer update follows from adoption.

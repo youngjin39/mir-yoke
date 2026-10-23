@@ -154,7 +154,7 @@ entry when the repository discovers runtime capabilities directly. Then run the 
 agent-management verifier. Follow the complete inventory, collision, activation, and rollback
 procedure in [Global Plugin Migration](global-plugin-migration.md).
 
-Mir Yoke's portable set is intentionally limited to four plugins and eighteen skills. The optional
+Mir Yoke's portable set is intentionally limited to four plugins and twenty-one skills. The optional
 `mir-core:selective-relations` skill supports bounded retrieval through declared relationships. The
 `design`, `governance`, `efficiency`, `bluebricks`, `testing`, `code-review`, and
 `verify` skills already compose this upgrade workflow; an umbrella duplicate would add discovery
@@ -164,6 +164,18 @@ Claude CLI or Codex CLI is Main; it sequences those skills without restating the
 The prior description is preserved in `tasks/change_log.md` under the 2026-09-24 skill implementation.
 `mir-core:reference-app-profile` extracts shipped application metadata into a fixed, evidence-labeled
 profile for design decisions without decompilation, code tracing or target launch.
+`mir-content:no-ai-slop` preserves the writer's voice while editing or detecting
+named patterns; `mir-content:fluent-korean` applies the complete Korean-output
+policy. Both are shared by Claude and Codex through `mir-content`. The existing
+`hybrid_pipeline` and `content_workspace` packs include it; `code_app` and
+`infra_runtime` exclude it. Adding these skills does not alter those packs or
+replace existing global policy/user-scope installations.
+
+The second 0.13.27 slice adds owner-requested `mir-core:memory-evaluation` for
+memory quality, evidence support and latency comparisons. Optional references in
+`testing`, `efficiency` and `governance` cover controlled experiments, instruction
+interventions and trace-derived skill patches. They supply methodology only, without
+a runtime, automatic adoption or a model-judged hard gate.
 
 #### Hooks
 

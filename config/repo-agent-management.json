@@ -359,6 +359,13 @@
         "status": "active",
         "source_path": "plugins/mir-core/skills/commit/"
       },
+      "memory-evaluation": {
+        "category": "knowledge",
+        "absorbs": [],
+        "scope": "universal",
+        "status": "active",
+        "source_path": "plugins/mir-core/skills/memory-evaluation/"
+      },
       "memory-gc": {
         "category": "automation",
         "absorbs": [],
@@ -400,6 +407,20 @@
         "scope": "universal",
         "status": "active",
         "source_path": "plugins/mir-lifecycle-hooks/skills/runtime-continuity/"
+      },
+      "fluent-korean": {
+        "category": "knowledge",
+        "absorbs": [],
+        "scope": "universal",
+        "status": "active",
+        "source_path": "plugins/mir-content/skills/fluent-korean/"
+      },
+      "no-ai-slop": {
+        "category": "knowledge",
+        "absorbs": [],
+        "scope": "universal",
+        "status": "active",
+        "source_path": "plugins/mir-content/skills/no-ai-slop/"
       }
     }
   },

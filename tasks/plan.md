@@ -1,65 +1,88 @@
 # Plan
 
-## Active task: default-work-method-behaviour-scenarios
+## Active task: external-capability-intake-2026-10-24
 
-2026-10-23: prepare the portable behaviour-scenario amendment before 0.13.26.
-Authority: current owner-approved writer brief, relayed by Main (parent-supplied).
-This single active cursor is the design authority. Requirement: ADR-92,
-2026-10-23 amendment, decision items 1–9; its forensic record is evidence,
-not a new authority or a claim about model causality.
+### Second slice: owner-approved methodology borrows
 
-Design: extend the existing method matrix with changed-flow scenarios; preserve
-all existing rules and proportional guidance without adding a blocking gate.
-Testing maps rows to production/platform evidence; review challenges missing,
-unreachable or wrongly expected rows and producer mocks. Only the Design phrase
-changes in the two identical SessionStart messages (`+scenarios`).
+Intent/design authority: current owner brief, owner Discord 1563245914133495830
+(parent-supplied), and the Harness intake report's exact items and exclusions.
+Main already applied the first writing-skill slice to the original repository
+(parent-supplied); preserve that complete change in this scratch clone.
+Add optional experiment, instruction-evaluation and trace-derived patch references,
+and an owner-requested memory-quality evaluation skill, following 0b04d0c registration.
+Scenarios: bounded experiments preserve evaluator and authority; shorter instructions
+retain task quality; trace patches use held-out cases; memory assessment withholds
+answers and compares evidence/latency without store writes or autonomous adoption.
+Request matrix: fail-first coverage; all five methodology sets and exclusions;
+registration/parity; cumulative 0.13.27 metadata/payload; full checks and patch.
+Execution stays in this scratch directory. No lock writes, commits, tags or pushes.
+Second-slice result: 5/5 request cells have current evidence. Fail-first focused
+checks: 4 failed before content; final new checks: 4 passed in 0.02s; package plus
+methodology checks: 20 passed in 0.17s. Full gate: 1 failed, 2723 passed, 1 skipped in 358.65s (0:05:58).
+Only test_repository_lock_is_portable_and_matches_managed_trees fails, as allowed
+before release binding. Ruff and Codex parity pass. Full checks ran on a byte-identical
+verification copy inside this clone's .git, with temporary state outside that copy
+but still inside this scratch clone. The original temporary layout caused seven
+path-boundary failures; all seven pass in the corrected layout without test changes.
+First-slice assets and existing skill bodies are preserved; the lock is unchanged.
+Final content/payload check: 5 passed in 0.14s. Regenerate the payload after this
+ledger update; deliver the cumulative binary diff as mir-yoke-0.13.27-full.patch
+in the scratch implementation directory. Main owns any later application or release.
+First-slice evidence below remains historical.
 
-Behaviour scenarios for this instruction/configuration change are not applicable:
-no product flow, state transition, async operation or shipped platform changes.
-The contract tests instead exercise published guidance and actual hook output.
+Main application (2026-10-24): the cumulative patch is applied to the original
+repository (uncommitted). Main host-env re-run: full suite 1 failed (only the
+pre-bind capability-lock test), 2724 passed, 0 skipped; Ruff and Codex parity pass;
+fail-first re-shown (methodology 4 failed without content, writing 5 failed without
+skills; 15 passed with both). Owner kept fluent-korean as a Korean-language skill
+with the exact body-hash exemption (Discord 1563250595219898399, parent-supplied).
+Commit, ADR-80 bind, tag/push, provider update and attestation await the owner.
 
-Request matrix (checked evidence required):
-1. Portable method preserves amendment items 1–9 and the existing completion rule.
-2. Testing skill preserves boundary, outcome, async and neighbouring-state rules.
-3. Review skill preserves scenario-first review, findings and fix re-review rules.
-4. Both SessionStart sources match, with only the short Design addition.
-5. Contract tests fail before source edits and pass after; full pytest, Ruff and
-   Codex parity run, reporting expected unchanged-lock digest failures separately.
-6. Cursor/history, prepared-source changelog and final adopter payload are current.
-7. Main regenerates checked-in Codex derivatives; writer must not write them.
+### First slice: preserved preparation record
 
-No commits, network, consumer/other-repository writes, live databases, versions,
-capability sources/locks, handler SHA admission or release operations are allowed.
-Use the approved external cache and scratch; preserve unrelated files.
-Previous cursor and intent archived verbatim in
-tasks/change_log.md#superseded-cursor-before-behaviour-scenarios-2026-10-23.
-Evidence: tasks/change_log.md#behaviour-scenarios-prepared-source-2026-10-23.
+Authority: owner Discord 1563243323047547173 (parent-supplied), current writer
+brief. This single active cursor owns intent and design. Baseline: clean main
+at dea069b (0.13.26). Predecessor records are preserved verbatim in
+tasks/change_log.md#external-capability-intake-and-01327-preparation-2026-10-24.
 
-Writer result: cells 1–6 have bounded repository evidence (6/7); cell 7 remains
-Main-owned because this writer must not regenerate checked-in Codex files.
-Fail-first: 20 failed; focused source/package checks: 47 passed. Final offline
-full suite: 2639 passed, 70 expected unchanged-lock/digest failures (2709 total).
-Ruff and official Codex comparison pass; the comparison produces no checked-in
-drift. Main owns release digest acknowledgements/lock refresh and any required
-Codex regeneration. This is prepared source, not release or fleet activation.
-After the final record, regenerate adopter payload and check its exact bytes.
+Design: follow 0b04d0c registration and release preparation. Preserve the
+no-ai-slop upstream behaviour and eval, moving the eval into references; omit
+agents/openai.yaml because no existing Yoke skill ships it. Copy the complete
+Fluent Korean global policy body and attribution, adding Korean-output trigger
+frontmatter. Preserve MIT notices, all rules and existing profile packs.
+Register both skills in capability sources, catalog and Codex parity; refresh
+all eight plugin manifests, release metadata, lifecycle digest acknowledgement
+and the generated adopter payload. No Codex derivative source changes are needed.
 
-Main acceptance and release (2026-10-23): 7/7 cells closed.
-- Cell 7: `scripts/verify_codex_sync.py` reports Codex derivatives match their sources, so nothing was regenerated.
-- Fail-first re-run by Main: 21 failed / 26 passed with the old sources, 47 passed after.
-- Commits:
-  - 9aa995d: source, version 0.13.26 and lifecycle digest acknowledgement. Full suite: 2708 passed, plus the expected lock failure.
-  - Bind 0ff984b: full suite 2709 passed. Tagged v0.13.26 and pushed.
-- Provider update: from the registered fd3c2bb lock, recorded in cfbf106.
-- Attestation used fresh 0.13.26 sessions; each listed 18 `mir-*` skills.
-  - Claude headless session 2fc9996f (owner option 2, Discord 1563037835139747902) showed all four hooks:
-    - SessionStart: the `(+scenarios)` line;
-    - UserPromptSubmit: the packet supply;
-    - Stop: a repair block;
-    - PreToolUse: 5 runs per Bash call against 4 non-plugin registrations.
-  - Codex sessions:
-    - 01a166e1, 01a166e4 and 01a166e8 showed SessionStart;
-    - 01a166e4 and 01a166e8 showed the UserPromptSubmit supply;
-    - 01a166e4 showed the Stop hook_prompt under `mir-lifecycle-hooks/0.13.26`;
-    - 01a166e8 showed the PreToolUse denial "Owner forbids commands in this handoff turn".
-- Finalize: registration is active at 0ff984b and integrity is true.
+Scenarios: both skills are discovered from the same mir-content tree by Claude
+and Codex; edit and detect modes retain the upstream eval boundary; Korean output
+retains every policy rule and notice. hybrid_pipeline and content_workspace
+include the plugin; code_app and infra_runtime continue to exclude it. Contract
+and production package/config checks cover these published-source scenarios;
+provider installation and live attestation are outside this task.
+
+Request matrix:
+1. Fail-first focused tests, then faithful and licensed skill sources.
+2. Catalog, capability inventory, package expectations and dual-runtime parity.
+3. Complete 0.13.27 release metadata, documentation, digest and generated payload.
+4. Full pytest with only the accepted pre-bind capability-lock failure, Ruff and
+   Codex sync; read actual output and report every failure.
+5. Diff/status evidence and original-repository application.
+
+Execution boundary: the session sandbox permits the authorized scratch copy
+but excludes writes to the original repository. Prepare a reviewable patch in
+scratch; original-repository application remains open. No commits, tags, pushes,
+provider updates, attestation, global-policy edits or capability-lock writes.
+
+Prepared-source result: 4/5 cells have evidence; original application in cell 5
+remains open because the sandbox excludes original-repository writes. The final
+full suite returned 1 failed, 2719 passed, 1 skipped in 423.22s. Only the accepted
+pre-bind capability-lock test fails. The skipped owner-contract comparison has
+no owner file at the scratch checkout's relative path. Focused final checks:
+35 passed in 0.97s; Ruff and Codex parity pass; script sanitization passes.
+Additional required test adjustments: security release version assertion and
+an exact path/body-hash Korean policy exception with boundary coverage.
+Final ledger edits require one payload regeneration and exact-content checks.
+Evidence: tasks/change_log.md#external-capability-intake-and-01327-preparation-2026-10-24.
+Main owns original application, verification and any later owner-approved commit;
+ADR-80 bind, tag/push, provider update and attestation are outside this task.

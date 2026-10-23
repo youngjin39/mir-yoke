@@ -24,6 +24,7 @@ including .github/workflows/validate.yml, the release-readiness gate, and a test
 that asserts the name.
 """
 
+import hashlib
 import re
 import subprocess
 from pathlib import Path
@@ -79,10 +80,32 @@ def _checkable_files():
             continue
 
 
+def _hangul_checked_content(path: Path, content: str) -> str:
+    # Owner-approved Korean policy import: exempt only the complete pinned body.
+    # Frontmatter, other files, edits and appended Korean remain scanned.
+    if path == Path("plugins/mir-content/skills/fluent-korean/SKILL.md"):
+        frontmatter, separator, body = content.partition("\n---\n\n")
+        approved = "c936979949925fa04f5c9f80bbdf5afef09e127c0802500900244b1e20b488f7"
+        if separator and hashlib.sha256(body.encode()).hexdigest() == approved:
+            return frontmatter
+    return content
+
+
+def test_korean_policy_exception_is_exact_and_keeps_other_prose_scanned():
+    path = Path("plugins/mir-content/skills/fluent-korean/SKILL.md")
+    content = (Path(__file__).resolve().parents[1] / path).read_text(encoding="utf-8")
+    assert not HANGUL.search(_hangul_checked_content(path, content))
+    assert HANGUL.search(_hangul_checked_content(Path("other/SKILL.md"), content))
+    assert HANGUL.search(_hangul_checked_content(path, content + chr(0xAC00)))
+    altered_frontmatter = content.replace("name: fluent-korean", "name: " + chr(0xAC00))
+    assert HANGUL.search(_hangul_checked_content(path, altered_frontmatter))
+
+
 def test_no_korean_in_template():
-    """Template repo is English-only public mirror -- zero Hangul allowed."""
+    """Public prose is English except the exact owner-approved Korean policy."""
     violations = []
     for path, content in _checkable_files():
+        content = _hangul_checked_content(path, content)
         # Strip fenced code blocks before the Hangul check: code examples may
         # contain an intentional Hangul-range regex literal (the detector pattern
         # itself); only prose Korean is a real leak.
@@ -179,6 +202,7 @@ def test_no_credential_shapes_in_template():
 if __name__ == "__main__":
     # The release gate runs this file as a script, so a test that is not called
     # here does not run in the gate no matter what pytest does with it.
+    test_korean_policy_exception_is_exact_and_keeps_other_prose_scanned()
     test_no_korean_in_template()
     test_no_platform_channel_ids_in_template()
     test_no_credential_shapes_in_template()

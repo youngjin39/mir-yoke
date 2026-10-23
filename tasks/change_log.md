@@ -1,3 +1,59 @@
+## External capability intake: 0.13.27 second slice (2026-10-24)
+
+Intent/design authority: tasks/plan.md, second slice; current owner brief and
+Discord 1563245914133495830 (parent-supplied). Main already applied the first
+writing-skill slice to the original repository (parent-supplied). This cumulative
+scratch change preserves it and adds all five owner-approved methodology borrows.
+
+Fresh text only: autoresearch 228791f, claude-token-efficient 0d30a6d,
+token-diet 82ac6a7, SkillOpt 84b36cd and LongMemEval-V2 2cc8c54.
+Three optional references extend testing, efficiency and governance; the new
+owner-requested memory-evaluation skill follows 0b04d0c registration in capability
+sources, catalog, parity and package counts. Existing skill text is not shortened.
+No scripts, runtime, scheduler, auto-adopt, autonomous loop or LLM hard gate enters
+the provider. No capability-lock change, commit, tag or push is authorized.
+Lifecycle tree is unchanged by this slice; its first-slice acknowledgement is retained.
+
+Fail-first: uv run pytest -q tests/test_capability_methodology.py returned
+4 failed in 0.11s, all missing-content FileNotFoundError before implementation.
+The initial post-content run found two phrase checks sensitive to line wrapping;
+normalize whitespace in those checks without weakening the required concepts.
+Final results:
+- uv run pytest -q tests/test_capability_methodology.py: 4 passed in 0.02s.
+- uv run pytest -q tests/test_capability_methodology.py tests/test_plugin_skill_packages.py:
+  20 passed in 0.17s.
+- uv run pytest -q: 1 failed, 2723 passed, 1 skipped in 358.65s (0:05:58).
+  Only tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees
+  fails, the accepted pre-bind exception. The lock was not changed.
+- uv run ruff check: All checks passed!
+- uv run python scripts/verify_codex_sync.py: OK: Codex derivatives match Claude sources.
+
+Verification setup deviation: initial temporary files were classified as deployment
+assets, so the preliminary attempt was interrupted and scratch artifacts moved under
+.git. A complete run using temp paths inside the provider returned 8 failed, 2716
+passed, 1 skipped in 375.16s. Besides the allowed lock failure, failures were:
+- tests/test_ontology_skill.py::test_should_report_unknown_git_pins_without_failing[not-a-repo]
+- tests/test_project_agent_kit_release_evidence.py::test_release_evidence_requires_one_claude_and_one_codex_run
+- tests/test_project_agent_kit_release_evidence.py::test_release_evidence_recomputes_artifact_hashes
+- tests/test_project_agent_kit_release_evidence.py::test_release_evidence_rejects_unobserved_git_configuration
+- tests/test_project_agent_kit_release_evidence.py::test_release_evidence_rejects_missing_memory_rehydration_observation
+- tests/test_project_agent_kit_release_evidence.py::test_observer_rejects_a_hook_that_skips_missing_memory
+- tests/test_project_agent_kit_release_evidence.py::test_release_evidence_rejects_sensitive_runtime_transcript
+
+The observer rejects state inside its provider; Git discovery also reached parent
+metadata in an intended non-repository fixture. Run the full gate in an exact-diff
+verification copy within this clone's .git, with sibling temporary state and an
+explicit Git discovery ceiling. All writes remain in the authorized clone. Changed
+file bytes and cumulative binary diff matched before dispatch; no test expectations
+or product code were changed to mask these failures. The final run resolves all seven.
+First-slice writing assets hash-match the incoming change; the three existing skill
+bodies remain byte-identical prefixes. Lifecycle acknowledgement is unchanged by this
+slice. Final content/payload consistency check: 5 passed in 0.14s. Regenerate after the
+last ledger update. Deliver mir-yoke-0.13.27-full.patch in the scratch implementation
+directory with git add -N for new files and git diff --binary dea069b. No source
+scope deviation; verification uses an isolated identical copy to keep every write
+inside the authorized scratch clone while satisfying observer path boundaries.
+
 ## H1 handoff inventory and 0.13.12 preparation (2026-10-21)
 
 Intent/design authority: tasks/plan.md; owner Discord 1562370913666601052 item 4,
@@ -10382,3 +10438,249 @@ checks. Their observed result is reported to Main. The approved task scratch is
 removed after checks; no service or emulator was started. No commit, network,
 secret/live-database access, other-repository write or protected/generated Codex
 edit was performed.
+
+## External capability intake and 0.13.27 preparation (2026-10-24)
+
+Authority: owner Discord 1563243323047547173, relayed in the current writer brief
+(parent-supplied); run external-capability-intake-2026-10-24.
+Single active intent and design authority: tasks/plan.md.
+
+### Superseded cursor and intent (verbatim)
+
+#### tasks/plan.md
+
+```markdown
+# Plan
+
+## Active task: default-work-method-behaviour-scenarios
+
+2026-10-23: prepare the portable behaviour-scenario amendment before 0.13.26.
+Authority: current owner-approved writer brief, relayed by Main (parent-supplied).
+This single active cursor is the design authority. Requirement: ADR-92,
+2026-10-23 amendment, decision items 1–9; its forensic record is evidence,
+not a new authority or a claim about model causality.
+
+Design: extend the existing method matrix with changed-flow scenarios; preserve
+all existing rules and proportional guidance without adding a blocking gate.
+Testing maps rows to production/platform evidence; review challenges missing,
+unreachable or wrongly expected rows and producer mocks. Only the Design phrase
+changes in the two identical SessionStart messages (`+scenarios`).
+
+Behaviour scenarios for this instruction/configuration change are not applicable:
+no product flow, state transition, async operation or shipped platform changes.
+The contract tests instead exercise published guidance and actual hook output.
+
+Request matrix (checked evidence required):
+1. Portable method preserves amendment items 1–9 and the existing completion rule.
+2. Testing skill preserves boundary, outcome, async and neighbouring-state rules.
+3. Review skill preserves scenario-first review, findings and fix re-review rules.
+4. Both SessionStart sources match, with only the short Design addition.
+5. Contract tests fail before source edits and pass after; full pytest, Ruff and
+   Codex parity run, reporting expected unchanged-lock digest failures separately.
+6. Cursor/history, prepared-source changelog and final adopter payload are current.
+7. Main regenerates checked-in Codex derivatives; writer must not write them.
+
+No commits, network, consumer/other-repository writes, live databases, versions,
+capability sources/locks, handler SHA admission or release operations are allowed.
+Use the approved external cache and scratch; preserve unrelated files.
+Previous cursor and intent archived verbatim in
+tasks/change_log.md#superseded-cursor-before-behaviour-scenarios-2026-10-23.
+Evidence: tasks/change_log.md#behaviour-scenarios-prepared-source-2026-10-23.
+
+Writer result: cells 1–6 have bounded repository evidence (6/7); cell 7 remains
+Main-owned because this writer must not regenerate checked-in Codex files.
+Fail-first: 20 failed; focused source/package checks: 47 passed. Final offline
+full suite: 2639 passed, 70 expected unchanged-lock/digest failures (2709 total).
+Ruff and official Codex comparison pass; the comparison produces no checked-in
+drift. Main owns release digest acknowledgements/lock refresh and any required
+Codex regeneration. This is prepared source, not release or fleet activation.
+After the final record, regenerate adopter payload and check its exact bytes.
+
+Main acceptance and release (2026-10-23): 7/7 cells closed.
+- Cell 7: `scripts/verify_codex_sync.py` reports Codex derivatives match their sources, so nothing was regenerated.
+- Fail-first re-run by Main: 21 failed / 26 passed with the old sources, 47 passed after.
+- Commits:
+  - 9aa995d: source, version 0.13.26 and lifecycle digest acknowledgement. Full suite: 2708 passed, plus the expected lock failure.
+  - Bind 0ff984b: full suite 2709 passed. Tagged v0.13.26 and pushed.
+- Provider update: from the registered fd3c2bb lock, recorded in cfbf106.
+- Attestation used fresh 0.13.26 sessions; each listed 18 `mir-*` skills.
+  - Claude headless session 2fc9996f (owner option 2, Discord 1563037835139747902) showed all four hooks:
+    - SessionStart: the `(+scenarios)` line;
+    - UserPromptSubmit: the packet supply;
+    - Stop: a repair block;
+    - PreToolUse: 5 runs per Bash call against 4 non-plugin registrations.
+  - Codex sessions:
+    - 01a166e1, 01a166e4 and 01a166e8 showed SessionStart;
+    - 01a166e4 and 01a166e8 showed the UserPromptSubmit supply;
+    - 01a166e4 showed the Stop hook_prompt under `mir-lifecycle-hooks/0.13.26`;
+    - 01a166e8 showed the PreToolUse denial "Owner forbids commands in this handoff turn".
+- Finalize: registration is active at 0ff984b and integrity is true.
+```
+
+#### tasks/intent.json
+
+```json
+{
+  "goal": "Prepare the portable ADR-92 behaviour-scenario amendment in the default work method, testing and code-review skills with fail-first contract evidence.",
+  "goal_type": "maintenance",
+  "scope": "Mir Yoke prepared source only; Main owns Codex regeneration and release. No commit, network, other-repository writes, live databases, versions or capability lock/digest admission changes.",
+  "priority": "normal",
+  "updated": "2026-10-23",
+  "history": [
+    {
+      "goal": "Re-verify all 23 repository-maintenance items since the 2026-10-18 acceptance and apply only minimal confirmed improvements.",
+      "updated": "2026-10-23",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#repo-maintenance-2026-10-23",
+      "authority": "Owner Discord 1562969123871522900 (2026-10-23), relayed by Mir Harness Main; parent-supplied. Single active cursor: tasks/plan.md."
+    },
+    {
+      "goal": "Re-verify the 22-item maintenance delta since 2b89087 and fix F1 success-path test load sensitivity.",
+      "updated": "2026-10-18",
+      "status": "superseded",
+      "archive": "tasks/change_log.md#superseded-continuity-before-repo-maintenance-2026-10-23-2026-10-23"
+    },
+    {
+      "goal": "Re-verify all 22 repository-maintenance items against current evidence and apply minimal evidenced improvements.",
+      "updated": "2026-10-17",
+      "status": "superseded",
+      "archive": "tasks/change_log.md#superseded-cursor-before-ontology-reachability-2026-10-17"
+    },
+    {
+      "goal": "Make the default work method portable across adopting computers and both runtimes, including delegated Codex sessions.",
+      "updated": "2026-10-17",
+      "evidence": "tasks/change_log.md#portable-default-work-method-2026-10-17",
+      "status": "superseded",
+      "archive": "tasks/change_log.md#superseded-continuity-before-matrix-pass-2026-10-17"
+    },
+    {
+      "goal": "Re-verify Mir Yoke against the owner-directed 22-item repository maintenance checklist and apply minimal evidenced improvements.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#matrix-pass-2026-10-16"
+    },
+    {
+      "goal": "Fix the five Linux release-runner test failures without weakening their behavioral guarantees.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#linux-release-runner-fixtures-2026-10-16"
+    },
+    {
+      "goal": "Prepare the Mir Yoke 0.13.1 release working tree with version metadata and migration notes only.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#0131-release-preparation-2026-10-16"
+    },
+    {
+      "goal": "Close ontology impact and isolated distribution gaps and scope E06/E08 evidence.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#ontology-gap-development-2026-10-16"
+    },
+    {
+      "goal": "Make local validation and fresh-checkout validate workflow commands pass while retaining the memory render guard.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#local-and-ci-validation-fixes-2026-10-16"
+    },
+    {
+      "goal": "Prevent automatic consistency tests from rendering live agent memory.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#automatic-memory-render-guard-2026-10-16"
+    },
+    {
+      "goal": "Prepare the Mir Yoke 0.13.0 release working tree with version metadata and migration notes only.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#0130-release-preparation-2026-10-16"
+    },
+    {
+      "goal": "Correct E03 and E07 covered check references using existing executable behavior tests.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#superseded-cursor-covered-label-fix-before-0130-preparation-2026-10-16"
+    },
+    {
+      "goal": "Retain repeatable Yoke-domain selection/evidence use and resolve declared relation target-freshness ownership.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#ontology-rejudgment-g08g13-2026-10-16"
+    }
+  ],
+  "status": "in_progress",
+  "evidence": "tasks/change_log.md#behaviour-scenarios-prepared-source-2026-10-23",
+  "authority": "Current owner-approved writer brief relayed by Main (parent-supplied); single active cursor: tasks/plan.md."
+}
+```
+
+### Preparation evidence
+
+- Followed 0b04d0c registration, release metadata, predecessor archival and
+  single active cursor/intent updates. Both imported sources are MIT licensed.
+- no-ai-slop source pin: 000650b156983f5159695b441477f4e63b25dc85;
+  fluent-korean upstream pin: ce8683f0eba8cddb91de4dcd151425ff73e60498.
+  The full approved global-policy body and notice are unchanged. No byte-budget
+  trimming was applied. No existing skill ships agents/openai.yaml, so it is omitted.
+- Focused new tests before files/registration: 7 failed, 4 passed (exit 1).
+  Replayed the final test bytes against absent skills and baseline registrations:
+  7 failed, 4 passed in 0.18s. Restored the prepared changes immediately.
+- After implementation: new tests 11 passed in 0.06s; new plus package tests
+  27 passed in 0.65s. Ruff: All checks passed! (exit 0).
+- Same mir-content tree is declared by Claude and Codex manifests; capability
+  support includes claude-code, codex-cli and codex-desktop. The profile packs
+  hybrid_pipeline and content_workspace include it; code_app (alias code) and
+  infra_runtime (alias infra) exclude it. Packs are unchanged. IDE extension
+  plugin delivery remains unsupported by the existing contract.
+- Lifecycle acknowledgement refreshed through the repository tree-digest routine:
+  163c4837f4f5270fc85f5b84e66a961513c2dcd7333caaf9baba0745250d7a0f.
+- Execution deviation: sandbox excludes original-repository writes. Preparation
+  and checks use an isolated clone under the owner-authorized scratch; source
+  application to the original checkout remains open. No commit, tag, push,
+  provider update, attestation, global-policy or capability-lock write occurred.
+
+Final full-suite evidence follows below; diff/status are captured with the delivery patch.
+
+### First full-suite findings and bounded corrections
+
+`uv run pytest -q`: 4 failed, 2715 passed, 1 skipped in 372.15s.
+Every failure:
+1. tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees:
+   expected unchanged-lock pre-bind failure; lock remains untouched.
+2. tests/test_capability_security.py::test_should_bind_h1_exact_hook_source_and_final_package_version:
+   release version assertion still pinned 0.13.26. Updated it to 0.13.27.
+3. tests/test_harness_consistency.py::test_harness_consistency_zero_error_on_current_repo:
+   child interpreter could not import mir. The isolated environment lacked pytest,
+   so uv resolved host pytest; install the project's dev extra in scratch, without
+   changing the test or using a live environment.
+4. tests/test_no_korean_in_user_facing.py::test_no_korean_in_template:
+   the blanket Hangul ban rejected the required verbatim Korean policy. Add an
+   exception for that exact path and approved body SHA-256, continuing to scan
+   frontmatter, altered bodies and all other paths. Boundary regression coverage
+   proves these remain scanned, including the script-mode sanitization gate.
+
+Deviations from the named file list: security version assertion and sanitization
+test changes are necessary for the requested release and untranslated policy;
+no rules were shortened or deleted, and no general Korean exemption was added.
+
+### Final verification and delivery boundary
+
+- Full `uv run pytest -q`: 1 failed, 2719 passed, 1 skipped in 423.22s (0:07:03),
+  exit 1. The only failure is
+  tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees,
+  the explicitly accepted ADR-80 pre-bind digest mismatch. The capability lock is unchanged.
+- Skip: tests/test_ontology_skill.py::test_contract_distribution_is_byte_identical_to_owner;
+  Mir Harness owner contract is absent at the public scratch checkout's relative
+  owner path (confirmed with a focused -rs run). This is not a distribution attestation.
+- Focused final checks: 35 passed in 0.97s, including new writing contracts,
+  package contracts, Korean exception boundaries, harness consistency and the
+  security version assertion. Script-mode sanitization: PASS.
+- `uv run ruff check`: All checks passed! (exit 0).
+- `uv run python scripts/verify_codex_sync.py`:
+  OK: Codex derivatives match Claude sources (exit 0); no derivatives regenerated.
+- Regenerate adopter payload after these final ledger edits and verify exact
+  payload/classification and public-surface checks before preparing the patch.
+- Request matrix: cells 1–4 have checked preparation evidence. Cell 5 remains
+  open only for original-repository application; the sandbox excludes its path.
+  Deliver an uncommitted patch and raw status/stat/test evidence for Main review.
+  No commit, tag, push, provider update, attestation or post-commit bind occurred.

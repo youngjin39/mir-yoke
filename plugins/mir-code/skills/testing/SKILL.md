@@ -54,3 +54,5 @@ When the project has GUI components and computer-use MCP is enabled:
 ### Failures (if any)
 - {test_name}: {root cause} → {fix applied}
 ```
+
+For authorized performance comparisons, read [the optional reference](references/controlled-experiments.md).

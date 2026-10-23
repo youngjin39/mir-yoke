@@ -24,3 +24,5 @@ description: "Repository governance and instruction-document operations for CLAU
 
 Do not assume a fleet topology, Mir CLI, bootstrap phase, memory store, provider marker, or global
 registry. Use those concepts only when the current repository explicitly declares them.
+
+For owner-invoked skill maintenance from traces, read [the optional reference](references/skill-patch-from-traces.md).

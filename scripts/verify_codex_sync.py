@@ -21,6 +21,7 @@ PLUGIN_SKILLS = {
         "design",
         "efficiency",
         "governance",
+        "memory-evaluation",
         "memory-gc",
         "ontology",
         "reference-app-profile",
@@ -30,7 +31,7 @@ PLUGIN_SKILLS = {
         "verify",
     },
     "mir-code": {"bluebricks", "code-review", "testing"},
-    "mir-content": {"knowledge", "ui-design"},
+    "mir-content": {"fluent-korean", "knowledge", "no-ai-slop", "ui-design"},
     "mir-lifecycle-hooks": {"runtime-continuity"},
 }
 
