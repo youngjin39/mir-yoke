@@ -31,3 +31,5 @@ When identity, relation or status meaning affects the task, apply `mir-core:onto
 4. Inspect the diff for unintended scope, stale generated files, missing tests, secret exposure, and platform-specific assumptions.
 5. Compare implementation to the governing requirement or spec and label each claim passed, failed, or unevaluated.
 6. Report completion only when all required claims pass; otherwise report `N/M` with the open claims. Finish every claim an agent can finish; deliver owner-only decisions, each with a recommendation, after the rest. Report residual risk and unrun checks explicitly.
+
+For consequential work with existing handoff/spec/plan documents, use the [optional fidelity audit](references/three-document-fidelity.md).

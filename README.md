@@ -52,7 +52,7 @@ immutable release:
 
 ```bash
 uv tool install --force --link-mode copy \
-  "git+https://github.com/youngjin39/mir-yoke.git@v0.13.27"
+  "git+https://github.com/youngjin39/mir-yoke.git@v0.13.28"
 mir --help
 ```
 
@@ -97,6 +97,11 @@ it does not add a database writer or automatic extraction to the portable reader
 Version 0.13.27 also adds owner-requested `mir-core:memory-evaluation` and optional
 methodology references in testing, efficiency and governance for controlled experiments,
 instruction changes and trace-derived skill patches. These additions ship guidance only.
+
+Version 0.13.28 fills verified guidance gaps in existing skills: frontier interview
+rounds and fallback briefs, a sufficient-solution ladder, repository audit and
+shortcut debt review, report-only stagnation, three-document fidelity and an
+advisory consensus panel. These optional references add no executable components.
 
 ### Platform use
 

@@ -53,3 +53,7 @@ it changes and is reviewed again when it changes state or asynchronous behaviour
 ## Banned verdict language
 
 Do not substitute confidence phrases such as “looks good,” “should be fine,” or “probably OK” for evidence.
+
+For a requested repository audit or manual shortcut review, use [audit and debt guidance](references/repository-audit-and-debt.md).
+
+For disputed high-impact reviews, use the [advisory consensus panel](references/advisory-consensus.md).

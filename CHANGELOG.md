@@ -8,6 +8,23 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.28] — 2026-10-24 — Guidance capability gap fills
+
+### Added
+
+- Seven optional references extend existing design, bluebricks, code-review,
+  automation and verify skills, preserving their existing text.
+- Design-tree frontier interviews and text-only fallback briefs; explicit installed
+  dependency and readable adapter rungs with safeguards; requested repository audit
+  and manual shortcut debt guidance; report-only SPINNING; optional three-document
+  fidelity audit; and an advisory consensus panel for disputed high-impact reviews.
+- Fresh methodology text credits mattpocock/skills 5beb35b (MIT),
+  DietrichGebert/ponytail 09c434a (MIT), fn-opt/dryforge f5aa6d7 (Apache-2.0)
+  and ADR-58 items 1, 4 and 5b. No upstream code is included or executed.
+- Focused reference, provenance and pointer tests. No new scripts, hooks, commands,
+  agents, universal document requirement or model-judged acceptance gate.
+
+
 ## [v0.13.27] — 2026-10-24 — Common writing skills
 
 ### Added

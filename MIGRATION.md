@@ -100,7 +100,7 @@ Discard an uncommitted Project Agent Kit adaptation in the target or restore the
 commit. For an explicitly invoked CLI transaction, use that command's recorded rollback/recovery
 contract. Installing the CLI does not itself mutate a target.
 
-Current version: `0.13.27`. See `CHANGELOG.md` for release details.
+Current version: `0.13.28`. See `CHANGELOG.md` for release details.
 
 Version 0.10.0 adds opt-in `memory_relations` ingestion and read-only `mir relations query|bundle --memory`
 query/bundle selection using the existing memory schema. No automatic corpus backfill, database
@@ -249,3 +249,12 @@ The second 0.13.27 slice adds optional references for controlled experiments,
 instruction-change evaluation and trace-derived skill patches, plus owner-requested
 `mir-core:memory-evaluation`. These are guidance only; no store migration, runtime
 installation, automatic memory write or consumer update follows from adoption.
+
+## 0.13.28 optional capability gap fills
+
+Existing design, bluebricks, code-review, automation and verify skills now point to
+seven optional references. Frontier rounds extend the existing elicitation rules;
+interview fallback preserves unanswered decisions. The audit/debt recipe is manual,
+SPINNING only reports, and fidelity/panel judgments remain advisory. No new skills,
+agents, commands, scripts, hooks, schema migration or automatic consumer update are
+introduced. Existing deterministic checks and owner authority remain in force.

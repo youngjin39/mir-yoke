@@ -1,10 +1,15 @@
 {
-  "goal": "Port no-ai-slop and fluent-korean into the common mir-content plugin and prepare 0.13.27 without binding or publishing.",
+  "goal": "Prepare Mir Yoke 0.13.28 guidance-only capability gap fills and a binary patch against c12cd1d.",
   "goal_type": "maintenance",
-  "scope": "Current owner request, Mir Yoke only. No commit, tag, push, provider update, attestation, capability-lock or global-policy edits. tasks/plan.md owns intent and design.",
+  "scope": "Only the owner-named gapfill-1024 scratch clone and delivery directory. No capability-lock edits, commits, tags or pushes. tasks/plan.md owns intent and design.",
   "priority": "normal",
   "updated": "2026-10-24",
   "history": [
+    {
+      "goal": "Port no-ai-slop and fluent-korean into the common mir-content plugin and prepare 0.13.27 without binding or publishing.",
+      "status": "archived",
+      "archive": "tasks/change_log.md#cursor-before-external-capability-gap-fill-2026-10-24"
+    },
     {
       "goal": "Prepare the portable ADR-92 behaviour-scenario amendment in the default work method, testing and code-review skills with fail-first contract evidence.",
       "updated": "2026-10-23",
@@ -93,7 +98,7 @@
       "evidence": "tasks/change_log.md#ontology-rejudgment-g08g13-2026-10-16"
     }
   ],
-  "status": "in_progress",
-  "evidence": "tasks/change_log.md#external-capability-intake-and-01327-preparation-2026-10-24",
-  "authority": "Owner Discord 1563243323047547173 (parent-supplied); run external-capability-intake-2026-10-24; single active cursor: tasks/plan.md."
+  "status": "complete",
+  "evidence": "tasks/change_log.md#external-capability-gap-fill-01328-preparation-2026-10-24",
+  "authority": "Owner Discord 1563273097539485821 (parent-supplied), option 2; run external-capability-gap-fill-2026-10-24."
 }

@@ -177,6 +177,13 @@ memory quality, evidence support and latency comparisons. Optional references in
 interventions and trace-derived skill patches. They supply methodology only, without
 a runtime, automatic adoption or a model-judged hard gate.
 
+Version 0.13.28 adds optional references to existing skills, not new surfaces:
+`design` covers frontier rounds and degraded interview briefs; `bluebricks` expands
+the sufficient-solution ladder; `code-review` covers requested repository audits,
+manual shortcut debt and advisory consensus; `automation` reports SPINNING without
+actuation; `verify` audits fidelity when handoff/spec/plan already exist. Choose
+only relevant references. No runtime or artifact set is required by these additions.
+
 #### Hooks
 
 Use hooks for deterministic, bounded lifecycle work that must happen automatically. Use

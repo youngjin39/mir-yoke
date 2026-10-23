@@ -24,3 +24,5 @@ description: "Long-running task control + browser automation.\n\nTrigger: runner
    inventing a command.
 5. On compact or handoff, update the same ledger with observed evidence, remaining work, and the exact next command.
 6. Mark completion only after the recorded completion test passes; otherwise leave a truthful running, paused, or blocked state.
+
+For stagnation in an observed run, use the [report-only SPINNING check](references/spinning-report.md).

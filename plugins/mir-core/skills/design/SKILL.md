@@ -64,3 +64,7 @@ When the repository provides a design schema, record structured output through i
 
 ## Status
 This skill is the canonical design entry point. Use it proportionally rather than as a universal pre-code gate.
+
+For consequential or owner-requested interviews, extend the existing elicitation rules with [frontier rounds](references/frontier-interview.md).
+
+When an interview cannot proceed, use the [text-only degraded brief](references/interview-fallback.md).

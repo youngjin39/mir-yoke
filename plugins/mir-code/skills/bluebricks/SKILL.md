@@ -100,3 +100,5 @@ When finishing, report:
 3. validation performed
 4. risks or assumptions
 5. newly discovered AI-ready rules, if any
+
+When selecting a solution, apply the [expanded ladder and safeguards](references/sufficient-solution.md).
