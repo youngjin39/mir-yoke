@@ -43,3 +43,23 @@ Ruff and official Codex comparison pass; the comparison produces no checked-in
 drift. Main owns release digest acknowledgements/lock refresh and any required
 Codex regeneration. This is prepared source, not release or fleet activation.
 After the final record, regenerate adopter payload and check its exact bytes.
+
+Main acceptance and release (2026-10-23): 7/7 cells closed.
+- Cell 7: `scripts/verify_codex_sync.py` reports Codex derivatives match their sources, so nothing was regenerated.
+- Fail-first re-run by Main: 21 failed / 26 passed with the old sources, 47 passed after.
+- Commits:
+  - 9aa995d: source, version 0.13.26 and lifecycle digest acknowledgement. Full suite: 2708 passed, plus the expected lock failure.
+  - Bind 0ff984b: full suite 2709 passed. Tagged v0.13.26 and pushed.
+- Provider update: from the registered fd3c2bb lock, recorded in cfbf106.
+- Attestation used fresh 0.13.26 sessions; each listed 18 `mir-*` skills.
+  - Claude headless session 2fc9996f (owner option 2, Discord 1563037835139747902) showed all four hooks:
+    - SessionStart: the `(+scenarios)` line;
+    - UserPromptSubmit: the packet supply;
+    - Stop: a repair block;
+    - PreToolUse: 5 runs per Bash call against 4 non-plugin registrations.
+  - Codex sessions:
+    - 01a166e1, 01a166e4 and 01a166e8 showed SessionStart;
+    - 01a166e4 and 01a166e8 showed the UserPromptSubmit supply;
+    - 01a166e4 showed the Stop hook_prompt under `mir-lifecycle-hooks/0.13.26`;
+    - 01a166e8 showed the PreToolUse denial "Owner forbids commands in this handoff turn".
+- Finalize: registration is active at 0ff984b and integrity is true.
