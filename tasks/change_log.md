@@ -9619,3 +9619,441 @@ metadata selection **9 passed in 0.53 s** after this evidence entry and cursor/l
 updates. Ruff, Codex parity and diff checks passed again. HEAD, map and handler
 hashes still match the full pins above; SessionStart, .codex and session handoff
 have no diff. Task scratch is removed after these checks.
+
+## Superseded continuity before repo-maintenance-2026-10-23 (2026-10-23)
+
+### Preserved original: tasks/plan.md
+
+# Plan
+
+## Active task: Stateless mechanical handoff hooks, 0.13.14 (2026-10-22)
+
+Intent/design authority: current owner writer brief and addendum (decision
+1562495356552355994, parent-supplied). The previous adapter/state cursor is
+preserved in tasks/change_log.md and is superseded by this addendum.
+Qualified target: mir-yoke:mechanical-handoff-packet.
+Verified HEAD: 22125d66642c5cc87234ed610012af2e83fa776b.
+Verified map SHA256:
+516c5b160c0fa49de51e4a0dc6f14c6e6a955d1baf72cc75dc2c93de7ea23e79.
+Contract: mir.common-semantics@1.1.0. Semantic sources:
+.mir/ontology-map.json#/concepts/Task and #/domain/invariants/2;
+docs/decisions/adr-90-role-plugins-and-common-hooks.md#Amendment: 2026-10-22.
+No inherited external measurement is treated as authority.
+
+Design: common UserPromptSubmit supply and Stop check; unchanged SessionStart.
+No adapter, persisted state, writes, network or model. Root-local runner only,
+argv and 5-second deadline. Explicit native transcript tail at most 1 MiB,
+exact prompt SHA256 guard, final assistant text, fresh pins, stop_hook_active
+one-shot repair. Missing evidence/errors warn/fail open. Explicit grants use
+lexical containment; no explicit sections defaults to read/inspect only.
+English/Korean authority/prohibition patterns and detection limits are documented
+in plugins/mir-lifecycle-hooks/skills/runtime-continuity/references/handoff-packet.md.
+Stateless limitation: fresh pin observation time differs from supplied time;
+the latter is format-checked, all other canonical pin bytes are compared freshly.
+ADR-90/schema-4 exact event and handler admission is implemented (R19).
+
+Current evidence: fail-first 18 failed/64 passed; added boundaries 2 failed;
+mechanical green 90 passed. Direct R19 rerun: 18 passed. Focused suite:
+209 passed/30 expected pre-bind acknowledgement failures. Full suite:
+2232 passed/75 failed in 329.95 s: 69 acknowledgement failures, managed lock (1),
+stale adopter payload (3), empty isolated offline dependency cache (1), and a
+new ledger absolute path (1). The ledger path was corrected; final relevant
+selection including public-surface tests passed 143 tests (109 deselected).
+No post-correction full-suite rerun is claimed. Ruff, Codex parity and strict
+ontology impact pass. Matrix: 10/11 complete; full-suite green remains open.
+All requested checks were executed and every remaining cause is inventoried
+in tasks/change_log.md. This is prepared source, not binding or activation.
+Evidence sink: tasks/change_log.md; structured ledger: tasks/tdd.json.
+
+May: bounded plugin/tests/ADR/validator/release metadata edits and offline checks.
+May not: commit/push/tag/release/bind; generated .codex writes; network/MK;
+real agents/probes; other repositories; protected data; session-handoff-LATEST edits.
+Main owns binding, digest acknowledgements, generated derivatives and live-host
+verification. No activation or native-host parity claim.
+
+### Preserved original: tasks/intent.json
+
+{
+  "goal": "Re-verify the 22-item maintenance delta since 2b89087 and fix F1 success-path test load sensitivity.",
+  "goal_type": "maintenance",
+  "scope": "Mir Yoke bounded writer only; no commit, generated instruction/Codex/agent writes, consumer writes, secrets, live DB/memory writes or delivery.",
+  "priority": "normal",
+  "updated": "2026-10-18",
+  "history": [
+    {
+      "goal": "Re-verify all 22 repository-maintenance items against current evidence and apply minimal evidenced improvements.",
+      "updated": "2026-10-17",
+      "status": "superseded",
+      "archive": "tasks/change_log.md#superseded-cursor-before-ontology-reachability-2026-10-17"
+    },
+    {
+      "goal": "Make the default work method portable across adopting computers and both runtimes, including delegated Codex sessions.",
+      "updated": "2026-10-17",
+      "evidence": "tasks/change_log.md#portable-default-work-method-2026-10-17",
+      "status": "superseded",
+      "archive": "tasks/change_log.md#superseded-continuity-before-matrix-pass-2026-10-17"
+    },
+    {
+      "goal": "Re-verify Mir Yoke against the owner-directed 22-item repository maintenance checklist and apply minimal evidenced improvements.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#matrix-pass-2026-10-16"
+    },
+    {
+      "goal": "Fix the five Linux release-runner test failures without weakening their behavioral guarantees.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#linux-release-runner-fixtures-2026-10-16"
+    },
+    {
+      "goal": "Prepare the Mir Yoke 0.13.1 release working tree with version metadata and migration notes only.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#0131-release-preparation-2026-10-16"
+    },
+    {
+      "goal": "Close ontology impact and isolated distribution gaps and scope E06/E08 evidence.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#ontology-gap-development-2026-10-16"
+    },
+    {
+      "goal": "Make local validation and fresh-checkout validate workflow commands pass while retaining the memory render guard.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#local-and-ci-validation-fixes-2026-10-16"
+    },
+    {
+      "goal": "Prevent automatic consistency tests from rendering live agent memory.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#automatic-memory-render-guard-2026-10-16"
+    },
+    {
+      "goal": "Prepare the Mir Yoke 0.13.0 release working tree with version metadata and migration notes only.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#0130-release-preparation-2026-10-16"
+    },
+    {
+      "goal": "Correct E03 and E07 covered check references using existing executable behavior tests.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#superseded-cursor-covered-label-fix-before-0130-preparation-2026-10-16"
+    },
+    {
+      "goal": "Retain repeatable Yoke-domain selection/evidence use and resolve declared relation target-freshness ownership.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#ontology-rejudgment-g08g13-2026-10-16"
+    }
+  ],
+  "status": "pending_main_acceptance",
+  "evidence": "tasks/change_log.md#delta-re-verification-2026-10-18",
+  "authority": "Owner Discord 1561379127401910383 (2026-10-18), relayed by Mir Harness Main; parent-supplied. Single active cursor: tasks/plan.md."
+}
+
+### Preserved original: tasks/checklist.md
+
+# Checklist
+
+Status projection for tasks/plan.md: delta re-verification 2026-10-18.
+6/6 request cells assessed, 4/6 closed; 19/22 maintenance items have bounded closure.
+Main owns items 18/19/21: generated adopter inventory and native session/trust proof.
+F1: deterministic red, then 2 passed; module 52, delta 330 and record checks 18 pass.
+Full gate: 2135 passed/5 failed; two observer failures from concurrent record edits
+passed 2/2 with writes paused. Three inventory effects remain for Main regeneration.
+Ruff, Codex parity, 77 context refs, common manifest, mapping 0/0 and strict impact pass.
+Evidence: tasks/change_log.md#delta-re-verification-2026-10-18.
+Previous projection: tasks/change_log.md#superseded-continuity-before-delta-re-verification-2026-10-18.
+
+### Preserved original: tasks/handoffs/session-handoff-LATEST.md
+
+# Session Handoff
+
+Resume pointer: tasks/plan.md is the sole active cursor; tasks/intent.json records
+owner Discord 1561379127401910383 and bounded authority. Current projection:
+tasks/checklist.md. Evidence: tasks/change_log.md#delta-re-verification-2026-10-18.
+Previous pointer: tasks/change_log.md#superseded-continuity-before-delta-re-verification-2026-10-18.
+Six request cells assessed, four closed. Main regenerates the adopter inventory,
+reruns the full gate with provider writes paused and confirms native sessions/trust.
+See the log for the retained full failure and stable observer recheck.
+Main owns review and delivery; no commit,
+consumer write, generated Codex edit, secret read or live database write is authorized.
+The generated snapshot below is historical and preserved under the generated-write
+boundary. Read tasks/checklist.md for current status.
+
+<!-- mir:runtime-snapshot:begin -->
+## Runtime Snapshot (Generated)
+
+### Active Plan Items
+- No open plan items.
+
+### Working Tree
+- Working tree dirty (1 paths; inspect git status --short).
+<!-- mir:runtime-snapshot:end -->
+
+
+## Preserved guide wording before repo-maintenance-2026-10-23 (2026-10-23)
+
+Source: docs/operations/harness-engineering-upgrade.md. The two counts below were
+checked against 18 current skill sources and the 22-item published checklist.
+
+Mir Yoke's portable set is intentionally limited to four plugins and seventeen skills. The optional
+`mir-core:selective-relations` skill supports bounded retrieval through declared relationships. The
+`design`, `governance`, `efficiency`, `bluebricks`, `testing`, `code-review`, and
+`verify` skills already compose this upgrade workflow; an umbrella duplicate would add discovery
+cost without a new capability. `mir-core:repo-maintenance` is the owner-defined twenty-one-item
+periodic checklist, including documented database/memory/graph repair and observed parity when either
+Claude CLI or Codex CLI is Main; it sequences those skills without restating their procedures.
+The prior description is preserved in `tasks/change_log.md` under the 2026-09-24 skill implementation.
+`mir-core:reference-app-profile` extracts shipped application metadata into a fixed, evidence-labeled
+profile for design decisions without decompilation, code tracing or target launch.
+
+
+## Repo maintenance 2026-10-23
+
+Run: `repo-maintenance-2026-10-23`. Authority: owner Discord 1562969123871522900,
+relayed by Mir Harness Main in the current bounded writer brief, parent-supplied.
+Intent/design authority: the single `tasks/plan.md` cursor. The active installed
+repo-maintenance skill was read; its 22 published items plus the owner's local
+ontology item 23 define this matrix. Previous passes supply navigation only.
+
+Observed locally on 2026-10-23 (KST), completed assessment timestamp: 2026-10-22T23:42:28.867737+00:00.
+Verified HEAD: fd3c2bb30dd3cd44539304f4a756144a77678c3d. Initial worktree clean;
+origin/main ahead/behind 0/0; 80 commits since 2026-10-18. Acceptance anchor:
+`db209e5` (Main acceptance of the preceding delta). Current delta: 45 paths,
+7259 insertions/153 deletions, chiefly handoff hooks, their guards and release
+bindings. No implementation, memory, routing or hook change was needed in this pass.
+
+### Current request matrix
+
+23/23 assessed; 21/23 have bounded repository closure. Items 19 and 21 remain
+NEEDS HARNESS. PASS describes the evidence scope in its row, not fleet-wide
+behavior, fresh-session delivery or permission to act on consumers.
+
+| # | verdict PASS/IMPROVED/NEEDS HARNESS/OWNER | evidence checked now | change |
+| --- | --- | --- | --- |
+| 1 | IMPROVED | Codex parity passes; 9 files/78 context refs resolve; 891/891 assets classified; guide counts contradicted 18 skills/22 checklist items. | Corrected two guide counts; generated adopter inventory rebound after edits. |
+| 2 | PASS | Project hook scripts and rendered registrations resolve; common plugin's four admitted events match the validator; full suite passes. | None; no dead feature or extra machinery introduced. |
+| 3 | IMPROVED | Cursor named 0.13.14 while projection, intent and resume named the 2026-10-18 delta; guide said 17 skills/21 items. | Aligned four continuity roles and corrected guide to 18/22; historical spec remains superseded-reference. |
+| 4 | IMPROVED | Original bytes of four continuity files and the affected guide paragraph preserved verbatim in this log. | Left resolvable pointers; removed no rule, decision or lesson. |
+| 5 | PASS | One active tasks/plan.md cursor; root and Starter instruction sizes unchanged; procedures stay on demand. | No always-loaded instruction growth. |
+| 6 | PASS | Stable DB/WAL/SHM byte snapshot; integrity ok, no FK violation; 21 facts/21 FTS rows, 12 entities; 11/11 audit records valid; no missing source joins, source hash mismatch, orphan subject/provenance or expired active facts. | No repair indicated by these checks; no live SQLite connection or store write. |
+| 7 | PASS | Official Claude/Codex derivative verifier passes; shared hook outputs match for both runtime labels; tested guards remain unchanged. | No safety guard relaxed and no restriction added. |
+| 8 | IMPROVED | 18 skill sources have name/description frontmatter and unique provider coverage; 48 source files match each installed runtime; agent-management checks pass. | Corrected stale skill inventory count in the guide. |
+| 9 | PASS | CLAUDE.md 40 lines/3587 B, AGENTS.md 42/3676 B; Starter pair 8/443 B and 10/567 B; official nested/generated parity passes. | No generated instructions or Codex files written. |
+| 10 | PASS | Rule homes and generated lessons/memory-map have no acceptance delta; current files still point at declared locations. | Neither generated memory projection changed; old rules preserved in log. |
+| 11 | PASS | ARCHITECTURE.md matches Starter/recipe/optional CLI/plugins/executor/reference layout; ADR-82 remains inert; ADR-90 amendments and exact event admission are exercised by full suite. | No architecture or accepted decision changed. |
+| 12 | PASS | Harness central+repository source hash matches routing lock; tier-resolved Main/default/nine category routes, model tiers, cap 8/depth 2 and force_codex mode agree. | No routing change or child agent needed. |
+| 13 | IMPROVED | Single cursor, existing resume pointer, status projection, intent metadata and evidence log now name this run; generated resume snapshot retains original bytes and is explicitly historical. | Updated existing documents only; created no second cursor or handoff. |
+| 14 | PASS | Local lookup returns Task/Evidence/distribution anchors; offline CR-006 relation query returns seven scoped edges, five historical endpoints explicitly skipped. | No MK call, consumer discovery or graph write. |
+| 15 | PASS | Identical per-runtime project startup 550 B plus common startup 783 B; prompt advisory 120 B; handoff supply 4102 B; instruction sizes unchanged. | No context cap or policy weakened. |
+| 16 | PASS | Full default tests/ and tools/ discovery: 2689 passed in 582.64s, no failures/skips reported; record-sensitive observer checks ran while provider writes were paused. | No test/code behavior changed; fail-first not applicable. |
+| 17 | PASS | Bounded handoff/guard delta inspected and security regressions pass in full suite; runtime dependency constraints unchanged; uv pip check finds 27 compatible installed packages; project MIT license retained. | No dependency added; no fresh remote advisory/outdated-version audit claimed. |
+| 18 | PASS | Document edits invalidate only adopter inventory entries; official generator used; common manifest, capability lock, routing source hash, ontology pins and provider receipts remain unchanged. | config/adopter-payload.json generated from actual edited bytes, without release/bind/receipt changes. |
+| 19 | NEEDS HARNESS | 12 ordinary synthetic hook calls exit 0; six positive handoff/guard calls show expected supply/block/deny; no SQL logic error. Installed bytes and CLI versions observed. | Main must observe fresh native delivery and trace target-specific Stop output; no source fix without reproduction. |
+| 20 | PASS | Three named unmerged and three merged side branches inspected read-only; no stash exists now; HEAD equals origin/main; accepted authority/consumer limits retained. | Status only; no branch/stash/worktree or accepted decision changed. |
+| 21 | NEEDS HARNESS | Generated/nested rules match; project startup/intent-retrieval policy and shared output agree; both project MCP declarations are intentionally empty; installed plugin files match. | Native Claude/Codex sessions and current Codex trust remain Main-only; no trust --apply or session started. |
+| 22 | PASS | Agent: 18 skills/48 matching files per runtime. Loop: executable seven-step continuity reminder. Graph: seven typed offline edges. Ontology: fresh mapping/impact/lookup plus synthetic handoff checks. | No additional Agent/Loop/Graph/Ontology machinery needed. |
+| 23 | PASS | Contract/map 1.1.0; supply/installed selection 0.13.25; mapping 0 errors/0 warnings and no line refs; strict impact passes; current settlement mechanism agrees with fd3c2bb. | Map unchanged; preserve local status/identity meanings and later CLOSED-LIMIT settlement, with historical summary differences disclosed below. |
+
+### Semantic pins and local differences
+
+Verified-in-repo map `.mir/ontology-map.json` SHA256:
+516c5b160c0fa49de51e4a0dc6f14c6e6a955d1baf72cc75dc2c93de7ea23e79.
+Verified-in-repo contract `mir.common-semantics@1.1.0`, distributed at
+`plugins/mir-core/skills/ontology/references/common-contract.json`, SHA256:
+b2f1ecd01aaa88d41caac2bc2481e7f4c5a429cff3983aaa85ddfb0fc2f1b93f.
+Handoff implementation SHA256:
+9b42581bd4f599da19ba573f91f7fb14ce0ed34f14241a74c70e1008d21caa7e,
+matching the reviewed manager acknowledgement and both installed copies.
+
+Semantic evidence: map `/concepts/Task`, `/concepts/Evidence`, `/vocabularies/9`,
+`/domain/identity_schemes/2-3`, `/domain/invariants/0-3`, `/relations` and
+`/questions/1-2`. These preserve supplier/consumer authority, byte identity versus
+truth, local task completion versus runtime acceptance, historical spec status,
+profile registration versus activation and declared relations versus executions.
+No mapping field, domain difference, contract version or pin was refreshed.
+`impact` selected Task and intent vocabulary only, with no stale refs or selected
+checks; selection itself was not counted as executed proof.
+
+Read-only comparison with the explicitly supplied Harness adoption record:
+`/contract/version` is 1.1.0. `/settlement/yoke` still says 0.13.10 and
+`/settlement/targets/mir-yoke` retains older 0.13.5/0.13.6 wording and PARTIAL
+open-summary text. The later `/settlement/closure_2026_10_22/rows` explicitly
+records mir-yoke:5-2.10, mir-yoke:5-2.done and mir-yoke:1.goal as CLOSED-LIMIT.
+`/settlement/two_layer_completion_2026_10_23/foundation/mechanism` explicitly
+names 0.13.25 finalized fd3c2bb, agreeing with current supply; the still-later
+scope settlement keeps foundation completeness separate from behavior quality.
+Thus the old summary fields differ, but the latest supplied settlement does not
+contradict the checked local map/supply state. Main may reconcile those summaries
+under its authority. No adoption row, target probe or consumer file was changed,
+and no historical acting-agent observation is presented as a fresh local run.
+
+### Memory, retrieval and runtime observations
+
+Snapshot observation began 2026-10-22T23:28:58Z. Protected live bytes were copied
+only after DB/WAL/SHM stat and SHA checks; those signatures were equal before
+and after copying and after hook probes. WAL was 0 B; rollback journal absent.
+DB 348160 B; SHM 32768 B. SQLite opened only the disposable immutable copy.
+DB SHA256: ffedc07c3773a2e251475805a89dc3948a54ebd0c728d9025d9d5a8036f316d6.
+One self-ingested source hashes correctly; all 21 facts reference an existing
+content source. External archive/document rows and fact-link/document rows are
+empty, so there is no missing external-source edge to repair in this snapshot.
+No factual truth review or memory/projection regeneration is implied.
+`memory doctor` was deliberately not run: src/mir/cli/memory.py:440 opens a
+write-capable connection and its rollback probe writes even though it rolls back.
+
+Offline graph SHA256:
+a26d2f530c0acd26cad958982ec89acaea7a21f7b2fc8232266c0730ee1829a5.
+CR-006 query scope is declared_spec_relations_only, not live-memory evidence.
+No real MK or external service was called. Project .mcp.json is absent and the
+Codex project config has no MCP servers; this is project-scope parity only.
+
+Both MIR_RUNTIME labels used synthetic JSON on stdin. Project SessionStart and
+UserPromptSubmit used this checkout's actual project root. Project Stop used a
+disposable audit destination and the same checkout interpreter; MIR_REVIEW_GATE=0.
+A shell mktemp wrapper redirected its hardcoded /tmp template into owner-approved
+scratch. The unmodified helper still performed its real audit-log write, in scratch.
+Common hooks ran the source commands; positive Stop probes used Claude and Codex
+native-shaped transcripts with a deliberately incomplete final packet.
+
+| Surface/event | Claude exit; stdout/stderr bytes | Codex exit; stdout/stderr bytes |
+| --- | --- | --- |
+| Project SessionStart | 0; 550/0 | 0; 550/0 |
+| Project UserPromptSubmit | 0; 120/0 | 0; 120/0 |
+| Project Stop | 0; 0/0 | 0; 0/0 |
+| Common SessionStart | 0; 783/0 | 0; 783/0 |
+| Common ordinary UserPromptSubmit | 0; 0/0 | 0; 0/0 |
+| Common ordinary Stop | 0; 0/0 | 0; 0/0 |
+| Common handoff UserPromptSubmit | 0; 4102/0, supply | 0; 4102/0, supply |
+| Common incomplete handoff Stop | 0; 1402/0, repair decision | 0; 1402/0, repair decision |
+| Common command-ban PreToolUse | 2; 193/76, expected deny | 2; 193/76, expected deny |
+
+Project startup and prompt outputs match byte-for-byte across labels; common
+startup likewise matches (SHA256 a096d1370c32ef857b0efade8b6c9e73091fecab182a3e95b15b0c68072fef2b).
+Both cache installations match all 48 current plugin files with no missing file
+or byte mismatch. Canonical installed runner --which selects 0.13.25, active
+Claude record, after checking runtime selection consistency. The Yoke checkout
+adapter intentionally remains a different supplier entrypoint. CLI observations:
+Claude Code 2.1.309; codex-cli 0.163.0 (exit 0 with a PATH-alias permission warning).
+Repository hook registrations retain the documented Claude-only StopFailure and
+the documented SessionEnd timeout difference. Native startup intentionally stays
+task-blind (ADR-53); current work is retrieved on demand, not a copied memory dump.
+
+### Stop SQL error trace and remaining host evidence
+
+None of the 18 synthetic invocations printed SQL logic error. A scoped search
+of supplied hook/CLI sources found no literal emitter. .claude/hooks/mir-stop.sh:74
+writes a text audit file; its only helper diagnostic is the OSError warning at
+line 76. It invokes the selected Python helper at line 79, swallows failure at
+line 80 and ends with exit 0 at line 100. The optional review executor at line 91
+is off for these probes and suppresses stderr at line 97.
+
+The common handler's run_pins at
+plugins/mir-lifecycle-hooks/skills/runtime-continuity/scripts/handoff_packet.py:518
+captures both child streams, and line 525 discards child stderr. Its warning
+path at line 368 deliberately does not expose exception or subprocess strings.
+No confirmed Yoke-supplied code path printing the reported SQL message was found;
+therefore no speculative fix or fail-first claim is made.
+
+Unconfirmed boundary hypothesis for Main's target trace: target-local wrapper or
+its selected runtime helper differs from the source path exercised here.
+.claude/hooks/_lib/run-python.sh:61 delegates to the receipt-selected CLI;
+line 71 delegates to local Python. Neither line proves an SQL cause. For the
+reported target exit 127, lines 63-64 and 82-83 are real invalid-receipt/missing-
+interpreter exits, but the target's stderr/receipt was not inspected and its cause
+remains unknown. Main needs the effective target command, stdout/stderr split,
+receipt-selected helper and a fresh native observation under target authority.
+No target, native model session or trust application was probed by this writer.
+
+### Changes, fail-first and commands
+
+Changed canonical documentation only: this log, the four existing continuity
+files and docs/operations/harness-engineering-upgrade.md. The latter corrects
+17 to 18 skills and 21 to 22 published checklist items; the fleet's extra local
+item 23 is not silently added to the common published skill. The generated
+config/adopter-payload.json records actual changed bytes through the documented
+command. No version, lock/provider receipt, hook, test or implementation changed.
+Fail-first: not applicable, because there is no behavior change. No low-value
+text-mirroring regression test or new gate was added.
+
+All uv invocations use the owner's external UV_CACHE_DIR. MAINTENANCE_SCRATCH,
+TMPDIR, Ruff cache and pytest basetemp point to the approved external task scratch;
+PYTHONDONTWRITEBYTECODE=1, pytest cacheprovider disabled. Checked-in Codex files
+were never regenerated or hand-edited; the official verifier generates disposable
+comparison output only. No gate uses another checkout's virtual environment.
+
+- `uv run pytest -q -p no:cacheprovider --basetemp="$MAINTENANCE_SCRATCH/full"`: 2689 passed in 582.64s (exit 0). Provider record writes paused throughout this whole-suite run.
+- `uv run ruff check`: all checks passed (exit 0).
+- `uv run python scripts/verify_codex_sync.py`: derivatives match Claude sources (exit 0).
+- `python3 scripts/verify_context_paths.py`: 9 files/78 references pass.
+- `uv run python scripts/verify_repo_agent_management.py`: schema/wiring/catalog/pack/specialist/repositories checks pass; dispatch audit has 0 entries/0 non-compliant.
+- `uv run python -m tools.executor_sync --check --target .`: Common manifest PASS.
+- `uv run python -m tools.template_assets --json`: 891/891 classified, no duplicate, unclassified or prohibited file.
+- `uv run python -m tools.template_assets --write-adopter-payload`: official inventory generator, used after record changes invalidated entry digests. No lock or receipt rebind.
+- `python3 scripts/mir_ontology.py mapping --repo . --json`: contract/map 1.1.0, 0 errors/0 warnings, 0 line refs.
+- `python3 scripts/mir_ontology.py impact --git-diff --strict`: Task/intent selected, no stale refs or undeclared check links; exit 0.
+- `python3 scripts/mir_ontology.py lookup 'current task evidence' --limit 3`: three relevant evidence anchors.
+- `python3 plugins/mir-core/skills/ontology/scripts/mir_ontology_runner.py --which`: active supply 0.13.25, exit 0.
+- `uv run mir relations query CR-006 --purpose implementation --json`: seven edges, five explicit historical skips, truncated=false.
+- `uv pip check`: 27 installed packages checked; all compatible (exit 0). This is dependency consistency, not a fresh vulnerability database audit.
+- `git branch --merged HEAD` / `git branch --no-merged HEAD`: three merged side branches, three unmerged. `git stash list`: empty now, contrary to the preceding pass's retained-stash observation; no deletion cause inferred.
+
+Unmerged side branches: backup/pre-rebuild-0.12.0, fix/mk-client-eperm-reap,
+maint/repo-maintenance-item-22. Merged side branches:
+fix/durable-provider-root-and-permitted-recovery,
+fix/gate-path-containment-and-adoption-recovery, rebuild-0.12.0.
+All refs and origin/main relation are unchanged. This is status reporting only;
+cleanup, merging and release are outside the writer grant. No new owner decision
+or release is needed for these documentation repairs.
+
+### Integrity and completion boundary
+
+Current request counts: 23/23 assessed; 21/23 repository-closed. Native runtime
+acceptance/trust (19/21) and the cross-target SQL provenance remain with Main.
+Source tests and synthetic output do not promote those cells to PASS. Main also
+owns its gate rerun, every-hunk review, any future generated Codex refresh and
+commits. Current generated Codex parity already passes, so no Codex refresh is
+requested for this documentation-only patch.
+
+Original continuity bytes are archived above; original generated resume snapshot
+is retained byte-for-byte. Capability/routing locks, ontology pins, provider
+receipts and protected memory remain untouched. Temporary snapshot/probe/test
+scratch is removed after final checks; no service or emulator was started.
+All public evidence stays generic and uses repository-relative paths. Owner
+identity/direction is parent-supplied; filesystem/command evidence is locally
+observed. Explicit unknowns: fresh native behavior/trust, target Stop error origin
+and current remote dependency advisory status. These observations grant no
+consumer or delivery authority.
+
+### Final record checks
+
+After the guide and maintenance record edits:
+`uv run pytest -q -p no:cacheprovider tests/test_decision_authority.py tests/test_public_template_surface.py tests/test_closeout_hooks.py tests/test_compact_lifecycle_hooks.py tests/test_template_asset_classification.py --basetemp="$MAINTENANCE_SCRATCH/records"`:
+35 passed in 2.38s (exit 0). Ruff, context references (9 files/78 refs), ontology
+mapping (0/0), strict impact and git diff --check were rerun and pass.
+The official Codex comparison also remains required to pass before writer closeout.
+The final payload regeneration occurs after this evidence append; reproduce it
+with `uv run python -m tools.template_assets --write-adopter-payload` after any
+future record edit, then run the exact payload regression. No manual digest edit.
+
+### Cursor scope clarification and final verification
+
+Intermediate cursor lines preserved verbatim before narrowing the wording to
+the actual writer boundary (generated Codex, versions, locks and provider receipts):
+
+```text
+writes, service changes, release metadata or receipt refreshes are authorized.
+Main owns generated refreshes, fresh sessions, trust application and acceptance.
+were repaired; no behavior changed. Final record checks and payload rebind follow
+through the documented commands; Main re-runs gates and reviews every hunk.
+```
+
+Official Codex comparison rerun: exit 0, derivatives match Claude sources.
+Exact generated-payload regression after the record append: 1 passed in 25.48s.
+Archive containment: four original continuity files preserved 4/4; generated
+resume snapshot identical; protected DB/WAL/SHM/journal signatures unchanged.
+HEAD remains fd3c2bb30dd3cd44539304f4a756144a77678c3d.
+The following final rebind/check covers this last evidence-only append as well.

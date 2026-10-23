@@ -1,16 +1,11 @@
 # Session Handoff
 
-Resume pointer: tasks/plan.md is the sole active cursor; tasks/intent.json records
-owner Discord 1561379127401910383 and bounded authority. Current projection:
-tasks/checklist.md. Evidence: tasks/change_log.md#delta-re-verification-2026-10-18.
-Previous pointer: tasks/change_log.md#superseded-continuity-before-delta-re-verification-2026-10-18.
-Six request cells assessed, four closed. Main regenerates the adopter inventory,
-reruns the full gate with provider writes paused and confirms native sessions/trust.
-See the log for the retained full failure and stable observer recheck.
-Main owns review and delivery; no commit,
-consumer write, generated Codex edit, secret read or live database write is authorized.
-The generated snapshot below is historical and preserved under the generated-write
-boundary. Read tasks/checklist.md for current status.
+Resume pointer: tasks/plan.md is the sole active cursor for repo-maintenance-2026-10-23.
+Authority: tasks/intent.json; status: tasks/checklist.md.
+Evidence: tasks/change_log.md#repo-maintenance-2026-10-23.
+Previous pointer preserved verbatim: tasks/change_log.md#superseded-continuity-before-repo-maintenance-2026-10-23-2026-10-23.
+Main owns acceptance, fresh native sessions, hook trust and delivery.
+The generated snapshot below is historical and preserved byte-for-byte.
 
 <!-- mir:runtime-snapshot:begin -->
 ## Runtime Snapshot (Generated)
@@ -19,5 +14,5 @@ boundary. Read tasks/checklist.md for current status.
 - No open plan items.
 
 ### Working Tree
-- Working tree dirty (1 paths; inspect git status --short).
+- Working tree dirty (8 paths; inspect git status --short).
 <!-- mir:runtime-snapshot:end -->

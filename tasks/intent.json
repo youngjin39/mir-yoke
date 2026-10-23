@@ -1,10 +1,16 @@
 {
-  "goal": "Re-verify the 22-item maintenance delta since 2b89087 and fix F1 success-path test load sensitivity.",
+  "goal": "Re-verify all 23 repository-maintenance items since the 2026-10-18 acceptance and apply only minimal confirmed improvements.",
   "goal_type": "maintenance",
   "scope": "Mir Yoke bounded writer only; no commit, generated instruction/Codex/agent writes, consumer writes, secrets, live DB/memory writes or delivery.",
   "priority": "normal",
-  "updated": "2026-10-18",
+  "updated": "2026-10-23",
   "history": [
+    {
+      "goal": "Re-verify the 22-item maintenance delta since 2b89087 and fix F1 success-path test load sensitivity.",
+      "updated": "2026-10-18",
+      "status": "superseded",
+      "archive": "tasks/change_log.md#superseded-continuity-before-repo-maintenance-2026-10-23-2026-10-23"
+    },
     {
       "goal": "Re-verify all 22 repository-maintenance items against current evidence and apply minimal evidenced improvements.",
       "updated": "2026-10-17",
@@ -74,6 +80,6 @@
     }
   ],
   "status": "pending_main_acceptance",
-  "evidence": "tasks/change_log.md#delta-re-verification-2026-10-18",
-  "authority": "Owner Discord 1561379127401910383 (2026-10-18), relayed by Mir Harness Main; parent-supplied. Single active cursor: tasks/plan.md."
+  "evidence": "tasks/change_log.md#repo-maintenance-2026-10-23",
+  "authority": "Owner Discord 1562969123871522900 (2026-10-23), relayed by Mir Harness Main; parent-supplied. Single active cursor: tasks/plan.md."
 }

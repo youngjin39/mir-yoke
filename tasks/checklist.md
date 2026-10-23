@@ -1,11 +1,11 @@
 # Checklist
 
-Status projection for tasks/plan.md: delta re-verification 2026-10-18.
-6/6 request cells assessed, 4/6 closed; 19/22 maintenance items have bounded closure.
-Main owns items 18/19/21: generated adopter inventory and native session/trust proof.
-F1: deterministic red, then 2 passed; module 52, delta 330 and record checks 18 pass.
-Full gate: 2135 passed/5 failed; two observer failures from concurrent record edits
-passed 2/2 with writes paused. Three inventory effects remain for Main regeneration.
-Ruff, Codex parity, 77 context refs, common manifest, mapping 0/0 and strict impact pass.
-Evidence: tasks/change_log.md#delta-re-verification-2026-10-18.
-Previous projection: tasks/change_log.md#superseded-continuity-before-delta-re-verification-2026-10-18.
+Status projection for tasks/plan.md: repo-maintenance-2026-10-23.
+23/23 assessed; 21/23 have bounded repository closure. Items 19 and 21 require
+Main fresh-session/trust evidence; synthetic execution is not native acceptance.
+Full suite: 2689 passed in 582.64s; Ruff and Codex parity pass.
+Mapping: contract/map 1.1.0, 0 errors/0 warnings; strict impact passes.
+Continuity and the guide counts are repaired; no behavior change or release.
+Final record checks and generated payload verification are reported in the log.
+Evidence: tasks/change_log.md#repo-maintenance-2026-10-23.
+Previous projection: tasks/change_log.md#superseded-continuity-before-repo-maintenance-2026-10-23-2026-10-23.

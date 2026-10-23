@@ -563,7 +563,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "config/cli-runtime-constraints.txt",
-      "sha256": "5cd863884ac945ab89b49067dedd3de0899fa90986ad3ae2d1ecd8ffa5e419b9"
+      "sha256": "77e1dabb7be34e2ccc3e9d1e602118bc9f38932a28172276944c5cd8cbbbf46c"
     },
     {
       "classification": "reference",
@@ -2255,7 +2255,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "docs/operations/harness-engineering-upgrade.md",
-      "sha256": "1844d2561bb08eb5d4c5d77a04ba6c3b5ffe2a3194ecb454b587466a6527ba77"
+      "sha256": "a504e75aac99e17c969231121549efab1447ee149d45f95437c9c6308af0ca1e"
     },
     {
       "classification": "reference",
@@ -4157,25 +4157,25 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/change_log.md",
-      "sha256": "ab0cac36097c9f0f56c83ea70e71af976857d738ab4f2265e34048da960a6f8f"
+      "sha256": "e00726f62d3a2fc11efc247a2be052cec4fdd4fcf296809952313d7b76bb5a42"
     },
     {
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/checklist.md",
-      "sha256": "050ac7412c7f71d870cc15783b5b07c8462cb50f6c93019fbda58e4d8d450f1a"
+      "sha256": "e03d33fbbc455178a0ea73ef22cc3066de81056b0b41f445e283c19bbfb6998d"
     },
     {
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/handoffs/session-handoff-LATEST.md",
-      "sha256": "90d24afa65270f9efecac494552cbf3aba7d687f1a15a1d5ac2666d04b0dab19"
+      "sha256": "0d69f4ff288408cd7acad1c866ce1fb2965108925aabd552cf59988f84761ce3"
     },
     {
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/intent.json",
-      "sha256": "0b1b5fd2632f26da9d4319975375eada5198b9455cefc70a1c84881800fc239b"
+      "sha256": "171633e1cd9b00e776d4d777ef64f57d16574dd82d755131b23ce5aeac1e0539"
     },
     {
       "classification": "reference",
@@ -4199,7 +4199,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/plan.md",
-      "sha256": "f5f7a9d24d0665ebb246ef838d550420454bc5682dbe7fa7c4080a070541d2ba"
+      "sha256": "a5c2f38d689779e2c7d7986186a51107f15dcfe53c970bf2e54e92666c0f9283"
     },
     {
       "classification": "reference",
@@ -5339,7 +5339,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "uv.lock",
-      "sha256": "8ffb83cb8c487085ec387ea91d7be1bde467fed7b25bca3bd8c37c4dd3647074"
+      "sha256": "069051ac4fb92e1c95776cfd0dab62ab07d5ad5c3156fc4019e036eca72512b7"
     }
   ],
   "generated_from": "config/template-assets.json",
