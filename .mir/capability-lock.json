@@ -110,14 +110,13 @@
   },
   "profile": "hybrid_pipeline",
   "registration": {
-    "finalized_at": "2026-10-23T20:11:17.292558+00:00",
-    "status": "active"
+    "status": "restart-required"
   },
   "schema_version": 2,
   "source": {
-    "commit": "5411daf11dc0c680b1255fbc66402bec79d56d59",
+    "commit": "a7d06d65f3ab16b8a9fbb58b758192336ed692f9",
     "ref": "main",
     "url": "https://github.com/youngjin39/mir-yoke.git"
   },
-  "synced_at": "2026-10-23T20:09:29.507811+00:00"
+  "synced_at": "2026-10-24T02:41:31.221447+00:00"
 }
