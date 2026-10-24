@@ -26,3 +26,10 @@ Request matrix: each accepted finding (rounds 1-8) has a targeted assertion in
 `tests/test_capability_gaploop.py`; release metadata, documentation and payload;
 full pytest, Ruff, Codex parity and diff check; ADR-80 bind, release, provider
 update, runtime attestation and finalize.
+
+Main acceptance and release (2026-10-24, owner Discord 1563488289556664383 approving the release after round 8, parent-supplied):
+- Commits: 8bcc100 source (full suite 2827 passed plus the expected pre-bind lock failure); bind 34ccd00 (full suite 2828 passed), tagged v0.13.30, pushed, GitHub release created.
+- Provider update from the enrolled 0.13.29 provider-update lock (a5534c0); recorded in 2779c96.
+- Claude headless session f73e9128: init catalog listed all 23 `mir-*` skills; SessionStart printed the Mir continuity line; SessionStart 3, UserPromptSubmit 5, PreToolUse 5 and Stop 6 hook runs.
+- Codex session 01a16d69 (0.13.30 cache): all 23 skills, SessionStart, the UserPromptSubmit packet, the PreToolUse denial "Owner forbids commands in this handoff turn" and the Stop hook_prompt under `mir-lifecycle-hooks/0.13.30`. An earlier Codex session (01a16d68) showed no Stop output, because its packet passed and Codex logs only hooks that produce output, so it was not used.
+- Attested both runtimes with no missing skills or hooks; finalized after restart; `mir capability status` ready at 34ccd00.
