@@ -8,6 +8,69 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.30] — 2026-10-24 — Guidance corrections and bounded gap recipes
+
+### Fixed
+
+- Expose ordinary notes/memory lookups; confirm scope-bearing interview answers before
+  decision/frontier updates. Require whole-tree unused-code proof, include merge/split
+  alternatives, and share explicit handoff/resume/run-state routing precedence.
+
+- Write verified feature/fix intent back to affected existing docs under write authority;
+  add Korean technical-form and notice-publication checks. Extend staged trace
+  proposals to canonical instruction docs, expose Korean routing and experiments
+  in descriptions, and cover every unresolved human decision in explicit grills.
+
+- Close assumed design decisions before freeze; add contextual Korean cues and
+  general-principle-only no-ai-slop use. Require exact, premise-aware memory
+  records; expose per-turn inventory/placement and audit precedence. Document
+  the existing handoff PreToolUse guard without changing hook behavior.
+
+- Keep Korean detection in diagnosis-only mode and English Detect scoped to English;
+  preserve genre register and author voice with agent/default-prose exceptions.
+  Batch spec questions by frontier; require safe, permitted observed runtime evidence
+  beside unit tests or label it unevaluated. Expose user-reported stall advice,
+  trace-based skill patches and concise-output guidance through existing triggers.
+
+- Enumerate change reach before edits; define terse output and manual evidence-status
+  rules for lesson/memory notes. Follow local test naming and report measured coverage
+  only. Clarify host-provided verification/design roles, Korean routing, grill and
+  audit triggers, and reuse of the existing automation cursor.
+
+- Mark deliberate implementation shortcuts immediately; check changing Korean draft
+  facts against current sources. Keep spec readiness advisory, scope three-failure
+  stops to spec repair, and limit automation ledgers to write-authorized persistent
+  runs. Correct the MODE-S comparison heading pointer.
+- Add Korean diagnosis-only routing and report/proposal execution fields; separate
+  migration implementation evidence from owner-confirmed policy and elicit missing rules.
+- Correct file-to-module impact traversal, condition cursor writes on request
+  authority, and provide a design-method fallback without the optional lifecycle package.
+
+- Keep forward-spec readiness separate from code verification, unify Gateway actor
+  boundaries, permit target-relative evidence/commands, and route as-built analysis
+  separately from unresolved design choices.
+- Align no-ai-slop eval with contextual exceptions and describe the local adaptation;
+  write the long-form Korean finish reference in Korean with pinned provenance.
+- Separate verification declarations from executed revision-bound results; align
+  task edge endpoints and make L1 coverage counts reproducible.
+- Preserve meaningful technical terms and proper names in no-ai-slop; route diff
+  and PR review, completion evidence and architecture analysis explicitly.
+- Scope GUI procedures to changed GUI behavior and replace the unsupported
+  100-point AI-readiness claim with a qualitative seven-category review.
+
+### Added
+
+- Ground unfamiliar or version-sensitive coding identifiers before assertion or use,
+  inspired by drona23/claude-token-efficient at 0d30a6d.
+- Advisory pre-spec intent audit, bounded task integration, prototype escape and
+  conversation-only interviews, long-form finishing and owner-requested style
+  profiles, consequential-choice memos, approved-spec issue drafts and reconstruction
+  proof applicability. All remain optional and Main-directed; Paperclip is excluded.
+- Updated REA provenance to MIT cd10ee1 while retaining the historical unlicensed
+  9e6c624 adaptation note. Other references retain their own pinned provenance.
+- Focused fail-first contract tests, 0.13.30 manifests and regenerated adopter
+  payload; lifecycle digest acknowledges release metadata and read-only method guidance. No hook behavior changes.
+
 ## [v0.13.29] — 2026-10-24 — Final guidance gap fills
 
 ### Added

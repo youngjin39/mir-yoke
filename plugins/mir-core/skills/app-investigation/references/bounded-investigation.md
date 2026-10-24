@@ -1,6 +1,7 @@
 # Feature-bounded evidence and reconstruction
 
-Inspired by morluto/rea at 9e6c624 (ideas only, no license; wording original).
+Inspired by morluto/rea at cd10ee1 (MIT).
+9e6c624 was unlicensed when first adapted.
 
 Use for explicit investigation of owned or permitted artifacts, within the declared
 legal and authorization boundary. Metadata-only work uses reference-app-profile.
@@ -21,11 +22,17 @@ legal and authorization boundary. Metadata-only work uses reference-app-profile.
    inference cannot establish that a branch executed or that the server behaves so.
 5. Before reconstruction, declare a behavior contract: inputs, outputs, errors,
    persistent state, timing assumptions, supported platforms and excluded behavior.
-   Derive requirements from permitted evidence; implement independently within scope.
+   Give each required behavior an owner. Derive requirements from permitted evidence;
+   implement independently within scope. Pin original and candidate identities with
+   their versions or digests so each proof identifies both artifacts compared.
 6. Compare the reconstruction against that contract using the same authorized cases
-   and conditions. Record expected/actual results and evidence per contract row.
-   Include failure and state-transition cases where relevant. Appearance alone does
-   not establish behavior, and a passing sampled case does not prove full coverage.
+   and conditions. Select applicable case kinds per behavior: normal, failure,
+   state-transition, lifecycle, timing or platform cases; explain exclusions.
+   Record expected/actual results and comparable evidence for both artifacts per
+   contract row in the existing report or matrix, without adding a ledger or tool.
+   When either artifact, requirement, environment or case changes, invalidate affected
+   proofs and identify the comparisons needing another authorized check. Appearance
+   alone does not establish behavior, and a sampled pass does not prove full coverage.
 7. Return a feature map, evidence rows, comparison coverage and unresolved questions.
    Keep contradictions and incomplete coverage as Unknown with competing evidence
    intact; name a discriminating check for Main. Do not claim complete equivalence

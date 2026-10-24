@@ -146,7 +146,7 @@ model. Keep the black box intact.
 
 ### Actor definition
 
-Actor = the context model's external entities ∪ {Timer}.
+Actor = the context model's external entities ∪ {Gateway, Timer}.
 A standard device («standard») is not an actor; the person using it is.
 Gateway and Timer sit inside the system but outside the development scope, so they may be actors.
 Behaviour starting at a specific time or period is initiated by a Timer actor. Different times mean
@@ -191,7 +191,7 @@ A verb conveying the function plus the core result. No slashes.
 
 ### Context model ↔ use case model consistency (mandatory check)
 
-- External entity set = actor set (excluding Timer)
+- External entity set = actor set minus {Timer, Gateway}. Both are internal, out-of-scope actors.
 - External interface = the union of the associations attached to that actor.
   That is, Interface1 = A11 ∪ A12. When an interface branches by function it decomposes into
   per-UC associations, and recombining them must give back the original interface.

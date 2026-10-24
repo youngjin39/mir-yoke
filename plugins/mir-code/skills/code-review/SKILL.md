@@ -1,11 +1,15 @@
 ---
 name: code-review
-description: "Code review and quality check. Trigger: code review, pull request review, quality check, merge check, post-completion. Architecture review routes to bluebricks."
+description: "Diff and PR review, code quality and merge checks. Trigger: code review, pull request review, quality check, merge check, repository audit. Completion evidence and spec compliance route to verify; architecture analysis routes to bluebricks."
 context: fork
 allowed-tools: Read, Grep, Glob, Bash
 ---
 
 # Code Review
+
+Routing precedence: diff and PR review → code-review; completion evidence and spec compliance → verify; architecture analysis → bluebricks.
+
+Audit precedence: code-quality, debt and risk audit of code → code-review; periodic multi-item repository checkup → repo-maintenance; instruction-document and registry governance → governance; AI-readiness review → efficiency.
 
 ## Review policy
 

@@ -1,6 +1,6 @@
 ---
 name: automation
-description: "Long-running task control + browser automation.\n\nTrigger: runner, long-running, background, monitor, resume, compact, handoff, browser, scrape, E2E\n\nAbsorbs: runner, browser-automation"
+description: "Long-running task control + browser automation.\n\nTrigger: runner, long-running, background, monitor, resume, compact, handoff, browser, scrape, E2E, stuck, going in circles, tried everything\n\nAbsorbs: runner, browser-automation"
 ---
 
 # Automation
@@ -9,13 +9,21 @@ description: "Long-running task control + browser automation.\n\nTrigger: runner
 - When a task is long-running or must survive session restart, compact, or handoff.
 - When browser automation, scraping, E2E testing, or web-app operation is needed.
 
+Routing precedence: writing or receiving a brief or handoff for another agent → ontology Handoff packet; resuming after a session transition or compaction → mir-lifecycle-hooks:runtime-continuity; persistent or long-running run state → automation.
+
 ## Absorbed legacy skills
 - runner — Long-running/background task control for Codex and Claude. Externalize task state to a durable ledger so compact, handoff, and session resume reconnect to the same work instead of relaunching it.
 - browser-automation — Real-browser control through an available browser capability, with
   accessibility-tree or semantic snapshots when supported.
 
 ## Workflow
-1. Give the run a stable identifier and record its goal, owner, current checkpoint, and completion test in a repository-owned task ledger.
+Ledger creation and updates apply only to persistent or long-running runs
+where write authority exists (steps 1–3 and 5–6). A one-off, read-only browser observation creates no record;
+use step 4 and verify the requested outcome without a ledger.
+
+1. Give the run a stable identifier; use the repository's existing cursor or task ledger when one exists,
+   and record its goal, owner, current checkpoint, and completion test there. Never create a second cursor.
+   Create a run ledger only when the repository has none and write authority exists.
 2. Before launching work, inspect the ledger and running processes so a resumed session does not duplicate an active run.
 3. Persist every external process identifier, output location, last verified checkpoint, and safe resume command. Never rely on chat history as the only state.
 4. For browser work, use an available browser tool, take the best supported semantic snapshot,
@@ -27,4 +35,4 @@ description: "Long-running task control + browser automation.\n\nTrigger: runner
 
 For stagnation in an observed run, use the [report-only SPINNING check](references/spinning-report.md).
 
-For Main-directed stall diagnosis, use [recovery and reframing](references/recovery-and-reframing.md) beside the existing SPINNING report.
+For Main-directed or user-reported stall diagnosis, use [recovery and reframing](references/recovery-and-reframing.md) beside the existing SPINNING report.

@@ -1,6 +1,6 @@
 ---
 name: no-ai-slop
-description: Edit drafts into sharper, more human writing while preserving the writer's personal voice, or detect AI-slop patterns without rewriting. Use when the user wants a draft clearer, more direct, more opinionated, or less AI-sounding, or asks whether writing reads as AI.
+description: Edit drafts into sharper, more human writing while preserving the writer's personal voice, or detect AI-slop patterns without rewriting. Use when the user wants a draft clearer, more direct, more opinionated, or less AI-sounding, or asks whether writing reads as AI. Korean-language text routes to `mir-content:korean-writing`.
 ---
 
 # No AI slop
@@ -43,7 +43,7 @@ If the goal is unclear, ask what the reader should think, feel, or do after read
 
 ## Words to cut
 
-Banned outright: delve, foster, leverage, utilize, facilitate, empower, streamline, robust, cutting-edge, paradigm shift, game changer, this is huge, this changes everything, tapestry, realm, beacon, multifaceted, meticulous, intricate, paramount, transformative, elevate, embark, supercharge, harness, ever-evolving.
+Banned as ornamental phrasing: delve, foster, leverage, utilize, facilitate, empower, streamline, robust, cutting-edge, paradigm shift, game changer, this is huge, this changes everything, tapestry, realm, beacon, multifaceted, meticulous, intricate, paramount, transformative, elevate, embark, supercharge, harness, ever-evolving. Exempt meaningful technical terms and proper names, such as "Mir Harness" and "test harness".
 
 Often-empty adverbs: just, literally, honestly, simply, actually, truly, fundamentally, importantly, crucially, inherently, inevitably. Cut them when they add nothing. Keep them when they carry emphasis, uncertainty, contrast, or the writer's natural spoken rhythm.
 
@@ -99,6 +99,7 @@ Often-empty phrases: it's worth noting, it's important to note, at the end of th
 ## Provenance
 
 Ported from [petergyang/no-ai-slop](https://github.com/petergyang/no-ai-slop)
-at `000650b156983f5159695b441477f4e63b25dc85` (MIT). The upstream behaviour
-is unchanged; the eval lives at [references/eval.md](references/eval.md).
+at `000650b156983f5159695b441477f4e63b25dc85` (MIT). A small local adaptation adds the
+technical-term/proper-name exception and aligns the [eval](references/eval.md) with contextual preservation.
+Korean-language drafts, diagnosis and revision route to `mir-content:korean-writing`; no-ai-slop's word and pattern lists are English.
 Copyright and permission notice: [LICENSE](LICENSE).

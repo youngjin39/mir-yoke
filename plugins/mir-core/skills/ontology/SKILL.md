@@ -11,6 +11,8 @@ The project owns its domain model and workflow. The distributed
 [owner and digest](references/SOURCE.md) identify the immutable distribution.
 Do not invent a competing contract, install a service or restructure the project to use it.
 
+Routing precedence: writing or receiving a brief or handoff for another agent → ontology Handoff packet; resuming after a session transition or compaction → mir-lifecycle-hooks:runtime-continuity; persistent or long-running run state → automation.
+
 ## Workflow
 
 1. Find the project model. Read `.mir/ontology-map.json` and only the relevant sources named by

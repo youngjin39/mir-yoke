@@ -52,7 +52,7 @@ immutable release:
 
 ```bash
 uv tool install --force --link-mode copy \
-  "git+https://github.com/youngjin39/mir-yoke.git@v0.13.29"
+  "git+https://github.com/youngjin39/mir-yoke.git@v0.13.30"
 mir --help
 ```
 
@@ -109,6 +109,12 @@ Existing skills add relevant diff load/performance/lean checks, learning-safe
 per-skill proposals, observed cache diagnostics, artifact-only executability review
 and synthetic visual memory cases. These are optional guidance, using existing
 authorized tools and preserving metadata profiling and language-policy boundaries.
+
+Version 0.13.30 corrects seven guidance defects and adds bounded pre-spec intent
+review, task integration, prototype escape, long-form finishing and reusable style
+profiles, consequential-choice memos, approved-spec issue drafts and version-bound
+reconstruction proof. AI-readiness review is qualitative; no dashboard is supplied.
+All additions remain optional, advisory and Main-directed; no runtime is added.
 
 ### Platform use
 

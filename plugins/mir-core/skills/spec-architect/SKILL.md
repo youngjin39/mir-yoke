@@ -145,7 +145,7 @@ L2 (the seven axes) needs use cases to exist. Do not run it before modelling (F5
 | F5 | 01 §5.3, §5.4, §5.6, §5.7 |
 | F6 | 00 §L2 then 01 §5.5 (seven axes) plus 01 §6.2–6.3 (QA scenarios, constraints) |
 | R1–R6 | 03 in full |
-| MODE-S | 03 §Four-quadrant comparison plus `@spec` anchor drift |
+| MODE-S | 03 §MODE-S in detail (comparison) plus `@spec` anchor drift |
 | MODE-D | 04 §Impact analysis (reverse graph traversal) |
 
 ## The completeness lattice — the backbone of this skill
@@ -240,8 +240,11 @@ affected projections, then `STATE.md`, before it ends. A session that changed no
 
 ## Verification gates
 
-Apply on every run. Record every shortfall in `gaps.yaml` as `GAP-nn` and tell the user. After three
-consecutive failures, stop and return the additional information needed.
+Apply on every run. Record every shortfall in `gaps.yaml` as `GAP-nn` and tell the user.
+Readiness and completeness judgments are advisory to Main and the owner.
+Only deterministic required checks and explicit owner decisions block implementation.
+After three consecutive failures, stop the spec-repair loop and return the additional information needed.
+This stop does not veto implementation the owner has already authorized.
 
 | ID | Judgement |
 |---|---|
@@ -261,7 +264,7 @@ consecutive failures, stop and return the additional information needed.
 | G-14 | In MODE-R, every recovered item carries `evidence` and `confidence` |
 | G-15 | `index.yaml` matches the actual shard list and counts |
 | G-16 | Every structural constraint has a `checks.yaml` entry whose `command` is not `[TBD]`. If it is, record it in `gaps.yaml` |
-| G-17 | Where an allocated module has code, it is bound by `@spec` anchors (MODE-R/S/D) |
+| G-17 | Where an allocated module has code (MODE-R/S/D), assess `@spec` bindings; report missing bindings without changing implementability readiness. Injection needs separate user approval |
 | G-18 | Four-layer coverage is reported as counts, and every `tbd` cell is recorded in `gaps.yaml` |
 | G-19 | Requirement conflicts are resolved by authority level or exposed as a `CONFLICT-` node |
 | G-20 | Graph integrity: zero undefined references, zero orphaned **body** nodes, zero missing mandatory edges (04 §Body and attachment) |
@@ -275,7 +278,7 @@ consecutive failures, stop and return the additional information needed.
 | Read failure | Report the failing path verbatim and separate that area as `unrecovered`. Do not fill it by guessing |
 | Insufficient information | `[TBD: needs confirmation - <what>]` plus `status: incomplete`. Record the id in `gaps.yaml` |
 | Conflict | Do not settle either side. Mark it `DRIFT` and ask |
-| Gate failure | Expose every `GAP-nn`. After three consecutive failures, stop and return the list of information needed |
+| Gate failure | Expose every `GAP-nn`. After three consecutive failures, stop the spec-repair loop and return the list of information needed; this does not veto implementation the owner has already authorized |
 | Mode undeterminable | Ask once what kind of input this is. In a remote channel, ask with a numbered list |
 | Output tree bloating | When a 04 §Token budget limit is exceeded, split the shard. Do not grow the file |
 
@@ -295,12 +298,14 @@ consecutive failures, stop and return the additional information needed.
 - X-9 Do not write only the basic scenario and omit the alternatives.
 - X-10 Do not produce a quality requirement without a quantified basis.
 - X-11 Do not report completion without confirming that the files were actually created.
-- X-12 Do not put internal paths, tool names, or session identifiers in the output.
+- X-12 Do not put private agent-host paths, session details or runtime-specific tool names in the output.
 - X-13 Never copy the same fact into two files. Reference by id. Relations go only in `graph.yaml`.
-- X-14 Do not put tool- or platform-specific syntax or paths in the spec.
+- X-14 Do not put tool- or platform-specific syntax or paths in the spec, except target-repository-relative evidence paths (MODE-R `file:line`) and verification commands in their designated fields.
 - X-15 Never reuse or renumber an id that has already been assigned.
 - X-16 Never edit a projection directly (`STATE.md`, `views/*`, derived Markdown).
 - X-17 Do not redefine intent extraction or the questioning protocol here. The `design` skill owns them.
 - No unapproved transmission: do not send output to an external repository, a remote channel, or an
   external service.
 - Do not modify code files. Injecting `@spec` anchors happens only as a separate, user-approved request.
+
+For approved specifications, use the [advisory issue-drafting recipe](references/approved-spec-to-issues.md).

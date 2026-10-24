@@ -100,7 +100,7 @@ Discard an uncommitted Project Agent Kit adaptation in the target or restore the
 commit. For an explicitly invoked CLI transaction, use that command's recorded rollback/recovery
 contract. Installing the CLI does not itself mutate a target.
 
-Current version: `0.13.29`. See `CHANGELOG.md` for release details.
+Current version: `0.13.30`. See `CHANGELOG.md` for release details.
 
 Version 0.10.0 adds opt-in `memory_relations` ingestion and read-only `mir relations query|bundle --memory`
 query/bundle selection using the existing memory schema. No automatic corpus backfill, database
@@ -273,3 +273,77 @@ proposal, cache-diagnosis, document-only review and visual memory-case guidance.
 No tools are bundled, no memory migration is required, and all judgments remain
 advisory under Main. The lifecycle package digest acknowledgement changes only
 because release metadata changes; hook code and capability-lock binding stay intact.
+
+## 0.13.30 guidance corrections and bounded gap recipes
+
+Round-9 guidance exposes ordinary memory/notes lookup, confirms scope-bearing
+free-text interview answers before decision/frontier updates, and requires whole-tree
+proof before unused-code deletion advice with merge/split alternatives. Automation
+and ontology share handoff/resume/run-state precedence. No runtime migration or lock binding.
+
+Round-8 guidance adds proportional, write-authorized intent write-back to existing
+repository docs, Korean technical-form and notice checks, and trace-based proposals
+for canonical instruction sources with regenerated derivatives. Descriptions route
+Korean diagnosis and expose experiments; explicit grills cover all unresolved human
+decisions while deriving facts. No new doc layout, runtime migration or lock binding.
+
+Round-7 guidance closes assumed load-bearing decisions before freeze, adds
+contextual Korean cues and applies only general no-ai-slop principles to Korean.
+Memory answers cite exact records and retain premise contradictions and unknowns.
+Efficiency exposes per-turn inventory/placement; audit routes have explicit
+precedence. The lifecycle entrypoint documents the existing PreToolUse command
+and file-write guard; only its package acknowledgement changes. No runtime
+migration, lock binding or hook behavior change is required.
+
+Round-6 guidance keeps Korean detection in diagnosis-only mode; no-ai-slop Detect
+applies only to English. Genre register and preserved author voice take precedence
+where required, while agent messages and default prose follow fluent-korean.
+Spec questions batch by prerequisite frontier. Runnable service/CLI/UI claims need
+a safe, permitted observed-behavior check beside unit tests or remain unevaluated.
+Existing triggers now expose user-reported stalls, trace-based skill patches and
+concise output. Recovery remains report-only; no hook or runtime migration.
+
+Round-5 guidance adds proportional pre-edit reach checks, a self-contained terse
+baseline and manual, write-authorized evidence rules for lesson/memory notes.
+Existing test names take precedence; unmeasured coverage stays "not measured".
+Legacy verification/design roles use host-provided agents. Korean drafts route to
+korean-writing; grill and repository-audit triggers are explicit. Automation reuses
+the existing cursor or ledger and creates one only when none exists and writes
+are authorized. No runtime migration or new learning loop.
+
+Round-4 guidance marks deliberate implementation limitations immediately with the
+existing shortcut recipe and verifies changing Korean draft facts against current
+sources, retaining source dates/versions and unconfirmed labels. Spec readiness is
+advisory to Main and the owner; three failures end only the spec-repair loop, not
+already authorized implementation. Automation ledgers require persistent/long-running
+work and write authority; one-off read-only browser observations create no record.
+The MODE-S pointer now names the existing comparison heading. No runtime migration.
+
+Round-3 guidance selects Korean diagnosis without rewriting, routes generic pattern
+checks to no-ai-slop Detect, and requires action owners, delivery dates and next actions
+(or explicit undecided fields). Migration interviews separate code from owner intent,
+confirm dangerous inferred policy and ask about important rules absent from code.
+File impact traverses modules before requirements. Read-only requests record nothing;
+when lifecycle-hooks is absent, design uses the repository method or its own order.
+
+Round-2 corrections distinguish implementability readiness from executed verification,
+unify Gateway/Timer actor boundaries, allow target-relative evidence and check commands,
+and route as-built architecture analysis to bluebricks while design owns open choices.
+Coding identifiers require grounding before use; no-ai-slop eval retains contextual
+exceptions, and the long-form finish reference now uses Korean. No runtime migration.
+
+No migration or new runtime is required. Existing skills now distinguish declared
+verification links from executed revision-bound proof, define task edge endpoints
+and a reproducible L1 denominator, preserve technical names in style editing,
+route diff/PR review to code-review and completion/spec evidence to verify, and
+limit GUI procedures to changed GUI behavior. AI-readiness is qualitative because
+no weighted rubric was supplied; dashboard-ready refers only to report formatting.
+
+Optional guidance adds pre-spec intent audit, bounded integration, interview
+prototype escape and conversation-only applicability, long-form finishing and
+owner-requested style profiles, choice memos, approved-spec issue drafting and
+reconstruction proof applicability. External issue publication still requires
+explicit authority. REA provenance is MIT at cd10ee1; the unlicensed 9e6c624 origin
+remains recorded. Refresh versions only through the existing authorized workflow.
+The lifecycle acknowledgement covers release manifests and the read-only method
+exception; no hook code changes and no capability-lock binding or consumer update is performed here.

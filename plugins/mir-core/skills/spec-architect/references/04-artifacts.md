@@ -140,9 +140,9 @@ Example: a `CHK-` that verifies graph integrity enforces no particular spec elem
 
 | Edge | from → to | Meaning |
 |---|---|---|
-| `has_req` | FEAT → REQ | Requirements composing the feature |
+| `has_req` | FEAT/TASK → REQ | Feature requirements or task acceptance coverage |
 | `refines` | UC → REQ | The use case elaborates the requirement |
-| `realized_by` | REQ → MOD | The implementing module |
+| `realized_by` | REQ/TASK → MOD | Implementing module or task-owning module |
 | `exposes` | MOD → IF | The interface the module provides |
 | `runs_on` | MOD → RC | Run-time placement |
 | `persists_to` | MOD → DS | Store used |
@@ -434,11 +434,11 @@ tasks:
     goal: "<what works once this is done>"
     touches: ["src/auth/token.py"]
     done_when:
-      command: "<verification command>"      # acceptance links are the graph's covers edges
+      command: "<verification command>"      # acceptance links are TASK → REQ has_req edges
     status: todo                  # todo | doing | done | blocked
 ```
 
-The owning module (`realized_by`), the requirements covered (via `has_req`), and ordering
+The owning module (`realized_by`: TASK → MOD), the requirements covered (`has_req`: TASK → REQ), and ordering
 (`depends_on`) all live in `graph.yaml` (G-22). Do not add a separate sequence number either.
 
 Task size criteria — split when any one is broken:
@@ -502,16 +502,16 @@ terms:
 
 Node types and the relation vocabulary are in §Graph. This section covers only code binding and checks.
 
-**Code binding** — leave comment anchors in implementation **and test** files. Only the comment
-syntax differs by language; the form is the same.
+**Code binding** — applies once code exists (MODE-R or after implementation), using comment anchors
+in implementation **and test** files. Only comment syntax differs by language; the form is the same.
 
 ```
 # @spec FR-001 MOD-AUTH          implementation file
 # @spec FR-001                   the test verifying that acceptance criterion
 ```
 
-Anchors pair with the graph's `implemented_in` and `verified_by` edges. An acceptance criterion
-without an anchor is an unverified requirement and returns to ARR-8 incomplete.
+Anchors pair with the graph's `implemented_in` and `verified_by` edges. A forward spec may be ready with a declared check method (ARR-8).
+Missing code anchors or `verified_by` do not demote forward readiness; once code exists, report missing bindings as verification gaps. Links alone are not executed verification.
 
 Injecting anchors modifies code. Do not do it without the user's approval.
 
@@ -522,7 +522,7 @@ Injecting anchors modifies code. Do not do it without the user's approval.
 | Undefined node reference | An edge names a non-existent id | Fix immediately |
 | Orphan node | A **body** node appears in no edge | Dead spec. Delete or connect |
 | Missing mandatory edge | A REQ without `realized_by`, a FEAT without `has_req` | ARR-7 shortfall |
-| Missing verification | `status: ready` with no `verified_by` | Return to ARR-8 incomplete |
+| Missing verification | Code exists but lacks anchors or `verified_by` evidence | Report a verification gap; keep implementability readiness separate |
 | Module cycle | A cycle in `depends_on` | ADP violation. MODE-R may record `ISSUE` |
 | Unimplemented | `realized_by` exists but no `implemented_in` | Move to `tasks.yaml` |
 | Anchor without spec | A code `@spec` id absent from the graph | Record a `CONFLICT-` and ask |
@@ -552,13 +552,13 @@ When a limit is exceeded, split the shard rather than trimming content.
 
 ## Impact analysis (MODE-D / MODE-Q)
 
-Answered by reverse graph traversal.
+Answered by reverse graph traversal. Choose traversal edges by input type; use the fixed endpoints above (inverses reverse them).
 
 | Query | Traversal |
 |---|---|
-| What does changing X affect | Reverse BFS from X over `realized_by⁻¹`, `has_req⁻¹`, `depends_on⁻¹` |
-| What requirement is this code | The file's `@spec` anchor → `implemented_in⁻¹` → REQ → `has_req⁻¹` → FEAT |
-| Is this feature verified | FEAT → `has_req` → REQ → presence of `verified_by` |
+| What does changing X affect | Reverse BFS by input type: path → `implemented_in⁻¹` → MOD; MOD → `realized_by⁻¹` → REQ → `has_req⁻¹` → FEAT. For MOD/TASK dependencies also follow `depends_on⁻¹`; retain TASK endpoints of `realized_by⁻¹`/`has_req⁻¹` for task coverage |
+| What requirement is this code | The file's `@spec` anchor to MOD or `implemented_in⁻¹` → MOD → `realized_by⁻¹` → REQ → `has_req⁻¹` → FEAT; a direct REQ anchor starts at REQ |
+| Is verification declared for this feature | FEAT → `has_req` → REQ → presence of `verified_by`; verification requires executed results for the checked revision |
 | What is blocked | All `blocks` and `affects` edges |
 
 Increment procedure:

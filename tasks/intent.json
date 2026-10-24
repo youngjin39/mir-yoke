@@ -1,10 +1,15 @@
 {
-  "goal": "Prepare Mir Yoke 0.13.29 guidance-only final gap fills as an uncommitted scratch-clone diff.",
+  "goal": "Prepare Mir Yoke 0.13.30 guidance-only defect fixes and all approved shippable gaps except Paperclip as an uncommitted scratch-clone diff.",
   "goal_type": "maintenance",
-  "scope": "Only the finalfill-1024 scratch clone. No capability-lock edits, commits, tags, pushes or other repository writes. tasks/plan.md owns intent and design.",
+  "scope": "Only the review3-1024 scratch clone. No capability-lock edits, commits, tags, pushes or other repository writes. tasks/plan.md owns intent and design.",
   "priority": "normal",
   "updated": "2026-10-24",
   "history": [
+    {
+      "goal": "Prepare Mir Yoke 0.13.29 guidance-only final gap fills as an uncommitted scratch-clone diff.",
+      "status": "superseded",
+      "archive": "tasks/change_log.md#cursor-before-capability-gaploop-2026-10-24"
+    },
     {
       "goal": "Prepare Mir Yoke 0.13.28 guidance-only capability gap fills and a binary patch against c12cd1d.",
       "status": "archived",

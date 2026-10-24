@@ -1,6 +1,6 @@
 ---
 name: testing
-description: "Test writing and execution.\n\nTrigger: test, TDD, unit test, integration test"
+description: "Test writing and execution.\n\nTrigger: test, TDD, unit test, integration test, experiment, benchmark, performance comparison"
 context: fork
 ---
 
@@ -26,7 +26,7 @@ async rows. Where a producer is mocked, add one real-boundary check to confirm t
 mock agrees with its real producer.
 
 ## Rules
-- Test names: `should_return_X_when_Y`.
+- Test names: Follow the repository's established test-naming convention; only when none exists, use `should_return_X_when_Y`.
 - Edge cases: null, empty, boundary, error, concurrent.
 - No mocks for external services unless explicitly approved.
 - Code review is not proof of correctness. Executed TDD evidence is.
@@ -38,18 +38,19 @@ mock agrees with its real producer.
 - A test that expects the reported defect is not regression evidence.
 
 ## GUI Testing (Computer Use)
-When the project has GUI components and computer-use MCP is enabled:
+When the change affects GUI behavior and computer-use MCP is enabled:
 1. Build and launch the app.
 2. Execute UI flows: tap, scroll, navigate between screens.
 3. Screenshot any visual anomalies or errors.
 4. Report layout issues with screenshot evidence.
 
 ## Output
+Fill Coverage only from a coverage tool's output; otherwise write "not measured".
 ```
 ## Test Results
 | File | Tests | Pass | Fail | Coverage |
 |---|---|---|---|---|
-| {file} | {N} | {N} | {N} | {%} |
+| {file} | {N} | {N} | {N} | {% or not measured} |
 
 ### Failures (if any)
 - {test_name}: {root cause} → {fix applied}

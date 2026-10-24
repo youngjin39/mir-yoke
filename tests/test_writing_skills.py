@@ -20,8 +20,25 @@ SKILLS = PLUGIN / "skills"
 
 def test_should_preserve_no_ai_slop_upstream_behaviour_when_packaged() -> None:
     text = (SKILLS / "no-ai-slop" / "SKILL.md").read_text(encoding="utf-8")
-    upstream = text.split("\n## Provenance\n", 1)[0].replace("references/eval.md", "eval.md")
-    # petergyang/no-ai-slop at 000650b156983f5159695b441477f4e63b25dc85.
+    upstream, local_adaptation = text.split("\n## Provenance\n", 1)
+    assert (
+        "Korean-language drafts, diagnosis and revision route to `mir-content:korean-writing`; "
+        "no-ai-slop's word and pattern lists are English."
+    ) in local_adaptation
+    routing = " Korean-language text routes to `mir-content:korean-writing`."
+    assert routing in upstream.splitlines()[2]
+    upstream = upstream.replace(routing, "", 1)
+    upstream = upstream.replace("references/eval.md", "eval.md")
+    # Reverse approved description routing and technical-terminology edits; verify
+    # the rest of petergyang/no-ai-slop 000650b remains byte-for-byte faithful.
+    exception = (
+        ' Exempt meaningful technical terms and proper names, such as "Mir Harness"'
+        ' and "test harness".'
+    )
+    assert exception in upstream
+    upstream = upstream.replace(exception, "").replace(
+        "Banned as ornamental phrasing:", "Banned outright:",
+    )
     assert hashlib.sha256(upstream.encode()).hexdigest() == (
         "992b365f51a2f62cf4c1c5ed22049a9ee551dfea677550c1a72b371c0ceadd62"
     )
@@ -29,9 +46,21 @@ def test_should_preserve_no_ai_slop_upstream_behaviour_when_packaged() -> None:
     assert not (SKILLS / "no-ai-slop" / "agents" / "openai.yaml").exists()
 
 
-def test_should_ship_the_unabridged_upstream_edit_and_detect_eval() -> None:
+def test_should_preserve_upstream_eval_except_contextual_exceptions() -> None:
     evaluation = SKILLS / "no-ai-slop" / "references" / "eval.md"
-    assert hashlib.sha256(evaluation.read_bytes()).hexdigest() == (
+    text = evaluation.read_text(encoding="utf-8")
+    adapted = (
+        "1. Are ornamental banned words, empty filler phrases, often-empty adverbs, "
+        "and inflated claims removed, preserving quoted examples, meaningful technical "
+        "terms and proper names, and adverbs and phrases that carry emphasis, uncertainty, "
+        "contrast, self-awareness, or the writer's natural spoken rhythm?"
+    )
+    assert adapted in text
+    upstream = text.replace(adapted, (
+        "1. Are banned words, filler phrases, often-empty adverbs, and inflated claims "
+        "removed unless quoted as examples?"
+    ))
+    assert hashlib.sha256(upstream.encode()).hexdigest() == (
         "8ad8d83ed1abe7fc054ad74966bfca64fc182bc71f59d701b24b962c39d11ad7"
     )
 

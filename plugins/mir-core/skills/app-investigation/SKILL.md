@@ -5,7 +5,8 @@ description: "Use only for an explicit request to investigate a bounded feature 
 
 # Bounded application investigation
 
-Inspired by morluto/rea at 9e6c624 (ideas only, no license; wording original).
+Inspired by morluto/rea at cd10ee1 (MIT).
+9e6c624 was unlicensed when first adapted.
 
 This opt-in guidance supplies no investigation tools. Define the feature, artifact
 identity, permitted operations and expected output before examining implementation.

@@ -68,6 +68,7 @@ ID | Requirement | ARR-1 | ARR-2 | ARR-3 | ARR-4 | ARR-5 | ARR-6 | ARR-7 | ARR-8
    re-judge after C2.
 5. ARR-8 at C1 requires only "how it will be checked" (test kind, measurement method). The
    executable command is settled at C6 as `tasks.yaml` `done_when.command`; reconcile the two then.
+   Implementability readiness is distinct from executed verification; code bindings apply once code exists.
 6. Never fill any item by guessing. Leave `[TBD: needs confirmation - <what>]`.
 
 ## Handling shortfalls
@@ -75,4 +76,7 @@ ID | Requirement | ARR-1 | ARR-2 | ARR-3 | ARR-4 | ARR-5 | ARR-6 | ARR-7 | ARR-8
 - A requirement whose `status` is not `ready` is recorded in `gaps.yaml` **by id only**. Do not copy
   the requirement's content.
 - Never report a gate failure as PASS.
-- After three consecutive gate failures, stop and return the additional information needed.
+- Readiness and completeness judgments are advisory to Main and the owner.
+  Only deterministic required checks and explicit owner decisions block implementation.
+- After three consecutive gate failures, stop the spec-repair loop and return the additional information needed.
+  This stop does not veto implementation the owner has already authorized.

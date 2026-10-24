@@ -2,7 +2,7 @@
 
 Inspired by Q00/ouroboros at 5520a3e.
 
-This is report-only advice for Main after a stall or repeated failure. Reuse the
+This is report-only advice for Main-directed or user-reported stalls or repeated failure. Reuse the
 [SPINNING report](spinning-report.md) and its declared attempt window; do not add
 another detector, ledger, retry loop or threshold. Main chooses any next action.
 

@@ -83,28 +83,31 @@ def _checkable_files():
 # Owner-approved Korean authoring files: only exact complete bytes are exempt.
 KOREAN_WRITING_HASHES = {
     "plugins/mir-content/skills/korean-writing/SKILL.md": (
-        "476c87767ab4c26b50e89a66ecfa5233846666a4d45335da166eeb7122a6a9ed"
+        "da6b9389ecb754c034b4b9e748a933a6a20cec7217c2e5ef797f93a54ab45dd2"
     ),
     "plugins/mir-content/skills/korean-writing/references/blogs.md": (
         "ace3ac45e00cb894305630fdd3e1e916354746aa18cd261f05b3d80db52b843a"
     ),
     "plugins/mir-content/skills/korean-writing/references/business.md": (
-        "018db71446d6441f8a2531dfd3249880656ade0964e04ab6e24128662db86e4c"
+        "d39b7b527c04922dba72f63478e1dce6ef1526cc0dcddaad5d5745ab4b454127"
     ),
     "plugins/mir-content/skills/korean-writing/references/contextual-revision.md": (
-        "37c9775e1c5f0e589c217e6fc4b0c7fe4dc253748958c1ffffad4704ae122b14"
+        "0944f00040bc15d94a9719763a6cccc880eb94ae93d2c73f87d9c98cfb47cea0"
     ),
     "plugins/mir-content/skills/korean-writing/references/essays.md": (
         "94375bbb4ab5d83bcb7e7e7f04a5d8a99955b6a6687d12b1aae32883b568e220"
+    ),
+    "plugins/mir-content/skills/korean-writing/references/long-form-finish.md": (
+        "943b55ae269c64f32226037e6befe256a3df4766d1dcda79df446d22481d9e19"
     ),
     "plugins/mir-content/skills/korean-writing/references/minutes-slides.md": (
         "7c5a6883ab3f83a49a7fed3b90d5a373ae93ea5c9c8e33e7d93eb9025ba1051f"
     ),
     "plugins/mir-content/skills/korean-writing/references/public-notices.md": (
-        "bfe2ec9e697767797e6d52e42861c9944517f14dd67d59036c77f0603fbcf7b4"
+        "262b997b130d3e487c3a6e7187dd8d290b95dc7be1716974c7a0c61b63b0de72"
     ),
     "plugins/mir-content/skills/korean-writing/references/technical-runbooks.md": (
-        "c78540a8edfb83cbe5c3a0e1d119223c5d3cd4768e7cbcd7f7680cdc6c035da7"
+        "26e744df90031bf918bfc06a5a26babb880f8769bd4cb005d7a0c1e4916e99d8"
     ),
 }
 
@@ -143,9 +146,10 @@ def test_korean_writing_exceptions_are_exact_and_scoped():
         content = (root / path).read_text(encoding="utf-8")
         assert hashlib.sha256(content.encode()).hexdigest() == digest
         assert not HANGUL.search(_hangul_checked_content(path, content))
-        assert HANGUL.search(_hangul_checked_content(Path("other") / path.name, content))
+        assert _hangul_checked_content(Path("other") / path.name, content) == content
         assert HANGUL.search(_hangul_checked_content(path, content + chr(0xAC00)))
-        assert HANGUL.search(_hangul_checked_content(path, content.replace("# ", "## ", 1)))
+        altered_heading = content.replace("# ", "## ", 1)
+        assert _hangul_checked_content(path, altered_heading) == altered_heading
 
 
 def test_no_korean_in_template():

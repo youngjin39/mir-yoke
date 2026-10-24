@@ -56,16 +56,20 @@ two sessions count the same spec differently and the numbers stop being comparab
 
 | Layer | One cell | Total |
 |---|---|---|
-| L1 | axis x subject | 8 axes x (entity count + actor count). Axes with no subject (F operations, G time) count as one cell each |
+| L1 | axis x subject | sum of the eight per-axis subject counts; F operations and G time count as one cell each |
 | L2 | use case x axis | use case count x 7 |
 | L3 | quality characteristic | always 9 |
 | L4 | check item | always 10 |
 
-When an L1 axis holds several scenarios, **the axis takes the lowest judgement**: any `tbd` makes the
-cell `tbd`; otherwise any `derived` makes it `derived`; all filled makes it `filled`.
+L1 subjects: A = entities; B = actors; C = stateful entities; D = forward actions;
+E = functions; F = one project-wide operations subject; G = one project-wide time
+subject; H = entities holding data. Enumerate each subject set before counting.
+For each axis x subject cell, aggregate its scenarios using the lowest judgement:
+any `tbd` makes the cell `tbd`; otherwise any `derived` makes it `derived`; all filled
+makes it `filled`. Retain `na` reasons; an empty subject set contributes zero cells.
 
 Report the total together with how it was computed, for example
-`L1 48 cells (8 axes x 4 entities + 2 subjectless axes)`.
+`L1: A=4, B=2, C=3, D=5, E=5, F=1, G=1, H=4; total=25`.
 
 ## The four layers
 
@@ -186,8 +190,9 @@ ordering, remote-channel rules, and authority separation as written there.
 
 Only two things are specific to the lattice:
 
-1. **Batch them.** Finish traversing the lattice, then present the `tbd` cells together. Do not ask
-   cell by cell.
+1. **Batch them.** Finish traversing the lattice, then present the `tbd` cells together by frontier,
+   as in the design skill's frontier interview: a cell whose answer depends on another open cell
+   waits for a later round. Do not ask cell by cell.
 2. **Order by impact.** Structural changes first, then behavioural, then value-only. Separate
    blocking (`blocking: true`) from non-blocking when presenting.
 
@@ -197,8 +202,9 @@ When an answer arrives, close the cell as `filled` and record `origin: "user con
 
 ## L4 implementation lattice — holes left in the blueprint
 
-Apply after C2 (view allocation). A single blank means implementation cannot start from this
-blueprint.
+Apply after C2 (view allocation). A blank means the blueprint is incomplete for implementation; report it to Main.
+Readiness and completeness judgments are advisory to Main and the owner.
+Only deterministic required checks and explicit owner decisions block implementation.
 
 | Check | What a blank means |
 |---|---|

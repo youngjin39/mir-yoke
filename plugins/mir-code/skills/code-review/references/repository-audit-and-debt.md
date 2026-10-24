@@ -21,7 +21,9 @@ whole-repository coverage. This is a manual recipe, not an automatic scanner.
 
 For ordinary changes, state relevant expected load assumptions and inspect changed
 hot-path work, repeated queries, growth and concurrency; label unmeasured performance
-hypotheses. Check lean alternatives: remove work, reuse existing code or built-ins
+hypotheses. Before recommending deletion of apparently unused code, search the whole tree,
+including tests, config, fixtures, and dynamic or string references; otherwise label the finding unproven.
+Check lean alternatives: remove work, reuse existing code or built-ins, merge or split
 before new machinery. Preserve safety and explicit requirements; taste is advisory.
 
 ## Manual `shortcut:` recipe

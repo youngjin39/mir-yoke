@@ -2,7 +2,10 @@
 
 Inspired by microsoft/SkillOpt at 84b36cd.
 
-Use only for owner-invoked skill maintenance within an authorized source scope.
+Use only for owner-invoked skill or instruction-document maintenance within an
+authorized source scope: CLAUDE.md, AGENTS.md and their canonical sources may be
+proposed under the same edit budget, held-out comparison, staging and owner adoption rules.
+Generated derivatives are regenerated, never hand-edited.
 
 1. Group authorized, redacted traces by recurring success or failure pattern. Cite
    the supporting cases and separate a systematic omission from a one-off incident.

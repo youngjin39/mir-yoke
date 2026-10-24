@@ -21,7 +21,7 @@ CASES = (
            "business", "technical-runbooks", "blogs", "essays", "public-notices",
            "minutes-slides")],
     ("mir-core/app-investigation", "bounded-investigation.md",
-     "morluto/rea at 9e6c624" + IDEAS,
+     "morluto/rea at cd10ee1 (MIT)",
      ("feature", "artifact", "already-installed", "already-authorized", "static inference",
       "runtime observation", "behavior contract", "Unknown", "contradictions", "permitted")),
     ("mir-core/automation", "recovery-and-reframing.md", "Q00/ouroboros at 5520a3e",

@@ -7,7 +7,7 @@ Keep repository policy, state and write authority with the repository.
 
 | Step | Method | Action |
 | --- | --- | --- |
-| 1 | Method and intent | Record the user's intent in the repository's single active cursor and re-check this method. |
+| 1 | Method and intent | Record the user's intent in the repository's single active cursor only when the request authorizes writes; always re-check this method. Read-only reviews record nothing and add no approval detour. |
 | 2 | Design | Use a decision record, spec, phase, plan or architecture at the depth the task needs. Also produce [Behaviour scenarios](#behaviour-scenarios) for changed flows. |
 | 3 | TDD | Run a failing test or check before the change. |
 | 4 | Eval | Define judging criteria and the request matrix: each requested target × item; scenario rows are request-matrix cells. |
@@ -15,7 +15,7 @@ Keep repository policy, state and write authority with the repository.
 | 6 | Repeat | Repeat steps 3–5 until the tests pass. |
 | 7 | Finish | Mark done only when every matrix cell has evidence checked now; otherwise report N/M cells and the open cells. Deliver owner-only decisions last, each with a recommendation. |
 
-Throughout, keep the request matrix and recorded intent current. Keep any
+Throughout, keep the request matrix current; maintain recorded intent only when the request authorizes writes. Keep any
 repository-declared relation graph and memory links/embeddings current through
 its documented lifecycle. Surface conflicting new instructions with both sides.
 

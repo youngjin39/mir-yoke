@@ -1,6 +1,6 @@
 ---
 name: governance
-description: "Repository governance and instruction-document operations for CLAUDE.md, AGENTS.md, generated derivatives, project health, and agent registries. Use for instruction docs, governance review, project doctor, registry optimization, or multi-repository policy analysis."
+description: "Repository governance and instruction-document operations for CLAUDE.md, AGENTS.md, generated derivatives, project health, and agent registries. Use for instruction docs, governance review, project doctor, registry optimization, or multi-repository policy analysis. Trigger: improve a skill from past sessions, skill patch from traces, improve instruction docs from past sessions."
 ---
 
 # Repository Governance
@@ -25,4 +25,4 @@ description: "Repository governance and instruction-document operations for CLAU
 Do not assume a fleet topology, Mir CLI, bootstrap phase, memory store, provider marker, or global
 registry. Use those concepts only when the current repository explicitly declares them.
 
-For owner-invoked skill maintenance from traces, read [the optional reference](references/skill-patch-from-traces.md).
+For owner-invoked skill or instruction-document maintenance from traces, read [the optional reference](references/skill-patch-from-traces.md).

@@ -1,3 +1,897 @@
+## Capability gaploop: 0.13.30 round-9 corrections (2026-10-24)
+
+Intent/design authority: tasks/plan.md and the owner-supplied writer-r9 brief,
+retaining writer-r1/r5 limits. Preserve all earlier diffs; only four accepted items.
+Placement: P2-1 knowledge description retains old triggers and adds ordinary notes/
+memory and prior-decision lookup. Refine check: frontier-interview step 4 restates
+scope/constraint/exclusion answers and confirms them in the next numbered round
+before recording or recomputing; dependents wait. Unused-code proof: existing audit
+lean paragraph requires whole-tree tests/config/fixture/dynamic/string-reference
+search or an unproven label, and adds merge/split; diff findings remain scoped.
+Existing Ponytail provenance is retained. P2-2: one identical routing line near
+routing text in automation and ontology; runtime-continuity remains unchanged.
+References are 46 and 49 lines. No hook, lifecycle, fluent-korean, no-ai-slop or lock edits.
+
+Fail-first before guidance changes: `uv run pytest -q tests/test_capability_gaploop.py
+--tb=short` returned five failures covering all four items (precedence in both skills):
+`5 failed, 73 passed in 0.15s`.
+After guidance changes, the same command returned `78 passed in 0.09s`.
+Runtime scenarios are not applicable: guidance/text contracts only.
+First full suite: `10 failed, 2817 passed, 1 skipped in 343.24s (0:05:43)`.
+One new failure was an existing frontier contract requiring the literal `recompute`;
+`recomputing` did not match. Retain that contract and explicitly say to recompute
+once the answer is confirmed. The remaining failures were the expected pre-bind
+lock mismatch and eight clone-internal fixture limitations: two parent Git discovery
+cases and six release-evidence targets that require an outside-worktree location.
+Final gaploop + gapfill contracts: `85 passed in 0.07s`.
+Ontology description, handoff and byte-exact pin checks:
+`31 passed, 318 deselected in 0.30s`.
+Final full suite, with TMPDIR and --basetemp inside .pytest_cache/r9 and
+GIT_CEILING_DIRECTORIES set to that scratch root:
+`7 failed, 2820 passed, 1 skipped in 408.96s (0:06:48)`.
+The parent-Git discovery cases and every guidance contract pass. One expected
+pre-bind failure remains:
+`tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees`.
+Six sandbox-only release-evidence cases reject their clone-internal state paths:
+`observer state directory must be outside target and provider`. Moving them outside
+the clone would violate the brief; leave their checks and unrelated code unchanged.
+No handoff-runner failure occurred. Full-suite cell remains open: matrix 10/11.
+
+Ruff: `All checks passed!`; Codex parity:
+`OK: Codex derivatives match Claude sources`; git diff --check exited 0.
+Payload generation: `template asset classification: pass`.
+Knowledge description: 310 characters; ontology description: unchanged at 510
+characters; ontology body: 10537 bytes. Modified references: 46/49 lines.
+Entry hashes show exactly 11 in-scope files changed, with lifecycle-hooks, both
+locks, source acknowledgements, fluent-korean and no-ai-slop preserved. Final
+record/payload scanning returned `19 passed in 0.86s`; Ruff and Codex parity
+passed again and git diff --check exited 0. All other entry files match their
+original hashes. Regenerate payload after this evidence update, then delete only
+.pytest_cache/r9 scratch. No commit or outside write.
+
+## Capability gaploop: 0.13.30 round-8 corrections (2026-10-24)
+
+Intent/design authority: tasks/plan.md and the owner-supplied writer-r8 brief,
+retaining writer-r1/r5 limits. Only G1-G3 and D1-D3 from round-7 are accepted;
+the Minor section remains excluded. Preserve all earlier uncommitted changes.
+
+Placement: G1 beside bluebricks workflow step 9 (verified, write-authorized,
+intent-first updates to affected existing durable docs; bidirectional staleness,
+conflict escalation and tiny-edit exemption). G2 in existing technical-runbooks
+and public-notices references (five technical forms and publication checks,
+fresh Korean wording); retain runbook guidance. G3 in the trace recipe's scope
+and governance description/pointer (canonical instruction proposals under the
+same budget, held-out comparison, staging and owner adoption; regenerate derivatives).
+D1 in both writing descriptions; reverse the additional no-ai-slop clause before
+the existing upstream 000650b byte-fidelity hash. D2 beside Intent Extraction
+step 2, with tuning defaults retained outside owner-invoked interviews; explicit
+grills ask every unresolved human decision and still derive facts. D3 in testing's
+description (experiment, benchmark, performance comparison). Refresh only the
+three edited Korean hashes. Lifecycle-hooks and acknowledgement remain unchanged.
+
+Fail-first, before guidance changes: `uv run pytest -q tests/test_capability_gaploop.py
+tests/test_writing_skills.py --tb=short` returned eight failures covering all six
+items and the upstream-description adaptation:
+`8 failed, 76 passed in 0.20s`.
+After guidance/hash changes, gaploop, writing fidelity, Korean hash, common-skill
+and plugin-package checks returned `138 passed in 7.08s`.
+Runtime scenarios are not applicable: guidance and text contracts change only.
+A preservation check additionally failed before clarifying that tuning defaults
+still apply outside owner-invoked interviews: `1 failed, 72 deselected in 0.14s`.
+Final focused contracts after that clarification: `138 passed in 6.80s`.
+
+Full suite, observed 2026-10-24, exit 1:
+`9 failed, 2813 passed, 1 skipped in 349.93s (0:05:49)`.
+Expected pre-bind failure:
+`tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees`.
+Eight sandbox-only failures reproduce the prior round's clone-internal fixture
+constraint: unknown-Git and non-Git-root cases discover the parent worktree;
+six project-agent-kit release-evidence cases reject targets inside a Git worktree.
+Failed-only rerun with GIT_CEILING_DIRECTORIES set to the clone-internal fixture
+root: `7 failed, 2 passed in 1.83s`. The two Git-discovery cases pass; the six
+release-evidence cases instead reject their state directory with
+`observer state directory must be outside target and provider`.
+Their required outside location conflicts with scratch-clone-only writes. Leave
+these checks and unrelated code unchanged. No handoff-runner failure occurred.
+
+Ruff: `All checks passed!`; Codex parity:
+`OK: Codex derivatives match Claude sources`; git diff --check exited 0.
+Regenerated payload: `template asset classification: pass`.
+Entry-hash inspection: exactly 18 in-scope files changed, 12 protected hashes
+unchanged, including both locks, fluent-korean, lifecycle-hooks and the package
+acknowledgement. References are 34/26/44/42 lines; descriptions are under 1024
+characters. Matrix 12/13: all six guidance items and other checks have evidence;
+the full-suite cell remains open for the six outside-provider fixture cases.
+Regenerate the payload after these records, verify final delivery/scanning
+contracts and delete task-owned verification scratch. No commit or outside write.
+
+## Capability gaploop: 0.13.30 round-7 corrections (2026-10-24)
+
+Intent/design authority: tasks/plan.md and the owner-supplied writer-r7 brief,
+retaining writer-r1/r5 limits. Only G1-G3 and D1-D4 from round-6 are accepted;
+G4 and Minor findings remain excluded. Preserve every earlier uncommitted change.
+
+Placement: G1 in design Intent Extraction (freeze exit, existing question limit
+retained, dryforge pin added); G2 in contextual-revision's cue table (three fresh
+Korean fix/keep rows); G3 in knowledge step 3 (exact premise-aware recall, explicit
+unknown conflicts); D1 beside both Korean no-ai-slop pointers (general principles
+only, no English lists); D2 in efficiency's description and inventory/placement
+reference label; D3 in runtime-continuity's handoff paragraph (existing PreToolUse
+owner command/file-write guard); D4 as one identical audit precedence line near
+the code-review/repo-maintenance routing entrypoints. Hook behavior is unchanged.
+Refresh both edited Korean hashes and the lifecycle tree acknowledgement, not
+locks. Fluent-korean and no-ai-slop remain byte-identical to entry state.
+
+Fail-first: before guidance changes, `uv run pytest -q tests/test_capability_gaploop.py
+--tb=short` returned exit 1: `9 failed, 57 passed in 0.18s`. All nine failures
+identify missing requested guidance across seven items and duplicate placements.
+After guidance/hash/acknowledgement changes, focused gaploop, Korean hashes,
+writing fidelity, common-skill, package and finalfill checks returned:
+`148 passed in 0.69s`. Ruff initially found 13 long new test lines; wrap only those.
+Ruff then returned `All checks passed!`; Codex parity returned
+`OK: Codex derivatives match Claude sources`; whitespace check exited 0.
+Runtime scenarios are not applicable because no executable behavior changes.
+Regenerate the adopter payload and run the required full suite before closeout.
+
+Full suite, observed 2026-10-24, exit 1:
+`9 failed, 2806 passed, 1 skipped in 330.51s (0:05:30)`.
+The expected pre-bind failure is
+`tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees`.
+Eight additional failures arose from keeping fixture scratch inside this clone:
+unknown-Git and non-Git-root cases discovered the parent worktree, while six
+project-agent-kit release-evidence cases rejected a target inside a Git worktree.
+A failed-only rerun with GIT_CEILING_DIRECTORIES bounded to the fixture directory
+returned `7 failed, 2 passed in 0.60s`. This resolves the two Git-discovery cases;
+the six release-evidence cases now reject their state directory inside the
+provider with `observer state directory must be outside target and provider`.
+The owner's scratch-clone-only constraint precludes their required outside
+fixture location. Do not weaken those checks, alter unrelated code or use an
+outside directory. The real handoff-runner test passed in the full suite.
+
+Entry-hash comparison confirms exactly 16 in-scope changed files. Both locks,
+fluent-korean, no-ai-slop, hook registrations and executable sources are unchanged.
+The Korean cue reference is 34 lines; package tests cover SessionStart text and
+byte budgets, handler hashes and the refreshed lifecycle acknowledgement.
+Seven guidance items have current executed evidence. Matrix: 13/14; the full-suite
+cell remains open because six fixture-boundary failures exceed the sole allowed
+pre-bind failure. All required commands ran. Leave the diff uncommitted and
+report both full-suite and failed-only summaries without claiming full success.
+Final record/payload checks returned `82 passed in 0.64s`; Ruff returned
+`All checks passed!`; Codex parity returned
+`OK: Codex derivatives match Claude sources`; whitespace exited 0 with no
+output. Regenerate the payload after this evidence record and remove only
+task-owned fixture/cache/log paths inside the clone. No commit or push.
+
+## Capability gaploop: 0.13.30 round-6 corrections (2026-10-24)
+
+Intent/design authority: tasks/plan.md and the owner-supplied writer-r6 brief,
+retaining writer-r1/r5 limits. Exactly seven accepted findings from round-5.md;
+Gap 5 and Minor findings are excluded. Preserve all earlier uncommitted changes.
+
+Placement:
+1. Korean-writing diagnosis paragraph: Korean detection, including AI-cliche
+   detection, stays diagnose-only; no-ai-slop Detect applies only to English.
+   The reciprocal no-ai-slop line is unchanged.
+2. Korean-writing basic-rule paragraph: genre register and preserved writer voice
+   override polite-speech/sentence endings where required; agent messages and
+   default prose still follow fluent-korean. Only this file's Korean hash changes.
+3. Spec-architect 00-completeness, Batch them: present cells by prerequisite frontier;
+   dependent open cells wait for later rounds; keep no cell-by-cell questioning.
+4. Verify workflow step 2: run a safe, permitted observed response/effect check for
+   runnable service/CLI/UI deliverables beside unit tests, otherwise unevaluated;
+   add the existing dryforge provenance pin. No duplicate ouroboros credit.
+5. Automation description and recovery pointer; recovery-and-reframing opening:
+   accept user-reported stalls; preserve report-only advice and Main's action choice.
+6. Governance description: expose existing trace-based skill maintenance advice.
+7. Efficiency description: expose the existing terse-output baseline; no hook edits.
+
+Tests: extend tests/test_capability_gaploop.py for all seven items, preserving old
+triggers and checking description length. Update the contradictory earlier Korean
+routing assertion. Before guidance edits, the focused command returned exit 1:
+`8 failed, 49 passed in 0.40s`. All eight failed on requested missing wording.
+Focused gaploop, Korean hashes, writing fidelity, common-skill, package and finalfill
+checks follow. CHANGELOG/MIGRATION document guidance only; regenerate the adopter
+payload after records. Both locks, capability sources, no-ai-slop, fluent-korean
+and lifecycle-hooks must retain their entry hashes. No commits or other-repository
+source edits. Runtime scenarios do not apply to documentation-only changes.
+
+Focused checks after guidance edits: `139 passed in 6.41s`.
+Ruff first found four long escaped-string lines in the new tests; wrap those only.
+Codex parity: `OK: Codex derivatives match Claude sources`.
+Required full pytest uses task-owned external-SSD fixture scratch outside any Git
+worktree; this edits no other repository. UV_FROZEN=1 prevents lock refresh and
+UV_CACHE_DIR uses the authorized shared cache. Remove fixture scratch at closeout.
+
+Full suite, final source guidance, observed 2026-10-24, exit 1:
+`1 failed, 2805 passed, 1 skipped in 433.17s (0:07:13)`.
+Only `tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees`
+fails on the explicitly expected pre-bind plugin-tree digest assertion. The real
+handoff runner passes. No unrelated test/runtime changes or lock binding.
+Ruff after wrapping: `All checks passed!`; Codex parity:
+`OK: Codex derivatives match Claude sources`; `git diff --check`: exit 0, no output.
+
+Entry-state verification: exactly 14 allowed files changed, no unexpected changed
+paths; 12 explicit protected file hashes match (both locks, capability-source
+configuration, no-ai-slop, fluent-korean, existing Korean references and dirty
+lifecycle-hooks files). Other entry files remain byte-identical. Description
+lengths (automation/governance/efficiency): 227/335/290; existing triggers retained.
+The recovery reference stays at 42 lines. All seven items have targeted executed
+evidence; matrix 14/14 under the specified pre-binding allowance. Refresh payload
+and rerun affected delivery/sanitization checks after these records; leave the
+working-tree diff uncommitted. Main owns later binding/publication.
+
+Post-record delivery/sanitization checks: `13 passed in 0.86s`.
+Task-owned external fixture scratch was removed. Regenerate payload after this
+final record and recheck affected inventory/scanning; no guidance changes since
+the complete full-suite run.
+
+## Capability gaploop: 0.13.30 round-5 corrections (2026-10-24)
+
+Intent/design authority: tasks/plan.md and the owner-supplied writer-r5 brief,
+retaining writer-r1 limits. Exactly nine accepted round-4 findings; no Minor work.
+All earlier uncommitted changes are preserved; no commits or other-repository edits.
+
+Placement and decisions:
+1. Bluebricks workflow step 2: enumerate callers, tests, fixtures, configs, exports
+   and cross-cutting sites before editing; find size/member-set-coupled tests and
+   snapshots; fix a bug once in shared code and finish reached sites. Tiny edits
+   use a quick search. Two provenance lines follow the existing reference pointers.
+2. Efficiency before Workflow: define the terse-output baseline with expansion
+   exceptions and exact-command/path/identifier preservation; include provenance.
+3. Knowledge step 3: default learned lesson/memory notes to no write; positive
+   notes need direct support or premise contradiction. Exclude near/insufficient
+   evidence or label a caution; manual, write-authorized only, no learning loop.
+4. Testing Rules: local naming wins; should_return_X_when_Y is a fallback only.
+5. Verify/design legacy descriptions: evidence-gated completion and optional
+   host-provided verification/delegated roles. Testing Output: measured coverage
+   only; otherwise "not measured".
+6. No-ai-slop Provenance: reciprocal Korean routing, English pattern-list scope.
+   The fidelity test explicitly splits off this local adaptation and still hashes
+   the remaining upstream bytes after only the pre-existing reversals.
+7. Design frontmatter: add grill me and stress-test a plan to existing triggers.
+8. Verify frontmatter: self-audit/spec audit replace bare audit; code-review adds
+   repository audit and retains every existing trigger. Routing precedence remains.
+9. Automation step 1: reuse the existing cursor/task ledger; never a second cursor;
+   create a run ledger only when none exists and write authority exists.
+
+Read-only upstream checks, observed 2026-10-24 with git log -1 --format=%h:
+- DietrichGebert/ponytail: 09c434a; root LICENSE is MIT.
+- fn-opt/dryforge: f5aa6d7; root LICENSE is Apache-2.0.
+- drona23/claude-token-efficient: 0d30a6d; root LICENSE is MIT.
+- xiaowu0162/LongMemEval-V2: 2cc8c54; root LICENSE is Apache-2.0;
+  no separate LICENSE/COPYING found in memory_modules. Per the brief, borrow only
+  the evidence-status idea and write fresh wording; no memory-module text copied.
+These are verified in the supplied local clones, not inferred from the review.
+
+Fail-first before guidance edits:
+`UV_CACHE_DIR=<external-cache> UV_FROZEN=1 uv run pytest -q tests/test_capability_gaploop.py`
+returned exit 1: `11 failed, 39 passed in 0.13s`. All eleven new cases failed on
+missing requested wording. After guidance edits, focused gaploop/writing/plugin/
+finalfill checks returned `94 passed in 0.26s`. New tests check all nine items,
+removal of contradictory rules, trigger length and unchanged routing precedence.
+CHANGELOG/MIGRATION summarize guidance-only changes; no Korean file changed.
+Both locks, capability-source acknowledgements, fluent-korean and lifecycle-hooks
+must match entry hashes. Regenerate payload after record edits; required full
+pytest, Ruff, Codex parity and whitespace checks follow. Main owns later binding.
+
+
+Full suite, source guidance in its final state, observed 2026-10-24:
+`1 failed, 2798 passed, 1 skipped in 350.40s (0:05:50)`.
+Only `tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees`
+fails on the expected pre-bind plugin-tree digest; no handoff-runner failure.
+Test fixtures use task-owned external-SSD scratch outside the provider worktree;
+no other repository sources were edited. UV_FROZEN=1 prevents lock refresh and
+UV_CACHE_DIR selects the authorized shared external cache. Scratch is removed
+at closeout. The full suite ran once to completion; no unrelated code was changed.
+
+Ruff initially found two long new test strings; wrap only those assertions.
+After formatting: `All checks passed!`. Codex parity:
+`OK: Codex derivatives match Claude sources`. `git diff --check`: exit 0.
+No-ai-slop clone HEAD additionally verified as 000650b; bundled LICENSE is MIT.
+Design/verify descriptions are 444/314 characters, within the 1024 limit.
+All 21 protected entry hashes match (both locks, capability-source configuration,
+Korean-writing, fluent-korean and lifecycle-hooks files). No reference files changed.
+
+Round-5 changed-file inventory (relative to entry, not the prior-round baseline):
+- plugins/mir-code/skills/bluebricks/SKILL.md: item 1, step 2 and provenance.
+- plugins/mir-core/skills/efficiency/SKILL.md: item 2, baseline before Workflow.
+- plugins/mir-content/skills/knowledge/SKILL.md: item 3, step 3 and provenance.
+- plugins/mir-code/skills/testing/SKILL.md: items 4/5, Rules and Output.
+- plugins/mir-core/skills/verify/SKILL.md: items 5/8, legacy intent and triggers.
+- plugins/mir-core/skills/design/SKILL.md: items 5/7, legacy intent and triggers.
+- plugins/mir-content/skills/no-ai-slop/SKILL.md: item 6, local provenance area.
+- plugins/mir-code/skills/code-review/SKILL.md: item 8, description trigger list.
+- plugins/mir-core/skills/automation/SKILL.md: item 9, workflow step 1.
+- tests/test_capability_gaploop.py: eleven targeted cases for all nine items.
+- tests/test_writing_skills.py: explicit local-routing split; same upstream hash.
+- CHANGELOG.md, MIGRATION.md: brief English 0.13.30 correction notes.
+- tasks/plan.md, tasks/change_log.md: single intent cursor and verification evidence.
+- config/adopter-payload.json: regenerated delivery hashes after record updates.
+
+Matrix **16/16** under the explicit pre-binding allowance: nine requested items,
+sha/license evidence, fail-first, notes/payload, full pytest, Ruff, Codex parity
+and whitespace. The full suite is not all green; binding remains Main-owned.
+Final record-dependent payload generation and focused delivery/format/parity checks
+follow these evidence updates. No commits, releases or consumer writes.
+
+
+Final focused guidance, fidelity, Korean sanitization, common-skill, package and
+payload checks: `121 passed in 0.80s`. Final Ruff: `All checks passed!`;
+Codex parity: `OK: Codex derivatives match Claude sources`; whitespace: exit 0.
+Regenerate the payload after this evidence-only addition and rerun the exact
+inventory assertion; the final response carries that last command's result.
+
+## Capability gaploop: 0.13.30 round-4 corrections (2026-10-24)
+
+Intent/design authority: tasks/plan.md and the owner-supplied writer-r4 brief,
+retaining writer-r1/r3 constraints and all prior uncommitted changes. Five accepted
+items only; inspected the independent round-3 review and its cited source lines.
+
+- Bluebricks adds one implementation-time line: mark deliberate known limitations
+  immediately using the existing shortcut recipe, with a ceiling and observable
+  upgrade trigger. No scanner or new ledger.
+- Korean-writing checks eligibility, deadlines, prices and regulations against
+  authoritative or provided current sources before confirming facts; keep source
+  dates/versions and draft/to-confirm labels. Original Korean wording, unchanged
+  provenance and refreshed SKILL.md hash; fluent-korean is untouched.
+- Spec-architect's entrypoint, completeness lattice and AI-ready reference make
+  readiness/completeness advisory to Main and the owner. Only deterministic required
+  checks and explicit owner decisions block implementation. Keep gap reporting and
+  the three-failure stop, scoped to the spec-repair loop; it does not veto already
+  authorized implementation. The MODE-S pointer uses the existing heading.
+- Automation scopes ledger steps to persistent/long-running runs with write
+  authority; one-off read-only browser observation creates no record. Browser
+  step 4 remains byte-for-byte unchanged.
+- Eight targeted contract cases cover all five items; release notes and adopter
+  payload are updated. No lock, runtime, hook, other-repository or commit changes.
+
+Fail-first: `uv run pytest -q tests/test_capability_gaploop.py` with the authorized
+external cache returned `8 failed, 31 passed in 0.09s`, all eight failing on absent
+guidance. The first invocation could not open the inherited cache outside the
+sandbox; use UV_CACHE_DIR on the external shared cache for subsequent commands.
+Focused gaploop, sanitization, common-skill and package checks:
+`93 passed in 0.88s`. First Ruff found five line-length errors in new test strings;
+wrapped those assertions only. Adopter payload regeneration returned
+`template asset classification: pass`. Required final checks follow execution.
+
+The first full invocation was interrupted (exit 130), not accepted as evidence:
+the evidence-log update preceded payload refresh, so its early payload check read
+stale hashes. Also, placing pytest scratch under `.mir/runtime` caused the existing
+whole-repository copy fixture to copy its own scratch. Moved task-owned evidence
+and scratch under ignored `.pytest_cache`, which that fixture already excludes;
+no fixture or unrelated code changes. Regenerate after this record, then rerun.
+Post-format gaploop checks: `39 passed in 0.15s`. Ruff: `All checks passed!`;
+Codex parity: `OK: Codex derivatives match Claude sources`; whitespace exit 0.
+Four changed skills pass the skill validator. The two locks, capability-source
+configuration and fluent-korean match their round-4 entry SHA-256 values.
+
+The second full invocation was also interrupted (exit 130): its scratch was
+excluded from copies but remained inside this Git worktree. Existing tests that
+require a non-repository directory therefore discovered the enclosing repository;
+confirmed with `git rev-parse --show-toplevel`. Use task-owned external-SSD scratch
+outside any worktree for the final run, then remove it. Only this clone's source
+files are edited; no test or unrelated runtime behavior is changed.
+
+Final complete full-suite run observed on 2026-10-24:
+`1 failed, 2787 passed, 1 skipped in 403.87s (0:06:43)`.
+Only `tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees`
+fails on the expected pre-bind plugin digest. No other failures; the handoff runner
+passes in this run. Matrix **11/11** under the explicit pre-binding allowance:
+five requested items, fail-first, notes/payload, full pytest, Ruff, Codex parity
+and whitespace. No all-green full-suite claim and no lock binding.
+
+Round-4 file inventory:
+- `plugins/mir-code/skills/bluebricks/SKILL.md`: one immediate-marker recipe pointer.
+- `plugins/mir-content/skills/korean-writing/SKILL.md`: current-source drafting checks.
+- `plugins/mir-core/skills/spec-architect/SKILL.md`: advisory readiness, bounded repair
+  stop and corrected MODE-S heading pointer.
+- `plugins/mir-core/skills/spec-architect/references/00-completeness.md`: report the
+  incomplete blueprint to Main; readiness advice is not an implementation veto.
+- `plugins/mir-core/skills/spec-architect/references/02-ai-ready-gate.md`: retain
+  gaps and three failures while limiting the stop to spec repair.
+- `plugins/mir-core/skills/automation/SKILL.md`: conditional ledger scope; same browser step.
+- `tests/test_capability_gaploop.py`: eight fail-first contract cases for five items.
+- `tests/test_no_korean_in_user_facing.py`: refresh only the changed Korean SKILL.md hash.
+- `CHANGELOG.md`, `MIGRATION.md`: brief guidance-only release notes.
+- `tasks/plan.md`, `tasks/change_log.md`: current intent/design and preserved evidence.
+- `config/adopter-payload.json`: regenerate delivery hashes after final record updates.
+
+Final record-dependent payload regeneration, focused delivery checks and ordered
+Ruff/parity/whitespace checks follow these updates; task-owned scratch is removed
+after completion. Both locks, capability-source configuration and fluent-korean
+remain byte-identical to their round-4 entry values. Preserve all prior-round
+changes and leave the candidate uncommitted.
+
+Final focused guidance, sanitization, package and delivery checks returned
+`106 passed in 7.43s`. Ruff returned `All checks passed!`; Codex parity returned
+`OK: Codex derivatives match Claude sources`; `git diff --check` returned exit 0.
+After this evidence-only addition, regenerate the payload and recheck the two
+exact-payload contracts. The round-4 entry hashes above still match after full tests.
+
+## Capability gaploop: 0.13.30 round-3 corrections (2026-10-24)
+
+Intent/design authority: tasks/plan.md and the owner-supplied writer-r3 brief,
+retaining writer-r1 constraints and both prior rounds' uncommitted changes.
+Six accepted items only: Korean diagnosis-only and generic detection precedence;
+business execution owner/date/next action or explicit undecided fields; migration
+code/owner confirmation separation and missing-rule elicitation; typed file/MOD/REQ/
+FEAT impact traversal; write-authorized cursor maintenance; optional-package method
+fallback. All existing rule meanings remain, narrowed by explicit exceptions.
+The migration reference reuses existing dispositions and fn-opt/dryforge f5aa6d7
+provenance. Korean wording is original; its three changed file hashes are updated.
+Before editing the default method, inspected its readers and pins in the plugin
+hook, manager source, common-skill contracts, package tests and security tests.
+SessionStart text/byte budgets and hook behavior stay unchanged; refresh the
+active lifecycle-package digest acknowledgement and adopter payload.
+
+Fail-first after adding eight cases: `uv run pytest -q tests/test_capability_gaploop.py`
+returned `8 failed, 23 passed in 0.12s`; every new case failed on missing guidance.
+An initial test-string syntax error was corrected before that run and is not
+fail-first evidence. First focused run returned `1 failed, 95 passed in 0.82s`:
+the negative assertion matched the suffix of the new conditional output rule.
+Anchored that assertion to the start of the old unconditional line; no guidance
+was changed to accommodate it. Required final checks are recorded after execution.
+
+Focused guidance/package/scenario/sanitization checks: `96 passed in 6.39s`.
+The Korean-writing and design skill validators also pass. First full run:
+`2 failed, 2778 passed, 1 skipped in 378.31s (0:06:18)`. Besides the permitted
+pre-bind lock assertion, the unchanged real repository handoff runner emitted its
+fail-open unavailable warning. Its cause is unknown; isolated unchanged retry:
+`1 passed in 0.23s`. All 931 source/candidate hashes were unchanged after the run.
+No hook, timeout or assertion was weakened. First Ruff found 14 line-length errors
+in the newly added escaped-string assertions; wrapped only those new assertions.
+Ruff then returned `All checks passed!`; Codex parity returned
+`OK: Codex derivatives match Claude sources`; whitespace check returned exit 0.
+A second full run follows these test-format and evidence-record changes.
+
+Final verification observed on 2026-10-24 (UTC): second full run returned
+`2 failed, 2778 passed, 1 skipped in 387.35s (0:06:27)`. The same failures remain:
+`tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees`
+(the permitted pre-bind failure), and
+`tests/test_mechanical_handoff.py::test_should_supply_real_repository_runner_pins_without_network`
+(the unexpected fail-open warning). Read-only inspection did not establish the
+warning's cause. The entire unchanged handoff module separately returned
+`465 passed in 60.68s (0:01:00)`. Do not substitute that for a passing full run.
+All 931 candidate/source hashes remained unchanged after the second run.
+Ordered post-run checks: Ruff `All checks passed!`; Codex parity
+`OK: Codex derivatives match Claude sources`; `git diff --check` exit 0, no output.
+
+Request matrix: **11/12 evidenced**. The six accepted guidance items, fail-first,
+release notes/digest/payload, Ruff, Codex parity and whitespace are satisfied.
+The full-suite cell stays open because it has one failure beyond the allowed
+pre-bind lock assertion. Guidance changes are implemented; no all-green claim,
+hook modification, timeout change, lock edit, commit or consumer write is made.
+Main owns any further diagnosis of the unchanged runner and later binding.
+Final record-dependent payload regeneration and focused checks follow this entry;
+remove only task-owned ignored verification scratch after checking.
+
+Round-3 file inventory and decisions:
+- `plugins/mir-content/skills/korean-writing/SKILL.md` and
+  `references/contextual-revision.md`: choose diagnose/revise before the workflow;
+  diagnose-only returns located prioritized findings without changing the original;
+  Korean linguistic diagnosis takes this route, generic pattern detection uses Detect.
+- `plugins/mir-content/skills/korean-writing/references/business.md`: requested
+  execution names owner, delivery date and next action, each explicitly undecided if unknown.
+- `plugins/mir-core/skills/design/SKILL.md` and
+  `references/migration-policy-confirmation.md`: separate implementation from owner
+  intent, confirm dangerous inferred policy, elicit important absent rules using
+  existing dispositions; fallback to the repository method or this skill when the
+  separately optional lifecycle package is absent.
+- `plugins/mir-core/skills/spec-architect/references/04-artifacts.md`: select reverse
+  edges by input type, with path to MOD to REQ to FEAT and task/dependency coverage.
+- `plugins/mir-core/skills/repo-maintenance/SKILL.md` and
+  `plugins/mir-lifecycle-hooks/skills/runtime-continuity/references/default-work-method.md`:
+  cursor/state updates require request write authority; read-only reviews write
+  nothing and add no approval detour. Existing hook behavior remains unchanged.
+- `tests/test_capability_gaploop.py`: eight fail-first cases for all six items.
+- `tests/test_no_korean_in_user_facing.py`: refresh only the three changed Korean hashes.
+- `config/capability-sources.json`: refresh the lifecycle-package digest acknowledgement.
+- `config/adopter-payload.json`: regenerate the classified delivery inventory.
+- `CHANGELOG.md`, `MIGRATION.md`, `tasks/plan.md`, `tasks/change_log.md`: concise
+  release guidance, current authority/design cursor and preserved prior evidence.
+
+After final evidence/cursor updates, regenerated the adopter payload successfully
+(`template asset classification: pass`). Final related guidance, package, method,
+sanitization and exact-payload checks returned `102 passed in 0.87s`.
+The full-suite cell remains open as recorded above; these focused results do not
+supersede either full-run failure. Refresh the payload after this final record.
+
+## Cursor before capability-gaploop round 3 (2026-10-24)
+
+# Plan
+
+## Active task: capability-gaploop-01330-round-2-2026-10-24
+
+Intent authority: the owner-supplied writer-r2 brief, retaining writer-r1 limits.
+This file remains the single intent/design cursor. Preserve the round-1 diff and
+fix exactly G1, D1-D5, the provenance note and Korean reference language.
+Design: ground identifiers before use; separate forward readiness from code-bound
+verification; exclude internal Gateway/Timer actors from external entities; permit
+target-relative evidence and check commands; route as-built analysis to bluebricks
+and unresolved choices to design; preserve contextual writing exceptions in eval;
+translate the finish reference with unchanged meaning and provenance.
+Matrix: eight accepted items, fail-first regressions, release notes/payload and
+the four ordered checks. Runtime scenarios are inapplicable to guidance-only edits;
+contract tests cover both replacement wording and removal of contradictory rules.
+No lock or fluent-korean edits, commits, or writes outside this scratch clone.
+Round-2 evidence belongs in tasks/change_log.md; round-1 evidence follows unchanged.
+
+Round-2 result: 14/14 cells evidenced under the explicit pre-binding allowance.
+Fail-first: `9 failed, 14 passed in 0.11s`; focused: `41 passed in 5.98s`.
+Final full suite: `1 failed, 2771 passed, 1 skipped in 379.64s (0:06:19)`;
+only the permitted repository-lock digest assertion fails. Ruff, Codex parity and
+whitespace checks pass. The first full run's additional handoff-runner warning,
+unchanged passing retry and complete evidence are in
+[the evidence log](change_log.md#capability-gaploop-01330-round-2-corrections-2026-10-24).
+Record-dependent payload regeneration and focused checks precede delivery.
+Leave the candidate uncommitted; binding and delivery remain Main-owned.
+
+
+## Capability gaploop: 0.13.30 round-2 corrections (2026-10-24)
+
+Intent/design authority: tasks/plan.md and owner-supplied writer-r2 brief;
+writer-r1 constraints remain in force. All changes stay in the scratch clone.
+The prior preparation record below remains historical evidence.
+
+Decisions: G1 grounds unfamiliar/version-sensitive identifiers in bluebricks before
+use, crediting drona23/claude-token-efficient 0d30a6d. D1 permits forward readiness
+with declared checks and records code-binding gaps separately, retaining approval
+for anchor injection. D2 excludes internal Gateway/Timer actors from external
+entities in both rules. D3 permits target-relative evidence/check commands while
+excluding private host/session/runtime details. D4 routes as-built analysis to
+bluebricks and unresolved/new design to design. D5 aligns writing eval with the
+contextual term/name/adverb/phrase exceptions, normalizing only that eval line for
+upstream byte fidelity. The provenance note names the small local adaptation.
+The long-form reference now uses fresh Korean with the same meaning/provenance;
+its exact-file sanitization hash and contract vocabulary are updated.
+
+Fail-first, before guidance edits: `uv run pytest -q tests/test_capability_gaploop.py`
+returned exit 1: `9 failed, 14 passed in 0.11s`. All eight new item tests and the
+Korean recipe vocabulary check failed as intended. After guidance/hash edits:
+`uv run pytest -q tests/test_capability_gaploop.py tests/test_writing_skills.py tests/test_no_korean_in_user_facing.py`
+returned exit 0: `41 passed in 5.98s`. Required full/ordered checks follow the payload
+regeneration; their actual results are recorded after execution.
+
+Full verification used the round-1 corrected layout: an ignored, byte-identical
+candidate inside this clone, with fixture scratch outside that provider copy and
+a Git discovery ceiling at the fixture boundary. Both full runs left all 930
+source/candidate file hashes unchanged. UV uses the shared external cache.
+First ordered run: `2 failed, 2770 passed, 1 skipped in 353.98s (0:05:53)`.
+Besides the expected lock digest assertion, the real handoff runner emitted a
+fail-open warning; the cause is unknown. Its isolated retry passed unchanged:
+`1 passed in 1.12s`. No hook, timeout or test condition was modified.
+Second full run: `1 failed, 2771 passed, 1 skipped in 379.64s (0:06:19)`.
+Only `tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees`
+failed, as explicitly permitted before binding. Both full runs were followed, in
+order, by Ruff (`All checks passed!`), Codex parity
+(`OK: Codex derivatives match Claude sources`) and `git diff --check` (exit 0,
+no output). Observed on 2026-10-24 at 04:34 UTC.
+Round-2 matrix: 14/14 cells evidenced under the explicit pre-binding allowance
+(eight items, fail-first, release notes/payload and four ordered checks).
+Final record-dependent payload regeneration and focused content/sanitization/
+payload checks follow this entry. Remove task verification scratch after checking.
+No lock/fluent-korean edit, commit or external repository write is authorized.
+
+## Capability gaploop: 0.13.30 preparation (2026-10-24)
+
+Intent/design authority: tasks/plan.md and the owner-supplied writer-r1 brief;
+owner Discord 1563396738570780685 (parent-supplied). Base: 5a1a5ac.
+Only this scratch clone is writable task scope; no release binding is authorized.
+
+Decisions and placements:
+- D1: spec-architect 04-artifacts calls graph links verification declared and
+  requires executed results for the checked revision.
+- D2: reuse fixed has_req (FEAT/TASK to REQ) and realized_by (REQ/TASK to MOD)
+  vocabulary, matching tasks.yaml without introducing an undeclared covers edge.
+- D3: enumerate per-axis L1 subjects and sum their counts; example totals 25.
+- D4: retain no-ai-slop's ban list while exempting meaningful terminology/names;
+  normalize only this approved exception in the upstream-fidelity test.
+- D5: diff/PR review routes to code-review, completion/spec evidence to verify,
+  architecture analysis to bluebricks in all three entrypoints.
+- D6: testing GUI procedure applies only to changed GUI behavior.
+- D7: qualitative seven-category review avoids invented weights/anchors; dashboard
+  wording describes a structured report and supplies no dashboard implementation.
+- G1/G3/G5: design owns advisory pre-spec intent audit, prototype escape and
+  conversation-only applicability, plus the consequential-choice memo.
+- G2: bluebricks owns bounded integration, dependency/shared-write/regen barriers,
+  failed-worktree retention and final combined evidence.
+- G4: korean-writing owns fresh English long-form finish guidance and owner-only
+  requested reusable style profiles in existing authorized docs/memory locations.
+- G6: spec-architect owns approved-spec parent/child issue drafts, destination and
+  duplicate checks, exact preview and explicit external-write authority.
+- G7: app-investigation extends its existing report/matrix with behavior ownership,
+  original/candidate proof identities, case kinds, comparable evidence, invalidation
+  and retained contradictions. Both files now cite MIT cd10ee1; historical 9e6c624
+  remains explicitly unlicensed when first adapted.
+
+Provenance: matching clone HEADs read locally on 2026-10-24: fn-opt/dryforge
+f5aa6d7, mattpocock/skills 5beb35b, Q00/ouroboros 825bc68,
+bear2u/natural-korean-skills 2a4f1fc and morluto/rea cd10ee1.
+The owner-supplied full second-final-review report supplied the scoped upstream
+passages. Unlicensed Korean-source ideas are freshly worded; Paperclip is excluded.
+Existing references retain their own historical provenance pins.
+
+Fail-first evidence, before guidance edits:
+`UV_CACHE_DIR=<shared-cache> uv run pytest -q tests/test_capability_gaploop.py`
+returned exit 1: `15 failed in 0.15s`. Missing references and old defective wording
+caused all 15 failures. Initial plain uv invocation could not access the default
+cache (os error 1); using the authorized shared T7 cache resolved initialization.
+After edits, gaploop/writing/finalfill/plugin focused tests returned exit 0:
+`59 passed in 0.45s`. Ruff returned `All checks passed!`.
+
+The first full run used a system pytest executable without the editable package
+on its subprocess path. The extra failing harness-consistency check was reproduced:
+`1 failed in 0.15s`, with `ModuleNotFoundError: No module named 'mir'`.
+The first full run was interrupted (exit 130) after diagnosis; it is not acceptance
+evidence. `uv sync --extra dev` installed the project-local pytest and Ruff.
+The same harness-consistency test then passed: `1 passed in 2.76s`.
+No test/source behavior was weakened to address this environment issue.
+
+A full run with test scratch nested under the provider returned:
+`10 failed, 2754 passed, 1 skipped in 325.31s (0:05:25)`.
+Besides the allowed lock failure, eight failures came from Git discovery or the
+observer's required outside-provider boundary; direct failing examples confirmed
+both. The remaining real-runner hook failure emitted a fail-open warning and
+passed on isolated rerun (`1 passed in 0.37s`); its cause remains unconfirmed.
+Tests and runtime limits were not changed. For final verification, a byte-identical
+candidate copy and its Git metadata are under ignored task scratch, while pytest
+scratch is a sibling outside that provider copy. GIT_CEILING_DIRECTORIES bounds Git
+discovery at the temporary-fixture boundary. All task writes stay in this clone.
+
+The corrected-layout subset (Project Agent Kit release evidence, unknown Git pins,
+real handoff runner and harness consistency) passed: `34 passed in 49.88s`.
+Final full verification (corrected layout, candidate byte-identical across 930
+files before and after the run) returned exit 1:
+`1 failed, 2763 passed, 1 skipped in 356.43s (0:05:56)`.
+The only failure is
+`tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees`,
+the explicitly allowed pre-binding failure. No other open verification cell remains
+under that preparation allowance. The one skip is retained from the existing suite.
+
+Preparation matrix: 16/16 cells evidenced (D1-D7, G1-G7, release metadata/payload,
+and fail-first/required checks). Ruff: `All checks passed!`; Codex parity:
+`OK: Codex derivatives match Claude sources`; `git diff --check`: exit 0, no output.
+Full tests ran with project-local development dependencies and a fixture Git ceiling
+inside this clone. This changes no product code, test assertions or runtime limits.
+
+After writing this record, regenerate the adopter payload and run final focused
+content, sanitization, exact payload and harness checks, then repeat Ruff, Codex
+parity and whitespace. Their exact terminal summary is delivered with the diff.
+Temporary verification copies, fixtures and logs are removed after evidence capture.
+No binding, commit, push, tag, release or consumer update occurred. Paperclip is
+excluded by instruction; no requested guidance item is deferred.
+
+Final full-suite evidence observed at 2026-10-24T04:04:30.530610+00:00.
+
+### Changed files (one line each)
+
+- `.claude-plugin/marketplace.json`: Bump all marketplace plugin versions to 0.13.30.
+- `CHANGELOG.md`: Record seven corrections, seven bounded recipes and provenance.
+- `MIGRATION.md`: Document qualitative review and unchanged runtime/binding boundaries.
+- `README.md`: Update install version and summarize 0.13.30 guidance.
+- `VERSION`: Set source version to 0.13.30.
+- `config/adopter-payload.json`: Regenerate classified file digests for the candidate.
+- `config/capability-sources.json`: Acknowledge the lifecycle tree digest after manifest version changes.
+- `plugins/mir-code/.claude-plugin/plugin.json`: Bump the runtime plugin manifest version to 0.13.30.
+- `plugins/mir-code/.codex-plugin/plugin.json`: Bump the runtime plugin manifest version to 0.13.30.
+- `plugins/mir-code/skills/bluebricks/SKILL.md`: Clarify review routing and link bounded integration.
+- `plugins/mir-code/skills/bluebricks/references/bounded-task-integration.md`: Add G2 ownership, dependencies, barriers and integrated proof.
+- `plugins/mir-code/skills/code-review/SKILL.md`: Make diff/PR review precedence explicit (D5).
+- `plugins/mir-code/skills/testing/SKILL.md`: Restrict the GUI procedure to changed GUI behavior (D6).
+- `plugins/mir-content/.claude-plugin/plugin.json`: Bump the runtime plugin manifest version to 0.13.30.
+- `plugins/mir-content/.codex-plugin/plugin.json`: Bump the runtime plugin manifest version to 0.13.30.
+- `plugins/mir-content/skills/korean-writing/SKILL.md`: Link the long-form finish pass in the existing Korean entrypoint.
+- `plugins/mir-content/skills/korean-writing/references/long-form-finish.md`: Add G4 fresh-worded structure/terminology checks and authorized style profiles.
+- `plugins/mir-content/skills/no-ai-slop/SKILL.md`: Preserve the ban list with meaningful technical/name exceptions (D4).
+- `plugins/mir-core/.claude-plugin/plugin.json`: Bump the runtime plugin manifest version to 0.13.30.
+- `plugins/mir-core/.codex-plugin/plugin.json`: Bump the runtime plugin manifest version to 0.13.30.
+- `plugins/mir-core/skills/app-investigation/SKILL.md`: Update MIT provenance and preserve unlicensed adaptation history.
+- `plugins/mir-core/skills/app-investigation/references/bounded-investigation.md`: Add G7 proof ownership, identities, applicable cases and invalidation.
+- `plugins/mir-core/skills/design/SKILL.md`: Link pre-spec intent review and consequential-choice decision mode.
+- `plugins/mir-core/skills/design/references/consequential-choice.md`: Add G5 recommendation, grounds, dissent and observable reversal conditions.
+- `plugins/mir-core/skills/design/references/frontier-interview.md`: Add G3 authorized prototype escape and conversation-only applicability.
+- `plugins/mir-core/skills/design/references/pre-spec-intent-audit.md`: Add G1 independent dialogue-grounded disposition/omission review.
+- `plugins/mir-core/skills/efficiency/SKILL.md`: Use qualitative seven-category review and clarify dashboard wording (D7).
+- `plugins/mir-core/skills/spec-architect/SKILL.md`: Link the approved-spec-to-issues advisory recipe.
+- `plugins/mir-core/skills/spec-architect/references/00-completeness.md`: Define per-axis L1 subject counts with a reproducible sum (D3).
+- `plugins/mir-core/skills/spec-architect/references/04-artifacts.md`: Require executed verification and align task relation endpoints (D1/D2).
+- `plugins/mir-core/skills/spec-architect/references/approved-spec-to-issues.md`: Add G6 destination/duplicate checks, exact draft preview and write authority.
+- `plugins/mir-core/skills/verify/SKILL.md`: Separate completion/spec evidence from diff and architecture review (D5).
+- `plugins/mir-lifecycle-hooks/.claude-plugin/plugin.json`: Bump the runtime plugin manifest version to 0.13.30.
+- `plugins/mir-lifecycle-hooks/.codex-plugin/plugin.json`: Bump the runtime plugin manifest version to 0.13.30.
+- `pyproject.toml`: Bump the Python project version to 0.13.30.
+- `tasks/change_log.md`: Preserve prior cursor/intent and record decisions, file inventory and evidence.
+- `tasks/intent.json`: Project the active 0.13.30 goal and archive the prior goal.
+- `tasks/plan.md`: Own the current intent, bounded design and request matrix.
+- `tests/test_capability_finalfill.py`: Expect current MIT REA provenance without relaxing existing content checks.
+- `tests/test_capability_gaploop.py`: Add fail-first regression coverage for D1-D7 and G1-G7.
+- `tests/test_capability_security.py`: Align the lifecycle manifest version assertion.
+- `tests/test_no_korean_in_user_facing.py`: Pin the changed Korean entrypoint and new reference; retain exact-scope checks.
+- `tests/test_plugin_skill_packages.py`: Align package version assertions for both runtimes.
+- `tests/test_writing_skills.py`: Normalize only the approved terminology exception before upstream hash comparison.
+- `uv.lock`: Align the editable project version with pyproject.toml.
+
+## Cursor before capability gaploop (2026-10-24)
+
+### Verbatim tasks/plan.md
+
+# Plan
+
+## Active task: external-capability-final-fill-2026-10-24
+
+Intent/design authority: owner-supplied final-fill brief, option 3, owner Discord
+1563372620370681867 (parent-supplied). This cursor owns intent and bounded design.
+Option 3 expressly replaces the earlier exclusions of Korean authoring and REA.
+Baseline: a3dd2da, Mir Yoke 0.13.28. Prior cursor and intent are preserved in
+[tasks/change_log.md](change_log.md#cursor-before-external-capability-final-fill-2026-10-24).
+
+Design: add opt-in Korean-language korean-writing and English app-investigation
+skills; keep metadata profiling bounded. Add recovery and product PRD references,
+route load/performance/lean checks into relevant diff review, separate learning-safe
+feedback and per-skill proposals, add observed cache diagnostics, artifact-only
+executability advice and synthetic visual memory cases. References stay below 50
+lines; existing entrypoints get at most one new pointer line each. Korean source
+files receive exact-hash sanitization exceptions; fluent-korean stays byte-identical.
+No licensed-source execution, scripts, agents, runtime policy, autonomous actions,
+AI-authorship scores or LLM hard gates. All guidance remains Main-directed.
+
+Placement: automation owns recovery beside SPINNING without duplicating it; design
+owns product discovery; governance and verify extend their existing short references;
+code-review reuses the existing audit/debt reference for ordinary relevant diffs.
+Scenarios: not applicable to runtime behavior; this is guidance and registration
+metadata only. Contract tests check delivery, scope, provenance and entrypoint links.
+
+Request matrix:
+1. G1a/G1b Korean revision and six genre authoring references, hashes, registrations.
+2. G2 bounded permitted-artifact investigation, evidence types and reconstruction.
+3. G3 recovery vocabulary, four patterns, five optional lenses and pipeline evidence.
+4. G4 ordinary diff checks and legacy/custom marker compatibility.
+5. G5 learning-safe feedback and independently selectable per-skill proposals.
+6. G6 observed prompt-cache diagnosis without unsupported pricing/TTL assumptions.
+7. G7 artifact-only advisory executability review.
+8. G8 synthetic screenshot/text memory evaluation.
+9. G11 product-focused PRD reference.
+10. Fail-first test, 0.13.29 metadata, documentation and regenerated adopter payload.
+11. Full pytest (only pre-binding lock failure allowed), Ruff, Codex sync, diff check
+    and plugin validation if available; protected fluent-korean and lock unchanged.
+
+Execution boundary: only this scratch clone; no commits, pushes, tags, releases,
+consumer writes or capability-lock edits. Main owns final binding and application.
+
+## Preparation result (2026-10-24)
+
+Preparation matrix: 11/11 cells checked under the brief's pre-binding allowance.
+Full pytest: 1 failed, 2749 passed, 1 skipped in 342.78s (0:05:42).
+Only the expected repository-lock digest check fails; Main owns binding.
+Focused tests: 43 passed in 0.77s. Ruff, Codex sync, diff whitespace and marketplace/
+plugin validation passed; plugin directories emit advisory missing-icon warnings.
+Fail-first, source pins, placement decisions and verification details are retained
+in tasks/change_log.md#external-capability-final-fill-01329-preparation-2026-10-24.
+Regenerate the adopter payload after this closure and recheck finalfill, sanitization,
+exact payload, Ruff, Codex sync and whitespace before delivery. Leave the worktree
+uncommitted and the capability-lock and fluent-korean policy unchanged.
+
+Main acceptance and release (2026-10-24, owner Discord 1563378712031006781 approving option 1, parent-supplied):
+- Commits: 34b0bf1 source (Main dropped a HEAD-relative preparation test that fails once the lock is bound; content was re-read in the diff); bind a7d06d6 (full suite 2750 passed), tagged v0.13.29, pushed, GitHub release created.
+- Provider update from the enrolled 0.13.28 provider-update lock (eee3ff0); recorded in a5534c0.
+- Claude headless session 0d6a9d66: init catalog listed all 23 `mir-*` skills including `mir-content:korean-writing` and `mir-core:app-investigation`; SessionStart printed the Mir continuity line; UserPromptSubmit 5, PreToolUse 5 and Stop 6 runs against 4 non-plugin registrations each.
+- Codex session 01a16bca (0.13.29 cache): all 23 skills, SessionStart, the UserPromptSubmit packet, the PreToolUse denial "Owner forbids commands in this handoff turn" and the Stop hook_prompt under `mir-lifecycle-hooks/0.13.29`.
+- Attested both runtimes with no missing skills or hooks; finalized after restart; `mir capability status` ready at a7d06d6.
+
+### Verbatim tasks/intent.json
+
+```json
+{
+  "goal": "Prepare Mir Yoke 0.13.29 guidance-only final gap fills as an uncommitted scratch-clone diff.",
+  "goal_type": "maintenance",
+  "scope": "Only the finalfill-1024 scratch clone. No capability-lock edits, commits, tags, pushes or other repository writes. tasks/plan.md owns intent and design.",
+  "priority": "normal",
+  "updated": "2026-10-24",
+  "history": [
+    {
+      "goal": "Prepare Mir Yoke 0.13.28 guidance-only capability gap fills and a binary patch against c12cd1d.",
+      "status": "archived",
+      "archive": "tasks/change_log.md#cursor-before-external-capability-final-fill-2026-10-24"
+    },
+    {
+      "goal": "Port no-ai-slop and fluent-korean into the common mir-content plugin and prepare 0.13.27 without binding or publishing.",
+      "status": "archived",
+      "archive": "tasks/change_log.md#cursor-before-external-capability-gap-fill-2026-10-24"
+    },
+    {
+      "goal": "Prepare the portable ADR-92 behaviour-scenario amendment in the default work method, testing and code-review skills with fail-first contract evidence.",
+      "updated": "2026-10-23",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#behaviour-scenarios-prepared-source-2026-10-23",
+      "archive": "tasks/change_log.md#external-capability-intake-and-01327-preparation-2026-10-24"
+    },
+    {
+      "goal": "Re-verify all 23 repository-maintenance items since the 2026-10-18 acceptance and apply only minimal confirmed improvements.",
+      "updated": "2026-10-23",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#repo-maintenance-2026-10-23",
+      "authority": "Owner Discord 1562969123871522900 (2026-10-23), relayed by Mir Harness Main; parent-supplied. Single active cursor: tasks/plan.md."
+    },
+    {
+      "goal": "Re-verify the 22-item maintenance delta since 2b89087 and fix F1 success-path test load sensitivity.",
+      "updated": "2026-10-18",
+      "status": "superseded",
+      "archive": "tasks/change_log.md#superseded-continuity-before-repo-maintenance-2026-10-23-2026-10-23"
+    },
+    {
+      "goal": "Re-verify all 22 repository-maintenance items against current evidence and apply minimal evidenced improvements.",
+      "updated": "2026-10-17",
+      "status": "superseded",
+      "archive": "tasks/change_log.md#superseded-cursor-before-ontology-reachability-2026-10-17"
+    },
+    {
+      "goal": "Make the default work method portable across adopting computers and both runtimes, including delegated Codex sessions.",
+      "updated": "2026-10-17",
+      "evidence": "tasks/change_log.md#portable-default-work-method-2026-10-17",
+      "status": "superseded",
+      "archive": "tasks/change_log.md#superseded-continuity-before-matrix-pass-2026-10-17"
+    },
+    {
+      "goal": "Re-verify Mir Yoke against the owner-directed 22-item repository maintenance checklist and apply minimal evidenced improvements.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#matrix-pass-2026-10-16"
+    },
+    {
+      "goal": "Fix the five Linux release-runner test failures without weakening their behavioral guarantees.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#linux-release-runner-fixtures-2026-10-16"
+    },
+    {
+      "goal": "Prepare the Mir Yoke 0.13.1 release working tree with version metadata and migration notes only.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#0131-release-preparation-2026-10-16"
+    },
+    {
+      "goal": "Close ontology impact and isolated distribution gaps and scope E06/E08 evidence.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#ontology-gap-development-2026-10-16"
+    },
+    {
+      "goal": "Make local validation and fresh-checkout validate workflow commands pass while retaining the memory render guard.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#local-and-ci-validation-fixes-2026-10-16"
+    },
+    {
+      "goal": "Prevent automatic consistency tests from rendering live agent memory.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#automatic-memory-render-guard-2026-10-16"
+    },
+    {
+      "goal": "Prepare the Mir Yoke 0.13.0 release working tree with version metadata and migration notes only.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#0130-release-preparation-2026-10-16"
+    },
+    {
+      "goal": "Correct E03 and E07 covered check references using existing executable behavior tests.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#superseded-cursor-covered-label-fix-before-0130-preparation-2026-10-16"
+    },
+    {
+      "goal": "Retain repeatable Yoke-domain selection/evidence use and resolve declared relation target-freshness ownership.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#ontology-rejudgment-g08g13-2026-10-16"
+    }
+  ],
+  "status": "complete",
+  "evidence": "tasks/change_log.md#external-capability-final-fill-01329-preparation-2026-10-24",
+  "authority": "Owner Discord 1563372620370681867 (parent-supplied), option 3; final-fill brief."
+}
+```
+
 ## External capability gap fill: 0.13.28 preparation (2026-10-24)
 
 Authority: current owner brief, option 2 of the Harness re-review report;
@@ -11185,3 +12079,261 @@ After this record update, regenerate the adopter payload and rerun the focused
 finalfill/sanitization and exact-payload checks, Ruff, Codex sync and diff check.
 The final response reports those fresh checks; the full suite above predates only
 this evidence/cursor closure and its generated payload hashes.
+
+## Superseded 0.13.30 round cursors (2026-10-24)
+
+Verbatim `tasks/plan.md` content replaced by the consolidated 0.13.30 cursor.
+
+    ## Active task: capability-gaploop-01330-round-9-2026-10-24
+
+    Intent authority: owner-supplied writer-r9 brief, retaining writer-r1/r5 limits.
+    This remains the single intent/design cursor. Preserve all earlier uncommitted
+    changes; work only in this scratch clone, with no commits or other-repository writes.
+    Design: extend knowledge lookup triggers; confirm scope-bearing free-text answers
+    before recording or frontier updates; require whole-tree unused-code proof and
+    include merge/split alternatives; share identical handoff/resume/run precedence
+    in automation and ontology. Preserve all existing rule meanings and keep references
+    under 50 lines. Do not alter lifecycle-hooks, fluent-korean, no-ai-slop or locks.
+    Runtime scenarios are not applicable: guidance and targeted text contracts only.
+    Matrix: four items, fail-first, notes/payload, full pytest, Ruff, Codex parity,
+    whitespace and entry preservation (11 cells). Expect only the named pre-bind lock
+    failure; report sandbox-only failures separately. Test scratch stays under
+    .pytest_cache/r9 inside this clone. Record executed evidence in tasks/change_log.md.
+
+    Round-9 result: four accepted guidance items implemented; matrix **10/11**.
+    Fail-first: `5 failed, 73 passed in 0.15s`; final guidance contracts:
+    `85 passed in 0.07s`; ontology description/handoff/pins:
+    `31 passed, 318 deselected in 0.30s`. Final full suite:
+    `7 failed, 2820 passed, 1 skipped in 408.96s (0:06:48)`.
+    Only the pre-bind mismatch is expected; six existing release-evidence tests need
+    state outside the provider, which clone-only writes forbid. The full-suite cell
+    remains open. Ruff, Codex parity and whitespace pass; modified references are
+    46/49 lines. Exactly 11 in-scope files changed; protected entry hashes match.
+    Regenerate payload after records and remove task scratch; leave uncommitted.
+    Evidence: [round-9 corrections](change_log.md#capability-gaploop-01330-round-9-corrections-2026-10-24).
+
+    ## Previous round-8 cursor: capability-gaploop-01330-round-8-2026-10-24
+
+    Intent authority: owner-supplied writer-r8 brief, retaining writer-r1/r5 limits.
+    This remains the single intent/design cursor. Preserve the earlier diff; change
+    only the six accepted items inside this scratch clone, with no commits.
+    Design: add write-authorized, intent-first durable-doc updates beside bluebricks
+    step 9; extend existing Korean technical/notice references with fresh wording;
+    extend staged trace proposals to canonical instruction sources; expose Korean
+    routing in both descriptions and preserve upstream fidelity by reversing only
+    that adaptation; exempt explicit grill frontiers from the high-cost filter;
+    expose experiments through testing triggers. Keep references under 50 lines.
+    Preserve fluent-korean, lifecycle-hooks, both locks and unrelated changes.
+    Runtime scenarios are not applicable: only guidance and contract tests change.
+    Matrix: six items, fail-first, notes/payload, full pytest, Ruff, Codex parity,
+    whitespace and entry preservation (13 cells). Expect only the named pre-bind
+    lock failure; report sandbox-only failures separately. Record real output in
+    tasks/change_log.md. Test scratch stays inside this clone under .pytest_cache.
+
+    Round-8 result: all six accepted items implemented, fail-first evidence recorded.
+    Matrix **12/13**: full-suite verification remains open under clone-only fixtures.
+    Full pytest: `9 failed, 2813 passed, 1 skipped in 349.93s (0:05:49)`;
+    Git-ceiling failed-only rerun: `7 failed, 2 passed in 1.83s`. Only the named
+    pre-bind failure is expected; six existing release-evidence cases require state
+    outside the provider, which this brief forbids. Focused contracts, Ruff, Codex
+    parity and whitespace pass. Exactly 18 in-scope files changed; all 12 protected
+    entry hashes are unchanged. Regenerate the payload after records, verify the
+    final delivery/scanning contracts and remove task scratch. Leave uncommitted.
+    Evidence: [round-8 corrections](change_log.md#capability-gaploop-01330-round-8-corrections-2026-10-24).
+
+    ## Previous round-7 cursor: capability-gaploop-01330-round-7-2026-10-24
+
+    Intent authority: owner-supplied writer-r7 brief, retaining writer-r1/r5 limits.
+    This is the single intent/design cursor. Preserve the existing diff and implement
+    only G1-G3 and D1-D4 in this scratch clone. No commits or other-repository writes.
+    Design: close assumed load-bearing decisions before freeze; add contextual Korean
+    cue rows and scope no-ai-slop principles; cite exact memory records and retain
+    premise conflicts; expose per-turn inventory/placement; document the existing
+    PreToolUse guard and refresh its package acknowledgement; share audit precedence.
+    Keep fluent-korean, no-ai-slop, hook behavior and both locks unchanged. Refresh
+    only changed Korean hashes, release notes and the generated adopter payload.
+    Runtime scenarios are not applicable: guidance-only changes alter no executable
+    behavior. Targeted text contracts cover positive wording and replaced ambiguity.
+    Matrix: seven items, fail-first, notes/payload, full pytest, Ruff, Codex parity,
+    whitespace and entry preservation (14 cells). Only the named pre-bind lock failure
+    is allowed. Record executed evidence in tasks/change_log.md.
+
+    Round-7 result: G1-G3 and D1-D4 implemented, with fail-first evidence and
+    focused checks passing. Matrix **13/14**: full-suite verification remains open.
+    Full pytest: `9 failed, 2806 passed, 1 skipped in 330.51s (0:05:30)`;
+    Git-ceiling failed-only rerun: `7 failed, 2 passed in 0.60s`. Besides the expected
+    pre-bind lock failure, six existing release-evidence cases require state outside
+    the provider, which conflicts with scratch-clone-only writes. Preserve those
+    checks and report the limitation. Ruff, Codex parity and whitespace pass.
+    Exactly 16 in-scope files changed; protected files retain entry hashes.
+    Evidence: [round-7 corrections](change_log.md#capability-gaploop-01330-round-7-corrections-2026-10-24).
+
+    ## Previous round-6 cursor: capability-gaploop-01330-round-6-2026-10-24
+
+    Intent authority: owner-supplied writer-r6 brief, retaining writer-r1/r5 limits.
+    This file remains the single intent/design cursor. Preserve every prior diff;
+    work only in this scratch clone, with no commits or other-repository writes.
+    Implement exactly seven accepted items; exclude Gap 5 and the Minor findings.
+
+    Design: keep Korean detection in diagnosis-only mode, scope English Detect and
+    state genre/voice precedence with agent/default-prose exceptions; batch lattice
+    questions by settled-prerequisite frontier; require a safe, permitted observed
+    runtime check beside unit tests or mark the claim unevaluated; expose user-reported
+    stall advice, trace-based skill patches and terse output through existing skills.
+    Preserve existing triggers, no-ai-slop, fluent-korean, hooks and both locks.
+    Update only the changed Korean file's hash and regenerate the adopter payload.
+    Runtime scenarios are not applicable to guidance-only edits; targeted text
+    contracts cover the requested wording and removal of contradictions.
+    Matrix: seven items, fail-first, notes/payload, full pytest, Ruff, Codex parity,
+    whitespace and protected-entry preservation (14 cells). Only the named pre-bind
+    lock failure is expected. Evidence belongs in tasks/change_log.md.
+
+    Round-6 result: all seven accepted items implemented; matrix **14/14** under the
+    explicit pre-binding allowance. Fail-first: `8 failed, 49 passed in 0.40s`;
+    focused checks: `139 passed in 6.41s`. Full suite, final guidance state:
+    `1 failed, 2805 passed, 1 skipped in 433.17s (0:07:13)`; only the named pre-bind
+    plugin-tree digest assertion fails. No handoff-runner failure. Ruff, Codex parity
+    and whitespace checks pass. Entry inspection confirms exactly 14 changed files
+    and 12 explicitly protected hashes unchanged; descriptions are 227/335/290
+    characters and the edited recovery reference stays at 42 lines. Delivery/scanning
+    checks after record updates: `13 passed in 0.86s`; task-owned fixture scratch is
+    removed. Final payload regeneration follows this record. Leave the diff uncommitted. Main owns later binding and delivery.
+    Evidence: [round-6 corrections](change_log.md#capability-gaploop-01330-round-6-corrections-2026-10-24).
+
+    ## Previous round-5 cursor: capability-gaploop-01330-round-5-2026-10-24
+
+    Intent authority: owner-supplied writer-r5 brief, retaining writer-r1 constraints.
+    This file remains the single intent/design cursor. Preserve all prior uncommitted
+    changes; work only in this scratch clone, with no commits or other-repository writes.
+    Implement exactly nine accepted round-4 findings; do not act on Minor findings.
+
+    Design: add pre-edit reach checks, a defined terse baseline and manual evidence-status
+    rules for lesson/memory notes; qualify test naming and coverage reporting; describe
+    legacy verification/design intent without promised runtimes; add reciprocal Korean
+    routing and grill/repository-audit triggers; reuse the existing cursor in automation.
+    Keep upstream pins and no-ai-slop fidelity; leave Korean files, fluent-korean,
+    lifecycle-hooks and both locks unchanged. No new runtime or learning loop.
+    Guidance-only scenarios use positive and contradictory-wording contract tests.
+    Matrix: nine items, sha/license checks, fail-first, notes/payload, full pytest,
+    Ruff, Codex parity and whitespace (16 cells). Run fail-first before guidance edits.
+    Only the named pre-bind lock failure is expected; report a handoff-runner failure
+    if observed without unrelated changes. Evidence belongs in tasks/change_log.md.
+
+
+    Round-5 result: all nine accepted items implemented; matrix **16/16** under the
+    explicit pre-binding allowance. Fail-first: `11 failed, 39 passed in 0.13s`;
+    initial focused checks: `94 passed in 0.26s`; final guidance/fidelity/sanitization/
+    package/delivery checks: `121 passed in 0.80s`. Full suite:
+    `1 failed, 2798 passed, 1 skipped in 350.40s (0:05:50)`; only the named pre-bind
+    lock digest assertion fails. No handoff-runner failure. Ruff, Codex parity and
+    whitespace checks pass. Entry-hash inspection preserves both locks, capability
+    acknowledgements, Korean files and lifecycle-hooks. Regenerate the payload after
+    these records and verify the final delivery contracts. Leave the diff uncommitted.
+    Evidence: [round-5 corrections](change_log.md#capability-gaploop-01330-round-5-corrections-2026-10-24).
+
+    ## Previous round-4 cursor: capability-gaploop-01330-round-4-2026-10-24
+
+    Intent authority: owner-supplied writer-r4 brief, retaining writer-r1/r3 constraints.
+    This file remains the single intent/design cursor; preserve all earlier changes.
+    Fix exactly five items: implementation-time shortcut markers, current-source
+    checks in Korean drafting, advisory spec readiness and bounded repair stops,
+    write-authorized persistent-run ledgers, and the MODE-S heading pointer.
+
+    Design: add one implementation pointer to the existing marker recipe; add fresh
+    Korean source/date/version checks and refresh only that file's hash; narrow spec
+    stops to the repair loop while preserving gap reporting and three failures;
+    scope ledger steps to persistent/long-running runs with write authority and leave
+    the browser step unchanged. No scanner, new ledger, lock edits or runtime changes.
+    Runtime scenarios do not apply to guidance-only changes. Targeted contract tests
+    cover positive wording and removal of contradictory unconditional wording.
+    Matrix: five items, fail-first, notes/payload, full pytest, Ruff, Codex parity,
+    whitespace (11 cells). Full pytest permits the pre-bind lock failure; report any
+    sandbox-only handoff-runner failure without unrelated fixes. Evidence belongs in
+    tasks/change_log.md. Leave all changes uncommitted; Main owns binding/delivery.
+
+    Round-4 result: five accepted items implemented; matrix **11/11** under the explicit
+    pre-binding allowance. Fail-first: `8 failed, 31 passed in 0.09s`; targeted checks:
+    `39 passed in 0.15s`. Final full run:
+    `1 failed, 2787 passed, 1 skipped in 403.87s (0:06:43)`; only the permitted lock
+    digest assertion fails. The handoff runner passes in this run. Two earlier
+    interrupted invocations are excluded; scratch/payload ordering corrections are
+    preserved in the evidence log. Ruff, Codex parity and whitespace checks pass.
+    Regenerate the payload after these record updates, recheck the final delivery
+    contracts and remove task-owned verification scratch. No additional lock,
+    fluent-korean, runtime or other-repository source edits; no commit.
+    Evidence: [round-4 corrections](change_log.md#capability-gaploop-01330-round-4-corrections-2026-10-24).
+
+    ## Previous round-3 cursor: capability-gaploop-01330-round-3-2026-10-24
+
+    Intent authority: owner-supplied writer-r3 brief, retaining writer-r1 constraints.
+    This file is the single intent/design cursor. Preserve both earlier rounds and
+    fix exactly six accepted items: Korean diagnosis/routing; business execution
+    closure; migration policy confirmation; typed impact traversal; read-only cursor
+    exceptions; optional lifecycle-package fallback. Prior round-2 cursor is preserved
+    in [the evidence log](change_log.md#cursor-before-capability-gaploop-round-3-2026-10-24).
+
+    Design: narrow existing rules with explicit exceptions. Diagnose-only preserves
+    original text; migration uses current dispositions with separate owner evidence;
+    file impact reaches MOD before REQ/FEAT; read-only requests write nothing and
+    require no approval detour; design falls back to the repository method or its own
+    order. No hook behavior, lock, fluent-korean, or other-repository edits or commits.
+    Scenarios are inapplicable to guidance-only changes; contract tests cover each
+    new rule and the contradictory old wording. Matrix: six items, fail-first,
+    release notes/digest/payload, and four required checks (12 cells). Run fail-first
+    before guidance edits, then focused checks and full pytest (only the named
+    pre-bind lock failure permitted), Ruff, Codex parity and whitespace checks.
+    Evidence belongs in tasks/change_log.md. Main owns binding and later delivery.
+
+    Round-3 result: six guidance items implemented; matrix **11/12** under the explicit
+    pre-binding allowance. Fail-first: `8 failed, 23 passed in 0.12s`; related checks:
+    `96 passed in 6.39s`; after test-string formatting, `31 passed in 0.12s`.
+    Final full run: `2 failed, 2778 passed, 1 skipped in 387.35s (0:06:27)`.
+    The allowed lock failure and unexpected unchanged handoff-runner warning remain;
+    the full-suite cell is open. Isolated runner: `1 passed in 0.23s`; handoff module:
+    `465 passed in 60.68s (0:01:00)`. The warning's cause remains unknown.
+    Ruff, Codex parity and whitespace checks pass. Full evidence and file inventory
+    are in [the evidence log](change_log.md#capability-gaploop-01330-round-3-corrections-2026-10-24).
+    Final payload regeneration and focused checks follow these record updates.
+    No lock, fluent-korean or hook behavior changes; leave the diff uncommitted.
+
+    ## Previous round-1 cursor: capability-gaploop-01330-2026-10-24
+
+    Intent authority: owner-supplied writer-r1 brief and owner Discord instruction
+    1563396738570780685 (parent-supplied). This file is the single intent/design cursor.
+    Baseline: 5a1a5ac, Mir Yoke 0.13.29. Prior cursor and intent are preserved in
+    [the evidence log](change_log.md#cursor-before-capability-gaploop-2026-10-24).
+
+    Design: fix D1-D7 in existing guidance with minimum edits; add G1-G7 as optional
+    Main-directed references or extensions. D7 becomes qualitative: no supplied weights
+    justify a reproducible numerical score. Dashboard-ready means report formatting,
+    not an implementation. Preserve source provenance; REA is MIT at cd10ee1 while
+    9e6c624 remains historical unlicensed provenance. Unlicensed Korean ideas use fresh
+    wording. Paperclip is explicitly excluded. No runtime capabilities are introduced.
+
+    Request matrix: D1 verification evidence; D2 task edge endpoints; D3 denominator;
+    D4 technical terminology; D5 review precedence; D6 changed-GUI trigger; D7 qualitative
+    review; G1 pre-spec audit; G2 bounded integration; G3 prototype escape and no-workspace
+    interview; G4 finish/style profiles; G5 choice memo; G6 issue drafts/authority;
+    G7 version-bound proof; release metadata/docs/payload; fail-first and required checks.
+    Each cell needs present-state artifact inspection and executed contract evidence.
+    Scenarios: runtime scenarios are not applicable because only advisory guidance and
+    release metadata change. Tests cover wording, routing, provenance and delivery.
+
+    Execution: only this scratch clone. No capability-lock edits, fluent-korean edits,
+    commits, pushes, tags, releases, consumer writes or upstream execution. References
+    stay below 50 lines; canonical sources precede generated payload. Run focused tests
+    before content, then full pytest (only the named pre-bind lock failure permitted),
+    Ruff, Codex parity and diff whitespace. Main owns later binding and delivery.
+
+    ## Preparation result (2026-10-24)
+
+    16/16 preparation cells have evidence under the explicit pre-binding allowance.
+    Full pytest: `1 failed, 2763 passed, 1 skipped in 356.43s (0:05:56)`; only the named
+    repository-lock digest assertion fails. D1-D7 and G1-G7 are implemented; Paperclip
+    is excluded. D7 is qualitative because no reproducible weighted rubric exists.
+    Fail-first, placement, provenance, file inventory and environment/layout recovery
+    are in [the evidence log](change_log.md#capability-gaploop-01330-preparation-2026-10-24).
+    Final delivery checks regenerate the payload after this closure and recheck focused
+    content/sanitization/payload/harness, Ruff, Codex parity and whitespace. Leave the
+    candidate uncommitted; the lock and fluent-korean source remain unchanged. Binding
+    and any later authorized release belong to Main.

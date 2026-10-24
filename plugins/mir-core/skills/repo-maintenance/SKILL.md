@@ -5,6 +5,8 @@ description: "Periodic maintenance checkup of an agent-operated repository acros
 
 # Repository Maintenance
 
+Audit precedence: code-quality, debt and risk audit of code → code-review; periodic multi-item repository checkup → repo-maintenance; instruction-document and registry governance → governance; AI-readiness review → efficiency.
+
 ## Use When
 - The owner asks for a full maintenance pass over one repository or every managed repository.
 - A previous pass needs re-verification against actual files and command output.
@@ -53,7 +55,7 @@ Apply each item proportionately. Mark it done, no change needed (with evidence),
 22. Agent, Loop, Graph and Ontology engineering: assess each axis against the repository's declared surfaces and observed use. Record a verdict and evidence per axis, with the smallest useful improvement or an explicit reason no change is needed; avoid adding unused machinery.
 
 ## Workflow
-1. Record the request in the repository's active cursor, then read its contract and profile.
+1. Record the request in the repository's active cursor only when the request authorizes writes, then read its contract and profile. Read-only reviews record nothing and add no approval detour.
 2. Start from a clean or snapshotted worktree so changes can be attributed.
 3. Run the checklist. When available, use `mir-core:governance`, `mir-core:verify`, `mir-code:testing` and
    `mir-code:code-review` for item procedures. For many repositories, handle each one under its own contract.

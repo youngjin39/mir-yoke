@@ -20,7 +20,7 @@ For detect requests, make sure the response names each pattern found with a quot
 
 ## Words to cut
 
-1. Are banned words, filler phrases, often-empty adverbs, and inflated claims removed unless quoted as examples?
+1. Are ornamental banned words, empty filler phrases, often-empty adverbs, and inflated claims removed, preserving quoted examples, meaningful technical terms and proper names, and adverbs and phrases that carry emphasis, uncertainty, contrast, self-awareness, or the writer's natural spoken rhythm?
 
 ## Patterns to cut
 
