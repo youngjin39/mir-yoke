@@ -443,7 +443,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": ".mir/capability-lock.json",
-      "sha256": "be81411bacc11f71c50dcd52740c3d9c3d2feca3483665ae3571275385409d9b"
+      "sha256": "72407652543d8f27192275d3fb65c95ec8085ee9a5d47f3f288bdd15b52d9a95"
     },
     {
       "classification": "reference",
@@ -4559,7 +4559,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_capability_finalfill.py",
-      "sha256": "87d7e8ba73a11723ff304065104b599ab3b943bb11a8b5af8b0810053dbec980"
+      "sha256": "4a56956d044054906703d923207acf29e997465b86a11c57bb5fc042a6ab8a27"
     },
     {
       "classification": "template-maintainer-tool",
