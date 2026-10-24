@@ -12337,3 +12337,155 @@ Verbatim `tasks/plan.md` content replaced by the consolidated 0.13.30 cursor.
     content/sanitization/payload/harness, Ruff, Codex parity and whitespace. Leave the
     candidate uncommitted; the lock and fluent-korean source remain unchanged. Binding
     and any later authorized release belong to Main.
+
+
+## Cursor before capability remaining 2026-10-24
+
+# Plan
+
+## Active task: external-capability-gaploop-0.13.30-2026-10-24
+
+Intent authority: Mir Harness cursor run `external-capability-gap-loop-2026-10-24`
+(owner Discord 1563396738570780685: proceed with option 1 and keep verifying in a loop
+until no gaps remain; parent-supplied). Baseline: 5a1a5ac, Mir Yoke 0.13.29.
+Goal: fix the installed-guidance defects of the second final review and fill every
+shippable gap from the 14 owner-named upstreams except Paperclip, as guidance only.
+
+Loop: a fresh independent reviewer per round against the candidate tree and fresh
+upstream clones (rounds 1-3 Codex; rounds 4-8 headless Claude Opus 5.5 at the owner's
+request); Main verified each cited line and accepted only behaviour-changing findings;
+a Codex writer applied them in a scratch clone with fail-first contract tests.
+Rounds 6-8 found no P1 defect. The owner released after round 8 (Discord
+1563488289556664383) and moved always-on fluent-korean for Claude into the global
+instruction file instead of a Yoke hook. Superseded per-round cursors are preserved
+verbatim in [the evidence log](change_log.md#superseded-0130-round-cursors-2026-10-24).
+
+Scope: guidance under `skills/` plus tests, release metadata and payload. No scripts,
+agents, commands, hooks behaviour, runtime policy, autonomous loops or LLM hard gates.
+fluent-korean stays byte-identical; no-ai-slop stays byte-faithful apart from the
+tested local adaptations; Korean files carry exact-hash exceptions.
+
+Request matrix: each accepted finding (rounds 1-8) has a targeted assertion in
+`tests/test_capability_gaploop.py`; release metadata, documentation and payload;
+full pytest, Ruff, Codex parity and diff check; ADR-80 bind, release, provider
+update, runtime attestation and finalize.
+
+Main acceptance and release (2026-10-24, owner Discord 1563488289556664383 approving the release after round 8, parent-supplied):
+- Commits: 8bcc100 source (full suite 2827 passed plus the expected pre-bind lock failure); bind 34ccd00 (full suite 2828 passed), tagged v0.13.30, pushed, GitHub release created.
+- Provider update from the enrolled 0.13.29 provider-update lock (a5534c0); recorded in 2779c96.
+- Claude headless session f73e9128: init catalog listed all 23 `mir-*` skills; SessionStart printed the Mir continuity line; SessionStart 3, UserPromptSubmit 5, PreToolUse 5 and Stop 6 hook runs.
+- Codex session 01a16d69 (0.13.30 cache): all 23 skills, SessionStart, the UserPromptSubmit packet, the PreToolUse denial "Owner forbids commands in this handoff turn" and the Stop hook_prompt under `mir-lifecycle-hooks/0.13.30`. An earlier Codex session (01a16d68) showed no Stop output, because its packet passed and Codex logs only hooks that produce output, so it was not used.
+- Attested both runtimes with no missing skills or hooks; finalized after restart; `mir capability status` ready at 34ccd00.
+
+
+## Capability remaining 0.13.31 preparation 2026-10-24
+
+Authority: owner-supplied `remaining-1024/writer.md`; scratch clone only, baseline
+f4e14d92f817c39e7ceb8fd3d115308495d9a1c8. No commit, consumer write, runtime
+behavior change or capability-lock edit is authorized or performed.
+
+Placement and decisions (all shipped edits are guidance under plugin skills):
+
+| Brief item | Placement | Decision |
+| --- | --- | --- |
+| 1 | app-investigation/references/bounded-investigation.md | Stable digests, source maps, exports and manifest identities; no minified/ordinal pairing. Add/remove claims need full coverage of both versions, otherwise Unknown. Preserve old provenance and add current REA pin. |
+| 2 business | korean-writing/references/business.md | Original Korean checks for weekly status, first-line request/deadline and meeting arrangements; 29 lines. |
+| 2 public | korean-writing/references/public-notices.md | Original Korean checks for first-fact press releases with source/contact, direct complaint answers with actions/deadlines and no assumed feelings, and confirmed official-letter fields or marked placeholders; 35 lines. |
+| 3a | bluebricks/references/sufficient-solution.md | Correct ladder citation to lines 15-20 and update the old gap-fill assertion. |
+| 3b | automation/references/spinning-report.md | Explain the executor signature is Yoke's own; consumers apply the rule manually. Preserve the evidence and same-cause cautions. |
+| 3c | design/SKILL.md; verify/SKILL.md | Remove unresolvable central-directive citations; keep the rules. |
+| 3d | spec-architect/references/00-completeness.md | Remove wrong ADR numbers; keep the design Intent Extraction pointer. |
+| 3e | automation/references/recovery-and-reframing.md; design/references/product-prd.md | Keep 5520a3e adaptation pins; append re-check at 7783d9f on 2026-10-24. Borrowed concepts still match; no material change in that subset. |
+| 3f | efficiency/references/instruction-change-evaluation.md | Qualify token-diet as ideas only, no license, original wording. |
+| 3g | spec-architect/SKILL.md | Explicitly except approved-spec issue drafting from general project-management exclusion. |
+| 3h | no-ai-slop/SKILL.md | Generic project/product name and test-harness examples; reverse this local exception in the upstream fidelity test. Update the old gap-loop assertion too. |
+| 3i | runtime-continuity/references/handoff-packet.md; new handoff-design.md | Replace private authority with an eight-line stateless, bounded, project-owned design reference; use local CLI guards and version-neutral source wording. |
+| 3j | fluent-korean/SKILL.md | Exactly two edits: restore the upstream settled-idiom exception and name Mir Yoke in attribution. Print the complete final file for Main; do not mirror host policy here. |
+| 3k | testing/references/controlled-experiments.md | Stop runs exceeding declared budget or timeout, record failure, never score. |
+| 3l | verify/SKILL.md | Required claims without runnable verification commands become decisions with recommendations to Main or the owner; unevaluated is never a pass. |
+
+Read-only source checks on 2026-10-24:
+- REA HEAD dd02d8ff696385949b05459f2ab9b6ffda18a52c (dd02d8f), LICENSE MIT,
+  copyright 2026 morluto. Read skill description and JavaScript version comparison.
+  Retained cd10ee1 MIT and initially unlicensed 9e6c624 notes.
+- Natural Korean HEAD 2a4f1fc103f39e4f5ad7f88c3ca4909c969cce28 (2a4f1fc),
+  no license file in HEAD. Read both requested formats files; ideas only, fresh
+  Korean wording without copied headings, phrasing or examples.
+- Ouroboros HEAD 7783d9f2d8ad30fd9ece4ea04d73475d64170472 (7783d9f), MIT.
+  Re-checked resilience/stagnation.py, resilience/lateral.py, resilience/recovery.py,
+  orchestrator/failure_taxonomy.py, bigbang/pm_interview.py and skills/pm/SKILL.md.
+  Stagnation patterns, persona affinities, pipeline evidence, product uncertainty
+  and behavior acceptance remain consistent with the bounded local adaptations.
+- Fluent Korean HEAD ce8683f0eba8cddb91de4dcd151425ff73e60498 (ce8683f), MIT.
+  Read upstream output style and LICENSE; preserve the existing full MIT notice.
+- Autoresearch HEAD 228791fb499afffb54b46200aca536f79142f117 (228791f),
+  program.md explicitly stops and fails overtime experiments; no runtime imported.
+- Dryforge HEAD f5aa6d71bfa3fcd65a96c66ecbd54d890d31f4ef (f5aa6d7);
+  existing inspiration pin retained for the requested owner-decision clause.
+
+Before changing handoff-packet.md, searched runtime-continuity/scripts and tests
+for its filename and replaced wording; no text parser or dependency was found.
+The existing long handoff reference now points to the new short design reference;
+all expanded short references remain under 50 lines. No script or hook code changed.
+
+Fail-first: `uv run pytest -q tests/test_capability_remaining.py` produced
+`19 failed, 9 passed in 0.08s` before guidance fixes: missing required clauses,
+obsolete citation/example wording and the not-yet-created design reference.
+The corrected test resolver was run before accepting this failure evidence.
+After fixes, the targeted remaining/writing/gap-loop group produced
+`117 passed in 0.22s`. No HEAD-relative assertions were added.
+
+Release surfaces: VERSION, pyproject.toml, uv.lock, marketplace, eight runtime
+manifests, README, CHANGELOG and MIGRATION now prepare 0.13.31; historical release
+records stay intact. Updated exact Korean hashes, version assertions and adopter
+payload. The active plan replaced the previous cursor, preserved verbatim above;
+intent.json remains a projection of that one cursor.
+
+Initial full run: `12 failed, 2843 passed, 1 skipped in 427.89s (0:07:07)`.
+The failures comprised the expected pre-bind lock, six release-evidence fixtures,
+three stale payload/citation assertions and two parent-Git discovery assumptions.
+Corrected the old gap-fill line-number assertion and regenerated payload after all
+edits. Clone-local temporary directories are mandatory under the owner boundary;
+set GIT_CEILING_DIRECTORIES to that temporary root for the final run. The ontology
+Git-state and corrected citation tests then passed (`10 passed in 0.41s`).
+Version/package/security/payload surface checks passed (`155 passed in 12.44s`).
+
+The six release-evidence fixtures call an observer that requires state outside
+both target and provider. Clone-local fixtures cannot satisfy that requirement;
+retain the runtime rule and report this scope-only limitation separately from the
+pre-bind lock. No permission-denial cause is assumed.
+
+Final full run, with clone-local caches/temp and bounded parent Git discovery:
+`uv run pytest -q` exited 1 with the exact summary
+`7 failed, 2848 passed, 1 skipped in 374.68s (0:06:14)`.
+- Expected pre-bind failure: `test_repository_lock_is_portable_and_matches_managed_trees`.
+- Separate clone-only scope limitations: six tests in
+  `tests/test_project_agent_kit_release_evidence.py`: requires-one-runtime-each,
+  artifact-hash recomputation, unobserved Git configuration, missing memory
+  rehydration, skipped-memory hook and sensitive transcript. Each failed at
+  `observer state directory must be outside target and provider`; no sandbox
+  permission-denial claim is made. Main should re-run this group with an
+  owner-authorized temporary workspace outside the provider, preserving its guard.
+- Previously stale payload/citation and parent Git discovery failures are gone.
+
+Final required checks observed: Ruff exited 0, `All checks passed!`; Codex sync
+exited 0, `OK: Codex derivatives match Claude sources`; diff check exited 0 with
+no output. Adopter payload generation reports `template asset classification: pass`.
+Bookkeeping is followed by another payload regeneration and focused payload and
+sanitization checks before delivery; no shipped guidance changed after the final run.
+
+Matrix: 14/14 brief items prepared, 7/8 release/verification cells evidenced, total
+21/22. The full-suite cell remains open for those six scope-limited fixtures;
+pre-bind lock binding is expressly excluded by the brief. No claim of a fully
+passing suite or live runtime activation is made.
+
+Integrity: 44 changed source files (17 skill guidance, 7 tests, 20 release/task
+records); prior cursor preserved verbatim; exactly one active cursor; fluent-korean
+has exactly the two requested edits, and its full final file was printed.
+Fluent policy body SHA256: 7109372ce9d6e8569c923568856788400d0e8032c60dfc66fad0a0e9baec7f32.
+Lifecycle acknowledgement: 1781a152eac5d443b705ec1195d697b24f32a0477b1323ba13c8a189ff906f9c.
+HEAD remains f4e14d92f817c39e7ceb8fd3d115308495d9a1c8; capability lock and
+all script/hook/agent/command/runtime policy sources are unchanged.
+
+After final bookkeeping and payload regeneration, focused remaining-item, payload,
+reference and sanitization checks passed: `48 passed in 0.73s`.

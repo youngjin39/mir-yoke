@@ -32,7 +32,7 @@ def test_should_preserve_no_ai_slop_upstream_behaviour_when_packaged() -> None:
     # Reverse approved description routing and technical-terminology edits; verify
     # the rest of petergyang/no-ai-slop 000650b remains byte-for-byte faithful.
     exception = (
-        ' Exempt meaningful technical terms and proper names, such as "Mir Harness"'
+        ' Exempt meaningful technical terms and proper names, such as a project or product name'
         ' and "test harness".'
     )
     assert exception in upstream
@@ -73,7 +73,7 @@ def test_should_retain_the_entire_fluent_korean_policy_and_attribution() -> None
     assert "Korean deliverables" in frontmatter
     # Approved global-policy snapshot, adapted from snflkd/fluent-korean ce8683f.
     assert hashlib.sha256(body.encode()).hexdigest() == (
-        "c936979949925fa04f5c9f80bbdf5afef09e127c0802500900244b1e20b488f7"
+        "7109372ce9d6e8569c923568856788400d0e8032c60dfc66fad0a0e9baec7f32"
     )
 
 

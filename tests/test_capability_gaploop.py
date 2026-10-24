@@ -78,7 +78,7 @@ def test_should_define_reproducible_per_axis_l1_denominator():
 def test_should_preserve_technical_terms_despite_style_ban():
     text = read("mir-content/no-ai-slop")
     assert "meaningful technical terms and proper names" in text
-    assert "Mir Harness" in text and "test harness" in text
+    assert "a project or product name" in text and "test harness" in text
     assert "Banned outright:" not in text
 
 

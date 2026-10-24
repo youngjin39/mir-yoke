@@ -9,8 +9,9 @@ The observation window does not authorize another attempt or a new process.
 
 Repeated identical failure signatures or no measurable progress across that window
 produce a **SPINNING** report to the Main. Reuse existing telemetry when available:
-`error_sig` in Yoke's `tools/mir_executor/dispatch.py:503` is one example, not a
-required detector or a guarantee that equal signatures have the same root cause.
+Mir Yoke's own executor implements this signature (`error_sig`); consumers apply
+the rule manually. It is neither a required detector nor a guarantee that
+equal signatures have the same root cause.
 Compare actual evidence, not a changing narrative or merely elapsed time.
 
 Report the run ID, declared window, attempt IDs, signatures and output locations,

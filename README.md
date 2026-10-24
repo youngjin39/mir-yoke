@@ -52,7 +52,7 @@ immutable release:
 
 ```bash
 uv tool install --force --link-mode copy \
-  "git+https://github.com/youngjin39/mir-yoke.git@v0.13.30"
+  "git+https://github.com/youngjin39/mir-yoke.git@v0.13.31"
 mir --help
 ```
 
@@ -115,6 +115,11 @@ review, task integration, prototype escape, long-form finishing and reusable sty
 profiles, consequential-choice memos, approved-spec issue drafts and version-bound
 reconstruction proof. AI-readiness review is qualitative; no dashboard is supplied.
 All additions remain optional, advisory and Main-directed; no runtime is added.
+
+Version 0.13.31 adds identity-based artifact version comparison and Korean business
+and public-document checks, restores the settled-idiom exception, and clarifies
+portable provenance, handoff authority, experiment timeouts and verification decisions.
+These are guidance-only corrections; no runtime behavior or tools are added.
 
 ### Platform use
 

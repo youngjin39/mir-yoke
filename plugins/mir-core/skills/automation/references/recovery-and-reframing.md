@@ -1,6 +1,6 @@
 # Recovery diagnosis and optional reframing
 
-Inspired by Q00/ouroboros at 5520a3e.
+Inspired by Q00/ouroboros at 5520a3e. Content re-checked at 7783d9f on 2026-10-24.
 
 This is report-only advice for Main-directed or user-reported stalls or repeated failure. Reuse the
 [SPINNING report](spinning-report.md) and its declared attempt window; do not add

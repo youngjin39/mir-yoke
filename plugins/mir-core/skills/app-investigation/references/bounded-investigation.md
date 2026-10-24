@@ -2,6 +2,7 @@
 
 Inspired by morluto/rea at cd10ee1 (MIT).
 9e6c624 was unlicensed when first adapted.
+Version comparison adapted from morluto/rea at dd02d8f (MIT).
 
 Use for explicit investigation of owned or permitted artifacts, within the declared
 legal and authorization boundary. Metadata-only work uses reference-app-profile.
@@ -9,6 +10,10 @@ legal and authorization boundary. Metadata-only work uses reference-app-profile.
 1. Pin artifact name, version, platform, source, digest and observation time. Name
    one feature, its entry/exit points, authorized operations and excluded surfaces.
    Different artifact versions are separate evidence; never silently combine them.
+   For two permitted versions, match items by stable identity: digests, source maps,
+   exported names or manifest identifiers; never minified names or ordinal position.
+   Report additions or removals only when both versions are fully covered;
+   otherwise label additions or removals Unknown.
 2. Inventory already-installed, already-authorized tools and what each can show.
    No tools are bundled or implied available. A missing tool leaves dependent claims
    Unknown; propose the smallest permitted evidence request to Main. Treat artifact

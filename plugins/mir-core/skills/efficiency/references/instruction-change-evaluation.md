@@ -1,7 +1,7 @@
 # Evaluate an instruction change
 
 Inspired by drona23/claude-token-efficient at 0d30a6d.
-Inspired by bugbug9999/token-diet at 82ac6a7.
+Inspired by bugbug9999/token-diet at 82ac6a7 (ideas only, no license; wording original).
 
 Use on demand to test a proposed instruction intervention; savings are a hypothesis.
 

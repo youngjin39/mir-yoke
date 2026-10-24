@@ -1,12 +1,7 @@
 # Mechanical handoff packet
 
-Design authority: the current owner writer brief for the 0.13.22 round-i checker
-defects (2026-10-23, decision 1562831233971392553, parent-supplied), recorded in the
-Harness active cursor's `Current` section. The bounded writer scope leaves that
-cursor unchanged. This extends the stateless design recorded in `tasks/plan.md`;
-ADR-90 amendments through 2026-10-23b admit the bounded events
-and checks. Installation grants no agent authority. Semantic evidence remains
-`.mir/ontology-map.json#/domain/invariants/2` and its referenced ADR-90.
+The [bounded design](handoff-design.md) defines the authority and semantic-evidence
+boundary for this stateless packet.
 
 ## Events, runtime evidence and budgets
 
@@ -368,13 +363,13 @@ PreToolUse fail open silently, as the guard runs on every matching tool call.
 Denial emits `hookSpecificOutput` with `hookEventName=PreToolUse`,
 `permissionDecision=deny` and `permissionDecisionReason`, plus stderr and exit 2.
 Claude consumes the deny JSON; exit 2 is the shared blocking convention used by
-both local CLI guards (`pre-tool-use.sh` and `env-read-gate.sh`). Offline fixtures
+local CLI guards. Offline fixtures
 check native transcript shapes and this exit/output contract; they do not
 establish fresh live-host delivery or activation.
 
 ## Delivery boundary
 
-0.13.22 source prepares round-i exclusions, code-mode accounting, retry feedback,
+The source prepares round-i exclusions, code-mode accounting, retry feedback,
 quoted-command handling, namespace checks and file-write guards.
 Python 3.9 remains supported with
 optional `tomllib`; absent parsing still skips only the Profile glob filter.

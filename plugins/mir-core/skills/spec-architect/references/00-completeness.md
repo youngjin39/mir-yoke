@@ -185,7 +185,7 @@ Record every `tbd` cell in `gaps.yaml` by id.
 ### Questions follow the design skill's protocol
 
 **This skill does not define its own questioning protocol.** How to ask is owned by the `design`
-skill's Intent Extraction section (ADR-70, ADR-78). Apply its grill-style elicit, derive-first
+skill's Intent Extraction section. Apply its grill-style elicit, derive-first
 ordering, remote-channel rules, and authority separation as written there.
 
 Only two things are specific to the lattice:

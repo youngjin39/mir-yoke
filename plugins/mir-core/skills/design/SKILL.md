@@ -54,7 +54,7 @@ An advisory design-skill discipline (no runtime hook): extract the user's real i
 
 5. **Freeze exit** — Before a design or spec is frozen, no load-bearing decision remains `assumed`. Resolve from available evidence first; ask the owner about open domain and policy decisions, present technical decisions with a recommendation, and mark tuning values `tunable`. Close assumptions under the existing high-cost-question rule; do not turn settled decisions into extra questions.
 
-Second-pass reinforcements (dryforge; central directive 2026-07-25):
+Second-pass reinforcements (dryforge):
 
 - **Derive-first elicit** — Before surfacing any question, first attempt to derive the answer from stated goals, constraints, and code facts; ask only when a specific unresolved decision remains. Question count is not a quality metric.
 - **Proposal-as-material** — A user-proposed solution is material serving the stated intent, not automatic specification authority. Confirm the underlying intent and surface a simpler path when one satisfies it; the user's explicit trade-off decision remains binding once made.

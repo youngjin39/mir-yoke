@@ -100,7 +100,7 @@ Discard an uncommitted Project Agent Kit adaptation in the target or restore the
 commit. For an explicitly invoked CLI transaction, use that command's recorded rollback/recovery
 contract. Installing the CLI does not itself mutate a target.
 
-Current version: `0.13.30`. See `CHANGELOG.md` for release details.
+Current version: `0.13.31`. See `CHANGELOG.md` for release details.
 
 Version 0.10.0 adds opt-in `memory_relations` ingestion and read-only `mir relations query|bundle --memory`
 query/bundle selection using the existing memory schema. No automatic corpus backfill, database
@@ -347,3 +347,18 @@ explicit authority. REA provenance is MIT at cd10ee1; the unlicensed 9e6c624 ori
 remains recorded. Refresh versions only through the existing authorized workflow.
 The lifecycle acknowledgement covers release manifests and the read-only method
 exception; no hook code changes and no capability-lock binding or consumer update is performed here.
+
+## 0.13.31 remaining guidance corrections
+
+No runtime migration or new tools are required. Artifact comparisons use stable
+identities and mark additions/removals Unknown unless both versions are covered.
+Korean business and public forms gain short checks; fluent-korean restores the
+settled-idiom exception under its existing MIT notice. Public guidance now uses
+resolvable citations, generic terminology and project-owned handoff authority.
+The experiment recipe stops over-budget or timed-out runs as unscored failures;
+required claims without runnable verification commands become recommended decisions
+for Main or the owner. Approved-spec issue drafting is an explicit routing exception.
+Ouroboros adaptations retain 5520a3e and were re-checked at 7783d9f on 2026-10-24;
+REA version-comparison ideas were checked at dd02d8f (MIT).
+The lifecycle package acknowledgement covers guidance and version manifests only.
+Hook behavior and the capability lock are unchanged; release binding remains Main's work.

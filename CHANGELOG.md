@@ -8,6 +8,31 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.31] — 2026-10-24 — Remaining guidance corrections
+
+### Fixed
+
+- Compare permitted artifact versions by stable identity and require coverage of
+  both versions before reporting additions/removals; record REA dd02d8f (MIT)
+  while preserving the cd10ee1 and initially unlicensed 9e6c624 provenance.
+- Add original Korean weekly-report, request-email, meeting-request, press-release,
+  complaint-reply and official-letter checks; restore the settled-idiom exception
+  and clarify the fluent-korean attribution under its existing MIT notice.
+- Correct the sufficient-solution citation, identify the executor example as
+  maintainer-only, remove unresolvable directive/ADR citations, qualify unlicensed
+  token-diet inspiration and make approved-spec issue drafting an explicit exception.
+- Replace the public writing example with generic terminology, make handoff design
+  project-owned, remove nonexistent guard names and version-specific source wording.
+- Retain Ouroboros 5520a3e adaptation pins with a 7783d9f re-check on 2026-10-24.
+  Stop over-budget or timed-out experiments as unscored failures; surface required
+  claims without runnable verification commands as decisions with recommendations.
+
+### Changed
+
+- Bump release surfaces to 0.13.31, refresh Korean fidelity hashes and the lifecycle
+  digest acknowledgement, and regenerate the adopter payload. No hook behavior,
+  scripts, agents, commands, runtime policy or capability-lock binding changes.
+
 ## [v0.13.30] — 2026-10-24 — Guidance corrections and bounded gap recipes
 
 ### Fixed

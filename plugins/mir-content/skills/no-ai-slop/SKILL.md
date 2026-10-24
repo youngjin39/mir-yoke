@@ -43,7 +43,7 @@ If the goal is unclear, ask what the reader should think, feel, or do after read
 
 ## Words to cut
 
-Banned as ornamental phrasing: delve, foster, leverage, utilize, facilitate, empower, streamline, robust, cutting-edge, paradigm shift, game changer, this is huge, this changes everything, tapestry, realm, beacon, multifaceted, meticulous, intricate, paramount, transformative, elevate, embark, supercharge, harness, ever-evolving. Exempt meaningful technical terms and proper names, such as "Mir Harness" and "test harness".
+Banned as ornamental phrasing: delve, foster, leverage, utilize, facilitate, empower, streamline, robust, cutting-edge, paradigm shift, game changer, this is huge, this changes everything, tapestry, realm, beacon, multifaceted, meticulous, intricate, paramount, transformative, elevate, embark, supercharge, harness, ever-evolving. Exempt meaningful technical terms and proper names, such as a project or product name and "test harness".
 
 Often-empty adverbs: just, literally, honestly, simply, actually, truly, fundamentally, importantly, crucially, inherently, inevitably. Cut them when they add nothing. Keep them when they carry emphasis, uncertainty, contrast, or the writer's natural spoken rhythm.
 

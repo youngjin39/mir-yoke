@@ -19,7 +19,7 @@ CASES = (
     )),
     ("mir-code/bluebricks", "sufficient-solution.md", "DietrichGebert/ponytail at 09c434a", (
         "installed dependency", "one-liner or adapter", "custom code", "security",
-        "data-loss", "accessibility", "explicit requirements", "18-23",
+        "data-loss", "accessibility", "explicit requirements", "15-20",
     )),
     ("mir-code/code-review", "repository-audit-and-debt.md",
      "DietrichGebert/ponytail at 09c434a", (

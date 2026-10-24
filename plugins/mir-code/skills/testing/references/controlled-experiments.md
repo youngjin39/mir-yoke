@@ -13,7 +13,9 @@ Use for an authorized, bounded performance comparison, not routine correctness c
    on different hardware does not prove comparable compute or performance.
 3. Append to the target's existing evidence log: candidate identity, hypothesis,
    metric and units, resource use, conditions and outcome. Record crashes as failed
-   attempts; never encode them as an apparently superior metric.
+   attempts; never encode them as an apparently superior metric. If a run
+   exceeds its declared budget or timeout, stop it and record a failed attempt;
+   never score it.
 4. Weigh measured gain against complexity and maintenance cost. Main recommends the
    disposition and owns dispatch under the target's authority; a metric alone does
    not select, retain or authorize a change.

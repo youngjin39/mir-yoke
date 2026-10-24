@@ -1,6 +1,6 @@
 ---
 name: spec-architect
-description: "Turns requirements or existing code into a machine-readable spec tree under spec/. Finds missing requirements with a four-layer lattice, reports coverage as counts, and links requirements to modules to code as a graph.\n\nTrigger: requirements completeness, clarify requirements, write a spec, generate architecture docs, recover requirements from code, legacy analysis, traceability matrix, spec-driven development, spec-code drift\n\nDeciding the design direction is the design skill's job. This skill turns settled intent into an implementable spec structure.\n\nDo NOT use for: writing or refactoring code, writing tests, CI/CD setup, general project management."
+description: "Turns requirements or existing code into a machine-readable spec tree under spec/. Finds missing requirements with a four-layer lattice, reports coverage as counts, and links requirements to modules to code as a graph.\n\nTrigger: requirements completeness, clarify requirements, write a spec, generate architecture docs, recover requirements from code, legacy analysis, traceability matrix, spec-driven development, spec-code drift\n\nDeciding the design direction is the design skill's job. This skill turns settled intent into an implementable spec structure.\n\nDo NOT use for: writing or refactoring code, writing tests, CI/CD setup, general project management except drafting issues from an approved spec."
 ---
 
 # spec-architect

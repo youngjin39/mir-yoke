@@ -89,7 +89,7 @@ KOREAN_WRITING_HASHES = {
         "ace3ac45e00cb894305630fdd3e1e916354746aa18cd261f05b3d80db52b843a"
     ),
     "plugins/mir-content/skills/korean-writing/references/business.md": (
-        "d39b7b527c04922dba72f63478e1dce6ef1526cc0dcddaad5d5745ab4b454127"
+        "fe31b476a557f878c244f82fab820551c2a2718b29930eb9237886956e850ab4"
     ),
     "plugins/mir-content/skills/korean-writing/references/contextual-revision.md": (
         "0944f00040bc15d94a9719763a6cccc880eb94ae93d2c73f87d9c98cfb47cea0"
@@ -104,7 +104,7 @@ KOREAN_WRITING_HASHES = {
         "7c5a6883ab3f83a49a7fed3b90d5a373ae93ea5c9c8e33e7d93eb9025ba1051f"
     ),
     "plugins/mir-content/skills/korean-writing/references/public-notices.md": (
-        "262b997b130d3e487c3a6e7187dd8d290b95dc7be1716974c7a0c61b63b0de72"
+        "0bdc1afc0c37b363e6d65ef7102739eacc18550589b7d708ecba2d1f27861588"
     ),
     "plugins/mir-content/skills/korean-writing/references/technical-runbooks.md": (
         "26e744df90031bf918bfc06a5a26babb880f8769bd4cb005d7a0c1e4916e99d8"
@@ -117,7 +117,7 @@ def _hangul_checked_content(path: Path, content: str) -> str:
     # Frontmatter, other files, edits and appended Korean remain scanned.
     if path == Path("plugins/mir-content/skills/fluent-korean/SKILL.md"):
         frontmatter, separator, body = content.partition("\n---\n\n")
-        approved = "c936979949925fa04f5c9f80bbdf5afef09e127c0802500900244b1e20b488f7"
+        approved = "7109372ce9d6e8569c923568856788400d0e8032c60dfc66fad0a0e9baec7f32"
         if separator and hashlib.sha256(body.encode()).hexdigest() == approved:
             return frontmatter
     approved_file = KOREAN_WRITING_HASHES.get(path.as_posix())

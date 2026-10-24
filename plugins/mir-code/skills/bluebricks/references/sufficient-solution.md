@@ -14,7 +14,7 @@ Stop at the first rung that satisfies the actual requirement:
 
 A compressed expression that needs decoding is not an immediately readable solution.
 A dependency's presence does not establish fitness, compatibility or permission.
-The rung order matches Yoke's `.ai-harness/development-ai-rules.md:18-23`;
+The rung order matches Yoke's `.ai-harness/development-ai-rules.md:15-20`;
 consumers follow their own repository rules rather than needing that file.
 
 Do not simplify away security, data-loss protection, credential or privacy

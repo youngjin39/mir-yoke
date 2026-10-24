@@ -20,7 +20,7 @@ Routing precedence: diff and PR review → code-review; completion evidence and 
   structure, and evidence the current repository actually declares.
 - review-code — Legacy alias: diff and PR review uses `mir-code:code-review`; completion evidence stays here.
 
-## Evidence-claim discipline (central directive 2026-07-25)
+## Evidence-claim discipline
 - Completion is an evidence claim, not a confidence statement.
 - A required check that cannot be evaluated — missing tool, unrunnable command, unreadable output — counts as a failure, not a pass.
 
@@ -29,7 +29,7 @@ Routing precedence: diff and PR review → code-review; completion evidence and 
 When identity, relation or status meaning affects the task, apply `mir-core:ontology` using the project-owned mapping.
 1. Convert the requested outcome into a checklist of observable claims (for a request over several targets or items, one claim per target × item), including explicit non-goals and protected boundaries.
 2. Map each claim to the smallest check that can fail: focused test, static check, generated parity check, runtime probe, or direct artifact inspection.
-   For a runnable service, CLI or UI, include one check beside the unit tests that runs it and observes a real response or effect when safe and permitted; otherwise label that claim unevaluated.
+   For a runnable service, CLI or UI, include one check beside the unit tests that runs it and observes a real response or effect when safe and permitted; otherwise label that claim unevaluated; when a required claim has no runnable verification command, surface it as a decision with a recommendation to Main or the owner.
 3. Run checks against the final worktree state and capture command, exit status, and relevant output. A missing tool or unreadable result is not a pass.
 4. Inspect the diff for unintended scope, stale generated files, missing tests, secret exposure, and platform-specific assumptions.
 5. Compare implementation to the governing requirement or spec and label each claim passed, failed, or unevaluated.

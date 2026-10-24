@@ -1,10 +1,15 @@
 {
-  "goal": "Prepare Mir Yoke 0.13.30 guidance-only defect fixes and all approved shippable gaps except Paperclip as an uncommitted scratch-clone diff.",
+  "goal": "Prepare the owner-briefed Mir Yoke 0.13.31 remaining guidance corrections as an uncommitted scratch-clone diff.",
   "goal_type": "maintenance",
-  "scope": "Only the review3-1024 scratch clone. No capability-lock edits, commits, tags, pushes or other repository writes. tasks/plan.md owns intent and design.",
+  "scope": "Only this remaining-1024 scratch clone. No capability-lock edits, commits, other repository writes or runtime behavior changes. tasks/plan.md owns intent and design.",
   "priority": "normal",
   "updated": "2026-10-24",
   "history": [
+    {
+      "goal": "Prepare Mir Yoke 0.13.30 guidance-only defect fixes and all approved shippable gaps except Paperclip as an uncommitted scratch-clone diff.",
+      "status": "superseded",
+      "archive": "tasks/change_log.md#cursor-before-capability-remaining-2026-10-24"
+    },
     {
       "goal": "Prepare Mir Yoke 0.13.29 guidance-only final gap fills as an uncommitted scratch-clone diff.",
       "status": "superseded",
@@ -108,7 +113,7 @@
       "evidence": "tasks/change_log.md#ontology-rejudgment-g08g13-2026-10-16"
     }
   ],
-  "status": "complete",
-  "evidence": "tasks/change_log.md#external-capability-final-fill-01329-preparation-2026-10-24",
-  "authority": "Owner Discord 1563372620370681867 (parent-supplied), option 3; final-fill brief."
+  "status": "in_progress",
+  "evidence": "tasks/change_log.md#capability-remaining-01331-preparation-2026-10-24",
+  "authority": "Owner-supplied remaining-1024/writer.md brief, 2026-10-24."
 }

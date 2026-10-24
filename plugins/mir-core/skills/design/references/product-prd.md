@@ -1,6 +1,6 @@
 # Optional product-focused PRD recipe
 
-Inspired by Q00/ouroboros at 5520a3e.
+Inspired by Q00/ouroboros at 5520a3e. Content re-checked at 7783d9f on 2026-10-24.
 
 Use when the owner asks for product requirements. Reuse the current intent cursor
 and elicitation rules; a PRD request does not authorize implementation or delivery.
