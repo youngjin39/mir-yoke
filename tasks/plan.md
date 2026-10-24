@@ -33,3 +33,10 @@ runtime/test rule was weakened. Main should re-run that fixture group in an
 owner-authorized external temporary workspace; binding remains out of scope.
 Evidence and per-item placements are in
 [the evidence log](change_log.md#capability-remaining-01331-preparation-2026-10-24).
+
+Main acceptance and release (2026-10-24, owner Discord 1563513553972109346 approving option 1, parent-supplied):
+- Commits: daa7e35 source (full suite 2855 passed plus the expected pre-bind lock failure); bind 3f2fe1e (full suite 2856 passed), tagged v0.13.31, pushed, GitHub release created.
+- Provider update from the enrolled 0.13.30 provider-update lock (2779c96); recorded in 48d334c.
+- Claude headless session c1716994: all 23 `mir-*` skills; Mir continuity line at SessionStart; SessionStart 3, UserPromptSubmit 5, PreToolUse 5 and Stop 6 hook responses.
+- Codex session 01a16db5 (0.13.31 cache): all 23 skills, SessionStart, the UserPromptSubmit packet, the PreToolUse denial "Owner forbids commands in this handoff turn" and the Stop hook_prompt under `mir-lifecycle-hooks/0.13.31`.
+- Attested both runtimes with no missing skills or hooks; finalized after restart; `mir capability status` ready at 3f2fe1e.
