@@ -2,8 +2,9 @@
 
 Inspired by DietrichGebert/ponytail at 09c434a.
 
-Use for an owner-requested whole-repository audit; ordinary reviews keep the bounded
-entrypoint workflow. This is a manual review recipe, not an automatic scanner.
+Use for an owner-requested whole-repository audit or ordinary relevant diff review.
+For a diff, bound these checks to changed paths and affected callers; do not imply
+whole-repository coverage. This is a manual recipe, not an automatic scanner.
 
 1. Map entrypoints, dependencies, storage and the highest-impact end-to-end flows.
    State load assumptions (users, input sizes, concurrency and deployment shape),
@@ -17,6 +18,11 @@ entrypoint workflow. This is a manual review recipe, not an automatic scanner.
 4. Return ranked findings using the entrypoint severity and scope statuses, with the
    smallest sufficient remedy and consequence of deferral. End with **Not checked:**
    unread paths, unrun checks and unknown load limits, even when no findings remain.
+
+For ordinary changes, state relevant expected load assumptions and inspect changed
+hot-path work, repeated queries, growth and concurrency; label unmeasured performance
+hypotheses. Check lean alternatives: remove work, reuse existing code or built-ins
+before new machinery. Preserve safety and explicit requirements; taste is advisory.
 
 ## Manual `shortcut:` recipe
 
@@ -35,3 +41,7 @@ Warn with **missing-trigger** for a marker lacking an observable upgrade trigger
 report a missing ceiling separately. Never invent either. Count markers and warnings;
 compare ceilings with expected load and link existing debt rows rather than duplicating
 ledgers. This recipe adds no script, hook or automatic upgrade.
+
+Compatibility: include legacy `ponytail:` comments and an owner-named custom marker
+when requested. Apply the same ceiling/trigger checks; exclude unrelated TODOs and
+prose examples. Reuse the existing debt record instead of inventing a second ledger.

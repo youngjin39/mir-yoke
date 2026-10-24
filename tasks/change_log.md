@@ -10916,3 +10916,272 @@ no rules were shortened or deleted, and no general Korean exemption was added.
   open only for original-repository application; the sandbox excludes its path.
   Deliver an uncommitted patch and raw status/stat/test evidence for Main review.
   No commit, tag, push, provider update, attestation or post-commit bind occurred.
+
+## Cursor before external capability final fill (2026-10-24)
+
+# Plan
+
+## Active task: external-capability-gap-fill-2026-10-24
+
+Intent/design authority: current owner brief, option 2 of the Harness external
+capability re-review report (2026-10-24), owner Discord 1563273097539485821
+(parent-supplied). This single cursor owns the bounded design and request matrix.
+Baseline: clean c12cd1d2b19ab5941a13217afcc67bf59d67ebfd (0.13.27).
+Predecessor plan and intent are archived verbatim in tasks/change_log.md under
+"Cursor before external capability gap fill (2026-10-24)".
+
+Design: add seven optional, fresh guidance references to existing skills: design
+frontier rounds and degraded interview brief; bluebricks ladder safeguards;
+code-review repository audit/debt and advisory consensus panel; automation
+report-only SPINNING; verify three-document fidelity checklist. The panel belongs
+in code-review because its trigger is a disputed high-impact review, not general
+completion verification. No new skills, agents, commands, scripts or hooks.
+Preserve every existing SKILL.md line. Use only source data from supplied clones.
+
+Scenarios: dependent questions wait while independent frontier questions proceed;
+missing replies never become answers; simplification retains safety requirements;
+audits state load and unread scope; debt markers expose missing triggers;
+stagnation reports do not actuate; document and panel judgments remain advisory.
+
+Request matrix:
+1. Fail-first focused reference/provenance/pointer contract, then seven references.
+2. Existing skill preservation, English text and guidance-only package boundaries.
+3. Complete 0.13.28 metadata, digest acknowledgement and final adopter payload.
+4. Focused/full pytest, Ruff and Codex sync with every failure reported.
+5. Binary patch against c12cd1d and status/stat/log evidence.
+
+Execution: only the gapfill-1024 scratch boundary is writable. No capability-lock
+edit, commit, tag, push, consumer operation or upstream execution.
+
+Main acceptance and release (2026-10-24, owner Discord 1563281668465364993 approving option 1, parent-supplied):
+- Commits: e92f386 source; bind 5411daf (full suite 2732 passed), tagged v0.13.28, pushed, GitHub release created.
+- Provider update from the enrolled 0.13.27 provider-update lock (bda4e97); recorded in eee3ff0.
+- Claude headless session 0a5cafb4: init catalog listed all 21 `mir-*` skills; SessionStart printed the Mir continuity line; UserPromptSubmit 5, PreToolUse 5 and Stop 6 runs against 4 non-plugin registrations each.
+- Codex session 01a16a62 (0.13.28 cache): all 21 skills, SessionStart, the UserPromptSubmit packet, the PreToolUse denial "Owner forbids commands in this handoff turn" and the Stop hook_prompt under `mir-lifecycle-hooks/0.13.28`.
+- Attest: both runtimes runtime_verified with no missing skills or hooks. Finalize: registration active, status ready.
+
+## Preparation result (2026-10-24)
+
+Request matrix: 5/5 preparation cells have checked evidence; release binding remains
+outside scope. Seven focused cases failed with missing references before content,
+then seven passed in 0.03s. All 21 existing SKILL.md bodies remain byte-identical
+prefixes; seven references span 22-37 lines. Baseline plan and intent were archived
+verbatim before this cursor was written. No size-budget or path-boundary failures.
+
+Full `uv run pytest -q`: 1 failed, 2730 passed, 1 skipped in 351.69s (0:05:51).
+Only `tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees`
+fails, as expressly allowed before binding. The capability lock is byte-identical
+to c12cd1d. Ruff: `All checks passed!`; Codex sync:
+`OK: Codex derivatives match Claude sources`.
+
+First full attempt: 2 failed, 2729 passed, 1 skipped in 348.83s (0:05:48).
+The additional failure was
+`tests/test_harness_consistency.py::test_harness_consistency_zero_error_on_current_repo`:
+global pytest used the base Python and its subprocess could not import `mir`.
+Installing the locked dev extra in this scratch clone with `uv sync --extra dev`
+resolved it without source or test-expectation changes. Cache and TMPDIR were kept
+inside the owner-approved scratch boundary; no upstream code was executed.
+
+Regenerate adopter-payload after this final record update, check the focused and
+payload contracts, then deliver `../mir-yoke-0.13.28.patch` using `git add -N` for
+new files and `git diff --binary c12cd1d`. Logs and final status/stat are retained
+in the adjacent scratch evidence directory. No commit, tag, push or lock binding.
+
+### Previous intent record
+
+```json
+{
+  "goal": "Prepare Mir Yoke 0.13.28 guidance-only capability gap fills and a binary patch against c12cd1d.",
+  "goal_type": "maintenance",
+  "scope": "Only the owner-named gapfill-1024 scratch clone and delivery directory. No capability-lock edits, commits, tags or pushes. tasks/plan.md owns intent and design.",
+  "priority": "normal",
+  "updated": "2026-10-24",
+  "history": [
+    {
+      "goal": "Port no-ai-slop and fluent-korean into the common mir-content plugin and prepare 0.13.27 without binding or publishing.",
+      "status": "archived",
+      "archive": "tasks/change_log.md#cursor-before-external-capability-gap-fill-2026-10-24"
+    },
+    {
+      "goal": "Prepare the portable ADR-92 behaviour-scenario amendment in the default work method, testing and code-review skills with fail-first contract evidence.",
+      "updated": "2026-10-23",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#behaviour-scenarios-prepared-source-2026-10-23",
+      "archive": "tasks/change_log.md#external-capability-intake-and-01327-preparation-2026-10-24"
+    },
+    {
+      "goal": "Re-verify all 23 repository-maintenance items since the 2026-10-18 acceptance and apply only minimal confirmed improvements.",
+      "updated": "2026-10-23",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#repo-maintenance-2026-10-23",
+      "authority": "Owner Discord 1562969123871522900 (2026-10-23), relayed by Mir Harness Main; parent-supplied. Single active cursor: tasks/plan.md."
+    },
+    {
+      "goal": "Re-verify the 22-item maintenance delta since 2b89087 and fix F1 success-path test load sensitivity.",
+      "updated": "2026-10-18",
+      "status": "superseded",
+      "archive": "tasks/change_log.md#superseded-continuity-before-repo-maintenance-2026-10-23-2026-10-23"
+    },
+    {
+      "goal": "Re-verify all 22 repository-maintenance items against current evidence and apply minimal evidenced improvements.",
+      "updated": "2026-10-17",
+      "status": "superseded",
+      "archive": "tasks/change_log.md#superseded-cursor-before-ontology-reachability-2026-10-17"
+    },
+    {
+      "goal": "Make the default work method portable across adopting computers and both runtimes, including delegated Codex sessions.",
+      "updated": "2026-10-17",
+      "evidence": "tasks/change_log.md#portable-default-work-method-2026-10-17",
+      "status": "superseded",
+      "archive": "tasks/change_log.md#superseded-continuity-before-matrix-pass-2026-10-17"
+    },
+    {
+      "goal": "Re-verify Mir Yoke against the owner-directed 22-item repository maintenance checklist and apply minimal evidenced improvements.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#matrix-pass-2026-10-16"
+    },
+    {
+      "goal": "Fix the five Linux release-runner test failures without weakening their behavioral guarantees.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#linux-release-runner-fixtures-2026-10-16"
+    },
+    {
+      "goal": "Prepare the Mir Yoke 0.13.1 release working tree with version metadata and migration notes only.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#0131-release-preparation-2026-10-16"
+    },
+    {
+      "goal": "Close ontology impact and isolated distribution gaps and scope E06/E08 evidence.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#ontology-gap-development-2026-10-16"
+    },
+    {
+      "goal": "Make local validation and fresh-checkout validate workflow commands pass while retaining the memory render guard.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#local-and-ci-validation-fixes-2026-10-16"
+    },
+    {
+      "goal": "Prevent automatic consistency tests from rendering live agent memory.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#automatic-memory-render-guard-2026-10-16"
+    },
+    {
+      "goal": "Prepare the Mir Yoke 0.13.0 release working tree with version metadata and migration notes only.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#0130-release-preparation-2026-10-16"
+    },
+    {
+      "goal": "Correct E03 and E07 covered check references using existing executable behavior tests.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#superseded-cursor-covered-label-fix-before-0130-preparation-2026-10-16"
+    },
+    {
+      "goal": "Retain repeatable Yoke-domain selection/evidence use and resolve declared relation target-freshness ownership.",
+      "updated": "2026-10-16",
+      "status": "complete",
+      "evidence": "tasks/change_log.md#ontology-rejudgment-g08g13-2026-10-16"
+    }
+  ],
+  "status": "complete",
+  "evidence": "tasks/change_log.md#external-capability-gap-fill-01328-preparation-2026-10-24",
+  "authority": "Owner Discord 1563273097539485821 (parent-supplied), option 2; run external-capability-gap-fill-2026-10-24."
+}
+```
+
+## External capability final fill 0.13.29 preparation (2026-10-24)
+
+Authority: owner-supplied final-fill brief, owner Discord 1563372620370681867,
+option 3 (parent-supplied). The single active intent/design cursor is tasks/plan.md.
+Baseline a3dd2da; all changes remain uncommitted in the authorized scratch clone.
+Option 3 expressly supersedes the earlier natural-korean-skills and REA exclusions.
+
+### Placement and source evidence
+
+- G1a/G1b: new Korean-language mir-content:korean-writing, with contextual revision
+  and six short genre references, deferring base rules to fluent-korean and general
+  editing to no-ai-slop. Eight exact-file hash exceptions; fluent-korean unchanged.
+- G2: new opt-in mir-core:app-investigation rather than widening metadata profiling.
+  It separates artifact/feature identity, static inference, runtime observation,
+  permitted operations, reconstruction contracts and unresolved coverage.
+- G3: automation recovery reference beside SPINNING, reusing its report rather than
+  duplicating detection; failure/recovery vocabulary, pipeline evidence, four
+  qualitative patterns and five optional lenses. Main retains every action.
+- G4: existing code-review audit/debt reference now also applies to relevant ordinary
+  diffs, with legacy/custom markers; the entrypoint gets one routing pointer.
+- G5/G7: extend existing governance/verify references to avoid parallel recipes;
+  learning-safe selected per-skill proposals and artifact-only advisory review.
+- G6/G8/G11: short efficiency, memory-evaluation and design references respectively.
+  Excluded satire generation and Paperclip diagnostics remain absent.
+
+Read-only upstream HEADs were checked locally: bear2u/natural-korean-skills 2a4f1fc,
+morluto/rea 9e6c624, Q00/ouroboros 5520a3e, DietrichGebert/ponytail 09c434a,
+microsoft/SkillOpt 84b36cd, bugbug9999/token-diet 82ac6a7, fn-opt/dryforge f5aa6d7,
+xiaowu0162/LongMemEval-V2 2cc8c54. The three unlicensed repositories inform ideas
+only; their provenance explicitly states original wording. No upstream code ran.
+
+### Fail-first and verification evidence
+
+Before any skill content or registration edits, the new finalfill test returned:
+`17 failed, 1 passed in 0.74s`. Missing references/skills and absent guidance terms
+caused the failures; the existing-source preservation case already passed.
+
+After implementation, focused finalfill/gapfill/writing/sanitization tests returned:
+`43 passed in 0.77s`.
+Full `uv run pytest -q` returned:
+`1 failed, 2749 passed, 1 skipped in 342.78s (0:05:42)`.
+The only failure is
+`tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees`:
+managed plugin content changed but Main has not rebound the protected lock, exactly
+as allowed by the brief. No test was skipped or weakened to hide that difference.
+The suite's single skip was reported as emitted, not treated as a pass.
+
+`uv run ruff check`: `All checks passed!`.
+`uv run python scripts/verify_codex_sync.py`:
+`OK: Codex derivatives match Claude sources`.
+`git diff --check`: exit 0, no output.
+`claude plugin validate .` and each of the four plugin directories:
+`Validation passed`; each plugin directory also reports ICON_MISSING (advisory).
+
+An early validation attempt placed pytest scratch inside the source tree; a
+repository-copy fixture recursively copied that scratch and Ruff scanned the
+copies. Both runs were interrupted and that task-created scratch was removed.
+Subsequent test temporary files were placed outside the clone on the permitted
+SSD task scratch. A pre-final adopter payload became stale after test-formatting
+edits; it was regenerated, and its exact-payload regression passed before the
+reported complete full run. Neither interrupted run is completion evidence.
+
+### Request matrix evidence
+
+1. G1a/G1b: seven provenance/pointer/line-limit cases, writing registration,
+   exact-hash mutation/scope checks and direct Korean contextual/genre review.
+2. G2: investigation reference and registration cases; legal and tool limits reviewed.
+3. G3: recovery reference case and direct pattern/lens/pipeline review.
+4. G4: ordinary review/debt reference case, existing gapfill contract retained.
+5. G5: learning-safe subset reference case, existing methodology contract retained.
+6. G6: observed-cache reference case and direct no-keep-alive/unsupported-claims review.
+7. G7: fidelity reference case and artifact-only advisory boundary review.
+8. G8: visual-memory reference case and gold/source isolation review.
+9. G11: PRD reference case and product/acceptance/non-goal review.
+10. Fail-first evidence, all release versions, registrations and documentation checked;
+    adopter payload regenerated through the declared tool.
+11. Complete suite, lint, sync, diff and plugin checks above; protected-source test
+    confirms fluent-korean and capability-lock are byte-identical to HEAD.
+
+Preparation envelope: 11/11 cells checked under the explicit pre-binding allowance.
+No release binding, commit, push, tag, consumer change or installed runtime probe
+was requested. No claim is made that guidance was exercised on a real application,
+private history or provider telemetry. Affected references are 18-47 lines; existing
+SKILL.md bodies are byte-identical prefixes with at most one new pointer line.
+
+After this record update, regenerate the adopter payload and rerun the focused
+finalfill/sanitization and exact-payload checks, Ruff, Codex sync and diff check.
+The final response reports those fresh checks; the full suite above predates only
+this evidence/cursor closure and its generated payload hashes.

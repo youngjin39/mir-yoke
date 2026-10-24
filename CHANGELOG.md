@@ -8,6 +8,24 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.29] — 2026-10-24 — Final guidance gap fills
+
+### Added
+
+- Opt-in `mir-content:korean-writing`, authored in Korean with contextual revision
+  and six genre recipes; exact-file hash exceptions preserve English sanitization
+  elsewhere and leave the existing fluent-korean policy unchanged.
+- Opt-in `mir-core:app-investigation` for permitted, feature-bounded investigation
+  and contract-based reconstruction comparison using existing authorized tools.
+- Main-directed recovery/reframing and product PRD recipes, ordinary diff load/
+  performance/lean checks and legacy/custom debt markers, learning-safe per-skill
+  proposals, observed prompt-cache diagnosis, artifact-only executability review,
+  and synthetic screenshot/text memory cases.
+- Original guidance credits natural-korean-skills, rea and token-diet as ideas only
+  (no license), plus pinned ouroboros, Ponytail, SkillOpt, dryforge and LongMemEval-V2.
+  No upstream code, runtime components, autonomous actions or LLM hard gates.
+
+
 ## [v0.13.28] — 2026-10-24 — Guidance capability gap fills
 
 ### Added

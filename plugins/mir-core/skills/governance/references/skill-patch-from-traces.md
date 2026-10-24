@@ -22,3 +22,20 @@ Neither learned wording nor a score grants instruction or memory write authority
 Main retains recommendations and dispatch under centrally owned model selection.
 Do not add an optimizer engine, scheduler, nightly cycle, runner, transcript harvester,
 WebUI, commands, autonomous evolution or auto-adopt path.
+
+## Learning-safe feedback and per-skill proposals
+
+Keep raw judge evidence in its authorized audit sink. Behavioral learning-safe
+feedback describes the user-visible mistake and desired behavior, excluding
+evaluator internals: hidden answers, check expressions, private labels and raw
+judge rationales. Review the description for secrets, prompt-like content and
+misleading claims; a prose projection is not a universal sanitizer. When a safe
+behavioral explanation is unavailable, mark feedback insufficient rather than
+forwarding raw evidence or inventing a lesson.
+
+Stage independent per-skill proposals, each with source identity, small diff,
+supporting cases, baseline comparison, regressions and rejected-edit reasons.
+Main chooses an explicit subset, including none. Disclose cross-skill dependencies;
+review the chosen subset together for conflicts and run its relevant held-out
+checks before authorized application. Do not silently apply unselected proposals
+or claim that isolated improvements establish combined improvement.

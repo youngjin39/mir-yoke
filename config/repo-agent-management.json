@@ -421,6 +421,20 @@
         "scope": "universal",
         "status": "active",
         "source_path": "plugins/mir-content/skills/no-ai-slop/"
+      },
+      "korean-writing": {
+        "category": "knowledge",
+        "absorbs": [],
+        "scope": "universal",
+        "status": "active",
+        "source_path": "plugins/mir-content/skills/korean-writing/"
+      },
+      "app-investigation": {
+        "category": "analysis",
+        "absorbs": [],
+        "scope": "universal",
+        "status": "active",
+        "source_path": "plugins/mir-core/skills/app-investigation/"
       }
     }
   },

@@ -57,3 +57,5 @@ Do not substitute confidence phrases such as “looks good,” “should be fine
 For a requested repository audit or manual shortcut review, use [audit and debt guidance](references/repository-audit-and-debt.md).
 
 For disputed high-impact reviews, use the [advisory consensus panel](references/advisory-consensus.md).
+
+For ordinary relevant diffs, apply the [bounded load, performance and lean checks](references/repository-audit-and-debt.md) to changed paths and callers.

@@ -23,3 +23,5 @@ description: "Token/context efficiency analysis + AI readiness cartography.\n\nT
 6. Keep concise output as the baseline, but expand wherever ambiguity would weaken review, verification, or operational safety.
 
 For on-demand instruction-change comparisons, read [the optional reference](references/instruction-change-evaluation.md).
+
+For real cache-miss evidence, use [manual prompt-cache diagnosis](references/observed-cache-misses.md).

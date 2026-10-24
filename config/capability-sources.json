@@ -8,7 +8,7 @@
     "mir-core": {
       "path": "plugins/mir-core",
       "package_kind": "skills",
-      "skills": ["automation", "commit", "design", "efficiency", "governance", "memory-evaluation", "memory-gc", "ontology", "reference-app-profile", "repo-maintenance", "selective-relations", "spec-architect", "verify"]
+      "skills": ["app-investigation", "automation", "commit", "design", "efficiency", "governance", "memory-evaluation", "memory-gc", "ontology", "reference-app-profile", "repo-maintenance", "selective-relations", "spec-architect", "verify"]
     },
     "mir-code": {
       "path": "plugins/mir-code",
@@ -18,7 +18,7 @@
     "mir-content": {
       "path": "plugins/mir-content",
       "package_kind": "skills",
-      "skills": ["fluent-korean", "knowledge", "no-ai-slop", "ui-design"]
+      "skills": ["fluent-korean", "knowledge", "korean-writing", "no-ai-slop", "ui-design"]
     },
     "mir-lifecycle-hooks": {
       "path": "plugins/mir-lifecycle-hooks",
@@ -36,7 +36,7 @@
     "forbidden_provider_components": ["agents", "commands", "apps", "scripts", "permissions", "runtime-policy"]
   },
   "active_package_digest_acknowledgements": {
-    "mir-lifecycle-hooks": "3cce55f1c0abbd61cd30b9e90a156ad10ce7ec3cde7016572e6b0727f4c6fb4c"
+    "mir-lifecycle-hooks": "0a7c0a67e3a3684ea1e4cd5bd9497ef7828fd2400e9075cffecebcbe10a66fc8"
   },
   "profiles": {
     "aliases": {

@@ -100,7 +100,7 @@ Discard an uncommitted Project Agent Kit adaptation in the target or restore the
 commit. For an explicitly invoked CLI transaction, use that command's recorded rollback/recovery
 contract. Installing the CLI does not itself mutate a target.
 
-Current version: `0.13.28`. See `CHANGELOG.md` for release details.
+Current version: `0.13.29`. See `CHANGELOG.md` for release details.
 
 Version 0.10.0 adds opt-in `memory_relations` ingestion and read-only `mir relations query|bundle --memory`
 query/bundle selection using the existing memory schema. No automatic corpus backfill, database
@@ -258,3 +258,18 @@ interview fallback preserves unanswered decisions. The audit/debt recipe is manu
 SPINNING only reports, and fidelity/panel judgments remain advisory. No new skills,
 agents, commands, scripts, hooks, schema migration or automatic consumer update are
 introduced. Existing deterministic checks and owner authority remain in force.
+
+## 0.13.29 final guidance gap fills
+
+Two optional skills join the shared provider catalog: `mir-content:korean-writing`
+(Korean-language authoring and contextual revision) and `mir-core:app-investigation`
+(explicitly requested, permitted-artifact investigation and reconstruction review).
+Metadata-only reference-app-profile retains its original bounds. Existing profile
+packs and fluent-korean source are unchanged. Refresh plugin versions explicitly
+through the existing authorized workflow; no automatic consumer update follows.
+
+Existing skills gain optional recovery, PRD, diff-review, selective learning-safe
+proposal, cache-diagnosis, document-only review and visual memory-case guidance.
+No tools are bundled, no memory migration is required, and all judgments remain
+advisory under Main. The lifecycle package digest acknowledgement changes only
+because release metadata changes; hook code and capability-lock binding stay intact.

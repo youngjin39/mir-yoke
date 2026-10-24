@@ -58,3 +58,5 @@ indirect markers such as library names, or `Unknown`), and the command or path t
 ## Report
 Return the profile table, then the facts most relevant to the owner's design question, then the Unknowns.
 Never upgrade an `Inferred` or `Unknown` row to `Confirmed` without its evidence.
+
+For explicitly requested deeper work, use the separate opt-in [app-investigation skill](../app-investigation/SKILL.md) within its own authorization boundary.

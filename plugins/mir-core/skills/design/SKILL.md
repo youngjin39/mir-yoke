@@ -68,3 +68,5 @@ This skill is the canonical design entry point. Use it proportionally rather tha
 For consequential or owner-requested interviews, extend the existing elicitation rules with [frontier rounds](references/frontier-interview.md).
 
 When an interview cannot proceed, use the [text-only degraded brief](references/interview-fallback.md).
+
+For owner-requested product requirements, use the [product-focused PRD recipe](references/product-prd.md).

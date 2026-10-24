@@ -52,7 +52,7 @@ immutable release:
 
 ```bash
 uv tool install --force --link-mode copy \
-  "git+https://github.com/youngjin39/mir-yoke.git@v0.13.28"
+  "git+https://github.com/youngjin39/mir-yoke.git@v0.13.29"
 mir --help
 ```
 
@@ -102,6 +102,13 @@ Version 0.13.28 fills verified guidance gaps in existing skills: frontier interv
 rounds and fallback briefs, a sufficient-solution ladder, repository audit and
 shortcut debt review, report-only stagnation, three-document fidelity and an
 advisory consensus panel. These optional references add no executable components.
+
+Version 0.13.29 adds opt-in `mir-content:korean-writing` (authored in Korean) and
+`mir-core:app-investigation`, plus Main-directed recovery and product PRD recipes.
+Existing skills add relevant diff load/performance/lean checks, learning-safe
+per-skill proposals, observed cache diagnostics, artifact-only executability review
+and synthetic visual memory cases. These are optional guidance, using existing
+authorized tools and preserving metadata profiling and language-policy boundaries.
 
 ### Platform use
 

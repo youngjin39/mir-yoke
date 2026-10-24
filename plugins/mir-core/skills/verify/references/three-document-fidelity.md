@@ -27,3 +27,16 @@ findings and unknowns as advisory evidence, alongside deterministic test results
 
 This checklist is never an LLM acceptance gate. Neither author agreement nor a
 reviewer's verdict substitutes for required deterministic checks or owner decisions.
+
+## Optional artifact-only executability review
+
+Main may ask an already-authorized fresh reviewer with no dialogue context to read
+only the finished repository-owned handoff, spec and plan, plus explicitly linked
+documents available in that artifact set. Ask: could an executor carry out the work
+from these documents alone, without guessing intent, authority, dependencies or
+acceptance checks? Check whether references resolve, steps have preconditions and
+expected outcomes, and unresolved choices have an owner and an explicit stop point.
+Return executable, executable with listed gaps, or not executable, citing each
+missing instruction and its consequence. Do not fill gaps from conversation memory.
+This artifact-only judgment is advisory; Main adjudicates repairs and required
+checks. An unavailable reviewer is unperformed evidence, never an LLM hard gate.

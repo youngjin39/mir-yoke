@@ -37,3 +37,5 @@ leaderboard utilities, fixed model pins or learning loops. Any runtime adapter n
 separate target-local authorization. Local cases need no benchmark download.
 Do not bundle datasets, trajectories, screenshots or questions: dataset redistribution
 rights require separate verification from the upstream code license.
+
+For multimodal comparisons, use [synthetic text and screenshot cases](references/synthetic-visual-cases.md).

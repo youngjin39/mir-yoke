@@ -16,6 +16,7 @@ MANIFEST = ROOT / ".codex-sync" / "manifest.json"
 PATH_SCOPED_INSTRUCTION_ROOTS = ("scripts", "src", "starter", "tests", "tools")
 PLUGIN_SKILLS = {
     "mir-core": {
+        "app-investigation",
         "automation",
         "commit",
         "design",
@@ -31,7 +32,7 @@ PLUGIN_SKILLS = {
         "verify",
     },
     "mir-code": {"bluebricks", "code-review", "testing"},
-    "mir-content": {"fluent-korean", "knowledge", "no-ai-slop", "ui-design"},
+    "mir-content": {"fluent-korean", "knowledge", "korean-writing", "no-ai-slop", "ui-design"},
     "mir-lifecycle-hooks": {"runtime-continuity"},
 }
 

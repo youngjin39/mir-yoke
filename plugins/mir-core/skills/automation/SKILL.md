@@ -26,3 +26,5 @@ description: "Long-running task control + browser automation.\n\nTrigger: runner
 6. Mark completion only after the recorded completion test passes; otherwise leave a truthful running, paused, or blocked state.
 
 For stagnation in an observed run, use the [report-only SPINNING check](references/spinning-report.md).
+
+For Main-directed stall diagnosis, use [recovery and reframing](references/recovery-and-reframing.md) beside the existing SPINNING report.

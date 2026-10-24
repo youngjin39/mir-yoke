@@ -80,6 +80,35 @@ def _checkable_files():
             continue
 
 
+# Owner-approved Korean authoring files: only exact complete bytes are exempt.
+KOREAN_WRITING_HASHES = {
+    "plugins/mir-content/skills/korean-writing/SKILL.md": (
+        "476c87767ab4c26b50e89a66ecfa5233846666a4d45335da166eeb7122a6a9ed"
+    ),
+    "plugins/mir-content/skills/korean-writing/references/blogs.md": (
+        "ace3ac45e00cb894305630fdd3e1e916354746aa18cd261f05b3d80db52b843a"
+    ),
+    "plugins/mir-content/skills/korean-writing/references/business.md": (
+        "018db71446d6441f8a2531dfd3249880656ade0964e04ab6e24128662db86e4c"
+    ),
+    "plugins/mir-content/skills/korean-writing/references/contextual-revision.md": (
+        "37c9775e1c5f0e589c217e6fc4b0c7fe4dc253748958c1ffffad4704ae122b14"
+    ),
+    "plugins/mir-content/skills/korean-writing/references/essays.md": (
+        "94375bbb4ab5d83bcb7e7e7f04a5d8a99955b6a6687d12b1aae32883b568e220"
+    ),
+    "plugins/mir-content/skills/korean-writing/references/minutes-slides.md": (
+        "7c5a6883ab3f83a49a7fed3b90d5a373ae93ea5c9c8e33e7d93eb9025ba1051f"
+    ),
+    "plugins/mir-content/skills/korean-writing/references/public-notices.md": (
+        "bfe2ec9e697767797e6d52e42861c9944517f14dd67d59036c77f0603fbcf7b4"
+    ),
+    "plugins/mir-content/skills/korean-writing/references/technical-runbooks.md": (
+        "c78540a8edfb83cbe5c3a0e1d119223c5d3cd4768e7cbcd7f7680cdc6c035da7"
+    ),
+}
+
+
 def _hangul_checked_content(path: Path, content: str) -> str:
     # Owner-approved Korean policy import: exempt only the complete pinned body.
     # Frontmatter, other files, edits and appended Korean remain scanned.
@@ -88,6 +117,9 @@ def _hangul_checked_content(path: Path, content: str) -> str:
         approved = "c936979949925fa04f5c9f80bbdf5afef09e127c0802500900244b1e20b488f7"
         if separator and hashlib.sha256(body.encode()).hexdigest() == approved:
             return frontmatter
+    approved_file = KOREAN_WRITING_HASHES.get(path.as_posix())
+    if approved_file and hashlib.sha256(content.encode()).hexdigest() == approved_file:
+        return ""
     return content
 
 
@@ -99,6 +131,21 @@ def test_korean_policy_exception_is_exact_and_keeps_other_prose_scanned():
     assert HANGUL.search(_hangul_checked_content(path, content + chr(0xAC00)))
     altered_frontmatter = content.replace("name: fluent-korean", "name: " + chr(0xAC00))
     assert HANGUL.search(_hangul_checked_content(path, altered_frontmatter))
+
+
+def test_korean_writing_exceptions_are_exact_and_scoped():
+    root = Path(__file__).resolve().parents[1]
+    skill_root = root / "plugins/mir-content/skills/korean-writing"
+    paths = {p.as_posix() for p in skill_root.rglob("*.md")}
+    assert paths == {(root / p).as_posix() for p in KOREAN_WRITING_HASHES}
+    for relative, digest in KOREAN_WRITING_HASHES.items():
+        path = Path(relative)
+        content = (root / path).read_text(encoding="utf-8")
+        assert hashlib.sha256(content.encode()).hexdigest() == digest
+        assert not HANGUL.search(_hangul_checked_content(path, content))
+        assert HANGUL.search(_hangul_checked_content(Path("other") / path.name, content))
+        assert HANGUL.search(_hangul_checked_content(path, content + chr(0xAC00)))
+        assert HANGUL.search(_hangul_checked_content(path, content.replace("# ", "## ", 1)))
 
 
 def test_no_korean_in_template():

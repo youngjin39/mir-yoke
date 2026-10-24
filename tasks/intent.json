@@ -1,10 +1,15 @@
 {
-  "goal": "Prepare Mir Yoke 0.13.28 guidance-only capability gap fills and a binary patch against c12cd1d.",
+  "goal": "Prepare Mir Yoke 0.13.29 guidance-only final gap fills as an uncommitted scratch-clone diff.",
   "goal_type": "maintenance",
-  "scope": "Only the owner-named gapfill-1024 scratch clone and delivery directory. No capability-lock edits, commits, tags or pushes. tasks/plan.md owns intent and design.",
+  "scope": "Only the finalfill-1024 scratch clone. No capability-lock edits, commits, tags, pushes or other repository writes. tasks/plan.md owns intent and design.",
   "priority": "normal",
   "updated": "2026-10-24",
   "history": [
+    {
+      "goal": "Prepare Mir Yoke 0.13.28 guidance-only capability gap fills and a binary patch against c12cd1d.",
+      "status": "archived",
+      "archive": "tasks/change_log.md#cursor-before-external-capability-final-fill-2026-10-24"
+    },
     {
       "goal": "Port no-ai-slop and fluent-korean into the common mir-content plugin and prepare 0.13.27 without binding or publishing.",
       "status": "archived",
@@ -99,6 +104,6 @@
     }
   ],
   "status": "complete",
-  "evidence": "tasks/change_log.md#external-capability-gap-fill-01328-preparation-2026-10-24",
-  "authority": "Owner Discord 1563273097539485821 (parent-supplied), option 2; run external-capability-gap-fill-2026-10-24."
+  "evidence": "tasks/change_log.md#external-capability-final-fill-01329-preparation-2026-10-24",
+  "authority": "Owner Discord 1563372620370681867 (parent-supplied), option 3; final-fill brief."
 }
