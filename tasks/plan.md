@@ -53,3 +53,10 @@ in tasks/change_log.md#external-capability-final-fill-01329-preparation-2026-10-
 Regenerate the adopter payload after this closure and recheck finalfill, sanitization,
 exact payload, Ruff, Codex sync and whitespace before delivery. Leave the worktree
 uncommitted and the capability-lock and fluent-korean policy unchanged.
+
+Main acceptance and release (2026-10-24, owner Discord 1563378712031006781 approving option 1, parent-supplied):
+- Commits: 34b0bf1 source (Main dropped a HEAD-relative preparation test that fails once the lock is bound; content was re-read in the diff); bind a7d06d6 (full suite 2750 passed), tagged v0.13.29, pushed, GitHub release created.
+- Provider update from the enrolled 0.13.28 provider-update lock (eee3ff0); recorded in a5534c0.
+- Claude headless session 0d6a9d66: init catalog listed all 23 `mir-*` skills including `mir-content:korean-writing` and `mir-core:app-investigation`; SessionStart printed the Mir continuity line; UserPromptSubmit 5, PreToolUse 5 and Stop 6 runs against 4 non-plugin registrations each.
+- Codex session 01a16bca (0.13.29 cache): all 23 skills, SessionStart, the UserPromptSubmit packet, the PreToolUse denial "Owner forbids commands in this handoff turn" and the Stop hook_prompt under `mir-lifecycle-hooks/0.13.29`.
+- Attested both runtimes with no missing skills or hooks; finalized after restart; `mir capability status` ready at a7d06d6.
