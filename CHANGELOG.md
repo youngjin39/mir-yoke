@@ -8,6 +8,27 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.33] — 2026-10-27 — `mir-mcp` test portability fix
+
+### Fixed
+
+- `mir-mcp` tests no longer write `__pycache__` into plugin trees when
+  `PYTHONDONTWRITEBYTECODE` is unset. In-process loaders compile the source directly, so
+  the closed package validator, which correctly rejects the undeclared directory, passes
+  on a clean CI host. The validator and the server are unchanged; neither writes bytecode.
+- Profile-protection tests probe each interpreter's real `tomllib` instead of assuming
+  `/usr/bin/python3` lacks it. A runtime with `tomllib` blocked keeps the unavailable
+  branch covered where the system Python is 3.11 or newer.
+
+### Changed
+
+- `runtime-continuity` default work method: delegation gives each child one small slice;
+  children run only the checks their change touches, and the orchestrator runs the full
+  suite once at acceptance.
+- Bump release surfaces to 0.13.33, refresh the lifecycle digest acknowledgement for its
+  version manifests and the delegation guidance, and regenerate the adopter payload. Hook
+  and server behavior are unchanged.
+
 ## [v0.13.32] — 2026-10-27 — Read-only stdio MCP package
 
 ### Added

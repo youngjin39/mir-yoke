@@ -52,7 +52,7 @@ immutable release:
 
 ```bash
 uv tool install --force --link-mode copy \
-  "git+https://github.com/youngjin39/mir-yoke.git@v0.13.32"
+  "git+https://github.com/youngjin39/mir-yoke.git@v0.13.33"
 mir --help
 ```
 
@@ -128,6 +128,10 @@ These are guidance-only corrections; no runtime behavior or tools are added.
 Version 0.13.32 adds the opt-in, read-only stdio `mir-mcp` package under ADR-91 and
 capability-source schema 5. Registration requires explicit MCP selection and a
 consumer-owned digest acknowledgement; no default Profile selects it.
+
+Version 0.13.33 fixes `mir-mcp` test portability: tests no longer write bytecode into
+plugin trees and no longer assume the system Python lacks `tomllib`. Runtime behavior is
+unchanged.
 
 ### Platform use
 

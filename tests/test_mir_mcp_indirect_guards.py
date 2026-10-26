@@ -18,7 +18,8 @@ SERVER = ROOT / "plugins/mir-mcp/mir_mcp.py"
 def server():
     spec = importlib.util.spec_from_file_location("indirect_mir_mcp", SERVER)
     module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    # Compile from source so a test never writes __pycache__ into a plugin tree.
+    exec(compile(SERVER.read_bytes(), str(SERVER), "exec"), module.__dict__)
     return module
 
 

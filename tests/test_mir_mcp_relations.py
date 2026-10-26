@@ -16,7 +16,8 @@ SCRIPT = (
 def adapter():
     spec = importlib.util.spec_from_file_location("standalone_relations", SCRIPT)
     module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    # Compile from source so a test never writes __pycache__ into a plugin tree.
+    exec(compile(SCRIPT.read_bytes(), str(SCRIPT), "exec"), module.__dict__)
     return module
 
 

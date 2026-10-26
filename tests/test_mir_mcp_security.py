@@ -14,6 +14,15 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 SERVER = ROOT / "plugins/mir-mcp/mir_mcp.py"
 INTERPRETERS = ["/usr/bin/python3", str(ROOT / ".venv/bin/python")]
+# Each interpreter as found, plus one with tomllib blocked so the unavailable branch
+# stays covered on hosts whose system Python is 3.11 or newer.
+PROFILE_RUNTIMES = [(interpreter, False) for interpreter in INTERPRETERS] + [
+    (INTERPRETERS[1], True)
+]
+NO_TOMLLIB = (
+    "import runpy, sys; sys.modules['tomllib'] = None; "
+    "runpy.run_path(sys.argv[1], run_name='__main__')"
+)
 META = {
     "io.modelcontextprotocol/protocolVersion": "2026-07-28",
     "io.modelcontextprotocol/clientInfo": {"name": "test", "version": "1"},
@@ -24,7 +33,8 @@ META = {
 def load_server():
     spec = importlib.util.spec_from_file_location("mir_mcp_security", SERVER)
     module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    # Compile from source so a test never writes __pycache__ into a plugin tree.
+    exec(compile(SERVER.read_bytes(), str(SERVER), "exec"), module.__dict__)
     return module
 
 
@@ -33,7 +43,12 @@ def interpreter(request):
     return request.param
 
 
-def call(interpreter, root, tool="handoff_pins", **arguments):
+def profile_available(interpreter, block_tomllib):
+    probe = subprocess.run([interpreter, "-I", "-c", "import tomllib"], capture_output=True)
+    return not block_tomllib and probe.returncode == 0
+
+
+def call(interpreter, root, tool="handoff_pins", block_tomllib=False, **arguments):
     request = {
         "jsonrpc": "2.0",
         "id": 1,
@@ -44,8 +59,9 @@ def call(interpreter, root, tool="handoff_pins", **arguments):
             "arguments": {"target_root": str(root), **arguments},
         },
     }
+    blocker = ["-c", NO_TOMLLIB] if block_tomllib else []
     result = subprocess.run(
-        [interpreter, "-I", "-B", "-u", str(SERVER)],
+        [interpreter, "-I", "-B", "-u", *blocker, str(SERVER)],
         input=json.dumps(request) + "\n",
         text=True,
         capture_output=True,
@@ -180,7 +196,8 @@ def test_protected_direct_and_indirect(interpreter, target, path):
         assert call(interpreter, target, tool, **kwargs)["error"] == {"code": "E_PROTECTED"}
 
 
-def test_symlink_special_and_profile(interpreter, target, tmp_path):
+@pytest.mark.parametrize("interpreter,block_tomllib", PROFILE_RUNTIMES)
+def test_symlink_special_and_profile(interpreter, block_tomllib, target, tmp_path):
     outside = tmp_path / "outside"
     outside.write_text("DO_NOT_DISCLOSE_SENTINEL")
     (target / "link").symlink_to(outside)
@@ -192,11 +209,13 @@ def test_symlink_special_and_profile(interpreter, target, tmp_path):
     (target / ".mir/repo-profile.toml").write_text(
         '[project]\nslug="test"\n[safety]\nprotected_paths=["source.py"]\n'
     )
-    result = call(interpreter, target, "ontology_lookup", query="sample")
-    if interpreter == "/usr/bin/python3":
-        assert result["ok"] and result["profile_protections"] == "unavailable"
-    else:
+    result = call(
+        interpreter, target, "ontology_lookup", query="sample", block_tomllib=block_tomllib
+    )
+    if profile_available(interpreter, block_tomllib):
         assert result["error"] == {"code": "E_PROTECTED"}
+    else:
+        assert result["ok"] and result["profile_protections"] == "unavailable"
 
 
 def test_size_depth_and_stale_cursor(interpreter, target):
@@ -278,12 +297,17 @@ def test_profile_change_is_refused_before_read(target):
         ("boundaries", "secrets"),
     ],
 )
-def test_profile_repository_schema_protections(interpreter, target, section, key):
+@pytest.mark.parametrize("interpreter,block_tomllib", PROFILE_RUNTIMES)
+def test_profile_repository_schema_protections(
+    interpreter, block_tomllib, target, section, key
+):
     (target / ".mir/repo-profile.toml").write_text(
         f'[repo]\nslug="test"\n[{section}]\n{key}=["source.py"]\n'
     )
-    result = call(interpreter, target, "ontology_lookup", query="sample")
-    if interpreter != "/usr/bin/python3":
+    result = call(
+        interpreter, target, "ontology_lookup", query="sample", block_tomllib=block_tomllib
+    )
+    if profile_available(interpreter, block_tomllib):
         assert result["error"] == {"code": "E_PROTECTED"}
     else:
         assert result["ok"] and result["profile_protections"] == "unavailable"

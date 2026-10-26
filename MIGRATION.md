@@ -100,7 +100,7 @@ Discard an uncommitted Project Agent Kit adaptation in the target or restore the
 commit. For an explicitly invoked CLI transaction, use that command's recorded rollback/recovery
 contract. Installing the CLI does not itself mutate a target.
 
-Current version: `0.13.32`. See `CHANGELOG.md` for release details.
+Current version: `0.13.33`. See `CHANGELOG.md` for release details.
 
 Version 0.10.0 adds opt-in `memory_relations` ingestion and read-only `mir relations query|bundle --memory`
 query/bundle selection using the existing memory schema. No automatic corpus backfill, database
@@ -375,3 +375,12 @@ needs fresh MCP evidence from both runtimes. See
 [ADR-91](docs/decisions/adr-91-stdio-mcp-package-admission.md).
 The lifecycle package acknowledgement covers version manifests only; hook behavior is unchanged.
 The capability-lock binding remains Main's release work.
+
+## 0.13.33 `mir-mcp` test portability fix
+
+No migration is required. Only tests and one guidance line changed, apart from version surfaces; the
+`mir-mcp` package keeps its eight-file inventory and server behavior. A consumer that
+registered `mir-mcp` renews its own tree-digest acknowledgement for the new version, as
+for any package update. The lifecycle package acknowledgement covers version manifests
+and one delegation line in the `runtime-continuity` work-method reference; hook behavior
+is unchanged. The capability-lock binding remains Main's release work.

@@ -169,11 +169,17 @@ def test_output_cap_and_stateless_cursor_bindings(interpreter, tmp_path):
     assert call(cursor="DO_NOT_DISCLOSE_SENTINEL")["error"] == {"code": "E_CURSOR"}
 
 
-@pytest.mark.parametrize("interpreter", INTERPRETERS)
-def test_protected_root_and_malformed_profile(interpreter, tmp_path):
+# Each interpreter as found, plus one with tomllib blocked so the unavailable branch
+# stays covered on hosts whose system Python is 3.11 or newer.
+@pytest.mark.parametrize(
+    "interpreter,block_tomllib",
+    [(interpreter, False) for interpreter in INTERPRETERS] + [(INTERPRETERS[1], True)],
+)
+def test_protected_root_and_malformed_profile(interpreter, block_tomllib, tmp_path):
     wrapper = tmp_path / "profile.py"
+    blocker = "sys.modules['tomllib'] = None\n" if block_tomllib else ""
     wrapper.write_text("""import json, runpy, sys
-m = runpy.run_path(sys.argv[1])
+""" + blocker + """m = runpy.run_path(sys.argv[1])
 print(json.dumps(m["execute"]("ontology_validate", {
     "target_root": sys.argv[2], "scope": "contract"})))
 """)
@@ -196,7 +202,8 @@ print(json.dumps(m["execute"]("ontology_validate", {
     (target / ".mir").mkdir(parents=True)
     (target / ".mir/repo-profile.toml").write_text('[paths]\nprotected_paths="SENTINEL"\n')
     result = run(target)
-    if interpreter == "/usr/bin/python3":
+    probe = subprocess.run([interpreter, "-I", "-c", "import tomllib"], capture_output=True)
+    if block_tomllib or probe.returncode != 0:
         assert result["ok"] and result["profile_protections"] == "unavailable"
     else:
         assert result["error"] == {"code": "E_FORMAT"}

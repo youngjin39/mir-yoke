@@ -1,45 +1,64 @@
 # Plan
 
-## Active task: release 0.13.32 (`mir-mcp`) (2026-10-27)
+## Active task: release 0.13.33 (`mir-mcp` test portability fix) (2026-10-27)
 
 Intent authority: the owner's release approval (Discord 1564297975755448493) and
 session instruction to use Claude writers (Discord 1564282799035523227), relayed by
-Mir Harness Main (parent-supplied). Design authority: this cursor and
-[ADR-91](../docs/decisions/adr-91-stdio-mcp-package-admission.md). Baseline: e38add3
-on `main`, fast-forwarded from `feat/mir-mcp`, not pushed; slices 1 and 2 are
-committed at f715b19 and e38add3.
+Mir Harness Main (parent-supplied). Baseline: 50c96b4 on `main` (tag v0.13.32,
+pushed). The v0.13.32 GitHub `release` workflow failed in "Validate repository release
+candidate" (`scripts/verify_release_readiness.py --current-clean-tree`, ubuntu,
+Python 3.12) with nine `mir-mcp` test failures; `validate` passed.
 
-Prior cursors are preserved verbatim in the evidence log:
-- slice 1: [cursor before B3 mir-mcp slice 2](change_log.md#cursor-before-b3-mir-mcp-slice-2-2026-10-26);
-- slice 2: [cursor before B3 slice-2 review fixes](change_log.md#cursor-before-b3-slice-2-review-fixes-2026-10-26)
-  and [cursor before release 0.13.32](change_log.md#cursor-before-release-01332-2026-10-27).
+Prior cursor preserved verbatim:
+[cursor before release 0.13.33](change_log.md#cursor-before-release-01333-2026-10-27).
 
-Design: the source commit follows the daa7e35 release pattern. Bump current release
-surfaces from 0.13.31 to 0.13.32 without rewriting historical release records;
-acknowledge the new `mir-lifecycle-hooks` tree digest in the provider config (hook
-behavior unchanged by owner decision); add no `mir-mcp` provider acknowledgement.
-Add 0.13.32 CHANGELOG, README and MIGRATION entries, then regenerate the adopter
-payload. `.mir/capability-lock.json` belongs to the separate bind commit.
+Root causes (confirmed locally, 2026-10-27):
+1. In-process test loaders (`spec_from_file_location` plus `exec_module`) in the
+   git, indirect-guard and security `mir-mcp` tests wrote
+   `plugins/mir-mcp/__pycache__` when `PYTHONDONTWRITEBYTECODE` was unset, and the
+   checker and relations tests did the same under `plugins/mir-core`. The closed
+   package validator then correctly rejected the undeclared directory, and copies of the
+   package carried it into later tests. The product validator reads `INPUT_SCHEMAS` as
+   data, and the server compiles its siblings from source, so neither writes bytecode.
+2. Profile tests assumed `/usr/bin/python3` lacks `tomllib` (macOS 3.9.6). On ubuntu it
+   is 3.12, so the server applied the profile and the expectation flipped.
+
+Design: loaders compile the source directly, so tests never write bytecode; the
+validator is unchanged. Profile tests probe each interpreter's real `tomllib` and add a
+venv runtime with `tomllib` import blocked, so both branches stay covered on every host;
+the server is unchanged apart from its version. The release follows the 0.13.32 pattern:
+bump current surfaces to 0.13.33 without historical rewrites, renew the
+`mir-lifecycle-hooks` acknowledgement (no `mir-mcp` provider acknowledgement), add
+CHANGELOG, README and MIGRATION entries, and regenerate the adopter payload last.
+`.mir/capability-lock.json` belongs to the separate bind commit.
 
 Request matrix (initially open):
-1. Version surfaces: VERSION, pyproject, uv.lock project entry, both marketplaces'
-   current entries, every plugin manifest, `mir_mcp.py` VERSION, version-pinning tests.
-2. Lifecycle digest acknowledgement equals `_tree_digest(plugins/mir-lifecycle-hooks)`.
-3. Release notes: CHANGELOG, README and MIGRATION 0.13.32 entries.
-4. This cursor; prior cursors preserved and every reference resolvable.
-5. Preparation-only tests comparing the working tree to HEAD removed if found.
-6. Adopter payload regenerated after the last edit.
-7. Ruff, `git diff --check` and one full suite; only
+1. Fail-first: the `__pycache__` failures without `PYTHONDONTWRITEBYTECODE`, and the
+   `tomllib` failures with a 3.12 stand-in for `/usr/bin/python3`.
+2. Test fixes for both causes; validator and server behavior unchanged.
+3. No product path writes `__pycache__` into an installed `mir-mcp` tree.
+4. Version surfaces, lifecycle acknowledgement, release notes, this cursor.
+5. `mir-mcp` and capability tests without `PYTHONDONTWRITEBYTECODE`, then no new
+   `__pycache__` under `plugins/`.
+6. Ruff, `git diff --check` and one full suite; only
    `test_repository_lock_is_portable_and_matches_managed_trees` may fail before the bind.
+7. Adopter payload regenerated after the last edit.
 
 Constraints: no commits, tags, pushes, sub-agents, capability-lock edits, real
 runtime homes or host `mir capability` operations. Scratch stays under the
 owner-specified external cache directory.
 
-Observed (2026-10-27, Claude writer): items 1-4 and 6 prepared. Item 5: no test
-compares the working tree to HEAD in a way that fails after the bind; the only
-HEAD-relative check is the lock test itself, so nothing was removed. Ruff,
-`git diff --check` and Codex parity pass. The full suite on the tree before this
-status note returned `1 failed, 3458 passed in 564.22s`; the failure is the expected
-pre-bind lock test. The final suite runs after the payload is regenerated from this
-note; Main records its result. No release, binding or runtime readiness is claimed.
+Observed (2026-10-27, Claude writer): items 1-6 checked; item 7 follows this note.
+Without `PYTHONDONTWRITEBYTECODE`, the unfixed tests failed 4 times in `mir-mcp`
+(`__pycache__`), and a 3.12 stand-in for `/usr/bin/python3` reproduced the other 5
+failures. After the fixes: `mir-mcp` and capability tests `931 passed`, with no new
+`__pycache__` under `plugins/`. An installed copy run without `-B` on 3.9 and 3.12
+wrote no bytecode. Ruff, `git diff --check` and Codex parity pass. The full suite
+without the variable returned `1 failed, 3463 passed in 789.78s`; the failure is the
+expected pre-bind lock test. Outside this scope, `tests/test_ontology_skill.py` and
+`tests/test_ontology_runner.py` still write `__pycache__` under `plugins/mir-core`
+(excluded from tree digests); this is reported, not changed. New tree digests:
+`mir-lifecycle-hooks` e49866a7fb93704cb5fc1730dcd1ba9f19194d85ba6f6405da86f0c8ff09bba8
+(after Main added the owner-approved delegation guidance to `runtime-continuity`),
+`mir-mcp` cb9876feaf228e47d7be285c261e0965a296297637484952092440681e085fe7.
+No release, binding or runtime readiness is claimed.
