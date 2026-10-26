@@ -84,6 +84,7 @@ def use_schema2_capability_source(project: Path) -> None:
     payload = json.loads(path.read_text(encoding="utf-8"))
     payload["schema_version"] = 2
     payload["plugins"].pop("mir-lifecycle-hooks")
+    payload["plugins"].pop("mir-mcp", None)
     payload.pop("active_package_digest_acknowledgements")
     payload.pop("commands")
     payload.pop("project_integrations")
@@ -278,7 +279,7 @@ def observed_skills(manager: CapabilityManager) -> list[str]:
     return sorted(
         f"{plugin}:{skill}"
         for plugin in lock["plugins"]
-        for skill in manager.config.plugin_skills[plugin]
+        for skill in manager.config.plugin_skills.get(plugin, ())
     )
 
 

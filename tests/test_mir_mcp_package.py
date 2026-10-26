@@ -1,81 +1,27 @@
-"""ADR-91 exact package shape; this test helper is not admission authority."""
+"""ADR-91 exact package shape; production admission and canonical-source parity."""
 
 from __future__ import annotations
 
 import json
 import os
-import re
 import shutil
-import stat
 from pathlib import Path
 
 import pytest
 
+from mir.core.capabilities.mcp import MCP_FILES, closed_json, validate_mcp_package
+
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE = ROOT / "plugins/mir-mcp"
-FILES = {
-    ".claude-plugin/plugin.json",
-    ".codex-plugin/plugin.json",
-    ".mcp.claude.json",
-    ".mcp.codex.json",
-    "mir_mcp.py",
-    "ontology/scripts/ontology_check.py",
-    "ontology/references/common-contract.json",
-    "shared/relations_query.py",
-}
+FILES = set(MCP_FILES)
 
 
 def _closed_json(path: Path) -> dict:
-    def unique(pairs):
-        result = {}
-        for key, value in pairs:
-            assert key not in result, f"duplicate key: {key}"
-            result[key] = value
-        return result
-
-    value = json.loads(path.read_text(), object_pairs_hook=unique)
-    assert isinstance(value, dict)
-    return value
+    return closed_json(path)
 
 
 def _assert_shape(package: Path) -> None:
-    """Independent closed-shape oracle, deliberately outside production validators."""
-    assert package.is_dir()
-    directories = {
-        str(parent) for file in FILES for parent in Path(file).parents if str(parent) != "."
-    }
-    found = set()
-    for path in package.rglob("*"):
-        relative = path.relative_to(package).as_posix()
-        mode = path.lstat().st_mode
-        assert not stat.S_ISLNK(mode)
-        if stat.S_ISDIR(mode):
-            assert relative in directories
-        else:
-            assert stat.S_ISREG(mode)
-            assert not mode & 0o111
-            found.add(relative)
-    assert found == FILES
-    manifests = []
-    for runtime, variable in (("claude", "CLAUDE_PLUGIN_ROOT"), ("codex", "PLUGIN_ROOT")):
-        manifest = _closed_json(package / f".{runtime}-plugin/plugin.json")
-        keys = {"name", "version", "description", "mcpServers"}
-        if runtime == "codex":
-            keys |= {"author", "interface"}
-            assert set(manifest["author"]) == {"name"}
-            assert set(manifest["interface"]) == {"displayName", "shortDescription"}
-        assert set(manifest) == keys
-        assert manifest["name"] == "mir-mcp"
-        assert re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+(?:[-+][A-Za-z0-9.-]+)?", manifest["version"])
-        assert isinstance(manifest["description"], str) and manifest["description"]
-        assert manifest["mcpServers"] == f"./.mcp.{runtime}.json"
-        declaration = _closed_json(package / f".mcp.{runtime}.json")
-        server = {"command": "python3", "args": ["-I", "-B", "-u", f"${{{variable}}}/mir_mcp.py"]}
-        server.update({"type": "stdio"} if runtime == "claude" else {"env_vars": []})
-        assert declaration == {"mcpServers": {"mir-mcp": server}}
-        manifests.append(manifest)
-    assert manifests[0]["version"] == manifests[1]["version"]
-    assert manifests[0]["description"] == manifests[1]["description"]
+    validate_mcp_package(package)
 
 
 def test_exact_package_and_closed_launch_declarations() -> None:
@@ -173,5 +119,5 @@ def test_closed_shape_oracle_rejects_mutations(tmp_path: Path, mutation: str) ->
         else:
             server["args"].insert(0, "-c")
         path.write_text(json.dumps(value))
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         _assert_shape(package)

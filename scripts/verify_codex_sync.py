@@ -175,7 +175,7 @@ def validate_plugin_skill_providers(
         if any(path.is_symlink() for path in plugin_root.rglob("*")):
             failures.append(f"plugin contains symlink: {plugin_name}")
 
-    expected_names = set(PLUGIN_SKILLS)
+    expected_names = set(PLUGIN_SKILLS) | {"mir-mcp"}
     claude_market = _read_json(root / ".claude-plugin" / "marketplace.json", failures)
     codex_market = _read_json(root / ".agents" / "plugins" / "marketplace.json", failures)
     if claude_market is not None:
@@ -196,7 +196,7 @@ def validate_managed_capability_surfaces(
     catalog = _read_json(root / "config" / "repo-agent-management.json", failures)
     if capability is None or catalog is None:
         return
-    if capability.get("schema_version") != 4:
+    if capability.get("schema_version") != 5:
         failures.append("capability source does not declare the five-surface schema")
         return
 

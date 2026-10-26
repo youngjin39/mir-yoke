@@ -2,6 +2,99 @@
   "version": 1,
   "changes": [
     {
+      "id": "b3-mir-mcp-slice-2-review-fixes-2026-10-26",
+      "record_status": "in_progress",
+      "scope": "Three owner-scoped review fixes; MCP-local approval, rollback approval evidence and schema-valid successful call receipts. Hooks unchanged; no release binding or live activation.",
+      "bluebrick": "Capability manager and shared MCP input schema",
+      "design_ref": "tasks/plan.md",
+      "fail_first": {
+        "command": "uv run --no-sync pytest -q tests/test_capability_mcp.py -k 'remote_mcp_ack or remote_hook_ack or consumer_only_mcp_ack or schema_invalid_call_receipt or call_receipt_requires' -p no:cacheprovider --basetemp=<owner-scratch>/pytest-s2fix/red --tb=short",
+        "result": "21 intended failures plus 1 invalid hook probe, corrected before implementation. Clean supplemental receipt run: 2 failed, 1 unchanged-hook test passed. See tasks/change_log.md."
+      },
+      "categories": {
+        "unit": {"status": "pass", "command": "uv run --no-sync pytest -q tests/test_capability_mcp.py -p no:cacheprovider --basetemp=<owner-scratch>/pytest-s2fix/green", "notes": "78 passed in 86.87s; includes all new regression cases."},
+        "integration": {"status": "pass", "command": "uv run --no-sync pytest -q tests/test_capability_*.py tests/test_mir_mcp_*.py tests/test_plugin_skill_packages.py tests/test_*template*.py tests/test_adopter_slim.py", "notes": "987 passed, expected release lock failure plus new log sanitation failure. Sanitized the log; all 31 public/payload checks then passed. Full suite pending."},
+        "edge": {"status": "pass", "command": "uv run --no-sync pytest -q tests/test_capability_mcp.py", "notes": "Missing approvals, stale receipt approval, required arguments, closed keys, types, numeric/string/array bounds and explicit success."},
+        "architecture": {"status": "pass", "command": "uv run --no-sync python scripts/mir_ontology.py impact --git-diff HEAD --strict", "notes": "No stale refs; no inferred execution evidence."},
+        "security": {"status": "pass", "command": "uv run --no-sync pytest -q tests/test_capability_mcp.py", "notes": "Remote MCP approval cannot override local approval; schema-invalid and failed receipts cannot reach READY. Package schemas read as data without execution."},
+        "transaction_locking": {"status": "pass", "command": "uv run --no-sync pytest -q tests/test_capability_mcp.py", "notes": "Consumer-only prior approval survives failed registration; missing/stale receipt approval refuses runtime commands."},
+        "compatibility": {"status": "pass", "command": "uv run --no-sync pytest -q -p no:cacheprovider --basetemp=<owner-scratch>/pytest-claude-s2/full", "notes": "Claude writer full suite: 3452 passed, 1 failed in 531.96s; the only failure is the preserved release-bind lock mismatch."},
+        "e2e": {"status": "not_applicable", "reason": "Live B4/runtime activation is owner-owned and outside this task."},
+        "browser": {"status": "not_applicable", "reason": "No GUI surface."},
+        "availability": {"status": "not_applicable", "reason": "No resident service or external integration."},
+        "load": {"status": "not_applicable", "reason": "No new performance behavior; existing bounded protocol checks are requested."},
+        "soak": {"status": "not_applicable", "reason": "No persistent runner or daemon started."}
+      }
+    },
+    {
+      "id": "b3-mir-mcp-slice-2-2026-10-26",
+      "record_status": "in_progress",
+      "scope": "Schema 5, exact package admission, optional selection and MCP-specific lifecycle evidence; no release bind or real-host activation.",
+      "bluebrick": "Capability source validation and manager admission",
+      "design_ref": "tasks/plan.md",
+      "fail_first": {
+        "command": "uv run --no-sync pytest -q tests/test_capability_mcp.py -p no:cacheprovider --basetemp=\"$MCP_S2/pytest-s2/fail-first\"",
+        "result": "29 failed, 16 passed. Later CLI, schema-parity, provider-ready and malformed-kind regressions each failed before their fixes. The first attempt had 45 fixture setup errors because the basetemp parent was absent; it is not TDD evidence."
+      },
+      "categories": {
+        "unit": {
+          "status": "pass",
+          "command": "uv run --no-sync pytest -q tests/test_capability_mcp.py tests/test_mir_mcp_package.py",
+          "notes": "Final admission/package run: 75 passed. After the runpy compatibility fix, ontology plus admission/package checks: 85 passed."
+        },
+        "integration": {
+          "status": "pass",
+          "command": "uv run --no-sync pytest -q tests/test_capability_*.py tests/test_plugin_skill_packages.py tests/test_mir_mcp_*.py",
+          "notes": "Final patched temporary provider copy including ontology: 920 passed; only the unchanged release-bind lock mismatch fails. Workspace Codex marketplace remains read-only and unpatched."
+        },
+        "edge": {
+          "status": "pass",
+          "command": "uv run --no-sync pytest -q tests/test_capability_mcp.py",
+          "notes": "Missing/stale digest, byte drift, receipt downgrade, exact inventory, both runtime receipts and schema parity."
+        },
+        "architecture": {
+          "status": "pass",
+          "command": "uv run --no-sync python scripts/mir_ontology.py impact --git-diff HEAD --strict",
+          "notes": "No stale refs; mapping: 0 errors and 0 warnings; supplied map digest unchanged."
+        },
+        "security": {
+          "status": "pass",
+          "command": "uv run --no-sync pytest -q tests/test_mir_mcp_*.py",
+          "notes": "Included in patched-copy boundary run; no real homes or runtime registrations."
+        },
+        "transaction_locking": {
+          "status": "pass",
+          "command": "uv run --no-sync pytest -q tests/test_capability_mcp.py",
+          "notes": "Prior selection/absence rollback and stale/downgraded inventory refusal; existing capability concurrency checks included."
+        },
+        "compatibility": {
+          "status": "fail",
+          "command": "uv run --no-sync pytest -q",
+          "notes": "Final source full suite: 3359 passed, 69 failed in 492.28s. Exactly 68 failures depend on the read-only Codex marketplace entry; one is the preserved release-bind lock mismatch. Matrix 5/6; no other regression remains."
+        },
+        "e2e": {
+          "status": "not_applicable",
+          "reason": "Real Claude/Codex activation and runtime attestation belong to B4 and are forbidden in this slice."
+        },
+        "browser": {
+          "status": "not_applicable",
+          "reason": "No GUI surface."
+        },
+        "availability": {
+          "status": "not_applicable",
+          "reason": "No new resident service or external integration."
+        },
+        "load": {
+          "status": "not_applicable",
+          "reason": "Protocol load/security bounds are slice-1 tests; B4 runtime accounting remains owner-owned."
+        },
+        "soak": {
+          "status": "not_applicable",
+          "reason": "No new background process or persistent runtime started."
+        }
+      }
+    },
+    {
       "id": "stateless-handoff-rework-2026-10-22",
       "record_status": "in_progress",
       "scope": "Current owner addendum: common stateless handoff events, ADR-90 R19, exact admission; unbound 0.13.14.",

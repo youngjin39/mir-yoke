@@ -631,9 +631,222 @@ OUTPUTS = {
 }
 
 
-def definition(name, description, properties, required):
-    common = {"target_root": string(), "cursor": string(1024), "page_size": integer(1, 64, 16)}
-    common.update(properties)
+# Literal data: receipt validation reads this assignment without executing the package.
+INPUT_SCHEMAS = {
+    "ontology_validate": {
+        "type": "object",
+        "properties": {
+            "target_root": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096
+            },
+            "cursor": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1024
+            },
+            "page_size": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 64,
+                "default": 16
+            },
+            "scope": {
+                "type": "string",
+                "enum": [
+                    "contract",
+                    "mapping",
+                    "both"
+                ],
+                "default": "both"
+            }
+        },
+        "required": [
+            "target_root"
+        ],
+        "additionalProperties": False
+    },
+    "ontology_lookup": {
+        "type": "object",
+        "properties": {
+            "target_root": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096
+            },
+            "cursor": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1024
+            },
+            "page_size": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 64,
+                "default": 16
+            },
+            "query": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+            },
+            "limit": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 16,
+                "default": 3
+            }
+        },
+        "required": [
+            "target_root",
+            "query"
+        ],
+        "additionalProperties": False
+    },
+    "ontology_impact": {
+        "type": "object",
+        "properties": {
+            "target_root": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096
+            },
+            "cursor": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1024
+            },
+            "page_size": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 64,
+                "default": 16
+            },
+            "paths": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 4096
+                },
+                "maxItems": 64,
+                "minItems": 1,
+                "uniqueItems": True
+            }
+        },
+        "required": [
+            "target_root",
+            "paths"
+        ],
+        "additionalProperties": False
+    },
+    "handoff_pins": {
+        "type": "object",
+        "properties": {
+            "target_root": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096
+            },
+            "cursor": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1024
+            },
+            "page_size": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 64,
+                "default": 16
+            },
+            "paths": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 4096
+                },
+                "maxItems": 16,
+                "minItems": 1,
+                "uniqueItems": True
+            }
+        },
+        "required": [
+            "target_root",
+            "paths"
+        ],
+        "additionalProperties": False
+    },
+    "relations_query": {
+        "type": "object",
+        "properties": {
+            "target_root": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096
+            },
+            "cursor": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1024
+            },
+            "page_size": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 64,
+                "default": 16
+            },
+            "adapter": {
+                "type": "string",
+                "enum": [
+                    "yaml"
+                ],
+                "default": "yaml"
+            },
+            "graph": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096,
+                "default": "spec/graph.yaml"
+            },
+            "anchor": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096
+            },
+            "purpose": {
+                "type": "string",
+                "enum": [
+                    "implementation",
+                    "verification",
+                    "impact",
+                    "dependencies"
+                ]
+            },
+            "depth": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 4
+            },
+            "max_edges": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 64,
+                "default": 16
+            }
+        },
+        "required": [
+            "target_root",
+            "anchor",
+            "purpose"
+        ],
+        "additionalProperties": False
+    }
+}
+
+
+def definition(name, description):
     result = closed(
         {
             "ok": BOOL,
@@ -646,7 +859,7 @@ def definition(name, description, properties, required):
     return {
         "name": name,
         "description": description,
-        "inputSchema": closed(common, ["target_root"] + required),
+        "inputSchema": INPUT_SCHEMAS[name],
         "outputSchema": result,
         "annotations": {"readOnlyHint": True, "destructiveHint": False, "openWorldHint": False},
     }
@@ -656,39 +869,22 @@ TOOLS = [
     definition(
         "ontology_validate",
         "Validate the common contract and target mapping.",
-        {"scope": choice(["contract", "mapping", "both"], "both")},
-        [],
     ),
     definition(
         "ontology_lookup",
         "Find term-matching map entries and declared evidence.",
-        {"query": string(256), "limit": integer(1, 16, 3)},
-        ["query"],
     ),
     definition(
         "ontology_impact",
         "Select declared affected entries and checks for changed paths.",
-        {"paths": array(string(), 64, 1, True)},
-        ["paths"],
     ),
     definition(
         "handoff_pins",
         "Collect repository, source, mapping, and contract pins with availability.",
-        {"paths": array(string(), 16, 1, True)},
-        ["paths"],
     ),
     definition(
         "relations_query",
         "Retrieve bounded declared YAML relations for one known anchor.",
-        {
-            "adapter": choice(["yaml"], "yaml"),
-            "graph": {**string(), "default": "spec/graph.yaml"},
-            "anchor": string(),
-            "purpose": choice(["implementation", "verification", "impact", "dependencies"]),
-            "depth": integer(1, 4),
-            "max_edges": integer(1, 64, 16),
-        },
-        ["anchor", "purpose"],
     ),
 ]
 TOOL_BY_NAME = {tool["name"]: tool for tool in TOOLS}

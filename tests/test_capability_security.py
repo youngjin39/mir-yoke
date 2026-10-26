@@ -38,6 +38,7 @@ def use_schema2_capability_source(project: Path) -> None:
     payload = json.loads(path.read_text(encoding="utf-8"))
     payload["schema_version"] = 2
     payload["plugins"].pop("mir-lifecycle-hooks")
+    payload["plugins"].pop("mir-mcp", None)
     payload.pop("active_package_digest_acknowledgements")
     payload.pop("commands")
     payload.pop("project_integrations")
@@ -394,7 +395,9 @@ def test_capability_source_declares_the_reviewed_active_hook_package() -> None:
         "mir-lifecycle-hooks": ("SessionStart", "UserPromptSubmit", "PreToolUse", "Stop")
     }
     assert config.provider_local_agents == (".claude/agents/template-sync-validator.md",)
-    assert config.component_policy["admitted_package_kinds"] == ["skills", "skills-hooks"]
+    assert config.component_policy["admitted_package_kinds"] == [
+        "skills", "skills-hooks", "mcp-stdio",
+    ]
     assert config.component_policy["reserved_active_package_kinds"] == ["mcp"]
     acknowledgement = config.active_digest_acknowledgements["mir-lifecycle-hooks"]
     assert acknowledgement == _tree_digest(ROOT / "plugins" / "mir-lifecycle-hooks")
@@ -806,6 +809,7 @@ def test_should_keep_schema2_sources_readable_without_managed_commands(
     def downgrade(value: dict[str, object]) -> None:
         value["schema_version"] = 2
         value["plugins"].pop("mir-lifecycle-hooks")
+        value["plugins"].pop("mir-mcp", None)
         value.pop("active_package_digest_acknowledgements")
         value.pop("commands")
         value.pop("project_integrations")

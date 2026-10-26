@@ -1,3 +1,277 @@
+## B3 slice-2: consumer-owned mir-mcp approval only (2026-10-26)
+
+Intent/design authority: the parent decision closing the residual finding below,
+under ADR-91 §4.8(1) and ADR-88 §2.2(4). For `mcp-stdio` only, registration (first
+sync, update, finalization and READY) counts a `mir-mcp` acknowledgement only from
+a consumer-owned config: `<consumer-root>/config/capability-sources.json` or the
+`--config` file. With no consumer config, the manager still falls back to the
+provider's active or bundled config, but now drops that config's `mcp-stdio`
+acknowledgements at construction. The missing-acknowledgement error names
+`active_package_digest_acknowledgements.<plugin>` and the consumer file. Hook
+(`skills-hooks`) acknowledgements from a provider-only config are unchanged.
+The migration procedure text already required the consumer-owned edit and was not changed.
+
+Runs use the owner-specified external UV cache, PYTHONDONTWRITEBYTECODE=1,
+-p no:cacheprovider and --basetemp under `<owner-scratch>/pytest-claude-s2b`.
+
+Fail-first (new tests in tests/test_capability_mcp.py, before the manager fix):
+
+```text
+-k "provider_mcp_ack_never or provider_hook_ack_still or consumer_owned_mcp_ack"
+FAILED test_provider_mcp_ack_never_admits_first_sync[active]
+FAILED test_provider_mcp_ack_never_admits_first_sync[bundled]
+E Failed: DID NOT RAISE <class 'mir.core.capabilities.manager.CapabilityError'>
+2 failed, 4 passed, 79 deselected
+```
+
+The four passing cases are the unchanged provider-only hook sync ([active], [bundled])
+and the consumer-owned approval that allows first sync ([local], [explicit] `--config`).
+After the fix, the same selection gave 6 passed, and the test then also asserted
+that `update --mcp --apply` fails closed and the in-memory approval set excludes
+`mir-mcp`. The whole tests/test_capability_mcp.py gave 85 passed.
+
+## B3 slice-2 review fixes: Claude writer review and completion (2026-10-26)
+
+Intent/design authority: tasks/plan.md's active review-fix cursor, the owner's
+session-scoped Claude-writer exception and the parent-supplied review report. The
+cancelled Codex writer's unreviewed edits were inspected against f715b19 and kept:
+the update-path MCP approval overlay, receipt-bound rollback approval, literal
+INPUT_SCHEMAS and per-tool receipt validation. The INPUT_SCHEMAS literal was
+checked against f715b19: the complete serialized TOOLS list is byte-identical, so
+the server's advertised tools/list is unchanged. Nothing was reverted.
+
+All runs use the owner-specified external UV cache, PYTHONDONTWRITEBYTECODE=1,
+-p no:cacheprovider and --basetemp under `<owner-scratch>/pytest-claude-s2`.
+
+Fail-first for the three review fixes, reproduced because the fixes already
+existed: a scratch copy of the working tree had exactly one fix reverted at a
+time, then ran the regression tests with the project interpreter.
+
+```text
+fix 1 reverted (update path loads provider config without the local MCP overlay)
+-k "remote_mcp_ack or remote_hook_ack"
+FAILED test_remote_mcp_ack_cannot_replace_local_approval[False]
+FAILED test_remote_mcp_ack_cannot_replace_local_approval[True]
+E Failed: DID NOT RAISE <class 'mir.core.capabilities.manager.CapabilityError'>
+2 failed, 1 passed, 76 deselected  (the unchanged hook-update test passed)
+
+fix 2 reverted (no receipt-bound approval; rollback reloads provider config only)
+-k "consumer_only_mcp_ack or receipt-ack or receipt-missing-ack"
+FAILED test_consumer_only_mcp_ack_survives_activation_rollback
+E Actual message: 'capability apply failed and local rollback was incomplete:
+  runtime plugin registration failed'
+FAILED test_rollback_refuses_stale_or_downgraded_mcp_inventory[receipt-ack]
+FAILED test_rollback_refuses_stale_or_downgraded_mcp_inventory[receipt-missing-ack]
+3 failed, 76 deselected
+
+fix 3 reverted (no per-tool schema check and no ok:true check)
+-k "schema_invalid_call_receipt or call_receipt_requires"
+18 x E Failed: DID NOT RAISE <class 'mir.core.capabilities.manager.CapabilityError'>
+1 x E AssertionError: false-ok
+19 failed, 60 deselected
+```
+
+Additional defect found in review: the receipt validator's Draft 2020-12
+"integer" accepted integral floats (limit 3.0), which the server's validate()
+refuses with E_SCHEMA. Added the case ("ontology_lookup", {"limit": 3.0}) to
+test_schema_invalid_call_receipt_cannot_reach_ready; before the fix:
+
+```text
+FAILED tests/test_capability_mcp.py::test_schema_invalid_call_receipt_cannot_reach_ready[ontology_lookup-patch12-None]
+E Failed: DID NOT RAISE <class 'mir.core.capabilities.manager.CapabilityError'>
+1 failed in 0.47s
+```
+
+Fix: src/mir/core/capabilities/mcp.py redefines the validator's integer type as
+an exact int, matching the server. After it, the receipt tests passed (21 passed)
+and the whole tests/test_capability_mcp.py passed: 79 passed in 66.15s.
+
+Residual finding, not changed (outside the parent-scoped update-path fix): with no
+consumer config, the manager falls back to the provider's active or bundled
+configuration. A scratch probe showed a provider-shipped mir-mcp approval then
+authorises first `sync --mcp --apply` (registration restart-required, locked).
+The current source supplies no mir-mcp approval, so this is latent.
+
+Final checks after adopter payload regeneration (`template asset classification: pass`):
+requested boundary set (tests/test_capability_*.py, tests/test_mir_mcp_*.py,
+tests/test_plugin_skill_packages.py, tests/test_template_asset_classification.py,
+tests/test_advanced_reference_templates.py, tests/test_public_template_surface.py,
+tests/test_greenfield_slim_integration.py): **956 passed, 1 failed in 208.42s**.
+`ruff check --no-cache`: All checks passed. `git diff --check`: clean. One full
+suite: **3452 passed, 1 failed in 531.96s**. The only failure in both runs is the
+preserved release-bind test_repository_lock_is_portable_and_matches_managed_trees
+(expected 5d31e04e..., actual 7a753ad1...). The three package copies are
+byte-identical to their canonical sources (cmp). Current mir-mcp tree SHA256:
+1c2e618b167d95c5653e410e97fda7befe0a392b35fca5ef1ed7194e8d3d3700; no approval
+entry was written. This entry was then added, so the payload was regenerated and
+its affected checks rerun before handoff.
+
+## B3 slice-2 review fixes: fail-first evidence (2026-10-26)
+
+Intent/design authority: tasks/plan.md's current review-fix cursor and the owner
+request. The review report is parent-supplied evidence, read directly from
+`b3-s2-review-result.md`; its deleted probes were recreated in
+tests/test_capability_mcp.py. The supplied ontology map hash was verified as
+516c5b160c0fa49de51e4a0dc6f14c6e6a955d1baf72cc75dc2c93de7ea23e79.
+Map `/vocabularies/5` (capability operation diagnostics) distinguishes registration,
+attestation and READY; executions below establish only their tested scope.
+
+All uv runs use the owner-specified external UV_CACHE_DIR and
+PYTHONDONTWRITEBYTECODE=1. All pytest runs use -p no:cacheprovider and
+--basetemp under the owner's
+`<owner-scratch>/pytest-s2fix`.
+TMPDIR also points there. No commits, branches, children or generated Codex writes.
+
+Fail-first command:
+`uv run --no-sync pytest -q tests/test_capability_mcp.py -k 'remote_mcp_ack or remote_hook_ack or consumer_only_mcp_ack or schema_invalid_call_receipt or call_receipt_requires' -p no:cacheprovider --basetemp='<above>/red' --tb=short`
+
+Observed before production changes: **22 failed, 54 deselected in 34.32s**.
+Twenty-one failures reproduce the requested defects:
+
+```text
+test_remote_mcp_ack_cannot_replace_local_approval[False/True]
+E Failed: DID NOT RAISE <class 'mir.core.capabilities.manager.CapabilityError'>
+
+test_consumer_only_mcp_ack_survives_activation_rollback
+E capability apply failed and local rollback was incomplete: runtime plugin registration failed
+E Expected regex: 'rollback was complete'
+
+test_schema_invalid_call_receipt_cannot_reach_ready (17 cases)
+E Failed: DID NOT RAISE <class 'mir.core.capabilities.manager.CapabilityError'>
+
+test_call_receipt_requires_explicit_success_on_revalidation
+E AssertionError: missing-ok
+E assert True is False
+```
+
+The remaining hook-test failure was an invalid probe: changing the exact reviewed
+handler is already forbidden. Changed the probe to append whitespace to its
+manifest instead; this preserves valid hook shape while changing package bytes.
+That corrected compatibility probe passed before implementation. It is expected
+to keep passing because hook behavior is explicitly outside the fix scope.
+
+Additional receipt-tamper probes first reached runtime commands instead of
+refusing missing/stale receipt approval. Their initial recorder returned None,
+causing AttributeError; corrected it to return the real fixture-runner result
+before using the clean assertion failures as regression evidence.
+
+Clean supplemental fail-first command: same flags, -k
+`'remote_hook_ack or receipt-ack or receipt-missing-ack'`, basetemp
+`<above>/red-receipt-clean`. Result: **2 failed, 1 passed, 75 deselected in 1.13s**.
+Both receipt probes failed with `AssertionError: assert True is False`; the
+unchanged hook update passed. No production fix had been applied yet.
+
+Passing production fixes: MCP approval is overlaid from pre-update consumer
+configuration only; provider hook approvals retain their old update path.
+`mcp_digest_acknowledgements` in the active receipt binds prior MCP approval;
+rollback reloads it with receipt-bound provider configuration and checks the
+restored bytes/inventory before registration. Missing/stale approval fails closed.
+Per-tool receipt arguments use literal INPUT_SCHEMAS in the installed package,
+parsed with AST/literal_eval without running candidate code. The server uses
+those same schemas; receipt validation preserves its UTF-8 byte string bounds
+and requires both `ok: true` and `is_error: false`.
+
+Green command: `uv run --no-sync pytest -q tests/test_capability_mcp.py
+-p no:cacheprovider --basetemp='<above>/green' --tb=short`.
+Result: **78 passed in 86.87s**. All 23 intended fail-first cases now pass,
+and the hook compatibility case still passes. Ruff command:
+`uv run --no-sync ruff check --no-cache`; output: `All checks passed!`.
+Ontology strict impact reported no stale refs; its check selection is not test
+execution evidence. Local approval location and the exact renewal file edit /
+digest command are documented in docs/operations/global-plugin-migration.md.
+
+Boundary command: `uv run --no-sync pytest -q tests/test_capability_*.py
+tests/test_mir_mcp_*.py tests/test_plugin_skill_packages.py tests/test_*template*.py
+tests/test_adopter_slim.py -p no:cacheprovider --basetemp='<above>/boundary'
+--tb=short`. Result: **987 passed, 2 failed in 188.10s**. One failure is the
+expected release-bind lock mismatch. The other was this new log's private
+absolute scratch/cache paths, detected by the public-surface scan; replaced them
+with generic placeholders. Source implementation and regression cases passed.
+Regenerate the payload after each durable-evidence update; rerun the affected
+public/payload checks before the one final full suite.
+
+Sanitation/payload rerun: `uv run --no-sync pytest -q
+tests/test_public_template_surface.py tests/test_template_asset_classification.py
+tests/test_adopter_slim.py -p no:cacheprovider
+--basetemp='<above>/payload-public' --tb=short`.
+Result: **31 passed in 10.49s** after successful adopter payload regeneration.
+Ruff passed; ontology mapping: **0 errors, 0 warnings**, contract/mapping 1.1.0.
+Contract SHA256 b2f1ecd01aaa88d41caac2bc2481e7f4c5a429cff3983aaa85ddfb0fc2f1b93f.
+The verified branch/HEAD is feat/mir-mcp at
+f715b196c5731bcb72eb8639443ab5426bc2e2b8.
+
+One full suite command: `uv run --no-sync pytest -q -p no:cacheprovider
+--basetemp='<above>/full' --tb=short`. Observed result:
+**3450 passed, 2 failed in 562.44s**. Failures:
+
+```text
+test_repository_lock_is_portable_and_matches_managed_trees
+E expected 5d31e04e126bf8c671991e8ad9c019c5cb8dfd241dbf5e328bf4063ac051c5cc
+E actual   7a753ad113f69cfef7455ef4bf5c009eb74ab78d7fda467e18fe7eeace7eac9a
+
+test_no_korean_in_template
+E AssertionError: Korean Hangul detected in 1 file(s): tests/test_capability_mcp.py
+```
+
+The lock mismatch is the expected owner-owned release bind and was not changed.
+The other failure came from the new UTF-8 byte-bound regression's source literal;
+converted it to an ASCII Unicode escape preserving the identical runtime input.
+Rerun that regression and the English-only scan, then update final evidence.
+No production code changed after the full suite; do not claim it returned only
+one failure. The final affected rerun determines whether that second failure is
+resolved. Exactly one full suite was executed as requested.
+
+## Cursor before B3 slice-2 review fixes (2026-10-26)
+
+## Active task: B3 mir-mcp slice 2 (2026-10-26)
+
+Intent/design authority: the current owner-relayed request, Discord
+1564229077840302156 (parent-supplied), and ADR-91 sections 4.1, 4.6, 4.8,
+and section 9 bullets 1 and 7. Slice 1 is committed at f715b19.
+The slice-1 cursor is preserved in
+change_log.md#cursor-before-b3-mir-mcp-slice-2-2026-10-26.
+
+Design: schema 5 admits only the exact mcp-stdio package. Promote the slice-1
+shape oracle into the production validator, retaining its mutation corpus.
+Validate all materialized packages and both marketplaces before registration.
+Default profiles omit MCP; explicit selection stays separate from the host
+union. Missing MCP acknowledgement blocks its registration; any stale supplied
+acknowledgement blocks registration, integrity and rollback. MCP receipts require
+installed digest, client/version/session/platform, launcher, protocol, the exact
+five tools and safe calls, plus B4 budget evidence. Catalogs alone cannot attest.
+
+Request matrix/scenarios, initially open:
+1. Exact schema 5 metadata/policy/inventory; legacy 1–4; no default selection.
+2. Production eight-file validator and existing closed-shape mutation corpus.
+3. Missing/stale acknowledgement; byte drift and downgrade block registration,
+   finalization and READY, including an unselected materialized package.
+4. Failed activation restores validated prior registration or absence; invalid
+   restored evidence blocks rollback; peer selection survives removal.
+5. Both fresh runtime MCP receipts with exact inventories, calls and B4 evidence;
+   missing/stale/downgraded evidence fails attestation and finalization.
+6. Requested boundary checks, payload regeneration, Ruff and one full suite;
+   preserve the known release-bind lock mismatch.
+
+Constraints: no commits, branch switches, children, generated Codex writes,
+release bind, real-host capability operations or real-package acknowledgement.
+Use temporary providers/homes and the specified external cache/pytest scratch.
+Detailed results belong in change_log.md. Live B4 evidence remains owner-owned.
+
+Final observed state: matrix 5/6 checked. Schema, validator, acknowledgement,
+selection/rollback and MCP receipt contracts pass their final boundary checks.
+The source full suite has 3359 passes and 69 failures: 68 are caused by the
+read-only, unpatched Codex marketplace, and one is the deliberately preserved
+release-bind lock mismatch. With the exact pending marketplace patch applied
+only to a temporary provider copy, 920 boundary tests pass and only that lock
+test fails. No runtime or release readiness is claimed.
+
+Main applied the Codex marketplace entry (the sandbox had refused that write) to
+`.agents/plugins/marketplace.json`, then regenerated the adopter payload and
+repeated the affected checks. The owner's exact real digest acknowledgement and
+fresh dual-runtime calls/accounting remain B4 work. Release binding and any
+Codex derivative regeneration remain outside this slice. Details and the
+preserved earlier cursor are in tasks/change_log.md.
+
 ## Capability gaploop: 0.13.30 round-9 corrections (2026-10-24)
 
 Intent/design authority: tasks/plan.md and the owner-supplied writer-r9 brief,
@@ -12764,3 +13038,224 @@ E     {'code': 'E_VERSION'} != {'code': 'E_SCHEMA'}
 Legacy _meta incorrectly succeeded instead of returning an error:
 E   KeyError: 'resultType'
 ```
+
+
+## B3 mir-mcp slice 2 admission (2026-10-26)
+
+Authority: owner approval Discord 1564229077840302156 is parent-supplied.
+Intent/design authority: tasks/plan.md and ADR-91 sections 4.1, 4.6, 4.8,
+and section 9 bullets 1 and 7. Verified starting branch feat/mir-mcp and HEAD
+f715b19; the initial working tree was clean. No owner digest acknowledgement,
+release binding, real-host runtime operation, commit, branch switch, child agent,
+or generated Codex write was performed.
+
+Schema 5 admits the exact mcp-stdio metadata without a fictitious skill. The
+slice-1 shape oracle is now the shared production validator; its original
+mutation corpus exercises it. Optional selection is retained in the consumer
+lock and remains separate from the host union. The installed digest, declaration
+and schema-source contract, exact inventory, client/version/session/platform,
+launcher, safe calls, measured B4 fields and dual-runtime schema parity are
+required by the MCP receipt path. Receipt validation is operator-observation
+validation; fixture receipts are not live runtime evidence.
+
+The source map still has SHA256
+516c5b160c0fa49de51e4a0dc6f14c6e6a955d1baf72cc75dc2c93de7ea23e79.
+Its /relations/10 defines selection separately from ownership; /vocabularies/5
+separates finalized registration, discovery and READY. New MCP-specific claims
+are evidenced by ADR-91 and the manager tests, not by parent-supplied approval
+or a historical status projection. Mapping/impact checks below passed.
+
+Sandbox limitation: the Codex marketplace path is read-only. apply_patch was
+rejected with "writing outside of the project; rejected by user approval
+settings". The exact change is supplied in tasks/mcp-marketplace.patch; it was
+checked and applied only to a temporary validation copy. Main must apply it and
+regenerate the adopter payload afterward. The Claude marketplace change is in
+the workspace. Both entries are required by _validate_marketplaces, which
+requires exact marketplace/config inventory equality. _profile and
+_registration_plan use explicit selected sets, so availability selects nothing.
+No registration path was relaxed to tolerate the missing workspace entry.
+
+Validation conventions: every pytest invocation used PYTHONDONTWRITEBYTECODE=1,
+-p no:cacheprovider, the owner-specified external UV_CACHE_DIR, and a distinct
+--basetemp below the owner-specified pytest-s2 directory. Below, P means
+`uv run --no-sync pytest -q`; names in parentheses identify the basetemp suffix.
+The temporary-copy commands additionally used the existing project venv through
+UV_PROJECT_ENVIRONMENT; no dependency installation was needed.
+
+| Command / scope | Observed result |
+| --- | --- |
+| P tests/test_capability_mcp.py (initial fail-first attempt) | 45 fixture setup errors: missing basetemp parent. Not TDD evidence. Parent created, then rerun. |
+| P tests/test_capability_mcp.py (fail-first) | 29 failed, 16 passed in 1.56s before implementation: schema 5, mcp-stdio and manager extensions absent. |
+| P tests/test_capability_mcp.py -k cli_exposes (cli-red) | 1 failed, 45 deselected; --mcp was unrecognized before CLI support. |
+| P tests/test_capability_mcp.py tests/test_mir_mcp_package.py (mcp-first-green) | 2 failed, 64 passed. The rollback fixture injected failure into a tolerated remove command; corrected it to fail required add, without relaxing production behavior. |
+| P tests/test_capability_mcp.py tests/test_mir_mcp_package.py (mcp-green) | 67 passed in 10.99s. |
+| P tests/test_capability_mcp.py -k 'rechecks_them and parity' (parity-red) | 1 failed, 46 deselected; differing tool-list digests still allowed READY before the parity fix. |
+| P tests/test_capability_mcp.py -k provider_cannot (provider-red) | 1 failed, 52 deselected; installation alone allowed provider_ready before the discovery fix. |
+| P tests/test_capability_mcp.py tests/test_mir_mcp_package.py (mcp-final) | 74 passed in 13.32s. |
+| P tests/test_capability_mcp.py -k kind-type (kind-red) | 1 failed, 53 deselected; list-valued package_kind raised TypeError before explicit type validation. |
+| P tests/test_capability_*.py tests/test_plugin_skill_packages.py tests/test_mir_mcp_*.py (first temporary-copy attempt) | Collection failed because the skill-only CLI probe assumed every package had skills; the probe now excludes the exact MCP kind and cannot attest it. |
+| Same boundary command (boundary-stage) | 44 failed, 762 passed, 104 errors: the copy lacked the existing .venv/bin/python reference; only the lock failure was unrelated to that fixture omission. |
+| Same boundary command (boundary-stage-final) | 910 passed, 1 failed in 141.74s; only test_repository_lock_is_portable_and_matches_managed_trees failed on its unchanged pre-release mir-core digest. Includes both interpreter lanes. |
+| uv run --no-sync ruff check | Initial 10 style/import findings, then 2 line-length findings; corrected. Final check passed. |
+| uv run --no-sync python scripts/mir_ontology.py impact --git-diff HEAD --strict | Exit 0, no stale refs; selection only, not test execution. |
+| uv run --no-sync python scripts/mir_ontology.py mapping | Exit 0, 0 errors, 0 warnings; contract and mapping 1.1.0; supplied map digest unchanged. |
+| uv run --no-sync python -m tools.template_assets --write-adopter-payload | Passed; final regeneration after evidence updates remains required. |
+
+Final source MCP, payload/template, workspace marketplace and full-suite results
+will be appended after their output has been inspected. B4 remains owner-owned:
+review and acknowledge the real exact tree digest, collect fresh Claude/Codex
+safe-call and budget evidence independently for each supported platform lane,
+then attest and finalize. Main also owns generated Codex parity and release bind.
+
+Further directly inspected results:
+- Source `P tests/test_capability_mcp.py tests/test_mir_mcp_*.py`
+  (source-mcp-final): 572 passed in 97.84s, both interpreter lanes.
+- Source `P tests/test_template_asset_classification.py tests/test_adopter_slim.py
+  tests/test_*template*.py tests/test_minimal_starter.py tests/test_project_agent_kit*.py`
+  (payload-template): 103 passed in 73.11s.
+- Source `P tests/test_plugin_skill_packages.py` (workspace-marketplace):
+  15 passed, 1 failed in 0.24s. The failure is the missing Codex marketplace entry.
+- Temporary-copy `P tests/test_capability_cli.py tests/test_capability_security.py
+  -k 'rollback or legacy or receipt'` (rollback-final): 25 passed, 164 deselected
+  in 49.16s after the final rollback validation guards.
+- A full-source attempt was interrupted with exit 130 during the final metadata
+  check. It is not a completed full-suite result. The new explicit-selection
+  regression then failed with KeyError runtimes (1 failed, 53 deselected) before
+  the MCP lock contract gained the canonical two-runtime list. No other runtime
+  behavior changed. The complete final suite is run after this fix.
+
+Final integration continuation:
+- `P tests/test_capability_mcp.py tests/test_mir_mcp_package.py` (admission-final):
+  75 passed in 13.72s, including the explicit runtime-list regression.
+- First completed source full suite: `P --tb=short` (full-final), exit 1,
+  3358 passed and 70 failed in 487.80s. 68 failures were the unavailable Codex
+  marketplace entry, one was the preserved release-bind lock mismatch, and one
+  exposed a real regression: the isolated ontology fixture uses runpy to load
+  config.py, and the new relative import prevented that existing route.
+- Focused fail-first: `P tests/test_mir_ontology.py -k use_own_domain_evidence`
+  (ontology-red): 1 failed, 9 deselected in 0.26s with the relative-import error.
+  The one MCP inventory definition now lives in self-contained config.py;
+  mcp.py imports it. No duplicate rules or import fallback were added.
+- `P tests/test_mir_ontology.py tests/test_capability_mcp.py
+  tests/test_mir_mcp_package.py` (ontology-green): 85 passed in 16.86s.
+- Ruff passed again after this fix. The full suite is rerun on the corrected
+  source; its result supersedes the earlier full-suite result for completion.
+
+Final corrected-source results:
+- Temporary-copy boundary command plus tests/test_mir_ontology.py
+  (boundary-verified): 920 passed, 1 failed in 169.43s. Only the preserved
+  repository lock mismatch fails; the exact pending Codex marketplace patch
+  is applied in that copy. This supersedes the earlier 910-case boundary result.
+- Corrected source full suite: P --tb=short (full-final-fixed), exit 1,
+  3359 passed and 69 failed in 492.28s. Exactly 67 manager tests stop at
+  CapabilityError: capability marketplace inventory drift, and one marketplace
+  inventory assertion lacks mir-mcp. The remaining failure is the unchanged
+  pre-release mir-core lock digest. No unexpected regression remains.
+- The six implementation/config/test SHA256 pins stayed unchanged throughout
+  the final full run. Ruff and git diff --check passed afterward.
+- Package validation and digest computation (read-only, not acknowledgement):
+  04d4087737748e549d747c60ca20d9cb26b801ec6f7f460ac70ac472938847a5.
+  The real acknowledgement map still contains only the existing hook entry.
+- Matrix 5/6 checked; the open cell is workspace marketplace delivery and its
+  dependent gates. No intentional ADR-91 policy relaxation was introduced.
+  The sandbox prevents the Codex marketplace write; the reviewable patch is
+  supplied. The expected release-bind lock failure is preserved, not repaired.
+- The final operation regenerates the adopter payload after these evidence and
+  cursor updates, runs focused payload checks and prints git status. Their
+  actual results are delivered in the final report and retained tool output.
+
+## Cursor before B3 mir-mcp slice 2 (2026-10-26)
+
+## Active task: B3 mir-mcp slice 1 (2026-10-26)
+
+Intent authority: the current owner-relayed B3 slice-1 request (Discord
+1564229077840302156, parent-supplied). Design authority: this cursor and
+`docs/decisions/adr-91-stdio-mcp-package-admission.md` sections 4.2–4.7 and
+section 9 bullets 2–6, at d05919f0e927c8c11f11c85417d76324d0026bca.
+Implement canonical guarded checker interfaces, the standalone YAML relation
+adapter, the exact eight-file package, and hermetic fail-first tests. Do not
+change admission, marketplaces, capability configuration, runtime registration,
+acknowledgements, generated Codex files, or existing tests. No commits or branch
+switching. Stop if existing tests/validators reject the new package directory.
+The previous cursor is preserved in
+[the evidence log](change_log.md#cursor-before-b3-mir-mcp-slice-1-2026-10-26).
+
+Design: all target reads pass a per-call bounded, root-confined guard; canonical
+checker callbacks cover indirect references and Git. Fixed package module loads
+and exact Git commands are the only dynamic loading/subprocess exceptions.
+Python 3.9 and 3.12 share tool semantics, with explicit Profile unavailability
+where tomllib is absent. YAML supports only documented flow triples.
+
+Request matrix and behaviour scenarios (all initially open):
+1. Package: exact files, declarations and rejection cases; no executable bits.
+2. Canonical sources: guarded indirect reads/Git, unchanged CLI, byte equality,
+   admitted-YAML differential traversal and independent package copy.
+3. Security on both interpreters: safe success, direct/indirect path refusals,
+   protected sentinels, races, all caps, stale cursors, static/runtime no writes,
+   no environment input and no network.
+4. Git: only guarded metadata, fixed argv/environment, bounded capture/time.
+5. Protocol on both interpreters: modern direct/discovery, legacy handshake,
+   invalid era/frame/feature rejection, ordered closed schemas, pure stdout.
+6. Existing ontology/relations/plugin tests, Ruff and one final full suite.
+
+Validation: use UV_CACHE_DIR on T7, PYTHONDONTWRITEBYTECODE=1, pytest
+-p no:cacheprovider and the owner-specified external --basetemp. Record a failing
+new-test run before implementation. Main owns generated-file regeneration.
+
+Initial recorded status: implementation not started; matrix 0/6 checked.
+
+Hardening continuation (2026-10-26): the current owner request authorizes fixing
+the parent-reproduced Git gitlink/filter and malformed-protocol-type defects,
+a protocol-wide field-type sweep, the public wording, adopter payload and any
+minimal provider classification needed for slim. This supersedes the earlier
+stop-on-existing-test-failure restriction for these named checks. This cursor
+remains the intent/design authority; ADR-91's working-tree version is the spec.
+Do not commit, switch branches, spawn children, or write generated Codex files.
+Scenarios: gitlink-only nested filter must never create its sentinel; every
+malformed request-field type must produce a bounded error and allow the next
+valid stdio request, on both Python interpreters. Check all MCP tests, the five
+reported integration failures, three-copy byte parity, Ruff, forbidden tokens,
+and one final full suite. Only the pre-release managed-tree lock mismatch is
+expected to remain. Fail-first and passing output goes in tasks/change_log.md.
+
+Continuation (2026-10-26): the current parent decision retains Git and narrows
+the child-read guarantee to ADR-91 section 4.5's fixed pre-spawn checks. Git's
+internal metadata/worktree reads are not individually guarded; concurrent
+same-user replacement during a child read is excluded. Other guarded reads
+retain their replacement checks. ADR-91 section 4.5 and the section 9 Git bullet
+have been amended accordingly. This continuation supersedes the initial Git
+confinement interpretation, not the original implementation scope.
+
+Current observed state: the eight-file package and canonical helpers are present;
+Git is implemented. Existing targeted tests passed (423 tests), both interpreter
+versions were observed (3.9.6 and 3.12.13), and the read-only Codex parity check
+passed with the required UV cache. New-test integration and the final full suite
+remain in progress. Detailed fail-first and final execution evidence belongs in
+`tasks/change_log.md`. No commit or generated-file write has been performed.
+
+Hardening observed state (2026-10-26): all 493 MCP cases and 21 affected
+integration cases pass; the only targeted failure is the expected pre-release
+mir-core lock digest mismatch, independently confirmed against every lock-test
+assertion. Git gitlink and nested-version regressions have fail-first evidence
+on both interpreters. The 48-field type sweep, exact argv, three-copy equality,
+Ruff, public scan and regenerated-payload slim checks pass. Evidence is in
+change_log.md#b3-slice-1-hardening-fixes-2026-10-26. The final full suite returned
+3348 passed and one expected lock failure in 470.75s; no other failures or skips.
+All 13 recorded hashes stayed unchanged during the run. Hardening matrix: 6/6
+checked, including the expected and preserved pre-release lock mismatch. Release
+binding and broader slice admission remain Main-owned.
+
+Main acceptance (2026-10-26, Harness Main): this supersedes the "in progress" lines
+above. An independent review reproduced two defects (gitlink nested filter;
+non-string `protocolVersion` crash), both fixed with fail-first regressions. A
+mutation review then killed 64 of 82 mutants; the 18 survivors were test gaps,
+not server defects. 16 gained killing tests and four stayed covered by later
+checks (#33, #40, #42, #43). Main re-ran in the host environment:
+- MCP tests: 518 passed.
+- Ruff: passed.
+- Three-copy byte equality: confirmed.
+- Adopter payload: regenerated after the test additions.
+- Full suite: 3373 passed, plus the expected pre-release mir-core lock failure.
+
+Slice 1 is committed on `feat/mir-mcp`, not pushed. Next is slice 2: schema 5,
+validator and manager admission, then the release bind that clears the lock failure.

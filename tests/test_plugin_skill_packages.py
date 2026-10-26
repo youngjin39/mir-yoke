@@ -189,7 +189,7 @@ def test_should_package_portable_default_work_method_in_order(tmp_path: Path) ->
 def test_marketplaces_publish_identical_plugin_names() -> None:
     claude = _json(ROOT / ".claude-plugin" / "marketplace.json")
     codex = _json(ROOT / ".agents" / "plugins" / "marketplace.json")
-    expected = set(PLUGIN_SKILLS)
+    expected = set(PLUGIN_SKILLS) | {"mir-mcp"}
     assert {item["name"] for item in claude["plugins"]} == expected
     assert {item["name"] for item in codex["plugins"]} == expected
 

@@ -8,6 +8,31 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from urllib.parse import urlsplit
 
+MCP_NAME = "mir-mcp"
+MCP_FILES = (
+    ".claude-plugin/plugin.json",
+    ".codex-plugin/plugin.json",
+    ".mcp.claude.json",
+    ".mcp.codex.json",
+    "mir_mcp.py",
+    "ontology/references/common-contract.json",
+    "ontology/scripts/ontology_check.py",
+    "shared/relations_query.py",
+)
+MCP_TOOLS = (
+    "ontology_validate",
+    "ontology_lookup",
+    "ontology_impact",
+    "handoff_pins",
+    "relations_query",
+)
+MCP_METADATA = {
+    "path": "plugins/mir-mcp",
+    "package_kind": "mcp-stdio",
+    "files": list(MCP_FILES),
+    "server": MCP_NAME,
+    "tools": list(MCP_TOOLS),
+}
 _PLUGIN_NAME = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 _WINDOWS_DRIVE = re.compile(r"^[A-Za-z]:")
 _REF = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]*$")
@@ -32,6 +57,10 @@ _PLUGIN_COMPONENT_POLICY = {
     **_SKILLS_ONLY_COMPONENT_POLICY,
     "admitted_package_kinds": ["skills", "skills-hooks"],
     "reserved_active_package_kinds": ["mcp"],
+}
+_MCP_COMPONENT_POLICY = {
+    **_PLUGIN_COMPONENT_POLICY,
+    "admitted_package_kinds": ["skills", "skills-hooks", "mcp-stdio"],
 }
 _COMMAND_DELIVERY = "claude-project-file-codex-plugin-skill"
 _PROJECT_INTEGRATIONS = {
@@ -115,6 +144,7 @@ class CapabilityConfig:
     plugin_kinds: dict[str, str]
     plugin_skills: dict[str, tuple[str, ...]]
     plugin_hooks: dict[str, tuple[str, ...]]
+    plugin_mcp: dict[str, dict[str, object]]
     active_digest_acknowledgements: dict[str, str]
     component_policy: dict[str, object]
     aliases: dict[str, str]
@@ -163,8 +193,8 @@ def load_capability_config(path: Path) -> CapabilityConfig:
         raise CapabilityConfigError(f"cannot read capability source: {path}") from exc
     except json.JSONDecodeError as exc:
         raise CapabilityConfigError(f"invalid capability source JSON: {path}") from exc
-    if not isinstance(raw, dict) or raw.get("schema_version") not in {1, 2, 3, 4}:
-        raise CapabilityConfigError("capability source schema_version must be 1, 2, 3, or 4")
+    if not isinstance(raw, dict) or raw.get("schema_version") not in {1, 2, 3, 4, 5}:
+        raise CapabilityConfigError("capability source schema_version must be 1, 2, 3, 4, or 5")
     source_schema_version = raw["schema_version"]
 
     source = raw.get("source")
@@ -180,6 +210,7 @@ def load_capability_config(path: Path) -> CapabilityConfig:
     plugin_kinds: dict[str, str] = {}
     plugin_skills: dict[str, tuple[str, ...]] = {}
     plugin_hooks: dict[str, tuple[str, ...]] = {}
+    plugin_mcp: dict[str, dict[str, object]] = {}
     for name, metadata in plugins_raw.items():
         if not isinstance(name, str) or _PLUGIN_NAME.fullmatch(name) is None:
             raise CapabilityConfigError(f"invalid plugin name: {name!r}")
@@ -192,16 +223,27 @@ def load_capability_config(path: Path) -> CapabilityConfig:
             package_kind = metadata.get("package_kind")
             allowed_kinds = (
                 {"skills", "skills-hooks"}
-                if source_schema_version == 4
+                if source_schema_version >= 4
                 else {"skills"}
             )
-            if package_kind not in allowed_kinds:
+            if source_schema_version == 5:
+                allowed_kinds = allowed_kinds | {"mcp-stdio"}
+            if not isinstance(package_kind, str) or package_kind not in allowed_kinds:
                 raise CapabilityConfigError(
                     f"plugin {name!r} package_kind is not admitted: {package_kind!r}"
                 )
             expected_metadata = {"path", "package_kind", "skills"}
         if package_kind == "skills-hooks":
             expected_metadata.add("hooks")
+        if package_kind == "mcp-stdio":
+            if name != MCP_NAME or metadata != MCP_METADATA:
+                raise CapabilityConfigError("mcp-stdio requires the exact mir-mcp metadata")
+            plugin_mcp[name] = dict(metadata)
+            plugins[name] = metadata["path"]
+            plugin_kinds[name] = package_kind
+            continue
+        if name == MCP_NAME:
+            raise CapabilityConfigError("mir-mcp requires schema 5 and package_kind mcp-stdio")
         if set(metadata) != expected_metadata:
             raise CapabilityConfigError(
                 f"plugin {name!r} metadata must contain only "
@@ -237,7 +279,9 @@ def load_capability_config(path: Path) -> CapabilityConfig:
 
     component_policy = raw.get("plugin_component_policy")
     expected_component_policy = (
-        _PLUGIN_COMPONENT_POLICY
+        _MCP_COMPONENT_POLICY
+        if source_schema_version == 5
+        else _PLUGIN_COMPONENT_POLICY
         if source_schema_version == 4
         else _SKILLS_ONLY_COMPONENT_POLICY
     )
@@ -249,21 +293,25 @@ def load_capability_config(path: Path) -> CapabilityConfig:
         raise CapabilityConfigError("schema_version 1 cannot declare plugin_component_policy")
 
     active_digest_acknowledgements: dict[str, str] = {}
-    if source_schema_version == 4:
+    if source_schema_version >= 4:
         acknowledgements = raw.get("active_package_digest_acknowledgements")
-        if not isinstance(acknowledgements, dict) or set(acknowledgements) != set(plugin_hooks):
+        if (
+            not isinstance(acknowledgements, dict)
+            or not set(plugin_hooks) <= set(acknowledgements)
+            or not set(acknowledgements) <= set(plugin_hooks) | set(plugin_mcp)
+        ):
             raise CapabilityConfigError(
                 "active package digest acknowledgement must cover every active hook package"
             )
         for name, digest in acknowledgements.items():
             if not isinstance(digest, str) or _SHA256.fullmatch(digest) is None:
                 raise CapabilityConfigError(
-                    f"active hook package {name!r} has an invalid digest acknowledgement"
+                    f"active package {name!r} has an invalid digest acknowledgement"
                 )
             active_digest_acknowledgements[name] = digest
     elif "active_package_digest_acknowledgements" in raw:
         raise CapabilityConfigError(
-            "only schema_version 4 can declare active package digest acknowledgements"
+            "only schema_version 4+ can declare active package digest acknowledgements"
         )
 
     profiles = raw.get("profiles")
@@ -288,7 +336,7 @@ def load_capability_config(path: Path) -> CapabilityConfig:
     agents_raw = raw.get("agents")
     expected_agent_keys = (
         {"allowlist", "provider_local"}
-        if source_schema_version == 4
+        if source_schema_version >= 4
         else {"allowlist"}
     )
     if (
@@ -307,7 +355,7 @@ def load_capability_config(path: Path) -> CapabilityConfig:
     if len(set(agents)) != len(agents):
         raise CapabilityConfigError("agents.allowlist contains duplicates")
     provider_local_agents: list[str] = []
-    if source_schema_version == 4:
+    if source_schema_version >= 4:
         provider_local_raw = agents_raw["provider_local"]
         if not isinstance(provider_local_raw, list):
             raise CapabilityConfigError("agents.provider_local must be an array")
@@ -381,6 +429,10 @@ def load_capability_config(path: Path) -> CapabilityConfig:
         pack_commands = pack.get("commands", [])
         if not isinstance(members, list) or not members:
             raise CapabilityConfigError(f"profile {name!r} plugins must be a non-empty array")
+        if MCP_NAME in members:
+            raise CapabilityConfigError(
+                "default Profiles cannot select mir-mcp; use explicit opt-in"
+            )
         if not isinstance(pack_agents, list) or not pack_agents:
             raise CapabilityConfigError(f"profile {name!r} agents must be a non-empty array")
         if source_schema_version >= 3 and (
@@ -410,7 +462,7 @@ def load_capability_config(path: Path) -> CapabilityConfig:
         selected_skills = {
             f"{plugin}:{skill}"
             for plugin in members
-            for skill in plugin_skills[plugin]
+            for skill in plugin_skills.get(plugin, ())
         }
         if any(commands[command] not in selected_skills for command in pack_commands):
             raise CapabilityConfigError(
@@ -495,6 +547,7 @@ def load_capability_config(path: Path) -> CapabilityConfig:
         plugin_kinds=plugin_kinds,
         plugin_skills=plugin_skills,
         plugin_hooks=plugin_hooks,
+        plugin_mcp=plugin_mcp,
         active_digest_acknowledgements=active_digest_acknowledgements,
         component_policy=component_policy,
         aliases=aliases,

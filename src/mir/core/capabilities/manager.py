@@ -14,6 +14,7 @@ import tempfile
 import tomllib
 from collections.abc import Callable, Iterator, Sequence
 from contextlib import contextmanager
+from dataclasses import replace
 from datetime import UTC, datetime
 from importlib.resources import files
 from pathlib import Path, PurePosixPath
@@ -21,6 +22,7 @@ from pathlib import Path, PurePosixPath
 from mir.core.adoption.runtime import _is_transient
 
 from .config import CapabilityConfig, CapabilityConfigError, CapabilityPack, load_capability_config
+from .mcp import MCP_NAME, mcp_launcher, validate_mcp_observation, validate_mcp_package
 
 _SHA = re.compile(r"^[0-9a-f]{40}$")
 _MARKDOWN_LINK = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
@@ -501,6 +503,15 @@ def _directory_identity(path: Path) -> tuple[int, int] | None:
 
 
 def _validate_plugin(plugin_root: Path, expected_name: str, *, package_kind: str) -> str:
+    if package_kind == "mcp-stdio":
+        if expected_name != MCP_NAME:
+            raise CapabilityError("mcp-stdio admits only mir-mcp")
+        try:
+            validate_mcp_package(plugin_root)
+        except (ValueError, OSError) as exc:
+            raise CapabilityError(str(exc)) from exc
+        _reject_active_package_credentials(plugin_root)
+        return _tree_digest(plugin_root)
     if package_kind == "skills":
         expected_entries = _SKILL_PLUGIN_ROOT_ENTRIES
         manifest_keys = {
@@ -739,6 +750,14 @@ class CapabilityManager:
             )
             self._provider_only = True
         self.config = load_capability_config(self.config_path)
+        self._consumer_config_path = (
+            self.project_root / "config" / "capability-sources.json"
+            if self._provider_only
+            else self.config_path
+        )
+        if self._provider_only:
+            # A provider-supplied config never carries a consumer's MCP approval.
+            self.config = self._with_mcp_acknowledgements(self.config, {})
         if capability_home is None and "MIR_CAPABILITY_HOME" not in os.environ:
             verified_provider_home = _configured_provider_home(
                 self.codex_home, self.config.source_url
@@ -1021,11 +1040,21 @@ class CapabilityManager:
             for metadata in (locked_plugins.get(plugin),)
         )
 
-    def _profile(self, requested: str | None, lock: dict[str, object] | None):
+    def _profile(
+        self, requested: str | None, lock: dict[str, object] | None, mcp: bool | None = None,
+    ):
         value = requested or (lock.get("profile") if lock else None) or "default"
         if not isinstance(value, str):
             raise CapabilityError("capability lock profile is invalid")
-        return self.config.resolve_profile(value)
+        profile, pack = self.config.resolve_profile(value)
+        if mcp is None:
+            locked = lock.get("plugins") if lock else None
+            mcp = isinstance(locked, dict) and MCP_NAME in locked
+        if mcp:
+            if MCP_NAME not in self.config.plugin_mcp:
+                raise CapabilityError("MCP opt-in requires schema 5 mir-mcp admission")
+            pack = CapabilityPack((*pack.plugins, MCP_NAME), pack.agents, pack.commands)
+        return profile, pack
 
     def _managed_file_status(
         self,
@@ -1207,6 +1236,7 @@ class CapabilityManager:
             and registry.get("active_plugins") == active_plugins
             and self._provider_active_integrity(active_receipt)
             and activation.get("status") == "active"
+            and self._provider_mcp_discovered(active_receipt, registry)
         )
         collisions = _standalone_collisions(
             self._configured_skill_names(tuple(self.config.plugins)),
@@ -1232,6 +1262,34 @@ class CapabilityManager:
             "consumer": {"status": "not-enrolled", "collisions": collisions},
         }
 
+    def _provider_mcp_discovered(
+        self, receipt: dict[str, object], registry: dict[str, object],
+    ) -> bool:
+        active = receipt.get("plugins", {})
+        expected = set(active) & set(self.config.plugin_mcp)
+        if not expected:
+            return True
+        discovery = receipt.get("discovery")
+        consumers = registry.get("consumers")
+        if not isinstance(discovery, dict) or not isinstance(consumers, dict):
+            return False
+        verified: set[str] = set()
+        for root, consumer in consumers.items():
+            selected = consumer.get("plugins") if isinstance(consumer, dict) else None
+            if not isinstance(selected, dict) or not expected & set(selected):
+                continue
+            if consumer.get("commit") != receipt.get("commit") or any(
+                active.get(name) != digest for name, digest in selected.items()
+            ):
+                continue
+            lock = {
+                "source": {"commit": receipt.get("commit")},
+                "plugins": {name: {"sha256": digest} for name, digest in selected.items()},
+            }
+            if self._discovery_evidence(lock, consumer_key=root)["status"] == "verified":
+                verified.update(expected & set(selected))
+        return verified == expected
+
     def _provider_active_integrity(self, receipt: dict[str, object]) -> bool:
         plugins = receipt.get("plugins")
         materialized = receipt.get("materialized_plugins")
@@ -1256,10 +1314,12 @@ class CapabilityManager:
                 )
                 for plugin, path in self.config.plugins.items()
             }
+            self._assert_active_digest_acknowledgements(actual, tuple(plugins))
         except (CapabilityError, OSError):
             return False
         return (
             materialized == actual
+            and self._mcp_receipt_matches(receipt, actual)
             and all(actual.get(plugin) == digest for plugin, digest in plugins.items())
             and receipt.get("marketplaces")
             == {path: {"sha256": digest} for path, digest in marketplaces.items()}
@@ -1294,7 +1354,9 @@ class CapabilityManager:
         if receipt.get("source_url") != config.source_url:
             raise CapabilityError("active provider configuration source drift")
         self.config_path = config_path
-        self.config = config
+        self.config = self._with_mcp_acknowledgements(
+            config, self.config.active_digest_acknowledgements,
+        )
 
     def _use_previous_config_for_rollback(
         self, receipt: dict[str, object] | None
@@ -1305,25 +1367,86 @@ class CapabilityManager:
         if receipt.get("config_sha256") != _file_digest(config_path):
             return None
         previous = self.config
-        self.config = load_capability_config(config_path)
+        acknowledgements = receipt.get("mcp_digest_acknowledgements", {})
+        if not isinstance(acknowledgements, dict):
+            return None
+        self.config = self._with_mcp_acknowledgements(
+            load_capability_config(config_path), acknowledgements,
+        )
         return previous
 
-    def _configured_skill_names(self, plugins: Sequence[str]) -> set[str]:
-        return {skill for plugin in plugins for skill in self.config.plugin_skills[plugin]}
+    @staticmethod
+    def _with_mcp_acknowledgements(
+        config: CapabilityConfig, acknowledgements: dict[str, str],
+    ) -> CapabilityConfig:
+        """Provider configuration cannot renew a consumer's MCP approval."""
+        return replace(config, active_digest_acknowledgements={
+            **{name: digest for name, digest in config.active_digest_acknowledgements.items()
+               if config.plugin_kinds.get(name) != "mcp-stdio"},
+            **{name: digest for name, digest in acknowledgements.items()
+               if config.plugin_kinds.get(name) == "mcp-stdio"},
+        })
 
-    def _assert_active_digest_acknowledgements(self, plugin_hashes: dict[str, str]) -> None:
+    def _mcp_digest_acknowledgements(self) -> dict[str, str]:
+        return {name: digest for name, digest in self.config.active_digest_acknowledgements.items()
+                if self.config.plugin_kinds.get(name) == "mcp-stdio"}
+
+    def _configured_skill_names(self, plugins: Sequence[str]) -> set[str]:
+        return {skill for plugin in plugins for skill in self.config.plugin_skills.get(plugin, ())}
+
+    def _assert_active_digest_acknowledgements(
+        self, plugin_hashes: dict[str, str], selected_plugins: Sequence[str] = (),
+    ) -> None:
+        for plugin in selected_plugins:
+            if (self.config.plugin_kinds.get(plugin) == "mcp-stdio"
+                    and plugin not in self.config.active_digest_acknowledgements):
+                raise CapabilityError(
+                    f"active package digest acknowledgement is missing: {plugin}; add "
+                    f"active_package_digest_acknowledgements.{plugin} to the consumer-owned "
+                    f"{self._consumer_config_path} (provider configuration does not count)"
+                )
         for plugin, expected in self.config.active_digest_acknowledgements.items():
             actual = plugin_hashes.get(plugin)
             if actual != expected:
                 raise CapabilityError(f"active package digest acknowledgement is stale: {plugin}")
 
+    def _plugin_metadata(self, plugin: str, digest: str) -> dict[str, object]:
+        return {
+            "path": self.config.plugins[plugin],
+            "package_kind": self.config.plugin_kinds[plugin],
+            "sha256": digest,
+            **({"mcp": self._mcp_contract(plugin)} if plugin in self.config.plugin_mcp else {}),
+        }
+
+    def _mcp_contract(self, plugin: str) -> dict[str, object]:
+        return {
+            **self.config.plugin_mcp[plugin],
+            "runtimes": list(self.config.required_runtimes),
+            "launchers": {
+                runtime: mcp_launcher(f"${{{variable}}}/mir_mcp.py")
+                for runtime, variable in (
+                    ("claude", "CLAUDE_PLUGIN_ROOT"), ("codex", "PLUGIN_ROOT"),
+                )
+            },
+            "schema_source": "mir_mcp.py",
+        }
+
+    def _mcp_packages(self, hashes: dict[str, str]) -> dict[str, object]:
+        return {name: {"sha256": hashes[name], **self._mcp_contract(name)}
+                for name in self.config.plugin_mcp}
+
+    def _mcp_receipt_matches(self, receipt: dict[str, object], hashes: dict[str, str]) -> bool:
+        return (receipt.get("mcp_packages") == self._mcp_packages(hashes)
+                if self.config.plugin_mcp else not receipt.get("mcp_packages"))
+
     def _managed_surfaces(self, pack: CapabilityPack) -> dict[str, object]:
         surfaces: dict[str, object] = {
             "skills": {
                 "delivery": "host-plugin",
-                "plugins": list(pack.plugins),
+                "plugins": [name for name in pack.plugins if name in self.config.plugin_skills],
                 "inventory": {
                     plugin: list(self.config.plugin_skills[plugin]) for plugin in pack.plugins
+                    if plugin in self.config.plugin_skills
                 },
             },
             "agents": {
@@ -1335,6 +1458,13 @@ class CapabilityManager:
                 "mappings": {path: self.config.commands[path] for path in pack.commands},
             },
         }
+        mcp_plugins = {name: self._mcp_contract(name) for name in pack.plugins
+                       if name in self.config.plugin_mcp}
+        if mcp_plugins:
+            surfaces["mcp"] = {
+                "delivery": "host-plugin-opt-in", "runtimes": list(self.config.required_runtimes),
+                "plugins": mcp_plugins,
+            }
         plugin_hooks = {
             plugin: list(self.config.plugin_hooks[plugin])
             for plugin in pack.plugins
@@ -1439,13 +1569,26 @@ class CapabilityManager:
                 )
                 for plugin in self.config.plugins
             }
+            self._assert_active_digest_acknowledgements(
+                actual_plugin_hashes, tuple(active_receipt.get("plugins", {})) if active_receipt
+                else plugins,
+            )
         except (CapabilityError, OSError):
+            return False
+        if self.config.plugin_mcp and (
+            not active_receipt
+            or not self._mcp_receipt_matches(active_receipt, actual_plugin_hashes)
+        ):
             return False
         for plugin in plugins:
             metadata = locked_plugins.get(plugin)
             if not isinstance(metadata, dict) or not isinstance(metadata.get("sha256"), str):
                 return False
             if actual_plugin_hashes[plugin] != metadata["sha256"]:
+                return False
+            if plugin in self.config.plugin_mcp and metadata != self._plugin_metadata(
+                plugin, actual_plugin_hashes[plugin],
+            ):
                 return False
         lock_marketplaces = lock.get("marketplaces")
         receipt_marketplaces = active_receipt.get("marketplaces") if active_receipt else None
@@ -1605,12 +1748,7 @@ class CapabilityManager:
                 return False
         return all(
             (
-                metadata
-                == {
-                    "path": self.config.plugins[plugin],
-                    "package_kind": self.config.plugin_kinds[plugin],
-                    "sha256": digest,
-                }
+                metadata == self._plugin_metadata(plugin, digest)
                 if self.config.source_schema_version >= 3
                 else isinstance(metadata, dict) and metadata.get("sha256") == digest
             )
@@ -1704,14 +1842,18 @@ class CapabilityManager:
                 return False
         return True
 
-    def check(self, profile: str | None = None) -> dict[str, object]:
-        return self._execute("check", profile=profile, apply=False)
+    def check(self, profile: str | None = None, *, mcp: bool | None = None) -> dict[str, object]:
+        return self._execute("check", profile=profile, apply=False, mcp=mcp)
 
-    def sync(self, profile: str | None = None, *, apply: bool = False) -> dict[str, object]:
-        return self._execute("sync", profile=profile, apply=apply)
+    def sync(
+        self, profile: str | None = None, *, apply: bool = False, mcp: bool | None = None,
+    ) -> dict[str, object]:
+        return self._execute("sync", profile=profile, apply=apply, mcp=mcp)
 
-    def update(self, profile: str | None = None, *, apply: bool = False) -> dict[str, object]:
-        return self._execute("update", profile=profile, apply=apply)
+    def update(
+        self, profile: str | None = None, *, apply: bool = False, mcp: bool | None = None,
+    ) -> dict[str, object]:
+        return self._execute("update", profile=profile, apply=apply, mcp=mcp)
 
     def _expected_runtime_skills(self, lock: dict[str, object]) -> set[str]:
         plugins = lock.get("plugins")
@@ -1748,14 +1890,17 @@ class CapabilityManager:
         observed_skills: Sequence[str],
         observed_hooks: Sequence[str] = (),
         *,
+        observed_mcp: dict[str, object] | None = None,
         apply: bool = False,
     ) -> dict[str, object]:
         if runtime not in _RUNTIMES:
             raise CapabilityError(f"unsupported runtime attestation: {runtime}")
         if apply:
             with self._capability_apply_guard():
-                return self._attest(runtime, observed_skills, observed_hooks, apply=True)
-        return self._attest(runtime, observed_skills, observed_hooks, apply=False)
+                return self._attest(runtime, observed_skills, observed_hooks,
+                                    observed_mcp=observed_mcp, apply=True)
+        return self._attest(runtime, observed_skills, observed_hooks,
+                            observed_mcp=observed_mcp, apply=False)
 
     def _attest(
         self,
@@ -1763,6 +1908,7 @@ class CapabilityManager:
         observed_skills: Sequence[str],
         observed_hooks: Sequence[str],
         *,
+        observed_mcp: dict[str, object] | None,
         apply: bool,
     ) -> dict[str, object]:
         self._assert_capability_home_safe(allow_missing=True)
@@ -1817,6 +1963,14 @@ class CapabilityManager:
         runtime_verified = bool(
             isinstance(runtime_evidence, dict) and runtime_evidence.get("verified") is True
         )
+        mcp_valid = self._mcp_observations_valid(
+            lock, runtime, resolved_session, observed_mcp, runtime_evidence,
+        )
+        attestation_kind = (
+            "operator-observed-runtime-catalog-hooks-and-mcp"
+            if any(name in self.config.plugin_mcp for name in locked_plugins)
+            else "operator-observed-runtime-catalog-and-hooks"
+        )
         result: dict[str, object] = {
             "operation": "attest",
             "dry_run": not apply,
@@ -1826,9 +1980,10 @@ class CapabilityManager:
             "missing_hooks": missing_hooks,
             "runtime_verified": runtime_verified,
             "new_session": new_session,
-            "attestation_kind": "operator-observed-runtime-catalog-and-hooks",
+            "attestation_kind": attestation_kind,
+            "mcp_verified": mcp_valid,
             "ready_to_attest": (
-                not missing and not missing_hooks and runtime_verified and new_session
+                not missing and not missing_hooks and runtime_verified and new_session and mcp_valid
             ),
         }
         if not apply:
@@ -1841,6 +1996,8 @@ class CapabilityManager:
             raise CapabilityError(
                 "runtime hook discovery is missing expected hooks: " + ", ".join(missing_hooks)
             )
+        if not mcp_valid:
+            raise CapabilityError("MCP runtime evidence is missing, incomplete or stale")
         if not session_valid:
             raise CapabilityError(
                 "runtime attestation requires a valid session id exposed by the "
@@ -1871,7 +2028,8 @@ class CapabilityManager:
             "session_id": resolved_session,
             "observed_skills": sorted(observed),
             "observed_hooks": sorted(observed_hook_set),
-            "attestation_kind": "operator-observed-runtime-catalog-and-hooks",
+            "attestation_kind": attestation_kind,
+            **({"observed_mcp": observed_mcp} if observed_mcp else {}),
             "attested_at": timestamp,
         }
         active_receipt["updated_at"] = timestamp
@@ -1879,9 +2037,53 @@ class CapabilityManager:
         result.update({"dry_run": False, "status": "attested", "attested_at": timestamp})
         return result
 
-    def _discovery_evidence(self, lock: dict[str, object]) -> dict[str, object]:
+    def _mcp_observations_valid(
+        self, lock: dict[str, object], runtime: str, session: object,
+        observations: object, runtime_evidence: object = None,
+    ) -> bool:
+        plugins = lock.get("plugins")
+        if not isinstance(plugins, dict):
+            return False
+        expected = set(plugins) & set(self.config.plugin_mcp)
+        if not expected:
+            return not observations
+        if not isinstance(observations, dict) or set(observations) != expected:
+            return False
+        if not isinstance(session, str):
+            return False
+        if runtime_evidence is None:
+            executable = "claude" if runtime == "claude-code" else "codex"
+            runtime_evidence = self._probe_runtime(
+                executable, ["plugin", "list", "--json"],
+                {name: {"sha256": digest} for name, digest in
+                 (_read_json(self.active_receipt_path) or {}).get("plugins", {}).items()},
+            )
+        if not isinstance(runtime_evidence, dict) or runtime_evidence.get("verified") is not True:
+            return False
+        installed_plugins = runtime_evidence.get("plugins")
+        if not isinstance(installed_plugins, dict):
+            return False
+        for name in expected:
+            installed = installed_plugins.get(name)
+            metadata = plugins.get(name)
+            if (not isinstance(installed, dict) or installed.get("status") != "enabled"
+                    or not isinstance(installed.get("installed_path"), str)
+                    or not isinstance(metadata, dict)
+                    or not isinstance(metadata.get("sha256"), str)):
+                return False
+            if not validate_mcp_observation(
+                observations[name], digest=metadata["sha256"], runtime=runtime, session=session,
+                installed=Path(installed["installed_path"]), provider=self.active_path,
+            ):
+                return False
+        return True
+
+    def _discovery_evidence(
+        self, lock: dict[str, object], *, consumer_key: str | None = None,
+    ) -> dict[str, object]:
         self._assert_capability_home_safe(allow_missing=True)
         active_receipt = _read_json(self.active_receipt_path)
+        consumer_key = consumer_key or _consumer_key(self.project_root)
         source = lock.get("source")
         plugins = lock.get("plugins")
         commit = source.get("commit") if isinstance(source, dict) else None
@@ -1899,7 +2101,7 @@ class CapabilityManager:
             else None
         )
         consumer_sessions = (
-            installation_sessions.get(_consumer_key(self.project_root))
+            installation_sessions.get(consumer_key)
             if isinstance(installation_sessions, dict)
             else None
         )
@@ -1907,7 +2109,7 @@ class CapabilityManager:
         if isinstance(active_receipt, dict):
             discovery = active_receipt.get("discovery")
             if isinstance(discovery, dict):
-                candidate = discovery.get(_consumer_key(self.project_root))
+                candidate = discovery.get(consumer_key)
                 if isinstance(candidate, dict):
                     consumer_receipts = candidate
 
@@ -1954,9 +2156,20 @@ class CapabilityManager:
                 status = "hooks-missing"
             elif (
                 expected_hooks
-                and receipt.get("attestation_kind") != "operator-observed-runtime-catalog-and-hooks"
+                and receipt.get("attestation_kind") not in {
+                    "operator-observed-runtime-catalog-and-hooks",
+                    "operator-observed-runtime-catalog-hooks-and-mcp",
+                }
             ):
                 status = "hook-attestation-invalid"
+            elif not self._mcp_observations_valid(
+                lock, runtime, session_id, receipt.get("observed_mcp"),
+            ):
+                status = "mcp-attestation-invalid"
+            elif any(name in self.config.plugin_mcp for name in plugins) and receipt.get(
+                "attestation_kind"
+            ) != "operator-observed-runtime-catalog-hooks-and-mcp":
+                status = "mcp-attestation-invalid"
             else:
                 status = "verified"
             evidence[runtime] = {
@@ -1967,6 +2180,17 @@ class CapabilityManager:
             }
             if required:
                 verified = verified and status == "verified"
+        if verified and any(name in self.config.plugin_mcp for name in plugins):
+            for name in set(plugins) & set(self.config.plugin_mcp):
+                signatures = {
+                    (consumer_receipts[runtime]["observed_mcp"][name]["tools_list"]["sha256"],
+                     consumer_receipts[runtime]["observed_mcp"][name]["tools_list"]["bytes"])
+                    for runtime in self.config.required_runtimes
+                }
+                if len(signatures) != 1:
+                    verified = False
+                    for runtime in self.config.required_runtimes:
+                        evidence[runtime]["status"] = "mcp-schema-parity-mismatch"
         return {
             "status": "verified" if verified else "incomplete",
             "required_runtimes": list(self.config.required_runtimes),
@@ -2257,7 +2481,9 @@ class CapabilityManager:
                 verified = False
             else:
                 try:
-                    actual = _tree_digest(installed_path)
+                    actual = _validate_plugin(
+                        installed_path, name, package_kind=self.config.plugin_kinds[name],
+                    ) if name in self.config.plugin_mcp else _tree_digest(installed_path)
                 except CapabilityError:
                     actual = None
                 if actual != expected:
@@ -2274,9 +2500,11 @@ class CapabilityManager:
                     }
         return {"verified": verified, "plugins": evidence}
 
-    def _execute(self, operation: str, *, profile: str | None, apply: bool) -> dict[str, object]:
+    def _execute(
+        self, operation: str, *, profile: str | None, apply: bool, mcp: bool | None = None,
+    ) -> dict[str, object]:
         lock = self._load_lock()
-        resolved_profile, pack = self._profile(profile, lock)
+        resolved_profile, pack = self._profile(profile, lock, mcp)
         selected_plugins = pack.plugins
         selected_agents = pack.agents
         selected_commands = pack.commands
@@ -2300,14 +2528,14 @@ class CapabilityManager:
         )
         if pending_local_update:
             self._use_receipt_bound_active_config()
-            resolved_profile, pack = self._profile(profile, lock)
+            resolved_profile, pack = self._profile(profile, lock, mcp)
             selected_plugins = pack.plugins
             selected_agents = pack.agents
             selected_commands = pack.commands
             remote_commit = self.git.resolve(self.config.source_url, self.config.source_ref)
         if (
             operation == "sync"
-            and self.config.source_schema_version == 4
+            and self.config.source_schema_version >= 4
             and isinstance(locked_commit, str)
             and _SHA.fullmatch(locked_commit)
             and locked_commit != remote_commit
@@ -2353,10 +2581,11 @@ class CapabilityManager:
                 checkout,
             )
             if operation == "update" and not pending_local_update:
-                self.config = load_capability_config(
-                    checkout / "config" / "capability-sources.json"
+                self.config = self._with_mcp_acknowledgements(
+                    load_capability_config(checkout / "config" / "capability-sources.json"),
+                    self.config.active_digest_acknowledgements,
                 )
-                resolved_profile, pack = self._profile(profile, lock)
+                resolved_profile, pack = self._profile(profile, lock, mcp)
                 selected_plugins = pack.plugins
                 selected_agents = pack.agents
                 selected_commands = pack.commands
@@ -2368,7 +2597,10 @@ class CapabilityManager:
                 )
                 for name, path in self.config.plugins.items()
             }
-            self._assert_active_digest_acknowledgements(plugin_hashes)
+            active_names = registry.get("active_plugins", {})
+            self._assert_active_digest_acknowledgements(
+                plugin_hashes, tuple(set(selected_plugins) | set(active_names)),
+            )
             marketplace_hashes = _validate_marketplaces(checkout, self.config)
             for name, expected_skills in self.config.plugin_skills.items():
                 actual_skills = {
@@ -2786,6 +3018,16 @@ class CapabilityManager:
                     target.parent.mkdir(parents=True, exist_ok=True)
                     shutil.copytree(source, target)
 
+                staged_hashes = {
+                    name: _validate_plugin(staged_active / path, name,
+                                           package_kind=self.config.plugin_kinds[name])
+                    for name, path in self.config.plugins.items()
+                }
+                staged_marketplaces = _validate_marketplaces(staged_active, self.config)
+                if staged_hashes != plugin_hashes or staged_marketplaces != marketplace_hashes:
+                    raise CapabilityError("staged capability inventory drift")
+                self._assert_active_digest_acknowledgements(staged_hashes, selected_plugins)
+
                 backup = self.capability_home / ".active.previous"
                 if self.active_path.is_symlink() or (
                     self.active_path.exists() and not self.active_path.is_dir()
@@ -2864,6 +3106,11 @@ class CapabilityManager:
                             raise CapabilityError("global consumer registry entry is invalid")
                         active_hashes = {plugin: plugin_hashes[plugin] for plugin in active_names}
                     candidate_active_plugins = tuple(sorted(active_hashes))
+                    self._assert_active_digest_acknowledgements(
+                        plugin_hashes, candidate_active_plugins,
+                    )
+                    if MCP_NAME in active_hashes and sys_platform() == "win32":
+                        raise CapabilityError("MCP native Windows activation is not admitted")
                     registry["schema_version"] = 3 if can_migrate else 2
                     registry["active_commit"] = commit
                     registry["active_plugins"] = active_hashes
@@ -2892,11 +3139,7 @@ class CapabilityManager:
                         },
                         "profile": profile,
                         "plugins": {
-                            plugin: {
-                                "path": self.config.plugins[plugin],
-                                "package_kind": self.config.plugin_kinds[plugin],
-                                "sha256": plugin_hashes[plugin],
-                            }
+                            plugin: self._plugin_metadata(plugin, plugin_hashes[plugin])
                             for plugin in selected_plugins
                         },
                         "marketplaces": {
@@ -2946,6 +3189,9 @@ class CapabilityManager:
                         "source_url": self.config.source_url,
                         "plugins": active_hashes,
                         "materialized_plugins": plugin_hashes,
+                        **({"mcp_packages": self._mcp_packages(plugin_hashes),
+                            "mcp_digest_acknowledgements": self._mcp_digest_acknowledgements()}
+                           if self.config.plugin_mcp else {}),
                         "marketplaces": {
                             path: {"sha256": digest} for path, digest in marketplace_hashes.items()
                         },
@@ -3085,12 +3331,25 @@ class CapabilityManager:
             receipt_schema = previous_active_receipt.get("schema_version")
             if receipt_schema not in {1, 2}:
                 return False
+            if self.config.plugin_mcp and receipt_schema != 2:
+                return False
+            if self.config.plugin_mcp and previous_active_receipt.get(
+                "mcp_digest_acknowledgements"
+            ) != self._mcp_digest_acknowledgements():
+                return False
             restored_lock = self._load_lock()
             lock_schema = restored_lock.get("schema_version") if restored_lock else None
             registry = self._load_registry()
             registry_schema = registry.get("schema_version")
             if lock_schema not in {None, 1, 2} or registry_schema not in {1, 2, 3}:
                 return False
+            if restored_lock and isinstance(restored_lock.get("plugins"), dict):
+                for name, metadata in restored_lock["plugins"].items():
+                    if name in self.config.plugin_mcp and (
+                        lock_schema != 2 or not isinstance(metadata, dict)
+                        or metadata != self._plugin_metadata(name, previous_plugins.get(name))
+                    ):
+                        return False
             if (lock_schema == 2 or registry_schema == 2) and receipt_schema != 2:
                 return False
             try:
@@ -3103,7 +3362,12 @@ class CapabilityManager:
                     )
                     for name, path in self.config.plugins.items()
                 }
+                self._assert_active_digest_acknowledgements(
+                    actual_materialized, tuple(previous_plugins),
+                )
             except (CapabilityError, OSError):
+                return False
+            if not self._mcp_receipt_matches(previous_active_receipt, actual_materialized):
                 return False
             if receipt_schema == 2:
                 materialized = previous_active_receipt.get("materialized_plugins")
@@ -3237,7 +3501,10 @@ class CapabilityManager:
             "next_step": (
                 "start new sessions for every required runtime, review and trust the exact "
                 "installed hook digest, attest each discovered skill catalog and observed "
-                "hook, then run capability finalize --apply --after-restart"
+                "hook, "
+                + ("supply --mcp-evidence for installed digest, exact tools, safe calls and B4, "
+                   if MCP_NAME in selected_plugins else "")
+                + "then run capability finalize --apply --after-restart"
             ),
         }
 

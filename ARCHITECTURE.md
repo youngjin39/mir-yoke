@@ -57,8 +57,11 @@ process and exposes no `yoke` composer.
   becoming a Project Agent Kit payload.
 - **Plugin provider** — `plugins/` and marketplace manifests publish three role-oriented,
   skills-only packages plus the exact read-only `mir-lifecycle-hooks` package. All four are shared
-  by Claude and Codex. Project-coupled hooks still require repository-owned adapters. No MCP server
-  or MCP plugin currently exists. Version 0.9.1 adds the on-demand
+  by Claude and Codex. The separate, read-only stdio `mir-mcp` package has schema-5
+  admission under ADR-91 and requires explicit selection, an exact human digest
+  acknowledgement and MCP-specific runtime evidence. No default Profile selects it.
+  Project-coupled hooks and MCP configuration still require repository-owned adapters.
+  Version 0.9.1 adds the on-demand
   `mir-core:selective-relations` SRR skill, with pointers from `mir-code:bluebricks` and
   `mir-content:knowledge` when a bounded question has declared typed relationship evidence. It does
   not guarantee token savings, require per-repository database migration, or generate graphs.

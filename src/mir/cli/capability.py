@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 
 from mir.core.capabilities import CapabilityConfigError, CapabilityError, CapabilityManager
+from mir.core.capabilities.mcp import closed_json
 
 from ._changes import changed_paths, snapshot_project
 
@@ -20,6 +21,14 @@ def _parser() -> argparse.ArgumentParser:
         command = subcommands.add_parser(name)
         _add_common_options(command)
         command.add_argument("--profile")
+        if name != "status":
+            command.add_argument(
+                "--mcp",
+                action=argparse.BooleanOptionalAction,
+                default=None,
+                help=("explicitly select mir-mcp (or remove it with --no-mcp); "
+                      "otherwise retain the lock"),
+            )
         if name in {"sync", "update"}:
             command.add_argument(
                 "--apply",
@@ -51,6 +60,11 @@ def _parser() -> argparse.ArgumentParser:
         help="operator-observed namespaced hook from the current runtime session",
     )
     attest.add_argument("--apply", action="store_true")
+    attest.add_argument(
+        "--mcp-evidence",
+        type=Path,
+        help="JSON object of operator-observed MCP evidence keyed by package name",
+    )
     return parser
 
 
@@ -82,22 +96,39 @@ def main(argv: list[str] | None = None) -> int:
         if namespace.command == "status":
             result = manager.status(namespace.profile)
         elif namespace.command == "check":
-            result = manager.check(namespace.profile)
+            result = manager.check(
+                namespace.profile, **({"mcp": namespace.mcp} if namespace.mcp is not None else {})
+            )
         elif namespace.command == "sync":
-            result = manager.sync(namespace.profile, apply=namespace.apply)
+            result = manager.sync(
+                namespace.profile,
+                apply=namespace.apply,
+                **({"mcp": namespace.mcp} if namespace.mcp is not None else {}),
+            )
         elif namespace.command == "update":
-            result = manager.update(namespace.profile, apply=namespace.apply)
+            result = manager.update(
+                namespace.profile,
+                apply=namespace.apply,
+                **({"mcp": namespace.mcp} if namespace.mcp is not None else {}),
+            )
         elif namespace.command == "finalize":
             result = manager.finalize(
                 apply=namespace.apply,
                 after_restart=namespace.after_restart,
             )
         elif namespace.command == "attest":
+            mcp_evidence = {}
+            if namespace.mcp_evidence is not None:
+                try:
+                    mcp_evidence["observed_mcp"] = closed_json(namespace.mcp_evidence)
+                except (ValueError, OSError) as exc:
+                    raise CapabilityError("cannot read MCP evidence JSON object") from exc
             result = manager.attest(
                 namespace.runtime,
                 namespace.observed_skill,
                 namespace.observed_hook,
                 apply=namespace.apply,
+                **mcp_evidence,
             )
         else:  # pragma: no cover - argparse owns the command choices
             return 2

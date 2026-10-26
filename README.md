@@ -67,10 +67,14 @@ plugin is installed explicitly in the agent host; it is not copied into a target
 readiness requirement. Three role plugins group the common workflows formerly copied into
 repositories: core, code, and content. A fourth `mir-lifecycle-hooks` plugin supplies the same
 read-only `SessionStart` continuity reminder and supporting skill to Claude and Codex. Its exact
-handler digest is acknowledged by schema 4, and it has no repository, file, environment, or network
+handler digest is acknowledged by schema 4+, and it has no repository, file, environment, or network
 access. [ADR-90](docs/decisions/adr-90-role-plugins-and-common-hooks.md) keeps all project-coupled
-hooks behind repository-owned adapters. Yoke has no registered or implemented MCP server, so
-`.mcp.json.example` remains inactive guidance instead of an empty MCP plugin.
+hooks behind repository-owned adapters. The separate `mir-mcp` package supplies five read-only
+stdio tools under [ADR-91](docs/decisions/adr-91-stdio-mcp-package-admission.md).
+Schema 5 admits its exact package shape; no default Profile selects it. Registration requires
+an explicit `mir capability sync --mcp --apply` and an owner-acknowledged tree digest.
+Fresh MCP-specific evidence from both runtimes is required before finalization; source tests
+do not establish runtime readiness. `.mcp.json.example` remains inactive target-local guidance.
 Codex still requires the operator to review and trust the current hook hash in a fresh session;
 installing or enabling the plugin alone does not prove hook execution.
 The real-CLI probe installs all four packages into isolated Claude and Codex homes and verifies

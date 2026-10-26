@@ -27,6 +27,10 @@ def _plugin_inventory() -> dict[str, tuple[str, ...]]:
     for name, metadata in plugins.items():
         if not isinstance(name, str) or not isinstance(metadata, dict):
             raise RuntimeError("capability source plugin inventory is invalid")
+        # This probe proves skill installation only. MCP needs its own fresh
+        # receipts and must never be selected by a skills-only activation check.
+        if metadata.get("package_kind") == "mcp-stdio":
+            continue
         skills = metadata.get("skills")
         if not isinstance(skills, list) or not all(
             isinstance(skill, str) for skill in skills

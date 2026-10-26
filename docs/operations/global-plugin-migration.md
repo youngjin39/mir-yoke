@@ -13,8 +13,9 @@ cross-repository write, deletion, commit, or push.
 The published packages group common work by role (`mir-core`, `mir-code`, and `mir-content`). Do not
 copy their common skill bodies back into repositories. ADR-90's `mir-lifecycle-hooks` is the fourth
 current package and contains only one acknowledged, read-only `SessionStart` reminder plus its
-supporting skill. Repository-coupled hooks remain local. The current MCP inventory is empty, so
-there is no `mir-mcp` package to install.
+supporting skill. Repository-coupled hooks remain local. ADR-91 adds the separate, opt-in
+`mir-mcp` stdio package. Marketplace availability does not select it; none of the default
+Profiles includes it. Its owner acknowledgement and live B4 evidence remain separate gates.
 
 This runbook describes the primary macOS host flow. Linux and WSL are separate compatibility lanes
 with separate user homes and receipts. Native Windows must not execute these commands as a claimed
@@ -131,6 +132,61 @@ tree matches the lock digest, the required runtime has complete skill and hook d
 and the canary has no standalone collisions.
 Register each additional clean repository with `sync --apply`; the one-version consumer registry
 refuses a divergent digest.
+
+### Optional MCP admission and receipts
+
+Only `mir-mcp` at `plugins/mir-mcp` is admitted as `mcp-stdio`. Generic `mcp` stays reserved.
+Before selecting it, the owner must review its computed tree SHA256 and record that exact value
+in the consumer's own `<consumer-root>/config/capability-sources.json`, at
+`active_package_digest_acknowledgements["mir-mcp"]`. When using `--config`, edit that explicit
+consumer-owned configuration instead. The provider's configuration cannot renew this approval.
+This source change supplies no acknowledgement.
+Any changed byte invalidates an existing acknowledgement. Status reports local drift; it does
+not claim that a previously running process has stopped.
+
+To renew approval, first review the exact candidate checkout and compute its package digest
+from a Yoke CLI environment:
+
+```sh
+uv run --no-sync python -c 'from pathlib import Path; from mir.core.capabilities.manager import _tree_digest; print(_tree_digest(Path("/absolute/reviewed-yoke/plugins/mir-mcp")))'
+```
+
+Manually set the consumer-local JSON entry above to that full 64-character digest, then run
+`mir capability update --mcp --apply --project-root /absolute/consumer-root` (include
+`--config /absolute/consumer-owned-config.json` when applicable). For first selection, use
+`mir capability sync --mcp --apply` from the consumer root. Approval must precede the update;
+a provider update that changes both bytes and its own approval fails until this local edit.
+The active receipt's `mcp_digest_acknowledgements` preserves the prior state's approval for
+rollback. Rollback checks it against the restored inventory and bytes before re-registration;
+it does not renew approval for a different digest. Hook update behavior is unchanged.
+
+Use `sync --mcp --apply` to select it explicitly and `sync --no-mcp --apply` to remove that
+consumer's selection. Omitting either option retains its lock selection. A peer consumer's
+selection keeps the host registration active. Selection is host-wide at user scope, so sessions
+in other repositories can see these tools. No consumer runtime settings or policy are merged.
+Native Windows activation is refused; macOS, Linux and WSL require independent runtime evidence.
+
+From each fresh runtime session outside the provider checkout, pass `attest --mcp-evidence
+/absolute/receipt.json` alongside the observed skills/hooks. The JSON object must be keyed by
+`mir-mcp`; each observation has these fields:
+
+| Field | Required observation |
+| --- | --- |
+| `installed_sha256`, `server` | Exact installed tree digest and `mir-mcp`. |
+| `client`, `client_version`, `session_id`, `session_cwd` | Runtime key, observed version, current exported session ID, absolute session working directory outside the provider. |
+| `platform`, `interpreter` | `macos`, `linux` or `wsl`; `{executable,version}` for an absolute Python path and Python 3.9+. |
+| `launcher` | `{command:"python3",args:["-I","-B","-u","<installed-root>/mir_mcp.py"],env:{}}`. |
+| `protocol_version` | Observed `2026-07-28` or `2025-11-25`. |
+| `tools` | Ordered `{name,raw_name}` entries for `ontology_validate`, `ontology_lookup`, `ontology_impact`, `handoff_pins`, `relations_query`; preserve raw host-prefixed names. |
+| `safe_calls` | Exactly those five names, each with `{arguments,result_sha256,is_error:false,ok:true}` from a bounded successful call. Copy `ok` from the structured result; an MCP `isError` response is not successful. Arguments must satisfy that tool's closed input schema, including required fields, types and bounds, and the absolute `target_root`. |
+| `tools_list` | `{sha256,bytes,tokens,tokenizer,initial_tokens,after_call_tokens,deferred_loading}` for the complete deterministically serialized tool-list result. Bytes must be at most 16384 and tokens at most 6000; record the accounting method and both measured loads. |
+
+`deferred_loading` is `observed` or `eager`; recording eager loading does not claim deferred
+loading or savings. Missing counters cannot pass B4 evidence. Both runtime receipts must agree
+on the serialized tool-list SHA256 and byte count. These are operator observations, not values
+inferred from manifests or skill discovery. Finalization revalidates installed bytes, the complete
+materialized inventory, acknowledgement, both receipts and schema parity. Source tests alone
+do not establish B4 or runtime readiness.
 
 ## 5. Optional user-level agents and commands
 

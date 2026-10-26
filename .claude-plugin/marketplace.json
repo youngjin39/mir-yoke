@@ -7,6 +7,14 @@
   },
   "plugins": [
     {
+      "name": "mir-mcp",
+      "source": "./plugins/mir-mcp",
+      "description": "Opt-in read-only stdio ontology and relation tools.",
+      "version": "0.13.31",
+      "author": {"name": "Harness Contributors"},
+      "category": "Development"
+    },
+    {
       "name": "mir-core",
       "source": "./plugins/mir-core",
       "description": "Architecture, governance, memory, and verification skills.",
