@@ -156,9 +156,29 @@ Manually set the consumer-local JSON entry above to that full 64-character diges
 `--config /absolute/consumer-owned-config.json` when applicable). For first selection, use
 `mir capability sync --mcp --apply` from the consumer root. Approval must precede the update;
 a provider update that changes both bytes and its own approval fails until this local edit.
-The active receipt's `mcp_digest_acknowledgements` preserves the prior state's approval for
+The active receipt's `consumer_digest_acknowledgements` preserves the prior state's approval for
 rollback. Rollback checks it against the restored inventory and bytes before re-registration;
-it does not renew approval for a different digest. Hook update behavior is unchanged.
+it does not renew approval for a different digest. A receipt written before 0.13.35 holds only
+`mcp_digest_acknowledgements`; rollback still reads it and takes the hook approval from the
+current consumer configuration, never from a provider configuration.
+
+Hook updates follow the same rule (ADR-91 amendment, 2026-10-27). Only the consumer-owned
+configuration acknowledges `mir-lifecycle-hooks`; a provider-only or bundled configuration's
+value does not count, and a consumer with no configuration of its own cannot select the hook
+package. A provider update that changes the hook bytes fails closed with a message naming the
+file and `active_package_digest_acknowledgements.mir-lifecycle-hooks`. To renew it, review the
+candidate checkout and compute the hook package digest:
+
+```sh
+uv run --no-sync python -c 'from pathlib import Path; from mir.core.capabilities.manager import _tree_digest; print(_tree_digest(Path("/absolute/reviewed-yoke/plugins/mir-lifecycle-hooks")))'
+```
+
+Set `active_package_digest_acknowledgements["mir-lifecycle-hooks"]` in the consumer-owned
+configuration to that full digest, then run `mir capability update --apply --project-root
+/absolute/consumer-root` (add `--mcp` when `mir-mcp` is selected, and `--config` when
+applicable). A repository whose consumer-owned configuration is its own tracked
+`config/capability-sources.json`, such as a Yoke checkout, keeps working while that file holds
+the exact digest.
 
 Use `sync --mcp --apply` to select it explicitly and `sync --no-mcp --apply` to remove that
 consumer's selection. Omitting either option retains its lock selection. A peer consumer's

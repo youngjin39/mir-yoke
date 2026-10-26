@@ -1,63 +1,61 @@
 # Plan
 
-## Active task: release 0.13.34 (`mir-mcp` Codex launcher fix) (2026-10-27)
+## Active task: release 0.13.35 (consumer-local hook acknowledgement) (2026-10-27)
 
-Intent authority: the owner's release-chain and B4 approvals (Discord
-1564297975755448493, 1564320227062186065) and session instruction to use Claude
+Intent authority: the owner's decision to apply the consumer-local acknowledgement rule
+to the hook package (Discord 1564336518967857153), the release-chain approvals (Discord
+1564297975755448493, 1564320227062186065) and the session instruction to use Claude
 writers (Discord 1564282799035523227), relayed by Mir Harness Main (parent-supplied).
-Design authority: this cursor and the 2026-10-27 amendment to
-[ADR-91](../docs/decisions/adr-91-stdio-mcp-package-admission.md). Baseline: f1f1fab
-on `main` (tag v0.13.33, pushed, released).
+Design authority: this cursor and the 2026-10-27 amendments to
+[ADR-91](../docs/decisions/adr-91-stdio-mcp-package-admission.md) and
+[ADR-88](../docs/decisions/adr-88-active-plugin-component-admission.md). Baseline: f515bd0
+on `main` (v0.13.34).
 
 Prior cursor preserved verbatim:
-[cursor before release 0.13.34](change_log.md#cursor-before-release-01334-2026-10-27).
+[cursor before release 0.13.35](change_log.md#cursor-before-release-01335-2026-10-27).
 
-Defect (observed by Main on the host, 2026-10-27, parent-supplied log excerpt): after
-installing 0.13.33, Codex passed `${PLUGIN_ROOT}/mir_mcp.py` literally, resolved it
-against the session working directory, and the server never answered `initialize`.
-Claude Code expands `${CLAUDE_PLUGIN_ROOT}` and called all five tools. A bundled Codex
-plugin uses `"cwd": "."`, which Codex resolves to the installed plugin root.
+Slice A (already in the working tree, kept): `_enrolled_plugin_matches` lets a consumer
+enrolled with an older well-formed `mir-mcp` contract update, and the dry run shares the
+apply enrollment verdict.
 
-Root cause: `plugins/mir-mcp/.mcp.codex.json` declared the script as
-`${PLUGIN_ROOT}/mir_mcp.py`, and the closed validator
-(`src/mir/core/capabilities/mcp.py` `validate_mcp_package`) required that form.
-
-Design: the Codex declaration becomes
-`{command:"python3",args:["-I","-B","-u","./mir_mcp.py"],cwd:".",env_vars:[]}`; `cwd`
-is admitted only as `"."`. The server resolves bundled modules from its own resolved
-file path, so loading is unchanged. The locked Codex launcher adds `cwd:"."`; Codex
-attestation evidence must be
-`{command:"python3",args:["-I","-B","-u","./mir_mcp.py"],cwd:"<installed-root>",env:{}}`.
-Claude's declaration, locked launcher and evidence form are unchanged. The release
-follows the 0.13.33 pattern: bump current surfaces without historical rewrites, renew
-the `mir-lifecycle-hooks` acknowledgement (no `mir-mcp` provider acknowledgement), add
-CHANGELOG, README and MIGRATION entries, and regenerate the adopter payload last.
-`.mir/capability-lock.json` belongs to the separate bind commit.
+Slice B rule: `skills-hooks` packages follow the `mcp-stdio` acknowledgement rule
+(ADR-91 §4.8 items 1–2, ADR-88 §2.2 item 4).
+1. Only the consumer-owned config (`<consumer-root>/config/capability-sources.json` or the
+   explicit `--config`) supplies a hook acknowledgement; provider-only and bundled configs
+   never do.
+2. Selecting or updating to hook bytes requires that acknowledgement to equal the exact
+   tree digest; a provider update that changes both bytes and its own acknowledgement fails
+   closed with a message naming the file and key.
+3. The active receipt's `consumer_digest_acknowledgements` (replacing
+   `mcp_digest_acknowledgements`) preserves the prior hook and MCP approvals; restore
+   re-validates against them. Legacy receipts stay readable; their hook approval comes from
+   the current consumer, never a provider config.
+4. A checkout whose consumer-owned config is its own repository config keeps working while
+   that config holds the exact digest.
 
 Request matrix (initially open):
-1. Fail-first test launching `.mcp.codex.json` as Codex does (verbatim args, `cwd:"."`
-   resolved to an isolated package copy) with `initialize` and `tools/list`.
-2. Codex declaration in cwd-relative form; `.mcp.claude.json` unchanged.
-3. Closed validator, per-runtime attestation launcher, locked launchers, their tests and
-   the operator table updated without loosening any check.
-4. ADR-91 dated amendment.
-5. Version surfaces, lifecycle acknowledgement, release notes, this cursor; adopter
-   payload regenerated last.
-6. Focused tests, ruff, `git diff --check`; no new bytecode under `plugins/mir-mcp`.
+1. Fail-first tests for rules 1–3 replacing the slice-2 "hook update unchanged" test,
+   with a consumer-only rollback acknowledgement and a legacy-receipt test.
+2. Manager change; every existing `mir-mcp` acknowledgement test stays green.
+3. Migration guide hook sentence and renewal procedure; ADR-91 and ADR-88 amendments.
+4. Version surfaces, this checkout's lifecycle acknowledgement, CHANGELOG, MIGRATION,
+   README, this cursor; adopter payload regenerated last.
+5. Focused tests, ruff, `git diff --check`.
 
-Constraints: no commits, tags, pushes, sub-agents, capability-lock edits, real
-runtime homes or host `mir capability` operations. Scratch stays under the
-owner-specified external cache directory. Main runs the full suite at acceptance.
+Constraints: no commits, tags, pushes, sub-agents, capability-lock edits, real runtime
+homes or host `mir capability` operations. Scratch stays under the owner-specified
+external cache directory. Main runs the full suite at acceptance.
 
-Observed (2026-10-27, Claude writer): items 1-6 checked; the payload regeneration
-follows this note. On the unfixed declaration,
-`test_codex_declaration_launches_without_variable_expansion` failed under both host
-interpreters with the host error (`can't open file '<session cwd>/${PLUGIN_ROOT}/mir_mcp.py'`).
-After the fix it passes on system Python 3.9 and venv 3.12; `initialize`, `tools/list` and
-an `ontology_validate` call that loads the bundled checker succeed from `cwd:"."` with
-`-I`, and no bytecode is written. Focused `mir-mcp`, capability, plugin-package and
-payload/template tests: `821 passed`. Ruff and `git diff --check` pass; no new `.pyc`
-under `plugins/`. New tree digests: `mir-lifecycle-hooks`
-2aace0403313189fce0c663783dfa5c6f314ce8efddc4599a6ffbd37e4f20a78, `mir-mcp`
-935d6a872f84ddc42f24c8871366c0456d5179f0c5b337d76db6ddddcad8c4c8. No release, binding,
+Observed (2026-10-27, Claude writer): items 1-5 checked; the payload regeneration
+follows this note. Before the fix, the new and changed tests failed (9 failed, 11 passed
+in the selected `tests/test_capability_mcp.py` subset): the provider-renewed hook update
+did not raise, provider-only configs still carried the hook acknowledgement, the receipt
+had no `consumer_digest_acknowledgements`, and a consumer-owned hook acknowledgement
+was replaced by the provider's on update. After the fix, focused capability, `mir-mcp`
+and plugin-package tests: 481 passed, 1 failed. The failure is
+`test_repository_lock_is_portable_and_matches_managed_trees`, because the version bump
+changes tree digests that `.mir/capability-lock.json` binds; that is the separate bind
+commit. Ruff and `git diff --check` pass. New tree digests: `mir-lifecycle-hooks`
+ce1f5078cf61ea8bd04897863d7f68cb6445e1444e3743434452a1d60c671ecc, `mir-mcp`
+e6d8adc6268d65b4af0739d49522c7c3ef6715a96835670292f0ec569013763d. No release, binding,
 full-suite or runtime readiness is claimed.

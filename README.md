@@ -52,7 +52,7 @@ immutable release:
 
 ```bash
 uv tool install --force --link-mode copy \
-  "git+https://github.com/youngjin39/mir-yoke.git@v0.13.34"
+  "git+https://github.com/youngjin39/mir-yoke.git@v0.13.35"
 mir --help
 ```
 
@@ -136,6 +136,10 @@ unchanged.
 Version 0.13.34 fixes the `mir-mcp` Codex launcher: Codex starts the server from the
 installed plugin root (`cwd: "."`) with a relative script path, because it does not expand
 `${PLUGIN_ROOT}`. The Claude launcher is unchanged.
+
+Version 0.13.35 applies the consumer-local acknowledgement rule to the `mir-lifecycle-hooks`
+package: only the consumer's own capability configuration approves its exact digest, as for
+`mir-mcp`. It also lets consumers enrolled with an older `mir-mcp` launcher update again.
 
 ### Platform use
 

@@ -167,6 +167,8 @@ _PLUGIN_VERSION = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 _SESSION_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,255}$")
 _CONSUMER_BINDING = re.compile(r"^[0-9a-f]{64}$")
 _RUNTIMES = ("claude-code", "codex-cli-desktop")
+# Active package kinds whose digest approval only the consumer-owned config can supply.
+_CONSUMER_ACKNOWLEDGED_KINDS = frozenset({"mcp-stdio", "skills-hooks"})
 _DERIVATIVE_STATIC_PATHS = (
     "AGENTS.md",
     ".agents/skills",
@@ -756,8 +758,8 @@ class CapabilityManager:
             else self.config_path
         )
         if self._provider_only:
-            # A provider-supplied config never carries a consumer's MCP approval.
-            self.config = self._with_mcp_acknowledgements(self.config, {})
+            # A provider-supplied config never carries a consumer's active-package approval.
+            self.config = self._with_consumer_acknowledgements(self.config, {})
         if capability_home is None and "MIR_CAPABILITY_HOME" not in os.environ:
             verified_provider_home = _configured_provider_home(
                 self.codex_home, self.config.source_url
@@ -1314,7 +1316,14 @@ class CapabilityManager:
                 )
                 for plugin, path in self.config.plugins.items()
             }
-            self._assert_active_digest_acknowledgements(actual, tuple(plugins))
+            # A provider-only observer has no approval of its own; it checks the approval the
+            # activating consumer recorded, never the provider configuration's.
+            acknowledgements = (
+                self._receipt_acknowledgements(receipt) if self._provider_only else None
+            )
+            if self._provider_only and acknowledgements is None:
+                return False
+            self._assert_active_digest_acknowledgements(actual, tuple(plugins), acknowledgements)
         except (CapabilityError, OSError):
             return False
         return (
@@ -1354,7 +1363,7 @@ class CapabilityManager:
         if receipt.get("source_url") != config.source_url:
             raise CapabilityError("active provider configuration source drift")
         self.config_path = config_path
-        self.config = self._with_mcp_acknowledgements(
+        self.config = self._with_consumer_acknowledgements(
             config, self.config.active_digest_acknowledgements,
         )
 
@@ -1367,48 +1376,78 @@ class CapabilityManager:
         if receipt.get("config_sha256") != _file_digest(config_path):
             return None
         previous = self.config
-        acknowledgements = receipt.get("mcp_digest_acknowledgements", {})
-        if not isinstance(acknowledgements, dict):
+        acknowledgements = self._receipt_acknowledgements(receipt)
+        if acknowledgements is None:
             return None
-        self.config = self._with_mcp_acknowledgements(
+        self.config = self._with_consumer_acknowledgements(
             load_capability_config(config_path), acknowledgements,
         )
         return previous
 
+    def _receipt_acknowledgements(self, receipt: dict[str, object]) -> dict[str, str] | None:
+        """Read a receipt's consumer approvals; pre-0.13.35 receipts recorded only MCP ones.
+
+        A legacy receipt's hook approval comes from the current consumer, never a provider.
+        """
+        if "consumer_digest_acknowledgements" in receipt:
+            acknowledgements = receipt["consumer_digest_acknowledgements"]
+            return acknowledgements if isinstance(acknowledgements, dict) else None
+        legacy = receipt.get("mcp_digest_acknowledgements", {})
+        if not isinstance(legacy, dict):
+            return None
+        return {
+            **{name: digest for name, digest in self._consumer_digest_acknowledgements().items()
+               if self.config.plugin_kinds.get(name) != "mcp-stdio"},
+            **{name: digest for name, digest in legacy.items()
+               if self.config.plugin_kinds.get(name) == "mcp-stdio"},
+        }
+
     @staticmethod
-    def _with_mcp_acknowledgements(
+    def _with_consumer_acknowledgements(
         config: CapabilityConfig, acknowledgements: dict[str, str],
     ) -> CapabilityConfig:
-        """Provider configuration cannot renew a consumer's MCP approval."""
+        """Provider configuration cannot renew a consumer's active-package approval."""
         return replace(config, active_digest_acknowledgements={
             **{name: digest for name, digest in config.active_digest_acknowledgements.items()
-               if config.plugin_kinds.get(name) != "mcp-stdio"},
+               if config.plugin_kinds.get(name) not in _CONSUMER_ACKNOWLEDGED_KINDS},
             **{name: digest for name, digest in acknowledgements.items()
-               if config.plugin_kinds.get(name) == "mcp-stdio"},
+               if config.plugin_kinds.get(name) in _CONSUMER_ACKNOWLEDGED_KINDS},
         })
 
-    def _mcp_digest_acknowledgements(self) -> dict[str, str]:
+    def _consumer_digest_acknowledgements(self) -> dict[str, str]:
         return {name: digest for name, digest in self.config.active_digest_acknowledgements.items()
-                if self.config.plugin_kinds.get(name) == "mcp-stdio"}
+                if self.config.plugin_kinds.get(name) in _CONSUMER_ACKNOWLEDGED_KINDS}
 
     def _configured_skill_names(self, plugins: Sequence[str]) -> set[str]:
         return {skill for plugin in plugins for skill in self.config.plugin_skills.get(plugin, ())}
 
     def _assert_active_digest_acknowledgements(
         self, plugin_hashes: dict[str, str], selected_plugins: Sequence[str] = (),
+        acknowledgements: dict[str, str] | None = None,
     ) -> None:
-        for plugin in selected_plugins:
-            if (self.config.plugin_kinds.get(plugin) == "mcp-stdio"
-                    and plugin not in self.config.active_digest_acknowledgements):
-                raise CapabilityError(
-                    f"active package digest acknowledgement is missing: {plugin}; add "
-                    f"active_package_digest_acknowledgements.{plugin} to the consumer-owned "
-                    f"{self._consumer_config_path} (provider configuration does not count)"
-                )
-        for plugin, expected in self.config.active_digest_acknowledgements.items():
+        if acknowledgements is None:
+            acknowledgements = self.config.active_digest_acknowledgements
+        missing = sorted(
+            plugin for plugin in set(selected_plugins)
+            if self.config.plugin_kinds.get(plugin) in _CONSUMER_ACKNOWLEDGED_KINDS
+            and plugin not in acknowledgements
+        )
+        if missing:
+            raise CapabilityError(
+                f"active package digest acknowledgement is missing: {', '.join(missing)}; add "
+                + ", ".join(f"active_package_digest_acknowledgements.{name}" for name in missing)
+                + f" to the consumer-owned {self._consumer_config_path} "
+                "(provider configuration does not count)"
+            )
+        for plugin, expected in acknowledgements.items():
             actual = plugin_hashes.get(plugin)
             if actual != expected:
-                raise CapabilityError(f"active package digest acknowledgement is stale: {plugin}")
+                raise CapabilityError(
+                    f"active package digest acknowledgement is stale: {plugin}; review the "
+                    f"package and renew active_package_digest_acknowledgements.{plugin} in the "
+                    f"consumer-owned {self._consumer_config_path} with its exact tree digest "
+                    "(provider configuration does not count)"
+                )
 
     def _plugin_metadata(self, plugin: str, digest: str) -> dict[str, object]:
         return {
@@ -1417,6 +1456,58 @@ class CapabilityManager:
             "sha256": digest,
             **({"mcp": self._mcp_contract(plugin)} if plugin in self.config.plugin_mcp else {}),
         }
+
+    def _enrolled_plugin_matches(self, plugin: str, metadata: object, digest: str) -> bool:
+        """Match locked identity exactly; a recorded MCP contract need only be well-formed.
+
+        Launcher values, files, tools and schema source are derived by the code that
+        enrolled the consumer and may legitimately differ from the current release.
+        """
+        expected = self._plugin_metadata(plugin, digest)
+        if not isinstance(metadata, dict) or set(metadata) != set(expected):
+            return False
+        identity = ("path", "package_kind", "sha256")
+        if any(metadata[key] != expected[key] for key in identity):
+            return False
+        if "mcp" not in expected:
+            return True
+        contract = metadata["mcp"]
+        current = expected["mcp"]
+        if not isinstance(contract, dict) or set(contract) != set(current):
+            return False
+
+        def names(value: object) -> bool:
+            return (
+                isinstance(value, list)
+                and bool(value)
+                and all(isinstance(item, str) and bool(item) for item in value)
+                and len(set(value)) == len(value)
+            )
+
+        launchers = contract["launchers"]
+        return (
+            contract["path"] == metadata["path"]
+            and contract["package_kind"] == metadata["package_kind"]
+            and contract["server"] == plugin
+            and contract["runtimes"] == current["runtimes"]
+            and names(contract["files"])
+            and names(contract["tools"])
+            and contract["schema_source"] in contract["files"]
+            and isinstance(launchers, dict)
+            and set(launchers) == set(current["launchers"])
+            and all(
+                isinstance(launcher, dict)
+                and {"command", "args"} <= set(launcher) <= {"command", "args", "cwd"}
+                and isinstance(launcher["command"], str)
+                and bool(launcher["command"])
+                and isinstance(launcher["args"], list)
+                and bool(launcher["args"])
+                and all(isinstance(arg, str) and bool(arg) for arg in launcher["args"])
+                and isinstance(launcher.get("cwd", "."), str)
+                and bool(launcher.get("cwd", "."))
+                for launcher in launchers.values()
+            )
+        )
 
     def _mcp_contract(self, plugin: str) -> dict[str, object]:
         return {
@@ -1746,7 +1837,7 @@ class CapabilityManager:
                 return False
         return all(
             (
-                metadata == self._plugin_metadata(plugin, digest)
+                self._enrolled_plugin_matches(plugin, metadata, digest)
                 if self.config.source_schema_version >= 3
                 else isinstance(metadata, dict) and metadata.get("sha256") == digest
             )
@@ -2579,7 +2670,7 @@ class CapabilityManager:
                 checkout,
             )
             if operation == "update" and not pending_local_update:
-                self.config = self._with_mcp_acknowledgements(
+                self.config = self._with_consumer_acknowledgements(
                     load_capability_config(checkout / "config" / "capability-sources.json"),
                     self.config.active_digest_acknowledgements,
                 )
@@ -2635,8 +2726,20 @@ class CapabilityManager:
                 "runtime_support": self.config.runtime_support,
             }
             if operation == "check" or not apply:
+                # Apply re-runs this enrollment check; the preview must share its verdict.
+                try:
+                    self._current_binding_for_apply(
+                        lock,
+                        registry,
+                        self._load_consumer_bindings(),
+                        _consumer_key(self.project_root),
+                    )
+                    enrollment_valid = True
+                except CapabilityError:
+                    enrollment_valid = False
                 result["ready_to_apply"] = (
-                    not collisions
+                    enrollment_valid
+                    and not collisions
                     and not missing_project_paths
                     and not any(value == "diverged" for value in agent_changes.values())
                     and not any(value == "diverged" for value in command_changes.values())
@@ -3187,9 +3290,11 @@ class CapabilityManager:
                         "source_url": self.config.source_url,
                         "plugins": active_hashes,
                         "materialized_plugins": plugin_hashes,
-                        **({"mcp_packages": self._mcp_packages(plugin_hashes),
-                            "mcp_digest_acknowledgements": self._mcp_digest_acknowledgements()}
+                        **({"mcp_packages": self._mcp_packages(plugin_hashes)}
                            if self.config.plugin_mcp else {}),
+                        **({"consumer_digest_acknowledgements":
+                            self._consumer_digest_acknowledgements()}
+                           if self.config.source_schema_version >= 4 else {}),
                         "marketplaces": {
                             path: {"sha256": digest} for path, digest in marketplace_hashes.items()
                         },
@@ -3331,9 +3436,9 @@ class CapabilityManager:
                 return False
             if self.config.plugin_mcp and receipt_schema != 2:
                 return False
-            if self.config.plugin_mcp and previous_active_receipt.get(
-                "mcp_digest_acknowledgements"
-            ) != self._mcp_digest_acknowledgements():
+            if self.config.source_schema_version >= 4 and self._receipt_acknowledgements(
+                previous_active_receipt
+            ) != self._consumer_digest_acknowledgements():
                 return False
             restored_lock = self._load_lock()
             lock_schema = restored_lock.get("schema_version") if restored_lock else None

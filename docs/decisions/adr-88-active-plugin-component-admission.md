@@ -160,3 +160,11 @@ cannot preserve a component that the current policy rejects.
   an explicit schema-4 `update --apply` rewrites them from the newer capability source.
 - Generated parity restores `.claude/settings.json` and `.codex/hooks.json` from tracked project
   sources, with no host-specific marketplace path.
+
+## Amendment: 2026-10-27 — Consumer-local hook acknowledgement
+
+Owner decision: Discord `1564336518967857153` (parent-supplied). The "local, human-reviewed
+acknowledgement" of §2.2 item 4 means the consumer-owned configuration for every admitted active
+kind, including `skills-hooks`: a provider-only or bundled configuration's acknowledgement no
+longer counts for `mir-lifecycle-hooks`. ADR-91's amendment of the same date records the rule,
+renewal and receipt details.

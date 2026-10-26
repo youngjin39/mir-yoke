@@ -8,6 +8,36 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.35] — 2026-10-27 — Consumer-local hook acknowledgement
+
+### Fixed
+
+- A consumer enrolled with `mir-mcp` before a launcher change can update again. The
+  enrollment check compared the locked `mcp` contract with the one the current code derives,
+  so a 0.13.33 lock failed with `current consumer enrollment is invalid`. Identity (source,
+  binding, plugin set, `path`, `package_kind`, `sha256`) still matches exactly; the recorded
+  contract must only be well-formed. The new lock still carries the current contract.
+- The update and sync dry run reports `ready_to_apply: false` when apply would reject the
+  current enrollment.
+
+### Changed
+
+- `skills-hooks` packages (`mir-lifecycle-hooks`) now follow the `mir-mcp` acknowledgement
+  rule (owner decision, Discord 1564336518967857153). Only the consumer-owned
+  `config/capability-sources.json`, or the explicit `--config`, supplies the acknowledgement;
+  a provider-only or bundled configuration's value does not count. A provider update that
+  changes the hook bytes fails closed until the consumer renews
+  `active_package_digest_acknowledgements.mir-lifecycle-hooks`, and the error names that key
+  and file. A missing-acknowledgement error lists every missing key.
+- The active receipt records `consumer_digest_acknowledgements` for both kinds in place of
+  `mcp_digest_acknowledgements`. Rollback still reads a receipt that has only the older field,
+  taking its hook approval from the current consumer configuration. A provider-only status
+  check verifies the approval recorded in the receipt, not the provider configuration's.
+- ADR-91 and ADR-88 record 2026-10-27 amendments; the plugin migration guide adds the hook
+  renewal procedure.
+- Bump release surfaces to 0.13.35, renew this checkout's own lifecycle acknowledgement, and
+  regenerate the adopter payload.
+
 ## [v0.13.34] — 2026-10-27 — `mir-mcp` Codex launcher fix
 
 ### Fixed

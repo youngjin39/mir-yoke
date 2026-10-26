@@ -288,21 +288,109 @@ def test_remote_mcp_ack_cannot_replace_local_approval(tmp_path, provider, local_
     )
 
 
-def test_remote_hook_ack_update_behavior_is_unchanged(tmp_path, provider):
+HOOKS = "mir-lifecycle-hooks"
+
+
+def acknowledge_hooks(config_path, digest):
+    payload = json.loads(config_path.read_text())
+    payload["active_package_digest_acknowledgements"][HOOKS] = digest
+    config_path.write_text(json.dumps(payload))
+
+
+def test_remote_hook_ack_cannot_replace_local_approval(tmp_path, provider):
     manager = manager_for(tmp_path, provider)
     manager.sync("code", apply=True)
-    local_before = manager.config.active_digest_acknowledgements["mir-lifecycle-hooks"]
+    local_path = manager.project_root / "config/capability-sources.json"
+    local_before = local_path.read_bytes()
+    lock_before = manager.lock_path.read_bytes()
     hook = provider / "plugins/mir-lifecycle-hooks/.claude-plugin/plugin.json"
     hook.write_bytes(hook.read_bytes() + b"\n")
-    path = provider / "config/capability-sources.json"
-    payload = json.loads(path.read_text())
     digest = _tree_digest(provider / "plugins/mir-lifecycle-hooks")
-    payload["active_package_digest_acknowledgements"]["mir-lifecycle-hooks"] = digest
-    path.write_text(json.dumps(payload))
+    acknowledge_hooks(provider / "config/capability-sources.json", digest)
     manager.git.commit = "b" * 40
+    calls = []
+    original = manager.command_runner
+
+    def record(args, **kwargs):
+        calls.append(args)
+        return original(args, **kwargs)
+
+    manager.command_runner = record
+    with pytest.raises(
+        CapabilityError,
+        match=r"stale: mir-lifecycle-hooks.*"
+        r"active_package_digest_acknowledgements\.mir-lifecycle-hooks.*"
+        r"config/capability-sources\.json",
+    ):
+        manager.update("code", apply=True)
+    assert calls == []
+    assert local_path.read_bytes() == local_before
+    assert manager.lock_path.read_bytes() == lock_before
+    acknowledge_hooks(local_path, digest)
+    manager.config = load_capability_config(local_path)
     assert manager.update("code", apply=True)["registration_status"] == "restart-required"
-    assert digest != local_before
-    assert manager.config.active_digest_acknowledgements["mir-lifecycle-hooks"] == digest
+    assert json.loads(manager.lock_path.read_text())["plugins"][HOOKS]["sha256"] == digest
+
+
+def test_consumer_only_hook_ack_survives_activation_rollback(tmp_path, provider):
+    manager = manager_for(tmp_path, provider)
+    digest = _tree_digest(provider / "plugins/mir-lifecycle-hooks")
+    # The provider's own grant is wrong; only the consumer-owned approval is exact.
+    acknowledge_hooks(provider / "config/capability-sources.json", "0" * 64)
+    manager.sync("code", apply=True)
+    receipt_body = json.loads(manager.active_receipt_path.read_text())
+    assert receipt_body["consumer_digest_acknowledgements"] == {HOOKS: digest}
+    lock = manager.lock_path.read_bytes()
+    receipt = manager.active_receipt_path.read_bytes()
+    original = manager.command_runner
+    failed = False
+
+    def fail_once(args, **kwargs):
+        nonlocal failed
+        if args[1:3] == ["plugin", "add"] and not failed:
+            failed = True
+            return subprocess.CompletedProcess(args, 1, "", "fixture failure")
+        return original(args, **kwargs)
+
+    manager.command_runner = fail_once
+    with pytest.raises(CapabilityError, match="rollback was complete"):
+        manager.sync("code", apply=True)
+    assert failed
+    assert manager.lock_path.read_bytes() == lock
+    assert manager.active_receipt_path.read_bytes() == receipt
+    assert manager._activation_evidence(json.loads(lock), require_active_receipt=False)[
+        "status"
+    ] == "verified"
+
+
+@pytest.mark.parametrize("consumer_hook_ack", ["exact", "stale"])
+def test_legacy_mcp_only_receipt_still_restores_without_provider_renewal(
+    tmp_path, provider, consumer_hook_ack,
+):
+    manager = manager_for(tmp_path, provider)
+    acknowledge_locally(manager, provider)
+    manager.sync("code", mcp=True, apply=True)
+    digest = _tree_digest(provider / "plugins/mir-lifecycle-hooks")
+    receipt = json.loads(manager.active_receipt_path.read_text())
+    mcp_ack = {"mir-mcp": _tree_digest(provider / "plugins/mir-mcp")}
+    assert receipt["consumer_digest_acknowledgements"] == {**mcp_ack, HOOKS: digest}
+    receipt.pop("consumer_digest_acknowledgements")
+    receipt["mcp_digest_acknowledgements"] = mcp_ack
+    if consumer_hook_ack == "stale":
+        # The provider's active config still grants the exact digest; it must not count.
+        assert load_capability_config(
+            manager.active_path / "config/capability-sources.json"
+        ).active_digest_acknowledgements[HOOKS] == digest
+        object.__setattr__(manager.config, "active_digest_acknowledgements", {
+            **manager.config.active_digest_acknowledgements, HOOKS: "0" * 64,
+        })
+    previous = manager._use_previous_config_for_rollback(receipt)
+    assert previous is not None
+    expected_hook = digest if consumer_hook_ack == "exact" else "0" * 64
+    assert manager.config.active_digest_acknowledgements == {**mcp_ack, HOOKS: expected_hook}
+    assert manager._rollback_runtime_registration(
+        tuple(receipt["plugins"]), receipt,
+    ) is (consumer_hook_ack == "exact")
 
 
 def test_consumer_only_mcp_ack_survives_activation_rollback(tmp_path, provider):
@@ -407,12 +495,74 @@ def test_provider_mcp_ack_never_admits_first_sync(tmp_path, provider, source, mo
 
 
 @pytest.mark.parametrize("source", ["active", "bundled"])
-def test_provider_hook_ack_still_admits_provider_only_sync(tmp_path, provider, source, monkeypatch):
+def test_provider_hook_ack_never_admits_provider_only_sync(tmp_path, provider, source, monkeypatch):
     manager = provider_only_manager(tmp_path, provider, source, monkeypatch)
-    assert "mir-lifecycle-hooks" in manager.config.active_digest_acknowledgements
-    result = manager.sync("code", apply=True)
-    assert result["registration_status"] == "restart-required"
-    assert "mir-lifecycle-hooks" in json.loads(manager.lock_path.read_text())["plugins"]
+    assert HOOKS in load_capability_config(manager.config_path).active_digest_acknowledgements
+    assert HOOKS not in manager.config.active_digest_acknowledgements
+    calls = []
+    original = manager.command_runner
+
+    def record(args, **kwargs):
+        calls.append(args)
+        return original(args, **kwargs)
+
+    manager.command_runner = record
+    receipt_before = (
+        manager.active_receipt_path.read_bytes() if manager.active_receipt_path.exists() else None
+    )
+    with pytest.raises(
+        CapabilityError,
+        match=r"acknowledgements\.mir-lifecycle-hooks.*config/capability-sources\.json",
+    ):
+        manager.sync("code", apply=True)
+    assert calls == []
+    assert not manager.lock_path.exists()
+    assert (
+        manager.active_receipt_path.read_bytes() if manager.active_receipt_path.exists() else None
+    ) == receipt_before
+
+
+@pytest.mark.parametrize("receipt_ack", ["recorded", "stale", "legacy"])
+def test_provider_only_status_checks_recorded_consumer_ack(
+    tmp_path, provider, receipt_ack, monkeypatch,
+):
+    manager = provider_only_manager(tmp_path, provider, "active", monkeypatch)
+    receipt = json.loads(manager.active_receipt_path.read_text())
+    if receipt_ack == "stale":
+        receipt["consumer_digest_acknowledgements"][HOOKS] = "0" * 64
+    elif receipt_ack == "legacy":
+        receipt.pop("consumer_digest_acknowledgements")
+    # The provider's configuration still grants the exact digest; it must not count.
+    assert HOOKS in load_capability_config(manager.config_path).active_digest_acknowledgements
+    assert manager._provider_active_integrity(receipt) is (receipt_ack == "recorded")
+
+
+@pytest.mark.parametrize("owner", ["local", "explicit"])
+def test_consumer_owned_hook_ack_admits_sync(tmp_path, provider, owner):
+    digest = _tree_digest(provider / "plugins/mir-lifecycle-hooks")
+    manager = manager_for(tmp_path, provider)
+    acknowledge_hooks(provider / "config/capability-sources.json", "0" * 64)
+    if owner == "explicit":
+        local = manager.project_root / "config/capability-sources.json"
+        explicit = tmp_path / "reviewed" / "capability-sources.json"
+        explicit.parent.mkdir()
+        local.rename(explicit)
+        manager = CapabilityManager(
+            manager.project_root,
+            config_path=explicit,
+            capability_home=manager.capability_home,
+            user_home=manager.user_home,
+            codex_home=manager.codex_home,
+            git=manager.git,
+            command_runner=manager.command_runner,
+            which=manager.which,
+        )
+    assert not manager.provider_only
+    assert manager.config.active_digest_acknowledgements[HOOKS] == digest
+    assert manager.sync("code", apply=True)["registration_status"] == "restart-required"
+    assert json.loads(manager.lock_path.read_text())["plugins"][HOOKS]["sha256"] == digest
+    manager.git.commit = "b" * 40
+    assert manager.update("code", apply=True)["registration_status"] == "restart-required"
 
 
 @pytest.mark.parametrize("owner", ["local", "explicit"])
@@ -472,7 +622,11 @@ def test_changed_provider_byte_blocks_registration_before_any_command(tmp_path, 
 
 
 @pytest.mark.parametrize(
-    "mutation", ["ack", "materialized", "contract", "schema", "receipt-ack", "receipt-missing-ack"],
+    "mutation",
+    [
+        "ack", "materialized", "contract", "schema", "receipt-ack", "legacy-receipt-ack",
+        "receipt-missing-ack",
+    ],
 )
 def test_rollback_refuses_stale_or_downgraded_mcp_inventory(tmp_path, provider, mutation):
     acknowledge(provider)
@@ -490,8 +644,12 @@ def test_rollback_refuses_stale_or_downgraded_mcp_inventory(tmp_path, provider, 
     elif mutation == "schema":
         receipt["schema_version"] = 1
     elif mutation == "receipt-ack":
+        receipt["consumer_digest_acknowledgements"]["mir-mcp"] = "0" * 64
+    elif mutation == "legacy-receipt-ack":
+        receipt.pop("consumer_digest_acknowledgements", None)
         receipt["mcp_digest_acknowledgements"] = {"mir-mcp": "0" * 64}
     else:
+        receipt.pop("consumer_digest_acknowledgements", None)
         receipt.pop("mcp_digest_acknowledgements", None)
     calls = []
     original = manager.command_runner
@@ -864,3 +1022,93 @@ def test_mcp_finalization_requires_both_receipts_and_rechecks_them(
     assert manager.status()["ready"] is False
     with pytest.raises(CapabilityError):
         manager.finalize(apply=True, after_restart=True)
+
+
+# The 0.13.33 Codex launcher, recorded in locks enrolled before 0.13.34.
+OLD_CODEX_LAUNCHER = {"command": "python3", "args": ["-I", "-B", "-u", "${PLUGIN_ROOT}/mir_mcp.py"]}
+
+
+def enrolled_with_old_contract(tmp_path, provider):
+    acknowledge(provider)
+    manager = manager_for(tmp_path, provider)
+    manager.sync("code", mcp=True, apply=True)
+    lock = json.loads(manager.lock_path.read_text())
+    current = copy.deepcopy(lock["plugins"]["mir-mcp"])
+    lock["plugins"]["mir-mcp"]["mcp"]["launchers"]["codex"] = copy.deepcopy(OLD_CODEX_LAUNCHER)
+    manager.lock_path.write_text(json.dumps(lock))
+    receipt = json.loads(manager.active_receipt_path.read_text())
+    receipt["mcp_packages"]["mir-mcp"]["launchers"]["codex"] = copy.deepcopy(OLD_CODEX_LAUNCHER)
+    manager.active_receipt_path.write_text(json.dumps(receipt))
+    manager.git.commit = "b" * 40
+    return manager, lock, current
+
+
+def test_update_accepts_enrollment_with_older_wellformed_mcp_contract(tmp_path, provider):
+    manager, _, current = enrolled_with_old_contract(tmp_path, provider)
+    assert manager.update("code", mcp=True)["ready_to_apply"] is True
+    result = manager.update("code", mcp=True, apply=True)
+    assert result["registration_status"] == "restart-required"
+    lock = json.loads(manager.lock_path.read_text())
+    assert lock["source"]["commit"] == "b" * 40
+    assert lock["plugins"]["mir-mcp"] == current
+
+
+def _mutate_enrollment(lock, mutation):
+    plugins = lock["plugins"]
+    contract = plugins["mir-mcp"]["mcp"]
+    if mutation in {"sha256", "path", "package_kind"}:
+        plugins["mir-mcp"][mutation] = {
+            "sha256": "0" * 64, "path": "plugins/other", "package_kind": "skills",
+        }[mutation]
+    elif mutation == "skill-sha256":
+        plugins[next(name for name in plugins if name != "mir-mcp")]["sha256"] = "0" * 64
+    elif mutation == "commit":
+        lock["source"]["commit"] = "c" * 40
+    elif mutation == "binding":
+        lock["consumer_binding"] = "d" * 64
+    elif mutation == "extra-plugin":
+        plugins["extra"] = copy.deepcopy(plugins["mir-mcp"])
+    elif mutation == "missing-plugin":
+        plugins.pop(next(name for name in plugins if name != "mir-mcp"))
+    elif mutation == "missing-mcp":
+        plugins["mir-mcp"].pop("mcp")
+    elif mutation == "extra-metadata-key":
+        plugins["mir-mcp"]["extra"] = True
+    elif mutation == "extra-mcp-key":
+        contract["extra"] = True
+    elif mutation == "missing-mcp-key":
+        contract.pop("schema_source")
+    elif mutation == "mcp-path":
+        contract["path"] = "plugins/other"
+    elif mutation == "mcp-files":
+        contract["files"] = "mir_mcp.py"
+    elif mutation == "mcp-schema-source":
+        contract["schema_source"] = "missing.py"
+    elif mutation == "mcp-runtimes":
+        contract["runtimes"] = ["unknown-runtime"]
+    elif mutation == "mcp-launcher-runtime":
+        contract["launchers"].pop("claude")
+    elif mutation == "mcp-launcher-args":
+        contract["launchers"]["codex"]["args"] = "./mir_mcp.py"
+    else:
+        contract["launchers"]["codex"]["env"] = {}
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        "sha256", "path", "package_kind", "skill-sha256", "commit", "binding",
+        "extra-plugin", "missing-plugin", "missing-mcp", "extra-metadata-key",
+        "extra-mcp-key", "missing-mcp-key", "mcp-path", "mcp-files", "mcp-schema-source",
+        "mcp-runtimes", "mcp-launcher-runtime", "mcp-launcher-args", "mcp-launcher-key",
+    ],
+)
+def test_update_still_rejects_changed_enrollment_identity(tmp_path, provider, mutation):
+    manager, lock, _ = enrolled_with_old_contract(tmp_path, provider)
+    _mutate_enrollment(lock, mutation)
+    manager.lock_path.write_text(json.dumps(lock))
+    before = manager.lock_path.read_bytes()
+    assert manager.update("code", mcp=True)["ready_to_apply"] is False
+    with pytest.raises(CapabilityError, match="current consumer enrollment is invalid"):
+        manager.update("code", mcp=True, apply=True)
+    assert manager.lock_path.read_bytes() == before

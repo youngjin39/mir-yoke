@@ -448,3 +448,21 @@ with the absolute installed root. Claude's declaration, locked launcher and atte
 `{command:"python3",args:["-I","-B","-u","<installed-root>/mir_mcp.py"],env:{}}` are unchanged.
 Each runtime's evidence must match its own form exactly. The package digest changes, so each
 consumer renews its own `mir-mcp` acknowledgement.
+
+## Amendment: 2026-10-27 — Consumer-local hook acknowledgement
+
+Owner decision: Discord `1564336518967857153` (parent-supplied), applying the consumer-local
+acknowledgement rule to the hook package. This amends the §8 exclusion of `skills-hooks`
+acknowledgement and update behaviour; §4.8 items 1–2 now apply to both `mcp-stdio` and
+`skills-hooks` packages.
+
+Only the consumer-owned configuration supplies an acknowledgement for either kind:
+`<consumer-root>/config/capability-sources.json`, or the explicit `--config`. A provider-only or
+bundled configuration never does. Selecting or updating to hook bytes requires that consumer
+acknowledgement to equal the exact tree digest, so a provider update that changes both the
+bytes and its own acknowledgement fails closed until the consumer renews
+`active_package_digest_acknowledgements["mir-lifecycle-hooks"]`. The active receipt's
+`consumer_digest_acknowledgements` replaces `mcp_digest_acknowledgements` and records the
+consumer approval for both kinds; rollback re-validates restored bytes against it. A receipt
+that holds only the older field is still read: its MCP approval comes from that field and its
+hook approval from the current consumer configuration, never from a provider configuration.

@@ -100,7 +100,7 @@ Discard an uncommitted Project Agent Kit adaptation in the target or restore the
 commit. For an explicitly invoked CLI transaction, use that command's recorded rollback/recovery
 contract. Installing the CLI does not itself mutate a target.
 
-Current version: `0.13.34`. See `CHANGELOG.md` for release details.
+Current version: `0.13.35`. See `CHANGELOG.md` for release details.
 
 Version 0.10.0 adds opt-in `memory_relations` ingestion and read-only `mir relations query|bundle --memory`
 query/bundle selection using the existing memory schema. No automatic corpus backfill, database
@@ -399,3 +399,33 @@ Claude receipts keep the absolute script form. See
 2026-10-27 amendment to [ADR-91](docs/decisions/adr-91-stdio-mcp-package-admission.md).
 The lifecycle package acknowledgement covers version manifests only; hook behavior is
 unchanged. The capability-lock binding remains Main's release work.
+
+## 0.13.35 Consumer-local hook acknowledgement
+
+Every consumer must now record its own `mir-lifecycle-hooks` acknowledgement. A provider-only
+or bundled configuration no longer approves the hook package, so a consumer without its own
+configuration cannot select it, and an update fails closed until the consumer acts. Review the
+candidate checkout, then compute each selected package's tree digest:
+
+```sh
+uv run --no-sync python -c 'from pathlib import Path; from mir.core.capabilities.manager import _tree_digest; print(_tree_digest(Path("/absolute/reviewed-yoke/plugins/mir-lifecycle-hooks")))'
+```
+
+Set `active_package_digest_acknowledgements["mir-lifecycle-hooks"]` in
+`<consumer-root>/config/capability-sources.json` (or the explicit `--config` file) to that full
+digest. If the consumer selected `mir-mcp`, also set
+`active_package_digest_acknowledgements["mir-mcp"]` to the digest printed for
+`plugins/mir-mcp`. Then run `mir capability update --apply --project-root
+/absolute/consumer-root`, adding `--mcp` when `mir-mcp` is selected and `--config` when
+applicable. For 0.13.35 the digests are `mir-lifecycle-hooks`
+`ce1f5078cf61ea8bd04897863d7f68cb6445e1444e3743434452a1d60c671ecc` and `mir-mcp`
+`e6d8adc6268d65b4af0739d49522c7c3ef6715a96835670292f0ec569013763d`; record them only
+after your own review.
+
+The active receipt field `mcp_digest_acknowledgements` is replaced by
+`consumer_digest_acknowledgements`; existing receipts remain readable for rollback. A consumer
+enrolled with the 0.13.33 `mir-mcp` launcher can update again. See
+[the plugin migration guide](docs/operations/global-plugin-migration.md) and the 2026-10-27
+amendments to [ADR-91](docs/decisions/adr-91-stdio-mcp-package-admission.md) and
+[ADR-88](docs/decisions/adr-88-active-plugin-component-admission.md). The capability-lock
+binding remains Main's release work.
