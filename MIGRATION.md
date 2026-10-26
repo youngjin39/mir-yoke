@@ -100,7 +100,7 @@ Discard an uncommitted Project Agent Kit adaptation in the target or restore the
 commit. For an explicitly invoked CLI transaction, use that command's recorded rollback/recovery
 contract. Installing the CLI does not itself mutate a target.
 
-Current version: `0.13.31`. See `CHANGELOG.md` for release details.
+Current version: `0.13.32`. See `CHANGELOG.md` for release details.
 
 Version 0.10.0 adds opt-in `memory_relations` ingestion and read-only `mir relations query|bundle --memory`
 query/bundle selection using the existing memory schema. No automatic corpus backfill, database
@@ -362,3 +362,16 @@ Ouroboros adaptations retain 5520a3e and were re-checked at 7783d9f on 2026-10-2
 REA version-comparison ideas were checked at dd02d8f (MIT).
 The lifecycle package acknowledgement covers guidance and version manifests only.
 Hook behavior and the capability lock are unchanged; release binding remains Main's work.
+
+## 0.13.32 read-only stdio MCP package
+
+No migration is required for existing skill and hook selections; no default Profile
+selects `mir-mcp`. Schemas 1-4 still validate. To register the package, a consumer adds
+the exact `mir-mcp` tree digest to `active_package_digest_acknowledgements` in its own
+`config/capability-sources.json` and runs an explicit `mir capability sync --mcp --apply`;
+a provider config or provider update never supplies that acknowledgement. Finalization
+needs fresh MCP evidence from both runtimes. See
+[the plugin migration guide](docs/operations/global-plugin-migration.md) and
+[ADR-91](docs/decisions/adr-91-stdio-mcp-package-admission.md).
+The lifecycle package acknowledgement covers version manifests only; hook behavior is unchanged.
+The capability-lock binding remains Main's release work.

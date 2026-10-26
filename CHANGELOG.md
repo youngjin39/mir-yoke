@@ -8,6 +8,30 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.32] — 2026-10-27 — Read-only stdio MCP package
+
+### Added
+
+- Accept ADR-91 and add the opt-in `mir-mcp` package: one stdio server with exactly five
+  read-only tools (`ontology_validate`, `ontology_lookup`, `ontology_impact`,
+  `handoff_pins`, `relations_query`), closed input and output schemas, root-confined
+  bounded reads, and Git as the sole fixed-argument subprocess.
+- Admit it through capability-source schema 5 and package kind `mcp-stdio`, only for
+  the exact `mir-mcp` name, path and eight-file inventory. Generic `mcp` stays reserved;
+  schemas 1-4 still validate. Both marketplaces list the package; no default Profile
+  selects it.
+- Require an exact tree-digest acknowledgement from a consumer-owned
+  `config/capability-sources.json` for registration, finalization and READY; a provider
+  config or provider update never supplies or renews it. Rollback restores the prior
+  registration and re-validates its receipt-bound acknowledgement. Attestation needs
+  MCP-specific evidence from both runtimes, including one schema-valid call per tool.
+
+### Changed
+
+- Bump release surfaces to 0.13.32, refresh the lifecycle digest acknowledgement for its
+  version manifests, and regenerate the adopter payload. Lifecycle hook behavior is
+  unchanged.
+
 ## [v0.13.31] — 2026-10-24 — Remaining guidance corrections
 
 ### Fixed

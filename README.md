@@ -52,7 +52,7 @@ immutable release:
 
 ```bash
 uv tool install --force --link-mode copy \
-  "git+https://github.com/youngjin39/mir-yoke.git@v0.13.31"
+  "git+https://github.com/youngjin39/mir-yoke.git@v0.13.32"
 mir --help
 ```
 
@@ -124,6 +124,10 @@ Version 0.13.31 adds identity-based artifact version comparison and Korean busin
 and public-document checks, restores the settled-idiom exception, and clarifies
 portable provenance, handoff authority, experiment timeouts and verification decisions.
 These are guidance-only corrections; no runtime behavior or tools are added.
+
+Version 0.13.32 adds the opt-in, read-only stdio `mir-mcp` package under ADR-91 and
+capability-source schema 5. Registration requires explicit MCP selection and a
+consumer-owned digest acknowledgement; no default Profile selects it.
 
 ### Platform use
 

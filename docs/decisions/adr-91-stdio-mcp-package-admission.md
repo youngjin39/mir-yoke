@@ -3,7 +3,7 @@ adr: 91
 title: "Admit the read-only stdio MCP package (`mir-mcp`)"
 type: template-adr
 created: 2026-10-26
-status: proposed
+status: accepted
 amends: [adr-74, adr-88, adr-89, adr-90]
 template_scope: mir-yoke
 schema: docs/templates/_schema/adr.schema.json
@@ -37,7 +37,7 @@ Yoke admission or activation. ADR-88's implementation and runtime-evidence gates
 
 | Alternative | Disposition |
 |---|---|
-| Public, separate `mir-mcp` with a closed validator | Proposed; concrete opt-in tools under active-package admission. |
+| Public, separate `mir-mcp` with a closed validator | Chosen; concrete opt-in tools under active-package admission. |
 | Private Harness source or tools in `mir-core` | Rejected; unavailable public source or a skills-only policy violation. |
 | Hub tools, write tools, or DB relation adapters | Rejected for v1; different authority or storage contracts. |
 | HTTP/SSE transport or generic MCP admission | Rejected; unnecessary listener or unreviewed package classes. |
@@ -322,11 +322,15 @@ evidence remain necessary; source tests and proposed text cannot establish deliv
 
 ## 8. Out-of-Scope — HARD
 
-This change edits only this proposed ADR and, if necessary, its index title. No code, other ADR,
-config, plugin, lock, receipt, generated file, runtime binding, commit, push, install,
-sync/update/apply, or consumer write is authorized. Implementation and native Windows admission
-are later work. No unresolved owner policy question blocks this draft; implementation evidence
-is still required.
+Out of scope:
+- native Windows activation;
+- write tools and DB relation adapters;
+- the Agent Hub tools;
+- generic MCP admission;
+- any change to the `skills-hooks` acknowledgement or update behaviour.
+
+Accepted at release 0.13.32 (owner Discord 1564297975755448493), after implementation
+f715b19 and e38add3. Runtime attestation on both hosts remains a per-host gate (§4.8).
 
 ## 9. Verification
 

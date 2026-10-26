@@ -145,4 +145,4 @@ Mir Yoke decisions with the same numbers are different records.
 | [ADR-88](adr-88-active-plugin-component-admission.md) | accepted | — |
 | [ADR-89](adr-89-dual-runtime-capability-management.md) | accepted | — |
 | [ADR-90](adr-90-role-plugins-and-common-hooks.md) | accepted | — |
-| [ADR-91](adr-91-stdio-mcp-package-admission.md) | proposed | — |
+| [ADR-91](adr-91-stdio-mcp-package-admission.md) | accepted | — |
