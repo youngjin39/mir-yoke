@@ -1,0 +1,401 @@
+---
+adr: 91
+title: "Admit the read-only stdio MCP package (`mir-mcp`)"
+type: template-adr
+created: 2026-10-26
+status: proposed
+amends: [adr-74, adr-88, adr-89, adr-90]
+template_scope: mir-yoke
+schema: docs/templates/_schema/adr.schema.json
+---
+
+# ADR-91 — Admit the Read-Only Stdio MCP Package (`mir-mcp`)
+
+## 1. Context
+
+Design authority is the owner's 2026-10-26 ADR-only request: public Yoke source, tools only,
+exactly five read-only v1 tools, and native Windows after macOS/Linux. Relayed owner decisions
+and the Harness inventory are parent-supplied evidence [E8]; repository citations relied upon
+were rechecked below. The maintainer cursor is outside this request's two-file write scope.
+This proposal performs no implementation, digest acknowledgement, delivery, or registration.
+
+Yoke supplies shared capabilities under Harness ADR-86 management; consumers retain their own
+policy, data, and execution authority. Agent Hub tools `hub_agents`, `hub_dispatch`, and
+`hub_task` are excluded: they are owner-only, owned by Mir Agent Hub, and not package dependencies.
+Current schema 4 admits only `skills` and exact `skills-hooks`, reserves `mcp`, and acknowledges
+only active hook digests [E1]. Native MCP declarations are evidenced [E7]; that does not prove
+Yoke admission or activation. ADR-88's implementation and runtime-evidence gates still apply.
+
+## 2. Decision Drivers
+
+- Supply bounded local tools to other users without private services or credentials.
+- Preserve skills-only role packages and independent no-MCP workflows.
+- Bound reads and token costs; expose no mutation or network path.
+- Retain immutable provenance, explicit selection, and Claude/Codex semantic parity.
+
+## 3. Considered Alternatives — HARD
+
+| Alternative | Disposition |
+|---|---|
+| Public, separate `mir-mcp` with a closed validator | Proposed; concrete opt-in tools under active-package admission. |
+| Private Harness source or tools in `mir-core` | Rejected; unavailable public source or a skills-only policy violation. |
+| Hub tools, write tools, or DB relation adapters | Rejected for v1; different authority or storage contracts. |
+| HTTP/SSE transport or generic MCP admission | Rejected; unnecessary listener or unreviewed package classes. |
+
+## 4. Decision
+
+### 4.1 One kind and one opt-in package
+
+After acceptance and implementation verification, admit `package_kind: mcp-stdio` only for
+`mir-mcp` at `plugins/mir-mcp` and its human-acknowledged, exact computed tree SHA256. Kind
+equality admits no other package, shape, tool, or digest. Generic `mcp` stays reserved and
+rejected. No default Profile selects `mir-mcp`; marketplace presence does not select it.
+
+This fulfils ADR-90 §2.4's reserved `mir-mcp` use case and admission conditions. It narrowly
+amends ADR-88 §2.1 lines 38–40 (admitted kinds) and 46–50 (sole active package/MCP reservation),
+ADR-74's 2026-09-04 amendment lines 18–20 and §2 lines 77–79 (MCP rejection), and ADR-90 §2.3
+line 92 and §2.4 lines 96–99. Their restrictions continue for every other shape; all three role
+plugins remain skills-only. These line locations were checked on 2026-10-26.
+
+The implementing change introduces capability-source schema 5 with a dedicated `mcp-stdio`
+metadata branch, exact server/tool inventory, no fictitious skill, and acknowledgements for
+both admitted active kinds. Preserve schema 1–4 validation; legacy locks cannot bypass current
+tree validation [E1–E2]. ADR-88 §2.3 and ADR-89 still govern project-local integration. This
+separate plugin supply path never writes or merges consumer runtime settings, `.mcp.json`, or policy.
+
+### 4.2 Exact v1 tool contract
+
+All inputs are closed JSON objects (`additionalProperties: false`) requiring
+`target_root: absolute-directory-path[≤4096 bytes]`; no cwd, environment, or client-root inference.
+Common optional fields are `cursor: string[≤1024 bytes]` and `page_size: integer[1,64]=16`.
+Other paths are root-relative and ≤4096 bytes each. The map is fixed at `.mir/ontology-map.json`;
+the contract is the bundled byte-pinned common contract. `?` marks optional fields;
+`enum[...]` lists the only choices. All tools share §4.4's input/read/output caps.
+
+| Tool and one-line description | Additional input schema | Compact `data` shape | Bounds |
+|---|---|---|---|
+| `ontology_validate`: Validate the common contract and target mapping. | `scope?: enum[contract,mapping,both]=both` | `{valid,contract_version,mapping_version,counts,findings:[{code,pointer}]}` | Fixed map/contract; guarded reference reads only. |
+| `ontology_lookup`: Find term-matching map entries and declared evidence. | `query: string[1,256 bytes]`, `limit?: integer[1,16]=3` | `{contract,matches:[{pointer,score,label,refs}]}` | ≤16 matches; no source excerpts or semantic-identity inference. |
+| `ontology_impact`: Select declared affected entries and checks for changed paths. | `paths: unique path-array[1,64]` | `{affected_entries,checks_to_run,stale_refs,undeclared_check_links,revalidate}` | Explicit paths only; no Git-diff mode, tree scan, or check execution. |
+| `handoff_pins`: Collect repository, source, mapping, and contract pins with availability. | `paths: unique path-array[1,16]` | `{repository_root,head,dirty,sources,mapping_path,mapping_version,mapping_sha256,contract_id,contract_version,contract_sha256,observed_at,unknowns,pin_inventory}` | ≤16 source files; full hashes/commits or explicit unknowns; §4.5 Git only. |
+| `relations_query`: Retrieve bounded declared YAML relations for one known anchor. | `adapter?: enum[yaml]=yaml`, `graph?: path=spec/graph.yaml`, `anchor: string[1,4096 bytes]`, `purpose: enum[implementation,verification,impact,dependencies]`, `depth?: integer[1,4]`, `max_edges?: integer[1,64]=16` | `{anchor,purpose,scope,source:{graph,sha256},edges,notices,truncated,resolved_anchors}` | Depth defaults: dependencies=1, others=3; graph ≤1 MiB/10,000 triples; no DB adapter. |
+
+Results use `structuredContent: {ok,data,error,next_cursor}` with a declared `outputSchema`.
+`error` is null or `{code}`; codes are `E_SCHEMA`, `E_PATH`, `E_PROTECTED`, `E_LIMIT`,
+`E_FORMAT`, `E_VERSION`, `E_IO`, `E_GIT`, `E_TIMEOUT`, and `E_CURSOR`. Validation findings
+use stable codes/pointers, never source values or raw exceptions. Missing pins stay explicitly
+unavailable. Declared evidence, hashes, and selected checks prove neither truth, execution, nor permission.
+
+The first four tools wrap `Checker.contract`/`Checker.mapping`, `lookup`, `impact`, and
+`handoff_pins` in `ontology_check.py` [E3]. YAML traversal exists as
+`src/mir/core/relations.py#query_relations` and its CLI route [E4]. There is no existing
+`relations_query` MCP wrapper or standalone package backend; those are new implementation work.
+
+### 4.3 One source of shared logic; independent skill use
+
+Use **byte-identical build-time copies enforced by tests**, not imports from sibling plugin
+caches. The canonical `plugins/mir-core/skills/ontology/scripts/ontology_check.py` and its
+`references/common-contract.json` are copied into the package's matching `ontology/` layout.
+Changes begin in those sources; drift tests compare every byte. First add guarded read/Git
+interfaces to the canonical checker so the server can enforce §4.4–4.5 on every indirect
+operation. Do not reimplement checker rules in the server or allow raw checker I/O to bypass guards.
+
+Add a canonical standalone `plugins/mir-core/skills/selective-relations/scripts/relations_query.py`,
+extracting existing purpose/direction/traversal rules [E4], and copy it identically into
+`mir-mcp/shared/`. Keep it stdlib-only: v1 accepts the documented `edges:` mapping with
+three-string flow-sequence rows; reject unsupported YAML forms, tags, anchors, aliases,
+duplicate keys, and multiple documents with `E_FORMAT`. Differential fixtures against the
+existing YAML CLI must prove equivalence on that admitted subset, not full PyYAML parity.
+Canonical helper scripts remain passive skill assets; only `mir-mcp` declares the active server.
+
+Isolation is evidenced by versioned `mir-core` cache resolution, per-plugin Claude `installPath`,
+and tests copying each plugin alone [E5]. `mir-mcp` must work without `mir-core`, the Mir CLI,
+or a source checkout. With `-I`, load only the two fixed in-package module paths; never search
+sibling caches or import target code. Skills keep their direct scripts, CLI, files, and text
+search paths. `spec-architect`'s no-CLI/IDE/MCP dependency contract and inventory constraint 12
+remain intact [E6, E8]; tool introduction does not justify deleting templates or references.
+
+### 4.4 Testable read-only security rules
+
+- **Tools only, stdio only:** advertise no resources, prompts, apps, sampling, elicitation,
+  tasks, subscriptions, or hidden action modes. No listener, HTTP/SSE, or background service.
+- **No network:** static import/call-graph checks reject `socket`, `http`, `urllib`, other
+  network libraries, and dynamic code loading except the two fixed package-module loads.
+  Allow only reviewed stdlib and copied modules; runtime tests deny indirect network calls too.
+- **No credentials or environment input:** the application allowlist is empty. No `getenv`,
+  environment-derived roots/config, home discovery, credential files, or forwarded names.
+  Host-expanded plugin-root argv is not server environment input. Git gets only §4.5's constants.
+- **No writes anywhere:** prohibit file creation/modification, caches, logs, telemetry,
+  temporary files, installs, bytecode, DB sidecars, and child writes. `-B` suppresses `.pyc`.
+  Test read-only target/package/home/scratch surfaces and trace filesystem calls through
+  success, refusal, malformed input, and shutdown. Stdout is protocol-only; stderr is short codes.
+- **Root confinement:** realpath the explicit root and every input/derived path before access;
+  require containment and refuse traversal, symlink escapes, special files, and replacement
+  races. Guard checker references, graph endpoints, Profile protections, and Git metadata too.
+  Immutable bundled code/contract reads are separately confined to the exact package tree.
+- **Protected paths:** before reading, deny case-insensitive component/glob matches for
+  `.env*`, `secrets/**`, `*.db*`, `*.sqlite*`, `.ssh/**`, `.aws/**`, `.gnupg/**`, `.netrc`,
+  `.npmrc`, `.pypirc`, `.git-credentials`, `credentials*`, `token.json`, `tokens.json`,
+  `id_rsa*`, `id_ed25519*`, `*.pem`, `*.key`, `*.p12`, `*.pfx`, and `*.keystore`.
+  Union target Profile protected/secret patterns; malformed protections fail closed. Where
+  stdlib `tomllib` is absent (Python 3.9–3.10), the fixed list alone applies and every result
+  reports `profile_protections: unavailable`; the server never claims Profile rules it did not read.
+  Check both lexical and resolved paths before lookup projection or source hashing.
+- **Bounds:** frames ≤64 KiB; each file ≤1 MiB; aggregate reads ≤4 MiB/256 files per call,
+  including indirect reads; parse depth ≤32; call deadline ≤10 s. Stream at most limit+1
+  bytes before rejection. Output including the envelope ≤16 KiB UTF-8; strings ≤4096 bytes.
+- **No protected output:** only schema-allowlisted metadata, labels, locators, codes, and
+  hashes; never protected contents, raw bodies, subprocess output, tracebacks, or credentials.
+  Sentinel tests cover indirect reads and every error path.
+
+Paginate deterministically without persistent/process result caches. A bounded stateless cursor
+binds tool, root, arguments, source digests, and offset; recheck all guards on each page.
+Changed inputs return `E_CURSOR`; an indivisible oversized item returns `E_LIMIT`. Never
+abbreviate pins or present truncated evidence as complete.
+
+### 4.5 Git is the sole subprocess exception
+
+Only `handoff_pins` needs Git; all other tools forbid children. Use existing trusted
+`/usr/bin/git`, `shell=False`, ≤5 s per child within the call deadline, and a streamed
+64-KiB stdout/stderr cap; kill and reap on overflow/timeout. The fixed argv prefix is:
+
+```text
+/usr/bin/git --no-optional-locks --literal-pathspecs
+-c core.fsmonitor=false -c core.untrackedCache=false -c core.hooksPath=/dev/null
+-c core.attributesFile=/dev/null -C <validated-root>
+```
+
+Only four suffix templates are allowed: `rev-parse --verify HEAD`,
+`status --porcelain=v1 --untracked-files=all`, `log -1 --format=%H -- <validated-relative-path>`,
+and `diff --quiet --no-ext-diff --no-textconv HEAD -- <validated-relative-path>`.
+The last replaces file-body retrieval for modification status. Slots accept validated paths
+only, never options, revisions, shell text, or arbitrary argv. Decode only commits/status booleans.
+
+Replace inherited child environment with constant `GIT_CONFIG_NOSYSTEM=1`,
+`GIT_CONFIG_SYSTEM=/dev/null`, `GIT_CONFIG_GLOBAL=/dev/null`, `GIT_ATTR_NOSYSTEM=1`, and
+`GIT_TERMINAL_PROMPT=0`; each disables external settings/attributes or prompts, not an operator
+input. Before spawning, refuse config includes, external Git directories/object alternates,
+and other metadata reads outside the guarded root/protected-path policy. No hook, helper,
+filter, external diff, textconv, or fsmonitor command may execute. Verify child and filesystem
+traces; existing CLI Git calls do not already prove this stronger boundary [E3].
+
+### 4.6 Exact package and launcher
+
+Only these eight files and their parent directories are admitted under `plugins/mir-mcp/`:
+
+| File | Purpose |
+|---|---|
+| `.claude-plugin/plugin.json` | Claude identity; `mcpServers: "./.mcp.claude.json"`. |
+| `.codex-plugin/plugin.json` | Codex compatibility identity; `mcpServers: "./.mcp.codex.json"`. |
+| `.mcp.claude.json` | One Claude stdio declaration. |
+| `.mcp.codex.json` | One Codex compatibility stdio declaration. |
+| `mir_mcp.py` | Protocol, closed schemas, guards, pagination, fixed module loader. |
+| `ontology/scripts/ontology_check.py` | Byte-identical canonical checker. |
+| `ontology/references/common-contract.json` | Byte-identical common contract distribution. |
+| `shared/relations_query.py` | Byte-identical standalone YAML adapter from §4.3. |
+
+Reject symlinks, submodules, executable bits, special files, and undeclared/transient files or
+directories. No skills, hooks, agents, commands, dependency installs, or network bootstrap.
+Tests/setup docs live outside the active tree. Require existing Python 3.9+, matching the
+canonical checker's floor, and Git. macOS's system `python3` is 3.9 (observed 3.9.6 on the
+maintainer host, 2026-10-26), so a 3.11 floor would fail on stock hosts; §4.4 states the
+`tomllib` fallback. Independent skill-script Python support is unchanged.
+
+Claude manifest keys are exactly `name`, `version`, `description`, `mcpServers`. Codex adds
+only `author: {name}` and `interface: {displayName,shortDescription}` as native metadata.
+Both names are `mir-mcp`; versions/descriptions agree and versions pass the safe grammar.
+Reject unknown/duplicate keys, inline/array/remote MCP references, and extra servers.
+Each declaration is exactly `{mcpServers:{"mir-mcp":<server>}}`: Claude server keys are
+`type: stdio`, `command`, `args`; Codex keys are `command`, `args`, `env_vars: []` [E7].
+Reject env values, URLs, headers, credentials, `cwd`, and all extra launch options.
+
+On macOS (primary), Linux and WSL (separate compatibility lanes), launch exactly
+`python3 -I -B -u <runtime-plugin-root>/mir_mcp.py`, keeping the module path one argv element
+with spaces. Only `${CLAUDE_PLUGIN_ROOT}` or `${PLUGIN_ROOT}`, respectively, substitutes that
+path [E7]. No shell, wrapper, `-c`, `-m`, interpreter fallback, or install command.
+
+Native Windows activation is refused in v1 per decision 1564223563987427390 and ADR-79.
+Later admission must specify native interpreter/path/null-device forms, Git/environment
+behavior, filesystem/protection tests, and address POSIX discovery such as
+`mir_ontology_runner.py:9`'s `pwd` import if that runner is used. Require a new reviewed
+shape/digest and both Windows runtime receipts. WSL keeps its own Linux homes/cache/receipts;
+no native-Windows readiness follows.
+
+### 4.7 Dual-era protocol and token budget
+
+Use newline-delimited JSON-RPC over stdio: MCP `2026-07-28` stateless per-request metadata,
+`server/discover`, and direct modern calls without initialization; plus legacy `initialize`
+and `notifications/initialized` for `2025-11-25`, scoped to the stdio process [E9]. Normalize
+era-specific envelopes to identical tool semantics. Reject unsupported versions; no deprecated
+features, HTTP/SSE fallback, or optional capabilities beyond tools.
+
+`tools/list` returns exactly the five tools in §4.2 table order, with one-line descriptions,
+closed input schemas, `outputSchema`, and `readOnlyHint: true`, `destructiveHint: false`,
+`openWorldHint: false` annotations. No examples, instruction dumps, dynamic tools, or extra
+discovery tools. Compact `structuredContent` with `content: []`
+avoids prose/JSON duplication. A client requiring duplication cannot pass unchanged.
+Tool-result cursors are independent of MCP discovery pagination.
+
+**B4 implementation evidence:** deterministically serialize the complete `tools/list` result;
+record UTF-8 bytes and SHA256; require ≤16 KiB and ≤6000 tokens using each runtime's evidenced
+accounting/tokenizer. In fresh Claude and Codex sessions record versions, discovery requests,
+initial model-visible schema/token load, and load after selecting/calling one tool. Exercise
+each host's supported deferred loading and retain observations. List size alone proves neither
+deferral nor savings. Record eager behavior and unavailable counters honestly; neither supports
+a deferred-loading/measured-budget claim. B4 remains open until both measurements support the
+claimed behavior and budget.
+
+### 4.8 Parity, selection, acknowledgement, rollback, and attestation
+
+Installed Codex `code-review` declares `mcpServers` and stdio fields [E7]; its shell,
+environment forwarding, and extra options are not admitted here. Yoke's existing MCP-field
+rejection is policy, not a Codex limitation [E2]. Normalize server identity, launcher, schemas,
+exact inventory, bounds, errors, and results; preserve raw host-prefixed tool names in evidence.
+Unsupported layouts fail parity, with no project-config fallback.
+
+Tracked consumer selection explicitly records `mir-mcp`, runtimes, server, and tools.
+ADR-89 §2.2 registration remains host-wide at user scope: unrelated repository sessions can see
+the tools. Guarded read-only operations with explicit roots cannot dispatch or mutate, but can
+expose allowed metadata. Roots are not authentication/session isolation; target read permission
+and local policy remain necessary. Keep each selected set separate from the host-active union;
+removing one consumer cannot unregister a package another consumer still selects.
+
+Apply ADR-88 §2.2 items 4–5 without relaxation:
+
+1. Validate complete materialized inventory and both marketplaces before registration, including
+   unselected packages without activating them. Bind provider commit, marketplace/tree digests,
+   kind, launcher, schemas, and exact inventory into locks/receipts. A human locally acknowledges
+   the computed tree SHA256 in `active_package_digest_acknowledgements`; generic enable/apply
+   is insufficient. Every changed byte invalidates acknowledgement and blocks new registration,
+   finalization, and READY claims. Status reports drift, not a remotely stopped process.
+2. Rollback restores preceding provider, lock, registry, and runtime registration only after
+   revalidating all restored inventory/digests/acknowledgements. No prior MCP selection means
+   no restored MCP registration. Reject incomplete/downgraded receipts; failed activation restores
+   prior registration. Tools write no target state requiring undo.
+3. Fresh Claude/Codex sessions outside the provider checkout must each prove installed digest,
+   client/version/session, OS/interpreter, stdio invocation, protocol era, exact five-tool inventory
+   without extras, and a bounded safe call per tool. Skill/hook discovery or manifests alone
+   cannot attest MCP. Finalize only after integrity, parity, B4, and both receipts pass.
+
+## 5. Rejected Alternatives — HARD
+
+- **Source in Mir Harness:** private source is unavailable to other users; public tools belong
+  in Yoke under Harness management.
+- **Tools inside `mir-core`:** violates skills-only admission and enlarges ordinary skill-update authority.
+- **Agent Hub tools:** owner-only Agent Hub capabilities outside this public read-only contract.
+- **Write tools in v1:** require separate mutation, recovery, and authority decisions.
+- **DB relation adapters in v1:** add consistency/WAL/sidecar contracts; v1 denies DB files.
+- **HTTP or SSE:** adds listener/deployment/authentication concerns to local tools.
+- **Generic MCP admission:** one reviewed use case cannot admit arbitrary servers.
+- **Sibling-cache imports:** violate independent package selection/version/cache isolation.
+
+## 6. Positive Consequences
+
+Public, bounded tools need no owner services or credentials. Shared checks have tested byte
+identity; skills work without MCP. Compact results and runtime measurements make costs reviewable.
+
+## 7. Negative Consequences — HARD
+
+Read access still needs review, confinement, digest renewal, and host-wide visibility accounting;
+stdio/annotations alone provide no sandbox. Guarded checker interfaces and the standalone YAML
+subset adapter are new work, not present CLI guarantees. Exact copies need drift tests;
+unsupported YAML and native Windows fail closed. Interpreter/Git prerequisites and real B4/runtime
+evidence remain necessary; source tests and proposed text cannot establish delivery.
+
+## 8. Out-of-Scope — HARD
+
+This change edits only this proposed ADR and, if necessary, its index title. No code, other ADR,
+config, plugin, lock, receipt, generated file, runtime binding, commit, push, install,
+sync/update/apply, or consumer write is authorized. Implementation and native Windows admission
+are later work. No unresolved owner policy question blocks this draft; implementation evidence
+is still required.
+
+## 9. Verification
+
+The implementing change must supply these checks; none is claimed executed here:
+
+- Configuration tests admit schema 5 only for the exact kind/name/path/inventory; reject generic,
+  mixed/unknown kinds and policy relaxation; preserve legacy checks; omit MCP from every default Profile.
+- Package/declaration tests prove all eight files, safe versions, closed manifests/argv,
+  credential-free content, empty environment inputs, and reject symlinks, submodules, executable
+  bits, undeclared files, duplicate keys, extra servers, shell/URL options, and launch drift.
+- Security tests cover path traversal/realpath/symlink escape/replacement races, direct/indirect
+  protected paths, Profile deny rules, special files, all size/count/depth/time/output caps,
+  sentinel non-disclosure, and stale cursors. Static no-network/environment checks plus runtime
+  no-network/no-write traces cover success/error/shutdown and descendants; no `.pyc` or caches.
+- Git tests permit only §4.5 argv/environment, disable external diff/textconv/helpers, refuse
+  external metadata/config includes, bound capture/time, and forbid shell/listener/credential
+  access, child writes, and non-Git subprocesses.
+- Hermetic dual-era tests cover discovery/direct modern calls, legacy initialization/calls,
+  unsupported versions, era-specific envelopes, malformed/oversized frames, exact order/schemas,
+  short errors, cursor pagination, stdout purity, and rejection of deprecated/unadvertised features.
+- Single-source tests compare checker/contract/YAML-adapter bytes and guard every backend read.
+  YAML differential fixtures preserve declared traversal on the admitted subset; unsupported
+  forms/DB adapters fail. Isolated package tests work without sibling caches/CLI/source checkout;
+  skill no-MCP paths and `spec-architect` neutrality still pass.
+- Manager tests enforce exact acknowledgement, complete inventory/marketplace digests,
+  stale/downgrade rejection, selected-set versus active-union integrity, rollback to validated
+  prior registration/absence, and MCP-specific attestation/finalization extensions [E2].
+- Real isolated-home Claude/Codex checks use two consumer directories and fresh sessions for exact
+  installed inventory and safe calls plus B4 size/deferred-loading measurements. Verify macOS,
+  Linux, and WSL independently; refuse native Windows. Run affected admission/security tests
+  and generated parity in that later implementing change.
+
+For this ADR-only change, behavior scenarios are not applicable. Check frontmatter/required
+sections, links, evidence locations, requested coverage, and diff scope; future runtime/security
+checks remain future gates, not current passes.
+
+## 10. References
+
+- [ADR-74](adr-74-portable-bootstrap-capability-sources-and-memory.md),
+  [ADR-79](adr-79-agent-guided-platform-scope.md),
+  [ADR-86](adr-86-mir-harness-managed-repository-maintenance.md),
+  [ADR-88](adr-88-active-plugin-component-admission.md) §§2.1–2.3, 5,
+  [ADR-89](adr-89-dual-runtime-capability-management.md) §2.2, and
+  [ADR-90](adr-90-role-plugins-and-common-hooks.md) §§2.3–2.4, 5.
+- **E1, verified in repository, 2026-10-26:** `config/capability-sources.json:30–40` and
+  `src/mir/core/capabilities/config.py:192–263`: current kinds, nonempty skills, closed
+  component policy, and hook-only acknowledgements.
+- **E2, verified in repository, 2026-10-26:**
+  `src/mir/core/capabilities/manager.py:455–473,503–550,1314–1318`: validation/acknowledgement;
+  `:1745` (`attest`), `:1976` (`finalize`), `:3066` (`_rollback_runtime_registration`)
+  are extension points, not MCP implementation. `tests/test_plugin_skill_packages.py:53`
+  forbids MCP fields in current role manifests.
+- **E3, verified in repository, 2026-10-26:**
+  `plugins/mir-core/skills/ontology/scripts/ontology_check.py:153,214` contract/mapping;
+  `:639` lookup; `:577` impact; `:697` handoff pins; `:534–574,724–769` existing Git
+  behavior, which differs from §4.5; `:14` relative contract location.
+- **E4, verified in repository, 2026-10-26:** `src/mir/core/relations.py:218,328,389`
+  loads/bounds/queries YAML; `:54–84` owns purpose/direction rules;
+  `src/mir/cli/relations.py:21,46,96–104` routes YAML separately from DB.
+  These implementations contain no MCP wrapper.
+- **E5, verified in repository, 2026-10-26:**
+  `plugins/mir-core/skills/ontology/scripts/mir_ontology_runner.py:47–72,99–123` resolves
+  versioned per-plugin caches/installation records; `tests/test_plugin_skill_packages.py:227–235`
+  copies and validates each plugin alone.
+- **E6, verified in repository, 2026-10-26:**
+  `plugins/mir-core/skills/spec-architect/SKILL.md:25` promises files/text search without
+  a particular CLI/IDE/MCP;
+  `plugins/mir-core/skills/ontology/scripts/mir_ontology_runner.py:9` imports `pwd`.
+- **E7, installed artifact and official docs rechecked 2026-10-26:** host-relative
+  `.codex/plugins/cache/openai-bundled/code-review/26.928.21956/.codex-plugin/plugin.json:18`
+  references `./.mcp.json`; its `.mcp.json:2–12` shows stdio launch/`env_vars` fields.
+  Read-only external evidence proves declaration support, not activation. OpenAI's
+  [packaging guide](https://developers.openai.com/plugins/build/plugins) retains Codex
+  compatibility manifests; its [local MCP guide](https://developers.openai.com/plugins/deploy/desktop-only#configure-a-local-mcp-server)
+  documents stdio/`${PLUGIN_ROOT}`. Claude's [manifest reference](https://code.claude.com/docs/en/plugins-reference#mcpservers)
+  documents JSON references/`${CLAUDE_PLUGIN_ROOT}`.
+- **E8, parent-supplied owner authority/evidence:** Discord 2026-10-26 decisions
+  `1564217596600131598` (Hub exclusion/public tools), `1564220383337517089` (public Yoke
+  source/tools only), `1564223563987427390` (five tools/platform order/ADR).
+  Harness `tasks/reports/yoke-public-mcp-tool-inventory-2026-10-26.md` is planning evidence,
+  not added authority; constraint 12's repository source is independently verified in E6.
+- **E9, official protocol docs retrieved 2026-10-26:** MCP
+  [modern versioning](https://modelcontextprotocol.io/specification/2026-07-28/basic/versioning),
+  [discovery](https://modelcontextprotocol.io/specification/2026-07-28/server/discover),
+  [tools](https://modelcontextprotocol.io/specification/2026-07-28/server/tools), and
+  [legacy lifecycle](https://modelcontextprotocol.io/specification/2025-11-25/basic/lifecycle).
+- **Semantic scope:** `.mir/ontology-map.json#/domain/concepts/2` indexes admitted kinds;
+  `#/domain/invariants/0` preserves consumer authority, `#/domain/invariants/1` separates
+  installation/discovery, and `#/domain/invariants/2` indexes the current hook/local-MCP
+  boundary. This proposal does not claim current map/implementation admission of `mir-mcp`.
