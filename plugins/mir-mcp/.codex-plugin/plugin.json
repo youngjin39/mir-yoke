@@ -1,0 +1,13 @@
+{
+  "name": "mir-mcp",
+  "version": "0.13.31",
+  "description": "Bounded read-only ontology and declared YAML relation tools.",
+  "mcpServers": "./.mcp.codex.json",
+  "author": {
+    "name": "Mir Yoke Contributors"
+  },
+  "interface": {
+    "displayName": "Mir MCP",
+    "shortDescription": "Read-only ontology and relation tools"
+  }
+}

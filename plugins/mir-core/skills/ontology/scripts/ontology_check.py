@@ -48,17 +48,30 @@ def pointer(base, key):
 
 
 class Checker:
-    def __init__(self):
+    def __init__(self, io=None):
+        # Optional IO owns every target access, including indirect references.
+        # Its path/exists/read methods must enforce the caller's read policy.
+        self.io = io
         self.errors = []
         self.warnings = []
         self.checked_refs = set()
         self.line_refs = set()
 
-    def error(self, at, message):
-        self.errors.append({"pointer": at, "message": message})
+    def error(self, at, message, code="E_VALIDATION"):
+        finding = {"pointer": at, "message": message}
+        if self.io is not None:
+            finding["code"] = code
+        self.errors.append(finding)
 
-    def warn(self, at, message):
-        self.warnings.append({"pointer": at, "message": message})
+    def warn(self, at, message, code="W_VALIDATION"):
+        finding = {"pointer": at, "message": message}
+        if self.io is not None:
+            finding["code"] = code
+        self.warnings.append(finding)
+
+    def read_text(self, relative):
+        """Match Path.read_text newline handling through the supplied boundary."""
+        return self.io.read(relative).decode("utf-8").replace("\r\n", "\n").replace("\r", "\n")
 
     def object(self, value, at):
         if not isinstance(value, dict):
@@ -95,6 +108,17 @@ class Checker:
         if ".." in PurePosixPath(raw_path).parts:
             self.error(at, "ref escapes repository: parent traversal is not allowed")
             return
+        if self.io is not None:
+            target = self.io.path(raw_path, allow_missing=True)
+            if not self.io.exists(raw_path):
+                self.error(at, "ref path does not exist")
+                return
+            if separator and not resolves_symbol(
+                self.read_text(raw_path), name, target.suffix.lower(),
+                validate_json=getattr(self.io, "validate_json", None),
+            ):
+                self.error(at, "symbol anchor not found (check name not found): " + name)
+            return target
         target = (root / raw_path).resolve()
         try:
             target.relative_to(root)
@@ -115,12 +139,13 @@ class Checker:
         target = self.ref(value, at, root)
         if target is None:
             return
-        if not target.is_file():
+        if self.io is None and not target.is_file():
             self.error(at, "check ref must name a file")
             return
         path = value.split("#", 1)[0]
         line = re.search(r":(\d+)$", path)
-        text = target.read_text(encoding="utf-8")
+        text = (self.read_text(ref_path(value)) if self.io is not None
+                else target.read_text(encoding="utf-8"))
         if line:
             number = int(line[1])
             if number < 1:
@@ -245,12 +270,15 @@ class Checker:
             if declaration["sha256"] != hashlib.sha256(contract_bytes).hexdigest():
                 self.warn("/contract/sha256", "contract sha256 differs from loaded file")
         profile = root / ".mir/repo-profile.toml"
-        if not profile.is_file():
+        profile_exists = (self.io.exists(".mir/repo-profile.toml") if self.io is not None
+                          else profile.is_file())
+        if not profile_exists:
             self.error("/namespace", "missing Profile: .mir/repo-profile.toml")
         else:
             slug = re.search(
                 r'^\s*slug\s*=\s*"([^"\n]+)"\s*(?:#.*)?$',
-                profile.read_text(encoding="utf-8"),
+                (self.read_text(".mir/repo-profile.toml") if self.io is not None
+                 else profile.read_text(encoding="utf-8")),
                 re.MULTILINE,
             )
             if not slug:
@@ -377,7 +405,7 @@ class Checker:
         return declaration.get("version")
 
 
-def resolves_symbol(text, name, suffix):
+def resolves_symbol(text, name, suffix, validate_json=None):
     """Resolve declared names, not arbitrary mentions; keep dotted check-name compatibility."""
     if not name:
         return False
@@ -411,6 +439,8 @@ def resolves_symbol(text, name, suffix):
                     return True
         text = "\n".join(unfenced)
     if suffix == ".json":
+        if validate_json is not None:
+            validate_json(text)
         try:
             document = json.loads(text)
         except ValueError:
@@ -574,7 +604,7 @@ def changed_paths(args, root):
     return sorted(paths - {""})
 
 
-def impact(mapping, root, changed, git_diff=False):
+def impact(mapping, root, changed, git_diff=False, io=None):
     affected = []
     affected_paths = set()
     stale = []
@@ -594,7 +624,7 @@ def impact(mapping, root, changed, git_diff=False):
                         "message": "no check declared; no test link inferred",
                     })
         for location, ref in refs:
-            check = Checker()
+            check = Checker(io=io)
             if git_diff and re.search(r":\d+$", ref.split("#", 1)[0]) and touches(
                 ref_path(ref), changed
             ):
@@ -614,6 +644,8 @@ def impact(mapping, root, changed, git_diff=False):
                 else:
                     check.ref(ref, location, root)
             except (OSError, UnicodeError, ValueError, RuntimeError):
+                if io is not None:
+                    raise
                 check.error(location, "ref could not be resolved")
             for finding in check.errors:
                 stale.append({**finding, "ref": ref})
@@ -636,7 +668,7 @@ def impact(mapping, root, changed, git_diff=False):
     }
 
 
-def lookup(mapping, query, limit):
+def lookup(mapping, query, limit, io=None):
     terms = set(re.findall(r"[^\W_]+", query.casefold(), re.UNICODE))
     matches = []
     for at, entry in map_entries(mapping):
@@ -649,7 +681,14 @@ def lookup(mapping, query, limit):
             refs = list(dict.fromkeys(ref for _, ref in entry_refs(entry, at)))
             matches.append({"pointer": at, "score": score, "entry": entry, "evidence": refs})
     matches.sort(key=lambda entry: -entry["score"])
-    return {"contract": mapping.get("contract", {}), "matches": matches[:limit]}
+    selected = matches[:limit]
+    if io is not None:
+        # Projection reveals locators even though it never reads their bodies.
+        # Guard lexical and resolved paths before returning selected evidence.
+        for match in selected:
+            for ref in match["evidence"]:
+                io.path(ref_path(ref), allow_missing=True)
+    return {"contract": mapping.get("contract", {}), "matches": selected}
 
 
 def positive_int(raw):
@@ -694,8 +733,10 @@ def finalize_handoff_pins(pins, paths):
     return {**pins, "unknowns": unknowns, "pin_inventory": inventory}
 
 
-def handoff_pins(repo, paths, report):
+def handoff_pins(repo, paths, report, io=None, git_runner=None):
     """Collect best-effort, read-only pins without changing mapping validation."""
+    if io is not None and git_runner is None:
+        raise ValueError("guarded handoff_pins requires git_runner")
     unknowns = []
     pins = {
         "repository_root": None,
@@ -712,16 +753,25 @@ def handoff_pins(repo, paths, report):
     for key, value in pins.items():
         if value is None and key not in ("repository_root", "head", "dirty"):
             unknowns.append(key + ": unavailable")
-    try:
-        root = repo.resolve()
+    if io is not None:
+        root = io.root
         pins["repository_root"] = str(root)
-    except (OSError, RuntimeError) as exc:
-        unknowns.append("repository_root: " + str(exc))
-        unknowns.extend(["head: unavailable", "dirty: unavailable"])
-        unknowns.extend(str(path) + ": repository root unavailable" for path in paths)
-        return finalize_handoff_pins(pins, paths)
+    else:
+        try:
+            root = repo.resolve()
+            pins["repository_root"] = str(root)
+        except (OSError, RuntimeError) as exc:
+            unknowns.append("repository_root: " + str(exc))
+            unknowns.extend(["head: unavailable", "dirty: unavailable"])
+            unknowns.extend(str(path) + ": repository root unavailable" for path in paths)
+            return finalize_handoff_pins(pins, paths)
 
     def git(label, *args):
+        if git_runner is not None:
+            result = git_runner(label, *args)
+            if result is None:
+                unknowns.append(label + ": git command failed")
+            return result
         try:
             result = subprocess.run(
                 ["git", "--no-optional-locks", "--literal-pathspecs", "-C", str(root), *args],
@@ -735,36 +785,57 @@ def handoff_pins(repo, paths, report):
         return None
 
     head = git("head", "rev-parse", "--verify", "HEAD")
-    pins["head"] = head.decode("ascii").strip() if head is not None else None
-    status = git("dirty", "status", "--porcelain", "--untracked-files=all")
+    pins["head"] = (head if isinstance(head, str) else head.decode("ascii").strip()
+                    ) if head is not None else None
+    status = git("dirty", "status",
+                 "--porcelain=v1" if git_runner is not None else "--porcelain",
+                 "--untracked-files=all",
+                 *(("--ignore-submodules=all",) if git_runner is not None else ()))
     pins["dirty"] = bool(status) if status is not None else None
     for raw in paths:
         source = {"path": raw, "revision": None, "sha256": None, "modified_vs_head": None}
         pins["sources"].append(source)
-        try:
-            path = (root / raw).resolve()
+        if io is not None:
+            path = io.path(raw, allow_missing=True)
             relative = path.relative_to(root).as_posix()
-        except (OSError, ValueError, RuntimeError) as exc:
-            unknowns.append(raw + ": outside repository or unresolved: " + str(exc))
-            continue
+        else:
+            try:
+                path = (root / raw).resolve()
+                relative = path.relative_to(root).as_posix()
+            except (OSError, ValueError, RuntimeError) as exc:
+                unknowns.append(raw + ": outside repository or unresolved: " + str(exc))
+                continue
         source["path"] = relative
-        try:
-            payload = path.read_bytes()
-        except (OSError, ValueError) as exc:
-            unknowns.append(relative + ": file unavailable: " + str(exc))
-            continue
+        if io is not None:
+            if not io.exists(raw):
+                unknowns.append(relative + ": file unavailable")
+                continue
+            payload = io.read(raw)
+        else:
+            try:
+                payload = path.read_bytes()
+            except (OSError, ValueError) as exc:
+                unknowns.append(relative + ": file unavailable: " + str(exc))
+                continue
         source["sha256"] = hashlib.sha256(payload).hexdigest()
         revision = git(relative + ".revision", "log", "-1", "--format=%H", "--", relative)
         if revision is not None:
-            source["revision"] = revision.decode("ascii").strip() or "untracked"
+            source["revision"] = (revision if isinstance(revision, str)
+                                  else revision.decode("ascii").strip()) or "untracked"
             if source["revision"] != "untracked":
                 source["revision_kind"] = "last_change_commit"
         if source["revision"] == "untracked":
             unknowns.append(relative + ".modified_vs_head: untracked")
         elif pins["head"] is not None:
-            original = git(relative + ".modified_vs_head", "show", "HEAD:" + relative)
-            if original is not None:
-                source["modified_vs_head"] = payload != original
+            if git_runner is not None:
+                source["modified_vs_head"] = git(
+                    relative + ".modified_vs_head", "diff", "--quiet", "--no-ext-diff",
+                    "--no-textconv", "--ignore-submodules=all", "HEAD", "--", relative,
+                )
+            else:
+                original = git(relative + ".modified_vs_head", "show", "HEAD:" + relative)
+                if original is not None:
+                    source["modified_vs_head"] = payload != original
         else:
             unknowns.append(relative + ".modified_vs_head: HEAD unavailable")
     return finalize_handoff_pins(pins, paths)

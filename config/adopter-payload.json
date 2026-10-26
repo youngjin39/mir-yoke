@@ -1289,7 +1289,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "docs/decisions/INDEX.md",
-      "sha256": "be9473a80a769377853d0cd55b084bb5038f5ce3986a154c8949f94a53b1ed6f"
+      "sha256": "82b95327bd3bd5cfd68564ae77527578fc1356ccb58266644e771a523bfd6786"
     },
     {
       "classification": "historical",
@@ -1716,6 +1716,12 @@
       "disposition": "remove",
       "path": "docs/decisions/adr-90-role-plugins-and-common-hooks.md",
       "sha256": "21e41eae100a0474485fd494eb3e38304cb9121097a8bee0a8ebb430a0ad86cf"
+    },
+    {
+      "classification": "historical",
+      "disposition": "remove",
+      "path": "docs/decisions/adr-91-stdio-mcp-package-admission.md",
+      "sha256": "ef6481d5633d866f43e6e11b7e7c627ea76a5aa90128944f078d50b02b45fb92"
     },
     {
       "classification": "reference",
@@ -3107,7 +3113,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "plugins/mir-core/skills/ontology/scripts/ontology_check.py",
-      "sha256": "bff0aac5f840dffd013de2bf877220d824f63662cd609f680cdce9ed46a3a547"
+      "sha256": "90e733a4895b5360938453ea0aded1d1dfb2e68225295ae21d3f3c183920c3a1"
     },
     {
       "classification": "optional-consumer-tool",
@@ -3144,6 +3150,12 @@
       "disposition": "remove",
       "path": "plugins/mir-core/skills/selective-relations/references/selective-relations.md",
       "sha256": "fa1e7dd6b2f865baab52a44ae360d24a74cd3c05a55b20dbddddb1a5ccad7100"
+    },
+    {
+      "classification": "optional-consumer-tool",
+      "disposition": "remove",
+      "path": "plugins/mir-core/skills/selective-relations/scripts/relations_query.py",
+      "sha256": "445f0d0b11860dd8e73e2342189c66be5e0eabe9ba90a57c5a7c9a1a389db7fa"
     },
     {
       "classification": "optional-consumer-tool",
@@ -3258,6 +3270,54 @@
       "disposition": "remove",
       "path": "plugins/mir-lifecycle-hooks/skills/runtime-continuity/scripts/handoff_packet.py",
       "sha256": "9b42581bd4f599da19ba573f91f7fb14ce0ed34f14241a74c70e1008d21caa7e"
+    },
+    {
+      "classification": "optional-consumer-tool",
+      "disposition": "remove",
+      "path": "plugins/mir-mcp/.claude-plugin/plugin.json",
+      "sha256": "a7887179580025e4fe274c50ff677de039620afc7ba5293093681d25abdb3731"
+    },
+    {
+      "classification": "optional-consumer-tool",
+      "disposition": "remove",
+      "path": "plugins/mir-mcp/.codex-plugin/plugin.json",
+      "sha256": "91b5c4dabe6dea961456a0cf6e2a3fdc337d8a2590ef41b25db8d45af215b556"
+    },
+    {
+      "classification": "optional-consumer-tool",
+      "disposition": "remove",
+      "path": "plugins/mir-mcp/.mcp.claude.json",
+      "sha256": "97f7dfce095ca3eef6203e2687c84c5915d55f2a080d95731f8d102b4dcfb137"
+    },
+    {
+      "classification": "optional-consumer-tool",
+      "disposition": "remove",
+      "path": "plugins/mir-mcp/.mcp.codex.json",
+      "sha256": "e1f4c638ed5f14366feeac1034601972f3e53418e4dbf79e56a828f69f25e98d"
+    },
+    {
+      "classification": "optional-consumer-tool",
+      "disposition": "remove",
+      "path": "plugins/mir-mcp/mir_mcp.py",
+      "sha256": "0551fa623f36fd1ccffdcec476e903565d644abe0df65012f45dae80105eb649"
+    },
+    {
+      "classification": "optional-consumer-tool",
+      "disposition": "remove",
+      "path": "plugins/mir-mcp/ontology/references/common-contract.json",
+      "sha256": "b2f1ecd01aaa88d41caac2bc2481e7f4c5a429cff3983aaa85ddfb0fc2f1b93f"
+    },
+    {
+      "classification": "optional-consumer-tool",
+      "disposition": "remove",
+      "path": "plugins/mir-mcp/ontology/scripts/ontology_check.py",
+      "sha256": "90e733a4895b5360938453ea0aded1d1dfb2e68225295ae21d3f3c183920c3a1"
+    },
+    {
+      "classification": "optional-consumer-tool",
+      "disposition": "remove",
+      "path": "plugins/mir-mcp/shared/relations_query.py",
+      "sha256": "445f0d0b11860dd8e73e2342189c66be5e0eabe9ba90a57c5a7c9a1a389db7fa"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4373,7 +4433,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/change_log.md",
-      "sha256": "1d5cf00bb2366f51c24970fe5445e3f21a7b1d331c2985c98d54c1db71eda5f5"
+      "sha256": "d3c32680bb8978f6fd76ab85e21f0b157d84eb97f118306249271b48411eb051"
     },
     {
       "classification": "reference",
@@ -4415,7 +4475,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/plan.md",
-      "sha256": "09e8ad019f65514acc8e2eaa69fe1a671ff5faf3e9250c98ee388d7727c209ae"
+      "sha256": "dcb383eb0d27bec685cc969247f74e13dc1d24a561c214ff1b838f7ee4a10bc3"
     },
     {
       "classification": "reference",
@@ -4788,6 +4848,54 @@
       "disposition": "remove",
       "path": "tests/test_minimal_starter.py",
       "sha256": "0592248fed3785c99f0c43c7550fbe94ecd2768dfc1d7b75635d99e93212fcc6"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "tests/test_mir_mcp_checker.py",
+      "sha256": "c1ebbc388e60c3d6b4c87f506c629fcf9c077170ca7c15f9ec61b8e13199c540"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "tests/test_mir_mcp_git.py",
+      "sha256": "b8cb498abb9c9828587cd5cfdac0ae6325895f70827b6bd59c7d3fa66be9feda"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "tests/test_mir_mcp_indirect_guards.py",
+      "sha256": "342584977a9d739ef544e37c7be7b69dafdd820a8e4b5fdfa573b68ba7157ef3"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "tests/test_mir_mcp_limits.py",
+      "sha256": "ecf1d0a49e17ea9e4efee4405b481f0a991c73c1900260fc65f1e434961b671a"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "tests/test_mir_mcp_package.py",
+      "sha256": "1efd2bc700093f77907dff7799670ddaeae2b40b3164a28d30fcc28527f9df31"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "tests/test_mir_mcp_protocol.py",
+      "sha256": "f05a331473c5b89021eb7ec8e065218b8903d0b14cb2af27200bf60260d56fbf"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "tests/test_mir_mcp_relations.py",
+      "sha256": "c81e2890dcf1e2d59bb7a1067c902c732943c5efced718043ddf48f680c3499b"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "tests/test_mir_mcp_security.py",
+      "sha256": "55375fcc9345537f34641587a4244467996f9a9f254fb1885d5e3bb75b92ea11"
     },
     {
       "classification": "template-maintainer-tool",

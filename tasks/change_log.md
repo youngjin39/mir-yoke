@@ -12489,3 +12489,278 @@ all script/hook/agent/command/runtime policy sources are unchanged.
 
 After final bookkeeping and payload regeneration, focused remaining-item, payload,
 reference and sanitization checks passed: `48 passed in 0.73s`.
+
+
+## Cursor before B3 mir-mcp slice 1 (2026-10-26)
+
+# Plan
+
+## Active task: capability-remaining-0.13.31-2026-10-24
+
+Intent and design authority: the owner-supplied `remaining-1024/writer.md` brief,
+received 2026-10-24. Baseline: f4e14d9, Mir Yoke 0.13.30.
+Prepare its remaining guidance items exactly in this scratch clone, without commits,
+capability-lock changes, other repository writes, or runtime behavior changes.
+The previous cursor is preserved verbatim in
+[the evidence log](change_log.md#cursor-before-capability-remaining-2026-10-24).
+
+Design: edit only the named skill guidance, targeted tests, release metadata and
+adopter payload. Preserve prior meanings and adaptation pins; check upstream HEADs
+and licenses read-only. Keep short references below 50 lines; use a short linked
+reference for additions to an already-long reference. Korean content stays Korean
+with exact hash/fidelity pins. Bump current release surfaces to 0.13.31 without
+rewriting historical release records. No new runtime behavior or authority.
+
+Request matrix: items 1, 2, 3a-l each receive targeted fail-first assertions in
+`tests/test_capability_remaining.py`; release versions, payload, hashes and lifecycle
+digest acknowledgement receive existing consistency checks. Required final checks:
+full pytest (expected pre-bind lock failure), Ruff, Codex parity and diff check.
+Behavior scenarios: not applicable, because all shipped changes are guidance text
+or release metadata; hooks, scripts and runtime execution remain unchanged.
+
+Status: guidance items 14/14 prepared; request matrix 21/22 evidenced. Release
+versions, payload, Korean hashes, lifecycle acknowledgement, Ruff, Codex parity
+and diff checks pass. The full-suite cell remains open: final pytest returned
+`7 failed, 2848 passed, 1 skipped in 374.68s (0:06:14)`. One failure is the expected
+pre-bind lock. Six release-evidence fixtures require observer state outside both
+target and provider, incompatible with the clone-only write boundary. No unrelated
+runtime/test rule was weakened. Main should re-run that fixture group in an
+owner-authorized external temporary workspace; binding remains out of scope.
+Evidence and per-item placements are in
+[the evidence log](change_log.md#capability-remaining-01331-preparation-2026-10-24).
+
+Main acceptance and release (2026-10-24, owner Discord 1563513553972109346 approving option 1, parent-supplied):
+- Commits: daa7e35 source (full suite 2855 passed plus the expected pre-bind lock failure); bind 3f2fe1e (full suite 2856 passed), tagged v0.13.31, pushed, GitHub release created.
+- Provider update from the enrolled 0.13.30 provider-update lock (2779c96); recorded in 48d334c.
+- Claude headless session c1716994: all 23 `mir-*` skills; Mir continuity line at SessionStart; SessionStart 3, UserPromptSubmit 5, PreToolUse 5 and Stop 6 hook responses.
+- Codex session 01a16db5 (0.13.31 cache): all 23 skills, SessionStart, the UserPromptSubmit packet, the PreToolUse denial "Owner forbids commands in this handoff turn" and the Stop hook_prompt under `mir-lifecycle-hooks/0.13.31`.
+- Attested both runtimes with no missing skills or hooks; finalized after restart; `mir capability status` ready at 3f2fe1e.
+
+## B3 mir-mcp slice 1 continuation (2026-10-26)
+
+Authority: the current parent-supplied B3 continuation and binding Git decision,
+recorded in the single cursor `tasks/plan.md`. ADR-91 remains proposed; this work
+does not establish package admission or runtime registration. Semantic evidence:
+`.mir/ontology-map.json#/domain/invariants/0` retains consumer authority and
+`#/domain/invariants/1` separates installation from runtime discovery. The map
+SHA256 was verified as
+`516c5b160c0fa49de51e4a0dc6f14c6e6a955d1baf72cc75dc2c93de7ea23e79`.
+
+The inherited implementation and six initial test files were already present.
+Fail-first evidence observed before the corresponding corrections:
+
+- Commands below use `B3_UV_CACHE` and `B3_BASETEMP` for the owner's external
+  cache and scratch paths; host-specific absolute paths are omitted from this
+  public evidence log. Exact expanded commands are returned to the parent.
+- Git nominal-metadata test: `UV_CACHE_DIR="$B3_UV_CACHE"
+  PYTHONDONTWRITEBYTECODE=1 uv run pytest -p no:cacheprovider
+  --basetemp="$B3_BASETEMP-git"
+  tests/test_mir_mcp_git.py -k admit_ordinary_git_metadata -q` returned
+  **1 failed, 18 deselected** because `git_preflight` always returned false.
+  This delegated run was parent-supplied execution evidence; the Main subsequently
+  inspected the filesystem changes and reran the integration tests.
+- Protocol regressions: `UV_CACHE_DIR="$B3_UV_CACHE"
+  PYTHONDONTWRITEBYTECODE=1 uv run pytest -q -p no:cacheprovider
+  --basetemp="$B3_BASETEMP"
+  tests/test_mir_mcp_protocol.py -k 'legacy_requires_valid_client_info or malformed_mapping'`
+  returned **14 failed, 6 passed, 56 deselected**. Four failures exposed invalid
+  legacy client identity acceptance; four exposed raw AttributeError tracebacks
+  from malformed contract objects. Six assertions initially required all query
+  operations to validate unrelated mapping sections; those assertions were
+  corrected to preserve the existing canonical query semantics.
+- The same command selecting `-k 'null_meta or null_request_id'` returned
+  **4 failed, 76 deselected**, before null metadata/ID handling was corrected.
+  Both protocol regressions ran through both isolated interpreter launchers.
+
+Protocol interpretation was checked against official sources on 2026-10-26:
+[2026-07-28 RequestMetaObject](https://modelcontextprotocol.io/specification/2026-07-28/schema#requestmetaobject)
+declares optional clientInfo and required protocolVersion/clientCapabilities;
+[2025-11-25 lifecycle](https://modelcontextprotocol.io/specification/2025-11-25/basic/lifecycle#initialization)
+requires client implementation information during initialize. Present identity
+objects require string name/version. The modern omission is accepted, and legacy
+omission is refused. This is protocol compliance, not an ADR deviation.
+
+ADR-91 section 4.5 and its section 9 Git bullet were amended exactly within the
+parent's narrowed guarantee. Fixed metadata checks replace the unconditional Git
+refusal. Filters, submodule config and partial-clone/promisor redirection are also
+refused because the exact allowed argv cannot safely disable their helpers.
+No recursive/per-object path-guard or concurrent same-user child-race guarantee is
+claimed. A new test expecting the excluded child-spawn race defense was corrected
+to check root replacement *before* preflight; ordinary read replacement tests remain.
+
+Intermediate observations: 423 existing ontology/relations/plugin package tests
+passed unchanged; a new-test integration caught checker-copy drift and the copies
+were regenerated from canonical sources. One isolated new-test run observed an
+unexpected E_IO for an unsafe input, and another observed a failed Python-3.9
+Profile fallback assertion; their causes were not established. The Profile group
+passed when rerun. Concurrent source/test changes outside this continuation's
+tools were observed and surfaced to the owner. Final runs below supersede these
+intermediate outcomes; no speculative environment diagnosis is asserted.
+
+### Observed checks and concurrent hardening boundary
+
+All commands used `PYTHONDONTWRITEBYTECODE=1` and the owner's external UV cache.
+Pytest used `-p no:cacheprovider` and the owner's external B3 basetemp unless
+an isolated suffix is named. Host paths remain outside this public record.
+
+- `uv run pytest -p no:cacheprovider --basetemp="$B3_BASETEMP"
+  tests/test_mir_mcp_*.py`: **365 passed in 44.29s** before the subsequent
+  read-redirection regressions and separately running hardening edits.
+- `uv run pytest -p no:cacheprovider --basetemp="$B3_BASETEMP"
+  tests/test_cli_relations.py tests/test_plugin_skill_packages.py
+  tests/test_ontology_skill.py tests/test_ontology_runner.py
+  tests/test_mir_ontology.py`: **423 passed in 28.60s**, rerun after the canonical
+  JSON-validation callback and decoded Git-runner seam were integrated.
+- The one full suite, `uv run pytest -p no:cacheprovider
+  --basetemp="$B3_BASETEMP"`: **6 failed, 3215 passed in 539.69s**. Two failures
+  compared the stale adopter payload, one checked the managed-tree lock digest,
+  one slim check preserved changed canonical helper files, one recovery test found
+  an already-existing temporary worktree, and one public-surface scan matched the
+  ADR's literal slash-separated home label. No validator or existing test was edited.
+- The public scan passed (**1 passed in 0.29s**) after replacing that literal
+  slash-separated label with an equivalent comma-separated list. No security rule
+  changed. The recovery test passed (**1 passed in 7.60s**) with an isolated
+  task-owned external TMPDIR, without changing the test or deleting the existing
+  conflicting worktree.
+- Follow-up Git read redirections: four new regressions failed before refusing
+  `core.excludesFile` and `diff.orderFile`; two more tests cover partial pins.
+  The delegated isolated Git run then returned **63 passed in 3.02s**.
+- `uv run ruff check` returned `All checks passed!`; read-only
+  `python3 scripts/verify_codex_sync.py` returned
+  `OK: Codex derivatives match Claude sources` with the external cache configured.
+  An earlier parity invocation without that UV setting failed to initialize its
+  inherited cache; the corrected command passed. No generated files were written.
+
+A separate writer subsequently changed the same test/source files and added a
+hardening scope to `tasks/plan.md`. That scope includes payload writes and changed
+Git argv, whereas this continuation's received request forbids admission changes
+and retains the ADR's fixed argv. The added record is not treated as a new owner
+grant for this continuation, and the other writer's edits are preserved.
+
+The latest integration run, with the same MCP-test command above, observed
+**26 failed, 467 passed in 49.29s** after the test collection grew to 493 cases.
+Failures included changed Git argv expectations, a nested-filter fixture's
+positive control, and malformed legacy protocol fields/error-envelope depth.
+The server changed again after that run; this is not a stable final snapshot or
+a completion claim. Both concurrent-write observations were surfaced to the
+owner. Implementation edits from this continuation stopped pending a single
+writer/role decision. The independently edited adopter payload was also observed
+modified afterward; this continuation did not write it.
+
+Final read-only observations for this continuation: Ruff and `git diff --check`
+passed, and all three canonical/package copy pairs were byte-identical. Current
+Git/protocol hardening and the full-suite completion cell remain unverified;
+the full suite was not repeated. The stable 365-pass result must not be promoted
+to a claim about the subsequently edited working tree.
+
+## B3 slice 1 hardening fixes (2026-10-26)
+
+Intent/design authority: the current owner hardening request in `tasks/plan.md`,
+using working-tree ADR-91. The supplied ontology-map digest was verified unchanged:
+`516c5b160c0fa49de51e4a0dc6f14c6e6a955d1baf72cc75dc2c93de7ea23e79`.
+Behavioral claims below are execution evidence. No commit, branch switch,
+sub-agent, generated Codex write, lock bind, admission or runtime registration.
+
+Commands below use B3_UV_CACHE and B3_BASETEMP for the owner's external cache
+and pytest-fix directory. All pytest commands set `UV_CACHE_DIR="$B3_UV_CACHE"`
+and `PYTHONDONTWRITEBYTECODE=1`, and pass `-p no:cacheprovider
+--basetemp="$B3_BASETEMP"`. Expanded paths are returned in the run report.
+
+Fail-first, observed before the corresponding source corrections:
+
+- `uv run pytest -q tests/test_mir_mcp_git.py -k gitlink_only --tb=short`:
+  `2 failed, 63 deselected in 1.15s`. Both isolated interpreters created the
+  nested filter sentinel through an index-only gitlink without gitmodules.
+  The fixture keeps changed content the same size and changes its mtime so
+  Git must compare content. An earlier larger-content fixture did not invoke
+  the filter and was corrected before accepting this regression evidence.
+- `uv run pytest -q tests/test_mir_mcp_protocol.py -k nested_malformed_version
+  --tb=short`: `4 failed, 198 deselected in 0.63s`. Depth-32 version objects and
+  arrays overflowed the deeper error envelope: traceback, `Refusal: E_LIMIT`,
+  exit 1, on both interpreters.
+- The initial exact-argv/gitlink/nonstring-version/field-sweep selection returned
+  `24 failed, 102 passed, 141 deselected in 10.75s`. Ten failures were legacy
+  nonstring versions echoing E_VERSION data; four sweep failures covered legacy
+  protocolVersion and unvalidated legacy _meta on both interpreters. Modern
+  version-type checks already passed. This initial run included the ineffective
+  gitlink fixture and shallower version test; the focused runs above supersede
+  those as the accepted sentinel/crash evidence.
+- The five integration selections before payload regeneration returned
+  `4 failed, 18 passed in 6.78s`: two stale payload equality checks, slim
+  preserving the changed checker/new relation adapter, and the expected lock
+  digest mismatch. The public-surface test already passed at entry: the supplied
+  tree already used comma-separated surfaces. No forbidden-prefix failure is
+  claimed. ADR wording now exactly matches the requested comma/conjunction form.
+
+Corrections and passing evidence:
+
+- Fixed prefix adds `-c submodule.recurse=false`; fixed status/diff suffixes
+  add `--ignore-submodules=all`. Guarded canonical callbacks and ADR-91 section
+  4.5 match; independent CLI argv remains unchanged. Exact tests compare every
+  argument and constant environment. The stdio fixture proves its unsafe
+  control command runs the filter, removes that marker, then verifies the server
+  never recreates it while returning pins with explicit availability.
+- Legacy protocolVersion must be a string; _meta must be an object before any
+  method branch. E_VERSION uses only an already validated version string.
+  The parametrized sweep covers 48 field cases: envelope, legacy/modern metadata,
+  names, argument objects, every field in all five tool schemas, and path items.
+  Every wrong JSON type is followed by a valid request in the same process;
+  both interpreters must answer, exit cleanly, and produce no stderr traceback.
+- Focused selection `exact_argv or gitlink_only or nonstring_protocol or
+  every_request_field or nested_malformed_version` returned
+  `126 passed, 141 deselected in 10.42s`.
+- `uv run python -m tools.template_assets --write-adopter-payload` returned
+  `template asset classification: pass`.
+- All MCP files plus public surface, advanced references, asset classification,
+  greenfield slim, and the expected lock test returned
+  `1 failed, 514 passed in 98.15s`. Only the authorized lock test failed;
+  all 493 MCP cases and the other 21 integration cases passed.
+- Slim needs no new classification or weakened test: `plugins/**` already has
+  optional-consumer-tool classification, which adopter-boundary removes.
+  slim.py compares payload digests before forming its move set, then refuses
+  preserved files beneath provider markers. Regeneration updates the checker
+  digest and adds the relation adapter/package files; the unchanged test passes.
+- Ruff: `All checks passed!`. All three canonical/package copy pairs compare
+  byte-identically: checker, common contract, relation adapter. Initial scan of
+  22 changed/new files found zero forbidden-token matches.
+- Independent execution of every lock-test assertion confirms only mir-core's
+  managed-tree digest differs. Expected:
+  `5d31e04e126bf8c671991e8ad9c019c5cb8dfd241dbf5e328bf4063ac051c5cc`;
+  observed: `7a753ad113f69cfef7455ef4bf5c009eb74ab78d7fda467e18fe7eeace7eac9a`.
+  Ancestry, portability, other plugin digests and all historical/current agent
+  digests pass. The lock remains untouched for the Main's release bind.
+
+Final full-suite command: `uv run pytest -q --tb=short`, with the same cache,
+bytecode, cache-provider and external basetemp settings. Its observed totals and
+exact git status are returned in the run report; no result is inferred from
+targeted checks.
+
+Final full suite, exit 1: `1 failed, 3348 passed in 470.75s (0:07:50)`.
+The only failure is
+`tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees`,
+at the managed-tree equality assertion. Its expected/observed digests match the
+independent check above. No skips or other failures. All 13 recorded hashes
+(implementation, canonical/copy files, regression tests, ADR, payload and records)
+stayed unchanged throughout this run. Request matrix: 6/6 checked, including the
+explicitly expected and preserved pre-release lock failure. Update these records
+and regenerate the payload, then check payload equality and public scanning;
+those documentation-only updates do not change the tested implementation.
+
+Accepted fail-first output excerpts (host paths omitted):
+
+```text
+Git gitlink, both interpreters:
+E   AssertionError: Git descended through the index and ran a nested filter
+2 failed, 63 deselected in 1.15s
+
+Nested protocolVersion object/array, both interpreters:
+E   AssertionError: Traceback (most recent call last):
+E     Refusal: E_LIMIT
+E   assert 1 == 0
+4 failed, 198 deselected in 0.63s
+
+Legacy protocolVersion, combined type sweep:
+E     {'code': 'E_VERSION'} != {'code': 'E_SCHEMA'}
+Legacy _meta incorrectly succeeded instead of returning an error:
+E   KeyError: 'resultType'
+```

@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "mir-mcp": {
+      "command": "python3",
+      "args": [
+        "-I",
+        "-B",
+        "-u",
+        "${CLAUDE_PLUGIN_ROOT}/mir_mcp.py"
+      ],
+      "type": "stdio"
+    }
+  }
+}

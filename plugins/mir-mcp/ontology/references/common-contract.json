@@ -1,0 +1,149 @@
+{
+  "schema": "mir-semantic-contract/v1",
+  "contract_id": "mir.common-semantics",
+  "version": "1.1.0",
+  "status": "accepted",
+  "purpose": "Shared meaning for project, agent, work, evidence and authority terms so agents interpret intent, plan, choose tools, analyse change impact, verify results, retrieve knowledge and hand off work consistently. Each project keeps its own domain model, identifiers, state machines, storage and procedures, and maps them to this contract.",
+  "compatibility": {
+    "versioning": "semver",
+    "major": "Changes the meaning of an existing concept, axis value or relation, removes a term, or tightens an identity or authority rule. Every mapping must be re-validated and re-mapped before it may claim the new major version.",
+    "minor": "Adds an optional concept, relation, axis value or rule. Existing mappings stay valid; they may adopt the addition.",
+    "patch": "Clarifies wording without changing meaning.",
+    "consumer_declaration": "A project mapping names the exact contract version it was validated against and the range it accepts, for example >=1.0.0 <2.0.0."
+  },
+  "rules": [
+    {"id": "ID-1", "area": "identity", "rule": "Qualify every shared identifier with its owner namespace: <namespace>:<local-id>. The namespace is the owning project's slug from its own repository Profile; a project may add sub-namespaces such as <slug>/<work>."},
+    {"id": "ID-2", "area": "identity", "rule": "Equal names, titles, slugs or numeric IDs from different namespaces are different entities until a same_as relation with reviewed evidence says otherwise."},
+    {"id": "ID-3", "area": "identity", "rule": "An alias, a similar concept, a broader or narrower concept, a co-mention or a vector neighbour is never the same entity."},
+    {"id": "ID-4", "area": "identity", "rule": "Never reissue, renumber or recycle an existing identifier. Record replacement with supersedes."},
+    {"id": "REL-1", "area": "relations", "rule": "Distinguish a declared relation (written by an author or tool) from an evidenced relation (backed by an execution or observation record) and from a mere association such as a mention or retrieval neighbour."},
+    {"id": "REL-2", "area": "relations", "rule": "A relation is valid only between the endpoint concepts it allows and only within its stated scope. Acyclicity is a per-relation project rule, never a blanket rule."},
+    {"id": "ST-1", "area": "status", "rule": "Keep lifecycle, temporal, epistemic and verification status on separate axes. Never collapse them into a single done, ready or complete flag."},
+    {"id": "ST-2", "area": "status", "rule": "A local status word keeps its local meaning. Map it to axis values; do not rename it or reuse it in another sense."},
+    {"id": "ST-3", "area": "status", "rule": "Proposed, superseded, retracted or historical material is never used as the current confirmed fact."},
+    {"id": "PROV-1", "area": "provenance", "rule": "Record where a claim came from (source_ref) and, when available, the source revision, content hash, observation time, method and basis."},
+    {"id": "PROV-2", "area": "provenance", "rule": "A matching hash proves the source is unchanged, not that its content is true."},
+    {"id": "PROV-3", "area": "provenance", "rule": "State how far a conclusion reaches: which scope the evidence covers and what it does not establish."},
+    {"id": "AUTH-1", "area": "authority", "rule": "Holding a capability, being able to read something, a relation, a confidence score or a passed check never grants permission to write, run, publish or change anything. Authority comes only from the owning project's policy and a current owner instruction."},
+    {"id": "AUTH-2", "area": "authority", "rule": "Distinguish what is semantically possible from what is permitted now."},
+    {"id": "JUDGE-1", "area": "judgement", "rule": "Check deterministically checkable conditions with code. For interpretive judgements, record the evidence used and the remaining uncertainty."},
+    {"id": "MAINT-1", "area": "maintenance", "rule": "When a source or definition changes, update or invalidate the relations, mappings, derived knowledge and verification evidence that depend on it, and only those."},
+    {"id": "MAINT-2", "area": "maintenance", "rule": "A change to this contract is checked against each mapping's declared version range before the mapping claims compatibility."},
+    {"id": "ABS-1", "area": "absence", "rule": "A missing record or relation does not prove that the thing does not exist. Conclude absence only within a scope whose completeness has been established."},
+    {"id": "LAYER-1", "area": "verification", "rule": "Agents reading the same skill does not guarantee consistent meaning. Keep the four verification layers separate: format checks, semantic and relation checks, execution verification, and authority control."}
+  ],
+  "concepts": [
+    {"id": "Project", "definition": "A bounded body of work owned by one repository Profile; the owner of a namespace.", "distinct_from": ["a launcher or agent binding that points at the repository", "an entity named after the project inside stored knowledge", "a work, product or idea inside the project"]},
+    {"id": "Agent", "definition": "An acting role or runtime identity that performs work: a resident session, a sub-agent role, a delegated worker or an automated process.", "distinct_from": ["the model or engine it runs on", "its display name on another host", "a self-reported client label"]},
+    {"id": "Capability", "definition": "A declared ability to perform a kind of work: a skill, tool, adapter, feature or runtime function, with its version.", "distinct_from": ["authorization to use it", "evidence that it works now", "installation of its files"]},
+    {"id": "Requirement", "definition": "A stated need or constraint that work must satisfy, with an owner and acceptance condition.", "distinct_from": ["a task that implements it", "a check that tests it"]},
+    {"id": "Concept", "definition": "A defined term or domain notion with a meaning, used to classify or describe other things.", "distinct_from": ["an occurrence of the word in text", "an instance of the thing it describes"]},
+    {"id": "Artifact", "definition": "A concrete produced or stored object: file, document, code module, record, package, media, receipt or report, identified by location and optionally by content hash.", "distinct_from": ["the requirement it serves", "the run that produced it", "other copies with the same content but a different role"]},
+    {"id": "Decision", "definition": "A recorded choice by an authorised party, with scope and status: ADR, owner decision, approval.", "distinct_from": ["a recommendation", "an extracted statement that sounds like a decision", "a routing or classifier output"]},
+    {"id": "Task", "definition": "A unit of intended work with an owner and an outcome condition.", "distinct_from": ["a run that attempts it", "the requirement it serves", "the product's own job or queue items unless the project maps them"]},
+    {"id": "Run", "definition": "One execution or attempt: a session turn, job, pipeline stage, intake batch, test run or deployment, with start and end time and outcome.", "distinct_from": ["the task it attempts", "a later retry, which is a new run", "the session it happened in"]},
+    {"id": "Evidence", "definition": "A record that supports or refutes a claim: execution output, receipt, observation, citation, measurement or source excerpt, with provenance.", "distinct_from": ["the claim it is about", "a declaration that evidence should exist"]},
+    {"id": "Assessment", "definition": "A judgement about something against a criterion: verdict, score, gate result, review finding, confidence, with the evidence and scope it used.", "distinct_from": ["the evidence it used", "an owner acceptance unless the owner made it"]},
+    {"id": "Policy", "definition": "A rule that governs what may or must be done, with its owner and scope: instruction, Profile boundary, gate, permission.", "distinct_from": ["a capability", "a recorded fact that mentions permission"]}
+  ],
+  "axes": {
+    "lifecycle": {
+      "applies_to": "definitions, decisions, requirements, claims, plans and workflows",
+      "values": {
+        "proposed": "Suggested or drafted; not in force.",
+        "accepted": "In force for its scope.",
+        "deprecated": "Still in force but scheduled for removal; do not start new use.",
+        "superseded": "Replaced by a newer item named through supersedes; kept as history.",
+        "retracted": "Invalidated by later evidence; must not be used as fact."
+      }
+    },
+    "temporal": {
+      "applies_to": "facts, states and observations",
+      "values": {
+        "current": "Describes the present within its validity range.",
+        "historical": "Describes a past state; true for its time, not now."
+      },
+      "optional_fields": ["valid_from", "valid_to", "observed_at"]
+    },
+    "epistemic": {
+      "applies_to": "claims, relations and mapping entries",
+      "values": {
+        "confirmed": "Directly observed or read from the authoritative source, with a reference.",
+        "inferred": "Reasoned from cited evidence; the reasoning basis is recorded.",
+        "unknown": "Not established within the inspected scope.",
+        "conflicting": "Authoritative sources disagree; resolution pending."
+      }
+    },
+    "verification": {
+      "applies_to": "requirements, capabilities, artifacts and claims that can be checked",
+      "values": {
+        "declared": "A check is declared (for example a verified_by relation) but no execution result is attached.",
+        "passed": "A recorded execution of the check passed, for the recorded scope and revision.",
+        "failed": "A recorded execution of the check failed.",
+        "unevaluated": "No check has been declared or run."
+      }
+    }
+  },
+  "relations": [
+    {"id": "owned_by", "from": ["*"], "to": ["Project", "Agent"], "kind": "declared", "meaning": "The target is responsible for and may change the source within its policy.", "inverse": "owns"},
+    {"id": "part_of", "from": ["*"], "to": ["*"], "kind": "declared", "meaning": "The source is a component of the target.", "inverse": "has_part"},
+    {"id": "realized_by", "from": ["Requirement", "Capability"], "to": ["Artifact"], "kind": "declared", "meaning": "The artifact is intended to satisfy the requirement or provide the capability.", "inverse": "realizes"},
+    {"id": "verified_by", "from": ["Requirement", "Capability", "Artifact", "Concept"], "to": ["Artifact"], "kind": "declared", "meaning": "The target is a check meant to verify the source. Says nothing about a result.", "inverse": "verifies"},
+    {"id": "verified_in", "from": ["Requirement", "Capability", "Artifact", "Concept", "Decision"], "to": ["Run"], "kind": "evidenced", "meaning": "The run executed a check of the source; the attached Evidence records passed or failed for a scope and revision.", "inverse": "verification_of"},
+    {"id": "depends_on", "from": ["*"], "to": ["*"], "kind": "declared", "meaning": "The source needs the target to work or to be valid.", "inverse": "required_by"},
+    {"id": "decided_by", "from": ["*"], "to": ["Decision"], "kind": "declared", "meaning": "The source is governed or chosen by the decision.", "inverse": "decides"},
+    {"id": "governed_by", "from": ["*"], "to": ["Policy", "Concept"], "kind": "declared", "meaning": "The source must comply with the target rule or concept contract.", "inverse": "governs"},
+    {"id": "supersedes", "from": ["*"], "to": ["*"], "kind": "declared", "same_concept": true, "meaning": "The source replaces the target; the target's lifecycle becomes superseded.", "inverse": "superseded_by"},
+    {"id": "executes", "from": ["Run"], "to": ["Task"], "kind": "evidenced", "meaning": "The run is an attempt at the task. A retry is a new run of the same task.", "inverse": "attempted_by"},
+    {"id": "produced_by", "from": ["Artifact", "Evidence", "Assessment"], "to": ["Run", "Agent"], "kind": "evidenced", "meaning": "The source was produced by the target.", "inverse": "produced"},
+    {"id": "derived_from", "from": ["Artifact", "Evidence", "Concept", "Assessment"], "to": ["Artifact", "Evidence"], "kind": "declared", "meaning": "The source was computed, extracted or copied from the target; it must be revalidated when the target changes.", "inverse": "source_of"},
+    {"id": "supports", "from": ["Evidence"], "to": ["*"], "kind": "evidenced", "meaning": "The evidence makes the target claim more credible, with method and scope.", "inverse": "supported_by"},
+    {"id": "refutes", "from": ["Evidence"], "to": ["*"], "kind": "evidenced", "meaning": "The evidence contradicts the target claim, with method and scope.", "inverse": "refuted_by"},
+    {"id": "assesses", "from": ["Assessment"], "to": ["*"], "kind": "evidenced", "meaning": "The assessment judges the target against a stated criterion.", "inverse": "assessed_by"},
+    {"id": "mentions", "from": ["Artifact", "Evidence"], "to": ["*"], "kind": "association", "meaning": "The source text refers to the target. Not an assertion about the target.", "inverse": "mentioned_in"},
+    {"id": "alias_of", "from": ["Concept"], "to": ["*"], "kind": "association", "meaning": "The source is another name for the target in some context. Not identity (ID-3).", "inverse": "has_alias"},
+    {"id": "same_as", "from": ["*"], "to": ["*"], "kind": "identity", "same_concept": true, "requires": "reviewed evidence; never similarity alone", "meaning": "Source and target denote one entity across namespaces.", "inverse": "same_as"}
+  ],
+  "provenance": {
+    "required": ["source_ref"],
+    "recommended": ["source_revision", "content_hash", "observed_at", "method", "basis", "conclusion_scope"],
+    "method_values": {
+      "authored": "Written by a person or agent as a statement or declaration.",
+      "extracted": "Pulled from a source by a parser or model.",
+      "measured": "Produced by executing a check or probe.",
+      "inferred": "Reasoned from other evidence.",
+      "imported": "Copied from another system with its own provenance."
+    }
+  },
+  "verification_layers": {
+    "format": "The record has the required structure and value types.",
+    "semantic": "Identities, relation endpoints, scopes and status axes are consistent with this contract and the project's model.",
+    "execution": "The behaviour was exercised and the result recorded as evidence.",
+    "authority": "The action is permitted by the owning project's policy and a current instruction."
+  },
+  "error_cases": [
+    {"id": "E01", "case": "Entities with the same name or the same ID from different namespaces are merged.", "rules": ["ID-1", "ID-2"]},
+    {"id": "E02", "case": "A relation is used against its direction, between disallowed endpoint concepts or outside its scope.", "rules": ["REL-2"]},
+    {"id": "E03", "case": "Proposed, historical, superseded or retracted material is used as a current confirmed fact.", "rules": ["ST-3"]},
+    {"id": "E04", "case": "A declared verified_by relation is reported as a passed test.", "rules": ["REL-1", "ST-1"]},
+    {"id": "E05", "case": "Vector similarity or an inferred relation is promoted to identity or confirmed fact.", "rules": ["ID-3", "REL-1"]},
+    {"id": "E06", "case": "Evidence recorded for an earlier revision is reused for a changed target.", "rules": ["MAINT-1", "PROV-3"]},
+    {"id": "E07", "case": "A capability or the ability to read is taken as permission to execute or modify.", "rules": ["AUTH-1", "AUTH-2"]},
+    {"id": "E08", "case": "Personal knowledge reaches a general development agent.", "rules": ["AUTH-1"]},
+    {"id": "E09", "case": "An outage of a shared knowledge service makes unrelated local work fail.", "rules": ["ABS-1"]},
+    {"id": "E10", "case": "Plugin, contract or local mapping versions differ but are reported as matching.", "rules": ["MAINT-2"]}
+  ],
+  "mapping": {
+    "schema": "mir-semantic-mapping/v1",
+    "location": ".mir/ontology-map.json in the consuming repository",
+    "owner": "the consuming project; the shared contract owner keeps only the location, version and adoption state",
+    "required_keys": ["schema", "contract", "namespace", "canonical_index", "concepts", "vocabularies", "relations", "domain", "questions", "error_cases", "knowledge_supply", "entrypoints"],
+    "concept_entry_status": ["mapped", "absent", "not_applicable"],
+    "relation_entry_target": "a relation id from this contract, or local_only with a reason",
+    "relation_entry_endpoints": "From mapping version 1.1.0, each relation entry naming common also declares from and to for its local source and target: non-empty arrays of common concept ids, or *. Each value must be allowed by the common relation's corresponding from/to; * in the contract allows any concept. local_only entries need no endpoints. Mappings validated against 1.0.0 remain valid.",
+    "error_case_check": "A covered error case names a repeatable check in the repository, resolving to a check file, a one-based line or a test name. A document is not a check.",
+    "vocabulary_value_target": "one or more axis values from this contract, or local_only with a reason",
+    "knowledge_supply_bindings": ["on_demand_stdio", "resident_stdio"],
+    "knowledge_supply_values": ["connected", "parent_supplied", "not_connected"]
+  }
+}

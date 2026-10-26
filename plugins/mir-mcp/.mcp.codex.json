@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "mir-mcp": {
+      "command": "python3",
+      "args": [
+        "-I",
+        "-B",
+        "-u",
+        "${PLUGIN_ROOT}/mir_mcp.py"
+      ],
+      "env_vars": []
+    }
+  }
+}

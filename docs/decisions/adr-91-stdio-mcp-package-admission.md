@@ -127,7 +127,7 @@ remain intact [E6, E8]; tool introduction does not justify deleting templates or
   Host-expanded plugin-root argv is not server environment input. Git gets only §4.5's constants.
 - **No writes anywhere:** prohibit file creation/modification, caches, logs, telemetry,
   temporary files, installs, bytecode, DB sidecars, and child writes. `-B` suppresses `.pyc`.
-  Test read-only target/package/home/scratch surfaces and trace filesystem calls through
+  Test read-only target, package, home and scratch surfaces and trace filesystem calls through
   success, refusal, malformed input, and shutdown. Stdout is protocol-only; stderr is short codes.
 - **Root confinement:** realpath the explicit root and every input/derived path before access;
   require containment and refuse traversal, symlink escapes, special files, and replacement
@@ -162,22 +162,40 @@ Only `handoff_pins` needs Git; all other tools forbid children. Use existing tru
 ```text
 /usr/bin/git --no-optional-locks --literal-pathspecs
 -c core.fsmonitor=false -c core.untrackedCache=false -c core.hooksPath=/dev/null
--c core.attributesFile=/dev/null -C <validated-root>
+-c core.attributesFile=/dev/null -c submodule.recurse=false -C <validated-root>
 ```
 
 Only four suffix templates are allowed: `rev-parse --verify HEAD`,
-`status --porcelain=v1 --untracked-files=all`, `log -1 --format=%H -- <validated-relative-path>`,
-and `diff --quiet --no-ext-diff --no-textconv HEAD -- <validated-relative-path>`.
+`status --porcelain=v1 --untracked-files=all --ignore-submodules=all`,
+`log -1 --format=%H -- <validated-relative-path>`, and
+`diff --quiet --no-ext-diff --no-textconv --ignore-submodules=all HEAD -- <validated-relative-path>`.
 The last replaces file-body retrieval for modification status. Slots accept validated paths
 only, never options, revisions, shell text, or arbitrary argv. Decode only commits/status booleans.
 
 Replace inherited child environment with constant `GIT_CONFIG_NOSYSTEM=1`,
 `GIT_CONFIG_SYSTEM=/dev/null`, `GIT_CONFIG_GLOBAL=/dev/null`, `GIT_ATTR_NOSYSTEM=1`, and
 `GIT_TERMINAL_PROMPT=0`; each disables external settings/attributes or prompts, not an operator
-input. Before spawning, refuse config includes, external Git directories/object alternates,
-and other metadata reads outside the guarded root/protected-path policy. No hook, helper,
-filter, external diff, textconv, or fsmonitor command may execute. Verify child and filesystem
-traces; existing CLI Git calls do not already prove this stronger boundary [E3].
+input. Before each spawn, require `.git` to be a real directory inside the validated root;
+refuse symlinks, gitfiles, worktree/submodule pointers, `commondir`, object alternates,
+config includes (`include`/`includeIf`), and `core.worktree`/`core.gitDir` redirection.
+Also refuse `core.excludesFile` and `diff.orderFile` regardless of their values: these
+settings redirect child reads to additional files, and `--quiet` does not suppress orderfile reads.
+Inspect only fixed metadata locations and the `HEAD` reference, without walking `.git`.
+Refuse configured filters, submodules, worktree config, and partial-clone/promisor settings:
+the fixed argv cannot safely disable their possible helper or network operations. No hook,
+helper, filter, external diff, textconv, or fsmonitor command may execute.
+
+This bounded Git exception permits Git to read repository metadata and stat/compare the
+worktree, including protected tracked files solely to produce a dirty boolean. Git's internal
+reads are not per-path Guard reads; neither file contents nor status paths leave the child
+decoder. Explicit path slots still require validated, nonprotected relative paths. The
+preflight establishes the fixed checks above, not recursive validation of every object/ref.
+Same-user concurrent replacement of repository metadata or worktree paths during a Git read
+is outside this exception's threat model. Other server reads retain §4.4's confinement and
+replacement checks. Refused or failed Git queries preserve available non-Git pins and mark
+Git pins unavailable with `E_GIT`; time/output failures retain their bounded error codes.
+Verify the stated preflight, child and filesystem behavior; existing CLI Git calls do not
+already prove this boundary [E3].
 
 ### 4.6 Exact package and launcher
 
@@ -323,9 +341,13 @@ The implementing change must supply these checks; none is claimed executed here:
   protected paths, Profile deny rules, special files, all size/count/depth/time/output caps,
   sentinel non-disclosure, and stale cursors. Static no-network/environment checks plus runtime
   no-network/no-write traces cover success/error/shutdown and descendants; no `.pyc` or caches.
-- Git tests permit only §4.5 argv/environment, disable external diff/textconv/helpers, refuse
-  external metadata/config includes, bound capture/time, and forbid shell/listener/credential
-  access, child writes, and non-Git subprocesses.
+- Git tests permit only §4.5 argv/environment, disable hooks/external diff/textconv/fsmonitor,
+  refuse configured filters/submodules/partial clones and fixed metadata redirections/config
+  includes and `core.excludesFile`/`diff.orderFile` read redirections before spawning, bound
+  combined capture/time, and prove protected tracked changes
+  yield only dirty booleans. Verify partial non-Git pins and short error codes on refusal;
+  forbid shell/listener/credential access, child writes, and non-Git subprocesses. Do not claim
+  recursive per-path Git read confinement or same-user concurrent-replacement protection.
 - Hermetic dual-era tests cover discovery/direct modern calls, legacy initialization/calls,
   unsupported versions, era-specific envelopes, malformed/oversized frames, exact order/schemas,
   short errors, cursor pagination, stdout purity, and rejection of deprecated/unadvertised features.
