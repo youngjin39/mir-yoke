@@ -524,6 +524,60 @@ def test_isolated_package_works_without_checkout_or_siblings(
     assert not list(tmp_path.rglob("*.pyc"))
 
 
+def test_codex_declaration_launches_without_variable_expansion(
+    interpreter: str, tmp_path: Path
+) -> None:
+    # Codex passes declared args verbatim and resolves cwd "." to the installed plugin root;
+    # without cwd it starts the server in the session directory.
+    package = tmp_path / "installed plugin with spaces"
+    shutil.copytree(PACKAGE, package)
+    session = tmp_path / "session cwd"
+    session.mkdir()
+    server = json.loads((package / ".mcp.codex.json").read_text())["mcpServers"]["mir-mcp"]
+    command = shutil.which(server["command"], path=str(Path(interpreter).parent))
+    assert command is not None
+    payload = b"".join(
+        json.dumps(frame, separators=(",", ":")).encode() + b"\n"
+        for frame in [
+            _request(
+                "initialize",
+                {
+                    "protocolVersion": VERSIONS[1],
+                    "capabilities": {},
+                    "clientInfo": {"name": "codex-launch", "version": "1"},
+                },
+                modern=False,
+            ),
+            {"jsonrpc": "2.0", "method": "notifications/initialized"},
+            _request("tools/list", modern=False, identity=2),
+            _request(
+                "tools/call",
+                {
+                    "name": "ontology_validate",
+                    "arguments": {"target_root": str(session), "scope": "contract"},
+                },
+                modern=False,
+                identity=3,
+            ),
+        ]
+    )
+    completed = subprocess.run(
+        [command, *server["args"]],
+        input=payload,
+        capture_output=True,
+        cwd=package if server.get("cwd") == "." else session,
+        env={},
+        timeout=15,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stderr.decode(errors="replace")
+    replies = [json.loads(line) for line in completed.stdout.splitlines()]
+    assert _success(replies[0], modern=False)["protocolVersion"] == VERSIONS[1]
+    _assert_inventory(_success(replies[1], modern=False))
+    assert _tool_result(replies[2], modern=False)["ok"] is True
+    assert not list(tmp_path.rglob("__pycache__"))
+
+
 def test_modern_client_info_is_optional(interpreter: str, tmp_path: Path) -> None:
     frame = _request("tools/list")
     del frame["params"]["_meta"]["io.modelcontextprotocol/clientInfo"]

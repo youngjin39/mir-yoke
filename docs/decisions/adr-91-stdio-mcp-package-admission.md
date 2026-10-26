@@ -425,3 +425,26 @@ checks remain future gates, not current passes.
   `#/domain/invariants/0` preserves consumer authority, `#/domain/invariants/1` separates
   installation/discovery, and `#/domain/invariants/2` indexes the current hook/local-MCP
   boundary. This proposal does not claim current map/implementation admission of `mir-mcp`.
+
+## Amendment: 2026-10-27 — Codex launcher form
+
+Design authority is the owner-approved Yoke release chain for this session (Discord
+`1564297975755448493`, `1564320227062186065`, parent-supplied). This amends §4.6 and the
+§4.8 attestation launcher for Codex only.
+
+After 0.13.33 was installed, Codex did not start the server. Its log showed that Codex
+passed `${PLUGIN_ROOT}/mir_mcp.py` literally, resolved that path against the session working
+directory, and closed the connection before the initialize response. Claude Code expands
+`${CLAUDE_PLUGIN_ROOT}` and called all five tools in a fresh session. A bundled Codex plugin
+uses `"cwd": "."`, which Codex resolves to the installed plugin root.
+
+The Codex declaration is now exactly
+`{command:"python3",args:["-I","-B","-u","./mir_mcp.py"],cwd:".",env_vars:[]}`, with no
+variable substitution. `cwd` is admitted only as `"."`; any other value or extra launch option
+is still rejected. The server already resolves its bundled modules from its own resolved file
+path, so loading is unchanged. The locked Codex launcher adds `cwd:"."`. The Codex attestation
+launcher is `{command:"python3",args:["-I","-B","-u","./mir_mcp.py"],cwd:"<installed-root>",env:{}}`
+with the absolute installed root. Claude's declaration, locked launcher and attestation launcher
+`{command:"python3",args:["-I","-B","-u","<installed-root>/mir_mcp.py"],env:{}}` are unchanged.
+Each runtime's evidence must match its own form exactly. The package digest changes, so each
+consumer renews its own `mir-mcp` acknowledgement.

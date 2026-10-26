@@ -38,6 +38,20 @@ def mcp_launcher(script: str) -> dict:
     return {"command": "python3", "args": ["-I", "-B", "-u", script]}
 
 
+# Codex passes args verbatim and resolves cwd "." to the installed plugin root.
+MCP_LAUNCHERS = {
+    "claude": mcp_launcher("${CLAUDE_PLUGIN_ROOT}/mir_mcp.py"),
+    "codex": {**mcp_launcher("./mir_mcp.py"), "cwd": "."},
+}
+
+
+def mcp_observed_launcher(runtime: str, installed: Path) -> dict:
+    """The process an operator observes each client launch from the installed root."""
+    if runtime == "claude-code":
+        return {**mcp_launcher(str(installed / "mir_mcp.py")), "env": {}}
+    return {**mcp_launcher("./mir_mcp.py"), "cwd": str(installed), "env": {}}
+
+
 def _max_utf8_length(validator, maximum, instance, schema):
     # The stdio server bounds strings by UTF-8 bytes, including receipt arguments.
     if isinstance(instance, str) and len(instance.encode("utf-8")) > maximum:
@@ -92,7 +106,7 @@ def validate_mcp_package(package: Path) -> None:
             found.add(relative)
     _require(found == set(MCP_FILES), "eight-file inventory drift")
     manifests = []
-    for runtime, variable in (("claude", "CLAUDE_PLUGIN_ROOT"), ("codex", "PLUGIN_ROOT")):
+    for runtime in ("claude", "codex"):
         manifest = closed_json(package / f".{runtime}-plugin/plugin.json")
         keys = {"name", "version", "description", "mcpServers"}
         if runtime == "codex":
@@ -125,8 +139,10 @@ def validate_mcp_package(package: Path) -> None:
             "description",
         )
         _require(manifest["mcpServers"] == f"./.mcp.{runtime}.json", "declaration reference")
-        server = mcp_launcher(f"${{{variable}}}/mir_mcp.py")
-        server.update({"type": "stdio"} if runtime == "claude" else {"env_vars": []})
+        server = {
+            **MCP_LAUNCHERS[runtime],
+            **({"type": "stdio"} if runtime == "claude" else {"env_vars": []}),
+        }
         _require(
             closed_json(package / f".mcp.{runtime}.json")
             == {
@@ -197,7 +213,7 @@ def validate_mcp_observation(
             or int(version.split(".")[1]) < 9
             or observation["server"] != MCP_NAME
             or observation["protocol_version"] not in {"2026-07-28", "2025-11-25"}
-            or observation["launcher"] != {**mcp_launcher(str(installed / "mir_mcp.py")), "env": {}}
+            or observation["launcher"] != mcp_observed_launcher(runtime, installed)
             or not isinstance(tools, list)
             or len(tools) != len(MCP_TOOLS)
             or [tool["name"] for tool in tools] != list(MCP_TOOLS)

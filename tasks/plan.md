@@ -1,64 +1,63 @@
 # Plan
 
-## Active task: release 0.13.33 (`mir-mcp` test portability fix) (2026-10-27)
+## Active task: release 0.13.34 (`mir-mcp` Codex launcher fix) (2026-10-27)
 
-Intent authority: the owner's release approval (Discord 1564297975755448493) and
-session instruction to use Claude writers (Discord 1564282799035523227), relayed by
-Mir Harness Main (parent-supplied). Baseline: 50c96b4 on `main` (tag v0.13.32,
-pushed). The v0.13.32 GitHub `release` workflow failed in "Validate repository release
-candidate" (`scripts/verify_release_readiness.py --current-clean-tree`, ubuntu,
-Python 3.12) with nine `mir-mcp` test failures; `validate` passed.
+Intent authority: the owner's release-chain and B4 approvals (Discord
+1564297975755448493, 1564320227062186065) and session instruction to use Claude
+writers (Discord 1564282799035523227), relayed by Mir Harness Main (parent-supplied).
+Design authority: this cursor and the 2026-10-27 amendment to
+[ADR-91](../docs/decisions/adr-91-stdio-mcp-package-admission.md). Baseline: f1f1fab
+on `main` (tag v0.13.33, pushed, released).
 
 Prior cursor preserved verbatim:
-[cursor before release 0.13.33](change_log.md#cursor-before-release-01333-2026-10-27).
+[cursor before release 0.13.34](change_log.md#cursor-before-release-01334-2026-10-27).
 
-Root causes (confirmed locally, 2026-10-27):
-1. In-process test loaders (`spec_from_file_location` plus `exec_module`) in the
-   git, indirect-guard and security `mir-mcp` tests wrote
-   `plugins/mir-mcp/__pycache__` when `PYTHONDONTWRITEBYTECODE` was unset, and the
-   checker and relations tests did the same under `plugins/mir-core`. The closed
-   package validator then correctly rejected the undeclared directory, and copies of the
-   package carried it into later tests. The product validator reads `INPUT_SCHEMAS` as
-   data, and the server compiles its siblings from source, so neither writes bytecode.
-2. Profile tests assumed `/usr/bin/python3` lacks `tomllib` (macOS 3.9.6). On ubuntu it
-   is 3.12, so the server applied the profile and the expectation flipped.
+Defect (observed by Main on the host, 2026-10-27, parent-supplied log excerpt): after
+installing 0.13.33, Codex passed `${PLUGIN_ROOT}/mir_mcp.py` literally, resolved it
+against the session working directory, and the server never answered `initialize`.
+Claude Code expands `${CLAUDE_PLUGIN_ROOT}` and called all five tools. A bundled Codex
+plugin uses `"cwd": "."`, which Codex resolves to the installed plugin root.
 
-Design: loaders compile the source directly, so tests never write bytecode; the
-validator is unchanged. Profile tests probe each interpreter's real `tomllib` and add a
-venv runtime with `tomllib` import blocked, so both branches stay covered on every host;
-the server is unchanged apart from its version. The release follows the 0.13.32 pattern:
-bump current surfaces to 0.13.33 without historical rewrites, renew the
-`mir-lifecycle-hooks` acknowledgement (no `mir-mcp` provider acknowledgement), add
+Root cause: `plugins/mir-mcp/.mcp.codex.json` declared the script as
+`${PLUGIN_ROOT}/mir_mcp.py`, and the closed validator
+(`src/mir/core/capabilities/mcp.py` `validate_mcp_package`) required that form.
+
+Design: the Codex declaration becomes
+`{command:"python3",args:["-I","-B","-u","./mir_mcp.py"],cwd:".",env_vars:[]}`; `cwd`
+is admitted only as `"."`. The server resolves bundled modules from its own resolved
+file path, so loading is unchanged. The locked Codex launcher adds `cwd:"."`; Codex
+attestation evidence must be
+`{command:"python3",args:["-I","-B","-u","./mir_mcp.py"],cwd:"<installed-root>",env:{}}`.
+Claude's declaration, locked launcher and evidence form are unchanged. The release
+follows the 0.13.33 pattern: bump current surfaces without historical rewrites, renew
+the `mir-lifecycle-hooks` acknowledgement (no `mir-mcp` provider acknowledgement), add
 CHANGELOG, README and MIGRATION entries, and regenerate the adopter payload last.
 `.mir/capability-lock.json` belongs to the separate bind commit.
 
 Request matrix (initially open):
-1. Fail-first: the `__pycache__` failures without `PYTHONDONTWRITEBYTECODE`, and the
-   `tomllib` failures with a 3.12 stand-in for `/usr/bin/python3`.
-2. Test fixes for both causes; validator and server behavior unchanged.
-3. No product path writes `__pycache__` into an installed `mir-mcp` tree.
-4. Version surfaces, lifecycle acknowledgement, release notes, this cursor.
-5. `mir-mcp` and capability tests without `PYTHONDONTWRITEBYTECODE`, then no new
-   `__pycache__` under `plugins/`.
-6. Ruff, `git diff --check` and one full suite; only
-   `test_repository_lock_is_portable_and_matches_managed_trees` may fail before the bind.
-7. Adopter payload regenerated after the last edit.
+1. Fail-first test launching `.mcp.codex.json` as Codex does (verbatim args, `cwd:"."`
+   resolved to an isolated package copy) with `initialize` and `tools/list`.
+2. Codex declaration in cwd-relative form; `.mcp.claude.json` unchanged.
+3. Closed validator, per-runtime attestation launcher, locked launchers, their tests and
+   the operator table updated without loosening any check.
+4. ADR-91 dated amendment.
+5. Version surfaces, lifecycle acknowledgement, release notes, this cursor; adopter
+   payload regenerated last.
+6. Focused tests, ruff, `git diff --check`; no new bytecode under `plugins/mir-mcp`.
 
 Constraints: no commits, tags, pushes, sub-agents, capability-lock edits, real
 runtime homes or host `mir capability` operations. Scratch stays under the
-owner-specified external cache directory.
+owner-specified external cache directory. Main runs the full suite at acceptance.
 
-Observed (2026-10-27, Claude writer): items 1-6 checked; item 7 follows this note.
-Without `PYTHONDONTWRITEBYTECODE`, the unfixed tests failed 4 times in `mir-mcp`
-(`__pycache__`), and a 3.12 stand-in for `/usr/bin/python3` reproduced the other 5
-failures. After the fixes: `mir-mcp` and capability tests `931 passed`, with no new
-`__pycache__` under `plugins/`. An installed copy run without `-B` on 3.9 and 3.12
-wrote no bytecode. Ruff, `git diff --check` and Codex parity pass. The full suite
-without the variable returned `1 failed, 3463 passed in 789.78s`; the failure is the
-expected pre-bind lock test. Outside this scope, `tests/test_ontology_skill.py` and
-`tests/test_ontology_runner.py` still write `__pycache__` under `plugins/mir-core`
-(excluded from tree digests); this is reported, not changed. New tree digests:
-`mir-lifecycle-hooks` e49866a7fb93704cb5fc1730dcd1ba9f19194d85ba6f6405da86f0c8ff09bba8
-(after Main added the owner-approved delegation guidance to `runtime-continuity`),
-`mir-mcp` cb9876feaf228e47d7be285c261e0965a296297637484952092440681e085fe7.
-No release, binding or runtime readiness is claimed.
+Observed (2026-10-27, Claude writer): items 1-6 checked; the payload regeneration
+follows this note. On the unfixed declaration,
+`test_codex_declaration_launches_without_variable_expansion` failed under both host
+interpreters with the host error (`can't open file '<session cwd>/${PLUGIN_ROOT}/mir_mcp.py'`).
+After the fix it passes on system Python 3.9 and venv 3.12; `initialize`, `tools/list` and
+an `ontology_validate` call that loads the bundled checker succeed from `cwd:"."` with
+`-I`, and no bytecode is written. Focused `mir-mcp`, capability, plugin-package and
+payload/template tests: `821 passed`. Ruff and `git diff --check` pass; no new `.pyc`
+under `plugins/`. New tree digests: `mir-lifecycle-hooks`
+2aace0403313189fce0c663783dfa5c6f314ce8efddc4599a6ffbd37e4f20a78, `mir-mcp`
+935d6a872f84ddc42f24c8871366c0456d5179f0c5b337d76db6ddddcad8c4c8. No release, binding,
+full-suite or runtime readiness is claimed.

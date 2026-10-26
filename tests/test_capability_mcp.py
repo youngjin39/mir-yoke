@@ -511,6 +511,11 @@ def test_explicit_selection_is_locked_separately_from_active_union(tmp_path, pro
     first.sync("code", mcp=True, apply=True)
     selection = json.loads(first.lock_path.read_text())["plugins"]["mir-mcp"]["mcp"]
     assert selection["runtimes"] == ["claude-code", "codex-cli-desktop"]
+    assert selection["launchers"] == {
+        "claude": {"command": "python3",
+                   "args": ["-I", "-B", "-u", "${CLAUDE_PLUGIN_ROOT}/mir_mcp.py"]},
+        "codex": {"command": "python3", "args": ["-I", "-B", "-u", "./mir_mcp.py"], "cwd": "."},
+    }
     second = manager_for(tmp_path, provider, "second", runner=first.command_runner)
     second.sync("content", apply=True)
     second_lock = json.loads(second.lock_path.read_text())
@@ -599,11 +604,13 @@ def mcp_evidence(manager, runtime, session):
             "interpreter": {"executable": "/usr/bin/python3", "version": "3.12.13"},
             "server": "mir-mcp",
             "protocol_version": "2026-07-28",
-            "launcher": {
-                "command": "python3",
-                "args": ["-I", "-B", "-u", f"{installed}/mir_mcp.py"],
-                "env": {},
-            },
+            "launcher": (
+                {"command": "python3", "args": ["-I", "-B", "-u", f"{installed}/mir_mcp.py"],
+                 "env": {}}
+                if runtime == "claude-code"
+                else {"command": "python3", "args": ["-I", "-B", "-u", "./mir_mcp.py"],
+                      "cwd": installed, "env": {}}
+            ),
             "tools": [{"name": name, "raw_name": f"mcp__mir-mcp__{name}"} for name in TOOLS],
             "safe_calls": {
                 name: {
@@ -648,6 +655,10 @@ def mcp_evidence(manager, runtime, session):
         "windows",
         "python",
         "launcher",
+        "launcher-cwd",
+        "launcher-missing-cwd",
+        "launcher-claude-form",
+        "launcher-relative-cwd",
         "era",
         "tools",
         "raw-name",
@@ -687,6 +698,14 @@ def test_mcp_attestation_rejects_incomplete_or_wrong_evidence(
         item["interpreter"]["version"] = "3.8.20"
     elif mutation == "launcher":
         item["launcher"]["args"].remove("-I")
+    elif mutation == "launcher-cwd":
+        item["launcher"]["cwd"] = str(manager.project_root)
+    elif mutation == "launcher-missing-cwd":
+        item["launcher"].pop("cwd")
+    elif mutation == "launcher-claude-form":
+        item["launcher"] = mcp_evidence(manager, "claude-code", session)["mir-mcp"]["launcher"]
+    elif mutation == "launcher-relative-cwd":
+        item["launcher"]["cwd"] = "."
     elif mutation == "era":
         item["protocol_version"] = "2024-01-01"
     elif mutation == "tools":
@@ -713,6 +732,20 @@ def test_mcp_attestation_rejects_incomplete_or_wrong_evidence(
             observed_mcp=evidence,
             apply=True,
         )
+
+
+def test_claude_attestation_rejects_codex_launcher_form(tmp_path, provider, monkeypatch):
+    acknowledge(provider)
+    manager = manager_for(tmp_path, provider)
+    manager.sync("code", mcp=True, apply=True)
+    monkeypatch.setenv("CLAUDE_SESSION_ID", "fresh-claude")
+    evidence = mcp_evidence(manager, "claude-code", "fresh-claude")
+    launcher = evidence["mir-mcp"]["launcher"]
+    launcher["cwd"] = str(Path(launcher["args"][-1]).parent)
+    launcher["args"][-1] = "./mir_mcp.py"
+    with pytest.raises(CapabilityError, match="MCP"):
+        manager.attest("claude-code", observed_skills(manager), observed_hooks(manager),
+                       observed_mcp=evidence, apply=True)
 
 
 @pytest.mark.parametrize(

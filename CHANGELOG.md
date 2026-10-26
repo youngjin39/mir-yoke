@@ -8,6 +8,27 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.34] — 2026-10-27 — `mir-mcp` Codex launcher fix
+
+### Fixed
+
+- Codex can start the `mir-mcp` server. Codex does not expand `${PLUGIN_ROOT}` in plugin
+  MCP arguments; it passed the path literally and resolved it against the session directory,
+  so the server never answered `initialize`. The Codex declaration is now
+  `python3 -I -B -u ./mir_mcp.py` with `cwd: "."`, which Codex resolves to the installed
+  plugin root. The Claude declaration is unchanged.
+- The closed package validator admits only that Codex form, with `cwd` exactly `"."`. The
+  locked Codex launcher records `cwd: "."`, and Codex attestation evidence must report the
+  relative script with the absolute installed root as `cwd`. Claude evidence keeps its
+  absolute script form. A test launches the declaration as Codex does, with no variable
+  expansion, under both host interpreters.
+
+### Changed
+
+- ADR-91 records a 2026-10-27 amendment for the Codex launcher form.
+- Bump release surfaces to 0.13.34, refresh the lifecycle digest acknowledgement for its
+  version manifests, and regenerate the adopter payload. Hook behavior is unchanged.
+
 ## [v0.13.33] — 2026-10-27 — `mir-mcp` test portability fix
 
 ### Fixed

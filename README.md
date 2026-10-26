@@ -52,7 +52,7 @@ immutable release:
 
 ```bash
 uv tool install --force --link-mode copy \
-  "git+https://github.com/youngjin39/mir-yoke.git@v0.13.33"
+  "git+https://github.com/youngjin39/mir-yoke.git@v0.13.34"
 mir --help
 ```
 
@@ -132,6 +132,10 @@ consumer-owned digest acknowledgement; no default Profile selects it.
 Version 0.13.33 fixes `mir-mcp` test portability: tests no longer write bytecode into
 plugin trees and no longer assume the system Python lacks `tomllib`. Runtime behavior is
 unchanged.
+
+Version 0.13.34 fixes the `mir-mcp` Codex launcher: Codex starts the server from the
+installed plugin root (`cwd: "."`) with a relative script path, because it does not expand
+`${PLUGIN_ROOT}`. The Claude launcher is unchanged.
 
 ### Platform use
 

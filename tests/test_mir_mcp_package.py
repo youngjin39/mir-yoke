@@ -60,6 +60,9 @@ def test_shared_sources_are_byte_identical(relative: str, canonical: str) -> Non
         "cwd",
         "url",
         "args",
+        "codex-variable-args",
+        "codex-session-cwd",
+        "codex-missing-cwd",
         "unsafe-version",
         "codex-metadata",
     ],
@@ -100,7 +103,9 @@ def test_closed_shape_oracle_rejects_mutations(tmp_path: Path, mutation: str) ->
         path.write_text(json.dumps(value))
     else:
         path = package / (
-            ".mcp.codex.json" if mutation == "forwarded-environment" else ".mcp.claude.json"
+            ".mcp.codex.json"
+            if mutation == "forwarded-environment" or mutation.startswith("codex-")
+            else ".mcp.claude.json"
         )
         value = _closed_json(path)
         server = value["mcpServers"]["mir-mcp"]
@@ -114,6 +119,12 @@ def test_closed_shape_oracle_rejects_mutations(tmp_path: Path, mutation: str) ->
             server["env_vars"] = ["TOKEN"]
         elif mutation == "cwd":
             server["cwd"] = "/tmp"
+        elif mutation == "codex-variable-args":
+            server["args"][-1] = "${PLUGIN_ROOT}/mir_mcp.py"
+        elif mutation == "codex-session-cwd":
+            server["cwd"] = "/tmp"
+        elif mutation == "codex-missing-cwd":
+            server.pop("cwd")
         elif mutation == "url":
             server["url"] = "https://example.invalid"
         else:

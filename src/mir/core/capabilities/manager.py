@@ -22,7 +22,7 @@ from pathlib import Path, PurePosixPath
 from mir.core.adoption.runtime import _is_transient
 
 from .config import CapabilityConfig, CapabilityConfigError, CapabilityPack, load_capability_config
-from .mcp import MCP_NAME, mcp_launcher, validate_mcp_observation, validate_mcp_package
+from .mcp import MCP_LAUNCHERS, MCP_NAME, validate_mcp_observation, validate_mcp_package
 
 _SHA = re.compile(r"^[0-9a-f]{40}$")
 _MARKDOWN_LINK = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
@@ -1423,10 +1423,8 @@ class CapabilityManager:
             **self.config.plugin_mcp[plugin],
             "runtimes": list(self.config.required_runtimes),
             "launchers": {
-                runtime: mcp_launcher(f"${{{variable}}}/mir_mcp.py")
-                for runtime, variable in (
-                    ("claude", "CLAUDE_PLUGIN_ROOT"), ("codex", "PLUGIN_ROOT"),
-                )
+                runtime: {**launcher, "args": [*launcher["args"]]}
+                for runtime, launcher in MCP_LAUNCHERS.items()
             },
             "schema_source": "mir_mcp.py",
         }

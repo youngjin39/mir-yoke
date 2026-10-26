@@ -6,8 +6,9 @@
         "-I",
         "-B",
         "-u",
-        "${PLUGIN_ROOT}/mir_mcp.py"
+        "./mir_mcp.py"
       ],
+      "cwd": ".",
       "env_vars": []
     }
   }
