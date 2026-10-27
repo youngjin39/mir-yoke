@@ -190,6 +190,9 @@ def test_should_return_unsupported_before_mutation_on_other_unsupported_platform
     assert marker.read_text(encoding="utf-8") == "preserve me\n"
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="Native Windows automated bootstrap is unsupported"
+)
 def test_should_return_success_when_bootstrap_runs_inside_wsl_linux(
     tmp_path, capsys, monkeypatch
 ):
@@ -209,6 +212,9 @@ def test_should_return_success_when_bootstrap_runs_inside_wsl_linux(
 
 
 # @spec FR-001 FR-004 QR-002
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="Native Windows automated bootstrap is unsupported"
+)
 def test_should_reject_provider_push_remote_before_bootstrap_mutation(tmp_path, capsys):
     _make_harness_surfaces(tmp_path)
     subprocess.run(
@@ -236,6 +242,9 @@ def test_should_reject_provider_push_remote_before_bootstrap_mutation(tmp_path, 
     } == before
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="Native Windows automated bootstrap is unsupported"
+)
 def test_should_treat_default_git_ports_as_the_same_provider(tmp_path, capsys):
     for push_url in (
         "ssh://git@github.com:22/example/mir-yoke.git",
@@ -249,6 +258,9 @@ def test_should_treat_default_git_ports_as_the_same_provider(tmp_path, capsys):
         assert "still targets the Mir Yoke provider" in capsys.readouterr().err
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="Native Windows automated bootstrap is unsupported"
+)
 def test_source_control_receipt_never_persists_remote_credentials(tmp_path, capsys):
     _make_harness_surfaces(tmp_path)
     subprocess.run(
@@ -276,6 +288,9 @@ def test_source_control_receipt_never_persists_remote_credentials(tmp_path, caps
     ]
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="Native Windows automated bootstrap is unsupported"
+)
 def test_should_fail_before_mutation_when_provider_source_is_unavailable(
     tmp_path, capsys
 ):
@@ -375,6 +390,9 @@ def test_authored_baseline_rejects_a_symlinked_contract_directory(tmp_path):
 
 
 # @spec FR-001 FR-004
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="Native Windows automated bootstrap is unsupported"
+)
 def test_bootstrap_builds_required_memory_and_is_idempotent(tmp_path, capsys):
     _make_harness_surfaces(tmp_path)
 
@@ -400,6 +418,9 @@ def test_bootstrap_builds_required_memory_and_is_idempotent(tmp_path, capsys):
         assert connection.execute("SELECT COUNT(*) FROM external_archives").fetchone()[0] == 3
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="Native Windows automated bootstrap is unsupported"
+)
 def test_bootstrap_receipt_binds_isolated_cli_source_evidence(tmp_path, capsys):
     _make_harness_surfaces(tmp_path)
     evidence = {
@@ -431,6 +452,9 @@ def test_bootstrap_receipt_binds_isolated_cli_source_evidence(tmp_path, capsys):
     assert receipt["source_control"]["status"] == "local_only"
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="Native Windows automated bootstrap is unsupported"
+)
 def test_bootstrap_receipt_preserves_the_namespaced_launcher_symlink(tmp_path, capsys):
     _make_harness_surfaces(tmp_path)
     runtime_root = tmp_path.parent / f"{tmp_path.name}-runtime"
@@ -460,6 +484,9 @@ def test_bootstrap_receipt_preserves_the_namespaced_launcher_symlink(tmp_path, c
     assert receipt["cli"]["sha256"] == sha256(inner_cli.read_bytes()).hexdigest()
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="Native Windows automated bootstrap is unsupported"
+)
 def test_should_convert_exact_provider_profile_when_phase1_is_explicit(
     tmp_path, capsys
 ):
@@ -512,6 +539,9 @@ def test_should_convert_exact_provider_profile_when_phase1_is_explicit(
     assert not (tmp_path / ".mir/cli-runtime-lock.json").exists()
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="Native Windows automated bootstrap is unsupported"
+)
 def test_content_workspace_classifies_existing_records_and_proves_search(tmp_path, capsys):
     _make_harness_surfaces(tmp_path)
     _write(
@@ -560,6 +590,9 @@ def test_content_workspace_classifies_existing_records_and_proves_search(tmp_pat
     ).read_text(encoding="utf-8")
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="Native Windows automated bootstrap is unsupported"
+)
 def test_content_workspace_blocks_unclassified_existing_records(tmp_path, capsys):
     _make_harness_surfaces(tmp_path)
     _write(tmp_path / "legacy-notes" / "history.md", "UniqueHistory evidence.\n")
@@ -587,6 +620,9 @@ def test_content_workspace_blocks_unclassified_existing_records(tmp_path, capsys
     assert not (tmp_path / "config" / "content-onboarding.json").exists()
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="Native Windows automated bootstrap is unsupported"
+)
 def test_content_workspace_reports_non_indexable_record_formats(tmp_path, capsys):
     _make_harness_surfaces(tmp_path)
     _write(tmp_path / "legacy-documents" / "resume.pdf", "%PDF sample\n")
@@ -614,6 +650,9 @@ def test_content_workspace_reports_non_indexable_record_formats(tmp_path, capsys
     assert any("UTF-8 text projection" in error for error in conversion["errors"])
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="Native Windows automated bootstrap is unsupported"
+)
 def test_content_finalize_blocks_stale_onboarding_manifest(tmp_path, capsys):
     _make_harness_surfaces(tmp_path)
     _write(
@@ -665,6 +704,9 @@ def test_content_finalize_blocks_stale_onboarding_manifest(tmp_path, capsys):
     assert any("content onboarding manifest is stale" in error for error in report["errors"])
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="Native Windows automated bootstrap is unsupported"
+)
 def test_external_storage_root_is_verified_and_recorded(tmp_path, capsys):
     project = tmp_path / "project"
     storage = tmp_path / "machine-storage"
@@ -696,6 +738,9 @@ def test_external_storage_root_is_verified_and_recorded(tmp_path, capsys):
     }
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="Native Windows automated bootstrap is unsupported"
+)
 def test_external_storage_root_requires_wrapper_environment(tmp_path, capsys):
     project = tmp_path / "project"
     storage = tmp_path / "machine-storage"
@@ -723,6 +768,9 @@ def test_external_storage_root_requires_wrapper_environment(tmp_path, capsys):
     assert not (project / ".mir" / "memory.db").exists()
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="Native Windows automated bootstrap is unsupported"
+)
 def test_preflight_failure_does_not_create_authored_config_or_db(tmp_path, capsys):
     _write(tmp_path / "CLAUDE.md")
     _write(
@@ -739,6 +787,9 @@ def test_preflight_failure_does_not_create_authored_config_or_db(tmp_path, capsy
     assert (tmp_path / ".mir" / "bootstrap-receipt.json").is_file()
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="Native Windows automated bootstrap is unsupported"
+)
 def test_bootstrap_requires_jq_for_active_hook_payloads(tmp_path, capsys):
     _make_harness_surfaces(tmp_path)
     real_which = bootstrap_cli.shutil.which
@@ -755,6 +806,9 @@ def test_bootstrap_requires_jq_for_active_hook_payloads(tmp_path, capsys):
     assert not (tmp_path / ".mir" / "memory.db").exists()
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="Native Windows automated bootstrap is unsupported"
+)
 def test_invalid_existing_config_is_preserved_and_blocks_bootstrap(tmp_path, capsys):
     _make_harness_surfaces(tmp_path)
     invalid = "[memory\nenabled = true\n"
@@ -767,6 +821,9 @@ def test_invalid_existing_config_is_preserved_and_blocks_bootstrap(tmp_path, cap
     assert not (tmp_path / ".mir" / "memory.db").exists()
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="Native Windows automated bootstrap is unsupported"
+)
 def test_existing_projection_text_outside_markers_is_preserved(tmp_path, capsys):
     _make_harness_surfaces(tmp_path)
     _write(tmp_path / "docs" / "memory-map.md", "Authored introduction.\n")
@@ -806,6 +863,9 @@ def test_public_cli_dispatches_to_the_restored_command_registry() -> None:
         assert "usage:" in completed.stdout.lower()
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="Native Windows automated bootstrap is unsupported"
+)
 def test_capability_install_requires_restart_before_ready(tmp_path, capsys):
     _make_harness_surfaces(tmp_path)
     evidence = {
@@ -872,6 +932,9 @@ def test_capability_install_requires_restart_before_ready(tmp_path, capsys):
     }
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="Native Windows automated bootstrap is unsupported"
+)
 def test_finalize_rolls_back_slim_when_ready_receipt_cannot_publish(tmp_path, capsys):
     _make_harness_surfaces(tmp_path)
     evidence = {
@@ -939,6 +1002,9 @@ def test_finalize_rolls_back_slim_when_ready_receipt_cannot_publish(tmp_path, ca
     commit.assert_not_called()
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="Native Windows automated bootstrap is unsupported"
+)
 def test_content_workspace_completes_phase2_after_restart(tmp_path, capsys):
     _make_harness_surfaces(tmp_path)
     _write(
@@ -1008,6 +1074,9 @@ def test_content_workspace_completes_phase2_after_restart(tmp_path, capsys):
     )
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="Native Windows automated bootstrap is unsupported"
+)
 def test_finalize_refuses_boolean_attestation_without_architecture_outputs(tmp_path, capsys):
     _make_harness_surfaces(tmp_path)
     with patch.object(
@@ -1080,6 +1149,9 @@ def test_phase2_rejects_incomplete_spec_coverage_and_open_gaps(tmp_path):
     assert report["open_gaps"] == 1
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="Native Windows automated bootstrap is unsupported"
+)
 def test_failed_rerun_preserves_existing_db_and_projection(tmp_path, capsys):
     _make_harness_surfaces(tmp_path)
     assert _bootstrap(tmp_path) == 0
@@ -1097,6 +1169,9 @@ def test_failed_rerun_preserves_existing_db_and_projection(tmp_path, capsys):
     assert projection_path.read_text(encoding="utf-8") == projection
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="Native Windows automated bootstrap is unsupported"
+)
 def test_sync_failure_after_preflight_preserves_live_db(tmp_path, capsys):
     _make_harness_surfaces(tmp_path)
     assert _bootstrap(tmp_path) == 0

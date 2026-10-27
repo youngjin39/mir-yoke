@@ -52,7 +52,7 @@ immutable release:
 
 ```bash
 uv tool install --force --link-mode copy \
-  "git+https://github.com/youngjin39/mir-yoke.git@v0.13.39"
+  "git+https://github.com/youngjin39/mir-yoke.git@v0.13.40"
 mir --help
 ```
 
@@ -158,6 +158,11 @@ Version 0.13.39 refuses repositories inside cloud-synced folders (OneDrive, macO
 iCloud Drive) with a warning, in both `mir-mcp` and `mir capability`, and keeps every checkout
 byte-identical to Git's blobs on all operating systems. It prepares a native Windows lane that
 later releases add.
+
+Version 0.13.40 runs the `mir capability` manager, the agent-derivative generator and the
+lifecycle hooks natively on Windows (Python generator, owner-only DACL for private state,
+Windows-safe transcript reads and timeouts), checked by a Windows CI job. `mir-mcp` and Windows
+runtime receipts follow in 0.13.41.
 
 ### Platform use
 

@@ -20,6 +20,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -136,6 +137,10 @@ def _write(project: Path, file_path: str) -> subprocess.CompletedProcess:
     )
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32" and shutil.which("grep") is None,
+    reason="POSIX grep is unavailable on native Windows",
+)
 def test_every_pattern_is_a_usable_posix_regex(tmp_path: Path) -> None:
     """A pattern grep cannot compile is a silent hole, and \\s/\\b are not POSIX.
 
@@ -191,6 +196,7 @@ def test_deny_list_only_rules_still_ship() -> None:
     )
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX shell entrypoint")
 @pytest.mark.parametrize(
     ("rule_id", "command"),
     [
@@ -221,6 +227,7 @@ def test_block_severity_commands_are_blocked(
     )
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX shell entrypoint")
 @pytest.mark.parametrize(
     "file_path",
     ["secrets/prod.yaml", "config/secrets/tokens.json"],
@@ -239,6 +246,7 @@ def test_secrets_directory_writes_are_blocked(tmp_path: Path, file_path: str) ->
     )
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX shell entrypoint")
 @pytest.mark.parametrize(
     "file_path",
     ["secrets/prod.yaml", "./secrets/prod.yaml", "config/secrets/tokens.json"],
@@ -263,6 +271,7 @@ def test_secrets_directory_writes_are_blocked_for_relative_paths(
     )
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX shell entrypoint")
 def test_path_deny_list_anchors_at_the_path(tmp_path: Path) -> None:
     """`^` in a path pattern must anchor at the path itself.
 
@@ -284,6 +293,7 @@ def test_path_deny_list_anchors_at_the_path(tmp_path: Path) -> None:
     )
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX shell entrypoint")
 def test_apply_patch_target_paths_are_screened(tmp_path: Path) -> None:
     """apply_patch had a path screen, but it never consulted the deny-list.
 
@@ -323,6 +333,7 @@ def test_apply_patch_target_paths_are_screened(tmp_path: Path) -> None:
     )
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX shell entrypoint")
 def test_notebook_edit_path_is_screened(tmp_path: Path) -> None:
     """NotebookEdit carries its target in `notebook_path` and reached no guard."""
     project = _make_project(tmp_path)
@@ -339,6 +350,7 @@ def test_notebook_edit_path_is_screened(tmp_path: Path) -> None:
     )
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX shell entrypoint")
 def test_deny_list_only_rules_report_their_own_id(tmp_path: Path) -> None:
     """Exit code 2 alone cannot prove the deny-list fired -- the reason can.
 
@@ -358,6 +370,7 @@ def test_deny_list_only_rules_report_their_own_id(tmp_path: Path) -> None:
         )
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX shell entrypoint")
 def test_plus_refspec_force_push_to_protected_branch_is_blocked(tmp_path: Path) -> None:
     """A leading `+` on the refspec forces the update with no flag at all.
 
@@ -379,6 +392,7 @@ def test_plus_refspec_force_push_to_protected_branch_is_blocked(tmp_path: Path) 
         assert "grep:" not in result.stderr, result.stderr
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX shell entrypoint")
 def test_plus_refspec_on_an_unprotected_branch_is_allowed(tmp_path: Path) -> None:
     """Force-pushing your own topic branch stays ordinary work.
 
@@ -396,6 +410,7 @@ def test_plus_refspec_on_an_unprotected_branch_is_allowed(tmp_path: Path) -> Non
         )
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX shell entrypoint")
 def test_force_push_guard_stops_at_a_command_separator(tmp_path: Path) -> None:
     """Guard 2 tests two conditions with two greps, and both scanned the whole line.
 
@@ -423,6 +438,7 @@ def test_force_push_guard_stops_at_a_command_separator(tmp_path: Path) -> None:
         )
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX shell entrypoint")
 def test_force_push_guard_still_blocks_within_a_compound_command(
     tmp_path: Path,
 ) -> None:
@@ -440,6 +456,7 @@ def test_force_push_guard_still_blocks_within_a_compound_command(
         )
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX shell entrypoint")
 def test_sudo_is_blocked_regardless_of_position(tmp_path: Path) -> None:
     """`(^| )sudo( |$)` misses a shell separator and an absolute path."""
     project = _make_project(tmp_path)
@@ -456,6 +473,7 @@ def test_sudo_is_blocked_regardless_of_position(tmp_path: Path) -> None:
         )
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX shell entrypoint")
 def test_ordinary_commands_and_paths_are_allowed(tmp_path: Path) -> None:
     """Guard against over-blocking, including branches that merely contain 'main'.
 

@@ -6,32 +6,105 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import tomllib
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
+
+import pytest
 
 from scripts import verify_codex_sync
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_should_generate_without_retired_hook_library_when_source_is_absent(tmp_path):
+@pytest.mark.parametrize("invalid", [False, True])
+def test_should_emit_utf8_bytes_under_cp949_locale(tmp_path, invalid):
+    source = tmp_path / "fixture—"
+    scripts = source / "scripts"
+    scripts.mkdir(parents=True)
+    copy_generators(scripts)
+    (source / "CLAUDE.md").write_text("# Fixture\n", encoding="utf-8")
+    if invalid:
+        agent = source / ".claude/agents/invalid—.md"
+        agent.parent.mkdir(parents=True)
+        agent.write_text("---\ndisallowedTools: 'Write, Edit'\n---\n", encoding="utf-8")
+    command = [sys.executable, str(scripts / "generate_codex_derivatives.py")]
+    baseline = subprocess.run(
+        command, capture_output=True,
+        env={**os.environ, "PYTHONUTF8": "0", "PYTHONIOENCODING": "utf-8"},
+    )
+    legacy = subprocess.run(
+        command, capture_output=True,
+        env={**os.environ, "PYTHONUTF8": "0", "PYTHONIOENCODING": "cp949"},
+    )
+    assert baseline.returncode == (2 if invalid else 0)
+    assert legacy.returncode == baseline.returncode, legacy.stderr
+    assert legacy.stdout == baseline.stdout
+    assert legacy.stderr == baseline.stderr
+
+
+def test_should_decode_git_output_as_utf8_under_cp949_locale(monkeypatch):
+    from mir.core.capabilities.manager import GitClient
+
+    monkeypatch.setattr(subprocess, "_text_encoding", lambda: "cp949")
+    result = GitClient()._run([
+        sys.executable, "-c", "import os; os.write(1, b'\\xe2\\x80\\x94\\xff')",
+    ])
+    assert result == "—\ufffd"
+
+
+def test_should_decode_generator_output_as_utf8_under_cp949_locale(tmp_path, monkeypatch):
+    from mir.core.capabilities.manager import CapabilityManager
+
+    scripts = tmp_path / "scripts"
+    scripts.mkdir()
+    (scripts / "generate_codex_derivatives.py").write_text(
+        "import os\nos.write(1, b'\\xe2\\x80\\x94\\xff')\n", encoding="utf-8",
+    )
+    manager = CapabilityManager(
+        tmp_path, capability_home=tmp_path / "capabilities", user_home=tmp_path / "user",
+        codex_home=tmp_path / "codex",
+    )
+    monkeypatch.setattr(subprocess, "_text_encoding", lambda: "cp949")
+    assert manager._regenerate_agent_derivatives()
+
+
+def copy_generators(scripts: Path) -> None:
+    for suffix in ("sh", "py"):
+        shutil.copy2(ROOT / f"scripts/generate_codex_derivatives.{suffix}", scripts)
+
+
+@pytest.fixture(params=["python", "wrapper"])
+def generator(request):
+    if request.param == "wrapper" and (sys.platform == "win32" or shutil.which("bash") is None):
+        pytest.skip("Bash wrapper requires a POSIX host with Bash")
+
+    def command(root):
+        if request.param == "python":
+            return [sys.executable, str(root / "scripts/generate_codex_derivatives.py")]
+        return ["bash", str(root / "scripts/generate_codex_derivatives.sh")]
+
+    return command
+
+
+def test_should_generate_without_retired_hook_library_when_source_is_absent(tmp_path, generator):
     source = tmp_path / "source"
     scripts = source / "scripts"
     scripts.mkdir(parents=True)
-    shutil.copy2(ROOT / "scripts/generate_codex_derivatives.sh", scripts)
+    copy_generators(scripts)
     (source / "CLAUDE.md").write_text("# Fixture\n", encoding="utf-8")
     output = tmp_path / "output"
     stale = output / ".codex/hooks/lib/obsolete.py"
     stale.parent.mkdir(parents=True)
     stale.write_text("# Obsolete generated helper\n", encoding="utf-8")
     result = subprocess.run(
-        ["bash", str(scripts / "generate_codex_derivatives.sh")],
+        generator(scripts.parent),
         env={**os.environ, "CODEX_DERIVATION_OUTPUT_ROOT": str(output)},
-        capture_output=True, text=True, check=False,
+        capture_output=True, text=True, encoding="utf-8", check=False,
     )
     assert result.returncode == 0, result.stderr
     assert not (output / ".codex/hooks/lib").exists()
-    manifest = json.loads((output / ".codex-sync/manifest.json").read_text())
+    manifest = json.loads((output / ".codex-sync/manifest.json").read_text(encoding="utf-8"))
     assert all(item["source"] != ".claude/hooks/lib" for item in manifest["mappings"])
     failures = []
     verify_codex_sync.validate_portable_hook_copy(
@@ -40,7 +113,7 @@ def test_should_generate_without_retired_hook_library_when_source_is_absent(tmp_
     assert failures == []
 
 
-def test_generator_skips_non_agent_markdown_and_empty_targets(tmp_path: Path) -> None:
+def test_generator_skips_non_agent_markdown_and_empty_targets(tmp_path: Path, generator) -> None:
     stale_agent = tmp_path / ".codex" / "agents" / "stale-agent.toml"
     stale_agent.parent.mkdir(parents=True)
     stale_agent.write_text('name = "stale-agent"\n', encoding="utf-8")
@@ -61,11 +134,11 @@ def test_generator_skips_non_agent_markdown_and_empty_targets(tmp_path: Path) ->
     env = os.environ.copy()
     env["CODEX_DERIVATION_OUTPUT_ROOT"] = str(tmp_path)
     completed = subprocess.run(
-        ["/bin/bash", "scripts/generate_codex_derivatives.sh"],
+        generator(ROOT),
         cwd=ROOT,
         env=env,
         capture_output=True,
-        text=True,
+        text=True, encoding="utf-8",
         check=False,
     )
 
@@ -126,7 +199,7 @@ def test_generator_skips_non_agent_markdown_and_empty_targets(tmp_path: Path) ->
     assert "## Post-Dispatch Evidence" in generated_orchestrator
     assert "Mir Yoke provides no daemon" in generated_orchestrator
 
-    config = tomllib.loads((tmp_path / ".codex" / "config.toml").read_text())
+    config = tomllib.loads((tmp_path / ".codex" / "config.toml").read_text(encoding="utf-8"))
     config_text = (tmp_path / ".codex" / "config.toml").read_text(encoding="utf-8")
     assert config_text.startswith(
         "# GENERATED FILE: edit scripts/generate_codex_derivatives.sh or .mcp.json"
@@ -140,13 +213,13 @@ def test_generator_skips_non_agent_markdown_and_empty_targets(tmp_path: Path) ->
     assert "multi_agent" not in config["features"]
     assert "codex_hooks" not in config["features"]
     executor = tomllib.loads(
-        (tmp_path / ".codex" / "agents" / "executor-agent.toml").read_text()
+        (tmp_path / ".codex" / "agents" / "executor-agent.toml").read_text(encoding="utf-8")
     )
     reviewer = tomllib.loads(
-        (tmp_path / ".codex" / "agents" / "codex-final-reviewer.toml").read_text()
+        (tmp_path / ".codex" / "agents" / "codex-final-reviewer.toml").read_text(encoding="utf-8")
     )
     governance_reviewer = tomllib.loads(
-        (tmp_path / ".codex" / "agents" / "fleet-doc-steward.toml").read_text()
+        (tmp_path / ".codex" / "agents" / "fleet-doc-steward.toml").read_text(encoding="utf-8")
     )
     assert "sandbox_mode" not in executor
     assert reviewer["sandbox_mode"] == "read-only"
@@ -204,21 +277,21 @@ def test_generator_skips_non_agent_markdown_and_empty_targets(tmp_path: Path) ->
         assert heading in claude_text
 
 
-def test_generator_derives_path_scoped_agents_and_manifest_entry(tmp_path: Path) -> None:
+def test_generator_derives_path_scoped_agents_and_manifest_entry(tmp_path: Path, generator) -> None:
     fixture = tmp_path / "fixture"
     scripts_dir = fixture / "scripts"
     scripts_dir.mkdir(parents=True)
-    shutil.copy2(ROOT / "scripts" / "generate_codex_derivatives.sh", scripts_dir)
+    copy_generators(scripts_dir)
     (fixture / "CLAUDE.md").write_text("# Fixture\n", encoding="utf-8")
     (scripts_dir / "CLAUDE.md").write_text(
         "Read root CLAUDE.md before changing scripts.\n", encoding="utf-8"
     )
 
     completed = subprocess.run(
-        ["/bin/bash", "scripts/generate_codex_derivatives.sh"],
+        generator(fixture),
         cwd=fixture,
         capture_output=True,
-        text=True,
+        text=True, encoding="utf-8",
         check=False,
     )
 
@@ -240,13 +313,13 @@ def test_generator_derives_path_scoped_agents_and_manifest_entry(tmp_path: Path)
     )
 
 
-def test_should_not_infer_read_only_sandbox_from_agent_name(tmp_path: Path) -> None:
+def test_should_not_infer_read_only_sandbox_from_agent_name(tmp_path: Path, generator) -> None:
     fixture = tmp_path / "fixture"
     scripts_dir = fixture / "scripts"
     agent_dir = fixture / ".claude" / "agents"
     scripts_dir.mkdir(parents=True)
     agent_dir.mkdir(parents=True)
-    shutil.copy2(ROOT / "scripts" / "generate_codex_derivatives.sh", scripts_dir)
+    copy_generators(scripts_dir)
     (fixture / "CLAUDE.md").write_text("# Fixture\n", encoding="utf-8")
     (agent_dir / "fleet-doc-steward.md").write_text(
         "---\n"
@@ -258,10 +331,10 @@ def test_should_not_infer_read_only_sandbox_from_agent_name(tmp_path: Path) -> N
     )
 
     completed = subprocess.run(
-        ["/bin/bash", "scripts/generate_codex_derivatives.sh"],
+        generator(fixture),
         cwd=fixture,
         capture_output=True,
-        text=True,
+        text=True, encoding="utf-8",
         check=False,
     )
 
@@ -275,14 +348,13 @@ def test_should_not_infer_read_only_sandbox_from_agent_name(tmp_path: Path) -> N
 
 
 def test_generator_requires_exact_write_and_edit_tokens_for_read_only_sandbox(
-    tmp_path: Path,
-) -> None:
+    tmp_path: Path, generator) -> None:
     fixture = tmp_path / "fixture"
     scripts_dir = fixture / "scripts"
     agent_dir = fixture / ".claude" / "agents"
     scripts_dir.mkdir(parents=True)
     agent_dir.mkdir(parents=True)
-    shutil.copy2(ROOT / "scripts" / "generate_codex_derivatives.sh", scripts_dir)
+    copy_generators(scripts_dir)
     (fixture / "CLAUDE.md").write_text("# Fixture\n", encoding="utf-8")
     for name, disallowed_tools in (
         ("writer-edit", "Writer, Edit"),
@@ -300,10 +372,10 @@ def test_generator_requires_exact_write_and_edit_tokens_for_read_only_sandbox(
         )
 
     completed = subprocess.run(
-        ["/bin/bash", "scripts/generate_codex_derivatives.sh"],
+        generator(fixture),
         cwd=fixture,
         capture_output=True,
-        text=True,
+        text=True, encoding="utf-8",
         check=False,
     )
 
@@ -321,8 +393,7 @@ def test_generator_requires_exact_write_and_edit_tokens_for_read_only_sandbox(
 
 
 def test_generator_rejects_invalid_patterned_frontmatter_before_agent_output(
-    tmp_path: Path,
-) -> None:
+    tmp_path: Path, generator) -> None:
     cases = (
         (
             "single-quoted-tools",
@@ -351,7 +422,7 @@ def test_generator_rejects_invalid_patterned_frontmatter_before_agent_output(
         agent_dir = fixture / ".claude" / "agents"
         scripts_dir.mkdir(parents=True)
         agent_dir.mkdir(parents=True)
-        shutil.copy2(ROOT / "scripts" / "generate_codex_derivatives.sh", scripts_dir)
+        copy_generators(scripts_dir)
         (fixture / "CLAUDE.md").write_text("# Fixture\n", encoding="utf-8")
         (agent_dir / f"{fixture_name}.md").write_text(
             f"---\n{frontmatter}---\n\nRemain within the supplied scope.\n",
@@ -359,10 +430,10 @@ def test_generator_rejects_invalid_patterned_frontmatter_before_agent_output(
         )
 
         completed = subprocess.run(
-            ["/bin/bash", "scripts/generate_codex_derivatives.sh"],
+            generator(fixture),
             cwd=fixture,
             capture_output=True,
-            text=True,
+            text=True, encoding="utf-8",
             check=False,
         )
 
@@ -372,8 +443,7 @@ def test_generator_rejects_invalid_patterned_frontmatter_before_agent_output(
 
 
 def test_generator_validates_all_agent_sources_before_replacing_agent_output(
-    tmp_path: Path,
-) -> None:
+    tmp_path: Path, generator) -> None:
     fixture = tmp_path / "fixture"
     scripts_dir = fixture / "scripts"
     agent_dir = fixture / ".claude" / "agents"
@@ -381,7 +451,7 @@ def test_generator_validates_all_agent_sources_before_replacing_agent_output(
     scripts_dir.mkdir(parents=True)
     agent_dir.mkdir(parents=True)
     output_agent_dir.mkdir(parents=True)
-    shutil.copy2(ROOT / "scripts" / "generate_codex_derivatives.sh", scripts_dir)
+    copy_generators(scripts_dir)
     (fixture / "CLAUDE.md").write_text("# Fixture\n", encoding="utf-8")
     (agent_dir / "a-valid.md").write_text(
         "---\n"
@@ -405,10 +475,10 @@ def test_generator_validates_all_agent_sources_before_replacing_agent_output(
     preserved.write_text('name = "preserved"\n', encoding="utf-8")
 
     completed = subprocess.run(
-        ["/bin/bash", "scripts/generate_codex_derivatives.sh"],
+        generator(fixture),
         cwd=fixture,
         capture_output=True,
-        text=True,
+        text=True, encoding="utf-8",
         check=False,
     )
 
@@ -433,7 +503,7 @@ def test_verifier_rejects_nested_agents_drift(tmp_path: Path) -> None:
     verify_codex_sync.validate_nested_instruction_derivatives(failures, root=tmp_path)
 
     assert failures == [
-        "nested AGENTS derivative retains Claude-only path reference: src/AGENTS.md"
+        f"nested AGENTS derivative retains Claude-only path reference: {Path('src/AGENTS.md')}"
     ]
 
 
@@ -445,7 +515,29 @@ def test_verifier_rejects_legacy_raw_skill_provider(tmp_path: Path) -> None:
 
     verify_codex_sync.validate_plugin_skill_providers(failures, root=tmp_path)
 
-    assert "legacy raw skill provider remains: .agents/skills" in failures
+    assert f"legacy raw skill provider remains: {Path('.agents/skills')}" in failures
+
+
+def test_verifier_accepts_posix_source_marker_with_windows_relative_path(tmp_path, monkeypatch):
+    source = tmp_path / "src/CLAUDE.md"
+    source.parent.mkdir()
+    source.write_text("# Fixture\n", encoding="utf-8")
+    source.with_name("AGENTS.md").write_text(
+        "<!-- GENERATED FILE: edit src/CLAUDE.md and rerun "
+        "scripts/generate_codex_derivatives.sh -->\n\n# Fixture\n",
+        encoding="utf-8",
+    )
+    relative_to = type(source).relative_to
+
+    def windows_source_relative_to(path, *args):
+        if path == source:
+            return PureWindowsPath("src/CLAUDE.md")
+        return relative_to(path, *args)
+
+    monkeypatch.setattr(type(source), "relative_to", windows_source_relative_to)
+    failures = []
+    verify_codex_sync.validate_nested_instruction_derivatives(failures, root=tmp_path)
+    assert failures == []
 
 
 def test_should_validate_all_yoke_managed_runtime_surfaces() -> None:
@@ -456,11 +548,11 @@ def test_should_validate_all_yoke_managed_runtime_surfaces() -> None:
     assert failures == []
 
 
-def test_generator_emits_real_portable_hook_library(tmp_path: Path) -> None:
+def test_generator_emits_real_portable_hook_library(tmp_path: Path, generator) -> None:
     source = tmp_path / "source"
     scripts = source / "scripts"
     scripts.mkdir(parents=True)
-    shutil.copy2(ROOT / "scripts/generate_codex_derivatives.sh", scripts)
+    copy_generators(scripts)
     (source / "CLAUDE.md").write_text("# Fixture\n", encoding="utf-8")
     library = source / ".claude/hooks/lib"
     library.mkdir(parents=True)
@@ -468,11 +560,11 @@ def test_generator_emits_real_portable_hook_library(tmp_path: Path) -> None:
     output = tmp_path / "output"
     env = {**os.environ, "CODEX_DERIVATION_OUTPUT_ROOT": str(output)}
     completed = subprocess.run(
-        ["/bin/bash", "scripts/generate_codex_derivatives.sh"],
+        generator(source),
         cwd=source,
         env=env,
         capture_output=True,
-        text=True,
+        text=True, encoding="utf-8",
         check=False,
     )
     assert completed.returncode == 0, completed.stderr
@@ -484,3 +576,72 @@ def test_generator_emits_real_portable_hook_library(tmp_path: Path) -> None:
         failures, source_root=source, output_root=output
     )
     assert failures == []
+
+
+@pytest.mark.parametrize("line_ending", ["\n", "\r\n"])
+def test_generator_preserves_shell_body_and_frontmatter_rules(tmp_path, generator, line_ending):
+    scripts = tmp_path / "scripts"
+    scripts.mkdir()
+    copy_generators(scripts)
+    (tmp_path / "CLAUDE.md").write_bytes(
+        line_ending.join(["---", "title: fixture", "---", "# Root", ""]).encode()
+    )
+    agents = tmp_path / ".claude/agents"
+    agents.mkdir(parents=True)
+    (agents / "sample.md").write_bytes(line_ending.join([
+        "---", "name: sample", 'description: "A multiline', 'description"',
+        "disallowedTools: Write, Edit", "---", "", '# Body with """', "last line",
+    ]).encode())
+    completed = subprocess.run(generator(tmp_path) + ["ignored-argument"],
+                               capture_output=True, text=True, encoding="utf-8", check=False)
+    assert completed.returncode == 0, completed.stderr
+    body = (tmp_path / "AGENTS.md").read_bytes()
+    if line_ending == "\r\n":
+        assert b"---\r\ntitle: fixture\r\n" in body
+    else:
+        assert b"title: fixture" not in body
+    agent = (tmp_path / ".codex/agents/sample.toml").read_bytes()
+    assert b'description = "A multiline\ndescription"\n' in agent
+    assert b'\\"""' in agent
+    assert agent.endswith(b'last line\n"""\n')
+
+
+def test_generator_missing_root_contract(tmp_path, generator):
+    scripts = tmp_path / "scripts"
+    scripts.mkdir()
+    copy_generators(scripts)
+    completed = subprocess.run(
+        generator(tmp_path), capture_output=True, text=True, encoding="utf-8", check=False,
+    )
+    assert completed.returncode == 1
+    assert completed.stderr == "ERROR: CLAUDE.md not found in repository root.\n"
+    assert not (tmp_path / ".codex").exists()
+
+
+@pytest.mark.parametrize("line_ending", ["\n", "\r\n"])
+def test_generator_uses_adopter_catalog_and_optional_mcp(tmp_path, generator, line_ending):
+    scripts = tmp_path / "scripts"
+    scripts.mkdir()
+    copy_generators(scripts)
+    (tmp_path / "CLAUDE.md").write_text("# Fixture\n", encoding="utf-8")
+    (tmp_path / ".mir").mkdir()
+    (tmp_path / ".mir/repo-profile.toml").write_bytes(
+        ('overlay_archetype = "product_adopter"' + line_ending).encode("utf-8"))
+    (tmp_path / "config").mkdir()
+    (tmp_path / "config/repo-agent-management.json").write_text(json.dumps({
+        "catalog": {"agents": {"custom": {"source_path": "custom.md"}}}
+    }), encoding="utf-8")
+    (tmp_path / "custom.md").write_text(
+        "---\nname: custom\ndescription: Custom\n---\nBody\n", encoding="utf-8")
+    (tmp_path / ".mcp.json").write_text(json.dumps({"mcpServers": {
+        "fixture": {"command": "python3", "args": ["server.py", "--stdio"]},
+        "no-args": {"command": "local"},
+    }}), encoding="utf-8")
+    completed = subprocess.run(
+        generator(tmp_path), capture_output=True, text=True, encoding="utf-8", check=False,
+    )
+    assert completed.returncode == 0, completed.stderr
+    assert (tmp_path / ".codex/agents/custom.toml").is_file()
+    config = tomllib.loads((tmp_path / ".codex/config.toml").read_text(encoding="utf-8"))
+    assert config["mcp_servers"]["fixture"]["args"] == ["server.py", "--stdio"]
+    assert config["mcp_servers"]["no-args"]["args"] == []

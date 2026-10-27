@@ -76,7 +76,7 @@ def validate_nested_instruction_derivatives(
             )
         else:
             expected_marker = (
-                f"<!-- GENERATED FILE: edit {source_rel} and rerun "
+                f"<!-- GENERATED FILE: edit {source_rel.as_posix()} and rerun "
                 "scripts/generate_codex_derivatives.sh -->"
             )
         if not target_text.startswith(expected_marker):

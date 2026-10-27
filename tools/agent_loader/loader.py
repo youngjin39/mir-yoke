@@ -1,8 +1,8 @@
 """ADR-09 Phase 9A/9B -- agent frontmatter parser + jsonschema validator.
 
-Line-based frontmatter parser (no PyYAML dependency -- matches extract_frontmatter_field
-in scripts/generate_codex_derivatives.sh perl pattern). Handles the simple key: value
-shape used by .claude/agents/*.md.
+Line-based frontmatter parser (no PyYAML dependency -- matches frontmatter in
+scripts/generate_codex_derivatives.py, also exposed through the .sh wrapper).
+Handles the simple key: value shape used by .claude/agents/*.md.
 
 Two validation modes:
 - 'lenient' (Phase 9A default): execution_backend may be absent. Other required fields

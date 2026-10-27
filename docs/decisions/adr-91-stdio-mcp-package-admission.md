@@ -574,3 +574,28 @@ the lane itself (§4.4-§4.8 for `windows`) is a later amendment and stays refus
 
 Every package digest changes (version manifests, plus `mir-mcp` and `mir-core` code), so each
 consumer renews its `mir-lifecycle-hooks` and `mir-mcp` acknowledgements.
+
+## Amendment: 2026-10-28 — Native Windows manager and hooks (0.13.40)
+
+Owner decisions: Discord `1564632417304838205` (answer 6: the manager and the hooks behave on
+Windows as on other OSes) and `1564744151088627924` (start 0.13.40), parent-supplied. Second of
+three releases; `mir-mcp` activation on native Windows stays refused (§4.4-§4.8 for `windows`
+remain the next amendment).
+
+- Derivatives: the manager runs `scripts/generate_codex_derivatives.py` with its own
+  interpreter. Its output is byte-identical to the former Bash generator (checked on every test
+  fixture and this repository), written as UTF-8 with LF. The Bash script is a wrapper; a
+  consumer without the `.py` still uses Bash.
+- Private files: mode 0600 on POSIX; on Windows a protected DACL with one ACE granting the
+  current user full access. The check accepts only a present, protected DACL whose ACEs are all
+  access-allowed for the current user, SYSTEM or Administrators; a NULL DACL or any other ACE is
+  not private. Rollback restores private files as private.
+- Hook: on Windows the handoff hook refuses a transcript that is a link or reparse point or whose
+  identity changes between `lstat` and open, and kills a timed-out pin runner's process tree with
+  `%SystemRoot%\System32\taskkill.exe /T /F`. POSIX paths are unchanged. The reviewed handler
+  digest changes accordingly.
+- Evidence: on the owner's Windows PC (Korean locale) the manager, generator, hook and ontology
+  test files ended at 1256 passed and 1 failed (the capability lock, rebound at release); tests
+  of POSIX shell entrypoints, native Windows bootstrap and `mir-mcp` activation are skipped on
+  Windows with those reasons (252). A `windows_native` CI job runs
+  the same files.

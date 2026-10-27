@@ -26,7 +26,10 @@ def runner(tmp_path, monkeypatch):
     home.mkdir()
     account.mkdir()
     monkeypatch.setattr(module.Path, "home", lambda: home)
-    monkeypatch.setattr(module.pwd, "getpwuid", lambda uid: SimpleNamespace(pw_dir=str(account)))
+    monkeypatch.setattr(
+        module, "pwd", SimpleNamespace(getpwuid=lambda uid: SimpleNamespace(pw_dir=str(account)))
+    )
+    monkeypatch.setattr(module.os, "getuid", lambda: 1000, raising=False)
     monkeypatch.delenv("MIR_ONTOLOGY_CHECKER", raising=False)
     return module, home, account
 
@@ -333,6 +336,8 @@ def test_missing_mk_sibling_does_not_use_newer_distribution(runner, capsys):
 
 @pytest.mark.parametrize("version", ["9.0.0-..", "9.0.0-01", "9.0.0+.."])
 def test_invalid_semver_cache_is_ignored(runner, capsys, version):
+    if sys.platform == "win32" and version.endswith("."):
+        pytest.skip("Windows cannot create directory names ending in '.'")
     module, home, _ = runner
     expected = distribution(home, ".codex", "0.12.0")
     distribution(home, ".claude", version)
@@ -343,6 +348,8 @@ def test_invalid_semver_cache_is_ignored(runner, capsys, version):
 @pytest.mark.parametrize("runtime", [".claude", ".codex"])
 @pytest.mark.parametrize("version", ["9.0.0-..", "9.0.0-01", "9.0.0+.."])
 def test_invalid_active_semver_is_rejected(runner, runtime, version):
+    if sys.platform == "win32" and version.endswith("."):
+        pytest.skip("Windows cannot create directory names ending in '.'")
     module, home, _ = runner
     checker = distribution(home, runtime, version)
     if runtime == ".claude":

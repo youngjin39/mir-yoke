@@ -8,6 +8,32 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.40] — 2026-10-28 — Manager and lifecycle hooks native on Windows
+
+### Added
+
+- `scripts/generate_codex_derivatives.py`: the agent-derivative generator in stdlib Python with
+  output byte-identical to the previous Bash generator (UTF-8, LF on every OS). The manager runs
+  it with its own interpreter, so `mir capability sync/update --apply` and rollback no longer
+  need Bash or Unix tools; `generate_codex_derivatives.sh` is now a wrapper around it.
+- Private state files on Windows: the manager writes its JSON state with an owner-only,
+  non-inherited DACL and accepts the consumer binding ledger only with such a DACL (owner,
+  SYSTEM, Administrators), the Windows form of mode 0600 (ADR-91 amendment 2026-10-28, 0.13.40).
+- A `windows_native` CI job runs the manager, generator, hook and ontology test files on
+  `windows-latest`.
+
+### Changed
+
+- The lifecycle handoff hook reads the transcript on Windows without following links or reparse
+  points (identity checked after open) and stops a timed-out pin runner with its whole process
+  tree (`taskkill /T /F`); the reviewed handler digest changes.
+- The manager decodes child-process output as UTF-8 and restores private state files as private
+  after a rollback; the nested-instruction verifier compares source markers with `/` paths.
+- The Python generator also derives agents from profiles with CRLF line endings, which the Bash
+  generator skipped.
+- Bump release surfaces to 0.13.40 and regenerate the adopter payload. `mir-mcp` stays refused
+  on native Windows until 0.13.41.
+
 ## [v0.13.39] — 2026-10-28 — Cloud-synced roots and byte-stable checkouts
 
 ### Added

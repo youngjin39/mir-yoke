@@ -10,7 +10,18 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def read(target, name="SKILL.md"):
     plugin, skill = target.split("/")
-    return (ROOT / "plugins" / plugin / "skills" / skill / name).read_text()
+    return (ROOT / "plugins" / plugin / "skills" / skill / name).read_text(encoding="utf-8")
+
+
+def test_should_read_utf8_skill_sources_under_cp949_locale(monkeypatch):
+    original = Path.read_text
+
+    def legacy_read(path, encoding=None, errors=None):
+        return original(path, encoding=encoding or "cp949", errors=errors)
+
+    monkeypatch.setattr(Path, "read_text", legacy_read)
+    expected = original(ROOT / "plugins/mir-core/skills/ontology/SKILL.md", encoding="utf-8")
+    assert read("mir-core/ontology") == expected
 
 
 REFERENCES = (
@@ -724,7 +735,9 @@ def test_should_describe_existing_pretooluse_handoff_guard_without_changing_sess
     ) in text
     assert "SessionStart stays unchanged" in text
     assert "UserPromptSubmit/Stop hooks" not in text
-    hooks = json.loads((ROOT / "plugins/mir-lifecycle-hooks/hooks/hooks.json").read_text())["hooks"]
+    hooks = json.loads(
+        (ROOT / "plugins/mir-lifecycle-hooks/hooks/hooks.json").read_text(encoding="utf-8")
+    )["hooks"]
     for event in ("UserPromptSubmit", "PreToolUse", "Stop"):
         handler = hooks[event][0]["hooks"][0]
         assert "skills/runtime-continuity/scripts/handoff_packet.py" in handler["command"]

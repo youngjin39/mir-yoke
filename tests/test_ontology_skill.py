@@ -206,7 +206,7 @@ def run_mapping(repo: Path, mapping: dict, *args: str) -> subprocess.CompletedPr
     (repo / ".mir/ontology-map.json").write_text(json.dumps(mapping))
     if "--contract" not in args:
         # Pin legacy regressions independently of the owner's parallel distribution update.
-        legacy = json.loads(CONTRACT.read_text())
+        legacy = json.loads(CONTRACT.read_text(encoding="utf-8"))
         legacy["version"] = "1.0.0"
         legacy_path = repo / "legacy-contract.json"
         legacy_path.write_text(json.dumps(legacy))
@@ -214,7 +214,7 @@ def run_mapping(repo: Path, mapping: dict, *args: str) -> subprocess.CompletedPr
     return subprocess.run(
         [sys.executable, str(CHECKER), "mapping", "--repo", str(repo), *args],
         capture_output=True,
-        text=True,
+        text=True, encoding="utf-8",
         check=False,
     )
 
@@ -225,7 +225,7 @@ def test_contract_distribution_is_byte_identical_to_owner() -> None:
     assert CONTRACT.read_bytes() == OWNER_CONTRACT.read_bytes()
     assert (
         hashlib.sha256(CONTRACT.read_bytes()).hexdigest()
-        in (SKILL / "references/SOURCE.md").read_text()
+        in (SKILL / "references/SOURCE.md").read_text(encoding="utf-8")
     )
 
 
@@ -233,14 +233,14 @@ def test_contract_self_check_passes() -> None:
     result = subprocess.run(
         [sys.executable, str(CHECKER), "contract"],
         capture_output=True,
-        text=True,
+        text=True, encoding="utf-8",
     )
     assert result.returncode == 0, result.stdout + result.stderr
     assert "0 errors" in result.stdout
 
 
 def test_checker_uses_python39_syntax_and_standard_library_only() -> None:
-    tree = ast.parse(CHECKER.read_text(), feature_version=(3, 9))
+    tree = ast.parse(CHECKER.read_text(encoding="utf-8"), feature_version=(3, 9))
     imports = set()
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
@@ -299,7 +299,7 @@ def test_should_report_byte_exact_pins_when_mapping_is_loaded(
         args.extend(["--contract", str(contract_path)])
     result = subprocess.run(
         [sys.executable, str(CHECKER), "mapping", "--repo", str(repo), *args],
-        capture_output=True, text=True, check=False,
+        capture_output=True, text=True, encoding="utf-8", check=False,
     )
     assert result.returncode == 0, result.stdout + result.stderr
     pins = {
@@ -329,7 +329,7 @@ def test_should_report_nullable_pins_when_source_is_missing(
         args = ["--contract", str(repo / "absent-contract.json")]
     result = subprocess.run(
         [sys.executable, str(CHECKER), "mapping", "--repo", str(repo), "--json", *args],
-        capture_output=True, text=True, check=False,
+        capture_output=True, text=True, encoding="utf-8", check=False,
     )
     assert result.returncode == 2
     report = json.loads(result.stdout)
@@ -413,7 +413,7 @@ def test_warnings_do_not_fail_mapping(mapping_repo: tuple[Path, dict]) -> None:
 
 def test_older_validated_version_is_a_warning(mapping_repo: tuple[Path, dict]) -> None:
     repo, mapping = mapping_repo
-    contract = json.loads(CONTRACT.read_text())
+    contract = json.loads(CONTRACT.read_text(encoding="utf-8"))
     contract["version"] = "1.1.0"
     path = repo / "contract.json"
     path.write_text(json.dumps(contract))
@@ -473,14 +473,14 @@ def test_symlink_ref_cannot_escape_repo(mapping_repo: tuple[Path, dict], tmp_pat
     ],
 )
 def test_invalid_contract_fails(tmp_path: Path, key: str, replacement: object, message: str):
-    contract = json.loads(CONTRACT.read_text())
+    contract = json.loads(CONTRACT.read_text(encoding="utf-8"))
     contract[key] = replacement
     path = tmp_path / "contract.json"
     path.write_text(json.dumps(contract))
     result = subprocess.run(
         [sys.executable, str(CHECKER), "contract", "--contract", str(path)],
         capture_output=True,
-        text=True,
+        text=True, encoding="utf-8",
     )
     assert result.returncode == 1
     assert message in result.stdout
@@ -491,7 +491,7 @@ def test_missing_mapping_is_io_exit(mapping_repo: tuple[Path, dict]) -> None:
     result = subprocess.run(
         [sys.executable, str(CHECKER), "mapping", "--repo", str(repo), "--json"],
         capture_output=True,
-        text=True,
+        text=True, encoding="utf-8",
     )
     assert result.returncode == 2
     assert not json.loads(result.stdout)["ok"]
@@ -510,14 +510,14 @@ def test_malformed_contract_mapping_spec_is_reported(
     replacement: object,
     message: str,
 ) -> None:
-    contract = json.loads(CONTRACT.read_text())
+    contract = json.loads(CONTRACT.read_text(encoding="utf-8"))
     contract["mapping"][key] = replacement
     path = tmp_path / "contract.json"
     path.write_text(json.dumps(contract))
     result = subprocess.run(
         [sys.executable, str(CHECKER), "contract", "--contract", str(path)],
         capture_output=True,
-        text=True,
+        text=True, encoding="utf-8",
     )
     assert result.returncode == 1
     assert message in result.stdout
@@ -525,7 +525,7 @@ def test_malformed_contract_mapping_spec_is_reported(
 
 def test_semver_prerelease_obeys_range(mapping_repo: tuple[Path, dict]) -> None:
     repo, mapping = mapping_repo
-    contract = json.loads(CONTRACT.read_text())
+    contract = json.loads(CONTRACT.read_text(encoding="utf-8"))
     contract["version"] = "1.0.0-rc.1+build"
     path = repo / "contract.json"
     path.write_text(json.dumps(contract))
@@ -540,7 +540,7 @@ def test_invalid_json_is_io_problem(mapping_repo: tuple[Path, dict]) -> None:
     result = subprocess.run(
         [sys.executable, str(CHECKER), "mapping", "--repo", str(repo), "--json"],
         capture_output=True,
-        text=True,
+        text=True, encoding="utf-8",
     )
     assert result.returncode == 2
     assert "IO problem" in json.loads(result.stdout)["errors"][0]["message"]
@@ -620,7 +620,7 @@ def test_should_reject_covered_check_symlink_escape(mapping_repo):
 @pytest.fixture
 def contract11(mapping_repo):
     repo, mapping = mapping_repo
-    contract = json.loads(CONTRACT.read_text())
+    contract = json.loads(CONTRACT.read_text(encoding="utf-8"))
     contract["version"] = "1.1.0"
     path = repo / "contract.json"
     path.write_text(json.dumps(contract))
@@ -770,7 +770,7 @@ def test_should_reject_unknown_binding_at_11(contract11):
 def run_query(repo, command, *args):
     return subprocess.run(
         [sys.executable, str(CHECKER), command, "--repo", str(repo), *args],
-        text=True,
+        text=True, encoding="utf-8",
         capture_output=True,
     )
 
@@ -840,7 +840,8 @@ def test_should_include_staged_unstaged_deletions_and_rename_sources(mapping_rep
 
     def git(*args):
         return subprocess.run(
-            ["git", "-C", str(repo), *args], env=env, text=True, capture_output=True, check=True
+            ["git", "-C", str(repo), *args], env=env, text=True, encoding="utf-8",
+            capture_output=True, check=True,
         ).stdout.strip()
 
     git("init", "-q")
@@ -854,7 +855,7 @@ def test_should_include_staged_unstaged_deletions_and_rename_sources(mapping_rep
     result = subprocess.run(
         [sys.executable, str(CHECKER), "impact", "--repo", str(repo), "--git-diff", tree, "--json"],
         env=env,
-        text=True,
+        text=True, encoding="utf-8",
         capture_output=True,
     )
     assert result.returncode == 0, result.stderr
@@ -895,6 +896,34 @@ MK_CLIENT = SKILL / "scripts/mk_query.py"
 FAKE_MCP = ROOT / "tests/fixtures/ontology_mcp_server.py"
 
 
+def assert_process_exited(pid):
+    if sys.platform != "win32":
+        import os
+
+        with pytest.raises(ProcessLookupError):
+            os.kill(pid, 0)
+        return
+
+    import ctypes
+    from ctypes import wintypes
+
+    kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
+    kernel.OpenProcess.restype = wintypes.HANDLE
+    kernel.WaitForSingleObject.argtypes = [wintypes.HANDLE, wintypes.DWORD]
+    kernel.WaitForSingleObject.restype = wintypes.DWORD
+    kernel.CloseHandle.argtypes = [wintypes.HANDLE]
+    kernel.CloseHandle.restype = wintypes.BOOL
+    handle = kernel.OpenProcess(0x00100000, False, pid)  # SYNCHRONIZE, read-only wait.
+    if not handle:
+        assert ctypes.get_last_error() == 87  # ERROR_INVALID_PARAMETER: PID no longer exists.
+        return
+    try:
+        assert kernel.WaitForSingleObject(handle, 0) == 0  # WAIT_OBJECT_0: process exited.
+    finally:
+        kernel.CloseHandle(handle)
+
+
 @pytest.fixture
 def mk_client(tmp_path, monkeypatch):
     host = tmp_path / "host"
@@ -902,6 +931,7 @@ def mk_client(tmp_path, monkeypatch):
     repo = tmp_path / "repo"
     repo.mkdir()
     monkeypatch.setenv("HOME", str(host))
+    monkeypatch.setenv("USERPROFILE", str(host))
     config = host / ".mir/knowledge-supply.json"
     config.parent.mkdir()
     monkeypatch.setenv("MIR_KNOWLEDGE_SUPPLY_CONFIG", str(config))
@@ -927,7 +957,7 @@ def mk_client(tmp_path, monkeypatch):
                 *(["--soft"] if soft else []),
                 *extra,
             ],
-            text=True,
+            text=True, encoding="utf-8",
             capture_output=True,
             timeout=8,
         )
@@ -937,22 +967,20 @@ def mk_client(tmp_path, monkeypatch):
 
 @pytest.mark.parametrize("mode", ["normal", "text"])
 def test_should_return_pack_and_reap_server(mk_client, mode):
-    import os
-
     run, config, host, repo = mk_client
     result = run(mode, extra=("query", "ontology", "--namespaces", "ns:core", "--k", "2"))
     assert result.returncode == 0, result.stderr
     assert json.loads(result.stdout)["schema_version"] == "mir-context-pack-v1"
     assert json.loads(result.stdout)["degradation"] == []
-    messages = [json.loads(line) for line in (host / "messages.jsonl").read_text().splitlines()]
+    messages = [json.loads(line) for line in
+                (host / "messages.jsonl").read_text(encoding="utf-8").splitlines()]
     assert messages[0]["params"]["clientInfo"]["name"] == "repo-agent"
     assert messages[1]["method"] == "notifications/initialized"
     assert messages[2]["params"] == {
         "name": "federation_serve",
         "arguments": {"query": "ontology", "namespaces": ["ns:core"], "k": 2},
     }
-    with pytest.raises(ProcessLookupError):
-        os.kill(int((host / "pid").read_text()), 0)
+    assert_process_exited(int((host / "pid").read_text(encoding="utf-8")))
 
 
 @pytest.mark.parametrize(
@@ -968,15 +996,12 @@ def test_should_return_pack_and_reap_server(mk_client, mode):
 )
 @pytest.mark.parametrize("soft", [True, False])
 def test_should_degrade_independently_and_reap_on_failure(mk_client, mode, status, soft):
-    import os
-
     run, config, host, repo = mk_client
     result = run(mode, soft=soft, extra=("query", "ontology"), timeout=0.3)
     assert result.returncode == (0 if soft else 2), result.stderr
     assert json.loads(result.stdout)["status"] == status
     assert json.loads(result.stdout)["reason"]
-    with pytest.raises(ProcessLookupError):
-        os.kill(int((host / "pid").read_text()), 0)
+    assert_process_exited(int((host / "pid").read_text(encoding="utf-8")))
 
 
 def test_should_pass_personal_namespace_refusal_unchanged(mk_client):
@@ -1098,18 +1123,18 @@ def test_should_degrade_without_config_or_on_spawn_failure(mk_client, monkeypatc
                 "query",
                 "ontology",
             ],
-            text=True,
+            text=True, encoding="utf-8",
             capture_output=True,
         )
         assert result.returncode == (0 if soft else 2), result.stderr
         assert json.loads(result.stdout)["status"] == "unavailable"
     run(extra=("query", "ontology"))
-    data = json.loads(config.read_text())
+    data = json.loads(config.read_text(encoding="utf-8"))
     data["memory_keeper"]["command"] = ["missing-ontology-mcp-command"]
     config.write_text(json.dumps(data))
     result = subprocess.run(
         [sys.executable, str(MK_CLIENT), "--repo", str(repo), "--soft", "query", "ontology"],
-        text=True,
+        text=True, encoding="utf-8",
         capture_output=True,
     )
     assert result.returncode == 0, result.stderr
@@ -1122,7 +1147,7 @@ def test_should_use_home_config_and_feedback(mk_client, monkeypatch):
     monkeypatch.delenv("MIR_KNOWLEDGE_SUPPLY_CONFIG")
     result = subprocess.run(
         [sys.executable, str(MK_CLIENT), "--repo", str(repo), "feedback", "federation:42", "used"],
-        text=True,
+        text=True, encoding="utf-8",
         capture_output=True,
     )
     assert result.returncode == 0, result.stderr
@@ -1134,11 +1159,11 @@ def test_should_refuse_repository_config_without_spawning(mk_client, monkeypatch
     run(extra=("query", "ontology"))
     (host / "pid").unlink()
     local = repo / "knowledge-supply.json"
-    local.write_text(config.read_text())
+    local.write_text(config.read_text(encoding="utf-8"))
     monkeypatch.setenv("MIR_KNOWLEDGE_SUPPLY_CONFIG", str(local))
     result = subprocess.run(
         [sys.executable, str(MK_CLIENT), "--repo", str(repo), "--soft", "query", "ontology"],
-        text=True,
+        text=True, encoding="utf-8",
         capture_output=True,
     )
     assert result.returncode == 0, result.stderr
@@ -1226,7 +1251,7 @@ def test_should_run_client_from_isolated_skill_copy(mk_client, tmp_path):
             "ontology",
         ],
         cwd=host,
-        text=True,
+        text=True, encoding="utf-8",
         capture_output=True,
         timeout=8,
     )
@@ -1235,7 +1260,7 @@ def test_should_run_client_from_isolated_skill_copy(mk_client, tmp_path):
 
 
 def test_should_use_only_python39_stdlib_in_mk_client():
-    tree = ast.parse(MK_CLIENT.read_text(), feature_version=(3, 9))
+    tree = ast.parse(MK_CLIENT.read_text(encoding="utf-8"), feature_version=(3, 9))
     allowed = {
         "__future__",
         "argparse",
@@ -1266,7 +1291,8 @@ def test_should_include_paths_when_staged_and_unstaged_edits_cancel(mapping_repo
 
     def git(*args):
         return subprocess.run(
-            ["git", "-C", str(repo), *args], env=env, text=True, capture_output=True, check=True
+            ["git", "-C", str(repo), *args], env=env, text=True, encoding="utf-8",
+            capture_output=True, check=True,
         ).stdout.strip()
 
     git("init", "-q")
@@ -1274,14 +1300,14 @@ def test_should_include_paths_when_staged_and_unstaged_edits_cancel(mapping_repo
     git("-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid",
         "-c", "commit.gpgsign=false", "commit", "-qm", "Fixture baseline")
     tree = "HEAD"
-    original = (repo / "model.md").read_text()
+    original = (repo / "model.md").read_text(encoding="utf-8")
     (repo / "model.md").write_text("staged different text")
     git("add", "model.md")
     (repo / "model.md").write_text(original)
     result = subprocess.run(
         [sys.executable, str(CHECKER), "impact", "--repo", str(repo), "--git-diff", tree, "--json"],
         env=env,
-        text=True,
+        text=True, encoding="utf-8",
         capture_output=True,
     )
     assert result.returncode == 0, result.stderr
@@ -1339,6 +1365,7 @@ def test_should_fall_back_to_account_home_when_home_is_an_agent_home(tmp_path, m
     import importlib.util
     import types
 
+    pytest.importorskip("pwd", reason="Account-home fallback uses the POSIX account database")
     agent_home = tmp_path / "agent-home"
     agent_home.mkdir()
     account = tmp_path / "account"
@@ -1369,13 +1396,17 @@ def test_should_not_pass_secrets_or_unrelated_environment_to_the_server(mk_clien
     monkeypatch.setenv("SOME_SERVICE_TOKEN", "fixture-secret")
     result = run(extra=("query", "ontology"))
     assert result.returncode == 0, result.stderr
-    names = set(json.loads((host / "env.json").read_text()))
+    names = set(json.loads((host / "env.json").read_text(encoding="utf-8")))
     assert "PATH" in names
     assert not names & {"OMLX_API_KEY", "SOME_SERVICE_TOKEN", "MIR_KNOWLEDGE_SUPPLY_CONFIG"}
 
 
 def test_should_return_pack_when_sandbox_denies_signalling_the_reaped_group(tmp_path, monkeypatch):
     import importlib.util
+    import os
+
+    if os.name != "posix":
+        pytest.skip("Process-group signalling is POSIX-only")
 
     # Under the Codex seatbelt, killpg on a group whose leader has exited fails with
     # EPERM instead of ESRCH; cleanup must not turn a delivered pack into "unavailable".
@@ -1588,7 +1619,7 @@ def test_should_select_declared_invariant_checks_without_execution(
     monkeypatch.setenv("MIR_ONTOLOGY_CHECKER", str(CHECKER))
     result = subprocess.run(
         [sys.executable, str(runner), "impact", "--paths", source, "--strict", "--json"],
-        capture_output=True, text=True,
+        capture_output=True, text=True, encoding="utf-8",
     )
     assert result.returncode == 0, result.stdout
     report = json.loads(result.stdout)
@@ -1617,10 +1648,13 @@ def handoff_repo(mapping_repo):
 
     def git(*args):
         return subprocess.run(
-            ["git", "-C", str(repo), *args], check=True, capture_output=True, text=True,
+            ["git", "-C", str(repo), *args], check=True, capture_output=True,
+            text=True, encoding="utf-8",
         ).stdout.strip()
 
     git("init", "-q")
+    # Pins compare working bytes with Git blobs, independently of host autocrlf defaults.
+    git("config", "core.autocrlf", "false")
     git("add", ".")
     git("-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid",
         "commit", "-qm", "fixture")
@@ -1635,7 +1669,7 @@ def handoff_command(repo, *args):
     return subprocess.run(
         [sys.executable, str(CHECKER), "mapping", "--repo", str(repo),
          "--contract", str(repo / "legacy-contract.json"), *args],
-        capture_output=True, text=True,
+        capture_output=True, text=True, encoding="utf-8",
     )
 
 
@@ -1678,7 +1712,7 @@ def test_should_supply_handoff_pins_and_preserve_existing_output(
     assert block["unknowns"] == []
     source_revision = subprocess.run(
         ["git", "-C", str(repo), "rev-parse", "HEAD^"],
-        check=True, capture_output=True, text=True,
+        check=True, capture_output=True, text=True, encoding="utf-8",
     ).stdout.strip()
     assert source_revision != head
     assert block["sources"] == [
@@ -1749,7 +1783,7 @@ def test_should_forward_handoff_through_both_shims(mapping_repo, monkeypatch, co
     monkeypatch.setenv("MIR_ONTOLOGY_CHECKER", str(CHECKER))
     result = subprocess.run(
         [sys.executable, str(runner), "mapping", "--json", "--handoff", "scripts/mir_ontology.py"],
-        capture_output=True, text=True,
+        capture_output=True, text=True, encoding="utf-8",
     )
     assert result.returncode == 0, result.stdout + result.stderr
     block = json.loads(result.stdout)["handoff"]
@@ -1759,7 +1793,10 @@ def test_should_forward_handoff_through_both_shims(mapping_repo, monkeypatch, co
 
 
 def test_should_name_handoff_pin_command_in_skill():
-    handoff = (SKILL / "SKILL.md").read_text().split("## Handoff", 1)[1].split("\n## ", 1)[0]
+    handoff = (
+        (SKILL / "SKILL.md").read_text(encoding="utf-8")
+        .split("## Handoff", 1)[1].split("\n## ", 1)[0]
+    )
     assert "`mapping --handoff <paths>`" in handoff
 
 
@@ -1913,7 +1950,7 @@ def test_should_finalize_h1_inventory_when_root_resolution_fails():
     "headings, quotes, examples and enclosing instructions", "without reproducing excluded content",
 ])
 def test_should_state_h1_whole_envelope_and_permission_rules(rule):
-    guide = " ".join((SKILL / "references/knowledge-supply.md").read_text().split())
+    guide = " ".join((SKILL / "references/knowledge-supply.md").read_text(encoding="utf-8").split())
     assert rule in guide
     allowed, forbidden = "SYNTHETIC_ALLOWED", "SYNTHETIC_EXCLUDED"
     artifact = f"Heading: {allowed}\n[Excluded content omitted under owner scope.]"

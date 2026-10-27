@@ -6,6 +6,7 @@ import hashlib
 import json
 import shutil
 import subprocess
+import sys
 import tomllib
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
@@ -20,7 +21,7 @@ from mir.core.capabilities import (
     CapabilityManager,
     load_capability_config,
 )
-from mir.core.capabilities.manager import _file_digest, _installed_path, _tree_digest
+from mir.core.capabilities.manager import _consumer_key, _file_digest, _installed_path, _tree_digest
 
 ROOT = Path(__file__).resolve().parents[1]
 SHA_A = "a" * 40
@@ -94,6 +95,9 @@ def make_project(tmp_path: Path, name: str = "project", *, real_derivatives: boo
     derivative.parent.mkdir(parents=True)
     if real_derivatives:
         shutil.copy2(ROOT / "scripts" / "generate_codex_derivatives.sh", derivative)
+        shutil.copy2(
+            ROOT / "scripts" / "generate_codex_derivatives.py", derivative.with_suffix(".py")
+        )
         (project / ".claude" / "hooks" / "lib").mkdir(parents=True)
     else:
         derivative.write_text("#!/usr/bin/env bash\nexit 0\n", encoding="utf-8")
@@ -124,7 +128,7 @@ def runtime_runner(active: Path, codex_home: Path):
         lines = [
             "[marketplaces.mir-yoke]",
             'source_type = "local"',
-            f'source = "{active}"',
+            f"source = {json.dumps(str(active), ensure_ascii=False)}",
             "",
         ]
         for plugin in sorted(installed["codex"]):
@@ -219,7 +223,7 @@ def sticky_runtime_runner(active: Path, codex_home: Path, claude_home: Path):
         lines = [
             "[marketplaces.mir-yoke]",
             'source_type = "local"',
-            f'source = "{active}"',
+            f"source = {json.dumps(str(active), ensure_ascii=False)}",
             "",
         ]
         for plugin in sorted(installed["codex"]):
@@ -287,12 +291,31 @@ def runtime_with_real_derivatives(active: Path, codex_home: Path):
     fake_runtime = runtime_runner(active, codex_home)
 
     def run(args: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        if len(args) > 1 and Path(args[1]).name == "generate_codex_derivatives.py":
+            return subprocess.run(args, **kwargs)
         if Path(args[0]).name == "bash":
             actual_args = [shutil.which("bash") or "/bin/bash", *args[1:]]
             return subprocess.run(actual_args, **kwargs)  # type: ignore[arg-type]
         return fake_runtime(args, **kwargs)
 
     return run
+
+
+@pytest.mark.parametrize("sticky", [False, True])
+def test_fake_runtime_round_trips_windows_marketplace_path(tmp_path: Path, sticky: bool):
+    active = Path(r"C:\Users\owner\Mir Yoke\active")
+    codex_home = tmp_path / "codex"
+    runner = (
+        sticky_runtime_runner(active, codex_home, tmp_path / "claude")[0]
+        if sticky
+        else runtime_runner(active, codex_home)
+    )
+
+    result = runner(["codex", "plugin", "marketplace", "add", str(active)])
+
+    assert result.returncode == 0
+    config = tomllib.loads((codex_home / "config.toml").read_text(encoding="utf-8"))
+    assert config["marketplaces"]["mir-yoke"]["source"] == str(active)
 
 
 def observed_skills(manager: CapabilityManager) -> list[str]:
@@ -393,9 +416,10 @@ def test_should_preserve_tree_digest_when_runtime_caches_are_created(
     skill.write_text("# Changed skill\n", encoding="utf-8")
     assert _tree_digest(plugin) != clean_digest
 
-    cache.chmod(0o755)
-    with pytest.raises(CapabilityError, match="executable content"):
-        _tree_digest(plugin)
+    if sys.platform != "win32":
+        cache.chmod(0o755)
+        with pytest.raises(CapabilityError, match="executable content"):
+            _tree_digest(plugin)
 
     cache.unlink()
     cache.symlink_to(skill)
@@ -452,7 +476,7 @@ def test_manager_recovers_verified_external_provider_from_codex_config(
             [
                 "[marketplaces.mir-yoke]",
                 'source_type = "local"',
-                f'source = "{active}"',
+                f"source = {json.dumps(str(active), ensure_ascii=False)}",
             ]
         ),
         encoding="utf-8",
@@ -1448,7 +1472,7 @@ def test_finalize_requires_fresh_observation_of_selected_plugin_hooks(
     assert claude_receipt["attestation_kind"] == "operator-observed-runtime-catalog-and-hooks"
     assert codex_receipt["missing_hooks"] == []
     receipt = json.loads(manager.active_receipt_path.read_text(encoding="utf-8"))
-    discovery = receipt["discovery"][str(project)]
+    discovery = receipt["discovery"][_consumer_key(project)]
     assert discovery["codex-cli-desktop"]["observed_hooks"] == hooks
     assert discovery["claude-code"]["observed_hooks"] == hooks
     assert manager.finalize()["ready_to_finalize"] is True

@@ -20,6 +20,7 @@ except ImportError:  # Claude may run hooks with macOS /usr/bin/python3 (3.9).
     tomllib = None
 
 LIMIT = 1024 * 1024
+_WINDOWS = sys.platform == 'win32'
 STARTED = time.monotonic()
 WARNING = 'Mir handoff WARNING: '
 STAMP = r'\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?(?:Z|[+-]\d\d:\d\d)'
@@ -508,6 +509,30 @@ def cited_paths(body: str, owner: dict, root: Path) -> list[str]:
     return paths[:32]
 
 
+def stop_windows_runner(process: subprocess.Popen) -> None:
+    try:
+        system_root = Path(os.environ['SystemRoot'])
+        if system_root.is_absolute():
+            subprocess.run(
+                [str(system_root / 'System32/taskkill.exe'), '/T', '/F', '/PID', str(process.pid)],
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=1, check=False,
+            )
+    except (KeyError, OSError, subprocess.TimeoutExpired):
+        pass
+    try:
+        process.kill()  # Fallback if taskkill failed or did not terminate the runner.
+    except OSError:
+        pass  # The tree may already have exited.
+    try:
+        process.communicate(timeout=1)
+    except subprocess.TimeoutExpired:
+        # Descendants can hold pipes open; Windows reader threads own and close those streams.
+        try:
+            process.wait(timeout=1)
+        except subprocess.TimeoutExpired:
+            pass
+
+
 def run_pins(event: dict, owner: dict, paths: list[str] | None = None, timeout: float = 5) -> str:
     root = repository_root(event)
     runner = root / 'scripts/mir_ontology.py'
@@ -518,14 +543,18 @@ def run_pins(event: dict, owner: dict, paths: list[str] | None = None, timeout: 
     process = subprocess.Popen(
         [sys.executable, str(runner), 'mapping', '--handoff', *paths],
         cwd=root, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
-        start_new_session=True,
+        **({'creationflags': subprocess.CREATE_NEW_PROCESS_GROUP} if _WINDOWS
+           else {'start_new_session': True}),
         env={**os.environ, 'PYTHONDONTWRITEBYTECODE': '1', 'GIT_OPTIONAL_LOCKS': '0'},
     )
     try:
         stdout, _ = process.communicate(timeout=timeout)
     except subprocess.TimeoutExpired:
-        os.killpg(process.pid, signal.SIGKILL)
-        process.communicate()
+        if _WINDOWS:
+            stop_windows_runner(process)
+        else:
+            os.killpg(process.pid, signal.SIGKILL)
+            process.communicate()
         raise ValueError('pin runner timed out') from None
     marker = 'handoff pins:\n'
     if process.returncode or marker not in stdout or len(stdout) > LIMIT:
@@ -619,10 +648,23 @@ def pin_differences(body: str, fresh: str) -> list[str]:
 def transcript_records(event: dict) -> list[dict]:
     transcript = Path(event['transcript_path'])
     # Native runtime owns this explicit transcript path; do not scan logs or directories.
-    fd = os.open(transcript, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
-    with os.fdopen(fd, 'rb') as stream:
-        if not stat.S_ISREG(os.fstat(stream.fileno()).st_mode):
+    if _WINDOWS:
+        before = transcript.lstat()
+        if (stat.S_ISLNK(before.st_mode)
+                or getattr(before, 'st_file_attributes', 0) & stat.FILE_ATTRIBUTE_REPARSE_POINT):
+            raise ValueError('transcript must not be a link or reparse point')
+        if not stat.S_ISREG(before.st_mode):
             raise ValueError('transcript must be a regular file')
+        stream = transcript.open('rb')
+    else:
+        fd = os.open(transcript, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+        stream = os.fdopen(fd, 'rb')
+    with stream:
+        opened = os.fstat(stream.fileno())
+        if not stat.S_ISREG(opened.st_mode):
+            raise ValueError('transcript must be a regular file')
+        if _WINDOWS and (before.st_dev, before.st_ino) != (opened.st_dev, opened.st_ino):
+            raise ValueError('transcript changed while opening')
         stream.seek(0, 2)
         start = max(0, stream.tell() - LIMIT)
         stream.seek(start)

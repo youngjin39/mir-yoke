@@ -42,6 +42,7 @@ def _events(project_dir: Path) -> list[dict[str, object]]:
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX shell entrypoint")
 @pytest.mark.parametrize("trigger", ["manual", "auto"])
 def test_should_checkpoint_curated_handoff_once_when_precompact_runs(
     tmp_path: Path, trigger: str
@@ -70,6 +71,7 @@ def test_should_checkpoint_curated_handoff_once_when_precompact_runs(
     ]
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX shell entrypoint")
 def test_should_include_ordered_incomplete_plan_cursors_in_precompact_snapshot(
     tmp_path: Path,
 ) -> None:
@@ -101,6 +103,7 @@ def test_should_include_ordered_incomplete_plan_cursors_in_precompact_snapshot(
     assert "- No open plan items." not in snapshot
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX shell entrypoint")
 def test_should_warn_and_keep_bounded_snapshot_when_dispatch_json_is_invalid(
     tmp_path: Path,
 ) -> None:
@@ -146,6 +149,7 @@ def test_should_warn_and_keep_bounded_snapshot_when_dispatch_json_is_invalid(
     assert "Dispatch brief unavailable" not in snapshot
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX shell entrypoint")
 @pytest.mark.parametrize("trigger", ["manual", "auto"])
 def test_should_validate_checkpoint_without_blocking_when_postcompact_runs(
     tmp_path: Path, trigger: str
@@ -168,6 +172,7 @@ def test_should_validate_checkpoint_without_blocking_when_postcompact_runs(
     assert _events(project)[-1]["name"] == "post-compact"
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX shell entrypoint")
 def test_should_emit_structured_fail_open_warning_when_postcompact_is_degraded(
     tmp_path: Path,
 ) -> None:
@@ -183,6 +188,7 @@ def test_should_emit_structured_fail_open_warning_when_postcompact_is_degraded(
     assert _events(project)[-1]["name"] == "post-compact"
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX shell entrypoint")
 def test_should_inject_bounded_utf8_handoff_only_for_compact_session_start(
     tmp_path: Path,
 ) -> None:
@@ -287,6 +293,7 @@ def test_should_reject_boolean_hook_timeouts(tmp_path: Path) -> None:
         assert "positive integer" in completed.stdout
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX shell entrypoint")
 def test_should_complete_session_end_within_codex_timeout(tmp_path: Path) -> None:
     project = tmp_path / "project with spaces"
     handoff = project / "tasks" / "handoffs" / "session-handoff-LATEST.md"
@@ -306,6 +313,7 @@ def test_should_complete_session_end_within_codex_timeout(tmp_path: Path) -> Non
     assert "<!-- mir:runtime-snapshot:begin -->" in handoff.read_text(encoding="utf-8")
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX shell entrypoint")
 def test_should_execute_rendered_compact_commands_from_nested_git_directory(
     tmp_path: Path,
 ) -> None:

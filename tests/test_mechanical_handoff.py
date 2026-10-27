@@ -6,9 +6,11 @@ import hashlib
 import importlib.util
 import json
 import os
+import stat
 import subprocess
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -40,6 +42,179 @@ def module():
     loaded = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(loaded)
     return loaded
+
+
+def test_should_read_bounded_transcript_tail_on_windows_without_posix_flags(tmp_path, monkeypatch):
+    hook = module()
+    monkeypatch.setattr(hook, '_WINDOWS', True, raising=False)
+    monkeypatch.delattr(os, 'O_NOFOLLOW', raising=False)
+    monkeypatch.delattr(os, 'O_NONBLOCK', raising=False)
+    monkeypatch.setattr(hook, 'LIMIT', 32)
+    transcript = tmp_path / 'session.jsonl'
+    transcript.write_bytes(b'{"discard": "' + b'x' * 64 + b'"}\n{"keep": 1}\n')
+    assert hook.transcript_records({'transcript_path': str(transcript)}) == [{'keep': 1}]
+
+
+@pytest.mark.parametrize('mode,attributes', [
+    (stat.S_IFLNK, 0), (stat.S_IFREG, stat.FILE_ATTRIBUTE_REPARSE_POINT), (stat.S_IFDIR, 0),
+])
+def test_should_refuse_windows_transcript_links_and_non_files_before_open(
+        tmp_path, monkeypatch, mode, attributes):
+    hook = module()
+    monkeypatch.setattr(hook, '_WINDOWS', True, raising=False)
+    monkeypatch.setattr(Path, 'lstat', lambda path: SimpleNamespace(
+        st_mode=mode, st_file_attributes=attributes))
+
+    def forbidden_open(*args, **kwargs):
+        pytest.fail('unsafe transcript must be refused before opening')
+
+    monkeypatch.setattr(os, 'open', forbidden_open)
+    monkeypatch.setattr(Path, 'open', forbidden_open)
+    with pytest.raises(ValueError):
+        hook.transcript_records({'transcript_path': str(tmp_path / 'session.jsonl')})
+
+
+@pytest.mark.parametrize('field', ['st_dev', 'st_ino'])
+def test_should_refuse_windows_transcript_identity_change_and_close_fd(
+    tmp_path, monkeypatch, field,
+):
+    hook = module()
+    monkeypatch.setattr(hook, '_WINDOWS', True, raising=False)
+    transcript = tmp_path / 'session.jsonl'
+    transcript.write_text('{}\n')
+    original = os.fstat
+    descriptors = []
+
+    def replaced_file(fd):
+        descriptors.append(fd)
+        observed = original(fd)
+        values = {key: getattr(observed, key) for key in ('st_mode', 'st_dev', 'st_ino')}
+        values[field] += 1
+        return SimpleNamespace(**values)
+
+    monkeypatch.setattr(os, 'fstat', replaced_file)
+    with pytest.raises(ValueError, match='transcript.*changed'):
+        hook.transcript_records({'transcript_path': str(transcript)})
+    assert len(descriptors) == 1
+    with pytest.raises(OSError):
+        original(descriptors[0])
+
+
+@pytest.mark.parametrize('taskkill_result', ['success', 'failure', 'missing', 'timeout'])
+@pytest.mark.parametrize('drain_timeout', [False, True])
+def test_should_kill_windows_pin_runner_tree_and_bound_cleanup(
+        tmp_path, monkeypatch, taskkill_result, drain_timeout):
+    hook = module()
+    monkeypatch.setattr(hook, '_WINDOWS', True, raising=False)
+    monkeypatch.setattr(subprocess, 'CREATE_NEW_PROCESS_GROUP', 512, raising=False)
+    monkeypatch.setenv('SystemRoot', str(tmp_path / 'Windows root'))
+    monkeypatch.setattr(hook, 'repository_root', lambda event: tmp_path)
+    (tmp_path / 'scripts').mkdir()
+    (tmp_path / 'scripts/mir_ontology.py').write_text('')
+    calls = []
+
+    class Process:
+        pid = 1234
+
+        def communicate(self, timeout=None):
+            calls.append(('communicate', timeout))
+            assert timeout is not None, 'cleanup must have a finite timeout'
+            if timeout == 0.1 or drain_timeout:
+                raise subprocess.TimeoutExpired('runner', timeout)
+            return '', ''
+
+        def kill(self):
+            calls.append('kill')
+
+        def wait(self, timeout=None):
+            calls.append(('wait', timeout))
+            assert timeout is not None
+            raise subprocess.TimeoutExpired('runner', timeout)
+
+    def popen(argv, **kwargs):
+        calls.append(('popen', argv, kwargs))
+        return Process()
+
+    def taskkill(argv, **kwargs):
+        calls.append(('taskkill', argv, kwargs))
+        if taskkill_result == 'missing':
+            raise OSError('taskkill unavailable')
+        if taskkill_result == 'timeout':
+            raise subprocess.TimeoutExpired(argv, kwargs['timeout'])
+        return SimpleNamespace(returncode=int(taskkill_result == 'failure'))
+
+    monkeypatch.setattr(subprocess, 'Popen', popen)
+    monkeypatch.setattr(subprocess, 'run', taskkill)
+    monkeypatch.setattr(os, 'killpg', lambda *args: pytest.fail('POSIX killpg on Windows'),
+                        raising=False)
+    with pytest.raises(ValueError, match='pin runner timed out'):
+        hook.run_pins({}, {'excluded': []}, paths=[], timeout=0.1)
+    _, argv, options = calls[0]
+    runner = str(tmp_path / 'scripts/mir_ontology.py')
+    assert argv == [sys.executable, runner, 'mapping', '--handoff']
+    assert options['creationflags'] == subprocess.CREATE_NEW_PROCESS_GROUP
+    assert not options.get('start_new_session', False)
+    _, argv, options = next(call for call in calls if call[0] == 'taskkill')
+    assert argv == [str(tmp_path / 'Windows root/System32/taskkill.exe'),
+                    '/T', '/F', '/PID', '1234']
+    assert not options.get('shell', False)
+    assert 0 < options['timeout'] <= 1
+    assert calls.index('kill') > next(i for i, call in enumerate(calls) if call[0] == 'taskkill')
+    assert ('communicate', 1) in calls
+    if drain_timeout:
+        assert ('wait', 1) in calls
+
+
+@pytest.mark.skipif(sys.platform != 'win32', reason='requires native Windows filesystem')
+def test_should_read_native_windows_transcript_and_refuse_symlink(tmp_path):
+    hook = module()
+    transcript = tmp_path / 'session.jsonl'
+    transcript.write_bytes(b'{"keep": 1}\n')
+    assert hook.transcript_records({'transcript_path': str(transcript)}) == [{'keep': 1}]
+    link = tmp_path / 'link.jsonl'
+    try:
+        link.symlink_to(transcript)
+    except OSError as exc:
+        pytest.skip('Windows symlink creation unavailable: ' + str(exc))
+    with pytest.raises(ValueError):
+        hook.transcript_records({'transcript_path': str(link)})
+
+
+@pytest.mark.skipif(sys.platform != 'win32', reason='requires native Windows process tree')
+def test_should_kill_native_windows_pin_runner_child(tmp_path):
+    import ctypes
+    from ctypes import wintypes
+
+    hook = module()
+    (tmp_path / '.git').mkdir()
+    (tmp_path / 'scripts').mkdir()
+    (tmp_path / 'scripts/mir_ontology.py').write_text(
+        'import subprocess, sys, time\n'
+        'from pathlib import Path\n'
+        'child = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"])\n'
+        'Path("child.pid").write_text(str(child.pid))\n'
+        'time.sleep(60)\n')
+    with pytest.raises(ValueError, match='pin runner timed out'):
+        hook.run_pins({'cwd': str(tmp_path)}, {'excluded': []}, paths=[], timeout=2)
+    pid = int((tmp_path / 'child.pid').read_text())
+    kernel = ctypes.WinDLL('kernel32', use_last_error=True)
+    kernel.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
+    kernel.OpenProcess.restype = wintypes.HANDLE
+    kernel.WaitForSingleObject.argtypes = [wintypes.HANDLE, wintypes.DWORD]
+    kernel.WaitForSingleObject.restype = wintypes.DWORD
+    kernel.CloseHandle.argtypes = [wintypes.HANDLE]
+    handle = kernel.OpenProcess(0x00100000, False, pid)  # SYNCHRONIZE
+    if not handle:
+        assert ctypes.get_last_error() == 87  # ERROR_INVALID_PARAMETER: process is gone
+        return
+    try:
+        status = kernel.WaitForSingleObject(handle, 0)
+        if status != 0:
+            subprocess.run([str(Path(os.environ['SystemRoot']) / 'System32/taskkill.exe'),
+                            '/T', '/F', '/PID', str(pid)], timeout=2, check=False)
+        assert status == 0  # WAIT_OBJECT_0: the child exited, including inherited pipe handles
+    finally:
+        kernel.CloseHandle(handle)
 
 
 PIN_NAMES = ['repository_root', 'head', 'mapping.identity', 'mapping.version',

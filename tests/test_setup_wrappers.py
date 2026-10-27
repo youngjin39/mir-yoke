@@ -2,10 +2,14 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import subprocess
+import sys
 from hashlib import sha256
 from pathlib import Path
+
+import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -35,6 +39,7 @@ _FAKE_MANIFEST_CREATE = (
 )
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX shell entrypoint")
 def test_shell_wrapper_is_thin_and_valid_bash():
     wrapper = ROOT / "setup.sh"
     body = wrapper.read_text(encoding="utf-8")
@@ -57,6 +62,7 @@ def test_shell_wrapper_is_thin_and_valid_bash():
 
 
 # @spec FR-004 QR-001
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX shell entrypoint")
 def test_should_stop_before_mutation_when_setup_sh_runs_in_native_windows_bash(tmp_path):
     fake_bin = tmp_path / "bin"
     fake_bin.mkdir()
@@ -89,6 +95,7 @@ def test_should_stop_before_mutation_when_setup_sh_runs_in_native_windows_bash(t
     assert not uv_marker.exists()
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX shell entrypoint")
 def test_setup_rejects_provider_push_remote_before_host_mutation(tmp_path):
     project = tmp_path / "project"
     project.mkdir()
@@ -144,6 +151,7 @@ def test_setup_rejects_provider_push_remote_before_host_mutation(tmp_path):
     assert not uv_marker.exists()
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX shell entrypoint")
 def test_setup_rejects_provider_push_remote_with_default_ports(tmp_path):
     for push_url in (
         "ssh://git@github.com:22/example/mir-yoke.git",
@@ -183,6 +191,7 @@ def test_setup_rejects_provider_push_remote_with_default_ports(tmp_path):
         assert "still targets the Mir Yoke provider" in completed.stderr
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX shell entrypoint")
 def test_setup_rejects_storage_inside_project_before_creating_it(tmp_path):
     project = tmp_path / "project"
     project.mkdir()
@@ -201,6 +210,7 @@ def test_setup_rejects_storage_inside_project_before_creating_it(tmp_path):
     assert not nested_storage.exists()
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX shell entrypoint")
 def test_setup_rejects_explicit_empty_storage_before_invoking_uv(tmp_path):
     fake_bin = tmp_path / "bin"
     fake_bin.mkdir()
@@ -227,6 +237,7 @@ def test_setup_rejects_explicit_empty_storage_before_invoking_uv(tmp_path):
         assert not uv_marker.exists()
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX shell entrypoint")
 def test_setup_rejects_nonexistent_storage_path_with_parent_traversal(tmp_path):
     project = tmp_path / "project"
     project.mkdir()
@@ -246,6 +257,7 @@ def test_setup_rejects_nonexistent_storage_path_with_parent_traversal(tmp_path):
     assert not (project / ".local-runtime").exists()
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX shell entrypoint")
 def test_shell_wrapper_exports_external_storage_before_tool_install(tmp_path):
     project = tmp_path / "project"
     project.mkdir()
@@ -332,6 +344,7 @@ def test_shell_wrapper_exports_external_storage_before_tool_install(tmp_path):
     )
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX shell entrypoint")
 def test_two_projects_sharing_storage_get_distinct_tool_namespaces(tmp_path):
     fake_bin = tmp_path / "bin"
     fake_bin.mkdir()
@@ -431,13 +444,20 @@ def test_should_target_supported_unix_platforms_when_portable_bootstrap_ci_runs(
     workflow = (ROOT / ".github" / "workflows" / "validate.yml").read_text(
         encoding="utf-8"
     )
+    head, separator, windows_job = workflow.partition("\n  windows_native:\n")
 
-    assert "os: [ubuntu-latest, macos-latest]" in workflow
-    assert "windows-latest" not in workflow
+    assert "os: [ubuntu-latest, macos-latest]" in head
+    assert "windows-latest" not in head
+    assert separator, "the native Windows lane runs only in its own job"
+    assert "runs-on: windows-latest" in windows_job
+    assert re.search(r"^  [\w-]+:$", windows_job, re.MULTILINE) is None, "it is the last job"
+    assert "bootstrap" not in windows_job
+    assert "setup_wrappers" not in windows_job
     assert "Bootstrap phase 1 on Windows PowerShell" not in workflow
     assert "Finalize ready bootstrap on Windows PowerShell" not in workflow
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX shell entrypoint")
 def test_shell_cli_launcher_uses_receipt_executable(tmp_path):
     project = tmp_path / "project"
     scripts = project / "scripts"
@@ -471,6 +491,7 @@ def test_shell_cli_launcher_uses_receipt_executable(tmp_path):
     assert completed.stdout.strip() == "capability status"
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX shell entrypoint")
 def test_shell_wrapper_reuses_hash_bound_external_cli_after_slim(tmp_path):
     project = tmp_path / "product"
     project.mkdir()
@@ -565,6 +586,7 @@ def test_shell_wrapper_reuses_hash_bound_external_cli_after_slim(tmp_path):
     assert "reusing receipt-bound external Mir CLI" in completed.stdout
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX shell entrypoint")
 def test_receipt_cli_reuse_restores_external_storage_environment(tmp_path):
     project = tmp_path / "product"
     project.mkdir()
@@ -660,6 +682,7 @@ def test_receipt_cli_reuse_restores_external_storage_environment(tmp_path):
     ]
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX shell entrypoint")
 def test_copied_receipt_cannot_reuse_another_projects_runtime(tmp_path):
     source_url = "https://github.com/example/mir-yoke.git"
     source_commit = "a" * 40
@@ -719,6 +742,7 @@ def test_copied_receipt_cannot_reuse_another_projects_runtime(tmp_path):
     assert not old_marker.exists()
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX shell entrypoint")
 def test_receipt_cli_is_not_reused_after_locked_source_changes(tmp_path):
     project = tmp_path / "product"
     project.mkdir()
@@ -812,6 +836,7 @@ def test_cli_runtime_constraints_match_frozen_production_lock() -> None:
     )
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX shell entrypoint")
 def test_hook_launcher_prefers_receipt_cli_over_product_virtualenv(tmp_path):
     project = tmp_path / "product"
     launcher = project / ".claude/hooks/_lib/run-python.sh"

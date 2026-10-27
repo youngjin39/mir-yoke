@@ -98,3 +98,30 @@ jobs:
       - run: python tests/test_hook_executability.py
       - run: python tests/test_no_korean_in_user_facing.py
       - run: python tests/test_phase_doc_completeness.py
+
+  windows_native:
+    name: native Windows manager and hooks
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
+      - run: uv sync --extra dev --frozen
+      - run: >-
+          uv run pytest -q
+          tests/test_line_endings.py
+          tests/test_private_file.py
+          tests/test_codex_derivation_script.py
+          tests/test_capability_cli.py
+          tests/test_capability_security.py
+          tests/test_capability_mcp.py
+          tests/test_mechanical_handoff.py
+          tests/test_compact_lifecycle_hooks.py
+          tests/test_hook_executability.py
+          tests/test_ontology_runner.py
+          tests/test_ontology_skill.py
+          tests/test_capability_gaploop.py
+          tests/test_deny_list.py
+          tests/test_minimal_starter.py

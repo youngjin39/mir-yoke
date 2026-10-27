@@ -232,6 +232,7 @@
           "**/AGENTS.md",
           "**/.claude/**",
           "**/.codex/**",
+          "scripts/generate_codex_derivatives.py",
           "scripts/generate_codex_derivatives.sh",
           "config/repo-agent-management.json"
         ],
@@ -514,6 +515,7 @@
           "docs/decisions/repo-profile-schema*.md"
         ],
         "generation_verification_pipeline": [
+          "scripts/generate_codex_derivatives.py",
           "scripts/generate_codex_derivatives.sh",
           "scripts/verify_codex_sync.py"
         ],
@@ -590,6 +592,7 @@
           ".mir-preserve.toml"
         ],
         "generation_verification_pipeline": [
+          "scripts/generate_codex_derivatives.py",
           "scripts/generate_codex_derivatives.sh",
           "scripts/verify_codex_sync.py"
         ],
@@ -655,6 +658,7 @@
           ".mir-preserve.toml"
         ],
         "generation_verification_pipeline": [
+          "scripts/generate_codex_derivatives.py",
           "scripts/generate_codex_derivatives.sh",
           "scripts/verify_codex_sync.py"
         ],
@@ -721,6 +725,7 @@
           ".mir-preserve.toml"
         ],
         "generation_verification_pipeline": [
+          "scripts/generate_codex_derivatives.py",
           "scripts/generate_codex_derivatives.sh",
           "scripts/verify_codex_sync.py"
         ],
@@ -787,6 +792,7 @@
           ".mir-preserve.toml"
         ],
         "generation_verification_pipeline": [
+          "scripts/generate_codex_derivatives.py",
           "scripts/generate_codex_derivatives.sh",
           "scripts/verify_codex_sync.py"
         ],
@@ -851,6 +857,7 @@
           ".mir/repo-profile.toml"
         ],
         "generation_verification_pipeline": [
+          "scripts/generate_codex_derivatives.py",
           "scripts/generate_codex_derivatives.sh"
         ],
         "operating_contract": [
@@ -913,6 +920,7 @@
           ".mir-preserve.toml"
         ],
         "generation_verification_pipeline": [
+          "scripts/generate_codex_derivatives.py",
           "scripts/generate_codex_derivatives.sh",
           "scripts/verify_codex_sync.py"
         ],
@@ -984,6 +992,7 @@
           "agent-memory/**"
         ],
         "generation_verification_pipeline": [
+          "scripts/generate_codex_derivatives.py",
           "scripts/generate_codex_derivatives.sh",
           "scripts/verify_codex_sync.py"
         ],

@@ -8,6 +8,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 from pathlib import Path, PurePosixPath, PureWindowsPath
 from types import SimpleNamespace
 
@@ -19,6 +20,7 @@ from mir.core.capabilities import manager as capability_manager
 from mir.core.capabilities.config import load_capability_config
 from mir.core.capabilities.manager import (
     GitClient,
+    _consumer_key,
     _tree_digest,
     _validate_marketplaces,
     _validate_plugin,
@@ -269,7 +271,7 @@ def downgrade_to_genuine_legacy_consumer(manager: CapabilityManager) -> None:
     registry["schema_version"] = 1
     registry.pop("active_plugins")
     registry["consumers"] = {
-        str(manager.project_root): downgrade_lock_to_genuine_legacy_consumer(manager)
+        _consumer_key(manager.project_root): downgrade_lock_to_genuine_legacy_consumer(manager)
     }
     manager.registry_path.write_text(json.dumps(registry), encoding="utf-8")
     manager.consumer_bindings_path.unlink()
@@ -301,7 +303,7 @@ def test_legacy_consumers_enroll_bindings_one_at_a_time_without_registry_deadloc
     registry["schema_version"] = 1
     registry.pop("active_plugins")
     registry["consumers"] = {
-        str(manager.project_root): downgrade_lock_to_genuine_legacy_consumer(manager)
+        _consumer_key(manager.project_root): downgrade_lock_to_genuine_legacy_consumer(manager)
         for manager in managers
     }
     managers[0].registry_path.write_text(json.dumps(registry), encoding="utf-8")
@@ -312,7 +314,7 @@ def test_legacy_consumers_enroll_bindings_one_at_a_time_without_registry_deadloc
     first_bindings = json.loads(managers[0].consumer_bindings_path.read_text(encoding="utf-8"))[
         "consumers"
     ]
-    first_key, second_key = (str(manager.project_root) for manager in managers)
+    first_key, second_key = (_consumer_key(manager.project_root) for manager in managers)
     assert set(first_bindings) == {first_key}
     assert "binding" in first_registry["consumers"][first_key]
     assert "binding" not in first_registry["consumers"][second_key]
@@ -345,7 +347,7 @@ def test_partial_or_invented_legacy_enrollment_state_is_rejected(
     manager.sync("code_app", apply=True)
     downgrade_to_genuine_legacy_consumer(manager)
     registry = json.loads(manager.registry_path.read_text(encoding="utf-8"))
-    consumer_key = str(manager.project_root)
+    consumer_key = _consumer_key(manager.project_root)
     if mutation == "partial":
         registry["consumers"].pop(consumer_key)
     elif mutation == "mismatched":
@@ -389,7 +391,7 @@ def test_schema4_sync_requires_update_for_legacy_lock_missing_selected_plugin(
     old_commit = "b" * 40
     lock["source"]["commit"] = old_commit
     registry["active_commit"] = old_commit
-    registry["consumers"][str(project)]["commit"] = old_commit
+    registry["consumers"][_consumer_key(project)]["commit"] = old_commit
     active_receipt = json.loads(manager.active_receipt_path.read_text(encoding="utf-8"))
     active_receipt["commit"] = old_commit
     manager.lock_path.write_text(json.dumps(lock), encoding="utf-8")
@@ -539,7 +541,9 @@ def test_capability_source_declares_the_reviewed_active_hook_package() -> None:
 
 
 def test_r19_adr90_amendment_admits_only_stateless_handoff_hooks() -> None:
-    text = (ROOT / "docs/decisions/adr-90-role-plugins-and-common-hooks.md").read_text()
+    text = (ROOT / "docs/decisions/adr-90-role-plugins-and-common-hooks.md").read_text(
+        encoding="utf-8"
+    )
     amendment = text.split("## Amendment: 2026-10-22", 1)[1]
     for invariant in (
         "UserPromptSubmit", "Stop", "SessionStart", "stateless", "no target adapter",
@@ -551,7 +555,9 @@ def test_r19_adr90_amendment_admits_only_stateless_handoff_hooks() -> None:
 
 
 def test_r19_adr90_amendment_2026_10_22b_admits_only_the_no_command_guard() -> None:
-    text = (ROOT / "docs/decisions/adr-90-role-plugins-and-common-hooks.md").read_text()
+    text = (ROOT / "docs/decisions/adr-90-role-plugins-and-common-hooks.md").read_text(
+        encoding="utf-8"
+    )
     amendment = " ".join(text.split("## Amendment: 2026-10-22b", 1)[1].split())
     for invariant in (
         "PreToolUse", "no-command guard", "handoff_packet.py",
@@ -612,7 +618,12 @@ def test_r19_active_package_rejects_shared_handoff_registration_drift(
         _validate_plugin(plugin, "mir-lifecycle-hooks", package_kind="skills-hooks")
 
 
-@pytest.mark.parametrize("mutation", ["missing", "linked", "modified", "executable"])
+@pytest.mark.parametrize("mutation", [
+    "missing", "linked", "modified",
+    pytest.param("executable", marks=pytest.mark.skipif(
+        sys.platform == "win32", reason="POSIX executable mode bits"
+    )),
+])
 def test_r19_active_package_rejects_unreviewed_handoff_handler(
     tmp_path: Path, mutation: str
 ) -> None:
@@ -1216,7 +1227,7 @@ def test_provider_integrity_does_not_read_peer_local_lock_state(
     first.sync("content_workspace", apply=True)
     second.sync("content_workspace", apply=True)
     registry = json.loads(first.registry_path.read_text(encoding="utf-8"))
-    first_key = str(first.project_root)
+    first_key = _consumer_key(first.project_root)
     registry["consumers"][first_key]["plugins"]["mir-core"] = "0" * 64
     first.registry_path.write_text(json.dumps(registry), encoding="utf-8")
 
@@ -1249,7 +1260,12 @@ def test_fake_registry_consumer_blocks_status_apply_and_rollback_registration(
         which=lambda executable: f"/fake/{executable}",
     )
     manager.sync("code_app", apply=True)
-    assert (manager.consumer_bindings_path.stat().st_mode & 0o777) == 0o600
+    if sys.platform == "win32":
+        from mir.core.capabilities.private_file import is_private
+
+        assert is_private(manager.consumer_bindings_path, manager.consumer_bindings_path.stat())
+    else:
+        assert (manager.consumer_bindings_path.stat().st_mode & 0o777) == 0o600
     receipt = json.loads(manager.active_receipt_path.read_text(encoding="utf-8"))
     registry = json.loads(manager.registry_path.read_text(encoding="utf-8"))
     content_digest = receipt["materialized_plugins"]["mir-content"]
@@ -1389,7 +1405,13 @@ def test_complete_forged_consumer_binding_cannot_enlarge_registry_union(tmp_path
     assert not any(args[1:3] in (["plugin", "install"], ["plugin", "add"]) for args in commands)
 
 
-@pytest.mark.parametrize("mutation", ["missing", "world-readable", "symlink"])
+@pytest.mark.parametrize("mutation", [
+    "missing",
+    pytest.param("world-readable", marks=pytest.mark.skipif(
+        sys.platform == "win32", reason="POSIX permission mode bits"
+    )),
+    "symlink",
+])
 def test_current_consumer_binding_ledger_mutation_blocks_status_apply_and_rollback(
     tmp_path: Path, mutation: str
 ) -> None:
@@ -1464,7 +1486,12 @@ def test_project_mir_lock_parent_must_be_a_real_project_directory(
         manager.sync("content_workspace", apply=True)
 
 
-@pytest.mark.parametrize("unsafe_kind", ["non-plugin", "symlink", "executable"])
+@pytest.mark.parametrize("unsafe_kind", [
+    "non-plugin", "symlink",
+    pytest.param("executable", marks=pytest.mark.skipif(
+        sys.platform == "win32", reason="POSIX executable mode bits"
+    )),
+])
 def test_materialized_plugin_rejects_unsafe_content(tmp_path: Path, unsafe_kind: str) -> None:
     plugin = tmp_path / "mir-core"
     shutil.copytree(ROOT / "plugins" / "mir-core", plugin)
@@ -1981,9 +2008,60 @@ def test_should_bind_h1_exact_hook_source_and_final_package_version():
     assert handler.read_bytes() == _HOOK_HANDLER_SOURCE.encode()
     assert "else inventory unavailable pins" in _HOOK_HANDLER_SOURCE
     for runtime in (".claude-plugin", ".codex-plugin"):
-        assert json.loads((plugin / runtime / "plugin.json").read_text())["version"] == "0.13.39"
+        assert json.loads((plugin / runtime / "plugin.json").read_text())["version"] == "0.13.40"
     config = load_capability_config(ROOT / "config/capability-sources.json")
     assert config.declared_digest_acknowledgements == {}
     assert config.plugin_hooks == {
         "mir-lifecycle-hooks": ("SessionStart", "UserPromptSubmit", "PreToolUse", "Stop")
     }
+
+
+@pytest.mark.parametrize("python_generator", [
+    True,
+    pytest.param(False, marks=pytest.mark.skipif(
+        sys.platform == "win32", reason="POSIX shell entrypoint"
+    )),
+    pytest.param("symlink", marks=pytest.mark.skipif(
+        sys.platform == "win32", reason="POSIX shell entrypoint"
+    )),
+])
+def test_agent_derivative_generator_selection(tmp_path: Path, monkeypatch, python_generator):
+    project = make_project(tmp_path)
+    script = project / "scripts/generate_codex_derivatives.py"
+    if python_generator:
+        if python_generator == "symlink":
+            target = project / "generator.py"
+            target.write_text("raise SystemExit(99)\n", encoding="utf-8")
+            script.symlink_to(target)
+        else:
+            shutil.copy2(ROOT / "scripts/generate_codex_derivatives.py", script)
+    bash = shutil.which("bash")
+    manager = CapabilityManager(
+        project, user_home=tmp_path / "user", capability_home=tmp_path / "provider",
+        which=lambda executable: None if python_generator is True else bash,
+    )
+    commands = []
+
+    def run(args, **kwargs):
+        commands.append(args)
+        return subprocess.run(args, **kwargs)
+
+    manager.command_runner = run
+    monkeypatch.setenv("PATH", "")
+    assert manager._regenerate_agent_derivatives()
+    if python_generator is True:
+        assert commands == [[sys.executable, str(script)]]
+        assert (project / ".codex-sync/manifest.json").is_file()
+    else:
+        assert Path(commands[0][0]).name == "bash"
+        assert commands[0][1] == str(script.with_suffix(".sh"))
+
+
+def test_agent_derivative_missing_generator_names_bash_fallback(tmp_path: Path):
+    project = make_project(tmp_path)
+    (project / "scripts/generate_codex_derivatives.sh").unlink()
+    manager = CapabilityManager(project, user_home=tmp_path / "user",
+                                capability_home=tmp_path / "provider", which=lambda _: None)
+    with pytest.raises(CapabilityError, match="scripts/generate_codex_derivatives.sh"):
+        manager._regenerate_agent_derivatives()
+    assert manager._regenerate_agent_derivatives(raise_on_error=False) is False

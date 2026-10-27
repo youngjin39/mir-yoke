@@ -29,6 +29,7 @@ from .config import (
     load_consumer_acknowledgements,
 )
 from .mcp import MCP_LAUNCHERS, MCP_NAME, validate_mcp_observation, validate_mcp_package
+from .private_file import is_private, make_private
 
 _SHA = re.compile(r"^[0-9a-f]{40}$")
 _MARKDOWN_LINK = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
@@ -145,7 +146,7 @@ if __name__ == "__main__":
     main()
 '''
 # ADR-90 amendment (2026-10-22): exact reviewed stateless handoff implementation.
-_HANDOFF_HANDLER_SHA256 = "9b42581bd4f599da19ba573f91f7fb14ce0ed34f14241a74c70e1008d21caa7e"
+_HANDOFF_HANDLER_SHA256 = "a0bfe0f85fbc606aead6249acf3ae71cd2f77f369c7a4993d680683448e03074"
 _ACTIVE_PACKAGE_CREDENTIAL_PATTERNS = (
     re.compile(rb"https?://[^\s/@]+@", re.IGNORECASE),
     re.compile(rb"-----BEGIN [A-Z ]*PRIVATE KEY-----"),
@@ -234,6 +235,8 @@ class GitClient:
             stdin=subprocess.DEVNULL,
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             check=False,
         )
         if completed.returncode != 0:
@@ -442,13 +445,13 @@ def _atomic_write_json(path: Path, payload: dict[str, object]) -> None:
             stream.write("\n")
             stream.flush()
             os.fsync(stream.fileno())
-        os.chmod(temp_path, stat.S_IRUSR | stat.S_IWUSR)
+        make_private(temp_path)
         os.replace(temp_path, path)
     finally:
         temp_path.unlink(missing_ok=True)
 
 
-def _atomic_write_bytes(path: Path, payload: bytes) -> None:
+def _atomic_write_bytes(path: Path, payload: bytes, *, private: bool = False) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     descriptor, raw_temp = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
     temp_path = Path(raw_temp)
@@ -457,6 +460,8 @@ def _atomic_write_bytes(path: Path, payload: bytes) -> None:
             stream.write(payload)
             stream.flush()
             os.fsync(stream.fileno())
+        if private:
+            make_private(temp_path)
         os.replace(temp_path, path)
     finally:
         temp_path.unlink(missing_ok=True)
@@ -920,7 +925,7 @@ class CapabilityManager:
         if (
             stat.S_ISLNK(metadata.st_mode)
             or not stat.S_ISREG(metadata.st_mode)
-            or stat.S_IMODE(metadata.st_mode) != 0o600
+            or not is_private(self.consumer_bindings_path, metadata)
         ):
             raise CapabilityError("consumer binding ledger is invalid")
         payload = _read_json(self.consumer_bindings_path)
@@ -2535,6 +2540,8 @@ class CapabilityManager:
             stdin=subprocess.DEVNULL,
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             check=False,
         )
         if completed.returncode != 0:
@@ -3389,7 +3396,7 @@ class CapabilityManager:
                             if body is None:
                                 path.unlink(missing_ok=True)
                             else:
-                                _atomic_write_bytes(path, body)
+                                _atomic_write_bytes(path, body, private=True)
                     runtime_rollback = True
                     if registration_attempted and capability_rollback_safe:
                         candidate_config = self._use_previous_config_for_rollback(
@@ -3418,6 +3425,8 @@ class CapabilityManager:
                     return registration
 
     def _regenerate_agent_derivatives(self, *, raise_on_error: bool = True) -> bool:
+        import sys
+
         try:
             self._assert_project_root_identity()
             self._assert_derivative_paths_safe()
@@ -3425,20 +3434,28 @@ class CapabilityManager:
             if raise_on_error:
                 raise
             return False
-        script = self.project_root / "scripts" / "generate_codex_derivatives.sh"
-        bash = self.which("bash")
-        if bash is None or not script.is_file() or script.is_symlink():
-            if raise_on_error:
-                raise CapabilityError(
-                    "agent pack activation requires Bash and scripts/generate_codex_derivatives.sh"
-                )
-            return False
+        script = self.project_root / "scripts" / "generate_codex_derivatives.py"
+        if script.is_file() and not script.is_symlink():
+            command = [sys.executable, str(script)]
+        else:
+            script = script.with_suffix(".sh")
+            bash = self.which("bash")
+            if bash is None or not script.is_file() or script.is_symlink():
+                if raise_on_error:
+                    raise CapabilityError(
+                        "agent pack activation requires Bash and "
+                        "scripts/generate_codex_derivatives.sh"
+                    )
+                return False
+            command = [bash, str(script)]
         completed = self.command_runner(
-            [bash, str(script)],
+            command,
             cwd=self.project_root,
             stdin=subprocess.DEVNULL,
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             check=False,
         )
         if completed.returncode != 0:
@@ -3593,6 +3610,8 @@ class CapabilityManager:
                         stdin=subprocess.DEVNULL,
                         capture_output=True,
                         text=True,
+                        encoding="utf-8",
+                        errors="replace",
                         check=False,
                     )
                 except Exception:
@@ -3635,7 +3654,7 @@ class CapabilityManager:
             "claude_code": claude_commands,
             "codex_cli_desktop": codex_commands,
             "codex_ide_extension": "unsupported; project-local agents and instructions only",
-            "after_agent_update": ["bash", "scripts/generate_codex_derivatives.sh"],
+            "after_agent_update": ["python3", "scripts/generate_codex_derivatives.py"],
             "required_runtimes": list(self.config.required_runtimes),
             "next_step": (
                 "start new sessions for every required runtime, review and trust the exact "
@@ -3709,6 +3728,8 @@ class CapabilityManager:
                     stdin=subprocess.DEVNULL,
                     capture_output=True,
                     text=True,
+                    encoding="utf-8",
+                    errors="replace",
                     check=False,
                 )
                 results.append(
