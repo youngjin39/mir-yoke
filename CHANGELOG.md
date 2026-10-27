@@ -8,6 +8,28 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.36] — 2026-10-27 — Codex 0.164 legacy MCP interoperability
+
+### Fixed
+
+- `mir-mcp` refused Codex CLI 0.164.0's legacy `initialize`, which requests protocol
+  version `2025-06-18`, with `E_VERSION`. Following the MCP 2025-11-25 lifecycle, a legacy
+  `initialize` that requests any string version now negotiates `2025-11-25`, and the client
+  decides whether to disconnect. All other `initialize` checks are unchanged.
+- After that legacy initialization, Codex 0.164.0 sends `_meta: {"progressToken": 0}` on
+  `tools/list` and its own `_meta` keys on `tools/call`; the server treated each as a modern
+  request without a protocol version and refused it with `E_SCHEMA`. After legacy
+  initialization, `_meta` without `io.modelcontextprotocol/protocolVersion` is now ordinary
+  request metadata. A `_meta` with that key still takes the modern path and its checks, and a
+  request whose `_meta` lacks it is still refused before initialization.
+
+### Changed
+
+- ADR-91 records a 2026-10-27 amendment to §4.7 (owner decision, Discord
+  1564465079863484509).
+- Bump release surfaces to 0.13.36, renew this checkout's own lifecycle acknowledgement, and
+  regenerate the adopter payload.
+
 ## [v0.13.35] — 2026-10-27 — Consumer-local hook acknowledgement
 
 ### Fixed

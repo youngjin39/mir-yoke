@@ -100,7 +100,7 @@ Discard an uncommitted Project Agent Kit adaptation in the target or restore the
 commit. For an explicitly invoked CLI transaction, use that command's recorded rollback/recovery
 contract. Installing the CLI does not itself mutate a target.
 
-Current version: `0.13.35`. See `CHANGELOG.md` for release details.
+Current version: `0.13.36`. See `CHANGELOG.md` for release details.
 
 Version 0.10.0 adds opt-in `memory_relations` ingestion and read-only `mir relations query|bundle --memory`
 query/bundle selection using the existing memory schema. No automatic corpus backfill, database
@@ -428,4 +428,30 @@ enrolled with the 0.13.33 `mir-mcp` launcher can update again. See
 [the plugin migration guide](docs/operations/global-plugin-migration.md) and the 2026-10-27
 amendments to [ADR-91](docs/decisions/adr-91-stdio-mcp-package-admission.md) and
 [ADR-88](docs/decisions/adr-88-active-plugin-component-admission.md). The capability-lock
+binding remains Main's release work.
+
+## 0.13.36 Codex 0.164 legacy MCP interoperability
+
+The `mir-mcp` server bytes changed, and the version manifests changed in every package. Review
+the candidate checkout, then compute each selected package's tree digest:
+
+```sh
+uv run --no-sync python -c 'from pathlib import Path; from mir.core.capabilities.manager import _tree_digest; print(_tree_digest(Path("/absolute/reviewed-yoke/plugins/mir-mcp")))'
+```
+
+A consumer that selected `mir-mcp` sets
+`active_package_digest_acknowledgements["mir-mcp"]` in
+`<consumer-root>/config/capability-sources.json` (or the explicit `--config` file) to that full
+digest. Every consumer also renews `active_package_digest_acknowledgements["mir-lifecycle-hooks"]`
+to the digest printed for `plugins/mir-lifecycle-hooks`. Then run `mir capability update --apply
+--project-root /absolute/consumer-root`, adding `--mcp` when `mir-mcp` is selected and `--config`
+when applicable. For 0.13.36 the digests are `mir-lifecycle-hooks`
+`555ac29c1b3b81a55972b2fa3c87cd71ebda03f3460e2a4998dc94d3d7cc8cf2` and `mir-mcp`
+`02fc33c01eca29d0c7a0803955da2378477c9eacb3efa96ddc14eda3d9a64390`; record them only
+after your own review.
+
+Codex CLI 0.164 can now complete the legacy handshake and call tools. Modern-era requests,
+the tool inventory and results are unchanged. See the 2026-10-27 legacy-negotiation amendment
+to [ADR-91](docs/decisions/adr-91-stdio-mcp-package-admission.md). The lifecycle package
+acknowledgement covers version manifests only; hook behavior is unchanged. The capability-lock
 binding remains Main's release work.

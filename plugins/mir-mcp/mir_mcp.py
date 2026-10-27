@@ -23,7 +23,7 @@ try:
 except ImportError:
     tomllib = None
 
-VERSION = "0.13.35"
+VERSION = "0.13.36"
 MODERN = "2026-07-28"
 LEGACY = "2025-11-25"
 VERSIONS = [MODERN, LEGACY]
@@ -1366,9 +1366,6 @@ class Protocol:
                     raise Refusal("E_SCHEMA")
                 if not isinstance(params.get("protocolVersion"), str):
                     raise Refusal("E_SCHEMA")
-                requested = params["protocolVersion"]
-                if requested != LEGACY:
-                    raise Refusal("E_VERSION")
                 if (
                     set(params) - {"protocolVersion", "clientInfo", "capabilities", "_meta"}
                     or not isinstance(params.get("clientInfo"), dict)
@@ -1388,7 +1385,11 @@ class Protocol:
                     },
                 }
             meta = params.get("_meta")
-            modern = "_meta" in params
+            modern = "_meta" in params and not (
+                self.initialized
+                and isinstance(meta, dict)
+                and "io.modelcontextprotocol/protocolVersion" not in meta
+            )
             if modern:
                 if not isinstance(meta, dict):
                     raise Refusal("E_SCHEMA")

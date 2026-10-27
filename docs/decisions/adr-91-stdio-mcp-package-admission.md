@@ -466,3 +466,24 @@ bytes and its own acknowledgement fails closed until the consumer renews
 consumer approval for both kinds; rollback re-validates restored bytes against it. A receipt
 that holds only the older field is still read: its MCP approval comes from that field and its
 hook approval from the current consumer configuration, never from a provider configuration.
+
+## Amendment: 2026-10-27 — Legacy version negotiation and request metadata
+
+Owner decision: Discord `1564465079863484509` (parent-supplied). This amends §4.7; the
+original "Reject unsupported versions" sentence above is kept as history.
+
+Codex CLI 0.164.0 sends a legacy `initialize` requesting `2025-06-18`, then sends
+`_meta: {"progressToken": 0}` on `tools/list` and its own `_meta` keys on `tools/call`. The
+server refused the first with `E_VERSION` and treated each later `_meta` as a modern request
+without a protocol version (`E_SCHEMA`). The
+[2025-11-25 lifecycle](https://modelcontextprotocol.io/specification/2025-11-25/basic/lifecycle)
+requires a server to answer an unsupported request with a version it supports, and leaves
+disconnection to the client.
+
+A legacy `initialize` that requests any string version now negotiates `2025-11-25`; every
+other `initialize` check is unchanged. After legacy initialization, `_meta` without
+`io.modelcontextprotocol/protocolVersion` is ordinary request metadata and is ignored. A
+`_meta` that carries that key still takes the modern path, which still refuses any version
+other than `2026-07-28` with `E_VERSION`. Before initialization, a request whose `_meta` lacks
+the key is still refused. The package digest changes, so each consumer renews its own
+`mir-mcp` acknowledgement.

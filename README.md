@@ -52,7 +52,7 @@ immutable release:
 
 ```bash
 uv tool install --force --link-mode copy \
-  "git+https://github.com/youngjin39/mir-yoke.git@v0.13.35"
+  "git+https://github.com/youngjin39/mir-yoke.git@v0.13.36"
 mir --help
 ```
 
@@ -140,6 +140,10 @@ installed plugin root (`cwd: "."`) with a relative script path, because it does 
 Version 0.13.35 applies the consumer-local acknowledgement rule to the `mir-lifecycle-hooks`
 package: only the consumer's own capability configuration approves its exact digest, as for
 `mir-mcp`. It also lets consumers enrolled with an older `mir-mcp` launcher update again.
+
+Version 0.13.36 lets Codex CLI 0.164 use `mir-mcp`. A legacy `initialize` that requests another
+protocol version now negotiates `2025-11-25` instead of being refused, and legacy request
+`_meta` such as `progressToken` is treated as request metadata, not as a modern request.
 
 ### Platform use
 

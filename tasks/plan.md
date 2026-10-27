@@ -1,43 +1,36 @@
 # Plan
 
-## Active task: release 0.13.35 (consumer-local hook acknowledgement) (2026-10-27)
+## Active task: release 0.13.36 (Codex 0.164 legacy MCP interoperability) (2026-10-27)
 
-Intent authority: the owner's decision to apply the consumer-local acknowledgement rule
-to the hook package (Discord 1564336518967857153), the release-chain approvals (Discord
-1564297975755448493, 1564320227062186065) and the session instruction to use Claude
-writers (Discord 1564282799035523227), relayed by Mir Harness Main (parent-supplied).
-Design authority: this cursor and the 2026-10-27 amendments to
-[ADR-91](../docs/decisions/adr-91-stdio-mcp-package-admission.md) and
-[ADR-88](../docs/decisions/adr-88-active-plugin-component-admission.md). Baseline: f515bd0
-on `main` (v0.13.34).
+Intent authority: the owner's choice of option 1 for the Codex protocol defect (Discord
+1564465079863484509), the release-chain approvals (Discord 1564297975755448493,
+1564320227062186065) and the session instruction to use Claude writers (Discord
+1564282799035523227), relayed by Mir Harness Main (parent-supplied). Design authority: this
+cursor and the 2026-10-27 legacy-negotiation amendment to
+[ADR-91](../docs/decisions/adr-91-stdio-mcp-package-admission.md). Baseline: 9b0548a on
+`main` (v0.13.35).
 
 Prior cursor preserved verbatim:
-[cursor before release 0.13.35](change_log.md#cursor-before-release-01335-2026-10-27).
+[cursor before release 0.13.36](change_log.md#cursor-before-release-01336-2026-10-27).
 
-Slice A (already in the working tree, kept): `_enrolled_plugin_matches` lets a consumer
-enrolled with an older well-formed `mir-mcp` contract update, and the dry run shares the
-apply enrollment verdict.
+Evidence (Main, 2026-10-27, parent-supplied): a byte-exact stdio tap shows Codex CLI 0.164.0
+sends a legacy `initialize` requesting `2025-06-18`, then `_meta.progressToken` on
+`tools/list` and Codex `_meta` keys on `tools/call`. Main validated the fix below against real
+Codex 0.164 in a scratch session.
 
-Slice B rule: `skills-hooks` packages follow the `mcp-stdio` acknowledgement rule
-(ADR-91 §4.8 items 1–2, ADR-88 §2.2 item 4).
-1. Only the consumer-owned config (`<consumer-root>/config/capability-sources.json` or the
-   explicit `--config`) supplies a hook acknowledgement; provider-only and bundled configs
-   never do.
-2. Selecting or updating to hook bytes requires that acknowledgement to equal the exact
-   tree digest; a provider update that changes both bytes and its own acknowledgement fails
-   closed with a message naming the file and key.
-3. The active receipt's `consumer_digest_acknowledgements` (replacing
-   `mcp_digest_acknowledgements`) preserves the prior hook and MCP approvals; restore
-   re-validates against them. Legacy receipts stay readable; their hook approval comes from
-   the current consumer, never a provider config.
-4. A checkout whose consumer-owned config is its own repository config keeps working while
-   that config holds the exact digest.
+Rule (`plugins/mir-mcp/mir_mcp.py`):
+1. A legacy `initialize` requesting any string version negotiates `2025-11-25`; every other
+   `initialize` check stays.
+2. After legacy initialization, `_meta` without `io.modelcontextprotocol/protocolVersion` is
+   ordinary request metadata. A `_meta` with that key keeps the modern path and checks;
+   before initialization such a request is still refused.
 
 Request matrix (initially open):
-1. Fail-first tests for rules 1–3 replacing the slice-2 "hook update unchanged" test,
-   with a consumer-only rollback acknowledgement and a legacy-receipt test.
-2. Manager change; every existing `mir-mcp` acknowledgement test stays green.
-3. Migration guide hook sentence and renewal procedure; ADR-91 and ADR-88 amendments.
+1. Fail-first tests: Codex's exact session, legacy metadata alone, an unsupported legacy
+   version negotiating, versioned metadata after legacy initialization, unversioned metadata
+   before initialization.
+2. Server change; existing malformed-metadata and nested-version tests stay green.
+3. ADR-91 §4.7 amendment.
 4. Version surfaces, this checkout's lifecycle acknowledgement, CHANGELOG, MIGRATION,
    README, this cursor; adopter payload regenerated last.
 5. Focused tests, ruff, `git diff --check`.
@@ -47,15 +40,15 @@ homes or host `mir capability` operations. Scratch stays under the owner-specifi
 external cache directory. Main runs the full suite at acceptance.
 
 Observed (2026-10-27, Claude writer): items 1-5 checked; the payload regeneration
-follows this note. Before the fix, the new and changed tests failed (9 failed, 11 passed
-in the selected `tests/test_capability_mcp.py` subset): the provider-renewed hook update
-did not raise, provider-only configs still carried the hook acknowledgement, the receipt
-had no `consumer_digest_acknowledgements`, and a consumer-owned hook acknowledgement
-was replaced by the provider's on update. After the fix, focused capability, `mir-mcp`
-and plugin-package tests: 481 passed, 1 failed. The failure is
-`test_repository_lock_is_portable_and_matches_managed_trees`, because the version bump
+follows this note. Before the fix, 8 of the 12 selected protocol tests failed: Codex's
+`2025-06-18` initialize and the `1900-01-01` legacy initialize returned `E_VERSION`, and
+`tools/list` with `_meta.progressToken` after a `2025-11-25` initialize returned
+`E_SCHEMA`. The 4 that passed are the unchanged-behaviour guards (modern unsupported version,
+unversioned metadata before initialization). After the fix, focused `mir-mcp`, capability,
+plugin-package and payload/template tests: 409 passed; the bumped hook-version test passes.
+`test_repository_lock_is_portable_and_matches_managed_trees` fails because the version bump
 changes tree digests that `.mir/capability-lock.json` binds; that is the separate bind
 commit. Ruff and `git diff --check` pass. New tree digests: `mir-lifecycle-hooks`
-ce1f5078cf61ea8bd04897863d7f68cb6445e1444e3743434452a1d60c671ecc, `mir-mcp`
-e6d8adc6268d65b4af0739d49522c7c3ef6715a96835670292f0ec569013763d. No release, binding,
+555ac29c1b3b81a55972b2fa3c87cd71ebda03f3460e2a4998dc94d3d7cc8cf2, `mir-mcp`
+02fc33c01eca29d0c7a0803955da2378477c9eacb3efa96ddc14eda3d9a64390. No release, binding,
 full-suite or runtime readiness is claimed.

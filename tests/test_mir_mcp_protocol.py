@@ -268,6 +268,110 @@ def test_legacy_initialization_list_and_call(interpreter: str, tmp_path: Path) -
     assert _tool_result(replies[2], modern=False)["ok"] is True
 
 
+CODEX_INITIALIZE = {
+    "jsonrpc": "2.0",
+    "id": 0,
+    "method": "initialize",
+    "params": {
+        "protocolVersion": "2025-06-18",
+        "capabilities": {
+            "experimental": {"codex/auth-change": {}},
+            "elicitation": {"form": {}, "url": {}},
+        },
+        "clientInfo": {"name": "codex-mcp-client", "title": "Codex", "version": "0.164.0"},
+    },
+}
+
+
+def test_codex_legacy_session_negotiates_and_ignores_request_metadata(
+    interpreter: str, tmp_path: Path
+) -> None:
+    replies = _run(
+        interpreter,
+        [
+            CODEX_INITIALIZE,
+            {"jsonrpc": "2.0", "method": "notifications/initialized"},
+            {"jsonrpc": "2.0", "id": 1, "method": "tools/list",
+             "params": {"_meta": {"progressToken": 0}}},
+            {"jsonrpc": "2.0", "id": 2, "method": "tools/call", "params": {
+                "_meta": {"callId": "exec-1", "x-codex-turn-metadata": {"turn": 1}},
+                "name": "ontology_validate",
+                "arguments": {"target_root": str(tmp_path), "scope": "contract"},
+            }},
+        ],
+        cwd=tmp_path,
+    )
+    assert [reply["id"] for reply in replies] == [0, 1, 2]
+    initialized = _success(replies[0], modern=False)
+    assert initialized["protocolVersion"] == VERSIONS[1]
+    assert initialized["capabilities"] == {"tools": {}}
+    _assert_inventory(_success(replies[1], modern=False))
+    assert _tool_result(replies[2], modern=False)["ok"] is True
+
+
+def test_legacy_request_metadata_without_version_is_ordinary(
+    interpreter: str, tmp_path: Path
+) -> None:
+    initialize = _request("initialize", {
+        "protocolVersion": VERSIONS[1], "capabilities": {},
+        "clientInfo": {"name": "test", "version": "1"},
+    }, modern=False)
+    replies = _run(
+        interpreter,
+        [
+            initialize,
+            {"jsonrpc": "2.0", "method": "notifications/initialized"},
+            {"jsonrpc": "2.0", "id": 2, "method": "tools/list",
+             "params": {"_meta": {"progressToken": 0}}},
+        ],
+        cwd=tmp_path,
+    )
+    assert [reply["id"] for reply in replies] == [1, 2]
+    _assert_inventory(_success(replies[1], modern=False))
+
+
+def test_versioned_metadata_after_legacy_initialization_stays_modern(
+    interpreter: str, tmp_path: Path
+) -> None:
+    unsupported = _request("tools/list", identity=2)
+    unsupported["params"]["_meta"]["io.modelcontextprotocol/protocolVersion"] = "1900-01-01"
+    incomplete = _request("tools/list", identity=3)
+    del incomplete["params"]["_meta"]["io.modelcontextprotocol/clientCapabilities"]
+    replies = _run(
+        interpreter,
+        [
+            CODEX_INITIALIZE,
+            {"jsonrpc": "2.0", "method": "notifications/initialized"},
+            unsupported,
+            incomplete,
+            _request("tools/list", identity=4),
+        ],
+        cwd=tmp_path,
+    )
+    assert [reply["id"] for reply in replies] == [0, 2, 3, 4]
+    assert _success(replies[0], modern=False)["protocolVersion"] == VERSIONS[1]
+    assert replies[1]["error"]["code"] == -32022
+    assert replies[1]["error"]["data"] == {
+        "code": "E_VERSION", "supported": VERSIONS, "requested": "1900-01-01"
+    }
+    assert replies[2]["error"]["data"] == {"code": "E_SCHEMA"}
+    _assert_inventory(_success(replies[3]))
+
+
+def test_unversioned_metadata_before_initialization_is_refused(
+    interpreter: str, tmp_path: Path
+) -> None:
+    frame = {"jsonrpc": "2.0", "id": 1, "method": "tools/list",
+             "params": {"_meta": {"progressToken": 0}}}
+    pending = copy.deepcopy(frame)
+    pending["id"] = 2
+    replies = _run(interpreter, [frame, CODEX_INITIALIZE, pending], cwd=tmp_path)
+    assert replies[0]["error"]["code"] == -32602
+    assert replies[0]["error"]["data"] == {"code": "E_SCHEMA"}
+    assert replies[2]["id"] == 2
+    assert replies[2]["error"]["data"] == {"code": "E_SCHEMA"}
+
+
 @pytest.mark.parametrize(
     "key", ["io.modelcontextprotocol/protocolVersion", "io.modelcontextprotocol/clientCapabilities"]
 )
@@ -287,9 +391,12 @@ def test_unsupported_version_is_explicit(interpreter: str, tmp_path: Path, era: 
             "protocolVersion": "1900-01-01", "clientInfo": {"name": "test", "version": "1"},
             "capabilities": {},
         }, modern=False)
-    else:
-        frame = _request("server/discover")
-        frame["params"]["_meta"]["io.modelcontextprotocol/protocolVersion"] = "1900-01-01"
+        # The MCP lifecycle answers an unsupported request with a supported version.
+        result = _success(_run(interpreter, [frame], cwd=tmp_path)[0], modern=False)
+        assert result["protocolVersion"] == VERSIONS[1]
+        return
+    frame = _request("server/discover")
+    frame["params"]["_meta"]["io.modelcontextprotocol/protocolVersion"] = "1900-01-01"
     error = _run(interpreter, [frame], cwd=tmp_path)[0]["error"]
     assert error["code"] == -32022
     assert error["data"] == {"code": "E_VERSION", "supported": VERSIONS, "requested": "1900-01-01"}
