@@ -13,6 +13,12 @@ Baseline: 9ad4354 on `main` (v0.13.36).
 Release note (Main): the `v0.13.37` tag (99afe63) failed its release workflow on a README path
 that names the git-ignored approval file; the fix ships as 0.13.38 with the same behavior.
 
+Live install (Main, 2026-10-28): this checkout's provider moved from 0.13.36 to v0.13.38
+(1e8878b) with the new hook and mir-mcp digests in its local approval file. Attested
+`claude-code` (session f297e6a7) and `codex-cli-desktop` (session 01a17e90), each with five
+`ok: true` mir-mcp calls, four hooks and 23 skills; `finalize --after-restart` applied;
+`mir capability status` ready with both runtimes verified.
+
 Prior cursor preserved verbatim:
 [cursor before release 0.13.37](change_log.md#cursor-before-release-01337-2026-10-27).
 
