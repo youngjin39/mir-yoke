@@ -53,12 +53,33 @@ class CopyGit:
                 shutil.copy2(source, target)
 
 
+ACKNOWLEDGEMENTS = Path("config/capability-acknowledgements.local.json")
+
+
+def write_acknowledgements(project: Path, acknowledgements: dict[str, str]) -> Path:
+    """Record a consumer's host-local package review; tracked configuration never counts."""
+    path = project / ACKNOWLEDGEMENTS
+    current = (
+        json.loads(path.read_text(encoding="utf-8"))["active_package_digest_acknowledgements"]
+        if path.exists()
+        else {}
+    )
+    path.write_text(
+        json.dumps({"active_package_digest_acknowledgements": {**current, **acknowledgements}}),
+        encoding="utf-8",
+    )
+    return path
+
+
 def make_project(tmp_path: Path, name: str = "project", *, real_derivatives: bool = False) -> Path:
     project = tmp_path / name
     (project / "config").mkdir(parents=True)
     shutil.copy2(
         ROOT / "config" / "capability-sources.json",
         project / "config" / "capability-sources.json",
+    )
+    write_acknowledgements(
+        project, {"mir-lifecycle-hooks": _tree_digest(ROOT / "plugins" / "mir-lifecycle-hooks")}
     )
     for filename in ("CLAUDE.md", "AGENTS.md"):
         (project / filename).write_text(f"# {filename}\n", encoding="utf-8")

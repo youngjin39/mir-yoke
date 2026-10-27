@@ -21,7 +21,13 @@ from pathlib import Path, PurePosixPath
 
 from mir.core.adoption.runtime import _is_transient
 
-from .config import CapabilityConfig, CapabilityConfigError, CapabilityPack, load_capability_config
+from .config import (
+    CapabilityConfig,
+    CapabilityConfigError,
+    CapabilityPack,
+    load_capability_config,
+    load_consumer_acknowledgements,
+)
 from .mcp import MCP_LAUNCHERS, MCP_NAME, validate_mcp_observation, validate_mcp_package
 
 _SHA = re.compile(r"^[0-9a-f]{40}$")
@@ -752,14 +758,17 @@ class CapabilityManager:
             )
             self._provider_only = True
         self.config = load_capability_config(self.config_path)
-        self._consumer_config_path = (
-            self.project_root / "config" / "capability-sources.json"
-            if self._provider_only
-            else self.config_path
+        # An approval is host-local consumer state: no capability-sources.json ever carries one.
+        self._acknowledgements_path = (
+            self.project_root / "config" / "capability-acknowledgements.local.json"
         )
-        if self._provider_only:
-            # A provider-supplied config never carries a consumer's active-package approval.
-            self.config = self._with_consumer_acknowledgements(self.config, {})
+        self._consumer_config_path = self.config_path
+        self._config_declared_acknowledgements = (
+            {} if self._provider_only else self.config.declared_digest_acknowledgements
+        )
+        self.config = self._with_consumer_acknowledgements(
+            self.config, load_consumer_acknowledgements(self._acknowledgements_path),
+        )
         if capability_home is None and "MIR_CAPABILITY_HOME" not in os.environ:
             verified_provider_home = _configured_provider_home(
                 self.codex_home, self.config.source_url
@@ -1408,10 +1417,8 @@ class CapabilityManager:
     ) -> CapabilityConfig:
         """Provider configuration cannot renew a consumer's active-package approval."""
         return replace(config, active_digest_acknowledgements={
-            **{name: digest for name, digest in config.active_digest_acknowledgements.items()
-               if config.plugin_kinds.get(name) not in _CONSUMER_ACKNOWLEDGED_KINDS},
-            **{name: digest for name, digest in acknowledgements.items()
-               if config.plugin_kinds.get(name) in _CONSUMER_ACKNOWLEDGED_KINDS},
+            name: digest for name, digest in acknowledgements.items()
+            if config.plugin_kinds.get(name) in _CONSUMER_ACKNOWLEDGED_KINDS
         })
 
     def _consumer_digest_acknowledgements(self) -> dict[str, str]:
@@ -1433,11 +1440,19 @@ class CapabilityManager:
             and plugin not in acknowledgements
         )
         if missing:
+            moved = sorted(set(missing) & set(self._config_declared_acknowledgements))
             raise CapabilityError(
-                f"active package digest acknowledgement is missing: {', '.join(missing)}; add "
+                f"active package digest acknowledgement is missing: {', '.join(missing)}; review "
+                "the package and add "
                 + ", ".join(f"active_package_digest_acknowledgements.{name}" for name in missing)
-                + f" to the consumer-owned {self._consumer_config_path} "
-                "(provider configuration does not count)"
+                + f" to the host-local {self._acknowledgements_path} "
+                "(capability-sources.json does not count)"
+                + (
+                    "; move "
+                    + ", ".join(f"active_package_digest_acknowledgements.{name}" for name in moved)
+                    + f" out of {self._consumer_config_path} into that file"
+                    if moved else ""
+                )
             )
         for plugin, expected in acknowledgements.items():
             actual = plugin_hashes.get(plugin)
@@ -1445,8 +1460,8 @@ class CapabilityManager:
                 raise CapabilityError(
                     f"active package digest acknowledgement is stale: {plugin}; review the "
                     f"package and renew active_package_digest_acknowledgements.{plugin} in the "
-                    f"consumer-owned {self._consumer_config_path} with its exact tree digest "
-                    "(provider configuration does not count)"
+                    f"host-local {self._acknowledgements_path} with its exact tree digest "
+                    "(capability-sources.json does not count)"
                 )
 
     def _plugin_metadata(self, plugin: str, digest: str) -> dict[str, object]:
@@ -2672,7 +2687,7 @@ class CapabilityManager:
             if operation == "update" and not pending_local_update:
                 self.config = self._with_consumer_acknowledgements(
                     load_capability_config(checkout / "config" / "capability-sources.json"),
-                    self.config.active_digest_acknowledgements,
+                    load_consumer_acknowledgements(self._acknowledgements_path),
                 )
                 resolved_profile, pack = self._profile(profile, lock, mcp)
                 selected_plugins = pack.plugins

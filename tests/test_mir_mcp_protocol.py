@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import importlib.util
 import json
 import shutil
 import subprocess
@@ -38,6 +39,7 @@ ERRORS = [
     "E_TIMEOUT",
     "E_CURSOR",
 ]
+CACHE = {"ttlMs": 3600000, "cacheScope": "public"}
 
 
 @pytest.fixture(
@@ -97,10 +99,17 @@ def _success(value: dict, *, modern: bool = True) -> dict:
 
 def _tool_result(value: dict, *, modern: bool = True) -> dict:
     result = _success(value, modern=modern)
-    assert result["content"] == []
     structured = result["structuredContent"]
     assert set(structured) == {"ok", "data", "error", "next_cursor", "profile_protections"}
     assert isinstance(structured["ok"], bool)
+    assert result["isError"] is not structured["ok"]
+    if structured["ok"]:
+        assert result["content"] == []
+    else:
+        [item] = result["content"]
+        assert set(item) == {"type", "text"} and item["type"] == "text"
+        assert len(json.dumps(item["text"], ensure_ascii=False).encode()) <= 512
+        assert json.loads(item["text"])["code"] == structured["error"]["code"]
     assert structured["profile_protections"] in {"available", "unavailable"}
     assert structured["error"] is None or (
         set(structured["error"]) == {"code"} and structured["error"]["code"] in ERRORS
@@ -129,8 +138,12 @@ def test_modern_discovery_and_direct_calls(interpreter: str, tmp_path: Path) -> 
     discovery = _success(replies[0])
     assert discovery["supportedVersions"] == VERSIONS
     assert discovery["capabilities"] == {"tools": {}}
-    _assert_inventory(_success(replies[1]))
+    assert {key: discovery[key] for key in CACHE} == CACHE
+    listed = _success(replies[1])
+    assert {key: listed[key] for key in CACHE} == CACHE
+    _assert_inventory(listed)
     assert _tool_result(replies[2])["ok"] is True
+    assert not set(CACHE) & set(replies[2]["result"])
 
 
 def _assert_inventory(result: dict) -> None:
@@ -264,6 +277,7 @@ def test_legacy_initialization_list_and_call(interpreter: str, tmp_path: Path) -
     initialized = _success(replies[0], modern=False)
     assert initialized["protocolVersion"] == VERSIONS[1]
     assert initialized["capabilities"] == {"tools": {}}
+    assert set(_success(replies[1], modern=False)) == {"tools"}
     _assert_inventory(_success(replies[1], modern=False))
     assert _tool_result(replies[2], modern=False)["ok"] is True
 
@@ -601,6 +615,57 @@ def test_invalid_tool_arguments_are_structured_errors(
     assert result["ok"] is False
     assert result["error"]["code"] in {"E_SCHEMA", "E_PATH"}
     assert result["data"] is None
+
+
+@pytest.mark.parametrize("modern", [True, False], ids=["modern", "legacy"])
+def test_failure_reason_is_visible_text_in_both_eras(
+    interpreter: str, tmp_path: Path, modern: bool
+) -> None:
+    frames = [_request("tools/call", {"name": "ontology_validate", "arguments": {}},
+                       modern=modern)]
+    if not modern:
+        frames[:0] = [
+            _request("initialize", {
+                "protocolVersion": VERSIONS[1], "capabilities": {},
+                "clientInfo": {"name": "test", "version": "1"},
+            }, modern=False),
+            {"jsonrpc": "2.0", "method": "notifications/initialized"},
+        ]
+    reply = _run(interpreter, frames, cwd=tmp_path)[-1]
+    assert _tool_result(reply, modern=modern)["ok"] is False
+    assert json.loads(reply["result"]["content"][0]["text"]) == {"code": "E_SCHEMA"}
+
+
+@pytest.mark.parametrize("count", [2, 200])
+def test_failure_text_keeps_bounded_prefix_of_unknowns(monkeypatch, count: int) -> None:
+    source = PACKAGE / "mir_mcp.py"
+    spec = importlib.util.spec_from_file_location("protocol_mir_mcp", source)
+    server = importlib.util.module_from_spec(spec)
+    # Compile from source so a test never writes __pycache__ into a plugin tree.
+    exec(compile(source.read_bytes(), str(source), "exec"), server.__dict__)
+    unknowns = [f"source-{index:03}.txt: E_GIT \"quoted\"" for index in range(count)]
+    structured = {
+        "ok": False,
+        "data": {"unknowns": unknowns},
+        "error": {"code": "E_GIT"},
+        "next_cursor": None,
+        "profile_protections": "available",
+    }
+    monkeypatch.setattr(server, "execute", lambda name, arguments: structured)
+    reply = server.Protocol().request(
+        _request("tools/call", {"name": "handoff_pins", "arguments": {}}, identity="x" * 256)
+    )
+    result = _tool_result(reply)
+    assert result is structured
+    reason = json.loads(reply["result"]["content"][0]["text"])
+    assert reason["code"] == "E_GIT"
+    assert reason["unknowns"] == unknowns[: len(reason["unknowns"])]
+    if count == 2:
+        assert set(reason) == {"code", "unknowns"} and reason["unknowns"] == unknowns
+    else:
+        assert set(reason) == {"code", "unknowns", "omitted"}
+        assert 0 < len(reason["unknowns"]) < len(unknowns)
+        assert reason["omitted"] == len(unknowns) - len(reason["unknowns"])
 
 
 def test_isolated_package_works_without_checkout_or_siblings(

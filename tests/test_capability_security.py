@@ -11,7 +11,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
-from test_capability_cli import CopyGit, make_project, runtime_runner
+from test_capability_cli import CopyGit, make_project, runtime_runner, write_acknowledgements
 
 from mir.core.capabilities import CapabilityConfigError, CapabilityError, CapabilityManager
 from mir.core.capabilities.config import load_capability_config
@@ -399,8 +399,9 @@ def test_capability_source_declares_the_reviewed_active_hook_package() -> None:
         "skills", "skills-hooks", "mcp-stdio",
     ]
     assert config.component_policy["reserved_active_package_kinds"] == ["mcp"]
-    acknowledgement = config.active_digest_acknowledgements["mir-lifecycle-hooks"]
-    assert acknowledgement == _tree_digest(ROOT / "plugins" / "mir-lifecycle-hooks")
+    # A tracked approval would travel to every clone; consumers approve in their local file.
+    assert config.declared_digest_acknowledgements == {}
+    assert config.active_digest_acknowledgements == {}
 
 
 def test_r19_adr90_amendment_admits_only_stateless_handoff_hooks() -> None:
@@ -556,26 +557,34 @@ def test_plugin_metadata_rejects_undeclared_component_fields(tmp_path: Path) -> 
         load_capability_config(config)
 
 
-def test_active_hook_package_requires_an_exact_digest_acknowledgement(
+def test_config_digest_acknowledgements_stay_loadable_but_never_approve(
     tmp_path: Path,
 ) -> None:
     missing = mutated_config(
         tmp_path,
         lambda value: value.pop("active_package_digest_acknowledgements"),
     )
-    with pytest.raises(CapabilityConfigError, match="digest acknowledgement"):
-        load_capability_config(missing)
+    assert load_capability_config(missing).declared_digest_acknowledgements == {}
 
-    stale = mutated_config(
+    # Older provider configurations still carry an approval; it loads and is ignored.
+    declared = mutated_config(
         tmp_path,
         lambda value: value["active_package_digest_acknowledgements"].update(
             {"mir-lifecycle-hooks": "0" * 64}
         ),
     )
-    assert (
-        load_capability_config(stale).active_digest_acknowledgements["mir-lifecycle-hooks"]
-        == "0" * 64
+    config = load_capability_config(declared)
+    assert config.declared_digest_acknowledgements == {"mir-lifecycle-hooks": "0" * 64}
+    assert config.active_digest_acknowledgements == {}
+
+    malformed = mutated_config(
+        tmp_path,
+        lambda value: value["active_package_digest_acknowledgements"].update(
+            {"mir-lifecycle-hooks": "invalid"}
+        ),
     )
+    with pytest.raises(CapabilityConfigError, match="digest acknowledgement"):
+        load_capability_config(malformed)
 
 
 def test_active_hook_package_rejects_undeclared_hook_files(tmp_path: Path) -> None:
@@ -678,10 +687,7 @@ def test_active_hook_package_rejects_credential_bearing_content(
 
 def test_stale_active_hook_digest_blocks_runtime_registration(tmp_path: Path) -> None:
     project = make_project(tmp_path)
-    config_path = project / "config" / "capability-sources.json"
-    payload = json.loads(config_path.read_text(encoding="utf-8"))
-    payload["active_package_digest_acknowledgements"]["mir-lifecycle-hooks"] = "0" * 64
-    config_path.write_text(json.dumps(payload), encoding="utf-8")
+    write_acknowledgements(project, {"mir-lifecycle-hooks": "0" * 64})
     capability_home = tmp_path / "capability-home"
     codex_home = tmp_path / "codex-home"
     commands: list[list[str]] = []
@@ -1841,9 +1847,9 @@ def test_should_bind_h1_exact_hook_source_and_final_package_version():
     assert handler.read_bytes() == _HOOK_HANDLER_SOURCE.encode()
     assert "else inventory unavailable pins" in _HOOK_HANDLER_SOURCE
     for runtime in (".claude-plugin", ".codex-plugin"):
-        assert json.loads((plugin / runtime / "plugin.json").read_text())["version"] == "0.13.36"
+        assert json.loads((plugin / runtime / "plugin.json").read_text())["version"] == "0.13.37"
     config = load_capability_config(ROOT / "config/capability-sources.json")
-    assert config.active_digest_acknowledgements["mir-lifecycle-hooks"] == _tree_digest(plugin)
+    assert config.declared_digest_acknowledgements == {}
     assert config.plugin_hooks == {
         "mir-lifecycle-hooks": ("SessionStart", "UserPromptSubmit", "PreToolUse", "Stop")
     }

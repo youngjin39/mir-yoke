@@ -100,7 +100,7 @@ Discard an uncommitted Project Agent Kit adaptation in the target or restore the
 commit. For an explicitly invoked CLI transaction, use that command's recorded rollback/recovery
 contract. Installing the CLI does not itself mutate a target.
 
-Current version: `0.13.36`. See `CHANGELOG.md` for release details.
+Current version: `0.13.37`. See `CHANGELOG.md` for release details.
 
 Version 0.10.0 adds opt-in `memory_relations` ingestion and read-only `mir relations query|bundle --memory`
 query/bundle selection using the existing memory schema. No automatic corpus backfill, database
@@ -455,3 +455,45 @@ the tool inventory and results are unchanged. See the 2026-10-27 legacy-negotiat
 to [ADR-91](docs/decisions/adr-91-stdio-mcp-package-admission.md). The lifecycle package
 acknowledgement covers version manifests only; hook behavior is unchanged. The capability-lock
 binding remains Main's release work.
+
+## 0.13.37 Host-local consumer approvals
+
+Consumer approvals now live only in the git-ignored
+`<consumer-root>/config/capability-acknowledgements.local.json`. An
+`active_package_digest_acknowledgements` entry in any `capability-sources.json` (tracked,
+provider, bundled or `--config`) still loads but never approves. A `mir` older than 0.13.37
+cannot load this release's provider config, so the order matters:
+
+1. Update the `mir` code first, for example with the `uv tool install` command in `README.md`
+   pinned to `v0.13.37`. Do not update the provider with an older `mir`.
+2. Review the candidate checkout. The `mir-mcp` server bytes and the version manifests of every
+   package changed, so compute each selected package's tree digest:
+
+   ```sh
+   uv run --no-sync python -c 'from pathlib import Path; from mir.core.capabilities.manager import _tree_digest; print(_tree_digest(Path("/absolute/reviewed-yoke/plugins/mir-lifecycle-hooks")))'
+   ```
+
+   Repeat with `plugins/mir-mcp` when `mir-mcp` is selected.
+3. Create `<consumer-root>/config/capability-acknowledgements.local.json` with those new full
+   digests, also when using `--config`:
+
+   ```json
+   {"active_package_digest_acknowledgements": {"mir-lifecycle-hooks": "<64-hex digest>", "mir-mcp": "<64-hex digest>"}}
+   ```
+
+   Omit `mir-mcp` when it is not selected. The digests you approved for 0.13.36 do not match
+   this release. Keep the file out of Git; it must not be a symlink, and a malformed file fails
+   closed.
+4. Remove the old `active_package_digest_acknowledgements` entries from
+   `capability-sources.json`, or leave them; they are ignored either way.
+5. Run `mir capability update --apply --project-root /absolute/consumer-root`, adding `--mcp`
+   when `mir-mcp` is selected and `--config` when applicable.
+
+No sync, update or rollback writes the local file; rollback restores the approvals recorded in
+its receipt. Modern `mir-mcp` `tools/list` and `server/discover` results now carry caching
+hints, `isError` results carry a short text reason, and a failed Git query in `handoff_pins`
+marks only its own pin unknown. The lifecycle package acknowledgement covers version manifests
+only; hook behavior is unchanged. See
+[the plugin migration guide](docs/operations/global-plugin-migration.md) and the two newest
+2026-10-27 amendments to [ADR-91](docs/decisions/adr-91-stdio-mcp-package-admission.md). The
+capability-lock binding remains Main's release work.

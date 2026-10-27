@@ -8,6 +8,41 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.37] — 2026-10-27 — MCP caching hints, failure text and host-local approvals
+
+### Fixed
+
+- A consumer approval was read from `config/capability-sources.json`, which in a Yoke checkout
+  is also the provider default. A fresh clone could therefore select `mir-mcp`, and the hook
+  package, on an acknowledgement its user never reviewed. The only approval source is now the
+  git-ignored `<project root>/config/capability-acknowledgements.local.json`, shaped
+  `{"active_package_digest_acknowledgements": {"<package>": "<sha256>"}}`. A missing file
+  approves nothing, a malformed one or a symlink fails closed, and no sync, update or rollback
+  writes it.
+- `mir-mcp` returned `isError` results with `content: []`, so Claude Code showed only
+  "Unknown error". Each `isError` result now carries one TextContent: compact JSON with the
+  error `code`, the result's `unknowns` when present, and `omitted` when unknowns were dropped
+  to stay within 512 bytes. Successful results are unchanged.
+- One slow or failed `git status` in `handoff_pins` set a call-wide Git error, skipped every
+  later Git query and returned `ok: false`. A failed Git query now marks only its own pin
+  unknown as `<label>: <code> after <seconds> s`, a Git child may use the call deadline minus a
+  1 s reserve instead of a fixed 5 s, and the call is `ok: false` only when Git never answered.
+
+### Changed
+
+- Modern `tools/list` and `server/discover` results carry `ttlMs: 3600000` and
+  `cacheScope: "public"`, as the 2026-07-28 caching utility requires. Legacy results are
+  unchanged.
+- `active_package_digest_acknowledgements` in any `capability-sources.json` is still validated
+  so older provider configs load for update and rollback, but it never approves; a
+  missing-approval error asks to move such an entry into the local file. Yoke's committed
+  config carries `{}`.
+- A `mir` older than 0.13.37 cannot load this release's provider config. Update the `mir` code
+  before the provider.
+- ADR-91 records two 2026-10-27 amendments (owner decisions, Discord 1564607534323732632 and
+  1564633173516755045).
+- Bump release surfaces to 0.13.37 and regenerate the adopter payload.
+
 ## [v0.13.36] — 2026-10-27 — Codex 0.164 legacy MCP interoperability
 
 ### Fixed

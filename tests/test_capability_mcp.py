@@ -17,16 +17,20 @@ from mir.core.capabilities import (
     CapabilityManager,
     load_capability_config,
 )
+from mir.core.capabilities.config import load_consumer_acknowledgements
 from mir.core.capabilities.manager import _tree_digest, _validate_plugin
 from tests.test_capability_cli import (
+    ACKNOWLEDGEMENTS,
     ROOT,
     CopyGit,
     make_project,
     observed_hooks,
     observed_skills,
     runtime_runner,
+    write_acknowledgements,
 )
 from tests.test_mir_mcp_package import FILES
+from tools.template_assets import _candidate_files
 
 TOOLS = [
     "ontology_validate",
@@ -46,6 +50,8 @@ METADATA = {
 
 def schema5() -> dict:
     payload = json.loads((ROOT / "config/capability-sources.json").read_text())
+    # The checkout's own mir-mcp approval is consumer state, never the provider default.
+    payload["active_package_digest_acknowledgements"].pop("mir-mcp", None)
     payload["schema_version"] = 5
     payload["plugins"]["mir-mcp"] = copy.deepcopy(METADATA)
     payload["plugin_component_policy"]["admitted_package_kinds"] = [
@@ -247,14 +253,13 @@ def acknowledge(provider):
     path.write_text(json.dumps(payload))
 
 
-def acknowledge_locally(manager, provider):
-    path = manager.project_root / "config/capability-sources.json"
-    payload = json.loads(path.read_text())
-    payload["active_package_digest_acknowledgements"]["mir-mcp"] = _tree_digest(
-        provider / "plugins/mir-mcp"
+def acknowledge_locally(manager, provider, name="mir-mcp"):
+    path = write_acknowledgements(
+        manager.project_root, {name: _tree_digest(provider / "plugins" / name)}
     )
-    path.write_text(json.dumps(payload))
-    manager.config = load_capability_config(path)
+    manager.config = manager._with_consumer_acknowledgements(
+        manager.config, load_consumer_acknowledgements(path),
+    )
 
 
 @pytest.mark.parametrize("local_ack", [False, True])
@@ -263,7 +268,7 @@ def test_remote_mcp_ack_cannot_replace_local_approval(tmp_path, provider, local_
     if local_ack:
         acknowledge_locally(manager, provider)
         manager.sync("code", mcp=True, apply=True)
-    local_path = manager.project_root / "config/capability-sources.json"
+    local_path = manager.project_root / ACKNOWLEDGEMENTS
     local_before = local_path.read_bytes()
     path = provider / "plugins/mir-mcp/mir_mcp.py"
     path.write_bytes(path.read_bytes() + b"\n")
@@ -282,10 +287,13 @@ def test_remote_mcp_ack_cannot_replace_local_approval(tmp_path, provider, local_
     assert calls == []
     assert local_path.read_bytes() == local_before
     acknowledge_locally(manager, provider)
+    local_before = local_path.read_bytes()
     assert manager.update("code", mcp=True, apply=True)["registration_status"] == "restart-required"
     assert json.loads(manager.lock_path.read_text())["plugins"]["mir-mcp"]["sha256"] == (
         _tree_digest(provider / "plugins/mir-mcp")
     )
+    # A provider update never writes or renews the consumer's approval.
+    assert local_path.read_bytes() == local_before
 
 
 HOOKS = "mir-lifecycle-hooks"
@@ -300,7 +308,7 @@ def acknowledge_hooks(config_path, digest):
 def test_remote_hook_ack_cannot_replace_local_approval(tmp_path, provider):
     manager = manager_for(tmp_path, provider)
     manager.sync("code", apply=True)
-    local_path = manager.project_root / "config/capability-sources.json"
+    local_path = manager.project_root / ACKNOWLEDGEMENTS
     local_before = local_path.read_bytes()
     lock_before = manager.lock_path.read_bytes()
     hook = provider / "plugins/mir-lifecycle-hooks/.claude-plugin/plugin.json"
@@ -320,16 +328,17 @@ def test_remote_hook_ack_cannot_replace_local_approval(tmp_path, provider):
         CapabilityError,
         match=r"stale: mir-lifecycle-hooks.*"
         r"active_package_digest_acknowledgements\.mir-lifecycle-hooks.*"
-        r"config/capability-sources\.json",
+        r"config/capability-acknowledgements\.local\.json",
     ):
         manager.update("code", apply=True)
     assert calls == []
     assert local_path.read_bytes() == local_before
     assert manager.lock_path.read_bytes() == lock_before
-    acknowledge_hooks(local_path, digest)
-    manager.config = load_capability_config(local_path)
+    acknowledge_locally(manager, provider, HOOKS)
+    local_before = local_path.read_bytes()
     assert manager.update("code", apply=True)["registration_status"] == "restart-required"
     assert json.loads(manager.lock_path.read_text())["plugins"][HOOKS]["sha256"] == digest
+    assert local_path.read_bytes() == local_before
 
 
 def test_consumer_only_hook_ack_survives_activation_rollback(tmp_path, provider):
@@ -342,6 +351,7 @@ def test_consumer_only_hook_ack_survives_activation_rollback(tmp_path, provider)
     assert receipt_body["consumer_digest_acknowledgements"] == {HOOKS: digest}
     lock = manager.lock_path.read_bytes()
     receipt = manager.active_receipt_path.read_bytes()
+    approval = (manager.project_root / ACKNOWLEDGEMENTS).read_bytes()
     original = manager.command_runner
     failed = False
 
@@ -358,6 +368,7 @@ def test_consumer_only_hook_ack_survives_activation_rollback(tmp_path, provider)
     assert failed
     assert manager.lock_path.read_bytes() == lock
     assert manager.active_receipt_path.read_bytes() == receipt
+    assert (manager.project_root / ACKNOWLEDGEMENTS).read_bytes() == approval
     assert manager._activation_evidence(json.loads(lock), require_active_receipt=False)[
         "status"
     ] == "verified"
@@ -367,10 +378,11 @@ def test_consumer_only_hook_ack_survives_activation_rollback(tmp_path, provider)
 def test_legacy_mcp_only_receipt_still_restores_without_provider_renewal(
     tmp_path, provider, consumer_hook_ack,
 ):
+    digest = _tree_digest(provider / "plugins/mir-lifecycle-hooks")
+    acknowledge_hooks(provider / "config/capability-sources.json", digest)
     manager = manager_for(tmp_path, provider)
     acknowledge_locally(manager, provider)
     manager.sync("code", mcp=True, apply=True)
-    digest = _tree_digest(provider / "plugins/mir-lifecycle-hooks")
     receipt = json.loads(manager.active_receipt_path.read_text())
     mcp_ack = {"mir-mcp": _tree_digest(provider / "plugins/mir-mcp")}
     assert receipt["consumer_digest_acknowledgements"] == {**mcp_ack, HOOKS: digest}
@@ -380,7 +392,7 @@ def test_legacy_mcp_only_receipt_still_restores_without_provider_renewal(
         # The provider's active config still grants the exact digest; it must not count.
         assert load_capability_config(
             manager.active_path / "config/capability-sources.json"
-        ).active_digest_acknowledgements[HOOKS] == digest
+        ).declared_digest_acknowledgements[HOOKS] == digest
         object.__setattr__(manager.config, "active_digest_acknowledgements", {
             **manager.config.active_digest_acknowledgements, HOOKS: "0" * 64,
         })
@@ -398,10 +410,11 @@ def test_consumer_only_mcp_ack_survives_activation_rollback(tmp_path, provider):
     acknowledge_locally(manager, provider)
     assert "mir-mcp" not in load_capability_config(
         provider / "config/capability-sources.json"
-    ).active_digest_acknowledgements
+    ).declared_digest_acknowledgements
     manager.sync("code", mcp=True, apply=True)
     lock = manager.lock_path.read_bytes()
     receipt = manager.active_receipt_path.read_bytes()
+    approval = (manager.project_root / ACKNOWLEDGEMENTS).read_bytes()
     original = manager.command_runner
     failed = False
 
@@ -418,6 +431,7 @@ def test_consumer_only_mcp_ack_survives_activation_rollback(tmp_path, provider):
     assert failed
     assert manager.lock_path.read_bytes() == lock
     assert manager.active_receipt_path.read_bytes() == receipt
+    assert (manager.project_root / ACKNOWLEDGEMENTS).read_bytes() == approval
     assert manager._activation_evidence(json.loads(lock), require_active_receipt=False)[
         "status"
     ] == "verified"
@@ -427,13 +441,15 @@ def test_missing_ack_blocks_only_explicit_mcp_registration(tmp_path, provider):
     calls = []
     manager = manager_for(tmp_path, provider, runner=lambda *a, **kw: calls.append(a))
     assert "mir-mcp" not in manager.check("code")["plugins"]
-    with pytest.raises(CapabilityError, match="acknowledgement"):
+    with pytest.raises(
+        CapabilityError, match=r"acknowledgement.*config/capability-acknowledgements\.local\.json"
+    ):
         manager.sync("code", mcp=True, apply=True)
     assert calls == []
     assert not manager.lock_path.exists()
 
 
-def provider_only_manager(tmp_path, provider, source, monkeypatch):
+def provider_only_manager(tmp_path, provider, source, monkeypatch, *, approved=False):
     """A consumer without its own config falls back to a provider-supplied config."""
     if source == "active":
         manager_for(tmp_path, provider, "seed").sync("code", apply=True)
@@ -447,6 +463,8 @@ def provider_only_manager(tmp_path, provider, source, monkeypatch):
         monkeypatch.setattr("mir.core.capabilities.manager.files", lambda _package: bundled)
     manager = manager_for(tmp_path, provider)
     (manager.project_root / "config/capability-sources.json").unlink()
+    if not approved:
+        (manager.project_root / ACKNOWLEDGEMENTS).unlink()
     manager = CapabilityManager(
         manager.project_root,
         capability_home=manager.capability_home,
@@ -474,7 +492,7 @@ def test_provider_mcp_ack_never_admits_first_sync(tmp_path, provider, source, mo
     manager.command_runner = record
     assert "mir-mcp" in load_capability_config(
         manager.config_path
-    ).active_digest_acknowledgements
+    ).declared_digest_acknowledgements
     # Finalization and READY read this same in-memory approval set.
     assert "mir-mcp" not in manager.config.active_digest_acknowledgements
     receipt_before = (
@@ -482,7 +500,8 @@ def test_provider_mcp_ack_never_admits_first_sync(tmp_path, provider, source, mo
     )
     with pytest.raises(
         CapabilityError,
-        match=r"active_package_digest_acknowledgements\.mir-mcp.*config/capability-sources\.json",
+        match=r"active_package_digest_acknowledgements\.mir-mcp.*"
+        r"config/capability-acknowledgements\.local\.json",
     ):
         manager.sync("code", mcp=True, apply=True)
     with pytest.raises(CapabilityError, match=r"acknowledgements\.mir-mcp"):
@@ -496,8 +515,12 @@ def test_provider_mcp_ack_never_admits_first_sync(tmp_path, provider, source, mo
 
 @pytest.mark.parametrize("source", ["active", "bundled"])
 def test_provider_hook_ack_never_admits_provider_only_sync(tmp_path, provider, source, monkeypatch):
+    acknowledge_hooks(
+        provider / "config/capability-sources.json",
+        _tree_digest(provider / "plugins/mir-lifecycle-hooks"),
+    )
     manager = provider_only_manager(tmp_path, provider, source, monkeypatch)
-    assert HOOKS in load_capability_config(manager.config_path).active_digest_acknowledgements
+    assert HOOKS in load_capability_config(manager.config_path).declared_digest_acknowledgements
     assert HOOKS not in manager.config.active_digest_acknowledgements
     calls = []
     original = manager.command_runner
@@ -512,7 +535,8 @@ def test_provider_hook_ack_never_admits_provider_only_sync(tmp_path, provider, s
     )
     with pytest.raises(
         CapabilityError,
-        match=r"acknowledgements\.mir-lifecycle-hooks.*config/capability-sources\.json",
+        match=r"acknowledgements\.mir-lifecycle-hooks.*"
+        r"config/capability-acknowledgements\.local\.json",
     ):
         manager.sync("code", apply=True)
     assert calls == []
@@ -522,10 +546,22 @@ def test_provider_hook_ack_never_admits_provider_only_sync(tmp_path, provider, s
     ) == receipt_before
 
 
+@pytest.mark.parametrize("source", ["active", "bundled"])
+def test_local_ack_admits_provider_only_sync(tmp_path, provider, source, monkeypatch):
+    manager = provider_only_manager(tmp_path, provider, source, monkeypatch, approved=True)
+    acknowledge_locally(manager, provider)
+    assert manager.sync("code", mcp=True, apply=True)["registration_status"] == "restart-required"
+    assert set(json.loads(manager.lock_path.read_text())["plugins"]) >= {HOOKS, "mir-mcp"}
+
+
 @pytest.mark.parametrize("receipt_ack", ["recorded", "stale", "legacy"])
 def test_provider_only_status_checks_recorded_consumer_ack(
     tmp_path, provider, receipt_ack, monkeypatch,
 ):
+    acknowledge_hooks(
+        provider / "config/capability-sources.json",
+        _tree_digest(provider / "plugins/mir-lifecycle-hooks"),
+    )
     manager = provider_only_manager(tmp_path, provider, "active", monkeypatch)
     receipt = json.loads(manager.active_receipt_path.read_text())
     if receipt_ack == "stale":
@@ -533,65 +569,132 @@ def test_provider_only_status_checks_recorded_consumer_ack(
     elif receipt_ack == "legacy":
         receipt.pop("consumer_digest_acknowledgements")
     # The provider's configuration still grants the exact digest; it must not count.
-    assert HOOKS in load_capability_config(manager.config_path).active_digest_acknowledgements
+    assert HOOKS in load_capability_config(manager.config_path).declared_digest_acknowledgements
     assert manager._provider_active_integrity(receipt) is (receipt_ack == "recorded")
 
 
+def reopened(manager, config_path=None):
+    """A fresh process for the same consumer rereads its host-local approval."""
+    return CapabilityManager(
+        manager.project_root,
+        config_path=config_path,
+        capability_home=manager.capability_home,
+        user_home=manager.user_home,
+        codex_home=manager.codex_home,
+        git=manager.git,
+        command_runner=manager.command_runner,
+        which=manager.which,
+    )
+
+
+@pytest.mark.parametrize("plugin", [HOOKS, "mir-mcp"])
 @pytest.mark.parametrize("owner", ["local", "explicit"])
-def test_consumer_owned_hook_ack_admits_sync(tmp_path, provider, owner):
-    digest = _tree_digest(provider / "plugins/mir-lifecycle-hooks")
+def test_local_ack_file_admits_sync_update_and_revalidation(tmp_path, provider, owner, plugin):
+    digest = _tree_digest(provider / "plugins" / plugin)
     manager = manager_for(tmp_path, provider)
     acknowledge_hooks(provider / "config/capability-sources.json", "0" * 64)
+    acknowledge_locally(manager, provider, plugin)
     if owner == "explicit":
         local = manager.project_root / "config/capability-sources.json"
         explicit = tmp_path / "reviewed" / "capability-sources.json"
         explicit.parent.mkdir()
         local.rename(explicit)
-        manager = CapabilityManager(
-            manager.project_root,
-            config_path=explicit,
-            capability_home=manager.capability_home,
-            user_home=manager.user_home,
-            codex_home=manager.codex_home,
-            git=manager.git,
-            command_runner=manager.command_runner,
-            which=manager.which,
-        )
-    assert not manager.provider_only
-    assert manager.config.active_digest_acknowledgements[HOOKS] == digest
-    assert manager.sync("code", apply=True)["registration_status"] == "restart-required"
-    assert json.loads(manager.lock_path.read_text())["plugins"][HOOKS]["sha256"] == digest
-    manager.git.commit = "b" * 40
-    assert manager.update("code", apply=True)["registration_status"] == "restart-required"
-
-
-@pytest.mark.parametrize("owner", ["local", "explicit"])
-def test_consumer_owned_mcp_ack_admits_first_sync(tmp_path, provider, owner):
-    manager = manager_for(tmp_path, provider)
-    acknowledge_locally(manager, provider)
-    if owner == "explicit":
-        local = manager.project_root / "config/capability-sources.json"
-        explicit = tmp_path / "reviewed" / "capability-sources.json"
-        explicit.parent.mkdir()
-        local.rename(explicit)
-        manager = CapabilityManager(
-            manager.project_root,
-            config_path=explicit,
-            capability_home=manager.capability_home,
-            user_home=manager.user_home,
-            codex_home=manager.codex_home,
-            git=manager.git,
-            command_runner=manager.command_runner,
-            which=manager.which,
-        )
+        manager = reopened(manager, explicit)
     assert not manager.provider_only
     assert "mir-mcp" not in load_capability_config(
         provider / "config/capability-sources.json"
-    ).active_digest_acknowledgements
-    assert manager.sync("code", mcp=True, apply=True)["registration_status"] == "restart-required"
-    assert json.loads(manager.lock_path.read_text())["plugins"]["mir-mcp"]["sha256"] == (
-        _tree_digest(provider / "plugins/mir-mcp")
+    ).declared_digest_acknowledgements
+    assert manager.config.active_digest_acknowledgements[plugin] == digest
+    mcp = plugin == "mir-mcp"
+    assert manager.sync("code", mcp=mcp, apply=True)["registration_status"] == "restart-required"
+    assert json.loads(manager.lock_path.read_text())["plugins"][plugin]["sha256"] == digest
+    manager.git.commit = "b" * 40
+    assert manager.update("code", mcp=mcp, apply=True)["registration_status"] == (
+        "restart-required"
     )
+    config_path = None if owner == "local" else manager.config_path
+    assert reopened(manager, config_path).status()["active_integrity"] is True
+    (manager.project_root / ACKNOWLEDGEMENTS).unlink()
+    revoked = reopened(manager, config_path)
+    assert revoked.status()["active_integrity"] is False
+    with pytest.raises(CapabilityError):
+        revoked.finalize(apply=True, after_restart=True)
+
+
+@pytest.mark.parametrize("operation", ["sync", "update"])
+@pytest.mark.parametrize("plugin", [HOOKS, "mir-mcp"])
+def test_tracked_config_ack_never_admits_fresh_clone(tmp_path, provider, plugin, operation):
+    """A clone's tracked capability-sources.json approval belongs to whoever committed it."""
+    digest = _tree_digest(provider / "plugins" / plugin)
+    calls = []
+    manager = manager_for(tmp_path, provider, runner=lambda *a, **kw: calls.append(a))
+    approval = manager.project_root / ACKNOWLEDGEMENTS
+    if plugin == HOOKS:
+        approval.unlink()
+    tracked = manager.project_root / "config/capability-sources.json"
+    payload = json.loads(tracked.read_text())
+    payload["active_package_digest_acknowledgements"][plugin] = digest
+    tracked.write_text(json.dumps(payload))
+    clone = reopened(manager)
+    assert plugin not in clone.config.active_digest_acknowledgements
+    with pytest.raises(
+        CapabilityError,
+        match=rf"missing: {plugin}.*config/capability-acknowledgements\.local\.json.*"
+        rf"move active_package_digest_acknowledgements\.{plugin} out of .*"
+        r"capability-sources\.json",
+    ):
+        getattr(clone, operation)("code", mcp=plugin == "mir-mcp", apply=True)
+    assert calls == []
+    assert not clone.lock_path.exists()
+    assert not approval.exists() or plugin not in json.loads(approval.read_text())[
+        "active_package_digest_acknowledgements"
+    ]
+
+
+@pytest.mark.parametrize(
+    "content",
+    [
+        "not json",
+        "[]",
+        "{}",
+        '{"active_package_digest_acknowledgements": [], "extra": 1}',
+        '{"active_package_digest_acknowledgements": []}',
+        '{"active_package_digest_acknowledgements": {"mir-mcp": "invalid"}}',
+        '{"active_package_digest_acknowledgements": {"Not A Plugin": "' + "a" * 64 + '"}}',
+        "symlink",
+    ],
+)
+def test_malformed_local_ack_file_fails_closed(tmp_path, provider, content):
+    manager = manager_for(tmp_path, provider)
+    path = manager.project_root / ACKNOWLEDGEMENTS
+    path.unlink()
+    if content == "symlink":
+        target = tmp_path / "elsewhere.json"
+        target.write_text(json.dumps({"active_package_digest_acknowledgements": {}}))
+        path.symlink_to(target)
+    else:
+        path.write_text(content)
+    with pytest.raises(
+        CapabilityConfigError, match=r"config/capability-acknowledgements\.local\.json"
+    ):
+        reopened(manager)
+
+
+def test_local_ack_file_is_ignored_and_never_payload_input(tmp_path):
+    relative = str(ACKNOWLEDGEMENTS)
+    ignored = subprocess.run(
+        ["git", "check-ignore", "-q", "--no-index", relative], cwd=ROOT, check=False,
+    )
+    assert ignored.returncode == 0
+    repo = tmp_path / "repo"
+    (repo / "config").mkdir(parents=True)
+    shutil.copy2(ROOT / ".gitignore", repo / ".gitignore")
+    shutil.copy2(ROOT / "config/capability-sources.json", repo / "config/capability-sources.json")
+    (repo / relative).write_text('{"active_package_digest_acknowledgements": {}}')
+    subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
+    candidates = _candidate_files(repo)
+    assert "config/capability-sources.json" in candidates
+    assert relative not in candidates
 
 
 def test_unselected_package_is_validated_before_registration(tmp_path, provider):
@@ -604,18 +707,18 @@ def test_unselected_package_is_validated_before_registration(tmp_path, provider)
 
 
 def test_provider_cannot_claim_ready_from_installation_only(tmp_path, provider):
-    acknowledge(provider)
     manager = manager_for(tmp_path, provider)
+    acknowledge_locally(manager, provider)
     manager.sync("code", mcp=True, apply=True)
     assert manager.status()["provider_ready"] is False
 
 
 def test_changed_provider_byte_blocks_registration_before_any_command(tmp_path, provider):
-    acknowledge(provider)
-    path = provider / "plugins/mir-mcp/mir_mcp.py"
-    path.write_bytes(path.read_bytes() + b"\n")
     calls = []
     manager = manager_for(tmp_path, provider, runner=lambda *args, **kwargs: calls.append(args))
+    acknowledge_locally(manager, provider)
+    path = provider / "plugins/mir-mcp/mir_mcp.py"
+    path.write_bytes(path.read_bytes() + b"\n")
     with pytest.raises(CapabilityError, match="acknowledgement is stale"):
         manager.sync("code", mcp=True, apply=True)
     assert calls == []
@@ -629,8 +732,8 @@ def test_changed_provider_byte_blocks_registration_before_any_command(tmp_path, 
     ],
 )
 def test_rollback_refuses_stale_or_downgraded_mcp_inventory(tmp_path, provider, mutation):
-    acknowledge(provider)
     manager = manager_for(tmp_path, provider)
+    acknowledge_locally(manager, provider)
     manager.sync("code", mcp=True, apply=True)
     receipt = json.loads(manager.active_receipt_path.read_text())
     if mutation == "ack":
@@ -664,8 +767,8 @@ def test_rollback_refuses_stale_or_downgraded_mcp_inventory(tmp_path, provider, 
 
 
 def test_explicit_selection_is_locked_separately_from_active_union(tmp_path, provider):
-    acknowledge(provider)
     first = manager_for(tmp_path, provider, "first")
+    acknowledge_locally(first, provider)
     first.sync("code", mcp=True, apply=True)
     selection = json.loads(first.lock_path.read_text())["plugins"]["mir-mcp"]["mcp"]
     assert selection["runtimes"] == ["claude-code", "codex-cli-desktop"]
@@ -675,6 +778,7 @@ def test_explicit_selection_is_locked_separately_from_active_union(tmp_path, pro
         "codex": {"command": "python3", "args": ["-I", "-B", "-u", "./mir_mcp.py"], "cwd": "."},
     }
     second = manager_for(tmp_path, provider, "second", runner=first.command_runner)
+    acknowledge_locally(second, provider)
     second.sync("content", apply=True)
     second_lock = json.loads(second.lock_path.read_text())
     receipt = json.loads(first.active_receipt_path.read_text())
@@ -692,8 +796,8 @@ def test_explicit_selection_is_locked_separately_from_active_union(tmp_path, pro
 
 @pytest.mark.parametrize("surface", ["provider", "installed", "acknowledgement"])
 def test_drift_blocks_finalization_and_ready(tmp_path, provider, surface):
-    acknowledge(provider)
     manager = manager_for(tmp_path, provider)
+    acknowledge_locally(manager, provider)
     manager.sync("code", mcp=True, apply=True)
     if surface == "installed":
         path = next((tmp_path / "home/.codex/plugins/cache/mir-yoke/mir-mcp").glob("*/mir_mcp.py"))
@@ -720,8 +824,8 @@ def test_drift_blocks_finalization_and_ready(tmp_path, provider, surface):
 
 @pytest.mark.parametrize("prior_mcp", [False, True])
 def test_failed_install_rolls_back_prior_selection(tmp_path, provider, prior_mcp):
-    acknowledge(provider)
     manager = manager_for(tmp_path, provider)
+    acknowledge_locally(manager, provider)
     manager.sync("code", mcp=prior_mcp, apply=True)
     lock = manager.lock_path.read_bytes()
     receipt = manager.active_receipt_path.read_bytes()
@@ -831,8 +935,8 @@ def mcp_evidence(manager, runtime, session):
 def test_mcp_attestation_rejects_incomplete_or_wrong_evidence(
     tmp_path, provider, monkeypatch, mutation
 ):
-    acknowledge(provider)
     manager = manager_for(tmp_path, provider)
+    acknowledge_locally(manager, provider)
     manager.sync("code", mcp=True, apply=True)
     session = "fresh-session"
     monkeypatch.setenv("CODEX_THREAD_ID", session)
@@ -893,8 +997,8 @@ def test_mcp_attestation_rejects_incomplete_or_wrong_evidence(
 
 
 def test_claude_attestation_rejects_codex_launcher_form(tmp_path, provider, monkeypatch):
-    acknowledge(provider)
     manager = manager_for(tmp_path, provider)
+    acknowledge_locally(manager, provider)
     manager.sync("code", mcp=True, apply=True)
     monkeypatch.setenv("CLAUDE_SESSION_ID", "fresh-claude")
     evidence = mcp_evidence(manager, "claude-code", "fresh-claude")
@@ -932,8 +1036,8 @@ def test_claude_attestation_rejects_codex_launcher_form(tmp_path, provider, monk
 def test_schema_invalid_call_receipt_cannot_reach_ready(
     tmp_path, provider, monkeypatch, tool, patch, remove,
 ):
-    acknowledge(provider)
     manager = manager_for(tmp_path, provider)
+    acknowledge_locally(manager, provider)
     manager.sync("code", mcp=True, apply=True)
     for runtime, env in (
         ("codex-cli-desktop", "CODEX_THREAD_ID"), ("claude-code", "CLAUDE_SESSION_ID"),
@@ -953,8 +1057,8 @@ def test_schema_invalid_call_receipt_cannot_reach_ready(
 
 
 def test_call_receipt_requires_explicit_success_on_revalidation(tmp_path, provider, monkeypatch):
-    acknowledge(provider)
     manager = manager_for(tmp_path, provider)
+    acknowledge_locally(manager, provider)
     manager.sync("code", mcp=True, apply=True)
     for runtime, env in (
         ("codex-cli-desktop", "CODEX_THREAD_ID"), ("claude-code", "CLAUDE_SESSION_ID"),
@@ -992,8 +1096,8 @@ def test_call_receipt_requires_explicit_success_on_revalidation(tmp_path, provid
 def test_mcp_finalization_requires_both_receipts_and_rechecks_them(
     tmp_path, provider, monkeypatch, mutation,
 ):
-    acknowledge(provider)
     manager = manager_for(tmp_path, provider)
+    acknowledge_locally(manager, provider)
     manager.sync("code", mcp=True, apply=True)
     for runtime, env in (
         ("codex-cli-desktop", "CODEX_THREAD_ID"),
@@ -1029,8 +1133,8 @@ OLD_CODEX_LAUNCHER = {"command": "python3", "args": ["-I", "-B", "-u", "${PLUGIN
 
 
 def enrolled_with_old_contract(tmp_path, provider):
-    acknowledge(provider)
     manager = manager_for(tmp_path, provider)
+    acknowledge_locally(manager, provider)
     manager.sync("code", mcp=True, apply=True)
     lock = json.loads(manager.lock_path.read_text())
     current = copy.deepcopy(lock["plugins"]["mir-mcp"])

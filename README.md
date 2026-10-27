@@ -52,7 +52,7 @@ immutable release:
 
 ```bash
 uv tool install --force --link-mode copy \
-  "git+https://github.com/youngjin39/mir-yoke.git@v0.13.36"
+  "git+https://github.com/youngjin39/mir-yoke.git@v0.13.37"
 mir --help
 ```
 
@@ -144,6 +144,12 @@ package: only the consumer's own capability configuration approves its exact dig
 Version 0.13.36 lets Codex CLI 0.164 use `mir-mcp`. A legacy `initialize` that requests another
 protocol version now negotiates `2025-11-25` instead of being refused, and legacy request
 `_meta` such as `progressToken` is treated as request metadata, not as a modern request.
+
+Version 0.13.37 moves every consumer approval into the git-ignored
+`config/capability-acknowledgements.local.json`; acknowledgements in `capability-sources.json`
+no longer approve. `mir-mcp` adds caching hints to modern `tools/list` and `server/discover`
+results, gives `isError` results a short text reason, and lets one failed Git query cost only
+its own pin. Update the `mir` code before the provider.
 
 ### Platform use
 

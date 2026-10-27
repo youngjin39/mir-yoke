@@ -487,3 +487,58 @@ other `initialize` check is unchanged. After legacy initialization, `_meta` with
 other than `2026-07-28` with `E_VERSION`. Before initialization, a request whose `_meta` lacks
 the key is still refused. The package digest changes, so each consumer renews its own
 `mir-mcp` acknowledgement.
+
+## Amendment: 2026-10-27 — Caching hints, failure text and per-pin Git failures
+
+Owner decision: Discord `1564607534323732632` (parent-supplied; the recommended options of the
+Harness items 10 and 11 preparation, each designed against its behavioural intent). This amends
+§4.7 and the Git limits; the original sentences above are kept as history.
+
+- Caching hints: the
+  [2026-07-28 caching utility](https://modelcontextprotocol.io/specification/2026-07-28/server/utilities/caching)
+  requires `ttlMs` and `cacheScope` on `resultType: "complete"` results of `server/discover`
+  and `tools/list`. Modern results now carry `ttlMs: 3600000` and `cacheScope: "public"`: the
+  five-tool list is the same for every caller, carries no authorization, and changes only with
+  the package bytes, which require re-acknowledgement and a restart. Legacy results are
+  unchanged.
+- Failure text: Claude Code shows the model only "Unknown error" for an `isError` result with
+  `content: []`. An `isError` result now carries exactly one TextContent: compact JSON with the
+  error `code`, the result's `unknowns` when present, and `omitted` when unknowns were dropped to
+  keep the text within 512 bytes. Successful results keep `content: []`.
+- Per-pin Git failures: one slow `git status` (over the old 5 s child limit, trigger unknown)
+  used to set a call-wide Git error and skip every later Git query, so `handoff_pins` returned
+  `ok: false` and lost `head` and every revision. A failed or timed-out Git query now marks
+  only its own pin unknown as `<label>: <code> after <seconds> s`. A Git child may use the call
+  deadline minus a 1 s reserve, so the call still answers before the 10 s alarm. The call is
+  `ok: false` only when Git never answered (preflight refusal or every query failed).
+
+The package digest changes, so each consumer renews its own `mir-mcp` acknowledgement.
+
+## Amendment: 2026-10-27 — Host-local consumer acknowledgements
+
+Owner decision: Discord `1564633173516755045` (parent-supplied), choosing a git-ignored local
+file after a Main check showed the earlier recommendation broke opt-in. This amends the
+"Consumer-local hook acknowledgement" amendment and every rule above that names
+`config/capability-sources.json` as the consumer's approval.
+
+In a Yoke checkout, `config/capability-sources.json` is both the provider default and the
+checkout's own consumer config. A fresh clone running `mir capability update --mcp
+--project-root .` was therefore admitted by whatever acknowledgement the repository committed,
+without its user reviewing anything; the committed `mir-lifecycle-hooks` acknowledgement leaked
+the same way. An approval is host-local state of the consumer that made it.
+
+- The only consumer approval source is `<project root>/config/capability-acknowledgements.local.json`,
+  shaped `{"active_package_digest_acknowledgements": {"<package>": "<sha256>"}}`. It is
+  git-ignored in Yoke, never part of the adopter payload or a provider copy, and must not be a
+  symlink. A missing file approves nothing; a malformed one fails closed.
+- `active_package_digest_acknowledgements` in any `capability-sources.json` is still validated
+  (names only active packages) so older provider configs stay loadable for update and rollback,
+  but it never approves. When a consumer config still carries one, the missing-approval error
+  says to move it into the local file. Yoke's committed config now carries `{}`.
+- Each update re-reads the local file, so an approval written for a package the update introduces
+  applies. A provider update never writes or renews the local file; rollback restores the
+  approvals recorded in its receipt.
+- Compatibility: a `mir` older than 0.13.37 requires a hook acknowledgement in every schema 4+
+  config and cannot load this release's provider config. Update the `mir` code before updating
+  the provider. A file force-added to git (`git add -f`) would still travel with a clone; that is
+  not checked.

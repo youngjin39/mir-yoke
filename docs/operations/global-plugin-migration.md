@@ -137,10 +137,14 @@ refuses a divergent digest.
 
 Only `mir-mcp` at `plugins/mir-mcp` is admitted as `mcp-stdio`. Generic `mcp` stays reserved.
 Before selecting it, the owner must review its computed tree SHA256 and record that exact value
-in the consumer's own `<consumer-root>/config/capability-sources.json`, at
-`active_package_digest_acknowledgements["mir-mcp"]`. When using `--config`, edit that explicit
-consumer-owned configuration instead. The provider's configuration cannot renew this approval.
-This source change supplies no acknowledgement.
+in the consumer's host-local, git-ignored
+`<consumer-root>/config/capability-acknowledgements.local.json`, shaped
+`{"active_package_digest_acknowledgements": {"mir-mcp": "<64-hex digest>"}}`. This file is the
+only source of approval, also with `--config`; a missing file approves nothing and a malformed
+one fails closed. `active_package_digest_acknowledgements` in any `capability-sources.json`
+(tracked, provider, bundled or `--config`) never counts: older configurations that carry it
+still load, and a missing-approval error names any such entry and asks to move it into the
+local file. Keep the local file out of Git so a clone or adopter starts with no approval.
 Any changed byte invalidates an existing acknowledgement. Status reports local drift; it does
 not claim that a previously running process has stopped.
 
@@ -151,34 +155,34 @@ from a Yoke CLI environment:
 uv run --no-sync python -c 'from pathlib import Path; from mir.core.capabilities.manager import _tree_digest; print(_tree_digest(Path("/absolute/reviewed-yoke/plugins/mir-mcp")))'
 ```
 
-Manually set the consumer-local JSON entry above to that full 64-character digest, then run
+Manually set the local file's entry above to that full 64-character digest, then run
 `mir capability update --mcp --apply --project-root /absolute/consumer-root` (include
 `--config /absolute/consumer-owned-config.json` when applicable). For first selection, use
 `mir capability sync --mcp --apply` from the consumer root. Approval must precede the update;
 a provider update that changes both bytes and its own approval fails until this local edit.
+No sync, update or rollback writes or renews the local file.
 The active receipt's `consumer_digest_acknowledgements` preserves the prior state's approval for
 rollback. Rollback checks it against the restored inventory and bytes before re-registration;
 it does not renew approval for a different digest. A receipt written before 0.13.35 holds only
 `mcp_digest_acknowledgements`; rollback still reads it and takes the hook approval from the
-current consumer configuration, never from a provider configuration.
+current consumer's local file, never from a configuration.
 
-Hook updates follow the same rule (ADR-91 amendment, 2026-10-27). Only the consumer-owned
-configuration acknowledges `mir-lifecycle-hooks`; a provider-only or bundled configuration's
-value does not count, and a consumer with no configuration of its own cannot select the hook
-package. A provider update that changes the hook bytes fails closed with a message naming the
-file and `active_package_digest_acknowledgements.mir-lifecycle-hooks`. To renew it, review the
+Hook updates follow the same rule (ADR-91 amendment, 2026-10-27). Only the consumer's local
+acknowledgement file approves `mir-lifecycle-hooks`; a value in any `capability-sources.json`
+does not count, and a consumer without that file cannot select the hook package. A provider
+update that changes the hook bytes fails closed with a message naming the local file and
+`active_package_digest_acknowledgements.mir-lifecycle-hooks`. To renew it, review the
 candidate checkout and compute the hook package digest:
 
 ```sh
 uv run --no-sync python -c 'from pathlib import Path; from mir.core.capabilities.manager import _tree_digest; print(_tree_digest(Path("/absolute/reviewed-yoke/plugins/mir-lifecycle-hooks")))'
 ```
 
-Set `active_package_digest_acknowledgements["mir-lifecycle-hooks"]` in the consumer-owned
-configuration to that full digest, then run `mir capability update --apply --project-root
-/absolute/consumer-root` (add `--mcp` when `mir-mcp` is selected, and `--config` when
-applicable). A repository whose consumer-owned configuration is its own tracked
-`config/capability-sources.json`, such as a Yoke checkout, keeps working while that file holds
-the exact digest.
+Set `active_package_digest_acknowledgements["mir-lifecycle-hooks"]` in the local file to that
+full digest, then run `mir capability update --apply --project-root /absolute/consumer-root`
+(add `--mcp` when `mir-mcp` is selected, and `--config` when applicable). A repository whose
+own tracked `config/capability-sources.json` is its configuration, such as a Yoke checkout,
+also approves only through its git-ignored local file; the tracked value is `{}`.
 
 Use `sync --mcp --apply` to select it explicitly and `sync --no-mcp --apply` to remove that
 consumer's selection. Omitting either option retains its lock selection. A peer consumer's

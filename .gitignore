@@ -53,6 +53,9 @@ out/
 .mir/slim.lock
 .mir/runtime/
 
+# Host-local consumer approvals of active package digests; a clone starts with none.
+config/capability-acknowledgements.local.json
+
 # Mir Yoke tracks its portable maintainer Profile; setup may replace it in a product-owned checkout.
 .mir/repo-profile.toml
 !.mir/repo-profile.toml

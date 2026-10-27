@@ -6,9 +6,12 @@ import hashlib
 import importlib.util
 import json
 import os
+import re
+import signal
 import subprocess
 import sys
 import time
+import types
 from pathlib import Path
 
 import pytest
@@ -403,7 +406,7 @@ def test_should_bound_capture_reap_and_hide_child_errors(server, repo, monkeypat
 
     monkeypatch.setattr(subprocess, "Popen", child)
     if mode == "timeout":
-        monkeypatch.setattr(server, "GIT_TIMEOUT", 0.05)
+        monkeypatch.setattr(server, "GIT_RESERVE", 9.95)
     start = time.monotonic()
     with pytest.raises(server.Refusal) as failure:
         query(server, repo, SUFFIXES[0])
@@ -421,6 +424,110 @@ def test_should_honor_call_deadline_before_spawn(server, repo, monkeypatch):
             server.run_git(io, "head", *SUFFIXES[0])
     finally:
         io.close()
+
+
+def slow_clock(server, monkeypatch, steps):
+    """Advance the server clock when a matching Git query spawns, without sleeping."""
+    original = subprocess.Popen
+    offset = [0.0]
+    monkeypatch.setattr(server, "time", types.SimpleNamespace(
+        monotonic=lambda: time.monotonic() + offset[0]))
+
+    def child(argv, **kwargs):
+        for word, (jump, script) in steps.items():
+            if word in argv:
+                offset[0] += jump
+                if script is not None:
+                    argv = [sys.executable, "-I", "-B", "-u", "-c", script]
+        return original(argv, **kwargs)
+
+    monkeypatch.setattr(subprocess, "Popen", child)
+
+
+def pins_call(server, repo):
+    return server.execute("handoff_pins", {"target_root": str(repo), "paths": ["source.txt"]})
+
+
+def unknown_seconds(pins, label, code):
+    [item] = [item for item in pins["unknowns"] if item.startswith(label + ": ")]
+    match = re.fullmatch(re.escape(label) + ": " + code + r" after (\d+\.\d\d) s", item)
+    assert match, item
+    return float(match[1])
+
+
+def test_should_let_slow_status_use_the_call_budget(server, repo, monkeypatch):
+    slow_clock(server, monkeypatch, {"status": (6.0, None)})
+    result = pins_call(server, repo)
+    assert result["ok"] is True and result["error"] is None
+    assert result["data"]["dirty"] is False
+    assert not [item for item in result["data"]["unknowns"] if item.startswith("dirty")]
+
+
+@pytest.mark.parametrize("mode", ["error", "timeout"])
+def test_should_cost_a_failed_query_only_its_own_pin(server, repo, monkeypatch, mode):
+    head = setup_git(repo, "rev-parse", "HEAD")
+    if mode == "error":
+        slow_clock(server, monkeypatch, {"status": (0.0, "import sys; sys.exit(2)")})
+    else:
+        slow_clock(server, monkeypatch, {"status": (9.5, None)})
+    result = pins_call(server, repo)
+    assert result["ok"] is True and result["error"] is None
+    pins = result["data"]
+    assert pins["head"] == head
+    assert pins["dirty"] is None
+    source = pins["sources"][0]
+    if mode == "error":
+        assert unknown_seconds(pins, "dirty", "E_GIT") < 5
+        assert source["revision"] == head
+        assert source["modified_vs_head"] is False
+        assert [item for item in pins["unknowns"] if "E_" in item] == [
+            next(item for item in pins["unknowns"] if item.startswith("dirty: "))]
+    else:
+        assert 9.5 <= unknown_seconds(pins, "dirty", "E_TIMEOUT") < 10
+        # The budget is spent, so each later query is named on its own label.
+        assert unknown_seconds(pins, "source.txt.revision", "E_TIMEOUT") < 0.5
+        assert source["revision"] is None
+        assert source["sha256"] == hashlib.sha256(b"source\n").hexdigest()
+
+
+def test_should_answer_before_the_call_alarm_when_git_hangs(server, repo, monkeypatch):
+    head = setup_git(repo, "rev-parse", "HEAD")
+    elapsed = 8.5
+    # The alarm keeps its 10 s schedule on the server clock, 8.5 s of which pass at once.
+    real = server.signal.setitimer
+    monkeypatch.setattr(server, "signal", types.SimpleNamespace(
+        ITIMER_REAL=server.signal.ITIMER_REAL,
+        setitimer=lambda which, value: real(which, value and value - elapsed)))
+    slow_clock(server, monkeypatch, {
+        "rev-parse": (elapsed, None), "status": (0.0, "import time; time.sleep(30)")})
+    fired = []
+
+    def alarm(signum, frame):
+        fired.append(signum)
+        raise server.Refusal("E_TIMEOUT")
+
+    previous = signal.signal(signal.SIGALRM, alarm)
+    try:
+        start = time.monotonic()
+        reply = server.Protocol().request({
+            "jsonrpc": "2.0", "id": 1, "method": "tools/call",
+            "params": {
+                "_meta": {"io.modelcontextprotocol/protocolVersion": "2026-07-28",
+                          "io.modelcontextprotocol/clientCapabilities": {}},
+                "name": "handoff_pins",
+                "arguments": {"target_root": str(repo), "paths": ["source.txt"]},
+            },
+        })
+        wall = time.monotonic() - start
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        signal.signal(signal.SIGALRM, previous)
+    assert not fired
+    assert wall < 10 - elapsed
+    result = reply["result"]["structuredContent"]
+    assert result["ok"] is True and result["error"] is None
+    assert result["data"]["head"] == head
+    assert unknown_seconds(result["data"], "dirty", "E_TIMEOUT") < 10 - elapsed
 
 
 def test_should_accept_exact_combined_output_limit_without_disclosure(server, repo, monkeypatch):

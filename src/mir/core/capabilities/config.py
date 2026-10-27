@@ -145,7 +145,9 @@ class CapabilityConfig:
     plugin_skills: dict[str, tuple[str, ...]]
     plugin_hooks: dict[str, tuple[str, ...]]
     plugin_mcp: dict[str, dict[str, object]]
+    # Consumer approvals in force; only the host-local acknowledgement file supplies them.
     active_digest_acknowledgements: dict[str, str]
+    declared_digest_acknowledgements: dict[str, str]
     component_policy: dict[str, object]
     aliases: dict[str, str]
     packs: dict[str, CapabilityPack]
@@ -184,6 +186,49 @@ def _string_map(raw: object, label: str) -> dict[str, str]:
             raise CapabilityConfigError(f"{label} must map strings to strings")
         result[key] = value
     return result
+
+
+def _digest_acknowledgements(raw: dict[str, object]) -> dict[str, str]:
+    result: dict[str, str] = {}
+    for name, digest in raw.items():
+        if not isinstance(digest, str) or _SHA256.fullmatch(digest) is None:
+            raise CapabilityConfigError(
+                f"active package {name!r} has an invalid digest acknowledgement"
+            )
+        result[name] = digest
+    return result
+
+
+def load_consumer_acknowledgements(path: Path) -> dict[str, str]:
+    """Read the consumer's host-local package approvals; a missing file approves nothing.
+
+    Entries for packages the current configuration does not declare are left to the caller.
+    """
+    if path.is_symlink():
+        raise CapabilityConfigError(f"consumer acknowledgement file must not be a symlink: {path}")
+    if not path.exists():
+        return {}
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise CapabilityConfigError(f"invalid consumer acknowledgement file: {path}") from exc
+    acknowledgements = (
+        raw.get("active_package_digest_acknowledgements") if isinstance(raw, dict) else None
+    )
+    if (
+        not isinstance(raw, dict)
+        or set(raw) != {"active_package_digest_acknowledgements"}
+        or not isinstance(acknowledgements, dict)
+        or not all(_PLUGIN_NAME.fullmatch(name) for name in acknowledgements)
+    ):
+        raise CapabilityConfigError(
+            f"consumer acknowledgement file must be {{\"active_package_digest_acknowledgements\": "
+            f"{{\"<package>\": \"<sha256>\"}}}}: {path}"
+        )
+    try:
+        return _digest_acknowledgements(acknowledgements)
+    except CapabilityConfigError as exc:
+        raise CapabilityConfigError(f"{exc}: {path}") from exc
 
 
 def load_capability_config(path: Path) -> CapabilityConfig:
@@ -292,23 +337,17 @@ def load_capability_config(path: Path) -> CapabilityConfig:
     if source_schema_version == 1 and component_policy is not None:
         raise CapabilityConfigError("schema_version 1 cannot declare plugin_component_policy")
 
-    active_digest_acknowledgements: dict[str, str] = {}
+    # Older provider configurations still carry an approval; it stays loadable, never approves.
+    declared_digest_acknowledgements: dict[str, str] = {}
     if source_schema_version >= 4:
-        acknowledgements = raw.get("active_package_digest_acknowledgements")
-        if (
-            not isinstance(acknowledgements, dict)
-            or not set(plugin_hooks) <= set(acknowledgements)
-            or not set(acknowledgements) <= set(plugin_hooks) | set(plugin_mcp)
-        ):
+        acknowledgements = raw.get("active_package_digest_acknowledgements", {})
+        if not isinstance(acknowledgements, dict) or not set(acknowledgements) <= set(
+            plugin_hooks
+        ) | set(plugin_mcp):
             raise CapabilityConfigError(
-                "active package digest acknowledgement must cover every active hook package"
+                "active package digest acknowledgement must name only active packages"
             )
-        for name, digest in acknowledgements.items():
-            if not isinstance(digest, str) or _SHA256.fullmatch(digest) is None:
-                raise CapabilityConfigError(
-                    f"active package {name!r} has an invalid digest acknowledgement"
-                )
-            active_digest_acknowledgements[name] = digest
+        declared_digest_acknowledgements = _digest_acknowledgements(acknowledgements)
     elif "active_package_digest_acknowledgements" in raw:
         raise CapabilityConfigError(
             "only schema_version 4+ can declare active package digest acknowledgements"
@@ -548,7 +587,8 @@ def load_capability_config(path: Path) -> CapabilityConfig:
         plugin_skills=plugin_skills,
         plugin_hooks=plugin_hooks,
         plugin_mcp=plugin_mcp,
-        active_digest_acknowledgements=active_digest_acknowledgements,
+        active_digest_acknowledgements={},
+        declared_digest_acknowledgements=declared_digest_acknowledgements,
         component_policy=component_policy,
         aliases=aliases,
         packs=packs,

@@ -23,7 +23,7 @@ try:
 except ImportError:
     tomllib = None
 
-VERSION = "0.13.36"
+VERSION = "0.13.37"
 MODERN = "2026-07-28"
 LEGACY = "2025-11-25"
 VERSIONS = [MODERN, LEGACY]
@@ -47,7 +47,8 @@ GIT_ENV = {
     "GIT_TERMINAL_PROMPT": "0",
 }
 GIT_OUTPUT_LIMIT = 65536
-GIT_TIMEOUT = 5
+# Seconds of the 10 s call budget Git may not use, so the call answers before the alarm.
+GIT_RESERVE = 1
 PACKAGE = Path(__file__).resolve().parent
 PROTECTED = (
     ".env*",
@@ -993,6 +994,9 @@ def git_preflight(io):
 def run_git(io, label, *suffix):
     """Run one fixed Git query and expose only a commit or a boolean."""
     io.tick()
+    deadline = io.deadline - GIT_RESERVE
+    if time.monotonic() >= deadline:
+        raise Refusal("E_TIMEOUT")
     if suffix == ("rev-parse", "--verify", "HEAD"):
         kind = "head"
     elif suffix == (
@@ -1019,7 +1023,6 @@ def run_git(io, label, *suffix):
         raise Refusal("E_GIT")
     child = None
     try:
-        deadline = min(io.deadline, time.monotonic() + GIT_TIMEOUT)
         child = subprocess.Popen(
             [*GIT_PREFIX, "-C", str(io.root), *suffix],
             stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
@@ -1175,30 +1178,36 @@ def tool_data(name, args, io):
     }
     io.git_error = None
     try:
-        git_available = git_preflight(io)
+        preflight = None if git_preflight(io) else "E_GIT"
     except Refusal as exc:
-        io.git_error = exc.code
-        git_available = False
-    if not git_available and io.git_error is None:
-        io.git_error = "E_GIT"
+        preflight = exc.code
+    failures = {}
+    codes = []
 
     def git(label, *suffix):
-        if not git_available or io.git_error is not None:
+        if preflight is not None:
+            failures[label] = preflight
             return None
+        start = time.monotonic()
         try:
             result = run_git(io, label, *suffix)
-            if result is None:
-                io.git_error = "E_GIT"
-            return result
+            code = "E_GIT"
         except Refusal as exc:
-            io.git_error = exc.code
-            return None
+            result, code = None, exc.code
+        codes.append(None if result is not None else code)
+        if result is None:
+            failures[label] = f"{code} after {time.monotonic() - start:.2f} s"
+        return result
 
     pins = ONTOLOGY.handoff_pins(io.root, args["paths"], report, io=io, git_runner=git)
-    pins["unknowns"] = [
-        item.replace(": git command failed", ": " + (io.git_error or "E_GIT"))
-        for item in pins["unknowns"]
-    ]
+    failed = {
+        label + ": git command failed": label + ": " + reason
+        for label, reason in failures.items()
+    }
+    pins["unknowns"] = [failed.get(item, item) for item in pins["unknowns"]]
+    # One failed query costs only its own pin; the call fails only when Git never answered.
+    if preflight is not None or None not in codes:
+        io.git_error = preflight or codes[0]
     return pins
 
 
@@ -1435,12 +1444,24 @@ class Protocol:
                     "structuredContent": structured,
                     "isError": not structured["ok"],
                 }
+                if result["isError"]:
+                    reason = {"code": structured["error"]["code"]}
+                    if "unknowns" in (structured["data"] or {}):
+                        reason["unknowns"] = list(structured["data"]["unknowns"])
+                    # Fit the escaped text inside the envelope space execute() reserves.
+                    while len(compact(compact(reason)).encode()) > 512:
+                        reason["unknowns"].pop()
+                        reason["omitted"] = reason.get("omitted", 0) + 1
+                    result["content"] = [{"type": "text", "text": compact(reason)}]
             elif method in ("tools/list", "tools/call", "server/discover"):
                 raise Refusal("E_SCHEMA")
             else:
                 return rpc_error(identity, -32601, "E_SCHEMA")
             if modern:
                 result["resultType"] = "complete"
+                if method != "tools/call":
+                    result["ttlMs"] = 3600000
+                    result["cacheScope"] = "public"
             return {"jsonrpc": "2.0", "id": identity, "result": result}
         except Refusal as exc:
             if exc.code == "E_VERSION":
