@@ -23,7 +23,7 @@ try:
 except ImportError:
     tomllib = None
 
-VERSION = "0.13.38"
+VERSION = "0.13.39"
 MODERN = "2026-07-28"
 LEGACY = "2025-11-25"
 VERSIONS = [MODERN, LEGACY]
@@ -73,6 +73,7 @@ PROTECTED_DIRS = {"secrets", ".ssh", ".aws", ".gnupg"}
 ERRORS = [
     "E_SCHEMA",
     "E_PATH",
+    "E_CLOUD_SYNC",
     "E_PROTECTED",
     "E_LIMIT",
     "E_FORMAT",
@@ -85,10 +86,11 @@ ERRORS = [
 
 
 class Refusal(Exception):
-    """Only this stable code may cross the tool boundary."""
+    """Only a stable code and explicit unknowns may cross the tool boundary."""
 
-    def __init__(self, code):
+    def __init__(self, code, unknowns=None):
         self.code = code
+        self.unknowns = unknowns
         super().__init__(code)
 
 
@@ -174,6 +176,22 @@ def relative_path(value):
     return "/".join(parts)
 
 
+def cloud_sync_reason(path):
+    """Classify a resolved root using cloud attributes or macOS path components."""
+    cloud_attributes = 0x80000 | 0x100000 | 0x40000 | 0x400000 | 0x1000
+    for component in (path, *path.parents):
+        info = os.stat(component, follow_symlinks=False)
+        if getattr(info, "st_file_attributes", 0) & cloud_attributes:
+            return "Windows cloud files"
+    parts = tuple(part.lower() for part in path.parts)
+    if len(parts) >= 5 and parts[:2] == ("/", "users") and parts[3] == "library":
+        if parts[4] == "cloudstorage":
+            return "macOS CloudStorage"
+        if parts[4] == "mobile documents":
+            return "iCloud Drive"
+    return None
+
+
 class Guard:
     """Every target access uses pinned directory descriptors and bounded reads."""
 
@@ -199,6 +217,12 @@ class Guard:
         try:
             self.protected(root)
             self.root = Path(root).resolve(strict=True)
+            reason = cloud_sync_reason(self.root)
+            if reason is not None:
+                raise Refusal("E_CLOUD_SYNC", [
+                    "target_root is inside a cloud-synced folder (" + reason + "); "
+                    "Mir does not run there. Move the repository to a local folder."
+                ])
             self.protected(self.root.as_posix())
             before = self.root.stat()
             self.fd = os.open(str(self.root), os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
@@ -851,7 +875,7 @@ def definition(name, description):
     result = closed(
         {
             "ok": BOOL,
-            "data": {"anyOf": [OUTPUTS[name], NULL]},
+            "data": {"anyOf": [OUTPUTS[name], NULL, closed({"unknowns": STRINGS})]},
             "error": {"anyOf": [closed({"code": choice(ERRORS)}), NULL]},
             "next_cursor": {"anyOf": [string(1024), NULL]},
             "profile_protections": choice(["available", "unavailable"]),
@@ -1224,6 +1248,7 @@ PAGE_KEYS = {
 
 def execute(name, arguments):
     io = None
+    unknowns = None
     profile = "unavailable" if tomllib is None else "available"
     try:
         if not isinstance(name, str) or name not in TOOL_BY_NAME:
@@ -1301,6 +1326,7 @@ def execute(name, arguments):
             end -= 1
     except Refusal as exc:
         code = exc.code
+        unknowns = exc.unknowns
     except RELATIONS.RelationsError as exc:
         code = exc.code
     except (OSError, UnicodeError):
@@ -1312,7 +1338,7 @@ def execute(name, arguments):
             io.close()
     return {
         "ok": False,
-        "data": None,
+        "data": {"unknowns": unknowns} if unknowns is not None else None,
         "error": {"code": code},
         "next_cursor": None,
         "profile_protections": profile,

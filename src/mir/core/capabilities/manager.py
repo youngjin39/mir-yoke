@@ -466,7 +466,7 @@ def _tree_digest(root: Path) -> str:
     if root.is_symlink() or not root.is_dir():
         raise CapabilityError(f"capability tree is not a real directory: {root}")
     digest = hashlib.sha256()
-    for path in sorted(root.rglob("*")):
+    for path in sorted(root.rglob("*"), key=lambda p: p.relative_to(root).parts):
         if path.is_symlink():
             raise CapabilityError(f"capability tree contains a symlink: {path}")
         is_file = path.is_file()
@@ -705,6 +705,22 @@ def _standalone_collisions(skill_names: set[str], project_root: Path, user_home:
     return collisions
 
 
+def cloud_sync_reason(path: Path) -> str | None:
+    """Identify cloud storage from a resolved root without reading consumer state."""
+    parts = tuple(part.casefold() for part in path.parts)
+    if len(parts) >= 5 and parts[:2] == ("/", "users") and parts[3] == "library":
+        if parts[4] == "cloudstorage":
+            return "macOS CloudStorage"
+        if parts[4] == "mobile documents":
+            return "iCloud Drive"
+    cloud_attributes = 0x80000 | 0x100000 | 0x40000 | 0x400000 | 0x1000
+    for component in (path, *path.parents):
+        attributes = getattr(os.stat(component, follow_symlinks=False), "st_file_attributes", 0)
+        if attributes & cloud_attributes:
+            return "Windows cloud files"
+    return None
+
+
 class CapabilityManager:
     """Status, check, sync, and update operations for a project consumer."""
 
@@ -724,6 +740,11 @@ class CapabilityManager:
         self._project_root_identity = _directory_identity(self.project_root)
         if self._project_root_identity is None:
             raise CapabilityError("project root is not a real directory")
+        if reason := cloud_sync_reason(self.project_root):
+            raise CapabilityError(
+                f"project root is inside a cloud-synced folder ({reason}); "
+                "Mir does not run there. Move the repository to a local folder."
+            )
         self.user_home = (user_home or Path.home()).resolve()
         raw_codex_home = os.environ.get("CODEX_HOME")
         configured_codex_home = codex_home or (
@@ -1612,7 +1633,7 @@ class CapabilityManager:
                 continue
             for source in root.rglob("CLAUDE.md"):
                 if source.is_file() and not source.is_symlink():
-                    paths.add(str(source.relative_to(self.project_root).with_name("AGENTS.md")))
+                    paths.add(source.relative_to(self.project_root).with_name("AGENTS.md").as_posix())
         for relative in sorted(paths):
             target = self._project_target(relative)
             if target.is_symlink():

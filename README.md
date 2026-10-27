@@ -52,7 +52,7 @@ immutable release:
 
 ```bash
 uv tool install --force --link-mode copy \
-  "git+https://github.com/youngjin39/mir-yoke.git@v0.13.38"
+  "git+https://github.com/youngjin39/mir-yoke.git@v0.13.39"
 mir --help
 ```
 
@@ -153,6 +153,11 @@ its own pin. Update the `mir` code before the provider.
 
 Version 0.13.38 republishes 0.13.37, whose release workflow stopped on a README path check
 that only a fresh checkout could see. Behavior is unchanged; `v0.13.37` has no release.
+
+Version 0.13.39 refuses repositories inside cloud-synced folders (OneDrive, macOS CloudStorage,
+iCloud Drive) with a warning, in both `mir-mcp` and `mir capability`, and keeps every checkout
+byte-identical to Git's blobs on all operating systems. It prepares a native Windows lane that
+later releases add.
 
 ### Platform use
 

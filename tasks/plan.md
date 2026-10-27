@@ -1,60 +1,36 @@
 # Plan
 
-## Active task: release 0.13.37 (MCP caching hints, failure text and host-local approvals) (2026-10-27)
+## Active task: release 0.13.39 (cloud-synced roots and byte-stable checkouts) (2026-10-28)
 
-Intent authority: the owner's decisions on the Harness items 10 and 11 preparation (Discord
-1564607534323732632) and on where consumer approvals live (Discord 1564633173516755045), with
-the release-chain approvals (Discord 1564297975755448493, 1564320227062186065), relayed by Mir
-Harness Main (parent-supplied). Design authority: this cursor and the two newest 2026-10-27
-amendments to [ADR-91](../docs/decisions/adr-91-stdio-mcp-package-admission.md) ("Caching
-hints, failure text and per-pin Git failures" and "Host-local consumer acknowledgements").
-Baseline: 9ad4354 on `main` (v0.13.36).
-
-Release note (Main): the `v0.13.37` tag (99afe63) failed its release workflow on a README path
-that names the git-ignored approval file; the fix ships as 0.13.38 with the same behavior.
-
-Live install (Main, 2026-10-28): this checkout's provider moved from 0.13.36 to v0.13.38
-(1e8878b) with the new hook and mir-mcp digests in its local approval file. Attested
-`claude-code` (session f297e6a7) and `codex-cli-desktop` (session 01a17e90), each with five
-`ok: true` mir-mcp calls, four hooks and 23 skills; `finalize --after-restart` applied;
-`mir capability status` ready with both runtimes verified.
+Intent authority: the owner's answers on the native Windows lane (Discord 1564632417304838205:
+refuse OneDrive-like synced storage with a warning; the same behaviour on every OS), the Python
+floor decision (Discord 1564633173516755045) and the start of 0.13.39 (Discord
+1564710844560969759), with the release-chain approvals (Discord 1564297975755448493,
+1564320227062186065), relayed by Mir Harness Main (parent-supplied). Design authority: this
+cursor and the 2026-10-28 amendment to
+[ADR-91](../docs/decisions/adr-91-stdio-mcp-package-admission.md). Baseline: 8aff20d on `main`
+(v0.13.38 installed and attested on the maintainer host).
 
 Prior cursor preserved verbatim:
-[cursor before release 0.13.37](change_log.md#cursor-before-release-01337-2026-10-27).
+[cursor before release 0.13.39](change_log.md#cursor-before-release-01339-2026-10-28).
 
-Rule (`plugins/mir-mcp/mir_mcp.py`):
-1. Modern `tools/list` and `server/discover` results carry `ttlMs: 3600000` and
-   `cacheScope: "public"`; legacy results are unchanged.
-2. An `isError` result carries exactly one TextContent: compact JSON with `code`, the result's
-   `unknowns` when present, and `omitted` when unknowns were dropped to stay within 512 bytes.
-   Successful results keep `content: []`.
-3. A failed or timed-out Git query marks only its own pin unknown as
-   `<label>: <code> after <seconds> s`; a Git child may use the call deadline minus a 1 s
-   reserve; the call is `ok: false` only when Git never answered. This addresses the open
-   `handoff_pins` `E_TIMEOUT` item of the prior cursor; its trigger remains unknown.
+Release split (Main): 0.13.39 portable foundations (this cursor); 0.13.40 the `mir` manager and
+lifecycle hooks native on Windows with a Windows CI job; 0.13.41 the `mir-mcp` Windows lane,
+`windows` receipts and the Python 3.11 floor for everything launched as bare `python3` (after
+this host's agent bridges launch a 3.11+ `python3`).
 
-Rule (`src/mir/core/capabilities/`):
-4. The only consumer approval source is the git-ignored
-   `<project root>/config/capability-acknowledgements.local.json`; a missing file approves
-   nothing, a malformed one or a symlink fails closed, and no sync, update or rollback writes it.
-5. `active_package_digest_acknowledgements` in any `capability-sources.json` is validated but
-   never approves; Yoke's committed config carries `{}`. A `mir` older than 0.13.37 cannot load
-   this release's provider config.
+Rules:
+1. A resolved root inside cloud-synced storage is refused: `mir-mcp` with `E_CLOUD_SYNC` and the
+   warning in `data.unknowns`; the manager with the same warning after the real-directory check
+   and before reading consumer state.
+2. `.gitattributes` `* -text` keeps checkouts byte-identical to blobs on every OS.
+3. Tree digests sort by relative path parts; derivative paths use `/`; `pwd` is optional in the
+   ontology runner and the Memory Keeper client.
 
-Request matrix (initially open):
-1. Fail-first tests and server change for rules 1-3.
-2. Fail-first tests and manager/config change for rules 4-5; `.gitignore` entry.
-3. ADR-91 amendments and the plugin migration guide.
-4. Version surfaces 0.13.37, CHANGELOG, MIGRATION consumer steps, README, this cursor.
-5. This checkout's own approvals moved into its local file; adopter payload regenerated last.
-6. Focused tests, ruff, `git diff --check`; Main runs the full suite at acceptance.
+Request matrix: (1) fail-first tests and code for rules 1-3; (2) ADR-91 amendment, CHANGELOG,
+MIGRATION, README, version surfaces; (3) Main full suite, fresh-clone readiness and a Windows
+rerun of the in-scope test files; (4) release chain and host re-attestation.
 
-Constraints: no commits, tags, pushes, capability-lock edits, real runtime homes or host
-`mir capability` operations by writers. Scratch stays under the owner-specified external cache
-directory.
-
-Observed (2026-10-27, Claude writer, item 4 only): the three current-version assertions in
-`tests/test_plugin_skill_packages.py` and `tests/test_capability_security.py` were bumped first
-and failed only on `0.13.36` versus `0.13.37` (3 failed, 146 passed). Items 1-3, 5 and 6 belong
-to other slices and are not claimed here; no release, binding, digest, full-suite or runtime
-readiness is claimed.
+Observed (Main, 2026-10-28): writers F2-F4 and Main slice F1 each failed first and pass; the only
+failing check before binding is `test_repository_lock_is_portable_and_matches_managed_trees`
+(the lock still holds 0.13.38 digests, rebound at release).

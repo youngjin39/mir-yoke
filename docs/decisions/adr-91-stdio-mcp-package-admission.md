@@ -542,3 +542,35 @@ the same way. An approval is host-local state of the consumer that made it.
   config and cannot load this release's provider config. Update the `mir` code before updating
   the provider. A file force-added to git (`git add -f`) would still travel with a clone; that is
   not checked.
+
+## Amendment: 2026-10-28 — Cloud-synced roots and byte-stable checkouts
+
+Owner decisions: Discord `1564632417304838205` (answer 7: refuse OneDrive-like synced storage
+with a warning; answer 6: the same behaviour on every OS) and `1564710844560969759` (start
+0.13.39), parent-supplied. This is the first of three releases toward a native Windows lane;
+the lane itself (§4.4-§4.8 for `windows`) is a later amendment and stays refused until then.
+
+- Cloud-synced roots: a resolved `target_root` inside cloud-synced storage is refused before it
+  is opened, with the new code `E_CLOUD_SYNC`. The result's `data` is `{"unknowns": [<warning>]}`
+  (the only non-null `data` of a refusal), so the failure text of the previous amendment shows the
+  warning: `target_root is inside a cloud-synced folder (<kind>); Mir does not run there. Move
+  the repository to a local folder.` Detection: on Windows any component of the resolved root
+  with a cloud-file attribute (`PINNED` 0x80000, `UNPINNED` 0x100000, `RECALL_ON_OPEN`
+  0x40000, `RECALL_ON_DATA_ACCESS` 0x400000, `OFFLINE` 0x1000; measured on the owner's Windows
+  11 PC, OneDrive folders carry `UNPINNED` and are not reparse points); on any OS a resolved root
+  whose parts start with `/`, `Users`, any user, `Library` and then `CloudStorage` or
+  `Mobile Documents` (a macOS home's File Provider or iCloud Drive storage), compared
+  case-insensitively. Linux has no OS marker and nothing more is refused there. The
+  `mir capability` manager refuses such a project root with the same text (`project root ...`)
+  after checking it is a real directory and before reading consumer state.
+- Byte-stable checkouts: package and reviewed-handler digests hash raw bytes, and Git for
+  Windows converts LF to CRLF on checkout by default (153 reviewed-handler failures in a Windows
+  test run of 8aff20d). The repository's `.gitattributes` is `* -text`, so every checkout is
+  byte-identical to its blob. Tree digests sort entries by relative path parts, which equals the
+  previous order on macOS/Linux (digests unchanged) and does not case-fold on Windows.
+- Portability fixes with no behaviour change elsewhere: copied derivative paths are stored with
+  `/` separators; the ontology runner and the Memory Keeper client import `pwd` only where it
+  exists and fall back to `Path.home()`.
+
+Every package digest changes (version manifests, plus `mir-mcp` and `mir-core` code), so each
+consumer renews its `mir-lifecycle-hooks` and `mir-mcp` acknowledgements.

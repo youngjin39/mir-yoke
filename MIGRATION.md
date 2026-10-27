@@ -503,3 +503,13 @@ capability-lock binding remains Main's release work.
 0.13.38 carries the 0.13.37 behavior; follow the 0.13.37 steps above. Only the version
 manifests changed, so every package digest changes again: review and re-acknowledge the
 selected packages' tree digests for this release in the host-local approval file.
+
+## 0.13.39 Cloud-synced roots refused
+
+- A repository inside OneDrive (or other Windows cloud files), macOS `~/Library/CloudStorage`
+  or iCloud Drive is now refused by `mir-mcp` (`E_CLOUD_SYNC`) and by `mir capability`. Move
+  such a repository to a local folder.
+- Every package digest changes (version manifests; `mir-mcp` and `mir-core` code). Update the
+  `mir` code first, then review and write the new `mir-lifecycle-hooks` and `mir-mcp` digests
+  into `<project root>/config/capability-acknowledgements.local.json` before
+  `mir capability update --apply`.

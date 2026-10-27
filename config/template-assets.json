@@ -243,6 +243,7 @@
       "id": "maintainer-tools",
       "classification": "template-maintainer-tool",
       "include": [
+        ".gitattributes",
         ".github/**",
         ".claude/agents/template-sync-validator.md",
         ".codex/agents/template-sync-validator.toml",

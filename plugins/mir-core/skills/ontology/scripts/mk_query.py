@@ -6,13 +6,17 @@ import argparse
 import json
 import math
 import os
-import pwd
 import queue
 import signal
 import subprocess
 import sys
 import threading
 from pathlib import Path
+
+try:
+    import pwd
+except ImportError:
+    pwd = None
 
 MAX_MESSAGE = 4 * 1024 * 1024
 # The server gets only what it needs to start; secrets and tokens never cross over.
@@ -29,7 +33,9 @@ def config_path():
     if explicit:
         return Path(explicit).expanduser().resolve()
     # Launchers may give each agent its own HOME; fall back to the account home.
-    candidates = [Path.home(), Path(pwd.getpwuid(os.getuid()).pw_dir)]
+    candidates = [Path.home()]
+    if pwd is not None:
+        candidates.append(Path(pwd.getpwuid(os.getuid()).pw_dir))
     paths = [(home / ".mir/knowledge-supply.json").resolve() for home in candidates]
     return next((path for path in paths if path.is_file()), paths[0])
 

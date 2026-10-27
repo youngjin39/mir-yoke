@@ -30,6 +30,7 @@ META = {
 ERRORS = [
     "E_SCHEMA",
     "E_PATH",
+    "E_CLOUD_SYNC",
     "E_PROTECTED",
     "E_LIMIT",
     "E_FORMAT",
@@ -634,6 +635,37 @@ def test_failure_reason_is_visible_text_in_both_eras(
     reply = _run(interpreter, frames, cwd=tmp_path)[-1]
     assert _tool_result(reply, modern=modern)["ok"] is False
     assert json.loads(reply["result"]["content"][0]["text"]) == {"code": "E_SCHEMA"}
+
+
+@pytest.mark.parametrize("name", TOOLS)
+def test_cloud_sync_failure_is_visible_and_schema_valid(monkeypatch, tmp_path, name):
+    source = PACKAGE / "mir_mcp.py"
+    spec = importlib.util.spec_from_file_location("protocol_mir_mcp", source)
+    server = importlib.util.module_from_spec(spec)
+    exec(compile(source.read_bytes(), str(source), "exec"), server.__dict__)
+    monkeypatch.setattr(server, "cloud_sync_reason", lambda path: "macOS CloudStorage")
+    arguments = {"target_root": str(tmp_path)}
+    arguments.update({
+        "ontology_lookup": {"query": "sample"},
+        "ontology_impact": {"paths": ["source.py"]},
+        "handoff_pins": {"paths": ["source.py"]},
+        "relations_query": {"anchor": "sample", "purpose": "implementation"},
+    }.get(name, {}))
+    reply = server.Protocol().request(
+        _request("tools/call", {"name": name, "arguments": arguments})
+    )
+    structured = _tool_result(reply)
+    warning = (
+        "target_root is inside a cloud-synced folder (macOS CloudStorage); "
+        "Mir does not run there. Move the repository to a local folder."
+    )
+    assert structured["ok"] is False
+    assert structured["error"] == {"code": "E_CLOUD_SYNC"}
+    assert structured["data"] == {"unknowns": [warning]}
+    assert json.loads(reply["result"]["content"][0]["text"]) == {
+        "code": "E_CLOUD_SYNC", "unknowns": [warning],
+    }
+    Draft202012Validator(server.TOOL_BY_NAME[name]["outputSchema"]).validate(structured)
 
 
 @pytest.mark.parametrize("count", [2, 200])

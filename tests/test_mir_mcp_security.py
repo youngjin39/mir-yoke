@@ -8,6 +8,7 @@ import json
 import os
 import subprocess
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -118,6 +119,74 @@ def test_explicit_root_alias_is_normalized_and_served(interpreter, target, tmp_p
     result = call(interpreter, alias, "ontology_lookup", query="sample")
     assert result["ok"], result
     assert result["data"]["matches"][0]["refs"] == ["source.py"]
+
+
+@pytest.mark.parametrize(
+    "path,reason",
+    [
+        ("/" + "Users/alice/Library/CloudStorage/OneDrive/repo", "macOS CloudStorage"),
+        ("/users/ALICE/library/cloudstorage/Dropbox/repo", "macOS CloudStorage"),
+        ("/" + "Users/alice/Library/Mobile Documents/com~apple~CloudDocs/repo", "iCloud Drive"),
+        ("/" + "Users/alice/Library/CloudStorage", "macOS CloudStorage"),
+        ("/" + "Users/alice/projects/repo", None),
+        ("/" + "home/alice/CloudStorage/repo", None),
+        ("/" + "Users/alice/Library/CloudStorage-backup/repo", None),
+    ],
+)
+def test_cloud_sync_reason_path_shape(monkeypatch, path, reason):
+    module = load_server()
+    check = module.cloud_sync_reason
+    with monkeypatch.context() as patch:
+        patch.setattr(module.os, "stat", lambda *args, **kwargs: SimpleNamespace())
+        assert check(Path(path)) == reason
+
+
+@pytest.mark.parametrize("attribute", [0x80000, 0x100000, 0x40000, 0x400000, 0x1000])
+@pytest.mark.parametrize("marked", [Path("/local/repo"), Path("/local"), Path("/")])
+def test_cloud_sync_reason_windows_attributes(monkeypatch, attribute, marked):
+    module = load_server()
+    check = module.cloud_sync_reason
+    seen = []
+
+    def fake_stat(path, *, follow_symlinks):
+        assert follow_symlinks is False
+        seen.append(path)
+        return SimpleNamespace(st_file_attributes=attribute if path == marked else 0)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(module.os, "stat", fake_stat)
+        assert check(Path("/local/repo")) == "Windows cloud files"
+    assert marked in seen
+
+
+def test_cloud_sync_local_root_is_accepted(target):
+    module = load_server()
+    guard = module.Guard(str(target))
+    try:
+        assert guard.root == target.resolve(strict=True)
+    finally:
+        guard.close()
+
+
+def test_cloud_sync_refusal_checks_resolved_root_before_open(monkeypatch, target, tmp_path):
+    module = load_server()
+    alias = tmp_path / "root-alias"
+    alias.symlink_to(target, target_is_directory=True)
+    seen = []
+
+    def reason(path):
+        seen.append(path)
+        return "macOS CloudStorage"
+
+    def unexpected_open(*args, **kwargs):
+        pytest.fail("Cloud-synced root must be refused before opening")
+
+    with monkeypatch.context() as patch:
+        patch.setattr(module, "cloud_sync_reason", reason)
+        patch.setattr(module.os, "open", unexpected_open)
+        with pytest.raises(module.Refusal, match="E_CLOUD_SYNC"):
+            module.Guard(str(alias))
+    assert seen == [target.resolve(strict=True)]
 
 
 def test_resolved_escape_is_refused_before_component_open(interpreter, target, tmp_path):

@@ -8,6 +8,25 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.39] — 2026-10-28 — Cloud-synced roots and byte-stable checkouts
+
+### Added
+
+- `mir-mcp` refuses a `target_root` inside cloud-synced storage (OneDrive and other Windows
+  cloud files, macOS `Library/CloudStorage`, iCloud Drive) with the new code `E_CLOUD_SYNC`
+  and a warning in `data.unknowns`; the `mir capability` manager refuses such a project root
+  with the same warning before reading consumer state (ADR-91 amendment 2026-10-28).
+- `.gitattributes` (`* -text`): checkouts stay byte-identical to their blobs on every OS, so
+  Git for Windows no longer breaks reviewed-handler and package digests with CRLF.
+
+### Changed
+
+- Tree digests sort entries by relative path parts (same order and digests on macOS/Linux; no
+  case folding on Windows). Derivative paths are stored with `/` separators.
+- The ontology runner and the Memory Keeper client import `pwd` only where it exists.
+- Bump release surfaces to 0.13.39 and regenerate the adopter payload. First of three releases
+  toward a native Windows lane; native Windows stays refused in this release.
+
 ## [v0.13.38] — 2026-10-27 — Republish 0.13.37
 
 ### Fixed

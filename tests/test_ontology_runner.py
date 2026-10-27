@@ -70,6 +70,39 @@ def codex(home, version=None, enabled=True):
     )
 
 
+def test_import_without_pwd_uses_path_home(tmp_path, monkeypatch):
+    monkeypatch.setitem(sys.modules, "pwd", None)
+    spec = importlib.util.spec_from_file_location("ontology_runner_without_pwd", RUNNER)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    home = tmp_path / "home"
+    home.mkdir()
+    monkeypatch.setattr(module.Path, "home", lambda: home)
+    expected = distribution(home, ".codex", "0.13.0")
+
+    assert module.pwd is None
+    assert module.find_checker() == expected
+
+
+def test_mk_query_imports_without_pwd(tmp_path, monkeypatch):
+    monkeypatch.setitem(sys.modules, "pwd", None)
+    spec = importlib.util.spec_from_file_location(
+        "mk_query_without_pwd", RUNNER.with_name("mk_query.py")
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    home = tmp_path / "home"
+    (home / ".mir").mkdir(parents=True)
+    (home / ".mir/knowledge-supply.json").write_text("{}", encoding="utf-8")
+    monkeypatch.delenv("MIR_KNOWLEDGE_SUPPLY_CONFIG", raising=False)
+    monkeypatch.setattr(module.Path, "home", lambda: home)
+
+    assert module.pwd is None
+    assert module.config_path() == (home / ".mir/knowledge-supply.json").resolve()
+
+
 def test_active_rollback_beats_newer_cache(runner):
     module, home, _ = runner
     active = distribution(home, ".claude", "0.11.0")

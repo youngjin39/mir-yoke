@@ -8,12 +8,14 @@ import os
 import re
 import shutil
 import subprocess
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
+from types import SimpleNamespace
 
 import pytest
 from test_capability_cli import CopyGit, make_project, runtime_runner, write_acknowledgements
 
 from mir.core.capabilities import CapabilityConfigError, CapabilityError, CapabilityManager
+from mir.core.capabilities import manager as capability_manager
 from mir.core.capabilities.config import load_capability_config
 from mir.core.capabilities.manager import (
     GitClient,
@@ -23,6 +25,138 @@ from mir.core.capabilities.manager import (
 )
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+@pytest.mark.parametrize(
+    ("raw_path", "reason"),
+    [
+        ("/" + "Users/person/Library/CloudStorage/OneDrive/repo", "macOS CloudStorage"),
+        ("/uSeRs/person/lIbRaRy/cLoUdStOrAgE/repo", "macOS CloudStorage"),
+        ("/" + "Users/person/Library/Mobile Documents/repo", "iCloud Drive"),
+        ("/users/person/library/mobile documents/repo", "iCloud Drive"),
+        ("/" + "home/person/OneDrive/repo", None),
+        ("/" + "Users/person/Library/CloudStorageBackup/repo", None),
+        ("/other/" + "Users/person/Library/CloudStorage/repo", None),
+    ],
+)
+def test_cloud_sync_reason_path_shape(monkeypatch, raw_path: str, reason: str | None) -> None:
+    with monkeypatch.context() as patch:
+        patch.setattr(os, "stat", lambda *args, **kwargs: SimpleNamespace())
+        actual = capability_manager.cloud_sync_reason(PurePosixPath(raw_path))
+    assert actual == reason
+
+
+@pytest.mark.parametrize("attribute", [0x80000, 0x100000, 0x40000, 0x400000, 0x1000, 0x400])
+@pytest.mark.parametrize("on_root", [True, False])
+def test_cloud_sync_reason_windows_attributes(monkeypatch, attribute: int, on_root: bool) -> None:
+    root = PureWindowsPath("C:/local/repo")
+    marked = root if on_root else root.parent
+    seen = []
+
+    def fake_stat(path, *, follow_symlinks):
+        assert follow_symlinks is False
+        seen.append(path)
+        return SimpleNamespace(st_file_attributes=attribute if path == marked else 0)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(os, "stat", fake_stat)
+        reason = capability_manager.cloud_sync_reason(root)
+    assert reason == (None if attribute == 0x400 else "Windows cloud files")
+    assert marked in seen
+
+
+@pytest.mark.parametrize("kind", ["macOS CloudStorage", "iCloud Drive", "Windows cloud files"])
+def test_cloud_project_refused_before_consumer_state_access(
+    tmp_path: Path, monkeypatch, kind: str,
+) -> None:
+    project = tmp_path / "project"
+    project.mkdir()
+    (project / "keep.txt").write_text("unchanged", encoding="utf-8")
+    before = {path.relative_to(tmp_path): path.read_bytes() for path in tmp_path.rglob("*")
+              if path.is_file()}
+    resolved = {
+        "macOS CloudStorage": PurePosixPath(
+            "/" + "Users/person/Library/CloudStorage/OneDrive/repo"
+        ),
+        "iCloud Drive": PurePosixPath("/" + "Users/person/Library/Mobile Documents/repo"),
+        "Windows cloud files": project,
+    }[kind]
+    real_resolve = Path.resolve
+    real_stat = os.stat
+
+    def resolve(path, strict=False):
+        if path == project:
+            return resolved
+        return real_resolve(path, strict=strict)
+
+    def fake_stat(path, *args, **kwargs):
+        if kind == "Windows cloud files" and path == project.parent:
+            assert kwargs == {"follow_symlinks": False}
+            return SimpleNamespace(st_file_attributes=0x100000)
+        return real_stat(path, *args, **kwargs)
+
+    def forbid_consumer_read(*args, **kwargs):
+        pytest.fail("consumer state accessed before cloud refusal")
+
+    with monkeypatch.context() as patch:
+        patch.setattr(Path, "resolve", resolve)
+        patch.setattr(os, "stat", fake_stat)
+        patch.setattr(capability_manager, "load_capability_config", forbid_consumer_read)
+        patch.setattr(capability_manager, "_directory_identity", lambda path: (1, 1))
+        with pytest.raises(CapabilityError) as caught:
+            CapabilityManager(project, user_home=tmp_path / "user",
+                              capability_home=tmp_path / "provider")
+        assert str(caught.value) == (
+            f"project root is inside a cloud-synced folder ({kind}); "
+            "Mir does not run there. Move the repository to a local folder."
+        )
+    after = {path.relative_to(tmp_path): path.read_bytes() for path in tmp_path.rglob("*")
+             if path.is_file()}
+    assert after == before
+    assert sorted(path.relative_to(tmp_path) for path in tmp_path.rglob("*")) == [
+        Path("project"), Path("project/keep.txt")
+    ]
+
+
+def test_derivative_paths_use_posix_with_windows_relative_paths(
+    tmp_path: Path, monkeypatch,
+) -> None:
+    project = make_project(tmp_path)
+    source = project / "src" / "nested" / "CLAUDE.md"
+    source.parent.mkdir(parents=True)
+    source.write_text("# Nested\n", encoding="utf-8")
+    manager = CapabilityManager(project, user_home=tmp_path / "user",
+                                capability_home=tmp_path / "provider")
+    real_relative_to = Path.relative_to
+
+    def relative_to(path, *args, **kwargs):
+        relative = real_relative_to(path, *args, **kwargs)
+        return PureWindowsPath(relative) if path == source else relative
+
+    monkeypatch.setattr(Path, "relative_to", relative_to)
+    manager._assert_derivative_paths_safe()
+    (source.parent / "AGENTS.md").symlink_to(source)
+    with pytest.raises(CapabilityError, match="derivative path is a symlink: src/nested/AGENTS.md"):
+        manager._assert_derivative_paths_safe()
+
+
+def test_tree_digest_sorts_synthetic_windows_relative_parts() -> None:
+    class SyntheticPath(PureWindowsPath):
+        def is_symlink(self):
+            return False
+
+        def is_dir(self):
+            return True
+
+        def is_file(self):
+            return False
+
+        def rglob(self, pattern):
+            return iter([self / "a", self / "B"])
+
+    root = SyntheticPath("C:/plugin")
+    expected = hashlib.sha256(b"B\0\0a\0\0").hexdigest()
+    assert _tree_digest(root) == expected
 
 
 def mutated_config(tmp_path: Path, mutation) -> Path:
@@ -1847,7 +1981,7 @@ def test_should_bind_h1_exact_hook_source_and_final_package_version():
     assert handler.read_bytes() == _HOOK_HANDLER_SOURCE.encode()
     assert "else inventory unavailable pins" in _HOOK_HANDLER_SOURCE
     for runtime in (".claude-plugin", ".codex-plugin"):
-        assert json.loads((plugin / runtime / "plugin.json").read_text())["version"] == "0.13.38"
+        assert json.loads((plugin / runtime / "plugin.json").read_text())["version"] == "0.13.39"
     config = load_capability_config(ROOT / "config/capability-sources.json")
     assert config.declared_digest_acknowledgements == {}
     assert config.plugin_hooks == {

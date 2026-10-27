@@ -6,11 +6,15 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import pwd
 import re
 import subprocess
 import sys
 from pathlib import Path
+
+try:
+    import pwd
+except ImportError:
+    pwd = None
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 PLUGIN = "mir-core@mir-yoke"
@@ -146,7 +150,10 @@ def select_distribution() -> tuple[str, Path, str]:
             version = "unknown"
         return version, checker.resolve(), "MIR_ONTOLOGY_CHECKER override"
 
-    homes = dict.fromkeys((Path.home(), Path(pwd.getpwuid(os.getuid()).pw_dir)))
+    home_paths = [Path.home()]
+    if pwd is not None:
+        home_paths.append(Path(pwd.getpwuid(os.getuid()).pw_dir))
+    homes = dict.fromkeys(home_paths)
     active = []
     for home in homes:
         active.extend(claude_active(home))
