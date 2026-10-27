@@ -27,3 +27,13 @@ Rules:
 Request matrix: (1) fail-first tests and fixes (done: `tests/test_capability_windows_paths.py`);
 (2) docs and version surfaces; (3) Main full suite, fresh-clone readiness; (4) release, host
 re-attestation; (5) the Windows PC canary rerun on the released code.
+
+Live install (Main, 2026-10-28): v0.13.41 (9dac2f7) published after fresh-clone readiness (3653
+passed) and CI validate (including `windows_native`) and release. This checkout's provider moved
+0.13.39 → 0.13.40 (Claude b47b2cd4, Codex 01a17f99; that record is folded into 0514f78's lock)
+→ 0.13.41 with the new hook and mir-mcp digests in its local approval file. Attested
+`claude-code` (session 33be5a41) and `codex-cli-desktop` (session 01a17fc1), each with five
+`ok: true` mir-mcp calls, four hooks and 23 skills; `finalize --after-restart` applied; status
+ready with both runtimes verified. Windows PC, released v0.13.41 unpatched, isolated homes under
+the PC temp folder: sync apply restart-required, four plugins registered in each CLI, binding
+ledger private, update preview ready; runtimes stay unattested until 0.13.42 receipts.
