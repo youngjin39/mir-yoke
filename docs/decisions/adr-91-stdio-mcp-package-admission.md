@@ -599,3 +599,15 @@ remain the next amendment).
   of POSIX shell entrypoints, native Windows bootstrap and `mir-mcp` activation are skipped on
   Windows with those reasons (252). A `windows_native` CI job runs
   the same files.
+
+## Amendment: 2026-10-28 — Windows consumer sync fixes (0.13.41)
+
+The 0.13.40 exit check, a consumer `sync --apply` on the owner's Windows PC with isolated
+capability, Claude and Codex homes, failed natively twice: removing the exported `.git` raised
+WinError 5 (Git for Windows object files are read-only), and Codex 0.164 for Windows writes the
+local marketplace source as `\\?\C:\...`, so the persisted source never equalled the active
+path. Tree removal now clears the read-only attribute and retries; every Codex marketplace
+source read drops the extended-length prefix (`\\?\` and `\\?\UNC\`) before resolving. With
+both fixes the PC run registered the four selected plugins in both CLIs and kept the binding
+ledger private. The third release of the lane (`mir-mcp`, `windows` receipts, Python 3.11 floor)
+becomes 0.13.42.

@@ -113,6 +113,7 @@ jobs:
           uv run pytest -q
           tests/test_line_endings.py
           tests/test_private_file.py
+          tests/test_capability_windows_paths.py
           tests/test_codex_derivation_script.py
           tests/test_capability_cli.py
           tests/test_capability_security.py

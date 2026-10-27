@@ -349,7 +349,19 @@ class GitClient:
             ],
             cwd=destination,
         )
-        shutil.rmtree(destination / ".git")
+        _rmtree(destination / ".git")
+
+
+def _rmtree(path: Path) -> None:
+    """Remove a tree; Git for Windows marks object files read-only, so clear that first."""
+
+    def clear_read_only(
+        function: Callable[..., object], failed: str, _error: BaseException
+    ) -> None:
+        os.chmod(failed, stat.S_IWRITE)
+        function(failed)
+
+    shutil.rmtree(path, onexc=clear_read_only)
 
 
 def default_capability_home() -> Path:
@@ -399,7 +411,7 @@ def _configured_provider_home(codex_home: Path, source_url: str) -> Path | None:
     raw_source = marketplace.get("source")
     if not isinstance(raw_source, str):
         return None
-    source = Path(raw_source).expanduser().resolve()
+    source = _codex_source_path(raw_source)
     if source.name != "active" or source.is_symlink() or not source.is_dir():
         return None
     receipt = _read_json(source.parent / "active.json")
@@ -411,6 +423,19 @@ def _configured_provider_home(codex_home: Path, source_url: str) -> Path | None:
     if Path(materialized_root).expanduser().resolve() != source:
         return None
     return source.parent
+
+
+def _strip_verbatim_prefix(source: str) -> str:
+    """Drop the extended-length prefix Codex for Windows writes on local marketplace paths."""
+    if source.startswith("\\\\?\\UNC\\"):
+        return "\\\\" + source[len("\\\\?\\UNC\\"):]
+    if source.startswith("\\\\?\\"):
+        return source[len("\\\\?\\"):]
+    return source
+
+
+def _codex_source_path(source: str) -> Path:
+    return Path(_strip_verbatim_prefix(source)).expanduser().resolve()
 
 
 def _codex_provider_home(codex_home: Path) -> Path | None:
@@ -429,7 +454,7 @@ def _codex_provider_home(codex_home: Path) -> Path | None:
     raw_source = marketplace.get("source")
     if not isinstance(raw_source, str):
         return None
-    source = Path(raw_source).expanduser().resolve()
+    source = _codex_source_path(raw_source)
     if source.name != "active" or source.is_symlink() or not source.is_dir():
         return None
     return source.parent
@@ -2451,7 +2476,7 @@ class CapabilityManager:
         if not isinstance(source, str):
             return "codex-marketplace-source-missing"
         try:
-            source_path = Path(source).expanduser().resolve()
+            source_path = _codex_source_path(source)
         except OSError:
             return "codex-marketplace-source-invalid"
         if source_path != self.active_path:
@@ -3367,7 +3392,7 @@ class CapabilityManager:
                         capability_rollback_safe = True
                     if capability_rollback_safe:
                         if new_active_published and self.active_path.exists():
-                            shutil.rmtree(self.active_path)
+                            _rmtree(self.active_path)
                         if old_active_moved and backup.exists():
                             os.replace(backup, self.active_path)
                     try:
@@ -3421,7 +3446,7 @@ class CapabilityManager:
                 else:
                     self._assert_capability_home_safe(allow_missing=False)
                     if backup.exists():
-                        shutil.rmtree(backup)
+                        _rmtree(backup)
                     return registration
 
     def _regenerate_agent_derivatives(self, *, raise_on_error: bool = True) -> bool:

@@ -53,7 +53,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": ".claude-plugin/marketplace.json",
-      "sha256": "3e33d77654ae469859aa3ced59c1b1d3e6ae6bffab3d5af5e7d421565e0d4f7c"
+      "sha256": "5187228a541ce05beff0a771ef5e6dbd5d548a99012762cf19d5431f5509530b"
     },
     {
       "classification": "reference",
@@ -419,7 +419,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": ".github/workflows/validate.yml",
-      "sha256": "423b96a539fd16453d73679ef713de4eca375f984035952d3cfa783abc11f4bd"
+      "sha256": "ed14c020ac60729153542a0d2dde8f1332a311856ab56e04435c88320df18773"
     },
     {
       "classification": "reference",
@@ -449,7 +449,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": ".mir/capability-lock.json",
-      "sha256": "b4eeabf5f4eaec690d9fef7044a8642f94dc7e6a011447293687033102a21d2f"
+      "sha256": "4eb7b6dd3f5f1f3076df04e6980767d6260607b819fe00a2852e594a7073a500"
     },
     {
       "classification": "reference",
@@ -491,7 +491,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "CHANGELOG.md",
-      "sha256": "922f57c70c1015a1c110a1073325c1d16da1e181ded110a43d418b6e32beadcc"
+      "sha256": "c1c056ba4a7315d0e824d87fc27233630eb1f85217f1cbfb19329ef32cf82575"
     },
     {
       "classification": "reference",
@@ -515,19 +515,19 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "MIGRATION.md",
-      "sha256": "eb0ad11d65ad7146d07895fbcce6d31d070e422967b6bf605dd8becb39f2d4b7"
+      "sha256": "ea47ca70e218224a0d2fcea25436e9d7fca95c0b88cf5e1ba8125d29dbfcdd0a"
     },
     {
       "classification": "reference",
       "disposition": "remove",
       "path": "README.md",
-      "sha256": "d6d61caab40eccee83cfa0bf69a3e503717399d5adeed723d88d6fa847ddfa63"
+      "sha256": "b88a9ff29a5d049cac107ba002d7c63286012c57a02ed7af8be497b5de57c557"
     },
     {
       "classification": "reference",
       "disposition": "remove",
       "path": "VERSION",
-      "sha256": "819bce57d4c82141b3724c75416aa8e8eba87fe3256b1546b2b931a04a3eddc0"
+      "sha256": "a4737df549b995c07cc02689042e9d085f40c8846501101ceb584b55f2db8c75"
     },
     {
       "classification": "reference",
@@ -1727,7 +1727,7 @@
       "classification": "historical",
       "disposition": "remove",
       "path": "docs/decisions/adr-91-stdio-mcp-package-admission.md",
-      "sha256": "d7eac6f6e22a4747f4d154b025c7992e826a00c69654ba68c077880d54e2eb18"
+      "sha256": "37773a2af7cdd6df537de2ca1bcb6e300aa5ae2fb3935cc19c618ba235ad4052"
     },
     {
       "classification": "reference",
@@ -2771,13 +2771,13 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "plugins/mir-code/.claude-plugin/plugin.json",
-      "sha256": "e7e478bde59d05ef8d230cbb4ce31c897e65535446a293d71ab8ecc9a0df120b"
+      "sha256": "2e22dc00eb7529640dbe232a88d8df08b74dba15744af3ccf53398350462d821"
     },
     {
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "plugins/mir-code/.codex-plugin/plugin.json",
-      "sha256": "7708590d31ed86816121191e28f651e6773aa16b1e002a2c3a70134992974251"
+      "sha256": "81b76f409e90acd5dede46cd0c776c3e3030f9d11492c1a849580d3bea28de06"
     },
     {
       "classification": "optional-consumer-tool",
@@ -2837,13 +2837,13 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "plugins/mir-content/.claude-plugin/plugin.json",
-      "sha256": "a0b614a29f0dcdf473adedbd2fc9ab2503554d3e1f8c6cdf706b4006a06d5539"
+      "sha256": "a6b7d521807921e1b3e29720ce6fdb050bbefa82e44570e05146210b62a65d6b"
     },
     {
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "plugins/mir-content/.codex-plugin/plugin.json",
-      "sha256": "a07f20b51b45586da80a6bbcdc60235cf8410bf7836e1c11f24eba8e4a06b667"
+      "sha256": "154b9118bd72ea3d39611774beefb9678a423231d2f098c5213e08addc351278"
     },
     {
       "classification": "optional-consumer-tool",
@@ -2939,13 +2939,13 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "plugins/mir-core/.claude-plugin/plugin.json",
-      "sha256": "b9375a4fcf5d345551176db925a4dab3f9aacb026c2f752226a81e8b86a5bc27"
+      "sha256": "b1f00d31c2cbe24075138764a25aefb0c12898d35c5ff61175eefe6376425278"
     },
     {
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "plugins/mir-core/.codex-plugin/plugin.json",
-      "sha256": "b6521b6b2135042cfdb7cf90acb0a80bbc8cca106f6aef1cd54276df737b0b9d"
+      "sha256": "ccfa012189b3fd347181fc5598f2906d6ea4234d02d3df0c422ebb4eba6033ce"
     },
     {
       "classification": "optional-consumer-tool",
@@ -3227,13 +3227,13 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "plugins/mir-lifecycle-hooks/.claude-plugin/plugin.json",
-      "sha256": "f9e5a4c7f70d1a0bb7c0a76db8d894a4a4a244e4ba82fa9d5ac6287e8c769944"
+      "sha256": "667e2f8ab8bba57c67b2c797fdb4dd923266f630917e7256118ff51c41ccc760"
     },
     {
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "plugins/mir-lifecycle-hooks/.codex-plugin/plugin.json",
-      "sha256": "7461dd117347dc019b47f02a784e1ad29642a1c1e2330e94032cd2a41360df8f"
+      "sha256": "f65935ba1d9a535a1811c29882aa33f086cee4ee9b9b0b080d46a7370779e35f"
     },
     {
       "classification": "optional-consumer-tool",
@@ -3281,13 +3281,13 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "plugins/mir-mcp/.claude-plugin/plugin.json",
-      "sha256": "a08a0777eb6c9e41eb0528e3da108017352005b6d60e7760fe90c1f185a3c6d8"
+      "sha256": "023ff9545fbfde6cd39ccb25182cfdb73248500e75974500b4e24af3cb0017fe"
     },
     {
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "plugins/mir-mcp/.codex-plugin/plugin.json",
-      "sha256": "be28bd51c9526bb5da003a546484e56504063214f284d651a6e594ece1e58dc6"
+      "sha256": "2445c7ede9dc175eaf086d6a59fb90484284f9f747726d6ab77c15c8961f1120"
     },
     {
       "classification": "optional-consumer-tool",
@@ -3305,7 +3305,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "plugins/mir-mcp/mir_mcp.py",
-      "sha256": "a10ffffbdd6ca27046e79c2b5072230ee2fa65f2171e75b32f55c98682ab1aa0"
+      "sha256": "5a28dc9df16f512602105072de8a2bd6ec9aa55a46f66a8828290e7df09cb5d1"
     },
     {
       "classification": "optional-consumer-tool",
@@ -3329,7 +3329,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "pyproject.toml",
-      "sha256": "fdea3f6e3177dca5027c1f6072397048196e0771f36c62325b57f9962b284b91"
+      "sha256": "fba10f7f3dfc577f284f24b7fd20cf51658ce2deb5bcd729351b466228165c73"
     },
     {
       "classification": "reference",
@@ -4091,7 +4091,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "src/mir/core/capabilities/manager.py",
-      "sha256": "0694f133038e8de020436c4ef266778513b0cf9655c2ea0c30a8baa603595b61"
+      "sha256": "00c252d8663b872e97819af864e7c560c86e9065806cc251a1a831116077fb38"
     },
     {
       "classification": "optional-consumer-tool",
@@ -4457,7 +4457,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/change_log.md",
-      "sha256": "8a2a4bc37f94e07b79dd3418a31a0c7802bda5306590a917a2be42b36d4c328e"
+      "sha256": "88b43bf491447792aa723bf29a63d2b2fbb0e2d3246bc29b98858e51ef42c77d"
     },
     {
       "classification": "reference",
@@ -4499,7 +4499,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/plan.md",
-      "sha256": "612aaac06c8a9d764209066aafe893a98a6c5304837f6d441cf9e3080dd7f44c"
+      "sha256": "d31e3fbf4401d39163b3a5ca8af8ae1c7a92064b54c77a3cf9d63bc25e4b3426"
     },
     {
       "classification": "reference",
@@ -4721,7 +4721,13 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_capability_security.py",
-      "sha256": "64824f8082c757763ea1574b6190b026cd2eebf13217a00aa079f5c26f2ba57a"
+      "sha256": "afd5b45c44cd392e52cb1f055d0db2ba39492c9fcd3ca6cf5bf4f4a0d4553c50"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "tests/test_capability_windows_paths.py",
+      "sha256": "9d8a77a5ef5dcca8da39be72f9bcbdaf3e363b7c97355317ab790000ebf72a2d"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4967,7 +4973,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_plugin_skill_packages.py",
-      "sha256": "4519f249fa7cec03beaef8f9e1c4cf5c2d46d0c65f86b64ee9fc89076f3e7895"
+      "sha256": "51f506d4254022b02887ebd2bbdd610571367579636f329797e89ad3e60f271c"
     },
     {
       "classification": "template-maintainer-tool",
@@ -5741,7 +5747,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "uv.lock",
-      "sha256": "47093a3062a3dec406742bf48c3859d3f55d3a32df638421243c448d39881011"
+      "sha256": "7fa80cbb6343404f35330eed8c532bb32b920df53f32342d03ecd71b6c9ff4af"
     }
   ],
   "generated_from": "config/template-assets.json",

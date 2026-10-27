@@ -523,3 +523,10 @@ selected packages' tree digests for this release in the host-local approval file
   Update the `mir` code first, then review and write the new `mir-lifecycle-hooks` and `mir-mcp`
   digests into `<project root>/config/capability-acknowledgements.local.json` before
   `mir capability update --apply`.
+
+## 0.13.41 Windows consumer sync fixes
+
+- No consumer action beyond the usual update. Every package digest changes (version manifests):
+  update the `mir` code first, then review and write the new `mir-lifecycle-hooks` and `mir-mcp`
+  digests into `<project root>/config/capability-acknowledgements.local.json` before
+  `mir capability update --apply`.

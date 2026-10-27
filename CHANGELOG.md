@@ -8,6 +8,21 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.41] — 2026-10-28 — Windows consumer sync fixes
+
+### Fixed
+
+- `mir capability sync/update --apply` on Windows: removing the exported `.git` failed with
+  WinError 5 because Git for Windows makes object files read-only; tree removal now clears the
+  read-only attribute and retries.
+- Codex for Windows records the local marketplace source with the `\\?\` extended-length prefix;
+  the manager now drops it before comparing, so Codex registration verifies on Windows.
+
+### Changed
+
+- Bump release surfaces to 0.13.41 and regenerate the adopter payload. The `mir-mcp` Windows
+  lane, `windows` receipts and the Python 3.11 floor move to 0.13.42.
+
 ## [v0.13.40] — 2026-10-28 — Manager and lifecycle hooks native on Windows
 
 ### Added
