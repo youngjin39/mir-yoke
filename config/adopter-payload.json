@@ -557,7 +557,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "config/capability-sources.json",
-      "sha256": "2dc01bc81a8a01c99985a48fca29a61c7816e5c22c18b3c64cc191d5b5fc1567"
+      "sha256": "b5de5af77a9e5892be9fcb58c13d6b76e70392a7a1ce214d498badb66eddfef1"
     },
     {
       "classification": "reference",
@@ -4481,7 +4481,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/plan.md",
-      "sha256": "a4d59e232385f4de94822adb03093779d981837504f931428113f07a272283fe"
+      "sha256": "9bc0acaae7d9167be7c972c20252e4e60dfddbce91aef70ff7577042c15e6ec9"
     },
     {
       "classification": "reference",
