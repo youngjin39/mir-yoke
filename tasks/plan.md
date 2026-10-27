@@ -76,3 +76,12 @@ earlier fresh-session probes (Claude twice, Codex once): the first `git status` 
 5-second limit and the later git calls were skipped. It did not reproduce in about 30 direct
 calls, including runs after 7 minutes idle; the trigger is unknown. On failure the server's
 `content: []` makes Claude show only "Unknown error".
+
+Re-attestation (Main, 2026-10-27): the probe directories above were deleted with scratch, so
+both receipts failed their `session_cwd` check (`mcp-attestation-invalid`). Fresh sessions
+were run from a persistent directory, `/Volumes/T7 Shield/agent-cache/mir-harness/attestation-cwd/`.
+Keep it while these receipts are active. Claude Code session af9d1025 and Codex session 01a17b73
+re-attested: five tools `ok: true`, 23 skills, four hooks. Schema load: Claude 1,768 tokens,
+Codex 1,562 tokens. `mir capability status` reports ready, with both runtimes verified. The
+`mir-mcp` consumer approval stays a local, uncommitted value in this checkout's config (see
+15f7d60) until the owner decides where it lives.
