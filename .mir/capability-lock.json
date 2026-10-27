@@ -106,18 +106,71 @@
       "package_kind": "skills-hooks",
       "path": "plugins/mir-lifecycle-hooks",
       "sha256": "555ac29c1b3b81a55972b2fa3c87cd71ebda03f3460e2a4998dc94d3d7cc8cf2"
+    },
+    "mir-mcp": {
+      "mcp": {
+        "files": [
+          ".claude-plugin/plugin.json",
+          ".codex-plugin/plugin.json",
+          ".mcp.claude.json",
+          ".mcp.codex.json",
+          "mir_mcp.py",
+          "ontology/references/common-contract.json",
+          "ontology/scripts/ontology_check.py",
+          "shared/relations_query.py"
+        ],
+        "launchers": {
+          "claude": {
+            "args": [
+              "-I",
+              "-B",
+              "-u",
+              "${CLAUDE_PLUGIN_ROOT}/mir_mcp.py"
+            ],
+            "command": "python3"
+          },
+          "codex": {
+            "args": [
+              "-I",
+              "-B",
+              "-u",
+              "./mir_mcp.py"
+            ],
+            "command": "python3",
+            "cwd": "."
+          }
+        },
+        "package_kind": "mcp-stdio",
+        "path": "plugins/mir-mcp",
+        "runtimes": [
+          "claude-code",
+          "codex-cli-desktop"
+        ],
+        "schema_source": "mir_mcp.py",
+        "server": "mir-mcp",
+        "tools": [
+          "ontology_validate",
+          "ontology_lookup",
+          "ontology_impact",
+          "handoff_pins",
+          "relations_query"
+        ]
+      },
+      "package_kind": "mcp-stdio",
+      "path": "plugins/mir-mcp",
+      "sha256": "02fc33c01eca29d0c7a0803955da2378477c9eacb3efa96ddc14eda3d9a64390"
     }
   },
   "profile": "hybrid_pipeline",
   "registration": {
-    "finalized_at": "2026-10-24T11:39:53.722153+00:00",
+    "finalized_at": "2026-10-27T03:23:54.460767+00:00",
     "status": "active"
   },
   "schema_version": 2,
   "source": {
-    "commit": "3f2fe1e3dee52348da1f0b1849932fc05aad99a2",
+    "commit": "1b4a963c946f0e78df9f0d333aab29baf337f6d7",
     "ref": "main",
     "url": "https://github.com/youngjin39/mir-yoke.git"
   },
-  "synced_at": "2026-10-24T11:37:47.374843+00:00"
+  "synced_at": "2026-10-27T02:56:03.564491+00:00"
 }

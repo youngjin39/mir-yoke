@@ -52,3 +52,27 @@ commit. Ruff and `git diff --check` pass. New tree digests: `mir-lifecycle-hooks
 555ac29c1b3b81a55972b2fa3c87cd71ebda03f3460e2a4998dc94d3d7cc8cf2, `mir-mcp`
 02fc33c01eca29d0c7a0803955da2378477c9eacb3efa96ddc14eda3d9a64390. No release, binding,
 full-suite or runtime readiness is claimed.
+
+Release and host install (Main, 2026-10-27): source a0fff20, bind 1b4a963 (v0.13.36);
+`verify_release_readiness.py --current-clean-tree` ready (3511 passed); CI validate and
+release succeeded. This host updated 0.13.35 → 0.13.36 from the enrolled 0.13.35 lock with
+`mir capability update --mcp --apply`; `config/capability-sources.json` now carries this
+checkout's own consumer approval for `mir-mcp` (02fc33c0…) beside the hook approval, so
+later release preparation renews both. Codex plugin hooks were re-trusted with
+`mir codex-trust --apply` after the hook digest changed.
+
+Attestation (fresh sessions, both `attested`, then `finalize --apply --after-restart`;
+`mir capability status` ready at 1b4a963):
+- Claude Code 2.1.310, session 517178e9: five `mir-mcp` tools `ok: true`, negotiated
+  2026-07-28, 23 skills, four lifecycle hooks. `tools/list` 12,551 bytes, sha256 a9a072c4…;
+  schema load 1,768 tokens (initial 26,044, after calls 30,317), deferred loading observed.
+- Codex CLI 0.164.0, session 01a17b61: five tools `ok: true`, negotiated 2025-11-25, 23
+  skills; SessionStart line, UserPromptSubmit packet, PreToolUse denial and Stop
+  `hook_prompt` under 0.13.36. Same `tools/list` sha256 and bytes; schema load 1,559 tokens
+  (initial 25,633, after calls 32,438), deferred loading observed (`ALL_TOOLS` discovery).
+
+Open (not fixed here): `handoff_pins` returned `ok: false` with `dirty: E_TIMEOUT` in three
+earlier fresh-session probes (Claude twice, Codex once): the first `git status` exceeded the
+5-second limit and the later git calls were skipped. It did not reproduce in about 30 direct
+calls, including runs after 7 minutes idle; the trigger is unknown. On failure the server's
+`content: []` makes Claude show only "Unknown error".
