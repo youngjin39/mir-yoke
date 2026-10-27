@@ -10,6 +10,9 @@ amendments to [ADR-91](../docs/decisions/adr-91-stdio-mcp-package-admission.md) 
 hints, failure text and per-pin Git failures" and "Host-local consumer acknowledgements").
 Baseline: 9ad4354 on `main` (v0.13.36).
 
+Release note (Main): the `v0.13.37` tag (99afe63) failed its release workflow on a README path
+that names the git-ignored approval file; the fix ships as 0.13.38 with the same behavior.
+
 Prior cursor preserved verbatim:
 [cursor before release 0.13.37](change_log.md#cursor-before-release-01337-2026-10-27).
 

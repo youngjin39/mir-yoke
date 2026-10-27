@@ -8,6 +8,20 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.38] — 2026-10-27 — Republish 0.13.37
+
+### Fixed
+
+- The `v0.13.37` release workflow failed `test_harness_consistency`: the README named the
+  host-local approval file as a repository path, and a fresh checkout does not have that
+  git-ignored file. The README now names it under `<project root>/`. Local readiness passed
+  because this maintainer host has the file. `v0.13.37` stays tagged without a release.
+
+### Changed
+
+- Bump release surfaces to 0.13.38 and regenerate the adopter payload. Behavior is the
+  0.13.37 behavior; package digests change only through the version manifests.
+
 ## [v0.13.37] — 2026-10-27 — MCP caching hints, failure text and host-local approvals
 
 ### Fixed

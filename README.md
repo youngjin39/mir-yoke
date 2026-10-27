@@ -52,7 +52,7 @@ immutable release:
 
 ```bash
 uv tool install --force --link-mode copy \
-  "git+https://github.com/youngjin39/mir-yoke.git@v0.13.37"
+  "git+https://github.com/youngjin39/mir-yoke.git@v0.13.38"
 mir --help
 ```
 
@@ -146,10 +146,13 @@ protocol version now negotiates `2025-11-25` instead of being refused, and legac
 `_meta` such as `progressToken` is treated as request metadata, not as a modern request.
 
 Version 0.13.37 moves every consumer approval into the git-ignored
-`config/capability-acknowledgements.local.json`; acknowledgements in `capability-sources.json`
+`<project root>/config/capability-acknowledgements.local.json`; acknowledgements in `capability-sources.json`
 no longer approve. `mir-mcp` adds caching hints to modern `tools/list` and `server/discover`
 results, gives `isError` results a short text reason, and lets one failed Git query cost only
 its own pin. Update the `mir` code before the provider.
+
+Version 0.13.38 republishes 0.13.37, whose release workflow stopped on a README path check
+that only a fresh checkout could see. Behavior is unchanged; `v0.13.37` has no release.
 
 ### Platform use
 

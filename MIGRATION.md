@@ -465,7 +465,7 @@ provider, bundled or `--config`) still loads but never approves. A `mir` older t
 cannot load this release's provider config, so the order matters:
 
 1. Update the `mir` code first, for example with the `uv tool install` command in `README.md`
-   pinned to `v0.13.37`. Do not update the provider with an older `mir`.
+   pinned to `v0.13.38` (`v0.13.37` has no release). Do not update the provider with an older `mir`.
 2. Review the candidate checkout. The `mir-mcp` server bytes and the version manifests of every
    package changed, so compute each selected package's tree digest:
 
@@ -497,3 +497,9 @@ only; hook behavior is unchanged. See
 [the plugin migration guide](docs/operations/global-plugin-migration.md) and the two newest
 2026-10-27 amendments to [ADR-91](docs/decisions/adr-91-stdio-mcp-package-admission.md). The
 capability-lock binding remains Main's release work.
+
+## 0.13.38 Republish of 0.13.37
+
+0.13.38 carries the 0.13.37 behavior; follow the 0.13.37 steps above. Only the version
+manifests changed, so every package digest changes again: review and re-acknowledge the
+selected packages' tree digests for this release in the host-local approval file.
