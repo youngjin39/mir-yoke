@@ -34,3 +34,13 @@ rerun of the in-scope test files; (4) release chain and host re-attestation.
 Observed (Main, 2026-10-28): writers F2-F4 and Main slice F1 each failed first and pass; the only
 failing check before binding is `test_repository_lock_is_portable_and_matches_managed_trees`
 (the lock still holds 0.13.38 digests, rebound at release).
+
+Live install (Main, 2026-10-28): v0.13.39 (2df3c21) published after fresh-clone readiness (3591
+passed) and CI validate/release. This checkout's provider moved from 0.13.38 with the new hook
+and mir-mcp digests in its local approval file. Attested `claude-code` (session 9ab249ba) and
+`codex-cli-desktop` (session 01a17ee9), each with five `ok: true` mir-mcp calls, four hooks and
+23 skills; `tools/list` is 13,481 bytes (was 12,551: the new code and the `unknowns` branch);
+`finalize --after-restart` applied; `mir capability status` ready with both runtimes verified.
+A live call with a `Library/CloudStorage` root returned `E_CLOUD_SYNC` with the warning text.
+On the owner's Windows PC the in-scope test files went from 814 failed / 641 passed to 763 / 748
+(the CRLF reviewed-handler class is gone); the rest is 0.13.40/0.13.41 work.
