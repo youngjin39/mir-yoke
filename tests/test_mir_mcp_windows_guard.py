@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+import ctypes
 import importlib.util
+import ntpath
 import os
+import stat
 import subprocess
 import sys
 from pathlib import Path, PureWindowsPath
+from types import SimpleNamespace
 
 import pytest
 
@@ -224,6 +228,53 @@ def test_windows_short_name_final_path_is_protected(server, tmp_path, monkeypatc
             guard.read(alias + "/source.txt")
     finally:
         guard.close()
+
+
+@pytest.mark.parametrize(("requested", "final", "refusal"), [
+    (r"C:\repo\SECRET~1\token.json", r"C:\repo\secrets\token.json", "E_PROTECTED"),
+    (r"C:\repo\SECRET~1\source.txt", r"C:\repo\secrets\source.txt", "E_PROTECTED"),
+    (r"C:\repo\source.txt", r"c:\REPO\SOURCE.TXT", None),
+])
+def test_windows_injected_final_path_checks_protection_and_case(
+        server, monkeypatch, requested, final, refusal):
+    closed = []
+    checked = []
+    guard = server.Guard.__new__(server.Guard)
+    guard.root = PureWindowsPath(r"C:\repo")
+    guard.patterns = []
+
+    def final_path(handle, buffer, size, flags):
+        assert handle == 123 and flags == 0
+        buffer.value = "\\\\?\\" + final
+        return len(buffer.value)
+
+    def protected(path):
+        checked.append(path)
+        guard._windows_protected(path)
+
+    monkeypatch.setattr(server, "ctypes", ctypes, raising=False)
+    monkeypatch.setattr(server, "kernel32", SimpleNamespace(
+        CreateFileW=lambda *args: 123,
+        GetFinalPathNameByHandleW=final_path,
+        CloseHandle=lambda handle: pytest.fail("CRT owns the handle"),
+    ), raising=False)
+    monkeypatch.setattr(server, "msvcrt", SimpleNamespace(
+        open_osfhandle=lambda *args: 456,
+    ), raising=False)
+    monkeypatch.setattr(server, "os", SimpleNamespace(
+        O_RDONLY=os.O_RDONLY, O_NOINHERIT=0, path=ntpath,
+        fstat=lambda handle: SimpleNamespace(st_mode=stat.S_IFREG, st_file_attributes=0),
+        close=closed.append,
+    ))
+    monkeypatch.setattr(server, "Path", PureWindowsPath)
+    if refusal:
+        with pytest.raises(server.Refusal, match=refusal):
+            server.windows_open(PureWindowsPath(requested), protected=protected)
+        assert closed == [456]
+    else:
+        assert server.windows_open(PureWindowsPath(requested), protected=protected) == 456
+        assert closed == []
+    assert checked == [PureWindowsPath(final)]
 
 
 @WINDOWS

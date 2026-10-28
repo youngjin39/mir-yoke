@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+import locale
 import os
 import stat
 import subprocess
@@ -42,6 +43,29 @@ def module():
     loaded = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(loaded)
     return loaded
+
+
+@pytest.mark.parametrize('invalid', [False, True])
+def test_should_decode_pin_runner_output_as_utf8_with_cp949_locale(
+        tmp_path, monkeypatch, invalid):
+    hook = module()
+    monkeypatch.setattr(hook, 'repository_root', lambda event: tmp_path)
+    monkeypatch.setattr(locale, 'getpreferredencoding', lambda *args: 'cp949')
+    monkeypatch.setattr(locale, 'getencoding', lambda: 'cp949', raising=False)
+    monkeypatch.setenv('PYTHONUTF8', '0')
+    monkeypatch.setenv('PYTHONIOENCODING', 'cp949')
+    # Write bytes so the child's output is independent of its own locale and stdio encoding.
+    output = 'handoff pins:\n{"path": "한글'.encode()
+    output += (b'\xff' if invalid else b'') + b'"}\n'
+    (tmp_path / 'scripts').mkdir()
+    (tmp_path / 'scripts/mir_ontology.py').write_text(
+        'import sys\n'
+        f'sys.stdout.buffer.write({output!r})\n'
+        "sys.stderr.buffer.write(b'\\xff')\n",
+        encoding='utf-8',
+    )
+    pins = hook.run_pins({}, {'excluded': []}, paths=[])
+    assert json.loads(pins.split('\n', 1)[1]) == {'path': '한글' + ('\ufffd' if invalid else '')}
 
 
 def test_should_read_bounded_transcript_tail_on_windows_without_posix_flags(tmp_path, monkeypatch):

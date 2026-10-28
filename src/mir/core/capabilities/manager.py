@@ -146,7 +146,7 @@ if __name__ == "__main__":
     main()
 '''
 # ADR-90 amendment (2026-10-22): exact reviewed stateless handoff implementation.
-_HANDOFF_HANDLER_SHA256 = "c9fd9f68fd08a50a5637e5e4137053fd7e97897cfedc00d8c9bc5c958e3175e3"
+_HANDOFF_HANDLER_SHA256 = "407d40c6afbc8293fc5e94000bb608cd5db9ed568b571583f1f81d9d1a04207c"
 _ACTIVE_PACKAGE_CREDENTIAL_PATTERNS = (
     re.compile(rb"https?://[^\s/@]+@", re.IGNORECASE),
     re.compile(rb"-----BEGIN [A-Z ]*PRIVATE KEY-----"),
@@ -420,7 +420,7 @@ def _configured_provider_home(codex_home: Path, source_url: str) -> Path | None:
     materialized_root = receipt.get("materialized_root")
     if not isinstance(materialized_root, str):
         return None
-    if Path(materialized_root).expanduser().resolve() != source:
+    if _codex_source_path(materialized_root) != source:
         return None
     return source.parent
 
@@ -814,6 +814,7 @@ class CapabilityManager:
             self.project_root / "config" / "capability-acknowledgements.local.json"
         )
         self._consumer_config_path = self.config_path
+        self._enrollment_config = self.config
         self._config_declared_acknowledgements = (
             {} if self._provider_only else self.config.declared_digest_acknowledgements
         )
@@ -1053,7 +1054,7 @@ class CapabilityManager:
         if not isinstance(profile, str):
             return False
         try:
-            _, pack = self.config.resolve_profile(profile)
+            _, pack = self._enrollment_config.resolve_profile(profile)
         except CapabilityConfigError:
             return False
         if (
@@ -1097,7 +1098,7 @@ class CapabilityManager:
         return all(
             isinstance(digest, str)
             and _CONSUMER_BINDING.fullmatch(digest) is not None
-            and metadata == {"path": self.config.plugins.get(plugin), "sha256": digest}
+            and metadata == {"path": self._enrollment_config.plugins.get(plugin), "sha256": digest}
             for plugin, digest in required.items()
             for metadata in (locked_plugins.get(plugin),)
         )
@@ -1358,7 +1359,7 @@ class CapabilityManager:
         if not isinstance(plugins, dict) or not isinstance(materialized, dict):
             return False
         try:
-            materialized_root = Path(str(receipt.get("materialized_root"))).expanduser().resolve()
+            materialized_root = _codex_source_path(str(receipt.get("materialized_root")))
         except OSError:
             return False
         if (
@@ -1836,8 +1837,12 @@ class CapabilityManager:
     def _registry_consumer_root(self, raw_root: object) -> Path | None:
         if not isinstance(raw_root, str):
             return None
+        raw_root = _strip_verbatim_prefix(raw_root)
         root = Path(raw_root)
-        if not root.is_absolute() or str(root) != raw_root:
+        # Windows registry keys are normcase paths; retain the known filesystem spelling.
+        if raw_root == _consumer_key(self.project_root):
+            root = self.project_root
+        if not root.is_absolute() or os.path.normcase(str(root)) != raw_root:
             return None
         current = Path(root.anchor)
         for component in root.parts[1:]:
@@ -2228,7 +2233,8 @@ class CapabilityManager:
                 return False
             if not validate_mcp_observation(
                 observations[name], digest=metadata["sha256"], runtime=runtime, session=session,
-                installed=Path(installed["installed_path"]), provider=self.active_path,
+                installed=_codex_source_path(installed["installed_path"]),
+                provider=self.active_path,
             ):
                 return False
         return True
@@ -2621,7 +2627,7 @@ class CapabilityManager:
                 path_error = persistence_error or cache_error
             else:
                 raw_path = _installed_path(entry)
-                installed_path = Path(raw_path).expanduser() if raw_path is not None else None
+                installed_path = _codex_source_path(raw_path) if raw_path is not None else None
                 path_error = None if installed_path is not None else "installed-path-missing"
             if not enabled:
                 evidence[name] = {"status": "disabled"}
@@ -2730,6 +2736,20 @@ class CapabilityManager:
         ]
         with tempfile.TemporaryDirectory(prefix="mir-capability-check-") as raw_temp:
             checkout = Path(raw_temp) / "checkout"
+            if operation == "update" and not pending_local_update:
+                probe = Path(raw_temp) / "config-probe"
+                self.git.export(
+                    self.config.source_url, self.config.source_ref, desired_commit,
+                    ["config/capability-sources.json"], probe,
+                )
+                target_config = load_capability_config(probe / "config/capability-sources.json")
+                export_paths = [
+                    "config/capability-sources.json",
+                    *_MARKETPLACE_PATHS,
+                    *target_config.plugins.values(),
+                    *target_config.agents,
+                    *target_config.commands,
+                ]
             self.git.export(
                 self.config.source_url,
                 self.config.source_ref,
@@ -2851,6 +2871,8 @@ class CapabilityManager:
                 marketplace_hashes=marketplace_hashes,
                 agent_hashes=agent_hashes,
                 command_hashes=command_hashes,
+                update_config=(operation == "update"
+                               and self._enrollment_config.source_schema_version == 1),
             )
             result["dry_run"] = False
             result["applied"] = True
@@ -2995,14 +3017,31 @@ class CapabilityManager:
             ):
                 raise CapabilityError("global consumer registry is invalid")
             try:
+                legacy = active_receipt.get("schema_version") == 1
+                names = set(self.config.plugins)
+                if legacy:
+                    names = set()
+                    for entry in consumers.values():
+                        required = entry.get("plugins") if isinstance(entry, dict) else None
+                        if not isinstance(required, dict):
+                            raise CapabilityError("legacy consumer plugins are invalid")
+                        names.update(required)
                 active_hashes = {
                     plugin: _validate_plugin(
-                        self.active_path / path,
+                        self.active_path / self.config.plugins[plugin],
                         plugin,
-                        package_kind=self.config.plugin_kinds[plugin],
+                        package_kind="skills" if legacy else self.config.plugin_kinds[plugin],
                     )
-                    for plugin, path in self.config.plugins.items()
+                    for plugin in names
+                    if plugin in self.config.plugins
                 }
+                if legacy and (
+                    active_receipt.get("source_url") != self.config.source_url
+                    or _codex_source_path(str(active_receipt.get("materialized_root")))
+                    != self.active_path
+                    or active_receipt.get("plugins") != active_hashes
+                ):
+                    raise CapabilityError("legacy active receipt is invalid")
             except (CapabilityError, OSError) as exc:
                 raise CapabilityError("global consumer registry is invalid") from exc
             if (
@@ -3119,6 +3158,7 @@ class CapabilityManager:
         marketplace_hashes: dict[str, str],
         agent_hashes: dict[str, str],
         command_hashes: dict[str, str],
+        update_config: bool = False,
     ) -> dict[str, object]:
         with self._capability_apply_guard():
             self._assert_project_lock_path_safe()
@@ -3154,6 +3194,11 @@ class CapabilityManager:
                 )
                 for path in (*self.config.agents, *self.config.commands)
             }
+            if update_config:
+                config_target = self._project_target("config/capability-sources.json")
+                if config_target.is_symlink():
+                    raise CapabilityError("project capability config path is a symlink")
+                managed_file_snapshots[config_target] = config_target.read_bytes()
             state_paths = (
                 self.lock_path,
                 self.registry_path,
@@ -3232,6 +3277,10 @@ class CapabilityManager:
                         - set(self.config.provider_local_agents)
                     ):
                         self._project_target(source_path).unlink(missing_ok=True)
+                    if update_config and previous_lock:
+                        for source_path in self.config.provider_local_agents:
+                            if source_path in previous_lock.get("agents", {}):
+                                self._project_target(source_path).unlink(missing_ok=True)
                     for source_path in selected_commands:
                         _atomic_write_bytes(
                             self._project_target(source_path),
@@ -3305,6 +3354,11 @@ class CapabilityManager:
                     )
                     if registration["status"] != "restart-required":
                         raise CapabilityError("runtime plugin registration failed")
+                    if update_config:
+                        _atomic_write_bytes(
+                            self._project_target("config/capability-sources.json"),
+                            (checkout / "config/capability-sources.json").read_bytes(),
+                        )
                     derivatives_attempted = True
                     self._regenerate_agent_derivatives()
                     timestamp = datetime.now(UTC).isoformat()

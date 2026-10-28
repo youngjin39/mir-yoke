@@ -543,6 +543,7 @@ def run_pins(event: dict, owner: dict, paths: list[str] | None = None, timeout: 
     process = subprocess.Popen(
         [sys.executable, str(runner), 'mapping', '--handoff', *paths],
         cwd=root, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+        encoding='utf-8', errors='replace',
         **({'creationflags': subprocess.CREATE_NEW_PROCESS_GROUP} if _WINDOWS
            else {'start_new_session': True}),
         env={**os.environ, 'PYTHONDONTWRITEBYTECODE': '1', 'GIT_OPTIONAL_LOCKS': '0'},
