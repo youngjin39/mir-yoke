@@ -668,3 +668,19 @@ checked with `os.path.isfile` at start; neither present leaves the first, so Git
 `E_GIT`. No `PATH` search, wrapper or environment input is added. The same check also failed on
 Ubuntu for lack of a Python 3.11 compatibility interpreter; the release workflow now installs
 3.11 beside 3.12. `v0.13.42` stays tagged without a GitHub Release; 0.13.43 carries it.
+
+## Amendment: 2026-10-28 — direct migration from a 0.8.0 enrollment (0.13.44)
+
+The owner's Windows PC still held a project enrolled by the shipped 0.8.0 provider (schema-1
+registry, active receipt, lock and `capability-sources.json`). Update checked that state against
+the current configuration, which names `mir-mcp`, so it refused with `MCP package rejected: root
+must be a real directory`. Update now validates a schema-1 provider and consumer against their own
+evidence (the receipt's source, materialized root and plugin digests; the consumer's locked
+plugins and agents), exports the target `capability-sources.json` first and takes the export
+paths from it, and on apply rewrites the consumer config, lock and registry to the current
+schemas. `mir-mcp` is only added when the target profile selects it, so this path admits no MCP
+package by itself. Registry keys are compared in `normcase` form and the `\\?\` prefix is
+stripped from recorded paths, as Windows writes them. Evidence: a test built from the real 0.8.0
+tree (`26cf2a4`) fails with the PC's message against 0.13.43 and passes now, on macOS and
+natively on the Windows PC; partial, invented, digest, receipt and active-tree forgeries are
+refused.

@@ -524,6 +524,16 @@ selected packages' tree digests for this release in the host-local approval file
   digests into `<project root>/config/capability-acknowledgements.local.json` before
   `mir capability update --apply`.
 
+## 0.13.44 Direct migration from 0.8.0
+
+- A project still enrolled by the 0.8.0 provider updates directly: run
+  `mir capability update --project-root <project>` (dry run), then `--apply`. The apply rewrites
+  the project's `config/capability-sources.json`, `.mir/capability-lock.json`, managed agents
+  and commands, and their generated derivatives, and adds `mir-lifecycle-hooks`; review and
+  acknowledge its digest first, as in the 0.13.42 steps.
+- The `mir-lifecycle-hooks` digest changes (handoff hook UTF-8 decoding): acknowledge the new
+  digest before updating.
+
 ## 0.13.43 Windows Git path for Git for Windows 2.56+
 
 - `v0.13.42` has no release; update from 0.13.41 straight to 0.13.43 and apply the 0.13.42 steps

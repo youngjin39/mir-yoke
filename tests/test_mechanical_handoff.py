@@ -55,7 +55,7 @@ def test_should_decode_pin_runner_output_as_utf8_with_cp949_locale(
     monkeypatch.setenv('PYTHONUTF8', '0')
     monkeypatch.setenv('PYTHONIOENCODING', 'cp949')
     # Write bytes so the child's output is independent of its own locale and stdio encoding.
-    output = 'handoff pins:\n{"path": "한글'.encode()
+    output = 'handoff pins:\n{"path": "\ud55c\uae00'.encode()
     output += (b'\xff' if invalid else b'') + b'"}\n'
     (tmp_path / 'scripts').mkdir()
     (tmp_path / 'scripts/mir_ontology.py').write_text(
@@ -65,7 +65,8 @@ def test_should_decode_pin_runner_output_as_utf8_with_cp949_locale(
         encoding='utf-8',
     )
     pins = hook.run_pins({}, {'excluded': []}, paths=[])
-    assert json.loads(pins.split('\n', 1)[1]) == {'path': '한글' + ('\ufffd' if invalid else '')}
+    expected = '\ud55c\uae00' + ('\ufffd' if invalid else '')
+    assert json.loads(pins.split('\n', 1)[1]) == {'path': expected}
 
 
 def test_should_read_bounded_transcript_tail_on_windows_without_posix_flags(tmp_path, monkeypatch):

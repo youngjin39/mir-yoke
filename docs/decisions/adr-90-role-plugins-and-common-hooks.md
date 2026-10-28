@@ -438,3 +438,10 @@ parseable and runnable by Python 3.9. The SessionStart hook
 the H1 source pin does not. Tests:
 `test_entrypoint_python_floor_warns_and_preserves_stdout` and the macOS
 `/usr/bin/python3` 3.9 run in `tests/test_mechanical_handoff.py`.
+
+## Amendment: 2026-10-28 — handoff hook output decoding (0.13.44)
+
+The handoff hook reads the pin runner's output with `encoding='utf-8', errors='replace'`. Before,
+it used the locale encoding, so a Windows console with code page cp949 failed on UTF-8 pin
+output. The reviewed handoff handler digest in the manager changes with it; the SessionStart hook
+source is unchanged.

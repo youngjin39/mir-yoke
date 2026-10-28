@@ -8,6 +8,25 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.44] — 2026-10-28 — direct migration from a 0.8.0 enrollment; Windows hook decoding
+
+### Fixed
+
+- `mir capability update` now migrates a project enrolled by the shipped 0.8.0 provider
+  directly. Before, a 0.8.0 consumer (schema-1 registry, active receipt and lock) was checked
+  against the current configuration and refused with `MCP package rejected: root must be a real
+  directory`. Update now validates the legacy provider and consumer against their own evidence,
+  reads the target `capability-sources.json` before the export, and rewrites the consumer
+  config, lock and registry to the current schemas. Partial or forged legacy state is refused.
+- Windows: the handoff hook decodes the pin runner's output as UTF-8 with replacement, so a
+  non-UTF-8 console code page (for example cp949) no longer breaks the handoff packet.
+
+### Changed
+
+- New test for the Windows guard's final-path check with an injected 8.3 short name; the real
+  short-name test still needs a volume with short-name generation enabled.
+- Bump release surfaces to 0.13.44 and regenerate the adopter payload.
+
 ## [v0.13.43] — 2026-10-28 — Windows Git path for Git for Windows 2.56+
 
 ### Fixed
