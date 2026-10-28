@@ -524,6 +524,12 @@ selected packages' tree digests for this release in the host-local approval file
   digests into `<project root>/config/capability-acknowledgements.local.json` before
   `mir capability update --apply`.
 
+## 0.13.45 Claude attestation through a linked config home
+
+- Update from 0.13.43 or 0.13.44 as usual and acknowledge the new package digests (version-only
+  changes). A Claude receipt refused by 0.13.44 as "missing, incomplete or stale" while the
+  Claude config home is a symbolic link is accepted again.
+
 ## 0.13.44 Direct migration from 0.8.0
 
 - A project still enrolled by the 0.8.0 provider updates directly: run

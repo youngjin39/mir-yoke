@@ -36,4 +36,13 @@ Status (2026-10-28, Main):
   at 506 passed. Windows PC in-scope run at da2045e: 921 passed, 9 skipped, 1 failed (the lock).
 - (2) done: ADR-91 and ADR-90 amendments, CHANGELOG, MIGRATION, README, version surfaces 0.13.44,
   adopter payload.
+- 2026-10-28 later: v0.13.44 tagged and pushed (8b1e619 source, 3185dc3 bind) after fresh-clone
+  readiness (3851 passed, 26 skipped). Host update 0.13.43 -> 0.13.44 applied and the Codex receipt
+  attested, but the Claude receipt was refused: the M6 change resolved Claude's recorded install
+  path, and this host's Claude config home is a symbolic link, so the launcher no longer matched.
+  0.13.45 compares the recorded path after prefix stripping only (fail-first test with a linked
+  capability home).
+- PC: an isolated copy of the 0.8.0 enrollment now passes the old refusal, but the dry run is
+  not ready: the consumer lacks `config/project-hooks.json`, and three consumer-committed agents
+  share names with newly managed ones (`diverged`). Owner decision pending.
 - (4), (5) open.

@@ -684,3 +684,9 @@ stripped from recorded paths, as Windows writes them. Evidence: a test built fro
 tree (`26cf2a4`) fails with the PC's message against 0.13.43 and passes now, on macOS and
 natively on the Windows PC; partial, invented, digest, receipt and active-tree forgeries are
 refused.
+
+Correction (0.13.45): stripping the `\\?\` prefix must not resolve the recorded install path.
+0.13.44 resolved it, so on a host whose Claude config home is a symbolic link the launcher Claude
+actually ran (`<recorded path>/mir_mcp.py`) no longer matched and the receipt was refused. The
+install path is compared as recorded, after prefix stripping only; a test with a linked
+capability home covers it.

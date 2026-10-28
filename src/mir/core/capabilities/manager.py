@@ -2233,7 +2233,7 @@ class CapabilityManager:
                 return False
             if not validate_mcp_observation(
                 observations[name], digest=metadata["sha256"], runtime=runtime, session=session,
-                installed=_codex_source_path(installed["installed_path"]),
+                installed=Path(_strip_verbatim_prefix(installed["installed_path"])),
                 provider=self.active_path,
             ):
                 return False
@@ -2627,7 +2627,10 @@ class CapabilityManager:
                 path_error = persistence_error or cache_error
             else:
                 raw_path = _installed_path(entry)
-                installed_path = _codex_source_path(raw_path) if raw_path is not None else None
+                installed_path = (
+                    Path(_strip_verbatim_prefix(raw_path)).expanduser()
+                    if raw_path is not None else None
+                )
                 path_error = None if installed_path is not None else "installed-path-missing"
             if not enabled:
                 evidence[name] = {"status": "disabled"}

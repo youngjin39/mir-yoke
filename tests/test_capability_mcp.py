@@ -1152,6 +1152,23 @@ def test_claude_attestation_rejects_codex_launcher_form(tmp_path, provider, monk
                        observed_mcp=evidence, apply=True)
 
 
+def test_claude_attestation_keeps_symlinked_install_path(tmp_path, provider, monkeypatch):
+    # Claude launches the server from the path it records, even through a linked config home.
+    alias = tmp_path / "linked-capabilities"
+    alias.symlink_to(tmp_path / "capabilities", target_is_directory=True)
+    codex = tmp_path / "home" / ".codex"
+    manager = manager_for(tmp_path, provider, runner=runtime_runner(alias / "active", codex))
+    acknowledge_locally(manager, provider)
+    manager.sync("code", mcp=True, apply=True)
+    monkeypatch.setenv("CLAUDE_SESSION_ID", "fresh-claude")
+    digest = json.loads(manager.lock_path.read_text())["plugins"]["mir-mcp"]["sha256"]
+    evidence = mcp_receipt("claude-code", "fresh-claude", manager.project_root,
+                           str(alias / "active/plugins/mir-mcp"), digest)
+    result = manager.attest("claude-code", observed_skills(manager), observed_hooks(manager),
+                            observed_mcp=evidence, apply=True)
+    assert result["status"] == "attested"
+
+
 @pytest.mark.parametrize(
     "tool,patch,remove",
     [

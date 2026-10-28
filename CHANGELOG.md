@@ -8,6 +8,20 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.45] — 2026-10-28 — Claude attestation through a linked config home
+
+### Fixed
+
+- `mir capability attest` for Claude Code compares the `mir-mcp` launcher with the install path
+  exactly as Claude records it again. 0.13.44 resolved that path while stripping the Windows
+  `\\?\` prefix, so a Claude config home reached through a symbolic link (the maintainer
+  host's) produced a different launcher and the receipt was refused as stale. Only the prefix is
+  stripped now. Plugin packages are unchanged apart from the version.
+
+### Changed
+
+- Bump release surfaces to 0.13.45 and regenerate the adopter payload.
+
 ## [v0.13.44] — 2026-10-28 — direct migration from a 0.8.0 enrollment; Windows hook decoding
 
 ### Fixed

@@ -52,7 +52,7 @@ immutable release:
 
 ```bash
 uv tool install --force --link-mode copy \
-  "git+https://github.com/youngjin39/mir-yoke.git@v0.13.44"
+  "git+https://github.com/youngjin39/mir-yoke.git@v0.13.45"
 mir --help
 ```
 
@@ -175,6 +175,8 @@ Version 0.13.43 carries 0.13.42, which is tagged without a release, and finds Gi
 
 Version 0.13.44 updates a project enrolled by the 0.8.0 provider directly and makes the Windows
 handoff hook decode its pin output as UTF-8.
+
+Version 0.13.45 fixes Claude attestation when the Claude config home is a symbolic link.
 
 ### Platform use
 
