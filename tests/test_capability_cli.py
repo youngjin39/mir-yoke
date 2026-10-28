@@ -293,7 +293,7 @@ def runtime_with_real_derivatives(active: Path, codex_home: Path):
     def run(args: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
         if len(args) > 1 and Path(args[1]).name == "generate_codex_derivatives.py":
             return subprocess.run(args, **kwargs)
-        if Path(args[0]).name == "bash":
+        if Path(args[0]).stem == "bash":
             actual_args = [shutil.which("bash") or "/bin/bash", *args[1:]]
             return subprocess.run(actual_args, **kwargs)  # type: ignore[arg-type]
         return fake_runtime(args, **kwargs)
@@ -1154,7 +1154,7 @@ def test_should_restore_exact_plugin_set_when_profile_update_rolls_back(
 
     def runner(args: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
         nonlocal fail_derivative_once
-        if Path(args[0]).name == "bash" and fail_derivative_once:
+        if Path(args[0]).stem == "bash" and fail_derivative_once:
             fail_derivative_once = False
             return subprocess.CompletedProcess(args, 1, "", "forced derivative failure")
         return base_runner(args, **kwargs)
@@ -1195,7 +1195,7 @@ def test_rollback_rejects_inflated_schema2_prior_consumer_union_before_commands(
     def runner(args: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
         nonlocal fail_derivative_once
         commands.append(args)
-        if Path(args[0]).name == "bash" and fail_derivative_once:
+        if Path(args[0]).stem == "bash" and fail_derivative_once:
             fail_derivative_once = False
             return subprocess.CompletedProcess(args, 1, "", "forced derivative failure")
         return base_runner(args, **kwargs)
@@ -1336,7 +1336,7 @@ def test_apply_rejects_replaced_project_root_before_generator_execution(
     with pytest.raises(CapabilityError, match="local rollback was incomplete"):
         manager.sync("code_app", apply=True)
 
-    assert not any(Path(args[0]).name == "bash" for args in commands)
+    assert not any(Path(args[0]).stem == "bash" for args in commands)
     assert replacement_lock.read_text(encoding="utf-8") == "replacement sentinel\n"
 
 

@@ -4685,7 +4685,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_capability_cli.py",
-      "sha256": "d8aab2099d54d96911a92c8e88575e0451c75f4fbaabf8e6d0c7bfdb5b20fd63"
+      "sha256": "4dad92a1d9942a3f64fc661b7ec72e372078eb04f4f1e5f341953182e66bd766"
     },
     {
       "classification": "template-maintainer-tool",
