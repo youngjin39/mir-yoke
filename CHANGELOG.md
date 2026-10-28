@@ -8,6 +8,23 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.43] — 2026-10-28 — Windows Git path for Git for Windows 2.56+
+
+### Fixed
+
+- `mir-mcp` on Windows: Git for Windows 2.56 moved the real binary from `mingw64\bin` to
+  `ucrt64\bin`, so Git pins reported `E_GIT` with current Git. The server now uses the first
+  present of two fixed binaries under `C:\Program Files\Git` (`ucrt64\bin\git.exe`, then
+  `mingw64\bin\git.exe`); still no `PATH` search and no `cmd\git.exe` wrapper.
+- The release workflow installs Python 3.11 beside 3.12, so the release candidate runs the
+  `mir-mcp` tests on the compatibility floor.
+
+### Changed
+
+- `v0.13.42` is tagged but has no GitHub Release: its release check failed on these two points.
+  0.13.43 carries all of 0.13.42. Bump release surfaces to 0.13.43 and regenerate the adopter
+  payload.
+
 ## [v0.13.42] — 2026-10-28 — mir-mcp native Windows lane and the Python 3.11 floor
 
 ### Added

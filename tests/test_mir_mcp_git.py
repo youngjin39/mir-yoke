@@ -31,9 +31,13 @@ ENV = {
     "GIT_CONFIG_GLOBAL": "/dev/null", "GIT_ATTR_NOSYSTEM": "1",
     "GIT_TERMINAL_PROMPT": "0",
 }
+WINDOWS_GIT = next((path for path in (
+    r"C:\Program Files\Git\ucrt64\bin\git.exe",
+    r"C:\Program Files\Git\mingw64\bin\git.exe",
+) if os.path.isfile(path)), None)
 PREFIX = [
-    (r"C:\Program Files\Git\mingw64\bin\git.exe" if sys.platform == "win32"
-     else "/usr/bin/git"), "--no-optional-locks", "--literal-pathspecs",
+    (WINDOWS_GIT if sys.platform == "win32" else "/usr/bin/git"),
+    "--no-optional-locks", "--literal-pathspecs",
     "-c", "core.fsmonitor=false", "-c", "core.untrackedCache=false",
     "-c", "core.hooksPath=/dev/null", "-c", "core.attributesFile=/dev/null",
     "-c", "submodule.recurse=false",
@@ -607,6 +611,16 @@ def test_protocol_should_report_commit_pins_and_only_dirty_for_protected_change(
     assert not list(repo.rglob("*.pyc"))
 
 
+def test_windows_git_is_one_of_two_fixed_binaries(server):
+    ucrt, mingw = server.WINDOWS_GITS
+    assert ucrt == r"C:\Program Files\Git\ucrt64\bin\git.exe"
+    assert mingw == r"C:\Program Files\Git\mingw64\bin\git.exe"
+    assert server.windows_git(lambda path: True) == ucrt
+    assert server.windows_git(lambda path: path == mingw) == mingw
+    # Neither present: the spawn fails and Git pins report E_GIT; no PATH search.
+    assert server.windows_git(lambda path: False) == ucrt
+
+
 @pytest.mark.skipif(sys.platform != "win32", reason="requires native Windows Git")
 def test_windows_fixed_git_drive_root_and_no_console(server, tmp_path, monkeypatch):
     root = tmp_path / "root with spaces"
@@ -620,7 +634,7 @@ def test_windows_fixed_git_drive_root_and_no_console(server, tmp_path, monkeypat
     monkeypatch.setattr(subprocess, "Popen", capture)
     assert query(server, root, SUFFIXES[1]) is False
     argv, kwargs = calls[0]
-    assert argv[0] == r"C:\Program Files\Git\mingw64\bin\git.exe"
+    assert argv[0] == WINDOWS_GIT
     assert argv[argv.index("-C") + 1] == str(root.resolve())
     assert re.match(r"^[A-Za-z]:\\", argv[argv.index("-C") + 1])
     assert kwargs["creationflags"] == subprocess.CREATE_NO_WINDOW

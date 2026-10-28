@@ -50,3 +50,8 @@ Status (2026-10-28, Main):
   lookups, since fixed); a targeted re-run after the fixes gave 114 passed, 1 skipped (8.3
   names disabled on the volume). Fresh-clone readiness is still open.
 - (4), (5) open.
+- 2026-10-28 later: v0.13.42 was tagged and pushed (79a9cbf source, 35f696a bind) but its release
+  check failed twice. On `windows-latest`, Git for Windows 2.56 moved `git.exe` from `mingw64\bin`
+  to `ucrt64\bin`. On Ubuntu, no Python 3.11 compatibility interpreter was installed. Following
+  the v0.13.37 precedent, the tag stays and has no release. 0.13.43 uses the first present of two
+  fixed binaries (`ucrt64`, then `mingw64`) and adds 3.11 to the release workflow.

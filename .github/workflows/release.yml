@@ -17,8 +17,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
+      # 3.11 is the mir-mcp compatibility floor the suite also runs; 3.12 stays the default.
       - uses: actions/setup-python@v5
-        with: { python-version: '3.12' }
+        with:
+          python-version: |
+            3.11
+            3.12
       - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
       - run: uv sync --extra dev --frozen
       - name: Validate repository release candidate

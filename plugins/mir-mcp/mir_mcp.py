@@ -24,7 +24,7 @@ try:
 except ImportError:
     tomllib = None
 
-VERSION = "0.13.42"
+VERSION = "0.13.43"
 MODERN = "2026-07-28"
 LEGACY = "2025-11-25"
 VERSIONS = [MODERN, LEGACY]
@@ -34,9 +34,20 @@ READ_LIMIT = 4194304
 FILE_COUNT = 256
 OUTPUT_LIMIT = 16384
 STRING_LIMIT = 4096
+# Git for Windows 2.56 moved the real binary from mingw64 to ucrt64; no PATH search, no wrapper.
+WINDOWS_GITS = (
+    r"C:\Program Files\Git\ucrt64\bin\git.exe",
+    r"C:\Program Files\Git\mingw64\bin\git.exe",
+)
+
+
+def windows_git(exists=os.path.isfile):
+    return next((path for path in WINDOWS_GITS if exists(path)), WINDOWS_GITS[0])
+
+
 GIT_PREFIX = (
-    (r"C:\Program Files\Git\mingw64\bin\git.exe" if sys.platform == "win32"
-     else "/usr/bin/git"), "--no-optional-locks", "--literal-pathspecs",
+    windows_git() if sys.platform == "win32" else "/usr/bin/git",
+    "--no-optional-locks", "--literal-pathspecs",
     "-c", "core.fsmonitor=false", "-c", "core.untrackedCache=false",
     "-c", "core.hooksPath=/dev/null", "-c", "core.attributesFile=/dev/null",
     "-c", "submodule.recurse=false",

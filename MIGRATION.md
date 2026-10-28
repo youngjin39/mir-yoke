@@ -524,6 +524,11 @@ selected packages' tree digests for this release in the host-local approval file
   digests into `<project root>/config/capability-acknowledgements.local.json` before
   `mir capability update --apply`.
 
+## 0.13.43 Windows Git path for Git for Windows 2.56+
+
+- `v0.13.42` has no release; update from 0.13.41 straight to 0.13.43 and apply the 0.13.42 steps
+  below (Python 3.11+, digest acknowledgements, receipt renewal) with the 0.13.43 digests.
+
 ## 0.13.42 mir-mcp native Windows lane and the Python 3.11 floor
 
 - `python3` must resolve to Python 3.11 or newer on every host that runs the plugins. Below it,

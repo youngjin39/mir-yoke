@@ -655,3 +655,16 @@ launcher, the default Git for Windows path, the same deadline behaviour, Python 
 - Admission stays incomplete until fresh Claude Code and Codex receipts with `platform: windows`
   exist on the owner's PC (design §5.5). They need the PC's user-scope CLI homes, which still hold
   stale 0.8.0 registrations; that is an owner decision.
+
+## Amendment: 2026-10-28 — Windows Git binary location (0.13.43)
+
+The 0.13.42 release check failed on `windows-latest` (Git for Windows 2.56.0): the fixed
+`mingw64\bin\git.exe` no longer exists there, because Git for Windows 2.56 moved the real
+binary to `ucrt64\bin`; the project names only `cmd\git.exe`, a wrapper this design refuses, as
+stable. On `win32` the Git argv now starts with the first present of two fixed paths under the
+default install location, `C:\Program Files\Git\ucrt64\bin\git.exe` then
+`C:\Program Files\Git\mingw64\bin\git.exe` (owner answer 4, "the Windows default Git location"),
+checked with `os.path.isfile` at start; neither present leaves the first, so Git pins report
+`E_GIT`. No `PATH` search, wrapper or environment input is added. The same check also failed on
+Ubuntu for lack of a Python 3.11 compatibility interpreter; the release workflow now installs
+3.11 beside 3.12. `v0.13.42` stays tagged without a GitHub Release; 0.13.43 carries it.

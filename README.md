@@ -52,7 +52,7 @@ immutable release:
 
 ```bash
 uv tool install --force --link-mode copy \
-  "git+https://github.com/youngjin39/mir-yoke.git@v0.13.42"
+  "git+https://github.com/youngjin39/mir-yoke.git@v0.13.43"
 mir --help
 ```
 
@@ -169,6 +169,9 @@ Git object files in the export and Codex's `\\?\` marketplace paths.
 Version 0.13.42 runs `mir-mcp` natively on Windows x64 (handle-based no-reparse guard, a worker
 thread deadline, the fixed Git for Windows binary) and accepts `windows` receipts. Python 3.11 is
 the floor for everything launched as `python3`.
+
+Version 0.13.43 carries 0.13.42, which is tagged without a release, and finds Git for Windows
+2.56+ at its new `ucrt64` location.
 
 ### Platform use
 
