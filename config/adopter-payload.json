@@ -449,7 +449,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": ".mir/capability-lock.json",
-      "sha256": "a76584af1379b50d5f4a2fe40d148998d25bd33ae2056a581f9070db4e483510"
+      "sha256": "d2da64a61a6cd19c1910cf34af387a8becb8519407b765d1fd363a267ab97e0a"
     },
     {
       "classification": "reference",
@@ -4499,7 +4499,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/plan.md",
-      "sha256": "830f1b1b101e8fea17b5a8c051d710d8da899a9965d496803ce6a2f0f1a8f947"
+      "sha256": "02dfbdc07e533a29e5851504aa71bacbaeb800f5154622204d347e8cd270ab46"
     },
     {
       "classification": "reference",
@@ -4985,7 +4985,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_plugin_skill_packages.py",
-      "sha256": "51f506d4254022b02887ebd2bbdd610571367579636f329797e89ad3e60f271c"
+      "sha256": "dceddc8b665473f1e6a2401b71d3cd90b575aacb505b7954e74af2194702d41e"
     },
     {
       "classification": "template-maintainer-tool",
