@@ -45,4 +45,10 @@ Status (2026-10-28, Main):
 - PC: an isolated copy of the 0.8.0 enrollment now passes the old refusal, but the dry run is
   not ready: the consumer lacks `config/project-hooks.json`, and three consumer-committed agents
   share names with newly managed ones (`diverged`). Owner decision pending.
-- (4), (5) open.
+- (3)/(4) for 0.13.45: fresh-clone readiness 3852 passed, 26 skipped, every check exiting 0;
+  tagged and pushed (b52d44e source, 684623c bind). Host updated 0.13.44 -> 0.13.45; Codex hooks
+  re-trusted (4). Claude session 665dec3f and Codex thread 01a18181 attested: five `ok` mir-mcp
+  calls each, four hooks, the skills; servers sampled on Homebrew Python 3.14.6. Finalized;
+  status ready at 684623c.
+- (5) open: owner decision on the consumer's missing `config/project-hooks.json` and the three
+  same-named agents.
