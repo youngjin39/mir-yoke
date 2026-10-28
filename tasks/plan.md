@@ -55,3 +55,12 @@ Status (2026-10-28, Main):
   to `ucrt64\bin`. On Ubuntu, no Python 3.11 compatibility interpreter was installed. Following
   the v0.13.37 precedent, the tag stays and has no release. 0.13.43 uses the first present of two
   fixed binaries (`ucrt64`, then `mingw64`) and adds 3.11 to the release workflow.
+- (3) done for 0.13.43: fresh-clone readiness passed with 3837 tests (26 skipped) and every
+  check exiting 0. CI validate (including `windows_native` on Git for Windows 2.56) and release
+  succeeded; v0.13.43 was published 2026-10-28T02:37:05Z.
+- (4) done: provider updated 0.13.41 -> 0.13.43 (0bb5634); Codex hooks re-trusted (4). Claude
+  session 3d6aedad and Codex thread 01a18060 attested: five mir-mcp calls ok, four hooks and the
+  skills. The observed servers ran Homebrew Python 3.14.6, so the 3.11 floor holds; the Codex
+  server cwd is the installed 0.13.43 root. Finalized after restart; status ready at 0bb5634.
+- (5) open: Windows receipts need the PC's real Claude/Codex homes (stale Yoke 0.8.0
+  registration for `daily_reward_runner`); owner decision.
