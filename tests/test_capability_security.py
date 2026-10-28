@@ -2057,6 +2057,28 @@ def test_agent_derivative_generator_selection(tmp_path: Path, monkeypatch, pytho
         assert commands[0][1] == str(script.with_suffix(".sh"))
 
 
+def test_windows_agent_derivatives_use_git_bash_not_path_bash(tmp_path: Path, monkeypatch):
+    project = make_project(tmp_path)
+    manager = CapabilityManager(
+        project, user_home=tmp_path / "user", capability_home=tmp_path / "provider",
+        which=lambda _: r"C:\Users\A\AppData\Local\Microsoft\WindowsApps\bash.exe",
+    )
+    commands = []
+    manager.command_runner = lambda args, **kwargs: (
+        commands.append(args) or subprocess.CompletedProcess(args, 0, "", "")
+    )
+    git_bash = tmp_path / "bash.exe"
+    git_bash.write_text("")
+    monkeypatch.setattr(capability_manager, "_WINDOWS_BASH", str(git_bash))
+    monkeypatch.setattr(capability_manager, "sys_platform", lambda: "win32")
+    assert manager._regenerate_agent_derivatives()
+    # PATH `bash` is the WSL launcher on Windows; the script path stays relative to the project.
+    assert commands == [[str(git_bash), "scripts/generate_codex_derivatives.sh"]]
+    git_bash.unlink()
+    with pytest.raises(CapabilityError, match="Git for Windows Bash"):
+        manager._regenerate_agent_derivatives()
+
+
 def test_agent_derivative_missing_generator_names_bash_fallback(tmp_path: Path):
     project = make_project(tmp_path)
     (project / "scripts/generate_codex_derivatives.sh").unlink()

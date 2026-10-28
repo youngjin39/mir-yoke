@@ -513,6 +513,10 @@ def _tree_digest(root: Path) -> str:
     return digest.hexdigest()
 
 
+# Git for Windows Bash at its default location; `bash` on a Windows PATH is usually WSL's launcher.
+_WINDOWS_BASH = r"C:\Program Files\Git\bin\bash.exe"
+
+
 def _legacy_tree_digest(root: Path) -> str:
     """Digest a provider tree as 0.8.0 did: native path order, so case-insensitive on Windows."""
     digest = hashlib.sha256()
@@ -3547,15 +3551,20 @@ class CapabilityManager:
             command = [sys.executable, str(script)]
         else:
             script = script.with_suffix(".sh")
-            bash = self.which("bash")
+            windows = sys_platform() == "win32"
+            if windows:
+                bash = _WINDOWS_BASH if os.path.isfile(_WINDOWS_BASH) else None
+            else:
+                bash = self.which("bash")
             if bash is None or not script.is_file() or script.is_symlink():
                 if raise_on_error:
                     raise CapabilityError(
-                        "agent pack activation requires Bash and "
-                        "scripts/generate_codex_derivatives.sh"
+                        "agent pack activation requires "
+                        + (f"Git for Windows Bash ({_WINDOWS_BASH})" if windows else "Bash")
+                        + " and scripts/generate_codex_derivatives.sh"
                     )
                 return False
-            command = [bash, str(script)]
+            command = [bash, "scripts/generate_codex_derivatives.sh" if windows else str(script)]
         completed = self.command_runner(
             command,
             cwd=self.project_root,
