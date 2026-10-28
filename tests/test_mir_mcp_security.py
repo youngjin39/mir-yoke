@@ -7,18 +7,19 @@ import importlib.util
 import json
 import os
 import subprocess
-from pathlib import Path
+import sys
+from pathlib import Path, PurePosixPath
 from types import SimpleNamespace
 
 import pytest
+from mir_mcp_interpreters import INTERPRETERS
 
 ROOT = Path(__file__).resolve().parents[1]
 SERVER = ROOT / "plugins/mir-mcp/mir_mcp.py"
-INTERPRETERS = ["/usr/bin/python3", str(ROOT / ".venv/bin/python")]
 # Each interpreter as found, plus one with tomllib blocked so the unavailable branch
 # stays covered on hosts whose system Python is 3.11 or newer.
 PROFILE_RUNTIMES = [(interpreter, False) for interpreter in INTERPRETERS] + [
-    (INTERPRETERS[1], True)
+    (INTERPRETERS[-1], True)
 ]
 NO_TOMLLIB = (
     "import runpy, sys; sys.modules['tomllib'] = None; "
@@ -138,7 +139,7 @@ def test_cloud_sync_reason_path_shape(monkeypatch, path, reason):
     check = module.cloud_sync_reason
     with monkeypatch.context() as patch:
         patch.setattr(module.os, "stat", lambda *args, **kwargs: SimpleNamespace())
-        assert check(Path(path)) == reason
+        assert check(PurePosixPath(path)) == reason
 
 
 @pytest.mark.parametrize("attribute", [0x80000, 0x100000, 0x40000, 0x400000, 0x1000])
@@ -273,8 +274,9 @@ def test_symlink_special_and_profile(interpreter, block_tomllib, target, tmp_pat
     assert call(interpreter, target, paths=["link"])["error"] == {"code": "E_PATH"}
     (target / "internal-link").symlink_to(target / "source.py")
     assert call(interpreter, target, paths=["internal-link"])["error"] == {"code": "E_PATH"}
-    os.mkfifo(target / "fifo")
-    assert call(interpreter, target, paths=["fifo"])["error"] == {"code": "E_PATH"}
+    if sys.platform != "win32":
+        os.mkfifo(target / "fifo")
+        assert call(interpreter, target, paths=["fifo"])["error"] == {"code": "E_PATH"}
     (target / ".mir/repo-profile.toml").write_text(
         '[project]\nslug="test"\n[safety]\nprotected_paths=["source.py"]\n'
     )
@@ -333,15 +335,20 @@ def test_guard_aggregate_count_deadline_and_race(target, monkeypatch):
             guard.read(f"large{index}")
     guard.close()
     guard = module.Guard(str(target))
-    original = module.os.open
+    original = module.windows_open if sys.platform == "win32" else module.os.open
+    outside = target.parent / "outside"
+    outside.write_text("DO_NOT_DISCLOSE_SENTINEL")
 
-    def replace(path, flags, *args, **kwargs):
-        if path == "source.py":
+    def replace(path, *args, **kwargs):
+        if path == (target / "source.py" if sys.platform == "win32" else "source.py"):
             (target / "source.py").unlink()
-            (target / "source.py").symlink_to("/etc/passwd")
-        return original(path, flags, *args, **kwargs)
+            (target / "source.py").symlink_to(outside)
+        return original(path, *args, **kwargs)
 
-    monkeypatch.setattr(module.os, "open", replace)
+    if sys.platform == "win32":
+        monkeypatch.setattr(module, "windows_open", replace)
+    else:
+        monkeypatch.setattr(module.os, "open", replace)
     with pytest.raises(module.Refusal):
         guard.read("source.py")
     guard.close()
@@ -412,18 +419,50 @@ def test_static_closed_imports_and_no_environment():
     }
     for path in files:
         tree = ast.parse(path.read_text(), feature_version=(3, 9))
+        allowed = reviewed | ({"ctypes", "msvcrt", "threading"} if path == SERVER else set())
+        loaders = []
+        kernel_attributes = set()
+        windows_imports = {
+            child.lineno for branch in ast.walk(tree)
+            if isinstance(branch, ast.If) and ast.dump(branch.test) == ast.dump(ast.parse(
+                'sys.platform == "win32"', mode="eval"
+            ).body)
+            for child in branch.body if isinstance(child, ast.Import)
+        }
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
-                assert all(alias.name.split(".")[0] in reviewed for alias in node.names)
+                assert all(alias.name.split(".")[0] in allowed for alias in node.names)
+                for alias in node.names:
+                    if alias.name in {"ctypes", "msvcrt"}:
+                        assert alias.asname is None and node.lineno in windows_imports
             if isinstance(node, ast.ImportFrom):
-                assert (node.module or "").split(".")[0] in reviewed
+                assert (node.module or "").split(".")[0] in allowed
+                assert (node.module or "").split(".")[0] not in {"ctypes", "msvcrt"}
             if isinstance(node, ast.Attribute):
                 assert node.attr not in {
                     "environ", "getenv", "putenv", "expanduser", "system", "popen",
                     "posix_spawn", "spawnv", "spawnve", "path_hooks", "meta_path",
                 }
+                if isinstance(node.value, ast.Name) and node.value.id == "kernel32":
+                    assert node.attr in {"CreateFileW", "GetFinalPathNameByHandleW", "CloseHandle"}
+                    kernel_attributes.add(node.attr)
+                if isinstance(node.value, ast.Name) and node.value.id == "msvcrt":
+                    assert node.attr == "open_osfhandle"
+                assert node.attr not in {"windll", "CDLL", "oledll", "LoadLibrary"}
+                if node.attr == "WinDLL":
+                    loaders.append(node)
             if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
                 assert node.func.id not in {"eval", "exec", "__import__"}
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
+                if node.func.attr == "WinDLL":
+                    assert path == SERVER
+                    assert ast.dump(node) == ast.dump(ast.parse(
+                        'ctypes.WinDLL("kernel32", use_last_error=True)', mode="eval"
+                    ).body)
+        assert len(loaders) == (1 if path == SERVER else 0)
+        assert kernel_attributes == (
+            {"CreateFileW", "GetFinalPathNameByHandleW", "CloseHandle"} if path == SERVER else set()
+        )
 
 
 def audit_run(interpreter, tmp_path, requests):

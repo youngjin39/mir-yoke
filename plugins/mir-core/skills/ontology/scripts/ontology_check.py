@@ -1,4 +1,4 @@
-"""Read-only semantic contract and project mapping checks; Python 3.9, stdlib only."""
+"""Read-only semantic contract and project mapping checks; Python 3.11+, stdlib only."""
 
 from __future__ import annotations
 
@@ -994,4 +994,10 @@ def main(argv=None):
 
 
 if __name__ == "__main__":
+    if sys.version_info < (3, 11):  # noqa: UP036 - bare python3 must warn and run on 3.9.
+        print(
+            "mir: Python 3.11+ is required; running on "
+            + ".".join(map(str, sys.version_info[:3])) + " (upgrade python3)",
+            file=sys.stderr,
+        )
     sys.exit(main())

@@ -146,7 +146,7 @@ if __name__ == "__main__":
     main()
 '''
 # ADR-90 amendment (2026-10-22): exact reviewed stateless handoff implementation.
-_HANDOFF_HANDLER_SHA256 = "a0bfe0f85fbc606aead6249acf3ae71cd2f77f369c7a4993d680683448e03074"
+_HANDOFF_HANDLER_SHA256 = "c9fd9f68fd08a50a5637e5e4137053fd7e97897cfedc00d8c9bc5c958e3175e3"
 _ACTIVE_PACKAGE_CREDENTIAL_PATTERNS = (
     re.compile(rb"https?://[^\s/@]+@", re.IGNORECASE),
     re.compile(rb"-----BEGIN [A-Z ]*PRIVATE KEY-----"),
@@ -3279,7 +3279,16 @@ class CapabilityManager:
                         plugin_hashes, candidate_active_plugins,
                     )
                     if MCP_NAME in active_hashes and sys_platform() == "win32":
-                        raise CapabilityError("MCP native Windows activation is not admitted")
+                        import platform
+                        import sys
+
+                        machine = platform.machine().lower()
+                        bits = 32 if sys.maxsize <= 2**32 else 64
+                        if machine not in {"amd64", "x86_64"} or bits == 32:
+                            raise CapabilityError(
+                                "MCP native Windows activation is not admitted for "
+                                f"{machine} with {bits}-bit Python"
+                            )
                     registry["schema_version"] = 3 if can_migrate else 2
                     registry["active_commit"] = commit
                     registry["active_plugins"] = active_hashes

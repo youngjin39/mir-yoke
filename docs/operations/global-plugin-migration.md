@@ -198,7 +198,7 @@ From each fresh runtime session outside the provider checkout, pass `attest --mc
 | --- | --- |
 | `installed_sha256`, `server` | Exact installed tree digest and `mir-mcp`. |
 | `client`, `client_version`, `session_id`, `session_cwd` | Runtime key, observed version, current exported session ID, absolute session working directory outside the provider. |
-| `platform`, `interpreter` | `macos`, `linux` or `wsl`; `{executable,version}` for an absolute Python path and Python 3.9+. |
+| `platform`, `interpreter` | `macos`, `linux`, `wsl` or `windows`; `{executable,version}` for an absolute Python path and Python 3.11+. |
 | `launcher` | Claude: `{command:"python3",args:["-I","-B","-u","<installed-root>/mir_mcp.py"],env:{}}`. Codex: `{command:"python3",args:["-I","-B","-u","./mir_mcp.py"],cwd:"<installed-root>",env:{}}`, where `cwd` is the absolute installed root that Codex resolves from the declared `cwd:"."`. |
 | `protocol_version` | Observed `2026-07-28` or `2025-11-25`. |
 | `tools` | Ordered `{name,raw_name}` entries for `ontology_validate`, `ontology_lookup`, `ontology_impact`, `handoff_pins`, `relations_query`; preserve raw host-prefixed names. |

@@ -6,6 +6,7 @@ import importlib.util
 import json
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -49,6 +50,34 @@ def test_bundled_replacement_refuses_external_file(server, tmp_path, monkeypatch
     external = tmp_path / "external"
     external.write_text("DO_NOT_DISCLOSE_SENTINEL")
 
+    if sys.platform == "win32":
+        original_windows_open = server.windows_open
+        outside = tmp_path / "outside"
+        outside.mkdir()
+        (outside / contract.name).write_bytes(external.read_bytes())
+        references = contract.parent
+        saved = package / "saved-references"
+
+        def replace_directory(path, *args, **kwargs):
+            if path == references:
+                references.rename(saved)
+                result = subprocess.run(
+                    ["cmd.exe", "/c", "mklink", "/J", str(references), str(outside)],
+                    capture_output=True,
+                )
+                assert result.returncode == 0, result.stderr
+            return original_windows_open(path, *args, **kwargs)
+
+        monkeypatch.setattr(server, "windows_open", replace_directory)
+        try:
+            with pytest.raises(server.Refusal, match="E_PATH"):
+                server.bundled("ontology/references/common-contract.json")
+        finally:
+            if saved.exists():
+                references.rmdir()
+                saved.rename(references)
+        return
+
     def replace(path, flags, *args, **kwargs):
         if path == "common-contract.json":
             contract.unlink()
@@ -75,6 +104,16 @@ def test_git_root_replacement_before_preflight_refuses_without_child(server, tmp
     init(external, "b")
     guard = server.Guard(str(root))
     saved = tmp_path / "saved"
+    if sys.platform == "win32":
+        try:
+            # The root's non-delete-sharing handle prevents the POSIX replacement race.
+            with pytest.raises(OSError):
+                root.rename(saved)
+        finally:
+            guard.close()
+        root.rename(saved)
+        saved.rename(root)
+        return
     root.rename(saved)
     root.symlink_to(external, target_is_directory=True)
 

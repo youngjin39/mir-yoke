@@ -52,7 +52,7 @@ immutable release:
 
 ```bash
 uv tool install --force --link-mode copy \
-  "git+https://github.com/youngjin39/mir-yoke.git@v0.13.41"
+  "git+https://github.com/youngjin39/mir-yoke.git@v0.13.42"
 mir --help
 ```
 
@@ -161,18 +161,22 @@ later releases add.
 
 Version 0.13.40 runs the `mir capability` manager, the agent-derivative generator and the
 lifecycle hooks natively on Windows (Python generator, owner-only DACL for private state,
-Windows-safe transcript reads and timeouts), checked by a Windows CI job. `mir-mcp` and Windows
-runtime receipts follow in 0.13.42.
+Windows-safe transcript reads and timeouts), checked by a Windows CI job.
 
 Version 0.13.41 fixes two Windows consumer sync failures found on a real Windows PC: read-only
 Git object files in the export and Codex's `\\?\` marketplace paths.
+
+Version 0.13.42 runs `mir-mcp` natively on Windows x64 (handle-based no-reparse guard, a worker
+thread deadline, the fixed Git for Windows binary) and accepts `windows` receipts. Python 3.11 is
+the floor for everything launched as `python3`.
 
 ### Platform use
 
 macOS is the primary central-provider and release-evidence lane. Linux and WSL are separate
 compatibility lanes; they use their own runtime homes, caches, trust decisions, receipts, and
-storage, and their failure does not invalidate a proven macOS provider. Native Windows is not an
-automatic Yoke installation lane. A Windows project may give an AI agent the Git repository as a
+storage, and their failure does not invalidate a proven macOS provider. Native Windows x64 is a
+separate lane for the `mir capability` consumer flow, the lifecycle hooks and `mir-mcp`; automated
+bootstrap is not supported there. A Windows project may give an AI agent the Git repository as a
 versioned example, then let that agent select and adapt the needed plugin, skill, agent, command
 intent, hook semantics, and structure under the target's own policy and checks.
 

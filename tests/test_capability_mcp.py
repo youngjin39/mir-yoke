@@ -7,7 +7,7 @@ import json
 import shutil
 import subprocess
 import sys
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
 import pytest
 
@@ -18,8 +18,10 @@ from mir.core.capabilities import (
     CapabilityManager,
     load_capability_config,
 )
+from mir.core.capabilities import mcp as mcp_contract
 from mir.core.capabilities.config import load_consumer_acknowledgements
-from mir.core.capabilities.manager import _tree_digest, _validate_plugin
+from mir.core.capabilities.manager import _consumer_key, _tree_digest, _validate_plugin
+from mir.core.capabilities.mcp import mcp_observed_launcher, validate_mcp_observation
 from tests.test_capability_cli import (
     ACKNOWLEDGEMENTS,
     ROOT,
@@ -263,9 +265,6 @@ def acknowledge_locally(manager, provider, name="mir-mcp"):
     )
 
 
-@pytest.mark.skipif(
-    sys.platform == "win32", reason="MCP native Windows activation is not admitted"
-)
 @pytest.mark.parametrize("local_ack", [False, True])
 def test_remote_mcp_ack_cannot_replace_local_approval(tmp_path, provider, local_ack):
     manager = manager_for(tmp_path, provider)
@@ -378,9 +377,6 @@ def test_consumer_only_hook_ack_survives_activation_rollback(tmp_path, provider)
     ] == "verified"
 
 
-@pytest.mark.skipif(
-    sys.platform == "win32", reason="MCP native Windows activation is not admitted"
-)
 @pytest.mark.parametrize("consumer_hook_ack", ["exact", "stale"])
 def test_legacy_mcp_only_receipt_still_restores_without_provider_renewal(
     tmp_path, provider, consumer_hook_ack,
@@ -412,9 +408,6 @@ def test_legacy_mcp_only_receipt_still_restores_without_provider_renewal(
     ) is (consumer_hook_ack == "exact")
 
 
-@pytest.mark.skipif(
-    sys.platform == "win32", reason="MCP native Windows activation is not admitted"
-)
 def test_consumer_only_mcp_ack_survives_activation_rollback(tmp_path, provider):
     manager = manager_for(tmp_path, provider)
     acknowledge_locally(manager, provider)
@@ -460,12 +453,41 @@ def test_missing_ack_blocks_only_explicit_mcp_registration(tmp_path, provider):
     assert not manager.lock_path.exists()
 
 
-def test_native_windows_refuses_mcp_activation(tmp_path, provider, monkeypatch):
+@pytest.mark.parametrize("machine", ["AMD64", "amd64", "x86_64", "X86_64"])
+def test_native_windows_admits_x64_mcp_activation(tmp_path, provider, monkeypatch, machine):
     monkeypatch.setattr("mir.core.capabilities.manager.sys_platform", lambda: "win32")
+    monkeypatch.setattr("platform.machine", lambda: machine)
+    monkeypatch.setattr(sys, "maxsize", 2**63 - 1)
     manager = manager_for(tmp_path, provider)
     acknowledge_locally(manager, provider)
 
-    with pytest.raises(CapabilityError, match="MCP native Windows activation is not admitted"):
+    assert manager.sync("code", mcp=True, apply=True)["registration_status"] == "restart-required"
+    assert "mir-mcp" in json.loads(manager.lock_path.read_text())["plugins"]
+
+
+@pytest.mark.parametrize("machine", ["ARM64", "aarch64"])
+def test_native_windows_refuses_arm64_mcp_activation(tmp_path, provider, monkeypatch, machine):
+    monkeypatch.setattr("mir.core.capabilities.manager.sys_platform", lambda: "win32")
+    monkeypatch.setattr("platform.machine", lambda: machine)
+    monkeypatch.setattr(sys, "maxsize", 2**63 - 1)
+    manager = manager_for(tmp_path, provider)
+    acknowledge_locally(manager, provider)
+
+    with pytest.raises(CapabilityError, match=f"MCP.*{machine.lower()}"):
+        manager.sync("code", mcp=True, apply=True)
+
+    assert not manager.lock_path.exists()
+
+
+@pytest.mark.parametrize("machine", ["AMD64", "x86"])
+def test_native_windows_refuses_32_bit_mcp_activation(tmp_path, provider, monkeypatch, machine):
+    monkeypatch.setattr("mir.core.capabilities.manager.sys_platform", lambda: "win32")
+    monkeypatch.setattr("platform.machine", lambda: machine)
+    monkeypatch.setattr(sys, "maxsize", 2**31 - 1)
+    manager = manager_for(tmp_path, provider)
+    acknowledge_locally(manager, provider)
+
+    with pytest.raises(CapabilityError, match=f"MCP.*{machine.lower()}.*32-bit"):
         manager.sync("code", mcp=True, apply=True)
 
     assert not manager.lock_path.exists()
@@ -568,9 +590,6 @@ def test_provider_hook_ack_never_admits_provider_only_sync(tmp_path, provider, s
     ) == receipt_before
 
 
-@pytest.mark.skipif(
-    sys.platform == "win32", reason="MCP native Windows activation is not admitted"
-)
 @pytest.mark.parametrize("source", ["active", "bundled"])
 def test_local_ack_admits_provider_only_sync(tmp_path, provider, source, monkeypatch):
     manager = provider_only_manager(tmp_path, provider, source, monkeypatch, approved=True)
@@ -615,8 +634,6 @@ def reopened(manager, config_path=None):
 @pytest.mark.parametrize("plugin", [HOOKS, "mir-mcp"])
 @pytest.mark.parametrize("owner", ["local", "explicit"])
 def test_local_ack_file_admits_sync_update_and_revalidation(tmp_path, provider, owner, plugin):
-    if sys.platform == "win32" and plugin == "mir-mcp":
-        pytest.skip("MCP native Windows activation is not admitted")
     digest = _tree_digest(provider / "plugins" / plugin)
     manager = manager_for(tmp_path, provider)
     acknowledge_hooks(provider / "config/capability-sources.json", "0" * 64)
@@ -733,9 +750,6 @@ def test_unselected_package_is_validated_before_registration(tmp_path, provider)
     assert calls == []
 
 
-@pytest.mark.skipif(
-    sys.platform == "win32", reason="MCP native Windows activation is not admitted"
-)
 def test_provider_cannot_claim_ready_from_installation_only(tmp_path, provider):
     manager = manager_for(tmp_path, provider)
     acknowledge_locally(manager, provider)
@@ -754,9 +768,6 @@ def test_changed_provider_byte_blocks_registration_before_any_command(tmp_path, 
     assert calls == []
 
 
-@pytest.mark.skipif(
-    sys.platform == "win32", reason="MCP native Windows activation is not admitted"
-)
 @pytest.mark.parametrize(
     "mutation",
     [
@@ -799,9 +810,6 @@ def test_rollback_refuses_stale_or_downgraded_mcp_inventory(tmp_path, provider, 
     assert calls == []
 
 
-@pytest.mark.skipif(
-    sys.platform == "win32", reason="MCP native Windows activation is not admitted"
-)
 def test_explicit_selection_is_locked_separately_from_active_union(tmp_path, provider):
     first = manager_for(tmp_path, provider, "first")
     acknowledge_locally(first, provider)
@@ -830,9 +838,6 @@ def test_explicit_selection_is_locked_separately_from_active_union(tmp_path, pro
     assert "mir-mcp" not in json.loads(first.active_receipt_path.read_text())["plugins"]
 
 
-@pytest.mark.skipif(
-    sys.platform == "win32", reason="MCP native Windows activation is not admitted"
-)
 @pytest.mark.parametrize("surface", ["provider", "installed", "acknowledgement"])
 def test_drift_blocks_finalization_and_ready(tmp_path, provider, surface):
     manager = manager_for(tmp_path, provider)
@@ -861,9 +866,6 @@ def test_drift_blocks_finalization_and_ready(tmp_path, provider, surface):
         manager.finalize(apply=True, after_restart=True)
 
 
-@pytest.mark.skipif(
-    sys.platform == "win32", reason="MCP native Windows activation is not admitted"
-)
 @pytest.mark.parametrize("prior_mcp", [False, True])
 def test_failed_install_rolls_back_prior_selection(tmp_path, provider, prior_mcp):
     manager = manager_for(tmp_path, provider)
@@ -897,15 +899,19 @@ def mcp_evidence(manager, runtime, session):
         json.loads(manager.lock_path.read_text()), require_active_receipt=False
     )
     installed = probe["runtimes"][runtime]["plugins"]["mir-mcp"]["installed_path"]
+    return mcp_receipt(runtime, session, manager.project_root, installed, digest)
+
+
+def mcp_receipt(runtime, session, project_root, installed, digest):
     return {
         "mir-mcp": {
             "installed_sha256": digest,
             "client": runtime,
             "client_version": "fixture-1",
             "session_id": session,
-            "session_cwd": str(manager.project_root),
-            "platform": "macos",
-            "interpreter": {"executable": "/usr/bin/python3", "version": "3.12.13"},
+            "session_cwd": str(project_root),
+            "platform": {"win32": "windows", "darwin": "macos"}.get(sys.platform, "linux"),
+            "interpreter": {"executable": sys.executable, "version": "3.12.13"},
             "server": "mir-mcp",
             "protocol_version": "2026-07-28",
             "launcher": (
@@ -919,7 +925,7 @@ def mcp_evidence(manager, runtime, session):
             "safe_calls": {
                 name: {
                     "arguments": {
-                        "target_root": str(manager.project_root),
+                        "target_root": str(project_root),
                         **{
                             "ontology_validate": {},
                             "ontology_lookup": {"query": "capability"},
@@ -947,9 +953,100 @@ def mcp_evidence(manager, runtime, session):
     }
 
 
-@pytest.mark.skipif(
-    sys.platform == "win32", reason="MCP native Windows activation is not admitted"
+@pytest.fixture
+def receipt_context(tmp_path):
+    installed = tmp_path / "mir-mcp" / "0.13.42"
+    shutil.copytree(ROOT / "plugins/mir-mcp", installed)
+    project = tmp_path / "consumer"
+    project.mkdir()
+    return installed, project, tmp_path / "provider"
+
+
+@pytest.mark.parametrize("runtime", ["claude-code", "codex-cli-desktop"])
+def test_windows_observed_launcher_keeps_native_root_and_literal_suffix(runtime):
+    installed = PureWindowsPath(r"C:\Users\A B\plugins\mir-mcp\0.13.42")
+    launcher = mcp_observed_launcher(runtime, installed)
+    assert launcher == (
+        {"command": "python3", "args": ["-I", "-B", "-u", str(installed) + "/mir_mcp.py"],
+         "env": {}}
+        if runtime == "claude-code"
+        else {"command": "python3", "args": ["-I", "-B", "-u", "./mir_mcp.py"],
+              "cwd": str(installed), "env": {}}
+    )
+
+
+@pytest.mark.parametrize("host", ["darwin", "linux", "win32"])
+@pytest.mark.parametrize("lane", ["macos", "linux", "wsl", "windows"])
+def test_mcp_receipt_platform_matches_host(receipt_context, monkeypatch, host, lane):
+    installed, project, provider = receipt_context
+    runtime = "claude-code"
+    item = mcp_receipt(runtime, "fresh-session", project, str(installed), "a" * 64)["mir-mcp"]
+    item["platform"] = lane
+    item["interpreter"]["executable"] = (
+        r"C:\Python311\python.exe" if host == "win32" else "/usr/bin/python3"
+    )
+    monkeypatch.setattr(mcp_contract, "sys_platform", lambda: host, raising=False)
+    assert validate_mcp_observation(
+        item, digest=item["installed_sha256"], runtime=runtime, session="fresh-session",
+        installed=installed, provider=provider,
+    ) is ((host == "win32") == (lane == "windows"))
+
+
+@pytest.mark.parametrize("host,windows_root", [("linux", False), ("linux", True), ("win32", True)])
+@pytest.mark.parametrize("runtime", ["claude-code", "codex-cli-desktop"])
+@pytest.mark.parametrize(
+    "mutation", ["valid", "foreign-interpreter", "relative-interpreter", "python310",
+                 "launcher-separator", "launcher-extra"],
 )
+def test_mcp_receipt_native_paths_and_closed_launcher(
+    receipt_context, monkeypatch, host, windows_root, runtime, mutation,
+):
+    actual, project, provider = receipt_context
+    item = mcp_receipt(runtime, "fresh-session", project, str(actual), "a" * 64)["mir-mcp"]
+    installed = (
+        PureWindowsPath(r"C:\Users\A B\plugins\mir-mcp\0.13.42") if windows_root else actual
+    )
+    # Keep schema I/O on the real host while exercising native Windows receipt strings.
+    read_schemas = mcp_contract._input_schemas
+    monkeypatch.setattr(mcp_contract, "_input_schemas", lambda path: read_schemas(actual))
+    monkeypatch.setattr(mcp_contract, "sys_platform", lambda: host, raising=False)
+    item["platform"] = "windows" if host == "win32" else "linux"
+    item["interpreter"] = {
+        "executable": r"C:\Python311\python.exe" if host == "win32" else "/usr/bin/python3",
+        "version": "3.11.0",
+    }
+    item["launcher"] = (
+        {"command": "python3", "args": ["-I", "-B", "-u", str(installed) + "/mir_mcp.py"],
+         "env": {}}
+        if runtime == "claude-code"
+        else {"command": "python3", "args": ["-I", "-B", "-u", "./mir_mcp.py"],
+              "cwd": str(installed), "env": {}}
+    )
+    if mutation == "foreign-interpreter":
+        item["interpreter"]["executable"] = (
+            "/usr/bin/python3" if host == "win32" else r"C:\Python311\python.exe"
+        )
+    elif mutation == "relative-interpreter":
+        item["interpreter"]["executable"] = "python.exe" if host == "win32" else "python3"
+    elif mutation == "python310":
+        item["interpreter"]["version"] = "3.10.16"
+    elif mutation == "launcher-separator":
+        if runtime == "claude-code":
+            item["launcher"]["args"][-1] = str(installed) + r"\mir_mcp.py"
+        else:
+            cwd = str(installed)
+            item["launcher"]["cwd"] = (
+                cwd.replace("\\", "/") if "\\" in cwd else cwd.replace("/", "\\")
+            )
+            assert item["launcher"]["cwd"] != cwd
+    elif mutation == "launcher-extra":
+        item["launcher"]["timeout"] = 10
+    assert validate_mcp_observation(
+        item, digest=item["installed_sha256"], runtime=runtime, session="fresh-session",
+        installed=installed, provider=provider,
+    ) is (mutation == "valid")
+
+
 @pytest.mark.parametrize(
     "mutation",
     [
@@ -959,7 +1056,7 @@ def mcp_evidence(manager, runtime, session):
         "version",
         "session",
         "cwd",
-        "windows",
+        "platform",
         "python",
         "launcher",
         "launcher-cwd",
@@ -999,10 +1096,10 @@ def test_mcp_attestation_rejects_incomplete_or_wrong_evidence(
         item["session_id"] = "old-session"
     elif mutation == "cwd":
         item["session_cwd"] = str(manager.active_path)
-    elif mutation == "windows":
-        item["platform"] = "windows"
+    elif mutation == "platform":
+        item["platform"] = "macos" if sys.platform == "win32" else "windows"
     elif mutation == "python":
-        item["interpreter"]["version"] = "3.8.20"
+        item["interpreter"]["version"] = "3.10.16"
     elif mutation == "launcher":
         item["launcher"]["args"].remove("-I")
     elif mutation == "launcher-cwd":
@@ -1041,9 +1138,6 @@ def test_mcp_attestation_rejects_incomplete_or_wrong_evidence(
         )
 
 
-@pytest.mark.skipif(
-    sys.platform == "win32", reason="MCP native Windows activation is not admitted"
-)
 def test_claude_attestation_rejects_codex_launcher_form(tmp_path, provider, monkeypatch):
     manager = manager_for(tmp_path, provider)
     acknowledge_locally(manager, provider)
@@ -1058,9 +1152,6 @@ def test_claude_attestation_rejects_codex_launcher_form(tmp_path, provider, monk
                        observed_mcp=evidence, apply=True)
 
 
-@pytest.mark.skipif(
-    sys.platform == "win32", reason="MCP native Windows activation is not admitted"
-)
 @pytest.mark.parametrize(
     "tool,patch,remove",
     [
@@ -1107,9 +1198,6 @@ def test_schema_invalid_call_receipt_cannot_reach_ready(
     assert manager.status()["ready"] is False
 
 
-@pytest.mark.skipif(
-    sys.platform == "win32", reason="MCP native Windows activation is not admitted"
-)
 def test_call_receipt_requires_explicit_success_on_revalidation(tmp_path, provider, monkeypatch):
     manager = manager_for(tmp_path, provider)
     acknowledge_locally(manager, provider)
@@ -1126,9 +1214,8 @@ def test_call_receipt_requires_explicit_success_on_revalidation(tmp_path, provid
     original = json.loads(manager.active_receipt_path.read_text())
     for mutation in ("missing-ok", "false-ok", "is-error", "isError", "invalid-arguments"):
         receipt = copy.deepcopy(original)
-        call = receipt["discovery"][str(manager.project_root)]["claude-code"]["observed_mcp"][
-            "mir-mcp"
-        ]["safe_calls"]["ontology_lookup"]
+        claude = receipt["discovery"][_consumer_key(manager.project_root)]["claude-code"]
+        call = claude["observed_mcp"]["mir-mcp"]["safe_calls"]["ontology_lookup"]
         if mutation == "missing-ok":
             call.pop("ok", None)
         elif mutation == "false-ok":
@@ -1146,9 +1233,6 @@ def test_call_receipt_requires_explicit_success_on_revalidation(tmp_path, provid
             manager.finalize(apply=True, after_restart=True)
 
 
-@pytest.mark.skipif(
-    sys.platform == "win32", reason="MCP native Windows activation is not admitted"
-)
 @pytest.mark.parametrize("mutation", ["downgrade", "parity"])
 def test_mcp_finalization_requires_both_receipts_and_rechecks_them(
     tmp_path, provider, monkeypatch, mutation,
@@ -1174,7 +1258,7 @@ def test_mcp_finalization_requires_both_receipts_and_rechecks_them(
     manager.finalize(apply=True, after_restart=True)
     assert manager.status()["ready"] is True
     receipt = json.loads(manager.active_receipt_path.read_text())
-    claude = receipt["discovery"][str(manager.project_root)]["claude-code"]
+    claude = receipt["discovery"][_consumer_key(manager.project_root)]["claude-code"]
     if mutation == "downgrade":
         claude.pop("observed_mcp")
     else:
@@ -1204,9 +1288,6 @@ def enrolled_with_old_contract(tmp_path, provider):
     return manager, lock, current
 
 
-@pytest.mark.skipif(
-    sys.platform == "win32", reason="MCP native Windows activation is not admitted"
-)
 def test_update_accepts_enrollment_with_older_wellformed_mcp_contract(tmp_path, provider):
     manager, _, current = enrolled_with_old_contract(tmp_path, provider)
     assert manager.update("code", mcp=True)["ready_to_apply"] is True
@@ -1258,9 +1339,6 @@ def _mutate_enrollment(lock, mutation):
         contract["launchers"]["codex"]["env"] = {}
 
 
-@pytest.mark.skipif(
-    sys.platform == "win32", reason="MCP native Windows activation is not admitted"
-)
 @pytest.mark.parametrize(
     "mutation",
     [

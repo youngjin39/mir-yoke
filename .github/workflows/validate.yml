@@ -100,7 +100,7 @@ jobs:
       - run: python tests/test_phase_doc_completeness.py
 
   windows_native:
-    name: native Windows manager and hooks
+    name: native Windows manager, hooks and mir-mcp
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -126,3 +126,12 @@ jobs:
           tests/test_capability_gaploop.py
           tests/test_deny_list.py
           tests/test_minimal_starter.py
+          tests/test_mir_mcp_windows_guard.py
+          tests/test_mir_mcp_security.py
+          tests/test_mir_mcp_indirect_guards.py
+          tests/test_mir_mcp_protocol.py
+          tests/test_mir_mcp_git.py
+          tests/test_mir_mcp_limits.py
+          tests/test_mir_mcp_package.py
+          tests/test_mir_mcp_checker.py
+          tests/test_mir_mcp_relations.py

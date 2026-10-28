@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Copy to scripts/mir_ontology.py to run installed ontology tools (Python 3.9+)."""
+"""Copy to scripts/mir_ontology.py to run installed ontology tools (Python 3.11+)."""
 
 from __future__ import annotations
 
@@ -232,4 +232,10 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
+    if sys.version_info < (3, 11):  # noqa: UP036 - bare python3 must warn and run on 3.9.
+        print(
+            "mir: Python 3.11+ is required; running on "
+            + ".".join(map(str, sys.version_info[:3])) + " (upgrade python3)",
+            file=sys.stderr,
+        )
     raise SystemExit(main())

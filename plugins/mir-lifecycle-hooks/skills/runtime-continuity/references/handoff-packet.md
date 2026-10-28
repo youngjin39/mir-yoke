@@ -371,8 +371,9 @@ establish fresh live-host delivery or activation.
 
 The source prepares round-i exclusions, code-mode accounting, retry feedback,
 quoted-command handling, namespace checks and file-write guards.
-Python 3.9 remains supported with
-optional `tomllib`; absent parsing still skips only the Profile glob filter.
+Python 3.11 or newer is required. Hooks and copied runners warn on stderr and still
+run below 3.11; mir-mcp refuses to start below 3.11. The hook keeps `tomllib` optional
+for older interpreters; absent parsing still skips only the Profile glob filter.
 Main still owns generated Codex
 surfaces, digest acknowledgement, locks/binding and any live-host verification.
 This work performs no bind, tag, push or release. A prepared version is not activation.

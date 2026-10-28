@@ -611,3 +611,47 @@ source read drops the extended-length prefix (`\\?\` and `\\?\UNC\`) before reso
 both fixes the PC run registered the four selected plugins in both CLIs and kept the binding
 ledger private. The third release of the lane (`mir-mcp`, `windows` receipts, Python 3.11 floor)
 becomes 0.13.42.
+
+## Amendment: 2026-10-28 — mir-mcp native Windows lane and the Python 3.11 floor (0.13.42)
+
+Implements the Windows admission design (owner answers of 2026-10-28: option B guard, `python3`
+launcher, the default Git for Windows path, the same deadline behaviour, Python 3.11 on every OS).
+
+- Guard: on `win32`, each path component is opened with `CreateFileW` (`GENERIC_READ`, share
+  read/write, `OPEN_EXISTING`, `FILE_FLAG_OPEN_REPARSE_POINT | FILE_FLAG_BACKUP_SEMANTICS`) and
+  converted with `msvcrt.open_osfhandle`. A reparse point, a non-regular non-directory, a final
+  path (`GetFinalPathNameByHandleW`) that differs from the requested one under `normcase`, or a
+  final path that is UNC is `E_PATH`; ancestors stay open (no delete sharing) until the read
+  ends; protected names are checked on the lexical, resolved and final paths. Lexical refusals:
+  `:` in a component, device names (`CON`, `PRN`, `AUX`, `NUL`, `CONIN$`, `CONOUT$`, `COM0`-`COM9`,
+  `LPT0`-`LPT9`, superscript digits included) with or without an extension, `*?"<>|` outside
+  Profile patterns, and a trailing dot or space. Roots must be local drive-letter paths. The only
+  native surface is `kernel32` `CreateFileW`, `GetFinalPathNameByHandleW`, `CloseHandle` and
+  `msvcrt.open_osfhandle` (static test). POSIX paths are unchanged.
+- Deadline: on `win32`, `tools/call` runs `execute()` in one worker thread joined for 10 s; on
+  overrun the server writes the `E_TIMEOUT` result and exits with `os._exit(0)`. POSIX keeps
+  `SIGALRM`; the cooperative `tick()` deadline and the Git reserve apply on both.
+- Git: on `win32` the first argv element is `C:\Program Files\Git\mingw64\bin\git.exe` (no `PATH`
+  search, no `cmd\git.exe` wrapper), with `CREATE_NO_WINDOW` and two reader threads bounded at
+  64 KiB in place of `selectors`. The five `GIT_ENV` entries are unchanged; no `SystemRoot` entry
+  is needed (measured on the PC), so no fourth `kernel32` function is admitted.
+- Startup: the `win32` refusal is removed; any interpreter below 3.11 exits non-zero with a
+  stderr reason before reading stdin. `mir_mcp.py` stays parseable by Python 3.9 so that refusal
+  is reachable.
+- Receipts: `platform` accepts `windows` only when the validator runs on `win32`, and refuses it
+  elsewhere; `interpreter.executable` must be absolute in the host's native form (a drive-letter
+  path on Windows); `interpreter.version` must be 3.11+; the Claude launcher is compared as
+  `str(installed) + "/mir_mcp.py"` (equal to the former value on POSIX).
+- Manager: `mir-mcp` activation is admitted on Windows x64 with 64-bit Python; ARM64 and 32-bit
+  Python stay refused with the architecture named.
+- Evidence: macOS full suite 3836 passed with 1 failure, the capability lock, rebound at release.
+  On the owner's Windows PC the in-scope files ran natively before the version bump, including
+  the Windows-only guard, deadline and Git tests. Two runs found product and test defects: a
+  hook-source pin, CRLF test fixtures, a launcher-separator case, a FIFO case, the
+  environment-variable length of a test ID, and receipt lookups by the consumer key. After those
+  fixes, 114 targeted Windows tests passed and 1 was skipped: the 8.3 short-name case, because
+  short-name generation is disabled on that volume. The full PC run before the last test-only
+  fixes ended at 1945 passed and 4 failed: the lock and the three consumer-key lookups.
+- Admission stays incomplete until fresh Claude Code and Codex receipts with `platform: windows`
+  exist on the owner's PC (design §5.5). They need the PC's user-scope CLI homes, which still hold
+  stale 0.8.0 registrations; that is an owner decision.

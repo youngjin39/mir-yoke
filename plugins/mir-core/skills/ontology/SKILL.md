@@ -70,7 +70,8 @@ See the [handoff details](references/knowledge-supply.md#agent-handoff-and-deleg
 Read the [mapping guide](references/mapping-guide.md) when authoring or changing a mapping.
 Run the [checker](scripts/ontology_check.py) after mapping, Profile, referenced source or
 contract-distribution changes, and before claiming mapping compatibility. Invoke it explicitly
-with Python 3.9 or newer from the installed skill directory:
+with Python 3.11 or newer from the installed skill directory. Hooks and copied runners
+warn on stderr and still run below 3.11; mir-mcp refuses to start below 3.11:
 
 ```sh
 python3 scripts/ontology_check.py contract

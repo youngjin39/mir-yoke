@@ -15,10 +15,10 @@ import types
 from pathlib import Path
 
 import pytest
+from mir_mcp_interpreters import INTERPRETERS
 
 ROOT = Path(__file__).resolve().parents[1]
 SERVER = ROOT / "plugins/mir-mcp/mir_mcp.py"
-INTERPRETERS = ["/usr/bin/python3", str(ROOT / ".venv/bin/python")]
 SUFFIXES = [
     ("rev-parse", "--verify", "HEAD"),
     ("status", "--porcelain=v1", "--untracked-files=all", "--ignore-submodules=all"),
@@ -32,7 +32,8 @@ ENV = {
     "GIT_TERMINAL_PROMPT": "0",
 }
 PREFIX = [
-    "/usr/bin/git", "--no-optional-locks", "--literal-pathspecs",
+    (r"C:\Program Files\Git\mingw64\bin\git.exe" if sys.platform == "win32"
+     else "/usr/bin/git"), "--no-optional-locks", "--literal-pathspecs",
     "-c", "core.fsmonitor=false", "-c", "core.untrackedCache=false",
     "-c", "core.hooksPath=/dev/null", "-c", "core.attributesFile=/dev/null",
     "-c", "submodule.recurse=false",
@@ -50,7 +51,7 @@ def server():
 
 def setup_git(root, *args):
     return subprocess.run(
-        ["/usr/bin/git", "-c", "init.templateDir=", "-c", "user.name=Test",
+        [PREFIX[0], "-c", "init.templateDir=", "-c", "user.name=Test",
          "-c", "user.email=test@example.invalid", "-C", str(root), *args],
         capture_output=True, check=True, env=ENV,
     ).stdout.decode().strip()
@@ -59,7 +60,7 @@ def setup_git(root, *args):
 @pytest.fixture
 def repo(tmp_path):
     setup_git(tmp_path, "init", "-q")
-    (tmp_path / "source.txt").write_text("source\n")
+    (tmp_path / "source.txt").write_bytes(b"source\n")
     setup_git(tmp_path, "add", "--", "source.txt")
     setup_git(tmp_path, "commit", "-qm", "initial")
     return tmp_path
@@ -125,10 +126,11 @@ def test_should_run_only_exact_argv_and_environment(server, repo, monkeypatch, s
     assert kwargs == {
         "stdin": subprocess.DEVNULL, "stdout": subprocess.PIPE, "stderr": subprocess.PIPE,
         "shell": False, "env": ENV,
+        **({"creationflags": subprocess.CREATE_NO_WINDOW} if sys.platform == "win32" else {}),
     }
 
 
-@pytest.mark.parametrize("interpreter", INTERPRETERS, ids=["system-python", "venv-python"])
+@pytest.mark.parametrize("interpreter", INTERPRETERS, ids=INTERPRETERS)
 def test_gitlink_only_nested_filter_never_runs_over_stdio(interpreter, repo):
     from test_mir_mcp_protocol import _request, _run, _tool_result
 
@@ -168,7 +170,11 @@ def test_gitlink_only_nested_filter_never_runs_over_stdio(interpreter, repo):
     assert head_pin["availability"] == ("available" if pins["data"]["head"] else "unknown")
 
 
-@pytest.mark.parametrize("kind", ["missing", "gitfile", "symlink", "special"])
+@pytest.mark.parametrize("kind", [
+    "missing", "gitfile", "symlink",
+    pytest.param("special", marks=pytest.mark.skipif(
+        sys.platform == "win32", reason="Windows has no os.mkfifo for a filesystem FIFO")),
+])
 def test_should_refuse_nonlocal_git_directory(server, tmp_path, monkeypatch, kind):
     root = tmp_path / "target"
     root.mkdir()
@@ -382,11 +388,17 @@ def test_should_keep_partial_pins_after_config_read_redirection_refusal(
     assert "GIT_REDIRECT_SENTINEL" not in json.dumps(result)
 
 
+@pytest.mark.parametrize("windows", [
+    pytest.param(False, marks=pytest.mark.skipif(
+        sys.platform == "win32", reason="POSIX selector lane")), True,
+])
 @pytest.mark.parametrize("mode,code", [
     ("stdout", "E_LIMIT"), ("stderr", "E_LIMIT"), ("combined", "E_LIMIT"),
     ("timeout", "E_TIMEOUT"), ("invalid", "E_GIT"), ("error", "E_GIT"),
 ])
-def test_should_bound_capture_reap_and_hide_child_errors(server, repo, monkeypatch, mode, code):
+def test_should_bound_capture_reap_and_hide_child_errors(
+    server, repo, monkeypatch, mode, code, windows
+):
     original = subprocess.Popen
     children = []
     scripts = {
@@ -400,6 +412,8 @@ def test_should_bound_capture_reap_and_hide_child_errors(server, repo, monkeypat
     def child(argv, **kwargs):
         if mode == "error":
             raise OSError("SUBPROCESS_ERROR_SENTINEL")
+        if sys.platform != "win32":
+            kwargs.pop("creationflags", None)
         process = original([sys.executable, "-I", "-B", "-u", "-c", scripts[mode]], **kwargs)
         children.append(process)
         return process
@@ -409,7 +423,11 @@ def test_should_bound_capture_reap_and_hide_child_errors(server, repo, monkeypat
         monkeypatch.setattr(server, "GIT_RESERVE", 9.95)
     start = time.monotonic()
     with pytest.raises(server.Refusal) as failure:
-        query(server, repo, SUFFIXES[0])
+        io = server.Guard(str(repo))
+        try:
+            server.run_git(io, "head", *SUFFIXES[0], windows=windows)
+        finally:
+            io.close()
     assert str(failure.value) == code
     assert time.monotonic() - start < 5
     assert all(process.poll() is not None for process in children)
@@ -490,6 +508,7 @@ def test_should_cost_a_failed_query_only_its_own_pin(server, repo, monkeypatch, 
         assert source["sha256"] == hashlib.sha256(b"source\n").hexdigest()
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX SIGALRM reserve check")
 def test_should_answer_before_the_call_alarm_when_git_hangs(server, repo, monkeypatch):
     head = setup_git(repo, "rev-parse", "HEAD")
     elapsed = 8.5
@@ -530,7 +549,10 @@ def test_should_answer_before_the_call_alarm_when_git_hangs(server, repo, monkey
     assert unknown_seconds(result["data"], "dirty", "E_TIMEOUT") < 10 - elapsed
 
 
-def test_should_accept_exact_combined_output_limit_without_disclosure(server, repo, monkeypatch):
+@pytest.mark.parametrize("windows", [None, True])
+def test_should_accept_exact_combined_output_limit_without_disclosure(
+    server, repo, monkeypatch, windows
+):
     original = subprocess.Popen
     commit = "a" * 40
 
@@ -542,10 +564,14 @@ def test_should_accept_exact_combined_output_limit_without_disclosure(server, re
         )
 
     monkeypatch.setattr(subprocess, "Popen", child)
-    assert query(server, repo, SUFFIXES[0]) == commit
+    io = server.Guard(str(repo))
+    try:
+        assert server.run_git(io, "head", *SUFFIXES[0], windows=windows) == commit
+    finally:
+        io.close()
 
 
-@pytest.mark.parametrize("interpreter", INTERPRETERS, ids=["system-python", "venv-python"])
+@pytest.mark.parametrize("interpreter", INTERPRETERS, ids=INTERPRETERS)
 def test_protocol_should_report_commit_pins_and_only_dirty_for_protected_change(interpreter, repo):
     (repo / ".env").write_text("PROTECTED_SENTINEL_INITIAL\n")
     setup_git(repo, "add", "--", ".env")
@@ -579,3 +605,37 @@ def test_protocol_should_report_commit_pins_and_only_dirty_for_protected_change(
     assert pins["sources"][0]["modified_vs_head"] is False
     assert pins["sources"][0]["sha256"] == hashlib.sha256(b"source\n").hexdigest()
     assert not list(repo.rglob("*.pyc"))
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="requires native Windows Git")
+def test_windows_fixed_git_drive_root_and_no_console(server, tmp_path, monkeypatch):
+    root = tmp_path / "root with spaces"
+    root.mkdir()
+    setup_git(root, "init", "-q")
+    original = subprocess.Popen
+    calls = []
+    def capture(argv, **kwargs):
+        calls.append((argv, kwargs))
+        return original(argv, **kwargs)
+    monkeypatch.setattr(subprocess, "Popen", capture)
+    assert query(server, root, SUFFIXES[1]) is False
+    argv, kwargs = calls[0]
+    assert argv[0] == r"C:\Program Files\Git\mingw64\bin\git.exe"
+    assert argv[argv.index("-C") + 1] == str(root.resolve())
+    assert re.match(r"^[A-Za-z]:\\", argv[argv.index("-C") + 1])
+    assert kwargs["creationflags"] == subprocess.CREATE_NO_WINDOW
+    assert kwargs["env"] == ENV
+
+
+@pytest.mark.parametrize("suffix", SUFFIXES)
+def test_threaded_git_matches_normal_queries_and_joins(server, repo, suffix):
+    import threading
+
+    before = set(threading.enumerate())
+    expected = query(server, repo, suffix)
+    io = server.Guard(str(repo))
+    try:
+        assert server.run_git(io, "test", *suffix, windows=True) == expected
+    finally:
+        io.close()
+    assert set(threading.enumerate()) == before

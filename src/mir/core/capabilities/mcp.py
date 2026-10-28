@@ -6,7 +6,7 @@ import ast
 import json
 import re
 import stat
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 
 from jsonschema import Draft202012Validator, ValidationError, validators
 from jsonschema.exceptions import SchemaError
@@ -14,6 +14,13 @@ from jsonschema.exceptions import SchemaError
 from .config import MCP_FILES, MCP_NAME, MCP_TOOLS
 
 _VERSION = re.compile(r"[0-9]+\.[0-9]+\.[0-9]+(?:[-+][A-Za-z0-9.-]+)?")
+
+
+def sys_platform() -> str:
+    """Small seam for host-specific receipt validation tests."""
+    import sys
+
+    return sys.platform
 
 
 def _require(condition: bool, message: str) -> None:
@@ -48,7 +55,7 @@ MCP_LAUNCHERS = {
 def mcp_observed_launcher(runtime: str, installed: Path) -> dict:
     """The process an operator observes each client launch from the installed root."""
     if runtime == "claude-code":
-        return {**mcp_launcher(str(installed / "mir_mcp.py")), "env": {}}
+        return {**mcp_launcher(str(installed) + "/mir_mcp.py"), "env": {}}
     return {**mcp_launcher("./mir_mcp.py"), "cwd": str(installed), "env": {}}
 
 
@@ -196,6 +203,11 @@ def validate_mcp_observation(
         calls = observation["safe_calls"]
         budget = observation["tools_list"]
         version = interpreter["version"]
+        windows = sys_platform() == "win32"
+        executable = (
+            PureWindowsPath(interpreter["executable"]) if windows
+            else PurePosixPath(interpreter["executable"])
+        )
         if (
             observation["installed_sha256"] != digest
             or observation["client"] != runtime
@@ -204,13 +216,15 @@ def validate_mcp_observation(
             or cwd is None
             or not cwd.is_dir()
             or cwd.is_relative_to(provider.resolve())
-            or observation["platform"] not in {"macos", "linux", "wsl"}
+            or observation["platform"] not in {"macos", "linux", "wsl", "windows"}
+            or (observation["platform"] == "windows") != windows
             or not isinstance(interpreter, dict)
             or set(interpreter) != {"executable", "version"}
-            or not Path(interpreter["executable"]).is_absolute()
+            or not executable.is_absolute()
+            or (windows and re.fullmatch(r"[A-Za-z]:", executable.drive) is None)
             or not isinstance(version, str)
             or re.fullmatch(r"3\.\d+\.\d+", version) is None
-            or int(version.split(".")[1]) < 9
+            or int(version.split(".")[1]) < 11
             or observation["server"] != MCP_NAME
             or observation["protocol_version"] not in {"2026-07-28", "2025-11-25"}
             or observation["launcher"] != mcp_observed_launcher(runtime, installed)

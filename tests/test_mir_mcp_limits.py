@@ -4,15 +4,17 @@ from __future__ import annotations
 
 import json
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
+from mir_mcp_interpreters import INTERPRETERS
 
 ROOT = Path(__file__).resolve().parents[1]
 SERVER = ROOT / "plugins/mir-mcp/mir_mcp.py"
-INTERPRETERS = ["/usr/bin/python3", str(ROOT / ".venv/bin/python")]
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX SIGALRM interruption")
 @pytest.mark.parametrize("interpreter", INTERPRETERS)
 def test_global_deadline_interrupts_tool_without_guard_reentry(interpreter, tmp_path):
     from test_mir_mcp_protocol import _request, _success, _tool_result
@@ -53,6 +55,7 @@ m.main()
     assert _success(replies[1])["tools"]
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX dir_fd replacement race")
 @pytest.mark.parametrize("interpreter", INTERPRETERS)
 def test_read_limits_and_replacement_in_both_interpreters(interpreter, tmp_path):
     target = tmp_path / "target"
@@ -173,7 +176,7 @@ def test_output_cap_and_stateless_cursor_bindings(interpreter, tmp_path):
 # stays covered on hosts whose system Python is 3.11 or newer.
 @pytest.mark.parametrize(
     "interpreter,block_tomllib",
-    [(interpreter, False) for interpreter in INTERPRETERS] + [(INTERPRETERS[1], True)],
+    [(interpreter, False) for interpreter in INTERPRETERS] + [(INTERPRETERS[-1], True)],
 )
 def test_protected_root_and_malformed_profile(interpreter, block_tomllib, tmp_path):
     wrapper = tmp_path / "profile.py"
@@ -207,3 +210,68 @@ print(json.dumps(m["execute"]("ontology_validate", {
         assert result["ok"] and result["profile_protections"] == "unavailable"
     else:
         assert result["error"] == {"code": "E_FORMAT"}
+
+
+@pytest.mark.parametrize("interpreter", INTERPRETERS)
+@pytest.mark.parametrize("modern", [False, True])
+def test_windows_backstop_flushes_timeout_and_exits(interpreter, tmp_path, modern):
+    import time
+
+    from test_mir_mcp_protocol import _request
+
+    wrapper = tmp_path / "windows_block.py"
+    wrapper.write_text("""import importlib.util, sys, time
+spec = importlib.util.spec_from_file_location("windows_block_mcp", sys.argv[1])
+m = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(m)
+def block(*args):
+    time.sleep(60)
+m.execute = block
+sys.exit(m.main(windows=True))
+""")
+    frames = []
+    if not modern:
+        frames = [_request("initialize", {"protocolVersion": "2025-11-25",
+                  "clientInfo": {"name": "test", "version": "1"}, "capabilities": {}},
+                  modern=False),
+                  {"jsonrpc": "2.0", "method": "notifications/initialized"}]
+    frames.append(_request("tools/call", {"name": "ontology_validate", "arguments": {}},
+                           modern=modern, identity="blocked"))
+    start = time.monotonic()
+    child = subprocess.run([interpreter, "-I", "-B", "-u", str(wrapper), str(SERVER)],
+                           input=b"".join(json.dumps(f).encode() + b"\n" for f in frames),
+                           capture_output=True, timeout=12, env={})
+    assert time.monotonic() - start < 10.5
+    assert child.returncode == 0 and child.stderr == b""
+    assert child.stdout.endswith(b"\n") and b"\r\n" not in child.stdout
+    response = json.loads(child.stdout.splitlines()[-1])
+    expected = {"content": [{"type": "text", "text": '{"code":"E_TIMEOUT"}'}],
+                "structuredContent": {"ok": False, "data": None,
+                    "error": {"code": "E_TIMEOUT"}, "next_cursor": None,
+                    "profile_protections": "available"}, "isError": True}
+    if modern:
+        expected["resultType"] = "complete"
+    assert response == {"jsonrpc": "2.0", "id": "blocked", "result": expected}
+
+
+def test_windows_normal_call_joins_worker(monkeypatch):
+    import importlib.util
+    import threading
+
+    from test_mir_mcp_protocol import _request
+
+    spec = importlib.util.spec_from_file_location("windows_normal_mcp", SERVER)
+    module = importlib.util.module_from_spec(spec)
+    exec(compile(SERVER.read_bytes(), str(SERVER), "exec"), module.__dict__)
+    before = set(threading.enumerate())
+    workers = []
+    def execute(*args):
+        workers.append(threading.current_thread())
+        return {"ok": True, "data": {}, "error": None, "next_cursor": None,
+                "profile_protections": "available"}
+    monkeypatch.setattr(module, "execute", execute)
+    reply = module.Protocol(windows=True).request(_request(
+        "tools/call", {"name": "ontology_validate", "arguments": {}}))
+    assert reply["result"]["structuredContent"]["ok"]
+    assert len(workers) == 1 and workers[0] is not threading.current_thread()
+    assert not workers[0].is_alive() and set(threading.enumerate()) == before

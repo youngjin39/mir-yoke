@@ -15,6 +15,55 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 RUNNER = ROOT / "plugins/mir-core/skills/ontology/scripts/mir_ontology_runner.py"
 
+# The SessionStart hook stays the exact print-only H1 source (ADR-90); the handoff hook warns.
+FLOOR_ENTRYPOINTS = (
+    "plugins/mir-lifecycle-hooks/skills/runtime-continuity/scripts/handoff_packet.py",
+    "plugins/mir-core/skills/ontology/scripts/mir_ontology_runner.py",
+    "plugins/mir-core/skills/ontology/scripts/mk_query.py",
+    "plugins/mir-core/skills/ontology/scripts/ontology_check.py",
+    "plugins/mir-mcp/ontology/scripts/ontology_check.py",
+)
+
+
+@pytest.mark.parametrize("relative", FLOOR_ENTRYPOINTS)
+@pytest.mark.parametrize("version", [(3, 9, 6), (3, 10, 0), (3, 11, 0), (3, 14, 6)])
+def test_entrypoint_python_floor_warns_and_preserves_stdout(relative, version):
+    path = ROOT / relative
+
+    def run(injected):
+        code = (
+            "import runpy, sys; "
+            f"sys.version_info = {injected!r}; "
+            f"sys.argv = [{str(path)!r}, '--help']; "
+            f"runpy.run_path({str(path)!r}, run_name='__main__')"
+        )
+        return subprocess.run(
+            [sys.executable, "-c", code], input='{"hook_event_name": "PreToolUse"}',
+            text=True, capture_output=True, check=False,
+        )
+
+    baseline = run((3, 11, 0))
+    result = run(version)
+    assert baseline.returncode == result.returncode == 0, result.stderr
+    assert result.stdout == baseline.stdout
+    assert baseline.stderr == ""
+    expected = (
+        "mir: Python 3.11+ is required; running on "
+        + ".".join(map(str, version)) + " (upgrade python3)\n"
+    ) if version < (3, 11) else ""
+    assert result.stderr == expected
+
+
+@pytest.mark.parametrize("relative", FLOOR_ENTRYPOINTS)
+def test_import_does_not_emit_python_floor_warning(relative):
+    code = (
+        "import runpy, sys; sys.version_info = (3, 9, 6); "
+        f"runpy.run_path({str(ROOT / relative)!r}, run_name='floor_import_test')"
+    )
+    result = subprocess.run([sys.executable, "-c", code], text=True, capture_output=True)
+    assert result.returncode == 0, result.stderr
+    assert result.stdout == result.stderr == ""
+
 
 @pytest.fixture
 def runner(tmp_path, monkeypatch):

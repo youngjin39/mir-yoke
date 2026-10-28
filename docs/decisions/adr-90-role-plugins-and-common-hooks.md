@@ -425,3 +425,16 @@ read-only/offline behavior and Python 3.9 support remain unchanged. Main owns
 versions, handler SHA admission, tree digests, payloads, locks, generated
 derivatives, activation and release verification; this source-only amendment
 performs none of that release chain.
+
+## Amendment: 2026-10-28 — Python 3.11 floor for the hooks (0.13.42)
+
+The owner set Python 3.11 as the floor on every OS. The handoff hook
+(`handoff_packet.py`) and the copied ontology runners print one stderr line
+below 3.11 and then run unchanged: stdout, the admitted events, fail-open
+behaviour and optional `tomllib` stay as before, and the source stays
+parseable and runnable by Python 3.9. The SessionStart hook
+(`runtime_continuity.py`) stays the exact print-only H1 source within its
+1024-byte bound, so it does not warn. The reviewed handler digest changes;
+the H1 source pin does not. Tests:
+`test_entrypoint_python_floor_warns_and_preserves_stdout` and the macOS
+`/usr/bin/python3` 3.9 run in `tests/test_mechanical_handoff.py`.

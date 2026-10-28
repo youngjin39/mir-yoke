@@ -1,4 +1,4 @@
-"""Bounded read-only stdio tools, Python 3.9+, with no environment inputs."""
+"""Bounded read-only stdio tools, Python 3.11+, with no environment inputs."""
 
 from __future__ import annotations
 
@@ -15,6 +15,7 @@ import signal
 import stat
 import subprocess
 import sys
+import threading
 import time
 from pathlib import Path, PurePosixPath, PureWindowsPath
 
@@ -23,7 +24,7 @@ try:
 except ImportError:
     tomllib = None
 
-VERSION = "0.13.41"
+VERSION = "0.13.42"
 MODERN = "2026-07-28"
 LEGACY = "2025-11-25"
 VERSIONS = [MODERN, LEGACY]
@@ -34,7 +35,8 @@ FILE_COUNT = 256
 OUTPUT_LIMIT = 16384
 STRING_LIMIT = 4096
 GIT_PREFIX = (
-    "/usr/bin/git", "--no-optional-locks", "--literal-pathspecs",
+    (r"C:\Program Files\Git\mingw64\bin\git.exe" if sys.platform == "win32"
+     else "/usr/bin/git"), "--no-optional-locks", "--literal-pathspecs",
     "-c", "core.fsmonitor=false", "-c", "core.untrackedCache=false",
     "-c", "core.hooksPath=/dev/null", "-c", "core.attributesFile=/dev/null",
     "-c", "submodule.recurse=false",
@@ -157,7 +159,110 @@ def parse_json(raw):
     return value
 
 
-def relative_path(value):
+if sys.platform == "win32":
+    import ctypes
+    import msvcrt
+
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32.CreateFileW.argtypes = (
+        ctypes.c_wchar_p, ctypes.c_uint32, ctypes.c_uint32, ctypes.c_void_p,
+        ctypes.c_uint32, ctypes.c_uint32, ctypes.c_void_p,
+    )
+    kernel32.CreateFileW.restype = ctypes.c_void_p
+    kernel32.GetFinalPathNameByHandleW.argtypes = (
+        ctypes.c_void_p, ctypes.c_wchar_p, ctypes.c_uint32, ctypes.c_uint32,
+    )
+    kernel32.GetFinalPathNameByHandleW.restype = ctypes.c_uint32
+    kernel32.CloseHandle.argtypes = (ctypes.c_void_p,)
+    kernel32.CloseHandle.restype = ctypes.c_int
+
+
+def windows_components(parts, pattern=False):
+    """Reject Win32 device, stream and normalization spellings without native calls."""
+    for part in parts:
+        device = part.split(".", 1)[0].upper()
+        if (
+            any(char in part for char in (':"<>|' if pattern else ':*?"<>|'))
+            or part.endswith((".", " "))
+            or device in {"CON", "PRN", "AUX", "NUL", "CONIN$", "CONOUT$"}
+            or re.fullmatch(r"(?:COM|LPT)[0-9¹²³]", device)
+        ):
+            raise Refusal("E_PATH")
+
+
+def windows_root(value):
+    """Admit only absolute local drive roots, including after resolution."""
+    path = PureWindowsPath(value)
+    if (
+        not re.fullmatch(r"[a-zA-Z]:", path.drive)
+        or path.root != "\\"
+        or ".." in path.parts
+        or any(ord(char) < 32 or ord(char) == 127 for char in value)
+    ):
+        raise Refusal("E_PATH")
+    windows_components(path.parts[1:])
+
+
+def windows_open(path, directory=False, protected=None):
+    """Open without following reparses and prove the path of this exact handle."""
+    native = kernel32.CreateFileW(
+        str(path), 0x80000000, 0x1 | 0x2, None, 3, 0x00200000 | 0x02000000, None
+    )  # GENERIC_READ; SHARE_READ|WRITE; OPEN_EXISTING; OPEN_REPARSE_POINT|BACKUP_SEMANTICS
+    if native == ctypes.c_void_p(-1).value:
+        raise ctypes.WinError(ctypes.get_last_error())
+    handle = None
+    try:
+        opened = native
+        handle = msvcrt.open_osfhandle(native, os.O_RDONLY | os.O_NOINHERIT)
+        native = None  # The CRT descriptor now owns the native handle.
+        info = os.fstat(handle)
+        if (
+            getattr(info, "st_file_attributes", 0) & 0x400  # FILE_ATTRIBUTE_REPARSE_POINT
+            or (directory and not stat.S_ISDIR(info.st_mode))
+            or not (stat.S_ISDIR(info.st_mode) or stat.S_ISREG(info.st_mode))
+        ):
+            raise Refusal("E_PATH")
+        buffer = ctypes.create_unicode_buffer(32768)
+        # FILE_NAME_NORMALIZED | VOLUME_NAME_DOS are both zero.
+        length = kernel32.GetFinalPathNameByHandleW(opened, buffer, len(buffer), 0)
+        if not length or length >= len(buffer):
+            raise Refusal("E_PATH")
+        final = buffer.value
+        if not final.startswith("\\\\?\\"):
+            raise Refusal("E_PATH")
+        final = final[4:]
+        windows_root(final)  # Also refuses mapped drives whose final path is UNC.
+        if protected is not None:
+            protected(Path(final))
+        if os.path.normcase(final) != os.path.normcase(str(path)):
+            raise Refusal("E_PATH")
+        result = handle
+        handle = None
+        return result
+    finally:
+        if handle is not None:
+            os.close(handle)
+        if native is not None:
+            kernel32.CloseHandle(native)
+
+
+def windows_walk(root, parts, protected=None):
+    """Keep all ancestors open without delete sharing until the caller closes them."""
+    handles = []
+    try:
+        path = root
+        handles.append(windows_open(path, True, protected))
+        for index, part in enumerate(parts):
+            path = path / part
+            handles.append(windows_open(path, index < len(parts) - 1, protected))
+        return handles
+    except BaseException:
+        for handle in reversed(handles):
+            os.close(handle)
+        raise
+
+
+def relative_path(value, pattern=False):
     if (
         not isinstance(value, str)
         or not value
@@ -173,6 +278,8 @@ def relative_path(value):
     parts = PurePosixPath(value).parts
     if not parts or parts == (".",):
         raise Refusal("E_PATH")
+    if sys.platform == "win32":
+        windows_components(parts, pattern)
     return "/".join(parts)
 
 
@@ -197,6 +304,7 @@ class Guard:
 
     def __init__(self, root):
         self.fd = None
+        self.windows_ancestors = {}
         self.deadline = time.monotonic() + 10
         self.total = 0
         self.files = 0
@@ -210,13 +318,17 @@ class Guard:
         if (
             not isinstance(root, str)
             or len(root.encode("utf-8")) > 4096
-            or not Path(root).is_absolute()
+            or (sys.platform != "win32" and not Path(root).is_absolute())
             or ".." in Path(root).parts
         ):
             raise Refusal("E_PATH")
+        if sys.platform == "win32":
+            windows_root(root)
         try:
-            self.protected(root)
+            self.protected(root.replace("\\", "/") if sys.platform == "win32" else root)
             self.root = Path(root).resolve(strict=True)
+            if sys.platform == "win32":
+                windows_root(str(self.root))
             reason = cloud_sync_reason(self.root)
             if reason is not None:
                 raise Refusal("E_CLOUD_SYNC", [
@@ -225,7 +337,10 @@ class Guard:
                 ])
             self.protected(self.root.as_posix())
             before = self.root.stat()
-            self.fd = os.open(str(self.root), os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+            if sys.platform == "win32":
+                self.fd = windows_open(self.root, True, self._windows_protected)
+            else:
+                self.fd = os.open(str(self.root), os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
             after = os.fstat(self.fd)
             if (before.st_dev, before.st_ino) != (after.st_dev, after.st_ino):
                 raise Refusal("E_PATH")
@@ -254,7 +369,7 @@ class Guard:
                             raise Refusal("E_FORMAT")
                         for pattern in patterns:
                             try:
-                                self.patterns.append(relative_path(pattern).lower())
+                                self.patterns.append(relative_path(pattern, pattern=True).lower())
                             except Refusal:
                                 raise Refusal("E_FORMAT") from None
             if tomllib is not None:
@@ -266,9 +381,26 @@ class Guard:
             raise
 
     def close(self):
+        for handle in list(self.windows_ancestors):
+            self._close(handle)
         if self.fd is not None:
             os.close(self.fd)
             self.fd = None
+
+    def _close(self, handle):
+        try:
+            os.close(handle)
+        finally:
+            for ancestor in reversed(self.windows_ancestors.pop(handle, [])):
+                os.close(ancestor)
+
+    def _windows_protected(self, final):
+        self.protected(final.as_posix())
+        try:
+            relative = final.relative_to(self.root).as_posix()
+        except ValueError:
+            raise Refusal("E_PATH") from None
+        self.protected(relative)
 
     def tick(self):
         if time.monotonic() >= self.deadline:
@@ -283,6 +415,21 @@ class Guard:
             raise Refusal("E_PATH")
 
     def _profile_stamp(self):
+        if sys.platform == "win32":
+            handles = []
+            try:
+                handles = windows_walk(self.root, (".mir", "repo-profile.toml"))
+                info = os.fstat(handles[-1])
+                if not stat.S_ISREG(info.st_mode):
+                    raise Refusal("E_PATH")
+                return (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
+            except FileNotFoundError:
+                return "missing"
+            except OSError:
+                raise Refusal("E_PATH") from None
+            finally:
+                for handle in reversed(handles):
+                    os.close(handle)
         directory = None
         handle = None
         try:
@@ -339,6 +486,8 @@ class Guard:
         except (OSError, ValueError, RuntimeError):
             raise Refusal("E_PATH") from None
         self.protected(resolved_relative)
+        if sys.platform == "win32":
+            return self._windows_open(relative, allow_missing)
         # O_NOFOLLOW on every component also refuses replacement by an internal symlink.
         directory = os.dup(self.fd)
         try:
@@ -374,18 +523,47 @@ class Guard:
             if directory is not None:
                 os.close(directory)
 
+    def _windows_open(self, relative, allow_missing):
+        handles = []
+        try:
+            try:
+                handles = windows_walk(
+                    self.root, PurePosixPath(relative).parts, self._windows_protected
+                )
+            except FileNotFoundError:
+                self.sources[relative] = "missing"
+                if allow_missing:
+                    return None
+                raise Refusal("E_IO") from None
+            except OSError:
+                raise Refusal("E_PATH") from None
+            info = os.fstat(handles[-1])
+            if stat.S_ISREG(info.st_mode):
+                self.accessed.add(relative)
+                if len(self.accessed) > FILE_COUNT:
+                    raise Refusal("E_LIMIT")
+            self.sources[relative] = [info.st_dev, info.st_ino, info.st_size,
+                                      info.st_mtime_ns, info.st_ctime_ns]
+            result = handles[-1]
+            self.windows_ancestors[result] = handles[:-1]
+            handles = []
+            return result
+        finally:
+            for handle in reversed(handles):
+                os.close(handle)
+
     def path(self, relative, allow_missing=False):
         normalized = self._relative(relative)
         handle = self._open(normalized, allow_missing)
         if handle is not None:
-            os.close(handle)
+            self._close(handle)
         return self.root / normalized
 
     def exists(self, relative):
         handle = self._open(relative, True)
         if handle is None:
             return False
-        os.close(handle)
+        self._close(handle)
         return True
 
     def read(self, relative):
@@ -426,13 +604,13 @@ class Guard:
                 if (current.st_dev, current.st_ino) != (after.st_dev, after.st_ino):
                     raise Refusal("E_PATH")
             finally:
-                os.close(check)
+                self._close(check)
             payload = b"".join(chunks)
             self.sources[normalized] = digest(payload)
             self.source_digests[normalized] = digest(payload)
             return payload
         finally:
-            os.close(handle)
+            self._close(handle)
 
     def validate_json(self, text):
         parse_json(text.encode("utf-8") if isinstance(text, str) else text)
@@ -444,21 +622,30 @@ def bundled(relative):
     if relative not in allowed:
         raise Refusal("E_PATH")
     handle = None
+    ancestors = []
     try:
         before_root = PACKAGE.stat()
-        handle = os.open("/", os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
-        parts = (PACKAGE / relative).parts[1:]
-        for index, part in enumerate(parts):
-            flags = os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK
-            if index < len(parts) - 1:
-                flags |= os.O_DIRECTORY
-            child = os.open(part, flags, dir_fd=handle)
-            os.close(handle)
-            handle = child
-            if index == len(PACKAGE.parts) - 2:
-                pinned = os.fstat(handle)
-                if (before_root.st_dev, before_root.st_ino) != (pinned.st_dev, pinned.st_ino):
-                    raise Refusal("E_PATH")
+        if sys.platform == "win32":
+            windows_root(str(PACKAGE))
+            handles = windows_walk(Path(PACKAGE.anchor), (PACKAGE / relative).parts[1:])
+            handle, ancestors = handles[-1], handles[:-1]
+            pinned = os.fstat(handles[len(PACKAGE.parts) - 1])
+            if (before_root.st_dev, before_root.st_ino) != (pinned.st_dev, pinned.st_ino):
+                raise Refusal("E_PATH")
+        else:
+            handle = os.open("/", os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+            parts = (PACKAGE / relative).parts[1:]
+            for index, part in enumerate(parts):
+                flags = os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK
+                if index < len(parts) - 1:
+                    flags |= os.O_DIRECTORY
+                child = os.open(part, flags, dir_fd=handle)
+                os.close(handle)
+                handle = child
+                if index == len(PACKAGE.parts) - 2:
+                    pinned = os.fstat(handle)
+                    if (before_root.st_dev, before_root.st_ino) != (pinned.st_dev, pinned.st_ino):
+                        raise Refusal("E_PATH")
         before = os.fstat(handle)
         if not stat.S_ISREG(before.st_mode):
             raise Refusal("E_PATH")
@@ -486,6 +673,8 @@ def bundled(relative):
     finally:
         if handle is not None:
             os.close(handle)
+        for ancestor in reversed(ancestors):
+            os.close(ancestor)
 
 
 def load_modules():
@@ -1015,8 +1204,68 @@ def git_preflight(io):
         return False
 
 
-def run_git(io, label, *suffix):
+def threaded_git_output(child, deadline):
+    """Bound both Windows pipes without selectors (which only supports sockets there)."""
+    output = bytearray()
+    lock = threading.Lock()
+    changed = threading.Event()
+    total = 0
+    finished = 0
+    error = None
+
+    def read(pipe):
+        nonlocal total, finished, error
+        try:
+            while True:
+                raw = os.read(pipe.fileno(), 8192)
+                if not raw:
+                    break
+                with lock:
+                    total += len(raw)
+                    if total > GIT_OUTPUT_LIMIT:
+                        error = "E_LIMIT"
+                        break
+                    if pipe is child.stdout:
+                        output.extend(raw)
+        except OSError:
+            with lock:
+                error = error or "E_GIT"
+        finally:
+            with lock:
+                finished += 1
+                changed.set()
+
+    readers = [threading.Thread(target=read, args=(pipe,), daemon=True)
+               for pipe in (child.stdout, child.stderr)]
+    try:
+        for reader in readers:
+            reader.start()
+        while True:
+            with lock:
+                if error:
+                    raise Refusal(error)
+                if finished == 2:
+                    break
+                changed.clear()
+            remaining = deadline - time.monotonic()
+            if remaining <= 0 or not changed.wait(remaining):
+                raise Refusal("E_TIMEOUT")
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise Refusal("E_TIMEOUT")
+        return output, child.wait(timeout=remaining)
+    finally:
+        if child.poll() is None:
+            child.kill()
+        child.wait()
+        for reader in readers:
+            if reader.ident is not None:
+                reader.join(timeout=1)
+
+
+def run_git(io, label, *suffix, windows=None):
     """Run one fixed Git query and expose only a commit or a boolean."""
+    windows = sys.platform == "win32" if windows is None else windows
     io.tick()
     deadline = io.deadline - GIT_RESERVE
     if time.monotonic() >= deadline:
@@ -1051,29 +1300,33 @@ def run_git(io, label, *suffix):
             [*GIT_PREFIX, "-C", str(io.root), *suffix],
             stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             shell=False, env=dict(GIT_ENV),
+            **({"creationflags": subprocess.CREATE_NO_WINDOW} if sys.platform == "win32" else {}),
         )
-        output = bytearray()
-        total = 0
-        with selectors.DefaultSelector() as selector:
-            selector.register(child.stdout, selectors.EVENT_READ)
-            selector.register(child.stderr, selectors.EVENT_READ)
-            while selector.get_map():
+        if windows:
+            output, code = threaded_git_output(child, deadline)
+        else:
+            output = bytearray()
+            total = 0
+            with selectors.DefaultSelector() as selector:
+                selector.register(child.stdout, selectors.EVENT_READ)
+                selector.register(child.stderr, selectors.EVENT_READ)
+                while selector.get_map():
+                    remaining = deadline - time.monotonic()
+                    if remaining <= 0:
+                        raise Refusal("E_TIMEOUT")
+                    for key, _ in selector.select(remaining):
+                        raw = os.read(key.fileobj.fileno(), 8192)
+                        total += len(raw)
+                        if total > GIT_OUTPUT_LIMIT:
+                            raise Refusal("E_LIMIT")
+                        if not raw:
+                            selector.unregister(key.fileobj)
+                        elif key.fileobj is child.stdout:
+                            output.extend(raw)
                 remaining = deadline - time.monotonic()
                 if remaining <= 0:
                     raise Refusal("E_TIMEOUT")
-                for key, _ in selector.select(remaining):
-                    raw = os.read(key.fileobj.fileno(), 8192)
-                    total += len(raw)
-                    if total > GIT_OUTPUT_LIMIT:
-                        raise Refusal("E_LIMIT")
-                    if not raw:
-                        selector.unregister(key.fileobj)
-                    elif key.fileobj is child.stdout:
-                        output.extend(raw)
-            remaining = deadline - time.monotonic()
-            if remaining <= 0:
-                raise Refusal("E_TIMEOUT")
-            code = child.wait(timeout=remaining)
+                code = child.wait(timeout=remaining)
         if kind == "diff":
             return bool(code) if code in (0, 1) else None
         if code != 0:
@@ -1358,7 +1611,9 @@ def timeout_handler(signum, frame):
 
 
 class Protocol:
-    def __init__(self):
+    def __init__(self, windows=None):
+        self.windows = sys.platform == "win32" if windows is None else windows
+        self.exit_after_response = False
         self.initialized = False
         self.pending = False
 
@@ -1460,11 +1715,30 @@ class Protocol:
             elif method == "tools/list" and not ordinary:
                 result = {"tools": TOOLS}
             elif method == "tools/call" and set(ordinary) == {"name", "arguments"}:
-                signal.setitimer(signal.ITIMER_REAL, 10)
-                try:
-                    structured = execute(ordinary["name"], ordinary["arguments"])
-                finally:
-                    signal.setitimer(signal.ITIMER_REAL, 0)
+                if self.windows:
+                    completed = []
+                    def call():
+                        completed.append(execute(ordinary["name"], ordinary["arguments"]))
+                    worker = threading.Thread(target=call, daemon=True)
+                    worker.start()
+                    worker.join(10)
+                    if worker.is_alive():
+                        structured = {
+                            "ok": False, "data": None, "error": {"code": "E_TIMEOUT"},
+                            "next_cursor": None,
+                            "profile_protections": (
+                                "unavailable" if tomllib is None else "available"
+                            ),
+                        }
+                        self.exit_after_response = True
+                    else:
+                        structured = completed[0]
+                else:
+                    signal.setitimer(signal.ITIMER_REAL, 10)
+                    try:
+                        structured = execute(ordinary["name"], ordinary["arguments"])
+                    finally:
+                        signal.setitimer(signal.ITIMER_REAL, 0)
                 result = {
                     "content": [],
                     "structuredContent": structured,
@@ -1499,12 +1773,15 @@ class Protocol:
             return rpc_error(identity, -32602, exc.code)
 
 
-def main():
-    if sys.platform == "win32":
-        sys.stderr.write("E_VERSION\n")
+def main(windows=None):
+    if sys.version_info < (3, 11):  # noqa: UP036 - standalone refusal must run on 3.9
+        running = ".".join(map(str, sys.version_info[:3]))
+        sys.stderr.write("mir-mcp requires Python 3.11+; running " + running + "\n")
         return 1
-    signal.signal(signal.SIGALRM, timeout_handler)
-    protocol = Protocol()
+    windows = sys.platform == "win32" if windows is None else windows
+    if not windows:
+        signal.signal(signal.SIGALRM, timeout_handler)
+    protocol = Protocol(windows=windows)
     while True:
         raw = sys.stdin.buffer.readline(FRAME_LIMIT + 1)
         if not raw:
@@ -1529,6 +1806,8 @@ def main():
                     encoded = compact(response).encode("utf-8")
                 sys.stdout.buffer.write(encoded + b"\n")
                 sys.stdout.buffer.flush()
+                if protocol.exit_after_response:
+                    os._exit(0)
             except (BrokenPipeError, OSError):
                 return 0
 

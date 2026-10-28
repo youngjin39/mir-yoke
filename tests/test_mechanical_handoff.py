@@ -1227,6 +1227,7 @@ def test_should_run_all_events_on_interpreters_without_tomllib(runtime):
     """macOS /usr/bin/python3 (3.9) runs Claude hooks: a 3.11-only import must not crash them."""
     run, _, repo = runtime
     guard = ("import runpy, sys; sys.modules['tomllib'] = None; "
+             "sys.version_info = (3, 9, 6); "
              f"sys.argv = [{str(HANDLER)!r}]; "
              f"runpy.run_path({str(HANDLER)!r}, run_name='__main__')")
     transcript = repo / 'native-session.jsonl'
@@ -1239,8 +1240,17 @@ def test_should_run_all_events_on_interpreters_without_tomllib(runtime):
         payload.update(cwd=str(repo), session_id='session-1', transcript_path=str(transcript))
         result = subprocess.run([HANDLER_PYTHON, '-c', guard], input=json.dumps(payload),
                                 text=True, capture_output=True, check=False)
-        assert 'Traceback' not in result.stderr, result.stderr
+        assert result.stderr == (
+            'mir: Python 3.11+ is required; running on 3.9.6 (upgrade python3)\n'
+        )
         assert result.returncode in {0, 2}
+        baseline = subprocess.run(
+            [sys.executable, '-c', guard.replace('sys.version_info = (3, 9, 6); ', '')],
+            input=json.dumps(payload), text=True, capture_output=True, check=False,
+        )
+        assert baseline.stderr == ''
+        assert result.stdout == baseline.stdout
+        assert result.returncode == baseline.returncode
     supplied = subprocess.run(
         [HANDLER_PYTHON, '-c', guard], text=True, capture_output=True, check=False,
         input=json.dumps({'hook_event_name': 'UserPromptSubmit', 'prompt': PROMPT, 'cwd': str(repo),

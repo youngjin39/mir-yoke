@@ -1,39 +1,52 @@
 # Plan
 
-## Active task: release 0.13.41 (Windows consumer sync fixes) (2026-10-28)
+## Active task: release 0.13.42 (`mir-mcp` native Windows lane and the Python 3.11 floor) (2026-10-28)
 
-Intent authority: as for 0.13.40 (Discord 1564632417304838205, 1564744151088627924; release-chain
-approvals 1564297975755448493, 1564320227062186065), relayed by Mir Harness Main
-(parent-supplied). Design authority: this cursor and the 0.13.40 amendment to
-[ADR-91](../docs/decisions/adr-91-stdio-mcp-package-admission.md). Baseline: 5cb0ec0 (v0.13.40),
-installed and attested on the maintainer host.
+Intent authority: the owner's answers on the native Windows lane (Discord 1564632417304838205:
+option B `ctypes` guard, keep `python3`, Git at the default Git for Windows location, the same
+user-visible behaviour), the Python 3.11+ floor on every OS (1564633173516755045), the home_server
+PATH fix applied (1564793658933383179; Main observed every live `mir-mcp` on 3.14.6) and the start
+of 0.13.42 ("go ahead", 1564794291950452747), with the release-chain approvals
+(1564297975755448493, 1564320227062186065), relayed by Mir Harness Main (parent-supplied). Design
+authority: this cursor, Mir Harness `tasks/reports/mir-mcp-windows-admission-design-2026-10-27.md`
+§2-§5 with its 2026-10-28 update (parent-supplied), and the ADR-91 amendment this release adds.
+Baseline: 54b3841 on `main` (v0.13.41 installed and attested on the maintainer host).
 
 Prior cursor preserved verbatim:
-[cursor before release 0.13.41](change_log.md#cursor-before-release-01341-2026-10-28).
-
-Why: the 0.13.40 exit check (a consumer sync on the owner's Windows PC, with the capability home,
-Claude config and Codex home isolated under the PC's temp folder) failed twice natively:
-removing the exported `.git` raised WinError 5 (Git for Windows makes object files read-only), and
-Codex for Windows records the local marketplace source as `\\?\C:\...`, which the manager read
-as a different path. With both fixed in place on the PC, sync apply registered the four selected
-plugins in both CLIs, the binding ledger passed the DACL check and a second update preview was
-ready to apply. The `mir-mcp` Windows lane, `windows` receipts and the Python 3.11 floor move to
-0.13.42.
+[cursor before release 0.13.42](change_log.md#cursor-before-release-01342-2026-10-28).
 
 Rules:
-1. Tree removal clears the read-only attribute before retrying a failed delete.
-2. Codex marketplace sources drop the Windows extended-length prefix before they are compared.
+1. Windows filesystem guard (option B): lexical refusals, root refusals (UNC, `\\?\`, `\\.\`,
+   drive-relative, resolving to UNC), a handle walk with `CreateFileW`
+   (`FILE_FLAG_OPEN_REPARSE_POINT | FILE_FLAG_BACKUP_SEMANTICS`, no `FILE_SHARE_DELETE`), refusal
+   of every reparse point, final-path proof by `GetFinalPathNameByHandleW`, ancestors held during
+   the read; the only native surface is `kernel32` `CreateFileW`, `GetFinalPathNameByHandleW`,
+   `CloseHandle` plus `msvcrt.open_osfhandle`.
+2. Windows deadline: the cooperative deadline stays; a worker thread backstop answers `E_TIMEOUT`
+   at 10 s and exits the server. Startup selects the platform path instead of refusing Windows.
+3. Windows Git: only `C:\Program Files\Git\mingw64\bin\git.exe`, the same argv and five-entry
+   environment, `CREATE_NO_WINDOW`, two bounded reader threads instead of `selectors`.
+4. Provider: receipts accept `platform: windows` only on Windows (and refuse it elsewhere), the
+   native interpreter path, and the observed launcher forms; the manager admits `mir-mcp` on
+   Windows x64.
+5. Python 3.11+: `mir-mcp` refuses to start below 3.11 with a stderr reason; receipts require
+   `interpreter.version` >= 3.11; hooks and copied runners warn below 3.11 and still run.
 
-Request matrix: (1) fail-first tests and fixes (done: `tests/test_capability_windows_paths.py`);
-(2) docs and version surfaces; (3) Main full suite, fresh-clone readiness; (4) release, host
-re-attestation; (5) the Windows PC canary rerun on the released code.
+Request matrix: (1) fail-first tests and code for rules 1-5; (2) ADR-91 amendment, docs, version
+surfaces; (3) Main full suite, fresh-clone readiness, Windows PC `mir-mcp` and in-scope tests;
+(4) release and host re-attestation (macOS receipts at >= 3.11); (5) Windows receipts on the
+owner's PC (needs the PC's real Claude/Codex homes: owner decision on its Yoke 0.8.0 state).
 
-Live install (Main, 2026-10-28): v0.13.41 (9dac2f7) published after fresh-clone readiness (3653
-passed) and CI validate (including `windows_native`) and release. This checkout's provider moved
-0.13.39 → 0.13.40 (Claude b47b2cd4, Codex 01a17f99; that record is folded into 0514f78's lock)
-→ 0.13.41 with the new hook and mir-mcp digests in its local approval file. Attested
-`claude-code` (session 33be5a41) and `codex-cli-desktop` (session 01a17fc1), each with five
-`ok: true` mir-mcp calls, four hooks and 23 skills; `finalize --after-restart` applied; status
-ready with both runtimes verified. Windows PC, released v0.13.41 unpatched, isolated homes under
-the PC temp folder: sync apply restart-required, four plugins registered in each CLI, binding
-ledger private, update preview ready; runtimes stay unattested until 0.13.42 receipts.
+Status (2026-10-28, Main):
+- (1) done: slices M1 guard, M2 deadline/startup/Git, M3 provider/manager, M4 floor, M5 Windows
+  test fixes. Main changes: the SessionStart hook keeps its exact print-only H1 source (the M4
+  warning broke its 1024-byte bound), so only the handoff hook warns; handoff handler SHA
+  updated; receipt lookups keyed by the consumer key.
+- (2) done: ADR-91 and ADR-90 amendments, CHANGELOG, MIGRATION, README, version surfaces 0.13.42;
+  `windows_native` CI job gains the `mir-mcp` test files.
+- (3) partly done: macOS full suite 3834 passed with 3 failures. Two were version pins in
+  `tests/test_plugin_skill_packages.py`, fixed and re-run at 16 passed; the third is the lock,
+  rebound at release. Windows PC: 1945 passed, 4 failed (lock plus the three consumer-key
+  lookups, since fixed); a targeted re-run after the fixes gave 114 passed, 1 skipped (8.3
+  names disabled on the volume). Fresh-clone readiness is still open.
+- (4), (5) open.

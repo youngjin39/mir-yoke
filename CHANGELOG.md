@@ -8,6 +8,36 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.42] — 2026-10-28 — mir-mcp native Windows lane and the Python 3.11 floor
+
+### Added
+
+- `mir-mcp` runs natively on Windows x64. A Windows-only filesystem guard opens each path
+  component with `CreateFileW` (no reparse following), refuses reparse points, device names,
+  alternate data streams, trailing dots or spaces, UNC and device-namespace roots, and compares
+  `GetFinalPathNameByHandleW` with the requested path while holding every ancestor open. The only
+  native surface is `kernel32` `CreateFileW`, `GetFinalPathNameByHandleW` and `CloseHandle` plus
+  `msvcrt.open_osfhandle`, enforced by a static test.
+- Windows per-call deadline: `tools/call` runs in a worker thread; a call still running after
+  10 s answers `E_TIMEOUT` and the server exits so the runtime restarts it. POSIX keeps
+  `SIGALRM`.
+- Windows Git: one fixed `C:\Program Files\Git\mingw64\bin\git.exe`, no console window, and two
+  bounded pipe-reader threads in place of `selectors`. Same argv, environment, caps and per-pin
+  failure rule as on POSIX.
+- Receipts accept `platform: windows` only on Windows (and refuse it elsewhere); the Claude
+  launcher is compared as `<installed-root>/mir_mcp.py`, the literal suffix the declaration
+  appends.
+
+### Changed
+
+- Python 3.11 is the floor for everything launched as bare `python3`: `mir-mcp` refuses to start
+  below it with a stderr reason, receipts require `interpreter.version` 3.11+, and the handoff
+  hook and copied ontology runners print one stderr warning and still run. The SessionStart hook
+  stays the exact print-only H1 source.
+- The manager no longer refuses `mir-mcp` activation on Windows x64; ARM64 and 32-bit Python stay
+  refused.
+- Bump release surfaces to 0.13.42 and regenerate the adopter payload.
+
 ## [v0.13.41] — 2026-10-28 — Windows consumer sync fixes
 
 ### Fixed

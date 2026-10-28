@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import shutil
+import sys
 from pathlib import Path
 
 import pytest
@@ -48,8 +49,10 @@ def test_shared_sources_are_byte_identical(relative: str, canonical: str) -> Non
         "extra-file",
         "transient-directory",
         "symlink",
-        "executable",
-        "special-file",
+        pytest.param("executable", marks=pytest.mark.skipif(
+            sys.platform == "win32", reason="Windows chmod cannot set POSIX executable bits")),
+        pytest.param("special-file", marks=pytest.mark.skipif(
+            sys.platform == "win32", reason="Windows has no os.mkfifo for a filesystem FIFO")),
         "duplicate-key",
         "unknown-manifest-key",
         "inline-server",

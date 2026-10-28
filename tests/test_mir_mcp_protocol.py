@@ -11,6 +11,7 @@ from pathlib import Path
 
 import pytest
 from jsonschema import Draft202012Validator
+from mir_mcp_interpreters import INTERPRETERS
 
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE = ROOT / "plugins/mir-mcp"
@@ -44,8 +45,8 @@ CACHE = {"ttlMs": 3600000, "cacheScope": "public"}
 
 
 @pytest.fixture(
-    params=["/usr/bin/python3", str(ROOT / ".venv/bin/python")],
-    ids=["system-python", "venv-python"],
+    params=INTERPRETERS,
+    ids=[f"python-{i}" for i in range(len(INTERPRETERS))],
 )
 def interpreter(request) -> str:
     assert Path(request.param).is_file(), "Both compatibility interpreters must be available"
@@ -580,7 +581,8 @@ def test_unadvertised_methods_are_rejected(interpreter: str, tmp_path: Path, met
 
 
 @pytest.mark.parametrize(
-    "raw,code,reason", [(b"{malformed", -32700, "E_FORMAT"), (b"x" * 65537, -32600, "E_LIMIT")]
+    "raw,code,reason", [(b"{malformed", -32700, "E_FORMAT"), (b"x" * 65537, -32600, "E_LIMIT")],
+    ids=["malformed", "oversized"],
 )
 def test_malformed_oversized_frames_preserve_stdout_protocol(
     interpreter: str, tmp_path: Path, raw: bytes, code: int, reason: str
@@ -738,8 +740,9 @@ def test_codex_declaration_launches_without_variable_expansion(
     session = tmp_path / "session cwd"
     session.mkdir()
     server = json.loads((package / ".mcp.codex.json").read_text())["mcpServers"]["mir-mcp"]
-    command = shutil.which(server["command"], path=str(Path(interpreter).parent))
-    assert command is not None
+    assert server["command"] == "python3"
+    # Exercise each compatibility interpreter even when Windows supplies only python.exe.
+    command = interpreter
     payload = b"".join(
         json.dumps(frame, separators=(",", ":")).encode() + b"\n"
         for frame in [
@@ -902,3 +905,58 @@ def test_all_tools_share_era_semantics_and_satisfy_declared_output(interpreter, 
             first["data"].pop("observed_at")
             second["data"].pop("observed_at")
         assert first == second
+
+
+@pytest.mark.parametrize("version", [(3, 9, 6), (3, 10, 16)])
+def test_python_floor_refuses_before_stdin(monkeypatch, capsys, version):
+    import io
+    import sys
+
+    spec = importlib.util.spec_from_file_location("floor_mcp", PACKAGE / "mir_mcp.py")
+    module = importlib.util.module_from_spec(spec)
+    exec(compile((PACKAGE / "mir_mcp.py").read_bytes(), str(PACKAGE / "mir_mcp.py"), "exec"),
+         module.__dict__)
+    monkeypatch.setattr(sys, "version_info", version)
+    monkeypatch.setattr(sys, "stdin", io.BytesIO())
+    assert module.main() != 0
+    assert capsys.readouterr().err == (
+        "mir-mcp requires Python 3.11+; running " + ".".join(map(str, version)) + "\n"
+    )
+
+
+def test_real_old_python_refuses_without_reading_stdin():
+    old = Path("/usr/bin/python3")
+    if not old.is_file():
+        pytest.skip("/usr/bin/python3 is absent; no old interpreter available")
+    probe = subprocess.run([str(old), "-I", "-B", "-c",
+                            "import sys; print('.'.join(map(str, sys.version_info[:3])))"],
+                           capture_output=True, text=True, check=True)
+    version = probe.stdout.strip()
+    if tuple(map(int, version.split("."))) >= (3, 11):
+        pytest.skip("/usr/bin/python3 is " + version + "; no pre-3.11 interpreter available")
+    child = subprocess.Popen([str(old), "-I", "-B", str(PACKAGE / "mir_mcp.py")],
+                             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    try:
+        assert child.wait(timeout=3) != 0
+        assert child.stdout.read() == b""
+        assert child.stderr.read().decode() == (
+            "mir-mcp requires Python 3.11+; running " + version + "\n"
+        )
+    finally:
+        if child.poll() is None:
+            child.kill()
+        child.communicate()
+
+
+def test_windows_startup_admitted_without_signals(monkeypatch):
+    import io
+
+    spec = importlib.util.spec_from_file_location("startup_mcp", PACKAGE / "mir_mcp.py")
+    module = importlib.util.module_from_spec(spec)
+    exec(compile((PACKAGE / "mir_mcp.py").read_bytes(), str(PACKAGE / "mir_mcp.py"), "exec"),
+         module.__dict__)
+    monkeypatch.setattr(module.sys, "stdin", type("Input", (), {"buffer": io.BytesIO()})())
+    def forbidden(*args):
+        pytest.fail("Windows must not register a signal handler")
+    monkeypatch.setattr(module.signal, "signal", forbidden)
+    assert module.main(windows=True) == 0
