@@ -8,6 +8,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import tarfile
 from pathlib import Path
 
@@ -106,6 +107,9 @@ def test_update_real_080(legacy_080, monkeypatch, apply, windows):
     manager, commands, target = legacy_080
     if windows:
         monkeypatch.setattr(module, "sys_platform", lambda: "win32")
+        # The host Bash stands in for Git for Windows Bash when Windows is emulated.
+        if sys.platform != "win32":
+            monkeypatch.setattr(module, "_WINDOWS_BASH", shutil.which("bash"))
         monkeypatch.setattr(os.path, "normcase", lambda value: value.lower())
         # Host filesystem remains POSIX; emulate Windows case-insensitive lookup.
         registry = json.loads(manager.registry_path.read_text())

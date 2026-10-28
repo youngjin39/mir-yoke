@@ -4709,13 +4709,13 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_capability_legacy_080.py",
-      "sha256": "8da99c8b31cf5e5813c3ff26ae8632f20be649fc5860659a1963d754db88f31c"
+      "sha256": "6e38806d3cb2bbe5dbaa92f1ca31a3806da4eba82e59364307d6163ff68809ca"
     },
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_capability_mcp.py",
-      "sha256": "c4cac9c31b956c94c47810cec4057ee168b2e121aedd3d54cd8ec2277722fcc3"
+      "sha256": "519dc5695540655a9c0a271b1ab442977519256cc38153c5c63ec1cd06340c0b"
     },
     {
       "classification": "template-maintainer-tool",

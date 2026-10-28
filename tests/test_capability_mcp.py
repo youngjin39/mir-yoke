@@ -456,6 +456,9 @@ def test_missing_ack_blocks_only_explicit_mcp_registration(tmp_path, provider):
 @pytest.mark.parametrize("machine", ["AMD64", "amd64", "x86_64", "X86_64"])
 def test_native_windows_admits_x64_mcp_activation(tmp_path, provider, monkeypatch, machine):
     monkeypatch.setattr("mir.core.capabilities.manager.sys_platform", lambda: "win32")
+    if sys.platform != "win32":
+        # Emulated Windows: the host Bash stands in for Git for Windows Bash.
+        monkeypatch.setattr("mir.core.capabilities.manager._WINDOWS_BASH", shutil.which("bash"))
     monkeypatch.setattr("platform.machine", lambda: machine)
     monkeypatch.setattr(sys, "maxsize", 2**63 - 1)
     manager = manager_for(tmp_path, provider)
