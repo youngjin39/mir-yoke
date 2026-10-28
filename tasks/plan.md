@@ -50,5 +50,9 @@ Status (2026-10-28, Main):
   re-trusted (4). Claude session 665dec3f and Codex thread 01a18181 attested: five `ok` mir-mcp
   calls each, four hooks, the skills; servers sampled on Homebrew Python 3.14.6. Finalized;
   status ready at 684623c.
-- (5) open: owner decision on the consumer's missing `config/project-hooks.json` and the three
-  same-named agents.
+- (5) owner chose option 1 (Discord 1564942652460503215, relayed by Mir Harness Main,
+  parent-supplied): write the consumer's `config/project-hooks.json` from its current hooks and
+  replace the three same-named agents with the managed ones; no commit in the consumer. The
+  isolated apply then exposed two Yoke defects: the 0.8.0 Windows digest order (ca653df) and the
+  WSL `bash` launcher (36f8413), both fail-first (PC) and fixed; the isolated apply then succeeded.
+  Release 0.13.46 carries them; the real re-registration and Windows receipts follow.

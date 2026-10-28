@@ -8,6 +8,25 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.46] — 2026-10-28 — 0.8.0 migration on a real Windows enrollment
+
+### Fixed
+
+- The direct 0.8.0 migration now accepts a Windows enrollment. 0.8.0 hashed provider trees in
+  native path order, which is case-insensitive on Windows, so its Windows receipts and registry
+  entries never matched the current digest and the apply refused with `global consumer registry
+  is invalid`. Legacy receipts are checked with that 0.8.0 rule.
+- On Windows the consumer's `scripts/generate_codex_derivatives.sh` runs under Git for Windows
+  Bash at its default location (`C:\Program Files\Git\bin\bash.exe`) with a project-relative
+  path. `bash` on a Windows `PATH` is usually WSL's launcher, which mangled the path and failed
+  the apply.
+
+### Changed
+
+- The native Windows CI job runs the 0.8.0 migration tests; their fixture uses the 0.8.0 digest
+  function itself.
+- Bump release surfaces to 0.13.46 and regenerate the adopter payload.
+
 ## [v0.13.45] — 2026-10-28 — Claude attestation through a linked config home
 
 ### Fixed

@@ -690,3 +690,13 @@ Correction (0.13.45): stripping the `\\?\` prefix must not resolve the recorded 
 actually ran (`<recorded path>/mir_mcp.py`) no longer matched and the receipt was refused. The
 install path is compared as recorded, after prefix stripping only; a test with a linked
 capability home covers it.
+
+Correction (0.13.46): the owner's real Windows enrollment still failed the apply. 0.8.0 hashed
+trees with `sorted(root.rglob("*"))`, whose order is case-insensitive on Windows, so its Windows
+`mir-core` digest (`527e1569...`) differs from the current rule's (`c106a083...`, which the 0.8.0
+macOS lock also recorded); legacy receipts and registry entries are now checked with the 0.8.0
+rule, and the test fixture uses the historical function. The derivative script then failed under
+the WSL `bash` launcher found on the Windows `PATH`; Windows uses the fixed Git for Windows Bash
+(`C:\Program Files\Git\bin\bash.exe`), as `mir-mcp` uses the fixed Git binary. An isolated copy
+of the PC's enrollment (provider, registry, receipt, consumer clone, isolated CLI homes) then
+applied with `active_integrity: true` and `restart-required` registration.

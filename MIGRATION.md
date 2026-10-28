@@ -524,6 +524,16 @@ selected packages' tree digests for this release in the host-local approval file
   digests into `<project root>/config/capability-acknowledgements.local.json` before
   `mir capability update --apply`.
 
+## 0.13.46 0.8.0 migration on Windows
+
+- A Windows project still enrolled by 0.8.0 updates directly with this release. Git for Windows
+  must be installed at `C:\Program Files\Git` when the project generates derivatives with
+  `scripts/generate_codex_derivatives.sh`.
+- The current update requires `config/project-hooks.json` in the consumer, and refuses to
+  overwrite a project-owned agent that now shares a name with a managed one: add the file and
+  resolve those agents before `--apply`.
+- Acknowledge the new package digests (version-only changes).
+
 ## 0.13.45 Claude attestation through a linked config home
 
 - Update from 0.13.43 or 0.13.44 as usual and acknowledge the new package digests (version-only
