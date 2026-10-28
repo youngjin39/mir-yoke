@@ -118,6 +118,7 @@ jobs:
           tests/test_capability_cli.py
           tests/test_capability_security.py
           tests/test_capability_mcp.py
+          tests/test_capability_legacy_080.py
           tests/test_mechanical_handoff.py
           tests/test_compact_lifecycle_hooks.py
           tests/test_hook_executability.py

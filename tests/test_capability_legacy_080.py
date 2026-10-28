@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import hashlib
 import io
 import json
 import os
 import shutil
 import subprocess
 import tarfile
+from pathlib import Path
 
 import pytest
 from test_capability_cli import ROOT, CopyGit, make_project, runtime_runner, write_acknowledgements
@@ -15,6 +17,18 @@ from test_capability_cli import ROOT, CopyGit, make_project, runtime_runner, wri
 from mir.core.capabilities import CapabilityError, CapabilityManager
 from mir.core.capabilities import manager as module
 from mir.core.capabilities.manager import _consumer_key, _file_digest, _tree_digest
+
+
+def _tree_digest_080():
+    """The 0.8.0 provider's own digest; its path order differs from the current one on Windows."""
+    source = subprocess.run(
+        ["git", "show", "26cf2a4:src/mir/core/capabilities/manager.py"],
+        cwd=ROOT, capture_output=True, text=True, check=True,
+    ).stdout
+    start = source.index("def _tree_digest(")
+    namespace = {"hashlib": hashlib, "Path": Path, "CapabilityError": CapabilityError}
+    exec(source[start:source.index("\ndef ", start)], namespace)
+    return namespace["_tree_digest"]
 
 
 @pytest.fixture
@@ -32,13 +46,14 @@ def legacy_080(tmp_path):
     config_path = project / "config/capability-sources.json"
     shutil.copy2(tree / "config/capability-sources.json", config_path)
     config = json.loads(config_path.read_text())
+    digest_080 = _tree_digest_080()
     home = tmp_path / "provider"
     active = home / "active"
     for relative in ["plugins", ".claude-plugin", ".agents/plugins"]:
         shutil.copytree(tree / relative, active / relative)
     plugins = {
         name: {"path": config["plugins"][name]["path"],
-               "sha256": _tree_digest(active / config["plugins"][name]["path"])}
+               "sha256": digest_080(active / config["plugins"][name]["path"])}
         for name in ("mir-core", "mir-code")
     }
     agents = {}

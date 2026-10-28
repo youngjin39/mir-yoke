@@ -513,6 +513,18 @@ def _tree_digest(root: Path) -> str:
     return digest.hexdigest()
 
 
+def _legacy_tree_digest(root: Path) -> str:
+    """Digest a provider tree as 0.8.0 did: native path order, so case-insensitive on Windows."""
+    digest = hashlib.sha256()
+    for path in sorted(root.rglob("*")):
+        digest.update(path.relative_to(root).as_posix().encode())
+        digest.update(b"\0")
+        if path.is_file():
+            digest.update(path.read_bytes())
+        digest.update(b"\0")
+    return digest.hexdigest()
+
+
 def _file_digest(path: Path) -> str:
     if path.is_symlink() or not path.is_file():
         raise CapabilityError(f"capability file is missing or linked: {path}")
@@ -3038,6 +3050,11 @@ class CapabilityManager:
                     for plugin in names
                     if plugin in self.config.plugins
                 }
+                if legacy:
+                    active_hashes = {
+                        plugin: _legacy_tree_digest(self.active_path / self.config.plugins[plugin])
+                        for plugin in active_hashes
+                    }
                 if legacy and (
                     active_receipt.get("source_url") != self.config.source_url
                     or _codex_source_path(str(active_receipt.get("materialized_root")))
