@@ -56,3 +56,16 @@ Status (2026-10-28, Main):
   isolated apply then exposed two Yoke defects: the 0.8.0 Windows digest order (ca653df) and the
   WSL `bash` launcher (36f8413), both fail-first (PC) and fixed; the isolated apply then succeeded.
   Release 0.13.46 carries them; the real re-registration and Windows receipts follow.
+- 0.13.46: readiness first failed 5 tests that emulate win32 on POSIX (the fixed Git Bash path is
+  absent there; 6f737e0 stands the host Bash in) and the PC then failed 2 tests that matched the
+  derivative command by the name `bash` (3bfa152 matches `bash.exe` too). Fresh-clone readiness at
+  3bfa152: 3853 passed, 26 skipped; PC CLI and migration tests 67 passed; CI validate (with
+  `windows_native`) and release succeeded; published 2026-10-28T11:07:58Z. Mac host 0.13.45 ->
+  0.13.46, Claude b89f273d and Codex 01a1822b attested, finalized, status ready at 3bfa152.
+- (5) PC: backup `backup-before-0146` (provider, Claude plugin lists and settings, Codex config).
+  The real `daily_reward_runner` migrated from 0.8.0 (`update --apply`, then `update --mcp
+  --apply`): provider 3bfa152, `active_integrity: true`, four plugins enabled in both real CLI
+  homes, registration `restart-required`. Consumer diff left uncommitted: three agents replaced,
+  six commands, config, lock, `.codex/agents`, `config/project-hooks.json`, local approvals.
+  Windows receipts still open: a headless Claude probe is blocked by the Main's `force_codex`
+  gate, and the Codex probe needs a hook trust and runner decision (owner).
