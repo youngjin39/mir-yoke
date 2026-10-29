@@ -30,3 +30,11 @@ Status (2026-10-29, Main):
   test (unsorted), and three scoped-ban cases (restricted). Fixes pass; handoff 485 passed.
 - (2) README, CHANGELOG, MIGRATION, ADR-90 amendment, version surfaces, handler digest re-pin,
   payload.
+- (3) Main full suite: 3857 passed, 4 failed: the lock test (before the bind) and three payload
+  tests (the payload predated the last cursor edit). After the payload regeneration and the bind,
+  those files pass (85 passed). Fresh-clone readiness at 319d876: 3860 passed, 26 skipped, ready.
+- (4) v0.13.47 (source ea38b4f, bind 319d876) published 2026-10-29T10:20:22Z; CI validate and
+  release succeeded. Maintainer host 0.13.46 -> 0.13.47: Claude e1cb2934 and Codex 01a18735
+  attested (all five calls ok, four hooks), finalized, status ready at 319d876. With rule 3 the
+  probe's scoped ban no longer draws a PreToolUse deny, so the Codex probe ran through `codex
+  app-server`, whose hook events record silent hook runs. The owner's PC stays on 0.13.46.
