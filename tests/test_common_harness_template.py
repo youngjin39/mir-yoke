@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+import shutil
+import subprocess
 import tomllib
 from pathlib import Path
+
+import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 TEMPLATE = ROOT / "templates" / "common-harness"
@@ -119,3 +123,21 @@ def test_should_keep_maintainer_and_consumer_compact_behaviors_in_parity() -> No
         ".claude/hooks/compact-resume.sh",
     ):
         assert (ROOT / relative).read_bytes() == (TEMPLATE / relative).read_bytes()
+
+
+@pytest.mark.skipif(shutil.which("sh") is None, reason="POSIX sh is required")
+def test_should_run_hook_python_from_the_project_root(tmp_path: Path) -> None:
+    project = tmp_path / "project"
+    shutil.copytree(TEMPLATE, project)
+    stub = project / "scripts" / "mir.sh"
+    stub.write_text('#!/bin/sh\nprintf "%s\\n" "$@"\n', encoding="utf-8")
+    stub.chmod(0o755)
+
+    result = subprocess.run(
+        ["sh", str(project / ".claude" / "hooks" / "_lib" / "run-python.sh"), "hook.py"],
+        capture_output=True, text=True, check=True,
+    )
+
+    assert result.stdout.splitlines() == [
+        "run-python", "--project-root", str(project.resolve()), "--", "hook.py",
+    ]

@@ -379,17 +379,21 @@ def restricted(prompt: str) -> bool:
     owner = owner_sections(prompt)
     # Quoted command examples are not a prohibition on all commands. Never scan
     # raw packet/fenced/blockquote text after owner_sections has excluded it.
-    prohibition = QUOTED.sub(' ', owner['may_not'])
-    deny = normalized(prohibition)
-    return bool(re.search(
-        r'\b(?:run|execute) (?:any )?(?:commands|shell|python)\b', deny
-    ) or re.search(
-        r'\b(?:no commands|commands (?:are )?(?:forbidden|prohibited)'
-        r'|do not (?:run|execute) (?:any )?commands)\b',
-        prohibition.casefold(),
-    ) or re.search(r'(?:\uba85\ub839|\ucee4\ub9e8\ub4dc|\uc250|\ud30c\uc774\uc36c)'
-                   r'[^\n.!?]*(?:\uc9c0\s*(?:\ub9d0|\ub9c8|\uc54a\uace0)|'
-                   r'\uc2e4\ud589\s*\uc5c6\uc774|\uae08\uc9c0)', prohibition))
+    # A clause that names an exception ("other than `echo x`") scopes the ban; keep
+    # clauses separate so a scoped clause never waives a blanket one elsewhere.
+    for clause in re.split(r';|\n|(?<=[.!?])(?:\s+|$)', QUOTED.sub(' ', owner['may_not'])):
+        deny = normalized(clause)
+        if re.search(r'\b(?:other than|except|besides|apart from)\b|'
+                     r'\uc774\uc678|\uc81c\uc678', deny):
+            continue
+        if (re.search(r'\b(?:run|execute) (?:any )?(?:commands|shell|python)\b', deny)
+                or re.search(r'\b(?:no commands|commands (?:are )?(?:forbidden|prohibited)'
+                             r'|do not (?:run|execute) (?:any )?commands)\b', clause.casefold())
+                or re.search(r'(?:\uba85\ub839|\ucee4\ub9e8\ub4dc|\uc250|\ud30c\uc774\uc36c)'
+                             r'[^\n.!?]*(?:\uc9c0\s*(?:\ub9d0|\ub9c8|\uc54a\uace0)|'
+                             r'\uc2e4\ud589\s*\uc5c6\uc774|\uae08\uc9c0)', clause)):
+            return True
+    return False
 
 
 def files_restricted(owner: dict) -> bool:

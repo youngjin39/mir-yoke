@@ -445,3 +445,14 @@ The handoff hook reads the pin runner's output with `encoding='utf-8', errors='r
 it used the locale encoding, so a Windows console with code page cp949 failed on UTF-8 pin
 output. The reviewed handoff handler digest in the manager changes with it; the SessionStart hook
 source is unchanged.
+
+## Amendment: 2026-10-29 — scoped command bans (0.13.47)
+
+The owner no-command guard reads the May-not section clause by clause. A clause that names an
+exception (`other than`, `except`, `besides`, `apart from`, or the Korean equivalents for "other
+than" and "excluding") scopes its prohibition, so it does not ban every shell and interpreter
+tool; a blanket clause elsewhere in the section still does. Before, "run commands other than
+`echo x`" denied the permitted command too. The reviewed handoff handler digest in the manager
+changes with it. Tests: `test_should_read_a_command_ban_with_a_stated_exception_as_scoped` and
+`test_should_keep_a_blanket_command_ban_beside_a_scoped_clause` in
+`tests/test_mechanical_handoff.py`.

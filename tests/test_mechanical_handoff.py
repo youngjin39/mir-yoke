@@ -2157,3 +2157,20 @@ def test_should_ignore_non_path_tokens_but_require_real_verified_path(runtime, t
     result = run('Stop', last_assistant_message=body + ' docs/unchecked.md')
     assert ('verified-in-repo path lacks this-turn tool reference: docs/unchecked.md'
             in json.loads(result.stdout)['reason'])
+
+
+@pytest.mark.parametrize('may_not', [
+    'May not: edit files; run tests; run commands other than `echo attest-probe`',
+    'May not: run any commands except `echo attest-probe`.',
+    'May not: execute shell besides `echo attest-probe`',
+])
+def test_should_read_a_command_ban_with_a_stated_exception_as_scoped(may_not):
+    prompt = ('Write a handoff for another agent.\nSources: README.md\n'
+              'May: read README.md; run `echo attest-probe` once\n' + may_not)
+    assert not module().restricted(prompt)
+
+
+def test_should_keep_a_blanket_command_ban_beside_a_scoped_clause():
+    prompt = ('Write a handoff for another agent.\nSources: README.md\n'
+              'May: read README.md\nMay not: run commands; edit files other than notes.md')
+    assert module().restricted(prompt)

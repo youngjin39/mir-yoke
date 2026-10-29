@@ -324,3 +324,53 @@ def test_context_sync_missing_vector_backfill_requires_embedding_and_vec(tmp_pat
 
     assert context_cli.main(["sync", "--reindex-missing-vectors", "--db", str(db_path)]) == 2
     assert "embedding" in capsys.readouterr().out.lower()
+
+
+def test_doctor_probes_past_a_first_chunk_without_a_stable_token(tmp_path, capsys):
+    _write_memory_config(tmp_path)
+    # The first indexed chunk holds only short Hangul words; a later one holds a probe token.
+    (tmp_path / "docs" / "memory.md").write_text(
+        "\ud55c\uae00 \ubb38\uc11c \uba54\ubaa8\n", encoding="utf-8"
+    )
+    db_path = tmp_path / ".mir" / "memory.db"
+    connection = store.connect(db_path)
+    try:
+        store.apply_migrations(connection.conn)
+    finally:
+        connection.conn.close()
+    assert context_cli.main(["sync", "--db", str(db_path)]) == 0
+    (tmp_path / "docs" / "next.md").write_text("portable doctorprobecontent\n", encoding="utf-8")
+    assert context_cli.main(["sync", "--db", str(db_path)]) == 0
+    capsys.readouterr()
+
+    assert memory_cli.main(["doctor", "--project-root", str(tmp_path), "--json"]) == 0
+    report = json.loads(capsys.readouterr().out)
+
+    assert report["memory"]["archive_fts_probe"] == "ok"
+    assert report["status"] == "ready"
+
+
+def test_archive_scan_indexes_documents_in_sorted_path_order(tmp_path, monkeypatch):
+    _write_memory_config(tmp_path)
+    for index in range(40):
+        (tmp_path / "docs" / f"note-{index:02d}.md").write_text(
+            f"note {index}\n", encoding="utf-8"
+        )
+    db_path = tmp_path / ".mir" / "memory.db"
+    connection = store.connect(db_path)
+    try:
+        store.apply_migrations(connection.conn)
+    finally:
+        connection.conn.close()
+    indexed: list[str] = []
+    original = ExternalStore._index_file
+
+    def record(self, archive, rel, **kwargs):
+        indexed.append(rel)
+        return original(self, archive, rel, **kwargs)
+
+    monkeypatch.setattr(ExternalStore, "_index_file", record)
+    assert context_cli.main(["sync", "--db", str(db_path)]) == 0
+
+    assert len(indexed) == 41
+    assert indexed == sorted(indexed)

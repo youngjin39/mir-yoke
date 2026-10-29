@@ -524,6 +524,15 @@ selected packages' tree digests for this release in the host-local approval file
   digests into `<project root>/config/capability-acknowledgements.local.json` before
   `mir capability update --apply`.
 
+## 0.13.47 template hook root, archive doctor probe, scoped command bans
+
+- A project built from `templates/common-harness` before this release carries the faulty
+  `.claude/hooks/_lib/run-python.sh`: copy the fixed file from the template, or change
+  `/../../../..` to `/../../..` in its `root=` line.
+- No database migration: an existing archive index passes `mir memory doctor` without a resync.
+- Acknowledge the new package digests (the `mir-lifecycle-hooks` handoff handler changed; the
+  other packages are version-only changes).
+
 ## 0.13.46 0.8.0 migration on Windows
 
 - A Windows project still enrolled by 0.8.0 updates directly with this release. Git for Windows

@@ -1,3 +1,81 @@
+## Cursor before release 0.13.47 (2026-10-29)
+
+### Active task: release 0.13.44 (direct 0.8.0 migration, Windows hook UTF-8, 8.3 coverage) (2026-10-28)
+
+Intent authority: the owner's message relayed by Mir Harness Main (parent-supplied, Discord
+1564891404659069039): fix the migration from the shipped 0.8.0 enrollment and re-register the
+owner's Windows PC, fix the Windows handoff hook's output decoding, and cover real 8.3 short
+names; with the release-chain approvals (1564297975755448493, 1564320227062186065). Design
+authority: this cursor and the ADR-91 amendment this release adds. Baseline: 45d5fe8 on `main`
+(v0.13.43 installed and attested on the maintainer host).
+
+Prior cursor preserved verbatim:
+[cursor before release 0.13.44](change_log.md#cursor-before-release-01344-2026-10-28).
+
+Rules:
+1. `mir capability update` migrates a real 0.8.0 enrollment (schema-1 consumer registry, active
+   receipt and lock, schema-1 `capability-sources.json`) directly: it validates the legacy
+   provider and consumer against their own evidence, reads the target config before the export,
+   and rewrites the consumer config, lock and registry to the current schemas. Forged or partial
+   legacy state is refused.
+2. The handoff hook decodes the pin runner's output as UTF-8 with replacement, whatever the
+   console code page.
+3. The Windows guard's final-path check is covered with an injected 8.3 short-name case, since
+   the owner's PC volume has short-name generation disabled.
+
+Request matrix: (1) fail-first tests and code for rules 1-3; (2) ADR-91 amendment, docs, version
+surfaces; (3) Main full suite, fresh-clone readiness, Windows PC in-scope tests; (4) release and
+host re-attestation; (5) PC re-registration of `daily_reward_runner` and Windows receipts.
+
+Status (2026-10-28, Main):
+- (1) done: da2045e. The new migration test reproduces the PC's real refusal ("MCP package
+  rejected: root must be a real directory") against 45d5fe8's manager, and the UTF-8 test fails
+  against 45d5fe8's hook; both pass with the fix.
+- (3) partly done: macOS full suite 3847 passed, 5 failed: the release lock, the adopter payload
+  (three tests, regenerated) and Hangul literals in the new hook test (now escapes); those re-ran
+  at 506 passed. Windows PC in-scope run at da2045e: 921 passed, 9 skipped, 1 failed (the lock).
+- (2) done: ADR-91 and ADR-90 amendments, CHANGELOG, MIGRATION, README, version surfaces 0.13.44,
+  adopter payload.
+- 2026-10-28 later: v0.13.44 tagged and pushed (8b1e619 source, 3185dc3 bind) after fresh-clone
+  readiness (3851 passed, 26 skipped). Host update 0.13.43 -> 0.13.44 applied and the Codex receipt
+  attested, but the Claude receipt was refused: the M6 change resolved Claude's recorded install
+  path, and this host's Claude config home is a symbolic link, so the launcher no longer matched.
+  0.13.45 compares the recorded path after prefix stripping only (fail-first test with a linked
+  capability home).
+- PC: an isolated copy of the 0.8.0 enrollment now passes the old refusal, but the dry run is
+  not ready: the consumer lacks `config/project-hooks.json`, and three consumer-committed agents
+  share names with newly managed ones (`diverged`). Owner decision pending.
+- (3)/(4) for 0.13.45: fresh-clone readiness 3852 passed, 26 skipped, every check exiting 0;
+  tagged and pushed (b52d44e source, 684623c bind). Host updated 0.13.44 -> 0.13.45; Codex hooks
+  re-trusted (4). Claude session 665dec3f and Codex thread 01a18181 attested: five `ok` mir-mcp
+  calls each, four hooks, the skills; servers sampled on Homebrew Python 3.14.6. Finalized;
+  status ready at 684623c.
+- (5) owner chose option 1 (Discord 1564942652460503215, relayed by Mir Harness Main,
+  parent-supplied): write the consumer's `config/project-hooks.json` from its current hooks and
+  replace the three same-named agents with the managed ones; no commit in the consumer. The
+  isolated apply then exposed two Yoke defects: the 0.8.0 Windows digest order (ca653df) and the
+  WSL `bash` launcher (36f8413), both fail-first (PC) and fixed; the isolated apply then succeeded.
+  Release 0.13.46 carries them; the real re-registration and Windows receipts follow.
+- 0.13.46: readiness first failed 5 tests that emulate win32 on POSIX (the fixed Git Bash path is
+  absent there; 6f737e0 stands the host Bash in) and the PC then failed 2 tests that matched the
+  derivative command by the name `bash` (3bfa152 matches `bash.exe` too). Fresh-clone readiness at
+  3bfa152: 3853 passed, 26 skipped; PC CLI and migration tests 67 passed; CI validate (with
+  `windows_native`) and release succeeded; published 2026-10-28T11:07:58Z. Mac host 0.13.45 ->
+  0.13.46, Claude b89f273d and Codex 01a1822b attested, finalized, status ready at 3bfa152.
+- (5) PC: backup `backup-before-0146` (provider, Claude plugin lists and settings, Codex config).
+  The real `daily_reward_runner` migrated from 0.8.0 (`update --apply`, then `update --mcp
+  --apply`): provider 3bfa152, `active_integrity: true`, four plugins enabled in both real CLI
+  homes, registration `restart-required`. Consumer diff left uncommitted: three agents replaced,
+  six commands, config, lock, `.codex/agents`, `config/project-hooks.json`, local approvals.
+  Windows receipts (owner "remote allowed", 2026-10-29): the Main's `force_codex` gate got a
+  session-scoped override, removed after the Claude probe; PC Codex plugin hooks trusted (4, verified
+  against the installed `hooks.json`; config backed up first); the Codex probe ran through
+  `codex app-server` (raw `codex exec` stays blocked). Claude 6dea2b4e and Codex 01a18703 attested on
+  the PC (all five calls ok, four hooks), finalized; status ready at 3bfa152, `memory.db` unchanged.
+  Observed, not fixed: `handoff_packet.restricted()` reads "run commands other than `X`" as a
+  blanket command ban (the first Codex probe then called no tool); the PC Codex shell runner timed out
+  ("connecting runner pipe-in") on `echo attest-probe`.
+
 ## Cursor before release 0.13.44 (2026-10-28)
 
 ### Active task: release 0.13.42 (`mir-mcp` native Windows lane and the Python 3.11 floor) (2026-10-28)

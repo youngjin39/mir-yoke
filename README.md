@@ -52,7 +52,7 @@ immutable release:
 
 ```bash
 uv tool install --force --link-mode copy \
-  "git+https://github.com/youngjin39/mir-yoke.git@v0.13.46"
+  "git+https://github.com/youngjin39/mir-yoke.git@v0.13.47"
 mir --help
 ```
 
@@ -180,6 +180,9 @@ Version 0.13.45 fixes Claude attestation when the Claude config home is a symbol
 
 Version 0.13.46 completes the 0.8.0 migration on Windows: legacy receipts are checked with the
 0.8.0 digest rule, and derivative scripts run under Git for Windows Bash.
+
+Version 0.13.47 fixes the template hook wrapper's project root, makes `mir memory doctor`'s archive
+probe independent of document order, and reads a command ban with a stated exception as scoped.
 
 ### Platform use
 

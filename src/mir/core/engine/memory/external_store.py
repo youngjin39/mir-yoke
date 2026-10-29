@@ -587,6 +587,7 @@ class ExternalStore:
                 CURRENT_METADATA_VERSION
             )
 
+        # Sorted order keeps chunk ids independent of string hash randomization.
         to_delete = db_set - current_fs
         to_insert = current_fs - db_set
         to_check = current_fs & db_set
@@ -594,14 +595,14 @@ class ExternalStore:
         inserted = deleted = reindexed = unchanged = 0
         failed: list[tuple[str, str]] = []
 
-        for rel in to_delete:
+        for rel in sorted(to_delete):
             try:
                 self._cascade_delete_document(archive_id, rel)
                 deleted += 1
             except Exception as e:  # pragma: no cover
                 failed.append((rel, f"delete: {e}"))
 
-        for rel in to_insert:
+        for rel in sorted(to_insert):
             try:
                 self._index_file(
                     archive,
@@ -613,7 +614,7 @@ class ExternalStore:
             except Exception as e:
                 failed.append((rel, f"insert: {e}"))
 
-        for rel in to_check:
+        for rel in sorted(to_check):
             try:
                 changed = self._reindex_if_changed(
                     archive,

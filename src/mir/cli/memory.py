@@ -530,26 +530,32 @@ def run_doctor(project_root: Path, *, db_override: Path | None = None) -> tuple[
         if document_count < 1 or chunk_count < 1:
             report["errors"].append("archive sync produced no searchable documents/chunks")
         else:
-            sample = conn.execute(
+            samples = conn.execute(
                 "SELECT a.root_path, d.relative_path, c.byte_start, c.byte_end "
                 "FROM external_chunks c "
                 "JOIN external_documents d ON d.id = c.document_id "
                 "JOIN external_archives a ON a.id = d.archive_id "
-                "ORDER BY c.id LIMIT 1"
-            ).fetchone()
+                "ORDER BY c.id"
+            )
             try:
-                snippet = (
-                    (Path(sample[0]) / sample[1])
-                    .read_bytes()[sample[2] : sample[3]]
-                    .decode("utf-8")
-                )
-                tokens = [
-                    token
-                    for token in re.findall(r"[A-Za-z0-9_\u00C0-\uFFFF]+", snippet)
-                    if len(token) >= 6
-                ]
+                # Probe the first indexed chunk that holds a stable token; short-word
+                # scripts such as Hangul often have none in a given chunk.
+                tokens = []
+                for sample in samples:
+                    snippet = (
+                        (Path(sample[0]) / sample[1])
+                        .read_bytes()[sample[2] : sample[3]]
+                        .decode("utf-8")
+                    )
+                    tokens = [
+                        token
+                        for token in re.findall(r"[A-Za-z0-9_\u00C0-\uFFFF]+", snippet)
+                        if len(token) >= 6
+                    ]
+                    if tokens:
+                        break
                 if not tokens:
-                    raise RuntimeError("indexed sample contains no stable probe token")
+                    raise RuntimeError("indexed archive contains no stable probe token")
                 probe_query = distill.sanitize_fts_query(tokens[0])
                 probe_row = conn.execute(
                     "SELECT c.id FROM external_chunks_fts f "

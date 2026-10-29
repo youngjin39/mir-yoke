@@ -8,6 +8,28 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.47] — 2026-10-29 — template hook root, archive doctor probe, scoped command bans
+
+### Fixed
+
+- `templates/common-harness/.claude/hooks/_lib/run-python.sh` resolved the project root one
+  level above the project, so hooks in projects built from the template could not find
+  `scripts/mir.sh`. It now resolves three levels above `_lib`.
+- `mir memory doctor` could report `not_ready` with `indexed sample contains no stable probe
+  token`: the archive scan indexed documents in Python set order, which changes with string hash
+  randomization, and the FTS5 probe used only the first indexed chunk. A first chunk of short
+  Hangul words has no six-character token. The scan now indexes, deletes and rechecks documents
+  in sorted path order, and the probe uses the first indexed chunk that holds a usable token.
+- The handoff hook read a command prohibition with a stated exception, such as ``May not: run
+  commands other than `echo x` ``, as a blanket ban and denied every shell and interpreter tool
+  in the turn. A clause that names an exception (`other than`, `except`, `besides`, `apart from`)
+  is now scoped; a blanket clause elsewhere in the same section still bans commands.
+
+### Changed
+
+- Bump release surfaces to 0.13.47, re-pin the reviewed handoff handler digest and regenerate the
+  adopter payload.
+
 ## [v0.13.46] — 2026-10-28 — 0.8.0 migration on a real Windows enrollment
 
 ### Fixed
