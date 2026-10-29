@@ -67,5 +67,11 @@ Status (2026-10-28, Main):
   --apply`): provider 3bfa152, `active_integrity: true`, four plugins enabled in both real CLI
   homes, registration `restart-required`. Consumer diff left uncommitted: three agents replaced,
   six commands, config, lock, `.codex/agents`, `config/project-hooks.json`, local approvals.
-  Windows receipts still open: a headless Claude probe is blocked by the Main's `force_codex`
-  gate, and the Codex probe needs a hook trust and runner decision (owner).
+  Windows receipts (owner "remote allowed", 2026-10-29): the Main's `force_codex` gate got a
+  session-scoped override, removed after the Claude probe; PC Codex plugin hooks trusted (4, verified
+  against the installed `hooks.json`; config backed up first); the Codex probe ran through
+  `codex app-server` (raw `codex exec` stays blocked). Claude 6dea2b4e and Codex 01a18703 attested on
+  the PC (all five calls ok, four hooks), finalized; status ready at 3bfa152, `memory.db` unchanged.
+  Observed, not fixed: `handoff_packet.restricted()` reads "run commands other than `X`" as a
+  blanket command ban (the first Codex probe then called no tool); the PC Codex shell runner timed out
+  ("connecting runner pipe-in") on `echo attest-probe`.
