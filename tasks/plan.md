@@ -37,4 +37,8 @@ Status (2026-10-29, Main):
   release succeeded. Maintainer host 0.13.46 -> 0.13.47: Claude e1cb2934 and Codex 01a18735
   attested (all five calls ok, four hooks), finalized, status ready at 319d876. With rule 3 the
   probe's scoped ban no longer draws a PreToolUse deny, so the Codex probe ran through `codex
-  app-server`, whose hook events record silent hook runs. The owner's PC stays on 0.13.46.
+  app-server`, whose hook events record silent hook runs.
+- Owner's PC (separate decision, approved 2026-10-29): `daily_reward_runner` updated 0.13.46 ->
+  0.13.47 with mir-mcp; Claude acc97632 and Codex 01a1878a attested (all five calls ok, four
+  hooks; the Codex probe kept the unmodified "other than" wording), finalized, status ready at
+  c46bf7b. Request matrix complete; no open item.
