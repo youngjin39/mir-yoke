@@ -484,3 +484,15 @@ attributed claims, labels with explanatory text in a cell, shared-line map citat
 declarations and an adequate Korean access-limit disclosure are no longer flagged. The reviewed
 handoff handler digest in the manager changes with it. Tests: the `test_round_p_*` cases in
 `tests/test_mechanical_handoff.py`.
+
+## Amendment: 2026-10-31 — handoff checker fixes from round q (0.13.50)
+
+An offline judge of three my-life author/recipient chains under 0.13.49 (2026-10-31) found one
+checker false negative and three false positives. A Glob call at the repository root without a
+`glob` argument counted as a complete search whatever its `pattern`; a root Glob is now complete
+only for a whole-tree pattern, and any other pattern is a bounded scope. A contract declaration
+whose map citation is in the source section, a recipient access-limit disclosure phrased with
+"without running commands" or "shell/interpreter not called", and a may-line restating a
+read-only condition of the owner's grant are no longer flagged. The reviewed handoff handler
+digest in the manager changes with it. Tests: the `test_round_q_*` cases in
+`tests/test_mechanical_handoff.py`.

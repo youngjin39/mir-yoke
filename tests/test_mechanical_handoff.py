@@ -2232,7 +2232,7 @@ def test_should_allow_scoped_absence_and_non_absence_negation(runtime, claim):
 
 
 @pytest.mark.parametrize('tool,args', [
-    ('Grep', {'pattern': 'item'}), ('Glob', {'pattern': '*item*'}),
+    ('Grep', {'pattern': 'item'}), ('Glob', {'pattern': '**/*'}),
     ('Grep', {'path': '.', 'pattern': 'item'}),
     ('Bash', {'command': 'rg item .'}), ('Bash', {'command': 'grep -r item .'}),
     ('Bash', {'command': 'rg item ROOT'}),
@@ -2437,3 +2437,144 @@ def test_round_p_d07_table_only_target_requires_every_pin(runtime):
     assert 'Received handoff' in supplied.stdout
     result = json.loads(run('Stop', last_assistant_message='No local check was performed.').stdout)
     assert result['reason'].count('missing recipient pin label:') == 8
+
+
+# Round q excerpts: Q01P L134/F65, Q02P L138 source/self-check sections,
+# and Q01C/Q02C/Q03C T28. Host-specific roots are replaced with neutral paths.
+ROUND_Q_ABSENCE = (
+    '\uc774 \uccb4\uc778\uc740 \uc800\uc7a5\uc18c\uc5d0 \uc5c6\uace0 parent\uac00 \uc81c'
+    '\uc548\ud55c \uac83\uc785\ub2c8\ub2e4.'
+)
+ROUND_Q_DECLARATIONS = (
+    '- `.mir/ontology-map.json`\n'
+    '  - `:3`: contract `mir.common-semantics` 1.1.0, sha256 '
+    '`b2f1ecd01aaa88d41caac2bc2481e7f4c5a429cff3983aaa85ddfb0fc2f1b93f`(\uc120\uc5b8\uac12)\n'
+    '  - contract.identity=verified-in-repo: `mir.common-semantics`\n'
+    '  - contract.version=verified-in-repo: 1.1.0\n'
+    '  - contract.digest=verified-in-repo: \uc120\uc5b8\uac12\uc774\uba70 \uacc4\uc57d '
+    '\ud30c\uc77c\uacfc \ub300\uc870\ud558\uc9c0 \uc54a\uc74c'
+)
+ROUND_Q_LIMITATIONS = [
+    '\uc774\ubc88 \ud134\uc5d0\ub294 \ub3c4\uad6c \ubaa9\ub85d\ub9cc \ud655\uc778\ud588'
+    '\uc2b5\ub2c8\ub2e4. \uba85\ub839 \uc2e4\ud589 \uc5c6\uc774 \ub85c\uceec \uc18c\uc2a4'
+    '\ub97c \uc77d\ub294 \uc804\uc6a9 \ub3c4\uad6c\ub97c '
+    '\ucc3e\uc9c0 \ubabb\ud588\uc73c\ubbc0\ub85c **\ud30c\uc77c\uc744 \uc9c1\uc811 \uc77d'
+    '\uac70\ub098 \uac80\uc0c9\ud558\uc9c0 \uc54a\uc558\uc2b5\ub2c8\ub2e4.** \uc544\ub798 '
+    '\ud30c\uc77c\ubcc4 \uc124\uba85\uacfc \uc904 '
+    '\ubc88\ud638\ub294 \ubaa8\ub450 `parent-supplied`\uc774\uba70, \ud604\uc7ac \uc800'
+    '\uc7a5\uc18c\uc5d0\uc11c \ud655\uc778\ud55c \uadfc\uac70\ub85c \ucde8\uae09\ud558'
+    '\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4. '
+    '\uba85\ub839\xb7\ud14c\uc2a4\ud2b8\xb7\uc218\uc815\xb7\uc2e4\uc81c \uc704\uc784\ub3c4 '
+    '\uc218\ud589\ud558\uc9c0 \uc54a\uc558\uc2b5\ub2c8\ub2e4.',
+    '\uac80\ud1a0 \ub300\uc0c1\uacfc \uad8c\ud55c \ubc94\uc704\ub294 \uba85\ud655\ud569'
+    '\ub2c8\ub2e4. \ub2e4\ub9cc \uc774\ubc88 \ud134\uc5d0\ub294 \ub85c\uceec \ud14d\uc2a4'
+    '\ud2b8\ub97c \uc77d\ub294 \ub3c4\uad6c\ub97c '
+    '\ucc3e\uc9c0 \ubabb\ud574 \uc18c\uc2a4\ub97c \uc9c1\uc811 \ud655\uc778\ud558\uc9c0 '
+    '\ubabb\ud588\uc2b5\ub2c8\ub2e4. \uc544\ub798 \ub0b4\uc6a9\uc740 \uc804\ub2ec\ubc1b'
+    '\uc740 \uc9c0\uc2dc\ubb38\uacfc \uc18c\uc2a4 '
+    '\uc124\uba85\uc5d0 \ub300\ud55c \uac80\ud1a0\uc785\ub2c8\ub2e4. \uba85\ub839\xb7\ud14c'
+    '\uc2a4\ud2b8 \uc2e4\ud589, \uc2e4\uc81c \uc704\uc784\xb7dispatch, DB \uc811\uadfc, '
+    '\ud30c\uc77c \uc218\uc815\uc740 '
+    '\ud558\uc9c0 \uc54a\uc558\uc2b5\ub2c8\ub2e4.',
+    '\uc774\ubc88 \ud134\uc5d0\ub294 \ub3c4\uad6c \ubaa9\ub85d\uc5d0\uc11c \ud30c\uc77c '
+    '\uc77d\uae30 \uae30\ub2a5\uc744 \ucc3e\uc544\ubd24\uc9c0\ub9cc, \uc0ac\uc6a9\ud560 '
+    '\uc218 \uc788\ub294 \ub85c\uceec \ud14d\uc2a4\ud2b8 '
+    'reader\ub97c \ucc3e\uc9c0 \ubabb\ud588\uc2b5\ub2c8\ub2e4. \uae08\uc9c0\ub41c shell'
+    '\uc774\ub098 \ucf54\ub4dc \uc778\ud130\ud504\ub9ac\ud130\ub294 \ud638\ucd9c\ud558'
+    '\uc9c0 \uc54a\uc558\uc2b5\ub2c8\ub2e4. '
+    '\ub530\ub77c\uc11c **\uc800\uc7a5\uc18c\uc5d0\uc11c \uc774\ubc88 \ud134\uc5d0 \uc9c1'
+    '\uc811 \ud655\uc778\ud55c \uadfc\uac70\ub294 \uc5c6\uc73c\uba70**, \uc544\ub798 \uc18c'
+    '\uc2a4 \uc124\uba85\uc740 \ubaa8\ub450 '
+    '\uc804\ub2ec\ubc1b\uc740 \uc9c0\uc2dc\ubb38\uc744 \uae30\uc900\uc73c\ub85c \uac80'
+    '\ud1a0\ud55c \uacb0\uacfc\uc785\ub2c8\ub2e4.',
+]
+ROUND_Q_READ_GRANT = (
+    '\uba85\ub839\uc744 \uc2e4\ud589\ud558\uc9c0 \uc54a\ub294 \uc77d\uae30 \ub3c4\uad6c'
+    '\uac00 \uc788\uc744 \ub54c, \ud5c8\uc6a9\ub41c \ucf54\ub4dc\xb7\uc2a4\ud0a4\ub9c8\xb7'
+    '\uad6c\uc870 \uc815\uc758\xb7\ud15c\ud50c\ub9bf\xb7'
+    '\ud569\uc131 \ud14c\uc2a4\ud2b8\ub97c \uc77d\uace0 \uc124\uba85\ud560 \uc218 \uc788'
+    '\uc2b5\ub2c8\ub2e4.'
+)
+
+
+@pytest.mark.parametrize('scope', [{'path': '/srv/my-life'}, {}])
+def test_round_q_d01_glob_pattern_bounds_root_search(scope):
+    calls = [('glob', {'pattern': '.mir/*.json', **scope})]
+    calls += [('grep', {'path': path, 'pattern': 's4a-life-chain'})
+              for path in ('tests', 'scripts', 'spec', 'tools')]
+    defects = module().absence_defects(ROUND_Q_ABSENCE, calls, Path('/srv/my-life'))
+    assert defects and '.mir/*.json' in defects[0]
+
+
+def test_round_q_d02_source_section_supports_contract_declarations(monkeypatch):
+    hook = module()
+    monkeypatch.setattr(hook, 'turn_tools', lambda event: (
+        [('read', {'file_path': '.mir/ontology-map.json'})], ['.mir/ontology-map.json'], []))
+    defects = hook.verification_defects('', ROUND_Q_DECLARATIONS,
+                                       {'cwd': str(ROOT)}, no_commands=True)
+    assert len(defects) == 1
+    assert 'digest needs a this-turn computation' in defects[0]
+
+
+@pytest.mark.parametrize('body', ROUND_Q_LIMITATIONS, ids=['Q01C', 'Q02C', 'Q03C'])
+def test_round_q_d03_real_access_limit_disclosures(runtime, body):
+    run, _, _ = runtime
+    run('UserPromptSubmit', prompt=RECIPIENT_PROMPT + '\nNo commands.')
+    assert run('Stop', last_assistant_message=RECIPIENT_LABELS + '\n' + body).stdout == ''
+
+
+def test_round_q_d04_conditional_read_narrows_owner_grant():
+    hook = module()
+    boundary = hook.owner_sections('May: read/inspect only\nMay not: run commands; edit files')
+    assert hook.authority_defects(ROUND_Q_READ_GRANT, boundary) == []
+
+
+@pytest.mark.parametrize('tool,args,complete', [
+    ('glob', {'pattern': '**/*'}, True),
+    ('glob', {'pattern': '**'}, True),
+    ('glob', {'pattern': '**/*', 'path': 'tests'}, False),
+    ('glob', {}, False),
+    ('grep', {'pattern': 's4a-life-chain'}, True),
+    ('grep', {'pattern': 's4a-life-chain', 'glob': 'tests/**'}, False),
+])
+def test_round_q_search_scope_boundaries(tool, args, complete):
+    defects = module().absence_defects(ROUND_Q_ABSENCE, [(tool, args)], ROOT)
+    assert bool(defects) is not complete
+
+
+@pytest.mark.parametrize('body,reads', [
+    (ROUND_Q_DECLARATIONS, []),
+    (ROUND_Q_DECLARATIONS.replace('.mir/ontology-map.json', 'other/map.json'),
+     ['.mir/ontology-map.json']),
+])
+def test_round_q_contract_declarations_still_need_map_reference(monkeypatch, body, reads):
+    hook = module()
+    monkeypatch.setattr(hook, 'turn_tools', lambda event: ([], reads, []))
+    defects = hook.verification_defects('', body, {'cwd': str(ROOT)}, no_commands=True)
+    assert any('tool reference: contract.identity' in defect for defect in defects)
+    assert any('tool reference: contract.version' in defect for defect in defects)
+
+
+@pytest.mark.parametrize('body', [
+    'No commands were run.',
+    'No non-command reader was available.',
+    'A local text reader was available. Commands were not run.',
+    'No non-command reader was available. Commands were run.',
+    'No non-command reader was available. Commands were allowed.',
+])
+def test_round_q_missing_access_limit_disclosure_stays_blocked(monkeypatch, body):
+    hook = module()
+    monkeypatch.setattr(hook, 'turn_tools', lambda event: ([], [], []))
+    defects = hook.recipient_check('No commands.', body, {'cwd': str(ROOT)})
+    assert 'state commands forbidden and no non-command reader was used/available' in defects
+
+
+@pytest.mark.parametrize('extra', [
+    ' \ud569\uc131 \ud14c\uc2a4\ud2b8\ub97c \uc2e4\ud589\ud560 \uc218 \uc788\uc2b5\ub2c8\ub2e4.',
+    ' \ud30c\uc77c\uc744 \uc218\uc815\ud560 \uc218 \uc788\uc2b5\ub2c8\ub2e4.',
+    ' You may run commands.',
+])
+def test_round_q_enlarged_authority_stays_blocked(extra):
+    hook = module()
+    boundary = hook.owner_sections('May: read/inspect only\nMay not: run commands; edit files')
+    assert hook.authority_defects(ROUND_Q_READ_GRANT + extra, boundary)

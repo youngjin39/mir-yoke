@@ -8,6 +8,25 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.50] — 2026-10-31 — handoff checker fixes from the round q judge
+
+### Fixed
+
+- A Glob call at the repository root without a `glob` argument counted as a complete repository
+  search, whatever its `pattern` (for example `.mir/*.json`), so a repository-wide absence claim
+  after only bounded searches passed the Stop checks. A root Glob now counts as complete only for
+  a whole-tree pattern (`**` or `**/*`); any other pattern is recorded as a bounded scope.
+- False positives: a contract identity/version declaration whose map citation sits in the
+  source section rather than next to the pin label; a recipient access-limit disclosure phrased
+  as "without running commands" or "shell/interpreter not called" with an unavailable reader; and
+  a may-line that restates a read-only condition of the owner's grant (a reader that does not run
+  commands, synthetic test fixtures as read targets) was reported as extra authority.
+
+### Changed
+
+- Bump release surfaces to 0.13.50, re-pin the reviewed handoff handler digest and regenerate the
+  adopter payload.
+
 ## [v0.13.49] — 2026-10-31 — handoff checker fixes from the round p judge
 
 ### Fixed

@@ -269,7 +269,11 @@ def authority_defects(body: str, boundary: dict) -> list[str]:
         permitted = (f' {candidate} ' in f' {grant} '
                      if boundary.get('explicit_authority', True)
                      else bool(READ.search(item)) and not ACTION.search(item))
-        permitted = permitted or (bool(READ.search(item)) and not ACTION.search(item))
+        # Read-only conditions and fixture nouns do not grant command/test execution.
+        read_item = re.sub(
+            r'\uba85\ub839\uc744\s*\uc2e4\ud589\ud558\uc9c0\s*\uc54a\ub294(?=\s*\uc77d\uae30\s*\ub3c4\uad6c)|'
+            r'\ud569\uc131\s*\ud14c\uc2a4\ud2b8', '', item)
+        permitted = permitted or (bool(READ.search(read_item)) and not ACTION.search(read_item))
         if (not candidate or not permitted
                 or any(deny and f' {deny} ' in f' {candidate} ' for deny in denied)):
             defects.append('extra may: ' + item)
@@ -947,10 +951,20 @@ def absence_defects(body: str, calls: list[tuple[str, dict]], root: Path) -> lis
     for name, args in calls:
         if name in {'grep', 'glob'}:
             path = args.get('path')
-            glob = args.get('glob')
-            if not glob and (not path or Path(os.path.abspath(root / path)) == root):
-                return []
-            scopes.append(str(glob or os.path.relpath(root / path, root)))
+            at_root = not path or Path(os.path.abspath(root / path)) == root
+            if name == 'glob':
+                pattern = args.get('pattern')
+                if at_root and not args.get('glob') and pattern in {'**/*', '**'}:
+                    return []
+                if args.get('glob'):
+                    scopes.append(str(args['glob']))
+                scopes.append(str(Path(os.path.relpath(root / (path or '.'), root))
+                                  / (pattern or '[unspecified pattern]')))
+            else:
+                glob = args.get('glob')
+                if not glob and at_root:
+                    return []
+                scopes.append(str(glob or os.path.relpath(root / path, root)))
         elif name in SHELL_TOOLS:
             command = args.get('command', args.get('cmd', ''))
             try:
@@ -1017,7 +1031,8 @@ def verification_defects(text: str, body: str, event: dict, no_commands: bool = 
         explicit = [value for value in claimed_paths(line) if value != name]
         if name in {'contract.identity', 'contract.version'}:
             mapping_path = paths['mapping.identity']
-            if mapping_path in explicit:
+            # Declaration citations may live in the source section, away from pin labels.
+            if mapping_path in claimed_paths(plain):
                 path = mapping_path
         if not path and explicit:
             path = explicit[0]
@@ -1139,12 +1154,14 @@ def recipient_check(prompt: str, body: str, event: dict) -> list[str]:
             and not any(name in SHELL_TOOLS for name, _ in calls) and not (
         (re.search(r'commands?[^\n]*(?:forbidden|prohibited|not (?:run|allowed))', plain, re.I)
          and re.search(r'no (?:non-command )?reader[^\n]*(?:used|available)', plain, re.I))
-        or (re.search(r'\uba85\ub839[^\n]*(?:\uae08\uc9c0|\uc2e4\ud589\ud558\uc9c0)|'
-                      r'(?:\uc15c|\uc778\ud130\ud504\ub9ac\ud130)[^\n]*'
-                      r'\ud638\ucd9c\ud558\uc9c0\s*\uc54a', plain)
-            and re.search(r'(?:\uc77d\uae30\s*\ub3c4\uad6c|\ub9ac\ub354|'
-                          r'\ud30c\uc77c\uc744\s*\uc77d[^.]*\ub3c4\uad6c)'
-                          r'[^\n]*(?:\uc5c6|\uc0ac\uc6a9\ud558\uc9c0|\ubabb)', plain))
+        or (re.search(r'\uba85\ub839[^.\n]*(?:\uae08\uc9c0|\uc2e4\ud589\ud558\uc9c0|'
+                      r'\uc2e4\ud589\s*\uc5c6\uc774)|'
+                      r'\uba85\ub839[^.\n]*(?:\uc2e4\ud589|\uc218\ud589)[^.\n]*\ud558\uc9c0\s*\uc54a|'
+                      r'(?:\uc15c|\uc178|shell|\uc778\ud130\ud504\ub9ac\ud130)[^.\n]*'
+                      r'\ud638\ucd9c\ud558\uc9c0\s*\uc54a', plain, re.I)
+            and re.search(r'(?:\uc77d\uae30\s*\ub3c4\uad6c|\ub9ac\ub354|reader|'
+                          r'(?:\ud30c\uc77c|\uc18c\uc2a4|\ud14d\uc2a4\ud2b8)[^.\n]*\uc77d[^.\n]*\ub3c4\uad6c)'
+                          r'[^.\n]*(?:\uc5c6|\uc0ac\uc6a9\ud558\uc9c0|\ubabb)', plain, re.I))
     )):
         defects.append('state commands forbidden and no non-command reader was used/available')
     return defects
