@@ -27,3 +27,9 @@ Status (2026-10-31, Main):
   the three known misreadings (Q03, R01, R03) and on one accurate claim (P03).
 - (2) README, CHANGELOG, MIGRATION, ADR-90 amendment, version surfaces, handler digest, payload.
 - (3) Full suite before the source commit: 3969 passed, 25 skipped, 5 failed (all commit-coupled).
+- (3) After the source commit ebb8bbb and the bind 322167f the lock-coupled files pass (67
+  passed). Fresh-clone readiness at 322167f: 3973 passed, 26 skipped, `ready: true`, exit 0. CI
+  validate on 322167f (including the Windows job) succeeded before the tag.
+- (4) Tag `v0.13.52` on 322167f pushed. Maintainer host: provider update applied (lock restored
+  from 8ee8649), Codex hook trust 4/4, Claude 62e68fc0 and Codex 01a18eb7 attested (five
+  mir-mcp calls ok, four hooks), finalized, ready at 322167f. Owner PC: recorded by Harness.
