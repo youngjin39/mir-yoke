@@ -2255,3 +2255,185 @@ def test_should_supply_owner_permission_and_search_scope_rule(runtime, receiving
             'permission comes only from the owner May line. '
             'Claim absence only for the scope you searched.')
     assert context.count(rule) == 1
+
+
+# Round p C1 text excerpts; P3 evidence is embedded in the owner prompt.
+ROUND_P_LABELS = (
+    '| `repository_root` | **parent-supplied**: `/srv/my-life` |\n| `h'
+    'ead` | **unavailable**: \uc804\uccb4 SHA\uac00 \uc804\ub2ec\ub418\uc9c0 \uc54a\uc558\uace0'
+    ', \uc774\ubc88 \ud134\uc5d0\ub3c4 \ud655\uc778\ud558\uc9c0 \uc54a\uc558\uc2b5\ub2c8\ub2e4.'
+    ' |\n| `mapping.identity` | **parent-supplied**: schema `mir-semantic-mapping/v1`, namespac'
+    'e `my-life` |\n| `mapping.version` | **unavailable**: \ub3c5\ub9bd version \ud544\ub4dc'
+    '\uac00 \uc5c6\ub2e4\ub294 \uc124\uba85\ub3c4 \uc9c1\uc811 \ud655\uc778\ud558\uc9c0 \ubabb'
+    '\ud588\uc2b5\ub2c8\ub2e4. |\n| `mapping.digest` | **unavailable** |\n| `contract.identity`'
+    ' | **parent-supplied**: \uc120\uc5b8\uac12 `mir.common-semantics` |\n| `contract.version` '
+    '| **parent-supplied**: \uc120\uc5b8\uac12 `1.1.0` |\n| `contract.digest` | **parent-suppli'
+    'ed**: \uc120\uc5b8\uac12 `b2f1ecd01aaa88d41caac2bc2481e7f4c5a429cff3983aaa85ddfb0fc2f1b93f'
+    '`. \uc2e4\uc81c \uacc4\uc57d\uacfc\uc758 \uc77c\uce58\ub294 \ubbf8\ud655\uc778\uc785\ub2c8'
+    '\ub2e4. |'
+)
+
+ROUND_P_ATTRIBUTION = (
+    '\uc6d0\ubb38\uc758 \xa711\uc5d0\uc11c `verified-in-repo`\ub85c \ud45c\uc2dc\ud55c \ud56d'
+    '\ubaa9\uc740 \ubd80\ubaa8\uac00 \uc77d\uc5c8\ub2e4\uace0 \uc804\ub2ec\ud55c \uae30\ub85d'
+    '\uc785\ub2c8\ub2e4. **\uc774\ubc88 \uc218\uc2e0\uc790 \uac80\ud1a0\uc5d0\uc11c\ub294 `pare'
+    'nt-supplied`\ub85c \ud45c\uc2dc\ud569\ub2c8\ub2e4.** \ub610\ud55c `contract.digest`\ub294 '
+    '\ud30c\uc77c\uc5d0 \uc801\ud78c \uc120\uc5b8\uac12\uc744 \uc77d\ub294 \uac83\uacfc \uc2e4'
+    '\uc81c digest\ub97c \uac80\uc99d\ud558\ub294 \uac83\uc744 \uad6c\ubd84\ud574\uc57c \ud569'
+    '\ub2c8\ub2e4.'
+)
+
+ROUND_P_NEGATION = (
+    '\ud604\uc7ac \ucf54\ub4dc\xb7\uc904 \ubc88\ud638\uc758 \uc77c\uce58, \uc2e4\uc81c ref allo'
+    'wlist\uc640 verifier \ubaa9\ub85d, canary \uad00\ub828 \ud14c\uc2a4\ud2b8\uc758 \uc874'
+    '\uc7ac, \uc124\uce58\ub41c \uacc4\uc57d\uacfc \uc120\uc5b8 digest\uc758 \uc77c\uce58, '
+    '\ubaa8\ub4e0 \uc2e4\ud589 \uacb0\uacfc\uac00 \ubbf8\ud655\uc778\uc785\ub2c8\ub2e4. \ud2b9'
+    '\uc815 \ud1a0\ud070\uc774\ub098 ID\uac00 \uc800\uc7a5\uc18c\uc5d0 \uc5c6\ub2e4\ub294 '
+    '\uacb0\ub860\ub3c4 \ub0b4\ub9ac\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4. \uc804\ub2ec\ub41c \uacfc'
+    '\uac70 \uac80\uc0c9 \uacb0\uacfc\ub294 \uba85\uc2dc\ub41c \ub124 \uc18c\uc2a4 \ub8e8\ud2b8'
+    '\uc640 \ub2f9\uc2dc \uac80\uc0c9 \uc2dc\uc810\uc5d0 \ud55c\uc815\ub41c \uc8fc\uc7a5\uc785'
+    '\ub2c8\ub2e4.'
+)
+
+ROUND_P_LIMITATION = (
+    '\uc774\ubc88 \ucc28\ub840\uc5d0\ub294 \ub3c4\uad6c \ubaa9\ub85d\uc5d0\uc11c \uba85\ub839 '
+    '\uc2e4\ud589 \uc5c6\uc774 \ud30c\uc77c\uc744 \uc77d\uc744 \uc218 \uc788\ub294 \uc804\uc6a9'
+    ' \ub3c4\uad6c\ub97c \ucc3e\uc9c0 \ubabb\ud588\uc2b5\ub2c8\ub2e4. \uc178\xb7\ucf54\ub4dc '
+    '\uc778\ud130\ud504\ub9ac\ud130\ub294 \ud638\ucd9c\ud558\uc9c0 \uc54a\uc558\uc73c\uba70, '
+    '\ub85c\uceec \uc18c\uc2a4\ub3c4 \uc9c1\uc811 \uc77d\uc9c0 \uc54a\uc558\uc2b5\ub2c8\ub2e4. '
+    '\ub530\ub77c\uc11c \uc544\ub798 \uc800\uc7a5\uc18c \uad00\ub828 \uadfc\uac70\ub294 \ubaa8'
+    '\ub450 **parent-supplied**\uc785\ub2c8\ub2e4. \uc9c1\uc811 \ud655\uc778\ud55c \uc18c\uc2a4'
+    ', \ud604\uc7ac HEAD, \ud30c\uc77c \ud574\uc2dc \ub610\ub294 \ud14c\uc2a4\ud2b8 \uacb0'
+    '\uacfc\ub294 \uc5c6\uc2b5\ub2c8\ub2e4.'
+)
+
+ROUND_P_TARGET = (
+    '| \uc815\uaddc\ud654 \ub300\uc0c1 | `my-life:scripts/verify_memory_freshness.py`, \ud569'
+    '\uc131 \uccb4\uc778 `my-life:s4a-life-chain` (\ubd80\ubaa8\uac00 \uc81c\uacf5, \uc800'
+    '\uc7a5\uc18c\uc5d0 \uc5c6\uc74c) |'
+)
+
+ROUND_P_ABSENCE = (
+    '- **Qualified target**: `my-life:s4a-life-chain`. \ud569\uc131 \uc5f0\uc1c4 ID\uc785\ub2c8'
+    '\ub2e4. \uc774 ID\ub294 \uc800\uc7a5\uc18c\uc5d0 \uc5c6\uace0, \uc774 \uc9c0\uc2dc\ubb38'
+    '\uc5d0\uc11c\ub9cc \uc815\uc758\ud569\ub2c8\ub2e4.'
+)
+
+
+ROUND_P_CONTRACT_ID = (
+    '| contract.identity | verified-in-repo | \uc774\ubc88 \ud134 Read `.mir/ontology-map.json:'
+    '3`: `"id":"mir.common-semantics"` (\uc120\uc5b8\ub41c \uac12) |'
+)
+
+ROUND_P_CONTRACT_VERSION = (
+    '| contract.version | verified-in-repo | \uc774\ubc88 \ud134 Read `.mir/ontology-map.json:3'
+    '`: `"version":"1.1.0"` (\uc120\uc5b8\ub41c \uac12) |'
+)
+
+ROUND_P_DIGEST = (
+    '| contract.digest | verified-in-repo | \uc774\ubc88 \ud134 Read `.mir/ontology-map.json:3`'
+    ': `b2f1ecd01aaa88d41caac2bc2481e7f4c5a429cff3983aaa85ddfb0fc2f1b93f` (\uc120\uc5b8\ub41c '
+    '\uac12\uc774\uba70, \uc124\uce58\ub41c \uacc4\uc57d\uacfc\ub294 \ub300\uc870\ud558\uc9c0 '
+    '\uc54a\uc558\uc2b5\ub2c8\ub2e4) |'
+)
+
+
+@pytest.mark.parametrize('claim', [
+    ROUND_P_ABSENCE, ROUND_P_TARGET,
+])
+def test_round_p_d05_unrelated_scope_does_not_bound_absence(claim):
+    assert module().absence_defects(claim, [], ROOT)
+
+
+def test_round_p_d05_scoped_absence_in_the_same_item_stays_allowed():
+    """Round p P03 F13 (judged MET): the search-scope sentence bounds its absence claim."""
+    calls = [('grep', {'path': 'scripts', 'pattern': 's4a-life-chain'})]
+    claim = ('- `my-life:s4a-life-chain` \u2014 \ubd80\ubaa8\uac00 \uc815\uc758\ud55c '
+             '**\ud569\uc131** \uccb4\uc778\uc785\ub2c8\ub2e4. \uc800\uc7a5\uc18c'
+             '\uc5d0\ub294 \uc544\uc9c1 \uc5c6\uc2b5\ub2c8\ub2e4. \uc704 \ub124 \uc18c'
+             '\uc2a4 \ub8e8\ud2b8\uc5d0\uc11c `s4a-life-chain|S4A_LIFE|s4a_life`\ub97c '
+             '\uac80\uc0c9\ud588\uc744 \ub54c 0\uac74\uc774\uc5c8\uc73c\uba70, \uc774 '
+             '\ubd80\uc7ac \ud310\ub2e8\uc740 \ud574\ub2f9 \ubc94\uc704\uc5d0\ub9cc \uc801'
+             '\uc6a9\ub429\ub2c8\ub2e4.')
+    assert module().absence_defects(claim, calls, ROOT) == []
+
+
+@pytest.mark.parametrize('names', [
+    ['contract.identity'], ['contract.version'], ['contract.identity', 'contract.version'],
+])
+def test_round_p_d01_map_declarations_accept_shared_reference(monkeypatch, names):
+    hook = module()
+    monkeypatch.setattr(hook, 'turn_tools', lambda event: (
+        [('read', {'file_path': '.mir/ontology-map.json'})], ['.mir/ontology-map.json'], []))
+    rows = {'contract.identity': ROUND_P_CONTRACT_ID,
+            'contract.version': ROUND_P_CONTRACT_VERSION}
+    body = '\n'.join(rows[name] for name in names)
+    if len(names) > 1:
+        # Share the real map citation between the two declaration labels.
+        body = ' | '.join(name + ': verified-in-repo' for name in names)
+        body += ' | ' + ROUND_P_CONTRACT_ID.split('|')[3]
+    assert hook.verification_defects('', body, {'cwd': str(ROOT)}, no_commands=True) == []
+
+
+def test_round_p_d02_labels_allow_explanation_in_cell():
+    assert dict(module().pin_claims(ROUND_P_LABELS)) == {
+        'repository_root': 'parent-supplied', 'head': 'unavailable',
+        'mapping.identity': 'parent-supplied', 'mapping.version': 'unavailable',
+        'mapping.digest': 'unavailable', 'contract.identity': 'parent-supplied',
+        'contract.version': 'parent-supplied', 'contract.digest': 'parent-supplied'}
+
+
+@pytest.mark.parametrize('body', [ROUND_P_NEGATION, ROUND_P_ATTRIBUTION,
+    'I do not conclude it is absent from the repository.',
+    '> The item is absent from the repository.',
+    '> contract.digest: verified-in-repo',
+])
+def test_round_p_d03_negated_and_attributed_claims_are_not_assertions(monkeypatch, body):
+    hook = module()
+    monkeypatch.setattr(hook, 'turn_tools', lambda event: ([], [], []))
+    assert hook.verification_defects('', body, {'cwd': str(ROOT)}) == []
+
+
+def test_round_p_d04_access_limit_disclosure_is_sufficient(runtime):
+    run, _, _ = runtime
+    run('UserPromptSubmit', prompt=RECIPIENT_PROMPT + '\nNo commands.')
+    body = RECIPIENT_LABELS + '\n' + ROUND_P_LIMITATION
+    assert run('Stop', last_assistant_message=body).stdout == ''
+
+
+@pytest.mark.parametrize('pin', ['contract.digest', 'mapping.digest', 'sources[0].sha256'])
+def test_round_p_d06_read_digest_requires_computation_without_ban(runtime, pin):
+    run, _, repo = runtime
+    run('UserPromptSubmit', prompt=PROMPT)
+    append_tool(repo, 'claude', 'Read', {'file_path': '.mir/ontology-map.json'})
+    body = packet() + '\n' + ROUND_P_DIGEST.replace('contract.digest', pin)
+    result = json.loads(run('Stop', last_assistant_message=body).stdout or '{}')
+    assert result.get('decision') == 'block'
+    assert 'this-turn computation' in result['reason']
+
+
+@pytest.mark.parametrize('claim', [ROUND_P_ABSENCE, 'pin contract.digest=verified-in-repo'])
+@pytest.mark.parametrize('receiving', [False, True])
+def test_round_p_d06_replacement_final_rechecks_absence_and_digest(runtime, claim, receiving):
+    run, _, repo = runtime
+    run('UserPromptSubmit', prompt=(RECIPIENT_PROMPT if receiving else PROMPT)
+        + '\nNo commands.')
+    first_body = RECIPIENT_LABELS if receiving else NO_PIN_PACKET
+    first = json.loads(run('Stop', last_assistant_message=first_body + '\nHEAD: abcdef123').stdout)
+    append_block(repo, 'claude', first['reason'])
+    result = json.loads(run('Stop', last_assistant_message=first_body + '\n' + claim,
+                           stop_hook_active=True).stdout or '{}')
+    assert result.get('decision') == 'block'
+    assert ('repository-wide absence' if claim == ROUND_P_ABSENCE else 'this-turn computation'
+            ) in result['reason']
+
+
+def test_round_p_d07_table_only_target_requires_every_pin(runtime):
+    run, _, _ = runtime
+    prompt = (ROUND_P_TARGET + '\n| Lifecycle | proposed |\n| Verification | unchecked |'
+              '\n| Unknowns | hashes unchecked |')
+    assert module().recipient(prompt)
+    supplied = run('UserPromptSubmit', prompt=prompt)
+    assert 'Received handoff' in supplied.stdout
+    result = json.loads(run('Stop', last_assistant_message='No local check was performed.').stdout)
+    assert result['reason'].count('missing recipient pin label:') == 8

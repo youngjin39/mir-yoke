@@ -379,3 +379,8 @@ for older interpreters; absent parsing still skips only the Profile glob filter.
 Main still owns generated Codex
 surfaces, digest acknowledgement, locks/binding and any live-host verification.
 This work performs no bind, tag, push or release. A prepared version is not activation.
+
+- Contract identity/version declarations may cite this-turn map reads, including shared
+  line references; they attest declared values only. Digest pins always require this-turn
+  computation, including replacement finals. Absence scope must govern its own clause;
+  quoted, attributed or negated claims are not the recipient's positive assertions.

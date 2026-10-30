@@ -471,3 +471,16 @@ manager changes with it. Tests: `test_should_block_repository_absence_after_limi
 `test_should_allow_repository_absence_after_root_search`,
 `test_should_reject_read_only_verified_digest_under_command_ban` and
 `test_should_supply_owner_permission_and_search_scope_rule` in `tests/test_mechanical_handoff.py`.
+
+## Amendment: 2026-10-31 — handoff checker fixes from round p (0.13.49)
+
+An offline judge of three my-life author/recipient chains under 0.13.48 (2026-10-31) found three
+checker false negatives and four false positives. An absence claim was treated as scoped when any
+scope word appeared elsewhere on its line; scope words now count only in the claim's own clause,
+while a search qualifier in the same item still bounds it. The verified-in-repo digest rule now
+applies with or without a command ban, and the second Stop recheck covers digest and absence
+defects. A table-only qualified target is recognised for recipient accounting. Negated, quoted or
+attributed claims, labels with explanatory text in a cell, shared-line map citations for contract
+declarations and an adequate Korean access-limit disclosure are no longer flagged. The reviewed
+handoff handler digest in the manager changes with it. Tests: the `test_round_p_*` cases in
+`tests/test_mechanical_handoff.py`.

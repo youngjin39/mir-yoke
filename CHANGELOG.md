@@ -8,6 +8,29 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.49] — 2026-10-31 — handoff checker fixes from the round p judge
+
+### Fixed
+
+- An absence claim was treated as scoped when any scope word appeared elsewhere on its line (for
+  example a Korean "only in this prompt" clause after "not in the repository", or an unrelated
+  source path in the same table row). Scope words now count only in the claim's own clause; a
+  search qualifier in the same item (searched, no matches, or the Korean equivalents for search,
+  zero hits and absence judgement) still bounds it.
+- A digest pin labelled `verified-in-repo` from a read declaration passed when commands were not
+  banned, and a replacement final after a first Stop block was not rechecked for digest or
+  absence defects. Both are now checked.
+- A recipient packet whose qualified target appears only in a table row was not recognised, so
+  missing per-pin labels went unreported.
+- False positives: contract identity/version declarations citing a this-turn map read through a
+  shared line; pin labels followed by an explanation in the same table cell; negated, quoted or
+  attributed absence and digest claims; and an adequate Korean access-limit disclosure.
+
+### Changed
+
+- Bump release surfaces to 0.13.49, re-pin the reviewed handoff handler digest and regenerate the
+  adopter payload.
+
 ## [v0.13.48] — 2026-10-30 — bounded absence claims and digest labels in the handoff hook
 
 ### Fixed

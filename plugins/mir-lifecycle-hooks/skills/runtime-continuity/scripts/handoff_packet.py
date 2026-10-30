@@ -109,7 +109,12 @@ def recipient(prompt: str) -> bool:
     lines = plain.splitlines()
     target_label = (r'^\s*(?:#{1,6}\s+(?:\d+[.)]\s*)?'
                     + TARGET_NAME + r'|(?:[-+]\s*)?' + TARGET_NAME + r'\s*(?::|$))')
-    target = any(
+    table_target = any(
+        re.search(r'^\s*\|\s*(?:' + TARGET_NAME
+                  + r'|\uc815\uaddc\ud654\s+\ub300\uc0c1)\s*\|'
+                  r'[^\n]*[\w.-]+:[\w./-]+', line, re.I)
+        for line in lines)
+    target = table_target or any(
         re.search(target_label, line, re.I)
         and re.search(r'(?<![\w:/])[\w.-]+:[\w./-]+', '\n'.join(lines[i:i + 4]))
         for i, line in enumerate(lines))
@@ -826,7 +831,7 @@ def tool_kind(name: str) -> str:
 
 
 def pin_claims(text: str) -> list[tuple[str, str]]:
-    plain = re.sub(r'[*`]', '', text)
+    plain = re.sub(r'[*`]', '', assertion_text(text))
     claims = re.findall(r'(?im)(?<![\w.-])(?:pin )?([\w.\[\]-]+)\s*[=:]\s*'
                         r'(verified-in-repo|parent-supplied|unavailable)\b', plain)
     for line in plain.splitlines():
@@ -834,8 +839,8 @@ def pin_claims(text: str) -> list[tuple[str, str]]:
             continue
         cells = [cell.strip() for cell in line.strip().strip('|').split('|')]
         names = [cell for cell in cells if re.fullmatch(PIN_KEY, cell, re.I)]
-        labels = [cell for cell in cells if re.fullmatch(
-            r'verified-in-repo|parent-supplied|unavailable', cell, re.I)]
+        labels = [match[0] for cell in cells if (match := re.match(
+            r'(?:verified-in-repo|parent-supplied|unavailable)\b', cell, re.I))]
         if len(names) == 1 and len(labels) == 1:
             claims.append((names[0], labels[0]))
     return [(name, label) for name, label in claims if name.lower() not in NON_PIN_NAMES]
@@ -843,7 +848,8 @@ def pin_claims(text: str) -> list[tuple[str, str]]:
 
 def claimed_paths(text: str) -> list[str]:
     """Separate file references from qualified IDs, versions and structured pin keys."""
-    plain = re.sub(r'(?<![\w:/])[\w.-]+:[\w./-]+', '', text)
+    plain = re.sub(r'(?<![\w:/])([\w.-]+):([\w./-]+)',
+                   lambda match: match[0] if match[2].isdigit() else '', text)
     plain = re.sub(r'(?<![\w./-])' + PIN_KEY + r'(?![\w./-])', '', plain, flags=re.I)
     return [value for value in CITED.findall(plain)
             if not re.fullmatch(r'v?\d+(?:\.\d+)+(?:[-+][\w.-]+)?', value, re.I)]
@@ -891,6 +897,12 @@ def path_referenced(path: str, reads: list[str], commands: list[str], root: Path
                for value in reads if value) or any(path in command for command in commands)
 
 
+def assertion_text(text: str) -> str:
+    """Exclude quoted claims; keep independent assertions on the same line."""
+    return '\n'.join(line for line in text.splitlines()
+                     if not line.lstrip().startswith('>'))
+
+
 def absence_defects(body: str, calls: list[tuple[str, dict]], root: Path) -> list[str]:
     """Bound lexical absence claims to this turn's explicit search scopes."""
     # The scope word must govern the absence phrase, so a no-change line is not a claim.
@@ -906,9 +918,30 @@ def absence_defects(body: str, calls: list[tuple[str, dict]], root: Path) -> lis
              r'(?:\uc5c6|\uc874\uc7ac\ud558\uc9c0\s*\uc54a|\ucc3e\uc9c0\s*\ubabb)|'
              r'\uc5b4\ub514\uc5d0\ub3c4\s*(?:\uc5c6|\uc874\uc7ac\ud558\uc9c0\s*\uc54a)')
     bounded = (r'\b(?:within|under|searched)\b|'
-               r'\ubc94\uc704|\uc548\uc5d0\uc11c|\uc5d0\uc11c\ub9cc|[\w.-]+/')
-    if not any(re.search(claim, line, re.I) and not re.search(bounded, line, re.I)
-               for line in body.splitlines()):
+               r'\ubc94\uc704|\uc548\uc5d0\uc11c|\uc5d0\uc11c\ub9cc')
+    # A search-scope qualifier in the same item bounds its absence claim.
+    searched = (r'\bsearch(?:ed|es)?\b|\bno (?:matches|hits)\b|'
+                r'\uac80\uc0c9|0\s*\uac74|\ubd80\uc7ac\s*(?:\ud310\ub2e8|\uc8fc\uc7a5)')
+    unbounded = False
+    for line in assertion_text(body).splitlines():
+        if re.search(searched, line, re.I):
+            continue
+        # Other scope words cannot be borrowed from a neighbouring clause.
+        clauses = re.split(r'(?<=[.!?])\s+|[,;|]', line)
+        for clause in clauses:
+            match = re.search(claim, clause, re.I)
+            if not match:
+                continue
+            if re.search(r'\b(?:do not|don.t|cannot) conclude\b|'
+                         r'\uacb0\ub860[^.]*\ub0b4\ub9ac\uc9c0\s*\uc54a', clause, re.I):
+                continue
+            # A path governs absence only next to the repository noun, not in an ID.
+            scoped = re.search(bounded, clause, re.I)
+            scoped = scoped or re.search(
+                r'(?:repo|repository|codebase)\s+[`\w./-]+/', clause, re.I)
+            if not scoped:
+                unbounded = True
+    if not unbounded:
         return []
     scopes = []
     for name, args in calls:
@@ -982,6 +1015,10 @@ def verification_defects(text: str, body: str, event: dict, no_commands: bool = 
                      and 'verified-in-repo' in line.lower()), '')
         # Pin identifiers (mapping.digest etc.) are not file paths.
         explicit = [value for value in claimed_paths(line) if value != name]
+        if name in {'contract.identity', 'contract.version'}:
+            mapping_path = paths['mapping.identity']
+            if mapping_path in explicit:
+                path = mapping_path
         if not path and explicit:
             path = explicit[0]
         if no_commands:
@@ -1020,9 +1057,10 @@ def verification_defects(text: str, body: str, event: dict, no_commands: bool = 
         elif not typed and path:
             verified_paths.add(path)
     names = {name for name, _ in pin_claims(plain)}
-    for line in plain.splitlines():
+    for line in assertion_text(plain).splitlines():
         if 'verified-in-repo' in line.lower():
-            verified_paths.update(value for value in claimed_paths(line) if value not in names)
+            verified_paths.update(value for value in claimed_paths(line)
+                                  if value not in names and not re.fullmatch(PIN_KEY, value, re.I))
     for path in sorted(verified_paths):
         referenced = path_referenced(path, reads, [] if no_commands else commands, root)
         if not no_commands and path == '.mir/ontology-map.json':
@@ -1101,8 +1139,11 @@ def recipient_check(prompt: str, body: str, event: dict) -> list[str]:
             and not any(name in SHELL_TOOLS for name, _ in calls) and not (
         (re.search(r'commands?[^\n]*(?:forbidden|prohibited|not (?:run|allowed))', plain, re.I)
          and re.search(r'no (?:non-command )?reader[^\n]*(?:used|available)', plain, re.I))
-        or (re.search(r'\uba85\ub839[^\n]*(?:\uae08\uc9c0|\uc2e4\ud589\ud558\uc9c0)', plain)
-            and re.search(r'(?:\uc77d\uae30\s*\ub3c4\uad6c|\ub9ac\ub354)'
+        or (re.search(r'\uba85\ub839[^\n]*(?:\uae08\uc9c0|\uc2e4\ud589\ud558\uc9c0)|'
+                      r'(?:\uc15c|\uc778\ud130\ud504\ub9ac\ud130)[^\n]*'
+                      r'\ud638\ucd9c\ud558\uc9c0\s*\uc54a', plain)
+            and re.search(r'(?:\uc77d\uae30\s*\ub3c4\uad6c|\ub9ac\ub354|'
+                          r'\ud30c\uc77c\uc744\s*\uc77d[^.]*\ub3c4\uad6c)'
                           r'[^\n]*(?:\uc5c6|\uc0ac\uc6a9\ud558\uc9c0|\ubabb)', plain))
     )):
         defects.append('state commands forbidden and no non-command reader was used/available')
@@ -1168,7 +1209,9 @@ def prior_blocks(event: dict) -> int | None:
 def deterministic(defects: list[str]) -> list[str]:
     return [defect for defect in defects if defect.startswith((
         'missing cited-source pins', 'abbreviated hex', 'missing recipient pin label',
-        'excluded item #', 'qualified target namespace ', 'command-ban compliance failure'))]
+        'excluded item #', 'qualified target namespace ', 'command-ban compliance failure',
+        'verified-in-repo digest needs', 'verified-in-repo pin lacks this-turn computation',
+        'repository-wide absence claimed'))]
 
 
 def block(defects: list[str], retry: bool, receiving: bool, owner: dict) -> None:
@@ -1242,8 +1285,7 @@ def stop(event: dict) -> None:
                            'sources; no second pins block): ' + ', '.join(unpinned))
     if not guard:
         defects.append('missing Prompt SHA256 (copy the supplied full prompt hash)')
-    calls, _, _ = turn_tools(event)
-    defects.extend(absence_defects(body, calls, repository_root(event)))
+    defects.extend(verification_defects(body, body, event))
     block(defects, retry, False, owner)
 
 
