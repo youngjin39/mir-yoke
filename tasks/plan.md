@@ -33,3 +33,8 @@ Status (2026-10-31, Main):
   private absolute path in a new test fixture, replaced by a neutral path. The other five
   (`test_update_real_080` x4, the repository lock test) read the committed tree and wait for
   the source and bind commits.
+- (3) After the source commit 1c35757 and the bind ce528f4 the lock-coupled files pass (67
+  passed). Fresh-clone readiness at ce528f4: 3920 passed, 26 skipped, `ready: true`, exit 0.
+- (4) Tag `v0.13.49` on ce528f4 pushed. Maintainer host: provider update applied (lock restored
+  from 48b0e19), Codex hook trust 4/4, Claude 04547b54 and Codex 01a18da1 attested (five
+  mir-mcp calls ok, four hooks), finalized, ready at ce528f4. Owner PC: pending.
