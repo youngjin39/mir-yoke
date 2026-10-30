@@ -30,4 +30,11 @@ Status (2026-10-30, Main):
   handler digest re-pin, payload.
 - (3) Main full suite before the source commit: 3892 passed, 25 skipped, 8 failed. Four were test
   version pins (fixed). Three `test_update_real_080` cases and the lock test read committed
-  `HEAD`, so they need the source commit and the bind.
+  `HEAD`, so they need the source commit and the bind. (Correction: all four `test_update_real_080`
+  cases failed, and the eighth failure was the lock test.) After the source commit and the bind
+  the lock-coupled files pass (245 passed). Fresh-clone readiness at 50123f9: 3899 passed,
+  26 skipped, ready.
+- (4) v0.13.48 (source 10a7c66, bind 50123f9) published 2026-10-30T11:12:28Z; the release
+  workflow succeeded. Maintainer host 0.13.47 -> 0.13.48: Claude 1ca239ab and Codex 01a18c88
+  attested (all five calls ok, four hooks; the Codex UserPromptSubmit context carries the new
+  scope rule), finalized, status ready at 50123f9. The owner's PC stays on 0.13.47.
