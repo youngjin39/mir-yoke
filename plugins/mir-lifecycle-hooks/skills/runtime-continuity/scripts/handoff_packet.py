@@ -82,7 +82,7 @@ TARGET_NAME = r'(?:qualified target|\ub300\uc0c1)\b(?:[ \t]*\([^\n)]*\))?'
 PIN_KEY = (r'(?:repository_root|head|(?:mapping|contract)\.(?:identity|version|digest)|'
            r'sources\[\d+\]\.(?:digest|sha256|revision))')
 NON_PIN_NAMES = {'lifecycle', 'temporal', 'epistemic', 'verification', 'evidence', 'unknowns',
-                 'provenance', 'reason', 'reasons', '\uc774\uc720', 'sha256', 'revision'}
+                 'provenance', 'label', 'reason', 'reasons', '\uc774\uc720', 'sha256', 'revision'}
 COMPLETE_ARTIFACT_RULE = (
     'Re-send the complete corrected artifact as your final message; it replaces the previous '
     'one, so do not send only the changed sections.'
@@ -255,6 +255,11 @@ def authority_defects(body: str, boundary: dict) -> list[str]:
         r'\ud5c8\uc6a9\ub429\ub2c8\ub2e4)[^\n]*)', grant_prose)
     # Conditional design suggestions do not grant the recipient permission.
     inline += [item for item in korean if (ACTION.search(item) or READ.search(item))
+               and not (re.search(r'(?:\ucd94\uc815|\uc624\ub3c5)\ud560\s*\uc218\s*'
+                                  r'\uc788\uc2b5\ub2c8\ub2e4[.\s]*$', item)
+                        and len(re.findall(r'\uc218\s*\uc788\uc2b5\ub2c8\ub2e4|'
+                                           r'\ud574\ub3c4\s*\ub429\ub2c8\ub2e4|'
+                                           r'\ud5c8\uc6a9\ub429\ub2c8\ub2e4', item)) == 1)
                and not (re.search(r'\ud558\uba74[^.!?]*\uc218\s*\uc788\uc2b5\ub2c8\ub2e4', item)
                         and not re.search(r'\uc218\uc2e0\uc790|\uc5d0\uc774\uc804\ud2b8|'
                                           r'\ud5c8\uc6a9|\ud574\ub3c4\s*'
@@ -284,7 +289,11 @@ def authority_defects(body: str, boundary: dict) -> list[str]:
         # Read-only conditions and fixture nouns do not grant command/test execution.
         read_item = re.sub(
             r'\uba85\ub839\uc744\s*\uc2e4\ud589\ud558\uc9c0\s*\uc54a\ub294(?=\s*\uc77d\uae30\s*\ub3c4\uad6c)|'
+            r'\uba85\ub839\s*\uc2e4\ud589\uc774\s*\ud544\uc694\s*\uc5c6\ub294(?=\s*\uc77d\uae30\s*\ub3c4\uad6c)|'
             r'\ud569\uc131\s*\ud14c\uc2a4\ud2b8', '', item)
+        read_item = re.sub(r'[\w.-]+(?:/[\w.*-]*)+',
+                           lambda match: match[0] if match[0].lower() == 'read/inspect' else '',
+                           read_item)
         permitted = permitted or (bool(READ.search(read_item)) and not ACTION.search(read_item))
         if (not candidate or not permitted
                 or any(deny and f' {deny} ' in f' {candidate} ' for deny in denied)):
@@ -716,7 +725,7 @@ def message_text(message: dict) -> str:
 
 
 def hook_prompts(row: dict) -> list[tuple[str, str]]:
-    """Codex emits two views of the same native feedback, keyed by hook run ID."""
+    """Read native Codex feedback; a hook run ID can recur across Stops."""
     payload = row.get('payload', {})
     if row.get('type') == 'response_item' and payload.get('role') == 'user':
         match = re.fullmatch(r'\s*<hook_prompt\s+hook_run_id="([^"]+)">'
@@ -848,9 +857,23 @@ def tool_kind(name: str) -> str:
 
 def pin_claims(text: str) -> list[tuple[str, str]]:
     plain = re.sub(r'[*`]', '', assertion_text(text))
-    claims = re.findall(r'(?im)(?<![\w.-])(?:pin )?([\w.\[\]-]+)\s*[=:]\s*'
+    claims = re.findall(r'(?im)(?<![\w.=-])(?:pin )?([\w.\[\]-]+)\s*[=:]\s*'
+                        r'(?:[^\n;:=]+:\s*)?'
                         r'(verified-in-repo|parent-supplied|unavailable)(?![A-Za-z0-9_-])', plain)
+    parents = []
     for line in plain.splitlines():
+        if line.strip():
+            indent = len(line) - len(line.lstrip())
+            while parents and indent <= parents[-1][0]:
+                parents.pop()
+            child = re.fullmatch(r'\s*(?:provenance|label):\s*'
+                                 r'(verified-in-repo|parent-supplied|unavailable)\s*',
+                                 line, re.I)
+            if child and parents:
+                claims.append((parents[-1][1], child[1]))
+            header = re.fullmatch(r'\s*([\w.\[\]-]+):\s*', line)
+            if header:
+                parents.append((indent, header[1]))
         if '|' not in line:
             continue
         cells = [cell.strip() for cell in line.strip().strip('|').split('|')]
@@ -1214,14 +1237,22 @@ def prior_blocks(event: dict) -> int | None:
     """Count only this handler's native feedback, never assistant-quoted decisions."""
     _, rows = current_turn(event)
     count = 0
-    seen = set()
+    pending = {}
     for row in rows:
-        for run_id, text in hook_prompts(row):
-            if (run_id.lower().startswith('stop:') and run_id not in seen
+        for run_id, text in set(hook_prompts(row)):
+            if (run_id.lower().startswith('stop:')
                     and re.match(r'Repair (?:handoff once|recipient accounting once|'
                                  r'handoff deterministic defects \(second/final block\)):', text)):
-                seen.add(run_id)
-                count += 1
+                # Pair record views, never distinct messages of the same view.
+                shape = row['type']
+                other = 'event_msg' if shape == 'response_item' else 'response_item'
+                key = (run_id, text, shape)
+                paired = (run_id, text, other)
+                if pending.get(paired, 0):
+                    pending[paired] -= 1
+                else:
+                    pending[key] = pending.get(key, 0) + 1
+                    count += 1
         payload = row.get('payload', {})
         record = row if row.get('type') == 'system' else payload
         feedback = (row.get('type') == 'system' and row.get('subtype') == 'hook_response'

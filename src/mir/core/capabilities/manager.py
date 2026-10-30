@@ -146,7 +146,7 @@ if __name__ == "__main__":
     main()
 '''
 # ADR-90 amendment (2026-10-22): exact reviewed stateless handoff implementation.
-_HANDOFF_HANDLER_SHA256 = "5c2c9cefcd4ef99f1b79c769c1db44b4a7c10597df77240fcab83389b1edc671"
+_HANDOFF_HANDLER_SHA256 = "d3dc8d36380a94ac45bfa275b35a9d8e38a1311e7e6110537fd7b919e603a9f8"
 _ACTIVE_PACKAGE_CREDENTIAL_PATTERNS = (
     re.compile(rb"https?://[^\s/@]+@", re.IGNORECASE),
     re.compile(rb"-----BEGIN [A-Z ]*PRIVATE KEY-----"),

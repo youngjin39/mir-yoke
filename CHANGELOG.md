@@ -8,6 +8,24 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.53] — 2026-10-31 — handoff repair guard and round s checker fixes
+
+### Fixed
+
+- The Stop repair guard counted distinct hook run IDs, and Codex reuses one Stop run ID for every
+  Stop of a session, so the two-block limit never tripped (a round s recipient received four
+  repair prompts). Each native repair message is now counted once, pairing only the two Codex
+  record views of the same message.
+- Three handoff checker false positives found by the round s judge: a read/review scope that
+  lists paths, a fixture inference or an explanation of a possible misreading is not read as
+  granted authority; in `name=value: label` the pin is `name`; and a pin inventory may give each
+  label on the same line or as an indented `label`/`provenance` child of the pin.
+
+### Changed
+
+- Bump release surfaces to 0.13.53, re-pin the reviewed handoff handler digest and regenerate the
+  adopter payload.
+
 ## [v0.13.52] — 2026-10-31 — handoff checker fixes from the round r judge
 
 ### Fixed

@@ -524,6 +524,12 @@ selected packages' tree digests for this release in the host-local approval file
   digests into `<project root>/config/capability-acknowledgements.local.json` before
   `mir capability update --apply`.
 
+## 0.13.53 handoff repair guard and round s checker fixes
+
+- No database or configuration migration.
+- Acknowledge the new package digests (the `mir-lifecycle-hooks` handoff handler changed; the
+  other packages are version-only changes).
+
 ## 0.13.52 handoff checker fixes from the round r judge
 
 - No database or configuration migration.

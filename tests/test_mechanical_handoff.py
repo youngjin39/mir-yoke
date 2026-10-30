@@ -2715,3 +2715,223 @@ def test_round_r_s01_recipient_not_checked(runtime):
     run('UserPromptSubmit', prompt=RECIPIENT_PROMPT)
     result = run('Stop', last_assistant_message=RECIPIENT_LABELS + '\n' + ROUND_R_SOURCE_CLAIMS[0])
     assert 'universal claim about cited source output:' not in result.stdout
+
+
+# S03C T44/52/60/68: distinct native messages reuse the same Stop run ID.
+ROUND_S_REPAIRS = [{'type': 'response_item',
+  'payload': {'type': 'message',
+              'id': 'msg_01a18ecc-a3c1-7ad0-96ea-15c1b51176ad',
+              'role': 'user',
+              'content': [{'type': 'input_text',
+                           'text': '<hook_prompt '
+                                   'hook_run_id="stop:21:/synthetic/hooks/hooks.json">Repair '
+                                   'recipient accounting once: missing recipient pin label: '
+                                   'abbreviated. Re-send the complete corrected artifact as '
+                                   'your final message; it replaces the previous one, so do '
+                                   'not send only the changed sections.</hook_prompt>'}]}},
+ {'type': 'response_item',
+  'payload': {'type': 'message',
+              'id': 'msg_01a18ecd-0bdf-7e50-995a-a7566046c148',
+              'role': 'user',
+              'content': [{'type': 'input_text',
+                           'text': '<hook_prompt '
+                                   'hook_run_id="stop:21:/synthetic/hooks/hooks.json">Repair '
+                                   'handoff deterministic defects (second/final block): '
+                                   'missing recipient pin label: abbreviated. Re-send the '
+                                   'complete corrected artifact as your final message; it '
+                                   'replaces the previous one, so do not send only the changed '
+                                   'sections.</hook_prompt>'}]}},
+ {'type': 'response_item',
+  'payload': {'type': 'message',
+              'id': 'msg_01a18ecd-790d-7552-a367-5cfc560f1e0f',
+              'role': 'user',
+              'content': [{'type': 'input_text',
+                           'text': '<hook_prompt '
+                                   'hook_run_id="stop:21:/synthetic/hooks/hooks.json">Repair '
+                                   'handoff deterministic defects (second/final block): '
+                                   'missing recipient pin label: head. Re-send the complete '
+                                   'corrected artifact as your final message; it replaces the '
+                                   'previous one, so do not send only the changed '
+                                   'sections.</hook_prompt>'}]}},
+ {'type': 'response_item',
+  'payload': {'type': 'message',
+              'id': 'msg_01a18ece-025a-7a43-ad14-8c4e5fdae0a3',
+              'role': 'user',
+              'content': [{'type': 'input_text',
+                           'text': '<hook_prompt '
+                                   'hook_run_id="stop:21:/synthetic/hooks/hooks.json">Repair '
+                                   'handoff deterministic defects (second/final block): '
+                                   'missing recipient pin label: repository_root; missing '
+                                   'recipient pin label: head; missing recipient pin label: '
+                                   'mapping.identity; missing recipient pin label: '
+                                   'mapping.version; missing recipient pin label: '
+                                   'mapping.digest; missing recipient pin label: '
+                                   'contract.identity; missing recipient pin label: '
+                                   'contract.version; missing recipient pin label: '
+                                   'contract.digest; missing recipient pin label: abbreviated. '
+                                   'Re-send the complete corrected artifact as your final '
+                                   'message; it replaces the previous one, so do not send only '
+                                   'the changed sections.</hook_prompt>'}]}}]
+
+
+def test_round_s_d04_reused_stop_id_counts_occurrences(runtime):
+    run, _, repo = runtime
+    run('UserPromptSubmit', prompt=RECIPIENT_PROMPT)
+    hook = module()
+    event = {'cwd': str(repo), 'transcript_path': str(repo / 'native-session.jsonl')}
+    for count, row in enumerate(ROUND_S_REPAIRS, 1):
+        with (repo / 'native-session.jsonl').open('a') as stream:
+            stream.write(json.dumps(row) + '\n')
+        if count == 2:
+            third = run('Stop', last_assistant_message='Done.', stop_hook_active=True)
+            assert 'decision' not in json.loads(third.stdout or '{}')
+        assert hook.prior_blocks(event) == count
+
+
+# S01P T383:134/153, S02P T387:90, S01C T28:124.
+ROUND_S_AUTHORITY = [
+    (
+        '      test_l'
+        'ocal_hooks.p'
+        'y:79-81\uc774 \ud1b5\uacfc\ud55c'
+        '\ub2e4\uba74 scripts/\xb7'
+        'tests/ \uacc4\uc5f4 pr'
+        'efix\uac00 \ud5c8\uc6a9\ub41c\ub2e4\uace0 '
+        '\ucd94\uc815\ud560 \uc218 \uc788\uc2b5\ub2c8\ub2e4.'
+    ),
+    (
+        'May: \uc704 1\uc808\uc5d0 \ub098'
+        '\uc5f4\ud55c scripts/,'
+        ' spec/, test'
+        's/, tools/ \ud30c'
+        '\uc77c\uacfc \uc774 \uc9c0\uc2dc\ubb38\uc744 \uc77d\uace0'
+        ' \uac80\ud1a0 \uc758\uacac\ub9cc \ub0c5\ub2c8\ub2e4.'
+    ),
+    (
+        '- **(a) \uc0c1\ud0dc\uac00 '
+        '\ub4dc\ub7ec\ub098\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4.**'
+        ' \ucd9c\ub825\uc5d0 \ucd9c\ucc98\uc758 lif'
+        'ecycle(propo'
+        'sed/accepted'
+        ')\uacfc \ubcc0\uacbd \uc804\ud6c4 \ud574\uc2dc\uac00'
+        ' \uc5c6\uc2b5\ub2c8\ub2e4. \uadf8\ub798\uc11c "'
+        '\uc7ac\uac80\ud1a0 \ud544\uc694"\ub97c "\ubcc0\uacbd'
+        ' \ud655\uc815"\uc73c\ub85c \uc624\ub3c5\ud560 \uc218'
+        ' \uc788\uc2b5\ub2c8\ub2e4.'
+    ),
+    (
+        '- \uba85\ub839 \uc2e4\ud589\uc774 \ud544\uc694 '
+        '\uc5c6\ub294 \uc77d\uae30 \ub3c4\uad6c\uac00 \uc788\ub2e4'
+        '\uba74, \ud5c8\uc6a9\ub41c \uc18c\uc2a4\uc758 \ud544'
+        '\uc694\ud55c \ubd80\ubd84\uc744 \uc77d\uace0 \ub300\uc870'
+        '\ud560 \uc218 \uc788\uc2b5\ub2c8\ub2e4.'
+    ),
+]
+
+# S03C T57:93-100 and T65:71-99; neutral repository root.
+ROUND_S_INVENTORIES = [
+ 'repository_root=parent-supplied: /srv/my-life; repository-root identity not '
+ 'independently verified\n'
+ 'head=abbreviated: parent-supplied 974eebf; full SHA and current HEAD unavailable\n'
+ 'mapping.identity=unavailable\n'
+ 'mapping.version=unavailable\n'
+ 'mapping.digest=unavailable\n'
+ 'contract.identity=unavailable\n'
+ 'contract.version=parent-supplied: test expectation 1.1.0 only; runtime version '
+ 'unavailable\n'
+ 'contract.digest=unavailable',
+ 'recipient_pins:\n'
+ '  repository_root:\n'
+ '    label: parent-supplied\n'
+ '    value: "/srv/my-life"\n'
+ '    verification: unavailable\n'
+ '  head:\n'
+ '    label: parent-supplied\n'
+ '    completeness: abbreviated\n'
+ '    value: "974eebf"\n'
+ '    full_sha: unavailable\n'
+ '    current_head: unavailable\n'
+ '  abbreviated:\n'
+ '    label: parent-supplied\n'
+ '    applies_to: head\n'
+ '    value: "974eebf"\n'
+ '  mapping.identity:\n'
+ '    label: unavailable\n'
+ '  mapping.version:\n'
+ '    label: unavailable\n'
+ '  mapping.digest:\n'
+ '    label: unavailable\n'
+ '  contract.identity:\n'
+ '    label: unavailable\n'
+ '  contract.version:\n'
+ '    label: parent-supplied\n'
+ '    value: "1.1.0"\n'
+ '    limitation: "Reported test expectation only; runtime version unavailable."\n'
+ '  contract.digest:\n'
+ '    label: unavailable']
+
+
+@pytest.mark.parametrize('body', ROUND_S_AUTHORITY,
+                         ids=['fixture-inference', 'review-scope', 'risk', 'reader'])
+def test_round_s_d01_read_scope_and_inference(body, monkeypatch):
+    hook = module()
+    monkeypatch.setattr(hook, 'turn_tools', lambda event: ([], [], []))
+    owner = hook.owner_sections('May: read/inspect only\nMay not: run commands; edit files')
+    assert hook.authority_defects(body, owner) == []
+    for enlarged in ('You may run commands.', 'You may modify files.',
+                     'You may commit changes.', 'You may write files.',
+                     'You may use the network.'):
+        assert hook.authority_defects(body + '\n' + enlarged, owner)
+    # The same drafts also contained valid absence and digest interventions.
+    assert hook.absence_defects(ROUND_S_ABSENCE, [], ROOT)
+    assert any('verified-in-repo digest needs' in defect for defect in
+               hook.verification_defects('', ROUND_S_DIGEST, {'cwd': str(ROOT)},
+                                         no_commands=True))
+
+
+def test_round_s_d02_value_is_not_a_pin(monkeypatch):
+    hook = module()
+    monkeypatch.setattr(hook, 'turn_tools', lambda event: ([], [], []))
+    claim = 'head=abbreviated: parent-supplied'
+    assert hook.pin_claims(claim) == [('head', 'parent-supplied')]
+    assert hook.recipient_check(RECIPIENT_PROMPT + '\n' + claim,
+                                RECIPIENT_LABELS, {'cwd': str(ROOT)}) == []
+
+
+@pytest.mark.parametrize('inventory', ROUND_S_INVENTORIES, ids=['combined', 'nested'])
+def test_round_s_d03_recipient_inventory(monkeypatch, inventory):
+    hook = module()
+    monkeypatch.setattr(hook, 'turn_tools', lambda event: ([], [], []))
+    prompt = 'Review this received handoff.'
+    body = inventory + '\nNo local check was performed.'
+    assert hook.recipient_check(prompt, body, {'cwd': str(ROOT)}) == []
+    assert hook.recipient_check(prompt, body.replace('label:', 'provenance:'),
+                                {'cwd': str(ROOT)}) == []
+    # An adjacent sibling label cannot supply the missing pin's provenance.
+    body = body.replace('head=abbreviated: parent-supplied', 'head=abbreviated: unknown')
+    body = body.replace('  head:\n    label: parent-supplied',
+                        '  head:\n    completeness: abbreviated')
+    assert 'missing recipient pin label: head' in hook.recipient_check(
+        prompt, body, {'cwd': str(ROOT)})
+
+
+ROUND_S_ABSENCE = (
+    '2. \ud569\uc131 s4a-li'
+    'fe-chain (pa'
+    'rent-supplie'
+    'd \uc815\uc758. \uc800\uc7a5\uc18c\uc5d0 \uc774'
+    ' fixture\ub294 \uc5c6\uc2b5'
+    '\ub2c8\ub2e4)'
+)
+
+
+ROUND_S_DIGEST = (
+    '- contract.d'
+    'igest=verifi'
+    'ed-in-repo: '
+    'map\uc5d0 \uc120\uc5b8\ub41c `b2'
+    'f1ecd0\u2026`(`:3'
+    '`)\uc785\ub2c8\ub2e4. \uc2e4\uc81c co'
+    'ntract \ud30c\uc77c\uacfc \ub300'
+    '\uc870\ud558\uc9c0\ub294 \uc54a\uc558\uc2b5\ub2c8\ub2e4.'
+)

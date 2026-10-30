@@ -514,3 +514,14 @@ makes a universal claim about quoted output; this targets the source misreading 
 of the last six my-life chains, and it is a request, not a finding. Contradictions between
 separate lines remain outside lexical reach. The reviewed handoff handler digest in the manager
 changes with it. Tests: the `test_round_r_*` cases in `tests/test_mechanical_handoff.py`.
+
+## Amendment: 2026-10-31 — repair guard and round s checker fixes (0.13.53)
+
+The handoff Stop handler allows at most two repair blocks per turn. It counted distinct Stop hook
+run IDs, and Codex reuses one run ID for every Stop of a session, so a round s recipient received
+four repair prompts. Each native repair message now counts once; only the two Codex record views
+of one message are paired. Three round s false positives are removed: read/review scope lines,
+inferences and misreading explanations read as extra authority; a value word in
+`name=value: label` extracted as a pin; and a same-line or nested label inventory reported
+missing. The reviewed handoff handler digest in the manager changes with it. Tests: the
+`test_round_s_*` cases in `tests/test_mechanical_handoff.py`.

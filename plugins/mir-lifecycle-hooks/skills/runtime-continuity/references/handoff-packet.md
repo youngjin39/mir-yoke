@@ -5,6 +5,13 @@ Round r lexical boundaries:
 - A bare basename resolves only when this turn's read paths identify one distinct matching path.
 - A May scope/range continuation listing paths or source kinds without action verbs adds no grant.
 - Conditional design suggestions add no authority unless they grant permission to the recipient.
+- Read/review scope may list paths; conditional reader availability, fixture inferences and
+  explanations of possible misreadings add no action grant. Separate action grants stay checked.
+- In `name=value: label`, the pin is `name`, including `head=abbreviated: parent-supplied`.
+- Pin inventories accept same-line labels or indented `label`/`provenance` children of each
+  named pin; neighbouring siblings never supply a missing label.
+- Count each native repair message even when Stop reuses its run ID; pair only matching
+  run-ID/text occurrences across the two Codex record views, never across distinct Stops.
 - `provenance` is an accounting label, not an additional pin.
 - Pin labels accept a following Hangul suffix, but not a longer ASCII word.
 - On the first author block only, a universal claim about cited, quoted source output requests
