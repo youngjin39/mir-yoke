@@ -33,3 +33,8 @@ Status (2026-10-31, Main):
   Korean quotation in this cursor, replaced by an English paraphrase. The other five
   (`test_update_real_080` x4, the repository lock test) read the committed tree and wait for
   the source and bind commits.
+- (3) After the source commit 2232543 and the bind 4726a2c the lock-coupled files pass (67
+  passed). Fresh-clone readiness at 4726a2c: 3943 passed, 26 skipped, `ready: true`, exit 0.
+- (4) Tag `v0.13.50` on 4726a2c pushed. Maintainer host: provider update applied (lock restored
+  from b97b843), Codex hook trust 4/4, Claude 63447509 and Codex 01a18de6 attested (five
+  mir-mcp calls ok, four hooks), finalized, ready at 4726a2c. Owner PC: pending.
