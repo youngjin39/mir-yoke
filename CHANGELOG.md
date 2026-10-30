@@ -8,6 +8,20 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.51] — 2026-10-31 — POSIX Glob scope on Windows
+
+### Fixed
+
+- On Windows the 0.13.50 bounded-Glob scope in the repository-wide absence message was built with
+  the native separator, so `.mir/*.json` was reported as `.mir\*.json` and two
+  `test_round_q_d01_glob_pattern_bounds_root_search` cases failed on the Windows CI job. The
+  scope is now kept in POSIX form. Detection was not affected.
+
+### Changed
+
+- Bump release surfaces to 0.13.51, re-pin the reviewed handoff handler digest and regenerate the
+  adopter payload.
+
 ## [v0.13.50] — 2026-10-31 — handoff checker fixes from the round q judge
 
 ### Fixed

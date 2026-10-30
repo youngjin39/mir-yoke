@@ -496,3 +496,10 @@ whose map citation is in the source section, a recipient access-limit disclosure
 read-only condition of the owner's grant are no longer flagged. The reviewed handoff handler
 digest in the manager changes with it. Tests: the `test_round_q_*` cases in
 `tests/test_mechanical_handoff.py`.
+
+## Amendment: 2026-10-31 — POSIX Glob scope on Windows (0.13.51)
+
+The 0.13.50 Windows CI job failed two `test_round_q_d01_glob_pattern_bounds_root_search` cases:
+the bounded Glob scope in the absence message used the native separator. The scope is now kept
+in POSIX form; detection was unchanged. The reviewed handoff handler digest in the manager
+changes with it.

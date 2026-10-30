@@ -958,8 +958,9 @@ def absence_defects(body: str, calls: list[tuple[str, dict]], root: Path) -> lis
                     return []
                 if args.get('glob'):
                     scopes.append(str(args['glob']))
-                scopes.append(str(Path(os.path.relpath(root / (path or '.'), root))
-                                  / (pattern or '[unspecified pattern]')))
+                # Glob patterns use '/', so keep the scope in POSIX form on Windows too.
+                scopes.append((Path(os.path.relpath(root / (path or '.'), root))
+                               / (pattern or '[unspecified pattern]')).as_posix())
             else:
                 glob = args.get('glob')
                 if not glob and at_root:
