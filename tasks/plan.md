@@ -21,3 +21,9 @@ Status (2026-10-31, Main):
   `.mir/*.json`. Handoff suite 568 passed, 2 skipped on macOS.
 - (2) README, CHANGELOG, MIGRATION, ADR-90 amendment, version surfaces, handler digest, payload.
 - (3) Full suite before the source commit: 3939 passed, 25 skipped, 5 failed (all commit-coupled).
+- (3) After the source commit 4567c28 and the bind ca4b1ab the lock-coupled files pass (67
+  passed). Fresh-clone readiness at ca4b1ab: 3943 passed, 26 skipped, `ready: true`, exit 0. CI
+  validate on ca4b1ab (including the Windows job) succeeded before the tag.
+- (4) Tag `v0.13.51` on ca4b1ab pushed. Maintainer host: provider update applied (lock restored
+  from 694be8b), Codex hook trust 4/4, Claude 8b0d15f9 and Codex 01a18e10 attested (five
+  mir-mcp calls ok, four hooks), finalized, ready at ca4b1ab. Owner PC: pending.
