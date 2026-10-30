@@ -23,3 +23,9 @@ Status (2026-10-31, Main):
   8 passed after). Handoff and public surface suites 609 passed, 2 skipped.
 - (2) README, CHANGELOG, MIGRATION, ADR-90 amendment, version surfaces, handler digest, payload.
 - (3) Full suite before the source commit: 3977 passed, 25 skipped, 5 failed (all commit-coupled).
+- (3) After the source commit 076b8d7 and the bind f2cf498 the lock-coupled files pass (67
+  passed). Fresh-clone readiness at f2cf498: 3981 passed, 26 skipped, `ready: true`, exit 0. CI
+  validate on f2cf498 (including the Windows job) succeeded before the tag.
+- (4) Tag `v0.13.53` on f2cf498 pushed. Maintainer host: provider update applied (lock restored
+  from a439310), Codex hook trust 4/4, Claude 89761c91 and Codex 01a18ef6 attested (five
+  mir-mcp calls ok, four hooks), finalized, ready at f2cf498. Owner PC: recorded by Harness.
