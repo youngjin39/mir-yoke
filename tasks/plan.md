@@ -1,29 +1,29 @@
 # Plan
 
-## Active task: release 0.13.51 (POSIX Glob scope on Windows) (2026-10-31)
+## Active task: release 0.13.52 (round r checker fixes and source-claim re-read) (2026-10-31)
 
 Intent authority: the owner's message relayed by Mir Harness Main (parent-supplied, Discord
-1565775910966141068, "go with 1" = release the round q checker fixes, then measure round r). The
-0.13.50 Windows CI validate job failed, and completing that release needs this patch. Design
-authority: this cursor. Baseline: 694be8b on `main` (v0.13.50 attested on both hosts).
+1565830662706040974, "improve everything so that no problem remains" = fix the round r checker
+false positives, address the source misreading failures, then measure again). Design authority:
+this cursor. Baseline: 8ee8649 on `main` (v0.13.51 attested on the maintainer host and, per the
+Harness record e7a6862d, on the owner PC).
 
 Prior cursor preserved verbatim:
-[cursor before release 0.13.51](change_log.md#cursor-before-release-01351-2026-10-31).
+[cursor before release 0.13.52](change_log.md#cursor-before-release-01352-2026-10-31).
 
-Rule: the bounded Glob scope in the absence message is POSIX on every platform.
+Rules: a bare basename resolves only to one distinct path read this turn; a May scope line and a
+conditional suggestion add no grant; `provenance` is a label; a pin label may carry a Hangul
+suffix; a universal claim about cited source output gets one first-block re-read request
+(authors only).
 
-Request matrix: (1) code fix (the failing Windows CI cases are the test); (2) docs and version
-surfaces; (3) Main full suite, fresh-clone readiness and the Windows CI job before the tag;
-(4) release, maintainer-host and owner-PC re-attestation.
+Request matrix: (1) fail-first tests and code (R-D01..R-D05, S-01); (2) docs and version
+surfaces; (3) Main full suite, fresh-clone readiness and the CI validate job (including Windows)
+before the tag; (4) release, maintainer-host and owner-PC re-attestation.
 
 Status (2026-10-31, Main):
-- (1) `handoff_packet.py` keeps the Glob scope via `.as_posix()`; a `PureWindowsPath` check gives
-  `.mir/*.json`. Handoff suite 568 passed, 2 skipped on macOS.
+- (1) 30 new `test_round_r_*` cases (Codex, each failing before the fix; Main added a time-stamp
+  negative case for S-01 and proved it fails on the looser citation pattern). Handoff and public
+  surface suites 601 passed, 2 skipped. On the nine latest my-life author finals S-01 fires on
+  the three known misreadings (Q03, R01, R03) and on one accurate claim (P03).
 - (2) README, CHANGELOG, MIGRATION, ADR-90 amendment, version surfaces, handler digest, payload.
-- (3) Full suite before the source commit: 3939 passed, 25 skipped, 5 failed (all commit-coupled).
-- (3) After the source commit 4567c28 and the bind ca4b1ab the lock-coupled files pass (67
-  passed). Fresh-clone readiness at ca4b1ab: 3943 passed, 26 skipped, `ready: true`, exit 0. CI
-  validate on ca4b1ab (including the Windows job) succeeded before the tag.
-- (4) Tag `v0.13.51` on ca4b1ab pushed. Maintainer host: provider update applied (lock restored
-  from 694be8b), Codex hook trust 4/4, Claude 8b0d15f9 and Codex 01a18e10 attested (five
-  mir-mcp calls ok, four hooks), finalized, ready at ca4b1ab. Owner PC: pending.
+- (3) Full suite before the source commit: 3969 passed, 25 skipped, 5 failed (all commit-coupled).

@@ -1,5 +1,16 @@
 # Mechanical handoff packet
 
+Round r lexical boundaries:
+
+- A bare basename resolves only when this turn's read paths identify one distinct matching path.
+- A May scope/range continuation listing paths or source kinds without action verbs adds no grant.
+- Conditional design suggestions add no authority unless they grant permission to the recipient.
+- `provenance` is an accounting label, not an additional pin.
+- Pin labels accept a following Hangul suffix, but not a longer ASCII word.
+- On the first author block only, a universal claim about cited, quoted source output requests
+  a re-read: keep the claim only if each case's quoted literal shows it; recipient answers and
+  final retries skip it. It is a verification request, not a finding that the claim is wrong.
+
 The [bounded design](handoff-design.md) defines the authority and semantic-evidence
 boundary for this stateless packet.
 

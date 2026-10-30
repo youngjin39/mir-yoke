@@ -82,7 +82,7 @@ TARGET_NAME = r'(?:qualified target|\ub300\uc0c1)\b(?:[ \t]*\([^\n)]*\))?'
 PIN_KEY = (r'(?:repository_root|head|(?:mapping|contract)\.(?:identity|version|digest)|'
            r'sources\[\d+\]\.(?:digest|sha256|revision))')
 NON_PIN_NAMES = {'lifecycle', 'temporal', 'epistemic', 'verification', 'evidence', 'unknowns',
-                 'reason', 'reasons', '\uc774\uc720', 'sha256', 'revision'}
+                 'provenance', 'reason', 'reasons', '\uc774\uc720', 'sha256', 'revision'}
 COMPLETE_ARTIFACT_RULE = (
     'Re-send the complete corrected artifact as your final message; it replaces the previous '
     'one, so do not send only the changed sections.'
@@ -253,7 +253,12 @@ def authority_defects(body: str, boundary: dict) -> list[str]:
         r'(?m)^([^\n]*(?:\ud574\ub3c4\s*\ub429\ub2c8\ub2e4|'
         r'\ud560\s*\uc218\s*\uc788\uc2b5\ub2c8\ub2e4|'
         r'\ud5c8\uc6a9\ub429\ub2c8\ub2e4)[^\n]*)', grant_prose)
-    inline += [item for item in korean if ACTION.search(item) or READ.search(item)]
+    # Conditional design suggestions do not grant the recipient permission.
+    inline += [item for item in korean if (ACTION.search(item) or READ.search(item))
+               and not (re.search(r'\ud558\uba74[^.!?]*\uc218\s*\uc788\uc2b5\ub2c8\ub2e4', item)
+                        and not re.search(r'\uc218\uc2e0\uc790|\uc5d0\uc774\uc804\ud2b8|'
+                                          r'\ud5c8\uc6a9|\ud574\ub3c4\s*'
+                                          r'\ub429\ub2c8\ub2e4', item))]
     grants = [sentence for item in items(owner['may'])
               for sentence in re.split(r'(?<=[.!?])\s+', item)]
     for item in grants + inline:
@@ -266,6 +271,13 @@ def authority_defects(body: str, boundary: dict) -> list[str]:
             continue
         if future_grant(item):
             continue
+        scope = re.match(r'^(?:scope|range|\ubc94\uc704)\s*:', item, re.I)
+        if scope:
+            nouns = re.sub(r'[\w.-]+(?:/[\w.*-]*)+', '', item[scope.end():])
+            nouns = re.sub(r'\ud569\uc131\s*\ud14c\uc2a4\ud2b8|\bsynthetic tests?\b', '', nouns,
+                           flags=re.I)
+            if not ACTION.search(nouns) and not READ.search(nouns):
+                continue
         permitted = (f' {candidate} ' in f' {grant} '
                      if boundary.get('explicit_authority', True)
                      else bool(READ.search(item)) and not ACTION.search(item))
@@ -837,14 +849,14 @@ def tool_kind(name: str) -> str:
 def pin_claims(text: str) -> list[tuple[str, str]]:
     plain = re.sub(r'[*`]', '', assertion_text(text))
     claims = re.findall(r'(?im)(?<![\w.-])(?:pin )?([\w.\[\]-]+)\s*[=:]\s*'
-                        r'(verified-in-repo|parent-supplied|unavailable)\b', plain)
+                        r'(verified-in-repo|parent-supplied|unavailable)(?![A-Za-z0-9_-])', plain)
     for line in plain.splitlines():
         if '|' not in line:
             continue
         cells = [cell.strip() for cell in line.strip().strip('|').split('|')]
         names = [cell for cell in cells if re.fullmatch(PIN_KEY, cell, re.I)]
         labels = [match[0] for cell in cells if (match := re.match(
-            r'(?:verified-in-repo|parent-supplied|unavailable)\b', cell, re.I))]
+            r'(?:verified-in-repo|parent-supplied|unavailable)(?![A-Za-z0-9_-])', cell, re.I))]
         if len(names) == 1 and len(labels) == 1:
             claims.append((names[0], labels[0]))
     return [(name, label) for name, label in claims if name.lower() not in NON_PIN_NAMES]
@@ -897,8 +909,11 @@ def turn_tools(event: dict) -> tuple[list[tuple[str, dict]], list[str], list[str
 
 
 def path_referenced(path: str, reads: list[str], commands: list[str], root: Path) -> bool:
-    return any(os.path.abspath(root / value) == os.path.abspath(root / path)
-               for value in reads if value) or any(path in command for command in commands)
+    paths = {os.path.abspath(root / value) for value in reads if value}
+    if Path(path).name == path:
+        matches = {value for value in paths if Path(value).name == path}
+        return len(matches) == 1 or (not matches and any(path in cmd for cmd in commands))
+    return os.path.abspath(root / path) in paths or any(path in cmd for cmd in commands)
 
 
 def assertion_text(text: str) -> str:
@@ -1244,6 +1259,28 @@ def block(defects: list[str], retry: bool, receiving: bool, owner: dict) -> None
                           + '. ' + COMPLETE_ARTIFACT_RULE}))
 
 
+def source_claim_defects(body: str) -> list[str]:
+    """Request one re-read for universal assertions about cited literal output."""
+    for line in assertion_text(body).splitlines():
+        # A citation needs a path with '.' or '/', or an elided path; 10:30 is a time.
+        if not re.search(r'(?:[\w-]*[./][\w./-]*|\u2026):\d+(?:-\d+)?', line):
+            continue
+        if not re.search(r'`[^`\n]+`|"[^"\n]+"', line):
+            continue
+        prose = re.sub(r'`[^`\n]+`|"[^"\n]+"', '', line)
+        if (re.search(r'\b(?:all|every|always|each of|none)\b|\ubaa8\ub450|\ubaa8\ub4e0|'
+                      r'\uc804\ubd80|\ud56d\uc0c1|\uc5b8\uc81c\ub098',
+                      prose, re.I)
+                and re.search(r'\b(?:emit\w*|return\w*|print\w*|report\w*|'
+                              r'ends? with|raise\w*|output\w*)\b|'
+                              r'\ubcf4\uace0|\ucd9c\ub825|\ubc18\ud658|\ub05d\ub098|'
+                              r'\ub05d\ub0a9|\ub0c5\ub2c8\ub2e4|\ub0b8\ub2e4', prose, re.I)):
+            return ['universal claim about cited source output: re-read the cited lines; keep '
+                    'the claim only if each case\'s quoted literal shows it, else narrow it: '
+                    + line.strip()[:300]]
+    return []
+
+
 def stop(event: dict) -> None:
     prompt, body = transcript_turn(event)
     # The transcript can lag behind the turn's final message; the native payload carries it.
@@ -1273,6 +1310,8 @@ def stop(event: dict) -> None:
         message = 'pins/check unavailable: owner forbids commands; no runner performed.'
         print(WARNING + message, file=sys.stderr)
         defects = no_command_check(prompt, body, event)
+        if not retry:
+            defects.extend(source_claim_defects(body))
         selected = deterministic(defects) if retry else defects
         if selected:
             block(selected, retry, False, owner)
@@ -1304,6 +1343,8 @@ def stop(event: dict) -> None:
     if not guard:
         defects.append('missing Prompt SHA256 (copy the supplied full prompt hash)')
     defects.extend(verification_defects(body, body, event))
+    if not retry:
+        defects.extend(source_claim_defects(body))
     block(defects, retry, False, owner)
 
 

@@ -503,3 +503,14 @@ The 0.13.50 Windows CI job failed two `test_round_q_d01_glob_pattern_bounds_root
 the bounded Glob scope in the absence message used the native separator. The scope is now kept
 in POSIX form; detection was unchanged. The reviewed handoff handler digest in the manager
 changes with it.
+
+## Amendment: 2026-10-31 — round r checker fixes and source-claim re-read (0.13.52)
+
+The round r judge found five handoff checker false positives: a basename map reference, an
+allowed-source scope and a conditional proposal under a read-only May read as extra authority,
+`provenance` extracted as a pin, and a Korean suffix after a pin label. They are removed. The
+author check also asks once, on the first block, for a re-read when a line cites source lines and
+makes a universal claim about quoted output; this targets the source misreading that failed three
+of the last six my-life chains, and it is a request, not a finding. Contradictions between
+separate lines remain outside lexical reach. The reviewed handoff handler digest in the manager
+changes with it. Tests: the `test_round_r_*` cases in `tests/test_mechanical_handoff.py`.

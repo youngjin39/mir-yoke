@@ -8,6 +8,29 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.52] — 2026-10-31 — handoff checker fixes from the round r judge
+
+### Fixed
+
+- Five handoff checker false positives found by the round r judge: a bare basename now resolves
+  when exactly one path read this turn has it; a May scope line that lists paths or source kinds
+  without an action adds no grant; a conditional design suggestion is not read as granted
+  authority; `provenance` is a label, not a pin; and a pin label followed directly by a Hangul
+  suffix is accepted (a longer ASCII word is still rejected).
+
+### Added
+
+- On the first author block only, a line that cites source lines and makes a universal claim
+  about quoted output (all/every/always and Korean equivalents, with an output verb) gets one
+  re-read request: keep the claim only if each case's quoted literal shows it, else narrow it.
+  Three of the last six my-life chains misstated the same source branch in this form. Recipient
+  answers and the final retry skip it; it is a verification request, not a finding.
+
+### Changed
+
+- Bump release surfaces to 0.13.52, re-pin the reviewed handoff handler digest and regenerate the
+  adopter payload.
+
 ## [v0.13.51] — 2026-10-31 — POSIX Glob scope on Windows
 
 ### Fixed

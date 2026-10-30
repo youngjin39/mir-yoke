@@ -2578,3 +2578,140 @@ def test_round_q_enlarged_authority_stays_blocked(extra):
     hook = module()
     boundary = hook.owner_sections('May: read/inspect only\nMay not: run commands; edit files')
     assert hook.authority_defects(ROUND_Q_READ_GRANT + extra, boundary)
+
+
+# Round r regressions retain the observed wording with neutral repository paths.
+ROUND_R_SCOPE = (
+    '\ubc94\uc704: scripts/, spec/, tests/, tools/ \uc548\uc758 \ucf54\ub4dc\xb7\uc2a4'
+    '\ud0a4\ub9c8\xb7\uad6c\uc870 \uc815\uc758\xb7\ud569\uc131 \ud14c\uc2a4\ud2b8'
+)
+ROUND_R_PROPOSAL = (
+    '\uc6d0\ucc9c \ubcc0\uacbd \uc9c1\ud6c4\uc640 \uccb4\ucee4 \ud638\ucd9c \uc9c1\uc804'
+    '\uc744 \uae30\uc900\uc73c\ub85c \uc2a4\ub0c5\uc0f7\uc744 \uc7a1\uace0, \ud638\ucd9c'
+    ' \ud6c4 future\ub97c \ud3ec\ud568\ud55c \ubaa8\ub4e0 fixture \ud30c\uc77c\uacfc DB'
+    '\uac00 \uc720\uc9c0\ub418\ub294\uc9c0 \ube44\uad50\ud558\uba74 \ubcf4\uc874 \uc758'
+    '\ubb34\ub97c \ub354 \uba85\ud655\ud788 \uac80\uc99d\ud560 \uc218 \uc788\uc2b5\ub2c8'
+    '\ub2e4.'
+)
+ROUND_R_SOURCE_CLAIMS = [
+    (
+        '| `\u2026:61-83` | \ud574\uc2dc \ubd88\uc77c\uce58, \ud574\uc2dc \ub204\ub77d, '
+        '\ud30c\uc77c \ub204\ub77d\uc740 \ubaa8\ub450 "owner judgement required"\ub85c '
+        '\ubcf4\uace0\ud569\ub2c8\ub2e4. |'
+    ),
+    (
+        '- **\ucf54\ub4dc \ub3d9\uc791:** \uc18c\uc2a4 \uc0c1\ud0dc(proposed\uc778\uc9c0 acc'
+        'epted\uc778\uc9c0)\uc640 \uad00\uacc4\uc5c6\uc774 \ubaa8\ub4e0 \uc548\ub0b4\uac00 '
+        '\ub611\uac19\uc774 "owner judgement required"\ub85c \ub05d\ub0a9\ub2c8\ub2e4(`verif'
+        'y_memory_freshness.py:82, 149-151`).'
+    ),
+    (
+        '| `scripts/verify_memory_freshness.py:61-83` | \uc6d0\ubcf8\uc5d0 \ubb38\uc81c'
+        '\uac00 \uc0dd\uae30\uba74 \ub124 \uac00\uc9c0 \ubb38\uad6c \uc911 \ud558\ub098'
+        '\ub97c \ub0c5\ub2c8\ub2e4: `source missing`, `source hash missing`, `source unreada'
+        'ble`, `source changed`. \ubaa8\ub450 "owner judgement required"\ub85c \ub05d\ub098'
+        '\uace0, \ud574\ub2f9 \uacbd\ub85c\ub294 `affected`\uac00 \ub429\ub2c8\ub2e4. |'
+    )
+]
+
+
+def test_round_r_d01_unique_basename_reference(monkeypatch):
+    hook = module()
+    monkeypatch.setattr(hook, 'turn_tools', lambda event: (
+        [('read', {'file_path': '.mir/ontology-map.json'})], ['.mir/ontology-map.json'], []))
+    body = '| mapping.identity | verified-in-repo | `ontology-map.json` |'
+    assert hook.verification_defects('', body, {'cwd': str(ROOT)}, no_commands=True) == []
+
+
+@pytest.mark.parametrize('reads,expected', [
+    ([], False), (['other.json'], False),
+    (['.mir/ontology-map.json', 'other/ontology-map.json'], False),
+    (['.mir/ontology-map.json', '/srv/my-life/.mir/ontology-map.json'], True),
+])
+def test_round_r_basename_reference_boundaries(reads, expected):
+    result = module().path_referenced('ontology-map.json', reads, [], Path('/srv/my-life'))
+    assert result is expected
+
+
+def test_round_r_d02_scope_under_read_only_may():
+    hook = module()
+    owner = hook.owner_sections('May: read/inspect only\nMay not: run commands; edit files')
+    body = 'May: read/inspect only\n  - ' + ROUND_R_SCOPE
+    assert hook.authority_defects(body, owner) == []
+
+
+def test_round_r_d03_conditional_proposal():
+    hook = module()
+    owner = hook.owner_sections('May: read/inspect only\nMay not: run commands; edit files')
+    assert hook.authority_defects(ROUND_R_PROPOSAL, owner) == []
+
+
+@pytest.mark.parametrize('extra', [
+    'May: read/inspect only\n - Scope: scripts/; run tests',
+    'You may run commands if that would make the comparison clearer.',
+    'You may modify files. This could make the review clearer.',
+    'You may commit changes.',
+    '\ud30c\uc77c\uc744 \uc218\uc815\ud560 \uc218 \uc788\uc2b5\ub2c8\ub2e4.',
+])
+def test_round_r_enlarged_authority_stays_blocked(extra):
+    hook = module()
+    owner = hook.owner_sections('May: read/inspect only\nMay not: run commands; edit files')
+    assert hook.authority_defects(extra, owner)
+
+
+def test_round_r_d04_provenance_is_a_label(monkeypatch):
+    hook = module()
+    monkeypatch.setattr(hook, 'turn_tools', lambda event: ([], [], []))
+    prompt = RECIPIENT_PROMPT + '\nprovenance: parent-supplied'
+    assert hook.recipient_check(prompt, RECIPIENT_LABELS, {'cwd': str(ROOT)}) == []
+
+
+@pytest.mark.parametrize('markup', ['mapping.version=unavailable\uc785\ub2c8\ub2e4',
+                                  '| `mapping.digest` | **unavailable**\uc785\ub2c8\ub2e4. |'])
+def test_round_r_d05_hangul_label_suffix(markup):
+    name = 'mapping.digest' if 'digest' in markup else 'mapping.version'
+    assert module().pin_claims(markup) == [(name, 'unavailable')]
+
+
+@pytest.mark.parametrize('label', [
+    'unavailableExtra', 'parent-suppliedValue', 'verified-in-repository',
+])
+def test_round_r_ascii_label_suffix_is_not_a_label(label):
+    assert module().pin_claims('mapping.version=' + label) == []
+
+
+@pytest.mark.parametrize('claim', ROUND_R_SOURCE_CLAIMS,
+                         ids=['R01-table', 'R01-prose', 'R03-table'])
+@pytest.mark.parametrize('no_commands', [False, True])
+def test_round_r_s01_author_source_claim_first_block_only(runtime, claim, no_commands):
+    run, _, repo = runtime
+    run('UserPromptSubmit', prompt=PROMPT + ('\nNo commands.' if no_commands else ''))
+    body = (NO_PIN_PACKET if no_commands else packet()) + '\n' + claim + '\n' + claim
+    first = json.loads(run('Stop', last_assistant_message=body).stdout)
+    prefix = 'universal claim about cited source output:'
+    assert first['decision'] == 'block'
+    assert first['reason'].count(prefix) == 1
+    append_block(repo, 'claude', first['reason'])
+    second = run('Stop', last_assistant_message=body, stop_hook_active=True)
+    assert prefix not in second.stdout
+
+
+@pytest.mark.parametrize('claim', [
+    'All branches report "owner judgement required".',
+    '`scripts/check.py:61-83` reports "owner judgement required".',
+    'Eight pins are all verified-in-repo (`map:3`).',
+    'All checks passed (`map:3`); "output" is a field name.',
+    'All runs report "ok" at 10:30 (2026-10-31T01:40:41Z).',
+])
+def test_round_r_s01_non_output_claims_stay_allowed(runtime, claim):
+    run, _, _ = runtime
+    run('UserPromptSubmit', prompt=PROMPT)
+    result = run('Stop', last_assistant_message=packet() + '\n' + claim)
+    assert 'universal claim about cited source output:' not in result.stdout
+
+
+def test_round_r_s01_recipient_not_checked(runtime):
+    run, _, _ = runtime
+    run('UserPromptSubmit', prompt=RECIPIENT_PROMPT)
+    result = run('Stop', last_assistant_message=RECIPIENT_LABELS + '\n' + ROUND_R_SOURCE_CLAIMS[0])
+    assert 'universal claim about cited source output:' not in result.stdout
