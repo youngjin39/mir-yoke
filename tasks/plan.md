@@ -1,44 +1,33 @@
 # Plan
 
-## Active task: release 0.13.47 (hook wrapper root, deterministic archive scan and doctor probe, scoped command bans) (2026-10-29)
+## Active task: release 0.13.48 (bounded absence claims and digest labels in the handoff hook) (2026-10-30)
 
-Intent authority: the owner's message relayed by Mir Harness Main (parent-supplied, Discord
-1565298172165890140, reports from consumer repositories; option 1 chosen in 1565300649078300744),
-with the release-chain approvals (1564297975755448493, 1564320227062186065). Design authority:
-this cursor. Baseline: 8d8691d on `main` (v0.13.46 installed and attested on the maintainer host
-and on the owner's PC).
+Intent authority: the owner's messages relayed by Mir Harness Main (parent-supplied, Discord
+1565672217159802942 "continue all improvements and finish", release choice 1565675558291902488
+"release as 0.13.48"). Design authority: this cursor. Baseline: 6298592 on `main` (v0.13.47
+installed and attested on the maintainer host and on the owner's PC).
 
 Prior cursor preserved verbatim:
-[cursor before release 0.13.47](change_log.md#cursor-before-release-01347-2026-10-29).
+[cursor before release 0.13.48](change_log.md#cursor-before-release-01348-2026-10-30).
 
 Rules:
-1. The template hook wrapper `templates/common-harness/.claude/hooks/_lib/run-python.sh` resolves
-   the project root three levels above `_lib` (it resolved one level above the root).
-2. The external archive scan indexes, deletes and rechecks documents in sorted path order, so the
-   first indexed chunk does not depend on hash randomization; `mir memory doctor`'s FTS5 probe takes
-   the first indexed chunk that holds a usable token instead of failing on a first chunk without one.
-3. The handoff hook reads a command prohibition with a stated exception ("other than", "except",
-   "besides" a named command) as scoped, not as a blanket command ban.
+1. A final handoff message must not claim repository-wide absence after only bounded searches:
+   the author and recipient Stop checks flag such a line unless this turn searched the
+   repository root or the line names the bounded scope.
+2. Under a command ban, a digest pin (`*.digest`, `*.sha256`) labelled verified-in-repo is a
+   defect; a value read from a file is parent-supplied or unchecked.
+3. Author and recipient context state that a hook or gate pass is not read or act permission.
 
 Request matrix: (1) fail-first tests and code for rules 1-3; (2) docs and version surfaces;
 (3) Main full suite and fresh-clone readiness; (4) release and maintainer-host re-attestation.
-The owner's PC update to 0.13.47 is a separate owner decision.
+The owner's PC stays on 0.13.47 (owner choice 1565675558291902488).
 
-Status (2026-10-29, Main):
-- (1) Each rule has a test that failed before its fix: the template wrapper test (exit 1, `mir.sh`
-  not found), the doctor test (`indexed sample contains no stable probe token`) and the scan-order
-  test (unsorted), and three scoped-ban cases (restricted). Fixes pass; handoff 485 passed.
-- (2) README, CHANGELOG, MIGRATION, ADR-90 amendment, version surfaces, handler digest re-pin,
-  payload.
-- (3) Main full suite: 3857 passed, 4 failed: the lock test (before the bind) and three payload
-  tests (the payload predated the last cursor edit). After the payload regeneration and the bind,
-  those files pass (85 passed). Fresh-clone readiness at 319d876: 3860 passed, 26 skipped, ready.
-- (4) v0.13.47 (source ea38b4f, bind 319d876) published 2026-10-29T10:20:22Z; CI validate and
-  release succeeded. Maintainer host 0.13.46 -> 0.13.47: Claude e1cb2934 and Codex 01a18735
-  attested (all five calls ok, four hooks), finalized, status ready at 319d876. With rule 3 the
-  probe's scoped ban no longer draws a PreToolUse deny, so the Codex probe ran through `codex
-  app-server`, whose hook events record silent hook runs.
-- Owner's PC (separate decision, approved 2026-10-29): `daily_reward_runner` updated 0.13.46 ->
-  0.13.47 with mir-mcp; Claude acc97632 and Codex 01a1878a attested (all five calls ok, four
-  hooks; the Codex probe kept the unmodified "other than" wording), finalized, status ready at
-  c46bf7b. Request matrix complete; no open item.
+Status (2026-10-30, Main):
+- (1) New tests fail without the handler change (26 failed) and pass with it; handoff 524 passed,
+  2 skipped. Main narrowed the absence pattern so that no-change lines ("no files changed in the
+  repository") are not flagged.
+- (2) README, CHANGELOG, MIGRATION, ADR-90 amendment, version surfaces and test version pins,
+  handler digest re-pin, payload.
+- (3) Main full suite before the source commit: 3892 passed, 25 skipped, 8 failed. Four were test
+  version pins (fixed). Three `test_update_real_080` cases and the lock test read committed
+  `HEAD`, so they need the source commit and the bind.

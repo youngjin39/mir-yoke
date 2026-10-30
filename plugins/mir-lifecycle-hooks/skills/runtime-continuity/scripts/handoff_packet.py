@@ -7,6 +7,7 @@ import hashlib
 import json
 import os
 import re
+import shlex
 import signal
 import stat
 import subprocess
@@ -86,12 +87,17 @@ COMPLETE_ARTIFACT_RULE = (
     'Re-send the complete corrected artifact as your final message; it replaces the previous '
     'one, so do not send only the changed sections.'
 )
+SCOPE_RULE = (
+    'A hook or gate pass means only that the call was not blocked; read and act permission '
+    'comes only from the owner May line. Claim absence only for the scope you searched.'
+)
 RECEIPT_RULE = (
     'Received handoff: label every pin verified-in-repo, parent-supplied or unavailable; '
     'every path claimed verified-in-repo needs a this turn Read/Grep/Glob or shell reference. '
     'Digest/revision/HEAD claims need this-turn digest/git computation or mapping --handoff; '
     'a file read alone does not verify them. State a limitation if no local tool was used, '
-    'or if commands are forbidden and no reader was used. ' + COMPLETE_ARTIFACT_RULE
+    'or if commands are forbidden and no reader was used. ' + SCOPE_RULE + ' '
+    + COMPLETE_ARTIFACT_RULE
 )
 
 
@@ -361,7 +367,7 @@ def context_text(owner: dict, pins: str | None = None, prompt: str | None = None
         'For every other repository file you cite, add its sha256 and last-change revision from '
         '`python3 scripts/mir_ontology.py mapping --handoff <paths>` sources. '
         'Inspect the whole forwarded artifact, including enclosing text. '
-        + COMPLETE_ARTIFACT_RULE + '\n' + tool_attempt_rule(owner)
+        + SCOPE_RULE + ' ' + COMPLETE_ARTIFACT_RULE + '\n' + tool_attempt_rule(owner)
     )
 
 
@@ -885,12 +891,66 @@ def path_referenced(path: str, reads: list[str], commands: list[str], root: Path
                for value in reads if value) or any(path in command for command in commands)
 
 
+def absence_defects(body: str, calls: list[tuple[str, dict]], root: Path) -> list[str]:
+    """Bound lexical absence claims to this turn's explicit search scopes."""
+    # The scope word must govern the absence phrase, so a no-change line is not a claim.
+    claim = (r'\b(?:not found|does not exist|absent|missing)\s+(?:anywhere\b|(?:in|from)\s+'
+             r'(?:the\s+)?(?:repo|repository|codebase)\b)|'
+             r'\b(?:there (?:is|are)|has) no\b[^.\n]{0,60}'
+             r'\bin (?:the\s+)?(?:repo|repository|codebase)\b|'
+             # Korean: repository/repo/codebase (+whole) + locative particle ... none/absent.
+             r'(?:\uc800\uc7a5\uc18c|\ub808\ud3ec|\ucf54\ub4dc\ubca0\uc774\uc2a4)\s*'
+             r'(?:\uc804\uccb4)?\s*'
+             r'(?:\uc5d0\ub294|\uc5d0\uc11c\ub294|\uc5d0\uc11c\ub3c4|\uc5d0\ub3c4|\uc5d0\uc11c|\uc5d0)\s*'
+             r'(?:[^\s.]+\s+){0,2}'
+             r'(?:\uc5c6|\uc874\uc7ac\ud558\uc9c0\s*\uc54a|\ucc3e\uc9c0\s*\ubabb)|'
+             r'\uc5b4\ub514\uc5d0\ub3c4\s*(?:\uc5c6|\uc874\uc7ac\ud558\uc9c0\s*\uc54a)')
+    bounded = (r'\b(?:within|under|searched)\b|'
+               r'\ubc94\uc704|\uc548\uc5d0\uc11c|\uc5d0\uc11c\ub9cc|[\w.-]+/')
+    if not any(re.search(claim, line, re.I) and not re.search(bounded, line, re.I)
+               for line in body.splitlines()):
+        return []
+    scopes = []
+    for name, args in calls:
+        if name in {'grep', 'glob'}:
+            path = args.get('path')
+            glob = args.get('glob')
+            if not glob and (not path or Path(os.path.abspath(root / path)) == root):
+                return []
+            scopes.append(str(glob or os.path.relpath(root / path, root)))
+        elif name in SHELL_TOOLS:
+            command = args.get('command', args.get('cmd', ''))
+            try:
+                words = shlex.split(command)
+            except ValueError:
+                continue
+            # Recognize simple recursive searches only; never interpret shell code.
+            if not words or words[0] not in {'rg', 'grep'}:
+                continue
+            if words[0] == 'grep' and not any(
+                word in {'-r', '-R', '--recursive'} for word in words[1:]
+            ):
+                continue
+            scopes.append(command)
+            if any(word in {'-g', '--glob', '-e', '-f', '--file', '--regexp', ';', '|', '&&'}
+                   or word.startswith(('--glob=', '--include=', '--exclude='))
+                   for word in words[1:]):
+                continue
+            operands = [word for word in words[1:] if not word.startswith('-')]
+            if any(Path(os.path.abspath(root / path)) == root for path in operands[1:]):
+                return []
+    return ['repository-wide absence claimed after searches limited to: '
+            + ', '.join(dict.fromkeys(scopes or ['no searches']))
+            + '; name the searched scope or search the repository root']
+
+
 def verification_defects(text: str, body: str, event: dict, no_commands: bool = False) -> list[str]:
     """References establish provenance; typed pin claims additionally need computation."""
     defects = []
     paths = pin_paths(text, received_data(text))
     calls, reads, commands = turn_tools(event)
     root = repository_root(event)
+    defects.extend(absence_defects(body, calls, root))
     plain = re.sub(r'[*`]', '', body)
     command_tools = sorted({name for name, _ in calls if name in SHELL_TOOLS})
     if no_commands and command_tools and not any(
@@ -925,6 +985,10 @@ def verification_defects(text: str, body: str, event: dict, no_commands: bool = 
         if not path and explicit:
             path = explicit[0]
         if no_commands:
+            if name.endswith(('.digest', '.sha256')):
+                defects.append('verified-in-repo digest needs a this-turn computation; '
+                               'a value read from a file is parent-supplied or unchecked: ' + name)
+                continue
             pin_reads = reads
             if name == 'head':
                 path = '.git/HEAD'
@@ -1178,6 +1242,8 @@ def stop(event: dict) -> None:
                            'sources; no second pins block): ' + ', '.join(unpinned))
     if not guard:
         defects.append('missing Prompt SHA256 (copy the supplied full prompt hash)')
+    calls, _, _ = turn_tools(event)
+    defects.extend(absence_defects(body, calls, repository_root(event)))
     block(defects, retry, False, owner)
 
 

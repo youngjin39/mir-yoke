@@ -456,3 +456,18 @@ tool; a blanket clause elsewhere in the section still does. Before, "run command
 changes with it. Tests: `test_should_read_a_command_ban_with_a_stated_exception_as_scoped` and
 `test_should_keep_a_blanket_command_ban_beside_a_scoped_clause` in
 `tests/test_mechanical_handoff.py`.
+
+## Amendment: 2026-10-30 — bounded absence claims and digest labels (0.13.48)
+
+An offline judge of three author/recipient handoff chains (2026-10-30) found two checker false
+negatives. First, authors searched only bounded paths and then claimed the item was absent from
+the whole repository. The author and recipient Stop checks now flag a line whose repository scope
+word governs an absence phrase unless this turn searched the repository root or the line names a
+bounded scope. Second, under a command ban, a digest pin labelled `verified-in-repo` passed on a
+read of the declaring file; such a label is now a defect. Author and recipient context also
+states that a hook or gate pass is not permission. The reviewed handoff handler digest in the
+manager changes with it. Tests: `test_should_block_repository_absence_after_limited_or_no_search`,
+`test_should_allow_scoped_absence_and_non_absence_negation`,
+`test_should_allow_repository_absence_after_root_search`,
+`test_should_reject_read_only_verified_digest_under_command_ban` and
+`test_should_supply_owner_permission_and_search_scope_rule` in `tests/test_mechanical_handoff.py`.

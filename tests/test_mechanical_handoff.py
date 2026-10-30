@@ -7,6 +7,7 @@ import importlib.util
 import json
 import locale
 import os
+import shlex
 import stat
 import subprocess
 import sys
@@ -1068,9 +1069,9 @@ def test_should_accept_head_and_root_reads_but_require_contract_file_reference(r
     append_tool(repo, 'claude', 'Read', {'file_path': '.mir/ontology-map.json'})
     assert 'decision' not in json.loads(run('Stop', last_assistant_message=body).stdout or '{}')
     claims = '\n'.join('pin contract.' + key + '=verified-in-repo'
-                       for key in ['identity', 'version', 'digest'])
+                       for key in ['identity', 'version'])
     output = json.loads(run('Stop', last_assistant_message=body + '\n' + claims).stdout)
-    for key in ['identity', 'version', 'digest']:
+    for key in ['identity', 'version']:
         assert ('verified-in-repo pin lacks this-turn tool reference: contract.' + key
                 in output['reason'])
     # Author no-command packets resolve their contract path from the final artifact.
@@ -1311,7 +1312,7 @@ def no_command_turn(runtime, body, tools=()):
     (NO_PIN_PACKET + '\nVerified: .mir/ontology-map.json verified-in-repo',
      'verified-in-repo path lacks this-turn tool reference'),
     (NO_PIN_PACKET + '\npin contract.digest=verified-in-repo',
-     'verified-in-repo pin lacks this-turn tool reference'),
+     'verified-in-repo digest needs a this-turn computation'),
     (NO_PIN_PACKET + '\nHEAD: abcdef123', 'abbreviated hex'),
     (NO_PIN_PACKET + '\nrevision: ' + 'a' * 39, 'abbreviated hex'),
     (NO_PIN_PACKET + '\nsha256: abcdef123', 'abbreviated hex'),
@@ -1336,7 +1337,7 @@ def test_should_allow_translated_no_command_packet_with_reader_and_inventoried_s
     runtime, name, arguments,
 ):
     body = (NO_PIN_PACKET + '\nHEAD: abcdef123\npin head=abbreviated\n'
-            'pin mapping.digest=verified-in-repo .mir/ontology-map.json\n')
+            'pin mapping.identity=verified-in-repo .mir/ontology-map.json\n')
     result = no_command_turn(runtime, body, [(name, arguments)])
     assert 'decision' not in json.loads(result.stdout or '{}')
 
@@ -2174,3 +2175,83 @@ def test_should_keep_a_blanket_command_ban_beside_a_scoped_clause():
     prompt = ('Write a handoff for another agent.\nSources: README.md\n'
               'May: read README.md\nMay not: run commands; edit files other than notes.md')
     assert module().restricted(prompt)
+
+
+@pytest.mark.parametrize('receiving', [False, True])
+@pytest.mark.parametrize('pin', ['contract.digest', 'mapping.digest', 'sources[0].sha256'])
+def test_should_reject_read_only_verified_digest_under_command_ban(runtime, receiving, pin):
+    run, _, repo = runtime
+    prompt = (RECIPIENT_PROMPT if receiving else PROMPT) + '\nNo commands.'
+    run('UserPromptSubmit', prompt=prompt)
+    for path in ['schema/contract.json', '.mir/ontology-map.json', 'src/example.py']:
+        append_tool(repo, 'claude', 'Read', {'file_path': path})
+    body = (RECIPIENT_LABELS if receiving else NO_PIN_PACKET)
+    body += '\ncontract_path: schema/contract.json\npin ' + pin + '=verified-in-repo'
+    result = json.loads(run('Stop', last_assistant_message=body).stdout)
+    assert 'verified-in-repo digest needs a this-turn computation' in result['reason']
+    assert pin in result['reason']
+
+
+@pytest.mark.parametrize('receiving', [False, True])
+@pytest.mark.parametrize('search', [None, ('Grep', {'path': 'tests', 'pattern': 'item'}),
+    ('Glob', {'glob': '{scripts,spec,tests,tools}/**', 'pattern': '*item*'})])
+@pytest.mark.parametrize('claim', ['The item does not exist in the repository.',
+                                 '\uc774 \ud56d\ubaa9\uc740 '
+                                 '\uc800\uc7a5\uc18c\uc5d0\ub294 \uc5c6\uc74c.',
+                                 'There is no dedicated reader in the repository.'])
+def test_should_block_repository_absence_after_limited_or_no_search(
+    runtime, receiving, search, claim,
+):
+    run, _, repo = runtime
+    run('UserPromptSubmit', prompt=RECIPIENT_PROMPT if receiving else PROMPT)
+    if search:
+        name, args = search
+        if 'path' in args:
+            args = {**args, 'path': str(repo / args['path'])}
+        append_tool(repo, 'claude', name, args)
+    body = (RECIPIENT_LABELS if receiving else packet()) + '\n' + claim
+    result = json.loads(run('Stop', last_assistant_message=body).stdout)
+    assert 'repository-wide absence claimed after searches limited to:' in result['reason']
+    assert (('tests' if search[0] == 'Grep' else '{scripts,spec,tests,tools}/**')
+            if search else 'no searches') in result['reason']
+
+
+@pytest.mark.parametrize('claim', ['Item absent in repository tests/ only.',
+    '\uc800\uc7a5\uc18c tests/ \ubc94\uc704 \uc548\uc5d0\uc11c '
+    '\ucc3e\uc9c0 \ubabb\ud588\uc2b5\ub2c8\ub2e4.',
+    'A hook pass is not approval.',
+    '\uc800\uc7a5\uc18c \ubcc0\uacbd \uc5c6\uc74c.',
+    '\uc804\uccb4 \ud14c\uc2a4\ud2b8 \uc2e4\ud328 \uc5c6\uc74c.',
+    'No files changed in the repository status.',
+    'There is no reader in the repository tests/ tree.'])
+def test_should_allow_scoped_absence_and_non_absence_negation(runtime, claim):
+    run, _, repo = runtime
+    run('UserPromptSubmit', prompt=RECIPIENT_PROMPT)
+    append_tool(repo, 'claude', 'Grep', {'path': 'tests', 'pattern': 'item'})
+    assert run('Stop', last_assistant_message=RECIPIENT_LABELS + '\n' + claim).stdout == ''
+
+
+@pytest.mark.parametrize('tool,args', [
+    ('Grep', {'pattern': 'item'}), ('Glob', {'pattern': '*item*'}),
+    ('Grep', {'path': '.', 'pattern': 'item'}),
+    ('Bash', {'command': 'rg item .'}), ('Bash', {'command': 'grep -r item .'}),
+    ('Bash', {'command': 'rg item ROOT'}),
+])
+def test_should_allow_repository_absence_after_root_search(runtime, tool, args):
+    run, _, repo = runtime
+    run('UserPromptSubmit', prompt=RECIPIENT_PROMPT)
+    args = {key: value.replace('ROOT', shlex.quote(str(repo))) for key, value in args.items()}
+    append_tool(repo, 'claude', tool, args)
+    body = RECIPIENT_LABELS + '\nItem not found anywhere in the repository.'
+    assert run('Stop', last_assistant_message=body).stdout == ''
+
+
+@pytest.mark.parametrize('receiving', [False, True])
+def test_should_supply_owner_permission_and_search_scope_rule(runtime, receiving):
+    run, _, _ = runtime
+    result = run('UserPromptSubmit', prompt=RECIPIENT_PROMPT if receiving else PROMPT)
+    context = json.loads(result.stdout)['hookSpecificOutput']['additionalContext']
+    rule = ('A hook or gate pass means only that the call was not blocked; read and act '
+            'permission comes only from the owner May line. '
+            'Claim absence only for the scope you searched.')
+    assert context.count(rule) == 1

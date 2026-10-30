@@ -1,6 +1,6 @@
 {
   "name": "mir-mcp",
-  "version": "0.13.47",
+  "version": "0.13.48",
   "description": "Bounded read-only ontology and declared YAML relation tools.",
   "mcpServers": "./.mcp.claude.json"
 }

@@ -147,6 +147,8 @@ Arbitrary semantic paraphrases remain outside this lexical checker.
 
 ## Packet check and bounded repair
 
+- A hook or gate pass means only that the call was not blocked; read and act permission comes only from the owner May line. Claim absence only for the scope you searched.
+
 Recognize an emitted packet by `Qualified target:`, `handoff pins:`, `May not:`,
 a forwarded `pin_inventory`/`mapping_sha256` key or a handoff/brief heading line
 (English or Korean), so translated or relabelled packets are still checked.

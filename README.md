@@ -52,7 +52,7 @@ immutable release:
 
 ```bash
 uv tool install --force --link-mode copy \
-  "git+https://github.com/youngjin39/mir-yoke.git@v0.13.47"
+  "git+https://github.com/youngjin39/mir-yoke.git@v0.13.48"
 mir --help
 ```
 
@@ -183,6 +183,9 @@ Version 0.13.46 completes the 0.8.0 migration on Windows: legacy receipts are ch
 
 Version 0.13.47 fixes the template hook wrapper's project root, makes `mir memory doctor`'s archive
 probe independent of document order, and reads a command ban with a stated exception as scoped.
+
+Version 0.13.48 makes the handoff hook reject a repository-wide absence claim made after only
+bounded searches, and a digest labelled verified-in-repo under a command ban.
 
 ### Platform use
 

@@ -8,6 +8,26 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.48] — 2026-10-30 — bounded absence claims and digest labels in the handoff hook
+
+### Fixed
+
+- The handoff hook accepted a final message that said an item is absent from the whole
+  repository after the turn searched only some paths (for example a Grep limited to `tests`).
+  The author and recipient Stop checks now ask the agent to name the searched scope or search the
+  repository root. A line that names a bounded scope, or that is not an absence-of-item claim,
+  is not flagged.
+- Under a command ban, a digest pin (`*.digest`, `*.sha256`) labelled `verified-in-repo` passed
+  once the declaring file was read. Reading a declared value is not computing a digest, so the
+  label is now rejected; the value is parent-supplied or unchecked.
+- Author and recipient guidance now states that a hook or gate pass only means a call was not
+  blocked; read and act permission comes from the owner May line.
+
+### Changed
+
+- Bump release surfaces to 0.13.48, re-pin the reviewed handoff handler digest and regenerate the
+  adopter payload.
+
 ## [v0.13.47] — 2026-10-29 — template hook root, archive doctor probe, scoped command bans
 
 ### Fixed
