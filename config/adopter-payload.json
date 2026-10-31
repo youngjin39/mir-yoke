@@ -413,7 +413,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": ".github/workflows/native-artifacts.yml",
-      "sha256": "be62bf0d54899a2b243920d5eb6525bb2f5734d2c0e8b2470250a6ef581c8cfa"
+      "sha256": "24210d9371e2e7360015d4a2f92bbc16ea42c26149cd79029acc177c88713d13"
     },
     {
       "classification": "template-maintainer-tool",

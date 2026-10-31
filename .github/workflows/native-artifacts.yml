@@ -44,7 +44,8 @@ jobs:
           mkdir -p ../../dist-native
           cp "target/${{ matrix.target }}/release/handoff-packet${{ matrix.exe }}" "../../dist-native/handoff-packet-${{ matrix.target }}${{ matrix.exe }}"
           cd ../../dist-native
-          if command -v sha256sum >/dev/null; then sha256sum ./*; else shasum -a 256 ./*; fi > "SHA256-${{ matrix.target }}.txt"
+          f="handoff-packet-${{ matrix.target }}${{ matrix.exe }}"
+          if command -v sha256sum >/dev/null; then sha256sum "$f"; else shasum -a 256 "$f"; fi > "SHA256-${{ matrix.target }}.txt"
           cat "SHA256-${{ matrix.target }}.txt"
           ls -l
       - uses: actions/upload-artifact@v4
