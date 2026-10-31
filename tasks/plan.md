@@ -19,3 +19,13 @@ Codex sync and diff whitespace checks passed. Exact commands and semantic eviden
 are in tasks/change_log.md. Final payload regeneration and read-only surface checks
 follow. Main owns source commit, plugin digest rebinding and any generated Codex
 delivery. Windows execution remains CI evidence, not local macOS evidence.
+
+Release record (Main, 2026-11-01): source eef83b4, bind 9e02dc5; fresh-clone readiness
+exit 0; CI validate on 9e02dc5 (including the Windows job) succeeded before the tag
+`v0.13.56`. Maintainer host: provider update applied from the 0.13.55 consumer lock;
+the dry run listed both lifecycle binaries for aarch64-apple-darwin, and the apply placed
+`bin/handoff-packet` and `bin/runtime-continuity` in the Claude and Codex plugin caches
+with SHA-256 equal to the lock. Codex hook trust 4/4 (after a Harness verifier fix for
+the native-or-Python command form). Claude 8d71b653 and Codex 01a192e7 attested (five
+mir-mcp calls ok, four lifecycle hooks ran), finalized, ready at 9e02dc5. Owner PC:
+recorded by Harness.
