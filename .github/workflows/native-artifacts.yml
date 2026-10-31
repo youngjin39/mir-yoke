@@ -1,0 +1,54 @@
+name: native-artifacts
+# Proof of concept for per-target native binaries: build, smoke-run on the
+# target where the runner can execute it, and record SHA-256 digests.
+# Manual only; it publishes workflow artifacts, never a release.
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: build ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {os: macos-latest, target: aarch64-apple-darwin, exe: ''}
+          - {os: macos-latest, target: x86_64-apple-darwin, exe: ''}
+          - {os: ubuntu-latest, target: x86_64-unknown-linux-gnu, exe: ''}
+          - {os: ubuntu-24.04-arm, target: aarch64-unknown-linux-gnu, exe: ''}
+          - {os: windows-latest, target: x86_64-pc-windows-msvc, exe: '.exe'}
+    defaults:
+      run:
+        shell: bash
+        working-directory: native/handoff-packet
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup target add ${{ matrix.target }}
+      - run: cargo build --release --locked --target ${{ matrix.target }}
+      - name: smoke run
+        # An ordinary tool call must print nothing and exit 0; a handoff turn
+        # that forbids commands must deny with exit 2.
+        run: |
+          bin="target/${{ matrix.target }}/release/handoff-packet${{ matrix.exe }}"
+          out=$(printf '%s' '{"hook_event_name":"PreToolUse","tool_name":"Read","prompt":"Inspect.","tool_input":{}}' | "$bin")
+          test -z "$out"
+          set +e
+          printf '%s' '{"hook_event_name":"PreToolUse","tool_name":"Bash","prompt":"Write a handoff for Codex.\nNo commands.","tool_input":{"command":"pwd"}}' | "$bin" > deny.out
+          code=$?
+          set -e
+          test "$code" = 2
+          grep -q '"permissionDecision": "deny"' deny.out
+      - name: digest
+        run: |
+          mkdir -p ../../dist-native
+          cp "target/${{ matrix.target }}/release/handoff-packet${{ matrix.exe }}" "../../dist-native/handoff-packet-${{ matrix.target }}${{ matrix.exe }}"
+          cd ../../dist-native
+          if command -v sha256sum >/dev/null; then sha256sum ./*; else shasum -a 256 ./*; fi > "SHA256-${{ matrix.target }}.txt"
+          cat "SHA256-${{ matrix.target }}.txt"
+          ls -l
+      - uses: actions/upload-artifact@v4
+        with:
+          name: handoff-packet-${{ matrix.target }}
+          path: dist-native/
+          if-no-files-found: error
