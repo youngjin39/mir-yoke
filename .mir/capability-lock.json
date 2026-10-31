@@ -90,7 +90,7 @@
     "mir-code": {
       "package_kind": "skills",
       "path": "plugins/mir-code",
-      "sha256": "a13a5674d8c4b8498aef46011f51c92058de8115d25850b3cb3e578dd001a0c6"
+      "sha256": "5df63f25f85aa3b2ad82efa667d324d3a41f28b848e337fe5d2da0eb866efc23"
     },
     "mir-content": {
       "package_kind": "skills",
