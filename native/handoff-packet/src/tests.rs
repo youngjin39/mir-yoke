@@ -17,6 +17,7 @@ fn imperative() {
 }
 #[test]
 fn korean() {
+    // Korean "please write a handoff for another agent."
     assert!(detect("\u{b2e4}\u{b978} \u{c5d0}\u{c774}\u{c804}\u{d2b8} \u{d578}\u{b4dc}\u{c624}\u{d504}\u{b97c} \u{c791}\u{c131}\u{d574} \u{c8fc}\u{c138}\u{c694}.").unwrap());
 }
 #[test]

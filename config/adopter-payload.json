@@ -2801,7 +2801,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/lib.rs",
-      "sha256": "e787cec28b1b00d916f3b3455f4831452c1a481cfac8b283eadae1af2f374ec7"
+      "sha256": "0b6894b0be0749ab3cd3af090f2203b7ef9a371a5bd84a15f962ee909833d658"
     },
     {
       "classification": "template-maintainer-tool",
@@ -2825,7 +2825,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/tests.rs",
-      "sha256": "6e384a83fe2a2664dba08f29adeb9ffc437648d4fc61fb5a2344871c4ff2e349"
+      "sha256": "8486828452073434149cb9ef61e0e45a6d2868dbcec1884e0e8fcd6ffbe840f8"
     },
     {
       "classification": "template-maintainer-tool",

@@ -256,6 +256,7 @@ pub fn detect(prompt: &str) -> Result<bool> {
         "agent",
         "codex",
         "claude",
+        // Korean "agent".
         "\u{c5d0}\u{c774}\u{c804}\u{d2b8}",
     ]
     .iter()
@@ -296,6 +297,7 @@ pub fn recipient(prompt: &str) -> Result<bool> {
             c => c.to_ascii_lowercase(),
         })
         .collect();
+    // "\u{b300}\u{c0c1}" is Korean "target".
     if !folded.contains("qualified target") && !folded.contains("\u{b300}\u{c0c1}") {
         return Ok(false);
     }
@@ -306,6 +308,7 @@ pub fn recipient(prompt: &str) -> Result<bool> {
         p::TARGET_NAME
     );
     let table = format!(
+        // Korean "normalized target".
         r"^\s*\|\s*(?:{}|\x{{c815}}\x{{addc}}\x{{d654}}\s+\x{{b300}}\x{{c0c1}})\s*\|[^\n]*[\w.-]+:[\w./-]+",
         p::TARGET_NAME
     );
@@ -325,9 +328,13 @@ pub fn recipient(prompt: &str) -> Result<bool> {
     }
     let mut fields = 0;
     for pat in [
+        // Korean "status".
         r"\b(?:status axes|lifecycle|temporal|epistemic|verification)\b|\x{c0c1}\x{d0dc}",
+        // Korean "pin".
         r"\bpins\b|\x{d540}",
+        // Korean "unknown".
         r"\bunknowns\b|\x{bbf8}\x{d655}\x{c778}",
+        // Korean "allowed" and "forbidden".
         r"\bmay(?:[ -]not)?\s*:|\bauthority\b|\x{d5c8}\x{c6a9}|\x{ae08}\x{c9c0}",
     ] {
         fields += usize::from(has(pat, &plain, true)?);
