@@ -25,3 +25,9 @@ Status (2026-10-31, Main):
   retained round t drafts: the four false positives are gone and the T01 claim gets a re-read.
 - (2) README, CHANGELOG, MIGRATION, ADR-90 amendment, version surfaces, handler digest, payload.
 - (3) Full suite before the source commit: 3982 passed, 25 skipped, 5 failed (all commit-coupled).
+- (3) After the source commit 3ab62fd and the bind 732ecb3 the lock-coupled files pass (67
+  passed). Fresh-clone readiness at 732ecb3: 3986 passed, 26 skipped, `ready: true`, exit 0. CI
+  validate on 732ecb3 (including the Windows job) succeeded before the tag.
+- (4) Tag `v0.13.54` on 732ecb3 pushed. Maintainer host: provider update applied (lock restored
+  from 1efd8db), Codex hook trust 4/4, Claude 9b4a7773 and Codex 01a1908a attested (five
+  mir-mcp calls ok, four hooks), finalized, ready at 732ecb3. Owner PC: recorded by Harness.
