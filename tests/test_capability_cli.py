@@ -429,7 +429,11 @@ def test_should_preserve_tree_digest_when_runtime_caches_are_created(
 
 # @spec QR-003
 def test_repository_lock_is_portable_and_matches_managed_trees() -> None:
+    from mir.core.capabilities.native import validate_artifacts
+
     lock = json.loads((ROOT / ".mir" / "capability-lock.json").read_text(encoding="utf-8"))
+    validate_artifacts(lock.get("native_artifacts", {}), load_capability_config(
+        ROOT / "config/capability-sources.json").plugins, portable=True)
     commit = lock["source"]["commit"]
     ancestry = subprocess.run(
         ["git", "merge-base", "--is-ancestor", commit, "HEAD"],

@@ -29,6 +29,7 @@ from .config import (
     load_consumer_acknowledgements,
 )
 from .mcp import MCP_LAUNCHERS, MCP_NAME, validate_mcp_observation, validate_mcp_package
+from .native import place_artifacts, source_tree, validate_artifacts
 from .private_file import is_private, make_private
 
 _SHA = re.compile(r"^[0-9a-f]{40}$")
@@ -933,7 +934,32 @@ class CapabilityManager:
 
     def _load_lock(self) -> dict[str, object] | None:
         self._assert_project_lock_path_safe()
-        return _read_json(self.lock_path)
+        lock = _read_json(self.lock_path)
+        if lock is not None:
+            self._native_records(lock)
+        return lock
+
+    def _native_records(self, document: dict[str, object]) -> dict:
+        try:
+            return validate_artifacts(document.get("native_artifacts", {}), self.config.plugins)
+        except ValueError as exc:
+            raise CapabilityError(str(exc)) from exc
+
+    def _materialized_plugin(
+        self, root: Path, name: str, *, package_kind: str, native_artifacts=None,
+        digest_only: bool = False,
+    ) -> str:
+        if native_artifacts is None:
+            receipt = _read_json(self.active_receipt_path) or {}
+            native_artifacts = getattr(self, "_pending_native_artifacts", None)
+            if native_artifacts is None:
+                native_artifacts = self._native_records(receipt)
+        try:
+            with source_tree(root, name, native_artifacts) as view:
+                return (_tree_digest(view) if digest_only else
+                        _validate_plugin(view, name, package_kind=package_kind))
+        except ValueError as exc:
+            raise CapabilityError(str(exc)) from exc
 
     def _assert_project_lock_path_safe(self) -> None:
         """Ensure managed lock state cannot be redirected outside the project."""
@@ -1386,10 +1412,11 @@ class CapabilityManager:
         try:
             marketplaces = _validate_marketplaces(self.active_path, self.config)
             actual = {
-                plugin: _validate_plugin(
+                plugin: self._materialized_plugin(
                     self.active_path / path,
                     plugin,
                     package_kind=self.config.plugin_kinds[plugin],
+                    native_artifacts=self._native_records(receipt),
                 )
                 for plugin, path in self.config.plugins.items()
             }
@@ -1734,10 +1761,12 @@ class CapabilityManager:
         try:
             marketplace_hashes = _validate_marketplaces(self.active_path, self.config)
             actual_plugin_hashes = {
-                plugin: _validate_plugin(
+                plugin: self._materialized_plugin(
                     self.active_path / self.config.plugins[plugin],
                     plugin,
                     package_kind=self.config.plugin_kinds[plugin],
+                    native_artifacts=self._native_records(
+                        lock if "native_artifacts" in lock else active_receipt or {}),
                 )
                 for plugin in self.config.plugins
             }
@@ -1922,6 +1951,13 @@ class CapabilityManager:
                 or lock.get("consumer_binding") != binding
             ):
                 return False
+        try:
+            records = self._native_records(lock)
+            for plugin in required:
+                with source_tree(self.active_path / self.config.plugins[plugin], plugin, records):
+                    pass
+        except (CapabilityError, OSError, KeyError, ValueError):
+            return False
         return all(
             (
                 self._enrolled_plugin_matches(plugin, metadata, digest)
@@ -2663,9 +2699,10 @@ class CapabilityManager:
                 verified = False
             else:
                 try:
-                    actual = _validate_plugin(
+                    actual = self._materialized_plugin(
                         installed_path, name, package_kind=self.config.plugin_kinds[name],
-                    ) if name in self.config.plugin_mcp else _tree_digest(installed_path)
+                        digest_only=name not in self.config.plugin_mcp,
+                    )
                 except CapabilityError:
                     actual = None
                 if actual != expected:
@@ -3046,7 +3083,7 @@ class CapabilityManager:
                             raise CapabilityError("legacy consumer plugins are invalid")
                         names.update(required)
                 active_hashes = {
-                    plugin: _validate_plugin(
+                    plugin: self._materialized_plugin(
                         self.active_path / self.config.plugins[plugin],
                         plugin,
                         package_kind="skills" if legacy else self.config.plugin_kinds[plugin],
@@ -3233,6 +3270,9 @@ class CapabilityManager:
                 path: path.read_bytes() if path.is_file() else None for path in state_paths
             }
             previous_active_receipt = _read_json(self.active_receipt_path)
+            native_artifacts = self._native_records(
+                previous_lock if previous_lock and "native_artifacts" in previous_lock
+                else previous_active_receipt or {})
             self._assert_capability_home_safe(allow_missing=False)
             stage_parent = self.capability_home / "tmp"
             stage_parent.mkdir(parents=True, exist_ok=True)
@@ -3256,9 +3296,12 @@ class CapabilityManager:
                     target.parent.mkdir(parents=True, exist_ok=True)
                     shutil.copytree(source, target)
 
+                for name, path in self.config.plugins.items():
+                    place_artifacts(staged_active / path, name, native_artifacts)
                 staged_hashes = {
-                    name: _validate_plugin(staged_active / path, name,
-                                           package_kind=self.config.plugin_kinds[name])
+                    name: self._materialized_plugin(
+                        staged_active / path, name, package_kind=self.config.plugin_kinds[name],
+                        native_artifacts=native_artifacts)
                     for name, path in self.config.plugins.items()
                 }
                 staged_marketplaces = _validate_marketplaces(staged_active, self.config)
@@ -3367,15 +3410,20 @@ class CapabilityManager:
                     registry["active_plugins"] = active_hashes
 
                     registration_attempted = True
-                    registration = self._install_and_verify(
-                        self._registration_plan(
-                            candidate_active_plugins,
-                            # Native install/add may retain an existing cache.
-                            # Refresh every managed package before verifying candidate bytes.
-                            remove_plugins=tuple(sorted(self.config.plugins)),
-                        ),
-                        {plugin: {"sha256": digest} for plugin, digest in active_hashes.items()},
-                    )
+                    self._pending_native_artifacts = native_artifacts
+                    try:
+                        registration = self._install_and_verify(
+                            self._registration_plan(
+                                candidate_active_plugins,
+                                # Native install/add may retain an existing cache.
+                                # Refresh every managed package before verifying candidate bytes.
+                                remove_plugins=tuple(sorted(self.config.plugins)),
+                            ),
+                            {plugin: {"sha256": digest}
+                             for plugin, digest in active_hashes.items()},
+                        )
+                    finally:
+                        del self._pending_native_artifacts
                     if registration["status"] != "restart-required":
                         raise CapabilityError("runtime plugin registration failed")
                     if update_config:
@@ -3421,6 +3469,8 @@ class CapabilityManager:
                         ),
                         "synced_at": timestamp,
                     }
+                    if native_artifacts:
+                        lock["native_artifacts"] = native_artifacts
                     preserved_discovery: dict[str, object] = {}
                     preserved_installation_sessions: dict[str, object] = {}
                     if (
@@ -3462,6 +3512,8 @@ class CapabilityManager:
                         "updated_at": timestamp,
                     }
                     self._assert_capability_home_safe(allow_missing=False)
+                    if native_artifacts:
+                        active_receipt["native_artifacts"] = native_artifacts
                     _atomic_write_json(self.active_receipt_path, active_receipt)
                     _atomic_write_json(self.registry_path, registry)
                     _atomic_write_json(
@@ -3628,7 +3680,7 @@ class CapabilityManager:
             try:
                 marketplace_hashes = _validate_marketplaces(self.active_path, self.config)
                 actual_materialized = {
-                    name: _validate_plugin(
+                    name: self._materialized_plugin(
                         self.active_path / path,
                         name,
                         package_kind=self.config.plugin_kinds[name],

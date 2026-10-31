@@ -1,11 +1,16 @@
-//! Native PreToolUse; unknown external JSON fields are accepted like Python.
+//! Native lifecycle hooks; unknown external JSON fields are accepted like Python.
 #![forbid(unsafe_code)]
 #![cfg_attr(
     not(test),
     deny(clippy::unwrap_used, clippy::expect_used, clippy::panic)
 )]
+mod digest;
 mod patterns;
 mod python_text;
+pub mod stop;
+mod stop_tools;
+pub mod supply;
+mod supply_text;
 mod transcript;
 use patterns as p;
 use serde_json::{Value, json};

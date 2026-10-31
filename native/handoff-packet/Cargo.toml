@@ -3,17 +3,22 @@ name = "handoff-packet"
 version = "0.1.0"
 edition = "2024"
 publish = false
-description = "Native PreToolUse path of the mir-lifecycle-hooks handoff_packet hook (proof of concept)."
+description = "Native lifecycle handoff hook paths (proof of concept)."
 license = "MIT"
 
 [[bin]]
 name = "handoff-packet"
 path = "src/main.rs"
 
+[[bin]]
+name = "runtime-continuity"
+path = "src/runtime_continuity.rs"
+
 [dependencies]
 serde_json = "1"
 regex = "1"
 fancy-regex = "0.14"
+toml = { version = "=0.8.2", default-features = false, features = ["parse"] }
 
 [profile.release]
 lto = true

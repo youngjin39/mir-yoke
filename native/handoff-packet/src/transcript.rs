@@ -8,7 +8,7 @@ use std::{
 fn object(v: &Value) -> Result<&Map<String, Value>> {
     v.as_object().ok_or(Error::Shape)
 }
-fn message_text(message: &Value) -> Result<String> {
+pub(crate) fn message_text(message: &Value) -> Result<String> {
     let m = object(message)?;
     let empty = json!([]);
     let content = m.get("content").unwrap_or(&empty);
@@ -29,7 +29,7 @@ fn message_text(message: &Value) -> Result<String> {
     }
     Ok(out.join("\n"))
 }
-fn hook_prompts(row: &Value) -> Result<Vec<(String, String)>> {
+pub(crate) fn hook_prompts(row: &Value) -> Result<Vec<(String, String)>> {
     let row = object(row)?;
     let empty = json!({});
     let payload = row.get("payload").unwrap_or(&empty);
@@ -77,7 +77,7 @@ fn hook_prompts(row: &Value) -> Result<Vec<(String, String)>> {
     }
     Ok(vec![])
 }
-fn transcript_records(event: &Value) -> Result<Vec<Value>> {
+pub(crate) fn transcript_records(event: &Value) -> Result<Vec<Value>> {
     let path = Path::new(event["transcript_path"].as_str().ok_or(Error::Shape)?);
     let mut options = File::options();
     options.read(true);
@@ -119,7 +119,7 @@ fn transcript_records(event: &Value) -> Result<Vec<Value>> {
         .map(|line| Ok(serde_json::from_str(line)?))
         .collect()
 }
-fn current_turn(event: &Value) -> Result<(String, Vec<Value>)> {
+pub(crate) fn current_turn(event: &Value) -> Result<(String, Vec<Value>)> {
     let mut prompt = None;
     let mut rows = Vec::new();
     for row in transcript_records(event)? {
@@ -199,7 +199,7 @@ pub(super) fn transcript_turn(event: &Value) -> Result<(String, String)> {
     }
     Ok((prompt, body))
 }
-fn truthy(v: &Value) -> bool {
+pub(crate) fn truthy(v: &Value) -> bool {
     match v {
         Value::Null => false,
         Value::Bool(b) => *b,

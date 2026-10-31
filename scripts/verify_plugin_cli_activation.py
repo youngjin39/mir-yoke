@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
 import os
 import shlex
@@ -61,16 +60,12 @@ def _run(argv: list[str], environment: dict[str, str], cwd: Path) -> str:
     return completed.stdout
 
 
-def _tree_digest(root: Path) -> str:
-    digest = hashlib.sha256()
-    for path in sorted(root.rglob("*")):
-        relative = path.relative_to(root).as_posix()
-        digest.update(relative.encode())
-        digest.update(b"\0")
-        if path.is_file():
-            digest.update(path.read_bytes())
-        digest.update(b"\0")
-    return digest.hexdigest()
+def _tree_digest(root: Path, plugin: str | None = None, records: dict | None = None) -> str:
+    from mir.core.capabilities.manager import _tree_digest as strict_digest
+    from mir.core.capabilities.native import source_tree
+
+    with source_tree(root, plugin or root.name, records or {}) as view:
+        return strict_digest(view)
 
 
 def _entries(payload: object) -> list[dict[str, object]]:
@@ -146,8 +141,16 @@ def main() -> int:
             provider / ".agents" / "plugins" / "marketplace.json",
         )
         shutil.copytree(ROOT / "plugins", provider / "plugins")
+        from mir.core.capabilities.native import validate_artifacts
+
+        lock_path = ROOT / ".mir" / "capability-lock.json"
+        lock = json.loads(lock_path.read_text()) if lock_path.exists() else {}
+        configured_plugins = (json.loads(
+            (ROOT / "config" / "capability-sources.json").read_text())["plugins"]
+            if lock.get("native_artifacts") else PLUGIN_SKILLS)
+        records = validate_artifacts(lock.get("native_artifacts", {}), configured_plugins)
         expected = {
-            plugin: _tree_digest(provider / "plugins" / plugin)
+            plugin: _tree_digest(provider / "plugins" / plugin, plugin, records)
             for plugin in PLUGIN_NAMES
         }
         environment.update(
@@ -239,7 +242,7 @@ raise SystemExit(0)
                     installed = _validate_installed_path(
                         installed, runtime_homes[runtime]
                     )
-                    actual = _tree_digest(installed)
+                    actual = _tree_digest(installed, plugin, records)
                     if actual != expected[plugin]:
                         source = temp / "provider-unavailable" / "plugins" / plugin
                         source_files = {

@@ -1,14 +1,19 @@
 """Byte parity with the unchanged Python reference; Rust remains optional."""
 from __future__ import annotations
 
+import hashlib
+import inspect
+import io
 import json
 import os
 import shutil
 import subprocess
+import time
 from pathlib import Path
 
 import pytest
 
+from tests import test_mechanical_handoff as mechanical
 from tests.test_mechanical_handoff import HANDLER, HANDLER_PYTHON, PROMPT, RECIPIENT_PROMPT
 
 # Korean fixtures are escaped: the public template carries no Hangul literals.
@@ -128,7 +133,7 @@ BOUNDARIES = [
 def run_pair(binary, raw):
     env = dict(os.environ, MIR_HANDOFF_PYTHON=HANDLER_PYTHON, PYTHONUTF8='1')
     outputs = [subprocess.run(command, input=raw, capture_output=True, timeout=10, env=env)
-               for command in ([HANDLER_PYTHON, str(HANDLER)], [str(binary), str(HANDLER)])]
+               for command in ([HANDLER_PYTHON, str(HANDLER)], [str(binary)])]
     return [(p.stdout, p.stderr, p.returncode) for p in outputs]
 
 
@@ -136,6 +141,16 @@ def run_pair(binary, raw):
 def test_byte_parity(binary, name, raw):
     reference, native = run_pair(binary, raw)
     assert native == reference, name
+
+
+@pytest.mark.parametrize('control', ['\x1c', '\x1d', '\x1e', '\x1f'])
+def test_native_stop_control_only_final_keeps_transcript(binary, stop_repository, control):
+    repo, pins = stop_repository
+    event = json.loads(stop_payload(repo, PROMPT, mechanical.packet(pins).replace(pins, '')))
+    event['last_assistant_message'] = control
+    reference, native = run_pair(binary, json.dumps(event).encode())
+    assert json.loads(reference[0])['decision'] == 'block'
+    assert native == reference
 
 
 @pytest.mark.parametrize(('name', 'prompt', 'code'), BOUNDARIES,
@@ -213,15 +228,292 @@ def test_build_environment(monkeypatch, tmp_path):
     assert 'CARGO_HOME' not in calls.pop()[1]['env']
 
 
-def test_forward_interpreter(binary, tmp_path):
+@pytest.mark.parametrize('event', ['Stop', 'PreToolUse', 'UserPromptSubmit', 'unknown'])
+def test_no_reference_forwarding(binary, tmp_path, event):
     reference = tmp_path / 'reference with spaces.py'
+    marker = tmp_path / 'forwarded'
     reference.write_text(
-        'import sys\nsys.stdout.buffer.write(b"forwarded\\x00\\xc3\\xa9")\n'
-        'sys.stderr.buffer.write(b"diagnostic\\r\\n")\nsys.exit(7)\n', encoding='utf-8')
-    env = dict(os.environ, MIR_HANDOFF_PYTHON=HANDLER_PYTHON)
-    # PATH cannot supply python3: forwarding must honor the explicit interpreter.
-    env['PATH'] = str(tmp_path)
-    result = subprocess.run([str(binary), str(reference)], input=b'{"hook_event_name":"Stop"}',
-                            capture_output=True, env=env, timeout=10)
-    assert (result.stdout, result.stderr, result.returncode) == (
-        b'forwarded\x00\xc3\xa9', b'diagnostic\r\n', 7)
+        f'from pathlib import Path\nPath({str(marker)!r}).touch()\n'
+        'raise SystemExit(7)\n', encoding='utf-8')
+    raw = json.dumps({'hook_event_name': event}).encode()
+    env = dict(os.environ, MIR_HANDOFF_PYTHON=HANDLER_PYTHON, PATH=str(tmp_path))
+    direct = subprocess.run([str(binary)], input=raw, capture_output=True, env=env, timeout=10)
+    supplied = subprocess.run([str(binary), str(reference)], input=raw,
+                              capture_output=True, env=env, timeout=10)
+    assert not marker.exists(), 'native dispatch executed the reference argument'
+    assert (supplied.stdout, supplied.stderr, supplied.returncode) == (
+        direct.stdout, direct.stderr, direct.returncode)
+
+
+@pytest.mark.parametrize('mode', ['ordinary', 'recipient', 'forbidden', 'valid', 'invalid',
+    'oversized', 'excluded', 'nonzero', 'timeout', 'missing-cwd', 'bad-prompt',
+    'source-escape', 'source-secret', 'source-many', 'utf8', 'crlf', 'array', 'file-only',
+    'unicode-owner', 'marker-owner', 'symlink-runner', 'source-excluded', 'runner-env'])
+def test_native_supply(binary, tmp_path, mode):
+    # No reference argument: forwarding cannot make a native fixture pass.
+    (tmp_path / '.git').mkdir()
+    (tmp_path / 'scripts').mkdir()
+    prompt = PROMPT
+    output = b'handoff pins:\n{"ok": true}\n'
+    script = ''
+    if mode == 'ordinary':
+        prompt = 'Inspect the repository.'
+    elif mode == 'recipient':
+        prompt = RECIPIENT_PROMPT + '\nNo commands.\nNo file changes.'
+    elif mode == 'forbidden':
+        prompt += '\nNo commands.'
+    elif mode == 'invalid':
+        output = b'handoff pins:\ninvalid'
+    elif mode == 'array':
+        output = b'handoff pins:\n[]'
+    elif mode == 'oversized':
+        output = b'handoff pins:\n{"x":"' + b'x' * (1024 * 1024) + b'"}'
+    elif mode == 'excluded':
+        output = b'handoff pins:\n{"value":"PRIVATE-CANARY-42"}'
+    elif mode == 'timeout':
+        script = 'import time\ntime.sleep(6)\n'
+    elif mode == 'source-escape':
+        prompt = PROMPT.replace('Sources: src/example.py', 'Sources: ../escape.py')
+    elif mode == 'source-secret':
+        prompt = PROMPT.replace('Sources: src/example.py', 'Sources: secrets/key.txt')
+    elif mode == 'source-many':
+        prompt = PROMPT.replace('src/example.py', ';'.join(f'{i}.py' for i in range(17)), 1)
+    elif mode == 'utf8':
+        output = b'handoff pins:\n{"x":"\xff"}'
+    elif mode == 'crlf':
+        output = b'noise\r\nhandoff pins:\r\n{"ok":true}\r\n'
+    elif mode == 'unicode-owner':
+        prompt += '\nMay: inspect \u00e9\U0001f600\x7f'
+    elif mode == 'marker-owner':
+        prompt += '\nMay: @@MAY_NOT@@ @@EXCLUDED@@'
+    elif mode == 'source-excluded':
+        prompt = PROMPT.replace('Sources: src/example.py', 'Sources: PRIVATE-CANARY-42.txt')
+    elif mode == 'file-only':
+        prompt += '\nNo file changes.'
+    script += ('import os, sys\n'
+               'assert os.environ["PYTHONDONTWRITEBYTECODE"] == "1"\n'
+               'assert os.environ["GIT_OPTIONAL_LOCKS"] == "0"\n'
+               'assert sys.argv[1:3] == ["mapping", "--handoff"]\n'
+               f'sys.stdout.buffer.write({output!r})\n')
+    if mode == 'runner-env':
+        script = ('import json, os, sys\n'
+                  'print("handoff pins:")\n'
+                  'print(json.dumps(dict(cwd=os.getcwd(), executable=sys.executable, '
+                  'arguments=sys.argv[1:])))\n')
+    if mode == 'nonzero':
+        script += 'sys.exit(4)\n'
+    (tmp_path / 'scripts/mir_ontology.py').write_text(script, encoding='utf-8')
+    if mode == 'symlink-runner':
+        runner = tmp_path / 'scripts/mir_ontology.py'
+        target = tmp_path / 'real.py'
+        runner.rename(target)
+        try:
+            runner.symlink_to(target)
+        except OSError:
+            pytest.skip('symlink privilege unavailable')
+    event = dict(hook_event_name='UserPromptSubmit', prompt=prompt, cwd=str(tmp_path))
+    if mode == 'missing-cwd':
+        event.pop('cwd')
+    elif mode == 'bad-prompt':
+        event['prompt'] = []
+    env = dict(os.environ, MIR_HANDOFF_PYTHON=HANDLER_PYTHON, PYTHONUTF8='1')
+    outputs = [subprocess.run(cmd, input=json.dumps(event).encode(), capture_output=True,
+                              env=env, timeout=12)
+               for cmd in ([HANDLER_PYTHON, str(HANDLER)], [str(binary)])]
+    assert (outputs[0].stdout, outputs[0].stderr, outputs[0].returncode) == (
+        outputs[1].stdout, outputs[1].stderr, outputs[1].returncode)
+
+
+def test_session_start(binary):
+    reference = ROOT / 'plugins/mir-lifecycle-hooks/hooks/runtime_continuity.py'
+    native = binary.with_name('runtime-continuity' + binary.suffix)
+    outputs = [subprocess.run(cmd, capture_output=True, check=False)
+               for cmd in ([HANDLER_PYTHON, str(reference)], [str(native)])]
+    assert (outputs[0].stdout, outputs[0].stderr, outputs[0].returncode) == (
+        outputs[1].stdout, outputs[1].stderr, outputs[1].returncode)
+
+
+def test_supply_timeout_tree(binary, tmp_path):
+    (tmp_path / '.git').mkdir()
+    (tmp_path / 'scripts').mkdir()
+    marker = tmp_path / 'descendant-survived'
+    descendant = ('import time; from pathlib import Path; time.sleep(5.7); '
+                  f'Path({str(marker)!r}).touch()')
+    (tmp_path / 'scripts/mir_ontology.py').write_text(
+        'import subprocess, sys, time\n'
+        f'subprocess.Popen([sys.executable, "-c", {descendant!r}])\n'
+        'time.sleep(6)\n', encoding='utf-8')
+    raw = json.dumps(dict(hook_event_name='UserPromptSubmit', prompt=PROMPT,
+                          cwd=str(tmp_path))).encode()
+    env = dict(os.environ, MIR_HANDOFF_PYTHON=HANDLER_PYTHON, PYTHONUTF8='1')
+    outputs = []
+    for cmd in ([HANDLER_PYTHON, str(HANDLER)], [str(binary)]):
+        start = time.monotonic()
+        p = subprocess.run(cmd, input=raw, capture_output=True, env=env, timeout=10)
+        assert time.monotonic() - start < 5.6
+        outputs.append((p.stdout, p.stderr, p.returncode))
+        time.sleep(1)
+        assert not marker.exists(), 'runner descendant survived timeout'
+    assert outputs[0] == outputs[1]
+
+
+# Reuse the original pytest functions and marks, including every parameter value.
+# Interception at the actual process boundary captures payloads after each test has
+# finished updating its transcript, runner, map, and repair history.
+runtime = mechanical.runtime
+for _name, _test in vars(mechanical).items():
+    if _name.startswith('test_') and callable(_test):
+        _source = inspect.getsource(_test)
+        if 'runtime' in inspect.signature(_test).parameters or "'Stop'" in _source:
+            globals()['test_stop_reuse__' + _name.removeprefix('test_')] = _test
+
+
+@pytest.fixture(autouse=True)
+def compare_reused_stop(request, monkeypatch):
+    if not request.node.name.startswith('test_stop_reuse__'):
+        return
+    native_binary = request.getfixturevalue('binary')
+    original_run = subprocess.run
+
+    def compare(command, *args, **kwargs):
+        direct = list(command) == [HANDLER_PYTHON, str(HANDLER)]
+        # The compatibility test also invokes the handler via runpy. Compare its
+        # unmodified baseline; its simulated unsupported Python 3.9 invocation
+        # intentionally adds an interpreter diagnostic absent from native Rust.
+        runpy_baseline = (len(command) == 3 and command[1] == '-c'
+                          and str(HANDLER) in command[2]
+                          and "run_name='__main__'" in command[2]
+                          and 'sys.version_info = (3, 9, 6);' not in command[2])
+        if not direct and not runpy_baseline:
+            return original_run(command, *args, **kwargs)
+        try:
+            event = json.loads(kwargs.get('input', ''))
+        except (ValueError, TypeError):
+            return original_run(command, *args, **kwargs)
+        if not isinstance(event, dict) or event.get('hook_event_name') != 'Stop':
+            return original_run(command, *args, **kwargs)
+        # Compare pipe bytes before providing the original text-mode API to the
+        # reused test. In particular Windows newline conversion cannot hide drift.
+        options = dict(kwargs)
+        text_mode = any([options.pop(key, None) for key in ('text', 'universal_newlines')])
+        encoding = options.pop('encoding', None)
+        errors = options.pop('errors', None)
+        if isinstance(options.get('input'), str):
+            options['input'] = options['input'].encode(encoding or 'utf-8', errors or 'strict')
+        reference = original_run(command, *args, **options)
+        native = original_run([str(native_binary)], *args, **options)
+        assert (native.stdout, native.stderr, native.returncode) == (
+            reference.stdout, reference.stderr, reference.returncode), event
+        if text_mode or encoding or errors:
+            reference.stdout = io.TextIOWrapper(io.BytesIO(reference.stdout),
+                                                encoding=encoding, errors=errors).read()
+            reference.stderr = io.TextIOWrapper(io.BytesIO(reference.stderr),
+                                                encoding=encoding, errors=errors).read()
+        return reference
+
+    monkeypatch.setattr(subprocess, 'run', compare)
+
+
+@pytest.fixture
+def stop_repository(tmp_path):
+    (tmp_path / '.git').mkdir()
+    (tmp_path / 'scripts').mkdir()
+    pins = mechanical.PINS.replace('/example', str(tmp_path))
+    (tmp_path / 'scripts/mir_ontology.py').write_text(
+        f'print({pins!r})\n', encoding='utf-8')
+    return tmp_path, pins
+
+
+def stop_payload(repo, prompt, body, rows=(), shape='claude'):
+    if shape == 'claude':
+        user = {'type': 'user', 'message': {'content': prompt}}
+        assistant = {'type': 'assistant', 'message': {'content': body}}
+    else:
+        user = {'type': 'response_item', 'payload': {'role': 'user', 'content': prompt}}
+        assistant = {'type': 'response_item', 'payload': {'role': 'assistant', 'content': body}}
+    transcript = repo / 'stop.jsonl'
+    transcript.write_text(''.join(json.dumps(row) + '\n' for row in [user, *rows, assistant]),
+                          encoding='utf-8')
+    return json.dumps({'hook_event_name': 'Stop', 'cwd': str(repo),
+                       'session_id': 'native-stop', 'transcript_path': str(transcript),
+                       'stop_hook_active': False, 'last_assistant_message': body}).encode()
+
+
+@pytest.mark.parametrize('matches', [True, False], ids=['matching-pins', 'changed-head'])
+def test_native_stop_fake_repository_pins(binary, stop_repository, matches):
+    repo, pins = stop_repository
+    body = mechanical.packet(pins)
+    if not matches:
+        body = body.replace('a' * 40, 'f' * 40)
+    reference, native = run_pair(binary, stop_payload(repo, PROMPT, body))
+    assert ('decision' in json.loads(reference[0] or b'{}')) is not matches
+    assert native == reference
+
+
+def test_native_stop_preserves_warning_before_exception(binary, stop_repository):
+    repo, _ = stop_repository
+    payload = json.loads(stop_payload(repo, PROMPT + '\nNo commands.', mechanical.packet()))
+    del payload['cwd']
+    reference, native = run_pair(binary, json.dumps(payload).encode())
+    warnings = reference[1].splitlines()
+    assert len(warnings) == 2
+    assert b'owner forbids commands; no runner performed.' in warnings[0]
+    assert b'hook unavailable; allowing turn to continue.' in warnings[1]
+    assert native == reference
+
+
+@pytest.mark.parametrize('shape', ['claude', 'codex'])
+@pytest.mark.parametrize('count', [0, 1, 2, 3])
+def test_native_stop_repair_limit_reused_ids(binary, stop_repository, shape, count):
+    repo, _ = stop_repository
+    rows = mechanical.ROUND_S_REPAIRS[:count]
+    if shape == 'claude':
+        rows = [{'type': 'system', 'subtype': 'hook_response', 'hookName': 'Stop',
+                 'hookRunId': 'stop:21:/synthetic/hooks/hooks.json',
+                 'stdout': row['payload']['content'][0]['text']}
+                for row in rows]
+    raw = stop_payload(repo, RECIPIENT_PROMPT, 'Done.', rows, shape)
+    reference, native = run_pair(binary, raw)
+    assert ('decision' in json.loads(reference[0] or b'{}')) is (count < 2)
+    assert native == reference
+
+
+STOP_REGRESSIONS = [
+    ('round-r-source-' + str(i), PROMPT, claim)
+    for i, claim in enumerate(mechanical.ROUND_R_SOURCE_CLAIMS)
+] + [
+    ('round-s-authority-' + str(i), PROMPT, claim)
+    for i, claim in enumerate(mechanical.ROUND_S_AUTHORITY)
+] + [
+    ('round-s-inventory-' + str(i), RECIPIENT_PROMPT, inventory)
+    for i, inventory in enumerate(mechanical.ROUND_S_INVENTORIES)
+] + [
+    ('round-s-digest', RECIPIENT_PROMPT, mechanical.ROUND_S_DIGEST),
+    ('round-t-owner', PROMPT, 'Only the owner may approve edits.'),
+    ('round-t-pin-heading', 'Review this received handoff.\n- **pins:**\n'
+     '  - repository_root: parent-supplied(example)\n  - head: parent-supplied(example)',
+     mechanical.RECIPIENT_LABELS),
+    ('round-t-reader', RECIPIENT_PROMPT + '\nNo commands.', mechanical.RECIPIENT_LABELS +
+     '\n\uc18c\uc2a4 \ub9ac\ub354\ub97c \ucc3e\uc9c0 \ubabb\ud588\uc2b5\ub2c8\ub2e4. '
+     '\uc15c\u00b7\ucf54\ub4dc \uc778\ud130\ud504\ub9ac\ud130\ub294 '
+     '\uc2e4\ud589\ud558\uc9c0 \uc54a\uc558\uc2b5\ub2c8\ub2e4.'),
+    ('round-t-evidence', PROMPT, 'Controls would need to be run to verify the claim.'),
+    ('round-t-source', PROMPT, '- **`scripts/check.py`**\n  - 12\u201314: inspect branches.\n'
+     '  - All reports end with "review required".'),
+    ('korean-owner-ban', KO_HANDOFF + '\n' + KO_NO_COMMANDS,
+     '### \uad8c\ud55c\n- \ud5c8\uc6a9: \ud30c\uc77c \uc218\uc815'),
+]
+
+
+@pytest.mark.parametrize('name,prompt,claim', STOP_REGRESSIONS,
+                         ids=[case[0] for case in STOP_REGRESSIONS])
+def test_native_stop_regressions(binary, stop_repository, name, prompt, claim):
+    repo, pins = stop_repository
+    if prompt.startswith('Review this received handoff.'):
+        body = claim
+    else:
+        body = mechanical.packet(pins).replace(
+            hashlib.sha256(PROMPT.encode()).hexdigest(),
+            hashlib.sha256(prompt.encode()).hexdigest()) + '\n' + claim
+    reference, native = run_pair(binary, stop_payload(repo, prompt, body))
+    assert native == reference, name

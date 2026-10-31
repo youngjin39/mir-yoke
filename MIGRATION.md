@@ -626,3 +626,40 @@ selected packages' tree digests for this release in the host-local approval file
   update the `mir` code first, then review and write the new `mir-lifecycle-hooks` and `mir-mcp`
   digests into `<project root>/config/capability-acknowledgements.local.json` before
   `mir capability update --apply`.
+# Optional native capability artifacts
+
+Set `MIR_CAPABILITY_NATIVE_ARTIFACTS=1` when running `mir capability update --apply`
+to opt into native placement. The switch defaults to off and follows the existing
+capability environment override mechanism (`MIR_CAPABILITY_HOME`). The shipped hook
+and Python reference remain unchanged.
+
+An optional top-level lock section pins artifacts, for example:
+
+```json
+{"native_artifacts":{"handoff-packet":{"plugin":"mir-lifecycle-hooks",
+"install_path":"bin/handoff-packet","targets":{"aarch64-apple-darwin":{
+"url":"https://example.invalid/handoff-packet","sha256":"<64 lowercase hex digits>",
+"size":1727328}}}}}
+```
+
+The authorized binding step must supply actual URLs, SHA-256 hashes and exact byte
+sizes. Updates preserve this section; this change neither populates the repository
+lock nor publishes binaries. Published locks use portable URLs or relative local
+paths. Absolute paths and file URLs are supported for local offline fixtures but
+fail portable-lock validation. Install paths are canonical relative POSIX paths
+without an `.exe` suffix; Windows adds that suffix.
+
+Host targets cover macOS arm64/x86_64, Linux aarch64/x86_64 (GNU), and Windows x86_64
+(MSVC). Unknown hosts skip placement. HTTP transfers use a 30-second timeout and a
+byte cap equal to the pinned size. Plain paths and local `file://` URLs work offline.
+Verified bytes receive executable permissions before atomic publication. A missing
+target, unreadable source or size/hash mismatch produces one warning per artifact
+and retains the Python fallback.
+
+Materialized and installed tree verification always checks every present native
+artifact against its own size and SHA-256, even with the switch off. Only declared
+host artifact files are removed from the source verification view, pruning empty
+ancestor directories. All remaining paths undergo existing strict validation.
+Absent artifacts remain valid. Provider receipts preserve artifact pins for status,
+attestation, consumer validation and rollback. Signing, binary publication and
+native execution are outside this change.

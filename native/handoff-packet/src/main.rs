@@ -1,10 +1,7 @@
 #![forbid(unsafe_code)]
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 use handoff_packet::{LIMIT, pretool};
-use std::{
-    io::{self, Read, Write},
-    process::{Command, Stdio},
-};
+use std::io::{self, Read, Write};
 const WARNING: &str = "Mir handoff WARNING: hook unavailable; allowing turn to continue. Check native payload, explicit transcript tail and repository runner; pins/check unavailable.";
 // Python text streams translate LF on Windows; compare raw pipe bytes unchanged.
 const EOL: &str = if cfg!(windows) { "\r\n" } else { "\n" };
@@ -26,6 +23,27 @@ fn run() -> io::Result<i32> {
     } else {
         None
     };
+    if let Some(event) = parsed.as_ref()
+        && event.get("hook_event_name").and_then(|v| v.as_str()) == Some("UserPromptSubmit")
+    {
+        let output = handoff_packet::supply::supply(event)
+            .or_else(|_| handoff_packet::supply::exception(event));
+        if let Ok(output) = output {
+            let mut fields = Vec::new();
+            if let Some(message) = output.warning {
+                let message = format!("Mir handoff WARNING: {message}");
+                write!(io::stderr(), "{message}{EOL}")?;
+                fields.push(format!("\"systemMessage\": {}", ascii_json(&message)?));
+            }
+            if let Some(context) = output.context {
+                fields.push(format!("\"hookSpecificOutput\": {{\"hookEventName\": \"UserPromptSubmit\", \"additionalContext\": {}}}", ascii_json(&context)?));
+            }
+            if !fields.is_empty() {
+                write!(io::stdout(), "{{{}}}{EOL}", fields.join(", "))?;
+            }
+        }
+        return Ok(0);
+    }
     let is_pretool = parsed
         .as_ref()
         .and_then(|e| e.get("hook_event_name"))
@@ -44,36 +62,42 @@ fn run() -> io::Result<i32> {
         }
         return Ok(0);
     }
-    let Some(reference) = std::env::args_os().nth(1) else {
-        return warning();
-    };
-    io::stdin().lock().read_to_end(&mut raw)?;
-    // Match hooks.json by default; explicit callers may select their Python.
-    let python = std::env::var_os("MIR_HANDOFF_PYTHON").unwrap_or_else(|| "python3".into());
-    let child = Command::new(python)
-        .arg(reference)
-        .stdin(Stdio::piped())
-        .stdout(Stdio::inherit())
-        .stderr(Stdio::inherit())
-        .spawn();
-    let Ok(mut child) = child else {
-        return warning();
-    };
-    if let Some(mut stdin) = child.stdin.take()
-        && let Err(e) = stdin.write_all(&raw)
-        && e.kind() != io::ErrorKind::BrokenPipe
-    {
-        return Err(e);
+    if let Some(event) = parsed.as_ref() {
+        if !event.is_object() {
+            return warning();
+        }
+        if event.get("hook_event_name").and_then(|v| v.as_str()) == Some("Stop") {
+            match handoff_packet::stop::stop(event) {
+                Ok(output) => {
+                    if let Some(message) = output.warning {
+                        let message = message.replace('\n', EOL);
+                        write!(io::stderr(), "Mir handoff WARNING: {message}{EOL}")?;
+                    }
+                    if let Some(output) = output.output {
+                        write!(io::stdout(), "{output}{EOL}")?;
+                    }
+                    return Ok(0);
+                }
+                Err(_) => return warning(),
+            }
+        }
+        return Ok(0);
     }
-    let status = child.wait()?;
-    #[cfg(unix)]
-    {
-        use std::os::unix::process::ExitStatusExt;
-        if let Some(signal) = status.signal() {
-            return Ok(128 + signal);
+    warning()
+}
+fn ascii_json(text: &str) -> io::Result<String> {
+    let quoted = serde_json::to_string(text).map_err(io::Error::other)?;
+    let mut out = String::new();
+    for ch in quoted.chars() {
+        if ch.is_ascii() && ch != '\u{7f}' {
+            out.push(ch);
+        } else {
+            for unit in ch.encode_utf16(&mut [0; 2]) {
+                out.push_str(&format!("\\u{unit:04x}"));
+            }
         }
     }
-    Ok(status.code().unwrap_or(0))
+    Ok(out)
 }
 fn main() {
     std::process::exit(run().unwrap_or(0));

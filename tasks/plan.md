@@ -1,34 +1,54 @@
 # Plan
 
-## Active task: native handoff cross-platform CI (2026-10-31)
+## Active task: native Stop parity (2026-10-31)
 
 Intent authority: current owner request; this cursor owns the bounded design.
-Add macOS, Ubuntu and Windows Cargo/parity CI; preserve the Python reference,
-hooks.json, versions and generated Codex files. No commit or delivery.
-Prior cursor: [preserved evidence](change_log.md#cursor-before-cross-platform-native-ci-2026-10-31).
+Extend only the native crate, parity tests, benchmark/README and records. Preserve
+plugins, real lock, generated Codex artifacts and all unrelated changes. No commit,
+version change or caller switch.
 
-Design: honor Cargo environment, opt into offline builds, resolve target/executable
-paths, use the mechanical-test interpreter for both subprocesses, preserve Windows
-CRLF output bytes, and pin CI Python 3.14 to the Unicode 16.0 tables.
-The shipped hook still calls python3; document the Windows test/default distinction.
+Design: native Stop composes packet/authority/pin checks with transcript/tool
+accounting; reuse digest and bounded runner. Remove event forwarding after native
+coverage, retaining MIR_HANDOFF_PYTHON only for the repository pin runner. Exceptions
+keep the reference warning contract. Differential fixtures are the behavior oracle.
 
-Request matrix/scenarios:
-1. Configured Cargo home/target and explicit offline flag reach the build unchanged;
-   default builds may fetch dependencies; cargo absence skips the module.
-2. Forwarded events use the selected reference interpreter and preserve all bytes/status.
-3. Denials and warnings match native platform line endings without normalization;
-   UTF-8 subprocess mode protects Unicode fixtures from Windows code pages.
-4. Each OS runs four Cargo gates and byte parity with Python 3.14.
-5. Local requested pytest/Ruff/YAML checks pass; adopter payload is the final edit.
-Evidence: regression checks fail first, then local gates; Linux/Windows execution
-remains open until CI runs. No caller switch or cross-platform runtime claim.
+Request matrix:
+1. Entire Stop checker and exception/retry contract byte parity.
+2. Every mechanical Stop fixture plus escaped Korean, repair and fake-runner pins.
+3. Fail-first and checker-family mutation evidence.
+4. Thirty-sample Stop no-packet/valid/defective median and p90.
+5. Cargo and requested Python gates; README/records; payload regeneration LAST edit.
 
-Current evidence (2026-10-31): scenarios 1-3 pass locally, including 123 parity
-cases with Python 3.14 / Unicode 16.0, and 123 skips with Cargo unavailable.
-Cargo fmt, clippy, 9 unit tests and release build pass offline/locked (fmt takes
-neither flag). YAML safe_load and Ruff pass. Scenario 4 has macOS evidence only;
-Ubuntu and Windows remain open until CI executes. Initial requested Python set:
-772 passed, 2 skipped, only stale adopter inventory failed. Regenerate the payload
-as the final edit, then rerun the requested set; final execution results belong to
-the delivery report to avoid editing this cursor after inventory generation.
-No generated Codex files changed; no commit, push, tag, release or version bump.
+Status: native Stop implementation complete; all 15 checker-family mutants caught
+and restored. Initial no-forwarding red: 4 failed / 2 passed; ordered-exception
+warning red: 1 failed; control-only final-message red reproduced and four cases fixed. Cargo fmt/clippy/test/build pass (24 unit tests), Ruff passes.
+Thirty-sample latency recorded in README and change_log. Payload generation is the
+LAST edit, followed by the requested full read-only Python gate; final counts and
+any open cells belong in the delivery report. No intentional behavior difference
+or unported event remains. Local execution covers macOS only; Linux/Windows still
+need CI. Previous-slice evidence below is historical.
+
+## Previous slice: native supply and SessionStart (2026-10-31)
+
+Intent authority: current owner request; this cursor owns the bounded design.
+Preserve plugins, unrelated capability work, real lock and generated Codex files.
+No commit, version or caller changes. Stop remains Python-forwarded.
+
+Design: reuse native detection/owner restrictions, add supply context and bounded
+runner lifecycle; add a separate runtime-continuity binary with Python text bytes.
+
+Request matrix:
+1. Native UserPromptSubmit, exception owner context and runner lifecycle.
+2. SessionStart byte parity including Windows text line endings.
+3. Differential fixtures, fail-first evidence and deliberate mutations.
+4. Thirty-sample latency for ordinary/forbidden submit and SessionStart.
+5. README scope and requested Cargo/Python gates; adopter payload LAST edit.
+
+Status (2026-10-31): native implementation and 23 deliberate mutation checks
+complete. Initial red: 18 failed / 1 existing pass; initial green: 19 passed.
+DEL boundary red reproduced and fixed. Cargo four gates pass (10 unit tests);
+Ruff passes. Thirty-sample latency measured and recorded in README/change_log.
+Final inventory generation is the LAST edit, followed by the full requested
+read-only Python gate. Final gate counts and any open cells belong in the delivery
+report. Supported-platform execution remains local macOS only; Linux/Windows
+and Windows cleanup require CI. No caller switch, commits or plugin changes.

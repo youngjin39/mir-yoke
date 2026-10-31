@@ -14400,3 +14400,234 @@ Acceptance: 9 Rust tests; selected pytest 773 passed / 2 skipped; Cargo fmt,
 Clippy, release build, Ruff, Codex sync and asset classification passed. All twenty
 added boundary fixtures rejected at least one deliberately wrong filter before
 restoring production code. No new inventory entry or Cargo dependency was added.
+
+
+## Cursor before native artifact materialization (2026-10-31)
+
+# Plan
+
+## Active task: native handoff cross-platform CI (2026-10-31)
+
+Intent authority: current owner request; this cursor owns the bounded design.
+Add macOS, Ubuntu and Windows Cargo/parity CI; preserve the Python reference,
+hooks.json, versions and generated Codex files. No commit or delivery.
+Prior cursor: [preserved evidence](change_log.md#cursor-before-cross-platform-native-ci-2026-10-31).
+
+Design: honor Cargo environment, opt into offline builds, resolve target/executable
+paths, use the mechanical-test interpreter for both subprocesses, preserve Windows
+CRLF output bytes, and pin CI Python 3.14 to the Unicode 16.0 tables.
+The shipped hook still calls python3; document the Windows test/default distinction.
+
+Request matrix/scenarios:
+1. Configured Cargo home/target and explicit offline flag reach the build unchanged;
+   default builds may fetch dependencies; cargo absence skips the module.
+2. Forwarded events use the selected reference interpreter and preserve all bytes/status.
+3. Denials and warnings match native platform line endings without normalization;
+   UTF-8 subprocess mode protects Unicode fixtures from Windows code pages.
+4. Each OS runs four Cargo gates and byte parity with Python 3.14.
+5. Local requested pytest/Ruff/YAML checks pass; adopter payload is the final edit.
+Evidence: regression checks fail first, then local gates; Linux/Windows execution
+remains open until CI runs. No caller switch or cross-platform runtime claim.
+
+Current evidence (2026-10-31): scenarios 1-3 pass locally, including 123 parity
+cases with Python 3.14 / Unicode 16.0, and 123 skips with Cargo unavailable.
+Cargo fmt, clippy, 9 unit tests and release build pass offline/locked (fmt takes
+neither flag). YAML safe_load and Ruff pass. Scenario 4 has macOS evidence only;
+Ubuntu and Windows remain open until CI executes. Initial requested Python set:
+772 passed, 2 skipped, only stale adopter inventory failed. Regenerate the payload
+as the final edit, then rerun the requested set; final execution results belong to
+the delivery report to avoid editing this cursor after inventory generation.
+No generated Codex files changed; no commit, push, tag, release or version bump.
+
+
+## Native artifact materialization evidence (2026-10-31)
+
+Authority: owner request G4 option B, cursor tasks/plan.md. No commits, delivery,
+version changes, real lock edits, generated Codex edits or hook changes.
+
+Fail-first commands (each used the owner-specified UV cache):
+- uv run pytest -q -p no:cacheprovider tests/test_capability_native_artifacts.py:
+  27 failed before native.py; then 27 passed.
+- Same file with -k manager: 2 failed (native_artifacts lost by update); then
+  29 passed across the whole file after integration.
+- Same file with -k 'bootstrap or linked': 2 failed before the validator/root-link
+  fixes; then all 31 passed.
+- Added mixed-consumer assertion: 1 failed before shared receipt fallback; then
+  native plus ontology rehearsal selection: 34 passed, 159 deselected.
+
+Initial requested boundary run: 612 passed, 4 failed in 138.30s. Failures were the
+new consumer rehash interfering with candidate preview (fixed), a public fixture
+path literal (fixed), and two stale adopter inventory checks (final edit pending).
+Follow-up activation script regressions from reading absent fixture configuration
+were fixed by retaining the original no-native path: 16 package tests passed.
+Ruff passed. Final payload generation and requested boundary rerun follow these
+records; no extra cursor edit after generation. Final counts are in the delivery.
+
+## Cursor before native supply and SessionStart slice (2026-10-31)
+
+# Plan
+
+## Active task: opt-in native capability artifacts (2026-10-31)
+
+Intent authority: current owner request (G4 option B); this cursor owns the bounded design.
+Preserve the previous cursor verbatim in tasks/change_log.md. No commits, versions,
+real capability lock changes, generated Codex changes, hook or handoff changes.
+
+Design: optional validated native_artifacts in the lock, inherited on update; an
+explicit environment opt-in places host-specific verified bytes in the staged tree.
+All materialized/installed verification checks artifact size/digest before validating
+the source tree with only declared artifact files and their empty ancestors removed.
+Absent artifacts remain valid for Python fallback. Provider receipts carry the manifest;
+consumers without native entries use those receipt pins for shared-provider integrity.
+
+Request matrix:
+1. Optional lock validation and portable paths; legacy locks unchanged.
+2. Five host targets, Windows suffix, unknown hosts skip.
+3. Default off leaves source trees unchanged; opt-in atomic executable placement.
+4. Missing target/source, bad digest/size warn once and preserve other files.
+5. Shared verification accepts valid artifacts, rejects tampering and extra files.
+6. Affected capability/bootstrap and template gates, Ruff; payload generation last edit.
+
+Status (2026-10-31): scenarios 1-5 pass in 31 offline regression tests, including
+injected Windows naming and bootstrap validation. Red evidence: 27 unit cases
+failed before native.py existed; 2 manager cases failed before integration; 2
+bootstrap/symlink cases failed before their fixes. A mixed-consumer assertion also
+failed before receipt fallback was added. The ontology-distribution regression now
+passes (34 passed in the native + rehearsal selection). Activation checks: 16 passed.
+Ruff and diff whitespace checks pass. Initial broad run: 612 passed, 4 failed;
+consumer preview and public fixture-path regressions fixed, with two stale payload
+failures deferred to the required final generation. Scenario 6 remains pending the
+final inventory generation and gate rerun; final counts belong in the delivery report.
+No plugin trees changed, so no real-lock rebind is needed. No network tests;
+small fake artifact bytes only. Real Windows/Linux execution, signing, publication
+and owner-provided binding pins remain outside this implementation evidence.
+
+## Native UserPromptSubmit and SessionStart evidence (2026-10-31)
+
+Authority: current owner request, captured in tasks/plan.md. Native scope now
+includes UserPromptSubmit and a separate runtime-continuity SessionStart binary;
+Stop stays forwarded. No plugins, real lock, generated Codex files or callers changed.
+No new dependencies, versions or commits. Existing capability slice preserved.
+
+Fail-first: initial 19-fixture selection produced 18 failures and one existing
+bad-prompt pass; no reference argument was supplied to native submit fixtures.
+After implementation the same selection produced 19 passes. A subsequent Unicode
+boundary probe failed on DEL (Python escapes U+007F); fixed explicit ASCII quoting.
+Added owner marker, source exclusion, symlink runner, runner environment and
+child-process timeout coverage. Timeout fixtures retain the reference five seconds.
+
+Deliberate source mutations, each restored: 23 caught with pytest assertion failures
+(not build errors). These cover author detection, ordinary silence, receipt rule,
+command restriction, prompt digest, owner exception context, runner nonzero exit,
+output size, JSON dictionary shape, excluded pins, timeout, source count, protected
+source, UTF-8 replacement, universal newlines, SessionStart message, file rule,
+excluded source, symlink runner, invalid JSON, invalid prompt, DEL escaping and
+POSIX group kill. Group-kill mutation leaves a child alive and the new test catches
+its delayed marker. Final unmutated process-tree and full-suite results are recorded
+in the delivery report after the required last-edit inventory generation.
+
+Cargo fmt --check, clippy --all-targets --offline --locked -- -D warnings,
+test --offline --locked (10 tests) and build --release --offline --locked pass.
+Ruff passes. Cargo duplicate dependency inspection found none. No dependency added;
+optional vulnerability audit/signing not run. Local platform is macOS arm64;
+Linux/Windows execution and Windows taskkill remain CI evidence to obtain. Existing
+CI builds all crate binaries and runs the parity module, so no workflow edit needed.
+TCC prompt status is unknown: /usr/bin/log is denied in this sandbox.
+
+Latency: thirty fresh processes per implementation, alternating, Python 3.12,
+release Rust, caches not flushed. Native target explicitly selected through
+CARGO_TARGET_DIR. Median / nearest-rank p90 including startup and pipe I/O:
+
+| Fixture | Python median / p90 (ms) | Rust median / p90 (ms) |
+| --- | ---: | ---: |
+| submit ordinary | 51.463 / 57.903 | 5.11 / 5.942 |
+| submit forbidden | 39.406 / 41.277 | 8.125 / 8.508 |
+| SessionStart | 16.782 / 17.546 | 2.784 / 3.029 |
+
+
+## Native Stop final slice evidence (2026-10-31)
+
+Authority: current owner request, recorded in tasks/plan.md (the active intent and
+design cursor). Native Stop now covers packet/owner/namespace/pin checks, cited
+sources, current-turn tool evidence, recipient labels, command bans, source claims,
+Claude/Codex repair history and the two-block limit with reused Codex run IDs.
+No event forwards to Python; errors emit the native reference warning.
+MIR_HANDOFF_PYTHON remains only for the repository pin runner. No caller switch,
+plugin/real-lock/generated-Codex edits, version changes, commits or delivery actions.
+Existing native supply and capability-materializer work was preserved.
+
+Fail-first: new no-reference Stop selection failed 4 and passed 2 before wiring.
+The ordered command-ban/exception warning regression then failed once before its
+fix. The first broad parity run reached 516 passes with one stale collected Claude
+fixture expectation; current system-hook-response repair fixtures pass all eight
+count/shape combinations. The broad Python baseline passed 660 and skipped two;
+its only failures were a newly introduced Hangul guard (now escaped) and the stale
+payload reserved for last-edit regeneration. Final fresh full-gate counts belong
+in the delivery report after that regeneration.
+
+Parity fixtures reuse the original mechanical pytest cases and parameter marks,
+including rounds r/s/t, by comparing raw pipe bytes and status at each Stop process
+boundary before returning its original decoded API. Extra fixtures cover escaped
+Korean, fake-runner matching/changed pins, repeated repair run IDs and exception
+warning order. The no-tomllib runpy baseline is compared; a simulated unsupported
+Python 3.9 interpreter banner is not a native-binary behavior. No intentional
+difference or unported event path remains within the supported reference contract.
+
+Mutation evidence read by Main: ten helper mutants and five core mutants compiled
+successfully then failed assertions, with exact source restoration. Families:
+recipient inventory, command-ban checks, typed pin computation, absence scope,
+abbreviated hex, pin paths, nested tool calls, quoted claims, basename ambiguity,
+shlex errors, packet checks, authority, namespace, cited-source claims and repair
+counts. Core restoration SHA256 matched the source before final read-only gates.
+Ignored local evidence: native/handoff-packet/target/stop-tools-mutations.txt and
+native/handoff-packet/target/stop-core-mutations.txt.
+
+Cargo fmt --check, clippy --all-targets --offline --locked -- -D warnings,
+test --offline --locked (24 unit tests) and build --release --offline --locked pass.
+Ruff passes; no duplicate Cargo packages. Parse-only TOML dependency preserves the
+reference protected-profile semantics, including full filename character ranges.
+JSON tests cover key order/duplicates, Python float spelling, numeric equality,
+Unicode escapes and ordered warnings on restricted-check exceptions.
+TCC prompt status remains unknown because /usr/bin/log is sandbox-denied; no
+observed external-volume I/O stall. No signing or optional dependency vulnerability
+audit was run. Linux/Windows execution remains CI evidence to obtain.
+
+Final read-only Python gate (with offline Cargo/cache environment selected):
+
+```sh
+uv run pytest -q -p no:cacheprovider \
+  tests/test_handoff_packet_native_parity.py tests/test_mechanical_handoff.py \
+  tests/test_compact_lifecycle_hooks.py tests/test_line_endings.py \
+  tests/test_no_korean_in_user_facing.py tests/test_public_template_surface.py \
+  tests/test_template_asset_classification.py tests/test_adopter_slim.py
+uv run ruff check
+```
+
+Latency: `uv run python native/handoff-packet/benchmark.py`, macOS arm64,
+Python 3.12/release Rust, 30 alternating fresh processes, OS caches not flushed;
+startup, pipes and fake runner included. Benchmarks assert exact output equality.
+
+| Stop fixture | Python median / p90 (ms) | Rust median / p90 (ms) |
+| --- | ---: | ---: |
+| Stop no packet | 44.713 / 49.185 | 5.14 / 5.718 |
+| Stop valid | 61.073 / 65.418 | 58.852 / 64.282 |
+| Stop defective | 64.601 / 70.397 | 59.838 / 66.554 |
+
+Late final-message boundary: a control-only U+001C native last_assistant_message
+incorrectly replaced the transcript body because Rust trim differs from Python
+strip. A direct differential probe failed before the fix; all four U+001C-U+001F
+cases now retain the transcript and pass alongside the exception test (5 passed).
+After this source change the Cargo four gates pass again (24 tests). The previous
+full Python run had 1200 passes, two platform skips and only the payload inventory
+failure expected after this late source edit; regenerate again as LAST edit and
+run the complete selection read-only. Final counts belong in the delivery report.
+
+Main acceptance check (2026-10-31): re-ran the Cargo gates and the parity plus
+mechanical handoff modules (1154 passed, 2 skipped). Two Main mutations: disabling
+the Codex paired-prompt dedupe failed one parity test; treating fnmatch `?` as `*`
+survived all 543 parity tests. Added `fnmatch_matches_python_fnmatchcase`, a table
+of 210 cases whose expected values come from Python `fnmatch.fnmatchcase`; it fails
+under that mutation and passes on the restored code (25 unit tests). Re-measured
+Stop medians: no packet 45.5 -> 5.8 ms; valid 66.0 -> 62.8 ms; defective
+67.2 -> 62.1 ms. The valid and defective paths are dominated by the repository pin
+runner, which is Python owned by the repository, not by the hook.

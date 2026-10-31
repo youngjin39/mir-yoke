@@ -1,8 +1,10 @@
 # Native handoff packet proof of concept
 
-This maintainer-only crate implements PreToolUse and forwards other events to
-`python3 <first argument>`, preserving stdin, environment, stdout/stderr and status.
-`MIR_HANDOFF_PYTHON` overrides the executable (one path, not a shell command).
+This maintainer-only crate implements PreToolUse, UserPromptSubmit and Stop natively.
+The second binary, `runtime-continuity`, prints SessionStart context with Python
+text-stream line endings. No event forwards to the Python reference. Internal
+errors use the reference warning contract; PreToolUse errors remain silent.
+`MIR_HANDOFF_PYTHON` selects only the repository pin runner (one path, not a shell command).
 No hook caller or plugin payload selects it.
 
 Run Cargo from this directory:
@@ -15,17 +17,17 @@ cargo test --offline --locked
 cargo build --release --offline --locked
 ```
 
-Invoke `target/release/handoff-packet <path-to-handoff_packet.py>`.
+Invoke `target/release/handoff-packet` with hook JSON on stdin.
 On Windows the executable has an `.exe` suffix. With `CARGO_TARGET_DIR`, use its
 `release` directory instead; relative target paths resolve from this crate.
-Without the argument, recognized PreToolUse errors remain silent; other events
-emit the reference unavailable warning without owner-specific additionalContext.
+No reference argument is needed; the former reference argument is ignored.
 
 The reference's stdin limit counts decoded characters. Oversized, malformed and
 non-object input leaves its event undetermined and emits a warning. Preserve those
-observed bytes by forwarding these inputs. The initial read is bounded to four
-UTF-8 bytes per character; only forwarding drains remaining input. Native internal
-errors return silently. Regex backtracking is bounded to 64 Mi steps.
+observed bytes with the native warning. The initial read is bounded to four
+UTF-8 bytes per character. PreToolUse internal errors return silently; UserPromptSubmit exceptions emit
+the reference warning, including owner context for detected author prompts. Stop
+exceptions warn without owner context. Regex backtracking is bounded to 64 Mi steps.
 
 `patterns.rs` transcribes the reachable reference patterns. `python_text.rs` freezes
 Python 3.14 Unicode 16.0 word ranges and casefold exceptions. Word boundaries,
@@ -50,7 +52,7 @@ the repository root. The whole parity module skips if Cargo is absent.
 
 Parity uses `HANDLER_PYTHON` from `tests/test_mechanical_handoff.py`: the current
 `sys.executable`, or `MIR_HANDOFF_TEST_PYTHON` when explicitly set. It supplies that
-same executable to the native forwarder through `MIR_HANDOFF_PYTHON`. This avoids
+same executable to the repository pin runner through `MIR_HANDOFF_PYTHON`. This avoids
 Windows Store aliases and accidentally testing a different Python/Unicode version.
 The unchanged shipped `hooks.json` still requires `python3` on PATH on every OS,
 including Windows. The native default matches that contract; tests select an
@@ -59,7 +61,7 @@ prove that a Windows user's shell resolves the shipped `python3` command.
 
 Subprocesses run with `PYTHONUTF8=1` to decode non-ASCII input consistently across
 Windows code pages. Native output is UTF-8 with CRLF on Windows and LF elsewhere,
-matching Python text streams; forwarded output is inherited unchanged. Fixtures
+matching Python text streams. Fixtures
 are encoded explicitly and `.gitattributes` sets `* -text`, preventing checkout
 conversion even with `core.autocrlf`. Assertions compare raw stdout/stderr bytes
 and exit status without newline or encoding normalization. CI also runs
@@ -134,3 +136,63 @@ No build-time precompilation or new dependency was needed. Unicode slow paths
 still compile the full pinned classes; the optimization does not claim every
 possible prompt reaches the process-startup floor. The benchmark uses cached OS
 files and includes pipe/process overhead; Read variation reflects that baseline.
+
+## Native supply scope
+
+UserPromptSubmit ordinary prompts perform detection only. Recipient packets get
+receipt rules; author prompts get owner context and pins or the reference warning.
+The read-only pin runner uses MIR_HANDOFF_PYTHON (default python3), repository cwd,
+PYTHONDONTWRITEBYTECODE=1 and GIT_OPTIONAL_LOCKS=0. Five-second timeouts terminate
+the POSIX process group, or use bounded Windows taskkill followed by kill fallback.
+Pipe readers drain both streams concurrently. Output uses UTF-8 replacement decoding,
+universal newlines, the one-Mi-character limit, dictionary JSON and exclusion checks.
+No plugin or hook caller is switched.
+
+Native supply measurement (2026-10-31), macOS arm64, Python 3.12, release Rust,
+30 alternating fresh processes per implementation, startup and pipe I/O included.
+OS caches were not flushed. Command: `uv run python native/handoff-packet/benchmark.py`
+with CARGO_TARGET_DIR pointing at this crate target.
+
+| Fixture | Python median / p90 (ms) | Rust median / p90 (ms) |
+| --- | ---: | ---: |
+| submit ordinary | 51.463 / 57.903 | 5.11 / 5.942 |
+| submit forbidden | 39.406 / 41.277 | 8.125 / 8.508 |
+| SessionStart | 16.782 / 17.546 | 2.784 / 3.029 |
+
+## Native Stop scope
+
+Stop reads the explicit bounded transcript tail and native final message, then
+checks packet fields, owner authority, map namespaces, full pins, cited sources,
+recipient accounting, this-turn tool evidence and source-output claims. Native
+Claude/Codex feedback controls the two-block repair limit, including reused Codex
+run IDs and paired transcript views. Command-ban warnings survive later checker
+exceptions in their original stderr order. All remaining exceptions produce the
+reference warning directly; there is no Python event forwarding or fallback.
+
+The shared pin runner retains its five-second timeout; cited-source collection
+uses the remaining 6.5-second budget with the reference half-second floor. SHA-256
+reuses the native implementation. Protected citation patterns use a parse-only
+TOML dependency and Python-compatible filename matching. JSON pin comparison keeps
+object insertion order, observation time, Python indentation and ASCII escaping.
+No runner is started for a no-packet author turn or command-forbidden turn.
+
+The parity module reuses the mechanical Stop tests and parameters at their actual
+subprocess boundary, comparing stdout/stderr bytes and status before returning the
+original test API. It also covers escaped Korean, fake-runner pin match/mismatch,
+repair counts for both transcript shapes and ordered exception warnings. The
+simulated Python 3.9 interpreter banner is outside the native binary contract;
+the corresponding no-tomllib baseline is compared without that injected banner.
+
+Stop measurement (2026-10-31): macOS arm64, Python 3.12, release Rust;
+30 alternating fresh processes per implementation, OS caches not flushed.
+Command: `uv run python native/handoff-packet/benchmark.py`. Startup, pipe I/O
+and the fake repository runner are included. Every measured pair also compares
+stdout/stderr/status; the valid packet must be silent and the defective packet
+must block. Literal guards avoid compiling action/Korean grant/source patterns
+when necessary input literals are absent; all candidates still use the checker.
+
+| Stop fixture | Python median / p90 (ms) | Rust median / p90 (ms) |
+| --- | ---: | ---: |
+| Stop no packet | 44.713 / 49.185 | 5.14 / 5.718 |
+| Stop valid | 61.073 / 65.418 | 58.852 / 64.282 |
+| Stop defective | 64.601 / 70.397 | 59.838 / 66.554 |

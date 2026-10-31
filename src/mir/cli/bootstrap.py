@@ -1284,6 +1284,17 @@ def _capability_lock_evidence(root: Path) -> tuple[str, dict]:
         return "failed", {"reason": f"invalid capability lock: {exc}"}
     if not isinstance(lock_data, dict):
         return "failed", {"reason": "capability lock must be a JSON object"}
+    if "native_artifacts" in lock_data:
+        from mir.core.capabilities.config import CapabilityConfigError, load_capability_config
+        from mir.core.capabilities.native import validate_artifacts
+
+        try:
+            config_path = root / "config" / "capability-sources.json"
+            plugin_names = (load_capability_config(config_path).plugins if config_path.is_file()
+                            else lock_data.get("plugins", {}))
+            validate_artifacts(lock_data["native_artifacts"], plugin_names)
+        except (ValueError, CapabilityConfigError) as exc:
+            return "failed", {"reason": f"invalid capability lock: {exc}"}
     source = lock_data.get("source")
     plugins = lock_data.get("plugins")
     if (
