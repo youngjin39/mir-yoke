@@ -37,12 +37,16 @@ To prepare an explicit lock from a published prerelease, run the maintainer tool
 
 ```sh
 uv run python -m tools.native_release --repo OWNER/REPO --tag native-0123456789ab \
-  --lock path/to/capability-lock.json
+  --source <40-char source commit> --lock path/to/capability-lock.json
 ```
+
+`--source` is the commit the bind pins. The prerelease tag and its target commit must
+both match it; the lock's own `source.commit` still names the previously recorded
+provider at bind time and is not used.
 
 Its GitHub operations only read release metadata and download assets. For offline
 review, put the GitHub release API JSON in `assets/release.json` alongside all 15
-assets and use `--directory assets --lock path/to/capability-lock.json` instead.
+assets and use `--directory assets --source <commit> --lock path/to/capability-lock.json` instead.
 The tool requires a prerelease tag matching the lock source commit prefix,
 validates the complete five-target inventory, declared sizes and both binaries'
 SHA256 checksums, then writes only `native_artifacts` in that explicit lock.

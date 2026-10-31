@@ -15,7 +15,8 @@ TARGETS = (
     'x86_64-unknown-linux-gnu', 'aarch64-unknown-linux-gnu', 'x86_64-pc-windows-msvc',
 )
 NAMES = ('handoff-packet', 'runtime-continuity')
-TAG = 'native-' + 'a' * 12
+SOURCE = 'a' * 40
+TAG = 'native-' + SOURCE[:12]
 BASE = f'https://github.com/example/provider/releases/download/{TAG}'
 
 
@@ -37,17 +38,19 @@ def assets(tmp_path):
             add(filename, data)
             checksums.append(f'{hashlib.sha256(data).hexdigest()}  {filename}\n')
         add(f'SHA256-{target}.txt', ''.join(checksums).encode())
-    release = {'tag_name': TAG, 'prerelease': True, 'assets': records}
+    release = {'tag_name': TAG, 'target_commitish': SOURCE, 'prerelease': True,
+               'assets': records}
     (directory / 'release.json').write_text(json.dumps(release))
     lock = tmp_path / 'lock.json'
-    lock.write_text(json.dumps({'source': {'commit': 'a' * 40},
+    lock.write_text(json.dumps({'source': {'commit': 'c' * 40},
                                 'plugins': {'mir-lifecycle-hooks': {}}, 'preserve': [1]}))
     return directory, lock
 
 
-def run_tool(directory, lock):
+def run_tool(directory, lock, source=None):
     return subprocess.run([sys.executable, '-m', 'tools.native_release', '--directory',
-                           str(directory), '--lock', str(lock)], cwd=ROOT, capture_output=True)
+                           str(directory), '--lock', str(lock), '--source', source or SOURCE],
+                          cwd=ROOT, capture_output=True)
 
 
 def test_pins_published_bytes_and_preserves_lock(assets):
@@ -103,9 +106,7 @@ def test_rejects_bad_assets_without_lock_writes(assets, failure):
     elif failure == 'tag':
         release['tag_name'] = 'v1.0'
     elif failure == 'source':
-        data = json.loads(lock.read_text())
-        data['source']['commit'] = 'b' * 40
-        lock.write_text(json.dumps(data))
+        release['target_commitish'] = 'b' * 40
     else:
         path = directory / first['name']
         saved = directory / 'saved'
@@ -185,3 +186,11 @@ def test_workflow_digest_step_agrees_with_release_tool(assets, tmp_path):
             assert (output / name).read_bytes() == (directory / name).read_bytes()
     (output / 'release.json').write_bytes((directory / 'release.json').read_bytes())
     assert run_tool(output, lock).returncode == 0
+
+
+def test_source_argument_must_match_the_tag(assets):
+    directory, lock = assets
+    before = lock.read_bytes()
+    result = run_tool(directory, lock, source='b' * 40)
+    assert result.returncode != 0
+    assert lock.read_bytes() == before

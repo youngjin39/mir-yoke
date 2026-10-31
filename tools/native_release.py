@@ -29,16 +29,21 @@ def filename(name: str, target: str) -> str:
     return f"{name}-{target}" + (".exe" if target.endswith("windows-msvc") else "")
 
 
-def pin_release(directory: Path, lock_path: Path) -> None:
+def pin_release(directory: Path, lock_path: Path, source: str) -> None:
     """Validate the complete release before changing only the lock's native section."""
     release = json.loads((directory / "release.json").read_text(encoding="utf-8"))
     tag = release.get("tag_name", "")
     if re.fullmatch(r"native-[0-9a-f]{12}", tag) is None or release.get("prerelease") is not True:
         raise ValueError("expected a native-<12-char SHA> prerelease")
+    # The source is the commit the bind pins; the lock's own source.commit still names the
+    # previously recorded provider at bind time, so it cannot serve as the reference.
+    if (
+        re.fullmatch(r"[0-9a-f]{40}", source) is None
+        or tag != f"native-{source[:12]}"
+        or release.get("target_commitish") != source
+    ):
+        raise ValueError("release was not built from the given source commit")
     lock = json.loads(lock_path.read_text(encoding="utf-8"))
-    commit = lock.get("source", {}).get("commit", "")
-    if re.fullmatch(r"[0-9a-f]{40}", commit) is None or tag != f"native-{commit[:12]}":
-        raise ValueError("release source does not match lock source commit")
     expected = {filename(name, target) for name in NAMES for target in TARGETS}
     expected.update(f"SHA256-{target}.txt" for target in TARGETS)
     assets = {}
@@ -101,12 +106,13 @@ def main(argv: list[str] | None = None) -> int:
     source.add_argument("--repo", help="GitHub OWNER/REPO")
     parser.add_argument("--tag")
     parser.add_argument("--lock", required=True, type=Path, help="explicit capability-lock.json")
+    parser.add_argument("--source", required=True, help="40-char source commit of the prerelease")
     args = parser.parse_args(argv)
     try:
         if args.directory:
             if args.tag:
                 parser.error("--tag is only used with --repo")
-            pin_release(args.directory, args.lock)
+            pin_release(args.directory, args.lock, args.source)
         else:
             if not re.fullmatch(r"[\w.-]+/[\w.-]+", args.repo) or not re.fullmatch(
                 r"native-[0-9a-f]{12}", args.tag or ""
@@ -126,7 +132,7 @@ def main(argv: list[str] | None = None) -> int:
                      "--pattern", "runtime-continuity-*", "--pattern", "SHA256-*"],
                     check=True,
                 )
-                pin_release(directory, args.lock)
+                pin_release(directory, args.lock, args.source)
     except (OSError, ValueError, KeyError, TypeError, subprocess.CalledProcessError) as exc:
         parser.exit(1, f"native release: {exc}\n")
     return 0
