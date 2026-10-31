@@ -418,7 +418,8 @@ def compare_reused_stop(request, monkeypatch):
 def stop_repository(tmp_path):
     (tmp_path / '.git').mkdir()
     (tmp_path / 'scripts').mkdir()
-    pins = mechanical.PINS.replace('/example', str(tmp_path))
+    # JSON-escape the path: Windows backslashes are not valid JSON escapes.
+    pins = mechanical.PINS.replace('/example', json.dumps(str(tmp_path))[1:-1])
     (tmp_path / 'scripts/mir_ontology.py').write_text(
         f'print({pins!r})\n', encoding='utf-8')
     return tmp_path, pins

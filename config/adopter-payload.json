@@ -2855,7 +2855,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/supply.rs",
-      "sha256": "ea6f22cc2f94743940e7ae84110350f627e5930492a2de67db7894eeb30700bd"
+      "sha256": "b2e71a95de8f517e2dd6ae958cc24e22c41637caeb434629a6ed7dddb7e68ed3"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4961,7 +4961,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_handoff_packet_native_parity.py",
-      "sha256": "d46705549b9eca94a2e576a96b7d612db18b29349c1e460d5227f94227336bdd"
+      "sha256": "42bc39e7623ec104037f88b5d3e38c55d2f211aba67cad89423149c738893bb1"
     },
     {
       "classification": "template-maintainer-tool",

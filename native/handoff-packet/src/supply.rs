@@ -149,12 +149,28 @@ pub fn supply(event: &Value) -> Result<Output> {
         warning: None,
     })
 }
+// Windows canonicalize returns verbatim paths (\\?\C:\...); Python's resolve
+// strips that prefix, and the hook compares paths with that plain form.
+fn plain(path: PathBuf) -> PathBuf {
+    #[cfg(windows)]
+    if let Some(text) = path.to_str() {
+        if let Some(rest) = text.strip_prefix(r"\\?\UNC\") {
+            return PathBuf::from(format!(r"\\{rest}"));
+        }
+        if let Some(rest) = text.strip_prefix(r"\\?\")
+            && rest.as_bytes().get(1) == Some(&b':')
+        {
+            return PathBuf::from(rest);
+        }
+    }
+    path
+}
 pub(crate) fn repository_root(event: &Value) -> Result<PathBuf> {
     let cwd = Path::new(event["cwd"].as_str().ok_or(Error::Shape)?);
     if !cwd.is_absolute() || !cwd.is_dir() {
         return Err(Error::Shape);
     }
-    let cwd = cwd.canonicalize()?;
+    let cwd = plain(cwd.canonicalize()?);
     cwd.ancestors()
         .find(|p| p.join(".git").exists())
         .map(Path::to_owned)
@@ -175,7 +191,7 @@ pub(crate) fn resolve(path: &Path) -> Result<PathBuf> {
             .symlink_metadata()
             .is_ok_and(|m| m.file_type().is_symlink())
         {
-            out = out.canonicalize()?;
+            out = plain(out.canonicalize()?);
         }
     }
     Ok(out)
