@@ -419,7 +419,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": ".github/workflows/validate.yml",
-      "sha256": "111ed47d268679edbaeca6dfa12a61534ab0e1cfd76fa93db3b175924fab23dc"
+      "sha256": "e901ba5e42aad5dad13d2c9f98a867e1b0a934852f9db1d434e0d2036f47661d"
     },
     {
       "classification": "reference",
@@ -2891,7 +2891,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "plugins/mir-code/skills/rust/SKILL.md",
-      "sha256": "cea475779df8973b3a42ad33eb4395e5ab41f81dd403eea39f33992d82664822"
+      "sha256": "3a344e4c07922c4191a3365abee0ae7a2fbe52c53b8afcd029ebe8548197c171"
     },
     {
       "classification": "optional-consumer-tool",

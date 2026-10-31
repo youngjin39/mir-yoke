@@ -13,7 +13,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest]
+        # Windows runs the same steps at the end of windows_native, the only Windows lane.
+        os: [macos-latest, ubuntu-latest]
     env:
       PYTHONUTF8: '1'
       CARGO_TARGET_DIR: ${{ github.workspace }}/native/handoff-packet/target
@@ -167,3 +168,19 @@ jobs:
           tests/test_mir_mcp_package.py
           tests/test_mir_mcp_checker.py
           tests/test_mir_mcp_relations.py
+      # Native handoff byte parity on Windows (same steps as native_handoff).
+      - run: uv sync --python 3.14 --extra dev --frozen
+      - run: cargo fmt --check
+        working-directory: native/handoff-packet
+      - run: cargo clippy --all-targets --locked -- -D warnings
+        working-directory: native/handoff-packet
+      - run: cargo test --locked
+        working-directory: native/handoff-packet
+      - run: cargo build --release --locked
+        working-directory: native/handoff-packet
+        env:
+          CARGO_TARGET_DIR: ${{ github.workspace }}/native/handoff-packet/target
+      - run: uv run --python 3.14 pytest -q -p no:cacheprovider tests/test_handoff_packet_native_parity.py
+        env:
+          PYTHONUTF8: '1'
+          CARGO_TARGET_DIR: ${{ github.workspace }}/native/handoff-packet/target
