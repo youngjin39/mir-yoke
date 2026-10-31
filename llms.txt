@@ -33,3 +33,6 @@
 The Starter is the only fixed payload. The Project Agent Kit creates project-owned files under the
 target agent's explicit authority. The installed CLI is optional and acts only when separately
 invoked for a named scope; path presence alone authorizes nothing.
+
+## On-demand language guidance
+- `plugins/mir-code/skills/rust/SKILL.md` — Rust coding, analysis, project configuration and parity-guided porting; load only for Rust work

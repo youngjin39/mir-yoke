@@ -263,6 +263,7 @@
         "scripts/verify_project_agent_kit_evidence.py",
         "scripts/verify_release_readiness.py",
         "tests/**",
+        "native/**",
         "tools/harness_consistency/**",
         "tools/template_assets.py",
         "tools/executor_sync.py",

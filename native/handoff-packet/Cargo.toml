@@ -1,0 +1,22 @@
+[package]
+name = "handoff-packet"
+version = "0.1.0"
+edition = "2024"
+publish = false
+description = "Native PreToolUse path of the mir-lifecycle-hooks handoff_packet hook (proof of concept)."
+license = "MIT"
+
+[[bin]]
+name = "handoff-packet"
+path = "src/main.rs"
+
+[dependencies]
+serde_json = "1"
+regex = "1"
+fancy-regex = "0.14"
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"

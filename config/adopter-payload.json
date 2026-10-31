@@ -521,7 +521,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "README.md",
-      "sha256": "2d8f8eecec1841b9438ec6f338533a1966a8e2841eae286e7f8f72bc6badfd2c"
+      "sha256": "de546c68683c9d790c964926506e743c6af12683225697f63fdd9d5a5b34effa"
     },
     {
       "classification": "reference",
@@ -563,7 +563,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "config/capability-sources.json",
-      "sha256": "162a51f12e52f9c205ea0842c4a5dbb86286589ac88c3b4f02effb6f52f899c4"
+      "sha256": "4e04870cb5f1af8fe40abbbfa14a98dbbde2d4712ec18007907fb183bb048666"
     },
     {
       "classification": "reference",
@@ -617,7 +617,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "config/repo-agent-management.json",
-      "sha256": "1191792d4e9824634ddca0f68edac9a578eec9fe4a0ebf2fd677b6b32ab48464"
+      "sha256": "0bb7b3f3b1b23fcce0e6dd921bec3e889c905468547983551f33d0eca1889464"
     },
     {
       "classification": "reference",
@@ -653,7 +653,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "config/template-assets.json",
-      "sha256": "3a0c4d0f46c51a9680aa92f14ac4ad79996c3d93032552ddbf90bbf5dd9b54f3"
+      "sha256": "a367bd681d807840bd4a39719f3d2db6939433373e150b296ca4a0d973e9f328"
     },
     {
       "classification": "template-maintainer-tool",
@@ -2765,7 +2765,73 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "llms.txt",
-      "sha256": "3285bcc3b5d13a8810f9d71223fa80c55468a7c4cf3f36086c373ffa53b115cb"
+      "sha256": "e8a02c78aab3291640dd9df68192769d65b6b5823ec05a109f7303d45b316782"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/Cargo.lock",
+      "sha256": "1e6d886eba80c55674d79be344f7994a8f69e744e129be802d8cb488f774a6f3"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/Cargo.toml",
+      "sha256": "83cc9240d45859b94609de7aa8f81fe38ff0a7ef274e35b882f6bf1863d2c4d6"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/README.md",
+      "sha256": "d703eb9c859a475c48ae0caf044d3b9b7753b47ca369a418bd49f86c631c4ace"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/benchmark.py",
+      "sha256": "3fa5310607b983305adf62ad5aacb48be4881a5ffc0e63c15ed4cda47547e872"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/rust-toolchain.toml",
+      "sha256": "007a7e2abbd4afe192a3ef190dfa54914800621e221196747cff9e172735dc00"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/src/lib.rs",
+      "sha256": "e787cec28b1b00d916f3b3455f4831452c1a481cfac8b283eadae1af2f374ec7"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/src/main.rs",
+      "sha256": "beb617c8fcd26d343e4fa7c796b2c6df9c8f2093a100ebaa67801836f4d61102"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/src/patterns.rs",
+      "sha256": "ada9dcd67c46eef562d8c1b620075f62c6f8078857d5a887d87907477a79954c"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/src/python_text.rs",
+      "sha256": "eb710ae4588f8701501b13eda7a920eb7fc5e5ba1a857a585453403d7a23409b"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/src/tests.rs",
+      "sha256": "6e384a83fe2a2664dba08f29adeb9ffc437648d4fc61fb5a2344871c4ff2e349"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/src/transcript.rs",
+      "sha256": "e4b62470abee91c5a6bd23c1ed97475466814d7b123fa86dc8074e676f011582"
     },
     {
       "classification": "optional-consumer-tool",
@@ -2820,6 +2886,36 @@
       "disposition": "remove",
       "path": "plugins/mir-code/skills/code-review/references/repository-audit-and-debt.md",
       "sha256": "657adeac5998c6b187a33f6bb02c63ba987ecd5edf27ceb4050d821295393179"
+    },
+    {
+      "classification": "optional-consumer-tool",
+      "disposition": "remove",
+      "path": "plugins/mir-code/skills/rust/SKILL.md",
+      "sha256": "cea475779df8973b3a42ad33eb4395e5ab41f81dd403eea39f33992d82664822"
+    },
+    {
+      "classification": "optional-consumer-tool",
+      "disposition": "remove",
+      "path": "plugins/mir-code/skills/rust/references/analysis.md",
+      "sha256": "e51384a60ecb8d002850f46ab2c10940d0bb5f6b0b5c68558bb020b247241c8d"
+    },
+    {
+      "classification": "optional-consumer-tool",
+      "disposition": "remove",
+      "path": "plugins/mir-code/skills/rust/references/coding.md",
+      "sha256": "26bc650bcd5965699a119854737270aca83ff0402e91864b894086ba7bf8fe0d"
+    },
+    {
+      "classification": "optional-consumer-tool",
+      "disposition": "remove",
+      "path": "plugins/mir-code/skills/rust/references/porting.md",
+      "sha256": "e68601dccdc528c7614a6f7ef9a9411d70f8a5f7430c27d9c2358a0407a8d720"
+    },
+    {
+      "classification": "optional-consumer-tool",
+      "disposition": "remove",
+      "path": "plugins/mir-code/skills/rust/references/structure.md",
+      "sha256": "ff11218849289b7cedef7858fd72aec6fda90db8ff075b8eeb013e37a7cedf8e"
     },
     {
       "classification": "optional-consumer-tool",
@@ -3665,7 +3761,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "scripts/verify_codex_sync.py",
-      "sha256": "a9ce8378d84f3c86bed636f4feee3d8f23303cc7999317d44fb45a24d8a42ba4"
+      "sha256": "4f33860a58b225dafd771ac204341deb801b21cce9c3de649ce909b0214254d1"
     },
     {
       "classification": "reference",
@@ -4457,7 +4553,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/change_log.md",
-      "sha256": "398a590e287af2578f5566337fd6318670d9f51a491ad5329c1375a0d7d2c7ad"
+      "sha256": "727c0c6fc9803b6daed356e7289d7fdc4925cefe0ef9b24fa12ee236c160baa5"
     },
     {
       "classification": "reference",
@@ -4499,7 +4595,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/plan.md",
-      "sha256": "dd7f1680e11b0b49b058f580791a4ce4990b96415321bc998c60fcfcd87835e1"
+      "sha256": "0082229c9da69599df7eaa4a780e2ad34638478842f922c22d66bea08dfd99fb"
     },
     {
       "classification": "reference",
@@ -4810,6 +4906,12 @@
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
+      "path": "tests/test_handoff_packet_native_parity.py",
+      "sha256": "c1198396c72d9fcb3f3db8ba283d8ec44e9e7609a5b3ef2e9666c2d7aed415d1"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
       "path": "tests/test_harness_consistency.py",
       "sha256": "0b353c33bd69bfa32dae8589d0ed416373bca4862d65adc161434c0bcf0f9140"
     },
@@ -4991,7 +5093,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_plugin_skill_packages.py",
-      "sha256": "965dbe0e3761303920f9067c7097f541a317d640d152b3fa801f5b6acfed8887"
+      "sha256": "acb85cba2f16a58ac7e75c4019054d704d25805f44c5018da4ef2cb9efabb39d"
     },
     {
       "classification": "template-maintainer-tool",

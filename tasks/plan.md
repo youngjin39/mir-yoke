@@ -1,33 +1,21 @@
 # Plan
 
-## Active task: release 0.13.54 (round t checker fixes) (2026-10-31)
+## Active task: Rust skill and native handoff proof of concept (2026-10-31)
 
-Intent authority: the owner's message relayed by Mir Harness Main (parent-supplied, Discord
-1565960047412908143, option 1 of the round t report: fix T-D01..T-D05). Round t found four
-checker false positives and one missed source-claim re-read. Design authority: this cursor.
-Baseline: 1efd8db on `main` (v0.13.53 attested on the maintainer host and the owner PC).
+Intent authority: the owner's messages relayed by Mir Harness Main (parent-supplied):
+add on-demand Rust guidance, port the PreToolUse path of the continuity handoff hook as a
+proof of concept, cut its start-up cost, then commit and bind; push, tag and release need
+separate approval. Design authority: this cursor. No version bump; `hooks.json` and the
+Python reference stay byte-identical; callers are not switched.
+Prior cursor (three slices, verbatim): [cursor before Rust PoC commit](change_log.md#cursor-before-rust-poc-commit-2026-10-31).
 
-Prior cursor preserved verbatim:
-[cursor before release 0.13.54](change_log.md#cursor-before-release-01354-2026-10-31).
+Request matrix: (1) `mir-code:rust` skill with coding, analysis, structure and porting
+references, registered; (2) `native/handoff-packet` with byte parity on shared fixtures and
+measured latency; (3) start-up optimization with boundary fixtures; (4) source and bind
+commits.
 
-Rules: owner-only reservations and evidential preconditions add no grant; a `pin`/`pins` heading
-is not a pin and a pin claim stays on one line; "not executed" shell/interpreter disclosures count
-as reader disclosures; a nested list item under a parent naming a file, with a sibling citing line
-numbers, counts as cited for the source-claim re-read.
-
-Request matrix: (1) fail-first tests and code (T-D01..T-D05); (2) docs and version surfaces;
-(3) Main full suite, fresh-clone readiness and the CI validate job (including Windows) before
-the tag; (4) release, maintainer-host and owner-PC re-attestation.
-
-Status (2026-10-31, Main):
-- (1) 5 new `test_round_t_*` cases (Codex; Main re-ran them: 5 failed on the 0.13.53 handler,
-  passed after). `tests/test_mechanical_handoff.py` 611 passed, 2 skipped. Replay of the four
-  retained round t drafts: the four false positives are gone and the T01 claim gets a re-read.
-- (2) README, CHANGELOG, MIGRATION, ADR-90 amendment, version surfaces, handler digest, payload.
-- (3) Full suite before the source commit: 3982 passed, 25 skipped, 5 failed (all commit-coupled).
-- (3) After the source commit 3ab62fd and the bind 732ecb3 the lock-coupled files pass (67
-  passed). Fresh-clone readiness at 732ecb3: 3986 passed, 26 skipped, `ready: true`, exit 0. CI
-  validate on 732ecb3 (including the Windows job) succeeded before the tag.
-- (4) Tag `v0.13.54` on 732ecb3 pushed. Maintainer host: provider update applied (lock restored
-  from 1efd8db), Codex hook trust 4/4, Claude 9b4a7773 and Codex 01a1908a attested (five
-  mir-mcp calls ok, four hooks), finalized, ready at 732ecb3. Owner PC: recorded by Harness.
+Status (2026-10-31, Main): (1)-(3) done. Main re-ran the four Cargo gates (9 unit tests),
+the parity module (121 passed; dropping the `codex` or `claude` prefilter literal fails 2 or
+1 fixtures) and 30-process latency (median ms, Python -> Rust: Read 37.1 -> 3.1, ordinary
+Bash 37.4 -> 3.2, handoff deny 38.2 -> 7.6, non-ASCII ordinary 36.1 -> 2.6, non-ASCII
+handoff deny 36.3 -> 32.2). Linux, Windows and signing remain unverified. (4) in progress.

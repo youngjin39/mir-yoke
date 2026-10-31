@@ -13,7 +13,7 @@
     "mir-code": {
       "path": "plugins/mir-code",
       "package_kind": "skills",
-      "skills": ["bluebricks", "code-review", "testing"]
+      "skills": ["bluebricks", "code-review", "rust", "testing"]
     },
     "mir-content": {
       "path": "plugins/mir-content",

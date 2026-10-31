@@ -284,6 +284,13 @@
         "status": "active",
         "source_path": "plugins/mir-code/skills/code-review/"
       },
+      "rust": {
+        "category": "bluebricks",
+        "absorbs": [],
+        "scope": "universal",
+        "status": "active",
+        "source_path": "plugins/mir-code/skills/rust/"
+      },
       "testing": {
         "category": "testing",
         "absorbs": [],

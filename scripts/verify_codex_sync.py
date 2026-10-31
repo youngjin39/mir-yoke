@@ -31,7 +31,7 @@ PLUGIN_SKILLS = {
         "spec-architect",
         "verify",
     },
-    "mir-code": {"bluebricks", "code-review", "testing"},
+    "mir-code": {"bluebricks", "code-review", "rust", "testing"},
     "mir-content": {"fluent-korean", "knowledge", "korean-writing", "no-ai-slop", "ui-design"},
     "mir-lifecycle-hooks": {"runtime-continuity"},
 }

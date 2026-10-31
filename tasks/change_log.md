@@ -1,3 +1,68 @@
+## Cursor before Rust PoC commit (2026-10-31)
+
+# Plan
+
+## Active optimization follow-up (2026-10-31)
+
+Intent/design authority: current owner request and this cursor. Profile cold pattern
+compilation before optimizing; preserve reference bytes and caller registration.
+Measure all four cold paths, add conservative boundary fixtures with deliberate
+mutation failures, update generic Rust porting guidance, and run the requested
+Cargo/Python gates. No generated Codex edits, commit, delivery or version change.
+
+Acceptance: all four Cargo gates passed (9 unit tests); requested five-file pytest
+selection passed 773 with 2 skipped. Ruff, Codex sync and asset classification
+passed. Twenty new boundary fixtures fail under deliberate wrong filters (union
+20/20), then pass after restoration. Profile, semantic arguments and 30-process
+before/after measurements are in native/handoff-packet/README.md. No dependency,
+lockfile, caller, protected reference or hook-registration change. Sandbox blocks
+tccd log inspection; no prompt-wait status can be asserted. Other platforms remain
+outside the PoC. Generated Codex files remain Main-owned.
+
+## Active follow-up: native handoff packet proof of concept (2026-10-31)
+
+Intent authority: current owner request; this cursor owns design. Port only the
+PreToolUse path to native/handoff-packet; forward other events unchanged to the
+first-argument Python reference. Keep reference and hook registration byte-identical.
+Preserve existing skill work below; no commit, version bump or generated Codex edits.
+Request matrix: Rust unit fail-first; differential fixture fail-first; native port;
+classification/payload; four Cargo gates; selected pytest and Ruff; 30-process latency.
+Malformed/unknown events forward when a reference is supplied. Without a reference,
+recognized PreToolUse fails silently; other events emit the reference unavailable
+warning without owner context. Use one crate, testable library, thin process boundary,
+and only the pre-fetched dependencies. No caller switch or plugin payload addition.
+Implementation and test fixtures are prepared. Initial Rust tests: 8 failures;
+initial differential module: 50 failures / 34 passes. Additional oversized,
+CRLF and surrogate fixtures exposed differences before their fixes. Preserve actual
+reference behavior: malformed/non-object/oversized inputs cannot determine the event,
+so forward them and retain its warning; the reference limit counts characters.
+Native regex compatibility data pins Python 3.14 / Unicode 16.0. Local acceptance
+commands and 30-process latency are reported by this task; other platforms and
+signing remain outside this proof of concept. See native/handoff-packet/README.md.
+
+
+## Retained prior task: on-demand Rust skill (2026-10-31)
+
+Intent authority: current owner request. Design authority: this cursor.
+Add generic English Rust guidance to mir-code, with coding, analysis, structure and
+porting references. Register explicit inventories and discovery links; existing directory
+rules cover classification and harness discovery. No version bump, commit or delivery.
+Generated .codex files remain Main-owned under the explicit sandbox instruction.
+Prior cursor: change_log.md#cursor-before-rust-skill-2026-10-31.
+
+Request matrix: content and links; provider registration and payload; generated parity;
+affected package/capability/adopter/template/Codex checks. Run the smallest applicable tests.
+
+Verification: package/capability/adopter/template/Codex selection: 135 passed,
+1 failed (test_repository_lock_is_portable_and_matches_managed_trees: existing
+revision-bound lock digest differs after adding the skill). Further capability
+security/MCP/finalfill tests: 372 passed. After catalog registration, package,
+template and Codex checks: 56 passed. Ruff and Codex sync verification passed.
+The latter regenerates into an isolated output root and compares bytes; no tracked
+Codex derivative changed. Directory rules in template-assets and harness-consistency
+already include the Rust skill. Main retains ownership of revision-bound lock
+refresh and generated .codex writes. No commit or version change was made.
+
 ## Cursor before release 0.13.54 (2026-10-31)
 
 ## Active task: release 0.13.53 (repair guard and round s checker fixes) (2026-10-31)
@@ -14237,3 +14302,50 @@ checks (#33, #40, #42, #43). Main re-ran in the host environment:
 
 Slice 1 is committed on `feat/mir-mcp`, not pushed. Next is slice 2: schema 5,
 validator and manager admission, then the release bind that clears the lock failure.
+
+## Cursor before Rust skill (2026-10-31)
+
+# Plan
+
+## Active task: release 0.13.54 (round t checker fixes) (2026-10-31)
+
+Intent authority: the owner's message relayed by Mir Harness Main (parent-supplied, Discord
+1565960047412908143, option 1 of the round t report: fix T-D01..T-D05). Round t found four
+checker false positives and one missed source-claim re-read. Design authority: this cursor.
+Baseline: 1efd8db on `main` (v0.13.53 attested on the maintainer host and the owner PC).
+
+Prior cursor preserved verbatim:
+[cursor before release 0.13.54](change_log.md#cursor-before-release-01354-2026-10-31).
+
+Rules: owner-only reservations and evidential preconditions add no grant; a `pin`/`pins` heading
+is not a pin and a pin claim stays on one line; "not executed" shell/interpreter disclosures count
+as reader disclosures; a nested list item under a parent naming a file, with a sibling citing line
+numbers, counts as cited for the source-claim re-read.
+
+Request matrix: (1) fail-first tests and code (T-D01..T-D05); (2) docs and version surfaces;
+(3) Main full suite, fresh-clone readiness and the CI validate job (including Windows) before
+the tag; (4) release, maintainer-host and owner-PC re-attestation.
+
+Status (2026-10-31, Main):
+- (1) 5 new `test_round_t_*` cases (Codex; Main re-ran them: 5 failed on the 0.13.53 handler,
+  passed after). `tests/test_mechanical_handoff.py` 611 passed, 2 skipped. Replay of the four
+  retained round t drafts: the four false positives are gone and the T01 claim gets a re-read.
+- (2) README, CHANGELOG, MIGRATION, ADR-90 amendment, version surfaces, handler digest, payload.
+- (3) Full suite before the source commit: 3982 passed, 25 skipped, 5 failed (all commit-coupled).
+- (3) After the source commit 3ab62fd and the bind 732ecb3 the lock-coupled files pass (67
+  passed). Fresh-clone readiness at 732ecb3: 3986 passed, 26 skipped, `ready: true`, exit 0. CI
+  validate on 732ecb3 (including the Windows job) succeeded before the tag.
+- (4) Tag `v0.13.54` on 732ecb3 pushed. Maintainer host: provider update applied (lock restored
+  from 1efd8db), Codex hook trust 4/4, Claude 9b4a7773 and Codex 01a1908a attested (five
+  mir-mcp calls ok, four hooks), finalized, ready at 732ecb3. Owner PC: recorded by Harness.
+# Native handoff cold-start optimization (2026-10-31)
+
+Current owner request authorized profiling and optimizing the existing native PoC.
+The active cursor is tasks/plan.md; experiment evidence and equivalence arguments
+are in native/handoff-packet/README.md. Compilation dominated the measured slow
+paths. ASCII word-class specialization and necessary-literal recognition filters
+retain byte parity; no caller switch, version change or delivery occurred.
+Acceptance: 9 Rust tests; selected pytest 773 passed / 2 skipped; Cargo fmt,
+Clippy, release build, Ruff, Codex sync and asset classification passed. All twenty
+added boundary fixtures rejected at least one deliberately wrong filter before
+restoring production code. No new inventory entry or Cargo dependency was added.

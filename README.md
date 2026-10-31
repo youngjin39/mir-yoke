@@ -320,3 +320,6 @@ Ordinary memory/body retrieval is unchanged; fewer relation calls do not guarant
 
 SRR 0.10.4 requires a delivery-selected provider and explicit target root for portable examples.
 It does not upgrade repository-local consoles, install providers, or change memory ownership.
+
+`mir-code:rust` provides on-demand Rust coding, analysis, crate configuration and
+parity-guided porting guidance. See [the Rust skill](plugins/mir-code/skills/rust/SKILL.md).

@@ -34,7 +34,7 @@ def test_common_skills_have_one_namespaced_provider() -> None:
             assert skill not in providers
             providers[skill] = plugin_name
 
-    assert len(providers) == 23
+    assert len(providers) == 24
     assert not (ROOT / ".claude" / "skills").exists()
     assert not (ROOT / ".agents" / "skills").exists()
 
