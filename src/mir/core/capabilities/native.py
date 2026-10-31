@@ -138,7 +138,7 @@ def _read(url, size):
 
 
 def place_artifacts(root: Path, plugin: str, records: dict, *, target=None) -> None:
-    if os.environ.get("MIR_CAPABILITY_NATIVE_ARTIFACTS") != "1":
+    if os.environ.get("MIR_CAPABILITY_NATIVE_ARTIFACTS") == "0":
         return
     target = target or host_target()
     if target is None:

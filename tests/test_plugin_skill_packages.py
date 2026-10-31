@@ -45,7 +45,7 @@ def test_dual_runtime_manifests_share_one_skill_tree() -> None:
         claude = _json(plugin_root / ".claude-plugin" / "plugin.json")
         codex = _json(plugin_root / ".codex-plugin" / "plugin.json")
         assert claude["name"] == codex["name"] == plugin_name
-        assert claude["version"] == codex["version"] == "0.13.54"
+        assert claude["version"] == codex["version"] == "0.13.55"
         assert codex["skills"] == "./skills/"
         assert isinstance(codex["interface"]["defaultPrompt"], list)
         assert 1 <= len(codex["interface"]["defaultPrompt"]) <= 3
@@ -75,66 +75,29 @@ def test_lifecycle_hook_plugin_uses_one_exact_shared_hook_file() -> None:
     assert "hooks" not in claude
     assert "hooks" not in codex
     assert codex["skills"] == "./skills/"
-    assert hooks == {
-        "hooks": {
-            "SessionStart": [
-                {
-                    "hooks": [
-                        {
-                            "type": "command",
-                            "command": (
-                                'python3 "${CLAUDE_PLUGIN_ROOT}/hooks/'
-                                "runtime_continuity.py\""
-                            ),
-                            "timeout": 2,
-                        }
-                    ]
-                }
-            ],
-            "UserPromptSubmit": [
-                {
-                    "hooks": [
-                        {
-                            "type": "command",
-                            "command": (
-                                'python3 "${CLAUDE_PLUGIN_ROOT}/skills/runtime-continuity/'
-                                'scripts/handoff_packet.py"'
-                            ),
-                            "timeout": 8,
-                        }
-                    ]
-                }
-            ],
-            "PreToolUse": [
-                {
-                    "hooks": [
-                        {
-                            "type": "command",
-                            "command": (
-                                'python3 "${CLAUDE_PLUGIN_ROOT}/skills/runtime-continuity/'
-                                'scripts/handoff_packet.py"'
-                            ),
-                            "timeout": 8,
-                        }
-                    ]
-                }
-            ],
-            "Stop": [
-                {
-                    "hooks": [
-                        {
-                            "type": "command",
-                            "command": (
-                                'python3 "${CLAUDE_PLUGIN_ROOT}/skills/runtime-continuity/'
-                                'scripts/handoff_packet.py"'
-                            ),
-                            "timeout": 8,
-                        }
-                    ]
-                }
-            ],
-        }
-    }
+    assert set(hooks["hooks"]) == {"SessionStart", "UserPromptSubmit", "PreToolUse", "Stop"}
+    for event, groups in hooks["hooks"].items():
+        assert len(groups) == 1 and len(groups[0]["hooks"]) == 1
+        hook = groups[0]["hooks"][0]
+        assert hook["type"] == "command"
+        assert hook["timeout"] == (2 if event == "SessionStart" else 8)
+        name = "runtime-continuity" if event == "SessionStart" else "handoff-packet"
+        reference = ("hooks/runtime_continuity.py" if event == "SessionStart" else
+                     "skills/runtime-continuity/scripts/handoff_packet.py")
+        base = "${CLAUDE_PLUGIN_ROOT}/bin/" + name
+        assert hook["command"] == (
+            f'if [ -x "{base}" ]; then exec "{base}"; '
+            f'elif [ -x "{base}.exe" ]; then exec "{base}.exe"; '
+            f'else exec python3 "${{CLAUDE_PLUGIN_ROOT}}/{reference}"; fi'
+        )
+        windows_base = "%CLAUDE_PLUGIN_ROOT%\\bin\\" + name + ".exe"
+        windows_reference = "%CLAUDE_PLUGIN_ROOT%\\" + reference.replace("/", "\\")
+        assert hook["commandWindows"] == (
+            f'if exist "{windows_base}" ("{windows_base}") '
+            f'else (python3 "{windows_reference}")'
+        )
+    from mir.core.capabilities.manager import _HOOKS_SCHEMA
+    assert hooks == _HOOKS_SCHEMA
     handler = plugin_root / "hooks" / "runtime_continuity.py"
     assert handler.stat().st_mode & 0o111 == 0
     assert len(handler.read_bytes()) <= 1024
@@ -320,7 +283,7 @@ def test_should_reject_non_user_claude_install_scope(tmp_path, monkeypatch, caps
 
 def test_manifest_versions_match_repository_release() -> None:
     version = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
-    assert version == "0.13.54"
+    assert version == "0.13.55"
     for plugin_name in PLUGIN_SKILLS:
         plugin_root = ROOT / "plugins" / plugin_name
         assert _json(plugin_root / ".claude-plugin" / "plugin.json")["version"] == version

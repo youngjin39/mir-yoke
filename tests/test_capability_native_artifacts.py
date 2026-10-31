@@ -71,12 +71,28 @@ def test_placement(tmp_path, monkeypatch, uri, target):
             pass
 
 
-def test_default_off(tmp_path, monkeypatch):
-    monkeypatch.delenv("MIR_CAPABILITY_NATIVE_ARTIFACTS", raising=False)
-    records = manifest(str(tmp_path / "absent"))
-    (tmp_path / "reference").write_bytes(b"python")
-    api().place_artifacts(tmp_path, "mir-lifecycle-hooks", records, target="aarch64-apple-darwin")
-    assert list(tmp_path.iterdir()) == [tmp_path / "reference"]
+@pytest.mark.parametrize("setting", [None, "0"])
+def test_default_placement_and_explicit_opt_out(tmp_path, monkeypatch, setting):
+    if setting is None:
+        monkeypatch.delenv("MIR_CAPABILITY_NATIVE_ARTIFACTS", raising=False)
+    else:
+        monkeypatch.setenv("MIR_CAPABILITY_NATIVE_ARTIFACTS", setting)
+    source = tmp_path / "source"
+    source.write_bytes(DATA)
+    records = manifest(str(source))
+    root = tmp_path / "plugin"
+    root.mkdir()
+    (root / "reference").write_bytes(b"python")
+    if setting == "0":
+        def unexpected_read(*args):
+            pytest.fail("opt-out must skip native artifact downloads")
+        monkeypatch.setattr(api(), "_read", unexpected_read)
+    api().place_artifacts(root, "mir-lifecycle-hooks", records, target="aarch64-apple-darwin")
+    binary = root / "bin/handoff-packet"
+    assert binary.exists() == (setting is None)
+    if setting is None:
+        assert binary.read_bytes() == DATA
+    assert (root / "reference").read_bytes() == b"python"
 
 
 @pytest.mark.parametrize("failure", ["digest", "size", "target", "source", "url"])
@@ -99,7 +115,7 @@ def test_failure_falls_back(tmp_path, monkeypatch, capsys, failure):
     root = tmp_path / "plugin"
     root.mkdir()
     (root / "reference").write_bytes(b"python")
-    monkeypatch.setenv("MIR_CAPABILITY_NATIVE_ARTIFACTS", "1")
+    monkeypatch.delenv("MIR_CAPABILITY_NATIVE_ARTIFACTS", raising=False)
     api().place_artifacts(root, "mir-lifecycle-hooks", records, target="aarch64-apple-darwin")
     assert list(root.iterdir()) == [root / "reference"]
     assert capsys.readouterr().err.count("Warning: native artifact") == 1
@@ -155,14 +171,19 @@ def test_tree_integrity(tmp_path, monkeypatch):
         assert _tree_digest(view) != expected
 
 
-@pytest.mark.parametrize("enabled", [False, True])
-def test_manager_materializes_and_verifies_artifacts(tmp_path, monkeypatch, enabled):
+@pytest.mark.parametrize("setting", [None, "0", "1"])
+@pytest.mark.parametrize("target", ["aarch64-apple-darwin", "x86_64-pc-windows-msvc"])
+def test_manager_materializes_and_verifies_artifacts(tmp_path, monkeypatch, setting, target):
     from test_capability_cli import CopyGit, make_project, runtime_runner
 
     from mir.core.capabilities import CapabilityManager
 
-    monkeypatch.setattr(api(), "host_target", lambda: "aarch64-apple-darwin")
-    monkeypatch.setenv("MIR_CAPABILITY_NATIVE_ARTIFACTS", "1" if enabled else "0")
+    monkeypatch.setattr(api(), "host_target", lambda: target)
+    enabled = setting != "0"
+    if setting is None:
+        monkeypatch.delenv("MIR_CAPABILITY_NATIVE_ARTIFACTS", raising=False)
+    else:
+        monkeypatch.setenv("MIR_CAPABILITY_NATIVE_ARTIFACTS", setting)
     project = make_project(tmp_path)
     home, codex = tmp_path / "provider", tmp_path / "codex"
     manager = CapabilityManager(
@@ -183,13 +204,33 @@ def test_manager_materializes_and_verifies_artifacts(tmp_path, monkeypatch, enab
     source = tmp_path / "artifact"
     source.write_bytes(DATA)
     lock = json.loads(manager.lock_path.read_text())
-    lock["native_artifacts"] = manifest(str(source))
+    records = manifest(str(source))
+    records["handoff-packet"]["targets"][target] = records["handoff-packet"]["targets"].pop(
+        "aarch64-apple-darwin"
+    )
+    continuity_source = tmp_path / "continuity-artifact"
+    continuity_data = DATA + b"-continuity"
+    continuity_source.write_bytes(continuity_data)
+    records["runtime-continuity"] = {
+        "plugin": "mir-lifecycle-hooks", "install_path": "bin/runtime-continuity",
+        "targets": {target: {
+            "url": str(continuity_source),
+            "sha256": hashlib.sha256(continuity_data).hexdigest(), "size": len(continuity_data),
+        }},
+    }
+    lock["native_artifacts"] = records
     manager.lock_path.write_text(json.dumps(lock))
     manager.update(apply=True)
     lock = json.loads(manager.lock_path.read_text())
-    assert lock["native_artifacts"] == manifest(str(source))
-    binary = manager.active_path / "plugins/mir-lifecycle-hooks/bin/handoff-packet"
+    assert lock["native_artifacts"] == records
+    suffix = ".exe" if "windows" in target else ""
+    binary = manager.active_path / f"plugins/mir-lifecycle-hooks/bin/handoff-packet{suffix}"
     assert binary.exists() == enabled
+    continuity = binary.with_name("runtime-continuity" + suffix)
+    assert continuity.exists() == enabled
+    if enabled:
+        assert binary.read_bytes() == DATA
+        assert continuity.read_bytes() == continuity_data
     if not enabled:
         assert not binary.parent.exists()
         assert before == {

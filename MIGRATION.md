@@ -1,5 +1,64 @@
 # Migration Guide
 
+## 0.13.55 native lifecycle hooks by default
+
+`mir capability update --apply` now places native binaries declared in the capability
+lock by default. Set `MIR_CAPABILITY_NATIVE_ARTIFACTS=0` for Python-only placement.
+Failed placement retains the existing warning and Python reference fallback.
+Existing installations need an explicit update; direct plugin installations without
+placed binaries continue using Python. The release lock is bound separately after
+the source commit.
+
+## Codex on Windows lifecycle hooks
+
+Codex on Windows now runs each lifecycle hook through its cmd.exe-compatible
+`commandWindows` handler (Codex 0.166). Previously the POSIX command failed before
+the hook could run. Each handler selects the matching `bin/*.exe` when present,
+otherwise `python3` runs the reference. Paths with spaces and deny exit status
+are preserved. Claude Code continues using the unchanged POSIX command.
+
+## Native lifecycle hook selection
+
+The shared lifecycle commands select executable `bin/handoff-packet` for
+UserPromptSubmit, PreToolUse and Stop, or `bin/runtime-continuity` for SessionStart.
+Each also accepts `.exe`. If neither executable is available, the command executes
+the existing Python reference. The selected process owns stdout, stderr and exit
+status; a native deny never invokes Python afterward. Timeouts remain 8 and 2 seconds.
+Plugins installed without the capability manager keep the Python fallback.
+
+The manual `native-artifacts` workflow defaults to upload-only. A later authorized
+dispatch with `publish=true` creates or updates prerelease `native-<12-char source
+SHA>` and its tag, uploading both binary names for five targets plus five SHA256
+files. Publication uses the exact built artifacts, including Windows bytes; a
+local Windows rebuild must never supply a published digest. Reruns may replace
+assets, so regenerate and review pins after an authorized publication.
+
+To prepare an explicit lock from a published prerelease, run the maintainer tool:
+
+```sh
+uv run python -m tools.native_release --repo OWNER/REPO --tag native-0123456789ab \
+  --lock path/to/capability-lock.json
+```
+
+Its GitHub operations only read release metadata and download assets. For offline
+review, put the GitHub release API JSON in `assets/release.json` alongside all 15
+assets and use `--directory assets --lock path/to/capability-lock.json` instead.
+The tool requires a prerelease tag matching the lock source commit prefix,
+validates the complete five-target inventory, declared sizes and both binaries'
+SHA256 checksums, then writes only `native_artifacts` in that explicit lock.
+Every pin has an HTTPS release URL and portable validation runs before writing.
+The declarations install to `bin/handoff-packet` and `bin/runtime-continuity`;
+the materializer appends `.exe` on Windows. Reviewed pins are installed only by
+an explicit `mir capability update --apply` by default. Set
+`MIR_CAPABILITY_NATIVE_ARTIFACTS=0` to disable placement. After a failed download,
+Python remains available.
+
+This slice performs no publication, tag creation or real lock update. Those remain
+owner-authorized delivery work. POSIX shells are verified locally; Windows Codex's
+plugin hook process execution remains pending Windows CI. The owner-reported Claude Git Bash setup is
+parent-supplied context. ADR-79 and `docs/operations/windows-wsl-reference-adaptation.md`
+retain the native Windows reference-adaptation boundary.
+
 ## 0.13.13 handoff authority and final inventory
 
 Handoff authors must copy the current request's owner-granted actions by verb.
@@ -628,10 +687,10 @@ selected packages' tree digests for this release in the host-local approval file
   `mir capability update --apply`.
 # Optional native capability artifacts
 
-Set `MIR_CAPABILITY_NATIVE_ARTIFACTS=1` when running `mir capability update --apply`
-to opt into native placement. The switch defaults to off and follows the existing
-capability environment override mechanism (`MIR_CAPABILITY_HOME`). The shipped hook
-and Python reference remain unchanged.
+Native placement is enabled by default when running `mir capability update --apply`.
+Set `MIR_CAPABILITY_NATIVE_ARTIFACTS=0` to disable it. The switch follows the existing
+capability environment override mechanism (`MIR_CAPABILITY_HOME`). Lifecycle commands
+select a placed binary or the Python reference.
 
 An optional top-level lock section pins artifacts, for example:
 

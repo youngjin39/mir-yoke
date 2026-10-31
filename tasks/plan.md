@@ -1,54 +1,31 @@
 # Plan
 
-## Active task: native Stop parity (2026-10-31)
+## Active task: Mir Yoke 0.13.55 release preparation (2026-10-31)
 
-Intent authority: current owner request; this cursor owns the bounded design.
-Extend only the native crate, parity tests, benchmark/README and records. Preserve
-plugins, real lock, generated Codex artifacts and all unrelated changes. No commit,
-version change or caller switch.
+Intent authority: owner Slice H3 request, preserving uncommitted H/H2 work.
+This is the single release cursor; superseded slice cursors are preserved verbatim
+in tasks/change_log.md. No commit, tag, dispatch, capability-lock or .codex edits.
 
-Design: native Stop composes packet/authority/pin checks with transcript/tool
-accounting; reuse digest and bounded runner. Remove event forwarding after native
-coverage, retaining MIR_HANDOFF_PYTHON only for the repository pin runner. Exceptions
-keep the reference warning contract. Differential fixtures are the behavior oracle.
-
-Request matrix:
-1. Entire Stop checker and exception/retry contract byte parity.
-2. Every mechanical Stop fixture plus escaped Korean, repair and fake-runner pins.
-3. Fail-first and checker-family mutation evidence.
-4. Thirty-sample Stop no-packet/valid/defective median and p90.
-5. Cargo and requested Python gates; README/records; payload regeneration LAST edit.
-
-Status: native Stop implementation complete; all 15 checker-family mutants caught
-and restored. Initial no-forwarding red: 4 failed / 2 passed; ordered-exception
-warning red: 1 failed; control-only final-message red reproduced and four cases fixed. Cargo fmt/clippy/test/build pass (24 unit tests), Ruff passes.
-Thirty-sample latency recorded in README and change_log. Payload generation is the
-LAST edit, followed by the requested full read-only Python gate; final counts and
-any open cells belong in the delivery report. No intentional behavior difference
-or unported event remains. Local execution covers macOS only; Linux/Windows still
-need CI. Previous-slice evidence below is historical.
-
-## Previous slice: native supply and SessionStart (2026-10-31)
-
-Intent authority: current owner request; this cursor owns the bounded design.
-Preserve plugins, unrelated capability work, real lock and generated Codex files.
-No commit, version or caller changes. Stop remains Python-forwarded.
-
-Design: reuse native detection/owner restrictions, add supply context and bounded
-runner lifecycle; add a separate runtime-continuity binary with Python text bytes.
+Design: native placement uses lock-pinned binaries by default; only the exact
+MIR_CAPABILITY_NATIVE_ARTIFACTS=0 override disables it. Preserve existing warning
+and Python fallback on placement failures. Bump current release surfaces to
+0.13.55, retain historical release records, and describe native lifecycle and
+Windows command selection. Regenerate adopter payload as the final edit.
 
 Request matrix:
-1. Native UserPromptSubmit, exception owner context and runner lifecycle.
-2. SessionStart byte parity including Windows text line endings.
-3. Differential fixtures, fail-first evidence and deliberate mutations.
-4. Thirty-sample latency for ordinary/forbidden submit and SessionStart.
-5. README scope and requested Cargo/Python gates; adopter payload LAST edit.
+1. Fail-first default placement and explicit opt-out; existing fallback checks.
+2. Version pins, release metadata, changelog, migration and current help text.
+3. Single cursor and verbatim superseded cursor archive.
+4. Requested pytest modules, public-language check, Ruff and Codex sync.
+5. Final adopter payload regeneration followed only by read-only checks.
 
-Status (2026-10-31): native implementation and 23 deliberate mutation checks
-complete. Initial red: 18 failed / 1 existing pass; initial green: 19 passed.
-DEL boundary red reproduced and fixed. Cargo four gates pass (10 unit tests);
-Ruff passes. Thirty-sample latency measured and recorded in README/change_log.
-Final inventory generation is the LAST edit, followed by the full requested
-read-only Python gate. Final gate counts and any open cells belong in the delivery
-report. Supported-platform execution remains local macOS only; Linux/Windows
-and Windows cleanup require CI. No caller switch, commits or plugin changes.
+Expected open delivery: Main binds the real lock after the source commit;
+unbound tree-digest and committed-HEAD checks cannot pass before that step.
+Windows process execution remains a CI requirement, not local macOS evidence.
+
+Status before final payload regeneration: rows 1-3 verified. Requested gate:
+315 passed, 16 Windows-only skipped, 1 expected unbound tree-digest failure.
+Committed-HEAD compatibility: 5 passed, 4 prior-schema failures pending source
+commit. Native publication fixtures: 39 passed. Ruff and Codex sync passed.
+Final payload edit and read-only checks follow. Commands and red/green evidence
+are in tasks/change_log.md. Main's source commit and lock bind remain open.

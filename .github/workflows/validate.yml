@@ -37,6 +37,7 @@ jobs:
       - run: >-
           uv run --python 3.14 pytest -q -p no:cacheprovider
           tests/test_handoff_packet_native_parity.py
+          tests/test_lifecycle_native_commands.py
           tests/test_line_endings.py
 
   supported_contracts:
@@ -54,6 +55,7 @@ jobs:
           tests/test_public_template_identity.py
           tests/test_decision_authority.py
           tests/test_template_asset_classification.py
+          tests/test_native_release.py
           tests/test_plugin_skill_packages.py
           tests/test_common_skill_contracts.py
       - run: uv run python scripts/verify_codex_sync.py
@@ -90,6 +92,7 @@ jobs:
           tests/test_loop_cli.py
           tests/test_loop_driver.py
           tests/test_capability_cli.py
+          tests/test_capability_native_artifacts.py
           tests/test_capability_security.py
           tests/test_run_python_cli.py
           tests/test_runtime_manifest.py
@@ -180,7 +183,7 @@ jobs:
         working-directory: native/handoff-packet
         env:
           CARGO_TARGET_DIR: ${{ github.workspace }}/native/handoff-packet/target
-      - run: uv run --python 3.14 pytest -q -p no:cacheprovider tests/test_handoff_packet_native_parity.py
+      - run: uv run --python 3.14 pytest -q -p no:cacheprovider tests/test_handoff_packet_native_parity.py tests/test_lifecycle_native_commands.py
         env:
           PYTHONUTF8: '1'
           CARGO_TARGET_DIR: ${{ github.workspace }}/native/handoff-packet/target

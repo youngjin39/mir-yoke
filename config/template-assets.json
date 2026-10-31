@@ -235,6 +235,7 @@
         "tools/plan_archive/**",
         "tools/run_orchestrator/**",
         "tools/template_assets.py",
+        "tools/native_release.py",
         "tools/executor_sync.py"
       ],
       "reason": "Retained non-package scripts and tooling used as inspectable prior art without consumer compatibility."
@@ -266,6 +267,7 @@
         "native/**",
         "tools/harness_consistency/**",
         "tools/template_assets.py",
+        "tools/native_release.py",
         "tools/executor_sync.py",
         "uv.lock"
       ],

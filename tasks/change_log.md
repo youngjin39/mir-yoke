@@ -1,3 +1,314 @@
+## Slice H3: Mir Yoke 0.13.55 release preparation (2026-10-31)
+
+Intent authority: owner H3 request; current cursor is tasks/plan.md. Preserved H/H2.
+Native placement defaults on; exact MIR_CAPABILITY_NATIVE_ARTIFACTS=0 skips downloads.
+Existing warnings and Python fallback remain covered. Release surfaces use 0.13.55;
+historical versions remain historical. The manager has no release-version literal;
+its H/H2 exact hook schema changes are preserved. No lock or generated Codex edits.
+
+Evidence (local macOS, 2026-10-31). Every uv command uses the owner-specified cache.
+Native checks set MIR_HANDOFF_CARGO_OFFLINE=1 and both Cargo directories under
+native/handoff-packet/target. Scratch basetemp flags are normalized below to avoid
+publishing host paths.
+
+- Red: uv run --no-sync pytest -q tests/test_capability_native_artifacts.py
+  -k 'default_placement_and_explicit_opt_out or manager_materializes_and_verifies_artifacts'
+  --tb=short: 3 failed, 5 passed, 29 deselected. Default direct/manager placement
+  failed; explicit zero/one controls passed before implementation.
+- Opt-out mutation: native.py loaded in memory with the zero guard replaced by
+  False, then pytest.main selecting default_placement_and_explicit_opt_out and 0:
+  1 failed, 36 deselected, detecting a forbidden download. No source file mutated.
+  Original rerun: uv run --no-sync pytest -q tests/test_capability_native_artifacts.py
+  -k default_placement_and_explicit_opt_out --basetemp=<scratch>/opt-out-green
+  --tb=short: 2 passed, 35 deselected.
+- uv run --no-sync pytest -q tests/test_capability_native_artifacts.py
+  --basetemp=<scratch>/native --tb=short: 37 passed.
+- Requested gate: uv run --no-sync pytest -q tests/test_release_metadata.py
+  tests/test_capability_security.py tests/test_capability_native_artifacts.py
+  tests/test_capability_cli.py tests/test_lifecycle_native_commands.py
+  tests/test_plugin_skill_packages.py tests/test_public_template_surface.py
+  tests/test_no_korean_in_user_facing.py --basetemp=<scratch>/requested-offline
+  --tb=short: 315 passed, 16 Windows-only skipped, 1 failed in 92.92 seconds.
+  Only failure: test_repository_lock_is_portable_and_matches_managed_trees at
+  tests/test_capability_cli.py:447, due to the intentionally unbound tree digest.
+  Earlier attempt explicitly interrupted after 107 passes to correct the Cargo
+  environment before native fixtures; it is not completion evidence.
+- uv run --no-sync pytest -q tests/test_lifecycle_native_commands.py
+  --basetemp=<scratch>/offline-hooks --tb=short: 32 passed, 16 Windows-only skipped.
+- uv run --no-sync pytest -q tests/test_native_release.py
+  --basetemp=<scratch>/publication --tb=short: 39 passed.
+- uv run --no-sync pytest -q tests/test_capability_legacy_080.py
+  --basetemp=<scratch>/committed-head --tb=short: 5 passed, 4 failed.
+  Four test_update_real_080 variants read git archive HEAD and reject its previous
+  hook schema. git show HEAD:plugins/mir-lifecycle-hooks/hooks/hooks.json confirmed
+  that every HEAD event lacks commandWindows and has the old command. These
+  failures await the source commit, independently of the real lock tree digest.
+- Pre-regeneration: uv run --no-sync pytest -q tests/test_template_asset_classification.py
+  tests/test_release_readiness.py --basetemp=<scratch>/payload-pre --tb=short:
+  7 passed, 1 expected stale-payload failure.
+- uv run --no-sync ruff check: passed.
+- uv run --no-sync python scripts/verify_codex_sync.py: passed without generated edits.
+- git diff --check: passed. Ontology map SHA256 matches the supplied pin.
+
+Final edit: uv run --no-sync python -m tools.template_assets --write-adopter-payload.
+Only read-only checks follow; final counts belong in the delivery response.
+Main owns the source commit, real lock binding and publication. Windows process
+execution remains pending CI. No commit, tag, dispatch or external publication.
+
+## Superseded H/H2 release cursors (2026-10-31)
+
+## Active slice H2 (2026-10-31)
+
+Intent authority: owner H2 request, building on preserved Slice H. Add exact cmd.exe
+commandWindows selectors and strict schema parity; preserve POSIX commands. Test
+all four events, absent/present binaries, allow/deny via Codex outer quoting on
+Windows CI. Local assertions must fail first. Record evidence and regenerate
+adopter payload as the last edit. No commit, dispatch, lock or .codex edits.
+
+
+H2 status: local contract and process checks 100 passed, 16 Windows-only skipped;
+Ruff, Codex parity and Windows lane placement checks passed. Windows execution
+remains pending CI. Payload regeneration is the last edit; final read-only
+verification counts are reported in the delivery response.
+
+## Active task: Slice H native lifecycle live-switch preparation (2026-10-31)
+
+Intent authority: current owner Slice H request; this cursor owns the bounded design.
+Implement opt-in prerelease publication, a verified asset-to-lock maintainer tool,
+and native-first lifecycle commands with Python fallback. No real lock edits,
+commits, tags, releases, workflow dispatch, GitHub writes or generated Codex edits.
+
+Design: publish both binaries for five targets from one source SHA; use published
+asset bytes and declared sizes, never rebuilt Windows digests. The tool reads a
+release.json plus downloaded assets, or fetches them through read-only gh commands,
+and validates all bytes before writing only native_artifacts in an explicit lock.
+Hooks use POSIX executable selection (including .exe) and exec, preserving deny
+exit status. Existing materializer consumes both declared bin paths.
+
+Request matrix:
+1. Opt-in prerelease workflow, default upload-only, both binaries and checksums.
+2. Fixture-tested publication tool: HTTPS pins, SHA256, sizes, portable validation.
+3. Real hooks.json process tests: absent/present/non-executable/.exe, allow/deny.
+4. Fixture manager update places both binaries; strict tree integrity passes.
+5. Fail-first; Cargo fmt/clippy/test/build; affected pytest; Ruff; YAML safe_load.
+6. Migration and records; adopter payload regenerated as the LAST edit.
+
+Open delivery evidence: Windows Codex plugin hook shell, real prerelease, real
+native lock entries and tag. ADR-79 platform scope remains unchanged; inspected
+Windows adaptation guide requires target-owned shell evidence. Local POSIX tests
+cannot establish live Windows delivery. No external publication is authorized.
+
+Status: preparation implemented; 5/6 matrix rows verified. Row 5 remains open
+only for the real-lock tree-digest check: the owner prohibited updating that lock.
+Extended pytest: 1325 passed, 2 skipped, 1 failed (that check only). Cargo
+fmt/clippy/test/build passed (25 unit tests), Ruff and both workflow YAML parsers
+passed. Focused publication/materializer selection: 73 passed before the last
+fixture strengthening. Final read-only counts belong in the delivery report.
+The final operation is adopter payload regeneration followed by read-only checks.
+No publication, real native lock entries or tag was created. Generated Codex
+parity passed without edits. Windows target placement is fixture evidence, not
+Windows shell execution. Exact commands and red/green evidence: tasks/change_log.md.
+
+## Slice H2: Codex Windows lifecycle commands (2026-10-31)
+
+Intent authority: owner H2 request, extending preserved Slice H. Parent-supplied
+Codex 0.166 source facts are evidence, not repository authority. All four handlers
+gain commandWindows selectors with strict manager schema parity; POSIX commands
+and timeouts stay unchanged. Tests compare stdout, stderr and exit status through
+the Codex outer quote pair and cmd.exe /C, with paths containing spaces, absent
+and present binaries, and allow/deny fixtures. Native selection poisons the
+Python script to detect fallback; PreToolUse explicitly checks deny exit 2.
+
+Evidence (2026-10-31, local macOS):
+- pytest -q tests/test_plugin_skill_packages.py -k one_exact_shared_hook_file:
+  fail-first 1 failed (missing commandWindows), then 1 passed, 15 deselected.
+- pytest -q tests/test_plugin_skill_packages.py tests/test_lifecycle_native_commands.py
+  tests/test_setup_wrappers.py tests/test_capability_native_artifacts.py:
+  100 passed, 16 Windows-only skipped. Cargo used offline mode and the crate target.
+- ruff check tests/test_lifecycle_native_commands.py tests/test_plugin_skill_packages.py
+  src/mir/core/capabilities/manager.py: passed after wrapping schema literals.
+- python scripts/verify_codex_sync.py: passed without generated edits.
+- YAML safe_load and last/only Windows job assertions: passed.
+- Plugin, template classification and adopter slim tests: 43 passed, 1 stale
+  payload failure before the required final regeneration.
+- An initial nonexistent test_adopter_boundary.py path ran no tests; corrected
+  to test_adopter_slim.py. All Python checks use uv with the owner-specified cache.
+
+Final edit is python -m tools.template_assets --write-adopter-payload; final
+read-only counts are reported in the delivery response. Windows process evidence
+remains pending CI (16 cases); no local result proves cmd.exe behavior. Existing
+Slice H publication/lock delivery gaps remain. No commit, dispatch or .codex edit.
+
+## Slice H: native lifecycle live-switch preparation (2026-10-31)
+
+Intent authority: current owner request recorded in tasks/plan.md. This records
+local implementation and fixture evidence only. No commits, tags, releases,
+dispatches, GitHub write calls, real lock edits or generated Codex edits.
+
+Implemented opt-in native-artifacts publication, default upload-only, for both
+binary names across five targets with five checksum files. Publication uses exact
+build artifacts and never derives Windows pins from a rebuild. The maintainer
+tool tools/native_release.py accepts a directory with GitHub release.json or
+read-only gh metadata/download operations. It validates all 15 sizes, all ten
+binary SHA256 values, complete/unique HTTPS asset inventory, matching source
+prefix and portable pins before writing only native_artifacts in an explicit lock.
+
+Shipped commands use POSIX if/exec for bin/handoff-packet or bin/runtime-continuity,
+including .exe, with Python fallback only when no executable is available.
+The selected process owns stdout/stderr/status; deny cannot fall through.
+Timeouts remain unchanged. The manager's exact schema matches the commands.
+Real sh/bash command tests cover all events, allow/deny, paths with spaces and
+absent/present/non-executable/.exe states. Native cases replace Python with a trap.
+SessionStart has no deny behavior; that input proves its unchanged reminder.
+Stop's deny fixture emits a packet with abbreviated HEAD, reaching a real block.
+Fixture update places both independently pinned byte streams; active/provider
+strict checks cover default-off, opt-in, tampering and undeclared extras.
+Windows suffix placement is simulated target selection, not Windows execution.
+CI includes the new tests without changing the single-last-windows_native lane.
+
+Fail-first: initial two-module run: 20 failed / 25 passed. Two publication checks
+and 14 native-selection assertions failed for missing behavior; four Stop fixture
+assertions additionally failed because they did not reach a defect path. The
+next four-module run: 8 failed / 85 passed (four Stop fixture assertions plus four
+schema/materializer/package assertions). Corrected fixtures and implementation:
+93 passed. Added every-asset size/digest and workflow-producer-to-tool checks:
+publication/materializer selection 73 passed. The real workflow digest shell
+emitted all five inventories and the real tool consumed them. The materializer
+fixture was subsequently strengthened to use distinct binary byte streams.
+
+Commands ran from repository root with owner-supplied UV_CACHE_DIR and:
+
+```sh
+export CARGO_HOME="$PWD/native/handoff-packet/target/cargo-home"
+export CARGO_TARGET_DIR="$PWD/native/handoff-packet/target"
+export MIR_HANDOFF_CARGO_OFFLINE=1
+cargo fmt --manifest-path native/handoff-packet/Cargo.toml --check
+cargo clippy --manifest-path native/handoff-packet/Cargo.toml --all-targets --offline --locked -- -D warnings
+cargo test --manifest-path native/handoff-packet/Cargo.toml --offline --locked
+cargo build --manifest-path native/handoff-packet/Cargo.toml --release --offline --locked
+uv run ruff check
+```
+
+All four Cargo gates pass (Cargo 1.99.1, 25 unit tests). Ruff passes.
+Extended gate, with TMPDIR set to the crate target's slice-h-tmp:
+
+```sh
+uv run pytest -q -p no:cacheprovider --basetemp=native/handoff-packet/target/slice-h-pytest \
+  tests/test_native_release.py tests/test_lifecycle_native_commands.py \
+  tests/test_capability_native_artifacts.py tests/test_plugin_skill_packages.py \
+  tests/test_capability_cli.py tests/test_setup_wrappers.py \
+  tests/test_mechanical_handoff.py tests/test_handoff_packet_native_parity.py \
+  tests/test_line_endings.py
+```
+
+Observed: 1325 passed, 2 skipped, 1 failed in 263.98 seconds. Sole failure:
+test_repository_lock_is_portable_and_matches_managed_trees. The unchanged real
+lock pins the previous plugin tree; hooks.json now changes that tree. An isolated
+copy restored from HEAD's hooks.json matched the original lock digest, confirming
+the cause without editing the real lock. This remains an open delivery gate.
+
+Additional executed commands:
+
+```sh
+uv run pytest -q -p no:cacheprovider --basetemp=native/handoff-packet/target/slice-h-release-tests \
+  tests/test_native_release.py tests/test_capability_native_artifacts.py
+uv run pytest -q -p no:cacheprovider --basetemp=native/handoff-packet/target/slice-h-contract-tests \
+  tests/test_common_skill_contracts.py tests/test_template_asset_classification.py
+uv run python scripts/verify_codex_sync.py
+uv run python scripts/verify_context_paths.py
+python3 scripts/mir_ontology.py impact --git-diff HEAD --strict
+python3 scripts/mir_ontology.py mapping
+```
+
+First selection: 73 passed. Contract selection: 36 passed, 1 expected inventory
+failure before payload regeneration. Codex parity passes without edits; context
+paths pass (7 files, 69 references). Ontology impact has no stale refs; mapping
+1.1.0 has zero errors/warnings and matches the owner-supplied map SHA256. Map
+concepts Artifact, Evidence and Assessment separate distribution, execution and
+activation. Both workflow files passed yaml.safe_load; all five native-artifacts
+run blocks passed bash -n after matrix substitution. Changed public code/config/
+docs contain no literal Hangul or host paths. git diff --check passes.
+
+Final edit, after records and source changes:
+
+```sh
+uv run python -m tools.template_assets --write-adopter-payload
+```
+
+Final read-only acceptance command (counts reported on delivery):
+
+```sh
+uv run pytest -q -p no:cacheprovider --basetemp=native/handoff-packet/target/slice-h-final \
+  tests/test_native_release.py tests/test_lifecycle_native_commands.py \
+  tests/test_capability_native_artifacts.py tests/test_plugin_skill_packages.py \
+  tests/test_common_skill_contracts.py tests/test_template_asset_classification.py
+```
+
+Open: Windows Codex plugin hook shell (not established by inspected README,
+workflow, Windows adaptation guide or ADR-79); actual Linux/Windows hook execution;
+real prerelease; real native lock entries and refreshed plugin tree digest; tag.
+Owner-reported Windows Claude Git Bash use is parent-supplied context only.
+Preparation has 5/6 cursor rows verified; the real-lock gate prevents a blanket
+all-gates-pass claim. No publication was attempted.
+
+## Cursor before Slice H (2026-10-31)
+
+# Plan
+
+## Active task: native Stop parity (2026-10-31)
+
+Intent authority: current owner request; this cursor owns the bounded design.
+Extend only the native crate, parity tests, benchmark/README and records. Preserve
+plugins, real lock, generated Codex artifacts and all unrelated changes. No commit,
+version change or caller switch.
+
+Design: native Stop composes packet/authority/pin checks with transcript/tool
+accounting; reuse digest and bounded runner. Remove event forwarding after native
+coverage, retaining MIR_HANDOFF_PYTHON only for the repository pin runner. Exceptions
+keep the reference warning contract. Differential fixtures are the behavior oracle.
+
+Request matrix:
+1. Entire Stop checker and exception/retry contract byte parity.
+2. Every mechanical Stop fixture plus escaped Korean, repair and fake-runner pins.
+3. Fail-first and checker-family mutation evidence.
+4. Thirty-sample Stop no-packet/valid/defective median and p90.
+5. Cargo and requested Python gates; README/records; payload regeneration LAST edit.
+
+Status: native Stop implementation complete; all 15 checker-family mutants caught
+and restored. Initial no-forwarding red: 4 failed / 2 passed; ordered-exception
+warning red: 1 failed; control-only final-message red reproduced and four cases fixed. Cargo fmt/clippy/test/build pass (24 unit tests), Ruff passes.
+Thirty-sample latency recorded in README and change_log. Payload generation is the
+LAST edit, followed by the requested full read-only Python gate; final counts and
+any open cells belong in the delivery report. No intentional behavior difference
+or unported event remains. Local execution covers macOS only; Linux/Windows still
+need CI. Previous-slice evidence below is historical.
+
+## Previous slice: native supply and SessionStart (2026-10-31)
+
+Intent authority: current owner request; this cursor owns the bounded design.
+Preserve plugins, unrelated capability work, real lock and generated Codex files.
+No commit, version or caller changes. Stop remains Python-forwarded.
+
+Design: reuse native detection/owner restrictions, add supply context and bounded
+runner lifecycle; add a separate runtime-continuity binary with Python text bytes.
+
+Request matrix:
+1. Native UserPromptSubmit, exception owner context and runner lifecycle.
+2. SessionStart byte parity including Windows text line endings.
+3. Differential fixtures, fail-first evidence and deliberate mutations.
+4. Thirty-sample latency for ordinary/forbidden submit and SessionStart.
+5. README scope and requested Cargo/Python gates; adopter payload LAST edit.
+
+Status (2026-10-31): native implementation and 23 deliberate mutation checks
+complete. Initial red: 18 failed / 1 existing pass; initial green: 19 passed.
+DEL boundary red reproduced and fixed. Cargo four gates pass (10 unit tests);
+Ruff passes. Thirty-sample latency measured and recorded in README/change_log.
+Final inventory generation is the LAST edit, followed by the full requested
+read-only Python gate. Final gate counts and any open cells belong in the delivery
+report. Supported-platform execution remains local macOS only; Linux/Windows
+and Windows cleanup require CI. No caller switch, commits or plugin changes.
+
+
 ## Native handoff cross-platform CI evidence (2026-10-31)
 
 Owner request: make the maintainer PoC portable across macOS, Ubuntu and Windows.

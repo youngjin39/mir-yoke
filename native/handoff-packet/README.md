@@ -5,7 +5,9 @@ The second binary, `runtime-continuity`, prints SessionStart context with Python
 text-stream line endings. No event forwards to the Python reference. Internal
 errors use the reference warning contract; PreToolUse errors remain silent.
 `MIR_HANDOFF_PYTHON` selects only the repository pin runner (one path, not a shell command).
-No hook caller or plugin payload selects it.
+The lifecycle plugin selects an installed executable in `bin/` when available,
+otherwise its Python reference. Capability updates install lock-pinned native
+artifacts by default; `MIR_CAPABILITY_NATIVE_ARTIFACTS=0` disables placement.
 
 Run Cargo from this directory:
 
@@ -54,10 +56,14 @@ Parity uses `HANDLER_PYTHON` from `tests/test_mechanical_handoff.py`: the curren
 `sys.executable`, or `MIR_HANDOFF_TEST_PYTHON` when explicitly set. It supplies that
 same executable to the repository pin runner through `MIR_HANDOFF_PYTHON`. This avoids
 Windows Store aliases and accidentally testing a different Python/Unicode version.
-The unchanged shipped `hooks.json` still requires `python3` on PATH on every OS,
-including Windows. The native default matches that contract; tests select an
-explicit interpreter, as the existing Windows hook tests do. These tests do not
-prove that a Windows user's shell resolves the shipped `python3` command.
+The shipped `hooks.json` uses POSIX `if`/`exec` selection, including `.exe`, and
+requires `python3` on PATH for fallback. A native handoff may still need Python
+for the repository pin runner. POSIX command tests cover installed binaries and
+fallback with paths containing spaces and preserve deny exit codes. The owner
+reports Claude on Windows uses Git Bash; that is parent-supplied context, not
+local execution evidence. The Windows Codex plugin hook shell is not established
+in the inspected repository. ADR-79 remains reference-adaptation-only there;
+these tests do not establish live Windows shell delivery or activation.
 
 Subprocesses run with `PYTHONUTF8=1` to decode non-ASCII input consistently across
 Windows code pages. Native output is UTF-8 with CRLF on Windows and LF elsewhere,

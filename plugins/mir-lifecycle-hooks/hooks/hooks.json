@@ -5,8 +5,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/runtime_continuity.py\"",
-            "timeout": 2
+            "command": "if [ -x \"${CLAUDE_PLUGIN_ROOT}/bin/runtime-continuity\" ]; then exec \"${CLAUDE_PLUGIN_ROOT}/bin/runtime-continuity\"; elif [ -x \"${CLAUDE_PLUGIN_ROOT}/bin/runtime-continuity.exe\" ]; then exec \"${CLAUDE_PLUGIN_ROOT}/bin/runtime-continuity.exe\"; else exec python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/runtime_continuity.py\"; fi",
+            "timeout": 2,
+            "commandWindows": "if exist \"%CLAUDE_PLUGIN_ROOT%\\bin\\runtime-continuity.exe\" (\"%CLAUDE_PLUGIN_ROOT%\\bin\\runtime-continuity.exe\") else (python3 \"%CLAUDE_PLUGIN_ROOT%\\hooks\\runtime_continuity.py\")"
           }
         ]
       }
@@ -16,8 +17,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/skills/runtime-continuity/scripts/handoff_packet.py\"",
-            "timeout": 8
+            "command": "if [ -x \"${CLAUDE_PLUGIN_ROOT}/bin/handoff-packet\" ]; then exec \"${CLAUDE_PLUGIN_ROOT}/bin/handoff-packet\"; elif [ -x \"${CLAUDE_PLUGIN_ROOT}/bin/handoff-packet.exe\" ]; then exec \"${CLAUDE_PLUGIN_ROOT}/bin/handoff-packet.exe\"; else exec python3 \"${CLAUDE_PLUGIN_ROOT}/skills/runtime-continuity/scripts/handoff_packet.py\"; fi",
+            "timeout": 8,
+            "commandWindows": "if exist \"%CLAUDE_PLUGIN_ROOT%\\bin\\handoff-packet.exe\" (\"%CLAUDE_PLUGIN_ROOT%\\bin\\handoff-packet.exe\") else (python3 \"%CLAUDE_PLUGIN_ROOT%\\skills\\runtime-continuity\\scripts\\handoff_packet.py\")"
           }
         ]
       }
@@ -27,8 +29,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/skills/runtime-continuity/scripts/handoff_packet.py\"",
-            "timeout": 8
+            "command": "if [ -x \"${CLAUDE_PLUGIN_ROOT}/bin/handoff-packet\" ]; then exec \"${CLAUDE_PLUGIN_ROOT}/bin/handoff-packet\"; elif [ -x \"${CLAUDE_PLUGIN_ROOT}/bin/handoff-packet.exe\" ]; then exec \"${CLAUDE_PLUGIN_ROOT}/bin/handoff-packet.exe\"; else exec python3 \"${CLAUDE_PLUGIN_ROOT}/skills/runtime-continuity/scripts/handoff_packet.py\"; fi",
+            "timeout": 8,
+            "commandWindows": "if exist \"%CLAUDE_PLUGIN_ROOT%\\bin\\handoff-packet.exe\" (\"%CLAUDE_PLUGIN_ROOT%\\bin\\handoff-packet.exe\") else (python3 \"%CLAUDE_PLUGIN_ROOT%\\skills\\runtime-continuity\\scripts\\handoff_packet.py\")"
           }
         ]
       }
@@ -38,8 +41,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/skills/runtime-continuity/scripts/handoff_packet.py\"",
-            "timeout": 8
+            "command": "if [ -x \"${CLAUDE_PLUGIN_ROOT}/bin/handoff-packet\" ]; then exec \"${CLAUDE_PLUGIN_ROOT}/bin/handoff-packet\"; elif [ -x \"${CLAUDE_PLUGIN_ROOT}/bin/handoff-packet.exe\" ]; then exec \"${CLAUDE_PLUGIN_ROOT}/bin/handoff-packet.exe\"; else exec python3 \"${CLAUDE_PLUGIN_ROOT}/skills/runtime-continuity/scripts/handoff_packet.py\"; fi",
+            "timeout": 8,
+            "commandWindows": "if exist \"%CLAUDE_PLUGIN_ROOT%\\bin\\handoff-packet.exe\" (\"%CLAUDE_PLUGIN_ROOT%\\bin\\handoff-packet.exe\") else (python3 \"%CLAUDE_PLUGIN_ROOT%\\skills\\runtime-continuity\\scripts\\handoff_packet.py\")"
           }
         ]
       }

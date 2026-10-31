@@ -537,3 +537,14 @@ the file, with sibling items citing line ranges, received no re-read request. Th
 asks only for verification and still applies to authors only. The reviewed handoff handler digest
 in the manager changes with it. Tests: the `test_round_t_*` cases in
 `tests/test_mechanical_handoff.py`.
+
+## Amendment: 2026-10-31 — native lifecycle default (0.13.55)
+
+All four lifecycle events have Rust implementations. The shared hook commands
+select placed native binaries or the Python reference; Codex on Windows uses
+cmd.exe-compatible commandWindows selectors. Capability updates place lock-pinned
+native artifacts by default unless MIR_CAPABILITY_NATIVE_ARTIFACTS=0. Placement
+failures keep the existing warning and Python reference. Native prerelease
+publication remains explicit, and the maintainer pinning tool validates published
+bytes before writing an explicitly selected lock. None of these mechanisms grants
+consumer write authority. See tasks/plan.md for the release preparation cursor.

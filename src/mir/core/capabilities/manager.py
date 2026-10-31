@@ -66,6 +66,17 @@ _CODEX_SKILL_MANIFEST_KEYS = {
 }
 _CLAUDE_HOOK_MANIFEST_KEYS = _CLAUDE_SKILL_MANIFEST_KEYS
 _CODEX_HOOK_MANIFEST_KEYS = _CODEX_SKILL_MANIFEST_KEYS
+
+
+def _native_hook_command(name: str, reference: str) -> str:
+    base = "${CLAUDE_PLUGIN_ROOT}/bin/" + name
+    return (
+        f'if [ -x "{base}" ]; then exec "{base}"; '
+        f'elif [ -x "{base}.exe" ]; then exec "{base}.exe"; '
+        f'else exec python3 "${{CLAUDE_PLUGIN_ROOT}}/{reference}"; fi'
+    )
+
+
 _HOOKS_SCHEMA = {
     "hooks": {
         "SessionStart": [
@@ -73,7 +84,14 @@ _HOOKS_SCHEMA = {
                 "hooks": [
                     {
                         "type": "command",
-                        "command": 'python3 "${CLAUDE_PLUGIN_ROOT}/hooks/runtime_continuity.py"',
+                        "command": _native_hook_command(
+                            "runtime-continuity", "hooks/runtime_continuity.py"
+                        ),
+                        "commandWindows": (
+                            'if exist "%CLAUDE_PLUGIN_ROOT%\\bin\\runtime-continuity.exe"'
+                            ' ("%CLAUDE_PLUGIN_ROOT%\\bin\\runtime-continuity.exe")'
+                            ' else (python3 "%CLAUDE_PLUGIN_ROOT%\\hooks\\runtime_continuity.py")'
+                        ),
                         "timeout": 2,
                     }
                 ]
@@ -84,9 +102,14 @@ _HOOKS_SCHEMA = {
                 "hooks": [
                     {
                         "type": "command",
-                        "command": (
-                            'python3 "${CLAUDE_PLUGIN_ROOT}/skills/runtime-continuity/'
-                            'scripts/handoff_packet.py"'
+                        "command": _native_hook_command(
+                            "handoff-packet", "skills/runtime-continuity/scripts/handoff_packet.py"
+                        ),
+                        "commandWindows": (
+                            'if exist "%CLAUDE_PLUGIN_ROOT%\\bin\\handoff-packet.exe"'
+                            ' ("%CLAUDE_PLUGIN_ROOT%\\bin\\handoff-packet.exe")'
+                            ' else (python3 "%CLAUDE_PLUGIN_ROOT%\\skills\\runtime-continuity'
+                            '\\scripts\\handoff_packet.py")'
                         ),
                         "timeout": 8,
                     }
@@ -98,9 +121,14 @@ _HOOKS_SCHEMA = {
                 "hooks": [
                     {
                         "type": "command",
-                        "command": (
-                            'python3 "${CLAUDE_PLUGIN_ROOT}/skills/runtime-continuity/'
-                            'scripts/handoff_packet.py"'
+                        "command": _native_hook_command(
+                            "handoff-packet", "skills/runtime-continuity/scripts/handoff_packet.py"
+                        ),
+                        "commandWindows": (
+                            'if exist "%CLAUDE_PLUGIN_ROOT%\\bin\\handoff-packet.exe"'
+                            ' ("%CLAUDE_PLUGIN_ROOT%\\bin\\handoff-packet.exe")'
+                            ' else (python3 "%CLAUDE_PLUGIN_ROOT%\\skills\\runtime-continuity'
+                            '\\scripts\\handoff_packet.py")'
                         ),
                         "timeout": 8,
                     }
@@ -112,9 +140,14 @@ _HOOKS_SCHEMA = {
                 "hooks": [
                     {
                         "type": "command",
-                        "command": (
-                            'python3 "${CLAUDE_PLUGIN_ROOT}/skills/runtime-continuity/'
-                            'scripts/handoff_packet.py"'
+                        "command": _native_hook_command(
+                            "handoff-packet", "skills/runtime-continuity/scripts/handoff_packet.py"
+                        ),
+                        "commandWindows": (
+                            'if exist "%CLAUDE_PLUGIN_ROOT%\\bin\\handoff-packet.exe"'
+                            ' ("%CLAUDE_PLUGIN_ROOT%\\bin\\handoff-packet.exe")'
+                            ' else (python3 "%CLAUDE_PLUGIN_ROOT%\\skills\\runtime-continuity'
+                            '\\scripts\\handoff_packet.py")'
                         ),
                         "timeout": 8,
                     }

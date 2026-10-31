@@ -8,6 +8,30 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.55] — 2026-10-31 — native lifecycle hooks by default
+
+### Added
+
+- Rust implementations for all four lifecycle hook events, with byte parity against the
+  Python reference on macOS, Ubuntu and Windows in the native validation matrix.
+- Opt-in native prerelease publication of both binaries for five targets, and a maintainer
+  lock pinning tool that verifies published asset sizes and SHA256 checksums.
+
+### Fixed
+
+- Codex on Windows uses cmd.exe-compatible `commandWindows` lifecycle handlers. Previously
+  the POSIX commands failed under cmd.exe before running the hooks.
+
+### Changed
+
+- `hooks.json` runs a placed native binary when available and otherwise runs the Python
+  reference, preserving output and deny exit status.
+- `mir capability update --apply` places lock-pinned native artifacts by default. Set
+  `MIR_CAPABILITY_NATIVE_ARTIFACTS=0` to disable placement. Placement failures retain the
+  existing warning and Python reference fallback.
+- Bump release surfaces to 0.13.55 and regenerate the adopter payload. Release lock binding
+  remains a separate delivery step after the source commit.
+
 ## [v0.13.54] — 2026-10-31 — round t checker fixes
 
 ### Fixed

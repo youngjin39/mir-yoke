@@ -2,6 +2,74 @@
   "version": 1,
   "changes": [
     {
+      "id": "h3-native-default-release-0.13.55-2026-10-31",
+      "record_status": "in_progress",
+      "scope": "Owner Slice H3: default lock-pinned native placement, exact zero opt-out, release surfaces and single cursor; preserve H/H2; no lock binding or generated Codex writes.",
+      "bluebrick": "Capability native artifact materializer and release metadata",
+      "design_ref": "tasks/plan.md",
+      "fail_first": {
+        "command": "uv run --no-sync pytest -q tests/test_capability_native_artifacts.py -k 'default_placement_and_explicit_opt_out or manager_materializes_and_verifies_artifacts' --tb=short",
+        "result": "3 failed, 5 passed, 29 deselected before changing the default. Default direct and manager placement failed; explicit zero and explicit one controls passed. Zero-guard in-memory mutation: 1 failed, 36 deselected. Original rerun: 2 passed, 35 deselected."
+      },
+      "categories": {
+        "unit": {
+          "status": "pass",
+          "command": "uv run --no-sync pytest -q tests/test_capability_native_artifacts.py",
+          "notes": "37 passed; default placement, zero skips downloads, explicit one, warning fallback, byte verification."
+        },
+        "integration": {
+          "status": "planned",
+          "command": "uv run --no-sync pytest -q tests/test_capability_cli.py tests/test_capability_security.py tests/test_plugin_skill_packages.py",
+          "notes": "315 passed, 16 Windows-only skipped, 1 unbound tree-digest failure. Additional committed-HEAD checks: 5 passed, 4 prior-schema failures pending source commit. See tasks/change_log.md."
+        },
+        "edge": {
+          "status": "pass",
+          "command": "uv run --no-sync pytest -q tests/test_capability_native_artifacts.py",
+          "notes": "Missing target/source, invalid URL, digest and size retain Python with warning under the new default."
+        },
+        "architecture": {
+          "status": "pass",
+          "command": "uv run --no-sync python scripts/verify_codex_sync.py",
+          "notes": "Codex sync passed without generated edits."
+        },
+        "security": {
+          "status": "pass",
+          "command": "uv run --no-sync pytest -q tests/test_capability_native_artifacts.py",
+          "notes": "Existing source-tree integrity and path rejection checks remain in place."
+        },
+        "compatibility": {
+          "status": "pass",
+          "command": "uv run --no-sync pytest -q tests/test_lifecycle_native_commands.py tests/test_public_template_surface.py tests/test_no_korean_in_user_facing.py",
+          "notes": "Local hooks: 32 passed, 16 Windows-only skipped. Public and language checks passed in requested gate. Windows process execution remains pending CI."
+        },
+        "e2e": {
+          "status": "not_applicable",
+          "reason": "Real prerelease publication and lock binding are owner-owned delivery steps."
+        },
+        "browser": {
+          "status": "not_applicable",
+          "reason": "No GUI surface."
+        },
+        "availability": {
+          "status": "not_applicable",
+          "reason": "No service started."
+        },
+        "load": {
+          "status": "not_applicable",
+          "reason": "One environment switch change; no performance claim."
+        },
+        "soak": {
+          "status": "not_applicable",
+          "reason": "No persistent runner."
+        },
+        "transaction_locking": {
+          "status": "pass",
+          "command": "uv run --no-sync pytest -q tests/test_capability_native_artifacts.py",
+          "notes": "Existing atomic placement and fixture manager integrity checks pass."
+        }
+      }
+    },
+    {
       "id": "b3-mir-mcp-slice-2-review-fixes-2026-10-26",
       "record_status": "in_progress",
       "scope": "Three owner-scoped review fixes; MCP-local approval, rollback approval evidence and schema-valid successful call receipts. Hooks unchanged; no release binding or live activation.",
@@ -12,18 +80,61 @@
         "result": "21 intended failures plus 1 invalid hook probe, corrected before implementation. Clean supplemental receipt run: 2 failed, 1 unchanged-hook test passed. See tasks/change_log.md."
       },
       "categories": {
-        "unit": {"status": "pass", "command": "uv run --no-sync pytest -q tests/test_capability_mcp.py -p no:cacheprovider --basetemp=<owner-scratch>/pytest-s2fix/green", "notes": "78 passed in 86.87s; includes all new regression cases."},
-        "integration": {"status": "pass", "command": "uv run --no-sync pytest -q tests/test_capability_*.py tests/test_mir_mcp_*.py tests/test_plugin_skill_packages.py tests/test_*template*.py tests/test_adopter_slim.py", "notes": "987 passed, expected release lock failure plus new log sanitation failure. Sanitized the log; all 31 public/payload checks then passed. Full suite pending."},
-        "edge": {"status": "pass", "command": "uv run --no-sync pytest -q tests/test_capability_mcp.py", "notes": "Missing approvals, stale receipt approval, required arguments, closed keys, types, numeric/string/array bounds and explicit success."},
-        "architecture": {"status": "pass", "command": "uv run --no-sync python scripts/mir_ontology.py impact --git-diff HEAD --strict", "notes": "No stale refs; no inferred execution evidence."},
-        "security": {"status": "pass", "command": "uv run --no-sync pytest -q tests/test_capability_mcp.py", "notes": "Remote MCP approval cannot override local approval; schema-invalid and failed receipts cannot reach READY. Package schemas read as data without execution."},
-        "transaction_locking": {"status": "pass", "command": "uv run --no-sync pytest -q tests/test_capability_mcp.py", "notes": "Consumer-only prior approval survives failed registration; missing/stale receipt approval refuses runtime commands."},
-        "compatibility": {"status": "pass", "command": "uv run --no-sync pytest -q -p no:cacheprovider --basetemp=<owner-scratch>/pytest-claude-s2/full", "notes": "Claude writer full suite: 3452 passed, 1 failed in 531.96s; the only failure is the preserved release-bind lock mismatch."},
-        "e2e": {"status": "not_applicable", "reason": "Live B4/runtime activation is owner-owned and outside this task."},
-        "browser": {"status": "not_applicable", "reason": "No GUI surface."},
-        "availability": {"status": "not_applicable", "reason": "No resident service or external integration."},
-        "load": {"status": "not_applicable", "reason": "No new performance behavior; existing bounded protocol checks are requested."},
-        "soak": {"status": "not_applicable", "reason": "No persistent runner or daemon started."}
+        "unit": {
+          "status": "pass",
+          "command": "uv run --no-sync pytest -q tests/test_capability_mcp.py -p no:cacheprovider --basetemp=<owner-scratch>/pytest-s2fix/green",
+          "notes": "78 passed in 86.87s; includes all new regression cases."
+        },
+        "integration": {
+          "status": "pass",
+          "command": "uv run --no-sync pytest -q tests/test_capability_*.py tests/test_mir_mcp_*.py tests/test_plugin_skill_packages.py tests/test_*template*.py tests/test_adopter_slim.py",
+          "notes": "987 passed, expected release lock failure plus new log sanitation failure. Sanitized the log; all 31 public/payload checks then passed. Full suite pending."
+        },
+        "edge": {
+          "status": "pass",
+          "command": "uv run --no-sync pytest -q tests/test_capability_mcp.py",
+          "notes": "Missing approvals, stale receipt approval, required arguments, closed keys, types, numeric/string/array bounds and explicit success."
+        },
+        "architecture": {
+          "status": "pass",
+          "command": "uv run --no-sync python scripts/mir_ontology.py impact --git-diff HEAD --strict",
+          "notes": "No stale refs; no inferred execution evidence."
+        },
+        "security": {
+          "status": "pass",
+          "command": "uv run --no-sync pytest -q tests/test_capability_mcp.py",
+          "notes": "Remote MCP approval cannot override local approval; schema-invalid and failed receipts cannot reach READY. Package schemas read as data without execution."
+        },
+        "transaction_locking": {
+          "status": "pass",
+          "command": "uv run --no-sync pytest -q tests/test_capability_mcp.py",
+          "notes": "Consumer-only prior approval survives failed registration; missing/stale receipt approval refuses runtime commands."
+        },
+        "compatibility": {
+          "status": "pass",
+          "command": "uv run --no-sync pytest -q -p no:cacheprovider --basetemp=<owner-scratch>/pytest-claude-s2/full",
+          "notes": "Claude writer full suite: 3452 passed, 1 failed in 531.96s; the only failure is the preserved release-bind lock mismatch."
+        },
+        "e2e": {
+          "status": "not_applicable",
+          "reason": "Live B4/runtime activation is owner-owned and outside this task."
+        },
+        "browser": {
+          "status": "not_applicable",
+          "reason": "No GUI surface."
+        },
+        "availability": {
+          "status": "not_applicable",
+          "reason": "No resident service or external integration."
+        },
+        "load": {
+          "status": "not_applicable",
+          "reason": "No new performance behavior; existing bounded protocol checks are requested."
+        },
+        "soak": {
+          "status": "not_applicable",
+          "reason": "No persistent runner or daemon started."
+        }
       }
     },
     {
@@ -105,18 +216,61 @@
         "result": "18 failed, 64 passed before stateless changes; further pin-pointer/Korean-negative boundaries: 2 failed, 88 deselected. Admission agent observed 6 failed, 4 passed before its changes."
       },
       "categories": {
-        "unit": {"status": "pass", "command": "uv run --offline pytest -q tests/test_mechanical_handoff.py", "notes": "90 passed in 7.37s; both native shapes offline, fresh runner, no state."},
-        "integration": {"status": "pass", "command": "uv run --offline pytest -q tests/test_mechanical_handoff.py", "notes": "Real repository-local mapping runner supplied full pins offline; no live agents."},
-        "edge": {"status": "pass", "command": "uv run --offline pytest -q tests/test_mechanical_handoff.py", "notes": "Prompt/hash/tail, errors, timeout, retry, exclusions and unknown inventory."},
-        "architecture": {"status": "pass", "command": "uv run --offline pytest -q tests/test_capability_security.py -k r19", "notes": "Direct rerun: 18 passed, 109 deselected; exact event/schema/handler admission and dated amendment."},
-        "compatibility": {"status": "fail", "command": "uv run --offline pytest -q", "notes": "2232 passed, 75 failed in 329.95s. 69 expected acknowledgement failures; 1 lock, 3 adopter payload, 1 empty offline install cache, 1 new ledger path. Path corrected; final relevant selection 143 passed, 109 deselected. No full rerun after that documentation-only correction."},
-        "security": {"status": "pass", "command": "uv run --offline pytest -q tests/test_mechanical_handoff.py", "notes": "Explicit/default lexical authority, English/Korean actions, protected sources and excluded canary."},
-        "transaction_locking": {"status": "not_applicable", "reason": "Handler has no writes or persisted transactions; existing package acknowledgement gate is preserved."},
-        "e2e": {"status": "not_applicable", "reason": "Owner forbids live agents/probes and runtime binding; offline native payload fixtures only."},
-        "browser": {"status": "not_applicable", "reason": "No GUI surface."},
-        "availability": {"status": "pass", "command": "uv run --offline pytest -q tests/test_mechanical_handoff.py", "notes": "5-second runner timeout, fail-open warnings and one-shot retry guard."},
-        "load": {"status": "not_applicable", "reason": "Bounded 1 MiB transcript and hook input; no resident service."},
-        "soak": {"status": "not_applicable", "reason": "No persistent state or background runner."}
+        "unit": {
+          "status": "pass",
+          "command": "uv run --offline pytest -q tests/test_mechanical_handoff.py",
+          "notes": "90 passed in 7.37s; both native shapes offline, fresh runner, no state."
+        },
+        "integration": {
+          "status": "pass",
+          "command": "uv run --offline pytest -q tests/test_mechanical_handoff.py",
+          "notes": "Real repository-local mapping runner supplied full pins offline; no live agents."
+        },
+        "edge": {
+          "status": "pass",
+          "command": "uv run --offline pytest -q tests/test_mechanical_handoff.py",
+          "notes": "Prompt/hash/tail, errors, timeout, retry, exclusions and unknown inventory."
+        },
+        "architecture": {
+          "status": "pass",
+          "command": "uv run --offline pytest -q tests/test_capability_security.py -k r19",
+          "notes": "Direct rerun: 18 passed, 109 deselected; exact event/schema/handler admission and dated amendment."
+        },
+        "compatibility": {
+          "status": "fail",
+          "command": "uv run --offline pytest -q",
+          "notes": "2232 passed, 75 failed in 329.95s. 69 expected acknowledgement failures; 1 lock, 3 adopter payload, 1 empty offline install cache, 1 new ledger path. Path corrected; final relevant selection 143 passed, 109 deselected. No full rerun after that documentation-only correction."
+        },
+        "security": {
+          "status": "pass",
+          "command": "uv run --offline pytest -q tests/test_mechanical_handoff.py",
+          "notes": "Explicit/default lexical authority, English/Korean actions, protected sources and excluded canary."
+        },
+        "transaction_locking": {
+          "status": "not_applicable",
+          "reason": "Handler has no writes or persisted transactions; existing package acknowledgement gate is preserved."
+        },
+        "e2e": {
+          "status": "not_applicable",
+          "reason": "Owner forbids live agents/probes and runtime binding; offline native payload fixtures only."
+        },
+        "browser": {
+          "status": "not_applicable",
+          "reason": "No GUI surface."
+        },
+        "availability": {
+          "status": "pass",
+          "command": "uv run --offline pytest -q tests/test_mechanical_handoff.py",
+          "notes": "5-second runner timeout, fail-open warnings and one-shot retry guard."
+        },
+        "load": {
+          "status": "not_applicable",
+          "reason": "Bounded 1 MiB transcript and hook input; no resident service."
+        },
+        "soak": {
+          "status": "not_applicable",
+          "reason": "No persistent state or background runner."
+        }
       }
     },
     {
@@ -964,173 +1118,608 @@
       "id": "adr90-role-plugins-common-hooks-2026-09-03",
       "record_status": "complete",
       "scope": "Publish and deploy the separately named common lifecycle hook package for both runtimes, preserve repository-owned policy, distribute agents and commands through a separate digest-bound user-runtime path, document the absent MCP-server state, and submit the Codex plugin-agent feature request.",
-      "targets": ["plugins/mir-lifecycle-hooks", ".agents/plugins/marketplace.json", ".claude-plugin/marketplace.json", "config/capability-sources.json", "config/repo-agent-management.json", "src/mir/core/capabilities/config.py", "src/mir/core/capabilities/manager.py", "scripts/install_user_runtime_agents.py", "scripts/verify_plugin_cli_activation.py", "tests/", "docs/decisions/adr-90-role-plugins-and-common-hooks.md", "docs/operations/", "tasks/"],
+      "targets": [
+        "plugins/mir-lifecycle-hooks",
+        ".agents/plugins/marketplace.json",
+        ".claude-plugin/marketplace.json",
+        "config/capability-sources.json",
+        "config/repo-agent-management.json",
+        "src/mir/core/capabilities/config.py",
+        "src/mir/core/capabilities/manager.py",
+        "scripts/install_user_runtime_agents.py",
+        "scripts/verify_plugin_cli_activation.py",
+        "tests/",
+        "docs/decisions/adr-90-role-plugins-and-common-hooks.md",
+        "docs/operations/",
+        "tasks/"
+      ],
       "design_ref": "docs/decisions/adr-90-role-plugins-and-common-hooks.md",
       "bluebrick": "Role capability plugins / Common hook engine / Active package admission",
       "categories": {
-        "unit": {"status": "pass", "command": "uv run pytest -q tests/test_plugin_skill_packages.py tests/test_capability_security.py tests/test_capability_cli.py tests/test_user_runtime_agent_command_install.py", "notes": "The package, supply-chain, capability, and separate user-runtime installer regressions pass; the installer itself has 14 safety and transaction tests."},
-        "integration": {"status": "pass", "command": "uv run python scripts/verify_codex_sync.py && uv run python scripts/verify_plugin_cli_activation.py", "notes": "Generated derivatives agree; isolated Claude and Codex homes install the same four packages and expose them from two consumer directories after the provider checkout is unavailable. The four packages are also enabled and visible from all 14 registered real repository roots."},
-        "e2e": {"status": "pass", "command": "uv run pytest -q", "notes": "966 tests pass in 178.68 seconds after global activation and closeout."},
-        "browser": {"status": "not_applicable", "reason": "No browser or GUI surface changes."},
-        "edge": {"status": "pass", "command": "uv run pytest -q tests/test_capability_security.py tests/test_user_runtime_agent_command_install.py", "notes": "Stale hook digests, undeclared hook files, symlinked targets, unmanaged divergence, and ambiguous runtime homes fail closed. Both runtime MCP registries remain empty."},
-        "architecture": {"status": "pass", "command": "uv run pytest -q tests/test_decision_authority.py tests/test_template_asset_classification.py tests/test_greenfield_slim_integration.py", "notes": "ADR-90 is current, the external catalog includes runtime-continuity for every profile, all 805 candidate files are classified, and the complete focused closeout selection passes 183 tests. Independent final re-review returned READY with no actionable findings."},
-        "availability": {"status": "not_applicable", "reason": "No standing service is introduced; no MCP server exists."},
-        "load": {"status": "not_applicable", "reason": "The SessionStart handler emits one fixed 94-byte stdout line, including its trailing newline, and starts no persistent work."},
-        "soak": {"status": "not_applicable", "reason": "No persistent process is introduced."},
-        "security": {"status": "pass", "command": "uv run pytest -q tests/test_capability_security.py tests/test_plugin_skill_packages.py tests/test_user_runtime_agent_command_install.py", "notes": "Only the exact read-only skills-hooks shape is admitted; MCP, target access, executable modes, undeclared hook files, stale acknowledgements, and unsafe user-home writes remain rejected."},
-        "compatibility": {"status": "pass", "command": "uv run pytest -q tests/test_capability_security.py -k 'previous_public_schema1 or schema1_capability or legacy_consumers or partial_or_invented_legacy or schema4_sync_requires_update or schema2_sources or legacy_and_bound_marketplace' && uv run ruff check . && uv run python -m tools.template_assets --json", "notes": "Schema-1 and schema-2 sources remain readable, the real legacy provider migrated safely to schema 4, invalid legacy states fail closed, and both required runtimes report exact skill and trusted-hook discovery before READY."},
-        "transaction_locking": {"status": "pass", "command": "uv run pytest -q tests/test_capability_cli.py tests/test_user_runtime_agent_command_install.py", "notes": "Capability registration retains guarded rollback; user-runtime delivery prevalidates both homes, snapshots both roots and receipts, replaces files atomically, and rolls both runtimes back on failure."}
+        "unit": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_plugin_skill_packages.py tests/test_capability_security.py tests/test_capability_cli.py tests/test_user_runtime_agent_command_install.py",
+          "notes": "The package, supply-chain, capability, and separate user-runtime installer regressions pass; the installer itself has 14 safety and transaction tests."
+        },
+        "integration": {
+          "status": "pass",
+          "command": "uv run python scripts/verify_codex_sync.py && uv run python scripts/verify_plugin_cli_activation.py",
+          "notes": "Generated derivatives agree; isolated Claude and Codex homes install the same four packages and expose them from two consumer directories after the provider checkout is unavailable. The four packages are also enabled and visible from all 14 registered real repository roots."
+        },
+        "e2e": {
+          "status": "pass",
+          "command": "uv run pytest -q",
+          "notes": "966 tests pass in 178.68 seconds after global activation and closeout."
+        },
+        "browser": {
+          "status": "not_applicable",
+          "reason": "No browser or GUI surface changes."
+        },
+        "edge": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_capability_security.py tests/test_user_runtime_agent_command_install.py",
+          "notes": "Stale hook digests, undeclared hook files, symlinked targets, unmanaged divergence, and ambiguous runtime homes fail closed. Both runtime MCP registries remain empty."
+        },
+        "architecture": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_decision_authority.py tests/test_template_asset_classification.py tests/test_greenfield_slim_integration.py",
+          "notes": "ADR-90 is current, the external catalog includes runtime-continuity for every profile, all 805 candidate files are classified, and the complete focused closeout selection passes 183 tests. Independent final re-review returned READY with no actionable findings."
+        },
+        "availability": {
+          "status": "not_applicable",
+          "reason": "No standing service is introduced; no MCP server exists."
+        },
+        "load": {
+          "status": "not_applicable",
+          "reason": "The SessionStart handler emits one fixed 94-byte stdout line, including its trailing newline, and starts no persistent work."
+        },
+        "soak": {
+          "status": "not_applicable",
+          "reason": "No persistent process is introduced."
+        },
+        "security": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_capability_security.py tests/test_plugin_skill_packages.py tests/test_user_runtime_agent_command_install.py",
+          "notes": "Only the exact read-only skills-hooks shape is admitted; MCP, target access, executable modes, undeclared hook files, stale acknowledgements, and unsafe user-home writes remain rejected."
+        },
+        "compatibility": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_capability_security.py -k 'previous_public_schema1 or schema1_capability or legacy_consumers or partial_or_invented_legacy or schema4_sync_requires_update or schema2_sources or legacy_and_bound_marketplace' && uv run ruff check . && uv run python -m tools.template_assets --json",
+          "notes": "Schema-1 and schema-2 sources remain readable, the real legacy provider migrated safely to schema 4, invalid legacy states fail closed, and both required runtimes report exact skill and trusted-hook discovery before READY."
+        },
+        "transaction_locking": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_capability_cli.py tests/test_user_runtime_agent_command_install.py",
+          "notes": "Capability registration retains guarded rollback; user-runtime delivery prevalidates both homes, snapshots both roots and receipts, replaces files atomically, and rolls both runtimes back on failure."
+        }
       }
     },
     {
       "id": "adr89-dual-runtime-capability-management-2026-09-03",
       "record_status": "complete",
       "scope": "Make Yoke's cross-repository provider contract explicitly manage agents, plugin skills, project-local hooks, optional MCP servers, and Claude commands with Codex skill equivalents while preserving ADR-88 active-package admission.",
-      "targets": [".mir/repo-profile.toml", "CLAUDE.md", "AGENTS.md", "README.md", "ARCHITECTURE.md", "CHANGELOG.md", "MIGRATION.md", "config/capability-sources.json", "config/repo-agent-management.json", "config/template-assets.json", "config/adopter-payload.json", "src/mir/core/capabilities/config.py", "src/mir/core/capabilities/manager.py", "scripts/verify_codex_sync.py", "scripts/verify_plugin_cli_activation.py", "tests/test_capability_cli.py", "tests/test_capability_security.py", "tests/test_plugin_skill_packages.py", "tests/test_codex_derivation_script.py", "tests/test_decision_authority.py", "tests/test_template_asset_classification.py", "docs/decisions/adr-89-dual-runtime-capability-management.md", "docs/decisions/adr-88-active-plugin-component-admission.md", "docs/decisions/adr-74-portable-bootstrap-capability-sources-and-memory.md", "docs/decisions/adr-75-global-plugin-migration-gate.md", "docs/decisions/adr-85-global-policy-inheritance-and-agent-contracts.md", "docs/decisions/INDEX.md", "docs/operations/global-plugin-migration.md", "tasks/intent.json", "tasks/plan.md", "tasks/handoffs/session-handoff-LATEST.md"],
+      "targets": [
+        ".mir/repo-profile.toml",
+        "CLAUDE.md",
+        "AGENTS.md",
+        "README.md",
+        "ARCHITECTURE.md",
+        "CHANGELOG.md",
+        "MIGRATION.md",
+        "config/capability-sources.json",
+        "config/repo-agent-management.json",
+        "config/template-assets.json",
+        "config/adopter-payload.json",
+        "src/mir/core/capabilities/config.py",
+        "src/mir/core/capabilities/manager.py",
+        "scripts/verify_codex_sync.py",
+        "scripts/verify_plugin_cli_activation.py",
+        "tests/test_capability_cli.py",
+        "tests/test_capability_security.py",
+        "tests/test_plugin_skill_packages.py",
+        "tests/test_codex_derivation_script.py",
+        "tests/test_decision_authority.py",
+        "tests/test_template_asset_classification.py",
+        "docs/decisions/adr-89-dual-runtime-capability-management.md",
+        "docs/decisions/adr-88-active-plugin-component-admission.md",
+        "docs/decisions/adr-74-portable-bootstrap-capability-sources-and-memory.md",
+        "docs/decisions/adr-75-global-plugin-migration-gate.md",
+        "docs/decisions/adr-85-global-policy-inheritance-and-agent-contracts.md",
+        "docs/decisions/INDEX.md",
+        "docs/operations/global-plugin-migration.md",
+        "tasks/intent.json",
+        "tasks/plan.md",
+        "tasks/handoffs/session-handoff-LATEST.md"
+      ],
       "design_ref": "docs/decisions/adr-89-dual-runtime-capability-management.md",
       "bluebrick": "Capability provider / Managed runtime projections / Cross-repository discovery",
       "categories": {
-        "unit": {"status": "pass", "command": "uv run pytest -q tests/test_capability_security.py tests/test_capability_cli.py tests/test_plugin_skill_packages.py", "notes": "Schema-3 commands, project integrations, enrolled consumer state, exact dual-runtime readiness policy, legacy compatibility, divergence, symlink, downgrade, interruption, rollback, and package admission regressions pass."},
-        "integration": {"status": "pass", "command": "uv run pytest -q tests/test_capability_cli.py", "notes": "Command materialization and locking, enrolled canonical on-disk consumer-authenticated global union activation, fail-fast concurrent sync with retry, exact rollback, and runtime probes pass."},
-        "e2e": {"status": "pass", "command": "uv run pytest -q", "notes": "922 tests passed in 153.32 seconds on Python 3.12.13 after the completed independent review and closeout payload refresh."},
-        "browser": {"status": "not_applicable", "reason": "No browser or GUI surface changes."},
-        "edge": {"status": "pass", "command": "uv run pytest -q tests/test_capability_security.py", "notes": "Unsafe command paths and mappings, target-local integration drift, schema downgrade, singleton runtime gates, command symlinks, malformed or unbound consumers, and symlinked or replaced project, Codex, capability-home, derivative, or cache roots fail closed."},
-        "architecture": {"status": "pass", "command": "uv run pytest -q tests/test_decision_authority.py tests/test_template_asset_classification.py tests/test_codex_derivation_script.py", "notes": "ADR-89 authority, current decision classification, generated agents, command-to-skill mappings, hook targets, and MCP references agree. Fresh independent final review returned PASS."},
-        "availability": {"status": "not_applicable", "reason": "No standing service is introduced; the MCP entry remains an inactive project-local example."},
-        "load": {"status": "not_applicable", "reason": "No throughput-sensitive runtime path changes."},
-        "soak": {"status": "not_applicable", "reason": "No persistent process is introduced."},
-        "security": {"status": "pass", "command": "uv run pytest -q tests/test_capability_security.py tests/test_plugin_skill_packages.py", "notes": "Active hook/MCP package admission remains closed; hidden Codex enablement, unbound or partially enrolled consumers, union inflation including rollback, state downgrade, symlink redirection, and root replacement are rejected. The enrollment ledger is written and revalidated at exact mode 0600. Fresh CWE review returned PASS with zero findings."},
-        "compatibility": {"status": "pass", "command": "uv run python scripts/verify_codex_sync.py && uv run python scripts/verify_plugin_cli_activation.py", "notes": "Generated surfaces match canonical sources; isolated Claude and Codex homes discover the same three exact plugin and skill inventories from two independent consumer directories after provider removal; both runtimes are required for READY."},
-        "transaction_locking": {"status": "pass", "command": "uv run pytest -q tests/test_capability_cli.py", "notes": "Registry reads, binding ledger, snapshots, consumer-union calculation, publication, rollback, attestation writes, and activation finalization occur under one identity-checked apply guard; rejected concurrency retries safely and stale or redirected roots cannot overwrite fresh state."}
+        "unit": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_capability_security.py tests/test_capability_cli.py tests/test_plugin_skill_packages.py",
+          "notes": "Schema-3 commands, project integrations, enrolled consumer state, exact dual-runtime readiness policy, legacy compatibility, divergence, symlink, downgrade, interruption, rollback, and package admission regressions pass."
+        },
+        "integration": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_capability_cli.py",
+          "notes": "Command materialization and locking, enrolled canonical on-disk consumer-authenticated global union activation, fail-fast concurrent sync with retry, exact rollback, and runtime probes pass."
+        },
+        "e2e": {
+          "status": "pass",
+          "command": "uv run pytest -q",
+          "notes": "922 tests passed in 153.32 seconds on Python 3.12.13 after the completed independent review and closeout payload refresh."
+        },
+        "browser": {
+          "status": "not_applicable",
+          "reason": "No browser or GUI surface changes."
+        },
+        "edge": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_capability_security.py",
+          "notes": "Unsafe command paths and mappings, target-local integration drift, schema downgrade, singleton runtime gates, command symlinks, malformed or unbound consumers, and symlinked or replaced project, Codex, capability-home, derivative, or cache roots fail closed."
+        },
+        "architecture": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_decision_authority.py tests/test_template_asset_classification.py tests/test_codex_derivation_script.py",
+          "notes": "ADR-89 authority, current decision classification, generated agents, command-to-skill mappings, hook targets, and MCP references agree. Fresh independent final review returned PASS."
+        },
+        "availability": {
+          "status": "not_applicable",
+          "reason": "No standing service is introduced; the MCP entry remains an inactive project-local example."
+        },
+        "load": {
+          "status": "not_applicable",
+          "reason": "No throughput-sensitive runtime path changes."
+        },
+        "soak": {
+          "status": "not_applicable",
+          "reason": "No persistent process is introduced."
+        },
+        "security": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_capability_security.py tests/test_plugin_skill_packages.py",
+          "notes": "Active hook/MCP package admission remains closed; hidden Codex enablement, unbound or partially enrolled consumers, union inflation including rollback, state downgrade, symlink redirection, and root replacement are rejected. The enrollment ledger is written and revalidated at exact mode 0600. Fresh CWE review returned PASS with zero findings."
+        },
+        "compatibility": {
+          "status": "pass",
+          "command": "uv run python scripts/verify_codex_sync.py && uv run python scripts/verify_plugin_cli_activation.py",
+          "notes": "Generated surfaces match canonical sources; isolated Claude and Codex homes discover the same three exact plugin and skill inventories from two independent consumer directories after provider removal; both runtimes are required for READY."
+        },
+        "transaction_locking": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_capability_cli.py",
+          "notes": "Registry reads, binding ledger, snapshots, consumer-union calculation, publication, rollback, attestation writes, and activation finalization occur under one identity-checked apply guard; rejected concurrency retries safely and stale or redirected roots cannot overwrite fresh state."
+        }
       }
     },
     {
       "id": "adr88-active-plugin-supply-chain-2026-09-03",
       "record_status": "complete",
       "scope": "Complete the interrupted host-specific plugin cleanup and make the Yoke capability supply chain explicitly skills-only until a separately named hook or MCP package has a dedicated validator and fresh digest acknowledgement.",
-      "targets": ["config/capability-sources.json", "config/adopter-payload.json", "src/mir/core/capabilities/config.py", "src/mir/core/capabilities/manager.py", "tools/template_assets.py", "tests/test_capability_security.py", "tests/test_capability_cli.py", "tests/test_plugin_skill_packages.py", "docs/decisions/adr-88-active-plugin-component-admission.md", "docs/decisions/INDEX.md", "docs/decisions/adr-74-portable-bootstrap-capability-sources-and-memory.md", "docs/decisions/adr-85-global-policy-inheritance-and-agent-contracts.md", "README.md", "ARCHITECTURE.md", ".claude/settings.json", ".codex/hooks.json", "tasks/intent.json", "tasks/plan.md", "tasks/handoffs/session-handoff-LATEST.md"],
+      "targets": [
+        "config/capability-sources.json",
+        "config/adopter-payload.json",
+        "src/mir/core/capabilities/config.py",
+        "src/mir/core/capabilities/manager.py",
+        "tools/template_assets.py",
+        "tests/test_capability_security.py",
+        "tests/test_capability_cli.py",
+        "tests/test_plugin_skill_packages.py",
+        "docs/decisions/adr-88-active-plugin-component-admission.md",
+        "docs/decisions/INDEX.md",
+        "docs/decisions/adr-74-portable-bootstrap-capability-sources-and-memory.md",
+        "docs/decisions/adr-85-global-policy-inheritance-and-agent-contracts.md",
+        "README.md",
+        "ARCHITECTURE.md",
+        ".claude/settings.json",
+        ".codex/hooks.json",
+        "tasks/intent.json",
+        "tasks/plan.md",
+        "tasks/handoffs/session-handoff-LATEST.md"
+      ],
       "design_ref": "docs/decisions/adr-88-active-plugin-component-admission.md",
       "bluebrick": "Capability provider / Active component admission / Runtime-local integration",
       "categories": {
-        "unit": {"status": "pass", "command": "uv run pytest -q tests/test_capability_security.py tests/test_plugin_skill_packages.py tests/test_capability_cli.py tests/test_decision_authority.py tests/test_template_asset_classification.py", "notes": "97 passed. The initial 14 expected failures established the package-kind gates; independent-review reproductions anchored manifest, marketplace, version, schema, receipt, registry, and rollback checks."},
-        "integration": {"status": "pass", "command": "uv run pytest -q tests/test_capability_cli.py", "notes": "Capability sync preserves the three skills-only plugin inventories and newly written locks record package_kind: skills."},
-        "e2e": {"status": "pass", "command": "uv run pytest -q", "notes": "884 passed in the final implementation run on Python 3.12.13."},
-        "browser": {"status": "not_applicable", "reason": "No browser or GUI surface changes."},
-        "edge": {"status": "pass", "command": "uv run pytest -q tests/test_capability_security.py tests/test_plugin_skill_packages.py", "notes": "Missing, unknown, reserved, mixed, and manifest-injected active components fail closed."},
-        "architecture": {"status": "pass", "command": "uv run pytest -q tests/test_decision_authority.py tests/test_template_asset_classification.py tests/test_advanced_reference_templates.py", "notes": "21 decision, classification, and payload tests pass; independent final review returned PASS after all rollback and compatibility repairs."},
-        "availability": {"status": "not_applicable", "reason": "No standing service or runtime endpoint is added."},
-        "load": {"status": "not_applicable", "reason": "No throughput-sensitive runtime path changes."},
-        "soak": {"status": "not_applicable", "reason": "No persistent process is introduced."},
-        "security": {"status": "pass", "command": "uv run pytest -q tests/test_capability_security.py tests/test_plugin_skill_packages.py tests/test_capability_cli.py", "notes": "83 passed. Independent CWE review returned PASS with zero remaining warnings after receipt/registry/schema and rollback prevalidation were closed."},
-        "compatibility": {"status": "pass", "command": "plugin validator for mir-core, mir-code, and mir-content; uv run python scripts/verify_codex_sync.py", "notes": "All three isolated plugin packages and generated Claude/Codex derivatives pass; the selected plugin and skill inventories are unchanged, and the schema-1/schema-2 compatibility matrix passes."},
-        "transaction_locking": {"status": "pass", "command": "uv run pytest -q tests/test_capability_cli.py", "notes": "Marketplace and selected/materialized digests join atomic schema-2 lock, registry, and receipt publication; rollback revalidates restored provider state before runtime commands."}
+        "unit": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_capability_security.py tests/test_plugin_skill_packages.py tests/test_capability_cli.py tests/test_decision_authority.py tests/test_template_asset_classification.py",
+          "notes": "97 passed. The initial 14 expected failures established the package-kind gates; independent-review reproductions anchored manifest, marketplace, version, schema, receipt, registry, and rollback checks."
+        },
+        "integration": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_capability_cli.py",
+          "notes": "Capability sync preserves the three skills-only plugin inventories and newly written locks record package_kind: skills."
+        },
+        "e2e": {
+          "status": "pass",
+          "command": "uv run pytest -q",
+          "notes": "884 passed in the final implementation run on Python 3.12.13."
+        },
+        "browser": {
+          "status": "not_applicable",
+          "reason": "No browser or GUI surface changes."
+        },
+        "edge": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_capability_security.py tests/test_plugin_skill_packages.py",
+          "notes": "Missing, unknown, reserved, mixed, and manifest-injected active components fail closed."
+        },
+        "architecture": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_decision_authority.py tests/test_template_asset_classification.py tests/test_advanced_reference_templates.py",
+          "notes": "21 decision, classification, and payload tests pass; independent final review returned PASS after all rollback and compatibility repairs."
+        },
+        "availability": {
+          "status": "not_applicable",
+          "reason": "No standing service or runtime endpoint is added."
+        },
+        "load": {
+          "status": "not_applicable",
+          "reason": "No throughput-sensitive runtime path changes."
+        },
+        "soak": {
+          "status": "not_applicable",
+          "reason": "No persistent process is introduced."
+        },
+        "security": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_capability_security.py tests/test_plugin_skill_packages.py tests/test_capability_cli.py",
+          "notes": "83 passed. Independent CWE review returned PASS with zero remaining warnings after receipt/registry/schema and rollback prevalidation were closed."
+        },
+        "compatibility": {
+          "status": "pass",
+          "command": "plugin validator for mir-core, mir-code, and mir-content; uv run python scripts/verify_codex_sync.py",
+          "notes": "All three isolated plugin packages and generated Claude/Codex derivatives pass; the selected plugin and skill inventories are unchanged, and the schema-1/schema-2 compatibility matrix passes."
+        },
+        "transaction_locking": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_capability_cli.py",
+          "notes": "Marketplace and selected/materialized digests join atomic schema-2 lock, registry, and receipt publication; rollback revalidates restored provider state before runtime commands."
+        }
       }
     },
     {
       "id": "adr87-force-push-separator-scope-2026-09-01",
       "record_status": "complete",
       "scope": "Confine both halves of the force-push guard to the push's own argument list so a protected branch name or a flag belonging to another command in a compound command cannot combine into a false block.",
-      "targets": [".claude/hooks/pre-tool-use.sh", "tests/test_deny_list.py", "docs/decisions/adr-87-deny-list-enforcement-recovery.md", "config/adopter-payload.json"],
+      "targets": [
+        ".claude/hooks/pre-tool-use.sh",
+        "tests/test_deny_list.py",
+        "docs/decisions/adr-87-deny-list-enforcement-recovery.md",
+        "config/adopter-payload.json"
+      ],
       "design_ref": "docs/decisions/adr-87-deny-list-enforcement-recovery.md",
       "bluebrick": "Hook enforcement / Guard portability",
       "categories": {
-        "unit": {"status": "pass", "command": "uv run pytest -q tests/test_deny_list.py -k 'separator or within_a_compound'", "notes": "2 tests added and watched fail first. The false-positive test failed on `git push --force origin dev && echo main`; the companion test pinning that compound commands still block passed from the start, which is the point of having both."},
-        "integration": {"status": "pass", "command": "uv run pytest -q tests/test_deny_list.py tests/test_hook_executability.py", "notes": "43 passed."},
-        "e2e": {"status": "pass", "command": "uv run pytest -q", "notes": "Full repository suite."},
-        "browser": {"status": "not_applicable", "reason": "No browser surface changes."},
-        "edge": {"status": "pass", "command": "uv run pytest -q tests/test_deny_list.py", "notes": "Separator forms with &&, ; and a flag before the push; the mirror cases where a compound command really does force-push a protected branch still block."},
-        "architecture": {"status": "pass", "command": "ADR-87 sections 4 and 7", "notes": "Three of the four false positives were introduced by this branch, not inherited: making the flag position-independent let the whole-line branch grep pair with a flag anywhere in the push. `git push --force origin dev && echo main` was blocked as far back as upstream e9e58bc. Recorded in section 7 as a correction, since no protected branch is force-pushed in any of them."},
-        "availability": {"status": "not_applicable", "reason": "No service changes."},
-        "load": {"status": "not_applicable", "reason": "No throughput changes."},
-        "soak": {"status": "not_applicable", "reason": "No persistent process is introduced."},
-        "security": {"status": "pass", "command": "ad-hoc 28-case matrix probed against both HEAD and the main hook", "notes": "28/28 as specified: 12 block, 16 allow. Zero new false positives against main and zero new bypasses beyond the four documented word-boundary and separator corrections. The rule learned here, from a peer session that shipped the same false positive: a widening change needs the allowed side probed as hard as the blocked side, and a first cycle with nine red bypass cases and zero red false-positive cases is the warning sign."},
-        "compatibility": {"status": "pass", "command": "uv run pytest -q tests/test_hook_executability.py", "notes": "Guard message unchanged."},
-        "transaction_locking": {"status": "not_applicable", "reason": "No concurrent writer, database transaction, or lock boundary is changed."}
+        "unit": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_deny_list.py -k 'separator or within_a_compound'",
+          "notes": "2 tests added and watched fail first. The false-positive test failed on `git push --force origin dev && echo main`; the companion test pinning that compound commands still block passed from the start, which is the point of having both."
+        },
+        "integration": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_deny_list.py tests/test_hook_executability.py",
+          "notes": "43 passed."
+        },
+        "e2e": {
+          "status": "pass",
+          "command": "uv run pytest -q",
+          "notes": "Full repository suite."
+        },
+        "browser": {
+          "status": "not_applicable",
+          "reason": "No browser surface changes."
+        },
+        "edge": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_deny_list.py",
+          "notes": "Separator forms with &&, ; and a flag before the push; the mirror cases where a compound command really does force-push a protected branch still block."
+        },
+        "architecture": {
+          "status": "pass",
+          "command": "ADR-87 sections 4 and 7",
+          "notes": "Three of the four false positives were introduced by this branch, not inherited: making the flag position-independent let the whole-line branch grep pair with a flag anywhere in the push. `git push --force origin dev && echo main` was blocked as far back as upstream e9e58bc. Recorded in section 7 as a correction, since no protected branch is force-pushed in any of them."
+        },
+        "availability": {
+          "status": "not_applicable",
+          "reason": "No service changes."
+        },
+        "load": {
+          "status": "not_applicable",
+          "reason": "No throughput changes."
+        },
+        "soak": {
+          "status": "not_applicable",
+          "reason": "No persistent process is introduced."
+        },
+        "security": {
+          "status": "pass",
+          "command": "ad-hoc 28-case matrix probed against both HEAD and the main hook",
+          "notes": "28/28 as specified: 12 block, 16 allow. Zero new false positives against main and zero new bypasses beyond the four documented word-boundary and separator corrections. The rule learned here, from a peer session that shipped the same false positive: a widening change needs the allowed side probed as hard as the blocked side, and a first cycle with nine red bypass cases and zero red false-positive cases is the warning sign."
+        },
+        "compatibility": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_hook_executability.py",
+          "notes": "Guard message unchanged."
+        },
+        "transaction_locking": {
+          "status": "not_applicable",
+          "reason": "No concurrent writer, database transaction, or lock boundary is changed."
+        }
       }
     },
     {
       "id": "adr87-plus-refspec-force-push-2026-09-01",
       "record_status": "complete",
       "scope": "Block a protected-branch force push spelled as a leading + on the refspec, which forces the update with no flag at all.",
-      "targets": [".claude/hooks/pre-tool-use.sh", "tests/test_deny_list.py", "docs/decisions/adr-87-deny-list-enforcement-recovery.md", "config/adopter-payload.json"],
+      "targets": [
+        ".claude/hooks/pre-tool-use.sh",
+        "tests/test_deny_list.py",
+        "docs/decisions/adr-87-deny-list-enforcement-recovery.md",
+        "config/adopter-payload.json"
+      ],
       "design_ref": "docs/decisions/adr-87-deny-list-enforcement-recovery.md",
       "bluebrick": "Hook enforcement / Guard portability",
       "categories": {
-        "unit": {"status": "pass", "command": "uv run pytest -q tests/test_deny_list.py -k plus_refspec", "notes": "2 tests added and watched fail first: the blocking case failed on `git push origin +main` (rc=0), the over-blocking guard passed from the start by construction."},
-        "integration": {"status": "pass", "command": "uv run pytest -q tests/test_deny_list.py tests/test_hook_executability.py", "notes": "41 passed. The documented maintenance / remaster / my-release-notes allowances still hold."},
-        "e2e": {"status": "pass", "command": "uv run pytest -q", "notes": "Full repository suite."},
-        "browser": {"status": "not_applicable", "reason": "No browser surface changes."},
-        "edge": {"status": "pass", "command": "uv run pytest -q tests/test_deny_list.py -k plus_refspec", "notes": "+main, +master, +refs/heads/main block; +feature/login and +refs/heads/feature/login stay allowed, so the + syntax is not banned wholesale."},
-        "architecture": {"status": "pass", "command": "ADR-87 sections 4, 7 and 8", "notes": "The + alternative sits in the same position as the flags rather than matching a bare whitespace-plus anywhere. Dropping that anchor, as mir-harness did, makes `rm -f x && git push origin main` block on the unrelated -f; measured allowed here. Four adjacent spellings remain allowed and are recorded in section 7 rather than fixed silently: release/1.0, main/sub, --force-with-lease=<refspec>, --force-if-includes."},
-        "availability": {"status": "not_applicable", "reason": "No service changes."},
-        "load": {"status": "not_applicable", "reason": "No throughput changes."},
-        "soak": {"status": "not_applicable", "reason": "No persistent process is introduced."},
-        "security": {"status": "pass", "command": "ad-hoc probe of the shipped hook, 12 force-push spellings", "notes": "8 of 8 in-scope expectations matched, including the two over-blocking guards. The 4 out-of-scope spellings were measured as allowed and documented, not left unmeasured."},
-        "compatibility": {"status": "pass", "command": "uv run pytest -q tests/test_hook_executability.py", "notes": "Existing guard messages unchanged; the block reason is still `Force push to protected branch`."},
-        "transaction_locking": {"status": "not_applicable", "reason": "No concurrent writer, database transaction, or lock boundary is changed."}
+        "unit": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_deny_list.py -k plus_refspec",
+          "notes": "2 tests added and watched fail first: the blocking case failed on `git push origin +main` (rc=0), the over-blocking guard passed from the start by construction."
+        },
+        "integration": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_deny_list.py tests/test_hook_executability.py",
+          "notes": "41 passed. The documented maintenance / remaster / my-release-notes allowances still hold."
+        },
+        "e2e": {
+          "status": "pass",
+          "command": "uv run pytest -q",
+          "notes": "Full repository suite."
+        },
+        "browser": {
+          "status": "not_applicable",
+          "reason": "No browser surface changes."
+        },
+        "edge": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_deny_list.py -k plus_refspec",
+          "notes": "+main, +master, +refs/heads/main block; +feature/login and +refs/heads/feature/login stay allowed, so the + syntax is not banned wholesale."
+        },
+        "architecture": {
+          "status": "pass",
+          "command": "ADR-87 sections 4, 7 and 8",
+          "notes": "The + alternative sits in the same position as the flags rather than matching a bare whitespace-plus anywhere. Dropping that anchor, as mir-harness did, makes `rm -f x && git push origin main` block on the unrelated -f; measured allowed here. Four adjacent spellings remain allowed and are recorded in section 7 rather than fixed silently: release/1.0, main/sub, --force-with-lease=<refspec>, --force-if-includes."
+        },
+        "availability": {
+          "status": "not_applicable",
+          "reason": "No service changes."
+        },
+        "load": {
+          "status": "not_applicable",
+          "reason": "No throughput changes."
+        },
+        "soak": {
+          "status": "not_applicable",
+          "reason": "No persistent process is introduced."
+        },
+        "security": {
+          "status": "pass",
+          "command": "ad-hoc probe of the shipped hook, 12 force-push spellings",
+          "notes": "8 of 8 in-scope expectations matched, including the two over-blocking guards. The 4 out-of-scope spellings were measured as allowed and documented, not left unmeasured."
+        },
+        "compatibility": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_hook_executability.py",
+          "notes": "Existing guard messages unchanged; the block reason is still `Force push to protected branch`."
+        },
+        "transaction_locking": {
+          "status": "not_applicable",
+          "reason": "No concurrent writer, database transaction, or lock boundary is changed."
+        }
       }
     },
     {
       "id": "adr87-path-screening-followup-2026-09-01",
       "record_status": "complete",
       "scope": "Screen deny-list path rules against the bare path so an anchored pattern can match, route NotebookEdit through the path guards, and apply the deny-list to apply_patch target paths.",
-      "targets": [".claude/hooks/pre-tool-use.sh", "tests/test_deny_list.py", "docs/decisions/adr-87-deny-list-enforcement-recovery.md", "config/adopter-payload.json"],
+      "targets": [
+        ".claude/hooks/pre-tool-use.sh",
+        "tests/test_deny_list.py",
+        "docs/decisions/adr-87-deny-list-enforcement-recovery.md",
+        "config/adopter-payload.json"
+      ],
       "design_ref": "docs/decisions/adr-87-deny-list-enforcement-recovery.md",
       "bluebrick": "Hook enforcement / Deny-list configuration / Guard portability",
       "categories": {
-        "unit": {"status": "pass", "command": "uv run pytest -q tests/test_deny_list.py", "notes": "6 tests added and watched fail first: bare relative secrets/ path, the probe-rule anchor regression, apply_patch, and NotebookEdit. 4 failed before the fix, 22 pass after."},
-        "integration": {"status": "pass", "command": "uv run pytest -q tests/test_deny_list.py tests/test_hook_executability.py", "notes": "39 passed. test_pre_tool_use_blocks_secret_path_from_codex_apply_patch_command caught a first attempt that added a second patch-path loop and shadowed the existing _mir_patch_path_safety_reason message; the fix instead adds apply_deny_list to the existing loop, so no message changes."},
-        "e2e": {"status": "pass", "command": "uv run pytest -q", "notes": "Full repository suite."},
-        "browser": {"status": "not_applicable", "reason": "No browser surface changes."},
-        "edge": {"status": "pass", "command": "uv run pytest -q tests/test_deny_list.py", "notes": "Relative, ./-prefixed, nested and absolute secrets/ paths; an anchored probe rule that fails for exactly one reason; a patch header adding .env and secrets/prod.yaml; NotebookEdit notebook_path."},
-        "architecture": {"status": "pass", "command": "ADR-87 sections 4, 6, 7 and 8 plus the .mir/boundary.md TDD-ledger requirement", "notes": "No .ai-harness/ rule changes, so no new design phase is required. Path guards consolidate into one screen_path_target function rather than being duplicated per tool. ADR-87 text corrected in the same change to match what the branch actually ships."},
-        "availability": {"status": "not_applicable", "reason": "No service changes."},
-        "load": {"status": "not_applicable", "reason": "No throughput changes."},
-        "soak": {"status": "not_applicable", "reason": "No persistent process is introduced."},
-        "security": {"status": "pass", "command": "uv run python /tmp/probe_yoke_hook.py", "notes": "Independent probe written from ADR-87 prose rather than from the test file: 14 of 17 cases matched before the fix, 15 of 17 after. The two remaining mismatches are the documented +refspec gap and a probe expectation that read the pre-fix chmod severity."},
-        "compatibility": {"status": "pass", "command": "uv run pytest -q tests/test_hook_executability.py", "notes": "Existing hardcoded guards and their exact block messages are unchanged."},
-        "transaction_locking": {"status": "not_applicable", "reason": "No concurrent writer, database transaction, or lock boundary is changed."}
+        "unit": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_deny_list.py",
+          "notes": "6 tests added and watched fail first: bare relative secrets/ path, the probe-rule anchor regression, apply_patch, and NotebookEdit. 4 failed before the fix, 22 pass after."
+        },
+        "integration": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_deny_list.py tests/test_hook_executability.py",
+          "notes": "39 passed. test_pre_tool_use_blocks_secret_path_from_codex_apply_patch_command caught a first attempt that added a second patch-path loop and shadowed the existing _mir_patch_path_safety_reason message; the fix instead adds apply_deny_list to the existing loop, so no message changes."
+        },
+        "e2e": {
+          "status": "pass",
+          "command": "uv run pytest -q",
+          "notes": "Full repository suite."
+        },
+        "browser": {
+          "status": "not_applicable",
+          "reason": "No browser surface changes."
+        },
+        "edge": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_deny_list.py",
+          "notes": "Relative, ./-prefixed, nested and absolute secrets/ paths; an anchored probe rule that fails for exactly one reason; a patch header adding .env and secrets/prod.yaml; NotebookEdit notebook_path."
+        },
+        "architecture": {
+          "status": "pass",
+          "command": "ADR-87 sections 4, 6, 7 and 8 plus the .mir/boundary.md TDD-ledger requirement",
+          "notes": "No .ai-harness/ rule changes, so no new design phase is required. Path guards consolidate into one screen_path_target function rather than being duplicated per tool. ADR-87 text corrected in the same change to match what the branch actually ships."
+        },
+        "availability": {
+          "status": "not_applicable",
+          "reason": "No service changes."
+        },
+        "load": {
+          "status": "not_applicable",
+          "reason": "No throughput changes."
+        },
+        "soak": {
+          "status": "not_applicable",
+          "reason": "No persistent process is introduced."
+        },
+        "security": {
+          "status": "pass",
+          "command": "uv run python /tmp/probe_yoke_hook.py",
+          "notes": "Independent probe written from ADR-87 prose rather than from the test file: 14 of 17 cases matched before the fix, 15 of 17 after. The two remaining mismatches are the documented +refspec gap and a probe expectation that read the pre-fix chmod severity."
+        },
+        "compatibility": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_hook_executability.py",
+          "notes": "Existing hardcoded guards and their exact block messages are unchanged."
+        },
+        "transaction_locking": {
+          "status": "not_applicable",
+          "reason": "No concurrent writer, database transaction, or lock boundary is changed."
+        }
       }
     },
     {
       "id": "adr87-deny-list-enforcement-recovery-2026-09-01",
       "record_status": "complete",
       "scope": "Restore deny-list enforcement, make the destructive-command guards position-independent and POSIX-portable, add a secrets/ directory check, and remove the broken F9 sealed-family push guard.",
-      "targets": [".claude/hooks/pre-tool-use.sh", ".ai-harness/deny-list.yaml", "tests/test_deny_list.py", "docs/decisions/adr-87-deny-list-enforcement-recovery.md", "docs/decisions/INDEX.md", "docs/harness-engineering/applications/harness-review-criteria.md", "config/template-assets.json", "config/adopter-payload.json"],
+      "targets": [
+        ".claude/hooks/pre-tool-use.sh",
+        ".ai-harness/deny-list.yaml",
+        "tests/test_deny_list.py",
+        "docs/decisions/adr-87-deny-list-enforcement-recovery.md",
+        "docs/decisions/INDEX.md",
+        "docs/harness-engineering/applications/harness-review-criteria.md",
+        "config/template-assets.json",
+        "config/adopter-payload.json"
+      ],
       "design_ref": "docs/decisions/adr-87-deny-list-enforcement-recovery.md",
       "bluebrick": "Hook enforcement / Deny-list configuration / Guard portability",
       "categories": {
-        "unit": {"status": "pass", "command": "uv run pytest -q tests/test_deny_list.py", "notes": "16 tests, written before the fix and failing 10 of 15 against the unmodified hooks. This is the regression anchor the repository previously lacked."},
-        "integration": {"status": "pass", "command": "uv run pytest -q tests/test_deny_list.py tests/test_hook_executability.py", "notes": "New enforcement holds without weakening the existing hardcoded guards. CI wiring into .github/workflows/validate.yml is deferred to a follow-up: the maintainer OAuth token lacks the workflow scope, so it cannot be pushed with this change. Until then the deny-list test runs locally only and the POSIX-portability claim is unverified on the macOS runner."},
-        "e2e": {"status": "pass", "command": "uv run pytest -q", "notes": "Full repository suite."},
-        "browser": {"status": "not_applicable", "reason": "No browser surface changes."},
-        "edge": {"status": "pass", "command": "uv run pytest -q tests/test_deny_list.py", "notes": "Flag-after-refspec force push, separator and absolute-path sudo, secrets/ directory writes, and the non-POSIX escape ban. Also pins that branches merely containing main/master/release stay allowed."},
-        "architecture": {"status": "pass", "command": "ADR-87 plus the .mir/boundary.md design-phase requirement", "notes": "The design record precedes the .ai-harness rule change. F9 removal is consistent with ADR-22 being a reference stub and with mir-harness having already deleted the guard."},
-        "availability": {"status": "not_applicable", "reason": "No service changes."},
-        "load": {"status": "not_applicable", "reason": "No throughput changes."},
-        "soak": {"status": "not_applicable", "reason": "No persistent process is introduced."}
+        "unit": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_deny_list.py",
+          "notes": "16 tests, written before the fix and failing 10 of 15 against the unmodified hooks. This is the regression anchor the repository previously lacked."
+        },
+        "integration": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_deny_list.py tests/test_hook_executability.py",
+          "notes": "New enforcement holds without weakening the existing hardcoded guards. CI wiring into .github/workflows/validate.yml is deferred to a follow-up: the maintainer OAuth token lacks the workflow scope, so it cannot be pushed with this change. Until then the deny-list test runs locally only and the POSIX-portability claim is unverified on the macOS runner."
+        },
+        "e2e": {
+          "status": "pass",
+          "command": "uv run pytest -q",
+          "notes": "Full repository suite."
+        },
+        "browser": {
+          "status": "not_applicable",
+          "reason": "No browser surface changes."
+        },
+        "edge": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_deny_list.py",
+          "notes": "Flag-after-refspec force push, separator and absolute-path sudo, secrets/ directory writes, and the non-POSIX escape ban. Also pins that branches merely containing main/master/release stay allowed."
+        },
+        "architecture": {
+          "status": "pass",
+          "command": "ADR-87 plus the .mir/boundary.md design-phase requirement",
+          "notes": "The design record precedes the .ai-harness rule change. F9 removal is consistent with ADR-22 being a reference stub and with mir-harness having already deleted the guard."
+        },
+        "availability": {
+          "status": "not_applicable",
+          "reason": "No service changes."
+        },
+        "load": {
+          "status": "not_applicable",
+          "reason": "No throughput changes."
+        },
+        "soak": {
+          "status": "not_applicable",
+          "reason": "No persistent process is introduced."
+        }
       }
     },
     {
       "id": "adr86-mir-harness-managed-maintenance-2026-08-30",
       "record_status": "complete",
       "scope": "Designate Mir Harness as the Mir Yoke repository-maintenance manager, remove capability-lock protection only from the tracked maintainer Profile, and retain consumer and publication authority boundaries.",
-      "targets": ["CLAUDE.md", ".mir/repo-profile.toml", "config/repos/mir-yoke.json", "docs/decisions/adr-86-mir-harness-managed-repository-maintenance.md", "tests/test_public_template_identity.py", "generated derivatives", "config/adopter-payload.json"],
+      "targets": [
+        "CLAUDE.md",
+        ".mir/repo-profile.toml",
+        "config/repos/mir-yoke.json",
+        "docs/decisions/adr-86-mir-harness-managed-repository-maintenance.md",
+        "tests/test_public_template_identity.py",
+        "generated derivatives",
+        "config/adopter-payload.json"
+      ],
       "design_ref": "docs/decisions/adr-86-mir-harness-managed-repository-maintenance.md",
       "bluebrick": "Repository maintenance authority / Portable maintainer Profile / Capability lock",
       "categories": {
-        "unit": {"status": "pass", "command": "uv run pytest -q tests/test_public_template_identity.py tests/test_template_asset_classification.py", "notes": "Harness-managed identity, unprotected maintainer lock, asset classification, and exact payload pass."},
-        "integration": {"status": "pass", "command": "uv run python scripts/verify_codex_sync.py && uv run python -m tools.template_assets", "notes": "Canonical and generated contracts and public asset inventory agree."},
-        "e2e": {"status": "pass", "command": "uv run pytest -q", "notes": "All 803 repository tests pass."},
-        "browser": {"status": "not_applicable", "reason": "No browser surface changes."},
-        "edge": {"status": "pass", "command": "uv run pytest -q tests/test_setup_profile.py tests/test_public_template_identity.py", "notes": "The maintainer lock is unprotected while adopter-generated Profiles retain lock protection."},
-        "architecture": {"status": "pass", "command": "ADR-86 and root-contract assertions", "notes": "Yoke remains a non-runtime public template with no consumer authority."},
-        "availability": {"status": "not_applicable", "reason": "No service changes."},
-        "load": {"status": "not_applicable", "reason": "No throughput changes."},
-        "soak": {"status": "not_applicable", "reason": "No persistent process is introduced."},
-        "security": {"status": "pass", "command": "uv run pytest -q tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees", "notes": "The lock remains commit-bound and exact; secrets and consumer locks remain protected."},
-        "compatibility": {"status": "pass", "command": "uv run pytest -q", "notes": "803 tests pass with no consumer bootstrap regression."},
-        "transaction_locking": {"status": "pass", "command": "capability-lock exact-object regression", "notes": "Removing protected-path classification does not weaken lock integrity."}
+        "unit": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_public_template_identity.py tests/test_template_asset_classification.py",
+          "notes": "Harness-managed identity, unprotected maintainer lock, asset classification, and exact payload pass."
+        },
+        "integration": {
+          "status": "pass",
+          "command": "uv run python scripts/verify_codex_sync.py && uv run python -m tools.template_assets",
+          "notes": "Canonical and generated contracts and public asset inventory agree."
+        },
+        "e2e": {
+          "status": "pass",
+          "command": "uv run pytest -q",
+          "notes": "All 803 repository tests pass."
+        },
+        "browser": {
+          "status": "not_applicable",
+          "reason": "No browser surface changes."
+        },
+        "edge": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_setup_profile.py tests/test_public_template_identity.py",
+          "notes": "The maintainer lock is unprotected while adopter-generated Profiles retain lock protection."
+        },
+        "architecture": {
+          "status": "pass",
+          "command": "ADR-86 and root-contract assertions",
+          "notes": "Yoke remains a non-runtime public template with no consumer authority."
+        },
+        "availability": {
+          "status": "not_applicable",
+          "reason": "No service changes."
+        },
+        "load": {
+          "status": "not_applicable",
+          "reason": "No throughput changes."
+        },
+        "soak": {
+          "status": "not_applicable",
+          "reason": "No persistent process is introduced."
+        },
+        "security": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees",
+          "notes": "The lock remains commit-bound and exact; secrets and consumer locks remain protected."
+        },
+        "compatibility": {
+          "status": "pass",
+          "command": "uv run pytest -q",
+          "notes": "803 tests pass with no consumer bootstrap regression."
+        },
+        "transaction_locking": {
+          "status": "pass",
+          "command": "capability-lock exact-object regression",
+          "notes": "Removing protected-path classification does not weaken lock integrity."
+        }
       }
     },
     {
@@ -1151,18 +1740,62 @@
       "design_ref": "docs/decisions/adr-85-global-policy-inheritance-and-agent-contracts.md",
       "bluebrick": "Runtime-neutral Codex contracts / Exact fail-closed source-driven read-only classification",
       "categories": {
-        "unit": {"status": "pass", "command": "uv run pytest -q tests/test_codex_derivation_script.py", "notes": "9 passed; exact Write/Edit tokens, batch fail-closed validation, invalid patterned frontmatter, near-match tool names, and stale contracts across every generated agent are covered."},
-        "integration": {"status": "pass", "command": "uv run python scripts/verify_codex_sync.py", "notes": "Canonical agent sources and generated Codex mirrors match after regeneration."},
-        "e2e": {"status": "pass", "command": "uv run python -m tools.template_assets --json && uv run pytest -q tests/test_template_asset_classification.py::test_should_match_exact_adopter_payload_when_release_inventory_is_generated", "notes": "All 692 tracked assets are classified and the refreshed adopter payload exactly matches the lock-bound generated inventory."},
-        "browser": {"status": "not_applicable", "reason": "No browser or GUI surface changes."},
-        "edge": {"status": "pass", "command": "uv run pytest -q tests/test_codex_derivation_script.py -k 'exact_write_and_edit or invalid_patterned'", "notes": "Writer/Edit and Write/NotebookEdit near matches do not select a read-only sandbox; invalid patterned name/tool metadata fails before agent output."},
-        "architecture": {"status": "pass", "command": "uv run python scripts/verify_codex_sync.py", "notes": "ADR-85 host-neutral delegation and source-derived sandboxing are synchronized."},
-        "availability": {"status": "not_applicable", "reason": "No daemon, scheduler, or standing service changes."},
-        "load": {"status": "not_applicable", "reason": "Generation remains bounded repository maintenance."},
-        "soak": {"status": "not_applicable", "reason": "No persistent process is introduced."},
-        "security": {"status": "pass", "command": "uv run pytest -q tests/test_codex_derivation_script.py", "notes": "Read-only sandbox assignment depends on exact source capabilities; all sources validate before output replacement, so malformed patterned metadata cannot leave partial or silently widened agent mirrors."},
-        "compatibility": {"status": "pass", "command": "uv run pytest -q", "notes": "803 tests passed with the protected capability lock included."},
-        "transaction_locking": {"status": "pass", "command": "uv run pytest -q tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees", "notes": "The protected lock binds the changed canonical agent objects to implementation commit 3018f5c63d610f06d3195a2e409f3bdb0cdd311f."}
+        "unit": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_codex_derivation_script.py",
+          "notes": "9 passed; exact Write/Edit tokens, batch fail-closed validation, invalid patterned frontmatter, near-match tool names, and stale contracts across every generated agent are covered."
+        },
+        "integration": {
+          "status": "pass",
+          "command": "uv run python scripts/verify_codex_sync.py",
+          "notes": "Canonical agent sources and generated Codex mirrors match after regeneration."
+        },
+        "e2e": {
+          "status": "pass",
+          "command": "uv run python -m tools.template_assets --json && uv run pytest -q tests/test_template_asset_classification.py::test_should_match_exact_adopter_payload_when_release_inventory_is_generated",
+          "notes": "All 692 tracked assets are classified and the refreshed adopter payload exactly matches the lock-bound generated inventory."
+        },
+        "browser": {
+          "status": "not_applicable",
+          "reason": "No browser or GUI surface changes."
+        },
+        "edge": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_codex_derivation_script.py -k 'exact_write_and_edit or invalid_patterned'",
+          "notes": "Writer/Edit and Write/NotebookEdit near matches do not select a read-only sandbox; invalid patterned name/tool metadata fails before agent output."
+        },
+        "architecture": {
+          "status": "pass",
+          "command": "uv run python scripts/verify_codex_sync.py",
+          "notes": "ADR-85 host-neutral delegation and source-derived sandboxing are synchronized."
+        },
+        "availability": {
+          "status": "not_applicable",
+          "reason": "No daemon, scheduler, or standing service changes."
+        },
+        "load": {
+          "status": "not_applicable",
+          "reason": "Generation remains bounded repository maintenance."
+        },
+        "soak": {
+          "status": "not_applicable",
+          "reason": "No persistent process is introduced."
+        },
+        "security": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_codex_derivation_script.py",
+          "notes": "Read-only sandbox assignment depends on exact source capabilities; all sources validate before output replacement, so malformed patterned metadata cannot leave partial or silently widened agent mirrors."
+        },
+        "compatibility": {
+          "status": "pass",
+          "command": "uv run pytest -q",
+          "notes": "803 tests passed with the protected capability lock included."
+        },
+        "transaction_locking": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees",
+          "notes": "The protected lock binds the changed canonical agent objects to implementation commit 3018f5c63d610f06d3195a2e409f3bdb0cdd311f."
+        }
       }
     },
     {
@@ -1188,18 +1821,62 @@
       "design_ref": "docs/decisions/adr-85-global-policy-inheritance-and-agent-contracts.md",
       "bluebrick": "Generated Codex policy / Agent contracts / External skill migration",
       "categories": {
-        "unit": {"status": "pass", "command": "uv run pytest -q tests/test_codex_derivation_script.py tests/test_bootstrap_cli.py tests/test_decision_authority.py tests/test_template_asset_classification.py", "notes": "53 passed across the canonical generator, validation, source metadata, and current decision boundary."},
-        "integration": {"status": "pass", "command": "uv run pytest -q tests/test_codex_derivation_script.py tests/test_greenfield_slim_integration.py", "notes": "11 passed across generated parity and external skill registries; the commit-bound lock remains a separate category."},
-        "e2e": {"status": "pass", "command": "uv run python scripts/verify_codex_sync.py", "notes": "A clean temporary derivation matches every maintained Codex output."},
-        "browser": {"status": "not_applicable", "reason": "No browser or GUI surface changes."},
-        "edge": {"status": "pass", "command": "uv run pytest -q tests/test_codex_derivation_script.py -k 'not_infer_read_only or skips_non_agent'", "notes": "A legacy slug cannot grant read-only sandboxing and optional project settings stay absent."},
-        "architecture": {"status": "pass", "command": "uv run pytest -q tests/test_decision_authority.py tests/test_public_template_identity.py tests/test_template_asset_classification.py", "notes": "ADR-85 remains inside the public-template authority and asset boundary; ADR-84 records the amendment."},
-        "availability": {"status": "not_applicable", "reason": "No daemon, scheduler, or standing service changes."},
-        "load": {"status": "not_applicable", "reason": "The change removes fixed native-agent concurrency instead of adding a throughput surface."},
-        "soak": {"status": "not_applicable", "reason": "No persistent process is introduced."},
-        "security": {"status": "pass", "command": "uv run pytest -q tests/test_codex_derivation_script.py tests/test_bootstrap_cli.py tests/test_public_template_identity.py", "notes": "Operator policy ownership, read-only metadata, and public non-authority pass."},
-        "compatibility": {"status": "pass", "command": "uv run pytest -q -k 'not test_repository_lock_is_portable_and_matches_managed_trees'", "notes": "799 passed and one commit-bound capability-lock test was intentionally deselected."},
-        "transaction_locking": {"status": "pass", "command": "uv run pytest -q tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees", "notes": "The protected lock binds the three changed agent source objects to implementation commit 90bb4f62270b3746e5a57e22c83ea3104c1ff357."}
+        "unit": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_codex_derivation_script.py tests/test_bootstrap_cli.py tests/test_decision_authority.py tests/test_template_asset_classification.py",
+          "notes": "53 passed across the canonical generator, validation, source metadata, and current decision boundary."
+        },
+        "integration": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_codex_derivation_script.py tests/test_greenfield_slim_integration.py",
+          "notes": "11 passed across generated parity and external skill registries; the commit-bound lock remains a separate category."
+        },
+        "e2e": {
+          "status": "pass",
+          "command": "uv run python scripts/verify_codex_sync.py",
+          "notes": "A clean temporary derivation matches every maintained Codex output."
+        },
+        "browser": {
+          "status": "not_applicable",
+          "reason": "No browser or GUI surface changes."
+        },
+        "edge": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_codex_derivation_script.py -k 'not_infer_read_only or skips_non_agent'",
+          "notes": "A legacy slug cannot grant read-only sandboxing and optional project settings stay absent."
+        },
+        "architecture": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_decision_authority.py tests/test_public_template_identity.py tests/test_template_asset_classification.py",
+          "notes": "ADR-85 remains inside the public-template authority and asset boundary; ADR-84 records the amendment."
+        },
+        "availability": {
+          "status": "not_applicable",
+          "reason": "No daemon, scheduler, or standing service changes."
+        },
+        "load": {
+          "status": "not_applicable",
+          "reason": "The change removes fixed native-agent concurrency instead of adding a throughput surface."
+        },
+        "soak": {
+          "status": "not_applicable",
+          "reason": "No persistent process is introduced."
+        },
+        "security": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_codex_derivation_script.py tests/test_bootstrap_cli.py tests/test_public_template_identity.py",
+          "notes": "Operator policy ownership, read-only metadata, and public non-authority pass."
+        },
+        "compatibility": {
+          "status": "pass",
+          "command": "uv run pytest -q -k 'not test_repository_lock_is_portable_and_matches_managed_trees'",
+          "notes": "799 passed and one commit-bound capability-lock test was intentionally deselected."
+        },
+        "transaction_locking": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees",
+          "notes": "The protected lock binds the three changed agent source objects to implementation commit 90bb4f62270b3746e5a57e22c83ea3104c1ff357."
+        }
       }
     },
     {
@@ -1234,18 +1911,62 @@
       "design_ref": "docs/decisions/adr-84-harness-upgrade-guidance-and-runtime-hygiene.md",
       "bluebrick": "Reference guidance / Context and memory / Embedding boundary / Hook adapters / Generated runtime parity",
       "categories": {
-        "unit": {"status": "pass", "command": "uv run pytest -q tests/test_adr53_phase3a_search.py tests/test_adr53_phase3b_context_cli.py tests/test_memory_doctor.py tests/test_post_edit_memory_sync.py tests/test_hook_executability.py", "notes": "Current/history facts, instruction-like memory quarantine, semantic document status, archive configuration, vector refusal/backfill/resume, patch adapters, secret redaction, and invalid configuration regressions pass."},
-        "integration": {"status": "pass", "command": "uv run pytest -q tests/test_adr53_phase2_population.py tests/test_adr53_phase3b_context_cli.py tests/test_memory_doctor.py tests/test_compact_lifecycle_hooks.py tests/test_bootstrap_cli.py tests/test_greenfield_slim_integration.py tests/test_codex_derivation_script.py", "notes": "Fingerprint-bound resume, subject/provenance rendering, unsafe-value quarantine, canonical hooks, operator-owned Codex permissions, bootstrap compatibility, SessionEnd timeout, and generated parity pass together."},
-        "e2e": {"status": "pass", "command": "uv run python scripts/verify_release_readiness.py", "notes": "Materialized clean candidate reports ready=true after focused contracts, installed CLI, 691-file classification, derivatives, sanitization, links, schemas, 797 full tests, and Ruff."},
-        "browser": {"status": "not_applicable", "reason": "Mir Yoke has no browser or GUI product surface."},
-        "edge": {"status": "pass", "command": "uv run pytest -q tests/test_adr53_phase3a_search.py tests/test_adr53_phase3b_context_cli.py tests/test_hook_executability.py", "notes": "Fact-only databases, UTF-8 caps, prompt-injection synonyms, current Codex patch fields, nested paths, archive globs, and partial vector coverage are covered."},
-        "architecture": {"status": "pass", "command": "uv run python scripts/verify_codex_sync.py", "notes": "Claude sources, generated AGENTS, Codex agents/config/hooks/README, portable hook library, and sync manifest are aligned."},
-        "availability": {"status": "not_applicable", "reason": "No daemon, scheduler, or standing service is introduced."},
-        "load": {"status": "not_applicable", "reason": "The change adds bounded retrieval and local hook behavior, not a throughput service."},
-        "soak": {"status": "not_applicable", "reason": "No persistent process is introduced."},
-        "security": {"status": "pass", "command": "uv run pytest -q tests/test_adr53_phase3b_context_cli.py tests/test_hook_executability.py tests/test_public_template_identity.py tests/test_decision_authority.py", "notes": "Path safety covers current patch input, credential values are redacted or quarantined, unsafe facts are omitted by id, operator permissions are not overridden, and public non-authority holds."},
-        "compatibility": {"status": "pass", "command": "uv run pytest -q", "notes": "The materialized clean candidate full suite passes with 797 tests."},
-        "transaction_locking": {"status": "pass", "command": "uv run pytest -q tests/test_adr53_phase2_population.py -k missing_vector_reindex", "notes": "Per-document vector backfill commits successful documents, rolls back failed documents, reports partial coverage, resumes only with the same persisted encoder fingerprint, and rejects a different fingerprint before writing."}
+        "unit": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_adr53_phase3a_search.py tests/test_adr53_phase3b_context_cli.py tests/test_memory_doctor.py tests/test_post_edit_memory_sync.py tests/test_hook_executability.py",
+          "notes": "Current/history facts, instruction-like memory quarantine, semantic document status, archive configuration, vector refusal/backfill/resume, patch adapters, secret redaction, and invalid configuration regressions pass."
+        },
+        "integration": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_adr53_phase2_population.py tests/test_adr53_phase3b_context_cli.py tests/test_memory_doctor.py tests/test_compact_lifecycle_hooks.py tests/test_bootstrap_cli.py tests/test_greenfield_slim_integration.py tests/test_codex_derivation_script.py",
+          "notes": "Fingerprint-bound resume, subject/provenance rendering, unsafe-value quarantine, canonical hooks, operator-owned Codex permissions, bootstrap compatibility, SessionEnd timeout, and generated parity pass together."
+        },
+        "e2e": {
+          "status": "pass",
+          "command": "uv run python scripts/verify_release_readiness.py",
+          "notes": "Materialized clean candidate reports ready=true after focused contracts, installed CLI, 691-file classification, derivatives, sanitization, links, schemas, 797 full tests, and Ruff."
+        },
+        "browser": {
+          "status": "not_applicable",
+          "reason": "Mir Yoke has no browser or GUI product surface."
+        },
+        "edge": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_adr53_phase3a_search.py tests/test_adr53_phase3b_context_cli.py tests/test_hook_executability.py",
+          "notes": "Fact-only databases, UTF-8 caps, prompt-injection synonyms, current Codex patch fields, nested paths, archive globs, and partial vector coverage are covered."
+        },
+        "architecture": {
+          "status": "pass",
+          "command": "uv run python scripts/verify_codex_sync.py",
+          "notes": "Claude sources, generated AGENTS, Codex agents/config/hooks/README, portable hook library, and sync manifest are aligned."
+        },
+        "availability": {
+          "status": "not_applicable",
+          "reason": "No daemon, scheduler, or standing service is introduced."
+        },
+        "load": {
+          "status": "not_applicable",
+          "reason": "The change adds bounded retrieval and local hook behavior, not a throughput service."
+        },
+        "soak": {
+          "status": "not_applicable",
+          "reason": "No persistent process is introduced."
+        },
+        "security": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_adr53_phase3b_context_cli.py tests/test_hook_executability.py tests/test_public_template_identity.py tests/test_decision_authority.py",
+          "notes": "Path safety covers current patch input, credential values are redacted or quarantined, unsafe facts are omitted by id, operator permissions are not overridden, and public non-authority holds."
+        },
+        "compatibility": {
+          "status": "pass",
+          "command": "uv run pytest -q",
+          "notes": "The materialized clean candidate full suite passes with 797 tests."
+        },
+        "transaction_locking": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_adr53_phase2_population.py -k missing_vector_reindex",
+          "notes": "Per-document vector backfill commits successful documents, rolls back failed documents, reports partial coverage, resumes only with the same persisted encoder fingerprint, and rejects a different fingerprint before writing."
+        }
       }
     },
     {
@@ -1269,18 +1990,62 @@
       ],
       "bluebrick": "Compact lifecycle / Generated hook parity / Project Agent Kit common harness",
       "categories": {
-        "unit": {"status": "pass", "command": "uv run pytest -q tests/test_compact_lifecycle_hooks.py tests/test_closeout_hooks.py", "notes": "PreCompact, PostCompact, compact-resume, atomic replacement, fail-open behavior, and ignored invocation evidence pass."},
-        "integration": {"status": "pass", "command": "uv run pytest -q tests/test_common_harness_template.py tests/test_project_agent_kit.py tests/test_project_agent_kit_release_evidence.py tests/test_codex_derivation_script.py", "notes": "Maintainer hooks, generated runtime registrations, common harness rendering, schema, observer, and verifier contracts pass together."},
-        "e2e": {"status": "pass", "command": "uv run python scripts/verify_release_readiness.py", "notes": "A materialized clean candidate passes supported-surface, CLI, asset, derivative, sanitization, link, schema, full-test, and lint gates. Owner-run example repositories remain optional post-release acceptance."},
-        "browser": {"status": "not_applicable", "reason": "No browser or GUI surface changes."},
-        "edge": {"status": "pass", "command": "uv run pytest -q tests/test_compact_lifecycle_hooks.py tests/test_project_agent_kit_release_evidence.py", "notes": "Unbalanced markers, malformed payloads, missing handoffs, oversized context, nested working directories, spaces, and mutation probes are covered."},
-        "architecture": {"status": "pass", "command": "uv run python scripts/verify_codex_sync.py", "notes": "Canonical project hook definitions and generated Claude/Codex registrations remain synchronized."},
-        "availability": {"status": "not_applicable", "reason": "Hooks are bounded lifecycle callbacks and add no daemon or service."},
-        "load": {"status": "not_applicable", "reason": "Compact lifecycle work is bounded to one repository session."},
-        "soak": {"status": "not_applicable", "reason": "No persistent process or scheduler is introduced."},
-        "security": {"status": "pass", "command": "uv run pytest -q tests/test_compact_lifecycle_hooks.py tests/test_public_template_identity.py tests/test_project_agent_kit_release_evidence.py", "notes": "Runtime evidence stays ignored, recovery context is bounded, hooks resolve the target root, and public-template non-authority remains intact."},
-        "compatibility": {"status": "pass", "command": "uv run pytest -q", "notes": "The materialized candidate full suite passes with 774 tests on the audited worktree."},
-        "transaction_locking": {"status": "pass", "command": "uv run pytest -q tests/test_compact_lifecycle_hooks.py", "notes": "Canonical handoff refresh uses same-directory temporary files and atomic replacement without adding a shared lock service."}
+        "unit": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_compact_lifecycle_hooks.py tests/test_closeout_hooks.py",
+          "notes": "PreCompact, PostCompact, compact-resume, atomic replacement, fail-open behavior, and ignored invocation evidence pass."
+        },
+        "integration": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_common_harness_template.py tests/test_project_agent_kit.py tests/test_project_agent_kit_release_evidence.py tests/test_codex_derivation_script.py",
+          "notes": "Maintainer hooks, generated runtime registrations, common harness rendering, schema, observer, and verifier contracts pass together."
+        },
+        "e2e": {
+          "status": "pass",
+          "command": "uv run python scripts/verify_release_readiness.py",
+          "notes": "A materialized clean candidate passes supported-surface, CLI, asset, derivative, sanitization, link, schema, full-test, and lint gates. Owner-run example repositories remain optional post-release acceptance."
+        },
+        "browser": {
+          "status": "not_applicable",
+          "reason": "No browser or GUI surface changes."
+        },
+        "edge": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_compact_lifecycle_hooks.py tests/test_project_agent_kit_release_evidence.py",
+          "notes": "Unbalanced markers, malformed payloads, missing handoffs, oversized context, nested working directories, spaces, and mutation probes are covered."
+        },
+        "architecture": {
+          "status": "pass",
+          "command": "uv run python scripts/verify_codex_sync.py",
+          "notes": "Canonical project hook definitions and generated Claude/Codex registrations remain synchronized."
+        },
+        "availability": {
+          "status": "not_applicable",
+          "reason": "Hooks are bounded lifecycle callbacks and add no daemon or service."
+        },
+        "load": {
+          "status": "not_applicable",
+          "reason": "Compact lifecycle work is bounded to one repository session."
+        },
+        "soak": {
+          "status": "not_applicable",
+          "reason": "No persistent process or scheduler is introduced."
+        },
+        "security": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_compact_lifecycle_hooks.py tests/test_public_template_identity.py tests/test_project_agent_kit_release_evidence.py",
+          "notes": "Runtime evidence stays ignored, recovery context is bounded, hooks resolve the target root, and public-template non-authority remains intact."
+        },
+        "compatibility": {
+          "status": "pass",
+          "command": "uv run pytest -q",
+          "notes": "The materialized candidate full suite passes with 774 tests on the audited worktree."
+        },
+        "transaction_locking": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_compact_lifecycle_hooks.py",
+          "notes": "Canonical handoff refresh uses same-directory temporary files and atomic replacement without adding a shared lock service."
+        }
       }
     },
     {
@@ -1295,18 +2060,62 @@
         "tasks/tdd.json"
       ],
       "categories": {
-        "unit": {"status": "pass", "command": "uv run pytest -q tests/test_bootstrap_start_gate.py", "notes": "19 passed; exact bounded worktree allowlist and source identity validation are covered."},
-        "integration": {"status": "pass", "command": "uv run pytest -q tests/test_bootstrap_start_gate.py tests/test_bootstrap_adoption_cli.py tests/test_bootstrap_cli.py", "notes": "75 passed; hook recovery, adoption, and greenfield bootstrap remain compatible."},
-        "e2e": {"status": "pass", "command": "uv run pytest -q tests/test_bootstrap_start_gate.py -k recovery", "notes": "1 passed; an invalid receipt permits agent-run clean provider preparation and adoption authorization."},
-        "browser": {"status": "not_applicable", "reason": "No browser or UI surface changes."},
-        "edge": {"status": "pass", "command": "uv run pytest -q tests/test_bootstrap_start_gate.py -k recovery", "notes": "Wrong commits, targets, remotes, flags, aliases, extensions, replacement objects, lazy fetches, symlinks, and shell metacharacters are rejected."},
-        "architecture": {"status": "pass", "command": "uv run pytest -q tests/test_bootstrap_start_gate.py tests/test_bootstrap_adoption_cli.py tests/test_bootstrap_cli.py && uv run python scripts/verify_codex_sync.py", "notes": "75 tests and generated parity pass; recovery stays provider-owned and target-local without standing authority."},
-        "availability": {"status": "pass", "command": "uv run pytest -q tests/test_bootstrap_start_gate.py -k recovery", "notes": "The invalid-receipt path no longer deadlocks deterministic preparation of a clean pinned source."},
-        "load": {"status": "not_applicable", "reason": "Recovery is a bounded operator action outside throughput-sensitive paths."},
-        "soak": {"status": "not_applicable", "reason": "No daemon or persistent loop is added."},
-        "security": {"status": "pass", "command": "uv run pytest -q tests/test_bootstrap_start_gate.py -k recovery", "notes": "Origin, commit, target confinement, extension neutralization, object identity, clean source, and injection rejection pass."},
-        "compatibility": {"status": "pass", "command": "uv run pytest -q tests/test_bootstrap_start_gate.py tests/test_bootstrap_adoption_cli.py tests/test_bootstrap_cli.py tests/test_installed_cli.py tests/test_hook_executability.py tests/test_common_harness_template.py", "notes": "97 passed across bootstrap, installed CLI, executable hook, and common harness contracts."},
-        "transaction_locking": {"status": "not_applicable", "reason": "The hook authorizes one Git worktree transaction but does not implement concurrent state mutation."}
+        "unit": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_bootstrap_start_gate.py",
+          "notes": "19 passed; exact bounded worktree allowlist and source identity validation are covered."
+        },
+        "integration": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_bootstrap_start_gate.py tests/test_bootstrap_adoption_cli.py tests/test_bootstrap_cli.py",
+          "notes": "75 passed; hook recovery, adoption, and greenfield bootstrap remain compatible."
+        },
+        "e2e": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_bootstrap_start_gate.py -k recovery",
+          "notes": "1 passed; an invalid receipt permits agent-run clean provider preparation and adoption authorization."
+        },
+        "browser": {
+          "status": "not_applicable",
+          "reason": "No browser or UI surface changes."
+        },
+        "edge": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_bootstrap_start_gate.py -k recovery",
+          "notes": "Wrong commits, targets, remotes, flags, aliases, extensions, replacement objects, lazy fetches, symlinks, and shell metacharacters are rejected."
+        },
+        "architecture": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_bootstrap_start_gate.py tests/test_bootstrap_adoption_cli.py tests/test_bootstrap_cli.py && uv run python scripts/verify_codex_sync.py",
+          "notes": "75 tests and generated parity pass; recovery stays provider-owned and target-local without standing authority."
+        },
+        "availability": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_bootstrap_start_gate.py -k recovery",
+          "notes": "The invalid-receipt path no longer deadlocks deterministic preparation of a clean pinned source."
+        },
+        "load": {
+          "status": "not_applicable",
+          "reason": "Recovery is a bounded operator action outside throughput-sensitive paths."
+        },
+        "soak": {
+          "status": "not_applicable",
+          "reason": "No daemon or persistent loop is added."
+        },
+        "security": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_bootstrap_start_gate.py -k recovery",
+          "notes": "Origin, commit, target confinement, extension neutralization, object identity, clean source, and injection rejection pass."
+        },
+        "compatibility": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_bootstrap_start_gate.py tests/test_bootstrap_adoption_cli.py tests/test_bootstrap_cli.py tests/test_installed_cli.py tests/test_hook_executability.py tests/test_common_harness_template.py",
+          "notes": "97 passed across bootstrap, installed CLI, executable hook, and common harness contracts."
+        },
+        "transaction_locking": {
+          "status": "not_applicable",
+          "reason": "The hook authorizes one Git worktree transaction but does not implement concurrent state mutation."
+        }
       }
     },
     {
@@ -1336,18 +2145,62 @@
       "design_ref": "docs/decisions/adr-83-project-agent-kit-recipe-and-supported-surfaces.md",
       "bluebrick": "Public CLI / Bootstrap / Common Harness / Memory / Project Agent Kit / Reference Templates / Release",
       "categories": {
-        "unit": {"status": "pass", "command": "uv run pytest -q tests/test_bootstrap_cli.py tests/test_common_harness_template.py tests/test_project_agent_kit.py tests/test_advanced_reference_templates.py", "notes": "The restored dispatcher, bounded target memory contract, four-file common template, and exact 33-file reference inventory pass."},
-        "integration": {"status": "pass", "command": "uv run pytest -q tests/test_installed_cli.py tests/test_bootstrap_cli.py tests/test_greenfield_slim_integration.py tests/test_project_agent_kit.py tests/test_project_agent_kit_release_evidence.py", "notes": "Installed CLI, explicit bootstrap, slim compatibility, and agent-guided greenfield paths coexist without copied provider runtime code."},
-        "e2e": {"status": "pass", "command": "uv run python scripts/verify_release_readiness.py", "notes": "The final clean release candidate passed all nine gates, including 759 full-suite tests, before publication. Owner-operated external generated-repository acceptance remains separate from the release claim."},
-        "browser": {"status": "not_applicable", "reason": "Mir Yoke has no browser or GUI product surface."},
-        "edge": {"status": "pass", "command": "uv run pytest -q tests/test_bootstrap_cli.py tests/test_project_agent_kit_release_evidence.py tests/test_capability_security.py", "notes": "Fail-closed target, path, Git, credential, rehydration, and rollback boundaries pass."},
-        "architecture": {"status": "pass", "command": "uv run pytest -q tests/test_decision_authority.py tests/test_public_template_identity.py tests/test_advanced_reference_templates.py", "notes": "The four-file minimum, common Project Agent Kit, installed CLI, and inert advanced reference boundary agree."},
-        "availability": {"status": "not_applicable", "reason": "The restored commands and generated foundation start no required persistent service."},
-        "load": {"status": "not_applicable", "reason": "Bootstrap and project creation are bounded local operations."},
-        "soak": {"status": "not_applicable", "reason": "No daemon or scheduler is introduced."},
-        "security": {"status": "pass", "command": "uv run pytest -q tests/test_capability_security.py tests/test_bootstrap_cli.py tests/test_project_agent_kit_release_evidence.py", "notes": "Explicit CLI invocation and target-agent authority remain separate; pinned wrappers, local state, no-copy, and reviewer boundaries pass."},
-        "compatibility": {"status": "pass", "command": "uv run pytest -q", "notes": "The complete materialized release-candidate regression passes with 759 tests. The restored public CLI/bootstrap suite runs on both Ubuntu and macOS in CI."},
-        "transaction_locking": {"status": "pass", "command": "uv run pytest -q tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees", "notes": "The protected lock is rebound in a separate release commit to verified implementation revision e5abfadce84be0107395a12509a256b144a2d29a."}
+        "unit": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_bootstrap_cli.py tests/test_common_harness_template.py tests/test_project_agent_kit.py tests/test_advanced_reference_templates.py",
+          "notes": "The restored dispatcher, bounded target memory contract, four-file common template, and exact 33-file reference inventory pass."
+        },
+        "integration": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_installed_cli.py tests/test_bootstrap_cli.py tests/test_greenfield_slim_integration.py tests/test_project_agent_kit.py tests/test_project_agent_kit_release_evidence.py",
+          "notes": "Installed CLI, explicit bootstrap, slim compatibility, and agent-guided greenfield paths coexist without copied provider runtime code."
+        },
+        "e2e": {
+          "status": "pass",
+          "command": "uv run python scripts/verify_release_readiness.py",
+          "notes": "The final clean release candidate passed all nine gates, including 759 full-suite tests, before publication. Owner-operated external generated-repository acceptance remains separate from the release claim."
+        },
+        "browser": {
+          "status": "not_applicable",
+          "reason": "Mir Yoke has no browser or GUI product surface."
+        },
+        "edge": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_bootstrap_cli.py tests/test_project_agent_kit_release_evidence.py tests/test_capability_security.py",
+          "notes": "Fail-closed target, path, Git, credential, rehydration, and rollback boundaries pass."
+        },
+        "architecture": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_decision_authority.py tests/test_public_template_identity.py tests/test_advanced_reference_templates.py",
+          "notes": "The four-file minimum, common Project Agent Kit, installed CLI, and inert advanced reference boundary agree."
+        },
+        "availability": {
+          "status": "not_applicable",
+          "reason": "The restored commands and generated foundation start no required persistent service."
+        },
+        "load": {
+          "status": "not_applicable",
+          "reason": "Bootstrap and project creation are bounded local operations."
+        },
+        "soak": {
+          "status": "not_applicable",
+          "reason": "No daemon or scheduler is introduced."
+        },
+        "security": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_capability_security.py tests/test_bootstrap_cli.py tests/test_project_agent_kit_release_evidence.py",
+          "notes": "Explicit CLI invocation and target-agent authority remain separate; pinned wrappers, local state, no-copy, and reviewer boundaries pass."
+        },
+        "compatibility": {
+          "status": "pass",
+          "command": "uv run pytest -q",
+          "notes": "The complete materialized release-candidate regression passes with 759 tests. The restored public CLI/bootstrap suite runs on both Ubuntu and macOS in CI."
+        },
+        "transaction_locking": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_capability_cli.py::test_repository_lock_is_portable_and_matches_managed_trees",
+          "notes": "The protected lock is rebound in a separate release commit to verified implementation revision e5abfadce84be0107395a12509a256b144a2d29a."
+        }
       }
     },
     {
@@ -1376,18 +2229,62 @@
       "design_ref": "docs/decisions/adr-83-project-agent-kit-recipe-and-supported-surfaces.md",
       "bluebrick": "Contract / Agent-Guided Adoption / Portable Plugin Provider / Maintenance",
       "categories": {
-        "unit": {"status": "pass", "command": "uv run pytest -q tests/test_project_agent_kit.py tests/test_minimal_starter.py", "notes": "Recipe contents, short prompt routing, four-file starter, Git hook contract, and completion boundary passed."},
-        "integration": {"status": "pass", "command": "uv run pytest -q tests/test_project_agent_kit.py tests/test_project_agent_kit_release_evidence.py tests/test_template_asset_classification.py tests/test_release_readiness.py tests/test_public_template_identity.py tests/test_decision_authority.py", "notes": "The clarified purpose-required prompt, rendered evidence binding, supported-surface classification, release-readiness contract, identity, and decision set passed 56 tests."},
-        "e2e": {"status": "planned", "command": "owner-run post-release Claude and Codex acceptance in separate empty targets", "notes": "The owner deferred real runtime acceptance until a target is supplied after release; v0.9.0 does not claim that dynamic proof."},
-        "browser": {"status": "not_applicable", "reason": "Mir Yoke and the Project Agent Kit recipe have no browser or GUI surface."},
-        "edge": {"status": "pass", "command": "uv run pytest -q tests/test_project_agent_kit.py tests/test_project_agent_kit_release_evidence.py", "notes": "Existing Git roots, non-empty targets, missing identity or toolchain, placeholders, no-op commands, provider writes, remote/push, purpose loss, invalid reviewers, product probes, parity drift, unsafe local Git config, and sensitive logs fail closed."},
-        "architecture": {"status": "pass", "command": "uv run pytest -q tests/test_project_agent_kit.py tests/test_decision_authority.py tests/test_public_template_identity.py", "notes": "Starter, recipe, plugin provider, reference corpus, target ownership, and no-composer boundaries agree."},
-        "availability": {"status": "not_applicable", "reason": "The recipe starts no service, daemon, scheduler, or persistent provider runtime."},
-        "load": {"status": "not_applicable", "reason": "Bootstrap work is bounded to one explicit target repository and its selected local checks."},
-        "soak": {"status": "not_applicable", "reason": "No long-running process or recurring fleet operation is introduced."},
-        "security": {"status": "pass", "command": "uv run pytest -q tests/test_project_agent_kit.py tests/test_project_agent_kit_release_evidence.py tests/test_capability_security.py tests/test_public_template_surface.py", "notes": "Read-only provider access, pre-execution validation, minimal offline environment, target/evidence isolation, reviewer write denial, bounded outside hashes, sensitive-log rejection, Git-policy preservation, and no remote/push behavior passed."},
-        "compatibility": {"status": "pass", "command": "uv run pytest -q tests/test_project_agent_kit.py tests/test_project_agent_kit_release_evidence.py tests/test_common_harness_template.py", "notes": "The schema-v2 Kit, bounded common harness, evidence mechanism, and original reviewer/hook foundation pass together."},
-        "transaction_locking": {"status": "pass", "command": "uv run pytest -q tests/test_project_agent_kit_release_evidence.py", "notes": "Observer-backed targets prove preflight-before-write, pre-Git verification, init then direct hook, one hook-verified commit, no remote, clean final state, provider/outside preservation, and evidence-root isolation; owner runtime acceptance is post-release."}
+        "unit": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_project_agent_kit.py tests/test_minimal_starter.py",
+          "notes": "Recipe contents, short prompt routing, four-file starter, Git hook contract, and completion boundary passed."
+        },
+        "integration": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_project_agent_kit.py tests/test_project_agent_kit_release_evidence.py tests/test_template_asset_classification.py tests/test_release_readiness.py tests/test_public_template_identity.py tests/test_decision_authority.py",
+          "notes": "The clarified purpose-required prompt, rendered evidence binding, supported-surface classification, release-readiness contract, identity, and decision set passed 56 tests."
+        },
+        "e2e": {
+          "status": "planned",
+          "command": "owner-run post-release Claude and Codex acceptance in separate empty targets",
+          "notes": "The owner deferred real runtime acceptance until a target is supplied after release; v0.9.0 does not claim that dynamic proof."
+        },
+        "browser": {
+          "status": "not_applicable",
+          "reason": "Mir Yoke and the Project Agent Kit recipe have no browser or GUI surface."
+        },
+        "edge": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_project_agent_kit.py tests/test_project_agent_kit_release_evidence.py",
+          "notes": "Existing Git roots, non-empty targets, missing identity or toolchain, placeholders, no-op commands, provider writes, remote/push, purpose loss, invalid reviewers, product probes, parity drift, unsafe local Git config, and sensitive logs fail closed."
+        },
+        "architecture": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_project_agent_kit.py tests/test_decision_authority.py tests/test_public_template_identity.py",
+          "notes": "Starter, recipe, plugin provider, reference corpus, target ownership, and no-composer boundaries agree."
+        },
+        "availability": {
+          "status": "not_applicable",
+          "reason": "The recipe starts no service, daemon, scheduler, or persistent provider runtime."
+        },
+        "load": {
+          "status": "not_applicable",
+          "reason": "Bootstrap work is bounded to one explicit target repository and its selected local checks."
+        },
+        "soak": {
+          "status": "not_applicable",
+          "reason": "No long-running process or recurring fleet operation is introduced."
+        },
+        "security": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_project_agent_kit.py tests/test_project_agent_kit_release_evidence.py tests/test_capability_security.py tests/test_public_template_surface.py",
+          "notes": "Read-only provider access, pre-execution validation, minimal offline environment, target/evidence isolation, reviewer write denial, bounded outside hashes, sensitive-log rejection, Git-policy preservation, and no remote/push behavior passed."
+        },
+        "compatibility": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_project_agent_kit.py tests/test_project_agent_kit_release_evidence.py tests/test_common_harness_template.py",
+          "notes": "The schema-v2 Kit, bounded common harness, evidence mechanism, and original reviewer/hook foundation pass together."
+        },
+        "transaction_locking": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_project_agent_kit_release_evidence.py",
+          "notes": "Observer-backed targets prove preflight-before-write, pre-Git verification, init then direct hook, one hook-verified commit, no remote, clean final state, provider/outside preservation, and evidence-root isolation; owner runtime acceptance is post-release."
+        }
       }
     },
     {
@@ -1419,18 +2316,62 @@
       "design_ref": "docs/decisions/adr-82-product-planes-capability-packs-and-composition.md",
       "bluebrick": "Contract / Adoption / Distribution / Composition / Retained Capability Provenance / Maintenance",
       "categories": {
-        "unit": {"status": "pass", "command": "uv run pytest -q tests/test_product_planes.py tests/test_distribution_builder.py tests/test_yoke_composer.py tests/test_yoke_cli.py tests/test_safety_pack.py", "notes": "Plane, schema, artifact, CLI, conflict, source-drift, multi-version, credential, and rollback contracts pass."},
-        "integration": {"status": "pass", "command": "uv run pytest -q tests/test_minimal_starter.py tests/test_product_planes.py tests/test_distribution_builder.py tests/test_yoke_composer.py tests/test_yoke_cli.py tests/test_safety_pack.py tests/test_template_asset_classification.py tests/test_release_readiness.py", "notes": "Core, pack, inventory, workflow, and release-gate integration passes."},
-        "e2e": {"status": "pass", "command": "uv run python scripts/verify_release_readiness.py", "notes": "A materialized clean candidate passed focused contracts, classification, derivatives, sanitization, links, schemas, the full regression, and lint."},
-        "browser": {"status": "not_applicable", "reason": "Mir Yoke has no browser or GUI product surface."},
-        "edge": {"status": "pass", "command": "uv run pytest -q tests/test_yoke_composer.py tests/test_safety_pack.py", "notes": "Conflicts, provider drift, multi-version coexistence, patch paths, credential text, Git change discovery, and rollback pass."},
-        "architecture": {"status": "pass", "command": "uv run pytest -q tests/test_product_planes.py tests/test_public_template_identity.py tests/test_decision_authority.py", "notes": "ADR-82, the public identity, four planes, advisory profiles, runtime-neutral roles, and preserved source mapping agree."},
-        "availability": {"status": "not_applicable", "reason": "The new builder and composer are bounded local commands and start no service."},
-        "load": {"status": "not_applicable", "reason": "Bundle composition is bounded by the selected tracked source files."},
-        "soak": {"status": "not_applicable", "reason": "No daemon, scheduler, or persistent worker is introduced."},
-        "security": {"status": "pass", "command": "uv run pytest -q tests/test_yoke_composer.py tests/test_safety_pack.py tests/test_capability_security.py", "notes": "Path, symlink, conflict, provider digest, remote capability, credential-class, and destructive-command boundaries pass."},
-        "compatibility": {"status": "pass", "command": "uv run pytest -q && uv run ruff check && uv run python scripts/verify_codex_sync.py", "notes": "The preserved 0.8 platform regression, 0.9 package metadata, and Claude/Codex derivatives pass together."},
-        "transaction_locking": {"status": "pass", "command": "uv run pytest -q tests/test_yoke_composer.py", "notes": "Apply stages and atomically creates only planned files, rejects concurrent target/provider changes, and rolls back creations and local state after failure."}
+        "unit": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_product_planes.py tests/test_distribution_builder.py tests/test_yoke_composer.py tests/test_yoke_cli.py tests/test_safety_pack.py",
+          "notes": "Plane, schema, artifact, CLI, conflict, source-drift, multi-version, credential, and rollback contracts pass."
+        },
+        "integration": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_minimal_starter.py tests/test_product_planes.py tests/test_distribution_builder.py tests/test_yoke_composer.py tests/test_yoke_cli.py tests/test_safety_pack.py tests/test_template_asset_classification.py tests/test_release_readiness.py",
+          "notes": "Core, pack, inventory, workflow, and release-gate integration passes."
+        },
+        "e2e": {
+          "status": "pass",
+          "command": "uv run python scripts/verify_release_readiness.py",
+          "notes": "A materialized clean candidate passed focused contracts, classification, derivatives, sanitization, links, schemas, the full regression, and lint."
+        },
+        "browser": {
+          "status": "not_applicable",
+          "reason": "Mir Yoke has no browser or GUI product surface."
+        },
+        "edge": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_yoke_composer.py tests/test_safety_pack.py",
+          "notes": "Conflicts, provider drift, multi-version coexistence, patch paths, credential text, Git change discovery, and rollback pass."
+        },
+        "architecture": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_product_planes.py tests/test_public_template_identity.py tests/test_decision_authority.py",
+          "notes": "ADR-82, the public identity, four planes, advisory profiles, runtime-neutral roles, and preserved source mapping agree."
+        },
+        "availability": {
+          "status": "not_applicable",
+          "reason": "The new builder and composer are bounded local commands and start no service."
+        },
+        "load": {
+          "status": "not_applicable",
+          "reason": "Bundle composition is bounded by the selected tracked source files."
+        },
+        "soak": {
+          "status": "not_applicable",
+          "reason": "No daemon, scheduler, or persistent worker is introduced."
+        },
+        "security": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_yoke_composer.py tests/test_safety_pack.py tests/test_capability_security.py",
+          "notes": "Path, symlink, conflict, provider digest, remote capability, credential-class, and destructive-command boundaries pass."
+        },
+        "compatibility": {
+          "status": "pass",
+          "command": "uv run pytest -q && uv run ruff check && uv run python scripts/verify_codex_sync.py",
+          "notes": "The preserved 0.8 platform regression, 0.9 package metadata, and Claude/Codex derivatives pass together."
+        },
+        "transaction_locking": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_yoke_composer.py",
+          "notes": "Apply stages and atomically creates only planned files, rejects concurrent target/provider changes, and rolls back creations and local state after failure."
+        }
       }
     },
     {
@@ -1465,18 +2406,62 @@
       "design_ref": "docs/decisions/adr-80-release-runtime-isolation-and-adopter-ownership.md",
       "bluebrick": "Contract / Adoption / Maintenance",
       "categories": {
-        "unit": {"status": "pass", "command": "uv run pytest -q tests/test_bootstrap_cli.py tests/test_runtime_manifest.py tests/test_template_asset_classification.py tests/test_loop_driver.py", "notes": "Coordinator, runtime closure, classification, URL/storage boundary, and recoverable lock cases pass."},
-        "integration": {"status": "pass", "command": "uv run pytest -q tests/test_setup_wrappers.py tests/test_runtime_manifest.py tests/test_installed_cli.py tests/test_adopter_slim.py tests/test_greenfield_slim_integration.py tests/test_bootstrap_start_gate.py", "notes": "Exact-source setup, real uv launcher symlink shape, receipt reuse, slim, and startup closure verification pass."},
-        "e2e": {"status": "pass", "command": "uv run python scripts/verify_release_readiness.py", "notes": "The materialized clean candidate passes every configured release-readiness stage."},
-        "browser": {"status": "not_applicable", "reason": "Mir Yoke has no browser or GUI release surface."},
-        "edge": {"status": "pass", "command": "uv run pytest -q tests/test_setup_wrappers.py tests/test_bootstrap_cli.py tests/test_adopter_slim.py tests/test_loop_driver.py", "notes": "Default-port Git URLs, copied receipts, unsafe storage, platform rejection, symlink launchers, and stale lock holders are covered."},
-        "architecture": {"status": "pass", "command": "uv run pytest -q tests/test_decision_authority.py tests/test_public_template_identity.py tests/test_spec_integrity.py", "notes": "ADR-80, the product boundary, task counts, and machine-readable adoption requirements agree."},
-        "availability": {"status": "not_applicable", "reason": "Mir Yoke starts no availability-managed runtime."},
-        "load": {"status": "not_applicable", "reason": "Bootstrap and release checks are bounded local commands."},
-        "soak": {"status": "not_applicable", "reason": "No daemon or persistent process changes."},
-        "security": {"status": "pass", "command": "uv run pytest -q tests/test_setup_wrappers.py tests/test_bootstrap_cli.py tests/test_adopter_slim.py", "notes": "Provider pushes, remote credentials, unavailable source identity, project-local storage, and provider markers fail closed."},
-        "compatibility": {"status": "pass", "command": "uv run pytest -q && uv run ruff check && uv run python scripts/verify_codex_sync.py", "notes": "The full regression, lint, and generated Claude/Codex parity checks pass with the commit-bound lock included."},
-        "transaction_locking": {"status": "pass", "command": "uv run pytest -q tests/test_adopter_slim.py tests/test_loop_driver.py", "notes": "Slim recovery/rollback and portable PID lock acquisition, live exclusion, cleanup, and dead-holder recovery pass."}
+        "unit": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_bootstrap_cli.py tests/test_runtime_manifest.py tests/test_template_asset_classification.py tests/test_loop_driver.py",
+          "notes": "Coordinator, runtime closure, classification, URL/storage boundary, and recoverable lock cases pass."
+        },
+        "integration": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_setup_wrappers.py tests/test_runtime_manifest.py tests/test_installed_cli.py tests/test_adopter_slim.py tests/test_greenfield_slim_integration.py tests/test_bootstrap_start_gate.py",
+          "notes": "Exact-source setup, real uv launcher symlink shape, receipt reuse, slim, and startup closure verification pass."
+        },
+        "e2e": {
+          "status": "pass",
+          "command": "uv run python scripts/verify_release_readiness.py",
+          "notes": "The materialized clean candidate passes every configured release-readiness stage."
+        },
+        "browser": {
+          "status": "not_applicable",
+          "reason": "Mir Yoke has no browser or GUI release surface."
+        },
+        "edge": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_setup_wrappers.py tests/test_bootstrap_cli.py tests/test_adopter_slim.py tests/test_loop_driver.py",
+          "notes": "Default-port Git URLs, copied receipts, unsafe storage, platform rejection, symlink launchers, and stale lock holders are covered."
+        },
+        "architecture": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_decision_authority.py tests/test_public_template_identity.py tests/test_spec_integrity.py",
+          "notes": "ADR-80, the product boundary, task counts, and machine-readable adoption requirements agree."
+        },
+        "availability": {
+          "status": "not_applicable",
+          "reason": "Mir Yoke starts no availability-managed runtime."
+        },
+        "load": {
+          "status": "not_applicable",
+          "reason": "Bootstrap and release checks are bounded local commands."
+        },
+        "soak": {
+          "status": "not_applicable",
+          "reason": "No daemon or persistent process changes."
+        },
+        "security": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_setup_wrappers.py tests/test_bootstrap_cli.py tests/test_adopter_slim.py",
+          "notes": "Provider pushes, remote credentials, unavailable source identity, project-local storage, and provider markers fail closed."
+        },
+        "compatibility": {
+          "status": "pass",
+          "command": "uv run pytest -q && uv run ruff check && uv run python scripts/verify_codex_sync.py",
+          "notes": "The full regression, lint, and generated Claude/Codex parity checks pass with the commit-bound lock included."
+        },
+        "transaction_locking": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_adopter_slim.py tests/test_loop_driver.py",
+          "notes": "Slim recovery/rollback and portable PID lock acquisition, live exclusion, cleanup, and dead-holder recovery pass."
+        }
       }
     },
     {
@@ -1502,18 +2487,61 @@
       "design_ref": "docs/decisions/adr-79-agent-guided-platform-scope.md",
       "bluebrick": "Contract / Adoption / Maintenance",
       "categories": {
-        "unit": {"status": "pass", "command": "uv run pytest -q tests/test_bootstrap_cli.py tests/test_setup_wrappers.py tests/test_adopter_slim.py", "notes": "Coordinator, shell, PowerShell, WSL, unsupported-platform, and slim-entrypoint contracts pass."},
-        "integration": {"status": "pass", "command": "uv run pytest -q tests/test_decision_authority.py tests/test_public_template_identity.py tests/test_bootstrap_cli.py tests/test_setup_wrappers.py tests/test_adopter_slim.py tests/test_installed_cli.py tests/test_bootstrap_start_gate.py tests/test_spec_integrity.py tests/test_template_asset_classification.py", "notes": "80 focused platform, identity, spec, generated payload, launcher, and adoption tests passed."},
-        "e2e": {"status": "not_applicable", "reason": "Native Windows has no supported positive automation lane; macOS and Linux ready bootstrap remain CI-owned."},
-        "browser": {"status": "not_applicable", "reason": "No browser or GUI surface changed."},
-        "edge": {"status": "pass", "command": "uv run pytest -q tests/test_bootstrap_cli.py tests/test_setup_wrappers.py tests/test_adopter_slim.py", "notes": "PowerShell, native-Windows Bash, direct coordinator, unsupported Unix, and slim APIs fail before mutation while WSL follows Linux."},
-        "architecture": {"status": "pass", "command": "uv run pytest -q tests/test_decision_authority.py tests/test_public_template_identity.py tests/test_spec_integrity.py", "notes": "ADR-79 is current authority and the product/spec surfaces agree on the narrowed platform boundary."},
-        "availability": {"status": "not_applicable", "reason": "Mir Yoke starts no availability-managed runtime."},
-        "load": {"status": "not_applicable", "reason": "Bootstrap and guidance entrypoints are bounded local commands."},
-        "soak": {"status": "not_applicable", "reason": "No daemon or persistent process changed."},
-        "security": {"status": "pass", "command": "uv run pytest -q tests/test_setup_wrappers.py tests/test_adopter_slim.py", "notes": "Unsupported platforms cannot enter installation, journal, recovery, or slim mutation paths."},
-        "compatibility": {"status": "pass", "command": "uv run pytest -q --ignore=tests/test_capability_cli.py && uv run ruff check && uv run python scripts/verify_codex_sync.py", "notes": "All non-protected-lock regressions, repository lint, and generated derivative checks pass; the protected capability lock remains an existing release prerequisite."},
-        "transaction_locking": {"status": "pass", "command": "uv run pytest -q tests/test_adopter_slim.py", "notes": "Supported-platform transaction and recovery behavior remains covered; unsupported platforms cannot enter it."}
+        "unit": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_bootstrap_cli.py tests/test_setup_wrappers.py tests/test_adopter_slim.py",
+          "notes": "Coordinator, shell, PowerShell, WSL, unsupported-platform, and slim-entrypoint contracts pass."
+        },
+        "integration": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_decision_authority.py tests/test_public_template_identity.py tests/test_bootstrap_cli.py tests/test_setup_wrappers.py tests/test_adopter_slim.py tests/test_installed_cli.py tests/test_bootstrap_start_gate.py tests/test_spec_integrity.py tests/test_template_asset_classification.py",
+          "notes": "80 focused platform, identity, spec, generated payload, launcher, and adoption tests passed."
+        },
+        "e2e": {
+          "status": "not_applicable",
+          "reason": "Native Windows has no supported positive automation lane; macOS and Linux ready bootstrap remain CI-owned."
+        },
+        "browser": {
+          "status": "not_applicable",
+          "reason": "No browser or GUI surface changed."
+        },
+        "edge": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_bootstrap_cli.py tests/test_setup_wrappers.py tests/test_adopter_slim.py",
+          "notes": "PowerShell, native-Windows Bash, direct coordinator, unsupported Unix, and slim APIs fail before mutation while WSL follows Linux."
+        },
+        "architecture": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_decision_authority.py tests/test_public_template_identity.py tests/test_spec_integrity.py",
+          "notes": "ADR-79 is current authority and the product/spec surfaces agree on the narrowed platform boundary."
+        },
+        "availability": {
+          "status": "not_applicable",
+          "reason": "Mir Yoke starts no availability-managed runtime."
+        },
+        "load": {
+          "status": "not_applicable",
+          "reason": "Bootstrap and guidance entrypoints are bounded local commands."
+        },
+        "soak": {
+          "status": "not_applicable",
+          "reason": "No daemon or persistent process changed."
+        },
+        "security": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_setup_wrappers.py tests/test_adopter_slim.py",
+          "notes": "Unsupported platforms cannot enter installation, journal, recovery, or slim mutation paths."
+        },
+        "compatibility": {
+          "status": "pass",
+          "command": "uv run pytest -q --ignore=tests/test_capability_cli.py && uv run ruff check && uv run python scripts/verify_codex_sync.py",
+          "notes": "All non-protected-lock regressions, repository lint, and generated derivative checks pass; the protected capability lock remains an existing release prerequisite."
+        },
+        "transaction_locking": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_adopter_slim.py",
+          "notes": "Supported-platform transaction and recovery behavior remains covered; unsupported platforms cannot enter it."
+        }
       }
     },
     {
@@ -1545,18 +2573,62 @@
       "design_ref": "docs/decisions/adr-78-public-template-identity-and-non-authority.md",
       "bluebrick": "Public Template Contract / Adoption / Capability Provenance / Maintenance / History",
       "categories": {
-        "unit": {"status": "pass", "command": "uv run pytest -q tests/test_template_asset_classification.py tests/test_public_template_identity.py tests/test_spec_integrity.py", "notes": "Identity, classification, and 20-requirement graph integrity pass."},
-        "integration": {"status": "pass", "command": "uv run pytest -q tests/test_public_template_authority.py tests/test_existing_repository_adoption.py tests/test_capability_cli.py tests/test_capability_security.py", "notes": "Repository-local authority, adoption preservation, provenance, rollback, and the commit-bound protected lock pass together."},
-        "e2e": {"status": "pass", "command": "uv run python scripts/verify_release_readiness.py", "notes": "The clean materialized candidate preserves Git ancestry and passes every release gate."},
-        "browser": {"status": "not_applicable", "reason": "Mir Yoke has no browser or GUI product surface."},
-        "edge": {"status": "pass", "command": "uv run pytest -q tests/test_template_asset_classification.py tests/test_public_template_authority.py tests/test_existing_repository_adoption.py", "notes": "Missing or duplicate classifications, implicit mutation, cross-root mutation, and failed adoption fail closed."},
-        "architecture": {"status": "pass", "command": "uv run pytest -q tests/test_decision_authority.py tests/test_public_template_identity.py tests/test_public_template_surface.py tests/test_spec_integrity.py", "notes": "Current authority, provider non-runtime, historical routing, and graph bindings pass."},
-        "availability": {"status": "not_applicable", "reason": "The provider starts no service, daemon, scheduler, or availability-managed runtime."},
-        "load": {"status": "not_applicable", "reason": "All changed operations are bounded local commands or static validation."},
-        "soak": {"status": "not_applicable", "reason": "ADR-78 explicitly removes provider daemons and persistent polling."},
-        "security": {"status": "pass", "command": "uv run pytest -q tests/test_public_template_authority.py tests/test_capability_security.py tests/test_existing_repository_adoption.py", "notes": "Local-root confinement, preservation, provenance validation, and explicit apply pass."},
-        "compatibility": {"status": "pass", "command": "uv run pytest -q && uv run ruff check && uv run python scripts/verify_codex_sync.py", "notes": "All 629 tests, repository-wide Ruff, and generated derivative checks pass."},
-        "transaction_locking": {"status": "pass", "command": "uv run pytest -q tests/test_existing_repository_adoption.py tests/test_capability_cli.py tests/test_capability_security.py", "notes": "Atomic receipt and rollback behavior pass; the protected repository lock reproduces the implementation commit and managed agent files."}
+        "unit": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_template_asset_classification.py tests/test_public_template_identity.py tests/test_spec_integrity.py",
+          "notes": "Identity, classification, and 20-requirement graph integrity pass."
+        },
+        "integration": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_public_template_authority.py tests/test_existing_repository_adoption.py tests/test_capability_cli.py tests/test_capability_security.py",
+          "notes": "Repository-local authority, adoption preservation, provenance, rollback, and the commit-bound protected lock pass together."
+        },
+        "e2e": {
+          "status": "pass",
+          "command": "uv run python scripts/verify_release_readiness.py",
+          "notes": "The clean materialized candidate preserves Git ancestry and passes every release gate."
+        },
+        "browser": {
+          "status": "not_applicable",
+          "reason": "Mir Yoke has no browser or GUI product surface."
+        },
+        "edge": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_template_asset_classification.py tests/test_public_template_authority.py tests/test_existing_repository_adoption.py",
+          "notes": "Missing or duplicate classifications, implicit mutation, cross-root mutation, and failed adoption fail closed."
+        },
+        "architecture": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_decision_authority.py tests/test_public_template_identity.py tests/test_public_template_surface.py tests/test_spec_integrity.py",
+          "notes": "Current authority, provider non-runtime, historical routing, and graph bindings pass."
+        },
+        "availability": {
+          "status": "not_applicable",
+          "reason": "The provider starts no service, daemon, scheduler, or availability-managed runtime."
+        },
+        "load": {
+          "status": "not_applicable",
+          "reason": "All changed operations are bounded local commands or static validation."
+        },
+        "soak": {
+          "status": "not_applicable",
+          "reason": "ADR-78 explicitly removes provider daemons and persistent polling."
+        },
+        "security": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_public_template_authority.py tests/test_capability_security.py tests/test_existing_repository_adoption.py",
+          "notes": "Local-root confinement, preservation, provenance validation, and explicit apply pass."
+        },
+        "compatibility": {
+          "status": "pass",
+          "command": "uv run pytest -q && uv run ruff check && uv run python scripts/verify_codex_sync.py",
+          "notes": "All 629 tests, repository-wide Ruff, and generated derivative checks pass."
+        },
+        "transaction_locking": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_existing_repository_adoption.py tests/test_capability_cli.py tests/test_capability_security.py",
+          "notes": "Atomic receipt and rollback behavior pass; the protected repository lock reproduces the implementation commit and managed agent files."
+        }
       }
     },
     {
@@ -1664,18 +2736,63 @@
       "design_ref": "docs/decisions/adr-74-portable-bootstrap-capability-sources-and-memory.md",
       "bluebrick": "Portable Harness Bootstrap / Namespaced Capability Provider / Memory Store",
       "categories": {
-        "unit": {"status": "pass", "command": "uv run pytest -q tests/test_capability_cli.py tests/test_memory_doctor.py tests/test_bootstrap_cli.py tests/test_codex_derivation_script.py", "notes": "Capability lifecycle, exact Claude/Codex profile mirrors, memory doctor, vector coverage, and transactional bootstrap tests passed."},
-        "integration": {"status": "pass", "command": "uv run pytest -q", "notes": "673 passed and 1 skipped, including the exact-SHA capability lock and real derivative generator."},
-        "e2e": {"status": "pass", "command": "uv run python scripts/verify_plugin_cli_activation.py", "notes": "Both real CLIs installed all three plugins in isolated homes and reported enabled trees matching the source hashes."},
-        "browser": {"status": "not_applicable", "reason": "No browser or UI surface changes."},
-        "edge": {"status": "pass", "command": "uv run pytest -q tests/test_capability_security.py tests/test_memory_doctor.py", "notes": "Unsafe Git content, collisions, archive escapes, empty indexes, and required-vector gaps fail closed."},
-        "architecture": {"status": "pass", "command": "uv run python scripts/verify_codex_sync.py && uv run python scripts/verify_repo_agent_management.py", "notes": "Generated surfaces and the profile registry agree with plugin-owned skills; stale Codex agents are removed on profile changes."},
-        "availability": {"status": "pass", "command": "uv run pytest -q tests/test_memory_doctor.py tests/test_setup_wrappers.py", "notes": "The FTS-only baseline and both platform wrapper contracts pass without vector dependencies; a real APFS external-volume bootstrap passed on macOS."},
-        "load": {"status": "not_applicable", "reason": "Bootstrap and update checks are bounded operator commands."},
-        "soak": {"status": "not_applicable", "reason": "No daemon or persistent polling loop is added."},
-        "security": {"status": "pass", "command": "uv run pytest -q tests/test_capability_security.py tests/test_plugin_skill_packages.py", "notes": "Credential URLs, traversal, symlinks, submodules, executables, duplicate providers, and divergence are rejected."},
-        "compatibility": {"status": "pass", "command": "uv run pytest -q && git diff --check", "notes": "Full local regression, changed-file Ruff, plugin validators, and portable generator checks pass; the required cross-platform workflow is the post-push gate."},
-        "transaction_locking": {"status": "pass", "command": "uv run pytest -q tests/test_bootstrap_cli.py tests/test_capability_cli.py", "notes": "Staged SQLite snapshots, atomic receipts/locks, consumer conflicts, rollback, and agent divergence protections pass."}
+        "unit": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_capability_cli.py tests/test_memory_doctor.py tests/test_bootstrap_cli.py tests/test_codex_derivation_script.py",
+          "notes": "Capability lifecycle, exact Claude/Codex profile mirrors, memory doctor, vector coverage, and transactional bootstrap tests passed."
+        },
+        "integration": {
+          "status": "pass",
+          "command": "uv run pytest -q",
+          "notes": "673 passed and 1 skipped, including the exact-SHA capability lock and real derivative generator."
+        },
+        "e2e": {
+          "status": "pass",
+          "command": "uv run python scripts/verify_plugin_cli_activation.py",
+          "notes": "Both real CLIs installed all three plugins in isolated homes and reported enabled trees matching the source hashes."
+        },
+        "browser": {
+          "status": "not_applicable",
+          "reason": "No browser or UI surface changes."
+        },
+        "edge": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_capability_security.py tests/test_memory_doctor.py",
+          "notes": "Unsafe Git content, collisions, archive escapes, empty indexes, and required-vector gaps fail closed."
+        },
+        "architecture": {
+          "status": "pass",
+          "command": "uv run python scripts/verify_codex_sync.py && uv run python scripts/verify_repo_agent_management.py",
+          "notes": "Generated surfaces and the profile registry agree with plugin-owned skills; stale Codex agents are removed on profile changes."
+        },
+        "availability": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_memory_doctor.py tests/test_setup_wrappers.py",
+          "notes": "The FTS-only baseline and both platform wrapper contracts pass without vector dependencies; a real APFS external-volume bootstrap passed on macOS."
+        },
+        "load": {
+          "status": "not_applicable",
+          "reason": "Bootstrap and update checks are bounded operator commands."
+        },
+        "soak": {
+          "status": "not_applicable",
+          "reason": "No daemon or persistent polling loop is added."
+        },
+        "security": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_capability_security.py tests/test_plugin_skill_packages.py",
+          "notes": "Credential URLs, traversal, symlinks, submodules, executables, duplicate providers, and divergence are rejected."
+        },
+        "compatibility": {
+          "status": "pass",
+          "command": "uv run pytest -q && git diff --check",
+          "notes": "Full local regression, changed-file Ruff, plugin validators, and portable generator checks pass; the required cross-platform workflow is the post-push gate."
+        },
+        "transaction_locking": {
+          "status": "pass",
+          "command": "uv run pytest -q tests/test_bootstrap_cli.py tests/test_capability_cli.py",
+          "notes": "Staged SQLite snapshots, atomic receipts/locks, consumer conflicts, rollback, and agent divergence protections pass."
+        }
       }
     },
     {
@@ -1703,18 +2820,58 @@
       "design_ref": "pyproject.toml",
       "bluebrick": "Repository Quality Baseline",
       "categories": {
-        "unit": {"status": "pass", "command": "uv run pytest -q", "notes": "The full test suite passes after the formatting-only cleanup."},
-        "integration": {"status": "pass", "command": "uv run pytest -q", "notes": "673 passed and 1 skipped."},
-        "e2e": {"status": "not_applicable", "reason": "No end-to-end behavior changed."},
-        "browser": {"status": "not_applicable", "reason": "No browser or UI surface changed."},
-        "edge": {"status": "not_applicable", "reason": "No edge-case behavior changed."},
-        "architecture": {"status": "pass", "command": "uv run python scripts/verify_codex_sync.py && uv run python scripts/verify_repo_agent_management.py && uv run python scripts/verify_context_paths.py", "notes": "Generated parity, registry structure, and path references pass."},
-        "availability": {"status": "not_applicable", "reason": "No availability-sensitive runtime changed."},
-        "load": {"status": "not_applicable", "reason": "No throughput-sensitive runtime changed."},
-        "soak": {"status": "not_applicable", "reason": "No persistent process changed."},
-        "security": {"status": "not_applicable", "reason": "No security boundary changed."},
-        "compatibility": {"status": "pass", "command": "uv run ruff check && git diff --check", "notes": "Repository-wide Ruff and whitespace checks pass."},
-        "transaction_locking": {"status": "not_applicable", "reason": "No transaction or locking behavior changed."}
+        "unit": {
+          "status": "pass",
+          "command": "uv run pytest -q",
+          "notes": "The full test suite passes after the formatting-only cleanup."
+        },
+        "integration": {
+          "status": "pass",
+          "command": "uv run pytest -q",
+          "notes": "673 passed and 1 skipped."
+        },
+        "e2e": {
+          "status": "not_applicable",
+          "reason": "No end-to-end behavior changed."
+        },
+        "browser": {
+          "status": "not_applicable",
+          "reason": "No browser or UI surface changed."
+        },
+        "edge": {
+          "status": "not_applicable",
+          "reason": "No edge-case behavior changed."
+        },
+        "architecture": {
+          "status": "pass",
+          "command": "uv run python scripts/verify_codex_sync.py && uv run python scripts/verify_repo_agent_management.py && uv run python scripts/verify_context_paths.py",
+          "notes": "Generated parity, registry structure, and path references pass."
+        },
+        "availability": {
+          "status": "not_applicable",
+          "reason": "No availability-sensitive runtime changed."
+        },
+        "load": {
+          "status": "not_applicable",
+          "reason": "No throughput-sensitive runtime changed."
+        },
+        "soak": {
+          "status": "not_applicable",
+          "reason": "No persistent process changed."
+        },
+        "security": {
+          "status": "not_applicable",
+          "reason": "No security boundary changed."
+        },
+        "compatibility": {
+          "status": "pass",
+          "command": "uv run ruff check && git diff --check",
+          "notes": "Repository-wide Ruff and whitespace checks pass."
+        },
+        "transaction_locking": {
+          "status": "not_applicable",
+          "reason": "No transaction or locking behavior changed."
+        }
       }
     },
     {
@@ -1749,7 +2906,10 @@
           "command": "historical: retired cross-repository parity verifier (ADR-78)",
           "notes": "All eight applied-state checks passed with no findings."
         },
-        "browser": {"status": "not_applicable", "reason": "No browser or UI surface changes."},
+        "browser": {
+          "status": "not_applicable",
+          "reason": "No browser or UI surface changes."
+        },
         "edge": {
           "status": "pass",
           "command": "uv run pytest -q tests/test_hook_executability.py tests/test_loop_cli.py tests/test_autonomous_loop.py",
@@ -1765,8 +2925,14 @@
           "command": "uv run pytest -q tests/test_autonomous_loop.py",
           "notes": "Recoverable retry-budget exhaustion remains observable without requesting approval; hard safety signals still request it."
         },
-        "load": {"status": "not_applicable", "reason": "No throughput-sensitive runtime is changed."},
-        "soak": {"status": "not_applicable", "reason": "No daemon or persistent process is added."},
+        "load": {
+          "status": "not_applicable",
+          "reason": "No throughput-sensitive runtime is changed."
+        },
+        "soak": {
+          "status": "not_applicable",
+          "reason": "No daemon or persistent process is added."
+        },
         "security": {
           "status": "pass",
           "command": "historical: retired cross-repository parity verifier (ADR-78)",
@@ -1777,7 +2943,10 @@
           "command": "uv run pytest -q",
           "notes": "595 passed, 1 skipped across the public template suite."
         },
-        "transaction_locking": {"status": "not_applicable", "reason": "No concurrent writer or transaction boundary is changed."}
+        "transaction_locking": {
+          "status": "not_applicable",
+          "reason": "No concurrent writer or transaction boundary is changed."
+        }
       }
     },
     {
