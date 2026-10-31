@@ -4991,7 +4991,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_lifecycle_native_commands.py",
-      "sha256": "c2af56691ee0abc2431cc0d86ce06109fa35cb96956641826f4cfc61bbe0b562"
+      "sha256": "9d2c5139cbe6c370ca816596a96c9791a8239d4f4d14d990a6485da6bc2e82cc"
     },
     {
       "classification": "template-maintainer-tool",

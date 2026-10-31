@@ -112,9 +112,11 @@ def test_codex_windows_hook_command(binary, stop_repository, event, mode, deny):
         script.write_text('raise SystemExit("Python reference unexpectedly executed")\n')
     command = json.loads((plugin / 'hooks/hooks.json').read_text())['hooks'][event][0]['hooks'][0]
     assert command['timeout'] == (2 if event == 'SessionStart' else 8)
-    # Codex passes one raw argument with one additional outer pair of quotes.
+    # Codex passes one raw argument with one additional outer pair of quotes (Rust raw_arg).
+    # A string reaches CreateProcess verbatim; a list would be re-quoted by list2cmdline,
+    # turning every inner quote into \" that cmd.exe then rejects.
     result = subprocess.run(
-        [env.get('COMSPEC', 'cmd.exe'), '/C', '"' + command['commandWindows'] + '"'],
+        f'"{env.get("COMSPEC", "cmd.exe")}" /C "{command["commandWindows"]}"',
         input=payload, capture_output=True, env=env, timeout=15,
     )
     assert (result.stdout, result.stderr, result.returncode) == (
