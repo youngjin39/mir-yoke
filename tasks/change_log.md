@@ -1,3 +1,65 @@
+## Slice H5: PowerShell lifecycle commands, 0.13.57 (2026-11-01)
+
+Intent authority: owner H5 request; single cursor: tasks/plan.md.
+Four Windows selectors now use PowerShell env access, native-or-Python selection,
+exit propagation and explicit exit 1 for missing python3. POSIX commands unchanged
+(4/4 compared with HEAD). Windows CI tests both pwsh and powershell with
+-NoProfile -Command, absent/present binaries, spaces, allow/deny and byte parity.
+Four additional cases cover UTF-8 stdin/stdout with exit 2 and missing Python.
+The existing windows_native job remains last and the only windows-latest job.
+Version pins are 0.13.57; native crate and capability lock are unchanged.
+
+Semantic evidence: .mir/ontology-map.json contract mir.common-semantics@1.1.0,
+SHA256 516c5b160c0fa49de51e4a0dc6f14c6e6a955d1baf72cc75dc2c93de7ea23e79,
+verified locally. Task maps to tasks/plan.md; Q1 cites ADR-90 and capability
+sources. Codex shell behavior and Windows PC reproductions are parent-supplied
+evidence (Main, 2026-11-01), not local Windows process proof.
+
+Commands and results, using the owner-prescribed UV_CACHE_DIR; native runs use
+CARGO_NET_OFFLINE=true and CARGO_TARGET_DIR=$PWD/native/handoff-packet/target:
+
+- Fail first: uv run pytest -q tests/test_plugin_skill_packages.py -k
+  lifecycle_hook_plugin_uses_one_exact_shared_hook_file: 1 failed, 15 deselected.
+  Existing cmd syntax mismatched the new exact PowerShell assertion.
+- uv run pytest -q tests/test_lifecycle_native_commands.py
+  tests/test_plugin_skill_packages.py tests/test_capability*.py
+  tests/test_no_korean_in_user_facing.py tests/test_setup_wrappers.py:
+  671 passed, 32 skipped, 5 failed in 213.70s. Capability collection: 603,
+  with 598 passed and 5 expected commit-coupled failures. This run preceded
+  the four extra Windows-only edge cases.
+- uv run pytest -q tests/test_lifecycle_native_commands.py:
+  final 32 passed, 36 Windows-only skipped in 5.27s.
+- uv run pytest -q tests/test_plugin_skill_packages.py
+  tests/test_public_template_surface.py tests/test_no_korean_in_user_facing.py:
+  26 passed (16 packages, 3 public surface, 7 no-korean).
+- uv run pytest -q tests/test_release_metadata.py
+  tests/test_public_template_surface.py tests/test_no_korean_in_user_facing.py:
+  11 passed after final prose edits.
+- uv run pytest -q tests/test_setup_wrappers.py: 18 passed.
+- uv run pytest -q tests/test_capability_legacy_080.py: 5 passed, 4 failed;
+  test_update_real_080 reads committed HEAD hooks, rejected by the new schema
+  until Main commits the source.
+- uv run pytest -q tests/test_capability_cli.py -k repository_lock_is_portable:
+  1 failed, 57 deselected; live plugin tree digests await commit and rebind.
+- uv run ruff check; python3 scripts/verify_codex_sync.py; git diff --check:
+  all passed. No generated Codex edits.
+- Before final regeneration, tests/test_template_asset_classification.py with
+  setup wrappers had 23 passed, 1 expected stale-payload failure. Final read-only
+  rerun results belong in the delivery report after the last payload edit.
+
+Changed files: VERSION, pyproject.toml, uv.lock, README.md, CHANGELOG.md,
+MIGRATION.md, .claude-plugin/marketplace.json, all ten plugin.json manifests,
+plugins/mir-mcp/mir_mcp.py, plugins/mir-lifecycle-hooks/hooks/hooks.json,
+src/mir/core/capabilities/manager.py, tests/test_capability_security.py,
+tests/test_lifecycle_native_commands.py, tests/test_plugin_skill_packages.py,
+tasks/plan.md, tasks/change_log.md and config/adopter-payload.json (final edit).
+The .agents marketplace has no version field and needs no version change.
+
+Final edit command: uv run python -m tools.template_assets
+--write-adopter-payload --json. Follow only with read-only verification.
+Open: Windows CI execution, source commit and lock rebind owned by Main.
+No commit, tag, push, dispatch, consumer write or live lock change was performed.
+
 ## Slice H3: Mir Yoke 0.13.55 release preparation (2026-10-31)
 
 Intent authority: owner H3 request; current cursor is tasks/plan.md. Preserved H/H2.
@@ -15042,3 +15104,37 @@ Committed-HEAD compatibility: 5 passed, 4 prior-schema failures pending source
 commit. Native publication fixtures: 39 passed. Ruff and Codex sync passed.
 Final payload edit and read-only checks follow. Commands and red/green evidence
 are in tasks/change_log.md. Main's source commit and lock bind remain open.
+
+## Superseded H4 cursor (H5, 2026-11-01)
+
+# Plan
+
+## Active task: Slice H4, provider native pins and 0.13.56 (2026-11-01)
+
+Intent authority: owner Slice H4 request. This is the single current cursor.
+Use the required-commit provider lock for placement and dry-run previews; validate
+portable pins, warn and retain Python on invalid native metadata or placement.
+Persist placement records and verify active trees against the active receipt.
+Cover provider pins without consumer pins, absence, invalid pins, opt-out and preview
+with offline fixtures. Bump current release surfaces to 0.13.56; retain historical
+records and native prerelease pins. No commit, dispatch, live lock or .codex writes.
+Regenerate adopter payload as the LAST edit, then perform read-only verification.
+
+Status before final payload regeneration: provider-source regressions and release
+surfaces are complete. Native tests: 44 passed. Requested combined gate: 666 passed,
+1 expected live-lock tree-digest failure. Native plus lifecycle check: 74 passed,
+16 Windows-only skipped before the two final export fixtures were added. Ruff,
+Codex sync and diff whitespace checks passed. Exact commands and semantic evidence
+are in tasks/change_log.md. Final payload regeneration and read-only surface checks
+follow. Main owns source commit, plugin digest rebinding and any generated Codex
+delivery. Windows execution remains CI evidence, not local macOS evidence.
+
+Release record (Main, 2026-11-01): source eef83b4, bind 9e02dc5; fresh-clone readiness
+exit 0; CI validate on 9e02dc5 (including the Windows job) succeeded before the tag
+`v0.13.56`. Maintainer host: provider update applied from the 0.13.55 consumer lock;
+the dry run listed both lifecycle binaries for aarch64-apple-darwin, and the apply placed
+`bin/handoff-packet` and `bin/runtime-continuity` in the Claude and Codex plugin caches
+with SHA-256 equal to the lock. Codex hook trust 4/4 (after a Harness verifier fix for
+the native-or-Python command form). Claude 8d71b653 and Codex 01a192e7 attested (five
+mir-mcp calls ok, four lifecycle hooks ran), finalized, ready at 9e02dc5. Owner PC:
+recorded by Harness.

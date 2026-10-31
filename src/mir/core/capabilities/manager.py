@@ -78,6 +78,17 @@ def _native_hook_command(name: str, reference: str) -> str:
     )
 
 
+def _windows_hook_command(name: str, reference: str) -> str:
+    base = "$env:CLAUDE_PLUGIN_ROOT\\bin\\" + name + ".exe"
+    script = "$env:CLAUDE_PLUGIN_ROOT\\" + reference.replace("/", "\\")
+    # Missing python3 must fail closed rather than use a stale LASTEXITCODE.
+    return (
+        f'if (Test-Path -LiteralPath "{base}") {{ & "{base}" }} '
+        'else { if (-not (Get-Command python3 -ErrorAction SilentlyContinue)) { exit 1 }; '
+        f'python3 "{script}" }}; exit $LASTEXITCODE'
+    )
+
+
 _HOOKS_SCHEMA = {
     "hooks": {
         "SessionStart": [
@@ -88,10 +99,8 @@ _HOOKS_SCHEMA = {
                         "command": _native_hook_command(
                             "runtime-continuity", "hooks/runtime_continuity.py"
                         ),
-                        "commandWindows": (
-                            'if exist "%CLAUDE_PLUGIN_ROOT%\\bin\\runtime-continuity.exe"'
-                            ' ("%CLAUDE_PLUGIN_ROOT%\\bin\\runtime-continuity.exe")'
-                            ' else (python3 "%CLAUDE_PLUGIN_ROOT%\\hooks\\runtime_continuity.py")'
+                        "commandWindows": _windows_hook_command(
+                            "runtime-continuity", "hooks/runtime_continuity.py"
                         ),
                         "timeout": 2,
                     }
@@ -106,11 +115,8 @@ _HOOKS_SCHEMA = {
                         "command": _native_hook_command(
                             "handoff-packet", "skills/runtime-continuity/scripts/handoff_packet.py"
                         ),
-                        "commandWindows": (
-                            'if exist "%CLAUDE_PLUGIN_ROOT%\\bin\\handoff-packet.exe"'
-                            ' ("%CLAUDE_PLUGIN_ROOT%\\bin\\handoff-packet.exe")'
-                            ' else (python3 "%CLAUDE_PLUGIN_ROOT%\\skills\\runtime-continuity'
-                            '\\scripts\\handoff_packet.py")'
+                        "commandWindows": _windows_hook_command(
+                            "handoff-packet", "skills/runtime-continuity/scripts/handoff_packet.py"
                         ),
                         "timeout": 8,
                     }
@@ -125,11 +131,8 @@ _HOOKS_SCHEMA = {
                         "command": _native_hook_command(
                             "handoff-packet", "skills/runtime-continuity/scripts/handoff_packet.py"
                         ),
-                        "commandWindows": (
-                            'if exist "%CLAUDE_PLUGIN_ROOT%\\bin\\handoff-packet.exe"'
-                            ' ("%CLAUDE_PLUGIN_ROOT%\\bin\\handoff-packet.exe")'
-                            ' else (python3 "%CLAUDE_PLUGIN_ROOT%\\skills\\runtime-continuity'
-                            '\\scripts\\handoff_packet.py")'
+                        "commandWindows": _windows_hook_command(
+                            "handoff-packet", "skills/runtime-continuity/scripts/handoff_packet.py"
                         ),
                         "timeout": 8,
                     }
@@ -144,11 +147,8 @@ _HOOKS_SCHEMA = {
                         "command": _native_hook_command(
                             "handoff-packet", "skills/runtime-continuity/scripts/handoff_packet.py"
                         ),
-                        "commandWindows": (
-                            'if exist "%CLAUDE_PLUGIN_ROOT%\\bin\\handoff-packet.exe"'
-                            ' ("%CLAUDE_PLUGIN_ROOT%\\bin\\handoff-packet.exe")'
-                            ' else (python3 "%CLAUDE_PLUGIN_ROOT%\\skills\\runtime-continuity'
-                            '\\scripts\\handoff_packet.py")'
+                        "commandWindows": _windows_hook_command(
+                            "handoff-packet", "skills/runtime-continuity/scripts/handoff_packet.py"
                         ),
                         "timeout": 8,
                     }

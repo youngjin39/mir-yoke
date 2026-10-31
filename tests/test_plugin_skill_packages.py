@@ -45,7 +45,7 @@ def test_dual_runtime_manifests_share_one_skill_tree() -> None:
         claude = _json(plugin_root / ".claude-plugin" / "plugin.json")
         codex = _json(plugin_root / ".codex-plugin" / "plugin.json")
         assert claude["name"] == codex["name"] == plugin_name
-        assert claude["version"] == codex["version"] == "0.13.56"
+        assert claude["version"] == codex["version"] == "0.13.57"
         assert codex["skills"] == "./skills/"
         assert isinstance(codex["interface"]["defaultPrompt"], list)
         assert 1 <= len(codex["interface"]["defaultPrompt"]) <= 3
@@ -90,11 +90,12 @@ def test_lifecycle_hook_plugin_uses_one_exact_shared_hook_file() -> None:
             f'elif [ -x "{base}.exe" ]; then exec "{base}.exe"; '
             f'else exec python3 "${{CLAUDE_PLUGIN_ROOT}}/{reference}"; fi'
         )
-        windows_base = "%CLAUDE_PLUGIN_ROOT%\\bin\\" + name + ".exe"
-        windows_reference = "%CLAUDE_PLUGIN_ROOT%\\" + reference.replace("/", "\\")
+        windows_base = "$env:CLAUDE_PLUGIN_ROOT\\bin\\" + name + ".exe"
+        windows_reference = "$env:CLAUDE_PLUGIN_ROOT\\" + reference.replace("/", "\\")
         assert hook["commandWindows"] == (
-            f'if exist "{windows_base}" ("{windows_base}") '
-            f'else (python3 "{windows_reference}")'
+            f'if (Test-Path -LiteralPath "{windows_base}") {{ & "{windows_base}" }} '
+            f'else {{ if (-not (Get-Command python3 -ErrorAction SilentlyContinue)) {{ exit 1 }}; '
+            f'python3 "{windows_reference}" }}; exit $LASTEXITCODE'
         )
     from mir.core.capabilities.manager import _HOOKS_SCHEMA
     assert hooks == _HOOKS_SCHEMA
@@ -283,7 +284,7 @@ def test_should_reject_non_user_claude_install_scope(tmp_path, monkeypatch, caps
 
 def test_manifest_versions_match_repository_release() -> None:
     version = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
-    assert version == "0.13.56"
+    assert version == "0.13.57"
     for plugin_name in PLUGIN_SKILLS:
         plugin_root = ROOT / "plugins" / plugin_name
         assert _json(plugin_root / ".claude-plugin" / "plugin.json")["version"] == version

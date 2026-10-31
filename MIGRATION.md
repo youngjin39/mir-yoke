@@ -1,5 +1,10 @@
 # Migration Guide
 
+## 0.13.57 PowerShell lifecycle hooks
+
+Update plugins to fix Codex Windows hook exit 1 in 0.13.55-0.13.56.
+Native pins remain on native-5e8bf0dd1132; the crate is unchanged.
+
 ## 0.13.56 provider native artifact pins
 
 Run `mir capability update --apply` to place binaries pinned by the provider release
@@ -21,9 +26,9 @@ the source commit.
 
 ## Codex on Windows lifecycle hooks
 
-Codex on Windows now runs each lifecycle hook through its cmd.exe-compatible
-`commandWindows` handler (Codex 0.166). Previously the POSIX command failed before
-the hook could run. Each handler selects the matching `bin/*.exe` when present,
+Codex 0.166 on Windows uses the session shell (PowerShell), with cmd.exe only
+without a session shell. Version 0.13.57 corrects the cmd syntax shipped previously.
+Each handler selects the matching `bin/*.exe` when present,
 otherwise `python3` runs the reference. Paths with spaces and deny exit status
 are preserved. Claude Code continues using the unchanged POSIX command.
 

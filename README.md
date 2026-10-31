@@ -52,7 +52,7 @@ immutable release:
 
 ```bash
 uv tool install --force --link-mode copy \
-  "git+https://github.com/youngjin39/mir-yoke.git@v0.13.56"
+  "git+https://github.com/youngjin39/mir-yoke.git@v0.13.57"
 mir --help
 ```
 
@@ -192,8 +192,9 @@ the author to re-read cited source lines once before keeping a universal claim a
 Version 0.13.53 makes the handoff repair limit hold when Codex reuses one Stop run ID and removes
 three checker false positives found by the round s judge.
 
-Version 0.13.56 runs every lifecycle event natively when a lock-pinned binary is placed,
-with Python fallback, Windows Codex commands and native placement enabled by default.
+Version 0.13.57 runs every lifecycle event natively when a lock-pinned binary is placed,
+with Python fallback, PowerShell commands for Codex on Windows and native placement enabled
+by default.
 
 Version 0.13.54 removes four handoff checker false positives found by the round t judge and lets
 the source-claim re-read use a citation from the enclosing list item.

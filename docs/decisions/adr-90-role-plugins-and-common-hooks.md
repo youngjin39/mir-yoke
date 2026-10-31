@@ -542,7 +542,8 @@ in the manager changes with it. Tests: the `test_round_t_*` cases in
 
 All four lifecycle events have Rust implementations. The shared hook commands
 select placed native binaries or the Python reference; Codex on Windows uses
-cmd.exe-compatible commandWindows selectors. Capability updates place lock-pinned
+PowerShell commandWindows selectors (corrected in 0.13.57). Codex uses the
+session shell, with cmd.exe only without one. Capability updates place lock-pinned
 native artifacts by default unless MIR_CAPABILITY_NATIVE_ARTIFACTS=0. Placement
 failures keep the existing warning and Python reference. Native prerelease
 publication remains explicit, and the maintainer pinning tool validates published

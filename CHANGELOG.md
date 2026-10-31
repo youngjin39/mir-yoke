@@ -8,6 +8,14 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.57] — 2026-11-01 — PowerShell lifecycle hooks
+
+### Fixed
+
+- Lifecycle hooks failed with exit 1 under Codex on Windows in 0.13.55-0.13.56.
+  Use the session shell (PowerShell), with cmd.exe only without a session shell.
+  Select native binaries or Python, preserve exit status, and fail closed if Python is missing.
+
 ## [v0.13.56] — 2026-11-01 — provider native artifact pins
 
 ### Fixed
@@ -30,8 +38,8 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ### Fixed
 
-- Codex on Windows uses cmd.exe-compatible `commandWindows` lifecycle handlers. Previously
-  the POSIX commands failed under cmd.exe before running the hooks.
+- Added Windows lifecycle handlers. Correction in 0.13.57: Codex uses the session
+  shell (PowerShell), with cmd.exe only without a session shell.
 
 ### Changed
 
