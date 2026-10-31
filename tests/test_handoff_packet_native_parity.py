@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from tests.test_mechanical_handoff import HANDLER, PROMPT, RECIPIENT_PROMPT
+from tests.test_mechanical_handoff import HANDLER, HANDLER_PYTHON, PROMPT, RECIPIENT_PROMPT
 
 # Korean fixtures are escaped: the public template carries no Hangul literals.
 KO_HANDOFF = ('\ub2e4\ub978 \uc5d0\uc774\uc804\ud2b8 '
@@ -27,11 +27,16 @@ pytestmark = pytest.mark.skipif(shutil.which('cargo') is None, reason='cargo una
 
 @pytest.fixture(scope='module')
 def binary():
-    env = dict(os.environ, CARGO_HOME=str(CRATE / 'target/cargo-home'),
-               CARGO_TARGET_DIR=str(CRATE / 'target'))
-    subprocess.run(['cargo', 'build', '--release', '--offline', '--locked'],
-                   cwd=CRATE, env=env, check=True, capture_output=True)
-    return CRATE / 'target/release/handoff-packet'
+    env = dict(os.environ)
+    command = ['cargo', 'build', '--release', '--locked']
+    if env.get('MIR_HANDOFF_CARGO_OFFLINE') == '1':
+        command.append('--offline')
+    subprocess.run(command, cwd=CRATE, env=env, check=True)
+    target = Path(env.get('CARGO_TARGET_DIR', 'target'))
+    if not target.is_absolute():
+        target = CRATE / target
+    executable = 'handoff-packet.exe' if os.name == 'nt' else 'handoff-packet'
+    return target / 'release' / executable
 
 
 def cases():
@@ -121,8 +126,9 @@ BOUNDARIES = [
 
 
 def run_pair(binary, raw):
-    outputs = [subprocess.run(command, input=raw, capture_output=True, timeout=10)
-               for command in (["python3", str(HANDLER)], [str(binary), str(HANDLER)])]
+    env = dict(os.environ, MIR_HANDOFF_PYTHON=HANDLER_PYTHON, PYTHONUTF8='1')
+    outputs = [subprocess.run(command, input=raw, capture_output=True, timeout=10, env=env)
+               for command in ([HANDLER_PYTHON, str(HANDLER)], [str(binary), str(HANDLER)])]
     return [(p.stdout, p.stderr, p.returncode) for p in outputs]
 
 
@@ -159,7 +165,7 @@ def test_transcript_and_stop(binary, tmp_path, shape):
     path.write_bytes((b'x' * (1024 * 1024) + b'\n' if shape == 'tail' else b'') +
                      ('\n'.join(json.dumps(row) for row in rows) + '\n').encode())
     if shape == 'broken':
-        path.write_text('not json\n')
+        path.write_bytes(b'not json\n')
     for event in ['PreToolUse', 'Stop']:
         raw = json.dumps(dict(hook_event_name=event, tool_name='Bash',
                               transcript_path=str(path), stop_hook_active=False)).encode()
@@ -174,5 +180,48 @@ def test_without_reference(binary):
     p = subprocess.run([str(binary)], input=b'{"hook_event_name":"Stop"}',
                        capture_output=True, check=False)
     assert p.returncode == 0
-    assert json.loads(p.stdout)['systemMessage'].encode() + b'\n' == p.stderr
+    newline = b'\r\n' if os.name == 'nt' else b'\n'
+    assert json.loads(p.stdout)['systemMessage'].encode() + newline == p.stderr
     assert b'hook unavailable; allowing turn to continue.' in p.stderr
+
+
+def test_build_environment(monkeypatch, tmp_path):
+    target = tmp_path / 'custom target'
+    home = tmp_path / 'cargo home'
+    monkeypatch.setenv('CARGO_HOME', str(home))
+    monkeypatch.setenv('CARGO_TARGET_DIR', str(target))
+    monkeypatch.delenv('MIR_HANDOFF_CARGO_OFFLINE', raising=False)
+    calls = []
+    monkeypatch.setattr(subprocess, 'run',
+                        lambda command, **kwargs: calls.append((command, kwargs)))
+    path = binary.__wrapped__()
+    command, options = calls.pop()
+    assert options['env']['CARGO_HOME'] == str(home)
+    assert options['env']['CARGO_TARGET_DIR'] == str(target)
+    assert '--locked' in command
+    assert '--offline' not in command
+    assert path == target / 'release' / ('handoff-packet.exe' if os.name == 'nt'
+                                        else 'handoff-packet')
+    monkeypatch.setenv('MIR_HANDOFF_CARGO_OFFLINE', '1')
+    binary.__wrapped__()
+    assert '--offline' in calls.pop()[0]
+    monkeypatch.setenv('CARGO_TARGET_DIR', 'relative target')
+    assert binary.__wrapped__() == CRATE / 'relative target/release' / path.name
+    monkeypatch.delenv('CARGO_TARGET_DIR')
+    monkeypatch.delenv('CARGO_HOME')
+    assert binary.__wrapped__() == CRATE / 'target/release' / path.name
+    assert 'CARGO_HOME' not in calls.pop()[1]['env']
+
+
+def test_forward_interpreter(binary, tmp_path):
+    reference = tmp_path / 'reference with spaces.py'
+    reference.write_text(
+        'import sys\nsys.stdout.buffer.write(b"forwarded\\x00\\xc3\\xa9")\n'
+        'sys.stderr.buffer.write(b"diagnostic\\r\\n")\nsys.exit(7)\n', encoding='utf-8')
+    env = dict(os.environ, MIR_HANDOFF_PYTHON=HANDLER_PYTHON)
+    # PATH cannot supply python3: forwarding must honor the explicit interpreter.
+    env['PATH'] = str(tmp_path)
+    result = subprocess.run([str(binary), str(reference)], input=b'{"hook_event_name":"Stop"}',
+                            capture_output=True, env=env, timeout=10)
+    assert (result.stdout, result.stderr, result.returncode) == (
+        b'forwarded\x00\xc3\xa9', b'diagnostic\r\n', 7)

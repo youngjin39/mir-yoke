@@ -7,6 +7,37 @@ on:
     branches: [main]
 
 jobs:
+  native_handoff:
+    name: native handoff byte parity (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+    env:
+      PYTHONUTF8: '1'
+      CARGO_TARGET_DIR: ${{ github.workspace }}/native/handoff-packet/target
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.14'}
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
+      - run: uv sync --python 3.14 --extra dev --frozen
+      # Runner rustup honors the crate's pinned toolchain and components.
+      # cargo fmt has no --locked option: it only checks source formatting.
+      - run: cargo fmt --check
+        working-directory: native/handoff-packet
+      - run: cargo clippy --all-targets --locked -- -D warnings
+        working-directory: native/handoff-packet
+      - run: cargo test --locked
+        working-directory: native/handoff-packet
+      - run: cargo build --release --locked
+        working-directory: native/handoff-packet
+      - run: >-
+          uv run --python 3.14 pytest -q -p no:cacheprovider
+          tests/test_handoff_packet_native_parity.py
+          tests/test_line_endings.py
+
   supported_contracts:
     runs-on: ubuntu-latest
     steps:

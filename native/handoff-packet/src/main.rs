@@ -6,9 +6,11 @@ use std::{
     process::{Command, Stdio},
 };
 const WARNING: &str = "Mir handoff WARNING: hook unavailable; allowing turn to continue. Check native payload, explicit transcript tail and repository runner; pins/check unavailable.";
+// Python text streams translate LF on Windows; compare raw pipe bytes unchanged.
+const EOL: &str = if cfg!(windows) { "\r\n" } else { "\n" };
 fn warning() -> io::Result<i32> {
-    writeln!(io::stderr(), "{WARNING}")?;
-    writeln!(io::stdout(), "{{\"systemMessage\": \"{WARNING}\"}}")?;
+    write!(io::stderr(), "{WARNING}{EOL}")?;
+    write!(io::stdout(), "{{\"systemMessage\": \"{WARNING}\"}}{EOL}")?;
     Ok(0)
 }
 fn run() -> io::Result<i32> {
@@ -33,11 +35,11 @@ fn run() -> io::Result<i32> {
         if let Some(event) = parsed
             && let Ok(Some(reason)) = pretool(&event)
         {
-            writeln!(
+            write!(
                 io::stdout(),
-                "{{\"hookSpecificOutput\": {{\"hookEventName\": \"PreToolUse\", \"permissionDecision\": \"deny\", \"permissionDecisionReason\": \"{reason}\"}}}}"
+                "{{\"hookSpecificOutput\": {{\"hookEventName\": \"PreToolUse\", \"permissionDecision\": \"deny\", \"permissionDecisionReason\": \"{reason}\"}}}}{EOL}"
             )?;
-            writeln!(io::stderr(), "{reason}")?;
+            write!(io::stderr(), "{reason}{EOL}")?;
             return Ok(2);
         }
         return Ok(0);
@@ -46,7 +48,9 @@ fn run() -> io::Result<i32> {
         return warning();
     };
     io::stdin().lock().read_to_end(&mut raw)?;
-    let child = Command::new("python3")
+    // Match hooks.json by default; explicit callers may select their Python.
+    let python = std::env::var_os("MIR_HANDOFF_PYTHON").unwrap_or_else(|| "python3".into());
+    let child = Command::new(python)
         .arg(reference)
         .stdin(Stdio::piped())
         .stdout(Stdio::inherit())

@@ -419,7 +419,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": ".github/workflows/validate.yml",
-      "sha256": "5bf4fc06066bd65d088eb94a69c2f9240a758b3fd33b530f2cc038f6d59f9d62"
+      "sha256": "111ed47d268679edbaeca6dfa12a61534ab0e1cfd76fa93db3b175924fab23dc"
     },
     {
       "classification": "reference",
@@ -2783,7 +2783,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/README.md",
-      "sha256": "d703eb9c859a475c48ae0caf044d3b9b7753b47ca369a418bd49f86c631c4ace"
+      "sha256": "f1d1100303b94199e0c780d03d82d3adac10ac39c9db7a3e46a786f3ccf177f4"
     },
     {
       "classification": "template-maintainer-tool",
@@ -2807,7 +2807,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/main.rs",
-      "sha256": "beb617c8fcd26d343e4fa7c796b2c6df9c8f2093a100ebaa67801836f4d61102"
+      "sha256": "65d6c672a3b9d96d73ce119d218e5cba9bad8aa848efca95de40ae787aa03c6f"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4553,7 +4553,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/change_log.md",
-      "sha256": "727c0c6fc9803b6daed356e7289d7fdc4925cefe0ef9b24fa12ee236c160baa5"
+      "sha256": "715747a27f48eb80888f6a413f2e482be5830e23fa6690e596721c4a20ffd062"
     },
     {
       "classification": "reference",
@@ -4595,7 +4595,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "tasks/plan.md",
-      "sha256": "f23d36f45bd631c7702acf8e50b41befccd7542856561612e2a995b42a07416c"
+      "sha256": "5f5b9836f764853f50c6699a71dbb25b98fdfedc83aeffcc6765eab625cb3efa"
     },
     {
       "classification": "reference",
@@ -4907,7 +4907,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_handoff_packet_native_parity.py",
-      "sha256": "c1198396c72d9fcb3f3db8ba283d8ec44e9e7609a5b3ef2e9666c2d7aed415d1"
+      "sha256": "babc106dd08c180f75c13ef0523b4b123ef56ecfe9d06064b1f965014ff435c3"
     },
     {
       "classification": "template-maintainer-tool",

@@ -1,3 +1,54 @@
+## Native handoff cross-platform CI evidence (2026-10-31)
+
+Owner request: make the maintainer PoC portable across macOS, Ubuntu and Windows.
+Authority is the current owner request recorded in tasks/plan.md. No caller switch.
+Evidence checked in this repository: hooks.json invokes python3 on every OS;
+test_mechanical_handoff.py selects MIR_HANDOFF_TEST_PYTHON or sys.executable.
+The new override lets both parity subprocesses select that same interpreter while
+preserving the shipped hook's default python3 contract. The README records the
+Windows alias limitation and UTF-8/CRLF byte contract.
+
+Fail-first regressions: build environment and forward interpreter tests both
+failed before their fixes (Cargo variables overwritten; explicit interpreter
+ignored with python3 absent from PATH). After fixes, Python 3.14 parity: 123 passed;
+Cargo unavailable: 123 skipped. Local default uv Python is 3.12 / Unicode 15.0;
+explicit Python 3.14 / Unicode 16.0 reference was also executed for CI equivalence.
+Cargo fmt --check, clippy --all-targets --offline --locked -- -D warnings,
+test --offline --locked (9 unit tests) and build --release --offline --locked
+passed with the crate-local pre-fetched Cargo home and target. No new dependency;
+optional vulnerability audit and signing were not run. Workflow YAML safe_load,
+three-runner matrix inspection and Ruff passed. Initial requested seven-module
+pytest selection: 772 passed, 2 skipped, 1 stale inventory failure. Final operation
+regenerates adopter payload, followed by read-only validation reported on delivery.
+Linux/Windows runtime and runner toolchain availability remain CI-only evidence.
+TCC prompt-wait status is unknown: /usr/bin/log was denied while sandboxed.
+
+## Cursor before cross-platform native CI (2026-10-31)
+
+# Plan
+
+## Active task: Rust skill and native handoff proof of concept (2026-10-31)
+
+Intent authority: the owner's messages relayed by Mir Harness Main (parent-supplied):
+add on-demand Rust guidance, port the PreToolUse path of the continuity handoff hook as a
+proof of concept, cut its start-up cost, then commit and bind; push, tag and release need
+separate approval. Design authority: this cursor. No version bump; `hooks.json` and the
+Python reference stay byte-identical; callers are not switched.
+Prior cursor (three slices, verbatim): [cursor before Rust PoC commit](change_log.md#cursor-before-rust-poc-commit-2026-10-31).
+
+Request matrix: (1) `mir-code:rust` skill with coding, analysis, structure and porting
+references, registered; (2) `native/handoff-packet` with byte parity on shared fixtures and
+measured latency; (3) start-up optimization with boundary fixtures; (4) source and bind
+commits.
+
+Status (2026-10-31, Main): (1)-(3) done. Main re-ran the four Cargo gates (9 unit tests),
+the parity module (121 passed; dropping the `codex` or `claude` prefilter literal fails 2 or
+1 fixtures) and 30-process latency (median ms, Python -> Rust: Read 37.1 -> 3.1, ordinary
+Bash 37.4 -> 3.2, handoff deny 38.2 -> 7.6, non-ASCII ordinary 36.1 -> 2.6, non-ASCII
+handoff deny 36.3 -> 32.2). Linux, Windows and signing remain unverified. (4) source
+8895ee3; the bind commit refreshes only the `mir-code` digest in `.mir/capability-lock.json`
+(other plugins unchanged). Not pushed, tagged or released.
+
 ## Cursor before Rust PoC commit (2026-10-31)
 
 # Plan

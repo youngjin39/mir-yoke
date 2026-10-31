@@ -2,6 +2,7 @@
 
 This maintainer-only crate implements PreToolUse and forwards other events to
 `python3 <first argument>`, preserving stdin, environment, stdout/stderr and status.
+`MIR_HANDOFF_PYTHON` overrides the executable (one path, not a shell command).
 No hook caller or plugin payload selects it.
 
 Run Cargo from this directory:
@@ -15,6 +16,8 @@ cargo build --release --offline --locked
 ```
 
 Invoke `target/release/handoff-packet <path-to-handoff_packet.py>`.
+On Windows the executable has an `.exe` suffix. With `CARGO_TARGET_DIR`, use its
+`release` directory instead; relative target paths resolve from this crate.
 Without the argument, recognized PreToolUse errors remain silent; other events
 emit the reference unavailable warning without owner-specific additionalContext.
 
@@ -32,6 +35,36 @@ classify newly added codepoints differently. JS lone surrogates are replaced onl
 in internal command evidence, which is neither emitted nor executed; nested call
 detection and denial remain identical.
 
+## Cross-platform validation
+
+The `native_handoff` CI job builds and executes byte parity on `macos-latest`,
+`ubuntu-latest` and `windows-latest`. It pins Python 3.14 (Unicode 16.0), matching
+the frozen tables, rather than the Python 3.12 used by other jobs. Runner rustup
+uses `rust-toolchain.toml` (1.99.1, clippy and rustfmt). Clippy, tests and release
+builds use `--locked`; `cargo fmt --check` has no lockfile/offline options.
+
+The parity fixture inherits `CARGO_HOME` and `CARGO_TARGET_DIR`, and permits Cargo
+to fetch by default. Set `MIR_HANDOFF_CARGO_OFFLINE=1` for the pre-fetched local
+workflow above, keeping both exported Cargo variables when running pytest from
+the repository root. The whole parity module skips if Cargo is absent.
+
+Parity uses `HANDLER_PYTHON` from `tests/test_mechanical_handoff.py`: the current
+`sys.executable`, or `MIR_HANDOFF_TEST_PYTHON` when explicitly set. It supplies that
+same executable to the native forwarder through `MIR_HANDOFF_PYTHON`. This avoids
+Windows Store aliases and accidentally testing a different Python/Unicode version.
+The unchanged shipped `hooks.json` still requires `python3` on PATH on every OS,
+including Windows. The native default matches that contract; tests select an
+explicit interpreter, as the existing Windows hook tests do. These tests do not
+prove that a Windows user's shell resolves the shipped `python3` command.
+
+Subprocesses run with `PYTHONUTF8=1` to decode non-ASCII input consistently across
+Windows code pages. Native output is UTF-8 with CRLF on Windows and LF elsewhere,
+matching Python text streams; forwarded output is inherited unchanged. Fixtures
+are encoded explicitly and `.gitattributes` sets `* -text`, preventing checkout
+conversion even with `core.autocrlf`. Assertions compare raw stdout/stderr bytes
+and exit status without newline or encoding normalization. CI also runs
+`tests/test_line_endings.py` to check the checkout contract.
+
 From the repository root, measure 30 fresh processes per implementation and fixture:
 
 ```sh
@@ -40,7 +73,8 @@ uv run python native/handoff-packet/benchmark.py
 
 Median and nearest-rank p90 include startup and pipe I/O. Implementations alternate;
 OS caches are not flushed. Local execution evidence covers macOS arm64 only.
-Linux, Windows, distribution signing and vulnerability audits are unverified.
+Linux and Windows execution requires the matrix job's results; distribution
+signing and vulnerability audits remain unverified.
 
 ## Cold pattern compilation experiment (2026-10-31)
 
