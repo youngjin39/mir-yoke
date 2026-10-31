@@ -2935,3 +2935,77 @@ ROUND_S_DIGEST = (
     'ntract \ud30c\uc77c\uacfc \ub300'
     '\uc870\ud558\uc9c0\ub294 \uc54a\uc558\uc2b5\ub2c8\ub2e4.'
 )
+
+
+def test_round_t_d01_owner_only_authority():
+    hook = module()
+    owner = hook.owner_sections('May: read/inspect only\nMay not: run commands; edit files')
+    for sentence in (
+        'owner(\uc0ac\uc6a9\uc790)\ub9cc \ubb38\uad6c \ubcc0\uacbd\uc744 '
+        '\uc2b9\uc778\ud560 \uc218 \uc788\uc2b5\ub2c8\ub2e4.',
+        'Only the owner may approve edits.', 'Only the owner can run commands.',
+    ):
+        assert hook.authority_defects('May: read/inspect only\n  - ' + sentence, owner) == []
+        for grant in ('You may run commands.',
+                      '\uc218\uc2e0\uc790\ub294 \ud30c\uc77c\uc744 '
+                      '\uc218\uc815\ud574\ub3c4 \ub429\ub2c8\ub2e4.'):
+            assert hook.authority_defects(sentence + '\n' + grant, owner)
+
+
+def test_round_t_d02_pin_headings(monkeypatch):
+    hook = module()
+    monkeypatch.setattr(hook, 'turn_tools', lambda event: ([], [], []))
+    for heading in ('pin', 'pins'):
+        prompt = ('Review this received handoff.\n- **' + heading + ':**\n'
+                  '  - repository_root: parent-supplied(example)\n'
+                  '  - head: parent-supplied(example)')
+        claims = hook.pin_claims(prompt)
+        assert claims == [('repository_root', 'parent-supplied'), ('head', 'parent-supplied')]
+        assert hook.recipient_check(prompt, RECIPIENT_LABELS, {'cwd': str(ROOT)}) == []
+        assert 'missing recipient pin label: head' in hook.recipient_check(
+            prompt, RECIPIENT_LABELS.replace('pin head=parent-supplied', ''), {'cwd': str(ROOT)})
+
+
+def test_round_t_d03_reader_disclosure(monkeypatch):
+    hook = module()
+    monkeypatch.setattr(hook, 'turn_tools', lambda event: ([], [], []))
+    prompt = RECIPIENT_PROMPT + '\nNo commands.'
+    disclosure = (
+        '\uc18c\uc2a4 \ub9ac\ub354\ub97c \ucc3e\uc9c0 \ubabb\ud588\uc2b5\ub2c8\ub2e4. '
+        '\uc15c\u00b7\ucf54\ub4dc \uc778\ud130\ud504\ub9ac\ud130\ub294 '
+        '\uc2e4\ud589\ud558\uc9c0 \uc54a\uc558\uc2b5\ub2c8\ub2e4.'
+    )
+    defect = 'state commands forbidden and no non-command reader was used/available'
+    assert hook.recipient_check(prompt, RECIPIENT_LABELS + '\n' + disclosure,
+                                {'cwd': str(ROOT)}) == []
+    assert defect in hook.recipient_check(prompt, RECIPIENT_LABELS, {'cwd': str(ROOT)})
+
+
+def test_round_t_d04_evidential_precondition():
+    hook = module()
+    owner = hook.owner_sections('May: read/inspect only\nMay not: run commands; edit files')
+    for sentence in (
+        '\ub300\uc870\uad70\uc774 \uc2e4\ud589\ub418\uc5b4\uc57c \uc8fc\uc7a5\uc744 '
+        '\ud655\uc778\ud560 \uc218 \uc788\uc2b5\ub2c8\ub2e4.',
+        'Controls would need to be executed to verify the claim.',
+        'Controls would need to be run to verify the claim.',
+    ):
+        assert hook.authority_defects(sentence, owner) == []
+        for grant in ('You may run commands.',
+                      '\uba85\ub839\uc744 \uc2e4\ud589\ud574\ub3c4 \ub429\ub2c8\ub2e4.'):
+            assert hook.authority_defects(sentence + '\n' + grant, owner)
+
+
+def test_round_t_d05_nested_source_citation():
+    hook = module()
+    claim = '  - All reports end with "review required".'
+    for numbers in ('12-14', '12\u201314', '12, 20\u201322', '12'):
+        cited = '- **`scripts/check.py`**\n  - ' + numbers + ': inspect branches.\n'
+        assert hook.source_claim_defects(cited + claim)
+        assert hook.source_claim_defects('- All reports end with "review required".') == []
+        assert hook.source_claim_defects(cited + '  - One branch reports "review required".') == []
+        assert hook.source_claim_defects(cited + '  - All branches have "status" fields.') == []
+        assert hook.source_claim_defects('- Source\n  - ' + numbers + ': inspect.\n' + claim) == []
+        assert hook.source_claim_defects('- `scripts/check.py`\n  - 10:30 meeting.\n' + claim) == []
+        assert hook.source_claim_defects(cited + '- Separate item\n' + claim) == []
+        assert hook.source_claim_defects(cited + '- `scripts/other.py`\n' + claim) == []

@@ -525,3 +525,15 @@ inferences and misreading explanations read as extra authority; a value word in
 `name=value: label` extracted as a pin; and a same-line or nested label inventory reported
 missing. The reviewed handoff handler digest in the manager changes with it. Tests: the
 `test_round_s_*` cases in `tests/test_mechanical_handoff.py`.
+
+## Amendment: 2026-10-31 — round t checker fixes (0.13.54)
+
+Round t found four lexical false positives and one miss. An owner-only reservation and an
+evidential precondition ("would need to be executed to verify") were read as extra authority; a
+`pin` section heading was extracted as a pin; a recipient's statement that shell and interpreter
+tools were not executed was not accepted as a reader disclosure; and the first-block source-claim
+re-read required the citation on the claim's own line, so a claim under a list item that named
+the file, with sibling items citing line ranges, received no re-read request. The re-read still
+asks only for verification and still applies to authors only. The reviewed handoff handler digest
+in the manager changes with it. Tests: the `test_round_t_*` cases in
+`tests/test_mechanical_handoff.py`.

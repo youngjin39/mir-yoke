@@ -52,7 +52,7 @@ immutable release:
 
 ```bash
 uv tool install --force --link-mode copy \
-  "git+https://github.com/youngjin39/mir-yoke.git@v0.13.53"
+  "git+https://github.com/youngjin39/mir-yoke.git@v0.13.54"
 mir --help
 ```
 
@@ -191,6 +191,9 @@ the author to re-read cited source lines once before keeping a universal claim a
 
 Version 0.13.53 makes the handoff repair limit hold when Codex reuses one Stop run ID and removes
 three checker false positives found by the round s judge.
+
+Version 0.13.54 removes four handoff checker false positives found by the round t judge and lets
+the source-claim re-read use a citation from the enclosing list item.
 
 Version 0.13.50 makes a root Glob count as a complete search only for a whole-tree pattern and
 removes three handoff checker false positives found by the round q judge.

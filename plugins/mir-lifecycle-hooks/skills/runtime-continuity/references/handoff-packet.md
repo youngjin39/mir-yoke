@@ -12,6 +12,13 @@ Round r lexical boundaries:
   named pin; neighbouring siblings never supply a missing label.
 - Count each native repair message even when Stop reuses its run ID; pair only matching
   run-ID/text occurrences across the two Codex record views, never across distinct Stops.
+- Owner-only reservations ("only the owner can ...") and evidential preconditions ("would need
+  to be executed to verify") add no grant unless they name the recipient or grant permission.
+- A `pin`/`pins` heading is not a pin, and a pin claim never spans a line break.
+- A recipient disclosure that shell or interpreter tools were not executed counts like "not
+  called" for the reader-limit statement.
+- For the source-claim re-read, a nested list item is cited when its nearest parent item names a
+  file path and a sibling item starts with a line number or range.
 - `provenance` is an accounting label, not an additional pin.
 - Pin labels accept a following Hangul suffix, but not a longer ASCII word.
 - On the first author block only, a universal claim about cited, quoted source output requests

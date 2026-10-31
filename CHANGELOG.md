@@ -8,6 +8,24 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.54] — 2026-10-31 — round t checker fixes
+
+### Fixed
+
+- Four handoff checker false positives found by the round t judge: a sentence that reserves a
+  decision for the owner only, or says that something would need to be executed before a claim
+  can be verified, is not read as granted authority; a `pin`/`pins` heading is not a pin and a
+  pin claim no longer spans a line break; a recipient disclosure that shell or interpreter tools
+  were not executed (not only "not called") counts as a reader disclosure.
+- The first-block source-claim re-read missed a universal output claim whose citation sat in the
+  enclosing list: a nested list item now counts as cited when its nearest parent item names a
+  file path and a sibling item starts with a line number or range.
+
+### Changed
+
+- Bump release surfaces to 0.13.54, re-pin the reviewed handoff handler digest and regenerate the
+  adopter payload.
+
 ## [v0.13.53] — 2026-10-31 — handoff repair guard and round s checker fixes
 
 ### Fixed

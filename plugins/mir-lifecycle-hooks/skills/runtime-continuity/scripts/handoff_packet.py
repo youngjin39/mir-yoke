@@ -82,7 +82,8 @@ TARGET_NAME = r'(?:qualified target|\ub300\uc0c1)\b(?:[ \t]*\([^\n)]*\))?'
 PIN_KEY = (r'(?:repository_root|head|(?:mapping|contract)\.(?:identity|version|digest)|'
            r'sources\[\d+\]\.(?:digest|sha256|revision))')
 NON_PIN_NAMES = {'lifecycle', 'temporal', 'epistemic', 'verification', 'evidence', 'unknowns',
-                 'provenance', 'label', 'reason', 'reasons', '\uc774\uc720', 'sha256', 'revision'}
+                 'pin', 'pins', 'provenance', 'label', 'reason', 'reasons', '\uc774\uc720',
+                 'sha256', 'revision'}
 COMPLETE_ARTIFACT_RULE = (
     'Re-send the complete corrected artifact as your final message; it replaces the previous '
     'one, so do not send only the changed sections.'
@@ -276,6 +277,16 @@ def authority_defects(body: str, boundary: dict) -> list[str]:
             continue
         if future_grant(item):
             continue
+        if (re.search(r'^\s*(?:[-+]\s*)?(?:only the owner\s+(?:can|may)\b|'
+                      r'(?:owner|\uc0ac\uc6a9\uc790|\uc18c\uc720\uc790)'
+                      r'(?:\([^)]*\))?\s*\ub9cc\s)', item, re.I)
+                or re.search(r'\ub418\uc5b4\uc57c[^.!?]*\ud655\uc778\ud560\s*\uc218\s*'
+                             r'\uc788\uc2b5\ub2c8\ub2e4$|'
+                             r'\bwould need to be (?:run|executed) to verify\b', item, re.I)):
+            if not re.search(r'\b(?:you|recipient|agent)\b|\uc218\uc2e0\uc790|'
+                             r'\uc5d0\uc774\uc804\ud2b8|\ud574\ub3c4\s*\ub429\ub2c8\ub2e4',
+                             item, re.I):
+                continue
         scope = re.match(r'^(?:scope|range|\ubc94\uc704)\s*:', item, re.I)
         if scope:
             nouns = re.sub(r'[\w.-]+(?:/[\w.*-]*)+', '', item[scope.end():])
@@ -857,8 +868,8 @@ def tool_kind(name: str) -> str:
 
 def pin_claims(text: str) -> list[tuple[str, str]]:
     plain = re.sub(r'[*`]', '', assertion_text(text))
-    claims = re.findall(r'(?im)(?<![\w.=-])(?:pin )?([\w.\[\]-]+)\s*[=:]\s*'
-                        r'(?:[^\n;:=]+:\s*)?'
+    claims = re.findall(r'(?im)(?<![\w.=-])(?:pin )?([\w.\[\]-]+)[ \t]*[=:][ \t]*'
+                        r'(?:[^\n;:=]+:[ \t]*)?'
                         r'(verified-in-repo|parent-supplied|unavailable)(?![A-Za-z0-9_-])', plain)
     parents = []
     for line in plain.splitlines():
@@ -1197,7 +1208,7 @@ def recipient_check(prompt: str, body: str, event: dict) -> list[str]:
                       r'\uc2e4\ud589\s*\uc5c6\uc774)|'
                       r'\uba85\ub839[^.\n]*(?:\uc2e4\ud589|\uc218\ud589)[^.\n]*\ud558\uc9c0\s*\uc54a|'
                       r'(?:\uc15c|\uc178|shell|\uc778\ud130\ud504\ub9ac\ud130)[^.\n]*'
-                      r'\ud638\ucd9c\ud558\uc9c0\s*\uc54a', plain, re.I)
+                      r'(?:\ud638\ucd9c|\uc2e4\ud589)\ud558\uc9c0\s*\uc54a', plain, re.I)
             and re.search(r'(?:\uc77d\uae30\s*\ub3c4\uad6c|\ub9ac\ub354|reader|'
                           r'(?:\ud30c\uc77c|\uc18c\uc2a4|\ud14d\uc2a4\ud2b8)[^.\n]*\uc77d[^.\n]*\ub3c4\uad6c)'
                           r'[^.\n]*(?:\uc5c6|\uc0ac\uc6a9\ud558\uc9c0|\ubabb)', plain, re.I))
@@ -1290,11 +1301,38 @@ def block(defects: list[str], retry: bool, receiving: bool, owner: dict) -> None
                           + '. ' + COMPLETE_ARTIFACT_RULE}))
 
 
+def nested_source_citations(lines: list[str]) -> set[int]:
+    parents = []
+    children = {}
+    for index, line in enumerate(lines):
+        if not line.strip():
+            continue
+        indent = len(line) - len(line.lstrip())
+        while parents and indent <= parents[-1][0]:
+            parents.pop()
+        if not re.match(r'\s*[-+*]\s+', line):
+            continue
+        if parents:
+            children.setdefault(parents[-1][1], []).append(index)
+        parents.append((indent, index))
+    cited = set()
+    for parent, siblings in children.items():
+        if (re.search(r'[\w-]+[./][\w./-]+', lines[parent])
+                and any(re.match(r'\s*[-+*]\s+\d+(?:[-\u2013]\d+)?'
+                                 r'(?:,\s*\d+(?:[-\u2013]\d+)?)*:\s', lines[index])
+                        for index in siblings)):
+            cited.update(siblings)
+    return cited
+
+
 def source_claim_defects(body: str) -> list[str]:
     """Request one re-read for universal assertions about cited literal output."""
-    for line in assertion_text(body).splitlines():
+    lines = assertion_text(body).splitlines()
+    nested = nested_source_citations(lines)
+    for index, line in enumerate(lines):
         # A citation needs a path with '.' or '/', or an elided path; 10:30 is a time.
-        if not re.search(r'(?:[\w-]*[./][\w./-]*|\u2026):\d+(?:-\d+)?', line):
+        if (index not in nested
+                and not re.search(r'(?:[\w-]*[./][\w./-]*|\u2026):\d+(?:-\d+)?', line)):
             continue
         if not re.search(r'`[^`\n]+`|"[^"\n]+"', line):
             continue
