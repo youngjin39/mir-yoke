@@ -18,4 +18,6 @@ Status (2026-10-31, Main): (1)-(3) done. Main re-ran the four Cargo gates (9 uni
 the parity module (121 passed; dropping the `codex` or `claude` prefilter literal fails 2 or
 1 fixtures) and 30-process latency (median ms, Python -> Rust: Read 37.1 -> 3.1, ordinary
 Bash 37.4 -> 3.2, handoff deny 38.2 -> 7.6, non-ASCII ordinary 36.1 -> 2.6, non-ASCII
-handoff deny 36.3 -> 32.2). Linux, Windows and signing remain unverified. (4) in progress.
+handoff deny 36.3 -> 32.2). Linux, Windows and signing remain unverified. (4) source
+8895ee3; the bind commit refreshes only the `mir-code` digest in `.mir/capability-lock.json`
+(other plugins unchanged). Not pushed, tagged or released.
