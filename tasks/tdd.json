@@ -2,6 +2,57 @@
   "version": 1,
   "changes": [
     {
+      "id": "h4-provider-native-pins-0.13.56-2026-11-01",
+      "record_status": "in_progress",
+      "scope": "Owner Slice H4: provider required-commit native pins, portable validation, warning fallback, dry-run placement and 0.13.56. Main owns live lock binding and commits.",
+      "bluebrick": "Capability provider native artifacts and release metadata",
+      "design_ref": "tasks/plan.md",
+      "fail_first": {
+        "command": "uv run --no-sync pytest -q tests/test_capability_native_artifacts.py -k manager_materializes --tb=short",
+        "result": "6 failed, 31 deselected before implementation. Consumer-source mutation then failed 2 default manager cases; final native module 44 passed."
+      },
+      "categories": {
+        "unit": {
+          "status": "pass",
+          "command": "uv run --no-sync pytest -q tests/test_capability_native_artifacts.py --tb=short",
+          "notes": "44 passed; provider placement, portable pins, optional export, opt-out, fallback, status, tampering and stale consumer records."
+        },
+        "edge": {
+          "status": "pass",
+          "command": "uv run --no-sync pytest -q tests/test_capability_native_artifacts.py --tb=short",
+          "notes": "44 passed; provider placement, portable pins, optional export, opt-out, fallback, status, tampering and stale consumer records."
+        },
+        "security": {
+          "status": "pass",
+          "command": "uv run --no-sync pytest -q tests/test_capability_native_artifacts.py --tb=short",
+          "notes": "44 passed; provider placement, portable pins, optional export, opt-out, fallback, status, tampering and stale consumer records."
+        },
+        "integration": {
+          "status": "planned",
+          "command": "uv run --no-sync pytest -q tests/test_capability*.py tests/test_native_release.py tests/test_plugin_skill_packages.py tests/test_public_template_surface.py tests/test_no_korean_in_user_facing.py --tb=short",
+          "notes": "666 passed, 1 expected live-lock digest failure before the final two export fixtures. Main source commit and digest rebind remain open."
+        },
+        "architecture": {
+          "status": "pass",
+          "command": "uv run --no-sync python scripts/verify_codex_sync.py",
+          "notes": "Codex sync passes without generated edits. Active/restored receipts govern verification."
+        },
+        "compatibility": {
+          "status": "pass",
+          "command": "uv run --no-sync pytest -q tests/test_capability_native_artifacts.py tests/test_lifecycle_native_commands.py --tb=short",
+          "notes": "74 passed, 16 Windows-only skipped before final two export fixtures; committed-HEAD legacy module 9 passed in combined gate."
+        },
+        "e2e": {
+          "status": "not_applicable",
+          "reason": "Publication and real consumer update are Main delivery steps; offline manager integration is covered."
+        },
+        "browser": {
+          "status": "not_applicable",
+          "reason": "No browser surface changed."
+        }
+      }
+    },
+    {
       "id": "h3-native-default-release-0.13.55-2026-10-31",
       "record_status": "in_progress",
       "scope": "Owner Slice H3: default lock-pinned native placement, exact zero opt-out, release surfaces and single cursor; preserve H/H2; no lock binding or generated Codex writes.",

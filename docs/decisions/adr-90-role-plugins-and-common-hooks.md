@@ -548,3 +548,12 @@ failures keep the existing warning and Python reference. Native prerelease
 publication remains explicit, and the maintainer pinning tool validates published
 bytes before writing an explicitly selected lock. None of these mechanisms grants
 consumer write authority. See tasks/plan.md for the release preparation cursor.
+
+## Amendment: 2026-11-01 — provider native pins (0.13.56)
+
+The required-commit provider lock supplies optional portable native artifact pins
+for update and dry-run placement. Consumer locks and active receipts persist those
+records; verification of installed trees uses the active placement receipt.
+Invalid provider metadata or failed placement warns and preserves the Python
+reference without failing the update. Dry-run JSON groups planned names, host
+targets and SHA256 digests by plugin. The native crate and prerelease pins are unchanged.

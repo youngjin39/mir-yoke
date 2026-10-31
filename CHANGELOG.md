@@ -8,6 +8,17 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.56] — 2026-11-01 — provider native artifact pins
+
+### Fixed
+
+- Capability updates and dry runs read portable native pins from the provider lock
+  at the required commit, rather than the consumer's previous lock. Dry-run JSON
+  lists planned artifact names, host targets and SHA256 digests per plugin.
+- Invalid provider native metadata or failed placement warns and retains Python
+  while completing the update. Active verification uses the placement receipt.
+  Native crate pins remain on the existing native prerelease.
+
 ## [v0.13.55] — 2026-10-31 — native lifecycle hooks by default
 
 ### Added

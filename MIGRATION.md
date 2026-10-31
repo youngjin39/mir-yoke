@@ -1,5 +1,15 @@
 # Migration Guide
 
+## 0.13.56 provider native artifact pins
+
+Run `mir capability update --apply` to place binaries pinned by the provider release
+at the required commit, including consumers whose previous lock has no native pins.
+Preview with `mir capability update --json`: `native_artifacts` groups planned names,
+host targets and SHA256 digests by plugin. The provider section is optional; invalid
+pins warn and retain Python without failing the update. The exact
+`MIR_CAPABILITY_NATIVE_ARTIFACTS=0` override still disables placement. The native
+crate and existing native prerelease pins are unchanged.
+
 ## 0.13.55 native lifecycle hooks by default
 
 `mir capability update --apply` now places native binaries declared in the capability

@@ -28,9 +28,10 @@ SHA_A = "a" * 40
 
 
 class CopyGit:
-    def __init__(self, source: Path = ROOT, commit: str = SHA_A) -> None:
+    def __init__(self, source: Path = ROOT, commit: str = SHA_A, *, native_artifacts=None) -> None:
         self.source = source
         self.commit = commit
+        self.native_artifacts = native_artifacts
 
     def resolve(self, url: str, ref: str) -> str:
         return self.commit
@@ -48,7 +49,11 @@ class CopyGit:
             source = self.source / relative
             target = destination / relative
             target.parent.mkdir(parents=True, exist_ok=True)
-            if source.is_dir():
+            if relative == ".mir/capability-lock.json":
+                # Offline providers explicitly supply native pins; never fetch release assets.
+                target.write_text(json.dumps({} if self.native_artifacts is None else
+                                             {"native_artifacts": self.native_artifacts}))
+            elif source.is_dir():
                 shutil.copytree(source, target)
             else:
                 shutil.copy2(source, target)

@@ -179,6 +179,7 @@ def test_manager_materializes_and_verifies_artifacts(tmp_path, monkeypatch, sett
     from mir.core.capabilities import CapabilityManager
 
     monkeypatch.setattr(api(), "host_target", lambda: target)
+    monkeypatch.setattr("mir.core.capabilities.manager.host_target", lambda: target)
     enabled = setting != "0"
     if setting is None:
         monkeypatch.delenv("MIR_CAPABILITY_NATIVE_ARTIFACTS", raising=False)
@@ -218,8 +219,15 @@ def test_manager_materializes_and_verifies_artifacts(tmp_path, monkeypatch, sett
             "sha256": hashlib.sha256(continuity_data).hexdigest(), "size": len(continuity_data),
         }},
     }
-    lock["native_artifacts"] = records
-    manager.lock_path.write_text(json.dumps(lock))
+    # Provider pins are portable; the fixture resolves relative assets to local file URLs.
+    local_read = api()._read
+    sources = {"handoff-packet": source, "runtime-continuity": continuity_source}
+    for name, record in records.items():
+        record["targets"][target]["url"] = name
+    monkeypatch.setattr(api(), "_read", lambda url, size: local_read(sources[url].as_uri(), size))
+    assert "native_artifacts" not in lock
+    manager.git.native_artifacts = records
+    preview = manager.update()
     manager.update(apply=True)
     lock = json.loads(manager.lock_path.read_text())
     assert lock["native_artifacts"] == records
@@ -228,6 +236,13 @@ def test_manager_materializes_and_verifies_artifacts(tmp_path, monkeypatch, sett
     assert binary.exists() == enabled
     continuity = binary.with_name("runtime-continuity" + suffix)
     assert continuity.exists() == enabled
+    if enabled:
+        assert preview["native_artifacts"]["mir-lifecycle-hooks"] == [
+            {"name": name, "target": target, "sha256": record["targets"][target]["sha256"]}
+            for name, record in records.items()
+        ]
+    else:
+        assert preview["native_artifacts"] == {}
     if enabled:
         assert binary.read_bytes() == DATA
         assert continuity.read_bytes() == continuity_data
@@ -244,6 +259,10 @@ def test_manager_materializes_and_verifies_artifacts(tmp_path, monkeypatch, sett
     if enabled:
         legacy_consumer = {key: value for key, value in lock.items() if key != "native_artifacts"}
         assert manager._active_integrity(legacy_consumer, tuple(lock["plugins"]))
+        stale_consumer = json.loads(json.dumps(lock))
+        stale_consumer["native_artifacts"]["handoff-packet"]["targets"][target]["sha256"] = "0" * 64
+        assert manager._active_integrity(stale_consumer, tuple(lock["plugins"]))
+        assert manager.status()["active_integrity"]
         binary.write_bytes(b"tampered")
         assert not manager._active_integrity(lock, tuple(lock["plugins"]))
         assert not manager._provider_active_integrity(receipt)
@@ -251,6 +270,15 @@ def test_manager_materializes_and_verifies_artifacts(tmp_path, monkeypatch, sett
         extra = binary.parent / "extra"
         extra.write_bytes(b"extra")
         assert not manager._active_integrity(lock, tuple(lock["plugins"]))
+        extra.unlink()
+    # A later provider without pins must not inherit the consumer's old pins.
+    manager.git.native_artifacts = None
+    manager.update(apply=True)
+    assert not binary.exists()
+    assert not continuity.exists()
+    assert "native_artifacts" not in json.loads(manager.lock_path.read_text())
+    assert "native_artifacts" not in json.loads(manager.active_receipt_path.read_text())
+    assert manager.status()["active_integrity"]
     assert before
 
 
@@ -286,3 +314,77 @@ def test_linked_native_root_rejected(tmp_path, monkeypatch):
             linked, "mir-lifecycle-hooks", records, target="aarch64-apple-darwin"
         ):
             pass
+
+
+@pytest.mark.parametrize("failure", ["absent", "digest", "url", "section", "portable"])
+def test_provider_native_failures_keep_update_and_python(tmp_path, monkeypatch, capsys, failure):
+    from test_capability_cli import CopyGit, make_project, runtime_runner
+
+    from mir.core.capabilities import CapabilityManager
+
+    monkeypatch.delenv("MIR_CAPABILITY_NATIVE_ARTIFACTS", raising=False)
+    monkeypatch.setattr(api(), "host_target", lambda: "aarch64-apple-darwin")
+    monkeypatch.setattr("mir.core.capabilities.manager.host_target",
+                        lambda: "aarch64-apple-darwin")
+    source = tmp_path / "artifact"
+    source.write_bytes(DATA)
+    records = manifest("artifact")
+    pin = records["handoff-packet"]["targets"]["aarch64-apple-darwin"]
+    if failure == "digest":
+        pin["sha256"] = "0" * 64
+    elif failure == "url":
+        pin["url"] = "invalid://artifact"
+    elif failure == "portable":
+        pin["url"] = source.as_uri()
+    elif failure == "section":
+        records = []
+    else:
+        records = None
+    local_read = api()._read
+    monkeypatch.setattr(api(), "_read", lambda url, size: local_read(source.as_uri(), size))
+    home, codex = tmp_path / "provider", tmp_path / "codex"
+    manager = CapabilityManager(
+        make_project(tmp_path), capability_home=home, user_home=tmp_path / "user",
+        codex_home=codex, git=CopyGit(native_artifacts=records),
+        command_runner=runtime_runner(home / "active", codex),
+        which=lambda executable: f"/fake/{executable}",
+    )
+    result = manager.update(apply=True)
+    assert result["applied"] is True
+    plugin = manager.active_path / "plugins/mir-lifecycle-hooks"
+    assert not (plugin / "bin/handoff-packet").exists()
+    assert (plugin / "hooks/hooks.json").is_file()
+    assert ("Warning: native artifact" in capsys.readouterr().err) == (failure != "absent")
+    lock = json.loads(manager.lock_path.read_text())
+    assert manager._active_integrity(lock, tuple(lock["plugins"]))
+    assert manager._provider_active_integrity(json.loads(manager.active_receipt_path.read_text()))
+
+
+@pytest.mark.parametrize("present", [False, True])
+def test_git_export_includes_optional_provider_lock(tmp_path, present):
+    import subprocess
+
+    from mir.core.capabilities.manager import GitClient
+
+    commit = "a" * 40
+    config = "config/capability-sources.json"
+    lock = ".mir/capability-lock.json"
+    checkouts = []
+
+    def runner(args, *, cwd, **kwargs):
+        output = ""
+        if "init" in args:
+            (cwd / ".git").mkdir()
+        elif "rev-parse" in args:
+            output = commit
+        elif "ls-tree" in args and ".gitmodules" not in args:
+            output = f"100644 blob {commit}\t{config}\0"
+            if present:
+                output += f"100644 blob {commit}\t{lock}\0"
+        elif "checkout" in args:
+            checkouts.append(args[args.index("--") + 1:])
+        return subprocess.CompletedProcess(args, 0, output, "")
+
+    GitClient(runner).export("https://example.com/source.git", "main", commit,
+                             [config, lock], tmp_path / "checkout")
+    assert checkouts == [[config, lock] if present else [config]]

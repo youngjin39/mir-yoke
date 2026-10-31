@@ -14942,3 +14942,103 @@ under that mutation and passes on the restored code (25 unit tests). Re-measured
 Stop medians: no packet 45.5 -> 5.8 ms; valid 66.0 -> 62.8 ms; defective
 67.2 -> 62.1 ms. The valid and defective paths are dominated by the repository pin
 runner, which is Python owned by the repository, not by the hook.
+
+
+## Slice H4: provider native pins and 0.13.56 (2026-11-01)
+
+Intent authority: owner Slice H4 request; current cursor: tasks/plan.md. Native
+placement now reads the optional provider lock exported at required_commit and
+validates with portable=True. Missing metadata places nothing; invalid metadata
+warns and keeps Python. Valid records persist in consumer locks and active receipts.
+Dry-run native_artifacts groups names, host targets and SHA256 digests by plugin.
+Active tree and enrolled-consumer verification use active receipt records, including
+when the consumer has absent or stale pins. Existing provider/runtime verification
+and rollback already use the active/restored receipt through _materialized_plugin;
+those paths retain that source. Source evidence: manager.py _execute, _apply,
+_active_integrity, _consumer_lock_matches and _rollback_runtime_registration;
+tests/test_capability_native_artifacts.py exercises placement, status and tampering.
+The ontology map's canonical_index names manager.py; its capability operation
+diagnostics vocabulary distinguishes active/verified from full readiness. No new
+semantic authority or readiness claim is introduced.
+
+Current version surfaces are 0.13.56, with CHANGELOG, MIGRATION and ADR-90 notes.
+Historical 0.13.55 records remain. manager.py contains no 0.13.55 release constant;
+the Codex marketplace likewise has no version field. All ten plugin manifests and
+the Claude marketplace were updated. Live capability-lock and .codex are untouched;
+native prerelease pins remain unchanged for Main's later plugin digest rebind.
+
+All uv commands used the owner-specified shared UV cache. Cargo network access was
+disabled for the combined gate; no native crate changed and no Cargo build was
+needed. Native fixtures resolve portable relative pins through real local file URL
+reads; no release asset network is used. Later runs use task-local external scratch.
+
+Executed evidence (commands relative to the repository):
+
+```sh
+uv run --no-sync pytest -q tests/test_capability_native_artifacts.py -k manager_materializes --tb=short
+uv run --no-sync pytest -q tests/test_capability*.py tests/test_native_release.py tests/test_plugin_skill_packages.py tests/test_public_template_surface.py tests/test_no_korean_in_user_facing.py --tb=short
+uv run --no-sync pytest -q tests/test_capability_native_artifacts.py tests/test_lifecycle_native_commands.py --tb=short
+uv run --no-sync pytest -q tests/test_capability_native_artifacts.py --tb=short
+uv run --no-sync ruff check
+uv run --no-sync python scripts/verify_codex_sync.py
+git diff --check
+```
+
+Fail-first: 6 failed, 31 deselected before implementation (missing dry-run field).
+An in-memory mutation restoring consumer-lock pin selection failed both default
+manager cases (2 failed, 40 deselected; no persisted provider pins). No source file
+was mutated for that check. Green native suite after final export fixtures:
+44 passed. Covers both binary names, macOS/Windows target suffixes, exact opt-out,
+absent section, malformed section, nonportable source, bad URL, digest failure,
+tampering, stale consumer pins, later provider pin removal and optional Git export.
+
+Combined gate: 666 passed, 1 expected failure in 170.74s. At that run capability
+modules collected 601 cases (600 passed, 1 failed), including CLI 58 (57 passed,
+1 failed), native artifacts 42; native release 40, plugin packages 16, public
+surface 3 and no-korean 7 all passed. The only failure is
+test_repository_lock_is_portable_and_matches_managed_trees: the live lock's plugin
+tree digest awaits Main's source commit and rebind. Committed-HEAD legacy tests:
+all 9 passed; no additional commit-coupled failure was observed. Two optional Git
+export cases were then added and the final native module passed all 44 cases.
+The separate native/lifecycle run passed 74, skipped 16 Windows-only cases in
+23.35s. Ruff, Codex sync and whitespace checks pass without generated Codex edits.
+
+Remaining delivery: Main commits and rebinds plugin digests; Windows process
+execution remains CI-owned. No commit, tag, dispatch or consumer operation was run.
+After this record, regenerate adopter payload as the final tracked edit and run
+read-only surface/payload checks; final execution counts belong in the delivery
+report so that writing them cannot invalidate the last-edit requirement.
+
+## Superseded H3 cursor (preserved for H4, 2026-11-01)
+
+# Plan
+
+## Active task: Mir Yoke 0.13.55 release preparation (2026-10-31)
+
+Intent authority: owner Slice H3 request, preserving uncommitted H/H2 work.
+This is the single release cursor; superseded slice cursors are preserved verbatim
+in tasks/change_log.md. No commit, tag, dispatch, capability-lock or .codex edits.
+
+Design: native placement uses lock-pinned binaries by default; only the exact
+MIR_CAPABILITY_NATIVE_ARTIFACTS=0 override disables it. Preserve existing warning
+and Python fallback on placement failures. Bump current release surfaces to
+0.13.55, retain historical release records, and describe native lifecycle and
+Windows command selection. Regenerate adopter payload as the final edit.
+
+Request matrix:
+1. Fail-first default placement and explicit opt-out; existing fallback checks.
+2. Version pins, release metadata, changelog, migration and current help text.
+3. Single cursor and verbatim superseded cursor archive.
+4. Requested pytest modules, public-language check, Ruff and Codex sync.
+5. Final adopter payload regeneration followed only by read-only checks.
+
+Expected open delivery: Main binds the real lock after the source commit;
+unbound tree-digest and committed-HEAD checks cannot pass before that step.
+Windows process execution remains a CI requirement, not local macOS evidence.
+
+Status before final payload regeneration: rows 1-3 verified. Requested gate:
+315 passed, 16 Windows-only skipped, 1 expected unbound tree-digest failure.
+Committed-HEAD compatibility: 5 passed, 4 prior-schema failures pending source
+commit. Native publication fixtures: 39 passed. Ruff and Codex sync passed.
+Final payload edit and read-only checks follow. Commands and red/green evidence
+are in tasks/change_log.md. Main's source commit and lock bind remain open.

@@ -1,31 +1,21 @@
 # Plan
 
-## Active task: Mir Yoke 0.13.55 release preparation (2026-10-31)
+## Active task: Slice H4, provider native pins and 0.13.56 (2026-11-01)
 
-Intent authority: owner Slice H3 request, preserving uncommitted H/H2 work.
-This is the single release cursor; superseded slice cursors are preserved verbatim
-in tasks/change_log.md. No commit, tag, dispatch, capability-lock or .codex edits.
+Intent authority: owner Slice H4 request. This is the single current cursor.
+Use the required-commit provider lock for placement and dry-run previews; validate
+portable pins, warn and retain Python on invalid native metadata or placement.
+Persist placement records and verify active trees against the active receipt.
+Cover provider pins without consumer pins, absence, invalid pins, opt-out and preview
+with offline fixtures. Bump current release surfaces to 0.13.56; retain historical
+records and native prerelease pins. No commit, dispatch, live lock or .codex writes.
+Regenerate adopter payload as the LAST edit, then perform read-only verification.
 
-Design: native placement uses lock-pinned binaries by default; only the exact
-MIR_CAPABILITY_NATIVE_ARTIFACTS=0 override disables it. Preserve existing warning
-and Python fallback on placement failures. Bump current release surfaces to
-0.13.55, retain historical release records, and describe native lifecycle and
-Windows command selection. Regenerate adopter payload as the final edit.
-
-Request matrix:
-1. Fail-first default placement and explicit opt-out; existing fallback checks.
-2. Version pins, release metadata, changelog, migration and current help text.
-3. Single cursor and verbatim superseded cursor archive.
-4. Requested pytest modules, public-language check, Ruff and Codex sync.
-5. Final adopter payload regeneration followed only by read-only checks.
-
-Expected open delivery: Main binds the real lock after the source commit;
-unbound tree-digest and committed-HEAD checks cannot pass before that step.
-Windows process execution remains a CI requirement, not local macOS evidence.
-
-Status before final payload regeneration: rows 1-3 verified. Requested gate:
-315 passed, 16 Windows-only skipped, 1 expected unbound tree-digest failure.
-Committed-HEAD compatibility: 5 passed, 4 prior-schema failures pending source
-commit. Native publication fixtures: 39 passed. Ruff and Codex sync passed.
-Final payload edit and read-only checks follow. Commands and red/green evidence
-are in tasks/change_log.md. Main's source commit and lock bind remain open.
+Status before final payload regeneration: provider-source regressions and release
+surfaces are complete. Native tests: 44 passed. Requested combined gate: 666 passed,
+1 expected live-lock tree-digest failure. Native plus lifecycle check: 74 passed,
+16 Windows-only skipped before the two final export fixtures were added. Ruff,
+Codex sync and diff whitespace checks passed. Exact commands and semantic evidence
+are in tasks/change_log.md. Final payload regeneration and read-only surface checks
+follow. Main owns source commit, plugin digest rebinding and any generated Codex
+delivery. Windows execution remains CI evidence, not local macOS evidence.

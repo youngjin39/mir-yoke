@@ -10,6 +10,7 @@ import secrets
 import shutil
 import stat
 import subprocess
+import sys
 import tempfile
 import tomllib
 from collections.abc import Callable, Iterator, Sequence
@@ -29,7 +30,7 @@ from .config import (
     load_consumer_acknowledgements,
 )
 from .mcp import MCP_LAUNCHERS, MCP_NAME, validate_mcp_observation, validate_mcp_package
-from .native import place_artifacts, source_tree, validate_artifacts
+from .native import host_target, place_artifacts, source_tree, validate_artifacts
 from .private_file import is_private, make_private
 
 _SHA = re.compile(r"^[0-9a-f]{40}$")
@@ -364,6 +365,8 @@ class GitClient:
             if mode == "100755":
                 raise CapabilityError(f"remote executable content rejected: {raw_path}")
             found_paths.add(raw_path)
+        paths = [path for path in paths if path != ".mir/capability-lock.json"
+                 or path in found_paths]
         for required in paths:
             prefix = f"{required}/"
             if required not in found_paths and not any(
@@ -977,6 +980,29 @@ class CapabilityManager:
             return validate_artifacts(document.get("native_artifacts", {}), self.config.plugins)
         except ValueError as exc:
             raise CapabilityError(str(exc)) from exc
+
+    def _provider_native_records(self, checkout: Path) -> dict:
+        try:
+            document = _read_json(checkout / ".mir/capability-lock.json") or {}
+            return validate_artifacts(
+                document.get("native_artifacts", {}), self.config.plugins, portable=True,
+            )
+        except (CapabilityError, ValueError, OSError) as exc:
+            print(f"Warning: native artifacts skipped: {exc}; using Python reference",
+                  file=sys.stderr)
+            return {}
+
+    def _native_placement_plan(self, records: dict) -> dict:
+        target = host_target()
+        if os.environ.get("MIR_CAPABILITY_NATIVE_ARTIFACTS") == "0" or target is None:
+            return {}
+        planned = {}
+        for name, record in records.items():
+            pin = record["targets"].get(target)
+            if pin:
+                planned.setdefault(record["plugin"], []).append(
+                    {"name": name, "target": target, "sha256": pin["sha256"]})
+        return planned
 
     def _materialized_plugin(
         self, root: Path, name: str, *, package_kind: str, native_artifacts=None,
@@ -1799,7 +1825,7 @@ class CapabilityManager:
                     plugin,
                     package_kind=self.config.plugin_kinds[plugin],
                     native_artifacts=self._native_records(
-                        lock if "native_artifacts" in lock else active_receipt or {}),
+                        active_receipt if active_receipt is not None else lock),
                 )
                 for plugin in self.config.plugins
             }
@@ -1985,7 +2011,7 @@ class CapabilityManager:
             ):
                 return False
         try:
-            records = self._native_records(lock)
+            records = self._native_records(_read_json(self.active_receipt_path) or {})
             for plugin in required:
                 with source_tree(self.active_path / self.config.plugins[plugin], plugin, records):
                     pass
@@ -2843,7 +2869,7 @@ class CapabilityManager:
                 self.config.source_url,
                 self.config.source_ref,
                 desired_commit,
-                export_paths,
+                [*export_paths, ".mir/capability-lock.json"],
                 checkout,
             )
             if operation == "update" and not pending_local_update:
@@ -2855,6 +2881,7 @@ class CapabilityManager:
                 selected_plugins = pack.plugins
                 selected_agents = pack.agents
                 selected_commands = pack.commands
+            native_artifacts = self._provider_native_records(checkout)
             plugin_hashes = {
                 name: _validate_plugin(
                     checkout / path,
@@ -2899,6 +2926,7 @@ class CapabilityManager:
                 "command_skill_map": {
                     path: self.config.commands[path] for path in selected_commands
                 },
+                "native_artifacts": self._native_placement_plan(native_artifacts),
                 "managed_surfaces": self._managed_surfaces(pack),
                 "runtime_support": self.config.runtime_support,
             }
@@ -2951,6 +2979,7 @@ class CapabilityManager:
                 )
             registration = self._apply(
                 checkout=checkout,
+                native_artifacts=native_artifacts,
                 commit=desired_commit,
                 profile=resolved_profile,
                 selected_plugins=selected_plugins,
@@ -3243,6 +3272,7 @@ class CapabilityManager:
         self,
         *,
         checkout: Path,
+        native_artifacts: dict,
         commit: str,
         profile: str,
         selected_plugins: Sequence[str],
@@ -3303,9 +3333,6 @@ class CapabilityManager:
                 path: path.read_bytes() if path.is_file() else None for path in state_paths
             }
             previous_active_receipt = _read_json(self.active_receipt_path)
-            native_artifacts = self._native_records(
-                previous_lock if previous_lock and "native_artifacts" in previous_lock
-                else previous_active_receipt or {})
             self._assert_capability_home_safe(allow_missing=False)
             stage_parent = self.capability_home / "tmp"
             stage_parent.mkdir(parents=True, exist_ok=True)
