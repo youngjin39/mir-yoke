@@ -21,7 +21,7 @@ TARGETS = (
     "aarch64-apple-darwin", "x86_64-apple-darwin", "x86_64-unknown-linux-gnu",
     "aarch64-unknown-linux-gnu", "x86_64-pc-windows-msvc",
 )
-NAMES = ("handoff-packet", "runtime-continuity")
+NAMES = ("handoff-packet", "runtime-continuity", "bootstrap-gate")
 PLUGIN = "mir-lifecycle-hooks"
 
 
@@ -84,7 +84,7 @@ def pin_release(directory: Path, lock_path: Path, source: str) -> None:
                 raise ValueError("invalid or duplicate checksum line")
             checksums[match[2]] = match[1]
         if set(checksums) != {filename(name, target) for name in NAMES}:
-            raise ValueError("checksum file must name exactly both target binaries")
+            raise ValueError("checksum file must name exactly all target binaries")
         for name in NAMES:
             asset_name = filename(name, target)
             asset, data = assets[asset_name]
@@ -129,7 +129,8 @@ def main(argv: list[str] | None = None) -> int:
                 subprocess.run(
                     ["gh", "release", "download", args.tag, "--repo", args.repo,
                      "--dir", str(directory), "--pattern", "handoff-packet-*",
-                     "--pattern", "runtime-continuity-*", "--pattern", "SHA256-*"],
+                     "--pattern", "runtime-continuity-*", "--pattern", "bootstrap-gate-*",
+                     "--pattern", "SHA256-*"],
                     check=True,
                 )
                 pin_release(directory, args.lock, args.source)

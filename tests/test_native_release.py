@@ -14,7 +14,7 @@ TARGETS = (
     'aarch64-apple-darwin', 'x86_64-apple-darwin',
     'x86_64-unknown-linux-gnu', 'aarch64-unknown-linux-gnu', 'x86_64-pc-windows-msvc',
 )
-NAMES = ('handoff-packet', 'runtime-continuity')
+NAMES = ('handoff-packet', 'runtime-continuity', 'bootstrap-gate')
 SOURCE = 'a' * 40
 TAG = 'native-' + SOURCE[:12]
 BASE = f'https://github.com/example/provider/releases/download/{TAG}'
@@ -95,12 +95,12 @@ def test_rejects_bad_assets_without_lock_writes(assets, failure):
     elif failure == 'url':
         first['browser_download_url'] = 'http://example.com/binary'
     elif failure == 'checksum-size':
-        release['assets'][2]['size'] += 1
+        release['assets'][len(NAMES)]['size'] += 1
     elif failure == 'checksum-name':
-        path = directory / release['assets'][2]['name']
+        path = directory / release['assets'][len(NAMES)]['name']
         data = path.read_bytes().replace(first['name'].encode(), b'../outside')
         path.write_bytes(data)
-        release['assets'][2]['size'] = len(data)
+        release['assets'][len(NAMES)]['size'] = len(data)
     elif failure == 'not-prerelease':
         release['prerelease'] = False
     elif failure == 'tag':
@@ -119,7 +119,7 @@ def test_rejects_bad_assets_without_lock_writes(assets, failure):
     assert lock.read_bytes() == before
 
 
-def test_workflow_publication_is_opt_in_and_collects_both_binaries():
+def test_workflow_publication_is_opt_in_and_collects_all_binaries():
     workflow = yaml.safe_load((ROOT / '.github/workflows/native-artifacts.yml').read_text())
     trigger = workflow.get('on', workflow.get(True))
     publish = trigger['workflow_dispatch']['inputs']['publish']
@@ -132,12 +132,16 @@ def test_workflow_publication_is_opt_in_and_collects_both_binaries():
     assert 'gh release create' in steps and '--prerelease' in steps
     assert 'gh release upload' in steps and '--clobber' in steps
     build = '\n'.join(step.get('run', '') for step in workflow['jobs']['build']['steps'])
-    assert 'runtime-continuity' in build
-    assert 'handoff-packet' in build
-    assert len(workflow['jobs']['build']['strategy']['matrix']['include']) == 5
+    for name in NAMES:
+        assert name in build
+    assert 'for name in ' + ' '.join(NAMES) + '; do' in build
+    assert f'-eq {len(TARGETS) * (len(NAMES) + 1)}' in steps
+    matrix = workflow['jobs']['build']['strategy']['matrix']['include']
+    assert {row['target'] for row in matrix} == set(TARGETS)
+    assert len(matrix) == len(TARGETS)
 
 
-@pytest.mark.parametrize('index', range(15))
+@pytest.mark.parametrize('index', range(len(TARGETS) * (len(NAMES) + 1)))
 def test_checks_every_asset_size(assets, index):
     directory, lock = assets
     release_path = directory / 'release.json'
@@ -194,3 +198,23 @@ def test_source_argument_must_match_the_tag(assets):
     result = run_tool(directory, lock, source='b' * 40)
     assert result.returncode != 0
     assert lock.read_bytes() == before
+
+
+def test_online_download_collects_every_binary(monkeypatch, tmp_path):
+    from tools import native_release
+
+    calls = []
+
+    def fake_run(command, **kwargs):
+        calls.append(command)
+        return subprocess.CompletedProcess(command, 0, stdout=b'{}')
+
+    monkeypatch.setattr(native_release.subprocess, 'run', fake_run)
+    monkeypatch.setattr(native_release, 'pin_release', lambda *args: None)
+    assert native_release.main([
+        '--repo', 'example/provider', '--tag', TAG, '--lock', str(tmp_path / 'lock.json'),
+        '--source', SOURCE,
+    ]) == 0
+    download = calls[1]
+    patterns = [download[index + 1] for index, value in enumerate(download) if value == '--pattern']
+    assert set(patterns) == {*(f'{name}-*' for name in NAMES), 'SHA256-*'}

@@ -1,5 +1,14 @@
 # Migration Guide
 
+## 0.13.58 native bootstrap-gate adoption evaluator
+
+Adopted repositories may run the adoption-ready bootstrap state check natively.
+Rerun `mir bootstrap-adoption --apply` from a provider checkout whose capability
+lock pins `bootstrap-gate` for the host; it installs `.mir/bin/bootstrap-gate` and
+records its SHA-256 in the receipt. Without a verified artifact, on Windows, or with
+`MIR_NATIVE_HOOKS=0`, the helper keeps the shell check. The canonical helper bytes
+change, so consumers keep the old helper until they rerun adoption.
+
 ## 0.13.57 PowerShell lifecycle hooks
 
 Update plugins to fix Codex Windows hook exit 1 in 0.13.55-0.13.56.
@@ -43,10 +52,26 @@ Plugins installed without the capability manager keep the Python fallback.
 
 The manual `native-artifacts` workflow defaults to upload-only. A later authorized
 dispatch with `publish=true` creates or updates prerelease `native-<12-char source
-SHA>` and its tag, uploading both binary names for five targets plus five SHA256
+SHA>` and its tag, uploading three binary names for five targets plus five SHA256
 files. Publication uses the exact built artifacts, including Windows bytes; a
 local Windows rebuild must never supply a published digest. Reruns may replace
 assets, so regenerate and review pins after an authorized publication.
+
+After the source commit is reviewed and published with owner authorization, an
+operator may dispatch the exact ref (do not dispatch from an uncommitted tree):
+
+```sh
+gh workflow run native-artifacts.yml --repo OWNER/REPO --ref SOURCE_REF -f publish=true
+```
+
+Wait for all five build jobs and publication, then inspect the prerelease's
+`target_commitish` and all 20 assets. The source SHA must be the full commit that
+workflow built. The source-pinned native tag is separate from the public SemVer
+release. CONTRIBUTING.md governs SemVer; when a public release is prepared,
+`VERSION`, `pyproject.toml`, the package entry in `uv.lock`, and the matching
+`CHANGELOG.md` heading must agree (`tests/test_release_metadata.py`). The helper
+accepts the evaluator only by its receipt SHA-256, so any rebuilt binary needs a
+new receipt pin; its verdict protocol is `ready`/0 or `invalid`/1 on stdout.
 
 To prepare an explicit lock from a published prerelease, run the maintainer tool:
 
@@ -60,17 +85,28 @@ both match it; the lock's own `source.commit` still names the previously recorde
 provider at bind time and is not used.
 
 Its GitHub operations only read release metadata and download assets. For offline
-review, put the GitHub release API JSON in `assets/release.json` alongside all 15
+review, put the GitHub release API JSON in `assets/release.json` alongside all 20
 assets and use `--directory assets --source <commit> --lock path/to/capability-lock.json` instead.
-The tool requires a prerelease tag matching the lock source commit prefix,
-validates the complete five-target inventory, declared sizes and both binaries'
+The tool requires a prerelease tag matching the supplied `--source` commit prefix,
+validates the complete five-target inventory, declared sizes and all three binaries'
 SHA256 checksums, then writes only `native_artifacts` in that explicit lock.
 Every pin has an HTTPS release URL and portable validation runs before writing.
-The declarations install to `bin/handoff-packet` and `bin/runtime-continuity`;
+The declarations install to `bin/handoff-packet`, `bin/runtime-continuity` and
+`bin/bootstrap-gate`;
 the materializer appends `.exe` on Windows. Reviewed pins are installed only by
 an explicit `mir capability update --apply` by default. Set
 `MIR_CAPABILITY_NATIVE_ARTIFACTS=0` to disable placement. After a failed download,
 Python remains available.
+
+For the bootstrap evaluator, plugin materialization is separate from target-local
+placement. An explicit `mir bootstrap-adoption --apply` verifies the host artifact
+from the provider lock and installs `.mir/bin/bootstrap-gate`, then records
+`native_evaluator.path` and `native_evaluator.sha256` in the bootstrap receipt.
+No verified host artifact means no pin and shell fallback; native Windows always
+uses that fallback. `--native-evaluator PATH` is the explicit local-build option.
+The target helper is a new byte-pinned revision; existing consumers retain their
+old helper until an explicitly authorized upgrade. `MIR_NATIVE_HOOKS=0` rolls back
+native adoption evaluation without changing greenfield or enforcement behavior.
 
 This slice performs no publication, tag creation or real lock update. Those remain
 owner-authorized delivery work. POSIX shells are verified locally; Windows Codex's

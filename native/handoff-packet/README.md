@@ -202,3 +202,76 @@ when necessary input literals are absent; all candidates still use the checker.
 | Stop no packet | 44.713 / 49.185 | 5.14 / 5.718 |
 | Stop valid | 61.073 / 65.418 | 58.852 / 64.282 |
 | Stop defective | 64.601 / 70.397 | 59.838 / 66.554 |
+
+## B1 adoption evaluator
+
+`bootstrap-gate <target>` evaluates only the ready adoption branch of
+`.claude/hooks/_lib/bootstrap-gate.sh`. It emits `ready\n` with exit 0 or
+`invalid\n` with exit 1 for supported shapes. Exit 64 is silent and requires
+calling the existing shell function unchanged. Malformed JSON, duplicate JSON
+keys, unusual jq types/escaping, unreadable files, provider exemptions,
+non-adoption states and Windows defer. Unknown JSON fields are ignored.
+Leaf evidence symlinks are rejected; ancestor symlinks follow the current shell
+oracle. This experiment deliberately does not strengthen that existing policy.
+
+A separate binary in this crate reuses the existing JSON dependency and SHA-256
+implementation; no new dependency or independent release unit is needed.
+`tests/test_bootstrap_native.py` compares the real shell function with the binary
+and a test-only dispatcher, including binary absence. Build the release binary
+before running it; `MIR_B1_REQUIRE_NATIVE=1` makes absence a test failure.
+The production helper uses this evaluator only for adoption-ready state. The
+release workflow includes it alongside the other two binaries for all five targets.
+
+### Production caller and integrity boundary
+
+The helper probes the regular, executable, non-symlink
+`<target>/.mir/bin/bootstrap-gate`. The adoption receipt contains:
+
+```json
+"native_evaluator": {"path": ".mir/bin/bootstrap-gate", "sha256": "<64 lowercase hex characters>"}
+```
+
+Before execution, the helper checks that pin against the binary's raw SHA-256;
+the pinned bytes fix the version, so no separate version probe runs. Only
+`(ready LF, 0)` or `(invalid LF, 1)` on stdout is accepted; the evaluator's
+stderr is discarded. A missing pin or file, symlink, non-regular or
+non-executable file, hash mismatch, unexpected output, signal or exit 64 runs
+the shell path.
+`MIR_NATIVE_HOOKS=0` forces shell evaluation. Provider exemptions, jq availability,
+greenfield state and enforcement remain in shell.
+
+The pin detects stale or replaced bytes under the target-owned receipt trust
+model. It is not a signature: rewriting both receipt and binary defeats it, and
+hash-then-exec retains a concurrent replacement race.
+
+### Delivery and release
+
+`mir bootstrap-adoption --apply` selects `bootstrap-gate` from the provider's
+capability lock for the host target. It reads the pinned source URL and verifies
+SHA-256 and size, atomically replaces the target file using a same-directory
+temporary file with mode 0755, then records the receipt pin. An unavailable or
+unverified artifact leaves adoption on shell without a native pin. Packaged
+installs without a provider lock also remain on shell. The release binder checks
+the published source commit and tag before writing artifact pins; installation
+does not require the lock source commit to equal the artifact tag revision.
+
+Maintainers can explicitly use
+`mir bootstrap-adoption --apply --native-evaluator /path/to/bootstrap-gate`.
+This local source is still hashed into the receipt; its digest is local build
+evidence, not a published artifact attestation. Native Windows installs no
+bootstrap evaluator and writes no pin, including with this option. The Windows
+release binary returns 64; bash remains the reference until a tested path contract
+supports a native verdict.
+
+See [the native release procedure](../../MIGRATION.md#native-lifecycle-hook-selection)
+for authorized workflow dispatch, prerelease inventory validation and lock binding.
+Publishing now requires 20 assets: three binaries for five targets plus five
+checksum files. Do not reuse a digest after signing or packaging changes bytes.
+The crate protocol version remains 0.1.0; a verdict protocol change must also
+update the helper's verdict match and its byte pin. Public repository
+release versions follow CONTRIBUTING.md and tests/test_release_metadata.py.
+
+G2 still requires actual macOS, Ubuntu and Windows execution. G4 requires final
+published bytes and their lock digests; local builds do not establish it. G5 also
+requires rollback verification and separately authorized consumer attestation.
+No workflow dispatch or consumer adoption is implied by source changes.

@@ -19,6 +19,7 @@ import yaml
 
 from mir.core.engine.memory.distill import sanitize_fts_query
 
+from ._adoption_native import install_evaluator
 from ._changes import changed_paths, snapshot_project
 from .bootstrap import _scan_content_candidates
 
@@ -105,6 +106,11 @@ def _parse(argv: list[str]) -> argparse.Namespace:
         "--apply",
         action="store_true",
         help="atomically write a ready bootstrap receipt after every check passes",
+    )
+    parser.add_argument(
+        "--native-evaluator",
+        type=Path,
+        help="explicit local bootstrap-gate build to copy and hash-pin during --apply",
     )
     parser.add_argument("--json", action="store_true", dest="json")
     return parser.parse_args(argv)
@@ -1145,6 +1151,11 @@ def main(argv: list[str] | None = None) -> int:
     }
     receipt_written = False
     if ns.apply and status == "ready":
+        native_evaluator = install_evaluator(
+            root, source_root=_SOURCE_ROOT, local_source=ns.native_evaluator,
+        )
+        if native_evaluator is not None:
+            receipt["native_evaluator"] = native_evaluator
         _atomic_write_json(root / ".mir/bootstrap-receipt.json", receipt)
         receipt_written = True
 

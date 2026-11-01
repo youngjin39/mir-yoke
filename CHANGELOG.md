@@ -8,6 +8,18 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.58] — 2026-11-01 — Native bootstrap-gate adoption evaluator
+
+### Added
+
+- `bootstrap-gate` native binary (crate `native/handoff-packet`) evaluates the
+  adoption-ready bootstrap state; uncertain inputs exit 64 and the shell decides.
+- `mir bootstrap-adoption --apply` installs the verified host artifact into
+  `.mir/bin/` and pins its SHA-256 in the receipt (`--native-evaluator PATH` for an
+  explicit local build). The helper accepts the binary only by that hash and only a
+  `ready`/0 or `invalid`/1 verdict; anything else uses the shell path.
+- Native artifact workflow and lock binding publish three binaries per target.
+
 ## [v0.13.57] — 2026-11-01 — PowerShell lifecycle hooks
 
 ### Fixed

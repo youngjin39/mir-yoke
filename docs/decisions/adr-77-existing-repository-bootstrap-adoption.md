@@ -18,7 +18,7 @@ evidence for the same seven bootstrap and Phase 2 controls.
 
 mir bootstrap-adoption is the existing-repository path. It reads the tracked
 config/bootstrap-adoption.json manifest and checks without writing by default. The --apply form
-writes only the ignored, machine-local .mir/bootstrap-receipt.json, atomically and only after every
+originally wrote only the ignored, machine-local .mir/bootstrap-receipt.json, atomically and only after every
 check passes. It never installs or patches hooks, profiles, archives, memory, or specifications.
 The greenfield mir bootstrap contract is unchanged.
 
@@ -75,6 +75,25 @@ are disabled for object validation, checkout, HEAD validation, and clean-source 
 agent—not the operator—executes the recovery.
 
 ## Consequences
+
+### Amendment: optional native evaluator (2026-11-01)
+
+The owner-approved B1b design extends a passing --apply to optionally install
+the ignored `.mir/bin/bootstrap-gate` executable. The command verifies the host
+artifact's pinned source URL, size and SHA-256, installs via a same-directory
+temporary file and rename with mode 0755, then records `native_evaluator.path`
+and `native_evaluator.sha256` in the receipt. `--native-evaluator PATH` explicitly
+selects local build bytes instead; their receipt digest is local evidence,
+not published artifact provenance. Missing or unverified host artifacts, unsafe
+paths and native Windows preserve shell adoption without a pin. Dry runs and
+failed validation never install a binary.
+
+Only adoption-ready state evaluation may use the binary after checking its
+receipt pin and integrity (the pinned bytes fix the version) and an exact
+verdict. `MIR_NATIVE_HOOKS=0` forces
+shell evaluation. Greenfield and enforcement logic remain shell. Existing
+consumers retain their byte-pinned helper until an authorized upgrade. This
+amendment grants no consumer authority and does not authorize a release.
 
 The portable manifest and evidence remain repository-owned and should be committed. The receipt
 remains local and ignored. Repositories must install or repair their own hooks before declaring

@@ -60,6 +60,22 @@ filter drivers, external attributes, replacement refs, lazy object fetching, for
 targets, dirty adoption sources, and shell composition fail closed. The agent then runs
 `bootstrap-adoption` from the clean checkout; the operator is not asked to prepare it manually.
 
+## Optional native adoption evaluator
+
+A passing `mir bootstrap-adoption --apply` may also install the verified host
+`bootstrap-gate` artifact into `.mir/bin/bootstrap-gate`, atomically with mode 0755.
+The local receipt's optional `native_evaluator` object records that relative `path`
+and its `sha256`. The helper verifies that hash, which also fixes the version, before
+using its adoption-ready verdict; a missing or invalid pin falls back to shell.
+`MIR_NATIVE_HOOKS=0` forces shell evaluation. Greenfield and enforcement remain
+shell operations. Unavailable artifacts and native Windows produce no pin and do
+not prevent adoption. This adds no consumer authority to the provider.
+
+Maintainer/test builds require the explicit
+`mir bootstrap-adoption --apply --native-evaluator /path/to/bootstrap-gate` option.
+The receipt hashes those local bytes; it does not claim they were published.
+See [native delivery details](native/handoff-packet/README.md#delivery-and-release).
+
 ## Unsupported target state
 
 Do not run the Project Agent Kit flow when the target contains files, is inside another Git

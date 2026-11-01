@@ -11,6 +11,38 @@ _mir_bootstrap_sha256() {
   fi
 }
 
+_mir_bootstrap_native_verdict() {
+  # The receipt pins the evaluator's exact bytes, so a hash match is the
+  # version check. Only "ready"/0 and "invalid"/1 are verdicts; anything else,
+  # including a signal or exit 64, defers to the shell path below.
+  local project_dir="$1" receipt="$2"
+  local executable="$project_dir/.mir/bin/bootstrap-gate"
+  local expected_hash actual_hash verdict code
+  [ "${MIR_NATIVE_HOOKS:-1}" != 0 ] || return 64
+  [ ! -L "$project_dir/.mir" ] && [ ! -L "$project_dir/.mir/bin" ] || return 64
+  [ -f "$executable" ] && [ -x "$executable" ] && [ ! -L "$executable" ] || return 64
+  expected_hash="$(jq -er '
+    .native_evaluator | select(.path == ".mir/bin/bootstrap-gate") |
+    .sha256 | select(type == "string" and length == 64 and test("^[0-9a-f]{64}$"))
+  ' "$receipt" 2>/dev/null)" || return 64
+  actual_hash="$(_mir_bootstrap_sha256 "$executable" 2>/dev/null)" || return 64
+  [ "$actual_hash" = "$expected_hash" ] || return 64
+  verdict="$(exec 2>/dev/null; "$executable" "$project_dir"; printf '\001%d' "$?")" || return 64
+  code="${verdict##*$'\001'}"
+  verdict="${verdict%$'\001'*}"
+  case "$code:$verdict" in
+    0:$'ready\n')
+      printf 'ready\n'
+      return 0
+      ;;
+    1:$'invalid\n')
+      printf 'invalid\n'
+      return 1
+      ;;
+  esac
+  return 64
+}
+
 _mir_bootstrap_has_official_origin() {
   local repository="$1"
   local origin
@@ -123,6 +155,13 @@ mir_bootstrap_gate_state() {
     fi
   fi
   if [ "$status" = "ready" ] && { [ "$receipt_mode" = "existing_repository_adoption" ] || [ -e "$project_dir/config/bootstrap-adoption.json" ]; }; then
+    local native_code
+    if _mir_bootstrap_native_verdict "$project_dir" "$receipt"; then
+      return 0
+    else
+      native_code="$?"
+    fi
+    [ "$native_code" -ne 1 ] || return 1
     local manifest="$project_dir/config/bootstrap-adoption.json"
     local manifest_hash receipt_hash manifest_source receipt_source
     [ -f "$manifest" ] && [ ! -L "$manifest" ] || status=invalid

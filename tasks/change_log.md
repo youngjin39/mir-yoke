@@ -1,3 +1,119 @@
+## B1b production adoption evaluator caller and delivery (2026-11-01)
+
+Intent authority: owner-supplied B1b brief; single cursor: tasks/plan.md.
+Supersedes the B1 preparation-only caller/delivery stop boundary below.
+Only adoption-ready state may use `.mir/bin/bootstrap-gate` after receipt path
+and SHA-256 verification, exact version and exact stdout/stderr/exit admission.
+Every unsupported protocol, execution failure or integrity problem falls back
+to shell. `MIR_NATIVE_HOOKS=0` rolls back. Enforcement logic stays in shell.
+Explicit passing adoption installs verified provider-lock artifacts atomically,
+mode 0755, then pins the receipt; `--native-evaluator PATH` selects local bytes.
+Windows, missing/unverified artifacts and unsafe paths issue no native pin.
+The manual release workflow and binder now require three binaries per target,
+five targets and 20 assets. No dispatch or actual lock binding was performed.
+BOOTSTRAP, MIGRATION, crate README and dated ADR-77 amendment describe the new
+helper revision, optional write boundary and separate authorized release steps.
+
+Evidence observed locally:
+- Caller fail-first and four signal-termination regressions failed before fixes.
+  Seven actual caller source mutations were detected and restored.
+- Delivery fail-first: 28 failures; final new delivery suite: 33 passed.
+  Five actual installer/receipt source mutations were detected and restored.
+- Release fail-first: 36 failed, 14 passed; final release suite: 51 passed.
+  Removing SHA verification failed all 15 binary digest tests; restored green.
+- Cargo fmt, offline/locked clippy, tests (26) and release build passed.
+- Independent review verified six signal cases and the ADR amendment; no
+  outstanding findings. Ruff and Codex derivative parity passed.
+- Real helper n=30 interleaved measurements include startup, pin read, binary
+  hash and version checks. All 480 stdout/stderr/exit signatures matched shell.
+  Median shell/native milliseconds, state then enforcement:
+  1 file: 34.16/23.94 and 32.16/23.15;
+  8 files: 51.97/23.89 and 48.38/23.11;
+  13 files: 63.90/23.80 and 60.81/23.77;
+  32 files: 111.06/24.05 and 103.09/23.75.
+  Single host, warm caches, small ready evidence; no cold-cache/fallback claim.
+
+Final acceptance and payload freshness are recorded in the owner-requested
+external B1b report after final regeneration. G2 platform execution, G4 published
+pins and G5 consumer attestation remain external delivery work. No commit, tag,
+push, consumer operation or live memory access was performed.
+
+## B1 adoption evaluator preparation (2026-11-01)
+
+Intent authority: owner-supplied B1 brief; cursor: tasks/plan.md.
+Added bootstrap-gate to the existing native crate, reusing SHA-256 and JSON.
+The production helper, receipt writer, delivery tools and capability lock remain
+unchanged. Caller integrity and delivery proposals live in the crate README.
+Silent exit 64 delegates uncertain shapes and Windows back to shell.
+
+Evidence observed locally on aarch64-apple-darwin, Rust 1.99.1:
+- Fail first: required missing binary setup failure, then a behavioral ready
+  fixture failure against a wrong-verdict executable (1 failed).
+- New suite: 71 passed (33 differential, 33 executable comparator mutations,
+  version and four probe guards). Supported verdicts compare raw stdout,
+  stderr and exit; uncertain cases require silent 64 and shell fallback parity.
+- Five Rust source mutations detected: manifest binding, source binding,
+  evidence set equality, evidence digest and leaf symlink checks.
+- Existing bootstrap modules: 88 passed.
+- Combined touched-area pytest: 211 passed, 1 stale-payload failure before the
+  prescribed final regeneration. Final post-generation result is in the report.
+- cargo fmt --check; cargo clippy --offline --all-targets --locked -- -D warnings;
+  cargo test --offline --locked (26 passed); cargo build --release --offline
+  --locked: passed. Cargo home and target stayed under the crate target tree.
+- Ruff, Codex derivative parity and git diff --check passed. No new dependencies;
+  cargo tree --duplicates reported none; features inspected. No dependency
+  vulnerability audit or remote/platform execution was performed.
+- Interleaved n=30 shell/test-dispatch median (p90) milliseconds:
+  1 file: 60.626 (79.025) / 15.621 (19.887);
+  8 files: 53.423 (72.601) / 8.956 (12.723);
+  13 files: 83.615 (131.693) / 11.360 (18.989);
+  32 files: 212.526 (257.140) / 16.409 (18.931).
+  Fresh processes, filesystem cache uncontrolled; dispatch includes version
+  probing but omits the proposed binary-integrity hash and jq availability probe.
+  These measurements do not establish production caller latency.
+
+Stop boundary: G2 platform execution, G4 final per-OS artifact digests and target
+installation contract, and G5 caller rollback/consumer attestation remain open.
+No consumer writes, memory DB access, commit, tag, push or release.
+Final repository mutation: regenerate adopter-payload with tools.template_assets;
+follow only with read-only verification and the external requested report.
+
+## Cursor before B1 (2026-11-01)
+
+# Plan
+
+## Active task: Slice H5, PowerShell lifecycle hooks and 0.13.57
+
+Intent authority: owner Slice H5 request (2026-11-01). Single current cursor.
+Design: keep POSIX commands unchanged; use session-shell PowerShell Windows
+selectors, prefer native executables, otherwise python3, and fail closed when
+python3 is unavailable. Parent-verified Codex 0.166 shell evidence supplies the
+runtime premise; local hooks/schema and process tests supply repository evidence.
+Scenarios: four hooks, both PowerShell shells, native absent/present, allow/deny,
+space-containing plugin roots, stdin and byte parity. Windows execution is CI-owned.
+No commit, push, tag, dispatch, .codex edits or live lock edits.
+
+Release record (Main, 2026-11-01): source 580e9fd, bind 8b76430; fresh-clone readiness
+exit 0 (4070 passed); CI validate on 8b76430 (all nine jobs, including Windows) succeeded
+before the tag `v0.13.57`. Before the commit the four commandWindows strings ran on the
+Windows consumer under pwsh and Windows PowerShell 5.1 with a plugin root containing a
+space: native and Python reference gave identical stdout bytes and exit codes. Maintainer
+host: provider update applied from the 0.13.56 record lock, both aarch64 binaries placed
+(SHA-256 equal to the lock), Codex hook trust 4/4, Claude 56f424e1 and Codex 01a19315
+attested (five mir-mcp calls ok, four lifecycle hooks), finalized, ready at 8b76430.
+Owner PC: recorded by Harness.
+Bump current release pins, correct historical shell claims, preserve native pins.
+Run fail-first package assertions, lifecycle/package/capability/surface/language
+checks, Ruff and Codex sync. Record results in change_log before regenerating
+adopter payload as the final edit. Main owns commit and plugin digest rebind.
+
+Evidence checked 2026-11-01: 4/5 outcome rows closed locally; Windows process
+proof remains open (36 CI-only cases). Combined gate: 671 passed, 32 skipped,
+5 expected commit-coupled failures. Final lifecycle: 32 passed, 36 skipped.
+Plugin packages 16, public surface 3, no-korean 7 passed; Ruff and Codex sync
+passed. Main owns source commit, digest rebind and Windows CI execution.
+Final action: regenerate adopter payload, then read-only verification.
+
 ## Slice H5: PowerShell lifecycle commands, 0.13.57 (2026-11-01)
 
 Intent authority: owner H5 request; single cursor: tasks/plan.md.
@@ -15138,3 +15254,16 @@ with SHA-256 equal to the lock. Codex hook trust 4/4 (after a Harness verifier f
 the native-or-Python command form). Claude 8d71b653 and Codex 01a192e7 attested (five
 mir-mcp calls ok, four lifecycle hooks ran), finalized, ready at 9e02dc5. Owner PC:
 recorded by Harness.
+
+### B1b Main review and 0.13.58 source (2026-11-01)
+
+Main simplified the production caller: the receipt SHA-256 pins the evaluator
+bytes, so the separate `--version` probe and the base64 stdout/stderr framing were
+removed. The helper now accepts only `ready LF`/0 or `invalid LF`/1 on stdout and
+discards the evaluator's stderr; signals, exit 64 and other output use the shell
+path. Same-fixture A/B, 13 evidence files, n=30 interleaved under host load:
+shell 171.29 ms, B1b caller 31.37 ms, simplified caller 25.85 ms, identical bytes.
+Mutations: removing the hash comparison failed 2 caller tests; widening the
+invalid verdict failed 5. Caller tests updated for the hash-only contract
+(136 passed). Version 0.13.58 source; native prerelease and lock binding follow
+the source commit.
