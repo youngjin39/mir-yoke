@@ -8,6 +8,8 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.59] — 2026-11-01 — Native runtime verifier and hook-scoped settings evidence
+
 ### Added
 
 - Optional `runtime-verify` binary verifies the installed CLI closure before wrapper
