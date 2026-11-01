@@ -65,4 +65,6 @@ at d9aaa73 exit 0 (4889 passed, 219 skipped); CI validate on 4760c2f all nine jo
 including Windows, before the tag. Maintainer host: provider update from the 0.13.58 record
 lock, four aarch64 binaries placed (SHA-256 equal to the lock), Codex hook trust 4/4,
 Claude 7375f3b1 and Codex 01a195b2 attested (five mir-mcp calls ok), finalized, ready at
-4760c2f. Owner PC: pending.
+4760c2f. Owner PC: four x86_64 Windows binaries placed (runtime-verify.exe included),
+Claude 06a768d6 and Codex 01a195b6 attested (five mir-mcp calls ok; Codex lifecycle hooks
+ran), finalized, ready at 73f1b1b; consumer commit pushed by the maintainer host.
