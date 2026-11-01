@@ -362,3 +362,46 @@ def test_executor_query_declines_arguments(binary, home, argv):
     before = (home / "tasks/jobs.db").read_bytes()
     assert invoke(binary, home, argv) == (b"", b"", 64)
     assert (home / "tasks/jobs.db").read_bytes() == before
+
+
+@pytest.mark.parametrize("field", ["codex_args", "ai_run_metadata"])
+@pytest.mark.parametrize("escape", [
+    r"\ud800", r"\udce2", r"\udce2\ud800", r"\ud800\udce2",
+    r"\\udce2", r"\\u12",
+])
+@pytest.mark.parametrize("command", ["status", "result", "list-jobs"])
+def test_executor_query_surrogate_escapes(binary, home, field, escape, command):
+    payload = ('["' + escape + '"]' if field == "codex_args" else
+               '{"' + escape + '": ["' + escape + '"]}')
+    json.loads(payload)  # The unchanged Python decoder is the acceptance oracle.
+    with sqlite3.connect(home / "tasks/jobs.db") as connection:
+        connection.execute(f"UPDATE jobs SET {field}=? WHERE job_id='failed'", (payload,))
+    argv = [command] if command == "list-jobs" else [command, "--job-id", "failed"]
+    reference = invoke(binary, home, argv, python=True)
+    assert reference[2] == 0, reference
+    before = (home / "tasks/jobs.db").read_bytes()
+    assert invoke(binary, home, argv) == reference
+    install_pin(binary, home)
+    (home / "tools/mir_executor/cli.py").write_text("raise AssertionError('Python fallback')\n")
+    for route in ("module", "mir-cli"):
+        assert pinned_cli(home, route, argv) == reference
+    assert (home / "tasks/jobs.db").read_bytes() == before
+
+
+@pytest.mark.parametrize("field", ["codex_args", "ai_run_metadata"])
+@pytest.mark.parametrize("payload", [r'["\u12"]', r'["\ud800\u12"]', r'["\ud80z"]'])
+@pytest.mark.parametrize("command", ["status", "result", "list-jobs"])
+def test_executor_query_invalid_unicode_escape_declines(binary, home, field, payload, command):
+    with pytest.raises(json.JSONDecodeError):
+        json.loads(payload)
+    with sqlite3.connect(home / "tasks/jobs.db") as connection:
+        connection.execute(f"UPDATE jobs SET {field}=? WHERE job_id='failed'", (payload,))
+    argv = [command] if command == "list-jobs" else [command, "--job-id", "failed"]
+    assert invoke(binary, home, argv) == (b"", b"", 64)
+
+
+@pytest.mark.parametrize("payload", [r'"\udce2"', r'["\udce2", 1]', r'{"x":"\udce2"}'])
+def test_executor_query_surrogate_args_shape_still_declines(binary, home, payload):
+    with sqlite3.connect(home / "tasks/jobs.db") as connection:
+        connection.execute("UPDATE jobs SET codex_args=? WHERE job_id='failed'", (payload,))
+    assert invoke(binary, home, ["list-jobs"]) == (b"", b"", 64)

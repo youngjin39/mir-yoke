@@ -12,6 +12,9 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ### Changed
 
+- Native `executor-query` accepts JSON surrogate escapes in `codex_args` and
+  `ai_run_metadata` like Python, including lone or mis-ordered surrogates, while
+  preserving argument shape checks and rejecting malformed escapes.
 - Native `executor-query` now admits same-home `status`, `result` and `list-jobs`
   queries even when `tools/mir_executor/local.py` or `config/mir-executor.local.json`
   exists. Native queries do not import local hooks: an import or

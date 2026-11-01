@@ -497,7 +497,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "CHANGELOG.md",
-      "sha256": "5ba9cd975e7bbe466496db5112f39af8d35821f3d0ad01343f8008a90058381d"
+      "sha256": "2edbb07e47435661c7d8b04e31502590e7dea16bb05e4e638bdbdf9d7a03e14d"
     },
     {
       "classification": "reference",
@@ -2825,7 +2825,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/executor_query.rs",
-      "sha256": "f2688b47d399574c3a786c9d1aa87d4a7fd276721cf62ca789362a1f07ad3e9f"
+      "sha256": "15af3da2b340d180f681bae4072cbdba624dbe00248172dd7af7d2f1322dae40"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4997,7 +4997,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_executor_query_native_parity.py",
-      "sha256": "b933bb6a9771ab6ad48235b8447d30b6f91e3bf45c5567b83162f391776e6f81"
+      "sha256": "e9fa73f7ca53f6902675cb7f3fee6ca94c503d73122ab80e124eacd79c198b25"
     },
     {
       "classification": "template-maintainer-tool",

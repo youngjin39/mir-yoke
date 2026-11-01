@@ -251,6 +251,33 @@ struct Job {
     cancel: bool,
 }
 
+// These fields are validated, never rendered. Python accepts unpaired surrogate
+// escapes, which Rust strings cannot represent. Substitute only complete surrogate
+// escapes in this validation copy, preserving escape boundaries and JSON shape.
+fn validation_json(input: &str) -> Result<serde_json::Value> {
+    let mut bytes = input.as_bytes().to_vec();
+    let mut index = 0;
+    while index < bytes.len() {
+        if bytes[index] != b'\\' {
+            index += 1;
+            continue;
+        }
+        if bytes.get(index + 1) == Some(&b'u')
+            && let Some(hex) = bytes.get(index + 2..index + 6)
+            && matches!(hex[0], b'd' | b'D')
+            && matches!(hex[1], b'8'..=b'9' | b'a'..=b'f' | b'A'..=b'F')
+            && hex.iter().all(u8::is_ascii_hexdigit)
+        {
+            bytes[index + 2..index + 6].copy_from_slice(b"e000");
+            index += 6;
+        } else {
+            // In particular, skip both bytes of an escaped backslash.
+            index += 2;
+        }
+    }
+    serde_json::from_slice(&bytes).map_err(|_| ())
+}
+
 fn read_job(row: &Row<'_>) -> Result<Job> {
     // Validate all fields decoded by the reference, including unused JSON. This
     // prevents a successful native answer from masking a Python decode failure.
@@ -281,7 +308,7 @@ fn read_job(row: &Row<'_>) -> Result<Job> {
         }
     }
     let args: String = row.get("codex_args").map_err(|_| ())?;
-    let args: serde_json::Value = serde_json::from_str(&args).map_err(|_| ())?;
+    let args: serde_json::Value = validation_json(&args)?;
     if !args
         .as_array()
         .is_some_and(|a| a.iter().all(serde_json::Value::is_string))
@@ -292,7 +319,7 @@ fn read_job(row: &Row<'_>) -> Result<Job> {
         .get::<_, Option<String>>("ai_run_metadata")
         .map_err(|_| ())?
     {
-        let _: serde_json::Value = serde_json::from_str(&metadata).map_err(|_| ())?;
+        let _: serde_json::Value = validation_json(&metadata)?;
     }
     Ok(Job {
         id: row.get("job_id").map_err(|_| ())?,
