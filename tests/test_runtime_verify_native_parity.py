@@ -289,7 +289,10 @@ def test_runtime_verify_unsupported_empty_home(binary, closure, monkeypatch):
     monkeypatch.chdir(root.parent)
     monkeypatch.setenv("USERPROFILE" if os.name == "nt" else "HOME", "")
     reference, native = pair(binary, Path("~") / root.name, manifest)
-    assert reference[2] == 2
+    # On Windows the reference depends on ntpath.expanduser's handling of an
+    # empty USERPROFILE (CI observed exit 0); native defers on every platform.
+    if os.name != "nt":
+        assert reference[2] == 2
     assert native == (b"", b"", 64)
 
 

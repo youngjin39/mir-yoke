@@ -5315,7 +5315,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_runtime_verify_native_parity.py",
-      "sha256": "a59e92594faec69679ad369fdf2dceb0a0685059b93aa0e1abb447c0bfe600b9"
+      "sha256": "b2dc2c215bdb0b93c6911e91d7a98017d717e26bc1c6b4aa94421e744120f75e"
     },
     {
       "classification": "template-maintainer-tool",
