@@ -8,6 +8,8 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.61] — 2026-11-01 — Native executor queries with local executor files
+
 ### Changed
 
 - Native `executor-query` now admits same-home `status`, `result` and `list-jobs`

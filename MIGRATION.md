@@ -1,6 +1,6 @@
 # Migration Guide
 
-## Unreleased
+## 0.13.61 native executor queries with local executor files
 
 Native `executor-query` now admits same-home `status`, `result` and `list-jobs`
 even when local executor hooks or configuration exist. These queries do not read
