@@ -8,6 +8,8 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.60] — 2026-11-01 — Native executor query front end
+
 ### Added
 
 - Optional `executor-query` accelerates same-repository `status`, `result` and

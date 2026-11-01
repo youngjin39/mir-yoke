@@ -1,6 +1,6 @@
 {
   "name": "mir-lifecycle-hooks",
-  "version": "0.13.59",
+  "version": "0.13.60",
   "description": "Portable, read-only session continuity guidance for Claude Code and Codex.",
   "author": {
     "name": "Harness Contributors",

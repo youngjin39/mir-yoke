@@ -1,6 +1,6 @@
 # Migration Guide
 
-## Unreleased native executor queries
+## 0.13.60 native executor queries
 
 Rerun executor sync with `--apply` after the provider lock pins `executor-query`
 for the host. Sync places the binary in `.mir/bin/` and records its digest in
