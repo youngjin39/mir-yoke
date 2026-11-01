@@ -660,9 +660,30 @@ def test_bootstrap_adoption_apply_should_write_hash_bound_atomic_ready_receipt(
     assert receipt["mode"] == "existing_repository_adoption"
     assert receipt["manifest"]["sha256"] == expected_hash
     assert receipt["source"]["mir_yoke_commit"] == SOURCE_COMMIT
+    settings_digest = adoption_cli.evidence_digest(
+        ".claude/settings.json", tmp_path / ".claude/settings.json"
+    )
+    assert {row["path"]: row["sha256"] for row in receipt["evidence"]}[
+        ".claude/settings.json"
+    ] == settings_digest
     assert set(receipt["surfaces"]) == set(SURFACE_KEYS)
     assert receipt["memory_acceptance"]["queries"][0]["expected_path"] == "memory.md"
     assert not list(receipt_path.parent.glob(".bootstrap-receipt.json.*"))
+
+
+def test_bootstrap_adoption_should_report_settings_digest_failure(
+    tmp_path, capsys, monkeypatch
+):
+    _ready_project(tmp_path)
+
+    def fail_digest(relative, path):
+        raise adoption_cli.AdoptionError("settings digest unavailable")
+
+    monkeypatch.setattr(adoption_cli, "evidence_digest", fail_digest)
+    assert _run(tmp_path, "--apply") == 2
+    report = json.loads(capsys.readouterr().out)
+    assert "settings digest unavailable" in report["errors"]
+    assert report["receipt_written"] is False
 
 
 def test_bootstrap_adoption_failure_should_preserve_existing_receipt(tmp_path, capsys):

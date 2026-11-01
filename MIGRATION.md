@@ -1,5 +1,15 @@
 # Migration Guide
 
+## Unreleased hook-scoped settings evidence
+
+Rerun adoption to adopt the new canonical helper bytes, then run
+`mir bootstrap-adoption --apply` to write hook-scoped settings evidence.
+New receipts hash compact sorted `{"hooks": ...}` JSON followed by one newline;
+unrelated settings preferences and key order no longer affect that digest.
+The writer requires jq, as does the shell gate. Existing whole-file receipts
+remain valid while their file bytes match. Every other evidence path retains
+its whole-file digest. Native numeric or JSON ambiguity falls back to shell.
+
 ## 0.13.58 native bootstrap-gate adoption evaluator
 
 Adopted repositories may run the adoption-ready bootstrap state check natively.

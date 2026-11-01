@@ -50,7 +50,14 @@ evidence paths included in the Phase 2 evidence set, and a non-placeholder verif
 observation, preventing an unsubstantiated five-word pass file from satisfying the gate.
 
 The receipt records a SHA-256 digest for the manifest and for the complete set of evidence paths
-declared by all surfaces. At every SessionStart or mutation check, the gate compares the source
+declared by all surfaces. For `.claude/settings.json`, new receipts hash only a nonempty hooks
+object wrapped as `{"hooks": ...}`, sorted recursively and compactly serialized by jq with
+exactly one trailing LF. The gate accepts either that hook digest or the historical whole-file
+digest; preferences and key order can change without masking hook edits. All other evidence
+remains whole-file. The native evaluator reproduces jq string serialization and accepts only
+exactly representable signed integers within the safe IEEE-754 range; unsupported numbers,
+duplicate keys, invalid UTF-8 and lone surrogates defer to shell with exit 64.
+At every SessionStart or mutation check, the gate compares the source
 commit, manifest digest, exact evidence path set, and live evidence digests. A missing, added,
 changed, duplicated, absolute, or parent-traversing evidence entry invalidates readiness. The
 blocked shell path recognizes complete command forms rather than substring matches and rejects

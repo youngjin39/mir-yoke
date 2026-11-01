@@ -946,6 +946,35 @@ def _validate_phase2(
     }
 
 
+def evidence_digest(relative: str, path: Path) -> str:
+    """Hash settings hook registrations with jq; hash all other evidence whole.
+
+    The shell reader uses the same jq canonical form and also accepts legacy
+    whole-file settings digests. jq is required for settings so number and string
+    serialization match the reader exactly, including one trailing newline.
+    """
+    if relative != ".claude/settings.json":
+        return hashlib.sha256(path.read_bytes()).hexdigest()
+    try:
+        canonical = subprocess.run(
+            [
+                "jq", "-S", "-c",
+                'if (.hooks | type) == "object" and (.hooks | length) > 0 '
+                'then {hooks: .hooks} else error("non-empty hooks object required") end',
+                str(path),
+            ],
+            capture_output=True,
+            check=False,
+        )
+    except OSError as exc:
+        raise AdoptionError(f"cannot digest settings hook evidence: {exc}") from exc
+    if canonical.returncode != 0 or not canonical.stdout.strip():
+        raise AdoptionError("settings evidence requires readable JSON with non-empty hooks")
+    # Match shell command substitution followed by printf '%s\\n'.
+    body = canonical.stdout.rstrip(b"\n") + b"\n"
+    return hashlib.sha256(body).hexdigest()
+
+
 def _evidence_digests(
     root: Path, surfaces: dict[str, dict[str, object]]
 ) -> list[dict[str, str]]:
@@ -960,7 +989,7 @@ def _evidence_digests(
     for relative in paths:
         path = root / relative
         try:
-            digest = hashlib.sha256(path.read_bytes()).hexdigest()
+            digest = evidence_digest(relative, path)
         except OSError:
             continue
         evidence.append({"path": relative, "sha256": digest})
@@ -1122,6 +1151,11 @@ def main(argv: list[str] | None = None) -> int:
                 "exceptions": [phase_exception] if phase_exception else [],
             }
 
+    try:
+        evidence = _evidence_digests(root, surfaces)
+    except AdoptionError as exc:
+        evidence = []
+        errors.append(str(exc))
     status = "ready" if not errors else "not_ready"
     manifest_hash = hashlib.sha256(manifest_bytes).hexdigest()
     receipt: dict[str, object] = {
@@ -1138,7 +1172,7 @@ def main(argv: list[str] | None = None) -> int:
             "path": "config/bootstrap-adoption.json",
             "sha256": manifest_hash,
         },
-        "evidence": _evidence_digests(root, surfaces),
+        "evidence": evidence,
         "profile": profile,
         "surfaces": surfaces,
         "bootstrap_start_gate": gate,

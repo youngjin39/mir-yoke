@@ -10,6 +10,11 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ### Changed
 
+- Bootstrap adoption receipts hash only canonical hook registrations for
+  `.claude/settings.json`, so preference changes and key reordering preserve readiness.
+  The shell and native gates also accept historical whole-file hashes; hook edits
+  still invalidate readiness. Ambiguous native JSON inputs defer to the shell.
+
 - `mir-code`: `bluebricks` states the language choice (new product and tool code starts in
   Rust, fixtures first; Python stays for ML/data, analysis, notebooks and one-off scripts or
   where the repository says otherwise); `rust` ports a component once it is stable and retires

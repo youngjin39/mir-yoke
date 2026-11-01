@@ -225,3 +225,85 @@ def test_prospective_dispatch_rejects_unusable_binary(
     if probe == 'rollback':
         monkeypatch.setenv('MIR_NATIVE_HOOKS', '0')
     _compare(_shell(tmp_path), _dispatch(tmp_path))
+
+
+@pytest.mark.parametrize('body,change,verdict,fallback', [
+    ('{"hooks":{"Z":["run"],"A":["check"]},"theme":"light"}',
+     '{"theme":"dark","hooks":{"A":["check"],"Z":["run"]}}', 'ready', False),
+    ('{"hooks":{"A":["run"]}}', '{"hooks":{"A":["edited"]}}', 'invalid', False),
+    ('{"hooks":{"A":["\\u00e9\\ud83d\\ude00\\u007f\\n\\t\\\\\\\""]}}', None, 'ready', False),
+    ('{"hooks":{"A":[1.5]}}', None, 'ready', True),
+    ('{"hooks":{"A":[0,-1,9007199254740991,-9007199254740991]}}', None, 'ready', False),
+    ('{"hooks":{"\\ue000":0,"\\ud83d\\ude00":1}}', None, 'ready', False),
+    ('{"hooks":{"A":[9223372036854775808]}}', None, 'ready', True),
+    ('{"hooks":{"A":[9007199254740993]}}', None, 'ready', True),
+    ('{"hooks":{"A":[1],"A":[2]}}', None, 'ready', True),
+    ('{"hooks":{"A":["\\ud800"]}}', None, 'invalid', True),
+    ('{"hooks":{}}', None, 'invalid', False),
+    ('{"hooks":[]}', None, 'invalid', False),
+    ('[]', None, 'invalid', False),
+    ('{}', None, 'invalid', False),
+    ('INVALID_UTF8', None, 'ready', True),
+    ('{', None, 'invalid', True),
+    ('{"hooks":{"A":["ok"]}}', '{"hooks":{"A":[]}}\n{"hooks":{"A":["ok"]}}',
+     'invalid', True),
+])
+def test_settings_hook_digest_native_parity(
+    tmp_path: Path, native: Path, body: str, change: str | None,
+    verdict: str, fallback: bool,
+) -> None:
+    _fixture(tmp_path, 'ready')
+    settings = tmp_path / '.claude/settings.json'
+    settings.parent.mkdir()
+    if body == 'INVALID_UTF8':
+        settings.write_bytes(b'{"hooks":{"A":["\xff"]}}')
+    else:
+        settings.write_text(body)
+    canonical = subprocess.run(
+        ['jq', '-S', '-c', '{hooks: .hooks}', str(settings)],
+        capture_output=True, check=False,
+    ).stdout
+    receipt_path = tmp_path / '.mir/bootstrap-receipt.json'
+    receipt = json.loads(receipt_path.read_bytes())
+    receipt['evidence'] = [{'path': '.claude/settings.json',
+                            'sha256': hashlib.sha256(canonical).hexdigest()}]
+    manifest_path = tmp_path / 'config/bootstrap-adoption.json'
+    manifest = json.loads(manifest_path.read_bytes())
+    manifest['surfaces']['phase2_spec']['evidence_paths'] = ['.claude/settings.json']
+    manifest_path.write_text(json.dumps(manifest))
+    receipt['manifest']['sha256'] = _hash(manifest_path)
+    receipt_path.write_text(json.dumps(receipt))
+    if change:
+        settings.write_text(change)
+    baseline = _shell(tmp_path)
+    assert baseline.stdout == (verdict + '\n').encode()
+    evaluated = subprocess.run([str(native), str(tmp_path)], capture_output=True, check=False)
+    if fallback:
+        assert _signature(evaluated) == (64, b'', b'')
+    else:
+        _compare(baseline, evaluated)
+    # Exercise the production receipt-pinned fallback, including unsupported numbers.
+    shutil.copy2(native, tmp_path / '.mir/bin/bootstrap-gate')
+    receipt['native_evaluator'] = {'path': '.mir/bin/bootstrap-gate', 'sha256': _hash(native)}
+    receipt_path.write_text(json.dumps(receipt))
+    _compare(baseline, _shell(tmp_path))
+
+
+def test_settings_old_whole_file_receipt(tmp_path: Path, native: Path) -> None:
+    _fixture(tmp_path, 'ready')
+    settings = tmp_path / '.claude/settings.json'
+    settings.parent.mkdir()
+    settings.write_text('{"hooks":{"A":["run"]}}')
+    manifest_path = tmp_path / 'config/bootstrap-adoption.json'
+    manifest = json.loads(manifest_path.read_bytes())
+    manifest['surfaces']['phase2_spec']['evidence_paths'] = ['.claude/settings.json']
+    manifest_path.write_text(json.dumps(manifest))
+    receipt_path = tmp_path / '.mir/bootstrap-receipt.json'
+    receipt = json.loads(receipt_path.read_bytes())
+    receipt['manifest']['sha256'] = _hash(manifest_path)
+    receipt['evidence'] = [{'path': '.claude/settings.json', 'sha256': _hash(settings)}]
+    receipt_path.write_text(json.dumps(receipt))
+    baseline = _shell(tmp_path)
+    assert baseline.stdout == b'ready\n'
+    evaluated = subprocess.run([str(native), str(tmp_path)], capture_output=True, check=False)
+    _compare(baseline, evaluated)

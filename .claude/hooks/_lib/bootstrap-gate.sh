@@ -11,6 +11,30 @@ _mir_bootstrap_sha256() {
   fi
 }
 
+_mir_bootstrap_sha256_stdin() {
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum | awk '{print $1}'
+  elif command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 | awk '{print $1}'
+  else
+    return 1
+  fi
+}
+
+# Settings preferences may be rewritten independently of hook registrations.
+# Hash sorted compact hook JSON with one trailing newline, matching the writer.
+_mir_bootstrap_settings_hook_sha256() {
+  local canonical
+  canonical="$(jq -S -c '
+    if (.hooks | type) == "object" and (.hooks | length) > 0
+    then {hooks: .hooks}
+    else error("non-empty hooks object required")
+    end
+  ' "$1" 2>/dev/null)" || return 1
+  [ -n "$canonical" ] || return 1
+  printf '%s\n' "$canonical" | _mir_bootstrap_sha256_stdin
+}
+
 _mir_bootstrap_native_verdict() {
   # The receipt pins the evaluator's exact bytes, so a hash match is the
   # version check. Only "ready"/0 and "invalid"/1 are verdicts; anything else,
@@ -200,7 +224,12 @@ mir_bootstrap_gate_state() {
           status=invalid
           break
         }
-        [ "$actual_hash" = "$evidence_hash" ] || status=invalid
+        if [ "$actual_hash" != "$evidence_hash" ] && \
+           [ "$evidence_path" = ".claude/settings.json" ]; then
+          actual_hash="$(_mir_bootstrap_settings_hook_sha256 "$project_dir/$evidence_path")" \
+            || actual_hash=""
+        fi
+        [ -n "$actual_hash" ] && [ "$actual_hash" = "$evidence_hash" ] || status=invalid
       done <<EOF
 $evidence_rows
 EOF

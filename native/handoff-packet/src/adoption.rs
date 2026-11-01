@@ -45,6 +45,38 @@ fn json(bytes: &[u8]) -> Option<Value> {
     Some(value)
 }
 
+// jq uses IEEE-754 numbers. Only exactly representable signed integers are
+// admitted here; other spellings and values must be decided by the shell.
+fn jq_exact(value: &Value) -> bool {
+    match value {
+        Value::Number(n) => n
+            .as_i64()
+            .is_some_and(|n| n.unsigned_abs() <= 9_007_199_254_740_991),
+        Value::Array(values) => values.iter().all(jq_exact),
+        Value::Object(values) => values.values().all(jq_exact),
+        _ => true,
+    }
+}
+
+fn settings_hook_digest(bytes: &[u8]) -> Option<Option<String>> {
+    let settings = json(bytes)?;
+    if !jq_exact(&settings) {
+        return None;
+    }
+    let Some(hooks) = settings.get("hooks").and_then(Value::as_object) else {
+        return Some(None);
+    };
+    if hooks.is_empty() {
+        return Some(None);
+    }
+    // Default serde_json maps sort keys as jq -S does. jq also escapes DEL.
+    let mut canonical = serde_json::to_string(&serde_json::json!({"hooks": hooks}))
+        .ok()?
+        .replace('\u{7f}', "\\u007f");
+    canonical.push('\n');
+    Some(Some(crate::digest::sha256(canonical.as_bytes())))
+}
+
 fn text(value: &Value) -> Option<&str> {
     let s = value.as_str()?;
     // jq's command substitution and @tsv escaping change these strings.
@@ -150,6 +182,7 @@ pub fn evaluate(root: &Path) -> Option<bool> {
         {
             return Some(false);
         }
+        let is_settings = path == ".claude/settings.json";
         let path = root.join(path);
         match fs::symlink_metadata(&path) {
             Ok(meta) if meta.is_file() => {}
@@ -158,7 +191,10 @@ pub fn evaluate(root: &Path) -> Option<bool> {
             Err(_) => return None,
         }
         // Shell rejects only a leaf symlink; ancestor symlinks remain equivalent.
-        if crate::digest::sha256(&fs::read(path).ok()?) != sha {
+        let bytes = fs::read(path).ok()?;
+        if crate::digest::sha256(&bytes) != sha
+            && (!is_settings || settings_hook_digest(&bytes)?.as_deref() != Some(sha))
+        {
             return Some(false);
         }
     }

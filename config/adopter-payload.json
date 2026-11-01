@@ -173,7 +173,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": ".claude/hooks/_lib/bootstrap-gate.sh",
-      "sha256": "09ebab6c9a20affd5abe2e424031eeae0534a7135368919e6ff0399b8a3ce42a"
+      "sha256": "0417a7f5128d98ee2a01fbd5088b301aa0e4403f5fa2d71569d99028de15602f"
     },
     {
       "classification": "reference",
@@ -497,7 +497,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "CHANGELOG.md",
-      "sha256": "94208c1f6122dba9aaf79fef775c89e5f62187a1cd937c80e607b2847ed83eda"
+      "sha256": "f1b7e2a09b22a04f571b312b7423b726e50c99ac8ffe645e7d472176231cd06d"
     },
     {
       "classification": "reference",
@@ -521,7 +521,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "MIGRATION.md",
-      "sha256": "eaafcbaddc4c5f63bec4992666fb725051dc5abe67f91667cb964c36eece3e28"
+      "sha256": "9819465c076af34939b299b89d4bccc3c682332bee1cf63eefa8060334d2bcf5"
     },
     {
       "classification": "reference",
@@ -1649,7 +1649,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "docs/decisions/adr-77-existing-repository-bootstrap-adoption.md",
-      "sha256": "e2612cc5422816608f29b174d5377da220db6257932b92b15237d761b03d84ec"
+      "sha256": "8d4e9c3e66c8b122dc23337e34930b6989d02ee0857f7362d57401e4cfa91df2"
     },
     {
       "classification": "reference",
@@ -2807,7 +2807,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/adoption.rs",
-      "sha256": "4a21ef4b4f78e77f97e4f9327173f649b6dfe76678e40586be77e7611be09c37"
+      "sha256": "c9a3cb00e4dbbd701769507464c7325b7f8b6aedc71ab514d9f610f6b5bc00a3"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4145,7 +4145,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "src/mir/cli/bootstrap_adoption.py",
-      "sha256": "0ccfc43983712ce0a59f7e67ff2bef54c0def96923621ffa91f6a20ca424ae84"
+      "sha256": "4bc69b711130b644a42ce9fe5521c9defa6866ea50cf1ee5ced224efb4b64b14"
     },
     {
       "classification": "optional-consumer-tool",
@@ -4823,7 +4823,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_bootstrap_adoption_cli.py",
-      "sha256": "758aad930d50fae159cf0ad464cec94855903f8daffb0dd0596af71ab6d6d54e"
+      "sha256": "45268288a7684fcc862b07f309618afbc47fcf5c998f1bebf63c3757e9809ae9"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4835,7 +4835,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_bootstrap_native.py",
-      "sha256": "00fbf9e87bdff654f3acbcdb3c607e8be464ad7934a8d7caea56787ebaf5d4b7"
+      "sha256": "af6a05664ad28f315d86404c5d2f201e01e5e0503b749de21e96db18872578fa"
     },
     {
       "classification": "template-maintainer-tool",
@@ -5010,6 +5010,12 @@
       "disposition": "remove",
       "path": "tests/test_hook_executability.py",
       "sha256": "e6da4645425779b4a02e7d2e66a81b61c19d3aff55e796c2cbb7a49bd6338a32"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "tests/test_hook_state_contract.py",
+      "sha256": "a31532af9266ae5c0ccf739f30690d9782a6661826f71ca6b835f38ef9716c2e"
     },
     {
       "classification": "template-maintainer-tool",
