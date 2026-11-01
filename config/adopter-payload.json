@@ -4823,7 +4823,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_bootstrap_adoption_cli.py",
-      "sha256": "61716619e06ae1809823cdaa8d6c97777a7d64f7b6ed9d57fdbcfba23f9f5dd5"
+      "sha256": "758aad930d50fae159cf0ad464cec94855903f8daffb0dd0596af71ab6d6d54e"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4985,7 +4985,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_existing_repository_adoption.py",
-      "sha256": "7834b147b9157142391dfeaf3c8779adef0620b07d34af10a88e91931b69c382"
+      "sha256": "100c3222f68dc0d3e9d0c36c04409f977bbae6d3b6b344aadef61a14f6f8a763"
     },
     {
       "classification": "template-maintainer-tool",

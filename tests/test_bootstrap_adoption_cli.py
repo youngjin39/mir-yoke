@@ -7,9 +7,17 @@ import subprocess
 from pathlib import Path
 
 import jsonschema
+import pytest
 
 from mir.cli import SUBCOMMANDS
 from mir.cli import bootstrap_adoption as adoption_cli
+
+
+@pytest.fixture(autouse=True)
+def _no_published_evaluator(monkeypatch):
+    # The repository lock pins published evaluator artifacts; these tests stay
+    # hermetic and exercise delivery in test_bootstrap_native_delivery.py.
+    monkeypatch.setenv("MIR_CAPABILITY_NATIVE_ARTIFACTS", "0")
 
 SOURCE_COMMIT = "a" * 40
 SURFACE_KEYS = (

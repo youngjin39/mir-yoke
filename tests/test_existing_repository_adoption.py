@@ -2,7 +2,15 @@ from __future__ import annotations
 
 import json
 
+import pytest
 from test_bootstrap_adoption_cli import _ready_project, _run
+
+
+@pytest.fixture(autouse=True)
+def _no_published_evaluator(monkeypatch):
+    # The repository lock pins published evaluator artifacts; adoption tests stay
+    # hermetic and exercise delivery in test_bootstrap_native_delivery.py.
+    monkeypatch.setenv("MIR_CAPABILITY_NATIVE_ARTIFACTS", "0")
 
 
 # @spec CR-005 FR-002 FR-006 IR-002 QR-002
