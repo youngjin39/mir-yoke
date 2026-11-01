@@ -68,3 +68,16 @@ Claude 7375f3b1 and Codex 01a195b2 attested (five mir-mcp calls ok), finalized, 
 4760c2f. Owner PC: four x86_64 Windows binaries placed (runtime-verify.exe included),
 Claude 06a768d6 and Codex 01a195b6 attested (five mir-mcp calls ok; Codex lifecycle hooks
 ran), finalized, ready at 73f1b1b; consumer commit pushed by the maintainer host.
+
+Release record v0.13.60 (Main, 2026-11-01): E1 native `executor-query` front end
+(a029d0b; same-home `status`, `result` and `list-jobs` from a read-only, fully understood
+jobs schema with exact bundled rusqlite 0.40.2; a stdlib-only entrypoint shared by both
+Python routes tries the host-locally pinned binary before importing the executor; whole
+CLI median 74.1 -> 30.4 ms, binary 3.7 ms, 270/270 identical bytes); version fc083b6,
+native prerelease native-fc083b61e55d (30 assets), bind 529b330. CI validate on a029d0b and
+529b330 all jobs green, including Windows (executor parity +76 on macOS, Ubuntu and
+Windows), before the tag. Fresh-clone readiness at 529b330 exit 0 (5006 passed, 219
+skipped). Maintainer host: provider update from the 0.13.59 record lock, five aarch64
+binaries placed (SHA-256 equal to the lock), Codex hook trust 4/4, Claude e7190a7a and
+Codex 01a19631 attested (five mir-mcp calls ok), finalized, ready at 529b330. Owner PC:
+pending.
