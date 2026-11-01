@@ -1217,3 +1217,44 @@ def test_generated_content_workspace_config_excludes_the_docs_archive() -> None:
     archives = {a["slug"]: a for a in parsed["memory"]["external_archives"]}
 
     assert archives["demo-content"].get("glob_exclude") == ["docs/_archive/**"]
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="Native Windows bootstrap unsupported")
+@pytest.mark.parametrize("available", [False, True])
+def test_bootstrap_receipt_delivers_optional_runtime_verifier(tmp_path, capsys, available):
+    from mir.core.capabilities import native
+
+    _make_harness_surfaces(tmp_path)
+    external = tmp_path.parent / f"{tmp_path.name}-external-mir"
+    external.write_bytes(b"#!/bin/sh\nexit 0\n")
+    external.chmod(0o755)
+    artifact = tmp_path / "artifact"
+    artifact.write_bytes(b"verified runtime artifact")
+    digest = sha256(artifact.read_bytes()).hexdigest()
+    lock = {
+        "plugins": {"mir-lifecycle-hooks": {}},
+        "native_artifacts": {},
+    }
+    if available:
+        lock["native_artifacts"]["runtime-verify"] = {
+            "plugin": "mir-lifecycle-hooks", "install_path": "bin/runtime-verify",
+            "targets": {"aarch64-apple-darwin": {
+                "url": artifact.as_uri(), "size": artifact.stat().st_size, "sha256": digest,
+            }},
+        }
+    (tmp_path / ".mir").mkdir(exist_ok=True)
+    (tmp_path / ".mir/capability-lock.json").write_text(json.dumps(lock))
+    with patch.dict(os.environ, {
+        "MIR_BOOTSTRAP_CLI_PATH": str(external),
+        "MIR_BOOTSTRAP_RUNTIME_MANIFEST": str(external.parent / "runtime-manifest.json"),
+        "MIR_CAPABILITY_NATIVE_ARTIFACTS": "1",
+    }), patch.object(native, "host_target", return_value="aarch64-apple-darwin"):
+        assert _bootstrap(tmp_path) == 0
+    receipt = json.loads(capsys.readouterr().out)
+    if available:
+        assert receipt["cli"]["runtime_verifier"] == {
+            "path": ".mir/bin/runtime-verify", "sha256": digest,
+        }
+        assert (tmp_path / ".mir/bin/runtime-verify").read_bytes() == artifact.read_bytes()
+    else:
+        assert "runtime_verifier" not in receipt["cli"]

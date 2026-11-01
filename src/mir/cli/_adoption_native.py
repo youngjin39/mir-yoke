@@ -14,8 +14,6 @@ import httpx
 
 from mir.core.capabilities import native
 
-_RELATIVE = ".mir/bin/bootstrap-gate"
-
 
 def install_evaluator(
     root: Path, *, source_root: Path, local_source: Path | None = None,
@@ -26,10 +24,23 @@ def install_evaluator(
     explicit local build replaces that provenance with an owner-selected file;
     both routes pin the exact installed bytes in the adoption receipt.
     """
+    return _install(root, source_root=source_root, local_source=local_source, name="bootstrap-gate")
+
+
+def install_runtime_verifier(root: Path, *, source_root: Path) -> dict[str, str] | None:
+    """Pin the optional project-local runtime verifier from the provider lock."""
+    return _install(root, source_root=source_root, name="runtime-verify")
+
+
+def _install(
+    root: Path, *, source_root: Path, name: str, local_source: Path | None = None,
+) -> dict[str, str] | None:
     target = native.host_target()
+    windows = bool(target and target.endswith("windows-msvc"))
+    relative = f".mir/bin/{name}" + (".exe" if windows else "")
     if (
         target is None
-        or target.endswith("windows-msvc")
+        or (windows and name == "bootstrap-gate")
         or os.environ.get("MIR_CAPABILITY_NATIVE_ARTIFACTS") == "0"
     ):
         return None
@@ -52,7 +63,7 @@ def install_evaluator(
             if not isinstance(lock, dict):
                 return None
             records = native.validate_artifacts(lock.get("native_artifacts", {}), lock["plugins"])
-            record = records.get("bootstrap-gate")
+            record = records.get(name)
             if not record:
                 return None
             pin = record["targets"].get(target)
@@ -65,9 +76,9 @@ def install_evaluator(
                     return None
             data = native._read(pin["url"], pin["size"])
 
-        destination = root / _RELATIVE
+        destination = root / relative
         parent = root
-        for part in Path(_RELATIVE).parts[:-1]:
+        for part in Path(relative).parts[:-1]:
             parent /= part
             if parent.is_symlink():
                 return None
@@ -77,14 +88,14 @@ def install_evaluator(
         if destination.is_symlink() or (destination.exists() and not destination.is_file()):
             return None
         with tempfile.NamedTemporaryFile(
-            prefix=".bootstrap-gate.", dir=parent, delete=False,
+            prefix=f".{name}.", dir=parent, delete=False,
         ) as output:
             temporary = Path(output.name)
             output.write(data)
         native._verify(temporary, pin)
         temporary.chmod(0o755)
         os.replace(temporary, destination)
-        return {"path": _RELATIVE, "sha256": pin["sha256"]}
+        return {"path": relative, "sha256": pin["sha256"]}
     except (OSError, ValueError, KeyError, TypeError, httpx.HTTPError, httpx.InvalidURL):
         return None
     finally:

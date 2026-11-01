@@ -36,7 +36,7 @@ jobs:
         working-directory: native/handoff-packet
       - run: >-
           uv run --python 3.14 pytest -q -p no:cacheprovider
-          tests/test_handoff_packet_native_parity.py
+          tests/test_runtime_verify_native_parity.py tests/test_handoff_packet_native_parity.py
           tests/test_lifecycle_native_commands.py
           tests/test_line_endings.py
 
@@ -171,6 +171,7 @@ jobs:
           tests/test_mir_mcp_package.py
           tests/test_mir_mcp_checker.py
           tests/test_mir_mcp_relations.py
+      - run: uv run pytest -q tests/test_setup_wrappers.py -k powershell_launcher
       # Native handoff byte parity on Windows (same steps as native_handoff).
       - run: uv sync --python 3.14 --extra dev --frozen
       - run: cargo fmt --check
@@ -183,7 +184,7 @@ jobs:
         working-directory: native/handoff-packet
         env:
           CARGO_TARGET_DIR: ${{ github.workspace }}/native/handoff-packet/target
-      - run: uv run --python 3.14 pytest -q -p no:cacheprovider tests/test_handoff_packet_native_parity.py tests/test_lifecycle_native_commands.py
+      - run: uv run --python 3.14 pytest -q -p no:cacheprovider tests/test_runtime_verify_native_parity.py tests/test_handoff_packet_native_parity.py tests/test_lifecycle_native_commands.py
         env:
           PYTHONUTF8: '1'
           CARGO_TARGET_DIR: ${{ github.workspace }}/native/handoff-packet/target

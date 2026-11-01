@@ -279,3 +279,43 @@ def test_missing_provider_lock_clears_previous_receipt_pin(tmp_path, monkeypatch
     assert "native_evaluator" not in receipt
     assert "native_evaluator" not in report
     assert (root / RELATIVE).read_bytes() == DATA
+
+
+@pytest.mark.parametrize("available", [False, True])
+def test_runtime_verifier_reuses_verified_installer(tmp_path, available):
+    provider = tmp_path / "provider"
+    path, lock = _provider(provider)
+    if available:
+        record = lock["native_artifacts"].pop("bootstrap-gate")
+        record["install_path"] = "bin/runtime-verify"
+        lock["native_artifacts"]["runtime-verify"] = record
+        path.write_text(json.dumps(lock))
+    root = tmp_path / "project"
+    root.mkdir()
+    pin = _delivery().install_runtime_verifier(root, source_root=provider)
+    if available:
+        assert pin == {
+            "path": ".mir/bin/runtime-verify", "sha256": hashlib.sha256(DATA).hexdigest(),
+        }
+        assert (root / pin["path"]).read_bytes() == DATA
+    else:
+        assert pin is None
+        assert not (root / ".mir/bin").exists()
+
+
+def test_runtime_verifier_supports_windows_artifact(tmp_path, monkeypatch):
+    provider = tmp_path / "provider"
+    target = "x86_64-pc-windows-msvc"
+    path, lock = _provider(provider, target=target)
+    record = lock["native_artifacts"].pop("bootstrap-gate")
+    record["install_path"] = "bin/runtime-verify"
+    lock["native_artifacts"]["runtime-verify"] = record
+    path.write_text(json.dumps(lock))
+    monkeypatch.setattr(native, "host_target", lambda: target)
+    root = tmp_path / "project"
+    root.mkdir()
+    pin = _delivery().install_runtime_verifier(root, source_root=provider)
+    assert pin == {
+        "path": ".mir/bin/runtime-verify.exe", "sha256": hashlib.sha256(DATA).hexdigest(),
+    }
+    assert (root / pin["path"]).read_bytes() == DATA

@@ -30,13 +30,30 @@ RUNTIME_MANIFEST="$(jq -r '.cli.runtime_manifest // empty' "$RECEIPT")"
   printf '[mir launcher] external Mir CLI hash changed; rerun setup.sh (inside WSL on Windows hosts)\n' >&2
   exit 1
 }
+verify_runtime() {
+  local verifier verifier_hash verdict=64
+  verifier="$(jq -r '.cli.runtime_verifier.path // empty' "$RECEIPT")"
+  verifier_hash="$(jq -r '.cli.runtime_verifier.sha256 // empty' "$RECEIPT")"
+  if [ "${MIR_NATIVE_HOOKS:-1}" != "0" ] && [ -n "$verifier" ] && [ -n "$verifier_hash" ]; then
+    [[ "$verifier" = /* ]] || verifier="$ROOT/$verifier"
+    if [ -f "$verifier" ] && [ ! -L "$verifier" ] && [ -x "$verifier" ] && \
+      [ "$(sha256_file "$verifier" 2>/dev/null || true)" = "$verifier_hash" ]; then
+      "$verifier" "$@" >/dev/null 2>&1 && verdict=0 || verdict=$?
+      case "$verdict" in
+        0) return 0 ;;
+        2) return 1 ;; # Same changed-runtime verdict as Python verification.
+      esac
+    fi
+  fi
+  "$MIR_CLI" runtime-manifest verify "$@" >/dev/null 2>&1
+}
 if [ -n "$RUNTIME_MANIFEST" ]; then
   RUNTIME_ROOT="$(cd -- "$(dirname -- "$MIR_CLI")/.." 2>/dev/null && pwd -P || true)"
   RUNTIME_MANIFEST_HASH="$(jq -r '.cli.runtime_manifest_sha256 // empty' "$RECEIPT")"
   [ -n "$RUNTIME_ROOT" ] && [ "$RUNTIME_MANIFEST" = "$RUNTIME_ROOT/runtime-manifest.json" ] && \
     [ -f "$RUNTIME_MANIFEST" ] && [ ! -L "$RUNTIME_MANIFEST" ] && \
     [ "$(sha256_file "$RUNTIME_MANIFEST" 2>/dev/null || true)" = "$RUNTIME_MANIFEST_HASH" ] && \
-    "$MIR_CLI" runtime-manifest verify --runtime-root "$RUNTIME_ROOT" \
+    verify_runtime --runtime-root "$RUNTIME_ROOT" \
       --manifest "$RUNTIME_MANIFEST" \
       --source-url "$(jq -r '.cli.source_url // empty' "$RECEIPT")" \
       --source-commit "$(jq -r '.cli.source_commit // empty' "$RECEIPT")" \

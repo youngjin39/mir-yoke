@@ -33,6 +33,7 @@ from mir.core.engine.memory import store
 
 from . import context as context_cli
 from . import memory as memory_cli
+from ._adoption_native import install_runtime_verifier
 from ._changes import changed_paths, snapshot_project
 
 _PROFILE_CHOICES = ("code_app", "hybrid_pipeline", "infra_runtime", "content_workspace")
@@ -2118,6 +2119,9 @@ def main(argv: list[str]) -> int:
         receipt_cli_path = str(candidate_cli)
         if candidate_cli.is_file():
             receipt_cli_hash = hashlib.sha256(candidate_cli.read_bytes()).hexdigest()
+    runtime_verifier = None
+    if receipt_cli_path and os.environ.get("MIR_BOOTSTRAP_RUNTIME_MANIFEST"):
+        runtime_verifier = install_runtime_verifier(root, source_root=root)
     receipt = {
         "schema_version": 1,
         "status": status,
@@ -2144,6 +2148,7 @@ def main(argv: list[str]) -> int:
             "constraints_sha256": os.environ.get(
                 "MIR_BOOTSTRAP_CONSTRAINTS_SHA256"
             ),
+            **({"runtime_verifier": runtime_verifier} if runtime_verifier else {}),
             "runtime_manifest": os.environ.get("MIR_BOOTSTRAP_RUNTIME_MANIFEST"),
             "runtime_manifest_sha256": os.environ.get(
                 "MIR_BOOTSTRAP_RUNTIME_MANIFEST_SHA256"

@@ -50,6 +50,8 @@ jobs:
           grep -q 'Mir lifecycle continuity' session.out
           gate="target/${{ matrix.target }}/release/bootstrap-gate${{ matrix.exe }}"
           test "$("$gate" --version)" = "bootstrap-gate 0.1.0"
+          verifier="target/${{ matrix.target }}/release/runtime-verify${{ matrix.exe }}"
+          test "$("$verifier" --version)" = "runtime-verify 0.1.0"
           set +e
           printf '%s' '{"hook_event_name":"PreToolUse","tool_name":"Bash","prompt":"Write a handoff for Codex.\nNo commands.","tool_input":{"command":"pwd"}}' | "$bin" > deny.out
           code=$?
@@ -60,7 +62,7 @@ jobs:
         run: |
           mkdir -p ../../dist-native
           cd ../../dist-native
-          for name in handoff-packet runtime-continuity bootstrap-gate; do
+          for name in handoff-packet runtime-continuity bootstrap-gate runtime-verify; do
             f="$name-${{ matrix.target }}${{ matrix.exe }}"
             cp "../native/handoff-packet/target/${{ matrix.target }}/release/$name${{ matrix.exe }}" "$f"
             if command -v sha256sum >/dev/null; then sha256sum "$f"; else shasum -a 256 "$f"; fi
@@ -95,7 +97,7 @@ jobs:
           set -euo pipefail
           tag="native-${SOURCE_SHA:0:12}"
           cd dist-native
-          test "$(find . -maxdepth 1 -type f | wc -l)" -eq 20
+          test "$(find . -maxdepth 1 -type f | wc -l)" -eq 25
           for digest in SHA256-*.txt; do sha256sum --check "$digest"; done
           if gh release view "$tag" >/dev/null 2>&1; then
             gh release edit "$tag" --prerelease --title "$tag"

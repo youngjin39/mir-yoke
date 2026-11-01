@@ -8,6 +8,15 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+### Added
+
+- Optional `runtime-verify` binary verifies the installed CLI closure before wrapper
+  calls. Setup installs a host artifact only from the provider lock and records
+  `cli.runtime_verifier` with its SHA-256. Wrappers check that pin before executing
+  it; exits 0 and 2 preserve Python verification verdicts, while unsupported input
+  (64), unexpected exits, spawn failure or digest mismatch use Python.
+  `MIR_NATIVE_HOOKS=0` forces Python. Native publication collects four binaries per target.
+
 ### Changed
 
 - Bootstrap adoption receipts hash only canonical hook registrations for

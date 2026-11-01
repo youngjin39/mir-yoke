@@ -29,11 +29,40 @@ if ([string]$Receipt.cli.runtime_manifest) {
         $ActualManifestHash -ne [string]$Receipt.cli.runtime_manifest_sha256) {
         throw "external Mir CLI runtime changed; rerun setup.sh inside WSL"
     }
-    & $MirCli runtime-manifest verify --runtime-root $RuntimeRoot --manifest $RuntimeManifest `
-        --source-url ([string]$Receipt.cli.source_url) `
-        --source-commit ([string]$Receipt.cli.source_commit) `
-        --constraints-sha256 ([string]$Receipt.cli.constraints_sha256)
-    if ($LASTEXITCODE -ne 0) {
+    $VerifyArgs = @(
+        "--runtime-root", $RuntimeRoot, "--manifest", $RuntimeManifest,
+        "--source-url", ([string]$Receipt.cli.source_url),
+        "--source-commit", ([string]$Receipt.cli.source_commit),
+        "--constraints-sha256", ([string]$Receipt.cli.constraints_sha256)
+    )
+    $VerifierExit = 64
+    $VerifierOutput = @()
+    $Verifier = [string]$Receipt.cli.runtime_verifier.path
+    $VerifierHash = [string]$Receipt.cli.runtime_verifier.sha256
+    if ($env:MIR_NATIVE_HOOKS -ne "0" -and $Verifier -and $VerifierHash) {
+        if (-not [System.IO.Path]::IsPathRooted($Verifier)) {
+            $Verifier = Join-Path $ProjectRoot $Verifier
+        }
+        try {
+            $VerifierFile = Get-Item -LiteralPath $Verifier -ErrorAction Stop
+            if (-not $VerifierFile.PSIsContainer -and
+                -not ($VerifierFile.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -and
+                (Get-FileHash -Algorithm SHA256 -LiteralPath $Verifier).Hash.ToLowerInvariant() -eq $VerifierHash) {
+                $VerifierOutput = @(& $Verifier @VerifyArgs 2>&1)
+                $VerifierExit = $LASTEXITCODE
+            }
+        } catch {
+            $VerifierExit = 64
+        }
+    }
+    if ($VerifierExit -eq 2) {
+        foreach ($Line in $VerifierOutput) { [Console]::Error.WriteLine([string]$Line) }
+    }
+    if ($VerifierExit -ne 0 -and $VerifierExit -ne 2) {
+        & $MirCli runtime-manifest verify @VerifyArgs
+        $VerifierExit = $LASTEXITCODE
+    }
+    if ($VerifierExit -ne 0) {
         throw "external Mir CLI runtime changed; rerun setup.sh inside WSL"
     }
 }

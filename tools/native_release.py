@@ -21,7 +21,7 @@ TARGETS = (
     "aarch64-apple-darwin", "x86_64-apple-darwin", "x86_64-unknown-linux-gnu",
     "aarch64-unknown-linux-gnu", "x86_64-pc-windows-msvc",
 )
-NAMES = ("handoff-packet", "runtime-continuity", "bootstrap-gate")
+NAMES = ("handoff-packet", "runtime-continuity", "bootstrap-gate", "runtime-verify")
 PLUGIN = "mir-lifecycle-hooks"
 
 
@@ -130,7 +130,7 @@ def main(argv: list[str] | None = None) -> int:
                     ["gh", "release", "download", args.tag, "--repo", args.repo,
                      "--dir", str(directory), "--pattern", "handoff-packet-*",
                      "--pattern", "runtime-continuity-*", "--pattern", "bootstrap-gate-*",
-                     "--pattern", "SHA256-*"],
+                     "--pattern", "runtime-verify-*", "--pattern", "SHA256-*"],
                     check=True,
                 )
                 pin_release(directory, args.lock, args.source)

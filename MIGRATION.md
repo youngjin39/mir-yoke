@@ -1,5 +1,17 @@
 # Migration Guide
 
+## Unreleased native runtime verification
+
+Rerun `setup.sh` after the provider lock includes a `runtime-verify` artifact for
+the host to install the verifier and pin `cli.runtime_verifier` in the receipt.
+Existing receipts without that pin keep Python verification. The POSIX and
+PowerShell wrappers hash the verifier before use; unsupported inputs (exit 64),
+unexpected exits, spawn failure and digest mismatch fall back to Python. Windows
+closures containing reparse entries also use Python to preserve path semantics. A proven
+closure change (exit 2) keeps the existing failure message. Set
+`MIR_NATIVE_HOOKS=0` for a one-step rollback to Python. Publication and capability
+lock updates remain a separate delivery step.
+
 ## Unreleased hook-scoped settings evidence
 
 Rerun adoption to adopt the new canonical helper bytes, then run

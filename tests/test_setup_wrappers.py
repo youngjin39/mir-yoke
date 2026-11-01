@@ -452,7 +452,10 @@ def test_should_target_supported_unix_platforms_when_portable_bootstrap_ci_runs(
     assert "runs-on: windows-latest" in windows_job
     assert re.search(r"^  [\w-]+:$", windows_job, re.MULTILINE) is None, "it is the last job"
     assert "bootstrap" not in windows_job
-    assert "setup_wrappers" not in windows_job
+    assert windows_job.count("tests/test_setup_wrappers.py") == 1
+    assert "tests/test_setup_wrappers.py -k powershell_launcher" in windows_job
+    assert "tests/test_runtime_verify_native_parity.py" in head
+    assert "tests/test_runtime_verify_native_parity.py" in windows_job
     assert "Bootstrap phase 1 on Windows PowerShell" not in workflow
     assert "Finalize ready bootstrap on Windows PowerShell" not in workflow
 
@@ -878,3 +881,114 @@ def test_hook_launcher_prefers_receipt_cli_over_product_virtualenv(tmp_path):
         f"external-mir run-python --project-root {project} -- -c"
     )
     assert "local-python" not in completed.stdout
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX shell entrypoint")
+@pytest.mark.parametrize("mode", [
+    "verified", "changed", "unsupported", "unknown", "spawn", "mismatch", "disabled", "unpinned",
+])
+def test_shell_launcher_pins_native_runtime_verification(tmp_path, mode):
+    project = tmp_path / "project"
+    scripts = project / "scripts"
+    scripts.mkdir(parents=True)
+    shutil.copy2(ROOT / "scripts/mir.sh", scripts / "mir.sh")
+    runtime = tmp_path / "runtime"
+    external = runtime / "bin/mir"
+    external.parent.mkdir(parents=True)
+    python_log = tmp_path / "python.log"
+    native_log = tmp_path / "native.log"
+    external.write_text(
+        '#!/bin/sh\nif [ "$1 $2" = "runtime-manifest verify" ]; then\n'
+        f'  echo python >> "{python_log}"\n  exit 0\nfi\nprintf "%s\\n" "$*"\n'
+    )
+    external.chmod(0o755)
+    manifest, manifest_hash = _write_fake_runtime_manifest(runtime)
+    verifier = project / ".mir/bin/runtime-verify"
+    verifier.parent.mkdir(parents=True)
+    verdict = {"changed": 2, "unsupported": 64, "unknown": 1}.get(mode, 0)
+    verifier.write_text(f'#!/bin/sh\necho "$*" >> "{native_log}"\nexit {verdict}\n')
+    verifier.chmod(0o755)
+    cli = {
+        "executable": str(external), "sha256": sha256(external.read_bytes()).hexdigest(),
+        "runtime_manifest": str(manifest), "runtime_manifest_sha256": manifest_hash,
+        "source_url": "https://example.test/repo.git", "source_commit": "a" * 40,
+        "constraints_sha256": "b" * 64,
+    }
+    if mode != "unpinned":
+        cli["runtime_verifier"] = {
+            "path": ".mir/bin/runtime-verify",
+            "sha256": "0" * 64 if mode == "mismatch" else sha256(verifier.read_bytes()).hexdigest(),
+        }
+    if mode == "spawn":
+        verifier.chmod(0o644)
+    (project / ".mir/bootstrap-receipt.json").write_text(json.dumps({"cli": cli}))
+    env = os.environ.copy()
+    env.pop("MIR_NATIVE_HOOKS", None)
+    if mode == "disabled":
+        env["MIR_NATIVE_HOOKS"] = "0"
+    result = subprocess.run(
+        ["bash", str(scripts / "mir.sh"), "capability", "status"],
+        env=env, capture_output=True, text=True, check=False,
+    )
+    assert result.returncode == (1 if mode == "changed" else 0)
+    assert python_log.exists() == (mode not in {"verified", "changed"})
+    assert native_log.exists() == (mode in {"verified", "changed", "unsupported", "unknown"})
+    if native_log.exists():
+        assert native_log.read_text().strip() == (
+            f"--runtime-root {runtime} --manifest {manifest} "
+            "--source-url https://example.test/repo.git "
+            f"--source-commit {'a' * 40} --constraints-sha256 {'b' * 64}"
+        )
+    if mode == "changed":
+        assert "external Mir CLI runtime changed" in result.stderr
+    else:
+        assert result.stdout.strip() == "capability status"
+
+
+@pytest.mark.skipif(not shutil.which("pwsh"), reason="PowerShell runtime required")
+@pytest.mark.parametrize("mode", [
+    "verified", "changed", "unsupported", "mismatch", "disabled", "unpinned",
+])
+def test_powershell_launcher_pins_native_runtime_verification(tmp_path, mode):
+    project = tmp_path / "project"
+    scripts = project / "scripts"
+    scripts.mkdir(parents=True)
+    shutil.copy2(ROOT / "scripts/mir.ps1", scripts / "mir.ps1")
+    external = tmp_path / "runtime/bin/mir.ps1"
+    external.parent.mkdir(parents=True)
+    python_log = tmp_path / "python.log"
+    native_log = tmp_path / "native.log"
+    external.write_text(
+        'if ($args[0] -eq "runtime-manifest") {\n'
+        f'  Set-Content -LiteralPath "{python_log}" -Value python\n  exit 0\n}}\n'
+        'Write-Output ($args -join " ")\nexit 0\n'
+    )
+    manifest, manifest_hash = _write_fake_runtime_manifest(external.parent.parent)
+    verifier = project / ".mir/bin/runtime-verify.ps1"
+    verifier.parent.mkdir(parents=True)
+    verdict = {"changed": 2, "unsupported": 64}.get(mode, 0)
+    verifier.write_text(f'Set-Content -LiteralPath "{native_log}" -Value native\nexit {verdict}\n')
+    cli = {
+        "executable": str(external), "sha256": sha256(external.read_bytes()).hexdigest(),
+        "runtime_manifest": str(manifest), "runtime_manifest_sha256": manifest_hash,
+        "source_url": "https://example.test/repo.git", "source_commit": "a" * 40,
+        "constraints_sha256": "b" * 64,
+    }
+    if mode != "unpinned":
+        cli["runtime_verifier"] = {
+            "path": ".mir/bin/runtime-verify.ps1",
+            "sha256": "0" * 64 if mode == "mismatch" else sha256(verifier.read_bytes()).hexdigest(),
+        }
+    (project / ".mir/bootstrap-receipt.json").write_text(json.dumps({"cli": cli}))
+    env = os.environ.copy()
+    env.pop("MIR_NATIVE_HOOKS", None)
+    if mode == "disabled":
+        env["MIR_NATIVE_HOOKS"] = "0"
+    result = subprocess.run(
+        [shutil.which("pwsh"), "-NoProfile", "-File", str(scripts / "mir.ps1"),
+         "capability", "status"],
+        env=env, capture_output=True, text=True, check=False,
+    )
+    assert result.returncode == (1 if mode == "changed" else 0), result.stderr
+    assert python_log.exists() == (mode not in {"verified", "changed"})
+    assert native_log.exists() == (mode in {"verified", "changed", "unsupported"})
