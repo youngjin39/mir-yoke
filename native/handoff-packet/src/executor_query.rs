@@ -57,8 +57,6 @@ enum Command {
 
 #[derive(Debug)]
 struct Args {
-    home: PathBuf,
-    root: PathBuf,
     db: PathBuf,
     command: Command,
 }
@@ -140,12 +138,7 @@ fn parse(raw: impl IntoIterator<Item = OsString>, cwd: &Path) -> Result<Args> {
     if db.components().any(|part| part == Component::ParentDir) {
         return Err(());
     }
-    Ok(Args {
-        home,
-        root,
-        db,
-        command,
-    })
+    Ok(Args { db, command })
 }
 
 fn absent(path: &Path) -> Result<bool> {
@@ -551,14 +544,6 @@ fn run(args: &Args) -> Result<(String, String, i32)> {
         Ok(value) if !utf8_encoding(&value) => return Err(()),
         Err(std::env::VarError::NotUnicode(_)) => return Err(()),
         Ok(_) | Err(std::env::VarError::NotPresent) => {}
-    }
-    for path in [
-        args.home.join("tools/mir_executor/local.py"),
-        args.root.join("config/mir-executor.local.json"),
-    ] {
-        if !absent(&path)? {
-            return Err(());
-        }
     }
     no_sidecars(&args.db)?;
     let py = PythonText::new()?;

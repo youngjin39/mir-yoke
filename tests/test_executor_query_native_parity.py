@@ -184,6 +184,67 @@ def test_executor_query_equal_timestamp_order(binary, home):
     assert invoke(binary, home, ["list-jobs"]) == invoke(binary, home, ["list-jobs"], python=True)
 
 
+@pytest.fixture
+def local_executor_files(home):
+    (home / "tools/mir_executor/local.py").write_text(
+        "def register_execute_options(parser):\n"
+        "    parser.add_argument('--project-review', action='store_true')\n"
+        "\n"
+        "def validate_brief(brief, repo_root):\n"
+        "    raise AssertionError('query called validate_brief')\n"
+        "\n"
+        "def pre_execute(args, repo_root):\n"
+        "    raise AssertionError('query called pre_execute')\n"
+        "\n"
+        "def authorize_target(home_root, target_root, args):\n"
+        "    raise AssertionError('same-home query called authorize_target')\n"
+    )
+    (home / "config").mkdir()
+    (home / "config/mir-executor.local.json").write_text(json.dumps({
+        "timeout_seconds_range": [30, 600], "input_limit_bytes": 4096,
+        "require_review": True,
+    }))
+
+
+@pytest.mark.parametrize("route", ["module", "mir-cli"])
+@pytest.mark.parametrize("argv", [
+    ["status", "--job-id", "failed"], ["result", "--job-id", "complete-\ud55c\U0001f600"],
+    ["list-jobs"],
+])
+@pytest.mark.parametrize("files", ["hook", "config", "both"])
+def test_executor_query_local_files_match_python(
+    binary, home, local_executor_files, route, argv, files,
+):
+    if files == "hook":
+        (home / "config/mir-executor.local.json").unlink()
+    elif files == "config":
+        (home / "tools/mir_executor/local.py").unlink()
+    reference = invoke(binary, home, argv, python=True)
+    assert reference[2] == 0, reference
+    before = (home / "tasks/jobs.db").read_bytes()
+    assert invoke(binary, home, argv) == reference
+    install_pin(binary, home)
+    (home / "tools/mir_executor/cli.py").write_text("raise AssertionError('Python CLI imported')\n")
+    assert pinned_cli(home, route, argv) == reference
+    assert (home / "tasks/jobs.db").read_bytes() == before
+
+
+@pytest.mark.parametrize("route", ["module", "mir-cli"])
+@pytest.mark.parametrize("argv", [
+    ["status", "--job-id", "failed"], ["result", "--job-id", "failed"], ["list-jobs"],
+])
+def test_executor_query_local_import_failure_accepted_divergence(binary, home, route, argv):
+    reference = invoke(binary, home, argv, python=True)
+    assert reference[2] == 0, reference
+    (home / "tools/mir_executor/local.py").write_text("raise RuntimeError('local import failed')\n")
+    python = invoke(binary, home, argv, python=True)
+    assert python[2] != 0
+    assert b"local import failed" in python[1]
+    assert invoke(binary, home, argv) == reference
+    install_pin(binary, home)
+    assert pinned_cli(home, route, argv) == reference
+
+
 @pytest.mark.parametrize("route", ["module", "mir-cli"])
 @pytest.mark.parametrize("argv", [
     ["status", "--job-id", "failed"], ["result", "--job-id", "complete-\ud55c\U0001f600"],
@@ -243,7 +304,7 @@ def test_executor_query_declines_absent_database_through_dangling_parent(binary,
     assert not (home / "absent").exists()
 
 
-@pytest.mark.parametrize("case", ["legacy", "hook", "config", "cross-target",
+@pytest.mark.parametrize("case", ["legacy", "cross-target",
                                       "symlink", "malformed-json", "invalid-type",
                                       "unicode-version"])
 def test_executor_query_declines_unsupported_storage(binary, home, tmp_path, case):
@@ -252,11 +313,6 @@ def test_executor_query_declines_unsupported_storage(binary, home, tmp_path, cas
     if case == "legacy":
         with sqlite3.connect(database) as connection:
             connection.execute("ALTER TABLE jobs DROP COLUMN ai_run_metadata")
-    elif case == "hook":
-        (home / "tools/mir_executor/local.py").write_text("raise RuntimeError('must not load')\n")
-    elif case == "config":
-        (home / "config").mkdir()
-        (home / "config/mir-executor.local.json").write_text("{}")
     elif case == "cross-target":
         other = tmp_path / "other"
         other.mkdir()

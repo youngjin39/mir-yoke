@@ -1,5 +1,17 @@
 # Migration Guide
 
+## Unreleased
+
+Native `executor-query` now admits same-home `status`, `result` and `list-jobs`
+even when local executor hooks or configuration exist. These queries do not read
+the local configuration or call execution or authorization hooks. Python still
+imports `local.py` and calls `register_execute_options` while building its parser;
+native queries skip that work. Accepted divergence: a local import or option
+registration failure can fail Python queries while native queries answer.
+Set `MIR_EXECUTOR_QUERY_IMPL=python` or `MIR_NATIVE_HOOKS=0` to force Python.
+Cross-target requests, unknown arguments, unsupported schemas, sidecars and the
+Unicode compatibility gate still return 64 for Python fallback.
+
 ## 0.13.60 native executor queries
 
 Rerun executor sync with `--apply` after the provider lock pins `executor-query`

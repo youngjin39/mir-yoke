@@ -497,7 +497,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "CHANGELOG.md",
-      "sha256": "112d6b10992a396a4b485418d604b102a6825b2e2f1e843a3e339cdea36396b5"
+      "sha256": "d492a6f8ed9629f88af7ed133087a06f5d7bdf2f3251bb6180a58efc9a34f13c"
     },
     {
       "classification": "reference",
@@ -521,7 +521,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "MIGRATION.md",
-      "sha256": "7b526ddc27f0af78df05ccfd51ecc2f84b78e622789926b7453416a4cfd45a09"
+      "sha256": "28b2db9c4f778472be091ad8c52db88cb96db60a8547d8366a4d146a3c5b507d"
     },
     {
       "classification": "reference",
@@ -2279,7 +2279,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "docs/operations/mir-executor-sync.md",
-      "sha256": "b3c820766192f762b9eed619361ba2d6786a88dbcf4a827a73ddee200a0ad536"
+      "sha256": "1c39b9a94403301fa44d6252455dd0ef5d37a8fc78fd3fa9984640f6dc297e78"
     },
     {
       "classification": "reference",
@@ -2825,7 +2825,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/executor_query.rs",
-      "sha256": "d6f5e073036513bed87f7988f2718547c150eab18461cff06ad5d18a3252ac9c"
+      "sha256": "f2688b47d399574c3a786c9d1aa87d4a7fd276721cf62ca789362a1f07ad3e9f"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4997,7 +4997,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_executor_query_native_parity.py",
-      "sha256": "05d9d79bb3e86b51b337c5e942f6f90b65fc1311edc88a3f569c8578df03e975"
+      "sha256": "b933bb6a9771ab6ad48235b8447d30b6f91e3bf45c5567b83162f391776e6f81"
     },
     {
       "classification": "template-maintainer-tool",

@@ -298,8 +298,13 @@ or `list-jobs`, before importing the Python executor. Both module and installed
 CLI routes use that entrypoint.
 
 The native reader opens SQLite read-only and never migrates it. It admits only
-same-home queries without target-local Python options or hooks and with a fully
-understood schema. Unsupported arguments, help, legacy schemas, unsupported
+same-home queries with a fully understood schema, including when
+`tools/mir_executor/local.py` or `config/mir-executor.local.json` exists. These
+queries do not read local configuration or call execution or authorization hooks.
+Python still imports `local.py` and calls `register_execute_options` while building
+its parser. Accepted divergence: if that import or registration fails, Python
+queries fail while native queries can answer without loading local hooks.
+Unsupported arguments, help, legacy schemas, unsupported
 sidecars and cross-target requests return 64 without output; the caller then
 runs Python with the original arguments. Spawn failure, a missing or mismatched
 pin, `MIR_EXECUTOR_QUERY_IMPL=python`, and `MIR_NATIVE_HOOKS=0` also retain Python.

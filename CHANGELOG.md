@@ -8,6 +8,14 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+### Changed
+
+- Native `executor-query` now admits same-home `status`, `result` and `list-jobs`
+  queries even when `tools/mir_executor/local.py` or `config/mir-executor.local.json`
+  exists. Native queries do not import local hooks: an import or
+  `register_execute_options` failure still fails Python queries, while native
+  queries can answer. Other admission checks and Python fallback remain unchanged.
+
 ## [v0.13.60] — 2026-11-01 — Native executor query front end
 
 ### Added
