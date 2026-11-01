@@ -12,13 +12,14 @@ Load on demand only for Rust work: writing or analyzing Rust code, configuring a
 crate or workspace, building a Rust native binary, or porting another language to Rust.
 A generic native-binary request alone does not select Rust.
 
-Do not load for unrelated languages or as always-on context. Do not convert a
-working implementation without a measured hot path or a distribution need. The
-existing implementation stays the reference until parity passes.
+Do not load for unrelated languages or as always-on context. Port a working
+implementation once it is stable (it no longer changes often), or earlier for a
+measured hot path or a distribution need. The existing implementation stays the
+reference until parity passes and is retired once the Rust path is stable.
 
-When the host's policy starts new runtime code in Rust (code that runs on other
-machines: hooks, CLIs, MCP servers, services, distributed tools), write the
-fixtures and tests first; they are the oracle that a reference implementation
+New code that runs as part of a product or tool (hooks, CLIs, MCP servers, services,
+libraries, distributed tools) starts in Rust unless the repository says otherwise;
+write the fixtures and tests first; they are the oracle that a reference implementation
 would otherwise provide. Shipping such code needs per-target builds and recorded
 artifact digests (see structure); plan that before the first release.
 

@@ -8,6 +8,13 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+### Changed
+
+- `mir-code`: `bluebricks` states the language choice (new product and tool code starts in
+  Rust, fixtures first; Python stays for ML/data, analysis, notebooks and one-off scripts or
+  where the repository says otherwise); `rust` ports a component once it is stable and retires
+  the old implementation after the Rust path is stable.
+
 ## [v0.13.58] — 2026-11-01 — Native bootstrap-gate adoption evaluator
 
 ### Added

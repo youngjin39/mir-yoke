@@ -31,6 +31,14 @@ Do not add relationship retrieval as a preflight to every code task. Otherwise u
 are optional; use direct search when the answer location is already known or the question is outside
 the supported declared relationships.
 
+## Language Choice
+
+New code that runs as part of a product or tool (CLIs, hooks, services, servers, libraries,
+distributed tools) starts in Rust, fixtures first; apply `mir-code:rust`. Python or another
+language stays only for ML/data, analysis, notebooks and one-off scripts, or where the repository's
+own policy says otherwise. Port a stable existing component to Rust with parity, then retire the old
+implementation once the Rust path is stable; do not maintain both long term.
+
 ## Workflow
 
 When identity, relation scope, lifecycle, evidence boundaries or an agent handoff affects the task, apply `mir-core:ontology` using the project-owned mapping.

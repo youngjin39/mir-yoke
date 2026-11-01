@@ -497,7 +497,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "CHANGELOG.md",
-      "sha256": "6bf65b9080461ce15c61f0da25e6924308287f6a27eeb1b83ed3638c779cd299"
+      "sha256": "94208c1f6122dba9aaf79fef775c89e5f62187a1cd937c80e607b2847ed83eda"
     },
     {
       "classification": "reference",
@@ -2903,7 +2903,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "plugins/mir-code/skills/bluebricks/SKILL.md",
-      "sha256": "747aed35a9f7298e8ab836d2e9845a4bce2392a4fce20e9760e3f1e745f6891c"
+      "sha256": "cd5677b98026baafcb5affad8058714b70a010c4df5a96113b29040d129c1619"
     },
     {
       "classification": "optional-consumer-tool",
@@ -2945,7 +2945,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "plugins/mir-code/skills/rust/SKILL.md",
-      "sha256": "3a344e4c07922c4191a3365abee0ae7a2fbe52c53b8afcd029ebe8548197c171"
+      "sha256": "1c52009bf24b2b8553ab60898ed1ac1b47de64b2d1b19c85000652b9c72e528a"
     },
     {
       "classification": "optional-consumer-tool",
