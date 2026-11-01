@@ -83,3 +83,14 @@ Codex 01a19631 attested (five mir-mcp calls ok), finalized, ready at 529b330. Ow
 five x86_64 Windows binaries placed (executor-query.exe included, SHA-256 equal to the
 lock), Claude a9c23877 and Codex 01a19635 attested (five mir-mcp calls ok), finalized,
 ready at 8b9573c; consumer commit pushed by the maintainer host.
+
+Release record v0.13.61 (Main, 2026-11-01): E1c native admission of same-home queries when a
+repository-local executor override exists (c1e960e) and E1d JSON surrogate escapes accepted
+like Python in validation copies (71ab8b1; list-jobs no longer declines to Python on lone
+surrogates); version fb63a7c, native prerelease native-71ab8b1c48f1 (30 assets), bind
+5a6f53e (supersedes c43d977). CI validate on 5a6f53e all jobs green, including Windows,
+before the tag. Fresh-clone readiness at 5a6f53e exit 0 (5085 passed, 219 skipped).
+Maintainer host: provider update from the 0.13.60 record lock, five aarch64 binaries placed
+(SHA-256 equal to the lock), Codex hook trust 4/4, Claude 92678a46 and Codex 01a197cf
+attested (five mir-mcp calls ok), finalized, ready at 5a6f53e. Owner PC:
+pending.
