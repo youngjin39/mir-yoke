@@ -34,3 +34,15 @@ state/enforce and file-count cell; median gains 1.39x to 4.62x including pin/has
 Main acceptance runs the complete touched selection, then final payload
 regeneration and the whole suite. Exact final counts and any open cells are
 recorded in the owner-requested external B1b report; no duplicate handoff exists.
+
+Release record (Main, 2026-11-01): source 529828a (caller simplified by the Main:
+the receipt hash fixes the version, so no version probe or stderr framing), native
+prerelease native-529828a95da6 (20 assets, target 529828a), bind 999823f, hermetic
+adoption-test fix 2487c19 after CI public Mir CLI regression failed on the bound
+lock (the report test saw the installed evaluator). Fresh-clone readiness exit 0
+(4763 passed, 195 skipped); CI validate on 2487c19 all nine jobs green, including
+Windows, before the tag `v0.13.58`. Maintainer host: provider update applied from
+the 0.13.57 record lock, three aarch64 binaries placed (SHA-256 equal to the lock),
+Codex hook trust 4/4, Claude 3dcbab47 and Codex 01a194dd attested (five mir-mcp
+calls ok, four lifecycle hooks), finalized, ready at 2487c19. Owner PC: recorded by
+Harness (unreachable since 2026-11-01 about 03:00 KST).
