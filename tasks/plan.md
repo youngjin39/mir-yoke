@@ -80,4 +80,6 @@ Windows), before the tag. Fresh-clone readiness at 529b330 exit 0 (5006 passed, 
 skipped). Maintainer host: provider update from the 0.13.59 record lock, five aarch64
 binaries placed (SHA-256 equal to the lock), Codex hook trust 4/4, Claude e7190a7a and
 Codex 01a19631 attested (five mir-mcp calls ok), finalized, ready at 529b330. Owner PC:
-pending.
+five x86_64 Windows binaries placed (executor-query.exe included, SHA-256 equal to the
+lock), Claude a9c23877 and Codex 01a19635 attested (five mir-mcp calls ok), finalized,
+ready at 8b9573c; consumer commit pushed by the maintainer host.
