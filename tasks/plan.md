@@ -54,3 +54,15 @@ product and tool code in Rust with fixtures first; Python stays for ML/data, ana
 notebooks and one-off scripts or by repository policy; rust ports a stable component and
 retires the old implementation once the Rust path is stable. Full suite after the bind:
 4322 passed, 636 skipped.
+
+Release record v0.13.59 (Main, 2026-11-01): B2 hook-scoped `.claude/settings.json`
+evidence (709dc53; helper, adoption CLI and evaluator accept the canonical hook digest or
+a legacy whole-file digest) and S7 native `runtime-verify` behind `cli.runtime_verifier`
+(9c3a9fa; wrapper median 369 -> 304 ms on a realistic closure under load); version
+4f5d7cc, native prerelease native-4f5d7cce8e1f (25 assets), bind d9aaa73, Windows test fix
+4760c2f (the empty-USERPROFILE reference verdict differs on Windows). Fresh-clone readiness
+at d9aaa73 exit 0 (4889 passed, 219 skipped); CI validate on 4760c2f all nine jobs green,
+including Windows, before the tag. Maintainer host: provider update from the 0.13.58 record
+lock, four aarch64 binaries placed (SHA-256 equal to the lock), Codex hook trust 4/4,
+Claude 7375f3b1 and Codex 01a195b2 attested (five mir-mcp calls ok), finalized, ready at
+4760c2f. Owner PC: pending.
