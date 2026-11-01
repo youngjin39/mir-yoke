@@ -44,5 +44,13 @@ lock (the report test saw the installed evaluator). Fresh-clone readiness exit 0
 Windows, before the tag `v0.13.58`. Maintainer host: provider update applied from
 the 0.13.57 record lock, three aarch64 binaries placed (SHA-256 equal to the lock),
 Codex hook trust 4/4, Claude 3dcbab47 and Codex 01a194dd attested (five mir-mcp
-calls ok, four lifecycle hooks), finalized, ready at 2487c19. Owner PC: recorded by
-Harness (unreachable since 2026-11-01 about 03:00 KST).
+calls ok, four lifecycle hooks), finalized, ready at 2487c19. Owner PC (2026-11-01): 0.13.58 applied over the
+unattested 0.13.56 (three x86_64 Windows binaries placed), Claude 121ec18b and Codex
+01a19565 attested (five mir-mcp calls ok; the Codex PowerShell lifecycle hooks ran),
+finalized, ready at f204a54; consumer commit pushed by the maintainer host.
+
+Language guidance (2026-11-01, d990257, bind 11063ff): `mir-code` bluebricks starts new
+product and tool code in Rust with fixtures first; Python stays for ML/data, analysis,
+notebooks and one-off scripts or by repository policy; rust ports a stable component and
+retires the old implementation once the Rust path is stable. Full suite after the bind:
+4322 passed, 636 skipped.
