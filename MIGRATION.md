@@ -1,5 +1,18 @@
 # Migration Guide
 
+## Unreleased native executor queries
+
+Rerun executor sync with `--apply` after the provider lock pins `executor-query`
+for the host. Sync places the binary in `.mir/bin/` and records its digest in
+`.mir/bin/executor-query.json`. Keep `.mir/bin/` git-ignored; the tracked
+common manifest is host-independent. Existing deployments without the local pin
+retain Python. Both `python -m tools.mir_executor` and `mir executor` check the
+pin before loading the Python executor. Set `MIR_EXECUTOR_QUERY_IMPL=python` or `MIR_NATIVE_HOOKS=0` to
+force Python. Only same-repository queries with fully understood database schemas
+and no local Python options or hooks are admitted. Native Windows builds are
+verified in the dedicated Windows parity lane; this adds no Windows bootstrap
+support. Artifact publication and provider lock updates remain separate steps.
+
 ## 0.13.59 native runtime verification
 
 Rerun `setup.sh` after the provider lock includes a `runtime-verify` artifact for

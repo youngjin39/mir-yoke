@@ -14,7 +14,9 @@ TARGETS = (
     'aarch64-apple-darwin', 'x86_64-apple-darwin',
     'x86_64-unknown-linux-gnu', 'aarch64-unknown-linux-gnu', 'x86_64-pc-windows-msvc',
 )
-NAMES = ('handoff-packet', 'runtime-continuity', 'bootstrap-gate', 'runtime-verify')
+NAMES = (
+    'handoff-packet', 'runtime-continuity', 'bootstrap-gate', 'runtime-verify', 'executor-query',
+)
 SOURCE = 'a' * 40
 TAG = 'native-' + SOURCE[:12]
 BASE = f'https://github.com/example/provider/releases/download/{TAG}'

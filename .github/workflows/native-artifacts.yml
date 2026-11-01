@@ -58,11 +58,19 @@ jobs:
           set -e
           test "$code" = 2
           grep -q '"permissionDecision": "deny"' deny.out
+          query="target/${{ matrix.target }}/release/executor-query${{ matrix.exe }}"
+          set +e
+          "$query" --help > query.out 2> query.err
+          code=$?
+          set -e
+          test "$code" = 64
+          test ! -s query.out
+          test ! -s query.err
       - name: digest
         run: |
           mkdir -p ../../dist-native
           cd ../../dist-native
-          for name in handoff-packet runtime-continuity bootstrap-gate runtime-verify; do
+          for name in handoff-packet runtime-continuity bootstrap-gate runtime-verify executor-query; do
             f="$name-${{ matrix.target }}${{ matrix.exe }}"
             cp "../native/handoff-packet/target/${{ matrix.target }}/release/$name${{ matrix.exe }}" "$f"
             if command -v sha256sum >/dev/null; then sha256sum "$f"; else shasum -a 256 "$f"; fi
@@ -97,7 +105,7 @@ jobs:
           set -euo pipefail
           tag="native-${SOURCE_SHA:0:12}"
           cd dist-native
-          test "$(find . -maxdepth 1 -type f | wc -l)" -eq 25
+          test "$(find . -maxdepth 1 -type f | wc -l)" -eq 30
           for digest in SHA256-*.txt; do sha256sum --check "$digest"; done
           if gh release view "$tag" >/dev/null 2>&1; then
             gh release edit "$tag" --prerelease --title "$tag"

@@ -456,6 +456,8 @@ def test_should_target_supported_unix_platforms_when_portable_bootstrap_ci_runs(
     assert "tests/test_setup_wrappers.py -k powershell_launcher" in windows_job
     assert "tests/test_runtime_verify_native_parity.py" in head
     assert "tests/test_runtime_verify_native_parity.py" in windows_job
+    assert "tests/test_executor_query_native_parity.py" in head
+    assert "tests/test_executor_query_native_parity.py" in windows_job
     assert "Bootstrap phase 1 on Windows PowerShell" not in workflow
     assert "Finalize ready bootstrap on Windows PowerShell" not in workflow
 

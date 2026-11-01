@@ -36,7 +36,7 @@ jobs:
         working-directory: native/handoff-packet
       - run: >-
           uv run --python 3.14 pytest -q -p no:cacheprovider
-          tests/test_runtime_verify_native_parity.py tests/test_handoff_packet_native_parity.py
+          tests/test_executor_query_native_parity.py tests/test_runtime_verify_native_parity.py tests/test_handoff_packet_native_parity.py
           tests/test_lifecycle_native_commands.py
           tests/test_line_endings.py
 
@@ -96,6 +96,8 @@ jobs:
           tests/test_capability_security.py
           tests/test_run_python_cli.py
           tests/test_runtime_manifest.py
+          tests/test_executor_native_caller.py
+          tests/test_executor_sync.py
           tools/mir_executor/tests
 
   portable_plugins:
@@ -184,7 +186,7 @@ jobs:
         working-directory: native/handoff-packet
         env:
           CARGO_TARGET_DIR: ${{ github.workspace }}/native/handoff-packet/target
-      - run: uv run --python 3.14 pytest -q -p no:cacheprovider tests/test_runtime_verify_native_parity.py tests/test_handoff_packet_native_parity.py tests/test_lifecycle_native_commands.py
+      - run: uv run --python 3.14 pytest -q -p no:cacheprovider tests/test_executor_query_native_parity.py tests/test_runtime_verify_native_parity.py tests/test_handoff_packet_native_parity.py tests/test_lifecycle_native_commands.py
         env:
           PYTHONUTF8: '1'
           CARGO_TARGET_DIR: ${{ github.workspace }}/native/handoff-packet/target

@@ -88,8 +88,11 @@ def test_should_apply_only_common_files_and_preserve_local_data(source, tmp_path
     api.sync(target, source_root=source, apply=True)
     assert (target / 'tools/mir_executor/policy.py').read_text() == 'VALUE = 2\n'
     assert [p.read_bytes() for p in preserved] == before
-    manifest = json.loads((target / 'tools/mir_executor/COMMON_MANIFEST.json').read_text())
-    assert manifest['source_commit'] == _git(source, 'rev-parse', 'HEAD').stdout.decode().strip()
+    expected = dict(api._read_manifest(source / api.SOURCE_MANIFEST),
+                    source_commit=_git(source, 'rev-parse', 'HEAD').stdout.decode().strip())
+    assert (target / api.CONSUMER_MANIFEST).read_bytes() == (
+        json.dumps(expected, indent=2, sort_keys=True) + '\n'
+    ).encode()
     assert api.check(target, source_root=source) == []
 
 
@@ -127,6 +130,109 @@ def test_should_refuse_symlink_targets(source, tmp_path):
     with pytest.raises(ValueError, match='symlink'):
         api.sync(target, source_root=source, apply=True)
     assert outside.read_text() == 'DO NOT WRITE\n'
+
+
+def _native_source(source, monkeypatch, *, target='aarch64-apple-darwin'):
+    from mir.core.capabilities import native
+
+    monkeypatch.setattr(native, 'host_target', lambda: target)
+    artifact = source / 'executor-query'
+    artifact.write_bytes(b'#!/bin/sh\necho query\n')
+    lock = {
+        'plugins': {'mir-core': {}},
+        'native_artifacts': {'executor-query': {
+            'plugin': 'mir-core', 'install_path': 'bin/executor-query',
+            'targets': {target: {
+                'url': str(artifact), 'size': artifact.stat().st_size,
+                'sha256': hashlib.sha256(artifact.read_bytes()).hexdigest(),
+            }},
+        }},
+    }
+    (source / '.mir').mkdir()
+    (source / '.mir/capability-lock.json').write_text(json.dumps(lock))
+    return lock
+
+
+@pytest.mark.parametrize('host', ['aarch64-apple-darwin', 'x86_64-pc-windows-msvc'])
+def test_should_install_provider_pinned_query_with_common_sync(source, tmp_path, monkeypatch, host):
+    lock = _native_source(source, monkeypatch, target=host)
+    api = _api()
+    api.generate_manifest(source)
+    target = _target(tmp_path)
+    api.sync(target, source_root=source, apply=True)
+    manifest = json.loads((target / 'tools/mir_executor/COMMON_MANIFEST.json').read_text())
+    relative = '.mir/bin/executor-query' + ('.exe' if 'windows' in host else '')
+    pin = lock['native_artifacts']['executor-query']['targets'][host]
+    assert 'native_query' not in manifest
+    expected = dict(api._read_manifest(source / api.SOURCE_MANIFEST),
+                    source_commit=_git(source, 'rev-parse', 'HEAD').stdout.decode().strip())
+    assert (target / api.CONSUMER_MANIFEST).read_bytes() == (
+        json.dumps(expected, indent=2, sort_keys=True) + '\n'
+    ).encode()
+    assert json.loads((target / '.mir/bin/executor-query.json').read_text()) == {
+        'path': relative, 'sha256': pin['sha256'],
+    }
+    assert api.check(target, source_root=None) == []
+    executable = target / relative
+    assert executable.read_bytes() == (source / 'executor-query').read_bytes()
+    assert executable.stat().st_mode & 0o111
+
+
+@pytest.mark.parametrize('guard', ['missing_host', 'hash', 'disabled', 'symlink'])
+def test_should_omit_native_pin_after_failed_or_unavailable_delivery(
+    source, tmp_path, monkeypatch, guard,
+):
+    lock = _native_source(source, monkeypatch)
+    pin = lock['native_artifacts']['executor-query']['targets']['aarch64-apple-darwin']
+    if guard == 'missing_host':
+        lock['native_artifacts']['executor-query']['targets'] = {}
+    elif guard == 'hash':
+        pin['sha256'] = '0' * 64
+    elif guard == 'disabled':
+        monkeypatch.setenv('MIR_CAPABILITY_NATIVE_ARTIFACTS', '0')
+    (source / '.mir/capability-lock.json').write_text(json.dumps(lock))
+    api = _api()
+    api.generate_manifest(source)
+    target = _target(tmp_path)
+    old = target / 'tools/mir_executor/COMMON_MANIFEST.json'
+    old.write_text(json.dumps({'native_query': {
+        'path': '.mir/bin/executor-query', 'sha256': 'f' * 64,
+    }}))
+    _git(target, 'add', '.')
+    _git(target, '-c', 'user.name=Test', '-c', 'user.email=test@example.com',
+         'commit', '-qm', 'old pin')
+    local_pin = target / '.mir/bin/executor-query.json'
+    if guard != 'symlink':
+        local_pin.parent.mkdir(parents=True)
+        local_pin.write_text('{}')
+    if guard == 'symlink':
+        outside = tmp_path / 'outside'
+        outside.mkdir()
+        (target / '.mir').symlink_to(outside, target_is_directory=True)
+    api.sync(target, source_root=source, apply=True)
+    manifest = json.loads(old.read_text())
+    assert 'native_query' not in manifest
+    assert not local_pin.exists()
+    assert not (target / '.mir/bin/executor-query').exists()
+
+
+def test_should_never_install_native_artifact_during_dry_run(source, tmp_path, monkeypatch):
+    _native_source(source, monkeypatch)
+    api = _api()
+    api.generate_manifest(source)
+    target = _target(tmp_path)
+    api.sync(target, source_root=source)
+    assert not (target / '.mir').exists()
+
+
+def test_should_detect_tampered_installed_query(source, tmp_path, monkeypatch):
+    _native_source(source, monkeypatch)
+    api = _api()
+    api.generate_manifest(source)
+    target = _target(tmp_path)
+    api.sync(target, source_root=source, apply=True)
+    (target / '.mir/bin/executor-query').write_bytes(b'tampered')
+    assert any('native query drift' in error for error in api.check(target, source_root=None))
 
 
 def test_should_reject_unsafe_manifest_paths(source, tmp_path):
@@ -193,3 +299,74 @@ def test_should_leave_git_index_unchanged_during_dry_run(source, tmp_path):
     os.utime(common, ns=(stat.st_atime_ns, stat.st_mtime_ns + 20_000_000_000))
     api.sync(target, source_root=source)
     assert index.read_bytes() == before
+
+
+def test_should_remove_stale_local_pin_when_host_artifact_disappears(source, tmp_path, monkeypatch):
+    lock = _native_source(source, monkeypatch)
+    api = _api()
+    api.generate_manifest(source)
+    target = _target(tmp_path)
+    api.sync(target, source_root=source, apply=True)
+    manifest = (target / api.CONSUMER_MANIFEST).read_bytes()
+    pin = target / '.mir/bin/executor-query.json'
+    assert pin.is_file()
+    _git(target, 'add', 'tools')
+    _git(target, '-c', 'user.name=Test', '-c', 'user.email=test@example.com',
+         'commit', '-qm', 'common sync')
+    lock['native_artifacts']['executor-query']['targets'] = {}
+    (source / '.mir/capability-lock.json').write_text(json.dumps(lock))
+    before = pin.read_bytes()
+    api.sync(target, source_root=source)
+    assert pin.read_bytes() == before
+    api.sync(target, source_root=source, apply=True)
+    assert not pin.exists()
+    assert (target / '.mir/bin/executor-query').is_file()
+    assert (target / api.CONSUMER_MANIFEST).read_bytes() == manifest
+    assert api.check(target, source_root=None) == []
+
+
+@pytest.mark.parametrize('state', ['absent', 'invalid', 'symlink', 'legacy_manifest'])
+def test_should_check_only_present_local_pin(source, tmp_path, state):
+    api = _api()
+    api.generate_manifest(source)
+    target = _target(tmp_path)
+    api.sync(target, source_root=source, apply=True)
+    pin = target / '.mir/bin/executor-query.json'
+    if state in {'invalid', 'symlink'}:
+        pin.parent.mkdir(parents=True, exist_ok=True)
+        if state == 'invalid':
+            pin.write_text('{}')
+        else:
+            pin.symlink_to(pin.parent / 'missing.json')
+    if state == 'legacy_manifest':
+        manifest = target / api.CONSUMER_MANIFEST
+        data = json.loads(manifest.read_text())
+        data['native_query'] = {'path': '.mir/bin/executor-query', 'sha256': 'f' * 64}
+        manifest.write_text(json.dumps(data))
+    errors = api.check(target, source_root=None)
+    assert errors == ([] if state in {'absent', 'legacy_manifest'}
+                      else ['native query drift: executor-query'])
+
+
+def test_should_preserve_pin_if_atomic_replace_fails(tmp_path, monkeypatch):
+    import pathlib
+
+    api = _api()
+    parent = tmp_path / '.mir/bin'
+    parent.mkdir(parents=True)
+    pin = parent / 'executor-query.json'
+    pin.write_bytes(b'old pin')
+
+    def fail_replace(self, target):
+        assert target == pin
+        assert pin.read_bytes() == b'old pin'
+        assert json.loads(self.read_text()) == {
+            'path': '.mir/bin/executor-query', 'sha256': 'a' * 64,
+        }
+        raise OSError('replace failed')
+
+    monkeypatch.setattr(pathlib.Path, 'replace', fail_replace)
+    with pytest.raises(OSError, match='replace failed'):
+        api._write_query_pin(tmp_path, {'path': '.mir/bin/executor-query', 'sha256': 'a' * 64})
+    assert list(parent.iterdir()) == [pin]
+    assert pin.read_bytes() == b'old pin'

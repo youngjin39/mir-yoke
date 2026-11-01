@@ -283,3 +283,27 @@ slash-free pattern such as `.env.*` names a file at any depth, like `.gitignore`
 broader `[paths].protected_paths` stays advisory, because it also lists ordinary working
 directories a delegated task may legitimately change. No new
 hook or configuration key: the profile already declares the data.
+
+## Native query front end
+
+Executor sync may place `executor-query` in the target `.mir/bin/` from the
+provider lock, with its path and SHA-256 recorded atomically in the host-local
+`.mir/bin/executor-query.json` after the verified binary install. Keep `.mir/bin/`
+git-ignored. The tracked `tools/mir_executor/COMMON_MANIFEST.json` carries no host
+pin. No host artifact removes any existing local pin so queries use Python; other
+files are preserved. Dry-run writes nothing. `check` verifies a local pin only
+when its file exists; absence is not drift.
+The lightweight entrypoint verifies those bytes before trying `status`, `result`
+or `list-jobs`, before importing the Python executor. Both module and installed
+CLI routes use that entrypoint.
+
+The native reader opens SQLite read-only and never migrates it. It admits only
+same-home queries without target-local Python options or hooks and with a fully
+understood schema. Unsupported arguments, help, legacy schemas, unsupported
+sidecars and cross-target requests return 64 without output; the caller then
+runs Python with the original arguments. Spawn failure, a missing or mismatched
+pin, `MIR_EXECUTOR_QUERY_IMPL=python`, and `MIR_NATIVE_HOOKS=0` also retain Python.
+Windows parity runs in the dedicated native Windows CI lane without enabling
+automated Windows bootstrap.
+Text containing characters newly assigned after Unicode 15.0 also uses Python,
+preserving representation across supported Python Unicode database versions.

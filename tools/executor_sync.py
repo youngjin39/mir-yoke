@@ -9,6 +9,7 @@ import pathlib
 import re
 import subprocess
 import sys
+import tempfile
 
 SOURCE_ROOT = pathlib.Path(__file__).resolve().parents[1]
 SOURCE_MANIFEST = 'config/mir-executor-common.json'
@@ -87,12 +88,39 @@ def _git(root: pathlib.Path, *args: str) -> str:
     return result.stdout.strip()
 
 
+def _write_query_pin(target: pathlib.Path, pin: dict | None) -> None:
+    from tools.mir_executor.entrypoint import QUERY_PIN
+
+    # Never follow a linked directory, even when retiring an old pin.
+    try:
+        parent = _no_symlink(target, str(pathlib.PurePosixPath(QUERY_PIN).parent))
+    except ValueError:
+        return
+    path = parent / pathlib.PurePosixPath(QUERY_PIN).name
+    if pin is None:
+        path.unlink(missing_ok=True)
+        return
+    parent.mkdir(parents=True, exist_ok=True)
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', dir=parent,
+                                         prefix='.executor-query-', delete=False) as stream:
+            temporary = pathlib.Path(stream.name)
+            stream.write(json.dumps(pin, indent=2, sort_keys=True) + '\n')
+        temporary.replace(path)
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
+
+
 def sync(target: pathlib.Path, *, source_root: pathlib.Path = SOURCE_ROOT,
          apply: bool = False) -> str:
     """Report common file changes; copy only when explicitly requested and clean."""
     target, source_root = pathlib.Path(target).resolve(), pathlib.Path(source_root).resolve()
     manifest = _read_manifest(source_root / SOURCE_MANIFEST)
     deployed = dict(manifest, source_commit=_git(source_root, 'rev-parse', 'HEAD'))
+    # Target-specific artifact pins are never inherited from a provider manifest.
+    deployed.pop('native_query', None)
     payloads = {}
     for name, digest in manifest['files'].items():
         source = _no_symlink(source_root, name)
@@ -104,6 +132,11 @@ def sync(target: pathlib.Path, *, source_root: pathlib.Path = SOURCE_ROOT,
     dirty = _git(target, 'status', '--porcelain', '--untracked-files=all', '--', *payloads)
     if dirty:
         raise ValueError(f'Refusing dirty common files in {target}:\n{dirty}')
+    if apply:
+        from mir.cli._adoption_native import install_executor_query
+
+        pin = install_executor_query(target, source_root=source_root)
+        _write_query_pin(target, pin)
     lines = [f'{"APPLY" if apply else "DRY-RUN"} {target}',
              f'Source commit: {deployed["source_commit"]}']
     for name, content in payloads.items():
@@ -144,6 +177,16 @@ def check(target: pathlib.Path, *, source_root: pathlib.Path | None = SOURCE_ROO
                 errors.append(f'target drift: {name}')
         except ValueError as exc:
             errors.append(str(exc))
+    from tools.mir_executor.entrypoint import QUERY_PIN, _pinned_query, _safe_path
+
+    pin_path = target / QUERY_PIN
+    if pin_path.exists() or pin_path.is_symlink():
+        try:
+            pin = json.loads(_safe_path(target, QUERY_PIN).read_bytes())
+            if _pinned_query(target, pin) is None:
+                errors.append('native query drift: executor-query')
+        except (OSError, ValueError, TypeError):
+            errors.append('native query drift: executor-query')
     if source_root is not None and (pathlib.Path(source_root) / SOURCE_MANIFEST).exists():
         source_root = pathlib.Path(source_root).resolve()
         source = _read_manifest(source_root / SOURCE_MANIFEST)

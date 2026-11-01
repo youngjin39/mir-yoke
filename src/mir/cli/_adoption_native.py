@@ -32,6 +32,11 @@ def install_runtime_verifier(root: Path, *, source_root: Path) -> dict[str, str]
     return _install(root, source_root=source_root, name="runtime-verify")
 
 
+def install_executor_query(root: Path, *, source_root: Path) -> dict[str, str] | None:
+    """Pin the optional project-local executor query reader from the provider lock."""
+    return _install(root, source_root=source_root, name="executor-query")
+
+
 def _install(
     root: Path, *, source_root: Path, name: str, local_source: Path | None = None,
 ) -> dict[str, str] | None:

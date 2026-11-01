@@ -10,7 +10,7 @@ _SUBCOMMAND_MODULES = {
     "bootstrap-adoption": "mir.cli.bootstrap_adoption",
     "capability": "mir.cli.capability",
     "context": "mir.cli.context",
-    "executor": "tools.mir_executor.cli",
+    "executor": "tools.mir_executor.entrypoint",
     "loop": "mir.cli.loop",
     "memory": "mir.cli.memory",
     "migrate": "mir.cli.migrate",

@@ -1,0 +1,308 @@
+"""Compare executor query process bytes with the unchanged Python CLI."""
+from __future__ import annotations
+
+import hashlib
+import json
+import os
+import shutil
+import sqlite3
+import subprocess
+import sys
+from pathlib import Path
+
+import pytest
+
+from tools.mir_executor.jobs import JobRecord, JobRegistry
+
+ROOT = Path(__file__).resolve().parents[1]
+CRATE = ROOT / "native/handoff-packet"
+pytestmark = pytest.mark.skipif(shutil.which("cargo") is None, reason="cargo unavailable")
+
+
+@pytest.fixture(scope="module")
+def binary():
+    command = ["cargo", "build", "--release", "--locked", "--bin", "executor-query"]
+    if os.environ.get("MIR_HANDOFF_CARGO_OFFLINE") == "1":
+        command.append("--offline")
+    subprocess.run(command, cwd=CRATE, check=True)
+    target = Path(os.environ.get("CARGO_TARGET_DIR", "target"))
+    if not target.is_absolute():
+        target = CRATE / target
+    suffix = ".exe" if os.name == "nt" else ""
+    return target / "release" / ("executor-query" + suffix)
+
+
+def seed(root):
+    """Use the production schema and data model, without a local extension."""
+    package = root / "tools/mir_executor"
+    package.mkdir(parents=True)
+    for source in (ROOT / "tools/mir_executor").glob("*.py"):
+        if source.name != "local.py":
+            shutil.copy2(source, package / source.name)
+    registry = JobRegistry(root / "tasks/jobs.db")
+    records = [
+        JobRecord(
+            job_id="complete-\ud55c\U0001f600", change_id="change 'quoted' \\ \ud55c",
+            category="unit",
+            family="family\nline", repo_root=str(root), codex_args=["task"],
+            timeout_seconds=600, status="completed", exit_code=0,
+            dispatch_brief_path="brief 'quoted' \\ \ud55c.json", resume_count=2,
+            last_resumed_at="2026-10-31T12:00:00Z", allow_harness_self_modify=True,
+            stdout=("\ud55c\U0001f600'\"\\\n\t\r\x00\u00a0\u2028"
+                    + "\u754c\U0001f600" * 300 + "AFTER_LIMIT"),
+            stderr="blocked_reason=stderr_reason trailing", duration_seconds=1.25,
+            started_at="2026-11-01T00:00:00Z", completed_at="2026-11-01T00:01:00Z",
+        ),
+        JobRecord(
+            job_id="running", change_id="running-change", category="edge", family=None,
+            repo_root=str(root), codex_args=[], timeout_seconds=600, status="running",
+            started_at="2026-11-01T02:00:00Z", cancel_requested=True,
+        ),
+        JobRecord(
+            job_id="failed", change_id="failed-change", category="unit", family="",
+            repo_root=str(root), codex_args=[], timeout_seconds=600, status="failed",
+            exit_code=7, stdout="blocked_reason=stdout_reason\u2003details",
+            stderr="blocked_reason=ignored", duration_seconds=0.0,
+            started_at="2026-11-01T01:00:00Z",
+        ),
+        JobRecord(
+            job_id="cancelled", change_id="", category="", family=None, repo_root=str(root),
+            codex_args=[], timeout_seconds=600, status="cancelled", stdout="", stderr="",
+            started_at="2026-10-31T23:00:00Z",
+        ),
+    ]
+    for record in records:
+        registry.insert(record)
+    registry.close()
+    return root
+
+
+@pytest.fixture
+def home(tmp_path):
+    return seed(tmp_path / "executor home \ud55c with spaces")
+
+
+def invoke(binary, home, argv, *, python=False, cwd=None):
+    command = ([sys.executable, "-m", "tools.mir_executor"] if python else
+               [str(binary), "--home-root", str(home)])
+    environment = dict(os.environ, PYTHONUTF8="1", PYTHONPATH=str(home),
+                       MIR_EXECUTOR_QUERY_IMPL="python", PYTHONDONTWRITEBYTECODE="1")
+    result = subprocess.run(command + argv, cwd=cwd or home, env=environment,
+                            capture_output=True, timeout=15, check=False)
+    return result.stdout, result.stderr, result.returncode
+
+
+def install_pin(binary, home):
+    destination = home / ".mir/bin" / binary.name
+    destination.parent.mkdir(parents=True)
+    shutil.copy2(binary, destination)
+    destination.chmod(0o755)
+    (home / ".mir/bin/executor-query.json").write_text(json.dumps({
+        "path": destination.relative_to(home).as_posix(),
+        "sha256": hashlib.sha256(destination.read_bytes()).hexdigest(),
+    }))
+
+
+def pinned_cli(home, route, argv):
+    prefix = ["-m", "tools.mir_executor"] if route == "module" else ["-m", "mir.cli", "executor"]
+    environment = dict(os.environ, PYTHONUTF8="1",
+                       PYTHONPATH=os.pathsep.join((str(home), str(ROOT / "src"))),
+                       MIR_EXECUTOR_QUERY_IMPL="native", MIR_NATIVE_HOOKS="1",
+                       PYTHONDONTWRITEBYTECODE="1")
+    result = subprocess.run([sys.executable, *prefix, *argv], cwd=home, env=environment,
+                            capture_output=True, timeout=15, check=False)
+    return result.stdout, result.stderr, result.returncode
+
+
+QUERY_CASES = [
+    [command, "--job-id", job_id]
+    for command in ("status", "result")
+    for job_id in ("complete-\ud55c\U0001f600", "running", "failed", "cancelled",
+                   "missing-'\\\ud55c")
+] + [["list-jobs"], ["list-jobs", "--status", "running"],
+     ["list-jobs", "--status=failed"], ["list-jobs", "--status", "completed"],
+     ["list-jobs", "--status", "cancelled"]]
+
+
+@pytest.mark.parametrize("argv", QUERY_CASES)
+def test_executor_query_bytes(binary, home, argv):
+    reference = invoke(binary, home, argv, python=True)
+    assert reference[2] == (1 if "missing-'\\\ud55c" in argv else 0), reference
+    before = (home / "tasks/jobs.db").read_bytes()
+    assert invoke(binary, home, argv) == reference
+    assert (home / "tasks/jobs.db").read_bytes() == before
+    if argv == ["list-jobs"]:
+        assert [line.split(b" status=")[0] for line in reference[0].splitlines()] == [
+            b"[JOB] job_id=running", b"[JOB] job_id=failed",
+            "[JOB] job_id=complete-\ud55c\U0001f600".encode(), b"[JOB] job_id=cancelled",
+        ]
+    if argv == ["result", "--job-id", "complete-\ud55c\U0001f600"]:
+        assert b"AFTER_LIMIT" not in reference[0]
+
+
+@pytest.mark.parametrize("command", ["status", "result", "list-jobs"])
+def test_executor_query_explicit_paths(binary, home, command):
+    argv = ["--jobs-db=tasks/jobs.db", command, "--repo-root=" + str(home)]
+    if command != "list-jobs":
+        argv.append("--job-id=complete-\ud55c\U0001f600")
+    assert invoke(binary, home, argv) == invoke(binary, home, argv, python=True)
+
+
+def test_executor_query_empty_database(binary, home):
+    with sqlite3.connect(home / "tasks/jobs.db") as connection:
+        connection.execute("DELETE FROM jobs")
+    for argv in (["list-jobs"], ["list-jobs", "--status", "running"],
+                 ["status", "--job-id", "absent"]):
+        assert invoke(binary, home, argv) == invoke(binary, home, argv, python=True)
+
+
+@pytest.mark.parametrize("duration", [0.0000001, 0.00001, 1e16, 1e20, 1e100, -1.25])
+def test_executor_query_python_float_format(binary, home, duration):
+    with sqlite3.connect(home / "tasks/jobs.db") as connection:
+        connection.execute("UPDATE jobs SET duration_seconds=? WHERE job_id='failed'", (duration,))
+    argv = ["result", "--job-id", "failed"]
+    assert invoke(binary, home, argv) == invoke(binary, home, argv, python=True)
+
+
+@pytest.mark.parametrize("payload", [
+    "single ' quote", 'double " quote', "both '\" quotes",
+    "\x01\x07\x08\x0b\x0c\x1f\x7f\x85\xad\u200b\u2028\u2029\ufeff",
+    "\u0301\u0378\ue000\U0001f600\U000e0001\U000f0000",
+])
+def test_executor_query_python_repr(binary, home, payload):
+    with sqlite3.connect(home / "tasks/jobs.db") as connection:
+        connection.execute("UPDATE jobs SET change_id=?, stdout=?, stderr=? WHERE job_id='failed'",
+                           (payload, payload, payload))
+    for command in ("status", "result", "list-jobs"):
+        argv = [command] if command == "list-jobs" else [command, "--job-id", "failed"]
+        assert invoke(binary, home, argv) == invoke(binary, home, argv, python=True)
+
+
+def test_executor_query_equal_timestamp_order(binary, home):
+    with sqlite3.connect(home / "tasks/jobs.db") as connection:
+        connection.execute("UPDATE jobs SET started_at='2026-11-01T00:00:00Z'")
+    assert invoke(binary, home, ["list-jobs"]) == invoke(binary, home, ["list-jobs"], python=True)
+
+
+@pytest.mark.parametrize("route", ["module", "mir-cli"])
+@pytest.mark.parametrize("argv", [
+    ["status", "--job-id", "failed"], ["result", "--job-id", "complete-\ud55c\U0001f600"],
+    ["list-jobs"], ["status", "--job-id", "missing"],
+])
+def test_executor_query_real_pin_avoids_python_executor_import(binary, home, route, argv):
+    reference = invoke(binary, home, argv, python=True)
+    install_pin(binary, home)
+    (home / "tools/mir_executor/cli.py").write_text("raise AssertionError('Python CLI imported')\n")
+    before = (home / "tasks/jobs.db").read_bytes()
+    assert pinned_cli(home, route, argv) == reference
+    assert (home / "tasks/jobs.db").read_bytes() == before
+
+
+@pytest.mark.parametrize("route", ["module", "mir-cli"])
+def test_executor_query_real_pin_unicode_decline_falls_back(binary, home, route):
+    with sqlite3.connect(home / "tasks/jobs.db") as connection:
+        connection.execute("UPDATE jobs SET stdout=? WHERE job_id='failed'", ("\U0001fae9",))
+    argv = ["result", "--job-id", "failed"]
+    reference = invoke(binary, home, argv, python=True)
+    install_pin(binary, home)
+    assert invoke(binary, home, argv) == (b"", b"", 64)
+    assert pinned_cli(home, route, argv) == reference
+
+
+@pytest.mark.parametrize("suffix", ["-journal", "-shm", "-wal"])
+def test_executor_query_declines_database_sidecars(binary, home, suffix):
+    database = home / "tasks/jobs.db"
+    sidecar = Path(str(database) + suffix)
+    sidecar.write_bytes(b"active database sidecar")
+    before = database.read_bytes()
+    assert invoke(binary, home, ["list-jobs"]) == (b"", b"", 64)
+    assert database.read_bytes() == before
+    assert sidecar.read_bytes() == b"active database sidecar"
+
+
+def test_executor_query_declines_non_utf8_streams(binary, home, monkeypatch):
+    monkeypatch.setenv("PYTHONIOENCODING", "ascii")
+    assert invoke(binary, home, ["list-jobs"]) == (b"", b"", 64)
+
+
+def test_executor_query_declines_parent_database_components(binary, home):
+    assert invoke(binary, home, ["--jobs-db", "tasks/../tasks/jobs.db", "list-jobs"]) == (
+        b"", b"", 64,
+    )
+
+
+def test_executor_query_declines_absent_database_through_dangling_parent(binary, home):
+    database = home / "tasks/jobs.db"
+    database.unlink()
+    database.parent.rmdir()
+    try:
+        database.parent.symlink_to(home / "absent", target_is_directory=True)
+    except OSError:
+        pytest.skip("symlink unavailable")
+    assert invoke(binary, home, ["list-jobs"]) == (b"", b"", 64)
+    assert not (home / "absent").exists()
+
+
+@pytest.mark.parametrize("case", ["legacy", "hook", "config", "cross-target",
+                                      "symlink", "malformed-json", "invalid-type",
+                                      "unicode-version"])
+def test_executor_query_declines_unsupported_storage(binary, home, tmp_path, case):
+    database = home / "tasks/jobs.db"
+    argv = ["list-jobs"]
+    if case == "legacy":
+        with sqlite3.connect(database) as connection:
+            connection.execute("ALTER TABLE jobs DROP COLUMN ai_run_metadata")
+    elif case == "hook":
+        (home / "tools/mir_executor/local.py").write_text("raise RuntimeError('must not load')\n")
+    elif case == "config":
+        (home / "config").mkdir()
+        (home / "config/mir-executor.local.json").write_text("{}")
+    elif case == "cross-target":
+        other = tmp_path / "other"
+        other.mkdir()
+        argv.extend(["--repo-root", str(other)])
+    elif case == "symlink":
+        saved = database.with_suffix(".saved")
+        database.rename(saved)
+        try:
+            database.symlink_to(saved)
+        except OSError:
+            pytest.skip("symlink unavailable")
+    elif case == "malformed-json":
+        with sqlite3.connect(database) as connection:
+            connection.execute("UPDATE jobs SET codex_args = 'not-json' WHERE job_id='running'")
+    elif case == "invalid-type":
+        with sqlite3.connect(database) as connection:
+            connection.execute("UPDATE jobs SET resume_count='invalid' WHERE job_id='running'")
+    elif case == "unicode-version":
+        with sqlite3.connect(database) as connection:
+            connection.execute("UPDATE jobs SET stdout=? WHERE job_id='running'", ("\U0001fae9",))
+    before = database.read_bytes() if database.exists() else None
+    assert invoke(binary, home, argv) == (b"", b"", 64)
+    assert (database.read_bytes() if database.exists() else None) == before
+
+
+@pytest.mark.parametrize("argv", [["list-jobs"], ["list-jobs", "--status", "running"],
+                                     ["status", "--job-id", "absent"],
+                                     ["result", "--job-id", "absent"]])
+def test_executor_query_absent_database_matches_without_creation(binary, home, argv):
+    database = home / "tasks/jobs.db"
+    database.unlink()
+    native = invoke(binary, home, argv)
+    assert not database.exists()
+    assert native == invoke(binary, home, argv, python=True)
+
+
+@pytest.mark.parametrize("argv", [
+    [], ["--help"], ["status", "--help"], ["result", "--help"], ["list-jobs", "--help"],
+    ["unknown"], ["cancel", "--job-id", "running"], ["execute"], ["resume"], ["sweep"],
+    ["status"], ["result"], ["list-jobs", "--unknown"],
+    ["status", "--job-id", "running", "--job-id", "failed"],
+    ["list-jobs", "--status", "not-a-status"],
+    ["status", "--job", "running"],
+    ["list-jobs", "--jobs-db", "tasks/jobs.db"],
+])
+def test_executor_query_declines_arguments(binary, home, argv):
+    before = (home / "tasks/jobs.db").read_bytes()
+    assert invoke(binary, home, argv) == (b"", b"", 64)
+    assert (home / "tasks/jobs.db").read_bytes() == before

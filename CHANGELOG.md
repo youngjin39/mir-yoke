@@ -8,6 +8,16 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+### Added
+
+- Optional `executor-query` accelerates same-repository `status`, `result` and
+  `list-jobs` queries using read-only SQLite. Executor sync installs only a verified
+  host artifact from the provider lock and records the host-local pin in
+  `.mir/bin/executor-query.json`. Keep `.mir/bin/` git-ignored; the tracked common
+  manifest remains host-independent. Unsupported requests, local Python hooks,
+  unknown schemas or failed pin checks retain the Python reference. Publication
+  collects five binaries per target.
+
 ## [v0.13.59] — 2026-11-01 — Native runtime verifier and hook-scoped settings evidence
 
 ### Added

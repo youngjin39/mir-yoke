@@ -1,5 +1,18 @@
 # Native handoff packet proof of concept
 
+`executor-query --home-root ROOT [executor query arguments]` implements
+`status`, `result` and `list-jobs` for the invoking repository only. The home
+root comes from the calling package. It opens known SQLite schemas read-only,
+never migrates a legacy database, and declines local Python extensions,
+cross-target requests and unsupported inputs silently with exit 64.
+The lightweight Python entrypoint checks the target manifest pin and retains
+the Python CLI on any decline or unavailable artifact.
+
+`tests/test_executor_query_native_parity.py` compares stdout, stderr and exit
+status with isolated copies of the Python CLI. It runs on macOS, Ubuntu and the
+dedicated Windows lane. Bundled SQLite requires the runner's C compiler; a Mac
+host cannot perform the MSVC check without that compiler.
+
 This maintainer-only crate implements PreToolUse, UserPromptSubmit and Stop natively.
 The second binary, `runtime-continuity`, prints SessionStart context with Python
 text-stream line endings. No event forwards to the Python reference. Internal
