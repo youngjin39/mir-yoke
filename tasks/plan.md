@@ -93,4 +93,7 @@ before the tag. Fresh-clone readiness at 5a6f53e exit 0 (5085 passed, 219 skippe
 Maintainer host: provider update from the 0.13.60 record lock, five aarch64 binaries placed
 (SHA-256 equal to the lock), Codex hook trust 4/4, Claude 92678a46 and Codex 01a197cf
 attested (five mir-mcp calls ok), finalized, ready at 5a6f53e. Owner PC:
-pending.
+five x86_64 Windows binaries placed (SHA-256 equal to the lock), Claude a9cfb2e4 and Codex
+01a197d4 attested (five mir-mcp calls ok; a first probe pointed at the removed 0.13.60 clone
+and returned E_IO, so it was not used), finalized, ready at 5a6f53e; consumer commit pushed
+by the maintainer host; consumer memory database unchanged.
