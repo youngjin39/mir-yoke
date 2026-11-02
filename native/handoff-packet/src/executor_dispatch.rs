@@ -271,6 +271,12 @@ pub struct DispatchContext<'a> {
     pub registry: Option<(&'a JobRegistry, &'a str)>,
     pub worktree: Option<DispatchWorktree>,
     pub provider_hook_applied: bool,
+    /// CLI provider wrapper metadata; None preserves the library caller contract.
+    pub provider_options: Option<Value>,
+    /// The CLI already holds the reentrant target writer scope.
+    pub writer_scope_held: bool,
+    /// The CLI projects the final registry row and failure event after finalization.
+    pub caller_projects_result: bool,
     pub event_errors: Vec<String>,
 }
 fn path_value(p: &Path) -> Value {
@@ -304,7 +310,7 @@ fn event(c: &mut DispatchContext<'_>, name: &str, mut payload: Value) {
     payload["job_id"] = c.registry.map_or(Value::Null, |(_, id)| json!(id));
     if let Err(e) = hook(c, "on_job_event", vec![json!(name), payload], json!({})) {
         let message = format!("on_job_event {name}: {}: {e}", e.kind());
-        eprintln!("[mir_executor] {message}");
+        let _ = crate::executor_execute::emit(&format!("[mir_executor] {message}\n"), true);
         c.event_errors.push(message);
     }
 }
@@ -323,12 +329,12 @@ fn state(
     Ok(())
 }
 fn append(p: &Path, v: Value) -> Result<()> {
-    executor_worktree::secure_write(
-        p,
-        &(serde_json::to_string(&v).map_err(Error::Json)? + "\n"),
-        true,
-    )
-    .map_err(Error::Worktree)
+    let text = crate::executor_ledger_json::render(
+        r#"{"kind":null,"dispatch_id":null,"attempt":null,"exit_code":null,"error_sig":null,"lane_unavailable":null,"retryable":null,"reason":null,"consecutive_failures":null,"threshold":null,"attempts":null}"#,
+        &v,
+    ).map_err(Error::Invalid)?;
+    let text = executor_worktree::compact_json(&text).map_err(Error::Worktree)?;
+    executor_worktree::secure_write(p, &text, true).map_err(Error::Worktree)
 }
 fn outcome(
     w: &DispatchWorktree,
@@ -365,7 +371,9 @@ where
     F: FnMut(&DispatchWorktree, usize) -> Result<CodexAttempt>,
 {
     let result = run_scoped(o, c, &mut runner);
-    if let Some((registry, id)) = c.registry {
+    if !c.caller_projects_result
+        && let Some((registry, id)) = c.registry
+    {
         match &result {
             Ok(out) => {
                 let previous = registry
@@ -444,12 +452,16 @@ where
     if o.max_codex_attempts < 1 {
         return Err(Error::Invalid("max_codex_attempts must be positive".into()));
     }
-    let scope = hook(
-        c,
-        "writer_scope",
-        vec![path_value(&o.main_repo_root)],
-        json!({}),
-    )?;
+    let scope = if c.writer_scope_held {
+        Value::Null
+    } else {
+        hook(
+            c,
+            "writer_scope",
+            vec![path_value(&o.main_repo_root)],
+            json!({}),
+        )?
+    };
     let handle = scope["handle"].as_str().map(str::to_owned);
     if let Some(h) = &handle {
         hook(
@@ -531,7 +543,7 @@ where
                 "after_provider_call",
                 vec![
                     json!({"$type":"codex_attempt","value":r.to_value()}),
-                    json!({"prompt_sha256":crate::digest::sha256(o.brief_text.as_bytes()),"model":r.model_id,"reasoning_effort":null,"tool_version":r.tool_version,"attempt":attempt,"elapsed_seconds":started.elapsed().as_secs_f64(),"token_usage":if tokens.is_empty(){Value::Null}else{json!(tokens)}}),
+                    json!({"prompt_sha256":crate::digest::sha256(c.provider_options.as_ref().and_then(|v|v["prompt"].as_str()).unwrap_or(&o.brief_text).as_bytes()),"model":r.model_id.as_ref().map_or_else(||c.provider_options.as_ref().map_or(Value::Null,|v|v["model"].clone()),|v|json!(v)),"reasoning_effort":c.provider_options.as_ref().map_or(Value::Null,|v|v["reasoning_effort"].clone()),"tool_version":r.tool_version,"attempt":attempt,"elapsed_seconds":started.elapsed().as_secs_f64(),"token_usage":if tokens.is_empty(){Value::Null}else{json!(tokens)}}),
                 ],
                 json!({}),
             )?;

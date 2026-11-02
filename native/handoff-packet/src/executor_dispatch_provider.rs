@@ -218,7 +218,15 @@ fn tokens(raw: &Value) -> Vec<(String, i64)> {
 
 fn event(path: Option<&Path>, value: &Value) -> Result<()> {
     if let Some(path) = path {
-        crate::executor_worktree::secure_write(path, &(value.to_string() + "\n"), true)
+        let layout = if value["event"] == "progress" {
+            r#"{"transport":null,"event":null,"duration_s":null,"method":null}"#
+        } else {
+            r#"{"exit_code":null,"duration_s":null,"error_sig":null,"transport":null,"threadId":null,"lane_unavailable":null}"#
+        };
+        let text = crate::executor_ledger_json::render(layout, value).map_err(Error::Output)?;
+        let text = crate::executor_worktree::compact_json(&text)
+            .map_err(|e| Error::Output(e.to_string()))?;
+        crate::executor_worktree::secure_write(path, &text, true)
             .map_err(|e| Error::Output(e.to_string()))?;
     }
     Ok(())

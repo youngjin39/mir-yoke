@@ -16,6 +16,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 CRATE = ROOT / 'native/handoff-packet'
 SUPPORT = runpy.run_path(str(ROOT / 'tests/fixtures/executor_execute_support.py'))
+DISPATCH = runpy.run_path(str(ROOT / 'tests/fixtures/executor_dispatch_cli_support.py'))
 GOLDEN = json.loads((ROOT / 'tests/fixtures/executor_execute.json').read_text(encoding='utf-8'))
 
 
@@ -44,7 +45,6 @@ def test_execute_native_matches_python_fixture(binary, tmp_path, case):
 
 
 @pytest.mark.parametrize('arguments', [
-    ['execute', '--dispatch'], ['resume', '--job-id', 'fixture'],
     ['execute', '--unknown'], ['execute', '--backend', 'claude'],
 ])
 def test_execute_declines_unsupported_command_before_effects(binary, tmp_path, arguments):
@@ -215,15 +215,97 @@ def pinned_home(binary, tmp_path, case='success'):
     }), encoding='utf-8')
     environment = SUPPORT['environment'](root, case, launcher)
     for key in ('MIR_EXECUTOR_IMPL', 'MIR_EXECUTOR_QUERY_IMPL', 'MIR_EXECUTOR_EXECUTE_IMPL',
-                'MIR_EXECUTOR_CANCEL_IMPL', 'MIR_NATIVE_HOOKS'):
+                'MIR_EXECUTOR_CANCEL_IMPL', 'MIR_EXECUTOR_DISPATCH_IMPL',
+                'MIR_EXECUTOR_RESUME_IMPL', 'MIR_EXECUTOR_SWEEP_IMPL', 'MIR_NATIVE_HOOKS'):
         environment.pop(key, None)
     return root, launcher, environment
+
+
+@pytest.mark.parametrize('case', ['success', 'claude_success', 'claude_invalid_timeout',
+                                  'relative_artifacts',
+                                  'gate_block', 'review_reject',
+                                  'finalize_rollback', 'hook_failure',
+                                  'current', 'legacy', 'changed_brief'])
+def test_pinned_dispatch_and_resume_match_python(binary, tmp_path, case):
+    import hashlib
+
+    snapshots = []
+    for implementation in ('python', 'native'):
+        root = tmp_path / implementation
+        _, environment, arguments = DISPATCH['seed'](root, case, SUPPORT)
+        if case in ('current', 'legacy', 'changed_brief'):
+            arguments = DISPATCH['resume'](root, case)
+        destination = root / '.mir/bin' / binary.name
+        destination.parent.mkdir(parents=True)
+        shutil.copy2(binary, destination)
+        (destination.parent / 'executor-query.json').write_text(json.dumps({
+            'path': destination.relative_to(root).as_posix(),
+            'sha256': hashlib.sha256(destination.read_bytes()).hexdigest(),
+        }), encoding='utf-8')
+        for selector in ('MIR_EXECUTOR_IMPL', 'MIR_EXECUTOR_DISPATCH_IMPL',
+                         'MIR_EXECUTOR_RESUME_IMPL', 'MIR_NATIVE_HOOKS'):
+            environment.pop(selector, None)
+        if implementation == 'python':
+            environment['MIR_EXECUTOR_IMPL'] = 'python'
+        elif case == 'changed_brief':
+            (root / 'tools/mir_executor/cli.py').write_text(
+                "raise RuntimeError('unexpected Python resume fallback')\n", encoding='utf-8')
+        result = invoke_pinned(root, environment, arguments, capture_output=True)
+        snapshots.append(DISPATCH['snapshot'](root, result))
+        if case != 'changed_brief':
+            assert (root / 'native-owned').exists() == (implementation == 'native'), result.stderr
+        if case in ('success', 'claude_success'):
+            assert result.returncode == 0, result.stderr
+            assert (root / 'code.txt').read_text() == 'delegated change\n'
+        if case == 'finalize_rollback':
+            assert result.returncode == 1, result.stderr
+            assert (root / 'code.txt').read_text() == 'initial\n'
+        if case == 'claude_invalid_timeout':
+            assert result.returncode == 1, result.stderr
+            assert not (root / 'provider-methods').exists()
+            assert not (root / 'artifacts').exists()
+        if case == 'review_reject':
+            assert result.returncode == 1, result.stderr
+            assert b'offline rejection' in result.stdout
+            assert (root / 'code.txt').read_text() == 'initial\n'
+            assert snapshots[-1]['provider_methods'].count('thread/start') == 2
+        if case == 'hook_failure':
+            assert result.returncode == 1, result.stderr
+            events = [json.loads(line)[0] for line in
+                      (root / 'hook-events').read_text().splitlines()]
+            assert events.count('dispatch_failed') == 1
+            assert (root / 'code.txt').read_text() == 'initial\n'
+            connection = sqlite3.connect(root / 'tasks/jobs.db')
+            try:
+                assert connection.execute('SELECT status,stderr FROM jobs').fetchall() == [
+                    ('failed', 'offline after_run failure')]
+            finally:
+                connection.close()
+    assert snapshots[0] == snapshots[1]
 
 
 def invoke_pinned(root, environment, arguments, **kwargs):
     return subprocess.run([sys.executable, '-m', 'tools.mir_executor', *arguments],
                           cwd=root, env=environment, timeout=60, check=False,
                           **kwargs)
+
+
+def test_dispatch_failed_receipt_declines_before_local_import(binary, tmp_path):
+    root = tmp_path / 'receipt-home'
+    _, environment, arguments = DISPATCH['seed'](root, 'success', SUPPORT)
+    (root / 'tools/mir_executor/local.py').write_text(
+        'from pathlib import Path\n'
+        "(Path(__file__).resolve().parents[2] / 'native-imported').touch()\n",
+        encoding='utf-8')
+    receipt = tmp_path / 'unwritable-receipt'
+    receipt.mkdir()
+    environment['MIR_EXECUTOR_OWNED_RECEIPT'] = str(receipt)
+    result = subprocess.run([str(binary), '--home-root', str(root), *arguments],
+                            cwd=root, env=environment, capture_output=True, timeout=60)
+    assert (result.returncode, result.stdout, result.stderr) == (64, b'', b'')
+    for path in ('native-imported', 'hook-events', 'provider-methods', 'tasks/jobs.db'):
+        assert not (root / path).exists()
+    assert (root / 'code.txt').read_text() == 'initial\n'
 
 
 @pytest.mark.parametrize('case', SUPPORT['CASES'])
@@ -274,11 +356,14 @@ def older_binary(tmp_path_factory):
     return binary
 
 
-@pytest.mark.parametrize('command', ['execute', 'cancel'])
+@pytest.mark.parametrize('command', ['execute', 'cancel', 'dispatch', 'resume', 'sweep'])
 def test_pinned_older_binary_declines_to_python(older_binary, tmp_path, command):
     root, launcher, environment = pinned_home(older_binary, tmp_path)
-    arguments = (SUPPORT['argv']('success') if command == 'execute'
-                 else ['cancel', '--job-id', 'missing'])
+    arguments = {'execute': SUPPORT['argv']('success'),
+                 'dispatch': ['execute', '--dispatch'],
+                 'cancel': ['cancel', '--job-id', 'missing'],
+                 'resume': ['resume', '--job-id', 'missing'],
+                 'sweep': ['sweep', '--repo-root', str(root)]}[command]
     result = invoke_pinned(root, environment, arguments, capture_output=True)
     if command == 'execute':
         assert SUPPORT['snapshot'](root, launcher, result) == GOLDEN['success']
@@ -459,3 +544,25 @@ def test_pinned_mutation_routes_keep_admission_guards(binary, tmp_path, guard, c
     assert result.returncode == 1
     assert b'python guard fallback' in result.stderr
     assert not (root / 'provider-started').exists()
+
+
+@pytest.mark.parametrize('dynamic', [False, True])
+def test_dispatch_unported_agent_never_launches_default_provider(binary, tmp_path, dynamic):
+    root = tmp_path / 'agent-route-home'
+    _, environment, arguments = DISPATCH['seed'](root, 'success', SUPPORT)
+    receipt = root / 'ownership'
+    environment['MIR_EXECUTOR_OWNED_RECEIPT'] = str(receipt)
+    if dynamic:
+        with (root / 'tools/mir_executor/local.py').open('a', encoding='utf-8') as stream:
+            stream.write("\ndef validate_brief(*args):\n"
+                         "    return {'target_agent': 'offline-agent'}\n")
+    else:
+        (root / 'brief.json').write_text(
+            '{"expanded_goal":"offline fixture","target_agent":"offline-agent"}',
+            encoding='utf-8')
+    result = subprocess.run([str(binary), '--home-root', str(root), *arguments],
+                            cwd=root, env=environment, capture_output=True, timeout=60)
+    assert result.returncode == (1 if dynamic else 64), result.stderr
+    assert receipt.exists() == dynamic
+    assert not (root / 'tasks/jobs.db').exists()
+    assert not (root / 'provider-methods').exists()

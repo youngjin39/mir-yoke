@@ -27,7 +27,11 @@ use std::{
 pub enum Error {
     Io(io::Error),
     Json(serde_json::Error),
-    Git { code: Option<i32>, stderr: String },
+    Git {
+        code: Option<i32>,
+        stderr: String,
+        command: Option<Vec<String>>,
+    },
     Invalid(String),
     Local(crate::executor_local::Error),
     Redaction(crate::Error),
@@ -49,7 +53,22 @@ impl fmt::Display for Error {
         match self {
             Self::Io(e) => e.fmt(f),
             Self::Json(e) => e.fmt(f),
-            Self::Git { code, stderr } => write!(f, "git failed ({code:?}): {stderr}"),
+            Self::Git {
+                code,
+                stderr,
+                command,
+            } => {
+                if let Some(command) = command {
+                    write!(
+                        f,
+                        "Command '{}' returned non-zero exit status {}.",
+                        crate::executor_execute::list_repr(command),
+                        code.unwrap_or(1)
+                    )
+                } else {
+                    write!(f, "git failed ({code:?}): {stderr}")
+                }
+            }
             Self::Invalid(e) => f.write_str(e),
             Self::Local(e) => e.fmt(f),
             Self::Redaction(e) => write!(f, "redaction failed: {e:?}"),
@@ -112,6 +131,29 @@ fn git(root: &Path, args: &[&OsStr], check: bool) -> Result<Output> {
     if check && !out.status.success() {
         return Err(Error::Git {
             code: out.status.code(),
+            command: if args.iter().any(|arg| *arg == OsStr::new("checkout")) {
+                Some(
+                    std::iter::once("git".to_owned())
+                        .chain(std::iter::once("-C".to_owned()))
+                        .chain(std::iter::once(
+                            root.to_str()
+                                .ok_or_else(|| Error::Invalid("non UTF-8 Git root".into()))?
+                                .to_owned(),
+                        ))
+                        .chain(
+                            args.iter()
+                                .map(|s| {
+                                    s.to_str().map(str::to_owned).ok_or_else(|| {
+                                        Error::Invalid("non UTF-8 Git argument".into())
+                                    })
+                                })
+                                .collect::<Result<Vec<_>>>()?,
+                        )
+                        .collect(),
+                )
+            } else {
+                None
+            },
             stderr: String::from_utf8(out.stderr)
                 .map_err(|_| Error::Invalid("non UTF-8 Git error".into()))?,
         });
@@ -527,12 +569,16 @@ fn private_write(path: &Path, text: &str, append: bool) -> Result<()> {
     ))
 }
 pub fn write_json(path: &Path, value: &Value) -> Result<()> {
-    let text = serde_json::to_string_pretty(&redact_structured_value(value)?)? + "\n";
+    let text = crate::executor_ledger_json::render(
+        r#"{"dispatch_id":null,"state":null,"base_commit":null}"#,
+        &redact_structured_value(value)?,
+    )
+    .map_err(Error::Invalid)?;
     write_private_text(path, &text, false)
 }
 // The existing validated layout reader retains nested insertion order. Compact
 // only whitespace outside strings using Python json.dumps default separators.
-fn compact_json(original: &str) -> Result<String> {
+pub(crate) fn compact_json(original: &str) -> Result<String> {
     let value = redact_structured_value(&serde_json::from_str(original)?)?;
     let pretty = crate::executor_ledger_json::render(original, &value).map_err(Error::Invalid)?;
     let mut out = String::new();
@@ -732,7 +778,42 @@ pub fn write_status(worktree: &DispatchWorktree, state: &str, fields: &Value) ->
     {
         data_object.insert(key.clone(), value.clone());
     }
-    write_json(&worktree.status_path, &data)
+    // Preserve the original dictionary order and append newly supplied fields
+    // in the order used by the Python state transitions.
+    let original = if text.trim().is_empty() {
+        "{}"
+    } else {
+        text.trim()
+    };
+    let mut layout = original
+        .strip_suffix('}')
+        .ok_or_else(|| Error::Invalid("expected JSON object in status".into()))?
+        .to_owned();
+    let mut separator = if layout.trim_end().ends_with('{') {
+        ""
+    } else {
+        ","
+    };
+    for key in ["state", "reason", "attempt", "attempts"]
+        .into_iter()
+        .chain(
+            fields
+                .as_object()
+                .into_iter()
+                .flat_map(|fields| fields.keys().map(String::as_str)),
+        )
+    {
+        if key == "state" || fields.get(key).is_some() {
+            layout.push_str(separator);
+            layout.push_str(&serde_json::to_string(key)?);
+            layout.push_str(":null");
+            separator = ",";
+        }
+    }
+    layout.push('}');
+    let text = crate::executor_ledger_json::render(&layout, &redact_structured_value(&data)?)
+        .map_err(Error::Invalid)?;
+    write_private_text(&worktree.status_path, &text, false)
 }
 
 /// Inspect only the explicitly supplied worktree; no consumer discovery.
@@ -761,6 +842,7 @@ pub fn cleanup_worktree(worktree: &DispatchWorktree, delete_branch: bool) -> Res
     if !removal.status.success() && worktree.path.try_exists()? {
         return Err(Error::Git {
             code: removal.status.code(),
+            command: None,
             stderr: String::from_utf8(removal.stderr)
                 .map_err(|_| Error::Invalid("non UTF-8 Git error".into()))?,
         });
@@ -791,6 +873,7 @@ pub fn cleanup_worktree(worktree: &DispatchWorktree, delete_branch: bool) -> Res
         } else if exists.status.code() != Some(1) {
             return Err(Error::Git {
                 code: exists.status.code(),
+                command: None,
                 stderr: String::from_utf8(exists.stderr)
                     .map_err(|_| Error::Invalid("non UTF-8 Git error".into()))?,
             });

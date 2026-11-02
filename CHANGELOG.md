@@ -110,6 +110,11 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
   the binary wrote no ownership receipt; once the binary owns a command, every
   exit is final. An older pinned binary that declines with 64 falls back to
   Python. Queries keep their buffered protocol.
+- The pinned binary now also runs `execute --dispatch` (attempts, merge gate,
+  independent review, finalize or rollback), `resume` and `sweep` natively, and
+  the entrypoint offers them to it (selectors `MIR_EXECUTOR_DISPATCH_IMPL=python`,
+  `MIR_EXECUTOR_RESUME_IMPL=python`, `MIR_EXECUTOR_SWEEP_IMPL=python`). Agent
+  routes, cross-home targets and parser extensions still run in Python.
 - `tools/mir_executor/policy.py` no longer imports `pwd` on Windows.
 - The Python executor's dispatch event writer skips `os.fchmod` where the
   platform lacks it, instead of failing.

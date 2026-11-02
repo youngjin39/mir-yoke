@@ -1,6 +1,6 @@
 """Try the pinned native executor before importing the Python executor.
 
-Queries retain their buffered byte protocol. Execute/cancel inherit the caller's
+Queries retain their buffered byte protocol. Mutations inherit the caller's
 stdin/stdout/stderr, preserving live output and descriptor ordering. Exit 64 is
 a decline only without an exact owned receipt in a private temporary directory.
 The binary claims ownership before importing hooks, output, registry writes, or
@@ -152,11 +152,13 @@ def _native_command(argv: list[str]) -> int | None:
         del remaining[:2]
     elif remaining and remaining[0].startswith('--jobs-db='):
         del remaining[0]
-    if not remaining or remaining[0] not in {'execute', 'cancel'}:
+    if not remaining or remaining[0] not in {'execute', 'cancel', 'resume', 'sweep'}:
         return None
     command = remaining[0]
     if (os.environ.get('MIR_EXECUTOR_IMPL') == 'python'
             or os.environ.get(f'MIR_EXECUTOR_{command.upper()}_IMPL') == 'python'
+            or (command == 'execute' and '--dispatch' in remaining[1:]
+                and os.environ.get('MIR_EXECUTOR_DISPATCH_IMPL') == 'python')
             or os.environ.get('MIR_NATIVE_HOOKS') == '0'):
         return None
     try:

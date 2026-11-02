@@ -139,7 +139,7 @@ pub(crate) fn python_float(value: f64) -> Result<String> {
     ))
 }
 
-fn json(value: &Value, spaced: bool) -> Result<String> {
+pub(crate) fn json(value: &Value, spaced: bool) -> Result<String> {
     Ok(match value {
         Value::String(s) => quoted(s)?,
         Value::Array(items) => format!(

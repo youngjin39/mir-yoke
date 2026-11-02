@@ -422,9 +422,14 @@ fn completed(
     }
     if let Some(review) = reviewer.as_mut() {
         let evidence = review(wt, &gate.changed_files)?;
+        let evidence_text = crate::executor_ledger_json::render(
+            r#"{"passed":null,"reason":null,"content":null,"provider":null}"#,
+            &evidence.to_value(),
+        )
+        .map_err(Error::Invalid)?;
         executor_worktree::secure_write(
             &wt.path.join(".mir-dispatch/reviewer.json"),
-            &evidence.to_value().to_string(),
+            &evidence_text,
             false,
         )
         .map_err(Error::Worktree)?;

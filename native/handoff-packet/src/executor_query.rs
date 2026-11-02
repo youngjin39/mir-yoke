@@ -700,20 +700,31 @@ fn main() {
     let raw: Vec<OsString> = std::env::args_os().skip(1).collect();
     if raw.first().is_some_and(|value| value == "--home-root")
         && let Some(home) = raw.get(1)
-        && (raw.get(2).is_some_and(|value| value == "execute")
-            || (raw.get(2).is_some_and(|value| value == "--jobs-db")
-                && raw.get(4).is_some_and(|value| value == "execute"))
-            || (raw
-                .get(2)
-                .and_then(|value| value.to_str())
-                .is_some_and(|value| value.starts_with("--jobs-db="))
-                && raw.get(3).is_some_and(|value| value == "execute")))
     {
-        let code = match std::env::current_dir() {
-            Ok(cwd) => handoff_packet::executor_execute::run(&raw[2..], &cwd, Path::new(home)),
-            Err(_) => 64,
-        };
-        std::process::exit(code);
+        let command = match raw.get(2).and_then(|s| s.to_str()) {
+            Some("--jobs-db") => raw.get(4),
+            Some(s) if s.starts_with("--jobs-db=") => raw.get(3),
+            _ => raw.get(2),
+        }
+        .and_then(|s| s.to_str());
+        if matches!(command, Some("execute" | "resume" | "sweep")) {
+            let code = match std::env::current_dir() {
+                Ok(cwd) => match command {
+                    Some("execute") => {
+                        handoff_packet::executor_execute::run(&raw[2..], &cwd, Path::new(home))
+                    }
+                    Some("resume") => {
+                        handoff_packet::executor_resume_cli::run(&raw[2..], &cwd, Path::new(home))
+                    }
+                    Some("sweep") => {
+                        handoff_packet::executor_sweep_cli::run(&raw[2..], &cwd, Path::new(home))
+                    }
+                    _ => 64,
+                },
+                Err(_) => 64,
+            };
+            std::process::exit(code);
+        }
     }
     let result = std::env::current_dir()
         .map_err(|_| ())

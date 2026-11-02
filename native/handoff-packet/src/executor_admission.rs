@@ -346,6 +346,7 @@ fn admit_inner(request: Request<'_>, command_scope: bool) -> Result<Admission, B
                 return Err(BridgeError::Protocol("missing post-hook namespace"));
             }
             if command_scope
+                && request.argv.iter().all(|arg| arg != "--dispatch")
                 && (args["dispatch"] == true
                     || args["execution_backend"]
                         .as_str()

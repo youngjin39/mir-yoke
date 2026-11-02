@@ -5,6 +5,7 @@ import contextlib
 import hashlib
 import json
 import os
+import runpy
 import shutil
 import sqlite3
 import subprocess
@@ -365,7 +366,7 @@ def test_executor_query_absent_database_matches_with_creation(binary, home, argv
 
 @pytest.mark.parametrize("argv", [
     [], ["--help"], ["status", "--help"], ["result", "--help"], ["list-jobs", "--help"],
-    ["unknown"], ["resume"], ["sweep"],
+    ["unknown"], ["resume"], ["sweep", "--unknown"],
     ["status"], ["result"], ["list-jobs", "--unknown"],
     ["status", "--job-id", "running", "--job-id", "failed"],
     ["list-jobs", "--status", "not-a-status"],
@@ -542,3 +543,45 @@ def test_pinned_cancel_declines_hook_to_python(binary, home):
     result = pinned_cli(home, 'module', ['cancel', '--job-id', 'running'])
     assert result[2] == 0, result
     assert (home / 'python-import').exists()
+
+
+@pytest.mark.parametrize('apply', [False, True])
+@pytest.mark.parametrize('selector', [None, 'MIR_EXECUTOR_IMPL', 'MIR_EXECUTOR_SWEEP_IMPL'])
+def test_pinned_sweep_matches_python_state(binary, tmp_path, apply, selector):
+    support = runpy.run_path(str(ROOT / 'tests/fixtures/executor_execute_support.py'))
+    dispatch = runpy.run_path(str(ROOT / 'tests/fixtures/executor_dispatch_cli_support.py'))
+    snapshots = []
+    for implementation in ('python', 'native'):
+        root = tmp_path / implementation
+        dispatch['seed'](root, 'success', support)
+        (root / 'tools/mir_executor/local.py').unlink()
+        install_pin(binary, root)
+        registry = JobRegistry(root / 'tasks/jobs.db')
+        registry.insert(JobRecord(
+            job_id='stale', change_id='fixture', category='unit', family=None,
+            repo_root=str(root), codex_args=[], timeout_seconds=1, status='running',
+            started_at='2000-01-01T00:00:00+00:00',
+        ))
+        registry.close()
+        orphan = root / 'orphan-worktree'
+        dispatch['git'](root, 'worktree', 'add', '-b', 'mir-dispatch/orphan',
+                        str(orphan), 'HEAD')
+        arguments = ['sweep', '--repo-root', str(root)] + (['--apply'] if apply else [])
+        database_before = (root / 'tasks/jobs.db').read_bytes()
+        selectors = {'MIR_EXECUTOR_IMPL': 'python'} if implementation == 'python' else {}
+        if implementation == 'native' and selector:
+            selectors[selector] = 'python'
+        if implementation == 'native' and selector is None:
+            (root / 'tools/mir_executor/cli.py').write_text(
+                "raise RuntimeError('unexpected Python sweep fallback')\n", encoding='utf-8')
+        result = pinned_cli(root, 'module', arguments, selectors=selectors)
+        assert result[2] == 0, result
+        payload = json.loads(result[0])
+        assert payload['stale_jobs'] == ['stale']
+        assert payload['orphan_worktrees'] == [str(orphan)]
+        assert orphan.exists() == (not apply)
+        if not apply:
+            assert (root / 'tasks/jobs.db').read_bytes() == database_before
+        completed = subprocess.CompletedProcess(arguments, result[2], result[0], result[1])
+        snapshots.append(dispatch['snapshot'](root, completed))
+    assert snapshots[0] == snapshots[1]

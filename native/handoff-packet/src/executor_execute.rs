@@ -21,12 +21,12 @@ use std::{
     },
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
-type Result<T> = std::result::Result<T, String>;
+pub(crate) type Result<T> = std::result::Result<T, String>;
 const BASE: &str = "You are a code-implementation sub-agent in an isolated git worktree for the Mir harness. Read .mir-dispatch/brief.md and implement the task fully. Rules: modify only files inside this worktree, never edit tasks/plan.md, follow existing code style and structure, keep changes minimal and scoped to the brief, when tests are specified make them pass. Report a concise summary of what you changed.";
 static SERIAL: AtomicU64 = AtomicU64::new(0);
 static OUTPUT_FAILED: AtomicBool = AtomicBool::new(false);
 static NONPRINTABLE: OnceLock<std::result::Result<regex::Regex, regex::Error>> = OnceLock::new();
-fn emit(text: &str, error: bool) -> io::Result<()> {
+pub(crate) fn emit(text: &str, error: bool) -> io::Result<()> {
     #[cfg(windows)]
     let text = text.replace('\n', "\r\n");
     if error {
@@ -35,21 +35,21 @@ fn emit(text: &str, error: bool) -> io::Result<()> {
         io::stdout().write_all(text.as_bytes())
     }
 }
-fn line(text: &str) {
+pub(crate) fn line(text: &str) {
     if emit(&format!("{text}\n"), false).is_err() {
         OUTPUT_FAILED.store(true, Ordering::Relaxed);
     }
 }
-fn diagnostic(text: &str) {
+pub(crate) fn diagnostic(text: &str) {
     let _ = emit(&format!("[mir_executor] {text}\n"), true);
 }
-fn path(path: &Path) -> Value {
+pub(crate) fn path(path: &Path) -> Value {
     json!({"$type":"path","value":path.to_str().unwrap_or("")})
 }
-fn namespace(args: &Value) -> Value {
+pub(crate) fn namespace(args: &Value) -> Value {
     json!({"$type":"namespace","value":args})
 }
-fn value_path(value: &Value, cwd: &Path) -> PathBuf {
+pub(crate) fn value_path(value: &Value, cwd: &Path) -> PathBuf {
     let raw = value["value"]
         .as_str()
         .or_else(|| value.as_str())
@@ -61,7 +61,7 @@ fn value_path(value: &Value, cwd: &Path) -> PathBuf {
         cwd.join(p)
     }
 }
-fn repr(s: &str) -> String {
+pub(crate) fn repr(s: &str) -> String {
     let nonprintable = NONPRINTABLE
         .get_or_init(|| regex::Regex::new(r"[\p{C}\p{Z}]"))
         .as_ref();
@@ -106,7 +106,7 @@ fn repr_value(v: &Value) -> String {
         repr(v.as_str().unwrap_or(""))
     }
 }
-fn list_repr(values: &[String]) -> String {
+pub(crate) fn list_repr(values: &[String]) -> String {
     format!(
         "[{}]",
         values
@@ -119,7 +119,11 @@ fn list_repr(values: &[String]) -> String {
 fn chars(s: &str, n: usize) -> String {
     s.chars().take(n).collect()
 }
-fn hook(bridge: &mut Option<Box<LocalBridge>>, name: &str, args: Vec<Value>) -> Result<Value> {
+pub(crate) fn hook(
+    bridge: &mut Option<Box<LocalBridge>>,
+    name: &str,
+    args: Vec<Value>,
+) -> Result<Value> {
     let Some(bridge) = bridge.as_mut() else {
         return Ok(Value::Null);
     };
@@ -138,7 +142,10 @@ fn hook(bridge: &mut Option<Box<LocalBridge>>, name: &str, args: Vec<Value>) -> 
     }
     Ok(reply["result"].clone())
 }
-fn interpreter(environment: &BTreeMap<OsString, OsString>, cwd: &Path) -> Option<PathBuf> {
+pub(crate) fn interpreter(
+    environment: &BTreeMap<OsString, OsString>,
+    cwd: &Path,
+) -> Option<PathBuf> {
     if let Some(p) = environment.get(&OsString::from("MIR_EXECUTOR_PYTHON")) {
         return fs::canonicalize(p).ok().map(crate::supply::plain);
     }
@@ -185,7 +192,7 @@ pub fn run(raw: &[OsString], cwd: &Path, home_root: &Path) -> i32 {
         Err(error) if error.kind() == io::ErrorKind::NotFound => (),
         Err(_) => return 64,
     }
-    if !ledger_preflight(&argv, cwd) {
+    if !crate::executor_dispatch_cli::preflight(&argv, cwd) || !ledger_preflight(&argv, cwd) {
         return 64;
     }
     let environment: BTreeMap<OsString, OsString> = std::env::vars_os().collect();
@@ -224,7 +231,11 @@ pub fn run(raw: &[OsString], cwd: &Path, home_root: &Path) -> i32 {
             return 1;
         }
     };
-    let result = execute(&root, &args, cwd, &environment, &mut bridge);
+    let result = if args["dispatch"] == true {
+        dispatch(&root, &args, None, cwd, &environment, &mut bridge)
+    } else {
+        execute(&root, &args, cwd, &environment, &mut bridge)
+    };
     let mut code = match result {
         Ok(code) => code,
         Err(error) => {
@@ -259,7 +270,7 @@ pub fn run(raw: &[OsString], cwd: &Path, home_root: &Path) -> i32 {
         code
     }
 }
-fn preflight(raw: &[OsString]) -> Option<Vec<String>> {
+pub(crate) fn preflight(raw: &[OsString]) -> Option<Vec<String>> {
     let mut argv = raw
         .iter()
         .map(|s| s.to_str().map(str::to_owned))
@@ -285,6 +296,7 @@ fn preflight(raw: &[OsString]) -> Option<Vec<String>> {
     ))
     .ok()?;
     let options = schema["execute"].as_array()?;
+    let dispatch = argv.iter().any(|s| s == "--dispatch");
     let mut i = 1;
     while i < argv.len() {
         let token = &argv[i];
@@ -296,8 +308,9 @@ fn preflight(raw: &[OsString]) -> Option<Vec<String>> {
                 .as_array()
                 .is_some_and(|a| a.iter().any(|v| v == flag))
         })?;
-        if !matches!(
-            option["dest"].as_str()?,
+        let dest = option["dest"].as_str()?;
+        if !(matches!(
+            dest,
             "change_id"
                 | "category"
                 | "codex_args"
@@ -313,10 +326,23 @@ fn preflight(raw: &[OsString]) -> Option<Vec<String>> {
                 | "background"
                 | "execution_backend"
                 | "allow_harness_self_modify"
-        ) {
+        ) || (dispatch
+            && matches!(
+                dest,
+                "dispatch"
+                    | "dispatch_brief"
+                    | "artifacts_dir"
+                    | "allow_paths"
+                    | "verify_cmds"
+                    | "expect_changes"
+                    | "max_codex_attempts"
+                    | "finalize_lock_timeout"
+            )))
+        {
             return None;
         }
-        if option["dest"] == "execution_backend"
+        if !dispatch
+            && option["dest"] == "execution_backend"
             && inline.or_else(|| argv.get(i + 1).map(String::as_str))? != "codex"
         {
             return None;
@@ -573,7 +599,7 @@ fn fail_job(registry: &JobRegistry, id: &str, error: &str) -> Result<()> {
         )
         .map_err(|e| format!("{e:?}"))
 }
-fn resolve_args(args: &Value, cwd: &Path, local: &LocalConfig) -> Result<Vec<String>> {
+pub(crate) fn resolve_args(args: &Value, cwd: &Path, local: &LocalConfig) -> Result<Vec<String>> {
     if !args["codex_args_file"].is_null() {
         let file = value_path(&args["codex_args_file"], cwd);
         let metadata = fs::metadata(&file).map_err(|e| format!("OSError: {e}"))?;
@@ -648,7 +674,7 @@ fn shell_words(text: &str) -> Result<Vec<String>> {
     }
     Ok(out)
 }
-fn prompt(args: &[String]) -> String {
+pub(crate) fn prompt(args: &[String]) -> String {
     let mut index = 0;
     const FLAGS: &[&str] = &[
         "--approval",
@@ -710,7 +736,7 @@ fn entry<'a>(ledger: &'a Value, change: &str) -> Option<&'a Value> {
         .and_then(|items| items.iter().find(|item| item["id"] == change))
         .or_else(|| ledger.get(change).filter(|v| v.is_object()))
 }
-fn validate_ledger(file: &Path, change: &str, category: &str) -> Result<Value> {
+pub(crate) fn validate_ledger(file: &Path, change: &str, category: &str) -> Result<Value> {
     let bytes=fs::read(file).map_err(|e|if e.kind()==io::ErrorKind::NotFound{format!("FileNotFoundError: Ledger not found: {}. Create tasks/tdd.json with a planned entry before calling execute.",file.display())}else{format!("OSError: {e}")})?;
     let ledger: Value =
         serde_json::from_slice(&bytes).map_err(|e| format!("JSONDecodeError: {e}"))?;
@@ -993,7 +1019,7 @@ fn provider(
     }
     Ok(result)
 }
-fn unique_id() -> String {
+pub(crate) fn unique_id() -> String {
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap_or_default()
@@ -1008,7 +1034,7 @@ fn unique_id() -> String {
     )[..32]
         .to_owned()
 }
-fn utc_now() -> String {
+pub(crate) fn utc_now() -> String {
     let elapsed = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap_or_default();
@@ -1031,6 +1057,18 @@ fn utc_now() -> String {
         seconds % 60,
         elapsed.subsec_micros()
     )
+}
+
+/// Shared command path for execute dispatch and integrity-checked resume.
+pub fn dispatch(
+    root: &Path,
+    args: &Value,
+    codex_args: Option<Vec<String>>,
+    cwd: &Path,
+    environment: &BTreeMap<OsString, OsString>,
+    bridge: &mut Option<Box<LocalBridge>>,
+) -> Result<i32> {
+    crate::executor_dispatch_cli::dispatch(root, args, codex_args, cwd, environment, bridge)
 }
 
 #[cfg(test)]
