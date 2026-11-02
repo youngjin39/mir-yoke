@@ -97,3 +97,17 @@ five x86_64 Windows binaries placed (SHA-256 equal to the lock), Claude a9cfb2e4
 01a197d4 attested (five mir-mcp calls ok; a first probe pointed at the removed 0.13.60 clone
 and returned E_IO, so it was not used), finalized, ready at 5a6f53e; consumer commit pushed
 by the maintainer host; consumer memory database unchanged.
+
+Release record v0.13.62 (Main, 2026-11-03): native executor commands. Library slices
+E2-E11 (admission, registry, transport, direct execute, worktrees, merge gate, dispatch
+attempts, review, finalize, resume, sweep), E12a entrypoint routing of execute and cancel
+with an ownership receipt (an older pinned binary falls back to Python), E12b native
+dispatch, resume and sweep commands, E12c agent routes, E12w Windows environment lookups;
+mir-code bluebricks Language Choice updated. Version 7dd4a10 on release/v0.13.62, native
+prerelease native-7dd4a10f2910 (30 assets), bind df48fd5. CI validate on df48fd5 green on
+every job, including Windows, after reruns of a GitHub macOS-capacity cancellation and one
+timing-bound ontology test, before the tag. Fresh-clone readiness at df48fd5 exit 0 (5366
+passed, 219 skipped). Maintainer host: provider update from the 0.13.61 record lock, five
+aarch64 binaries placed (SHA-256 equal to the lock), Codex hook trust 4/4, Claude 7843c4ea
+and Codex 01a19d8d attested (five mir-mcp calls ok), finalized, ready at df48fd5. Owner PC:
+pending.
