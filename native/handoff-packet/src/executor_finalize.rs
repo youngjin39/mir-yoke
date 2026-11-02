@@ -130,9 +130,13 @@ impl FinalizeLock {
         fs::create_dir_all(&directory)?;
         let path = directory.join("dispatch-finalize.lock");
         reject_lock_link(&path)?;
+        // Windows LockFileEx needs read or write access; an append-only handle
+        // lacks FILE_WRITE_DATA and fails with ERROR_ACCESS_DENIED.
         let file = fs::OpenOptions::new()
+            .read(true)
+            .write(true)
             .create(true)
-            .append(true)
+            .truncate(false)
             .open(path)?;
         let started = Instant::now();
         loop {
