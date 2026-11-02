@@ -110,4 +110,19 @@ timing-bound ontology test, before the tag. Fresh-clone readiness at df48fd5 exi
 passed, 219 skipped). Maintainer host: provider update from the 0.13.61 record lock, five
 aarch64 binaries placed (SHA-256 equal to the lock), Codex hook trust 4/4, Claude 7843c4ea
 and Codex 01a19d8d attested (five mir-mcp calls ok), finalized, ready at df48fd5. Owner PC:
-pending.
+not attested; superseded by v0.13.63 (a consumer whose hooks import virtual-environment
+packages fails natively on 0.13.62).
+
+Release record v0.13.63 (Main, 2026-11-03): the native bridge runs consumer hooks in the
+caller's interpreter (E12v): interpreter() keeps the unresolved path, and the entrypoint
+passes sys.executable as MIR_EXECUTOR_PYTHON unless set. Fix ae878b3 (CI validate green),
+version ba79888 on release/v0.13.63, native prerelease native-ba79888394dc (30 assets, after
+a rerun of a GitHub macOS-capacity cancellation), bind 3c8fafa. CI validate on 3c8fafa green
+on every job, including Windows, after one rerun of the timing-bound ontology test, before
+the tag; main push CI green. Fresh-clone readiness at 3c8fafa exit 0 (5372 passed, 219
+skipped). Real-consumer gate on Mir Harness (venv and local.py): sweep, list-jobs, status
+and result native with no decline and byte-equal to forced Python; cancel declines to
+Python by design; a base-interpreter override reproduces the 0.13.62 failure. Maintainer
+host: provider update from the 0.13.62 record lock, five aarch64 binaries placed (SHA-256
+equal to the lock), Codex hook trust 4/4, Claude d9376e73 and Codex 01a19e2d attested
+(five mir-mcp calls ok), finalized, ready at 3c8fafa. Owner PC: pending.
