@@ -452,7 +452,7 @@ pub fn sweep_terminal_artifacts_with_observer(
     let receipt_at = receipt_time(now)?;
     let floor =
         timestamp(now).ok_or("invalid now")? - i128::from(retention_days) * 86400 * 1_000_000;
-    let root = repo.join("tasks/dispatch");
+    let root = repo.join("tasks").join("dispatch");
     let mut expired = vec![];
     let mut removed = vec![];
     let mut errors = vec![];
