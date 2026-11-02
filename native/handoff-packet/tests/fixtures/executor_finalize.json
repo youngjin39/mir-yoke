@@ -1,0 +1,2434 @@
+{
+  "oracle": "tools/mir_executor/dispatch.py:finalize_dispatch",
+  "files": {
+    "pkg/a.py": "a = 1\n",
+    "pkg/b.py": "b = 1\n",
+    "pkg/delete.py": "delete me\n",
+    "pkg/rename-old.py": "rename me\n",
+    "pkg/[ab].py": "literal\n",
+    "wip/staged.txt": "staged base\n",
+    "wip/unstaged.txt": "unstaged base\n"
+  },
+  "cases": [
+    {
+      "name": "merged",
+      "expected": {
+        "result": {
+          "action": "merged",
+          "reason": "approved",
+          "merged_files": [
+            "pkg/a.py"
+          ]
+        },
+        "before": {
+          "main": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 1\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          },
+          "dispatch": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": " M pkg/a.py\u0000",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 2\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          }
+        },
+        "injected": [],
+        "after": {
+          "main": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 e7cabca986b0365ccfa4624eed67117c1b9b5f0c 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "M  pkg/a.py\u0000",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 2\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          },
+          "dispatch": null
+        },
+        "artifacts": [
+          "brief.md",
+          "status.json"
+        ],
+        "registry": {
+          "status": "completed",
+          "exit_code": 0
+        },
+        "artifact_content": {
+          "brief.md": "Fixture brief"
+        }
+      }
+    },
+    {
+      "name": "preserved",
+      "outcome": "blocked",
+      "expected": {
+        "result": {
+          "action": "preserved",
+          "reason": "fixture-blocked",
+          "merged_files": []
+        },
+        "before": {
+          "main": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 1\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          },
+          "dispatch": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": " M pkg/a.py\u0000",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 2\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          }
+        },
+        "injected": [],
+        "after": {
+          "main": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 1\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          },
+          "dispatch": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": " M pkg/a.py\u0000",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 2\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          }
+        },
+        "artifacts": [
+          "brief.md",
+          "status.json"
+        ],
+        "registry": {
+          "status": "failed",
+          "exit_code": 1
+        },
+        "artifact_content": {
+          "brief.md": "Fixture brief"
+        }
+      }
+    },
+    {
+      "name": "empty-diff",
+      "empty": true,
+      "expected": {
+        "result": {
+          "action": "blocked",
+          "reason": "empty-diff fail-closed",
+          "merged_files": []
+        },
+        "before": {
+          "main": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 1\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          },
+          "dispatch": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 1\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          }
+        },
+        "injected": [],
+        "after": {
+          "main": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 1\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          },
+          "dispatch": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 1\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          }
+        },
+        "artifacts": [
+          "brief.md",
+          "status.json"
+        ],
+        "registry": {
+          "status": "failed",
+          "exit_code": 1
+        },
+        "artifact_content": {
+          "brief.md": "Fixture brief"
+        }
+      }
+    },
+    {
+      "name": "reviewed-empty",
+      "empty": true,
+      "expect_changes": false,
+      "expected": {
+        "result": {
+          "action": "reviewed",
+          "reason": "approved",
+          "merged_files": []
+        },
+        "before": {
+          "main": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 1\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          },
+          "dispatch": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 1\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          }
+        },
+        "injected": [],
+        "after": {
+          "main": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 1\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          },
+          "dispatch": null
+        },
+        "artifacts": [
+          "brief.md",
+          "status.json"
+        ],
+        "registry": {
+          "status": "completed",
+          "exit_code": 0
+        },
+        "artifact_content": {
+          "brief.md": "Fixture brief"
+        }
+      }
+    },
+    {
+      "name": "missing-verifiers",
+      "verification_commands": [],
+      "expected": {
+        "result": {
+          "action": "blocked",
+          "reason": "no-verification-commands (fail-closed)",
+          "merged_files": []
+        },
+        "before": {
+          "main": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 1\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          },
+          "dispatch": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": " M pkg/a.py\u0000",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 2\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          }
+        },
+        "injected": [],
+        "after": {
+          "main": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 1\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          },
+          "dispatch": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 e7cabca986b0365ccfa4624eed67117c1b9b5f0c 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 2\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          }
+        },
+        "artifacts": [
+          "brief.md",
+          "status.json"
+        ],
+        "registry": {
+          "status": "failed",
+          "exit_code": 1
+        },
+        "artifact_content": {
+          "brief.md": "Fixture brief"
+        }
+      }
+    },
+    {
+      "name": "unknown-verifier",
+      "verification_commands": [
+        "missing"
+      ],
+      "expected": {
+        "result": {
+          "action": "blocked",
+          "reason": "unknown-verifier:missing",
+          "merged_files": []
+        },
+        "before": {
+          "main": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 1\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          },
+          "dispatch": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": " M pkg/a.py\u0000",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 2\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          }
+        },
+        "injected": [],
+        "after": {
+          "main": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 1\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          },
+          "dispatch": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 e7cabca986b0365ccfa4624eed67117c1b9b5f0c 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 2\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          }
+        },
+        "artifacts": [
+          "brief.md",
+          "status.json"
+        ],
+        "registry": {
+          "status": "failed",
+          "exit_code": 1
+        },
+        "artifact_content": {
+          "brief.md": "Fixture brief"
+        }
+      }
+    },
+    {
+      "name": "secret",
+      "secret": true,
+      "expected": {
+        "result": {
+          "action": "blocked",
+          "reason": "secret-path:pkg/a.py",
+          "merged_files": []
+        },
+        "before": {
+          "main": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 1\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          },
+          "dispatch": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": " M pkg/a.py\u0000",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 2\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          }
+        },
+        "injected": [],
+        "after": {
+          "main": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 1\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          },
+          "dispatch": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 e7cabca986b0365ccfa4624eed67117c1b9b5f0c 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 2\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          }
+        },
+        "artifacts": [
+          "brief.md",
+          "status.json"
+        ],
+        "registry": {
+          "status": "failed",
+          "exit_code": 1
+        },
+        "artifact_content": {
+          "brief.md": "Fixture brief"
+        }
+      }
+    },
+    {
+      "name": "review-missing",
+      "require_review": true,
+      "expected": {
+        "result": {
+          "action": "blocked",
+          "reason": "reviewer-missing",
+          "merged_files": []
+        },
+        "before": {
+          "main": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 1\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          },
+          "dispatch": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": " M pkg/a.py\u0000",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 2\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          }
+        },
+        "injected": [],
+        "after": {
+          "main": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 1\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          },
+          "dispatch": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 e7cabca986b0365ccfa4624eed67117c1b9b5f0c 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 2\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          }
+        },
+        "artifacts": [
+          "brief.md",
+          "status.json"
+        ],
+        "registry": {
+          "status": "failed",
+          "exit_code": 1
+        },
+        "artifact_content": {
+          "brief.md": "Fixture brief"
+        }
+      }
+    },
+    {
+      "name": "review-rejected",
+      "review": "reject",
+      "expected": {
+        "result": {
+          "action": "blocked",
+          "reason": "fixture-rejected",
+          "merged_files": []
+        },
+        "before": {
+          "main": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 1\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          },
+          "dispatch": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": " M pkg/a.py\u0000",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 2\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          }
+        },
+        "injected": [],
+        "after": {
+          "main": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 1\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          },
+          "dispatch": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 e7cabca986b0365ccfa4624eed67117c1b9b5f0c 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 2\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          }
+        },
+        "artifacts": [
+          "brief.md",
+          "reviewer.json",
+          "status.json"
+        ],
+        "registry": {
+          "status": "failed",
+          "exit_code": 1
+        },
+        "artifact_content": {
+          "brief.md": "Fixture brief",
+          "reviewer.json": {
+            "passed": false,
+            "reason": "fixture-rejected",
+            "content": "fixture review",
+            "provider": "fixture"
+          }
+        }
+      }
+    },
+    {
+      "name": "main-moved",
+      "drift": "main",
+      "expected": {
+        "result": {
+          "action": "blocked",
+          "reason": "main-moved",
+          "merged_files": []
+        },
+        "before": {
+          "main": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 1\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          },
+          "dispatch": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": " M pkg/a.py\u0000",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 2\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          }
+        },
+        "injected": [
+          {
+            "main": {
+              "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 73e518c0b614254528aebfffb9ac0e3a90d67025 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+              "status": "",
+              "files": {
+                "pkg/[ab].py": "literal\n",
+                "pkg/a.py": "a = 1\n",
+                "pkg/b.py": "main moved\n",
+                "pkg/delete.py": "delete me\n",
+                "pkg/rename-old.py": "rename me\n",
+                "wip/staged.txt": "staged base\n",
+                "wip/unstaged.txt": "unstaged base\n"
+              }
+            },
+            "dispatch": {
+              "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 e7cabca986b0365ccfa4624eed67117c1b9b5f0c 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+              "status": "",
+              "files": {
+                "pkg/[ab].py": "literal\n",
+                "pkg/a.py": "a = 2\n",
+                "pkg/b.py": "b = 1\n",
+                "pkg/delete.py": "delete me\n",
+                "pkg/rename-old.py": "rename me\n",
+                "wip/staged.txt": "staged base\n",
+                "wip/unstaged.txt": "unstaged base\n"
+              }
+            }
+          }
+        ],
+        "after": {
+          "main": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 73e518c0b614254528aebfffb9ac0e3a90d67025 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 1\n",
+              "pkg/b.py": "main moved\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          },
+          "dispatch": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 e7cabca986b0365ccfa4624eed67117c1b9b5f0c 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 2\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          }
+        },
+        "artifacts": [
+          "brief.md",
+          "reviewer.json",
+          "status.json"
+        ],
+        "registry": {
+          "status": "failed",
+          "exit_code": 1
+        },
+        "artifact_content": {
+          "brief.md": "Fixture brief",
+          "reviewer.json": {
+            "passed": true,
+            "reason": "approved",
+            "content": "fixture review",
+            "provider": "fixture"
+          }
+        }
+      }
+    },
+    {
+      "name": "dispatch-moved",
+      "drift": "dispatch",
+      "expected": {
+        "result": {
+          "action": "blocked",
+          "reason": "dispatch-moved",
+          "merged_files": []
+        },
+        "before": {
+          "main": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 1\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          },
+          "dispatch": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": " M pkg/a.py\u0000",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 2\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          }
+        },
+        "injected": [
+          {
+            "main": {
+              "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+              "status": "",
+              "files": {
+                "pkg/[ab].py": "literal\n",
+                "pkg/a.py": "a = 1\n",
+                "pkg/b.py": "b = 1\n",
+                "pkg/delete.py": "delete me\n",
+                "pkg/rename-old.py": "rename me\n",
+                "wip/staged.txt": "staged base\n",
+                "wip/unstaged.txt": "unstaged base\n"
+              }
+            },
+            "dispatch": {
+              "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 e7cabca986b0365ccfa4624eed67117c1b9b5f0c 0\tpkg/a.py\n100644 8a470eb0bbcd5f0b8ea6758868263f7609815d30 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+              "status": "",
+              "files": {
+                "pkg/[ab].py": "literal\n",
+                "pkg/a.py": "a = 2\n",
+                "pkg/b.py": "dispatch moved\n",
+                "pkg/delete.py": "delete me\n",
+                "pkg/rename-old.py": "rename me\n",
+                "wip/staged.txt": "staged base\n",
+                "wip/unstaged.txt": "unstaged base\n"
+              }
+            }
+          }
+        ],
+        "after": {
+          "main": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 1\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          },
+          "dispatch": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 e7cabca986b0365ccfa4624eed67117c1b9b5f0c 0\tpkg/a.py\n100644 8a470eb0bbcd5f0b8ea6758868263f7609815d30 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 2\n",
+              "pkg/b.py": "dispatch moved\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          }
+        },
+        "artifacts": [
+          "brief.md",
+          "reviewer.json",
+          "status.json"
+        ],
+        "registry": {
+          "status": "failed",
+          "exit_code": 1
+        },
+        "artifact_content": {
+          "brief.md": "Fixture brief",
+          "reviewer.json": {
+            "passed": true,
+            "reason": "approved",
+            "content": "fixture review",
+            "provider": "fixture"
+          }
+        }
+      }
+    },
+    {
+      "name": "dispatch-dirty",
+      "drift": "dirty",
+      "expected": {
+        "result": {
+          "action": "blocked",
+          "reason": "dispatch-dirty",
+          "merged_files": []
+        },
+        "before": {
+          "main": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 1\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          },
+          "dispatch": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": " M pkg/a.py\u0000",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 2\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          }
+        },
+        "injected": [
+          {
+            "main": {
+              "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+              "status": "",
+              "files": {
+                "pkg/[ab].py": "literal\n",
+                "pkg/a.py": "a = 1\n",
+                "pkg/b.py": "b = 1\n",
+                "pkg/delete.py": "delete me\n",
+                "pkg/rename-old.py": "rename me\n",
+                "wip/staged.txt": "staged base\n",
+                "wip/unstaged.txt": "unstaged base\n"
+              }
+            },
+            "dispatch": {
+              "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 e7cabca986b0365ccfa4624eed67117c1b9b5f0c 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+              "status": " M pkg/b.py\u0000",
+              "files": {
+                "pkg/[ab].py": "literal\n",
+                "pkg/a.py": "a = 2\n",
+                "pkg/b.py": "dispatch dirty\n",
+                "pkg/delete.py": "delete me\n",
+                "pkg/rename-old.py": "rename me\n",
+                "wip/staged.txt": "staged base\n",
+                "wip/unstaged.txt": "unstaged base\n"
+              }
+            }
+          }
+        ],
+        "after": {
+          "main": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 1\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          },
+          "dispatch": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 e7cabca986b0365ccfa4624eed67117c1b9b5f0c 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": " M pkg/b.py\u0000",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 2\n",
+              "pkg/b.py": "dispatch dirty\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          }
+        },
+        "artifacts": [
+          "brief.md",
+          "reviewer.json",
+          "status.json"
+        ],
+        "registry": {
+          "status": "failed",
+          "exit_code": 1
+        },
+        "artifact_content": {
+          "brief.md": "Fixture brief",
+          "reviewer.json": {
+            "passed": true,
+            "reason": "approved",
+            "content": "fixture review",
+            "provider": "fixture"
+          }
+        }
+      }
+    },
+    {
+      "name": "main-unstaged",
+      "collision": "unstaged",
+      "expected": {
+        "result": {
+          "action": "blocked",
+          "reason": "main-dirty",
+          "merged_files": []
+        },
+        "before": {
+          "main": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": " M pkg/a.py\u0000",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "main wip\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          },
+          "dispatch": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": " M pkg/a.py\u0000",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 2\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          }
+        },
+        "injected": [],
+        "after": {
+          "main": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": " M pkg/a.py\u0000",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "main wip\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          },
+          "dispatch": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 e7cabca986b0365ccfa4624eed67117c1b9b5f0c 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 2\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          }
+        },
+        "artifacts": [
+          "brief.md",
+          "status.json"
+        ],
+        "registry": {
+          "status": "failed",
+          "exit_code": 1
+        },
+        "artifact_content": {
+          "brief.md": "Fixture brief"
+        }
+      }
+    },
+    {
+      "name": "main-staged",
+      "collision": "staged",
+      "expected": {
+        "result": {
+          "action": "blocked",
+          "reason": "main-dirty",
+          "merged_files": []
+        },
+        "before": {
+          "main": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 3a60acb29b68104ca5bac9e170187a3eb7b53d57 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "M  pkg/a.py\u0000",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "main wip\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          },
+          "dispatch": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": " M pkg/a.py\u0000",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 2\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          }
+        },
+        "injected": [],
+        "after": {
+          "main": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 3a60acb29b68104ca5bac9e170187a3eb7b53d57 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "M  pkg/a.py\u0000",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "main wip\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          },
+          "dispatch": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 e7cabca986b0365ccfa4624eed67117c1b9b5f0c 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 2\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          }
+        },
+        "artifacts": [
+          "brief.md",
+          "status.json"
+        ],
+        "registry": {
+          "status": "failed",
+          "exit_code": 1
+        },
+        "artifact_content": {
+          "brief.md": "Fixture brief"
+        }
+      }
+    },
+    {
+      "name": "untracked-collision",
+      "collision": "untracked",
+      "expected": {
+        "result": {
+          "action": "blocked",
+          "reason": "main-dirty",
+          "merged_files": []
+        },
+        "before": {
+          "main": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "?? pkg/new.py\u0000",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 1\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/new.py": "main collision\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          },
+          "dispatch": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": " M pkg/a.py\u0000?? pkg/new.py\u0000",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 2\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/new.py": "dispatch new\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          }
+        },
+        "injected": [],
+        "after": {
+          "main": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "?? pkg/new.py\u0000",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 1\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/new.py": "main collision\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          },
+          "dispatch": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 e7cabca986b0365ccfa4624eed67117c1b9b5f0c 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 8d5ec9f0ba8a293ac63b7e753b8e00d86a71d7ba 0\tpkg/new.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 2\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/new.py": "dispatch new\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          }
+        },
+        "artifacts": [
+          "brief.md",
+          "status.json"
+        ],
+        "registry": {
+          "status": "failed",
+          "exit_code": 1
+        },
+        "artifact_content": {
+          "brief.md": "Fixture brief"
+        }
+      }
+    },
+    {
+      "name": "ignored-collision",
+      "collision": "ignored",
+      "expected": {
+        "result": {
+          "action": "blocked",
+          "reason": "main-dirty",
+          "merged_files": []
+        },
+        "before": {
+          "main": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "!! pkg/new.ignored\u0000",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 1\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/new.ignored": "main collision\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          },
+          "dispatch": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 8d5ec9f0ba8a293ac63b7e753b8e00d86a71d7ba 0\tpkg/new.ignored\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": " M pkg/a.py\u0000A  pkg/new.ignored\u0000",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 2\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/new.ignored": "dispatch new\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          }
+        },
+        "injected": [],
+        "after": {
+          "main": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "!! pkg/new.ignored\u0000",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 1\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/new.ignored": "main collision\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          },
+          "dispatch": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 e7cabca986b0365ccfa4624eed67117c1b9b5f0c 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 8d5ec9f0ba8a293ac63b7e753b8e00d86a71d7ba 0\tpkg/new.ignored\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 2\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/new.ignored": "dispatch new\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          }
+        },
+        "artifacts": [
+          "brief.md",
+          "status.json"
+        ],
+        "registry": {
+          "status": "failed",
+          "exit_code": 1
+        },
+        "artifact_content": {
+          "brief.md": "Fixture brief"
+        }
+      }
+    },
+    {
+      "name": "parent-collision",
+      "collision": "parent",
+      "expected": {
+        "result": {
+          "action": "blocked",
+          "reason": "main-dirty",
+          "merged_files": []
+        },
+        "before": {
+          "main": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "?? pkg/parent\u0000",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 1\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/parent": "main collision\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          },
+          "dispatch": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": " M pkg/a.py\u0000?? pkg/parent/new.py\u0000",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 2\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/parent/new.py": "dispatch new\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          }
+        },
+        "injected": [],
+        "after": {
+          "main": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "?? pkg/parent\u0000",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 1\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/parent": "main collision\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          },
+          "dispatch": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 e7cabca986b0365ccfa4624eed67117c1b9b5f0c 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 8d5ec9f0ba8a293ac63b7e753b8e00d86a71d7ba 0\tpkg/parent/new.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 2\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/parent/new.py": "dispatch new\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          }
+        },
+        "artifacts": [
+          "brief.md",
+          "status.json"
+        ],
+        "registry": {
+          "status": "failed",
+          "exit_code": 1
+        },
+        "artifact_content": {
+          "brief.md": "Fixture brief"
+        }
+      }
+    },
+    {
+      "name": "deletion-rename-literal",
+      "paths": true,
+      "expected": {
+        "result": {
+          "action": "merged",
+          "reason": "approved",
+          "merged_files": [
+            "pkg/[ab].py",
+            "pkg/a.py",
+            "pkg/delete.py",
+            "pkg/rename-new.py",
+            "pkg/rename-old.py"
+          ]
+        },
+        "before": {
+          "main": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 1\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          },
+          "dispatch": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": " M pkg/[ab].py\u0000 M pkg/a.py\u0000 D pkg/delete.py\u0000 D pkg/rename-old.py\u0000?? pkg/rename-new.py\u0000",
+            "files": {
+              "pkg/[ab].py": "literal changed\n",
+              "pkg/a.py": "a = 2\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/rename-new.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          }
+        },
+        "injected": [],
+        "after": {
+          "main": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 56f313eff5cf3ab23fdd4cc0295f1aa8ad34c6f3 0\tpkg/[ab].py\n100644 e7cabca986b0365ccfa4624eed67117c1b9b5f0c 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-new.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "M  pkg/[ab].py\u0000M  pkg/a.py\u0000D  pkg/delete.py\u0000R  pkg/rename-new.py\u0000pkg/rename-old.py\u0000",
+            "files": {
+              "pkg/[ab].py": "literal changed\n",
+              "pkg/a.py": "a = 2\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/rename-new.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          },
+          "dispatch": null
+        },
+        "artifacts": [
+          "brief.md",
+          "status.json"
+        ],
+        "registry": {
+          "status": "completed",
+          "exit_code": 0
+        },
+        "artifact_content": {
+          "brief.md": "Fixture brief"
+        }
+      }
+    },
+    {
+      "name": "unrelated-wip",
+      "wip": true,
+      "expected": {
+        "result": {
+          "action": "merged",
+          "reason": "approved",
+          "merged_files": [
+            "pkg/a.py"
+          ]
+        },
+        "before": {
+          "main": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 a2e6b17b757c8fb045ddcec4fc200f469702b700 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "M  wip/staged.txt\u0000 M wip/unstaged.txt\u0000?? wip/untracked.txt\u0000!! wip/cache.ignored\u0000",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 1\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/cache.ignored": "ignored wip\n",
+              "wip/staged.txt": "staged wip\n",
+              "wip/unstaged.txt": "unstaged wip\n",
+              "wip/untracked.txt": "untracked wip\n"
+            }
+          },
+          "dispatch": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": " M pkg/a.py\u0000",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 2\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          }
+        },
+        "injected": [],
+        "after": {
+          "main": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 e7cabca986b0365ccfa4624eed67117c1b9b5f0c 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 a2e6b17b757c8fb045ddcec4fc200f469702b700 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "M  pkg/a.py\u0000M  wip/staged.txt\u0000 M wip/unstaged.txt\u0000?? wip/untracked.txt\u0000!! wip/cache.ignored\u0000",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 2\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/cache.ignored": "ignored wip\n",
+              "wip/staged.txt": "staged wip\n",
+              "wip/unstaged.txt": "unstaged wip\n",
+              "wip/untracked.txt": "untracked wip\n"
+            }
+          },
+          "dispatch": null
+        },
+        "artifacts": [
+          "brief.md",
+          "status.json"
+        ],
+        "registry": {
+          "status": "completed",
+          "exit_code": 0
+        },
+        "artifact_content": {
+          "brief.md": "Fixture brief"
+        }
+      }
+    },
+    {
+      "name": "partial-merge-error",
+      "inject": "merge",
+      "wip": true,
+      "expected": {
+        "result": {
+          "action": "blocked",
+          "reason": "merge-error:boom",
+          "merged_files": []
+        },
+        "before": {
+          "main": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 a2e6b17b757c8fb045ddcec4fc200f469702b700 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "M  wip/staged.txt\u0000 M wip/unstaged.txt\u0000?? wip/untracked.txt\u0000!! wip/cache.ignored\u0000",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 1\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/cache.ignored": "ignored wip\n",
+              "wip/staged.txt": "staged wip\n",
+              "wip/unstaged.txt": "unstaged wip\n",
+              "wip/untracked.txt": "untracked wip\n"
+            }
+          },
+          "dispatch": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": " M pkg/a.py\u0000?? pkg/new.py\u0000",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 2\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/new.py": "new = 2\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          }
+        },
+        "injected": [
+          {
+            "main": {
+              "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 3fe482344df8f2604db9987789344c69aac5f5e2 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 1ccd6b035f936862a6215821e92cfaacd74b3364 0\tpkg/new.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 a2e6b17b757c8fb045ddcec4fc200f469702b700 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+              "status": "M  pkg/a.py\u0000A  pkg/new.py\u0000M  wip/staged.txt\u0000 M wip/unstaged.txt\u0000?? wip/untracked.txt\u0000!! wip/cache.ignored\u0000",
+              "files": {
+                "pkg/[ab].py": "literal\n",
+                "pkg/a.py": "partial merge\n",
+                "pkg/b.py": "b = 1\n",
+                "pkg/delete.py": "delete me\n",
+                "pkg/new.py": "new = 2\n",
+                "pkg/rename-old.py": "rename me\n",
+                "wip/cache.ignored": "ignored wip\n",
+                "wip/staged.txt": "staged wip\n",
+                "wip/unstaged.txt": "unstaged wip\n",
+                "wip/untracked.txt": "untracked wip\n"
+              }
+            },
+            "dispatch": {
+              "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 e7cabca986b0365ccfa4624eed67117c1b9b5f0c 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 1ccd6b035f936862a6215821e92cfaacd74b3364 0\tpkg/new.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+              "status": "",
+              "files": {
+                "pkg/[ab].py": "literal\n",
+                "pkg/a.py": "a = 2\n",
+                "pkg/b.py": "b = 1\n",
+                "pkg/delete.py": "delete me\n",
+                "pkg/new.py": "new = 2\n",
+                "pkg/rename-old.py": "rename me\n",
+                "wip/staged.txt": "staged base\n",
+                "wip/unstaged.txt": "unstaged base\n"
+              }
+            }
+          }
+        ],
+        "after": {
+          "main": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 a2e6b17b757c8fb045ddcec4fc200f469702b700 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "M  wip/staged.txt\u0000 M wip/unstaged.txt\u0000?? wip/untracked.txt\u0000!! wip/cache.ignored\u0000",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 1\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/cache.ignored": "ignored wip\n",
+              "wip/staged.txt": "staged wip\n",
+              "wip/unstaged.txt": "unstaged wip\n",
+              "wip/untracked.txt": "untracked wip\n"
+            }
+          },
+          "dispatch": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 e7cabca986b0365ccfa4624eed67117c1b9b5f0c 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 1ccd6b035f936862a6215821e92cfaacd74b3364 0\tpkg/new.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 2\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/new.py": "new = 2\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          }
+        },
+        "artifacts": [
+          "brief.md",
+          "status.json"
+        ],
+        "registry": {
+          "status": "failed",
+          "exit_code": 1
+        },
+        "artifact_content": {
+          "brief.md": "Fixture brief"
+        }
+      }
+    },
+    {
+      "name": "rollback-restore-failed",
+      "inject": "restore",
+      "wip": true,
+      "expected": {
+        "result": {
+          "action": "blocked",
+          "reason": "rollback-failed:merge-error:boom; failures=['restore:pkg/a.py', 'target-residue']",
+          "merged_files": []
+        },
+        "before": {
+          "main": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 a2e6b17b757c8fb045ddcec4fc200f469702b700 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "M  wip/staged.txt\u0000 M wip/unstaged.txt\u0000?? wip/untracked.txt\u0000!! wip/cache.ignored\u0000",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 1\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/cache.ignored": "ignored wip\n",
+              "wip/staged.txt": "staged wip\n",
+              "wip/unstaged.txt": "unstaged wip\n",
+              "wip/untracked.txt": "untracked wip\n"
+            }
+          },
+          "dispatch": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": " M pkg/a.py\u0000?? pkg/new.py\u0000",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 2\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/new.py": "new = 2\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          }
+        },
+        "injected": [
+          {
+            "main": {
+              "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 3fe482344df8f2604db9987789344c69aac5f5e2 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 1ccd6b035f936862a6215821e92cfaacd74b3364 0\tpkg/new.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 a2e6b17b757c8fb045ddcec4fc200f469702b700 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+              "status": "M  pkg/a.py\u0000A  pkg/new.py\u0000M  wip/staged.txt\u0000 M wip/unstaged.txt\u0000?? wip/untracked.txt\u0000!! wip/cache.ignored\u0000",
+              "files": {
+                "pkg/[ab].py": "literal\n",
+                "pkg/a.py": "partial merge\n",
+                "pkg/b.py": "b = 1\n",
+                "pkg/delete.py": "delete me\n",
+                "pkg/new.py": "new = 2\n",
+                "pkg/rename-old.py": "rename me\n",
+                "wip/cache.ignored": "ignored wip\n",
+                "wip/staged.txt": "staged wip\n",
+                "wip/unstaged.txt": "unstaged wip\n",
+                "wip/untracked.txt": "untracked wip\n"
+              }
+            },
+            "dispatch": {
+              "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 e7cabca986b0365ccfa4624eed67117c1b9b5f0c 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 1ccd6b035f936862a6215821e92cfaacd74b3364 0\tpkg/new.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+              "status": "",
+              "files": {
+                "pkg/[ab].py": "literal\n",
+                "pkg/a.py": "a = 2\n",
+                "pkg/b.py": "b = 1\n",
+                "pkg/delete.py": "delete me\n",
+                "pkg/new.py": "new = 2\n",
+                "pkg/rename-old.py": "rename me\n",
+                "wip/staged.txt": "staged base\n",
+                "wip/unstaged.txt": "unstaged base\n"
+              }
+            }
+          },
+          {
+            "main": {
+              "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 1ccd6b035f936862a6215821e92cfaacd74b3364 0\tpkg/new.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 a2e6b17b757c8fb045ddcec4fc200f469702b700 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+              "status": " M pkg/a.py\u0000A  pkg/new.py\u0000M  wip/staged.txt\u0000 M wip/unstaged.txt\u0000?? wip/untracked.txt\u0000!! wip/cache.ignored\u0000",
+              "files": {
+                "pkg/[ab].py": "literal\n",
+                "pkg/a.py": "partial merge\n",
+                "pkg/b.py": "b = 1\n",
+                "pkg/delete.py": "delete me\n",
+                "pkg/new.py": "new = 2\n",
+                "pkg/rename-old.py": "rename me\n",
+                "wip/cache.ignored": "ignored wip\n",
+                "wip/staged.txt": "staged wip\n",
+                "wip/unstaged.txt": "unstaged wip\n",
+                "wip/untracked.txt": "untracked wip\n"
+              }
+            },
+            "dispatch": {
+              "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 e7cabca986b0365ccfa4624eed67117c1b9b5f0c 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 1ccd6b035f936862a6215821e92cfaacd74b3364 0\tpkg/new.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+              "status": "",
+              "files": {
+                "pkg/[ab].py": "literal\n",
+                "pkg/a.py": "a = 2\n",
+                "pkg/b.py": "b = 1\n",
+                "pkg/delete.py": "delete me\n",
+                "pkg/new.py": "new = 2\n",
+                "pkg/rename-old.py": "rename me\n",
+                "wip/staged.txt": "staged base\n",
+                "wip/unstaged.txt": "unstaged base\n"
+              }
+            }
+          }
+        ],
+        "after": {
+          "main": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 a2e6b17b757c8fb045ddcec4fc200f469702b700 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": " M pkg/a.py\u0000M  wip/staged.txt\u0000 M wip/unstaged.txt\u0000?? wip/untracked.txt\u0000!! wip/cache.ignored\u0000",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "partial merge\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/cache.ignored": "ignored wip\n",
+              "wip/staged.txt": "staged wip\n",
+              "wip/unstaged.txt": "unstaged wip\n",
+              "wip/untracked.txt": "untracked wip\n"
+            }
+          },
+          "dispatch": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 e7cabca986b0365ccfa4624eed67117c1b9b5f0c 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 1ccd6b035f936862a6215821e92cfaacd74b3364 0\tpkg/new.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 2\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/new.py": "new = 2\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          }
+        },
+        "artifacts": [
+          "brief.md",
+          "status.json"
+        ],
+        "registry": {
+          "status": "failed",
+          "exit_code": 1
+        },
+        "artifact_content": {
+          "brief.md": "Fixture brief"
+        }
+      }
+    },
+    {
+      "name": "rollback-skipped",
+      "inject": "rollback",
+      "wip": true,
+      "expected": {
+        "result": {
+          "action": "blocked",
+          "reason": "rollback-failed:merge-error:boom; failures=['target-residue']",
+          "merged_files": []
+        },
+        "before": {
+          "main": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 a2e6b17b757c8fb045ddcec4fc200f469702b700 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "M  wip/staged.txt\u0000 M wip/unstaged.txt\u0000?? wip/untracked.txt\u0000!! wip/cache.ignored\u0000",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 1\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/cache.ignored": "ignored wip\n",
+              "wip/staged.txt": "staged wip\n",
+              "wip/unstaged.txt": "unstaged wip\n",
+              "wip/untracked.txt": "untracked wip\n"
+            }
+          },
+          "dispatch": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": " M pkg/a.py\u0000?? pkg/new.py\u0000",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 2\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/new.py": "new = 2\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          }
+        },
+        "injected": [
+          {
+            "main": {
+              "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 3fe482344df8f2604db9987789344c69aac5f5e2 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 1ccd6b035f936862a6215821e92cfaacd74b3364 0\tpkg/new.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 a2e6b17b757c8fb045ddcec4fc200f469702b700 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+              "status": "M  pkg/a.py\u0000A  pkg/new.py\u0000M  wip/staged.txt\u0000 M wip/unstaged.txt\u0000?? wip/untracked.txt\u0000!! wip/cache.ignored\u0000",
+              "files": {
+                "pkg/[ab].py": "literal\n",
+                "pkg/a.py": "partial merge\n",
+                "pkg/b.py": "b = 1\n",
+                "pkg/delete.py": "delete me\n",
+                "pkg/new.py": "new = 2\n",
+                "pkg/rename-old.py": "rename me\n",
+                "wip/cache.ignored": "ignored wip\n",
+                "wip/staged.txt": "staged wip\n",
+                "wip/unstaged.txt": "unstaged wip\n",
+                "wip/untracked.txt": "untracked wip\n"
+              }
+            },
+            "dispatch": {
+              "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 e7cabca986b0365ccfa4624eed67117c1b9b5f0c 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 1ccd6b035f936862a6215821e92cfaacd74b3364 0\tpkg/new.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+              "status": "",
+              "files": {
+                "pkg/[ab].py": "literal\n",
+                "pkg/a.py": "a = 2\n",
+                "pkg/b.py": "b = 1\n",
+                "pkg/delete.py": "delete me\n",
+                "pkg/new.py": "new = 2\n",
+                "pkg/rename-old.py": "rename me\n",
+                "wip/staged.txt": "staged base\n",
+                "wip/unstaged.txt": "unstaged base\n"
+              }
+            }
+          },
+          {
+            "main": {
+              "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 3fe482344df8f2604db9987789344c69aac5f5e2 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 1ccd6b035f936862a6215821e92cfaacd74b3364 0\tpkg/new.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 a2e6b17b757c8fb045ddcec4fc200f469702b700 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+              "status": "M  pkg/a.py\u0000A  pkg/new.py\u0000M  wip/staged.txt\u0000 M wip/unstaged.txt\u0000?? wip/untracked.txt\u0000!! wip/cache.ignored\u0000",
+              "files": {
+                "pkg/[ab].py": "literal\n",
+                "pkg/a.py": "partial merge\n",
+                "pkg/b.py": "b = 1\n",
+                "pkg/delete.py": "delete me\n",
+                "pkg/new.py": "new = 2\n",
+                "pkg/rename-old.py": "rename me\n",
+                "wip/cache.ignored": "ignored wip\n",
+                "wip/staged.txt": "staged wip\n",
+                "wip/unstaged.txt": "unstaged wip\n",
+                "wip/untracked.txt": "untracked wip\n"
+              }
+            },
+            "dispatch": {
+              "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 e7cabca986b0365ccfa4624eed67117c1b9b5f0c 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 1ccd6b035f936862a6215821e92cfaacd74b3364 0\tpkg/new.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+              "status": "",
+              "files": {
+                "pkg/[ab].py": "literal\n",
+                "pkg/a.py": "a = 2\n",
+                "pkg/b.py": "b = 1\n",
+                "pkg/delete.py": "delete me\n",
+                "pkg/new.py": "new = 2\n",
+                "pkg/rename-old.py": "rename me\n",
+                "wip/staged.txt": "staged base\n",
+                "wip/unstaged.txt": "unstaged base\n"
+              }
+            }
+          }
+        ],
+        "after": {
+          "main": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 3fe482344df8f2604db9987789344c69aac5f5e2 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 1ccd6b035f936862a6215821e92cfaacd74b3364 0\tpkg/new.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 a2e6b17b757c8fb045ddcec4fc200f469702b700 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "M  pkg/a.py\u0000A  pkg/new.py\u0000M  wip/staged.txt\u0000 M wip/unstaged.txt\u0000?? wip/untracked.txt\u0000!! wip/cache.ignored\u0000",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "partial merge\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/new.py": "new = 2\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/cache.ignored": "ignored wip\n",
+              "wip/staged.txt": "staged wip\n",
+              "wip/unstaged.txt": "unstaged wip\n",
+              "wip/untracked.txt": "untracked wip\n"
+            }
+          },
+          "dispatch": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 e7cabca986b0365ccfa4624eed67117c1b9b5f0c 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 1ccd6b035f936862a6215821e92cfaacd74b3364 0\tpkg/new.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 2\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/new.py": "new = 2\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          }
+        },
+        "artifacts": [
+          "brief.md",
+          "status.json"
+        ],
+        "registry": {
+          "status": "failed",
+          "exit_code": 1
+        },
+        "artifact_content": {
+          "brief.md": "Fixture brief"
+        }
+      }
+    },
+    {
+      "name": "cleanup-failed",
+      "inject": "cleanup",
+      "expected": {
+        "result": {
+          "action": "merged-but-cleanup-failed",
+          "reason": "post-merge-error:cleanup offline",
+          "merged_files": [
+            "pkg/a.py"
+          ]
+        },
+        "before": {
+          "main": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 1\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          },
+          "dispatch": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": " M pkg/a.py\u0000",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 2\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          }
+        },
+        "injected": [
+          {
+            "main": {
+              "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 e7cabca986b0365ccfa4624eed67117c1b9b5f0c 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+              "status": "M  pkg/a.py\u0000",
+              "files": {
+                "pkg/[ab].py": "literal\n",
+                "pkg/a.py": "a = 2\n",
+                "pkg/b.py": "b = 1\n",
+                "pkg/delete.py": "delete me\n",
+                "pkg/rename-old.py": "rename me\n",
+                "wip/staged.txt": "staged base\n",
+                "wip/unstaged.txt": "unstaged base\n"
+              }
+            },
+            "dispatch": {
+              "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 e7cabca986b0365ccfa4624eed67117c1b9b5f0c 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+              "status": "",
+              "files": {
+                "pkg/[ab].py": "literal\n",
+                "pkg/a.py": "a = 2\n",
+                "pkg/b.py": "b = 1\n",
+                "pkg/delete.py": "delete me\n",
+                "pkg/rename-old.py": "rename me\n",
+                "wip/staged.txt": "staged base\n",
+                "wip/unstaged.txt": "unstaged base\n"
+              }
+            }
+          }
+        ],
+        "after": {
+          "main": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 e7cabca986b0365ccfa4624eed67117c1b9b5f0c 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "M  pkg/a.py\u0000",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 2\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          },
+          "dispatch": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 e7cabca986b0365ccfa4624eed67117c1b9b5f0c 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 2\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          }
+        },
+        "artifacts": [
+          "brief.md",
+          "status.json"
+        ],
+        "registry": {
+          "status": "completed",
+          "exit_code": 0
+        },
+        "artifact_content": {
+          "brief.md": "Fixture brief"
+        }
+      }
+    },
+    {
+      "name": "persist-failed",
+      "inject": "persist",
+      "expected": {
+        "result": {
+          "action": "merged-but-cleanup-failed",
+          "reason": "post-merge-error:persist offline",
+          "merged_files": [
+            "pkg/a.py"
+          ]
+        },
+        "before": {
+          "main": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 1\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          },
+          "dispatch": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": " M pkg/a.py\u0000",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 2\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          }
+        },
+        "injected": [
+          {
+            "main": {
+              "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 e7cabca986b0365ccfa4624eed67117c1b9b5f0c 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+              "status": "M  pkg/a.py\u0000",
+              "files": {
+                "pkg/[ab].py": "literal\n",
+                "pkg/a.py": "a = 2\n",
+                "pkg/b.py": "b = 1\n",
+                "pkg/delete.py": "delete me\n",
+                "pkg/rename-old.py": "rename me\n",
+                "wip/staged.txt": "staged base\n",
+                "wip/unstaged.txt": "unstaged base\n"
+              }
+            },
+            "dispatch": {
+              "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 e7cabca986b0365ccfa4624eed67117c1b9b5f0c 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+              "status": "",
+              "files": {
+                "pkg/[ab].py": "literal\n",
+                "pkg/a.py": "a = 2\n",
+                "pkg/b.py": "b = 1\n",
+                "pkg/delete.py": "delete me\n",
+                "pkg/rename-old.py": "rename me\n",
+                "wip/staged.txt": "staged base\n",
+                "wip/unstaged.txt": "unstaged base\n"
+              }
+            }
+          }
+        ],
+        "after": {
+          "main": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 e7cabca986b0365ccfa4624eed67117c1b9b5f0c 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "M  pkg/a.py\u0000",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 2\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          },
+          "dispatch": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 e7cabca986b0365ccfa4624eed67117c1b9b5f0c 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 2\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          }
+        },
+        "artifacts": [],
+        "registry": {
+          "status": "completed",
+          "exit_code": 0
+        },
+        "artifact_content": {}
+      }
+    },
+    {
+      "name": "reviewed-cleanup-failed",
+      "inject": "cleanup",
+      "empty": true,
+      "expect_changes": false,
+      "expected": {
+        "result": {
+          "action": "reviewed-but-cleanup-failed",
+          "reason": "post-review-error:cleanup offline",
+          "merged_files": []
+        },
+        "before": {
+          "main": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 1\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          },
+          "dispatch": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 1\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          }
+        },
+        "injected": [
+          {
+            "main": {
+              "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+              "status": "",
+              "files": {
+                "pkg/[ab].py": "literal\n",
+                "pkg/a.py": "a = 1\n",
+                "pkg/b.py": "b = 1\n",
+                "pkg/delete.py": "delete me\n",
+                "pkg/rename-old.py": "rename me\n",
+                "wip/staged.txt": "staged base\n",
+                "wip/unstaged.txt": "unstaged base\n"
+              }
+            },
+            "dispatch": {
+              "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+              "status": "",
+              "files": {
+                "pkg/[ab].py": "literal\n",
+                "pkg/a.py": "a = 1\n",
+                "pkg/b.py": "b = 1\n",
+                "pkg/delete.py": "delete me\n",
+                "pkg/rename-old.py": "rename me\n",
+                "wip/staged.txt": "staged base\n",
+                "wip/unstaged.txt": "unstaged base\n"
+              }
+            }
+          }
+        ],
+        "after": {
+          "main": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 1\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          },
+          "dispatch": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 1\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          }
+        },
+        "artifacts": [
+          "brief.md",
+          "status.json"
+        ],
+        "registry": {
+          "status": "completed",
+          "exit_code": 0
+        },
+        "artifact_content": {
+          "brief.md": "Fixture brief"
+        }
+      }
+    },
+    {
+      "name": "lock-timeout",
+      "lock": true,
+      "expected": {
+        "result": {
+          "action": "blocked",
+          "reason": "finalize-lock-timeout",
+          "merged_files": []
+        },
+        "before": {
+          "main": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 1\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          },
+          "dispatch": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": " M pkg/a.py\u0000",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 2\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          }
+        },
+        "injected": [],
+        "after": {
+          "main": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 1337a530cbc1bd7d20aee2d80f1f174a9182417d 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 1\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          },
+          "dispatch": {
+            "index": "100644 ff2eaa33a2a35cc1e2bcb003aee4fc1dc2826a2a 0\t.gitignore\n100644 0ba4e1f09a160eabbdede62f55c616916ebfd32c 0\tpkg/[ab].py\n100644 e7cabca986b0365ccfa4624eed67117c1b9b5f0c 0\tpkg/a.py\n100644 6e5be2548650d2c9d8fce04df1198113316001c0 0\tpkg/b.py\n100644 2d030d7bc1bbfbdee332aaf691447b30cdea375b 0\tpkg/delete.py\n100644 43372edea46de0470388d72da4ad490183f95954 0\tpkg/rename-old.py\n100644 efa3c21670bc2f92f3eeaceaf96f7e8d835ed185 0\twip/staged.txt\n100644 8624656196e74e492e98756a509a0399f70e18ca 0\twip/unstaged.txt\n",
+            "status": "",
+            "files": {
+              "pkg/[ab].py": "literal\n",
+              "pkg/a.py": "a = 2\n",
+              "pkg/b.py": "b = 1\n",
+              "pkg/delete.py": "delete me\n",
+              "pkg/rename-old.py": "rename me\n",
+              "wip/staged.txt": "staged base\n",
+              "wip/unstaged.txt": "unstaged base\n"
+            }
+          }
+        },
+        "artifacts": [
+          "brief.md",
+          "status.json"
+        ],
+        "registry": {
+          "status": "failed",
+          "exit_code": 1
+        },
+        "artifact_content": {
+          "brief.md": "Fixture brief"
+        }
+      }
+    }
+  ]
+}

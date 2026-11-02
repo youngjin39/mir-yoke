@@ -77,6 +77,12 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
   no findings approves, and missing, malformed, rejecting or timed-out reviews
   block. Evidence, provider metadata and hook replacement match Python on 15
   evidence and 7 protocol scenarios.
+- Executor port slice E9b (library only): native finalization (gate, review and
+  head-drift checks, a bounded cross-process file lock that is a real lock on
+  Windows instead of Python's no-op branch, staged merge into the target,
+  rollback that keeps unrelated staged, unstaged, untracked and ignored work,
+  and a distinct result when cleanup fails after the merge), matching Python's
+  index, working-tree and registry snapshots on 26 scenarios.
 
 ### Changed
 

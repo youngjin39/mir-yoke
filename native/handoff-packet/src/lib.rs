@@ -19,6 +19,8 @@ pub mod executor_dispatch_provider;
 #[forbid(unsafe_code)]
 pub mod executor_execute;
 #[forbid(unsafe_code)]
+pub mod executor_finalize;
+#[forbid(unsafe_code)]
 mod executor_ledger_json;
 #[forbid(unsafe_code)]
 pub mod executor_local;

@@ -345,7 +345,7 @@ fn repr(text: &str) -> Result<String> {
     out.push(quote);
     Ok(out)
 }
-fn changed_repr(changed: &[String]) -> Result<String> {
+pub(crate) fn changed_repr(changed: &[String]) -> Result<String> {
     Ok(format!(
         "[{}]",
         changed
