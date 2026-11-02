@@ -37,6 +37,11 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
   (declined to Python when `local.py` exists); the Python entrypoint does not
   route `cancel` yet. Database files differ from Python's only in SQLite's
   writer-version header bytes.
+- Executor port slice E4 (library only): a native Codex app-server JSON-RPC
+  transport (handshake, thread and turn requests, issued-id tracking, streaming
+  items, token usage, stderr draining, stall and overall deadlines, cancellation,
+  child kill and reap) matching the Python client on 38 fake-server scenarios.
+  Closing kills the child directly instead of Python's terminate-then-kill.
 
 ## [v0.13.61] — 2026-11-01 — Native executor queries with local executor files
 

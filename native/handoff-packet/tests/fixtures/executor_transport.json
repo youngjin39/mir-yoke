@@ -1,0 +1,549 @@
+[
+  {
+    "mode": "normal",
+    "expected": {
+      "text": "completed \u2713",
+      "thread_id": "thread-1",
+      "model_id": "fixture",
+      "usage": {
+        "total": {
+          "inputTokens": 12,
+          "outputTokens": 3
+        }
+      },
+      "tool_version": "fake/1",
+      "raw_result": {
+        "threadId": "thread-1",
+        "turn": {
+          "id": "turn-1",
+          "status": "completed",
+          "items": []
+        }
+      }
+    },
+    "malformed": 0,
+    "stderr": 0
+  },
+  {
+    "mode": "streaming",
+    "expected": {
+      "text": "completed \u2713",
+      "thread_id": "thread-1",
+      "model_id": "fixture",
+      "usage": {
+        "total": {
+          "inputTokens": 12,
+          "outputTokens": 3
+        }
+      },
+      "tool_version": "fake/1",
+      "raw_result": {
+        "threadId": "thread-1",
+        "turn": {
+          "id": "turn-1",
+          "status": "completed",
+          "items": []
+        }
+      }
+    },
+    "malformed": 0,
+    "stderr": 0
+  },
+  {
+    "mode": "server_error",
+    "expected": {
+      "error": "CodexMcpProtocolError",
+      "message": "bad model"
+    },
+    "malformed": 0,
+    "stderr": 0
+  },
+  {
+    "mode": "malformed",
+    "expected": {
+      "text": "completed \u2713",
+      "thread_id": "thread-1",
+      "model_id": "fixture",
+      "usage": {
+        "total": {
+          "inputTokens": 12,
+          "outputTokens": 3
+        }
+      },
+      "tool_version": "fake/1",
+      "raw_result": {
+        "threadId": "thread-1",
+        "turn": {
+          "id": "turn-1",
+          "status": "completed",
+          "items": []
+        }
+      }
+    },
+    "malformed": 3,
+    "stderr": 0
+  },
+  {
+    "mode": "unknown_ids",
+    "expected": {
+      "text": "completed \u2713",
+      "thread_id": "thread-1",
+      "model_id": "fixture",
+      "usage": {
+        "total": {
+          "inputTokens": 12,
+          "outputTokens": 3
+        }
+      },
+      "tool_version": "fake/1",
+      "raw_result": {
+        "threadId": "thread-1",
+        "turn": {
+          "id": "turn-1",
+          "status": "completed",
+          "items": []
+        }
+      }
+    },
+    "malformed": 0,
+    "stderr": 0
+  },
+  {
+    "mode": "stderr_flood",
+    "expected": {
+      "text": "completed \u2713",
+      "thread_id": "thread-1",
+      "model_id": "fixture",
+      "usage": {
+        "total": {
+          "inputTokens": 12,
+          "outputTokens": 3
+        }
+      },
+      "tool_version": "fake/1",
+      "raw_result": {
+        "threadId": "thread-1",
+        "turn": {
+          "id": "turn-1",
+          "status": "completed",
+          "items": []
+        }
+      }
+    },
+    "malformed": 0,
+    "stderr": 2048
+  },
+  {
+    "mode": "stall",
+    "expected": {
+      "error": "CodexMcpStallError",
+      "message": "Codex app-server request 'turn/completed' stalled after <seconds>s without stdout activity"
+    },
+    "malformed": 0,
+    "stderr": 0
+  },
+  {
+    "mode": "deadline",
+    "expected": {
+      "error": "CodexMcpTimeoutError",
+      "message": "Codex app-server request 'turn/completed' timed out after <seconds>s"
+    },
+    "malformed": 0,
+    "stderr": 0
+  },
+  {
+    "mode": "cancel",
+    "expected": {
+      "error": "CodexMcpProcessError",
+      "message": "Codex app-server client closed"
+    },
+    "malformed": 0,
+    "stderr": 0
+  },
+  {
+    "mode": "exit_before_response",
+    "expected": {
+      "error": "CodexMcpProcessError",
+      "message": "Codex app-server exited with code 7"
+    },
+    "malformed": 0,
+    "stderr": 0
+  },
+  {
+    "mode": "nested_limits",
+    "expected": {
+      "text": "completed \u2713",
+      "thread_id": "thread-1",
+      "model_id": "fixture",
+      "usage": {
+        "total": {
+          "inputTokens": 12,
+          "outputTokens": 3
+        }
+      },
+      "tool_version": "fake/1",
+      "raw_result": {
+        "threadId": "thread-1",
+        "turn": {
+          "id": "turn-1",
+          "status": "completed",
+          "items": []
+        }
+      }
+    },
+    "malformed": 1,
+    "stderr": 0
+  },
+  {
+    "mode": "early_completion",
+    "expected": {
+      "text": "completed \u2713",
+      "thread_id": "thread-1",
+      "model_id": "fixture",
+      "usage": {
+        "total": {
+          "inputTokens": 12,
+          "outputTokens": 3
+        }
+      },
+      "tool_version": "fake/1",
+      "raw_result": {
+        "threadId": "thread-1",
+        "turn": {
+          "id": "turn-1",
+          "status": "completed",
+          "items": [
+            {
+              "id": "item-1",
+              "type": "agentMessage",
+              "text": "completed \u2713"
+            }
+          ]
+        }
+      }
+    },
+    "malformed": 0,
+    "stderr": 0
+  },
+  {
+    "mode": "invalid_id",
+    "expected": {
+      "error": "CodexMcpProtocolError",
+      "message": "app-server response has invalid id"
+    },
+    "malformed": 0,
+    "stderr": 0
+  },
+  {
+    "mode": "invalid_envelope",
+    "expected": {
+      "error": "CodexMcpProtocolError",
+      "message": "app-server response has invalid envelope"
+    },
+    "malformed": 0,
+    "stderr": 0
+  },
+  {
+    "mode": "missing_thread",
+    "expected": {
+      "error": "CodexMcpProtocolError",
+      "message": "thread/start returned no thread id"
+    },
+    "malformed": 0,
+    "stderr": 0
+  },
+  {
+    "mode": "missing_turn",
+    "expected": {
+      "error": "CodexMcpProtocolError",
+      "message": "turn/start returned no turn id"
+    },
+    "malformed": 0,
+    "stderr": 0
+  },
+  {
+    "mode": "invalid_item",
+    "expected": {
+      "error": "CodexMcpProtocolError",
+      "message": "item/completed item is not an object"
+    },
+    "malformed": 0,
+    "stderr": 0
+  },
+  {
+    "mode": "invalid_item_type",
+    "expected": {
+      "error": "CodexMcpProtocolError",
+      "message": "item/completed item has invalid type"
+    },
+    "malformed": 0,
+    "stderr": 0
+  },
+  {
+    "mode": "empty_item_id",
+    "expected": {
+      "error": "CodexMcpProtocolError",
+      "message": "item/completed item has invalid agent message fields"
+    },
+    "malformed": 0,
+    "stderr": 0
+  },
+  {
+    "mode": "invalid_item_text",
+    "expected": {
+      "error": "CodexMcpProtocolError",
+      "message": "item/completed item has invalid agent message fields"
+    },
+    "malformed": 0,
+    "stderr": 0
+  },
+  {
+    "mode": "unknown_item_type",
+    "expected": {
+      "text": "",
+      "thread_id": "thread-1",
+      "model_id": "fixture",
+      "usage": {
+        "total": {
+          "inputTokens": 12,
+          "outputTokens": 3
+        }
+      },
+      "tool_version": "fake/1",
+      "raw_result": {
+        "threadId": "thread-1",
+        "turn": {
+          "id": "turn-1",
+          "status": "completed",
+          "items": []
+        }
+      }
+    },
+    "malformed": 0,
+    "stderr": 0
+  },
+  {
+    "mode": "commentary",
+    "expected": {
+      "text": "",
+      "thread_id": "thread-1",
+      "model_id": "fixture",
+      "usage": {
+        "total": {
+          "inputTokens": 12,
+          "outputTokens": 3
+        }
+      },
+      "tool_version": "fake/1",
+      "raw_result": {
+        "threadId": "thread-1",
+        "turn": {
+          "id": "turn-1",
+          "status": "completed",
+          "items": []
+        }
+      }
+    },
+    "malformed": 0,
+    "stderr": 0
+  },
+  {
+    "mode": "failed",
+    "expected": {
+      "error": "CodexMcpProtocolError",
+      "message": "Codex turn failed: model unavailable"
+    },
+    "malformed": 0,
+    "stderr": 0
+  },
+  {
+    "mode": "interrupted",
+    "expected": {
+      "error": "CodexMcpProtocolError",
+      "message": "Codex turn failed: interrupted"
+    },
+    "malformed": 0,
+    "stderr": 0
+  },
+  {
+    "mode": "wrong_turn",
+    "expected": {
+      "error": "CodexMcpProtocolError",
+      "message": "turn/completed returned an unexpected turn id"
+    },
+    "malformed": 0,
+    "stderr": 0
+  },
+  {
+    "mode": "invalid_turn",
+    "expected": {
+      "error": "CodexMcpProtocolError",
+      "message": "turn/completed returned invalid turn"
+    },
+    "malformed": 0,
+    "stderr": 0
+  },
+  {
+    "mode": "invalid_items",
+    "expected": {
+      "error": "CodexMcpProtocolError",
+      "message": "turn/completed returned invalid items"
+    },
+    "malformed": 0,
+    "stderr": 0
+  },
+  {
+    "mode": "duplicate_items",
+    "expected": {
+      "text": "completed \u2713",
+      "thread_id": "thread-1",
+      "model_id": "fixture",
+      "usage": {
+        "total": {
+          "inputTokens": 12,
+          "outputTokens": 3
+        }
+      },
+      "tool_version": "fake/1",
+      "raw_result": {
+        "threadId": "thread-1",
+        "turn": {
+          "id": "turn-1",
+          "status": "completed",
+          "items": [
+            {
+              "id": "item-1",
+              "type": "agentMessage",
+              "text": "completed \u2713"
+            }
+          ]
+        }
+      }
+    },
+    "malformed": 0,
+    "stderr": 0
+  },
+  {
+    "mode": "heartbeat",
+    "expected": {
+      "text": "completed \u2713",
+      "thread_id": "thread-1",
+      "model_id": "fixture",
+      "usage": {
+        "total": {
+          "inputTokens": 12,
+          "outputTokens": 3
+        }
+      },
+      "tool_version": "fake/1",
+      "raw_result": {
+        "threadId": "thread-1",
+        "turn": {
+          "id": "turn-1",
+          "status": "completed",
+          "items": []
+        }
+      }
+    },
+    "malformed": 0,
+    "stderr": 0
+  },
+  {
+    "mode": "reader_eof",
+    "expected": {
+      "error": "CodexMcpProcessError",
+      "message": "Codex app-server stdout closed"
+    },
+    "malformed": 0,
+    "stderr": 0
+  },
+  {
+    "mode": "approval",
+    "expected": {
+      "error": "CodexMcpProtocolError",
+      "message": "Unsupported app-server request: requestApproval"
+    },
+    "malformed": 0,
+    "stderr": 0
+  },
+  {
+    "mode": "thread_timeout",
+    "expected": {
+      "error": "CodexMcpTimeoutError",
+      "message": "Codex app-server request 'thread/start' timed out after <seconds>s"
+    },
+    "malformed": 0,
+    "stderr": 0
+  },
+  {
+    "mode": "blocked_send",
+    "expected": {
+      "error": "CodexMcpTimeoutError",
+      "message": "Codex app-server request 'turn/start' timed out after <seconds>s"
+    },
+    "malformed": 0,
+    "stderr": 0
+  },
+  {
+    "mode": "deadline_activity",
+    "expected": {
+      "error": "CodexMcpTimeoutError",
+      "message": "Codex app-server request 'turn/completed' timed out after <seconds>s"
+    },
+    "malformed": 0,
+    "stderr": 0
+  },
+  {
+    "mode": "completion_model_usage",
+    "expected": {
+      "text": "completed \u2713",
+      "thread_id": "thread-1",
+      "model_id": "resolved",
+      "usage": {
+        "inputTokens": 20
+      },
+      "tool_version": "fake/1",
+      "raw_result": {
+        "threadId": "thread-1",
+        "turn": {
+          "id": "turn-1",
+          "status": "completed",
+          "items": [],
+          "modelId": "resolved",
+          "usage": {
+            "inputTokens": 20
+          }
+        }
+      }
+    },
+    "malformed": 0,
+    "stderr": 0
+  },
+  {
+    "mode": "invalid_completion_params",
+    "expected": {
+      "error": "CodexMcpProtocolError",
+      "message": "turn/completed returned invalid params"
+    },
+    "malformed": 0,
+    "stderr": 0
+  },
+  {
+    "mode": "invalid_thread_id",
+    "expected": {
+      "error": "CodexMcpProtocolError",
+      "message": "item/completed returned invalid threadId"
+    },
+    "malformed": 0,
+    "stderr": 0
+  },
+  {
+    "mode": "callback_error",
+    "expected": {
+      "error": "CodexMcpError",
+      "message": "Codex app-server progress callback failed: fixture callback"
+    },
+    "malformed": 0,
+    "stderr": 0
+  }
+]

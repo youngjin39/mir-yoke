@@ -9,6 +9,7 @@ pub mod executor_admission;
 pub mod executor_local;
 pub mod executor_policy;
 pub mod executor_registry;
+pub mod executor_transport;
 pub mod local_bridge;
 mod patterns;
 mod python_text;
