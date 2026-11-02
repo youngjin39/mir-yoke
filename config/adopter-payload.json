@@ -2825,7 +2825,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/executor_admission.rs",
-      "sha256": "df11e672574f2a0922ddaacdb29f1bd0c220b54550d02294dfdadbb3afc30f10"
+      "sha256": "7c98a3246214d4fd62f70b7f749b9dea9b01b3aa3826399d4a9772b05628a8e4"
     },
     {
       "classification": "template-maintainer-tool",

@@ -26,7 +26,8 @@ pub enum Admission {
         root: PathBuf,
         cross_target: bool,
         args: Value,
-        bridge: Option<LocalBridge>,
+        // Boxed: the child handle makes this variant large on Windows.
+        bridge: Option<Box<LocalBridge>>,
     },
     Refused {
         code: i32,
@@ -284,7 +285,7 @@ pub fn admit(request: Request<'_>) -> Result<Admission, BridgeError> {
         cross_target: root != home,
         root,
         args,
-        bridge,
+        bridge: bridge.map(Box::new),
     })
 }
 
