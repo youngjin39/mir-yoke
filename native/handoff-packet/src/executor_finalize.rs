@@ -564,7 +564,44 @@ fn project_registry(
         .iter()
         .cloned()
         .collect::<std::collections::BTreeMap<_, _>>();
-    registry.update_ai_run_metadata(job_id, &json!({"model_id":outcome.model_id,"tokens_used":tokens,"mcp_protocol":outcome.mcp_protocol,"dispatch_id":wt.dispatch_id,"dispatch_ids":[wt.dispatch_id]})).map_err(Error::Registry)?;
+    let previous: Option<String> = registry
+        .connection()
+        .query_row(
+            "SELECT ai_run_metadata FROM jobs WHERE job_id=?",
+            [job_id],
+            |row| row.get(0),
+        )
+        .map_err(|e| Error::Registry(e.into()))?;
+    let mut metadata: Value = previous
+        .map(|text| serde_json::from_str(&text))
+        .transpose()
+        .map_err(|e| Error::Invalid(e.to_string()))?
+        .unwrap_or_else(|| json!({}));
+    if !metadata.is_object() {
+        metadata = json!({});
+    }
+    let mut ids = Vec::<String>::new();
+    for value in metadata["dispatch_ids"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .chain(std::iter::once(&metadata["dispatch_id"]))
+        .chain(std::iter::once(&json!(wt.dispatch_id)))
+    {
+        if let Some(id) = value.as_str()
+            && !ids.iter().any(|item| item == id)
+        {
+            ids.push(id.into());
+        }
+    }
+    metadata["model_id"] = json!(outcome.model_id);
+    metadata["tokens_used"] = json!(tokens);
+    metadata["mcp_protocol"] = json!(outcome.mcp_protocol);
+    metadata["dispatch_id"] = json!(wt.dispatch_id);
+    metadata["dispatch_ids"] = json!(ids);
+    registry
+        .update_ai_run_metadata(job_id, &metadata)
+        .map_err(Error::Registry)?;
     let artifacts = options
         .artifacts_root
         .clone()

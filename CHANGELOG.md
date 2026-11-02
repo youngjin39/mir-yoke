@@ -85,6 +85,12 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
   rollback that keeps unrelated staged, unstaged, untracked and ignored work,
   and a distinct result when cleanup fails after the merge), matching Python's
   index, working-tree and registry snapshots on 26 scenarios.
+- Executor port slice E10 (library only): native integrity-bound resume (the 15
+  saved options or legacy defaults, timeout bounds, brief-hash and root refusal
+  before any effect, re-authorization through the bridge, same job with a fresh
+  attempt, cleared results, kept route and dispatch history, `job_resumed`
+  event), handing off to the E8 and E9 library path. Finalization now keeps
+  earlier dispatch ids in the job metadata, as Python does.
 
 ### Changed
 
