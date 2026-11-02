@@ -7,11 +7,11 @@ provider metadata assembly and job-event failure policy) remain caller-owned.
 
 from __future__ import annotations
 
+import argparse
 import contextlib
 import json
 import pathlib
 import sys
-from types import SimpleNamespace
 from typing import Any
 
 # Isolated script execution has no package search path; use this script's package.
@@ -47,9 +47,22 @@ def _decode(value: Any) -> Any:
             if value["$type"] == "path":
                 return pathlib.Path(value["value"])
             if value["$type"] == "namespace":
-                return SimpleNamespace(**_decode(value["value"]))
+                return argparse.Namespace(**_decode(value["value"]))
             raise ValueError("Unknown argument type")
         return {key: _decode(item) for key, item in value.items()}
+    return value
+
+
+def _encode(value: Any) -> Any:
+    """Encode post-call arguments without changing the existing result contract."""
+    if isinstance(value, pathlib.Path):
+        return {"$type": "path", "value": str(value)}
+    if isinstance(value, argparse.Namespace):
+        return {"$type": "namespace", "value": _encode(vars(value))}
+    if isinstance(value, list):
+        return [_encode(item) for item in value]
+    if isinstance(value, dict):
+        return {key: _encode(item) for key, item in value.items()}
     return value
 
 
@@ -155,11 +168,20 @@ class Bridge:
                 result_json = None
             else:
                 result_json = None if force_handle else result
+            if hook == "pre_execute":
+                response["args"] = _encode(args)
             response.update(ok=True, result=result_json)
             if retain and result is not None:
                 response["handle"] = self._retain(result)
         except BaseException as exc:  # noqa: BLE001
             response["error"] = {"type": type(exc).__name__, "message": str(exc)}
+            response["error_category"] = (
+                "value_error"
+                if isinstance(exc, ValueError)
+                else "os_error"
+                if isinstance(exc, OSError)
+                else "uncaught"
+            )
         return response
 
     def close(self) -> None:

@@ -13,6 +13,24 @@ SCRIPT = pathlib.Path(__file__).resolve().parents[1] / "local_bridge.py"
 VERSION = "mir-executor.local@1"
 
 
+def test_pre_execute_returns_mutated_namespace_without_changing_result(repo):
+    client = Client(repo)
+    reply = client.call(
+        "pre_execute",
+        [
+            {"$type": "namespace", "value": {"repo_root": {"$type": "path", "value": str(repo)}}},
+            {"$type": "path", "value": str(repo)},
+        ],
+    )
+    assert reply["ok"]
+    assert reply["handle"]
+    assert reply["args"][0] == {
+        "$type": "namespace",
+        "value": {"repo_root": {"$type": "path", "value": str(repo)}, "changed": True},
+    }
+    client.close()
+
+
 @pytest.fixture
 def repo(tmp_path_factory):
     # The caller sets pytest basetemp to the authorized scratch directory.

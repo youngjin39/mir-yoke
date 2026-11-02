@@ -1,5 +1,5 @@
 //! Library admission only: no database access, provider launch, or CLI dispatch.
-//! Unported grammar and target-local Python options decline before any hook import.
+//! Dynamic target options decline after hello, before any target hook call.
 use crate::local_bridge::{BridgeConfig, BridgeError, LocalBridge};
 use serde_json::{Value, json};
 use std::{
@@ -20,12 +20,13 @@ pub struct Request<'a> {
     pub interpreter: &'a Path,
     pub bridge_script: &'a Path,
 }
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 pub enum Admission {
     Admitted {
         root: PathBuf,
         cross_target: bool,
         args: Value,
+        bridge: Option<LocalBridge>,
     },
     Refused {
         code: i32,
@@ -46,7 +47,8 @@ fn resolved(path: &Path, cwd: &Path) -> io::Result<PathBuf> {
         cwd.join(path)
     };
     match fs::canonicalize(&path) {
-        Ok(path) => Ok(path),
+        // Python's resolve() never returns the Windows verbatim prefix.
+        Ok(path) => Ok(crate::supply::plain(path)),
         Err(e) if e.kind() == io::ErrorKind::NotFound => {
             let Some(parent) = path.parent() else {
                 return Err(e);
@@ -79,8 +81,7 @@ fn refusal(message: String) -> Admission {
     }
 }
 /// Malformed/unknown argv is left untouched for Python's argparse diagnostics.
-/// A target with any local.py is currently declined: determining dynamic option
-/// registration by importing it would run target code before the home guard.
+/// Target imports occur only after the first home authorization.
 pub fn admit(request: Request<'_>) -> Result<Admission, BridgeError> {
     let Some(command) = request.argv.first() else {
         return Ok(decline("help"));
@@ -200,68 +201,77 @@ pub fn admit(request: Request<'_>) -> Result<Admission, BridgeError> {
         .as_str()
         .map(Path::new)
         .unwrap_or(request.cwd);
-    let root = resolved(root_arg, request.cwd)?;
+    let mut root = resolved(root_arg, request.cwd)?;
     let home = resolved(request.invoking_home, request.cwd)?;
-    if root.join("tools/mir_executor/local.py").try_exists()? {
-        return Ok(decline(
-            "target Python hooks require whole-command fallback",
-        ));
-    }
     if root.to_str().is_none() || home.to_str().is_none() {
         return Ok(decline("non UTF-8 path"));
     }
-    let cross_target = root != home;
-    // main invokes the home guard twice, then execute preparation invokes it once.
-    let calls = if command == "execute" { 3 } else { 2 };
-    if cross_target {
-        let output = git(&request, &home, "--show-toplevel")?;
-        let stdout = std::str::from_utf8(&output.stdout).ok();
-        let is_home = output.status.success()
-            && stdout
-                .and_then(|s| resolved(Path::new(s.trim()), request.cwd).ok())
-                .as_ref()
-                == Some(&home);
-        if is_home {
-            let config = BridgeConfig {
-                interpreter: request.interpreter.into(),
-                target_root: home.clone(),
-                bridge_script: request.bridge_script.into(),
-                environment: request.environment.clone(),
-                timeout: Duration::from_secs(10),
-            };
-            if let Some(mut bridge) = LocalBridge::start(config)? {
-                for _ in 0..calls {
-                    let (Some(home_value), Some(root_value)) =
-                        (path_value(&home), path_value(&root))
-                    else {
-                        return Ok(decline("non UTF-8 path"));
-                    };
-                    let reply = bridge.call(
-                        "authorize_target",
-                        vec![
-                            home_value,
-                            root_value,
-                            json!({"$type":"namespace","value":args}),
-                        ],
-                        json!({}),
-                    )?;
-                    if reply["ok"] == false {
-                        return Ok(refusal(format!(
-                            "authorize_target refused {}: {}: {}",
-                            root.display(),
-                            reply["error"]["type"].as_str().unwrap_or(""),
-                            reply["error"]["message"].as_str().unwrap_or("")
-                        )));
-                    }
-                }
+    let mut home_bridge = None;
+    if let Some(refused) = authorize(&request, &home, &root, &args, &mut home_bridge, false)? {
+        return Ok(refused);
+    }
+    let mut bridge = match LocalBridge::start_in(bridge_config(&request, &root), request.cwd) {
+        Ok(bridge) => bridge,
+        Err(_) => return Ok(decline("target bridge failed before hello")),
+    };
+    if bridge
+        .as_ref()
+        .is_some_and(|b| b.hello()["register_execute_options"] == true)
+    {
+        return Ok(decline("target registers execute options"));
+    }
+    if let Some(refused) = authorize(&request, &home, &root, &args, &mut home_bridge, false)? {
+        return Ok(refused);
+    }
+    if command == "execute" {
+        if let Some(refused) = authorize(&request, &home, &root, &args, &mut home_bridge, true)? {
+            return Ok(refused);
+        }
+        if let Some(local) = bridge.as_mut() {
+            let reply = local.call(
+                "pre_execute",
+                vec![
+                    json!({"$type":"namespace","value":args}),
+                    path_value(&root).ok_or(BridgeError::Protocol("non UTF-8 path"))?,
+                ],
+                json!({}),
+            )?;
+            if reply["ok"] == false {
+                let error = &reply["error"];
+                let message = error["message"].as_str().unwrap_or("");
+                return Ok(refusal(if reply["error_category"] == "value_error" {
+                    format!("argument parse error: {message}")
+                } else {
+                    format!("{}: {message}", error["type"].as_str().unwrap_or(""))
+                }));
+            }
+            args = reply["args"][0]["value"].clone();
+            if !args.is_object() {
+                return Err(BridgeError::Protocol("missing post-hook namespace"));
             }
         }
+        let redirected = args["repo_root"]["value"]
+            .as_str()
+            .or_else(|| args["repo_root"].as_str())
+            .ok_or(BridgeError::Protocol("invalid post-hook repo_root"))?;
+        let redirected = resolved(Path::new(redirected), request.cwd)?;
+        if redirected != root {
+            let guard = if root == home {
+                &mut bridge
+            } else {
+                &mut home_bridge
+            };
+            if let Some(refused) = authorize(&request, &home, &redirected, &args, guard, true)? {
+                return Ok(refused);
+            }
+        }
+        root = redirected;
     }
     if command == "execute" {
         let output = git(&request, &root, "--is-inside-work-tree")?;
         if !output.status.success() || output.stdout.trim_ascii() != b"true" {
             return Ok(refusal(format!(
-                "ValueError: repo root is not a git repository: {}",
+                "argument parse error: repo root is not a git repository: {}",
                 root.display()
             )));
         }
@@ -271,8 +281,69 @@ pub fn admit(request: Request<'_>) -> Result<Admission, BridgeError> {
         args["repo_root"] = value;
     }
     Ok(Admission::Admitted {
+        cross_target: root != home,
         root,
-        cross_target,
         args,
+        bridge,
     })
+}
+
+fn bridge_config(request: &Request<'_>, root: &Path) -> BridgeConfig {
+    BridgeConfig {
+        interpreter: request.interpreter.into(),
+        target_root: root.into(),
+        bridge_script: request.bridge_script.into(),
+        environment: request.environment.clone(),
+        timeout: Duration::from_secs(10),
+    }
+}
+fn authorize(
+    request: &Request<'_>,
+    home: &Path,
+    root: &Path,
+    args: &Value,
+    bridge: &mut Option<LocalBridge>,
+    preparation: bool,
+) -> Result<Option<Admission>, BridgeError> {
+    if root == home {
+        return Ok(None);
+    }
+    let output = git(request, home, "--show-toplevel")?;
+    if !output.status.success()
+        || std::str::from_utf8(&output.stdout)
+            .ok()
+            .and_then(|s| resolved(Path::new(s.trim()), request.cwd).ok())
+            .as_deref()
+            != Some(home)
+    {
+        return Ok(None);
+    }
+    if bridge.is_none() {
+        *bridge = LocalBridge::start_in(bridge_config(request, home), request.cwd)?;
+    }
+    if let Some(bridge) = bridge {
+        let reply = bridge.call(
+            "authorize_target",
+            vec![
+                path_value(home).ok_or(BridgeError::Protocol("non UTF-8 home"))?,
+                path_value(root).ok_or(BridgeError::Protocol("non UTF-8 root"))?,
+                json!({"$type":"namespace","value":args}),
+            ],
+            json!({}),
+        )?;
+        if reply["ok"] == false {
+            let prefix = if preparation {
+                "argument parse error: "
+            } else {
+                ""
+            };
+            return Ok(Some(refusal(format!(
+                "{prefix}authorize_target refused {}: {}: {}",
+                root.display(),
+                reply["error"]["type"].as_str().unwrap_or(""),
+                reply["error"]["message"].as_str().unwrap_or("")
+            ))));
+        }
+    }
+    Ok(None)
 }

@@ -1,0 +1,62 @@
+[
+  {
+    "name": "empty",
+    "source": "",
+    "home_source": "",
+    "expected": {
+      "root": "$scratch/target",
+      "family": null,
+      "dispatch": false,
+      "stderr": ""
+    }
+  },
+  {
+    "name": "mutate",
+    "source": "def pre_execute(args, root):\n args.family = 'changed'\n args.dispatch = True\n",
+    "home_source": "",
+    "expected": {
+      "root": "$scratch/target",
+      "family": "changed",
+      "dispatch": true,
+      "stderr": ""
+    }
+  },
+  {
+    "name": "redirect",
+    "source": "def pre_execute(args, root):\n args.repo_root = root.parent / 'home'\n args.family = 'redirected'\n",
+    "home_source": "",
+    "expected": {
+      "root": "$scratch/home",
+      "family": "redirected",
+      "dispatch": false,
+      "stderr": ""
+    }
+  },
+  {
+    "name": "redirect_refused",
+    "source": "def pre_execute(args, root):\n args.repo_root = root.parent / 'redirected'\n",
+    "home_source": "def authorize_target(home, target, args):\n if target.name == 'redirected': raise RuntimeError('redirect denied')\n",
+    "expected": {
+      "code": 1,
+      "stderr": "[mir_executor] argument parse error: authorize_target refused $scratch/redirected: RuntimeError: redirect denied\n"
+    }
+  },
+  {
+    "name": "value_error",
+    "source": "def pre_execute(args, root):\n raise ValueError('hook rejected')\n",
+    "home_source": "",
+    "expected": {
+      "code": 1,
+      "stderr": "[mir_executor] argument parse error: hook rejected\n"
+    }
+  },
+  {
+    "name": "os_error",
+    "source": "def pre_execute(args, root):\n raise PermissionError('hook denied')\n",
+    "home_source": "",
+    "expected": {
+      "code": 1,
+      "stderr": "[mir_executor] PermissionError: hook denied\n"
+    }
+  }
+]

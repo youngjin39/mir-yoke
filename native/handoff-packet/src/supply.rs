@@ -151,7 +151,7 @@ pub fn supply(event: &Value) -> Result<Output> {
 }
 // Windows canonicalize returns verbatim paths (\\?\C:\...); Python's resolve
 // strips that prefix, and the hook compares paths with that plain form.
-fn plain(path: PathBuf) -> PathBuf {
+pub(crate) fn plain(path: PathBuf) -> PathBuf {
     #[cfg(windows)]
     if let Some(text) = path.to_str() {
         if let Some(rest) = text.strip_prefix(r"\\?\UNC\") {

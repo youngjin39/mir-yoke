@@ -23,6 +23,13 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
   home `authorize_target` through the bridge, Python refusal bytes). Admission
   declines to Python for `resume`, unsupported argv and any target with
   `local.py`; Windows account home comes from `USERPROFILE`.
+- Executor port slice E2c (library only): admission now admits targets with
+  `local.py` through one retained bridge, declines (exit 64) before any hook when
+  `register_execute_options` exists or the bridge fails before `hello`, and runs
+  `pre_execute` through the bridge with Python's redirect re-authorization. The
+  bridge returns the post-call `argparse.Namespace` state. Resolved paths drop
+  the Windows verbatim prefix like Python's `resolve()`. Known difference: an
+  uncaught `pre_execute` exception prints one refusal line instead of a traceback.
 
 ## [v0.13.61] — 2026-11-01 — Native executor queries with local executor files
 

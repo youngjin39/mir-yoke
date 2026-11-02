@@ -5,7 +5,7 @@ use std::{
     collections::BTreeMap,
     ffi::OsString,
     io::{self, BufRead, BufReader, Write},
-    path::PathBuf,
+    path::{Path, PathBuf},
     process::{Child, Command, Stdio},
     sync::mpsc::{self, Receiver, Sender},
     thread::{self, JoinHandle},
@@ -62,6 +62,7 @@ impl From<serde_json::Error> for BridgeError {
     }
 }
 type Result<T> = std::result::Result<T, BridgeError>;
+#[derive(Debug)]
 pub struct LocalBridge {
     child: Child,
     requests: Option<Sender<Vec<u8>>>,
@@ -75,6 +76,11 @@ pub struct LocalBridge {
 impl LocalBridge {
     /// No child is started when the target has no local hook file.
     pub fn start(config: BridgeConfig) -> Result<Option<Self>> {
+        let cwd = config.target_root.clone();
+        Self::start_in(config, &cwd)
+    }
+    /// Admission preserves the invoking command's working directory for hooks.
+    pub fn start_in(config: BridgeConfig, cwd: &Path) -> Result<Option<Self>> {
         match config
             .target_root
             .join("tools/mir_executor/local.py")
@@ -99,7 +105,7 @@ impl LocalBridge {
             .arg("-I")
             .arg(&config.bridge_script)
             .arg(&config.target_root)
-            .current_dir(&config.target_root)
+            .current_dir(cwd)
             .env_clear()
             .envs(&config.environment)
             .stdin(Stdio::piped())
