@@ -1,4 +1,4 @@
-//! Read-only executor queries. Exit 64 silently requests the Python reference.
+//! Executor registry queries and cancel. Exit 64 silently requests the Python reference.
 #![forbid(unsafe_code)]
 #![cfg_attr(
     not(test),
@@ -15,8 +15,8 @@ use std::path::{Component, Path, PathBuf};
 
 type Result<T> = std::result::Result<T, ()>;
 
-// Require the current, fully migrated JobRegistry schema. Legacy, extended and
-// dynamically typed rows go to Python rather than acquiring migration authority.
+// Admit current schemas and missing Python-migratable columns. Extended and
+// dynamically typed rows still go to Python before any native write.
 const COLUMNS: &[(&str, &str)] = &[
     ("job_id", "TEXT"),
     ("change_id", "TEXT"),
@@ -50,6 +50,7 @@ const COLUMNS: &[(&str, &str)] = &[
 
 #[derive(Debug, PartialEq)]
 enum Command {
+    Cancel(String),
     Status(String),
     Result(String),
     List(Option<String>),
@@ -79,7 +80,8 @@ fn parse(raw: impl IntoIterator<Item = OsString>, cwd: &Path) -> Result<Args> {
     let mut seen = BTreeSet::new();
     while let Some(arg) = raw.next() {
         let arg = text_arg(arg)?;
-        if matches!(arg.as_str(), "status" | "result" | "list-jobs") && command.is_none() {
+        if matches!(arg.as_str(), "status" | "result" | "list-jobs" | "cancel") && command.is_none()
+        {
             command = Some(arg);
             continue;
         }
@@ -89,7 +91,7 @@ fn parse(raw: impl IntoIterator<Item = OsString>, cwd: &Path) -> Result<Args> {
         let allowed = match key {
             "--jobs-db" => command.is_none(),
             "--repo-root" => command.is_some(),
-            "--job-id" => matches!(command.as_deref(), Some("status" | "result")),
+            "--job-id" => matches!(command.as_deref(), Some("status" | "result" | "cancel")),
             "--status" => command.as_deref() == Some("list-jobs"),
             _ => false,
         };
@@ -113,6 +115,7 @@ fn parse(raw: impl IntoIterator<Item = OsString>, cwd: &Path) -> Result<Args> {
         }
     }
     let command = match command.as_deref() {
+        Some("cancel") => Command::Cancel(job.ok_or(())?),
         Some("status") => Command::Status(job.ok_or(())?),
         Some("result") => Command::Result(job.ok_or(())?),
         Some("list-jobs") => {
@@ -129,6 +132,10 @@ fn parse(raw: impl IntoIterator<Item = OsString>, cwd: &Path) -> Result<Args> {
     let root = fs::canonicalize(root.unwrap_or_else(|| cwd.to_owned())).map_err(|_| ())?;
     let home = fs::canonicalize(home).map_err(|_| ())?;
     if root != home || !root.is_dir() {
+        return Err(());
+    }
+    if matches!(command, Command::Cancel(_)) && !absent(&root.join("tools/mir_executor/local.py"))?
+    {
         return Err(());
     }
     let db = db.unwrap_or_else(|| root.join("tasks/jobs.db"));
@@ -183,7 +190,7 @@ fn utf8_encoding(value: &str) -> bool {
         || encoding.eq_ignore_ascii_case("utf_8")
 }
 
-fn check_schema(db: &Connection) -> Result<()> {
+fn check_schema(db: &Connection) -> Result<Vec<String>> {
     for pragma in ["user_version", "application_id"] {
         let value: i64 = db
             .pragma_query_value(None, pragma, |r| r.get(0))
@@ -224,10 +231,47 @@ fn check_schema(db: &Connection) -> Result<()> {
             return Err(());
         }
     }
-    if seen.len() != COLUMNS.len() {
+    let optional = [
+        "target_agent",
+        "execution_backend",
+        "resolved_model",
+        "resolved_reasoning_effort",
+        "agent_definition_path",
+        "agent_definition_sha256",
+        "identity_json",
+        "dispatch_options_json",
+        "ai_run_metadata",
+        "dispatch_brief_path",
+        "allow_harness_self_modify",
+        "resume_count",
+        "last_resumed_at",
+    ];
+    let mut projection = Vec::new();
+    for (name, _) in COLUMNS {
+        if seen.contains(*name) {
+            projection.push((*name).to_owned());
+        } else if optional.contains(name) {
+            let default = if matches!(*name, "allow_harness_self_modify" | "resume_count") {
+                "0"
+            } else {
+                "NULL"
+            };
+            projection.push(format!("{default} AS {name}"));
+        } else {
+            return Err(());
+        }
+    }
+    let triggers: i64 = db
+        .query_row(
+            "SELECT count(*) FROM sqlite_master WHERE type='trigger'",
+            [],
+            |r| r.get(0),
+        )
+        .map_err(|_| ())?;
+    if triggers != 0 {
         return Err(());
     }
-    Ok(())
+    Ok(projection)
 }
 
 #[derive(Debug)]
@@ -484,7 +528,7 @@ fn python_float(value: f64) -> Result<String> {
 }
 
 fn output(command: &Command, jobs: &[Job], py: &PythonText) -> Result<(String, String, i32)> {
-    if let Command::Status(id) | Command::Result(id) = command {
+    if let Command::Cancel(id) | Command::Status(id) | Command::Result(id) = command {
         py.admit(id)?;
     }
     for job in jobs {
@@ -510,12 +554,15 @@ fn output(command: &Command, jobs: &[Job], py: &PythonText) -> Result<(String, S
     }
     let mut out = String::new();
     match command {
-        Command::Status(id) | Command::Result(id) if jobs.is_empty() => {
+        Command::Cancel(id) | Command::Status(id) | Command::Result(id) if jobs.is_empty() => {
             return Ok((
                 out,
                 format!("[mir_executor] job_id not found: {}\n", py.repr(id)),
                 1,
             ));
+        }
+        Command::Cancel(id) => {
+            out.push_str(&format!("[CANCEL] cancel_requested=True for job_id={id}\n"))
         }
         Command::Status(_) => {
             let job = jobs.first().ok_or(())?;
@@ -575,7 +622,10 @@ fn run(args: &Args) -> Result<(String, String, i32)> {
     no_sidecars(&args.db)?;
     let py = PythonText::new()?;
     if safely_absent(&args.db)? {
-        return output(&args.command, &[], &py);
+        let answer = output(&args.command, &[], &py)?;
+        let _registry =
+            handoff_packet::executor_registry::JobRegistry::open(&args.db).map_err(|_| ())?;
+        return Ok(answer);
     }
     if !fs::symlink_metadata(&args.db)
         .map_err(|_| ())?
@@ -600,9 +650,9 @@ fn run(args: &Args) -> Result<(String, String, i32)> {
     )
     .map_err(|_| ())?;
     db.execute_batch("BEGIN").map_err(|_| ())?;
-    check_schema(&db)?;
+    let projection = check_schema(&db)?.join(",");
     let (sql, filter) = match &args.command {
-        Command::Status(id) | Command::Result(id) => {
+        Command::Cancel(id) | Command::Status(id) | Command::Result(id) => {
             ("SELECT * FROM jobs WHERE job_id = ?", Some(id.as_str()))
         }
         Command::List(Some(status)) => (
@@ -611,7 +661,8 @@ fn run(args: &Args) -> Result<(String, String, i32)> {
         ),
         Command::List(None) => ("SELECT * FROM jobs ORDER BY started_at DESC", None),
     };
-    let mut stmt = db.prepare(sql).map_err(|_| ())?;
+    let sql = sql.replace("SELECT *", &format!("SELECT {projection}"));
+    let mut stmt = db.prepare(&sql).map_err(|_| ())?;
     let mut rows = match filter {
         Some(filter) => stmt.query([filter]),
         None => stmt.query([]),
@@ -623,6 +674,23 @@ fn run(args: &Args) -> Result<(String, String, i32)> {
     }
     let output = output(&args.command, &jobs, &py)?;
     no_sidecars(&args.db)?;
+    drop(rows);
+    drop(stmt);
+    drop(db);
+    let registry =
+        handoff_packet::executor_registry::JobRegistry::open(&args.db).map_err(|_| ())?;
+    if let Command::Cancel(id) = &args.command {
+        // Use the write's row count, including when another writer changed the
+        // row after the validation snapshot was released.
+        if registry.cancel(id).map_err(|_| ())? {
+            return Ok((
+                format!("[CANCEL] cancel_requested=True for job_id={id}\n"),
+                String::new(),
+                0,
+            ));
+        }
+        return self::output(&args.command, &[], &py);
+    }
     Ok(output)
 }
 

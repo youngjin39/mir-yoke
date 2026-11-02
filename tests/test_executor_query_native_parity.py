@@ -304,7 +304,7 @@ def test_executor_query_declines_absent_database_through_dangling_parent(binary,
     assert not (home / "absent").exists()
 
 
-@pytest.mark.parametrize("case", ["legacy", "cross-target",
+@pytest.mark.parametrize("case", ["cross-target",
                                       "symlink", "malformed-json", "invalid-type",
                                       "unicode-version"])
 def test_executor_query_declines_unsupported_storage(binary, home, tmp_path, case):
@@ -341,17 +341,17 @@ def test_executor_query_declines_unsupported_storage(binary, home, tmp_path, cas
 @pytest.mark.parametrize("argv", [["list-jobs"], ["list-jobs", "--status", "running"],
                                      ["status", "--job-id", "absent"],
                                      ["result", "--job-id", "absent"]])
-def test_executor_query_absent_database_matches_without_creation(binary, home, argv):
+def test_executor_query_absent_database_matches_with_creation(binary, home, argv):
     database = home / "tasks/jobs.db"
     database.unlink()
     native = invoke(binary, home, argv)
-    assert not database.exists()
+    assert database.exists()
     assert native == invoke(binary, home, argv, python=True)
 
 
 @pytest.mark.parametrize("argv", [
     [], ["--help"], ["status", "--help"], ["result", "--help"], ["list-jobs", "--help"],
-    ["unknown"], ["cancel", "--job-id", "running"], ["execute"], ["resume"], ["sweep"],
+    ["unknown"], ["execute"], ["resume"], ["sweep"],
     ["status"], ["result"], ["list-jobs", "--unknown"],
     ["status", "--job-id", "running", "--job-id", "failed"],
     ["list-jobs", "--status", "not-a-status"],
@@ -405,3 +405,86 @@ def test_executor_query_surrogate_args_shape_still_declines(binary, home, payloa
     with sqlite3.connect(home / "tasks/jobs.db") as connection:
         connection.execute("UPDATE jobs SET codex_args=? WHERE job_id='failed'", (payload,))
     assert invoke(binary, home, ["list-jobs"]) == (b"", b"", 64)
+
+
+@pytest.mark.parametrize("job", ["running", "failed", "cancelled", "complete-\ud55c\U0001f600",
+                                  "absent-'\ud55c"])
+def test_native_cancel_matches_python(binary, home, job):
+    database = home / "tasks/jobs.db"
+    saved = database.read_bytes()
+    argv = ["cancel", "--job-id", job]
+    native = invoke(binary, home, argv)
+    with sqlite3.connect(database) as connection:
+        actual = connection.execute("SELECT * FROM jobs ORDER BY job_id").fetchall()
+    database.write_bytes(saved)
+    reference = invoke(binary, home, argv, python=True)
+    with sqlite3.connect(database) as connection:
+        expected = connection.execute("SELECT * FROM jobs ORDER BY job_id").fetchall()
+    assert native == reference
+    assert actual == expected
+
+
+@pytest.mark.parametrize("removed", ["ai_run_metadata", "resume_count", "dispatch_brief_path",
+                                      "allow_harness_self_modify", "last_resumed_at"])
+@pytest.mark.parametrize("command", ["list-jobs", "cancel"])
+def test_native_migrates_legacy_registry(binary, home, removed, command):
+    database = home / "tasks/jobs.db"
+    with sqlite3.connect(database) as connection:
+        connection.execute(f"ALTER TABLE jobs DROP COLUMN {removed}")
+    saved = database.read_bytes()
+    argv = [command] + (["--job-id", "running"] if command == "cancel" else [])
+    native = invoke(binary, home, argv)
+    with sqlite3.connect(database) as connection:
+        actual = connection.execute("SELECT * FROM jobs ORDER BY job_id").fetchall()
+        columns = connection.execute("PRAGMA table_info(jobs)").fetchall()
+    database.write_bytes(saved)
+    reference = invoke(binary, home, argv, python=True)
+    with sqlite3.connect(database) as connection:
+        assert actual == connection.execute("SELECT * FROM jobs ORDER BY job_id").fetchall()
+        assert columns == connection.execute("PRAGMA table_info(jobs)").fetchall()
+    assert native == reference
+
+
+def test_native_cancel_declines_local_hook(binary, home):
+    (home / "tools/mir_executor/local.py").write_text("raise RuntimeError('local hook')\n")
+    database = home / "tasks/jobs.db"
+    saved = database.read_bytes()
+    assert invoke(binary, home, ["cancel", "--job-id", "running"]) == (b"", b"", 64)
+    assert database.read_bytes() == saved
+
+
+def test_native_cancel_golden_output(binary, home):
+    fixture = json.loads((CRATE / "tests/fixtures/executor_registry.json").read_text())
+    registry = JobRegistry(home / "tasks/jobs.db")
+    registry.insert(JobRecord(job_id="job", change_id="c", category="unit", family=None,
+                              repo_root=str(home), codex_args=[], timeout_seconds=60,
+                              status="running"))
+    registry.close()
+    for case in fixture["cancel"]:
+        expected = (case["stdout"].replace("\n", os.linesep).encode(),
+                    case["stderr"].replace("\n", os.linesep).encode(), case["code"])
+        argv = ["cancel", "--job-id", case["job_id"]]
+        assert invoke(binary, home, argv) == expected
+        assert invoke(binary, home, argv, python=True) == expected
+
+
+def test_native_cancel_absent_registry(binary, home):
+    database = home / "tasks/jobs.db"
+    database.unlink()
+    argv = ["cancel", "--job-id", "absent"]
+    native = invoke(binary, home, argv)
+    assert database.exists()
+    with sqlite3.connect(database) as connection:
+        columns = connection.execute("PRAGMA table_info(jobs)").fetchall()
+    database.unlink()
+    assert native == invoke(binary, home, argv, python=True)
+    with sqlite3.connect(database) as connection:
+        assert columns == connection.execute("PRAGMA table_info(jobs)").fetchall()
+
+
+def test_registry_fixture_matches_python():
+    import runpy
+
+    generator = CRATE / "tests/fixtures/generate_executor_registry.py"
+    expected = json.loads(generator.with_name("executor_registry.json").read_text())
+    assert runpy.run_path(str(generator))["generate"]() == expected

@@ -96,10 +96,8 @@ fn python_home_refusal_bytes_and_no_target_writes() {
         if ["status", "result", "cancel"].contains(&command) {
             argv.extend(["--job-id".into(), "fixture".into()])
         }
-        let expected = case["stderr"]
-            .as_str()
-            .unwrap()
-            .replace("$scratch", fixture.0.to_str().unwrap());
+        let expected = case["stderr"].as_str().unwrap().to_owned();
+        let expected = expand(&expected, &fixture.0, false);
         assert_refusal(
             fixture.run(&argv, &fixture.0.join("home")),
             Admission::Refused {
@@ -194,12 +192,12 @@ fn python_admitted_argument_goldens() {
         let Admission::Admitted { args, .. } = fixture.run(&argv, &fixture.0.join("target")) else {
             panic!("expected admission: {argv:?}")
         };
-        let expected: serde_json::Value =
-            serde_json::from_str(&serde_json::to_string(&case["expected"]).unwrap().replace(
-                "$scratch",
-                &fixture.0.to_str().unwrap().replace('\\', "\\\\"),
-            ))
-            .unwrap();
+        let expected: serde_json::Value = serde_json::from_str(&expand(
+            &serde_json::to_string(&case["expected"]).unwrap(),
+            &fixture.0,
+            true,
+        ))
+        .unwrap();
         assert_eq!(args, expected, "{argv:?}");
     }
 }
@@ -237,10 +235,7 @@ fn python_local_hook_goldens_and_persistent_bridge() {
             assert_eq!(code, expected["code"]);
             assert_eq!(
                 String::from_utf8(stderr).unwrap(),
-                expected["stderr"]
-                    .as_str()
-                    .unwrap()
-                    .replace("$scratch", fixture.0.to_str().unwrap())
+                expand(expected["stderr"].as_str().unwrap(), &fixture.0, false)
             );
         } else {
             let Admission::Admitted {
@@ -254,10 +249,7 @@ fn python_local_hook_goldens_and_persistent_bridge() {
             };
             assert_eq!(
                 root.to_str().unwrap(),
-                expected["root"]
-                    .as_str()
-                    .unwrap()
-                    .replace("$scratch", fixture.0.to_str().unwrap())
+                expand(expected["root"].as_str().unwrap(), &fixture.0, false)
             );
             assert_eq!(args["family"], expected["family"]);
             assert_eq!(args["dispatch"], expected["dispatch"]);
@@ -393,4 +385,20 @@ fn pre_execute_preserves_invoking_cwd_for_an_explicit_root() {
         panic!("expected admission")
     };
     assert_eq!(args["family"], "cwd preserved");
+}
+
+// Fixtures are generated on POSIX hosts as `$scratch/<name>`; Python prints the
+// platform separator, so expand them with the native one (escaped inside JSON).
+fn expand(text: &str, root: &Path, json: bool) -> String {
+    let escape = |value: &str| {
+        if json {
+            value.replace('\\', "\\\\")
+        } else {
+            value.to_owned()
+        }
+    };
+    let root = escape(root.to_str().unwrap());
+    let separator = escape(std::path::MAIN_SEPARATOR_STR);
+    text.replace("$scratch/", &format!("{root}{separator}"))
+        .replace("$scratch", &root)
 }

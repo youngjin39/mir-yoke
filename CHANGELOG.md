@@ -30,6 +30,13 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
   bridge returns the post-call `argparse.Namespace` state. Resolved paths drop
   the Windows verbatim prefix like Python's `resolve()`. Known difference: an
   uncaught `pre_execute` exception prints one refusal line instead of a traceback.
+- Executor port slice E3: a native job registry (schema creation, every legacy
+  migration Python performs, inserts, state transitions, cancel, sanitizing and
+  private storage modes) with Python-identical rows. `executor-query` now creates
+  absent registries, migrates supported legacy schemas and implements `cancel`
+  (declined to Python when `local.py` exists); the Python entrypoint does not
+  route `cancel` yet. Database files differ from Python's only in SQLite's
+  writer-version header bytes.
 
 ## [v0.13.61] — 2026-11-01 — Native executor queries with local executor files
 

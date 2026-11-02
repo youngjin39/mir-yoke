@@ -1,9 +1,9 @@
 # Native handoff packet proof of concept
 
 `executor-query --home-root ROOT [executor query arguments]` implements
-`status`, `result` and `list-jobs` for the invoking repository only. The home
-root comes from the calling package. It opens known SQLite schemas read-only,
-never migrates a legacy database, and declines local Python extensions,
+`status`, `result`, `list-jobs` and `cancel` for the invoking repository only. The home
+root comes from the calling package. It creates absent registries, migrates supported legacy schemas,
+and restricts storage permissions like Python. Cancel declines local Python extensions,
 cross-target requests and unsupported inputs silently with exit 64.
 The lightweight Python entrypoint checks the target manifest pin and retains
 the Python CLI on any decline or unavailable artifact.
