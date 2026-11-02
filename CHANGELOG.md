@@ -72,6 +72,11 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
   26 dispatch and 9 failure-history scenarios. The local bridge now carries
   `DispatchWorktree` and `CodexAttempt` values. Review and finalization are not
   part of this slice.
+- Executor port slice E9a (library only): native independent review through the
+  app-server transport with a forced read-only sandbox; only a strict `pass` with
+  no findings approves, and missing, malformed, rejecting or timed-out reviews
+  block. Evidence, provider metadata and hook replacement match Python on 15
+  evidence and 7 protocol scenarios.
 
 ### Changed
 

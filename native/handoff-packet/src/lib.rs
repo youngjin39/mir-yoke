@@ -27,6 +27,8 @@ pub mod executor_policy;
 #[forbid(unsafe_code)]
 pub mod executor_registry;
 #[forbid(unsafe_code)]
+pub mod executor_review;
+#[forbid(unsafe_code)]
 pub mod executor_transport;
 #[forbid(unsafe_code)]
 pub mod executor_verifier;

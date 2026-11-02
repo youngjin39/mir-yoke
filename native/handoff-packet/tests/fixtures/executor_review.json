@@ -1,0 +1,137 @@
+[
+  {
+    "content": "{\"verdict\":\"pass\",\"reason\":\"ok\",\"findings\":[]}",
+    "expected": {
+      "passed": true,
+      "reason": "ok",
+      "content": "{\"verdict\":\"pass\",\"reason\":\"ok\",\"findings\":[]}",
+      "provider": "codex-final-reviewer"
+    }
+  },
+  {
+    "content": "{\"verdict\":\"fail\",\"reason\":\"unsafe\",\"findings\":[\"bug\"]}",
+    "expected": {
+      "passed": false,
+      "reason": "unsafe",
+      "content": "{\"verdict\":\"fail\",\"reason\":\"unsafe\",\"findings\":[\"bug\"]}",
+      "provider": "codex-final-reviewer"
+    }
+  },
+  {
+    "content": "{\"verdict\":\"pass\",\"reason\":\"\",\"findings\":[\"bug\"]}",
+    "expected": {
+      "passed": false,
+      "reason": "reviewer-rejected",
+      "content": "{\"verdict\":\"pass\",\"reason\":\"\",\"findings\":[\"bug\"]}",
+      "provider": "codex-final-reviewer"
+    }
+  },
+  {
+    "content": "{\"verdict\":\"pass\",\"reason\":\"\",\"findings\":[]}",
+    "expected": {
+      "passed": true,
+      "reason": "approved",
+      "content": "{\"verdict\":\"pass\",\"reason\":\"\",\"findings\":[]}",
+      "provider": "codex-final-reviewer"
+    }
+  },
+  {
+    "content": "{\"verdict\":\"fail\",\"reason\":\"\",\"findings\":[]}",
+    "expected": {
+      "passed": false,
+      "reason": "reviewer-rejected",
+      "content": "{\"verdict\":\"fail\",\"reason\":\"\",\"findings\":[]}",
+      "provider": "codex-final-reviewer"
+    }
+  },
+  {
+    "content": "",
+    "expected": {
+      "passed": false,
+      "reason": "reviewer-malformed",
+      "content": "",
+      "provider": "codex-final-reviewer"
+    }
+  },
+  {
+    "content": "{bad",
+    "expected": {
+      "passed": false,
+      "reason": "reviewer-malformed",
+      "content": "{bad",
+      "provider": "codex-final-reviewer"
+    }
+  },
+  {
+    "content": "null",
+    "expected": {
+      "passed": false,
+      "reason": "reviewer-malformed",
+      "content": "null",
+      "provider": "codex-final-reviewer"
+    }
+  },
+  {
+    "content": "[]",
+    "expected": {
+      "passed": false,
+      "reason": "reviewer-malformed",
+      "content": "[]",
+      "provider": "codex-final-reviewer"
+    }
+  },
+  {
+    "content": "{}",
+    "expected": {
+      "passed": false,
+      "reason": "reviewer-malformed",
+      "content": "{}",
+      "provider": "codex-final-reviewer"
+    }
+  },
+  {
+    "content": "{\"verdict\":\"pass\",\"reason\":\"ok\",\"findings\":[],\"extra\":true}",
+    "expected": {
+      "passed": false,
+      "reason": "reviewer-malformed",
+      "content": "{\"verdict\":\"pass\",\"reason\":\"ok\",\"findings\":[],\"extra\":true}",
+      "provider": "codex-final-reviewer"
+    }
+  },
+  {
+    "content": "{\"verdict\":\"pass\",\"reason\":1,\"findings\":[]}",
+    "expected": {
+      "passed": false,
+      "reason": "reviewer-malformed",
+      "content": "{\"verdict\":\"pass\",\"reason\":1,\"findings\":[]}",
+      "provider": "codex-final-reviewer"
+    }
+  },
+  {
+    "content": "{\"verdict\":\"pass\",\"reason\":\"ok\",\"findings\":[1]}",
+    "expected": {
+      "passed": false,
+      "reason": "reviewer-malformed",
+      "content": "{\"verdict\":\"pass\",\"reason\":\"ok\",\"findings\":[1]}",
+      "provider": "codex-final-reviewer"
+    }
+  },
+  {
+    "content": "{\"verdict\":\"PASS\",\"reason\":\"ok\",\"findings\":[]}",
+    "expected": {
+      "passed": false,
+      "reason": "reviewer-malformed",
+      "content": "{\"verdict\":\"PASS\",\"reason\":\"ok\",\"findings\":[]}",
+      "provider": "codex-final-reviewer"
+    }
+  },
+  {
+    "content": "{\"verdict\":\"pass\",\"reason\":\"ok\",\"findings\":null}",
+    "expected": {
+      "passed": false,
+      "reason": "reviewer-malformed",
+      "content": "{\"verdict\":\"pass\",\"reason\":\"ok\",\"findings\":null}",
+      "provider": "codex-final-reviewer"
+    }
+  }
+]

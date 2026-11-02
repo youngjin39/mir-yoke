@@ -1,0 +1,141 @@
+[
+  {
+    "mode": "approve",
+    "expected": {
+      "passed": true,
+      "reason": "ok",
+      "content": "{\"verdict\":\"pass\",\"reason\":\"ok\",\"findings\":[]}",
+      "provider": "codex-final-reviewer"
+    },
+    "metadata": {
+      "prompt_sha256": "8d3fd1c90c3a603fc0e04ec65c6810406c2774961f8a3cd080d046659b5bb826",
+      "model": "fixture-model",
+      "reasoning_effort": null,
+      "tool_version": "review-fixture/1",
+      "attempt": 1,
+      "token_usage": {
+        "input_tokens": 12,
+        "output_tokens": 3,
+        "total_tokens": 15
+      }
+    }
+  },
+  {
+    "mode": "reject",
+    "expected": {
+      "passed": false,
+      "reason": "unsafe",
+      "content": "{\"verdict\":\"fail\",\"reason\":\"unsafe\",\"findings\":[\"bug\"]}",
+      "provider": "codex-final-reviewer"
+    },
+    "metadata": {
+      "prompt_sha256": "8d3fd1c90c3a603fc0e04ec65c6810406c2774961f8a3cd080d046659b5bb826",
+      "model": "fixture-model",
+      "reasoning_effort": null,
+      "tool_version": "review-fixture/1",
+      "attempt": 1,
+      "token_usage": {
+        "input_tokens": 12,
+        "output_tokens": 3,
+        "total_tokens": 15
+      }
+    }
+  },
+  {
+    "mode": "malformed",
+    "expected": {
+      "passed": false,
+      "reason": "reviewer-malformed",
+      "content": "{}",
+      "provider": "codex-final-reviewer"
+    },
+    "metadata": {
+      "prompt_sha256": "8d3fd1c90c3a603fc0e04ec65c6810406c2774961f8a3cd080d046659b5bb826",
+      "model": "fixture-model",
+      "reasoning_effort": null,
+      "tool_version": "review-fixture/1",
+      "attempt": 1,
+      "token_usage": {
+        "input_tokens": 12,
+        "output_tokens": 3,
+        "total_tokens": 15
+      }
+    }
+  },
+  {
+    "mode": "empty",
+    "expected": {
+      "passed": false,
+      "reason": "reviewer-malformed",
+      "content": "",
+      "provider": "codex-final-reviewer"
+    },
+    "metadata": {
+      "prompt_sha256": "8d3fd1c90c3a603fc0e04ec65c6810406c2774961f8a3cd080d046659b5bb826",
+      "model": "fixture-model",
+      "reasoning_effort": null,
+      "tool_version": "review-fixture/1",
+      "attempt": 1,
+      "token_usage": {
+        "input_tokens": 12,
+        "output_tokens": 3,
+        "total_tokens": 15
+      }
+    }
+  },
+  {
+    "mode": "missing",
+    "expected": {
+      "passed": false,
+      "reason": "reviewer-unavailable",
+      "content": "Codex app-server exited with code 0",
+      "provider": "codex-final-reviewer"
+    },
+    "metadata": {
+      "prompt_sha256": "8d3fd1c90c3a603fc0e04ec65c6810406c2774961f8a3cd080d046659b5bb826",
+      "model": null,
+      "reasoning_effort": null,
+      "tool_version": null,
+      "attempt": 1,
+      "token_usage": null
+    }
+  },
+  {
+    "mode": "timeout",
+    "expected": {
+      "passed": false,
+      "reason": "reviewer-timeout",
+      "content": "Codex app-server request 'turn/completed' timed out after <seconds>s",
+      "provider": "codex-final-reviewer"
+    },
+    "metadata": {
+      "prompt_sha256": "8d3fd1c90c3a603fc0e04ec65c6810406c2774961f8a3cd080d046659b5bb826",
+      "model": null,
+      "reasoning_effort": null,
+      "tool_version": null,
+      "attempt": 1,
+      "token_usage": null
+    }
+  },
+  {
+    "mode": "unicode",
+    "expected": {
+      "passed": true,
+      "reason": "ok",
+      "content": "{\"verdict\":\"pass\",\"reason\":\"ok\",\"findings\":[]}",
+      "provider": "codex-final-reviewer"
+    },
+    "metadata": {
+      "prompt_sha256": "824e50226c40dad0e342fa31e3287f708c57c2b52a740665d5103abb46938126",
+      "model": "fixture-model",
+      "reasoning_effort": null,
+      "tool_version": "review-fixture/1",
+      "attempt": 1,
+      "token_usage": {
+        "input_tokens": 12,
+        "output_tokens": 3,
+        "total_tokens": 15
+      }
+    }
+  }
+]
