@@ -30,7 +30,7 @@ jobs:
         working-directory: native/handoff-packet
       - run: cargo clippy --all-targets --locked -- -D warnings
         working-directory: native/handoff-packet
-      - run: cargo test --locked
+      - run: cargo test --locked --no-fail-fast
         working-directory: native/handoff-packet
       - run: cargo build --release --locked
         working-directory: native/handoff-packet
@@ -180,7 +180,7 @@ jobs:
         working-directory: native/handoff-packet
       - run: cargo clippy --all-targets --locked -- -D warnings
         working-directory: native/handoff-packet
-      - run: cargo test --locked
+      - run: cargo test --locked --no-fail-fast
         working-directory: native/handoff-packet
       - run: cargo build --release --locked
         working-directory: native/handoff-packet
