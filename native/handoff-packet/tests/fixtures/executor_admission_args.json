@@ -1,0 +1,326 @@
+[
+  {
+    "argv": [
+      "execute"
+    ],
+    "expected": {
+      "jobs_db": null,
+      "subcommand": "execute",
+      "change_id": null,
+      "category": null,
+      "codex_args": null,
+      "codex_args_file": null,
+      "timeout": null,
+      "model": null,
+      "reasoning_effort": null,
+      "stall_timeout": null,
+      "repo_root": {
+        "$type": "path",
+        "value": "$scratch/target"
+      },
+      "family": null,
+      "artifacts_dir": null,
+      "use_async": false,
+      "background": false,
+      "dispatch": false,
+      "max_codex_attempts": 1,
+      "finalize_lock_timeout": 30,
+      "execution_backend": null,
+      "expect_changes": true,
+      "allow_harness_self_modify": false,
+      "dispatch_brief": null
+    }
+  },
+  {
+    "argv": [
+      "execute",
+      "--family",
+      "selected",
+      "--dispatch",
+      "--codex-args",
+      "task"
+    ],
+    "expected": {
+      "jobs_db": null,
+      "subcommand": "execute",
+      "change_id": null,
+      "category": null,
+      "codex_args": "task",
+      "codex_args_file": null,
+      "timeout": null,
+      "model": null,
+      "reasoning_effort": null,
+      "stall_timeout": null,
+      "repo_root": {
+        "$type": "path",
+        "value": "$scratch/target"
+      },
+      "family": "selected",
+      "artifacts_dir": null,
+      "use_async": false,
+      "background": false,
+      "dispatch": true,
+      "max_codex_attempts": 1,
+      "finalize_lock_timeout": 30,
+      "execution_backend": null,
+      "expect_changes": true,
+      "allow_harness_self_modify": false,
+      "dispatch_brief": null
+    }
+  },
+  {
+    "argv": [
+      "execute",
+      "--timeout",
+      "42",
+      "--stall-timeout",
+      "1.5",
+      "--no-expect-changes"
+    ],
+    "expected": {
+      "jobs_db": null,
+      "subcommand": "execute",
+      "change_id": null,
+      "category": null,
+      "codex_args": null,
+      "codex_args_file": null,
+      "timeout": 42,
+      "model": null,
+      "reasoning_effort": null,
+      "stall_timeout": 1.5,
+      "repo_root": {
+        "$type": "path",
+        "value": "$scratch/target"
+      },
+      "family": null,
+      "artifacts_dir": null,
+      "use_async": false,
+      "background": false,
+      "dispatch": false,
+      "max_codex_attempts": 1,
+      "finalize_lock_timeout": 30,
+      "execution_backend": null,
+      "expect_changes": false,
+      "allow_harness_self_modify": false,
+      "dispatch_brief": null
+    }
+  },
+  {
+    "argv": [
+      "execute",
+      "--allow-path",
+      "src/",
+      "--allow-path",
+      "docs/",
+      "--verify-cmd",
+      "check"
+    ],
+    "expected": {
+      "jobs_db": null,
+      "subcommand": "execute",
+      "change_id": null,
+      "category": null,
+      "codex_args": null,
+      "codex_args_file": null,
+      "timeout": null,
+      "model": null,
+      "reasoning_effort": null,
+      "stall_timeout": null,
+      "repo_root": {
+        "$type": "path",
+        "value": "$scratch/target"
+      },
+      "family": null,
+      "artifacts_dir": null,
+      "use_async": false,
+      "background": false,
+      "dispatch": false,
+      "max_codex_attempts": 1,
+      "finalize_lock_timeout": 30,
+      "execution_backend": null,
+      "expect_changes": true,
+      "allow_harness_self_modify": false,
+      "dispatch_brief": null,
+      "allow_paths": [
+        "src/",
+        "docs/"
+      ],
+      "verify_cmds": [
+        "check"
+      ]
+    }
+  },
+  {
+    "argv": [
+      "execute",
+      "--execution-backend",
+      "claude",
+      "--category",
+      "unit",
+      "-a",
+      "-b"
+    ],
+    "expected": {
+      "jobs_db": null,
+      "subcommand": "execute",
+      "change_id": null,
+      "category": "unit",
+      "codex_args": null,
+      "codex_args_file": null,
+      "timeout": null,
+      "model": null,
+      "reasoning_effort": null,
+      "stall_timeout": null,
+      "repo_root": {
+        "$type": "path",
+        "value": "$scratch/target"
+      },
+      "family": null,
+      "artifacts_dir": null,
+      "use_async": true,
+      "background": true,
+      "dispatch": false,
+      "max_codex_attempts": 1,
+      "finalize_lock_timeout": 30,
+      "execution_backend": "claude",
+      "expect_changes": true,
+      "allow_harness_self_modify": false,
+      "dispatch_brief": null
+    }
+  },
+  {
+    "argv": [
+      "execute",
+      "--codex-args-file",
+      "prompt.txt",
+      "--dispatch-brief",
+      "brief.json"
+    ],
+    "expected": {
+      "jobs_db": null,
+      "subcommand": "execute",
+      "change_id": null,
+      "category": null,
+      "codex_args": null,
+      "codex_args_file": {
+        "$type": "path",
+        "value": "prompt.txt"
+      },
+      "timeout": null,
+      "model": null,
+      "reasoning_effort": null,
+      "stall_timeout": null,
+      "repo_root": {
+        "$type": "path",
+        "value": "$scratch/target"
+      },
+      "family": null,
+      "artifacts_dir": null,
+      "use_async": false,
+      "background": false,
+      "dispatch": false,
+      "max_codex_attempts": 1,
+      "finalize_lock_timeout": 30,
+      "execution_backend": null,
+      "expect_changes": true,
+      "allow_harness_self_modify": false,
+      "dispatch_brief": {
+        "$type": "path",
+        "value": "brief.json"
+      }
+    }
+  },
+  {
+    "argv": [
+      "execute",
+      "--max-codex-attempts",
+      "2",
+      "--finalize-lock-timeout",
+      "0"
+    ],
+    "expected": {
+      "jobs_db": null,
+      "subcommand": "execute",
+      "change_id": null,
+      "category": null,
+      "codex_args": null,
+      "codex_args_file": null,
+      "timeout": null,
+      "model": null,
+      "reasoning_effort": null,
+      "stall_timeout": null,
+      "repo_root": {
+        "$type": "path",
+        "value": "$scratch/target"
+      },
+      "family": null,
+      "artifacts_dir": null,
+      "use_async": false,
+      "background": false,
+      "dispatch": false,
+      "max_codex_attempts": 2,
+      "finalize_lock_timeout": 0,
+      "execution_backend": null,
+      "expect_changes": true,
+      "allow_harness_self_modify": false,
+      "dispatch_brief": null
+    }
+  },
+  {
+    "argv": [
+      "status",
+      "--job-id",
+      "fixture"
+    ],
+    "expected": {
+      "jobs_db": null,
+      "subcommand": "status",
+      "job_id": "fixture",
+      "repo_root": null
+    }
+  },
+  {
+    "argv": [
+      "result",
+      "--job-id",
+      "fixture"
+    ],
+    "expected": {
+      "jobs_db": null,
+      "subcommand": "result",
+      "job_id": "fixture",
+      "repo_root": null
+    }
+  },
+  {
+    "argv": [
+      "cancel",
+      "--job-id",
+      "fixture"
+    ],
+    "expected": {
+      "jobs_db": null,
+      "subcommand": "cancel",
+      "job_id": "fixture",
+      "repo_root": null
+    }
+  },
+  {
+    "argv": [
+      "sweep",
+      "--apply",
+      "--grace-seconds",
+      "0"
+    ],
+    "expected": {
+      "jobs_db": null,
+      "subcommand": "sweep",
+      "apply": true,
+      "repo_root": {
+        "$type": "path",
+        "value": "$scratch/target"
+      },
+      "grace_seconds": 0
+    }
+  }
+]

@@ -1,0 +1,202 @@
+[
+  {
+    "local": null,
+    "lock": null,
+    "overlay": null,
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {},
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": null,
+      "warning": ""
+    }
+  },
+  {
+    "local": "{\"mode\":\"force_codex\"}",
+    "lock": null,
+    "overlay": "{\"mode\":\"force_claude\"}",
+    "expected": {
+      "mode": "force_claude",
+      "per_project": {},
+      "routing": {},
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": null,
+      "warning": ""
+    }
+  },
+  {
+    "local": "{\"mode\":\"force_claude\"}",
+    "lock": "{\"policy\":{\"mode\":\"force_codex\"}}",
+    "overlay": "bad",
+    "expected": {
+      "mode": "force_codex",
+      "per_project": {},
+      "routing": {},
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": null,
+      "warning": ""
+    }
+  },
+  {
+    "local": "{\"mode\":\"unknown\"}",
+    "lock": null,
+    "overlay": null,
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {},
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": "unknown",
+      "warning": "[mir policy] unresolved mode: unknown; using select\n"
+    }
+  },
+  {
+    "local": "{\"delegation\":{\"mode\":\"obey_user\"}}",
+    "lock": null,
+    "overlay": null,
+    "expected": {
+      "mode": "user_command_priority",
+      "per_project": {},
+      "routing": {},
+      "monitoring": {},
+      "delegation": {
+        "mode": "obey_user"
+      },
+      "default_backend": "codex",
+      "unresolved_mode": null,
+      "warning": ""
+    }
+  },
+  {
+    "local": "[]",
+    "lock": null,
+    "overlay": null,
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {},
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": null,
+      "warning": "[mir policy] unreadable sub-agent policy (sub-agent policy must be a JSON object); using select defaults\n"
+    }
+  },
+  {
+    "local": "{",
+    "lock": null,
+    "overlay": null,
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {},
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": null,
+      "warning": "[mir policy] unreadable sub-agent policy (Expecting property name enclosed in double quotes: line 1 column 2 (char 1)); using select defaults\n"
+    }
+  },
+  {
+    "local": "{\"mode\":",
+    "lock": null,
+    "overlay": null,
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {},
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": null,
+      "warning": "[mir policy] unreadable sub-agent policy (Expecting value: line 1 column 9 (char 8)); using select defaults\n"
+    }
+  },
+  {
+    "local": "{\"mode\": invalid}",
+    "lock": null,
+    "overlay": null,
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {},
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": null,
+      "warning": "[mir policy] unreadable sub-agent policy (Expecting value: line 1 column 10 (char 9)); using select defaults\n"
+    }
+  },
+  {
+    "local": "{}",
+    "lock": "{\"policy\":null}",
+    "overlay": null,
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {},
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": null,
+      "warning": "[mir policy] unreadable sub-agent policy (model-routing lock `policy` must be a JSON object); using select defaults\n"
+    }
+  },
+  {
+    "local": "{}",
+    "lock": "[]",
+    "overlay": null,
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {},
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": null,
+      "warning": "[mir policy] unreadable sub-agent policy (sub-agent policy must be a JSON object); using select defaults\n"
+    }
+  },
+  {
+    "local": "{}",
+    "lock": null,
+    "overlay": "[]",
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {},
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": null,
+      "warning": "[mir policy] unreadable sub-agent policy (sub-agent policy must be a JSON object); using select defaults\n"
+    }
+  },
+  {
+    "local": "{\"monitoring\":{\"a\":1}}",
+    "lock": "{\"policy\":{\"monitoring\":{\"b\":2}}}",
+    "overlay": null,
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {},
+      "monitoring": {
+        "a": 1,
+        "b": 2
+      },
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": null,
+      "warning": ""
+    }
+  }
+]

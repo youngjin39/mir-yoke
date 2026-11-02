@@ -1,0 +1,476 @@
+{
+  "execute": [
+    {
+      "flags": [
+        "--change-id"
+      ],
+      "dest": "change_id",
+      "default": null,
+      "required": false,
+      "choices": null,
+      "kind": "_StoreAction",
+      "type": null
+    },
+    {
+      "flags": [
+        "--category"
+      ],
+      "dest": "category",
+      "default": null,
+      "required": false,
+      "choices": [
+        "unit",
+        "integration",
+        "e2e",
+        "browser",
+        "edge",
+        "architecture",
+        "availability",
+        "load",
+        "soak",
+        "security",
+        "compatibility",
+        "transaction_locking"
+      ],
+      "kind": "_StoreAction",
+      "type": null
+    },
+    {
+      "flags": [
+        "--codex-args"
+      ],
+      "dest": "codex_args",
+      "default": null,
+      "required": false,
+      "choices": null,
+      "kind": "_StoreAction",
+      "type": null
+    },
+    {
+      "flags": [
+        "--codex-args-file"
+      ],
+      "dest": "codex_args_file",
+      "default": null,
+      "required": false,
+      "choices": null,
+      "kind": "_StoreAction",
+      "type": "Path"
+    },
+    {
+      "flags": [
+        "--timeout"
+      ],
+      "dest": "timeout",
+      "default": null,
+      "required": false,
+      "choices": null,
+      "kind": "_StoreAction",
+      "type": "int"
+    },
+    {
+      "flags": [
+        "--model"
+      ],
+      "dest": "model",
+      "default": null,
+      "required": false,
+      "choices": null,
+      "kind": "_StoreAction",
+      "type": null
+    },
+    {
+      "flags": [
+        "--reasoning-effort"
+      ],
+      "dest": "reasoning_effort",
+      "default": null,
+      "required": false,
+      "choices": null,
+      "kind": "_StoreAction",
+      "type": null
+    },
+    {
+      "flags": [
+        "--stall-timeout"
+      ],
+      "dest": "stall_timeout",
+      "default": null,
+      "required": false,
+      "choices": null,
+      "kind": "_StoreAction",
+      "type": "float"
+    },
+    {
+      "flags": [
+        "--jobs-db"
+      ],
+      "dest": "jobs_db",
+      "default": "==SUPPRESS==",
+      "required": false,
+      "choices": null,
+      "kind": "_StoreAction",
+      "type": null
+    },
+    {
+      "flags": [
+        "--repo-root"
+      ],
+      "dest": "repo_root",
+      "default": {
+        "$type": "path",
+        "value": "$cwd"
+      },
+      "required": false,
+      "choices": null,
+      "kind": "_StoreAction",
+      "type": "Path"
+    },
+    {
+      "flags": [
+        "--family"
+      ],
+      "dest": "family",
+      "default": null,
+      "required": false,
+      "choices": null,
+      "kind": "_StoreAction",
+      "type": null
+    },
+    {
+      "flags": [
+        "--artifacts-dir"
+      ],
+      "dest": "artifacts_dir",
+      "default": null,
+      "required": false,
+      "choices": null,
+      "kind": "_StoreAction",
+      "type": "Path"
+    },
+    {
+      "flags": [
+        "--async",
+        "-a"
+      ],
+      "dest": "use_async",
+      "default": false,
+      "required": false,
+      "choices": null,
+      "kind": "_StoreTrueAction",
+      "type": null
+    },
+    {
+      "flags": [
+        "--background",
+        "-b"
+      ],
+      "dest": "background",
+      "default": false,
+      "required": false,
+      "choices": null,
+      "kind": "_StoreTrueAction",
+      "type": null
+    },
+    {
+      "flags": [
+        "--dispatch"
+      ],
+      "dest": "dispatch",
+      "default": false,
+      "required": false,
+      "choices": null,
+      "kind": "_StoreTrueAction",
+      "type": null
+    },
+    {
+      "flags": [
+        "--max-codex-attempts"
+      ],
+      "dest": "max_codex_attempts",
+      "default": 1,
+      "required": false,
+      "choices": null,
+      "kind": "_StoreAction",
+      "type": "_positive_int"
+    },
+    {
+      "flags": [
+        "--finalize-lock-timeout"
+      ],
+      "dest": "finalize_lock_timeout",
+      "default": 30,
+      "required": false,
+      "choices": null,
+      "kind": "_StoreAction",
+      "type": "_nonnegative_int"
+    },
+    {
+      "flags": [
+        "--execution-backend"
+      ],
+      "dest": "execution_backend",
+      "default": null,
+      "required": false,
+      "choices": [
+        "claude",
+        "codex"
+      ],
+      "kind": "_StoreAction",
+      "type": null
+    },
+    {
+      "flags": [
+        "--expect-changes",
+        "--no-expect-changes"
+      ],
+      "dest": "expect_changes",
+      "default": true,
+      "required": false,
+      "choices": null,
+      "kind": "BooleanOptionalAction",
+      "type": null
+    },
+    {
+      "flags": [
+        "--allow-harness-self-modify"
+      ],
+      "dest": "allow_harness_self_modify",
+      "default": false,
+      "required": false,
+      "choices": null,
+      "kind": "_StoreTrueAction",
+      "type": null
+    },
+    {
+      "flags": [
+        "--allow-path"
+      ],
+      "dest": "allow_paths",
+      "default": "==SUPPRESS==",
+      "required": false,
+      "choices": null,
+      "kind": "_AppendAction",
+      "type": null
+    },
+    {
+      "flags": [
+        "--verify-cmd"
+      ],
+      "dest": "verify_cmds",
+      "default": "==SUPPRESS==",
+      "required": false,
+      "choices": null,
+      "kind": "_AppendAction",
+      "type": null
+    },
+    {
+      "flags": [
+        "--dispatch-brief"
+      ],
+      "dest": "dispatch_brief",
+      "default": null,
+      "required": false,
+      "choices": null,
+      "kind": "_StoreAction",
+      "type": "Path"
+    }
+  ],
+  "status": [
+    {
+      "flags": [
+        "--job-id"
+      ],
+      "dest": "job_id",
+      "default": null,
+      "required": true,
+      "choices": null,
+      "kind": "_StoreAction",
+      "type": null
+    },
+    {
+      "flags": [
+        "--repo-root"
+      ],
+      "dest": "repo_root",
+      "default": null,
+      "required": false,
+      "choices": null,
+      "kind": "_StoreAction",
+      "type": "Path"
+    }
+  ],
+  "result": [
+    {
+      "flags": [
+        "--job-id"
+      ],
+      "dest": "job_id",
+      "default": null,
+      "required": true,
+      "choices": null,
+      "kind": "_StoreAction",
+      "type": null
+    },
+    {
+      "flags": [
+        "--repo-root"
+      ],
+      "dest": "repo_root",
+      "default": null,
+      "required": false,
+      "choices": null,
+      "kind": "_StoreAction",
+      "type": "Path"
+    }
+  ],
+  "cancel": [
+    {
+      "flags": [
+        "--job-id"
+      ],
+      "dest": "job_id",
+      "default": null,
+      "required": true,
+      "choices": null,
+      "kind": "_StoreAction",
+      "type": null
+    },
+    {
+      "flags": [
+        "--repo-root"
+      ],
+      "dest": "repo_root",
+      "default": null,
+      "required": false,
+      "choices": null,
+      "kind": "_StoreAction",
+      "type": "Path"
+    }
+  ],
+  "resume": [
+    {
+      "flags": [
+        "--job-id"
+      ],
+      "dest": "job_id",
+      "default": null,
+      "required": true,
+      "choices": null,
+      "kind": "_StoreAction",
+      "type": null
+    },
+    {
+      "flags": [
+        "--timeout"
+      ],
+      "dest": "timeout",
+      "default": null,
+      "required": false,
+      "choices": null,
+      "kind": "_StoreAction",
+      "type": "int"
+    },
+    {
+      "flags": [
+        "--async",
+        "-a"
+      ],
+      "dest": "use_async",
+      "default": false,
+      "required": false,
+      "choices": null,
+      "kind": "_StoreTrueAction",
+      "type": null
+    },
+    {
+      "flags": [
+        "--repo-root"
+      ],
+      "dest": "repo_root",
+      "default": null,
+      "required": false,
+      "choices": null,
+      "kind": "_StoreAction",
+      "type": "Path"
+    }
+  ],
+  "list-jobs": [
+    {
+      "flags": [
+        "--status"
+      ],
+      "dest": "status",
+      "default": null,
+      "required": false,
+      "choices": [
+        "running",
+        "completed",
+        "cancelled",
+        "failed"
+      ],
+      "kind": "_StoreAction",
+      "type": null
+    },
+    {
+      "flags": [
+        "--repo-root"
+      ],
+      "dest": "repo_root",
+      "default": null,
+      "required": false,
+      "choices": null,
+      "kind": "_StoreAction",
+      "type": "Path"
+    }
+  ],
+  "sweep": [
+    {
+      "flags": [
+        "--apply"
+      ],
+      "dest": "apply",
+      "default": false,
+      "required": false,
+      "choices": null,
+      "kind": "_StoreTrueAction",
+      "type": null
+    },
+    {
+      "flags": [
+        "--repo-root"
+      ],
+      "dest": "repo_root",
+      "default": {
+        "$type": "path",
+        "value": "$cwd"
+      },
+      "required": false,
+      "choices": null,
+      "kind": "_StoreAction",
+      "type": "Path"
+    },
+    {
+      "flags": [
+        "--jobs-db"
+      ],
+      "dest": "jobs_db",
+      "default": "==SUPPRESS==",
+      "required": false,
+      "choices": null,
+      "kind": "_StoreAction",
+      "type": null
+    },
+    {
+      "flags": [
+        "--grace-seconds"
+      ],
+      "dest": "grace_seconds",
+      "default": 120,
+      "required": false,
+      "choices": null,
+      "kind": "_StoreAction",
+      "type": "int"
+    }
+  ]
+}

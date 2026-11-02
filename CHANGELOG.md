@@ -17,6 +17,12 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
   (`mir-executor.local@1`) to a native caller, keeping non-JSON values and writer
   scopes as handles. Known differences from Python's JSON reader: lone surrogate
   escapes are rejected and nesting deeper than 64 levels fails.
+- Executor port slice E2b (library only): native policy resolution (delegation
+  modes, routes, backend guard, sandbox defaults, lock + local policy merge) and
+  conservative command admission (same-home and cross-target Git admission and
+  home `authorize_target` through the bridge, Python refusal bytes). Admission
+  declines to Python for `resume`, unsupported argv and any target with
+  `local.py`; Windows account home comes from `USERPROFILE`.
 
 ## [v0.13.61] — 2026-11-01 — Native executor queries with local executor files
 

@@ -1,0 +1,5356 @@
+[
+  {
+    "data": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      }
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": null,
+      "warning": "",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      }
+    },
+    "expected": {
+      "mode": "user_command_priority",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      },
+      "default_backend": "claude",
+      "unresolved_mode": null,
+      "warning": "",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "select",
+      "per_project": {
+        "demo": "claude"
+      },
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      }
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {
+        "demo": "claude"
+      },
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": null,
+      "warning": "",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "select",
+      "per_project": {
+        "demo": "claude"
+      },
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      }
+    },
+    "expected": {
+      "mode": "user_command_priority",
+      "per_project": {
+        "demo": "claude"
+      },
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      },
+      "default_backend": "claude",
+      "unresolved_mode": null,
+      "warning": "",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "select",
+      "per_project": [],
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      }
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": "select",
+      "warning": "[mir policy] unresolved mode: select; using select\n",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "select",
+      "per_project": [],
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      }
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      },
+      "default_backend": "claude",
+      "unresolved_mode": "obey_user",
+      "warning": "[mir policy] unresolved mode: obey_user; using select\n",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "select",
+      "per_project": null,
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      }
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": "select",
+      "warning": "[mir policy] unresolved mode: select; using select\n",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "select",
+      "per_project": null,
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      }
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      },
+      "default_backend": "claude",
+      "unresolved_mode": "obey_user",
+      "warning": "[mir policy] unresolved mode: obey_user; using select\n",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "force_codex",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      }
+    },
+    "expected": {
+      "mode": "force_codex",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": null,
+      "warning": "",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "force_codex",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      }
+    },
+    "expected": {
+      "mode": "user_command_priority",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      },
+      "default_backend": "claude",
+      "unresolved_mode": null,
+      "warning": "",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "force_codex",
+      "per_project": {
+        "demo": "claude"
+      },
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      }
+    },
+    "expected": {
+      "mode": "force_codex",
+      "per_project": {
+        "demo": "claude"
+      },
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": null,
+      "warning": "",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "force_codex",
+      "per_project": {
+        "demo": "claude"
+      },
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      }
+    },
+    "expected": {
+      "mode": "user_command_priority",
+      "per_project": {
+        "demo": "claude"
+      },
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      },
+      "default_backend": "claude",
+      "unresolved_mode": null,
+      "warning": "",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "force_codex",
+      "per_project": [],
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      }
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": "force_codex",
+      "warning": "[mir policy] unresolved mode: force_codex; using select\n",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "force_codex",
+      "per_project": [],
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      }
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      },
+      "default_backend": "claude",
+      "unresolved_mode": "obey_user",
+      "warning": "[mir policy] unresolved mode: obey_user; using select\n",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "force_codex",
+      "per_project": null,
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      }
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": "force_codex",
+      "warning": "[mir policy] unresolved mode: force_codex; using select\n",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "force_codex",
+      "per_project": null,
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      }
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      },
+      "default_backend": "claude",
+      "unresolved_mode": "obey_user",
+      "warning": "[mir policy] unresolved mode: obey_user; using select\n",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "force_claude",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      }
+    },
+    "expected": {
+      "mode": "force_claude",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": null,
+      "warning": "",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "claude"
+    }
+  },
+  {
+    "data": {
+      "mode": "force_claude",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      }
+    },
+    "expected": {
+      "mode": "user_command_priority",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      },
+      "default_backend": "claude",
+      "unresolved_mode": null,
+      "warning": "",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "force_claude",
+      "per_project": {
+        "demo": "claude"
+      },
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      }
+    },
+    "expected": {
+      "mode": "force_claude",
+      "per_project": {
+        "demo": "claude"
+      },
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": null,
+      "warning": "",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "claude"
+    }
+  },
+  {
+    "data": {
+      "mode": "force_claude",
+      "per_project": {
+        "demo": "claude"
+      },
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      }
+    },
+    "expected": {
+      "mode": "user_command_priority",
+      "per_project": {
+        "demo": "claude"
+      },
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      },
+      "default_backend": "claude",
+      "unresolved_mode": null,
+      "warning": "",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "force_claude",
+      "per_project": [],
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      }
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": "force_claude",
+      "warning": "[mir policy] unresolved mode: force_claude; using select\n",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "force_claude",
+      "per_project": [],
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      }
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      },
+      "default_backend": "claude",
+      "unresolved_mode": "obey_user",
+      "warning": "[mir policy] unresolved mode: obey_user; using select\n",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "force_claude",
+      "per_project": null,
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      }
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": "force_claude",
+      "warning": "[mir policy] unresolved mode: force_claude; using select\n",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "force_claude",
+      "per_project": null,
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      }
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      },
+      "default_backend": "claude",
+      "unresolved_mode": "obey_user",
+      "warning": "[mir policy] unresolved mode: obey_user; using select\n",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "obey_user",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      }
+    },
+    "expected": {
+      "mode": "user_command_priority",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": null,
+      "warning": "",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "obey_user",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      }
+    },
+    "expected": {
+      "mode": "user_command_priority",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      },
+      "default_backend": "claude",
+      "unresolved_mode": null,
+      "warning": "",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "obey_user",
+      "per_project": {
+        "demo": "claude"
+      },
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      }
+    },
+    "expected": {
+      "mode": "user_command_priority",
+      "per_project": {
+        "demo": "claude"
+      },
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": null,
+      "warning": "",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "obey_user",
+      "per_project": {
+        "demo": "claude"
+      },
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      }
+    },
+    "expected": {
+      "mode": "user_command_priority",
+      "per_project": {
+        "demo": "claude"
+      },
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      },
+      "default_backend": "claude",
+      "unresolved_mode": null,
+      "warning": "",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "obey_user",
+      "per_project": [],
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      }
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": "obey_user",
+      "warning": "[mir policy] unresolved mode: obey_user; using select\n",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "obey_user",
+      "per_project": [],
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      }
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      },
+      "default_backend": "claude",
+      "unresolved_mode": "obey_user",
+      "warning": "[mir policy] unresolved mode: obey_user; using select\n",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "obey_user",
+      "per_project": null,
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      }
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": "obey_user",
+      "warning": "[mir policy] unresolved mode: obey_user; using select\n",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "obey_user",
+      "per_project": null,
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      }
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      },
+      "default_backend": "claude",
+      "unresolved_mode": "obey_user",
+      "warning": "[mir policy] unresolved mode: obey_user; using select\n",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "user_command_priority",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      }
+    },
+    "expected": {
+      "mode": "user_command_priority",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": null,
+      "warning": "",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "user_command_priority",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      }
+    },
+    "expected": {
+      "mode": "user_command_priority",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      },
+      "default_backend": "claude",
+      "unresolved_mode": null,
+      "warning": "",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "user_command_priority",
+      "per_project": {
+        "demo": "claude"
+      },
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      }
+    },
+    "expected": {
+      "mode": "user_command_priority",
+      "per_project": {
+        "demo": "claude"
+      },
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": null,
+      "warning": "",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "user_command_priority",
+      "per_project": {
+        "demo": "claude"
+      },
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      }
+    },
+    "expected": {
+      "mode": "user_command_priority",
+      "per_project": {
+        "demo": "claude"
+      },
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      },
+      "default_backend": "claude",
+      "unresolved_mode": null,
+      "warning": "",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "user_command_priority",
+      "per_project": [],
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      }
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": "user_command_priority",
+      "warning": "[mir policy] unresolved mode: user_command_priority; using select\n",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "user_command_priority",
+      "per_project": [],
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      }
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      },
+      "default_backend": "claude",
+      "unresolved_mode": "obey_user",
+      "warning": "[mir policy] unresolved mode: obey_user; using select\n",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "user_command_priority",
+      "per_project": null,
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      }
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": "user_command_priority",
+      "warning": "[mir policy] unresolved mode: user_command_priority; using select\n",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "user_command_priority",
+      "per_project": null,
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      }
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      },
+      "default_backend": "claude",
+      "unresolved_mode": "obey_user",
+      "warning": "[mir policy] unresolved mode: obey_user; using select\n",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "unrestricted",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      }
+    },
+    "expected": {
+      "mode": "unrestricted",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": null,
+      "warning": "",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "unrestricted",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      }
+    },
+    "expected": {
+      "mode": "user_command_priority",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      },
+      "default_backend": "claude",
+      "unresolved_mode": null,
+      "warning": "",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "unrestricted",
+      "per_project": {
+        "demo": "claude"
+      },
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      }
+    },
+    "expected": {
+      "mode": "unrestricted",
+      "per_project": {
+        "demo": "claude"
+      },
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": null,
+      "warning": "",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "unrestricted",
+      "per_project": {
+        "demo": "claude"
+      },
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      }
+    },
+    "expected": {
+      "mode": "user_command_priority",
+      "per_project": {
+        "demo": "claude"
+      },
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      },
+      "default_backend": "claude",
+      "unresolved_mode": null,
+      "warning": "",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "unrestricted",
+      "per_project": [],
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      }
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": "unrestricted",
+      "warning": "[mir policy] unresolved mode: unrestricted; using select\n",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "unrestricted",
+      "per_project": [],
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      }
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      },
+      "default_backend": "claude",
+      "unresolved_mode": "obey_user",
+      "warning": "[mir policy] unresolved mode: obey_user; using select\n",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "unrestricted",
+      "per_project": null,
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      }
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": "unrestricted",
+      "warning": "[mir policy] unresolved mode: unrestricted; using select\n",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "unrestricted",
+      "per_project": null,
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      }
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      },
+      "default_backend": "claude",
+      "unresolved_mode": "obey_user",
+      "warning": "[mir policy] unresolved mode: obey_user; using select\n",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "per_project",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      }
+    },
+    "expected": {
+      "mode": "per_project",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": null,
+      "warning": "",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "per_project",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      }
+    },
+    "expected": {
+      "mode": "user_command_priority",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      },
+      "default_backend": "claude",
+      "unresolved_mode": null,
+      "warning": "",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "per_project",
+      "per_project": {
+        "demo": "claude"
+      },
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      }
+    },
+    "expected": {
+      "mode": "per_project",
+      "per_project": {
+        "demo": "claude"
+      },
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": null,
+      "warning": "",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "claude"
+    }
+  },
+  {
+    "data": {
+      "mode": "per_project",
+      "per_project": {
+        "demo": "claude"
+      },
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      }
+    },
+    "expected": {
+      "mode": "user_command_priority",
+      "per_project": {
+        "demo": "claude"
+      },
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      },
+      "default_backend": "claude",
+      "unresolved_mode": null,
+      "warning": "",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "per_project",
+      "per_project": [],
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      }
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": "per_project",
+      "warning": "[mir policy] unresolved mode: per_project; using select\n",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "per_project",
+      "per_project": [],
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      }
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      },
+      "default_backend": "claude",
+      "unresolved_mode": "obey_user",
+      "warning": "[mir policy] unresolved mode: obey_user; using select\n",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "per_project",
+      "per_project": null,
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      }
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": "per_project",
+      "warning": "[mir policy] unresolved mode: per_project; using select\n",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "per_project",
+      "per_project": null,
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      }
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      },
+      "default_backend": "claude",
+      "unresolved_mode": "obey_user",
+      "warning": "[mir policy] unresolved mode: obey_user; using select\n",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "unknown",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      }
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": "unknown",
+      "warning": "[mir policy] unresolved mode: unknown; using select\n",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "unknown",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      }
+    },
+    "expected": {
+      "mode": "user_command_priority",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      },
+      "default_backend": "claude",
+      "unresolved_mode": null,
+      "warning": "",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "unknown",
+      "per_project": {
+        "demo": "claude"
+      },
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      }
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": "unknown",
+      "warning": "[mir policy] unresolved mode: unknown; using select\n",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "unknown",
+      "per_project": {
+        "demo": "claude"
+      },
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      }
+    },
+    "expected": {
+      "mode": "user_command_priority",
+      "per_project": {
+        "demo": "claude"
+      },
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      },
+      "default_backend": "claude",
+      "unresolved_mode": null,
+      "warning": "",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "unknown",
+      "per_project": [],
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      }
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": "unknown",
+      "warning": "[mir policy] unresolved mode: unknown; using select\n",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "unknown",
+      "per_project": [],
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      }
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      },
+      "default_backend": "claude",
+      "unresolved_mode": "obey_user",
+      "warning": "[mir policy] unresolved mode: obey_user; using select\n",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "unknown",
+      "per_project": null,
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      }
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": "unknown",
+      "warning": "[mir policy] unresolved mode: unknown; using select\n",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "unknown",
+      "per_project": null,
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      }
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      },
+      "default_backend": "claude",
+      "unresolved_mode": "obey_user",
+      "warning": "[mir policy] unresolved mode: obey_user; using select\n",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      }
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": null,
+      "warning": "",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      }
+    },
+    "expected": {
+      "mode": "user_command_priority",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      },
+      "default_backend": "claude",
+      "unresolved_mode": null,
+      "warning": "",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "",
+      "per_project": {
+        "demo": "claude"
+      },
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      }
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": null,
+      "warning": "",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "",
+      "per_project": {
+        "demo": "claude"
+      },
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      }
+    },
+    "expected": {
+      "mode": "user_command_priority",
+      "per_project": {
+        "demo": "claude"
+      },
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      },
+      "default_backend": "claude",
+      "unresolved_mode": null,
+      "warning": "",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "",
+      "per_project": [],
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      }
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": null,
+      "warning": "",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "",
+      "per_project": [],
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      }
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      },
+      "default_backend": "claude",
+      "unresolved_mode": "obey_user",
+      "warning": "[mir policy] unresolved mode: obey_user; using select\n",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "",
+      "per_project": null,
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      }
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": null,
+      "warning": "",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "",
+      "per_project": null,
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      }
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      },
+      "default_backend": "claude",
+      "unresolved_mode": "obey_user",
+      "warning": "[mir policy] unresolved mode: obey_user; using select\n",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": null,
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      }
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": null,
+      "warning": "",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": null,
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      }
+    },
+    "expected": {
+      "mode": "user_command_priority",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      },
+      "default_backend": "claude",
+      "unresolved_mode": null,
+      "warning": "",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": null,
+      "per_project": {
+        "demo": "claude"
+      },
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      }
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": null,
+      "warning": "",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": null,
+      "per_project": {
+        "demo": "claude"
+      },
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      }
+    },
+    "expected": {
+      "mode": "user_command_priority",
+      "per_project": {
+        "demo": "claude"
+      },
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      },
+      "default_backend": "claude",
+      "unresolved_mode": null,
+      "warning": "",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": null,
+      "per_project": [],
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      }
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": null,
+      "warning": "",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": null,
+      "per_project": [],
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      }
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      },
+      "default_backend": "claude",
+      "unresolved_mode": "obey_user",
+      "warning": "[mir policy] unresolved mode: obey_user; using select\n",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": null,
+      "per_project": null,
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      }
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": null,
+      "warning": "",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": null,
+      "per_project": null,
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      }
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        },
+        "by_category": {
+          "unit": {
+            "model": "ignored",
+            "prefer": [
+              null,
+              {
+                "model": " opus ",
+                "reasoning_effort": " high "
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {
+        "mode": "obey_user",
+        "default_backend": "claude"
+      },
+      "default_backend": "claude",
+      "unresolved_mode": "obey_user",
+      "warning": "[mir policy] unresolved mode: obey_user; using select\n",
+      "route": {
+        "model": "opus",
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": "gpt-fixture",
+        "reasoning_effort": "medium"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "select",
+      "routing": null
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {},
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": null,
+      "warning": "",
+      "route": {
+        "model": null,
+        "reasoning_effort": null
+      },
+      "fallback": {
+        "model": null,
+        "reasoning_effort": null
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "select",
+      "routing": []
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {},
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": null,
+      "warning": "",
+      "route": {
+        "model": null,
+        "reasoning_effort": null
+      },
+      "fallback": {
+        "model": null,
+        "reasoning_effort": null
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "select",
+      "routing": {}
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {},
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": null,
+      "warning": "",
+      "route": {
+        "model": null,
+        "reasoning_effort": null
+      },
+      "fallback": {
+        "model": null,
+        "reasoning_effort": null
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "select",
+      "routing": {
+        "default_model": " x ",
+        "default_reasoning_effort": " low "
+      }
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {
+        "default_model": " x ",
+        "default_reasoning_effort": " low "
+      },
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": null,
+      "warning": "",
+      "route": {
+        "model": "x",
+        "reasoning_effort": "low"
+      },
+      "fallback": {
+        "model": "x",
+        "reasoning_effort": "low"
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "select",
+      "routing": {
+        "default": [],
+        "by_category": {
+          "unit": {
+            "prefer": [
+              {},
+              {
+                "model": "x"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {
+        "default": [],
+        "by_category": {
+          "unit": {
+            "prefer": [
+              {},
+              {
+                "model": "x"
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": null,
+      "warning": "",
+      "route": {
+        "model": "x",
+        "reasoning_effort": null
+      },
+      "fallback": {
+        "model": null,
+        "reasoning_effort": null
+      },
+      "backend": "codex"
+    }
+  },
+  {
+    "data": {
+      "mode": "select",
+      "routing": {
+        "by_category": {
+          "unit": {
+            "prefer": [
+              {
+                "reasoning_effort": "high"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "expected": {
+      "mode": "select",
+      "per_project": {},
+      "routing": {
+        "by_category": {
+          "unit": {
+            "prefer": [
+              {
+                "reasoning_effort": "high"
+              }
+            ]
+          }
+        }
+      },
+      "monitoring": {},
+      "delegation": {},
+      "default_backend": "codex",
+      "unresolved_mode": null,
+      "warning": "",
+      "route": {
+        "model": null,
+        "reasoning_effort": "high"
+      },
+      "fallback": {
+        "model": null,
+        "reasoning_effort": null
+      },
+      "backend": "codex"
+    }
+  }
+]

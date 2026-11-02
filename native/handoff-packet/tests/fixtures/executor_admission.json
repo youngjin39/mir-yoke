@@ -1,0 +1,27 @@
+[
+  {
+    "command": "execute",
+    "stderr": "[mir_executor] authorize_target refused $scratch/target: RuntimeError: fixture refusal\n",
+    "code": 1
+  },
+  {
+    "command": "status",
+    "stderr": "[mir_executor] authorize_target refused $scratch/target: RuntimeError: fixture refusal\n",
+    "code": 1
+  },
+  {
+    "command": "result",
+    "stderr": "[mir_executor] authorize_target refused $scratch/target: RuntimeError: fixture refusal\n",
+    "code": 1
+  },
+  {
+    "command": "cancel",
+    "stderr": "[mir_executor] authorize_target refused $scratch/target: RuntimeError: fixture refusal\n",
+    "code": 1
+  },
+  {
+    "command": "sweep",
+    "stderr": "[mir_executor] authorize_target refused $scratch/target: RuntimeError: fixture refusal\n",
+    "code": 1
+  }
+]

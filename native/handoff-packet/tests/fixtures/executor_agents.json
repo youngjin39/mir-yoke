@@ -1,0 +1,662 @@
+[
+  {
+    "source": "---\nexecution_backend: codex\nmodel: opus\neffort: high\n---\nDo the bounded work.\n",
+    "codex": null,
+    "policy": {
+      "mode": "select",
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        }
+      }
+    },
+    "expected": {
+      "route": {
+        "target_agent": "reviewer",
+        "execution_backend": "codex",
+        "model": "gpt-fixture",
+        "reasoning_effort": "high",
+        "definition_path": ".claude/agents/reviewer.md",
+        "definition_sha256": "dfd269d8456d4a5010a1c72ce9f22f872de7616042c6905337fefd5f8732a36e",
+        "base_instructions": "Do the bounded work.",
+        "sandbox": "workspace-write"
+      },
+      "warning": ""
+    }
+  },
+  {
+    "source": "---\nexecution_backend: codex\nmodel: opus\neffort: high\n---\nDo the bounded work.\n",
+    "codex": "sandbox_mode = \"read-only\"\ndeveloper_instructions = \"Native instructions.\"\n",
+    "policy": {
+      "mode": "select",
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        }
+      }
+    },
+    "expected": {
+      "route": {
+        "target_agent": "reviewer",
+        "execution_backend": "codex",
+        "model": "gpt-fixture",
+        "reasoning_effort": "high",
+        "definition_path": ".codex/agents/reviewer.toml",
+        "definition_sha256": "3ac6ed89fb678459113997ddc7e92452172ccdbeec9844301714b498b4f525bf",
+        "base_instructions": "Native instructions.",
+        "sandbox": "read-only"
+      },
+      "warning": ""
+    }
+  },
+  {
+    "source": "---\nexecution_backend: codex\nmodel: opus\neffort: high\n---\nDo the bounded work.\n",
+    "codex": "sandbox_mode = \"workspace-write\"\ndeveloper_instructions = \"Native instructions.\"\n",
+    "policy": {
+      "mode": "select",
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        }
+      }
+    },
+    "expected": {
+      "route": {
+        "target_agent": "reviewer",
+        "execution_backend": "codex",
+        "model": "gpt-fixture",
+        "reasoning_effort": "high",
+        "definition_path": ".codex/agents/reviewer.toml",
+        "definition_sha256": "c5e396fc771c5eee2c9225a71c92dead233b724b74fb81396c42a5aee16e0fa7",
+        "base_instructions": "Native instructions.",
+        "sandbox": "workspace-write"
+      },
+      "warning": ""
+    }
+  },
+  {
+    "source": "---\nexecution_backend: codex\nmodel: opus\neffort: high\n---\nDo the bounded work.\n",
+    "codex": "sandbox_mode = \"danger-full-access\"\ndeveloper_instructions = \"Native instructions.\"\n",
+    "policy": {
+      "mode": "select",
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        }
+      }
+    },
+    "expected": {
+      "route": {
+        "target_agent": "reviewer",
+        "execution_backend": "codex",
+        "model": "gpt-fixture",
+        "reasoning_effort": "high",
+        "definition_path": ".codex/agents/reviewer.toml",
+        "definition_sha256": "d14e7bede9b31b96357045b4895e218fa03a1bf5ccca8ac4567d95b188b7bb8b",
+        "base_instructions": "Native instructions.",
+        "sandbox": "workspace-write"
+      },
+      "warning": ""
+    }
+  },
+  {
+    "source": "---\nexecution_backend: codex\nmodel: opus\neffort: high\n---\nDo the bounded work.\n",
+    "codex": "sandbox_mode = \"invalid\"\ndeveloper_instructions = \"Native instructions.\"\n",
+    "policy": {
+      "mode": "select",
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        }
+      }
+    },
+    "expected": {
+      "error": "agent 'reviewer' has invalid sandbox_mode"
+    }
+  },
+  {
+    "source": "---\nexecution_backend: codex\nmodel: opus\neffort: high\ndisallowedTools: \"[Write, Edit]\"\n---\nDo the bounded work.\n",
+    "codex": null,
+    "policy": {
+      "mode": "select",
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        }
+      }
+    },
+    "expected": {
+      "route": {
+        "target_agent": "reviewer",
+        "execution_backend": "codex",
+        "model": "gpt-fixture",
+        "reasoning_effort": "high",
+        "definition_path": ".claude/agents/reviewer.md",
+        "definition_sha256": "4b0d543d4134466d324481de67889a9f0478b08a5c3ddcc010ef4dbc8b9a988e",
+        "base_instructions": "Do the bounded work.",
+        "sandbox": "read-only"
+      },
+      "warning": ""
+    }
+  },
+  {
+    "source": "---\nexecution_backend: codex\nmodel: opus\neffort: high\ndisallowedTools: \"[Write, Edit]\"\n---\nDo the bounded work.\n",
+    "codex": "sandbox_mode = \"read-only\"\ndeveloper_instructions = \"Native instructions.\"\n",
+    "policy": {
+      "mode": "select",
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        }
+      }
+    },
+    "expected": {
+      "route": {
+        "target_agent": "reviewer",
+        "execution_backend": "codex",
+        "model": "gpt-fixture",
+        "reasoning_effort": "high",
+        "definition_path": ".codex/agents/reviewer.toml",
+        "definition_sha256": "3ac6ed89fb678459113997ddc7e92452172ccdbeec9844301714b498b4f525bf",
+        "base_instructions": "Native instructions.",
+        "sandbox": "read-only"
+      },
+      "warning": ""
+    }
+  },
+  {
+    "source": "---\nexecution_backend: codex\nmodel: opus\neffort: high\ndisallowedTools: \"[Write, Edit]\"\n---\nDo the bounded work.\n",
+    "codex": "sandbox_mode = \"workspace-write\"\ndeveloper_instructions = \"Native instructions.\"\n",
+    "policy": {
+      "mode": "select",
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        }
+      }
+    },
+    "expected": {
+      "route": {
+        "target_agent": "reviewer",
+        "execution_backend": "codex",
+        "model": "gpt-fixture",
+        "reasoning_effort": "high",
+        "definition_path": ".codex/agents/reviewer.toml",
+        "definition_sha256": "c5e396fc771c5eee2c9225a71c92dead233b724b74fb81396c42a5aee16e0fa7",
+        "base_instructions": "Native instructions.",
+        "sandbox": "read-only"
+      },
+      "warning": ""
+    }
+  },
+  {
+    "source": "---\nexecution_backend: codex\nmodel: opus\neffort: high\ndisallowedTools: \"[Write, Edit]\"\n---\nDo the bounded work.\n",
+    "codex": "sandbox_mode = \"danger-full-access\"\ndeveloper_instructions = \"Native instructions.\"\n",
+    "policy": {
+      "mode": "select",
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        }
+      }
+    },
+    "expected": {
+      "route": {
+        "target_agent": "reviewer",
+        "execution_backend": "codex",
+        "model": "gpt-fixture",
+        "reasoning_effort": "high",
+        "definition_path": ".codex/agents/reviewer.toml",
+        "definition_sha256": "d14e7bede9b31b96357045b4895e218fa03a1bf5ccca8ac4567d95b188b7bb8b",
+        "base_instructions": "Native instructions.",
+        "sandbox": "read-only"
+      },
+      "warning": ""
+    }
+  },
+  {
+    "source": "---\nexecution_backend: codex\nmodel: opus\neffort: high\ndisallowedTools: \"[Write, Edit]\"\n---\nDo the bounded work.\n",
+    "codex": "sandbox_mode = \"invalid\"\ndeveloper_instructions = \"Native instructions.\"\n",
+    "policy": {
+      "mode": "select",
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        }
+      }
+    },
+    "expected": {
+      "error": "agent 'reviewer' has invalid sandbox_mode"
+    }
+  },
+  {
+    "source": "---\nexecution_backend: claude\nmodel: opus\neffort: high\n---\nDo the bounded work.\n",
+    "codex": null,
+    "policy": {
+      "mode": "select",
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        }
+      }
+    },
+    "expected": {
+      "route": {
+        "target_agent": "reviewer",
+        "execution_backend": "claude",
+        "model": "opus",
+        "reasoning_effort": "high",
+        "definition_path": ".claude/agents/reviewer.md",
+        "definition_sha256": "3612e3796df085869528f7029b1bd68a2f9093592cb56f743db60bf869773832",
+        "base_instructions": "Do the bounded work.",
+        "sandbox": null
+      },
+      "warning": ""
+    }
+  },
+  {
+    "source": "---\nexecution_backend: claude\nmodel: opus\neffort: high\n---\nDo the bounded work.\n",
+    "codex": "sandbox_mode = \"read-only\"\ndeveloper_instructions = \"Native instructions.\"\n",
+    "policy": {
+      "mode": "select",
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        }
+      }
+    },
+    "expected": {
+      "route": {
+        "target_agent": "reviewer",
+        "execution_backend": "claude",
+        "model": "opus",
+        "reasoning_effort": "high",
+        "definition_path": ".claude/agents/reviewer.md",
+        "definition_sha256": "3612e3796df085869528f7029b1bd68a2f9093592cb56f743db60bf869773832",
+        "base_instructions": "Do the bounded work.",
+        "sandbox": null
+      },
+      "warning": ""
+    }
+  },
+  {
+    "source": "---\nexecution_backend: claude\nmodel: opus\neffort: high\n---\nDo the bounded work.\n",
+    "codex": "sandbox_mode = \"workspace-write\"\ndeveloper_instructions = \"Native instructions.\"\n",
+    "policy": {
+      "mode": "select",
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        }
+      }
+    },
+    "expected": {
+      "route": {
+        "target_agent": "reviewer",
+        "execution_backend": "claude",
+        "model": "opus",
+        "reasoning_effort": "high",
+        "definition_path": ".claude/agents/reviewer.md",
+        "definition_sha256": "3612e3796df085869528f7029b1bd68a2f9093592cb56f743db60bf869773832",
+        "base_instructions": "Do the bounded work.",
+        "sandbox": null
+      },
+      "warning": ""
+    }
+  },
+  {
+    "source": "---\nexecution_backend: claude\nmodel: opus\neffort: high\n---\nDo the bounded work.\n",
+    "codex": "sandbox_mode = \"danger-full-access\"\ndeveloper_instructions = \"Native instructions.\"\n",
+    "policy": {
+      "mode": "select",
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        }
+      }
+    },
+    "expected": {
+      "route": {
+        "target_agent": "reviewer",
+        "execution_backend": "claude",
+        "model": "opus",
+        "reasoning_effort": "high",
+        "definition_path": ".claude/agents/reviewer.md",
+        "definition_sha256": "3612e3796df085869528f7029b1bd68a2f9093592cb56f743db60bf869773832",
+        "base_instructions": "Do the bounded work.",
+        "sandbox": null
+      },
+      "warning": ""
+    }
+  },
+  {
+    "source": "---\nexecution_backend: claude\nmodel: opus\neffort: high\n---\nDo the bounded work.\n",
+    "codex": "sandbox_mode = \"invalid\"\ndeveloper_instructions = \"Native instructions.\"\n",
+    "policy": {
+      "mode": "select",
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        }
+      }
+    },
+    "expected": {
+      "route": {
+        "target_agent": "reviewer",
+        "execution_backend": "claude",
+        "model": "opus",
+        "reasoning_effort": "high",
+        "definition_path": ".claude/agents/reviewer.md",
+        "definition_sha256": "3612e3796df085869528f7029b1bd68a2f9093592cb56f743db60bf869773832",
+        "base_instructions": "Do the bounded work.",
+        "sandbox": null
+      },
+      "warning": ""
+    }
+  },
+  {
+    "source": "---\nexecution_backend: claude\nmodel: opus\neffort: high\ndisallowedTools: \"[Write, Edit]\"\n---\nDo the bounded work.\n",
+    "codex": null,
+    "policy": {
+      "mode": "select",
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        }
+      }
+    },
+    "expected": {
+      "route": {
+        "target_agent": "reviewer",
+        "execution_backend": "claude",
+        "model": "opus",
+        "reasoning_effort": "high",
+        "definition_path": ".claude/agents/reviewer.md",
+        "definition_sha256": "8e764ae5ecc056a70b9c69537066ee9d9bb6cdbdae434b8b373cb6850b240421",
+        "base_instructions": "Do the bounded work.",
+        "sandbox": "read-only"
+      },
+      "warning": ""
+    }
+  },
+  {
+    "source": "---\nexecution_backend: claude\nmodel: opus\neffort: high\ndisallowedTools: \"[Write, Edit]\"\n---\nDo the bounded work.\n",
+    "codex": "sandbox_mode = \"read-only\"\ndeveloper_instructions = \"Native instructions.\"\n",
+    "policy": {
+      "mode": "select",
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        }
+      }
+    },
+    "expected": {
+      "route": {
+        "target_agent": "reviewer",
+        "execution_backend": "claude",
+        "model": "opus",
+        "reasoning_effort": "high",
+        "definition_path": ".claude/agents/reviewer.md",
+        "definition_sha256": "8e764ae5ecc056a70b9c69537066ee9d9bb6cdbdae434b8b373cb6850b240421",
+        "base_instructions": "Do the bounded work.",
+        "sandbox": "read-only"
+      },
+      "warning": ""
+    }
+  },
+  {
+    "source": "---\nexecution_backend: claude\nmodel: opus\neffort: high\ndisallowedTools: \"[Write, Edit]\"\n---\nDo the bounded work.\n",
+    "codex": "sandbox_mode = \"workspace-write\"\ndeveloper_instructions = \"Native instructions.\"\n",
+    "policy": {
+      "mode": "select",
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        }
+      }
+    },
+    "expected": {
+      "route": {
+        "target_agent": "reviewer",
+        "execution_backend": "claude",
+        "model": "opus",
+        "reasoning_effort": "high",
+        "definition_path": ".claude/agents/reviewer.md",
+        "definition_sha256": "8e764ae5ecc056a70b9c69537066ee9d9bb6cdbdae434b8b373cb6850b240421",
+        "base_instructions": "Do the bounded work.",
+        "sandbox": "read-only"
+      },
+      "warning": ""
+    }
+  },
+  {
+    "source": "---\nexecution_backend: claude\nmodel: opus\neffort: high\ndisallowedTools: \"[Write, Edit]\"\n---\nDo the bounded work.\n",
+    "codex": "sandbox_mode = \"danger-full-access\"\ndeveloper_instructions = \"Native instructions.\"\n",
+    "policy": {
+      "mode": "select",
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        }
+      }
+    },
+    "expected": {
+      "route": {
+        "target_agent": "reviewer",
+        "execution_backend": "claude",
+        "model": "opus",
+        "reasoning_effort": "high",
+        "definition_path": ".claude/agents/reviewer.md",
+        "definition_sha256": "8e764ae5ecc056a70b9c69537066ee9d9bb6cdbdae434b8b373cb6850b240421",
+        "base_instructions": "Do the bounded work.",
+        "sandbox": "read-only"
+      },
+      "warning": ""
+    }
+  },
+  {
+    "source": "---\nexecution_backend: claude\nmodel: opus\neffort: high\ndisallowedTools: \"[Write, Edit]\"\n---\nDo the bounded work.\n",
+    "codex": "sandbox_mode = \"invalid\"\ndeveloper_instructions = \"Native instructions.\"\n",
+    "policy": {
+      "mode": "select",
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        }
+      }
+    },
+    "expected": {
+      "route": {
+        "target_agent": "reviewer",
+        "execution_backend": "claude",
+        "model": "opus",
+        "reasoning_effort": "high",
+        "definition_path": ".claude/agents/reviewer.md",
+        "definition_sha256": "8e764ae5ecc056a70b9c69537066ee9d9bb6cdbdae434b8b373cb6850b240421",
+        "base_instructions": "Do the bounded work.",
+        "sandbox": "read-only"
+      },
+      "warning": ""
+    }
+  },
+  {
+    "source": "---\nexecution_backend: invalid\nmodel: opus\neffort: high\n---\nDo the bounded work.\n",
+    "codex": null,
+    "policy": {
+      "mode": "select",
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        }
+      }
+    },
+    "expected": {
+      "error": "agent 'reviewer' has no executable backend"
+    }
+  },
+  {
+    "source": "---\nexecution_backend: invalid\nmodel: opus\neffort: high\n---\nDo the bounded work.\n",
+    "codex": "sandbox_mode = \"read-only\"\ndeveloper_instructions = \"Native instructions.\"\n",
+    "policy": {
+      "mode": "select",
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        }
+      }
+    },
+    "expected": {
+      "error": "agent 'reviewer' has no executable backend"
+    }
+  },
+  {
+    "source": "---\nexecution_backend: invalid\nmodel: opus\neffort: high\n---\nDo the bounded work.\n",
+    "codex": "sandbox_mode = \"workspace-write\"\ndeveloper_instructions = \"Native instructions.\"\n",
+    "policy": {
+      "mode": "select",
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        }
+      }
+    },
+    "expected": {
+      "error": "agent 'reviewer' has no executable backend"
+    }
+  },
+  {
+    "source": "---\nexecution_backend: invalid\nmodel: opus\neffort: high\n---\nDo the bounded work.\n",
+    "codex": "sandbox_mode = \"danger-full-access\"\ndeveloper_instructions = \"Native instructions.\"\n",
+    "policy": {
+      "mode": "select",
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        }
+      }
+    },
+    "expected": {
+      "error": "agent 'reviewer' has no executable backend"
+    }
+  },
+  {
+    "source": "---\nexecution_backend: invalid\nmodel: opus\neffort: high\n---\nDo the bounded work.\n",
+    "codex": "sandbox_mode = \"invalid\"\ndeveloper_instructions = \"Native instructions.\"\n",
+    "policy": {
+      "mode": "select",
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        }
+      }
+    },
+    "expected": {
+      "error": "agent 'reviewer' has no executable backend"
+    }
+  },
+  {
+    "source": "---\nexecution_backend: invalid\nmodel: opus\neffort: high\ndisallowedTools: \"[Write, Edit]\"\n---\nDo the bounded work.\n",
+    "codex": null,
+    "policy": {
+      "mode": "select",
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        }
+      }
+    },
+    "expected": {
+      "error": "agent 'reviewer' has no executable backend"
+    }
+  },
+  {
+    "source": "---\nexecution_backend: invalid\nmodel: opus\neffort: high\ndisallowedTools: \"[Write, Edit]\"\n---\nDo the bounded work.\n",
+    "codex": "sandbox_mode = \"read-only\"\ndeveloper_instructions = \"Native instructions.\"\n",
+    "policy": {
+      "mode": "select",
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        }
+      }
+    },
+    "expected": {
+      "error": "agent 'reviewer' has no executable backend"
+    }
+  },
+  {
+    "source": "---\nexecution_backend: invalid\nmodel: opus\neffort: high\ndisallowedTools: \"[Write, Edit]\"\n---\nDo the bounded work.\n",
+    "codex": "sandbox_mode = \"workspace-write\"\ndeveloper_instructions = \"Native instructions.\"\n",
+    "policy": {
+      "mode": "select",
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        }
+      }
+    },
+    "expected": {
+      "error": "agent 'reviewer' has no executable backend"
+    }
+  },
+  {
+    "source": "---\nexecution_backend: invalid\nmodel: opus\neffort: high\ndisallowedTools: \"[Write, Edit]\"\n---\nDo the bounded work.\n",
+    "codex": "sandbox_mode = \"danger-full-access\"\ndeveloper_instructions = \"Native instructions.\"\n",
+    "policy": {
+      "mode": "select",
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        }
+      }
+    },
+    "expected": {
+      "error": "agent 'reviewer' has no executable backend"
+    }
+  },
+  {
+    "source": "---\nexecution_backend: invalid\nmodel: opus\neffort: high\ndisallowedTools: \"[Write, Edit]\"\n---\nDo the bounded work.\n",
+    "codex": "sandbox_mode = \"invalid\"\ndeveloper_instructions = \"Native instructions.\"\n",
+    "policy": {
+      "mode": "select",
+      "routing": {
+        "default": {
+          "model": "gpt-fixture",
+          "reasoning_effort": "medium"
+        }
+      }
+    },
+    "expected": {
+      "error": "agent 'reviewer' has no executable backend"
+    }
+  }
+]
