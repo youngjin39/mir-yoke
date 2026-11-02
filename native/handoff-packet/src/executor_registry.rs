@@ -252,6 +252,8 @@ fn private(path: &Path) -> Result<()> {
                 // Like Python chmod(0600), Windows changes the read-only
                 // attribute here; it does not replace inherited ACLs.
                 let mut permissions = meta.permissions();
+                // Clearing the attribute is the intent; the lint targets Unix modes.
+                #[allow(clippy::permissions_set_readonly_false)]
                 permissions.set_readonly(false);
                 fs::set_permissions(path, permissions)?;
             }

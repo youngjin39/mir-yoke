@@ -2849,7 +2849,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/executor_registry.rs",
-      "sha256": "d98adbac7e1737eb65b77fa5b9ff40a5781f2444095e386255e94f6376beab03"
+      "sha256": "5ed4a22bec3cdc6a0a35dbb432ea20f1c6d9f2fd24ac04a8f242f47b2c0cca08"
     },
     {
       "classification": "template-maintainer-tool",
