@@ -1,0 +1,138 @@
+{
+  "cases": [
+    {
+      "name": "space repo",
+      "files": {
+        "code [literal].txt": "initial\n",
+        ".gitignore": ".mir/\n"
+      },
+      "profile": "[repo]\nrepository_type = \"fixture\"\n",
+      "brief": "hello token=private-value\n",
+      "artifacts": {
+        "result.json": "{\"token\":\"private-value\",\"ok\":true,\"nested\":[\"Bearer private-value\"]}",
+        "events.jsonl": "{\"password\":\"private-value\"}\n\n{\"text\":\"normal\"}\n",
+        "reviewer.json": "{\"ok\":true}",
+        "dispatch-events.jsonl": "{\"api_key\":\"private-value\"}\n"
+      },
+      "expected": {
+        "brief": "hello token=[REDACTED]\n",
+        "status": {
+          "dispatch_id": "fixture",
+          "state": "created",
+          "base_commit": "<BASE>"
+        },
+        "profile": "[repo]\nrepository_type = \"fixture\"\n",
+        "branch": "mir-dispatch/fixture",
+        "artifacts": {
+          "result.json": "{\"token\": \"[REDACTED]\", \"ok\": true, \"nested\": [\"Bearer [REDACTED]\"]}\n",
+          "dispatch-events.jsonl": "{\"api_key\": \"[REDACTED]\"}\n",
+          "events.jsonl": "{\"password\": \"[REDACTED]\"}\n{\"text\": \"normal\"}\n",
+          "brief.md": "hello token=[REDACTED]\n",
+          "reviewer.json": "{\"ok\": true}\n"
+        },
+        "private_mode": "0o600",
+        "tracked": ".gitignore\u0000code [literal].txt\u0000",
+        "git_status": "?? .mir-dispatch/\u0000",
+        "removed": true,
+        "branch_removed": true,
+        "refusal_stderr": "Preparing worktree (new branch 'mir-dispatch/existing')\nfatal: a branch named 'mir-dispatch/existing' already exists\n"
+      }
+    },
+    {
+      "name": "unicode-\u03bb-\ud55c",
+      "files": {
+        "code [literal].txt": "initial\n",
+        ".gitignore": ".mir/\n"
+      },
+      "profile": "[repo]\nrepository_type = \"fixture\"\n",
+      "brief": "hello token=private-value\n",
+      "artifacts": {
+        "result.json": "{\"token\":\"private-value\",\"ok\":true,\"nested\":[\"Bearer private-value\"]}",
+        "events.jsonl": "{\"password\":\"private-value\"}\n\n{\"text\":\"normal\"}\n",
+        "reviewer.json": "{\"ok\":true}",
+        "dispatch-events.jsonl": "{\"api_key\":\"private-value\"}\n"
+      },
+      "expected": {
+        "brief": "hello token=[REDACTED]\n",
+        "status": {
+          "dispatch_id": "fixture",
+          "state": "created",
+          "base_commit": "<BASE>"
+        },
+        "profile": "[repo]\nrepository_type = \"fixture\"\n",
+        "branch": "mir-dispatch/fixture",
+        "artifacts": {
+          "result.json": "{\"token\": \"[REDACTED]\", \"ok\": true, \"nested\": [\"Bearer [REDACTED]\"]}\n",
+          "dispatch-events.jsonl": "{\"api_key\": \"[REDACTED]\"}\n",
+          "events.jsonl": "{\"password\": \"[REDACTED]\"}\n{\"text\": \"normal\"}\n",
+          "brief.md": "hello token=[REDACTED]\n",
+          "reviewer.json": "{\"ok\": true}\n"
+        },
+        "private_mode": "0o600",
+        "tracked": ".gitignore\u0000code [literal].txt\u0000",
+        "git_status": "?? .mir-dispatch/\u0000",
+        "removed": true,
+        "branch_removed": true,
+        "refusal_stderr": "Preparing worktree (new branch 'mir-dispatch/existing')\nfatal: a branch named 'mir-dispatch/existing' already exists\n"
+      }
+    }
+  ],
+  "env": [
+    {
+      "config": {},
+      "force": false,
+      "source": {
+        "PATH": "/fixture/bin",
+        "HOME": "/fixture/home",
+        "API_TOKEN": "hidden",
+        "EXTRA": "explicit",
+        "CODEX_EVENTS_FILE": "caller-events"
+      },
+      "expected": {
+        "PATH": "/fixture/bin",
+        "HOME": "/fixture/home",
+        "API_TOKEN": "hidden",
+        "EXTRA": "explicit",
+        "CODEX_EVENTS_FILE": "caller-events"
+      }
+    },
+    {
+      "config": {},
+      "force": true,
+      "source": {
+        "PATH": "/fixture/bin",
+        "HOME": "/fixture/home",
+        "API_TOKEN": "hidden",
+        "EXTRA": "explicit",
+        "CODEX_EVENTS_FILE": "caller-events"
+      },
+      "expected": {
+        "PATH": "/fixture/bin",
+        "HOME": "/fixture/home",
+        "CODEX_EVENTS_FILE": "caller-events"
+      }
+    },
+    {
+      "config": {
+        "child_env_filter": true,
+        "child_env_extra_keys": [
+          "EXTRA"
+        ]
+      },
+      "force": false,
+      "source": {
+        "PATH": "/fixture/bin",
+        "HOME": "/fixture/home",
+        "API_TOKEN": "hidden",
+        "EXTRA": "explicit",
+        "CODEX_EVENTS_FILE": "caller-events"
+      },
+      "expected": {
+        "PATH": "/fixture/bin",
+        "HOME": "/fixture/home",
+        "CODEX_EVENTS_FILE": "caller-events",
+        "EXTRA": "explicit"
+      }
+    }
+  ]
+}

@@ -50,6 +50,14 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
   scenarios. Dispatch, resume, Claude, agent routes, cross-target roots and parser
   extensions decline to Python. The Python entrypoint does not route `execute`
   yet. The Unix account home comes from `getpwuid_r` (the crate's only `unsafe`).
+- Executor port slice E6 (library only): native dispatch worktrees (creation from a
+  base commit, brief and status files, private and redacted writes, inspection,
+  merge, artifact persistence, child environment and cleanup) matching the Python
+  golden lifecycle. Caller-selected roots are resolved once, so roots under a
+  symlinked ancestor work as in Python; links at or below a selected root are
+  refused. Stricter than Python: a dispatch id must be one path component, a
+  selected root that is itself a link is refused, and a failed seed removes the
+  partial worktree.
 
 ### Changed
 
