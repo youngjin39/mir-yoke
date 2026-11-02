@@ -176,6 +176,7 @@ def _native_command(argv: list[str]) -> int | None:
     with directory:
         receipt = pathlib.Path(directory.name) / 'owned'
         environment = dict(os.environ, MIR_EXECUTOR_OWNED_RECEIPT=str(receipt))
+        environment.setdefault('MIR_EXECUTOR_PYTHON', sys.executable)
         previous = {}
         child = None
         try:

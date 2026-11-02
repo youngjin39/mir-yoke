@@ -425,7 +425,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": ".github/workflows/validate.yml",
-      "sha256": "2f158a228cc6a16de17ebcb96f65f066e3276dc3deef1ab4b75978c23f811ee5"
+      "sha256": "f55c7f344f7788b96ec4cf5f2b0218e86c1595f548ae868e04de88dfedfd42e6"
     },
     {
       "classification": "reference",
@@ -497,7 +497,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "CHANGELOG.md",
-      "sha256": "4ec544024dbcaf8f2be593e0a374c5dab282410464649e13f8c95546b81b2958"
+      "sha256": "cbe733c66393c51fc112891d7d02eaabf7f08c1374bd2ea0cc8d002efbf449e1"
     },
     {
       "classification": "reference",
@@ -599,7 +599,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "config/mir-executor-common.json",
-      "sha256": "9e37c8f3b3a943f27485ddf64b58e97bae8ce373a210eabf7910a548939e4f52"
+      "sha256": "7cce388c3555077a57158238ae7dad36263490583b0356acc14109239ec9014b"
     },
     {
       "classification": "template-maintainer-tool",
@@ -2855,7 +2855,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/executor_execute.rs",
-      "sha256": "322e94af3f37bd7843f3a57e897578d0210da64df31e09d5e0b63c8d57002deb"
+      "sha256": "89e32d6d2c1ca913acefaeaf918ecc4154103fba8d7419678ca224103f443a9b"
     },
     {
       "classification": "template-maintainer-tool",
@@ -5465,7 +5465,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_executor_execute_native_parity.py",
-      "sha256": "cb0c898183cdb4ffbb1603263870dd5d920ac4ddbafcfdb9b0d3b3a2c79d0389"
+      "sha256": "c9669355bc7225bfb6c48f32dc74e7bdfa9e42ca67addd0c434b277bb6b84d0f"
     },
     {
       "classification": "template-maintainer-tool",
@@ -6101,7 +6101,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/COMMON_MANIFEST.json",
-      "sha256": "9e37c8f3b3a943f27485ddf64b58e97bae8ce373a210eabf7910a548939e4f52"
+      "sha256": "7cce388c3555077a57158238ae7dad36263490583b0356acc14109239ec9014b"
     },
     {
       "classification": "optional-consumer-tool",
@@ -6149,7 +6149,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/entrypoint.py",
-      "sha256": "f64924d77c90801033c844f53487df9e75cd77a1c73af8d23491a9025df3b94f"
+      "sha256": "9cf6a012f5e13551b3190a4a547d8e82add408d4969d578250922b53962dacd9"
     },
     {
       "classification": "optional-consumer-tool",

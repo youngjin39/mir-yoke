@@ -166,7 +166,9 @@ pub(crate) fn interpreter(
     cwd: &Path,
 ) -> Option<PathBuf> {
     if let Some(p) = environment_value(environment, "MIR_EXECUTOR_PYTHON", cfg!(windows)) {
-        return fs::canonicalize(p).ok().map(crate::supply::plain);
+        let p = PathBuf::from(p);
+        let p = if p.is_absolute() { p } else { cwd.join(p) };
+        return p.is_file().then(|| crate::supply::plain(p));
     }
     let names = if cfg!(windows) {
         &["python3.exe", "python.exe"][..]
@@ -176,10 +178,10 @@ pub(crate) fn interpreter(
     for dir in std::env::split_paths(environment_value(environment, "PATH", cfg!(windows))?) {
         for name in names {
             let p = dir.join(name);
+            let p = if p.is_absolute() { p } else { cwd.join(p) };
             if p.is_file() {
-                return fs::canonicalize(if p.is_absolute() { p } else { cwd.join(p) })
-                    .ok()
-                    .map(crate::supply::plain);
+                // The unresolved executable path selects a virtual environment.
+                return Some(crate::supply::plain(p));
             }
         }
     }
@@ -1091,6 +1093,33 @@ pub fn dispatch(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(unix)]
+    #[test]
+    fn interpreter_preserves_virtual_environment_symlink() {
+        let root = std::env::var_os("MIR_NATIVE_TEST_SCRATCH")
+            .map(PathBuf::from)
+            .unwrap_or_else(std::env::temp_dir)
+            .join(format!("interpreter-symlink-{}", unique_id()));
+        fs::create_dir_all(root.join("venv")).unwrap();
+        let target = root.join("base-python");
+        fs::write(&target, "fixture").unwrap();
+        let link = root.join("venv").join("python3");
+        std::os::unix::fs::symlink(&target, &link).unwrap();
+        for override_path in [
+            None,
+            Some(link.clone()),
+            Some(PathBuf::from("venv/python3")),
+        ] {
+            let mut environment =
+                BTreeMap::from([(OsString::from("PATH"), root.join("venv").into_os_string())]);
+            if let Some(path) = override_path {
+                environment.insert(OsString::from("MIR_EXECUTOR_PYTHON"), path.into_os_string());
+            }
+            assert_eq!(interpreter(&environment, &root), Some(link.clone()));
+        }
+        fs::remove_dir_all(root).unwrap();
+    }
 
     #[test]
     fn windows_environment_lookup_preserves_os_case_rules() {

@@ -588,3 +588,70 @@ def test_dispatch_missing_agent_matches_python_fallback_route(binary, tmp_path, 
     assert b'no definition for target agent' in result.stderr, trace_details()
     assert (root / 'tasks/jobs.db').exists(), trace_details()
     assert (root / 'provider-methods').exists(), trace_details()
+
+
+@pytest.fixture(scope='module')
+def caller_venv(tmp_path_factory):
+    root = tmp_path_factory.mktemp('caller venv')
+    created = subprocess.run(
+        [sys.executable, '-m', 'venv', '--without-pip', str(root)],
+        capture_output=True, timeout=60, check=False)
+    if created.returncode:
+        pytest.skip(f'venv creation unavailable: {created.stderr!r}')
+    python = root / ('Scripts' if os.name == 'nt' else 'bin') / (
+        'python.exe' if os.name == 'nt' else 'python')
+    site = subprocess.run(
+        [str(python), '-I', '-c', 'import sysconfig; print(sysconfig.get_path("purelib"))'],
+        capture_output=True, text=True, timeout=30, check=True)
+    (Path(site.stdout.strip()) / 'venv_only_fixture.py').write_text(
+        'VALUE = "venv-only"\n', encoding='utf-8')
+    return python
+
+
+@pytest.mark.parametrize('command', ['sweep', 'cancel', 'execute'])
+@pytest.mark.parametrize('override', [False, True])
+def test_pinned_bridge_uses_caller_venv(binary, tmp_path, caller_venv, command, override):
+    from tools.mir_executor.jobs import JobRecord, JobRegistry
+
+    snapshots = []
+    for implementation in ('python', 'native'):
+        root, launcher, environment = pinned_home(binary, tmp_path / implementation)
+        environment.pop('MIR_EXECUTOR_PYTHON', None)
+        # Deliberately leave PATH unchanged: the caller need not activate its venv.
+        if implementation == 'python':
+            environment['MIR_EXECUTOR_IMPL'] = 'python'
+        (root / 'tools/mir_executor/local.py').write_text(
+            'import json, sys\n'
+            'from pathlib import Path\n'
+            'from venv_only_fixture import VALUE\n'
+            'root = Path(__file__).resolve().parents[2]\n'
+            '(root / "bridge-environment").write_text(json.dumps(\n'
+            '    [sys.executable, sys.flags.isolated, VALUE]))\n', encoding='utf-8')
+        if command == 'cancel':
+            registry = JobRegistry(root / 'tasks/jobs.db')
+            try:
+                registry.insert(JobRecord(
+                    job_id='venv-job', change_id='fixture', category='unit', family=None,
+                    repo_root=str(root), codex_args=[], timeout_seconds=30, status='running'))
+            finally:
+                registry.close()
+        arguments = (SUPPORT['argv']('success') if command == 'execute' else
+                     ['cancel', '--job-id', 'venv-job'] if command == 'cancel' else
+                     ['sweep', '--repo-root', str(root)])
+        caller = caller_venv
+        if override and implementation == 'native':
+            # A different caller proves the explicit interpreter is not overwritten.
+            environment['MIR_EXECUTOR_PYTHON'] = str(caller_venv)
+            if command != 'cancel':
+                caller = sys.executable
+        result = subprocess.run(
+            [str(caller), '-m', 'tools.mir_executor', *arguments],
+            cwd=root, env=environment, capture_output=True, timeout=60, check=False)
+        assert result.returncode == 0, (result.stdout, result.stderr)
+        executable, isolated, value = json.loads((root / 'bridge-environment').read_text())
+        assert executable == str(caller_venv)
+        # Cancel deliberately declines when local.py exists; Python owns its hooks.
+        assert isolated == (1 if implementation == 'native' and command != 'cancel' else 0)
+        assert value == 'venv-only'
+        snapshots.append(SUPPORT['snapshot'](root, launcher, result))
+    assert snapshots[0] == snapshots[1]
