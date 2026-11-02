@@ -8,6 +8,8 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.62] — 2026-11-03 — Native executor commands
+
 ### Added
 
 - Executor port slice E2a (library only; no command changes behaviour): a native
@@ -121,6 +123,9 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
   follow Windows' case-insensitive names, and `MIR_EXECUTOR_DECLINE_TRACE` names
   a file that records why the binary declined (for diagnosis only).
 - `tools/mir_executor/policy.py` no longer imports `pwd` on Windows.
+- `mir-code:bluebricks` Language Choice: for existing code of any kind (runtime,
+  tools, analysis, ML/data) stability decides; code that still changes often,
+  notebooks and one-off scripts stay in their language until they settle.
 - The Python executor's dispatch event writer skips `os.fchmod` where the
   platform lacks it, instead of failing.
 

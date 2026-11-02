@@ -34,10 +34,11 @@ the supported declared relationships.
 ## Language Choice
 
 New code that runs as part of a product or tool (CLIs, hooks, services, servers, libraries,
-distributed tools) starts in Rust, fixtures first; apply `mir-code:rust`. Python or another
-language stays only for ML/data, analysis, notebooks and one-off scripts, or where the repository's
-own policy says otherwise. Port a stable existing component to Rust with parity, then retire the old
-implementation once the Rust path is stable; do not maintain both long term.
+distributed tools) starts in Rust, fixtures first; apply `mir-code:rust`. For existing code of any
+kind (runtime, tools, analysis, ML/data), stability decides: port a stable component to Rust with
+parity, then retire the old implementation once the Rust path is stable; do not maintain both long
+term. Code that still changes frequently, notebooks and one-off scripts stay in their language until
+they settle, or where the repository's own policy says otherwise.
 
 ## Workflow
 
