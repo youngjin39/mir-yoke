@@ -5159,7 +5159,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_executor_query_native_parity.py",
-      "sha256": "b71357d3321cb919372e792e685a5af992ddfc5ef555bb4f03f1ea5253f54b90"
+      "sha256": "6c4177ae69519a4f2a8dc220e5b0d68f51b4359413d0823b164789513cbfd383"
     },
     {
       "classification": "template-maintainer-tool",

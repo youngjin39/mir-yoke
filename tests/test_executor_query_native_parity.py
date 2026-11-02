@@ -1,6 +1,7 @@
 """Compare executor query process bytes with the unchanged Python CLI."""
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import json
 import os
@@ -13,6 +14,18 @@ from pathlib import Path
 import pytest
 
 from tools.mir_executor.jobs import JobRecord, JobRegistry
+
+
+@contextlib.contextmanager
+def _connect(path):
+    """Commit like sqlite3's context manager, then close: Windows cannot unlink an open DB."""
+    connection = sqlite3.connect(path)
+    try:
+        with connection:
+            yield connection
+    finally:
+        connection.close()
+
 
 ROOT = Path(__file__).resolve().parents[1]
 CRATE = ROOT / "native/handoff-packet"
@@ -149,7 +162,7 @@ def test_executor_query_explicit_paths(binary, home, command):
 
 
 def test_executor_query_empty_database(binary, home):
-    with sqlite3.connect(home / "tasks/jobs.db") as connection:
+    with _connect(home / "tasks/jobs.db") as connection:
         connection.execute("DELETE FROM jobs")
     for argv in (["list-jobs"], ["list-jobs", "--status", "running"],
                  ["status", "--job-id", "absent"]):
@@ -158,7 +171,7 @@ def test_executor_query_empty_database(binary, home):
 
 @pytest.mark.parametrize("duration", [0.0000001, 0.00001, 1e16, 1e20, 1e100, -1.25])
 def test_executor_query_python_float_format(binary, home, duration):
-    with sqlite3.connect(home / "tasks/jobs.db") as connection:
+    with _connect(home / "tasks/jobs.db") as connection:
         connection.execute("UPDATE jobs SET duration_seconds=? WHERE job_id='failed'", (duration,))
     argv = ["result", "--job-id", "failed"]
     assert invoke(binary, home, argv) == invoke(binary, home, argv, python=True)
@@ -170,7 +183,7 @@ def test_executor_query_python_float_format(binary, home, duration):
     "\u0301\u0378\ue000\U0001f600\U000e0001\U000f0000",
 ])
 def test_executor_query_python_repr(binary, home, payload):
-    with sqlite3.connect(home / "tasks/jobs.db") as connection:
+    with _connect(home / "tasks/jobs.db") as connection:
         connection.execute("UPDATE jobs SET change_id=?, stdout=?, stderr=? WHERE job_id='failed'",
                            (payload, payload, payload))
     for command in ("status", "result", "list-jobs"):
@@ -179,7 +192,7 @@ def test_executor_query_python_repr(binary, home, payload):
 
 
 def test_executor_query_equal_timestamp_order(binary, home):
-    with sqlite3.connect(home / "tasks/jobs.db") as connection:
+    with _connect(home / "tasks/jobs.db") as connection:
         connection.execute("UPDATE jobs SET started_at='2026-11-01T00:00:00Z'")
     assert invoke(binary, home, ["list-jobs"]) == invoke(binary, home, ["list-jobs"], python=True)
 
@@ -261,7 +274,7 @@ def test_executor_query_real_pin_avoids_python_executor_import(binary, home, rou
 
 @pytest.mark.parametrize("route", ["module", "mir-cli"])
 def test_executor_query_real_pin_unicode_decline_falls_back(binary, home, route):
-    with sqlite3.connect(home / "tasks/jobs.db") as connection:
+    with _connect(home / "tasks/jobs.db") as connection:
         connection.execute("UPDATE jobs SET stdout=? WHERE job_id='failed'", ("\U0001fae9",))
     argv = ["result", "--job-id", "failed"]
     reference = invoke(binary, home, argv, python=True)
@@ -311,7 +324,7 @@ def test_executor_query_declines_unsupported_storage(binary, home, tmp_path, cas
     database = home / "tasks/jobs.db"
     argv = ["list-jobs"]
     if case == "legacy":
-        with sqlite3.connect(database) as connection:
+        with _connect(database) as connection:
             connection.execute("ALTER TABLE jobs DROP COLUMN ai_run_metadata")
     elif case == "cross-target":
         other = tmp_path / "other"
@@ -325,13 +338,13 @@ def test_executor_query_declines_unsupported_storage(binary, home, tmp_path, cas
         except OSError:
             pytest.skip("symlink unavailable")
     elif case == "malformed-json":
-        with sqlite3.connect(database) as connection:
+        with _connect(database) as connection:
             connection.execute("UPDATE jobs SET codex_args = 'not-json' WHERE job_id='running'")
     elif case == "invalid-type":
-        with sqlite3.connect(database) as connection:
+        with _connect(database) as connection:
             connection.execute("UPDATE jobs SET resume_count='invalid' WHERE job_id='running'")
     elif case == "unicode-version":
-        with sqlite3.connect(database) as connection:
+        with _connect(database) as connection:
             connection.execute("UPDATE jobs SET stdout=? WHERE job_id='running'", ("\U0001fae9",))
     before = database.read_bytes() if database.exists() else None
     assert invoke(binary, home, argv) == (b"", b"", 64)
@@ -374,7 +387,7 @@ def test_executor_query_surrogate_escapes(binary, home, field, escape, command):
     payload = ('["' + escape + '"]' if field == "codex_args" else
                '{"' + escape + '": ["' + escape + '"]}')
     json.loads(payload)  # The unchanged Python decoder is the acceptance oracle.
-    with sqlite3.connect(home / "tasks/jobs.db") as connection:
+    with _connect(home / "tasks/jobs.db") as connection:
         connection.execute(f"UPDATE jobs SET {field}=? WHERE job_id='failed'", (payload,))
     argv = [command] if command == "list-jobs" else [command, "--job-id", "failed"]
     reference = invoke(binary, home, argv, python=True)
@@ -394,7 +407,7 @@ def test_executor_query_surrogate_escapes(binary, home, field, escape, command):
 def test_executor_query_invalid_unicode_escape_declines(binary, home, field, payload, command):
     with pytest.raises(json.JSONDecodeError):
         json.loads(payload)
-    with sqlite3.connect(home / "tasks/jobs.db") as connection:
+    with _connect(home / "tasks/jobs.db") as connection:
         connection.execute(f"UPDATE jobs SET {field}=? WHERE job_id='failed'", (payload,))
     argv = [command] if command == "list-jobs" else [command, "--job-id", "failed"]
     assert invoke(binary, home, argv) == (b"", b"", 64)
@@ -402,7 +415,7 @@ def test_executor_query_invalid_unicode_escape_declines(binary, home, field, pay
 
 @pytest.mark.parametrize("payload", [r'"\udce2"', r'["\udce2", 1]', r'{"x":"\udce2"}'])
 def test_executor_query_surrogate_args_shape_still_declines(binary, home, payload):
-    with sqlite3.connect(home / "tasks/jobs.db") as connection:
+    with _connect(home / "tasks/jobs.db") as connection:
         connection.execute("UPDATE jobs SET codex_args=? WHERE job_id='failed'", (payload,))
     assert invoke(binary, home, ["list-jobs"]) == (b"", b"", 64)
 
@@ -414,11 +427,11 @@ def test_native_cancel_matches_python(binary, home, job):
     saved = database.read_bytes()
     argv = ["cancel", "--job-id", job]
     native = invoke(binary, home, argv)
-    with sqlite3.connect(database) as connection:
+    with _connect(database) as connection:
         actual = connection.execute("SELECT * FROM jobs ORDER BY job_id").fetchall()
     database.write_bytes(saved)
     reference = invoke(binary, home, argv, python=True)
-    with sqlite3.connect(database) as connection:
+    with _connect(database) as connection:
         expected = connection.execute("SELECT * FROM jobs ORDER BY job_id").fetchall()
     assert native == reference
     assert actual == expected
@@ -429,17 +442,17 @@ def test_native_cancel_matches_python(binary, home, job):
 @pytest.mark.parametrize("command", ["list-jobs", "cancel"])
 def test_native_migrates_legacy_registry(binary, home, removed, command):
     database = home / "tasks/jobs.db"
-    with sqlite3.connect(database) as connection:
+    with _connect(database) as connection:
         connection.execute(f"ALTER TABLE jobs DROP COLUMN {removed}")
     saved = database.read_bytes()
     argv = [command] + (["--job-id", "running"] if command == "cancel" else [])
     native = invoke(binary, home, argv)
-    with sqlite3.connect(database) as connection:
+    with _connect(database) as connection:
         actual = connection.execute("SELECT * FROM jobs ORDER BY job_id").fetchall()
         columns = connection.execute("PRAGMA table_info(jobs)").fetchall()
     database.write_bytes(saved)
     reference = invoke(binary, home, argv, python=True)
-    with sqlite3.connect(database) as connection:
+    with _connect(database) as connection:
         assert actual == connection.execute("SELECT * FROM jobs ORDER BY job_id").fetchall()
         assert columns == connection.execute("PRAGMA table_info(jobs)").fetchall()
     assert native == reference
@@ -474,11 +487,11 @@ def test_native_cancel_absent_registry(binary, home):
     argv = ["cancel", "--job-id", "absent"]
     native = invoke(binary, home, argv)
     assert database.exists()
-    with sqlite3.connect(database) as connection:
+    with _connect(database) as connection:
         columns = connection.execute("PRAGMA table_info(jobs)").fetchall()
     database.unlink()
     assert native == invoke(binary, home, argv, python=True)
-    with sqlite3.connect(database) as connection:
+    with _connect(database) as connection:
         assert columns == connection.execute("PRAGMA table_info(jobs)").fetchall()
 
 
