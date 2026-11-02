@@ -52,6 +52,17 @@ def _decode(value: Any) -> Any:
                 from tools.mir_executor.executor import SubprocessResult  # noqa: PLC0415
 
                 return SubprocessResult(**_decode(value["value"]))
+            if value["$type"] == "dispatch_worktree":
+                from tools.mir_executor.worktree import DispatchWorktree  # noqa: PLC0415
+
+                return DispatchWorktree(**_decode(value["value"]))
+            if value["$type"] == "codex_attempt":
+                from tools.mir_executor.dispatch import CodexAttempt  # noqa: PLC0415
+
+                fields = _decode(value["value"])
+                if "tokens_used" in fields:
+                    fields["tokens_used"] = tuple(tuple(item) for item in fields["tokens_used"])
+                return CodexAttempt(**fields)
             raise ValueError("Unknown argument type")
         return {key: _decode(item) for key, item in value.items()}
     return value
@@ -70,7 +81,12 @@ def _encode(value: Any) -> Any:
 
         if isinstance(value, SubprocessResult):
             return {"$type": "subprocess_result", "value": _encode(vars(value))}
-    if isinstance(value, list):
+    if type(value).__name__ == "CodexAttempt":
+        from tools.mir_executor.dispatch import CodexAttempt  # noqa: PLC0415
+
+        if isinstance(value, CodexAttempt):
+            return {"$type": "codex_attempt", "value": _encode(vars(value))}
+    if isinstance(value, (list, tuple)):
         return [_encode(item) for item in value]
     if isinstance(value, dict):
         return {key: _encode(item) for key, item in value.items()}

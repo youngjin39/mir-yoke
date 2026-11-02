@@ -64,6 +64,14 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
   checkout with an isolated HOME and cache, timeout kill and reap, cleanup failure
   blocking) matching Python's decisions on 47 gate and 6 profile scenarios. A
   timeout kills the verifier process, not its descendants, as in Python.
+- Executor port slice E8 (library only): native dispatch attempts (one attempt by
+  default, capped budgets, immediate stop on unavailable or nonretryable results,
+  retry exhaustion evidence), local hook order and nonfatal event-hook errors
+  through the bridge, job metadata and error persistence, Codex app-server and
+  headless Claude providers, and consecutive-failure counting, matching Python on
+  26 dispatch and 9 failure-history scenarios. The local bridge now carries
+  `DispatchWorktree` and `CodexAttempt` values. Review and finalization are not
+  part of this slice.
 
 ### Changed
 

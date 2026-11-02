@@ -427,3 +427,43 @@ def after_provider_call(result, metadata):
         **value, "exit_code": 7, "stdout": "replaced", "duration_seconds": 0.0,
     }}
     client.close()
+
+
+def test_dispatch_dataclasses_survive_hook_replacement(repo):
+    """Dispatch hooks receive real immutable records, including path and tuple fields."""
+    (repo / "tools/mir_executor/local.py").write_text('''
+from dataclasses import replace
+from pathlib import Path
+from tools.mir_executor.dispatch import CodexAttempt
+from tools.mir_executor.worktree import DispatchWorktree
+
+def after_provider_call(result, metadata):
+    assert isinstance(result, CodexAttempt)
+    assert result.tokens_used == (("input_tokens", 7),)
+    return replace(result, exit_code=1, retryable=False, blocked_reason="budget")
+
+def before_run(worktree, attempt):
+    assert isinstance(worktree, DispatchWorktree)
+    assert isinstance(worktree.path, Path)
+    assert attempt == 1
+''', encoding="utf-8")
+    client = Client(repo)
+    try:
+        paths = {key: {"$type": "path", "value": str(repo / key)} for key in (
+            "main_repo_root", "path", "brief_path", "status_path", "result_path",
+        )}
+        worktree = {"$type": "dispatch_worktree", "value": dict(
+            paths, dispatch_id="fixture", branch="fixture", base_commit="fixture",
+        )}
+        assert client.call("before_run", [worktree, 1])["ok"]
+        reply = client.call("after_provider_call", [
+            {"$type": "codex_attempt", "value": {
+                "exit_code": 0, "tokens_used": [["input_tokens", 7]],
+            }}, {},
+        ])
+        assert reply["ok"], reply
+        assert reply["result"]["$type"] == "codex_attempt"
+        assert reply["result"]["value"]["blocked_reason"] == "budget"
+        assert reply["result"]["value"]["tokens_used"] == [["input_tokens", 7]]
+    finally:
+        client.close()

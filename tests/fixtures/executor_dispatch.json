@@ -1,0 +1,3123 @@
+{
+  "source": "tools.mir_executor.dispatch.run_dispatch",
+  "hook_source": "from contextlib import contextmanager\nfrom dataclasses import replace\nimport json\nfrom pathlib import Path\nROOT = Path(__file__).resolve().parents[2]\ndef record(name, **data):\n    with (ROOT / 'hooks.jsonl').open('a', encoding='utf-8') as stream:\n        stream.write(json.dumps(dict(name=name, **data), sort_keys=True) + '\\n')\n    config = json.loads((ROOT / 'hook-config.json').read_text())\n    if config.get('fail') == name:\n        raise ValueError('fixture-' + name)\n    return config\ndef validate_brief(brief, root):\n    record('validate_brief', brief=brief, root_ok=root == ROOT)\n@contextmanager\ndef writer_scope(root):\n    record('writer_enter', root_ok=root == ROOT)\n    try:\n        yield\n    finally:\n        record('writer_exit')\ndef on_job_event(event, payload):\n    record('on_job_event', event=event, payload=payload)\ndef before_run(worktree, attempt):\n    record('before_run', attempt=attempt, dispatch_id=worktree.dispatch_id)\ndef after_provider_call(result, metadata):\n    observed = {key: value for key, value in metadata.items() if key != 'elapsed_seconds'}\n    record('after_provider_call', result_exit=result.exit_code, metadata=observed)\n    config = json.loads((ROOT / 'hook-config.json').read_text())\n    if config.get('replace'):\n        return replace(result, exit_code=9, retryable=False, blocked_reason='hook-budget')\ndef after_run(worktree, attempt, result):\n    record('after_run', attempt=attempt, result_exit=result.exit_code,\n           dispatch_id=worktree.dispatch_id)\n",
+  "cases": [
+    {
+      "name": "default-success",
+      "results": [
+        {
+          "exit_code": 0,
+          "stdout": "finished",
+          "stderr": "diagnostic",
+          "tokens_used": [
+            [
+              "input_tokens",
+              11
+            ],
+            [
+              "output_tokens",
+              3
+            ]
+          ],
+          "model_id": "fixture-model",
+          "mcp_protocol": "fixture-protocol",
+          "tool_version": "fixture-v1"
+        }
+      ],
+      "expected": {
+        "outcome": {
+          "status": "completed",
+          "attempts": 1,
+          "fell_back": false,
+          "blocked_reason": null,
+          "tokens_used": [
+            [
+              "input_tokens",
+              11
+            ],
+            [
+              "output_tokens",
+              3
+            ]
+          ],
+          "model_id": "fixture-model",
+          "mcp_protocol": "fixture-protocol",
+          "stdout": "finished",
+          "exit_code": 0,
+          "stderr": "diagnostic"
+        },
+        "registry": {
+          "status": "running",
+          "exit_code": null,
+          "stderr": null,
+          "ai_run_metadata": {
+            "dispatch_id": "fixture",
+            "dispatch_ids": [
+              "fixture"
+            ],
+            "mcp_protocol": "fixture-protocol",
+            "model_id": "fixture-model",
+            "tokens_used": {
+              "input_tokens": 11,
+              "output_tokens": 3
+            }
+          }
+        },
+        "calls": [
+          {
+            "attempt": 1,
+            "worktree_exists": true
+          }
+        ],
+        "events": [
+          {
+            "kind": "codex_success",
+            "dispatch_id": "fixture",
+            "attempt": 1
+          }
+        ],
+        "state": {
+          "state": "codex_completed",
+          "attempt": 1
+        },
+        "hooks": [],
+        "event_errors": []
+      }
+    },
+    {
+      "name": "default-single-failure",
+      "results": [
+        {
+          "exit_code": 2,
+          "error_sig": "fixture-error",
+          "stdout": "partial",
+          "stderr": "failed"
+        },
+        {
+          "exit_code": 0,
+          "stdout": "finished",
+          "stderr": "diagnostic",
+          "tokens_used": [
+            [
+              "input_tokens",
+              11
+            ],
+            [
+              "output_tokens",
+              3
+            ]
+          ],
+          "model_id": "fixture-model",
+          "mcp_protocol": "fixture-protocol",
+          "tool_version": "fixture-v1"
+        }
+      ],
+      "expected": {
+        "outcome": {
+          "status": "blocked",
+          "attempts": 1,
+          "fell_back": false,
+          "blocked_reason": "retry-exhausted",
+          "tokens_used": [],
+          "model_id": null,
+          "mcp_protocol": null,
+          "stdout": "partial",
+          "exit_code": 2,
+          "stderr": "failed"
+        },
+        "registry": {
+          "status": "running",
+          "exit_code": null,
+          "stderr": null,
+          "ai_run_metadata": {
+            "dispatch_id": "fixture",
+            "dispatch_ids": [
+              "fixture"
+            ],
+            "mcp_protocol": null,
+            "model_id": null,
+            "tokens_used": {}
+          }
+        },
+        "calls": [
+          {
+            "attempt": 1,
+            "worktree_exists": true
+          }
+        ],
+        "events": [
+          {
+            "kind": "codex_failure",
+            "dispatch_id": "fixture",
+            "attempt": 1,
+            "exit_code": 2,
+            "error_sig": "fixture-error",
+            "lane_unavailable": false,
+            "retryable": true
+          },
+          {
+            "kind": "retry_exhausted",
+            "dispatch_id": "fixture",
+            "attempts": 1
+          }
+        ],
+        "state": {
+          "state": "blocked",
+          "attempts": 1,
+          "reason": "retry-exhausted"
+        },
+        "hooks": [],
+        "event_errors": []
+      }
+    },
+    {
+      "name": "explicit-retry-success",
+      "results": [
+        {
+          "exit_code": 2,
+          "error_sig": "fixture-error",
+          "stdout": "partial",
+          "stderr": "failed"
+        },
+        {
+          "exit_code": 0,
+          "stdout": "finished",
+          "stderr": "diagnostic",
+          "tokens_used": [
+            [
+              "input_tokens",
+              11
+            ],
+            [
+              "output_tokens",
+              3
+            ]
+          ],
+          "model_id": "fixture-model",
+          "mcp_protocol": "fixture-protocol",
+          "tool_version": "fixture-v1"
+        }
+      ],
+      "max_codex_attempts": 3,
+      "expected": {
+        "outcome": {
+          "status": "completed",
+          "attempts": 2,
+          "fell_back": false,
+          "blocked_reason": null,
+          "tokens_used": [
+            [
+              "input_tokens",
+              11
+            ],
+            [
+              "output_tokens",
+              3
+            ]
+          ],
+          "model_id": "fixture-model",
+          "mcp_protocol": "fixture-protocol",
+          "stdout": "finished",
+          "exit_code": 0,
+          "stderr": "diagnostic"
+        },
+        "registry": {
+          "status": "running",
+          "exit_code": null,
+          "stderr": null,
+          "ai_run_metadata": {
+            "dispatch_id": "fixture",
+            "dispatch_ids": [
+              "fixture"
+            ],
+            "mcp_protocol": "fixture-protocol",
+            "model_id": "fixture-model",
+            "tokens_used": {
+              "input_tokens": 11,
+              "output_tokens": 3
+            }
+          }
+        },
+        "calls": [
+          {
+            "attempt": 1,
+            "worktree_exists": true
+          },
+          {
+            "attempt": 2,
+            "worktree_exists": true
+          }
+        ],
+        "events": [
+          {
+            "kind": "codex_failure",
+            "dispatch_id": "fixture",
+            "attempt": 1,
+            "exit_code": 2,
+            "error_sig": "fixture-error",
+            "lane_unavailable": false,
+            "retryable": true
+          },
+          {
+            "kind": "codex_success",
+            "dispatch_id": "fixture",
+            "attempt": 2
+          }
+        ],
+        "state": {
+          "state": "codex_completed",
+          "attempt": 2
+        },
+        "hooks": [],
+        "event_errors": []
+      }
+    },
+    {
+      "name": "explicit-exhaustion",
+      "results": [
+        {
+          "exit_code": 2,
+          "error_sig": "fixture-error",
+          "stdout": "partial",
+          "stderr": "failed"
+        }
+      ],
+      "max_codex_attempts": 2,
+      "expected": {
+        "outcome": {
+          "status": "blocked",
+          "attempts": 2,
+          "fell_back": false,
+          "blocked_reason": "retry-exhausted",
+          "tokens_used": [],
+          "model_id": null,
+          "mcp_protocol": null,
+          "stdout": "partial",
+          "exit_code": 2,
+          "stderr": "failed"
+        },
+        "registry": {
+          "status": "running",
+          "exit_code": null,
+          "stderr": null,
+          "ai_run_metadata": {
+            "dispatch_id": "fixture",
+            "dispatch_ids": [
+              "fixture"
+            ],
+            "mcp_protocol": null,
+            "model_id": null,
+            "tokens_used": {}
+          }
+        },
+        "calls": [
+          {
+            "attempt": 1,
+            "worktree_exists": true
+          },
+          {
+            "attempt": 2,
+            "worktree_exists": true
+          }
+        ],
+        "events": [
+          {
+            "kind": "codex_failure",
+            "dispatch_id": "fixture",
+            "attempt": 1,
+            "exit_code": 2,
+            "error_sig": "fixture-error",
+            "lane_unavailable": false,
+            "retryable": true
+          },
+          {
+            "kind": "codex_failure",
+            "dispatch_id": "fixture",
+            "attempt": 2,
+            "exit_code": 2,
+            "error_sig": "fixture-error",
+            "lane_unavailable": false,
+            "retryable": true
+          },
+          {
+            "kind": "retry_exhausted",
+            "dispatch_id": "fixture",
+            "attempts": 2
+          }
+        ],
+        "state": {
+          "state": "blocked",
+          "attempts": 2,
+          "reason": "retry-exhausted"
+        },
+        "hooks": [],
+        "event_errors": []
+      }
+    },
+    {
+      "name": "outage",
+      "results": [
+        {
+          "exit_code": 2,
+          "error_sig": "fixture-error",
+          "stdout": "partial",
+          "stderr": "failed"
+        }
+      ],
+      "prior_consecutive_codex_failures": 2,
+      "expected": {
+        "outcome": {
+          "status": "blocked",
+          "attempts": 1,
+          "fell_back": false,
+          "blocked_reason": "codex-outage",
+          "tokens_used": [],
+          "model_id": null,
+          "mcp_protocol": null,
+          "stdout": "partial",
+          "exit_code": 2,
+          "stderr": "failed"
+        },
+        "registry": {
+          "status": "running",
+          "exit_code": null,
+          "stderr": null,
+          "ai_run_metadata": {
+            "dispatch_id": "fixture",
+            "dispatch_ids": [
+              "fixture"
+            ],
+            "mcp_protocol": null,
+            "model_id": null,
+            "tokens_used": {}
+          }
+        },
+        "calls": [
+          {
+            "attempt": 1,
+            "worktree_exists": true
+          }
+        ],
+        "events": [
+          {
+            "kind": "codex_failure",
+            "dispatch_id": "fixture",
+            "attempt": 1,
+            "exit_code": 2,
+            "error_sig": "fixture-error",
+            "lane_unavailable": false,
+            "retryable": true
+          },
+          {
+            "kind": "codex_outage_halt",
+            "dispatch_id": "fixture",
+            "consecutive_failures": 3,
+            "threshold": 3
+          }
+        ],
+        "state": {
+          "state": "blocked",
+          "attempts": 1,
+          "reason": "codex-outage"
+        },
+        "hooks": [],
+        "event_errors": []
+      }
+    },
+    {
+      "name": "outage-threshold-one",
+      "results": [
+        {
+          "exit_code": 2,
+          "error_sig": "fixture-error",
+          "stdout": "partial",
+          "stderr": "failed"
+        }
+      ],
+      "outage_threshold": 1,
+      "expected": {
+        "outcome": {
+          "status": "blocked",
+          "attempts": 1,
+          "fell_back": false,
+          "blocked_reason": "codex-outage",
+          "tokens_used": [],
+          "model_id": null,
+          "mcp_protocol": null,
+          "stdout": "partial",
+          "exit_code": 2,
+          "stderr": "failed"
+        },
+        "registry": {
+          "status": "running",
+          "exit_code": null,
+          "stderr": null,
+          "ai_run_metadata": {
+            "dispatch_id": "fixture",
+            "dispatch_ids": [
+              "fixture"
+            ],
+            "mcp_protocol": null,
+            "model_id": null,
+            "tokens_used": {}
+          }
+        },
+        "calls": [
+          {
+            "attempt": 1,
+            "worktree_exists": true
+          }
+        ],
+        "events": [
+          {
+            "kind": "codex_failure",
+            "dispatch_id": "fixture",
+            "attempt": 1,
+            "exit_code": 2,
+            "error_sig": "fixture-error",
+            "lane_unavailable": false,
+            "retryable": true
+          },
+          {
+            "kind": "codex_outage_halt",
+            "dispatch_id": "fixture",
+            "consecutive_failures": 1,
+            "threshold": 1
+          }
+        ],
+        "state": {
+          "state": "blocked",
+          "attempts": 1,
+          "reason": "codex-outage"
+        },
+        "hooks": [],
+        "event_errors": []
+      }
+    },
+    {
+      "name": "lane-unavailable",
+      "results": [
+        {
+          "exit_code": 2,
+          "error_sig": "fixture-error",
+          "stdout": "partial",
+          "stderr": "failed",
+          "lane_unavailable": true
+        }
+      ],
+      "max_codex_attempts": 3,
+      "expected": {
+        "outcome": {
+          "status": "blocked",
+          "attempts": 1,
+          "fell_back": false,
+          "blocked_reason": "lane-unavailable",
+          "tokens_used": [],
+          "model_id": null,
+          "mcp_protocol": null,
+          "stdout": "partial",
+          "exit_code": 2,
+          "stderr": "failed"
+        },
+        "registry": {
+          "status": "running",
+          "exit_code": null,
+          "stderr": null,
+          "ai_run_metadata": {
+            "dispatch_id": "fixture",
+            "dispatch_ids": [
+              "fixture"
+            ],
+            "mcp_protocol": null,
+            "model_id": null,
+            "tokens_used": {}
+          }
+        },
+        "calls": [
+          {
+            "attempt": 1,
+            "worktree_exists": true
+          }
+        ],
+        "events": [
+          {
+            "kind": "codex_failure",
+            "dispatch_id": "fixture",
+            "attempt": 1,
+            "exit_code": 2,
+            "error_sig": "fixture-error",
+            "lane_unavailable": true,
+            "retryable": true
+          },
+          {
+            "kind": "lane_unavailable",
+            "dispatch_id": "fixture",
+            "attempt": 1
+          }
+        ],
+        "state": {
+          "state": "blocked",
+          "reason": "lane-unavailable",
+          "attempt": 1
+        },
+        "hooks": [],
+        "event_errors": []
+      }
+    },
+    {
+      "name": "non-retryable",
+      "results": [
+        {
+          "exit_code": 2,
+          "error_sig": "fixture-error",
+          "stdout": "partial",
+          "stderr": "failed",
+          "retryable": false
+        }
+      ],
+      "max_codex_attempts": 3,
+      "expected": {
+        "outcome": {
+          "status": "blocked",
+          "attempts": 1,
+          "fell_back": false,
+          "blocked_reason": "non-retryable",
+          "tokens_used": [],
+          "model_id": null,
+          "mcp_protocol": null,
+          "stdout": "partial",
+          "exit_code": 2,
+          "stderr": "failed"
+        },
+        "registry": {
+          "status": "running",
+          "exit_code": null,
+          "stderr": null,
+          "ai_run_metadata": {
+            "dispatch_id": "fixture",
+            "dispatch_ids": [
+              "fixture"
+            ],
+            "mcp_protocol": null,
+            "model_id": null,
+            "tokens_used": {}
+          }
+        },
+        "calls": [
+          {
+            "attempt": 1,
+            "worktree_exists": true
+          }
+        ],
+        "events": [
+          {
+            "kind": "codex_failure",
+            "dispatch_id": "fixture",
+            "attempt": 1,
+            "exit_code": 2,
+            "error_sig": "fixture-error",
+            "lane_unavailable": false,
+            "retryable": false
+          },
+          {
+            "kind": "non_retryable_blocker",
+            "dispatch_id": "fixture",
+            "attempt": 1,
+            "reason": "non-retryable"
+          }
+        ],
+        "state": {
+          "state": "blocked",
+          "reason": "non-retryable",
+          "attempt": 1
+        },
+        "hooks": [],
+        "event_errors": []
+      }
+    },
+    {
+      "name": "specific-blocker",
+      "results": [
+        {
+          "exit_code": 2,
+          "error_sig": "fixture-error",
+          "stdout": "partial",
+          "stderr": "failed",
+          "retryable": false,
+          "blocked_reason": "budget"
+        }
+      ],
+      "max_codex_attempts": 3,
+      "expected": {
+        "outcome": {
+          "status": "blocked",
+          "attempts": 1,
+          "fell_back": false,
+          "blocked_reason": "budget",
+          "tokens_used": [],
+          "model_id": null,
+          "mcp_protocol": null,
+          "stdout": "partial",
+          "exit_code": 2,
+          "stderr": "failed"
+        },
+        "registry": {
+          "status": "running",
+          "exit_code": null,
+          "stderr": null,
+          "ai_run_metadata": {
+            "dispatch_id": "fixture",
+            "dispatch_ids": [
+              "fixture"
+            ],
+            "mcp_protocol": null,
+            "model_id": null,
+            "tokens_used": {}
+          }
+        },
+        "calls": [
+          {
+            "attempt": 1,
+            "worktree_exists": true
+          }
+        ],
+        "events": [
+          {
+            "kind": "codex_failure",
+            "dispatch_id": "fixture",
+            "attempt": 1,
+            "exit_code": 2,
+            "error_sig": "fixture-error",
+            "lane_unavailable": false,
+            "retryable": false
+          },
+          {
+            "kind": "non_retryable_blocker",
+            "dispatch_id": "fixture",
+            "attempt": 1,
+            "reason": "budget"
+          }
+        ],
+        "state": {
+          "state": "blocked",
+          "reason": "budget",
+          "attempt": 1
+        },
+        "hooks": [],
+        "event_errors": []
+      }
+    },
+    {
+      "name": "cap-accepted",
+      "results": [
+        {
+          "exit_code": 2,
+          "error_sig": "fixture-error",
+          "stdout": "partial",
+          "stderr": "failed"
+        },
+        {
+          "exit_code": 0,
+          "stdout": "finished",
+          "stderr": "diagnostic",
+          "tokens_used": [
+            [
+              "input_tokens",
+              11
+            ],
+            [
+              "output_tokens",
+              3
+            ]
+          ],
+          "model_id": "fixture-model",
+          "mcp_protocol": "fixture-protocol",
+          "tool_version": "fixture-v1"
+        }
+      ],
+      "max_codex_attempts": 2,
+      "config": {
+        "max_codex_attempts_cap": 2
+      },
+      "expected": {
+        "outcome": {
+          "status": "completed",
+          "attempts": 2,
+          "fell_back": false,
+          "blocked_reason": null,
+          "tokens_used": [
+            [
+              "input_tokens",
+              11
+            ],
+            [
+              "output_tokens",
+              3
+            ]
+          ],
+          "model_id": "fixture-model",
+          "mcp_protocol": "fixture-protocol",
+          "stdout": "finished",
+          "exit_code": 0,
+          "stderr": "diagnostic"
+        },
+        "registry": {
+          "status": "running",
+          "exit_code": null,
+          "stderr": null,
+          "ai_run_metadata": {
+            "dispatch_id": "fixture",
+            "dispatch_ids": [
+              "fixture"
+            ],
+            "mcp_protocol": "fixture-protocol",
+            "model_id": "fixture-model",
+            "tokens_used": {
+              "input_tokens": 11,
+              "output_tokens": 3
+            }
+          }
+        },
+        "calls": [
+          {
+            "attempt": 1,
+            "worktree_exists": true
+          },
+          {
+            "attempt": 2,
+            "worktree_exists": true
+          }
+        ],
+        "events": [
+          {
+            "kind": "codex_failure",
+            "dispatch_id": "fixture",
+            "attempt": 1,
+            "exit_code": 2,
+            "error_sig": "fixture-error",
+            "lane_unavailable": false,
+            "retryable": true
+          },
+          {
+            "kind": "codex_success",
+            "dispatch_id": "fixture",
+            "attempt": 2
+          }
+        ],
+        "state": {
+          "state": "codex_completed",
+          "attempt": 2
+        },
+        "hooks": [],
+        "event_errors": []
+      }
+    },
+    {
+      "name": "cap-rejected",
+      "results": [
+        {
+          "exit_code": 0,
+          "stdout": "finished",
+          "stderr": "diagnostic",
+          "tokens_used": [
+            [
+              "input_tokens",
+              11
+            ],
+            [
+              "output_tokens",
+              3
+            ]
+          ],
+          "model_id": "fixture-model",
+          "mcp_protocol": "fixture-protocol",
+          "tool_version": "fixture-v1"
+        }
+      ],
+      "max_codex_attempts": 3,
+      "config": {
+        "max_codex_attempts_cap": 2
+      },
+      "expected": {
+        "error": "ValueError",
+        "message": "max_codex_attempts exceeds local cap",
+        "registry": {
+          "status": "failed",
+          "exit_code": 1,
+          "stderr": "max_codex_attempts exceeds local cap",
+          "ai_run_metadata": null
+        },
+        "calls": [],
+        "events": [],
+        "state": null,
+        "hooks": [],
+        "event_errors": []
+      }
+    },
+    {
+      "name": "zero-budget",
+      "results": [
+        {
+          "exit_code": 0,
+          "stdout": "finished",
+          "stderr": "diagnostic",
+          "tokens_used": [
+            [
+              "input_tokens",
+              11
+            ],
+            [
+              "output_tokens",
+              3
+            ]
+          ],
+          "model_id": "fixture-model",
+          "mcp_protocol": "fixture-protocol",
+          "tool_version": "fixture-v1"
+        }
+      ],
+      "max_codex_attempts": 0,
+      "expected": {
+        "error": "ValueError",
+        "message": "max_codex_attempts must be positive",
+        "registry": {
+          "status": "failed",
+          "exit_code": 1,
+          "stderr": "max_codex_attempts must be positive",
+          "ai_run_metadata": null
+        },
+        "calls": [],
+        "events": [],
+        "state": null,
+        "hooks": [],
+        "event_errors": []
+      }
+    },
+    {
+      "name": "negative-budget",
+      "results": [
+        {
+          "exit_code": 0,
+          "stdout": "finished",
+          "stderr": "diagnostic",
+          "tokens_used": [
+            [
+              "input_tokens",
+              11
+            ],
+            [
+              "output_tokens",
+              3
+            ]
+          ],
+          "model_id": "fixture-model",
+          "mcp_protocol": "fixture-protocol",
+          "tool_version": "fixture-v1"
+        }
+      ],
+      "max_codex_attempts": -1,
+      "expected": {
+        "error": "ValueError",
+        "message": "max_codex_attempts must be positive",
+        "registry": {
+          "status": "failed",
+          "exit_code": 1,
+          "stderr": "max_codex_attempts must be positive",
+          "ai_run_metadata": null
+        },
+        "calls": [],
+        "events": [],
+        "state": null,
+        "hooks": [],
+        "event_errors": []
+      }
+    },
+    {
+      "name": "hooks-success",
+      "results": [
+        {
+          "exit_code": 0,
+          "stdout": "finished",
+          "stderr": "diagnostic",
+          "tokens_used": [
+            [
+              "input_tokens",
+              11
+            ],
+            [
+              "output_tokens",
+              3
+            ]
+          ],
+          "model_id": "fixture-model",
+          "mcp_protocol": "fixture-protocol",
+          "tool_version": "fixture-v1"
+        }
+      ],
+      "hooks": {
+        "enabled": true
+      },
+      "expected": {
+        "outcome": {
+          "status": "completed",
+          "attempts": 1,
+          "fell_back": false,
+          "blocked_reason": null,
+          "tokens_used": [
+            [
+              "input_tokens",
+              11
+            ],
+            [
+              "output_tokens",
+              3
+            ]
+          ],
+          "model_id": "fixture-model",
+          "mcp_protocol": "fixture-protocol",
+          "stdout": "finished",
+          "exit_code": 0,
+          "stderr": "diagnostic"
+        },
+        "registry": {
+          "status": "running",
+          "exit_code": null,
+          "stderr": null,
+          "ai_run_metadata": {
+            "dispatch_id": "fixture",
+            "dispatch_ids": [
+              "fixture"
+            ],
+            "mcp_protocol": "fixture-protocol",
+            "model_id": "fixture-model",
+            "tokens_used": {
+              "input_tokens": 11,
+              "output_tokens": 3
+            }
+          }
+        },
+        "calls": [
+          {
+            "attempt": 1,
+            "worktree_exists": true
+          }
+        ],
+        "events": [
+          {
+            "kind": "codex_success",
+            "dispatch_id": "fixture",
+            "attempt": 1
+          }
+        ],
+        "state": {
+          "state": "codex_completed",
+          "attempt": 1
+        },
+        "hooks": [
+          {
+            "brief": "Fixture brief",
+            "name": "validate_brief",
+            "root_ok": true
+          },
+          {
+            "name": "writer_enter",
+            "root_ok": true
+          },
+          {
+            "event": "dispatch_state",
+            "name": "on_job_event",
+            "payload": {
+              "dispatch_id": "fixture",
+              "evidence": {},
+              "job_id": "fixture-job",
+              "state": "started"
+            }
+          },
+          {
+            "event": "dispatch_state",
+            "name": "on_job_event",
+            "payload": {
+              "dispatch_id": "fixture",
+              "evidence": {
+                "attempt": 1
+              },
+              "job_id": "fixture-job",
+              "state": "running"
+            }
+          },
+          {
+            "attempt": 1,
+            "dispatch_id": "fixture",
+            "name": "before_run"
+          },
+          {
+            "metadata": {
+              "attempt": 1,
+              "model": "fixture-model",
+              "prompt_sha256": "411d51fa4f33b9c63abafe35b48ef0d07397f986125c6fd0a828bfed698c201e",
+              "reasoning_effort": null,
+              "token_usage": {
+                "input_tokens": 11,
+                "output_tokens": 3
+              },
+              "tool_version": "fixture-v1"
+            },
+            "name": "after_provider_call",
+            "result_exit": 0
+          },
+          {
+            "attempt": 1,
+            "dispatch_id": "fixture",
+            "name": "after_run",
+            "result_exit": 0
+          },
+          {
+            "event": "dispatch_state",
+            "name": "on_job_event",
+            "payload": {
+              "dispatch_id": "fixture",
+              "evidence": {
+                "attempt": 1
+              },
+              "job_id": "fixture-job",
+              "state": "codex_completed"
+            }
+          },
+          {
+            "name": "writer_exit"
+          }
+        ],
+        "event_errors": []
+      }
+    },
+    {
+      "name": "hooks-retry",
+      "results": [
+        {
+          "exit_code": 2,
+          "error_sig": "fixture-error",
+          "stdout": "partial",
+          "stderr": "failed"
+        },
+        {
+          "exit_code": 0,
+          "stdout": "finished",
+          "stderr": "diagnostic",
+          "tokens_used": [
+            [
+              "input_tokens",
+              11
+            ],
+            [
+              "output_tokens",
+              3
+            ]
+          ],
+          "model_id": "fixture-model",
+          "mcp_protocol": "fixture-protocol",
+          "tool_version": "fixture-v1"
+        }
+      ],
+      "max_codex_attempts": 2,
+      "hooks": {
+        "enabled": true
+      },
+      "expected": {
+        "outcome": {
+          "status": "completed",
+          "attempts": 2,
+          "fell_back": false,
+          "blocked_reason": null,
+          "tokens_used": [
+            [
+              "input_tokens",
+              11
+            ],
+            [
+              "output_tokens",
+              3
+            ]
+          ],
+          "model_id": "fixture-model",
+          "mcp_protocol": "fixture-protocol",
+          "stdout": "finished",
+          "exit_code": 0,
+          "stderr": "diagnostic"
+        },
+        "registry": {
+          "status": "running",
+          "exit_code": null,
+          "stderr": null,
+          "ai_run_metadata": {
+            "dispatch_id": "fixture",
+            "dispatch_ids": [
+              "fixture"
+            ],
+            "mcp_protocol": "fixture-protocol",
+            "model_id": "fixture-model",
+            "tokens_used": {
+              "input_tokens": 11,
+              "output_tokens": 3
+            }
+          }
+        },
+        "calls": [
+          {
+            "attempt": 1,
+            "worktree_exists": true
+          },
+          {
+            "attempt": 2,
+            "worktree_exists": true
+          }
+        ],
+        "events": [
+          {
+            "kind": "codex_failure",
+            "dispatch_id": "fixture",
+            "attempt": 1,
+            "exit_code": 2,
+            "error_sig": "fixture-error",
+            "lane_unavailable": false,
+            "retryable": true
+          },
+          {
+            "kind": "codex_success",
+            "dispatch_id": "fixture",
+            "attempt": 2
+          }
+        ],
+        "state": {
+          "state": "codex_completed",
+          "attempt": 2
+        },
+        "hooks": [
+          {
+            "brief": "Fixture brief",
+            "name": "validate_brief",
+            "root_ok": true
+          },
+          {
+            "name": "writer_enter",
+            "root_ok": true
+          },
+          {
+            "event": "dispatch_state",
+            "name": "on_job_event",
+            "payload": {
+              "dispatch_id": "fixture",
+              "evidence": {},
+              "job_id": "fixture-job",
+              "state": "started"
+            }
+          },
+          {
+            "event": "dispatch_state",
+            "name": "on_job_event",
+            "payload": {
+              "dispatch_id": "fixture",
+              "evidence": {
+                "attempt": 1
+              },
+              "job_id": "fixture-job",
+              "state": "running"
+            }
+          },
+          {
+            "attempt": 1,
+            "dispatch_id": "fixture",
+            "name": "before_run"
+          },
+          {
+            "metadata": {
+              "attempt": 1,
+              "model": null,
+              "prompt_sha256": "411d51fa4f33b9c63abafe35b48ef0d07397f986125c6fd0a828bfed698c201e",
+              "reasoning_effort": null,
+              "token_usage": null,
+              "tool_version": null
+            },
+            "name": "after_provider_call",
+            "result_exit": 2
+          },
+          {
+            "attempt": 1,
+            "dispatch_id": "fixture",
+            "name": "after_run",
+            "result_exit": 2
+          },
+          {
+            "event": "dispatch_state",
+            "name": "on_job_event",
+            "payload": {
+              "dispatch_id": "fixture",
+              "evidence": {
+                "attempt": 2
+              },
+              "job_id": "fixture-job",
+              "state": "running"
+            }
+          },
+          {
+            "attempt": 2,
+            "dispatch_id": "fixture",
+            "name": "before_run"
+          },
+          {
+            "metadata": {
+              "attempt": 2,
+              "model": "fixture-model",
+              "prompt_sha256": "411d51fa4f33b9c63abafe35b48ef0d07397f986125c6fd0a828bfed698c201e",
+              "reasoning_effort": null,
+              "token_usage": {
+                "input_tokens": 11,
+                "output_tokens": 3
+              },
+              "tool_version": "fixture-v1"
+            },
+            "name": "after_provider_call",
+            "result_exit": 0
+          },
+          {
+            "attempt": 2,
+            "dispatch_id": "fixture",
+            "name": "after_run",
+            "result_exit": 0
+          },
+          {
+            "event": "dispatch_state",
+            "name": "on_job_event",
+            "payload": {
+              "dispatch_id": "fixture",
+              "evidence": {
+                "attempt": 2
+              },
+              "job_id": "fixture-job",
+              "state": "codex_completed"
+            }
+          },
+          {
+            "name": "writer_exit"
+          }
+        ],
+        "event_errors": []
+      }
+    },
+    {
+      "name": "hooks-provider-already-applied",
+      "results": [
+        {
+          "exit_code": 0,
+          "stdout": "finished",
+          "stderr": "diagnostic",
+          "tokens_used": [
+            [
+              "input_tokens",
+              11
+            ],
+            [
+              "output_tokens",
+              3
+            ]
+          ],
+          "model_id": "fixture-model",
+          "mcp_protocol": "fixture-protocol",
+          "tool_version": "fixture-v1"
+        }
+      ],
+      "hooks": {
+        "enabled": true
+      },
+      "provider_hook_applied": true,
+      "expected": {
+        "outcome": {
+          "status": "completed",
+          "attempts": 1,
+          "fell_back": false,
+          "blocked_reason": null,
+          "tokens_used": [
+            [
+              "input_tokens",
+              11
+            ],
+            [
+              "output_tokens",
+              3
+            ]
+          ],
+          "model_id": "fixture-model",
+          "mcp_protocol": "fixture-protocol",
+          "stdout": "finished",
+          "exit_code": 0,
+          "stderr": "diagnostic"
+        },
+        "registry": {
+          "status": "running",
+          "exit_code": null,
+          "stderr": null,
+          "ai_run_metadata": {
+            "dispatch_id": "fixture",
+            "dispatch_ids": [
+              "fixture"
+            ],
+            "mcp_protocol": "fixture-protocol",
+            "model_id": "fixture-model",
+            "tokens_used": {
+              "input_tokens": 11,
+              "output_tokens": 3
+            }
+          }
+        },
+        "calls": [
+          {
+            "attempt": 1,
+            "worktree_exists": true
+          }
+        ],
+        "events": [
+          {
+            "kind": "codex_success",
+            "dispatch_id": "fixture",
+            "attempt": 1
+          }
+        ],
+        "state": {
+          "state": "codex_completed",
+          "attempt": 1
+        },
+        "hooks": [
+          {
+            "brief": "Fixture brief",
+            "name": "validate_brief",
+            "root_ok": true
+          },
+          {
+            "name": "writer_enter",
+            "root_ok": true
+          },
+          {
+            "event": "dispatch_state",
+            "name": "on_job_event",
+            "payload": {
+              "dispatch_id": "fixture",
+              "evidence": {},
+              "job_id": "fixture-job",
+              "state": "started"
+            }
+          },
+          {
+            "event": "dispatch_state",
+            "name": "on_job_event",
+            "payload": {
+              "dispatch_id": "fixture",
+              "evidence": {
+                "attempt": 1
+              },
+              "job_id": "fixture-job",
+              "state": "running"
+            }
+          },
+          {
+            "attempt": 1,
+            "dispatch_id": "fixture",
+            "name": "before_run"
+          },
+          {
+            "attempt": 1,
+            "dispatch_id": "fixture",
+            "name": "after_run",
+            "result_exit": 0
+          },
+          {
+            "event": "dispatch_state",
+            "name": "on_job_event",
+            "payload": {
+              "dispatch_id": "fixture",
+              "evidence": {
+                "attempt": 1
+              },
+              "job_id": "fixture-job",
+              "state": "codex_completed"
+            }
+          },
+          {
+            "name": "writer_exit"
+          }
+        ],
+        "event_errors": []
+      }
+    },
+    {
+      "name": "hooks-provider-replacement",
+      "results": [
+        {
+          "exit_code": 0,
+          "stdout": "finished",
+          "stderr": "diagnostic",
+          "tokens_used": [
+            [
+              "input_tokens",
+              11
+            ],
+            [
+              "output_tokens",
+              3
+            ]
+          ],
+          "model_id": "fixture-model",
+          "mcp_protocol": "fixture-protocol",
+          "tool_version": "fixture-v1"
+        }
+      ],
+      "max_codex_attempts": 3,
+      "hooks": {
+        "replace": true
+      },
+      "expected": {
+        "outcome": {
+          "status": "blocked",
+          "attempts": 1,
+          "fell_back": false,
+          "blocked_reason": "hook-budget",
+          "tokens_used": [
+            [
+              "input_tokens",
+              11
+            ],
+            [
+              "output_tokens",
+              3
+            ]
+          ],
+          "model_id": "fixture-model",
+          "mcp_protocol": "fixture-protocol",
+          "stdout": "finished",
+          "exit_code": 9,
+          "stderr": "diagnostic"
+        },
+        "registry": {
+          "status": "running",
+          "exit_code": null,
+          "stderr": null,
+          "ai_run_metadata": {
+            "dispatch_id": "fixture",
+            "dispatch_ids": [
+              "fixture"
+            ],
+            "mcp_protocol": "fixture-protocol",
+            "model_id": "fixture-model",
+            "tokens_used": {
+              "input_tokens": 11,
+              "output_tokens": 3
+            }
+          }
+        },
+        "calls": [
+          {
+            "attempt": 1,
+            "worktree_exists": true
+          }
+        ],
+        "events": [
+          {
+            "kind": "codex_failure",
+            "dispatch_id": "fixture",
+            "attempt": 1,
+            "exit_code": 9,
+            "error_sig": "",
+            "lane_unavailable": false,
+            "retryable": false
+          },
+          {
+            "kind": "non_retryable_blocker",
+            "dispatch_id": "fixture",
+            "attempt": 1,
+            "reason": "hook-budget"
+          }
+        ],
+        "state": {
+          "state": "blocked",
+          "reason": "hook-budget",
+          "attempt": 1
+        },
+        "hooks": [
+          {
+            "brief": "Fixture brief",
+            "name": "validate_brief",
+            "root_ok": true
+          },
+          {
+            "name": "writer_enter",
+            "root_ok": true
+          },
+          {
+            "event": "dispatch_state",
+            "name": "on_job_event",
+            "payload": {
+              "dispatch_id": "fixture",
+              "evidence": {},
+              "job_id": "fixture-job",
+              "state": "started"
+            }
+          },
+          {
+            "event": "dispatch_state",
+            "name": "on_job_event",
+            "payload": {
+              "dispatch_id": "fixture",
+              "evidence": {
+                "attempt": 1
+              },
+              "job_id": "fixture-job",
+              "state": "running"
+            }
+          },
+          {
+            "attempt": 1,
+            "dispatch_id": "fixture",
+            "name": "before_run"
+          },
+          {
+            "metadata": {
+              "attempt": 1,
+              "model": "fixture-model",
+              "prompt_sha256": "411d51fa4f33b9c63abafe35b48ef0d07397f986125c6fd0a828bfed698c201e",
+              "reasoning_effort": null,
+              "token_usage": {
+                "input_tokens": 11,
+                "output_tokens": 3
+              },
+              "tool_version": "fixture-v1"
+            },
+            "name": "after_provider_call",
+            "result_exit": 0
+          },
+          {
+            "attempt": 1,
+            "dispatch_id": "fixture",
+            "name": "after_run",
+            "result_exit": 9
+          },
+          {
+            "event": "dispatch_state",
+            "name": "on_job_event",
+            "payload": {
+              "dispatch_id": "fixture",
+              "evidence": {
+                "attempt": 1,
+                "reason": "hook-budget"
+              },
+              "job_id": "fixture-job",
+              "state": "blocked"
+            }
+          },
+          {
+            "name": "writer_exit"
+          }
+        ],
+        "event_errors": []
+      }
+    },
+    {
+      "name": "hooks-events-fail-nonfatal",
+      "results": [
+        {
+          "exit_code": 0,
+          "stdout": "finished",
+          "stderr": "diagnostic",
+          "tokens_used": [
+            [
+              "input_tokens",
+              11
+            ],
+            [
+              "output_tokens",
+              3
+            ]
+          ],
+          "model_id": "fixture-model",
+          "mcp_protocol": "fixture-protocol",
+          "tool_version": "fixture-v1"
+        }
+      ],
+      "hooks": {
+        "fail": "on_job_event"
+      },
+      "expected": {
+        "outcome": {
+          "status": "completed",
+          "attempts": 1,
+          "fell_back": false,
+          "blocked_reason": null,
+          "tokens_used": [
+            [
+              "input_tokens",
+              11
+            ],
+            [
+              "output_tokens",
+              3
+            ]
+          ],
+          "model_id": "fixture-model",
+          "mcp_protocol": "fixture-protocol",
+          "stdout": "finished",
+          "exit_code": 0,
+          "stderr": "diagnostic"
+        },
+        "registry": {
+          "status": "running",
+          "exit_code": null,
+          "stderr": null,
+          "ai_run_metadata": {
+            "dispatch_id": "fixture",
+            "dispatch_ids": [
+              "fixture"
+            ],
+            "mcp_protocol": "fixture-protocol",
+            "model_id": "fixture-model",
+            "tokens_used": {
+              "input_tokens": 11,
+              "output_tokens": 3
+            }
+          }
+        },
+        "calls": [
+          {
+            "attempt": 1,
+            "worktree_exists": true
+          }
+        ],
+        "events": [
+          {
+            "kind": "codex_success",
+            "dispatch_id": "fixture",
+            "attempt": 1
+          }
+        ],
+        "state": {
+          "state": "codex_completed",
+          "attempt": 1
+        },
+        "hooks": [
+          {
+            "brief": "Fixture brief",
+            "name": "validate_brief",
+            "root_ok": true
+          },
+          {
+            "name": "writer_enter",
+            "root_ok": true
+          },
+          {
+            "event": "dispatch_state",
+            "name": "on_job_event",
+            "payload": {
+              "dispatch_id": "fixture",
+              "evidence": {},
+              "job_id": "fixture-job",
+              "state": "started"
+            }
+          },
+          {
+            "event": "dispatch_state",
+            "name": "on_job_event",
+            "payload": {
+              "dispatch_id": "fixture",
+              "evidence": {
+                "attempt": 1
+              },
+              "job_id": "fixture-job",
+              "state": "running"
+            }
+          },
+          {
+            "attempt": 1,
+            "dispatch_id": "fixture",
+            "name": "before_run"
+          },
+          {
+            "metadata": {
+              "attempt": 1,
+              "model": "fixture-model",
+              "prompt_sha256": "411d51fa4f33b9c63abafe35b48ef0d07397f986125c6fd0a828bfed698c201e",
+              "reasoning_effort": null,
+              "token_usage": {
+                "input_tokens": 11,
+                "output_tokens": 3
+              },
+              "tool_version": "fixture-v1"
+            },
+            "name": "after_provider_call",
+            "result_exit": 0
+          },
+          {
+            "attempt": 1,
+            "dispatch_id": "fixture",
+            "name": "after_run",
+            "result_exit": 0
+          },
+          {
+            "event": "dispatch_state",
+            "name": "on_job_event",
+            "payload": {
+              "dispatch_id": "fixture",
+              "evidence": {
+                "attempt": 1
+              },
+              "job_id": "fixture-job",
+              "state": "codex_completed"
+            }
+          },
+          {
+            "name": "writer_exit"
+          }
+        ],
+        "event_errors": [
+          "on_job_event dispatch_state: ValueError: fixture-on_job_event",
+          "on_job_event dispatch_state: ValueError: fixture-on_job_event",
+          "on_job_event dispatch_state: ValueError: fixture-on_job_event"
+        ]
+      }
+    },
+    {
+      "name": "hooks-validate-failure",
+      "results": [
+        {
+          "exit_code": 0,
+          "stdout": "finished",
+          "stderr": "diagnostic",
+          "tokens_used": [
+            [
+              "input_tokens",
+              11
+            ],
+            [
+              "output_tokens",
+              3
+            ]
+          ],
+          "model_id": "fixture-model",
+          "mcp_protocol": "fixture-protocol",
+          "tool_version": "fixture-v1"
+        }
+      ],
+      "hooks": {
+        "fail": "validate_brief"
+      },
+      "expected": {
+        "error": "ValueError",
+        "message": "fixture-validate_brief",
+        "registry": {
+          "status": "failed",
+          "exit_code": 1,
+          "stderr": "fixture-validate_brief",
+          "ai_run_metadata": null
+        },
+        "calls": [],
+        "events": [],
+        "state": null,
+        "hooks": [
+          {
+            "brief": "Fixture brief",
+            "name": "validate_brief",
+            "root_ok": true
+          },
+          {
+            "event": "dispatch_failed",
+            "name": "on_job_event",
+            "payload": {
+              "dispatch_id": "fixture",
+              "error_type": "ValueError",
+              "job_id": "fixture-job",
+              "message": "fixture-validate_brief"
+            }
+          }
+        ],
+        "event_errors": []
+      }
+    },
+    {
+      "name": "hooks-before-failure",
+      "results": [
+        {
+          "exit_code": 0,
+          "stdout": "finished",
+          "stderr": "diagnostic",
+          "tokens_used": [
+            [
+              "input_tokens",
+              11
+            ],
+            [
+              "output_tokens",
+              3
+            ]
+          ],
+          "model_id": "fixture-model",
+          "mcp_protocol": "fixture-protocol",
+          "tool_version": "fixture-v1"
+        }
+      ],
+      "hooks": {
+        "fail": "before_run"
+      },
+      "expected": {
+        "error": "ValueError",
+        "message": "fixture-before_run",
+        "registry": {
+          "status": "failed",
+          "exit_code": 1,
+          "stderr": "fixture-before_run",
+          "ai_run_metadata": null
+        },
+        "calls": [],
+        "events": [],
+        "state": {
+          "state": "created"
+        },
+        "hooks": [
+          {
+            "brief": "Fixture brief",
+            "name": "validate_brief",
+            "root_ok": true
+          },
+          {
+            "name": "writer_enter",
+            "root_ok": true
+          },
+          {
+            "event": "dispatch_state",
+            "name": "on_job_event",
+            "payload": {
+              "dispatch_id": "fixture",
+              "evidence": {},
+              "job_id": "fixture-job",
+              "state": "started"
+            }
+          },
+          {
+            "event": "dispatch_state",
+            "name": "on_job_event",
+            "payload": {
+              "dispatch_id": "fixture",
+              "evidence": {
+                "attempt": 1
+              },
+              "job_id": "fixture-job",
+              "state": "running"
+            }
+          },
+          {
+            "attempt": 1,
+            "dispatch_id": "fixture",
+            "name": "before_run"
+          },
+          {
+            "name": "writer_exit"
+          },
+          {
+            "event": "dispatch_failed",
+            "name": "on_job_event",
+            "payload": {
+              "dispatch_id": "fixture",
+              "error_type": "ValueError",
+              "job_id": "fixture-job",
+              "message": "fixture-before_run"
+            }
+          }
+        ],
+        "event_errors": []
+      }
+    },
+    {
+      "name": "hooks-after-failure",
+      "results": [
+        {
+          "exit_code": 0,
+          "stdout": "finished",
+          "stderr": "diagnostic",
+          "tokens_used": [
+            [
+              "input_tokens",
+              11
+            ],
+            [
+              "output_tokens",
+              3
+            ]
+          ],
+          "model_id": "fixture-model",
+          "mcp_protocol": "fixture-protocol",
+          "tool_version": "fixture-v1"
+        }
+      ],
+      "hooks": {
+        "fail": "after_run"
+      },
+      "expected": {
+        "error": "ValueError",
+        "message": "fixture-after_run",
+        "registry": {
+          "status": "failed",
+          "exit_code": 1,
+          "stderr": "fixture-after_run",
+          "ai_run_metadata": null
+        },
+        "calls": [
+          {
+            "attempt": 1,
+            "worktree_exists": true
+          }
+        ],
+        "events": [],
+        "state": {
+          "state": "created"
+        },
+        "hooks": [
+          {
+            "brief": "Fixture brief",
+            "name": "validate_brief",
+            "root_ok": true
+          },
+          {
+            "name": "writer_enter",
+            "root_ok": true
+          },
+          {
+            "event": "dispatch_state",
+            "name": "on_job_event",
+            "payload": {
+              "dispatch_id": "fixture",
+              "evidence": {},
+              "job_id": "fixture-job",
+              "state": "started"
+            }
+          },
+          {
+            "event": "dispatch_state",
+            "name": "on_job_event",
+            "payload": {
+              "dispatch_id": "fixture",
+              "evidence": {
+                "attempt": 1
+              },
+              "job_id": "fixture-job",
+              "state": "running"
+            }
+          },
+          {
+            "attempt": 1,
+            "dispatch_id": "fixture",
+            "name": "before_run"
+          },
+          {
+            "metadata": {
+              "attempt": 1,
+              "model": "fixture-model",
+              "prompt_sha256": "411d51fa4f33b9c63abafe35b48ef0d07397f986125c6fd0a828bfed698c201e",
+              "reasoning_effort": null,
+              "token_usage": {
+                "input_tokens": 11,
+                "output_tokens": 3
+              },
+              "tool_version": "fixture-v1"
+            },
+            "name": "after_provider_call",
+            "result_exit": 0
+          },
+          {
+            "attempt": 1,
+            "dispatch_id": "fixture",
+            "name": "after_run",
+            "result_exit": 0
+          },
+          {
+            "name": "writer_exit"
+          },
+          {
+            "event": "dispatch_failed",
+            "name": "on_job_event",
+            "payload": {
+              "dispatch_id": "fixture",
+              "error_type": "ValueError",
+              "job_id": "fixture-job",
+              "message": "fixture-after_run"
+            }
+          }
+        ],
+        "event_errors": []
+      }
+    },
+    {
+      "name": "hooks-provider-failure",
+      "results": [
+        {
+          "exit_code": 0,
+          "stdout": "finished",
+          "stderr": "diagnostic",
+          "tokens_used": [
+            [
+              "input_tokens",
+              11
+            ],
+            [
+              "output_tokens",
+              3
+            ]
+          ],
+          "model_id": "fixture-model",
+          "mcp_protocol": "fixture-protocol",
+          "tool_version": "fixture-v1"
+        }
+      ],
+      "hooks": {
+        "fail": "after_provider_call"
+      },
+      "expected": {
+        "error": "ValueError",
+        "message": "fixture-after_provider_call",
+        "registry": {
+          "status": "failed",
+          "exit_code": 1,
+          "stderr": "fixture-after_provider_call",
+          "ai_run_metadata": null
+        },
+        "calls": [
+          {
+            "attempt": 1,
+            "worktree_exists": true
+          }
+        ],
+        "events": [],
+        "state": {
+          "state": "created"
+        },
+        "hooks": [
+          {
+            "brief": "Fixture brief",
+            "name": "validate_brief",
+            "root_ok": true
+          },
+          {
+            "name": "writer_enter",
+            "root_ok": true
+          },
+          {
+            "event": "dispatch_state",
+            "name": "on_job_event",
+            "payload": {
+              "dispatch_id": "fixture",
+              "evidence": {},
+              "job_id": "fixture-job",
+              "state": "started"
+            }
+          },
+          {
+            "event": "dispatch_state",
+            "name": "on_job_event",
+            "payload": {
+              "dispatch_id": "fixture",
+              "evidence": {
+                "attempt": 1
+              },
+              "job_id": "fixture-job",
+              "state": "running"
+            }
+          },
+          {
+            "attempt": 1,
+            "dispatch_id": "fixture",
+            "name": "before_run"
+          },
+          {
+            "metadata": {
+              "attempt": 1,
+              "model": "fixture-model",
+              "prompt_sha256": "411d51fa4f33b9c63abafe35b48ef0d07397f986125c6fd0a828bfed698c201e",
+              "reasoning_effort": null,
+              "token_usage": {
+                "input_tokens": 11,
+                "output_tokens": 3
+              },
+              "tool_version": "fixture-v1"
+            },
+            "name": "after_provider_call",
+            "result_exit": 0
+          },
+          {
+            "name": "writer_exit"
+          },
+          {
+            "event": "dispatch_failed",
+            "name": "on_job_event",
+            "payload": {
+              "dispatch_id": "fixture",
+              "error_type": "ValueError",
+              "job_id": "fixture-job",
+              "message": "fixture-after_provider_call"
+            }
+          }
+        ],
+        "event_errors": []
+      }
+    },
+    {
+      "name": "runner-error",
+      "results": [
+        {
+          "exit_code": 0,
+          "stdout": "finished",
+          "stderr": "diagnostic",
+          "tokens_used": [
+            [
+              "input_tokens",
+              11
+            ],
+            [
+              "output_tokens",
+              3
+            ]
+          ],
+          "model_id": "fixture-model",
+          "mcp_protocol": "fixture-protocol",
+          "tool_version": "fixture-v1"
+        }
+      ],
+      "hooks": {
+        "enabled": true
+      },
+      "runner_error": true,
+      "expected": {
+        "error": "RuntimeError",
+        "message": "fixture-runner",
+        "registry": {
+          "status": "failed",
+          "exit_code": 1,
+          "stderr": "fixture-runner",
+          "ai_run_metadata": null
+        },
+        "calls": [
+          {
+            "attempt": 1,
+            "worktree_exists": true
+          }
+        ],
+        "events": [],
+        "state": {
+          "state": "created"
+        },
+        "hooks": [
+          {
+            "brief": "Fixture brief",
+            "name": "validate_brief",
+            "root_ok": true
+          },
+          {
+            "name": "writer_enter",
+            "root_ok": true
+          },
+          {
+            "event": "dispatch_state",
+            "name": "on_job_event",
+            "payload": {
+              "dispatch_id": "fixture",
+              "evidence": {},
+              "job_id": "fixture-job",
+              "state": "started"
+            }
+          },
+          {
+            "event": "dispatch_state",
+            "name": "on_job_event",
+            "payload": {
+              "dispatch_id": "fixture",
+              "evidence": {
+                "attempt": 1
+              },
+              "job_id": "fixture-job",
+              "state": "running"
+            }
+          },
+          {
+            "attempt": 1,
+            "dispatch_id": "fixture",
+            "name": "before_run"
+          },
+          {
+            "name": "writer_exit"
+          },
+          {
+            "event": "dispatch_failed",
+            "name": "on_job_event",
+            "payload": {
+              "dispatch_id": "fixture",
+              "error_type": "RuntimeError",
+              "job_id": "fixture-job",
+              "message": "fixture-runner"
+            }
+          }
+        ],
+        "event_errors": []
+      }
+    },
+    {
+      "name": "runner-error-with-event-errors",
+      "results": [
+        {
+          "exit_code": 0,
+          "stdout": "finished",
+          "stderr": "diagnostic",
+          "tokens_used": [
+            [
+              "input_tokens",
+              11
+            ],
+            [
+              "output_tokens",
+              3
+            ]
+          ],
+          "model_id": "fixture-model",
+          "mcp_protocol": "fixture-protocol",
+          "tool_version": "fixture-v1"
+        }
+      ],
+      "hooks": {
+        "fail": "on_job_event"
+      },
+      "runner_error": true,
+      "expected": {
+        "error": "RuntimeError",
+        "message": "fixture-runner",
+        "registry": {
+          "status": "failed",
+          "exit_code": 1,
+          "stderr": "fixture-runner; on_job_event dispatch_state: ValueError: fixture-on_job_event; on_job_event dispatch_state: ValueError: fixture-on_job_event; on_job_event dispatch_failed: ValueError: fixture-on_job_event",
+          "ai_run_metadata": null
+        },
+        "calls": [
+          {
+            "attempt": 1,
+            "worktree_exists": true
+          }
+        ],
+        "events": [],
+        "state": {
+          "state": "created"
+        },
+        "hooks": [
+          {
+            "brief": "Fixture brief",
+            "name": "validate_brief",
+            "root_ok": true
+          },
+          {
+            "name": "writer_enter",
+            "root_ok": true
+          },
+          {
+            "event": "dispatch_state",
+            "name": "on_job_event",
+            "payload": {
+              "dispatch_id": "fixture",
+              "evidence": {},
+              "job_id": "fixture-job",
+              "state": "started"
+            }
+          },
+          {
+            "event": "dispatch_state",
+            "name": "on_job_event",
+            "payload": {
+              "dispatch_id": "fixture",
+              "evidence": {
+                "attempt": 1
+              },
+              "job_id": "fixture-job",
+              "state": "running"
+            }
+          },
+          {
+            "attempt": 1,
+            "dispatch_id": "fixture",
+            "name": "before_run"
+          },
+          {
+            "name": "writer_exit"
+          },
+          {
+            "event": "dispatch_failed",
+            "name": "on_job_event",
+            "payload": {
+              "dispatch_id": "fixture",
+              "error_type": "RuntimeError",
+              "job_id": "fixture-job",
+              "message": "fixture-runner"
+            }
+          }
+        ],
+        "event_errors": [
+          "on_job_event dispatch_state: ValueError: fixture-on_job_event",
+          "on_job_event dispatch_state: ValueError: fixture-on_job_event",
+          "on_job_event dispatch_failed: ValueError: fixture-on_job_event"
+        ]
+      }
+    },
+    {
+      "name": "resumed-dispatch-history",
+      "results": [
+        {
+          "exit_code": 0,
+          "stdout": "finished",
+          "stderr": "diagnostic",
+          "tokens_used": [
+            [
+              "input_tokens",
+              11
+            ],
+            [
+              "output_tokens",
+              3
+            ]
+          ],
+          "model_id": "fixture-model",
+          "mcp_protocol": "fixture-protocol",
+          "tool_version": "fixture-v1"
+        }
+      ],
+      "previous_metadata": {
+        "dispatch_id": "previous",
+        "dispatch_ids": [
+          "first",
+          "first",
+          7,
+          "previous"
+        ],
+        "old_field": "superseded"
+      },
+      "expected": {
+        "outcome": {
+          "status": "completed",
+          "attempts": 1,
+          "fell_back": false,
+          "blocked_reason": null,
+          "tokens_used": [
+            [
+              "input_tokens",
+              11
+            ],
+            [
+              "output_tokens",
+              3
+            ]
+          ],
+          "model_id": "fixture-model",
+          "mcp_protocol": "fixture-protocol",
+          "stdout": "finished",
+          "exit_code": 0,
+          "stderr": "diagnostic"
+        },
+        "registry": {
+          "status": "running",
+          "exit_code": null,
+          "stderr": null,
+          "ai_run_metadata": {
+            "dispatch_id": "fixture",
+            "dispatch_ids": [
+              "first",
+              "previous",
+              "fixture"
+            ],
+            "mcp_protocol": "fixture-protocol",
+            "model_id": "fixture-model",
+            "tokens_used": {
+              "input_tokens": 11,
+              "output_tokens": 3
+            }
+          }
+        },
+        "calls": [
+          {
+            "attempt": 1,
+            "worktree_exists": true
+          }
+        ],
+        "events": [
+          {
+            "kind": "codex_success",
+            "dispatch_id": "fixture",
+            "attempt": 1
+          }
+        ],
+        "state": {
+          "state": "codex_completed",
+          "attempt": 1
+        },
+        "hooks": [],
+        "event_errors": []
+      }
+    },
+    {
+      "name": "resumed-malformed-history",
+      "results": [
+        {
+          "exit_code": 0,
+          "stdout": "finished",
+          "stderr": "diagnostic",
+          "tokens_used": [
+            [
+              "input_tokens",
+              11
+            ],
+            [
+              "output_tokens",
+              3
+            ]
+          ],
+          "model_id": "fixture-model",
+          "mcp_protocol": "fixture-protocol",
+          "tool_version": "fixture-v1"
+        }
+      ],
+      "previous_metadata": {
+        "dispatch_id": "previous",
+        "dispatch_ids": "invalid"
+      },
+      "expected": {
+        "outcome": {
+          "status": "completed",
+          "attempts": 1,
+          "fell_back": false,
+          "blocked_reason": null,
+          "tokens_used": [
+            [
+              "input_tokens",
+              11
+            ],
+            [
+              "output_tokens",
+              3
+            ]
+          ],
+          "model_id": "fixture-model",
+          "mcp_protocol": "fixture-protocol",
+          "stdout": "finished",
+          "exit_code": 0,
+          "stderr": "diagnostic"
+        },
+        "registry": {
+          "status": "running",
+          "exit_code": null,
+          "stderr": null,
+          "ai_run_metadata": {
+            "dispatch_id": "fixture",
+            "dispatch_ids": [
+              "previous",
+              "fixture"
+            ],
+            "mcp_protocol": "fixture-protocol",
+            "model_id": "fixture-model",
+            "tokens_used": {
+              "input_tokens": 11,
+              "output_tokens": 3
+            }
+          }
+        },
+        "calls": [
+          {
+            "attempt": 1,
+            "worktree_exists": true
+          }
+        ],
+        "events": [
+          {
+            "kind": "codex_success",
+            "dispatch_id": "fixture",
+            "attempt": 1
+          }
+        ],
+        "state": {
+          "state": "codex_completed",
+          "attempt": 1
+        },
+        "hooks": [],
+        "event_errors": []
+      }
+    }
+  ],
+  "counts": [
+    {
+      "name": "empty",
+      "records": [],
+      "prefix": "",
+      "expected": 0
+    },
+    {
+      "name": "all-failed",
+      "records": [
+        {
+          "job_id": "job-0",
+          "change_id": "a",
+          "category": "unit",
+          "family": null,
+          "repo_root": "<REPO>",
+          "codex_args": [],
+          "timeout_seconds": 60,
+          "status": "failed",
+          "dispatch_brief_path": null,
+          "resume_count": 0,
+          "last_resumed_at": null,
+          "exit_code": null,
+          "stdout": null,
+          "stderr": null,
+          "duration_seconds": null,
+          "started_at": "2026-01-01T00:00:59",
+          "completed_at": null,
+          "cancel_requested": false,
+          "allow_harness_self_modify": false,
+          "target_agent": null,
+          "execution_backend": null,
+          "resolved_model": null,
+          "resolved_reasoning_effort": null,
+          "agent_definition_path": null,
+          "agent_definition_sha256": null,
+          "identity_json": null,
+          "ai_run_metadata": null,
+          "dispatch_options_json": null
+        },
+        {
+          "job_id": "job-1",
+          "change_id": "a",
+          "category": "unit",
+          "family": null,
+          "repo_root": "<REPO>",
+          "codex_args": [],
+          "timeout_seconds": 60,
+          "status": "failed",
+          "dispatch_brief_path": null,
+          "resume_count": 0,
+          "last_resumed_at": null,
+          "exit_code": null,
+          "stdout": null,
+          "stderr": "dispatch_status=blocked",
+          "duration_seconds": null,
+          "started_at": "2026-01-01T00:00:58",
+          "completed_at": null,
+          "cancel_requested": false,
+          "allow_harness_self_modify": false,
+          "target_agent": null,
+          "execution_backend": null,
+          "resolved_model": null,
+          "resolved_reasoning_effort": null,
+          "agent_definition_path": null,
+          "agent_definition_sha256": null,
+          "identity_json": null,
+          "ai_run_metadata": null,
+          "dispatch_options_json": null
+        }
+      ],
+      "prefix": "",
+      "expected": 2
+    },
+    {
+      "name": "stop-completed",
+      "records": [
+        {
+          "job_id": "job-0",
+          "change_id": "a",
+          "category": "unit",
+          "family": null,
+          "repo_root": "<REPO>",
+          "codex_args": [],
+          "timeout_seconds": 60,
+          "status": "failed",
+          "dispatch_brief_path": null,
+          "resume_count": 0,
+          "last_resumed_at": null,
+          "exit_code": null,
+          "stdout": null,
+          "stderr": null,
+          "duration_seconds": null,
+          "started_at": "2026-01-01T00:00:59",
+          "completed_at": null,
+          "cancel_requested": false,
+          "allow_harness_self_modify": false,
+          "target_agent": null,
+          "execution_backend": null,
+          "resolved_model": null,
+          "resolved_reasoning_effort": null,
+          "agent_definition_path": null,
+          "agent_definition_sha256": null,
+          "identity_json": null,
+          "ai_run_metadata": null,
+          "dispatch_options_json": null
+        },
+        {
+          "job_id": "job-1",
+          "change_id": "a",
+          "category": "unit",
+          "family": null,
+          "repo_root": "<REPO>",
+          "codex_args": [],
+          "timeout_seconds": 60,
+          "status": "completed",
+          "dispatch_brief_path": null,
+          "resume_count": 0,
+          "last_resumed_at": null,
+          "exit_code": null,
+          "stdout": null,
+          "stderr": null,
+          "duration_seconds": null,
+          "started_at": "2026-01-01T00:00:58",
+          "completed_at": null,
+          "cancel_requested": false,
+          "allow_harness_self_modify": false,
+          "target_agent": null,
+          "execution_backend": null,
+          "resolved_model": null,
+          "resolved_reasoning_effort": null,
+          "agent_definition_path": null,
+          "agent_definition_sha256": null,
+          "identity_json": null,
+          "ai_run_metadata": null,
+          "dispatch_options_json": null
+        },
+        {
+          "job_id": "job-2",
+          "change_id": "a",
+          "category": "unit",
+          "family": null,
+          "repo_root": "<REPO>",
+          "codex_args": [],
+          "timeout_seconds": 60,
+          "status": "failed",
+          "dispatch_brief_path": null,
+          "resume_count": 0,
+          "last_resumed_at": null,
+          "exit_code": null,
+          "stdout": null,
+          "stderr": null,
+          "duration_seconds": null,
+          "started_at": "2026-01-01T00:00:57",
+          "completed_at": null,
+          "cancel_requested": false,
+          "allow_harness_self_modify": false,
+          "target_agent": null,
+          "execution_backend": null,
+          "resolved_model": null,
+          "resolved_reasoning_effort": null,
+          "agent_definition_path": null,
+          "agent_definition_sha256": null,
+          "identity_json": null,
+          "ai_run_metadata": null,
+          "dispatch_options_json": null
+        }
+      ],
+      "prefix": "",
+      "expected": 1
+    },
+    {
+      "name": "stop-provider-completed",
+      "records": [
+        {
+          "job_id": "job-0",
+          "change_id": "a",
+          "category": "unit",
+          "family": null,
+          "repo_root": "<REPO>",
+          "codex_args": [],
+          "timeout_seconds": 60,
+          "status": "failed",
+          "dispatch_brief_path": null,
+          "resume_count": 0,
+          "last_resumed_at": null,
+          "exit_code": null,
+          "stdout": null,
+          "stderr": null,
+          "duration_seconds": null,
+          "started_at": "2026-01-01T00:00:59",
+          "completed_at": null,
+          "cancel_requested": false,
+          "allow_harness_self_modify": false,
+          "target_agent": null,
+          "execution_backend": null,
+          "resolved_model": null,
+          "resolved_reasoning_effort": null,
+          "agent_definition_path": null,
+          "agent_definition_sha256": null,
+          "identity_json": null,
+          "ai_run_metadata": null,
+          "dispatch_options_json": null
+        },
+        {
+          "job_id": "job-1",
+          "change_id": "a",
+          "category": "unit",
+          "family": null,
+          "repo_root": "<REPO>",
+          "codex_args": [],
+          "timeout_seconds": 60,
+          "status": "failed",
+          "dispatch_brief_path": null,
+          "resume_count": 0,
+          "last_resumed_at": null,
+          "exit_code": null,
+          "stdout": null,
+          "stderr": "x dispatch_status=completed y",
+          "duration_seconds": null,
+          "started_at": "2026-01-01T00:00:58",
+          "completed_at": null,
+          "cancel_requested": false,
+          "allow_harness_self_modify": false,
+          "target_agent": null,
+          "execution_backend": null,
+          "resolved_model": null,
+          "resolved_reasoning_effort": null,
+          "agent_definition_path": null,
+          "agent_definition_sha256": null,
+          "identity_json": null,
+          "ai_run_metadata": null,
+          "dispatch_options_json": null
+        },
+        {
+          "job_id": "job-2",
+          "change_id": "a",
+          "category": "unit",
+          "family": null,
+          "repo_root": "<REPO>",
+          "codex_args": [],
+          "timeout_seconds": 60,
+          "status": "failed",
+          "dispatch_brief_path": null,
+          "resume_count": 0,
+          "last_resumed_at": null,
+          "exit_code": null,
+          "stdout": null,
+          "stderr": null,
+          "duration_seconds": null,
+          "started_at": "2026-01-01T00:00:57",
+          "completed_at": null,
+          "cancel_requested": false,
+          "allow_harness_self_modify": false,
+          "target_agent": null,
+          "execution_backend": null,
+          "resolved_model": null,
+          "resolved_reasoning_effort": null,
+          "agent_definition_path": null,
+          "agent_definition_sha256": null,
+          "identity_json": null,
+          "ai_run_metadata": null,
+          "dispatch_options_json": null
+        }
+      ],
+      "prefix": "",
+      "expected": 1
+    },
+    {
+      "name": "prefix",
+      "records": [
+        {
+          "job_id": "job-0",
+          "change_id": "scope-a",
+          "category": "unit",
+          "family": null,
+          "repo_root": "<REPO>",
+          "codex_args": [],
+          "timeout_seconds": 60,
+          "status": "failed",
+          "dispatch_brief_path": null,
+          "resume_count": 0,
+          "last_resumed_at": null,
+          "exit_code": null,
+          "stdout": null,
+          "stderr": null,
+          "duration_seconds": null,
+          "started_at": "2026-01-01T00:00:59",
+          "completed_at": null,
+          "cancel_requested": false,
+          "allow_harness_self_modify": false,
+          "target_agent": null,
+          "execution_backend": null,
+          "resolved_model": null,
+          "resolved_reasoning_effort": null,
+          "agent_definition_path": null,
+          "agent_definition_sha256": null,
+          "identity_json": null,
+          "ai_run_metadata": null,
+          "dispatch_options_json": null
+        },
+        {
+          "job_id": "job-1",
+          "change_id": "other",
+          "category": "unit",
+          "family": null,
+          "repo_root": "<REPO>",
+          "codex_args": [],
+          "timeout_seconds": 60,
+          "status": "completed",
+          "dispatch_brief_path": null,
+          "resume_count": 0,
+          "last_resumed_at": null,
+          "exit_code": null,
+          "stdout": null,
+          "stderr": null,
+          "duration_seconds": null,
+          "started_at": "2026-01-01T00:00:58",
+          "completed_at": null,
+          "cancel_requested": false,
+          "allow_harness_self_modify": false,
+          "target_agent": null,
+          "execution_backend": null,
+          "resolved_model": null,
+          "resolved_reasoning_effort": null,
+          "agent_definition_path": null,
+          "agent_definition_sha256": null,
+          "identity_json": null,
+          "ai_run_metadata": null,
+          "dispatch_options_json": null
+        },
+        {
+          "job_id": "job-2",
+          "change_id": "scope-b",
+          "category": "unit",
+          "family": null,
+          "repo_root": "<REPO>",
+          "codex_args": [],
+          "timeout_seconds": 60,
+          "status": "failed",
+          "dispatch_brief_path": null,
+          "resume_count": 0,
+          "last_resumed_at": null,
+          "exit_code": null,
+          "stdout": null,
+          "stderr": null,
+          "duration_seconds": null,
+          "started_at": "2026-01-01T00:00:57",
+          "completed_at": null,
+          "cancel_requested": false,
+          "allow_harness_self_modify": false,
+          "target_agent": null,
+          "execution_backend": null,
+          "resolved_model": null,
+          "resolved_reasoning_effort": null,
+          "agent_definition_path": null,
+          "agent_definition_sha256": null,
+          "identity_json": null,
+          "ai_run_metadata": null,
+          "dispatch_options_json": null
+        }
+      ],
+      "prefix": "scope-",
+      "expected": 2
+    },
+    {
+      "name": "literal-prefix",
+      "records": [
+        {
+          "job_id": "job-0",
+          "change_id": "a%one",
+          "category": "unit",
+          "family": null,
+          "repo_root": "<REPO>",
+          "codex_args": [],
+          "timeout_seconds": 60,
+          "status": "failed",
+          "dispatch_brief_path": null,
+          "resume_count": 0,
+          "last_resumed_at": null,
+          "exit_code": null,
+          "stdout": null,
+          "stderr": null,
+          "duration_seconds": null,
+          "started_at": "2026-01-01T00:00:59",
+          "completed_at": null,
+          "cancel_requested": false,
+          "allow_harness_self_modify": false,
+          "target_agent": null,
+          "execution_backend": null,
+          "resolved_model": null,
+          "resolved_reasoning_effort": null,
+          "agent_definition_path": null,
+          "agent_definition_sha256": null,
+          "identity_json": null,
+          "ai_run_metadata": null,
+          "dispatch_options_json": null
+        },
+        {
+          "job_id": "job-1",
+          "change_id": "another",
+          "category": "unit",
+          "family": null,
+          "repo_root": "<REPO>",
+          "codex_args": [],
+          "timeout_seconds": 60,
+          "status": "completed",
+          "dispatch_brief_path": null,
+          "resume_count": 0,
+          "last_resumed_at": null,
+          "exit_code": null,
+          "stdout": null,
+          "stderr": null,
+          "duration_seconds": null,
+          "started_at": "2026-01-01T00:00:58",
+          "completed_at": null,
+          "cancel_requested": false,
+          "allow_harness_self_modify": false,
+          "target_agent": null,
+          "execution_backend": null,
+          "resolved_model": null,
+          "resolved_reasoning_effort": null,
+          "agent_definition_path": null,
+          "agent_definition_sha256": null,
+          "identity_json": null,
+          "ai_run_metadata": null,
+          "dispatch_options_json": null
+        },
+        {
+          "job_id": "job-2",
+          "change_id": "a%two",
+          "category": "unit",
+          "family": null,
+          "repo_root": "<REPO>",
+          "codex_args": [],
+          "timeout_seconds": 60,
+          "status": "failed",
+          "dispatch_brief_path": null,
+          "resume_count": 0,
+          "last_resumed_at": null,
+          "exit_code": null,
+          "stdout": null,
+          "stderr": null,
+          "duration_seconds": null,
+          "started_at": "2026-01-01T00:00:57",
+          "completed_at": null,
+          "cancel_requested": false,
+          "allow_harness_self_modify": false,
+          "target_agent": null,
+          "execution_backend": null,
+          "resolved_model": null,
+          "resolved_reasoning_effort": null,
+          "agent_definition_path": null,
+          "agent_definition_sha256": null,
+          "identity_json": null,
+          "ai_run_metadata": null,
+          "dispatch_options_json": null
+        }
+      ],
+      "prefix": "a%",
+      "expected": 2
+    },
+    {
+      "name": "empty-prefix-result",
+      "records": [
+        {
+          "job_id": "job-0",
+          "change_id": "a",
+          "category": "unit",
+          "family": null,
+          "repo_root": "<REPO>",
+          "codex_args": [],
+          "timeout_seconds": 60,
+          "status": "failed",
+          "dispatch_brief_path": null,
+          "resume_count": 0,
+          "last_resumed_at": null,
+          "exit_code": null,
+          "stdout": null,
+          "stderr": null,
+          "duration_seconds": null,
+          "started_at": "2026-01-01T00:00:59",
+          "completed_at": null,
+          "cancel_requested": false,
+          "allow_harness_self_modify": false,
+          "target_agent": null,
+          "execution_backend": null,
+          "resolved_model": null,
+          "resolved_reasoning_effort": null,
+          "agent_definition_path": null,
+          "agent_definition_sha256": null,
+          "identity_json": null,
+          "ai_run_metadata": null,
+          "dispatch_options_json": null
+        }
+      ],
+      "prefix": "missing",
+      "expected": 0
+    },
+    {
+      "name": "token-substring",
+      "records": [
+        {
+          "job_id": "job-0",
+          "change_id": "a",
+          "category": "unit",
+          "family": null,
+          "repo_root": "<REPO>",
+          "codex_args": [],
+          "timeout_seconds": 60,
+          "status": "failed",
+          "dispatch_brief_path": null,
+          "resume_count": 0,
+          "last_resumed_at": null,
+          "exit_code": null,
+          "stdout": null,
+          "stderr": "notdispatch_status=completed",
+          "duration_seconds": null,
+          "started_at": "2026-01-01T00:00:59",
+          "completed_at": null,
+          "cancel_requested": false,
+          "allow_harness_self_modify": false,
+          "target_agent": null,
+          "execution_backend": null,
+          "resolved_model": null,
+          "resolved_reasoning_effort": null,
+          "agent_definition_path": null,
+          "agent_definition_sha256": null,
+          "identity_json": null,
+          "ai_run_metadata": null,
+          "dispatch_options_json": null
+        }
+      ],
+      "prefix": "",
+      "expected": 1
+    },
+    {
+      "name": "first-token-wins",
+      "records": [
+        {
+          "job_id": "job-0",
+          "change_id": "a",
+          "category": "unit",
+          "family": null,
+          "repo_root": "<REPO>",
+          "codex_args": [],
+          "timeout_seconds": 60,
+          "status": "failed",
+          "dispatch_brief_path": null,
+          "resume_count": 0,
+          "last_resumed_at": null,
+          "exit_code": null,
+          "stdout": null,
+          "stderr": "dispatch_status=blocked dispatch_status=completed",
+          "duration_seconds": null,
+          "started_at": "2026-01-01T00:00:59",
+          "completed_at": null,
+          "cancel_requested": false,
+          "allow_harness_self_modify": false,
+          "target_agent": null,
+          "execution_backend": null,
+          "resolved_model": null,
+          "resolved_reasoning_effort": null,
+          "agent_definition_path": null,
+          "agent_definition_sha256": null,
+          "identity_json": null,
+          "ai_run_metadata": null,
+          "dispatch_options_json": null
+        }
+      ],
+      "prefix": "",
+      "expected": 1
+    }
+  ]
+}
