@@ -90,7 +90,7 @@ fn quoted(text: &str) -> Result<String> {
     }
     Ok(out)
 }
-fn python_float(value: f64) -> Result<String> {
+pub(crate) fn python_float(value: f64) -> Result<String> {
     let encoded = serde_json::to_string(&value).map_err(|_| Error::Shape)?;
     let sign = if encoded.starts_with('-') { "-" } else { "" };
     let magnitude = encoded.trim_start_matches('-');

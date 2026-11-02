@@ -403,3 +403,27 @@ def test_should_reject_unterminated_frame_on_eof(repo):
     assert hello["version"] == VERSION
     assert response["error"]["message"] == "Request must end with a newline"
     assert result.returncode == 0
+
+
+def test_should_preserve_provider_result_dataclass_through_replacement(repo):
+    (repo / "tools/mir_executor/local.py").write_text("""
+from dataclasses import replace
+
+def after_provider_call(result, metadata):
+    assert result.command == ['fake', 'app-server']
+    assert metadata == {'attempt': 1}
+    return replace(result, exit_code=7, stdout='replaced', duration_seconds=0.0)
+""")
+    client = Client(repo)
+    value = {
+        "command": ["fake", "app-server"], "exit_code": 0,
+        "stdout": "original", "stderr": "", "duration_seconds": 1.0,
+    }
+    reply = client.call("after_provider_call", [
+        {"$type": "subprocess_result", "value": value}, {"attempt": 1},
+    ])
+    assert reply["ok"], reply
+    assert reply["result"] == {"$type": "subprocess_result", "value": {
+        **value, "exit_code": 7, "stdout": "replaced", "duration_seconds": 0.0,
+    }}
+    client.close()

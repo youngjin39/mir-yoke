@@ -364,7 +364,7 @@ def test_executor_query_absent_database_matches_with_creation(binary, home, argv
 
 @pytest.mark.parametrize("argv", [
     [], ["--help"], ["status", "--help"], ["result", "--help"], ["list-jobs", "--help"],
-    ["unknown"], ["execute"], ["resume"], ["sweep"],
+    ["unknown"], ["resume"], ["sweep"],
     ["status"], ["result"], ["list-jobs", "--unknown"],
     ["status", "--job-id", "running", "--job-id", "failed"],
     ["list-jobs", "--status", "not-a-status"],

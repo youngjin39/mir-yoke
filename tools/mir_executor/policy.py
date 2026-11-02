@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 import os
 import pathlib
-import pwd
 import sys
 from dataclasses import dataclass, field
 from typing import Any, Literal, cast
@@ -19,10 +18,13 @@ LOCK_RELPATH = pathlib.Path("config") / "model-routing.lock.json"
 # routes by category instead of silently resolving every route to null. Resolved from the
 # account's passwd home, not $HOME, because agent sessions run with a HOME other
 # than the account home.
-DEFAULT_GLOBAL_POLICY_PATH = (
-    pathlib.Path(pwd.getpwuid(os.getuid()).pw_dir)
-    / ".mir/model-routing/sub-agent-policy.json"
-)
+if os.name == "nt":
+    _ACCOUNT_HOME = pathlib.Path.home()
+else:
+    import pwd
+
+    _ACCOUNT_HOME = pathlib.Path(pwd.getpwuid(os.getuid()).pw_dir)
+DEFAULT_GLOBAL_POLICY_PATH = _ACCOUNT_HOME / ".mir/model-routing/sub-agent-policy.json"
 SUB_AGENT_POLICY_MODES = frozenset(
     {
         "force_codex",

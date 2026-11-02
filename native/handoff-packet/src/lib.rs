@@ -1,22 +1,44 @@
 //! Native lifecycle hooks; unknown external JSON fields are accepted like Python.
-#![forbid(unsafe_code)]
+// Only account_home may cross the Unix libc boundary; every other module forbids unsafe.
+#![deny(unsafe_code)]
 #![cfg_attr(
     not(test),
     deny(clippy::unwrap_used, clippy::expect_used, clippy::panic)
 )]
+#[cfg(unix)]
+#[allow(unsafe_code)]
+mod account_home;
+#[forbid(unsafe_code)]
 mod digest;
+#[forbid(unsafe_code)]
 pub mod executor_admission;
+#[forbid(unsafe_code)]
+pub mod executor_execute;
+#[forbid(unsafe_code)]
+mod executor_ledger_json;
+#[forbid(unsafe_code)]
 pub mod executor_local;
+#[forbid(unsafe_code)]
 pub mod executor_policy;
+#[forbid(unsafe_code)]
 pub mod executor_registry;
+#[forbid(unsafe_code)]
 pub mod executor_transport;
+#[forbid(unsafe_code)]
 pub mod local_bridge;
+#[forbid(unsafe_code)]
 mod patterns;
+#[forbid(unsafe_code)]
 mod python_text;
+#[forbid(unsafe_code)]
 pub mod stop;
+#[forbid(unsafe_code)]
 mod stop_tools;
+#[forbid(unsafe_code)]
 pub mod supply;
+#[forbid(unsafe_code)]
 mod supply_text;
+#[forbid(unsafe_code)]
 mod transcript;
 use patterns as p;
 use serde_json::{Value, json};
@@ -611,4 +633,5 @@ pub fn pretool(event: &Value) -> Result<Option<&'static str>> {
     Ok(None)
 }
 #[cfg(test)]
+#[forbid(unsafe_code)]
 mod tests;

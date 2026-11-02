@@ -42,6 +42,18 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
   items, token usage, stderr draining, stall and overall deadlines, cancellation,
   child kill and reap) matching the Python client on 38 fake-server scenarios.
   Closing kills the child directly instead of Python's terminate-then-kill.
+- Executor port slice E5: `executor-query execute` runs a direct (non-dispatch)
+  Codex execution natively: admission, local hooks through one bridge, writer
+  scope, input and timeout limits, background job insertion and flush, preflight
+  cancel, ledger transitions with atomic replacement, and `after_provider_call`
+  result replacement; output, ledger and job rows match Python on 18 fake-provider
+  scenarios. Dispatch, resume, Claude, agent routes, cross-target roots and parser
+  extensions decline to Python. The Python entrypoint does not route `execute`
+  yet. The Unix account home comes from `getpwuid_r` (the crate's only `unsafe`).
+
+### Changed
+
+- `tools/mir_executor/policy.py` no longer imports `pwd` on Windows.
 
 ## [v0.13.61] — 2026-11-01 — Native executor queries with local executor files
 

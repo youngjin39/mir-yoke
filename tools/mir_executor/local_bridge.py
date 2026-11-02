@@ -48,6 +48,10 @@ def _decode(value: Any) -> Any:
                 return pathlib.Path(value["value"])
             if value["$type"] == "namespace":
                 return argparse.Namespace(**_decode(value["value"]))
+            if value["$type"] == "subprocess_result":
+                from tools.mir_executor.executor import SubprocessResult  # noqa: PLC0415
+
+                return SubprocessResult(**_decode(value["value"]))
             raise ValueError("Unknown argument type")
         return {key: _decode(item) for key, item in value.items()}
     return value
@@ -59,6 +63,13 @@ def _encode(value: Any) -> Any:
         return {"$type": "path", "value": str(value)}
     if isinstance(value, argparse.Namespace):
         return {"$type": "namespace", "value": _encode(vars(value))}
+    # Provider results must remain real dataclasses in local hooks (including
+    # dataclasses.replace); only their explicit wire representation crosses JSON.
+    if type(value).__name__ == "SubprocessResult":
+        from tools.mir_executor.executor import SubprocessResult  # noqa: PLC0415
+
+        if isinstance(value, SubprocessResult):
+            return {"$type": "subprocess_result", "value": _encode(vars(value))}
     if isinstance(value, list):
         return [_encode(item) for item in value]
     if isinstance(value, dict):
@@ -162,12 +173,13 @@ class Bridge:
                 raise ValueError("Unsupported hook")
             retain = force_handle or hook in {"validate_brief", "writer_scope", "bridge.object"}
             try:
-                json.dumps(result, allow_nan=False)
+                encoded_result = _encode(result) if hook == "after_provider_call" else result
+                json.dumps(encoded_result, allow_nan=False)
             except (ValueError, TypeError, RecursionError):
                 retain = True
                 result_json = None
             else:
-                result_json = None if force_handle else result
+                result_json = None if force_handle else encoded_result
             if hook == "pre_execute":
                 response["args"] = _encode(args)
             response.update(ok=True, result=result_json)

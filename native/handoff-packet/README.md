@@ -8,6 +8,28 @@ cross-target requests and unsupported inputs silently with exit 64.
 The lightweight Python entrypoint checks the target manifest pin and retains
 the Python CLI on any decline or unavailable artifact.
 
+The same binary exposes the library's direct Codex execution path with
+`executor-query --home-root ROOT execute --change-id ID --category unit --codex-args "exec 'task'"`.
+It uses the app-server transport, updates the existing TDD ledger atomically, and
+supports asynchronous execution and same-process background jobs. Background mode
+flushes the job ID before starting the provider. Target hooks share one persistent
+Python bridge. Dispatch, resume, Claude, dynamic parser extensions and unsupported
+arguments decline with exit 64 before command hooks; failures after admission are
+final. The Python entrypoint routing is unchanged.
+Literal parser-extension declarations decline before importing local code. Extensions
+computed during import fail finally and require an explicit Python invocation, so
+import side effects cannot be repeated by an automatic fallback.
+
+`tests/test_executor_execute_native_parity.py` compares offline Python oracles with
+native process output, complete ledger text, job rows and hook order. It normalizes
+generated paths, IDs, timestamps, measured durations and platform line endings.
+Direct execution does not attach a dispatch brief, so it does not invoke
+`validate_brief`. Agent-specific read-only execution remains on the Python path.
+Ledger replacement uses `std::fs::rename` on every platform, including replacement
+of an existing ledger on Windows. Unix account home lookup uses `getpwuid_r` in
+one isolated unsafe module; Windows uses `USERPROFILE`. Neither operation starts
+Python; target hooks still use the persistent Python bridge.
+
 `tests/test_executor_query_native_parity.py` compares stdout, stderr and exit
 status with isolated copies of the Python CLI. It runs on macOS, Ubuntu and the
 dedicated Windows lane. Bundled SQLite requires the runner's C compiler; a Mac

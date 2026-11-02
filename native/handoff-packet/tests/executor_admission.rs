@@ -243,6 +243,7 @@ fn python_local_hook_goldens_and_persistent_bridge() {
                 args,
                 mut bridge,
                 cross_target,
+                ..
             } = result
             else {
                 panic!("expected admission: {result:?}")

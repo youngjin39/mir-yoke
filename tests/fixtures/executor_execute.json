@@ -1,0 +1,294 @@
+{
+  "success": {
+    "stdout": "[RESULT] change_id='fixture' category='unit'\n[RESULT] codex exit_code=0 duration=<duration>s\n[RESULT] command=['<codex>', 'app-server']\n[LEDGER] previous_status='planned' -> new_status='pass'\n[LEDGER] notes=\"P0-J auto: rc=0, stderr first 200 chars: ''\"\n[STDOUT] \"done 'quoted' \\\\ ✓\\n\"\n",
+    "stderr": "",
+    "code": 0,
+    "ledger": "{\n  \"changes\": [\n    {\n      \"id\": \"fixture\",\n      \"preserved\": \"keep\",\n      \"categories\": {\n        \"unit\": {\n          \"status\": \"pass\",\n          \"verifier\": \"preserved-verifier\",\n          \"notes\": \"P0-J auto: rc=0, stderr first 200 chars: ''\",\n          \"executed_argv\": [\n            \"<codex>\",\n            \"app-server\"\n          ]\n        }\n      }\n    }\n  ]\n}\n",
+    "jobs": [],
+    "provider_methods": [
+      "initialize",
+      "initialized",
+      "thread/start",
+      "turn/start"
+    ],
+    "hook_events": []
+  },
+  "error": {
+    "stdout": "[RESULT] change_id='fixture' category='unit'\n[RESULT] codex exit_code=1 duration=<duration>s\n[RESULT] command=['<codex>', 'app-server']\n[LEDGER] previous_status='planned' -> new_status='fail'\n[LEDGER] notes=\"P0-J auto: rc=1, stderr first 200 chars: 'Codex turn failed: offline provider failure'\"\n[STDERR] 'Codex turn failed: offline provider failure'\n",
+    "stderr": "",
+    "code": 1,
+    "ledger": "{\n  \"changes\": [\n    {\n      \"id\": \"fixture\",\n      \"preserved\": \"keep\",\n      \"categories\": {\n        \"unit\": {\n          \"status\": \"fail\",\n          \"verifier\": \"preserved-verifier\",\n          \"notes\": \"P0-J auto: rc=1, stderr first 200 chars: 'Codex turn failed: offline provider failure'\",\n          \"executed_argv\": [\n            \"<codex>\",\n            \"app-server\"\n          ]\n        }\n      }\n    }\n  ]\n}\n",
+    "jobs": [],
+    "provider_methods": [
+      "initialize",
+      "initialized",
+      "thread/start",
+      "turn/start"
+    ],
+    "hook_events": []
+  },
+  "timeout": {
+    "stdout": "",
+    "stderr": "[mir_executor] Codex timeout after 1s: Command '['<codex>', 'app-server']' timed out after 1 seconds\n",
+    "code": 1,
+    "ledger": "{\n  \"changes\": [\n    {\n      \"id\": \"fixture\",\n      \"preserved\": \"keep\",\n      \"categories\": {\n        \"unit\": {\n          \"status\": \"planned\",\n          \"verifier\": \"preserved-verifier\",\n          \"notes\": \"initial\"\n        }\n      }\n    }\n  ]\n}\n",
+    "jobs": [],
+    "provider_methods": [
+      "initialize",
+      "initialized",
+      "thread/start",
+      "turn/start"
+    ],
+    "hook_events": []
+  },
+  "async_success": {
+    "stdout": "[RESULT] change_id='fixture' category='unit'\n[RESULT] codex exit_code=0 duration=<duration>s\n[RESULT] command=['<codex>', 'app-server']\n[LEDGER] previous_status='planned' -> new_status='pass'\n[LEDGER] notes=\"P0-J auto: rc=0, stderr first 200 chars: ''\"\n[STDOUT] \"done 'quoted' \\\\ ✓\\n\"\n",
+    "stderr": "",
+    "code": 0,
+    "ledger": "{\n  \"changes\": [\n    {\n      \"id\": \"fixture\",\n      \"preserved\": \"keep\",\n      \"categories\": {\n        \"unit\": {\n          \"status\": \"pass\",\n          \"verifier\": \"preserved-verifier\",\n          \"notes\": \"P0-J auto: rc=0, stderr first 200 chars: ''\",\n          \"executed_argv\": [\n            \"<codex>\",\n            \"app-server\"\n          ]\n        }\n      }\n    }\n  ]\n}\n",
+    "jobs": [],
+    "provider_methods": [
+      "initialize",
+      "initialized",
+      "thread/start",
+      "turn/start"
+    ],
+    "hook_events": []
+  },
+  "background_success": {
+    "stdout": "[BACKGROUND] job_id=<job-id>\n",
+    "stderr": "",
+    "code": 0,
+    "ledger": "{\n  \"changes\": [\n    {\n      \"id\": \"fixture\",\n      \"preserved\": \"keep\",\n      \"categories\": {\n        \"unit\": {\n          \"status\": \"pass\",\n          \"verifier\": \"preserved-verifier\",\n          \"notes\": \"P0-J auto: rc=0, stderr first 200 chars: ''\",\n          \"executed_argv\": [\n            \"<codex>\",\n            \"app-server\"\n          ]\n        }\n      }\n    }\n  ]\n}\n",
+    "jobs": [
+      {
+        "job_id": "<job-id>",
+        "change_id": "fixture",
+        "category": "unit",
+        "family": null,
+        "repo_root": "<root>",
+        "codex_args": "[\"exec\", \"offline fixture\"]",
+        "dispatch_brief_path": null,
+        "allow_harness_self_modify": 0,
+        "resume_count": 0,
+        "last_resumed_at": null,
+        "timeout_seconds": 600,
+        "status": "completed",
+        "exit_code": 0,
+        "stdout": "done 'quoted' \\ ✓\n",
+        "stderr": "",
+        "duration_seconds": "<duration>",
+        "started_at": "<timestamp>",
+        "completed_at": "<timestamp>",
+        "cancel_requested": 0,
+        "target_agent": null,
+        "execution_backend": null,
+        "resolved_model": null,
+        "resolved_reasoning_effort": null,
+        "agent_definition_path": null,
+        "agent_definition_sha256": null,
+        "identity_json": null,
+        "dispatch_options_json": null,
+        "ai_run_metadata": null
+      }
+    ],
+    "provider_methods": [
+      "initialize",
+      "initialized",
+      "thread/start",
+      "turn/start"
+    ],
+    "hook_events": []
+  },
+  "cancel_before_start": {
+    "stdout": "[BACKGROUND] job_id=<job-id>\n",
+    "stderr": "",
+    "code": 1,
+    "ledger": "{\n  \"changes\": [\n    {\n      \"id\": \"fixture\",\n      \"preserved\": \"keep\",\n      \"categories\": {\n        \"unit\": {\n          \"status\": \"planned\",\n          \"verifier\": \"preserved-verifier\",\n          \"notes\": \"initial\"\n        }\n      }\n    }\n  ]\n}\n",
+    "jobs": [
+      {
+        "job_id": "<job-id>",
+        "change_id": "fixture",
+        "category": "unit",
+        "family": null,
+        "repo_root": "<root>",
+        "codex_args": "[\"exec\", \"offline fixture\"]",
+        "dispatch_brief_path": null,
+        "allow_harness_self_modify": 0,
+        "resume_count": 0,
+        "last_resumed_at": null,
+        "timeout_seconds": 600,
+        "status": "cancelled",
+        "exit_code": null,
+        "stdout": null,
+        "stderr": null,
+        "duration_seconds": null,
+        "started_at": "<timestamp>",
+        "completed_at": "<timestamp>",
+        "cancel_requested": 1,
+        "target_agent": null,
+        "execution_backend": null,
+        "resolved_model": null,
+        "resolved_reasoning_effort": null,
+        "agent_definition_path": null,
+        "agent_definition_sha256": null,
+        "identity_json": null,
+        "dispatch_options_json": null,
+        "ai_run_metadata": null
+      }
+    ],
+    "provider_methods": [],
+    "hook_events": []
+  },
+  "validate_brief_raises": {
+    "stdout": "[RESULT] change_id='fixture' category='unit'\n[RESULT] codex exit_code=0 duration=<duration>s\n[RESULT] command=['<codex>', 'app-server']\n[LEDGER] previous_status='planned' -> new_status='pass'\n[LEDGER] notes=\"P0-J auto: rc=0, stderr first 200 chars: ''\"\n[STDOUT] \"done 'quoted' \\\\ ✓\\n\"\n",
+    "stderr": "",
+    "code": 0,
+    "ledger": "{\n  \"changes\": [\n    {\n      \"id\": \"fixture\",\n      \"preserved\": \"keep\",\n      \"categories\": {\n        \"unit\": {\n          \"status\": \"pass\",\n          \"verifier\": \"preserved-verifier\",\n          \"notes\": \"P0-J auto: rc=0, stderr first 200 chars: ''\",\n          \"executed_argv\": [\n            \"<codex>\",\n            \"app-server\"\n          ]\n        }\n      }\n    }\n  ]\n}\n",
+    "jobs": [],
+    "provider_methods": [
+      "initialize",
+      "initialized",
+      "thread/start",
+      "turn/start"
+    ],
+    "hook_events": []
+  },
+  "provider_replacement": {
+    "stdout": "[RESULT] change_id='fixture' category='unit'\n[RESULT] codex exit_code=7 duration=<duration>s\n[RESULT] command=['fixture-replacement']\n[LEDGER] previous_status='planned' -> new_status='fail'\n[LEDGER] notes=\"P0-J auto: rc=7, stderr first 200 chars: 'budget exceeded'\"\n[STDOUT] 'replacement output'\n[STDERR] 'budget exceeded'\n",
+    "stderr": "",
+    "code": 7,
+    "ledger": "{\n  \"changes\": [\n    {\n      \"id\": \"fixture\",\n      \"preserved\": \"keep\",\n      \"categories\": {\n        \"unit\": {\n          \"status\": \"fail\",\n          \"verifier\": \"preserved-verifier\",\n          \"notes\": \"P0-J auto: rc=7, stderr first 200 chars: 'budget exceeded'\",\n          \"executed_argv\": [\n            \"fixture-replacement\"\n          ]\n        }\n      }\n    }\n  ]\n}\n",
+    "jobs": [],
+    "provider_methods": [
+      "initialize",
+      "initialized",
+      "thread/start",
+      "turn/start"
+    ],
+    "hook_events": []
+  },
+  "input_limit": {
+    "stdout": "",
+    "stderr": "[mir_executor] argument parse error: Codex input exceeds configured input_limit_bytes\n",
+    "code": 1,
+    "ledger": "{\n  \"changes\": [\n    {\n      \"id\": \"fixture\",\n      \"preserved\": \"keep\",\n      \"categories\": {\n        \"unit\": {\n          \"status\": \"planned\",\n          \"verifier\": \"preserved-verifier\",\n          \"notes\": \"initial\"\n        }\n      }\n    }\n  ]\n}\n",
+    "jobs": [],
+    "provider_methods": [],
+    "hook_events": []
+  },
+  "hook_order": {
+    "stdout": "[RESULT] change_id='fixture' category='unit'\n[RESULT] codex exit_code=0 duration=<duration>s\n[RESULT] command=['<codex>', 'app-server']\n[LEDGER] previous_status='planned' -> new_status='pass'\n[LEDGER] notes=\"P0-J auto: rc=0, stderr first 200 chars: ''\"\n[STDOUT] \"done 'quoted' \\\\ ✓\\n\"\n",
+    "stderr": "",
+    "code": 0,
+    "ledger": "{\n  \"changes\": [\n    {\n      \"id\": \"fixture\",\n      \"preserved\": \"keep\",\n      \"categories\": {\n        \"unit\": {\n          \"status\": \"pass\",\n          \"verifier\": \"preserved-verifier\",\n          \"notes\": \"P0-J auto: rc=0, stderr first 200 chars: ''\",\n          \"executed_argv\": [\n            \"<codex>\",\n            \"app-server\"\n          ]\n        }\n      }\n    }\n  ]\n}\n",
+    "jobs": [],
+    "provider_methods": [
+      "initialize",
+      "initialized",
+      "thread/start",
+      "turn/start"
+    ],
+    "hook_events": [
+      "writer_enter",
+      "pre_execute",
+      {
+        "after_provider_call": {
+          "attempt": 1,
+          "model": "offline-fixture",
+          "prompt_sha256": "e1bacc01026f196f24c278f9f873c6a387fba95305e0edac400cdc2e0b79a86a",
+          "reasoning_effort": null,
+          "token_usage": null,
+          "tool_version": "offline-execute/1"
+        }
+      },
+      "writer_exit"
+    ]
+  },
+  "missing_identity": {
+    "stdout": "",
+    "stderr": "[mir_executor] --change-id and --category are required outside --dispatch\n",
+    "code": 1,
+    "ledger": "{\n  \"changes\": [\n    {\n      \"id\": \"fixture\",\n      \"preserved\": \"keep\",\n      \"categories\": {\n        \"unit\": {\n          \"status\": \"planned\",\n          \"verifier\": \"preserved-verifier\",\n          \"notes\": \"initial\"\n        }\n      }\n    }\n  ]\n}\n",
+    "jobs": [],
+    "provider_methods": [],
+    "hook_events": []
+  },
+  "partial_identity": {
+    "stdout": "",
+    "stderr": "[mir_executor] --change-id and --category must be supplied together\n",
+    "code": 1,
+    "ledger": "{\n  \"changes\": [\n    {\n      \"id\": \"fixture\",\n      \"preserved\": \"keep\",\n      \"categories\": {\n        \"unit\": {\n          \"status\": \"planned\",\n          \"verifier\": \"preserved-verifier\",\n          \"notes\": \"initial\"\n        }\n      }\n    }\n  ]\n}\n",
+    "jobs": [],
+    "provider_methods": [],
+    "hook_events": []
+  },
+  "unknown_change": {
+    "stdout": "",
+    "stderr": "[mir_executor] KeyError: \"unknown change_id 'missing' in <root>/tasks/tdd.json. Add a TDD entry for this id before executing.\"\n",
+    "code": 1,
+    "ledger": "{\n  \"changes\": [\n    {\n      \"id\": \"fixture\",\n      \"preserved\": \"keep\",\n      \"categories\": {\n        \"unit\": {\n          \"status\": \"planned\",\n          \"verifier\": \"preserved-verifier\",\n          \"notes\": \"initial\"\n        }\n      }\n    }\n  ]\n}\n",
+    "jobs": [],
+    "provider_methods": [],
+    "hook_events": []
+  },
+  "timeout_range": {
+    "stdout": "",
+    "stderr": "[mir_executor] argument parse error: timeout must be within timeout_seconds_range [2, 5]\n",
+    "code": 1,
+    "ledger": "{\n  \"changes\": [\n    {\n      \"id\": \"fixture\",\n      \"preserved\": \"keep\",\n      \"categories\": {\n        \"unit\": {\n          \"status\": \"planned\",\n          \"verifier\": \"preserved-verifier\",\n          \"notes\": \"initial\"\n        }\n      }\n    }\n  ]\n}\n",
+    "jobs": [],
+    "provider_methods": [],
+    "hook_events": []
+  },
+  "codex_args_file": {
+    "stdout": "[RESULT] change_id='fixture' category='unit'\n[RESULT] codex exit_code=0 duration=<duration>s\n[RESULT] command=['<codex>', 'app-server']\n[LEDGER] previous_status='planned' -> new_status='pass'\n[LEDGER] notes=\"P0-J auto: rc=0, stderr first 200 chars: ''\"\n[STDOUT] \"done 'quoted' \\\\ ✓\\n\"\n",
+    "stderr": "",
+    "code": 0,
+    "ledger": "{\n  \"changes\": [\n    {\n      \"id\": \"fixture\",\n      \"preserved\": \"keep\",\n      \"categories\": {\n        \"unit\": {\n          \"status\": \"pass\",\n          \"verifier\": \"preserved-verifier\",\n          \"notes\": \"P0-J auto: rc=0, stderr first 200 chars: ''\",\n          \"executed_argv\": [\n            \"<codex>\",\n            \"app-server\"\n          ]\n        }\n      }\n    }\n  ]\n}\n",
+    "jobs": [],
+    "provider_methods": [
+      "initialize",
+      "initialized",
+      "thread/start",
+      "turn/start"
+    ],
+    "hook_events": []
+  },
+  "input_file_limit": {
+    "stdout": "",
+    "stderr": "[mir_executor] argument parse error: Codex input exceeds configured input_limit_bytes\n",
+    "code": 1,
+    "ledger": "{\n  \"changes\": [\n    {\n      \"id\": \"fixture\",\n      \"preserved\": \"keep\",\n      \"categories\": {\n        \"unit\": {\n          \"status\": \"planned\",\n          \"verifier\": \"preserved-verifier\",\n          \"notes\": \"initial\"\n        }\n      }\n    }\n  ]\n}\n",
+    "jobs": [],
+    "provider_methods": [],
+    "hook_events": []
+  },
+  "pre_execute_refusal": {
+    "stdout": "",
+    "stderr": "[mir_executor] argument parse error: offline local refusal\n",
+    "code": 1,
+    "ledger": "{\n  \"changes\": [\n    {\n      \"id\": \"fixture\",\n      \"preserved\": \"keep\",\n      \"categories\": {\n        \"unit\": {\n          \"status\": \"planned\",\n          \"verifier\": \"preserved-verifier\",\n          \"notes\": \"initial\"\n        }\n      }\n    }\n  ]\n}\n",
+    "jobs": [],
+    "provider_methods": [],
+    "hook_events": [
+      "writer_enter",
+      "pre_execute",
+      "writer_exit"
+    ]
+  },
+  "ledger_revalidation": {
+    "stdout": "",
+    "stderr": "[mir_executor] ValueError: category 'unit' is marked not_applicable; cannot run executor on it. Edit tdd.json manually if you intend to reclassify.\n",
+    "code": 1,
+    "ledger": "{\n  \"changes\": [\n    {\n      \"id\": \"fixture\",\n      \"preserved\": \"keep\",\n      \"categories\": {\n        \"unit\": {\n          \"status\": \"not_applicable\",\n          \"verifier\": \"preserved-verifier\",\n          \"notes\": \"initial\"\n        }\n      }\n    }\n  ]\n}\n",
+    "jobs": [],
+    "provider_methods": [
+      "initialize",
+      "initialized",
+      "thread/start",
+      "turn/start"
+    ],
+    "hook_events": []
+  }
+}

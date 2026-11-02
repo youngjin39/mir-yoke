@@ -28,6 +28,8 @@ pub enum Admission {
         args: Value,
         // Boxed: the child handle makes this variant large on Windows.
         bridge: Option<Box<LocalBridge>>,
+        /// Present only for command admission; the owner exits this lease.
+        writer_handle: Option<String>,
     },
     Refused {
         code: i32,
@@ -81,9 +83,45 @@ fn refusal(message: String) -> Admission {
         stderr: format!("[mir_executor] {message}\n").into_bytes(),
     }
 }
+// Admission may fail after entering the outer CLI lease. Closing the transport
+// kills its child, so release the context explicitly before that happens.
+struct WriterLease {
+    bridge: Option<LocalBridge>,
+    handle: Option<String>,
+}
+impl std::ops::Deref for WriterLease {
+    type Target = Option<LocalBridge>;
+    fn deref(&self) -> &Self::Target {
+        &self.bridge
+    }
+}
+impl std::ops::DerefMut for WriterLease {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.bridge
+    }
+}
+impl Drop for WriterLease {
+    fn drop(&mut self) {
+        if let (Some(bridge), Some(handle)) = (self.bridge.as_mut(), self.handle.take()) {
+            let _ = bridge.call(
+                "writer_scope.exit",
+                vec![Value::Null],
+                json!({"handles":{"0":handle}}),
+            );
+        }
+    }
+}
 /// Malformed/unknown argv is left untouched for Python's argparse diagnostics.
 /// Target imports occur only after the first home authorization.
 pub fn admit(request: Request<'_>) -> Result<Admission, BridgeError> {
+    admit_inner(request, false)
+}
+/// Enter the command's writer lease before preparation, matching the Python CLI.
+pub fn admit_execute(request: Request<'_>) -> Result<Admission, BridgeError> {
+    admit_inner(request, true)
+}
+
+fn admit_inner(request: Request<'_>, command_scope: bool) -> Result<Admission, BridgeError> {
     let Some(command) = request.argv.first() else {
         return Ok(decline("help"));
     };
@@ -213,16 +251,70 @@ pub fn admit(request: Request<'_>) -> Result<Admission, BridgeError> {
     }
     let mut bridge = match LocalBridge::start_in(bridge_config(&request, &root), request.cwd) {
         Ok(bridge) => bridge,
+        Err(error) if command_scope => return Ok(refusal(error.to_string())),
         Err(_) => return Ok(decline("target bridge failed before hello")),
     };
     if bridge
         .as_ref()
         .is_some_and(|b| b.hello()["register_execute_options"] == true)
     {
+        if command_scope {
+            return Ok(refusal(
+                "local import dynamically registered execute options; native ownership is final, invoke Python explicitly".into(),
+            ));
+        }
         return Ok(decline("target registers execute options"));
     }
     if let Some(refused) = authorize(&request, &home, &root, &args, &mut home_bridge, false)? {
         return Ok(refused);
+    }
+    let mut writer_handle = None;
+    if command_scope && let Some(local) = bridge.as_mut() {
+        let reply = local.call(
+            "writer_scope",
+            vec![path_value(&root).ok_or(BridgeError::Protocol("non UTF-8 path"))?],
+            json!({}),
+        )?;
+        if reply["ok"] == false {
+            return Ok(refusal(format!(
+                "{}: {}",
+                reply["error"]["type"].as_str().unwrap_or(""),
+                reply["error"]["message"].as_str().unwrap_or("")
+            )));
+        }
+        if let Some(handle) = reply["handle"].as_str() {
+            writer_handle = Some(handle.to_owned());
+            let entered = local.call(
+                "writer_scope.enter",
+                vec![Value::Null],
+                json!({"handles":{"0":handle}}),
+            )?;
+            if entered["ok"] == false {
+                return Ok(refusal(format!(
+                    "{}: {}",
+                    entered["error"]["type"].as_str().unwrap_or(""),
+                    entered["error"]["message"].as_str().unwrap_or("")
+                )));
+            }
+        }
+    }
+    let mut bridge = WriterLease {
+        bridge,
+        handle: writer_handle,
+    };
+    if command_scope {
+        let change = !args["change_id"].is_null();
+        let category = !args["category"].is_null();
+        if change != category {
+            return Ok(refusal(
+                "--change-id and --category must be supplied together".into(),
+            ));
+        }
+        if !change && args["dispatch"] != true {
+            return Ok(refusal(
+                "--change-id and --category are required outside --dispatch".into(),
+            ));
+        }
     }
     if command == "execute" {
         if let Some(refused) = authorize(&request, &home, &root, &args, &mut home_bridge, true)? {
@@ -250,6 +342,18 @@ pub fn admit(request: Request<'_>) -> Result<Admission, BridgeError> {
             if !args.is_object() {
                 return Err(BridgeError::Protocol("missing post-hook namespace"));
             }
+            if command_scope
+                && (args["dispatch"] == true
+                    || args["execution_backend"]
+                        .as_str()
+                        .is_some_and(|backend| backend != "codex")
+                    || !args["target_agent"].is_null()
+                    || !args["dispatch_brief"].is_null())
+            {
+                return Ok(refusal(
+                    "pre_execute selected an unsupported native execution path".into(),
+                ));
+            }
         }
         let redirected = args["repo_root"]["value"]
             .as_str()
@@ -257,13 +361,19 @@ pub fn admit(request: Request<'_>) -> Result<Admission, BridgeError> {
             .ok_or(BridgeError::Protocol("invalid post-hook repo_root"))?;
         let redirected = resolved(Path::new(redirected), request.cwd)?;
         if redirected != root {
-            let guard = if root == home {
+            let guard: &mut Option<LocalBridge> = if root == home {
                 &mut bridge
             } else {
                 &mut home_bridge
             };
             if let Some(refused) = authorize(&request, &home, &redirected, &args, guard, true)? {
                 return Ok(refused);
+            }
+            if command_scope {
+                return Ok(refusal(
+                    "pre_execute redirected the native execution root; refusing after admission"
+                        .into(),
+                ));
             }
         }
         root = redirected;
@@ -285,7 +395,8 @@ pub fn admit(request: Request<'_>) -> Result<Admission, BridgeError> {
         cross_target: root != home,
         root,
         args,
-        bridge: bridge.map(Box::new),
+        bridge: bridge.bridge.take().map(Box::new),
+        writer_handle: bridge.handle.take(),
     })
 }
 
