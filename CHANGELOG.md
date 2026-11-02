@@ -58,6 +58,12 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
   refused. Stricter than Python: a dispatch id must be one path component, a
   selected root that is itself a link is refused, and a failed seed removes the
   partial worktree.
+- Executor port slice E7 (library only): the native merge gate (empty-diff,
+  harness, secret-path and allowlist checks, verifier lookup that fails closed,
+  dirty checks before and after, verifiers run without a shell in a detached
+  checkout with an isolated HOME and cache, timeout kill and reap, cleanup failure
+  blocking) matching Python's decisions on 47 gate and 6 profile scenarios. A
+  timeout kills the verifier process, not its descendants, as in Python.
 
 ### Changed
 

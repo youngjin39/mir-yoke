@@ -25,6 +25,8 @@ pub mod executor_registry;
 #[forbid(unsafe_code)]
 pub mod executor_transport;
 #[forbid(unsafe_code)]
+pub mod executor_verifier;
+#[forbid(unsafe_code)]
 pub mod executor_worktree;
 #[forbid(unsafe_code)]
 pub mod local_bridge;

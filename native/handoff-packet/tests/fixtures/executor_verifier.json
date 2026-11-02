@@ -1,0 +1,1865 @@
+{
+  "literal": [
+    "two words",
+    "$(not-a-shell); * [literal]",
+    "unicode-\u03bb-\ud55c"
+  ],
+  "cases": [
+    {
+      "name": "inherit-success",
+      "changes": {
+        "code.txt": "changed\n"
+      },
+      "allowlist": [
+        "code.txt"
+      ],
+      "commands": [
+        "first"
+      ],
+      "mode": "inherit",
+      "runs": {},
+      "expect_changes": true,
+      "expected": {
+        "gate": {
+          "approved": true,
+          "reason": "approved",
+          "changed_files": [
+            "code.txt"
+          ]
+        },
+        "receipts": [
+          {
+            "name": "first",
+            "receipt": {
+              "literal": [
+                "two words",
+                "$(not-a-shell); * [literal]",
+                "unicode-\u03bb-\ud55c"
+              ],
+              "stdin_eof": true,
+              "code": "changed\n",
+              "profile": "[repo]\nrepository_type = \"fixture\"\n",
+              "home_exists": true,
+              "cache_exists": true,
+              "home_preexisting": false,
+              "env": {
+                "HOME": "<PARENT_HOME>",
+                "LANG": "C.UTF-8",
+                "CODEX_HOME": "<CODEX_HOME>",
+                "EXPLICIT_TOKEN": "explicit",
+                "UV_CACHE_DIR": "<PARENT_CACHE>",
+                "CODEX_EVENTS_FILE": "<REPO>/tasks/codex-exec-events.jsonl"
+              },
+              "cwd_is_dispatch": false
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "large-output",
+      "runs": {
+        "first": "output-large"
+      },
+      "changes": {
+        "code.txt": "changed\n"
+      },
+      "allowlist": [
+        "code.txt"
+      ],
+      "commands": [
+        "first"
+      ],
+      "mode": "inherit",
+      "expect_changes": true,
+      "expected": {
+        "gate": {
+          "approved": true,
+          "reason": "approved",
+          "changed_files": [
+            "code.txt"
+          ]
+        },
+        "receipts": [
+          {
+            "name": "first",
+            "receipt": {
+              "literal": [
+                "two words",
+                "$(not-a-shell); * [literal]",
+                "unicode-\u03bb-\ud55c"
+              ],
+              "stdin_eof": true,
+              "code": "changed\n",
+              "profile": "[repo]\nrepository_type = \"fixture\"\n",
+              "home_exists": true,
+              "cache_exists": true,
+              "home_preexisting": false,
+              "env": {
+                "HOME": "<PARENT_HOME>",
+                "LANG": "C.UTF-8",
+                "CODEX_HOME": "<CODEX_HOME>",
+                "EXPLICIT_TOKEN": "explicit",
+                "UV_CACHE_DIR": "<PARENT_CACHE>",
+                "CODEX_EVENTS_FILE": "<REPO>/tasks/codex-exec-events.jsonl"
+              },
+              "cwd_is_dispatch": false
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "invalid-output",
+      "runs": {
+        "first": "output-invalid"
+      },
+      "changes": {
+        "code.txt": "changed\n"
+      },
+      "allowlist": [
+        "code.txt"
+      ],
+      "commands": [
+        "first"
+      ],
+      "mode": "inherit",
+      "expect_changes": true,
+      "expected": {
+        "error": "UnicodeDecodeError",
+        "message": "'utf-8' codec can't decode byte 0xff in position 0: invalid start byte",
+        "receipts": [
+          {
+            "name": "first",
+            "receipt": {
+              "literal": [
+                "two words",
+                "$(not-a-shell); * [literal]",
+                "unicode-\u03bb-\ud55c"
+              ],
+              "stdin_eof": true,
+              "code": "changed\n",
+              "profile": "[repo]\nrepository_type = \"fixture\"\n",
+              "home_exists": true,
+              "cache_exists": true,
+              "home_preexisting": false,
+              "env": {
+                "HOME": "<PARENT_HOME>",
+                "LANG": "C.UTF-8",
+                "CODEX_HOME": "<CODEX_HOME>",
+                "EXPLICIT_TOKEN": "explicit",
+                "UV_CACHE_DIR": "<PARENT_CACHE>",
+                "CODEX_EVENTS_FILE": "<REPO>/tasks/codex-exec-events.jsonl"
+              },
+              "cwd_is_dispatch": false
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "descendant-invalid-output",
+      "runs": {
+        "first": "descendant-invalid"
+      },
+      "changes": {
+        "code.txt": "changed\n"
+      },
+      "allowlist": [
+        "code.txt"
+      ],
+      "commands": [
+        "first"
+      ],
+      "mode": "inherit",
+      "expect_changes": true,
+      "expected": {
+        "error": "UnicodeDecodeError",
+        "message": "'utf-8' codec can't decode byte 0xff in position 0: invalid start byte",
+        "receipts": [
+          {
+            "name": "first",
+            "receipt": {
+              "literal": [
+                "two words",
+                "$(not-a-shell); * [literal]",
+                "unicode-\u03bb-\ud55c"
+              ],
+              "stdin_eof": true,
+              "code": "changed\n",
+              "profile": "[repo]\nrepository_type = \"fixture\"\n",
+              "home_exists": true,
+              "cache_exists": true,
+              "home_preexisting": false,
+              "env": {
+                "HOME": "<PARENT_HOME>",
+                "LANG": "C.UTF-8",
+                "CODEX_HOME": "<CODEX_HOME>",
+                "EXPLICIT_TOKEN": "explicit",
+                "UV_CACHE_DIR": "<PARENT_CACHE>",
+                "CODEX_EVENTS_FILE": "<REPO>/tasks/codex-exec-events.jsonl"
+              },
+              "cwd_is_dispatch": false
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "isolated-two",
+      "mode": "isolated",
+      "commands": [
+        "first",
+        "second"
+      ],
+      "changes": {
+        "code.txt": "changed\n"
+      },
+      "allowlist": [
+        "code.txt"
+      ],
+      "runs": {},
+      "expect_changes": true,
+      "expected": {
+        "gate": {
+          "approved": true,
+          "reason": "approved",
+          "changed_files": [
+            "code.txt"
+          ]
+        },
+        "receipts": [
+          {
+            "name": "first",
+            "receipt": {
+              "literal": [
+                "two words",
+                "$(not-a-shell); * [literal]",
+                "unicode-\u03bb-\ud55c"
+              ],
+              "stdin_eof": true,
+              "code": "changed\n",
+              "profile": "[repo]\nrepository_type = \"fixture\"\n",
+              "home_exists": true,
+              "cache_exists": true,
+              "home_preexisting": false,
+              "env": {
+                "UV_CACHE_DIR": "<ISOLATED_CACHE>",
+                "LANG": "C.UTF-8",
+                "LC_MESSAGES": "C",
+                "EXPLICIT_TOKEN": "explicit",
+                "HOME": "<ISOLATED_HOME>"
+              },
+              "cwd_is_dispatch": false
+            }
+          },
+          {
+            "name": "second",
+            "receipt": {
+              "literal": [
+                "two words",
+                "$(not-a-shell); * [literal]",
+                "unicode-\u03bb-\ud55c"
+              ],
+              "stdin_eof": true,
+              "code": "verifier mutated checkout\n",
+              "profile": "[repo]\nrepository_type = \"fixture\"\n",
+              "home_exists": true,
+              "cache_exists": true,
+              "home_preexisting": false,
+              "env": {
+                "UV_CACHE_DIR": "<ISOLATED_CACHE>",
+                "LANG": "C.UTF-8",
+                "LC_MESSAGES": "C",
+                "EXPLICIT_TOKEN": "explicit",
+                "HOME": "<ISOLATED_HOME>"
+              },
+              "cwd_is_dispatch": false
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "isolated-failure",
+      "mode": "isolated",
+      "runs": {
+        "first": "fail"
+      },
+      "changes": {
+        "code.txt": "changed\n"
+      },
+      "allowlist": [
+        "code.txt"
+      ],
+      "commands": [
+        "first"
+      ],
+      "expect_changes": true,
+      "expected": {
+        "gate": {
+          "approved": false,
+          "reason": "verification-failed:first",
+          "changed_files": [
+            "code.txt"
+          ]
+        },
+        "receipts": [
+          {
+            "name": "first",
+            "receipt": {
+              "literal": [
+                "two words",
+                "$(not-a-shell); * [literal]",
+                "unicode-\u03bb-\ud55c"
+              ],
+              "stdin_eof": true,
+              "code": "changed\n",
+              "profile": "[repo]\nrepository_type = \"fixture\"\n",
+              "home_exists": true,
+              "cache_exists": true,
+              "home_preexisting": false,
+              "env": {
+                "UV_CACHE_DIR": "<ISOLATED_CACHE>",
+                "LANG": "C.UTF-8",
+                "LC_MESSAGES": "C",
+                "EXPLICIT_TOKEN": "explicit",
+                "HOME": "<ISOLATED_HOME>"
+              },
+              "cwd_is_dispatch": false
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "isolated-home-cleanup-error",
+      "mode": "isolated",
+      "runs": {
+        "first": "home-cleanup-error"
+      },
+      "changes": {
+        "code.txt": "changed\n"
+      },
+      "allowlist": [
+        "code.txt"
+      ],
+      "commands": [
+        "first"
+      ],
+      "expect_changes": true,
+      "expected": {
+        "error": "NotADirectoryError",
+        "message": "[Errno 20] Not a directory: '<HOME>'",
+        "receipts": [
+          {
+            "name": "first",
+            "receipt": {
+              "literal": [
+                "two words",
+                "$(not-a-shell); * [literal]",
+                "unicode-\u03bb-\ud55c"
+              ],
+              "stdin_eof": true,
+              "code": "changed\n",
+              "profile": "[repo]\nrepository_type = \"fixture\"\n",
+              "home_exists": true,
+              "cache_exists": true,
+              "home_preexisting": false,
+              "env": {
+                "UV_CACHE_DIR": "<ISOLATED_CACHE>",
+                "LANG": "C.UTF-8",
+                "LC_MESSAGES": "C",
+                "EXPLICIT_TOKEN": "explicit",
+                "HOME": "<ISOLATED_HOME>"
+              },
+              "cwd_is_dispatch": false
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "isolated-timeout",
+      "mode": "isolated",
+      "runs": {
+        "first": "timeout"
+      },
+      "timeout": 3,
+      "changes": {
+        "code.txt": "changed\n"
+      },
+      "allowlist": [
+        "code.txt"
+      ],
+      "commands": [
+        "first"
+      ],
+      "expect_changes": true,
+      "expected": {
+        "gate": {
+          "approved": false,
+          "reason": "verification-timeout",
+          "changed_files": [
+            "code.txt"
+          ]
+        },
+        "receipts": [
+          {
+            "name": "first",
+            "receipt": {
+              "literal": [
+                "two words",
+                "$(not-a-shell); * [literal]",
+                "unicode-\u03bb-\ud55c"
+              ],
+              "stdin_eof": true,
+              "code": "changed\n",
+              "profile": "[repo]\nrepository_type = \"fixture\"\n",
+              "home_exists": true,
+              "cache_exists": true,
+              "home_preexisting": false,
+              "env": {
+                "UV_CACHE_DIR": "<ISOLATED_CACHE>",
+                "LANG": "C.UTF-8",
+                "LC_MESSAGES": "C",
+                "EXPLICIT_TOKEN": "explicit",
+                "HOME": "<ISOLATED_HOME>"
+              },
+              "cwd_is_dispatch": false
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "isolated-spawn-error",
+      "mode": "isolated",
+      "verifiers": {
+        "first": [
+          "mir-e7-nonexistent-verifier"
+        ]
+      },
+      "changes": {
+        "code.txt": "changed\n"
+      },
+      "allowlist": [
+        "code.txt"
+      ],
+      "commands": [
+        "first"
+      ],
+      "runs": {},
+      "expect_changes": true,
+      "expected": {
+        "error": "FileNotFoundError",
+        "message": "[Errno 2] No such file or directory: 'mir-e7-nonexistent-verifier'",
+        "receipts": []
+      }
+    },
+    {
+      "name": "failure-first",
+      "runs": {
+        "first": "fail"
+      },
+      "commands": [
+        "first",
+        "second"
+      ],
+      "changes": {
+        "code.txt": "changed\n"
+      },
+      "allowlist": [
+        "code.txt"
+      ],
+      "mode": "inherit",
+      "expect_changes": true,
+      "expected": {
+        "gate": {
+          "approved": false,
+          "reason": "verification-failed:first",
+          "changed_files": [
+            "code.txt"
+          ]
+        },
+        "receipts": [
+          {
+            "name": "first",
+            "receipt": {
+              "literal": [
+                "two words",
+                "$(not-a-shell); * [literal]",
+                "unicode-\u03bb-\ud55c"
+              ],
+              "stdin_eof": true,
+              "code": "changed\n",
+              "profile": "[repo]\nrepository_type = \"fixture\"\n",
+              "home_exists": true,
+              "cache_exists": true,
+              "home_preexisting": false,
+              "env": {
+                "HOME": "<PARENT_HOME>",
+                "LANG": "C.UTF-8",
+                "CODEX_HOME": "<CODEX_HOME>",
+                "EXPLICIT_TOKEN": "explicit",
+                "UV_CACHE_DIR": "<PARENT_CACHE>",
+                "CODEX_EVENTS_FILE": "<REPO>/tasks/codex-exec-events.jsonl"
+              },
+              "cwd_is_dispatch": false
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "failure-second",
+      "runs": {
+        "second": "fail"
+      },
+      "commands": [
+        "first",
+        "second"
+      ],
+      "changes": {
+        "code.txt": "changed\n"
+      },
+      "allowlist": [
+        "code.txt"
+      ],
+      "mode": "inherit",
+      "expect_changes": true,
+      "expected": {
+        "gate": {
+          "approved": false,
+          "reason": "verification-failed:second",
+          "changed_files": [
+            "code.txt"
+          ]
+        },
+        "receipts": [
+          {
+            "name": "first",
+            "receipt": {
+              "literal": [
+                "two words",
+                "$(not-a-shell); * [literal]",
+                "unicode-\u03bb-\ud55c"
+              ],
+              "stdin_eof": true,
+              "code": "changed\n",
+              "profile": "[repo]\nrepository_type = \"fixture\"\n",
+              "home_exists": true,
+              "cache_exists": true,
+              "home_preexisting": false,
+              "env": {
+                "HOME": "<PARENT_HOME>",
+                "LANG": "C.UTF-8",
+                "CODEX_HOME": "<CODEX_HOME>",
+                "EXPLICIT_TOKEN": "explicit",
+                "UV_CACHE_DIR": "<PARENT_CACHE>",
+                "CODEX_EVENTS_FILE": "<REPO>/tasks/codex-exec-events.jsonl"
+              },
+              "cwd_is_dispatch": false
+            }
+          },
+          {
+            "name": "second",
+            "receipt": {
+              "literal": [
+                "two words",
+                "$(not-a-shell); * [literal]",
+                "unicode-\u03bb-\ud55c"
+              ],
+              "stdin_eof": true,
+              "code": "verifier mutated checkout\n",
+              "profile": "[repo]\nrepository_type = \"fixture\"\n",
+              "home_exists": true,
+              "cache_exists": true,
+              "home_preexisting": true,
+              "env": {
+                "HOME": "<PARENT_HOME>",
+                "LANG": "C.UTF-8",
+                "CODEX_HOME": "<CODEX_HOME>",
+                "EXPLICIT_TOKEN": "explicit",
+                "UV_CACHE_DIR": "<PARENT_CACHE>",
+                "CODEX_EVENTS_FILE": "<REPO>/tasks/codex-exec-events.jsonl"
+              },
+              "cwd_is_dispatch": false
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "timeout",
+      "runs": {
+        "first": "timeout"
+      },
+      "timeout": 3,
+      "changes": {
+        "code.txt": "changed\n"
+      },
+      "allowlist": [
+        "code.txt"
+      ],
+      "commands": [
+        "first"
+      ],
+      "mode": "inherit",
+      "expect_changes": true,
+      "expected": {
+        "gate": {
+          "approved": false,
+          "reason": "verification-timeout",
+          "changed_files": [
+            "code.txt"
+          ]
+        },
+        "receipts": [
+          {
+            "name": "first",
+            "receipt": {
+              "literal": [
+                "two words",
+                "$(not-a-shell); * [literal]",
+                "unicode-\u03bb-\ud55c"
+              ],
+              "stdin_eof": true,
+              "code": "changed\n",
+              "profile": "[repo]\nrepository_type = \"fixture\"\n",
+              "home_exists": true,
+              "cache_exists": true,
+              "home_preexisting": false,
+              "env": {
+                "HOME": "<PARENT_HOME>",
+                "LANG": "C.UTF-8",
+                "CODEX_HOME": "<CODEX_HOME>",
+                "EXPLICIT_TOKEN": "explicit",
+                "UV_CACHE_DIR": "<PARENT_CACHE>",
+                "CODEX_EVENTS_FILE": "<REPO>/tasks/codex-exec-events.jsonl"
+              },
+              "cwd_is_dispatch": false
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "cleanup-failure",
+      "runs": {
+        "first": "lock"
+      },
+      "changes": {
+        "code.txt": "changed\n"
+      },
+      "allowlist": [
+        "code.txt"
+      ],
+      "commands": [
+        "first"
+      ],
+      "mode": "inherit",
+      "expect_changes": true,
+      "expected": {
+        "gate": {
+          "approved": false,
+          "reason": "verification-cleanup-failed",
+          "changed_files": [
+            "code.txt"
+          ]
+        },
+        "receipts": [
+          {
+            "name": "first",
+            "receipt": {
+              "literal": [
+                "two words",
+                "$(not-a-shell); * [literal]",
+                "unicode-\u03bb-\ud55c"
+              ],
+              "stdin_eof": true,
+              "code": "changed\n",
+              "profile": "[repo]\nrepository_type = \"fixture\"\n",
+              "home_exists": true,
+              "cache_exists": true,
+              "home_preexisting": false,
+              "env": {
+                "HOME": "<PARENT_HOME>",
+                "LANG": "C.UTF-8",
+                "CODEX_HOME": "<CODEX_HOME>",
+                "EXPLICIT_TOKEN": "explicit",
+                "UV_CACHE_DIR": "<PARENT_CACHE>",
+                "CODEX_EVENTS_FILE": "<REPO>/tasks/codex-exec-events.jsonl"
+              },
+              "cwd_is_dispatch": false
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "cleanup-overrides-failure",
+      "runs": {
+        "first": "lock-fail"
+      },
+      "changes": {
+        "code.txt": "changed\n"
+      },
+      "allowlist": [
+        "code.txt"
+      ],
+      "commands": [
+        "first"
+      ],
+      "mode": "inherit",
+      "expect_changes": true,
+      "expected": {
+        "gate": {
+          "approved": false,
+          "reason": "verification-cleanup-failed",
+          "changed_files": [
+            "code.txt"
+          ]
+        },
+        "receipts": [
+          {
+            "name": "first",
+            "receipt": {
+              "literal": [
+                "two words",
+                "$(not-a-shell); * [literal]",
+                "unicode-\u03bb-\ud55c"
+              ],
+              "stdin_eof": true,
+              "code": "changed\n",
+              "profile": "[repo]\nrepository_type = \"fixture\"\n",
+              "home_exists": true,
+              "cache_exists": true,
+              "home_preexisting": false,
+              "env": {
+                "HOME": "<PARENT_HOME>",
+                "LANG": "C.UTF-8",
+                "CODEX_HOME": "<CODEX_HOME>",
+                "EXPLICIT_TOKEN": "explicit",
+                "UV_CACHE_DIR": "<PARENT_CACHE>",
+                "CODEX_EVENTS_FILE": "<REPO>/tasks/codex-exec-events.jsonl"
+              },
+              "cwd_is_dispatch": false
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "cleanup-overrides-spawn-error",
+      "runs": {
+        "first": "lock"
+      },
+      "commands": [
+        "first",
+        "second"
+      ],
+      "verifiers": {
+        "second": [
+          "mir-e7-nonexistent-verifier"
+        ]
+      },
+      "changes": {
+        "code.txt": "changed\n"
+      },
+      "allowlist": [
+        "code.txt"
+      ],
+      "mode": "inherit",
+      "expect_changes": true,
+      "expected": {
+        "gate": {
+          "approved": false,
+          "reason": "verification-cleanup-failed",
+          "changed_files": [
+            "code.txt"
+          ]
+        },
+        "receipts": [
+          {
+            "name": "first",
+            "receipt": {
+              "literal": [
+                "two words",
+                "$(not-a-shell); * [literal]",
+                "unicode-\u03bb-\ud55c"
+              ],
+              "stdin_eof": true,
+              "code": "changed\n",
+              "profile": "[repo]\nrepository_type = \"fixture\"\n",
+              "home_exists": true,
+              "cache_exists": true,
+              "home_preexisting": false,
+              "env": {
+                "HOME": "<PARENT_HOME>",
+                "LANG": "C.UTF-8",
+                "CODEX_HOME": "<CODEX_HOME>",
+                "EXPLICIT_TOKEN": "explicit",
+                "UV_CACHE_DIR": "<PARENT_CACHE>",
+                "CODEX_EVENTS_FILE": "<REPO>/tasks/codex-exec-events.jsonl"
+              },
+              "cwd_is_dispatch": false
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "dirty-after",
+      "runs": {
+        "first": "dirty"
+      },
+      "changes": {
+        "code.txt": "changed\n"
+      },
+      "allowlist": [
+        "code.txt"
+      ],
+      "commands": [
+        "first"
+      ],
+      "mode": "inherit",
+      "expect_changes": true,
+      "expected": {
+        "gate": {
+          "approved": false,
+          "reason": "dispatch-dirty",
+          "changed_files": [
+            "code.txt"
+          ]
+        },
+        "receipts": [
+          {
+            "name": "first",
+            "receipt": {
+              "literal": [
+                "two words",
+                "$(not-a-shell); * [literal]",
+                "unicode-\u03bb-\ud55c"
+              ],
+              "stdin_eof": true,
+              "code": "changed\n",
+              "profile": "[repo]\nrepository_type = \"fixture\"\n",
+              "home_exists": true,
+              "cache_exists": true,
+              "home_preexisting": false,
+              "env": {
+                "HOME": "<PARENT_HOME>",
+                "LANG": "C.UTF-8",
+                "CODEX_HOME": "<CODEX_HOME>",
+                "EXPLICIT_TOKEN": "explicit",
+                "UV_CACHE_DIR": "<PARENT_CACHE>",
+                "CODEX_EVENTS_FILE": "<REPO>/tasks/codex-exec-events.jsonl"
+              },
+              "cwd_is_dispatch": false
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "dirty-before",
+      "dirty": true,
+      "changes": {
+        "code.txt": "changed\n"
+      },
+      "allowlist": [
+        "code.txt"
+      ],
+      "commands": [
+        "first"
+      ],
+      "mode": "inherit",
+      "runs": {},
+      "expect_changes": true,
+      "expected": {
+        "gate": {
+          "approved": false,
+          "reason": "dispatch-dirty",
+          "changed_files": [
+            "code.txt"
+          ]
+        },
+        "receipts": []
+      }
+    },
+    {
+      "name": "runtime-artifacts-ignored",
+      "runtime_dirty": true,
+      "changes": {
+        "code.txt": "changed\n"
+      },
+      "allowlist": [
+        "code.txt"
+      ],
+      "commands": [
+        "first"
+      ],
+      "mode": "inherit",
+      "runs": {},
+      "expect_changes": true,
+      "expected": {
+        "gate": {
+          "approved": true,
+          "reason": "approved",
+          "changed_files": [
+            "code.txt"
+          ]
+        },
+        "receipts": [
+          {
+            "name": "first",
+            "receipt": {
+              "literal": [
+                "two words",
+                "$(not-a-shell); * [literal]",
+                "unicode-\u03bb-\ud55c"
+              ],
+              "stdin_eof": true,
+              "code": "changed\n",
+              "profile": "[repo]\nrepository_type = \"fixture\"\n",
+              "home_exists": true,
+              "cache_exists": true,
+              "home_preexisting": false,
+              "env": {
+                "HOME": "<PARENT_HOME>",
+                "LANG": "C.UTF-8",
+                "CODEX_HOME": "<CODEX_HOME>",
+                "EXPLICIT_TOKEN": "explicit",
+                "UV_CACHE_DIR": "<PARENT_CACHE>",
+                "CODEX_EVENTS_FILE": "<REPO>/tasks/codex-exec-events.jsonl"
+              },
+              "cwd_is_dispatch": false
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "empty-diff",
+      "changes": {},
+      "allowlist": [],
+      "commands": [
+        "first"
+      ],
+      "mode": "inherit",
+      "runs": {},
+      "expect_changes": true,
+      "expected": {
+        "gate": {
+          "approved": false,
+          "reason": "empty-diff fail-closed",
+          "changed_files": []
+        },
+        "receipts": []
+      }
+    },
+    {
+      "name": "reviewed-no-diff",
+      "changes": {},
+      "expect_changes": false,
+      "allowlist": [],
+      "commands": [
+        "first"
+      ],
+      "mode": "inherit",
+      "runs": {},
+      "expected": {
+        "gate": {
+          "approved": true,
+          "reason": "approved",
+          "changed_files": []
+        },
+        "receipts": [
+          {
+            "name": "first",
+            "receipt": {
+              "literal": [
+                "two words",
+                "$(not-a-shell); * [literal]",
+                "unicode-\u03bb-\ud55c"
+              ],
+              "stdin_eof": true,
+              "code": "initial\n",
+              "profile": "[repo]\nrepository_type = \"fixture\"\n",
+              "home_exists": true,
+              "cache_exists": true,
+              "home_preexisting": false,
+              "env": {
+                "HOME": "<PARENT_HOME>",
+                "LANG": "C.UTF-8",
+                "CODEX_HOME": "<CODEX_HOME>",
+                "EXPLICIT_TOKEN": "explicit",
+                "UV_CACHE_DIR": "<PARENT_CACHE>",
+                "CODEX_EVENTS_FILE": "<REPO>/tasks/codex-exec-events.jsonl"
+              },
+              "cwd_is_dispatch": false
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "denied-plan",
+      "changes": {
+        "tasks/plan.md": "changed\n"
+      },
+      "allowlist": [
+        "tasks/plan.md"
+      ],
+      "commands": [
+        "first"
+      ],
+      "mode": "inherit",
+      "runs": {},
+      "expect_changes": true,
+      "expected": {
+        "gate": {
+          "approved": false,
+          "reason": "denied-harness:tasks/plan.md; changed=['tasks/plan.md']",
+          "changed_files": [
+            "tasks/plan.md"
+          ]
+        },
+        "receipts": []
+      }
+    },
+    {
+      "name": "denied-source",
+      "changes": {
+        "config/source.py": "changed\n"
+      },
+      "allowlist": [
+        "config/source.py"
+      ],
+      "commands": [
+        "first"
+      ],
+      "mode": "inherit",
+      "runs": {},
+      "expect_changes": true,
+      "expected": {
+        "gate": {
+          "approved": false,
+          "reason": "denied-harness:config/source.py; changed=['config/source.py']",
+          "changed_files": [
+            "config/source.py"
+          ]
+        },
+        "receipts": []
+      }
+    },
+    {
+      "name": "self-modify-source",
+      "changes": {
+        "config/source.py": "changed\n"
+      },
+      "self_modify": true,
+      "allowlist": [
+        "config/source.py"
+      ],
+      "commands": [
+        "first"
+      ],
+      "mode": "inherit",
+      "runs": {},
+      "expect_changes": true,
+      "expected": {
+        "gate": {
+          "approved": true,
+          "reason": "approved",
+          "changed_files": [
+            "config/source.py"
+          ]
+        },
+        "receipts": [
+          {
+            "name": "first",
+            "receipt": {
+              "literal": [
+                "two words",
+                "$(not-a-shell); * [literal]",
+                "unicode-\u03bb-\ud55c"
+              ],
+              "stdin_eof": true,
+              "code": "initial\n",
+              "profile": "[repo]\nrepository_type = \"fixture\"\n",
+              "home_exists": true,
+              "cache_exists": true,
+              "home_preexisting": false,
+              "env": {
+                "HOME": "<PARENT_HOME>",
+                "LANG": "C.UTF-8",
+                "CODEX_HOME": "<CODEX_HOME>",
+                "EXPLICIT_TOKEN": "explicit",
+                "UV_CACHE_DIR": "<PARENT_CACHE>",
+                "CODEX_EVENTS_FILE": "<REPO>/tasks/codex-exec-events.jsonl"
+              },
+              "cwd_is_dispatch": false
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "self-modify-still-denies-plan",
+      "changes": {
+        "tasks/plan.md": "changed\n"
+      },
+      "self_modify": true,
+      "allowlist": [
+        "tasks/plan.md"
+      ],
+      "commands": [
+        "first"
+      ],
+      "mode": "inherit",
+      "runs": {},
+      "expect_changes": true,
+      "expected": {
+        "gate": {
+          "approved": false,
+          "reason": "denied-harness:tasks/plan.md; changed=['tasks/plan.md']",
+          "changed_files": [
+            "tasks/plan.md"
+          ]
+        },
+        "receipts": []
+      }
+    },
+    {
+      "name": "denied-quoted-unicode",
+      "changes": {
+        "tasks/a'b\u03bb.txt": "changed\n",
+        "tasks/z.txt": "changed\n"
+      },
+      "allowlist": [
+        "tasks/a'b\u03bb.txt",
+        "tasks/z.txt"
+      ],
+      "commands": [
+        "first"
+      ],
+      "mode": "inherit",
+      "runs": {},
+      "expect_changes": true,
+      "expected": {
+        "gate": {
+          "approved": false,
+          "reason": "denied-harness:tasks/a'b\u03bb.txt; changed=[\"tasks/a'b\u03bb.txt\", 'tasks/z.txt']",
+          "changed_files": [
+            "tasks/a'b\u03bb.txt",
+            "tasks/z.txt"
+          ]
+        },
+        "receipts": []
+      }
+    },
+    {
+      "name": "allowed-tdd-path",
+      "changes": {
+        "tasks/tdd.json": "{}\n"
+      },
+      "allowlist": [
+        "tasks/tdd.json"
+      ],
+      "commands": [
+        "first"
+      ],
+      "mode": "inherit",
+      "runs": {},
+      "expect_changes": true,
+      "expected": {
+        "gate": {
+          "approved": true,
+          "reason": "approved",
+          "changed_files": [
+            "tasks/tdd.json"
+          ]
+        },
+        "receipts": [
+          {
+            "name": "first",
+            "receipt": {
+              "literal": [
+                "two words",
+                "$(not-a-shell); * [literal]",
+                "unicode-\u03bb-\ud55c"
+              ],
+              "stdin_eof": true,
+              "code": "initial\n",
+              "profile": "[repo]\nrepository_type = \"fixture\"\n",
+              "home_exists": true,
+              "cache_exists": true,
+              "home_preexisting": false,
+              "env": {
+                "HOME": "<PARENT_HOME>",
+                "LANG": "C.UTF-8",
+                "CODEX_HOME": "<CODEX_HOME>",
+                "EXPLICIT_TOKEN": "explicit",
+                "UV_CACHE_DIR": "<PARENT_CACHE>",
+                "CODEX_EVENTS_FILE": "<REPO>/tasks/codex-exec-events.jsonl"
+              },
+              "cwd_is_dispatch": false
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "secret-basename",
+      "changes": {
+        "nested/private.key": "secret\n"
+      },
+      "secrets": [
+        "*.key"
+      ],
+      "allowlist": [
+        "nested/private.key"
+      ],
+      "commands": [
+        "first"
+      ],
+      "mode": "inherit",
+      "runs": {},
+      "expect_changes": true,
+      "expected": {
+        "gate": {
+          "approved": false,
+          "reason": "secret-path:nested/private.key",
+          "changed_files": [
+            "nested/private.key"
+          ]
+        },
+        "receipts": []
+      }
+    },
+    {
+      "name": "secret-directory",
+      "changes": {
+        "vault/code.txt": "secret\n"
+      },
+      "secrets": [
+        "vault"
+      ],
+      "allowlist": [
+        "vault/code.txt"
+      ],
+      "commands": [
+        "first"
+      ],
+      "mode": "inherit",
+      "runs": {},
+      "expect_changes": true,
+      "expected": {
+        "gate": {
+          "approved": false,
+          "reason": "secret-path:vault/code.txt",
+          "changed_files": [
+            "vault/code.txt"
+          ]
+        },
+        "receipts": []
+      }
+    },
+    {
+      "name": "secret-slash",
+      "changes": {
+        "nested/private.key": "secret\n"
+      },
+      "secrets": [
+        "nested/*.key"
+      ],
+      "allowlist": [
+        "nested/private.key"
+      ],
+      "commands": [
+        "first"
+      ],
+      "mode": "inherit",
+      "runs": {},
+      "expect_changes": true,
+      "expected": {
+        "gate": {
+          "approved": false,
+          "reason": "secret-path:nested/private.key",
+          "changed_files": [
+            "nested/private.key"
+          ]
+        },
+        "receipts": []
+      }
+    },
+    {
+      "name": "secret-before-allowlist",
+      "changes": {
+        "private.key": "secret\n"
+      },
+      "secrets": [
+        "*.key"
+      ],
+      "allowlist": [],
+      "commands": [
+        "first"
+      ],
+      "mode": "inherit",
+      "runs": {},
+      "expect_changes": true,
+      "expected": {
+        "gate": {
+          "approved": false,
+          "reason": "secret-path:private.key",
+          "changed_files": [
+            "private.key"
+          ]
+        },
+        "receipts": []
+      }
+    },
+    {
+      "name": "outside-allowlist",
+      "allowlist": [
+        "other/"
+      ],
+      "changes": {
+        "code.txt": "changed\n"
+      },
+      "commands": [
+        "first"
+      ],
+      "mode": "inherit",
+      "runs": {},
+      "expect_changes": true,
+      "expected": {
+        "gate": {
+          "approved": false,
+          "reason": "out-of-allowlist:code.txt",
+          "changed_files": [
+            "code.txt"
+          ]
+        },
+        "receipts": []
+      }
+    },
+    {
+      "name": "literal-allowlist",
+      "changes": {
+        "code [literal].txt": "changed\n"
+      },
+      "allowlist": [
+        "code [literal].txt"
+      ],
+      "commands": [
+        "first"
+      ],
+      "mode": "inherit",
+      "runs": {},
+      "expect_changes": true,
+      "expected": {
+        "gate": {
+          "approved": true,
+          "reason": "approved",
+          "changed_files": [
+            "code [literal].txt"
+          ]
+        },
+        "receipts": [
+          {
+            "name": "first",
+            "receipt": {
+              "literal": [
+                "two words",
+                "$(not-a-shell); * [literal]",
+                "unicode-\u03bb-\ud55c"
+              ],
+              "stdin_eof": true,
+              "code": "initial\n",
+              "profile": "[repo]\nrepository_type = \"fixture\"\n",
+              "home_exists": true,
+              "cache_exists": true,
+              "home_preexisting": false,
+              "env": {
+                "HOME": "<PARENT_HOME>",
+                "LANG": "C.UTF-8",
+                "CODEX_HOME": "<CODEX_HOME>",
+                "EXPLICIT_TOKEN": "explicit",
+                "UV_CACHE_DIR": "<PARENT_CACHE>",
+                "CODEX_EVENTS_FILE": "<REPO>/tasks/codex-exec-events.jsonl"
+              },
+              "cwd_is_dispatch": false
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "glob-allowlist",
+      "allowlist": [
+        "*.txt"
+      ],
+      "changes": {
+        "code.txt": "changed\n"
+      },
+      "commands": [
+        "first"
+      ],
+      "mode": "inherit",
+      "runs": {},
+      "expect_changes": true,
+      "expected": {
+        "gate": {
+          "approved": true,
+          "reason": "approved",
+          "changed_files": [
+            "code.txt"
+          ]
+        },
+        "receipts": [
+          {
+            "name": "first",
+            "receipt": {
+              "literal": [
+                "two words",
+                "$(not-a-shell); * [literal]",
+                "unicode-\u03bb-\ud55c"
+              ],
+              "stdin_eof": true,
+              "code": "changed\n",
+              "profile": "[repo]\nrepository_type = \"fixture\"\n",
+              "home_exists": true,
+              "cache_exists": true,
+              "home_preexisting": false,
+              "env": {
+                "HOME": "<PARENT_HOME>",
+                "LANG": "C.UTF-8",
+                "CODEX_HOME": "<CODEX_HOME>",
+                "EXPLICIT_TOKEN": "explicit",
+                "UV_CACHE_DIR": "<PARENT_CACHE>",
+                "CODEX_EVENTS_FILE": "<REPO>/tasks/codex-exec-events.jsonl"
+              },
+              "cwd_is_dispatch": false
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "unknown-sorted",
+      "commands": [
+        "z",
+        "a",
+        "z"
+      ],
+      "changes": {
+        "code.txt": "changed\n"
+      },
+      "allowlist": [
+        "code.txt"
+      ],
+      "mode": "inherit",
+      "runs": {},
+      "expect_changes": true,
+      "expected": {
+        "gate": {
+          "approved": false,
+          "reason": "unknown-verifier:a,z",
+          "changed_files": [
+            "code.txt"
+          ]
+        },
+        "receipts": []
+      }
+    },
+    {
+      "name": "invalid-empty",
+      "verifiers": {
+        "first": []
+      },
+      "changes": {
+        "code.txt": "changed\n"
+      },
+      "allowlist": [
+        "code.txt"
+      ],
+      "commands": [
+        "first"
+      ],
+      "mode": "inherit",
+      "runs": {},
+      "expect_changes": true,
+      "expected": {
+        "gate": {
+          "approved": false,
+          "reason": "invalid-verifier:first",
+          "changed_files": [
+            "code.txt"
+          ]
+        },
+        "receipts": []
+      }
+    },
+    {
+      "name": "invalid-empty-arg",
+      "verifiers": {
+        "first": [
+          ""
+        ]
+      },
+      "changes": {
+        "code.txt": "changed\n"
+      },
+      "allowlist": [
+        "code.txt"
+      ],
+      "commands": [
+        "first"
+      ],
+      "mode": "inherit",
+      "runs": {},
+      "expect_changes": true,
+      "expected": {
+        "gate": {
+          "approved": false,
+          "reason": "invalid-verifier:first",
+          "changed_files": [
+            "code.txt"
+          ]
+        },
+        "receipts": []
+      }
+    },
+    {
+      "name": "invalid-nonstring-arg",
+      "verifiers": {
+        "first": [
+          true
+        ]
+      },
+      "changes": {
+        "code.txt": "changed\n"
+      },
+      "allowlist": [
+        "code.txt"
+      ],
+      "commands": [
+        "first"
+      ],
+      "mode": "inherit",
+      "runs": {},
+      "expect_changes": true,
+      "expected": {
+        "gate": {
+          "approved": false,
+          "reason": "invalid-verifier:first",
+          "changed_files": [
+            "code.txt"
+          ]
+        },
+        "receipts": []
+      }
+    },
+    {
+      "name": "invalid-string-argv",
+      "verifiers": {
+        "first": "echo unsafe"
+      },
+      "changes": {
+        "code.txt": "changed\n"
+      },
+      "allowlist": [
+        "code.txt"
+      ],
+      "commands": [
+        "first"
+      ],
+      "mode": "inherit",
+      "runs": {},
+      "expect_changes": true,
+      "expected": {
+        "gate": {
+          "approved": false,
+          "reason": "invalid-verifier:first",
+          "changed_files": [
+            "code.txt"
+          ]
+        },
+        "receipts": []
+      }
+    },
+    {
+      "name": "invalid-null-argv",
+      "verifiers": {
+        "first": null
+      },
+      "changes": {
+        "code.txt": "changed\n"
+      },
+      "allowlist": [
+        "code.txt"
+      ],
+      "commands": [
+        "first"
+      ],
+      "mode": "inherit",
+      "runs": {},
+      "expect_changes": true,
+      "expected": {
+        "gate": {
+          "approved": false,
+          "reason": "invalid-verifier:first",
+          "changed_files": [
+            "code.txt"
+          ]
+        },
+        "receipts": []
+      }
+    },
+    {
+      "name": "no-verifiers",
+      "commands": [],
+      "changes": {
+        "code.txt": "changed\n"
+      },
+      "allowlist": [
+        "code.txt"
+      ],
+      "mode": "inherit",
+      "runs": {},
+      "expect_changes": true,
+      "expected": {
+        "gate": {
+          "approved": false,
+          "reason": "no-verification-commands (fail-closed)",
+          "changed_files": [
+            "code.txt"
+          ]
+        },
+        "receipts": []
+      }
+    },
+    {
+      "name": "path-before-unknown",
+      "changes": {
+        "tasks/plan.md": "changed\n"
+      },
+      "commands": [
+        "unknown"
+      ],
+      "allowlist": [
+        "tasks/plan.md"
+      ],
+      "mode": "inherit",
+      "runs": {},
+      "expect_changes": true,
+      "expected": {
+        "gate": {
+          "approved": false,
+          "reason": "denied-harness:tasks/plan.md; changed=['tasks/plan.md']",
+          "changed_files": [
+            "tasks/plan.md"
+          ]
+        },
+        "receipts": []
+      }
+    },
+    {
+      "name": "invalid-before-dirty",
+      "verifiers": {
+        "first": []
+      },
+      "dirty": true,
+      "changes": {
+        "code.txt": "changed\n"
+      },
+      "allowlist": [
+        "code.txt"
+      ],
+      "commands": [
+        "first"
+      ],
+      "mode": "inherit",
+      "runs": {},
+      "expect_changes": true,
+      "expected": {
+        "gate": {
+          "approved": false,
+          "reason": "invalid-verifier:first",
+          "changed_files": [
+            "code.txt"
+          ]
+        },
+        "receipts": []
+      }
+    },
+    {
+      "name": "pinned-source",
+      "pinned": true,
+      "changes": {
+        "code.txt": "changed\n"
+      },
+      "allowlist": [
+        "code.txt"
+      ],
+      "commands": [
+        "first"
+      ],
+      "mode": "inherit",
+      "runs": {},
+      "expect_changes": true,
+      "expected": {
+        "gate": {
+          "approved": true,
+          "reason": "approved",
+          "changed_files": [
+            "code.txt"
+          ]
+        },
+        "receipts": [
+          {
+            "name": "first",
+            "receipt": {
+              "literal": [
+                "two words",
+                "$(not-a-shell); * [literal]",
+                "unicode-\u03bb-\ud55c"
+              ],
+              "stdin_eof": true,
+              "code": "changed\n",
+              "profile": "[repo]\nrepository_type = \"fixture\"\n",
+              "home_exists": true,
+              "cache_exists": true,
+              "home_preexisting": false,
+              "env": {
+                "HOME": "<PARENT_HOME>",
+                "LANG": "C.UTF-8",
+                "CODEX_HOME": "<CODEX_HOME>",
+                "EXPLICIT_TOKEN": "explicit",
+                "UV_CACHE_DIR": "<PARENT_CACHE>",
+                "CODEX_EVENTS_FILE": "<REPO>/tasks/codex-exec-events.jsonl"
+              },
+              "cwd_is_dispatch": false
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "invalid-env",
+      "mode": "unknown",
+      "changes": {
+        "code.txt": "changed\n"
+      },
+      "allowlist": [
+        "code.txt"
+      ],
+      "commands": [
+        "first"
+      ],
+      "runs": {},
+      "expect_changes": true,
+      "expected": {
+        "error": "ValueError",
+        "message": "verifier_env must be \"inherit\" or \"isolated\"",
+        "receipts": []
+      }
+    },
+    {
+      "name": "invalid-timeout-zero",
+      "timeout": 0,
+      "changes": {
+        "code.txt": "changed\n"
+      },
+      "allowlist": [
+        "code.txt"
+      ],
+      "commands": [
+        "first"
+      ],
+      "mode": "inherit",
+      "runs": {},
+      "expect_changes": true,
+      "expected": {
+        "error": "ValueError",
+        "message": "timeout must be finite and positive",
+        "receipts": []
+      }
+    },
+    {
+      "name": "invalid-timeout-bool",
+      "timeout": true,
+      "changes": {
+        "code.txt": "changed\n"
+      },
+      "allowlist": [
+        "code.txt"
+      ],
+      "commands": [
+        "first"
+      ],
+      "mode": "inherit",
+      "runs": {},
+      "expect_changes": true,
+      "expected": {
+        "error": "ValueError",
+        "message": "timeout must be finite and positive",
+        "receipts": []
+      }
+    },
+    {
+      "name": "timeout-bounds",
+      "timeout": 1,
+      "bounds": [
+        2,
+        20
+      ],
+      "changes": {
+        "code.txt": "changed\n"
+      },
+      "allowlist": [
+        "code.txt"
+      ],
+      "commands": [
+        "first"
+      ],
+      "mode": "inherit",
+      "runs": {},
+      "expect_changes": true,
+      "expected": {
+        "error": "ValueError",
+        "message": "timeout must be within timeout_seconds_range [2, 20]",
+        "receipts": []
+      }
+    }
+  ],
+  "profiles": [
+    {
+      "text": null,
+      "expected": false
+    },
+    {
+      "text": "",
+      "expected": false
+    },
+    {
+      "text": "not toml [",
+      "expected": false
+    },
+    {
+      "text": "[repo]\nrepository_type=\"meta_harness\"\n",
+      "expected": true
+    },
+    {
+      "text": "[repo]\nrepository_type=\"consumer\"\n",
+      "expected": false
+    },
+    {
+      "text": "repo=\"meta_harness\"\n",
+      "expected": false
+    }
+  ]
+}
