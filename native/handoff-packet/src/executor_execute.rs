@@ -951,9 +951,10 @@ fn provider(
                 )
             });
         }
-        Err(TransportError::Process(message))
-            if message.contains("No such file") || message.contains("cannot find the file") =>
-        {
+        Err(TransportError::Spawn {
+            kind: std::io::ErrorKind::NotFound,
+            ..
+        }) => {
             return Err(format!(
                 "FileNotFoundError: Codex binary not found: {}. Set CODEX_BIN to the full path of the codex executable.",
                 repr(binary)

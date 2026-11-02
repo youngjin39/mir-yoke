@@ -109,8 +109,10 @@ if mode == "claude":
     )
     print("fixture diagnostic", file=sys.stderr)
     sys.exit(7)
-if mode == "timeout":
+if mode in {"timeout", "timeout_stderr"}:
     print("started", flush=True)
+    if mode == "timeout_stderr":
+        print("partial diagnostic", file=sys.stderr, flush=True)
     time.sleep(60)
     sys.exit(0)
 

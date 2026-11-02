@@ -78,6 +78,19 @@ def test_common_secure_redacted_artifacts(tmp_path):
         _cleanup(outcome)
 
 
+def test_append_event_without_fchmod(tmp_path, monkeypatch):
+    monkeypatch.delattr(dispatch.os, "fchmod", raising=False)
+    path = tmp_path / ".mir-dispatch/events.jsonl"
+    secret = "sk-" + "x" * 40
+
+    dispatch._append_event(path, {"event": "first", "message": "token=" + secret})
+    dispatch._append_event(path, {"event": "second"})
+
+    text = path.read_text()
+    assert secret not in text
+    assert [json.loads(line)["event"] for line in text.splitlines()] == ["first", "second"]
+
+
 @pytest.mark.parametrize("filename", [
     "reviewer.json", "brief.md", "status.json", "result.json", "events.jsonl",
     "dispatch-events.jsonl",

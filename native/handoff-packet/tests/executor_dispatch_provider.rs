@@ -83,11 +83,17 @@ fn codex_builder_defaults_and_route_match_python() {
         let mut oracle = fixture("codex_options_oracle")
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
             .spawn()
             .unwrap();
         oracle.stdin.take().unwrap().write_all(json!({"root":scratch.0,"cwd":scratch.0,"prompt":request.prompt,"agent":agent,"model":request.model,"effort":request.reasoning_effort,"timeout":request.timeout.map(|d|d.as_secs_f64()),"stall_timeout":request.stall_timeout.map(|d|d.as_secs_f64())}).to_string().as_bytes()).unwrap();
         let output = oracle.wait_with_output().unwrap();
-        assert!(output.status.success());
+        assert!(
+            output.status.success(),
+            "oracle exited {}: {}",
+            output.status,
+            String::from_utf8_lossy(&output.stderr)
+        );
         let expected: Value = serde_json::from_slice(&output.stdout).unwrap();
         assert_eq!(observed, expected);
     }
@@ -142,48 +148,71 @@ fn claude_arguments_environment_and_nonzero_exit() {
 
 #[test]
 fn claude_timeout_reaps_and_matches_python_output_shape() {
-    let options = ClaudeOptions {
-        cwd: PathBuf::from(env!("CARGO_MANIFEST_DIR")),
-        timeout: Some(Duration::from_secs(2)),
-        ..Default::default()
-    };
-    let started = Instant::now();
-    let result = claude_attempt(fixture("timeout"), &options).unwrap();
-    assert_eq!(result.exit_code, 124);
-    assert!(result.stdout.is_empty());
-    assert!(result.stderr.starts_with("Command '["));
-    assert!(result.stderr.ends_with("timed out after 2 seconds"));
-    assert!(started.elapsed() < Duration::from_secs(10));
-    let command = fixture("timeout");
-    let mut argv: Vec<_> = std::iter::once(command.get_program())
-        .chain(command.get_args())
-        .map(|arg| arg.to_str().unwrap().to_owned())
-        .collect();
-    argv.extend([
-        "-p".into(),
-        handoff_packet::executor_dispatch_provider::CLAUDE_PROMPT.into(),
-    ]);
-    let mut oracle = fixture("claude_oracle")
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .spawn()
-        .unwrap();
-    oracle
-        .stdin
-        .take()
-        .unwrap()
-        .write_all(
-            json!({"command":argv,"cwd":options.cwd,"timeout":2})
-                .to_string()
-                .as_bytes(),
-        )
-        .unwrap();
-    let output = oracle.wait_with_output().unwrap();
-    assert!(output.status.success());
-    let expected: Value = serde_json::from_slice(&output.stdout).unwrap();
-    assert_eq!(expected["exit_code"], result.exit_code);
-    assert_eq!(expected["stdout"], result.stdout);
-    assert_eq!(expected["stderr"], result.stderr);
+    for mode in ["timeout", "timeout_stderr"] {
+        let options = ClaudeOptions {
+            cwd: PathBuf::from(env!("CARGO_MANIFEST_DIR")),
+            timeout: Some(Duration::from_secs(2)),
+            ..Default::default()
+        };
+        let started = Instant::now();
+        let result = claude_attempt(fixture(mode), &options).unwrap();
+        assert_eq!(result.exit_code, 124);
+        #[cfg(windows)]
+        {
+            assert_eq!(result.stdout, "started\n");
+            assert_eq!(
+                result.stderr,
+                if mode == "timeout_stderr" {
+                    "partial diagnostic\n"
+                } else {
+                    ""
+                }
+            );
+        }
+        #[cfg(not(windows))]
+        {
+            assert!(result.stdout.is_empty());
+            assert!(result.stderr.starts_with("Command '["));
+            assert!(result.stderr.ends_with("timed out after 2 seconds"));
+        }
+        assert!(started.elapsed() < Duration::from_secs(10));
+        let command = fixture(mode);
+        let mut argv: Vec<_> = std::iter::once(command.get_program())
+            .chain(command.get_args())
+            .map(|arg| arg.to_str().unwrap().to_owned())
+            .collect();
+        argv.extend([
+            "-p".into(),
+            handoff_packet::executor_dispatch_provider::CLAUDE_PROMPT.into(),
+        ]);
+        let mut oracle = fixture("claude_oracle")
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .unwrap();
+        oracle
+            .stdin
+            .take()
+            .unwrap()
+            .write_all(
+                json!({"command":argv,"cwd":options.cwd,"timeout":2})
+                    .to_string()
+                    .as_bytes(),
+            )
+            .unwrap();
+        let output = oracle.wait_with_output().unwrap();
+        assert!(
+            output.status.success(),
+            "oracle exited {}: {}",
+            output.status,
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let expected: Value = serde_json::from_slice(&output.stdout).unwrap();
+        assert_eq!(expected["exit_code"], result.exit_code);
+        assert_eq!(expected["stdout"], result.stdout);
+        assert_eq!(expected["stderr"], result.stderr);
+    }
 }
 
 #[test]
@@ -224,6 +253,7 @@ fn codex_metadata_and_failure_classification() {
     let mut oracle = fixture("oracle")
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
         .spawn()
         .unwrap();
     oracle
@@ -237,7 +267,12 @@ fn codex_metadata_and_failure_classification() {
         )
         .unwrap();
     let output = oracle.wait_with_output().unwrap();
-    assert!(output.status.success());
+    assert!(
+        output.status.success(),
+        "oracle exited {}: {}",
+        output.status,
+        String::from_utf8_lossy(&output.stderr)
+    );
     let expected: Value = serde_json::from_slice(&output.stdout).unwrap();
     assert_eq!(expected["signature"], result.error_sig);
     assert_eq!(

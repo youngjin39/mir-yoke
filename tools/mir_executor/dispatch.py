@@ -279,7 +279,8 @@ def _secure_write(path: pathlib.Path, text: str, *, append: bool = False) -> Non
     flags |= getattr(os, "O_NOFOLLOW", 0)
     fd = os.open(path, flags, 0o600)
     with os.fdopen(fd, "a" if append else "w", encoding="utf-8") as stream:
-        os.fchmod(stream.fileno(), 0o600)
+        if hasattr(os, "fchmod"):
+            os.fchmod(stream.fileno(), 0o600)
         stream.write(text)
 
 

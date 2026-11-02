@@ -225,14 +225,13 @@ fn event(path: Option<&Path>, value: &Value) -> Result<()> {
 }
 
 fn unavailable(error: &TransportError) -> bool {
-    // Transport retains rendered process errors. std's OS-code suffix is stable
-    // even when the human-readable message is localized (Unix and Windows).
-    let codes = if cfg!(windows) {
-        &[2, 3, 5][..]
-    } else {
-        &[2, 13][..]
-    };
-    matches!(error, TransportError::Process(message) if codes.iter().any(|code| message.ends_with(&format!("(os error {code})"))))
+    matches!(
+        error,
+        TransportError::Spawn {
+            kind: std::io::ErrorKind::NotFound | std::io::ErrorKind::PermissionDenied,
+            ..
+        }
+    )
 }
 
 /// Run one app-server turn, preserving transport metadata and error classes.
@@ -452,9 +451,10 @@ pub fn claude_attempt(mut command: Command, options: &ClaudeOptions) -> Result<C
     };
     let mut stdout = text(out)?;
     let mut stderr = text(err)?;
-    if timed_out {
-        // subprocess.TimeoutExpired retains bytes despite text=True. The Python
-        // adapter discards those bytes and uses str(exc) for its stderr field.
+    if timed_out && !cfg!(windows) {
+        // POSIX TimeoutExpired retains bytes despite text=True, which the Python
+        // adapter discards. Windows run() collects text after kill/communicate;
+        // preserve both captured streams there, including empty stderr.
         stdout.clear();
         let seconds = options
             .timeout
@@ -468,4 +468,26 @@ pub fn claude_attempt(mut command: Command, options: &ClaudeOptions) -> Result<C
         stderr,
         ..Default::default()
     })
+}
+
+#[cfg(test)]
+mod spawn_error_tests {
+    use super::*;
+
+    #[test]
+    fn spawn_classification_uses_kind_without_os_code() {
+        for (kind, expected) in [
+            (std::io::ErrorKind::NotFound, true),
+            (std::io::ErrorKind::PermissionDenied, true),
+            (std::io::ErrorKind::InvalidInput, false),
+        ] {
+            let error = TransportError::from(std::io::Error::new(kind, "program not found"));
+            assert_eq!(unavailable(&error), expected, "{error:?}");
+            assert_eq!(error.to_string(), "program not found");
+            assert_eq!(error.python_class(), "CodexMcpProcessError");
+        }
+        assert!(!unavailable(&TransportError::Process(
+            "program not found".into()
+        )));
+    }
 }

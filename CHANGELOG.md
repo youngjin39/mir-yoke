@@ -71,7 +71,9 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
   headless Claude providers, and consecutive-failure counting, matching Python on
   26 dispatch and 9 failure-history scenarios. The local bridge now carries
   `DispatchWorktree` and `CodexAttempt` values. Review and finalization are not
-  part of this slice.
+  part of this slice. On Windows, a missing provider binary is classified by error
+  kind (std reports it without an OS code) and a headless Claude timeout keeps the
+  captured streams, as CPython's `subprocess.run` does there.
 - Executor port slice E9a (library only): native independent review through the
   app-server transport with a forced read-only sandbox; only a strict `pass` with
   no findings approves, and missing, malformed, rejecting or timed-out reviews
@@ -87,6 +89,8 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 ### Changed
 
 - `tools/mir_executor/policy.py` no longer imports `pwd` on Windows.
+- The Python executor's dispatch event writer skips `os.fchmod` where the
+  platform lacks it, instead of failing.
 
 ## [v0.13.61] — 2026-11-01 — Native executor queries with local executor files
 
