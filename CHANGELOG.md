@@ -8,6 +8,16 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+### Added
+
+- Executor port slice E2a (library only; no command changes behaviour): a native
+  reader for `config/mir-executor.local.json` with the Python defaults, validators
+  and messages, and `tools/mir_executor/local_bridge.py`, a stdlib-only persistent
+  bridge that serves a repository's `local.py` hooks over versioned JSON lines
+  (`mir-executor.local@1`) to a native caller, keeping non-JSON values and writer
+  scopes as handles. Known differences from Python's JSON reader: lone surrogate
+  escapes are rejected and nesting deeper than 64 levels fails.
+
 ## [v0.13.61] — 2026-11-01 — Native executor queries with local executor files
 
 ### Changed

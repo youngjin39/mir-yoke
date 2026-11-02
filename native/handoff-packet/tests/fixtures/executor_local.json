@@ -1,0 +1,2418 @@
+[
+  {
+    "name": "empty-defaults",
+    "operation": "defaults",
+    "text": "{}",
+    "expected": {
+      "value": {
+        "input_limit_bytes": null,
+        "timeout_seconds_range": null,
+        "max_codex_attempts_cap": null,
+        "codex_sandbox_default": "workspace-write",
+        "child_env_filter": false,
+        "child_env_extra_keys": [],
+        "require_review": false,
+        "verifiers": {},
+        "verifier_env": "inherit",
+        "artifact_retention_days": 30
+      }
+    }
+  },
+  {
+    "name": "unknown-fields-and-unvalidated-truthiness",
+    "operation": "defaults",
+    "text": "{\"extension\": {\"text\": \"\\u03bb\"}, \"child_env_filter\": \"yes\", \"child_env_extra_keys\": [\"CUSTOM\"], \"require_review\": 1, \"max_codex_attempts_cap\": 2}",
+    "expected": {
+      "value": {
+        "input_limit_bytes": null,
+        "timeout_seconds_range": null,
+        "max_codex_attempts_cap": 2,
+        "codex_sandbox_default": "workspace-write",
+        "child_env_filter": "yes",
+        "child_env_extra_keys": [
+          "CUSTOM"
+        ],
+        "require_review": 1,
+        "verifiers": {},
+        "verifier_env": "inherit",
+        "artifact_retention_days": 30,
+        "extension": {
+          "text": "\u03bb"
+        }
+      }
+    }
+  },
+  {
+    "name": "shape-'null'",
+    "operation": "defaults",
+    "text": "null",
+    "expected": {
+      "error": "ValueError",
+      "message": "<config> must contain a JSON object"
+    }
+  },
+  {
+    "name": "shape-'[]'",
+    "operation": "defaults",
+    "text": "[]",
+    "expected": {
+      "error": "ValueError",
+      "message": "<config> must contain a JSON object"
+    }
+  },
+  {
+    "name": "shape-'true'",
+    "operation": "defaults",
+    "text": "true",
+    "expected": {
+      "error": "ValueError",
+      "message": "<config> must contain a JSON object"
+    }
+  },
+  {
+    "name": "shape-'1'",
+    "operation": "defaults",
+    "text": "1",
+    "expected": {
+      "error": "ValueError",
+      "message": "<config> must contain a JSON object"
+    }
+  },
+  {
+    "name": "shape-'\"text\"'",
+    "operation": "defaults",
+    "text": "\"text\"",
+    "expected": {
+      "error": "ValueError",
+      "message": "<config> must contain a JSON object"
+    }
+  },
+  {
+    "name": "shape-'{'",
+    "operation": "defaults",
+    "text": "{",
+    "expected": {
+      "error": "JSONDecodeError",
+      "message": "Expecting property name enclosed in double quotes: line 1 column 2 (char 1)"
+    }
+  },
+  {
+    "name": "shape-'\\ufeff{}'",
+    "operation": "defaults",
+    "text": "\ufeff{}",
+    "expected": {
+      "error": "JSONDecodeError",
+      "message": "Unexpected UTF-8 BOM (decode using utf-8-sig): line 1 column 1 (char 0)"
+    }
+  },
+  {
+    "name": "syntax-''",
+    "operation": "defaults",
+    "text": "",
+    "expected": {
+      "error": "JSONDecodeError",
+      "message": "Expecting value: line 1 column 1 (char 0)"
+    }
+  },
+  {
+    "name": "syntax-'['",
+    "operation": "defaults",
+    "text": "[",
+    "expected": {
+      "error": "JSONDecodeError",
+      "message": "Expecting value: line 1 column 2 (char 1)"
+    }
+  },
+  {
+    "name": "syntax-'{\"a\":}'",
+    "operation": "defaults",
+    "text": "{\"a\":}",
+    "expected": {
+      "error": "JSONDecodeError",
+      "message": "Expecting value: line 1 column 6 (char 5)"
+    }
+  },
+  {
+    "name": "syntax-'{\"a\" 1}'",
+    "operation": "defaults",
+    "text": "{\"a\" 1}",
+    "expected": {
+      "error": "JSONDecodeError",
+      "message": "Expecting ':' delimiter: line 1 column 6 (char 5)"
+    }
+  },
+  {
+    "name": "syntax-'[1,]'",
+    "operation": "defaults",
+    "text": "[1,]",
+    "expected": {
+      "error": "JSONDecodeError",
+      "message": "Expecting value: line 1 column 4 (char 3)"
+    }
+  },
+  {
+    "name": "syntax-'{\"a\":1,}'",
+    "operation": "defaults",
+    "text": "{\"a\":1,}",
+    "expected": {
+      "error": "JSONDecodeError",
+      "message": "Expecting property name enclosed in double quotes: line 1 column 8 (char 7)"
+    }
+  },
+  {
+    "name": "syntax-'1 2'",
+    "operation": "defaults",
+    "text": "1 2",
+    "expected": {
+      "error": "JSONDecodeError",
+      "message": "Extra data: line 1 column 3 (char 2)"
+    }
+  },
+  {
+    "name": "syntax-'\"abc'",
+    "operation": "defaults",
+    "text": "\"abc",
+    "expected": {
+      "error": "JSONDecodeError",
+      "message": "Unterminated string starting at: line 1 column 1 (char 0)"
+    }
+  },
+  {
+    "name": "syntax-'\"a\\\\x\"'",
+    "operation": "defaults",
+    "text": "\"a\\x\"",
+    "expected": {
+      "error": "JSONDecodeError",
+      "message": "Invalid \\escape: line 1 column 3 (char 2)"
+    }
+  },
+  {
+    "name": "syntax-'\"\\\\uXX00\"'",
+    "operation": "defaults",
+    "text": "\"\\uXX00\"",
+    "expected": {
+      "error": "JSONDecodeError",
+      "message": "Invalid \\uXXXX escape: line 1 column 3 (char 2)"
+    }
+  },
+  {
+    "name": "syntax-'\"\\\\u123\"'",
+    "operation": "defaults",
+    "text": "\"\\u123\"",
+    "expected": {
+      "error": "JSONDecodeError",
+      "message": "Invalid \\uXXXX escape: line 1 column 3 (char 2)"
+    }
+  },
+  {
+    "name": "syntax-'\"a\\nb\"'",
+    "operation": "defaults",
+    "text": "\"a\nb\"",
+    "expected": {
+      "error": "JSONDecodeError",
+      "message": "Invalid control character at: line 1 column 3 (char 2)"
+    }
+  },
+  {
+    "name": "syntax-'{}\\n x'",
+    "operation": "defaults",
+    "text": "{}\n x",
+    "expected": {
+      "error": "JSONDecodeError",
+      "message": "Extra data: line 2 column 2 (char 4)"
+    }
+  },
+  {
+    "name": "syntax-'{\"extension\":\"\u03bb\", \"a\":}'",
+    "operation": "defaults",
+    "text": "{\"extension\":\"\u03bb\", \"a\":}",
+    "expected": {
+      "error": "JSONDecodeError",
+      "message": "Expecting value: line 1 column 23 (char 22)"
+    }
+  },
+  {
+    "name": "syntax-'{\"x\":1e}'",
+    "operation": "defaults",
+    "text": "{\"x\":1e}",
+    "expected": {
+      "error": "JSONDecodeError",
+      "message": "Expecting ',' delimiter: line 1 column 7 (char 6)"
+    }
+  },
+  {
+    "name": "syntax-'{\"x\":1.}'",
+    "operation": "defaults",
+    "text": "{\"x\":1.}",
+    "expected": {
+      "error": "JSONDecodeError",
+      "message": "Expecting ',' delimiter: line 1 column 7 (char 6)"
+    }
+  },
+  {
+    "name": "syntax-'{\"x\":tru}'",
+    "operation": "defaults",
+    "text": "{\"x\":tru}",
+    "expected": {
+      "error": "JSONDecodeError",
+      "message": "Expecting value: line 1 column 6 (char 5)"
+    }
+  },
+  {
+    "name": "syntax-'{\"x\":-}'",
+    "operation": "defaults",
+    "text": "{\"x\":-}",
+    "expected": {
+      "error": "JSONDecodeError",
+      "message": "Expecting value: line 1 column 6 (char 5)"
+    }
+  },
+  {
+    "name": "syntax-'{\"x\":[1 2]}'",
+    "operation": "defaults",
+    "text": "{\"x\":[1 2]}",
+    "expected": {
+      "error": "JSONDecodeError",
+      "message": "Expecting ',' delimiter: line 1 column 9 (char 8)"
+    }
+  },
+  {
+    "name": "syntax-'{\"x\":\"abc\\\\'",
+    "operation": "defaults",
+    "text": "{\"x\":\"abc\\",
+    "expected": {
+      "error": "JSONDecodeError",
+      "message": "Unterminated string starting at: line 1 column 6 (char 5)"
+    }
+  },
+  {
+    "name": "unicode-ff",
+    "operation": "defaults",
+    "bytes": [
+      255
+    ],
+    "expected": {
+      "error": "UnicodeDecodeError",
+      "message": "'utf-8' codec can't decode byte 0xff in position 0: invalid start byte"
+    }
+  },
+  {
+    "name": "unicode-c328",
+    "operation": "defaults",
+    "bytes": [
+      195,
+      40
+    ],
+    "expected": {
+      "error": "UnicodeDecodeError",
+      "message": "'utf-8' codec can't decode byte 0xc3 in position 0: invalid continuation byte"
+    }
+  },
+  {
+    "name": "unicode-e18041",
+    "operation": "defaults",
+    "bytes": [
+      225,
+      128,
+      65
+    ],
+    "expected": {
+      "error": "UnicodeDecodeError",
+      "message": "'utf-8' codec can't decode bytes in position 0-1: invalid continuation byte"
+    }
+  },
+  {
+    "name": "unicode-c3",
+    "operation": "defaults",
+    "bytes": [
+      195
+    ],
+    "expected": {
+      "error": "UnicodeDecodeError",
+      "message": "'utf-8' codec can't decode byte 0xc3 in position 0: unexpected end of data"
+    }
+  },
+  {
+    "name": "unicode-6180",
+    "operation": "defaults",
+    "bytes": [
+      97,
+      128
+    ],
+    "expected": {
+      "error": "UnicodeDecodeError",
+      "message": "'utf-8' codec can't decode byte 0x80 in position 1: invalid start byte"
+    }
+  },
+  {
+    "name": "unicode-f0808080",
+    "operation": "defaults",
+    "bytes": [
+      240,
+      128,
+      128,
+      128
+    ],
+    "expected": {
+      "error": "UnicodeDecodeError",
+      "message": "'utf-8' codec can't decode byte 0xf0 in position 0: invalid continuation byte"
+    }
+  },
+  {
+    "name": "timeout-None-None",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": null}",
+    "argument": null,
+    "argument_json": "null",
+    "expected": {
+      "value": null
+    }
+  },
+  {
+    "name": "timeout-None-True",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": null}",
+    "argument": true,
+    "argument_json": "true",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout must be finite and positive"
+    }
+  },
+  {
+    "name": "timeout-None-0",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": null}",
+    "argument": 0,
+    "argument_json": "0",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout must be finite and positive"
+    }
+  },
+  {
+    "name": "timeout-None--1",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": null}",
+    "argument": -1,
+    "argument_json": "-1",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout must be finite and positive"
+    }
+  },
+  {
+    "name": "timeout-None-1",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": null}",
+    "argument": 1,
+    "argument_json": "1",
+    "expected": {
+      "value": null
+    }
+  },
+  {
+    "name": "timeout-None-2",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": null}",
+    "argument": 2,
+    "argument_json": "2",
+    "expected": {
+      "value": null
+    }
+  },
+  {
+    "name": "timeout-None-10",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": null}",
+    "argument": 10,
+    "argument_json": "10",
+    "expected": {
+      "value": null
+    }
+  },
+  {
+    "name": "timeout-None-11",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": null}",
+    "argument": 11,
+    "argument_json": "11",
+    "expected": {
+      "value": null
+    }
+  },
+  {
+    "name": "timeout-None-'2'",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": null}",
+    "argument": "2",
+    "argument_json": "\"2\"",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout must be finite and positive"
+    }
+  },
+  {
+    "name": "timeout-[1, 10]-None",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [1, 10]}",
+    "argument": null,
+    "argument_json": "null",
+    "expected": {
+      "value": null
+    }
+  },
+  {
+    "name": "timeout-[1, 10]-True",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [1, 10]}",
+    "argument": true,
+    "argument_json": "true",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout must be finite and positive"
+    }
+  },
+  {
+    "name": "timeout-[1, 10]-0",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [1, 10]}",
+    "argument": 0,
+    "argument_json": "0",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout must be finite and positive"
+    }
+  },
+  {
+    "name": "timeout-[1, 10]--1",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [1, 10]}",
+    "argument": -1,
+    "argument_json": "-1",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout must be finite and positive"
+    }
+  },
+  {
+    "name": "timeout-[1, 10]-1",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [1, 10]}",
+    "argument": 1,
+    "argument_json": "1",
+    "expected": {
+      "value": null
+    }
+  },
+  {
+    "name": "timeout-[1, 10]-2",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [1, 10]}",
+    "argument": 2,
+    "argument_json": "2",
+    "expected": {
+      "value": null
+    }
+  },
+  {
+    "name": "timeout-[1, 10]-10",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [1, 10]}",
+    "argument": 10,
+    "argument_json": "10",
+    "expected": {
+      "value": null
+    }
+  },
+  {
+    "name": "timeout-[1, 10]-11",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [1, 10]}",
+    "argument": 11,
+    "argument_json": "11",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout must be within timeout_seconds_range [1, 10]"
+    }
+  },
+  {
+    "name": "timeout-[1, 10]-'2'",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [1, 10]}",
+    "argument": "2",
+    "argument_json": "\"2\"",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout must be finite and positive"
+    }
+  },
+  {
+    "name": "timeout-[2, 2]-None",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [2, 2]}",
+    "argument": null,
+    "argument_json": "null",
+    "expected": {
+      "value": null
+    }
+  },
+  {
+    "name": "timeout-[2, 2]-True",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [2, 2]}",
+    "argument": true,
+    "argument_json": "true",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout must be finite and positive"
+    }
+  },
+  {
+    "name": "timeout-[2, 2]-0",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [2, 2]}",
+    "argument": 0,
+    "argument_json": "0",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout must be finite and positive"
+    }
+  },
+  {
+    "name": "timeout-[2, 2]--1",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [2, 2]}",
+    "argument": -1,
+    "argument_json": "-1",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout must be finite and positive"
+    }
+  },
+  {
+    "name": "timeout-[2, 2]-1",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [2, 2]}",
+    "argument": 1,
+    "argument_json": "1",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout must be within timeout_seconds_range [2, 2]"
+    }
+  },
+  {
+    "name": "timeout-[2, 2]-2",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [2, 2]}",
+    "argument": 2,
+    "argument_json": "2",
+    "expected": {
+      "value": null
+    }
+  },
+  {
+    "name": "timeout-[2, 2]-10",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [2, 2]}",
+    "argument": 10,
+    "argument_json": "10",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout must be within timeout_seconds_range [2, 2]"
+    }
+  },
+  {
+    "name": "timeout-[2, 2]-11",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [2, 2]}",
+    "argument": 11,
+    "argument_json": "11",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout must be within timeout_seconds_range [2, 2]"
+    }
+  },
+  {
+    "name": "timeout-[2, 2]-'2'",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [2, 2]}",
+    "argument": "2",
+    "argument_json": "\"2\"",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout must be finite and positive"
+    }
+  },
+  {
+    "name": "timeout-[10, 1]-None",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [10, 1]}",
+    "argument": null,
+    "argument_json": "null",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "timeout-[10, 1]-True",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [10, 1]}",
+    "argument": true,
+    "argument_json": "true",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "timeout-[10, 1]-0",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [10, 1]}",
+    "argument": 0,
+    "argument_json": "0",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "timeout-[10, 1]--1",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [10, 1]}",
+    "argument": -1,
+    "argument_json": "-1",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "timeout-[10, 1]-1",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [10, 1]}",
+    "argument": 1,
+    "argument_json": "1",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "timeout-[10, 1]-2",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [10, 1]}",
+    "argument": 2,
+    "argument_json": "2",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "timeout-[10, 1]-10",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [10, 1]}",
+    "argument": 10,
+    "argument_json": "10",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "timeout-[10, 1]-11",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [10, 1]}",
+    "argument": 11,
+    "argument_json": "11",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "timeout-[10, 1]-'2'",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [10, 1]}",
+    "argument": "2",
+    "argument_json": "\"2\"",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "timeout-[0, 1]-None",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [0, 1]}",
+    "argument": null,
+    "argument_json": "null",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "timeout-[0, 1]-True",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [0, 1]}",
+    "argument": true,
+    "argument_json": "true",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "timeout-[0, 1]-0",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [0, 1]}",
+    "argument": 0,
+    "argument_json": "0",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "timeout-[0, 1]--1",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [0, 1]}",
+    "argument": -1,
+    "argument_json": "-1",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "timeout-[0, 1]-1",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [0, 1]}",
+    "argument": 1,
+    "argument_json": "1",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "timeout-[0, 1]-2",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [0, 1]}",
+    "argument": 2,
+    "argument_json": "2",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "timeout-[0, 1]-10",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [0, 1]}",
+    "argument": 10,
+    "argument_json": "10",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "timeout-[0, 1]-11",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [0, 1]}",
+    "argument": 11,
+    "argument_json": "11",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "timeout-[0, 1]-'2'",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [0, 1]}",
+    "argument": "2",
+    "argument_json": "\"2\"",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "timeout-[True, 10]-None",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [true, 10]}",
+    "argument": null,
+    "argument_json": "null",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "timeout-[True, 10]-True",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [true, 10]}",
+    "argument": true,
+    "argument_json": "true",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "timeout-[True, 10]-0",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [true, 10]}",
+    "argument": 0,
+    "argument_json": "0",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "timeout-[True, 10]--1",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [true, 10]}",
+    "argument": -1,
+    "argument_json": "-1",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "timeout-[True, 10]-1",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [true, 10]}",
+    "argument": 1,
+    "argument_json": "1",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "timeout-[True, 10]-2",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [true, 10]}",
+    "argument": 2,
+    "argument_json": "2",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "timeout-[True, 10]-10",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [true, 10]}",
+    "argument": 10,
+    "argument_json": "10",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "timeout-[True, 10]-11",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [true, 10]}",
+    "argument": 11,
+    "argument_json": "11",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "timeout-[True, 10]-'2'",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [true, 10]}",
+    "argument": "2",
+    "argument_json": "\"2\"",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "timeout-[1]-None",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [1]}",
+    "argument": null,
+    "argument_json": "null",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "timeout-[1]-True",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [1]}",
+    "argument": true,
+    "argument_json": "true",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "timeout-[1]-0",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [1]}",
+    "argument": 0,
+    "argument_json": "0",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "timeout-[1]--1",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [1]}",
+    "argument": -1,
+    "argument_json": "-1",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "timeout-[1]-1",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [1]}",
+    "argument": 1,
+    "argument_json": "1",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "timeout-[1]-2",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [1]}",
+    "argument": 2,
+    "argument_json": "2",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "timeout-[1]-10",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [1]}",
+    "argument": 10,
+    "argument_json": "10",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "timeout-[1]-11",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [1]}",
+    "argument": 11,
+    "argument_json": "11",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "timeout-[1]-'2'",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [1]}",
+    "argument": "2",
+    "argument_json": "\"2\"",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "timeout-'bad'-None",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": \"bad\"}",
+    "argument": null,
+    "argument_json": "null",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "timeout-'bad'-True",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": \"bad\"}",
+    "argument": true,
+    "argument_json": "true",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "timeout-'bad'-0",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": \"bad\"}",
+    "argument": 0,
+    "argument_json": "0",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "timeout-'bad'--1",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": \"bad\"}",
+    "argument": -1,
+    "argument_json": "-1",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "timeout-'bad'-1",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": \"bad\"}",
+    "argument": 1,
+    "argument_json": "1",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "timeout-'bad'-2",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": \"bad\"}",
+    "argument": 2,
+    "argument_json": "2",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "timeout-'bad'-10",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": \"bad\"}",
+    "argument": 10,
+    "argument_json": "10",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "timeout-'bad'-11",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": \"bad\"}",
+    "argument": 11,
+    "argument_json": "11",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "timeout-'bad'-'2'",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": \"bad\"}",
+    "argument": "2",
+    "argument_json": "\"2\"",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "timeout-[1, '2']-None",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [1, \"2\"]}",
+    "argument": null,
+    "argument_json": "null",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "timeout-[1, '2']-True",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [1, \"2\"]}",
+    "argument": true,
+    "argument_json": "true",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "timeout-[1, '2']-0",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [1, \"2\"]}",
+    "argument": 0,
+    "argument_json": "0",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "timeout-[1, '2']--1",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [1, \"2\"]}",
+    "argument": -1,
+    "argument_json": "-1",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "timeout-[1, '2']-1",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [1, \"2\"]}",
+    "argument": 1,
+    "argument_json": "1",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "timeout-[1, '2']-2",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [1, \"2\"]}",
+    "argument": 2,
+    "argument_json": "2",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "timeout-[1, '2']-10",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [1, \"2\"]}",
+    "argument": 10,
+    "argument_json": "10",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "timeout-[1, '2']-11",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [1, \"2\"]}",
+    "argument": 11,
+    "argument_json": "11",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "timeout-[1, '2']-'2'",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [1, \"2\"]}",
+    "argument": "2",
+    "argument_json": "\"2\"",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "sandbox-workspace-write",
+    "operation": "sandbox",
+    "text": "{\"codex_sandbox_default\": \"workspace-write\"}",
+    "expected": {
+      "value": "workspace-write"
+    }
+  },
+  {
+    "name": "sandbox-read-only",
+    "operation": "sandbox",
+    "text": "{\"codex_sandbox_default\": \"read-only\"}",
+    "expected": {
+      "value": "read-only"
+    }
+  },
+  {
+    "name": "sandbox-danger-full-access",
+    "operation": "sandbox",
+    "text": "{\"codex_sandbox_default\": \"danger-full-access\"}",
+    "expected": {
+      "value": "danger-full-access"
+    }
+  },
+  {
+    "name": "sandbox-invalid",
+    "operation": "sandbox",
+    "text": "{\"codex_sandbox_default\": \"invalid\"}",
+    "expected": {
+      "error": "ValueError",
+      "message": "invalid codex_sandbox_default"
+    }
+  },
+  {
+    "name": "sandbox-None",
+    "operation": "sandbox",
+    "text": "{\"codex_sandbox_default\": null}",
+    "expected": {
+      "error": "ValueError",
+      "message": "invalid codex_sandbox_default"
+    }
+  },
+  {
+    "name": "sandbox-False",
+    "operation": "sandbox",
+    "text": "{\"codex_sandbox_default\": false}",
+    "expected": {
+      "error": "ValueError",
+      "message": "invalid codex_sandbox_default"
+    }
+  },
+  {
+    "name": "sandbox-[]",
+    "operation": "sandbox",
+    "text": "{\"codex_sandbox_default\": []}",
+    "expected": {
+      "error": "TypeError",
+      "message": "unhashable type: 'list'"
+    }
+  },
+  {
+    "name": "sandbox-{}",
+    "operation": "sandbox",
+    "text": "{\"codex_sandbox_default\": {}}",
+    "expected": {
+      "error": "TypeError",
+      "message": "unhashable type: 'dict'"
+    }
+  },
+  {
+    "name": "verifier-env-inherit",
+    "operation": "verifier_env",
+    "text": "{\"verifier_env\": \"inherit\"}",
+    "expected": {
+      "value": "inherit"
+    }
+  },
+  {
+    "name": "verifier-env-invalid",
+    "operation": "verifier_env",
+    "text": "{\"verifier_env\": \"invalid\"}",
+    "expected": {
+      "error": "ValueError",
+      "message": "verifier_env must be \"inherit\" or \"isolated\""
+    }
+  },
+  {
+    "name": "verifier-env-None",
+    "operation": "verifier_env",
+    "text": "{\"verifier_env\": null}",
+    "expected": {
+      "error": "ValueError",
+      "message": "verifier_env must be \"inherit\" or \"isolated\""
+    }
+  },
+  {
+    "name": "verifier-env-False",
+    "operation": "verifier_env",
+    "text": "{\"verifier_env\": false}",
+    "expected": {
+      "error": "ValueError",
+      "message": "verifier_env must be \"inherit\" or \"isolated\""
+    }
+  },
+  {
+    "name": "verifier-env-isolated",
+    "operation": "verifier_env",
+    "text": "{\"verifier_env\": \"isolated\"}",
+    "expected": {
+      "value": "isolated"
+    }
+  },
+  {
+    "name": "retention-0",
+    "operation": "retention",
+    "text": "{\"artifact_retention_days\": 0}",
+    "expected": {
+      "value": 0
+    }
+  },
+  {
+    "name": "retention-1",
+    "operation": "retention",
+    "text": "{\"artifact_retention_days\": 1}",
+    "expected": {
+      "value": 1
+    }
+  },
+  {
+    "name": "retention-30",
+    "operation": "retention",
+    "text": "{\"artifact_retention_days\": 30}",
+    "expected": {
+      "value": 30
+    }
+  },
+  {
+    "name": "retention--1",
+    "operation": "retention",
+    "text": "{\"artifact_retention_days\": -1}",
+    "expected": {
+      "error": "ValueError",
+      "message": "artifact_retention_days must be a non-negative integer"
+    }
+  },
+  {
+    "name": "retention-True",
+    "operation": "retention",
+    "text": "{\"artifact_retention_days\": true}",
+    "expected": {
+      "error": "ValueError",
+      "message": "artifact_retention_days must be a non-negative integer"
+    }
+  },
+  {
+    "name": "retention-1.5",
+    "operation": "retention",
+    "text": "{\"artifact_retention_days\": 1.5}",
+    "expected": {
+      "error": "ValueError",
+      "message": "artifact_retention_days must be a non-negative integer"
+    }
+  },
+  {
+    "name": "retention-None",
+    "operation": "retention",
+    "text": "{\"artifact_retention_days\": null}",
+    "expected": {
+      "error": "ValueError",
+      "message": "artifact_retention_days must be a non-negative integer"
+    }
+  },
+  {
+    "name": "retention-'30'",
+    "operation": "retention",
+    "text": "{\"artifact_retention_days\": \"30\"}",
+    "expected": {
+      "error": "ValueError",
+      "message": "artifact_retention_days must be a non-negative integer"
+    }
+  },
+  {
+    "name": "retention-explicit-override",
+    "operation": "retention",
+    "text": "{\"artifact_retention_days\": -1}",
+    "argument": 7,
+    "argument_json": "7",
+    "expected": {
+      "value": 7
+    }
+  },
+  {
+    "name": "retention-negative-zero",
+    "operation": "retention",
+    "text": "{\"artifact_retention_days\":-0}",
+    "expected": {
+      "value": 0
+    }
+  },
+  {
+    "name": "default-negative-zero",
+    "operation": "defaults",
+    "text": "{\"extension\":-0}",
+    "expected": {
+      "value": {
+        "input_limit_bytes": null,
+        "timeout_seconds_range": null,
+        "max_codex_attempts_cap": null,
+        "codex_sandbox_default": "workspace-write",
+        "child_env_filter": false,
+        "child_env_extra_keys": [],
+        "require_review": false,
+        "verifiers": {},
+        "verifier_env": "inherit",
+        "artifact_retention_days": 30,
+        "extension": 0
+      }
+    }
+  },
+  {
+    "name": "verifier-[]",
+    "operation": "verifiers",
+    "text": "{\"verifiers\": {\"check\": []}}",
+    "expected": {
+      "error": "ValueError",
+      "message": "invalid-verifier:check"
+    }
+  },
+  {
+    "name": "verifier-['true']",
+    "operation": "verifiers",
+    "text": "{\"verifiers\": {\"check\": [\"true\"]}}",
+    "expected": {
+      "value": [
+        [
+          "true"
+        ]
+      ]
+    }
+  },
+  {
+    "name": "verifier-['tool', 'two words']",
+    "operation": "verifiers",
+    "text": "{\"verifiers\": {\"check\": [\"tool\", \"two words\"]}}",
+    "expected": {
+      "value": [
+        [
+          "tool",
+          "two words"
+        ]
+      ]
+    }
+  },
+  {
+    "name": "verifier-['']",
+    "operation": "verifiers",
+    "text": "{\"verifiers\": {\"check\": [\"\"]}}",
+    "expected": {
+      "error": "ValueError",
+      "message": "invalid-verifier:check"
+    }
+  },
+  {
+    "name": "verifier-[True]",
+    "operation": "verifiers",
+    "text": "{\"verifiers\": {\"check\": [true]}}",
+    "expected": {
+      "error": "ValueError",
+      "message": "invalid-verifier:check"
+    }
+  },
+  {
+    "name": "verifier-'true'",
+    "operation": "verifiers",
+    "text": "{\"verifiers\": {\"check\": \"true\"}}",
+    "expected": {
+      "error": "ValueError",
+      "message": "invalid-verifier:check"
+    }
+  },
+  {
+    "name": "verifier-None",
+    "operation": "verifiers",
+    "text": "{\"verifiers\": {\"check\": null}}",
+    "expected": {
+      "error": "ValueError",
+      "message": "invalid-verifier:check"
+    }
+  },
+  {
+    "name": "unknown-verifier",
+    "operation": "verifiers",
+    "text": "{}",
+    "expected": {
+      "error": "ValueError",
+      "message": "unknown-verifier:check"
+    }
+  },
+  {
+    "name": "verifier-container-None",
+    "operation": "verifiers",
+    "text": "{\"verifiers\": null}",
+    "expected": {
+      "error": "TypeError",
+      "message": "'NoneType' object is not iterable"
+    }
+  },
+  {
+    "name": "verifier-container-1",
+    "operation": "verifiers",
+    "text": "{\"verifiers\": 1}",
+    "expected": {
+      "error": "TypeError",
+      "message": "'int' object is not iterable"
+    }
+  },
+  {
+    "name": "verifier-container-1.5",
+    "operation": "verifiers",
+    "text": "{\"verifiers\": 1.5}",
+    "expected": {
+      "error": "TypeError",
+      "message": "'float' object is not iterable"
+    }
+  },
+  {
+    "name": "verifier-container-True",
+    "operation": "verifiers",
+    "text": "{\"verifiers\": true}",
+    "expected": {
+      "error": "TypeError",
+      "message": "'bool' object is not iterable"
+    }
+  },
+  {
+    "name": "verifier-container-[]",
+    "operation": "verifiers",
+    "text": "{\"verifiers\": []}",
+    "expected": {
+      "error": "ValueError",
+      "message": "unknown-verifier:check"
+    }
+  },
+  {
+    "name": "verifier-container-['other']",
+    "operation": "verifiers",
+    "text": "{\"verifiers\": [\"other\"]}",
+    "expected": {
+      "error": "ValueError",
+      "message": "unknown-verifier:check"
+    }
+  },
+  {
+    "name": "verifier-container-['check']",
+    "operation": "verifiers",
+    "text": "{\"verifiers\": [\"check\"]}",
+    "expected": {
+      "error": "TypeError",
+      "message": "list indices must be integers or slices, not str"
+    }
+  },
+  {
+    "name": "verifier-container-'check'",
+    "operation": "verifiers",
+    "text": "{\"verifiers\": \"check\"}",
+    "expected": {
+      "error": "ValueError",
+      "message": "unknown-verifier:check"
+    }
+  },
+  {
+    "name": "verifier-container-[[]]",
+    "operation": "verifiers",
+    "text": "{\"verifiers\": [[]]}",
+    "expected": {
+      "error": "TypeError",
+      "message": "unhashable type: 'list'"
+    }
+  },
+  {
+    "name": "verifier-container-[{}]",
+    "operation": "verifiers",
+    "text": "{\"verifiers\": [{}]}",
+    "expected": {
+      "error": "TypeError",
+      "message": "unhashable type: 'dict'"
+    }
+  },
+  {
+    "name": "numeric-sandbox-NaN",
+    "operation": "sandbox",
+    "text": "{\"codex_sandbox_default\":NaN}",
+    "expected": {
+      "error": "ValueError",
+      "message": "invalid codex_sandbox_default"
+    }
+  },
+  {
+    "name": "numeric-sandbox-Infinity",
+    "operation": "sandbox",
+    "text": "{\"codex_sandbox_default\":Infinity}",
+    "expected": {
+      "error": "ValueError",
+      "message": "invalid codex_sandbox_default"
+    }
+  },
+  {
+    "name": "numeric-sandbox-10000000000000000000",
+    "operation": "sandbox",
+    "text": "{\"codex_sandbox_default\":10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000}",
+    "expected": {
+      "error": "ValueError",
+      "message": "invalid codex_sandbox_default"
+    }
+  },
+  {
+    "name": "extended-timeout-NaN",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\":[1,NaN]}",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "extended-timeout-Infinity",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\":[1,Infinity]}",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "extended-timeout--Infinity",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\":[1,-Infinity]}",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "extended-timeout-1e999",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\":[1,1e999]}",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout_seconds_range must be [min, max], finite and positive"
+    }
+  },
+  {
+    "name": "extended-timeout-10000000000000000000",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\":[1,10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000]}",
+    "expected": {
+      "error": "OverflowError",
+      "message": "int too large to convert to float"
+    }
+  },
+  {
+    "name": "numeric-strings",
+    "operation": "defaults",
+    "text": "{\"extension\": [\"NaN\", \"Infinity\", \"1e999\", \"\\\\\\\"NaN\"]}",
+    "expected": {
+      "value": {
+        "input_limit_bytes": null,
+        "timeout_seconds_range": null,
+        "max_codex_attempts_cap": null,
+        "codex_sandbox_default": "workspace-write",
+        "child_env_filter": false,
+        "child_env_extra_keys": [],
+        "require_review": false,
+        "verifiers": {},
+        "verifier_env": "inherit",
+        "artifact_retention_days": 30,
+        "extension": [
+          "NaN",
+          "Infinity",
+          "1e999",
+          "\\\"NaN"
+        ]
+      }
+    }
+  },
+  {
+    "name": "invalid-numeric-{\"unused\":01e999}",
+    "operation": "defaults",
+    "text": "{\"unused\":01e999}",
+    "expected": {
+      "error": "JSONDecodeError",
+      "message": "Expecting ',' delimiter: line 1 column 12 (char 11)"
+    }
+  },
+  {
+    "name": "invalid-numeric-{\"unused\":1.e999}",
+    "operation": "defaults",
+    "text": "{\"unused\":1.e999}",
+    "expected": {
+      "error": "JSONDecodeError",
+      "message": "Expecting ',' delimiter: line 1 column 12 (char 11)"
+    }
+  },
+  {
+    "name": "invalid-numeric-{\"unused\":-01}",
+    "operation": "defaults",
+    "text": "{\"unused\":-01}",
+    "expected": {
+      "error": "JSONDecodeError",
+      "message": "Expecting ',' delimiter: line 1 column 13 (char 12)"
+    }
+  },
+  {
+    "name": "invalid-numeric-{\"unused\":NaNx}",
+    "operation": "defaults",
+    "text": "{\"unused\":NaNx}",
+    "expected": {
+      "error": "JSONDecodeError",
+      "message": "Expecting ',' delimiter: line 1 column 14 (char 13)"
+    }
+  },
+  {
+    "name": "precise-timeout-9007199254740993",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [9007199254740992, 9007199254740992]}",
+    "argument": 9007199254740993,
+    "argument_json": "9007199254740993",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout must be within timeout_seconds_range [9007199254740992, 9007199254740992]"
+    }
+  },
+  {
+    "name": "precise-timeout-9007199254740992",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [9007199254740993, 9007199254740994]}",
+    "argument": 9007199254740992,
+    "argument_json": "9007199254740992",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout must be within timeout_seconds_range [9007199254740993, 9007199254740994]"
+    }
+  },
+  {
+    "name": "precise-timeout-18446744073709551617",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [1, 18446744073709551616]}",
+    "argument": 18446744073709551617,
+    "argument_json": "18446744073709551617",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout must be within timeout_seconds_range [1, 18446744073709551616]"
+    }
+  },
+  {
+    "name": "float-repr-[1e-07, 1e+20]",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [1e-07, 1e+20]}",
+    "argument": 1e+21,
+    "argument_json": "1e+21",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout must be within timeout_seconds_range [1e-07, 1e+20]"
+    }
+  },
+  {
+    "name": "float-repr-[1e-05, 1e+16]",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [1e-05, 1e+16]}",
+    "argument": 1e-07,
+    "argument_json": "1e-07",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout must be within timeout_seconds_range [1e-05, 1e+16]"
+    }
+  },
+  {
+    "name": "float-repr-[1.0, 2.0]",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [1.0, 2.0]}",
+    "argument": 3,
+    "argument_json": "3",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout must be within timeout_seconds_range [1.0, 2.0]"
+    }
+  },
+  {
+    "name": "float-repr-[0.0001, 1000000000000000.0]",
+    "operation": "timeout",
+    "text": "{\"timeout_seconds_range\": [0.0001, 1000000000000000.0]}",
+    "argument": 1e+16,
+    "argument_json": "1e+16",
+    "expected": {
+      "error": "ValueError",
+      "message": "timeout must be within timeout_seconds_range [0.0001, 1000000000000000.0]"
+    }
+  },
+  {
+    "name": "attempts-None-0",
+    "operation": "attempts",
+    "text": "{\"max_codex_attempts_cap\": null}",
+    "argument": 0,
+    "argument_json": "0",
+    "expected": {
+      "error": "ValueError",
+      "message": "max_codex_attempts must be positive"
+    }
+  },
+  {
+    "name": "attempts-None-1",
+    "operation": "attempts",
+    "text": "{\"max_codex_attempts_cap\": null}",
+    "argument": 1,
+    "argument_json": "1",
+    "expected": {
+      "value": null
+    }
+  },
+  {
+    "name": "attempts-None-2",
+    "operation": "attempts",
+    "text": "{\"max_codex_attempts_cap\": null}",
+    "argument": 2,
+    "argument_json": "2",
+    "expected": {
+      "value": null
+    }
+  },
+  {
+    "name": "attempts-1-0",
+    "operation": "attempts",
+    "text": "{\"max_codex_attempts_cap\": 1}",
+    "argument": 0,
+    "argument_json": "0",
+    "expected": {
+      "error": "ValueError",
+      "message": "max_codex_attempts must be positive"
+    }
+  },
+  {
+    "name": "attempts-1-1",
+    "operation": "attempts",
+    "text": "{\"max_codex_attempts_cap\": 1}",
+    "argument": 1,
+    "argument_json": "1",
+    "expected": {
+      "value": null
+    }
+  },
+  {
+    "name": "attempts-1-2",
+    "operation": "attempts",
+    "text": "{\"max_codex_attempts_cap\": 1}",
+    "argument": 2,
+    "argument_json": "2",
+    "expected": {
+      "error": "ValueError",
+      "message": "max_codex_attempts exceeds local cap"
+    }
+  },
+  {
+    "name": "attempts-2-0",
+    "operation": "attempts",
+    "text": "{\"max_codex_attempts_cap\": 2}",
+    "argument": 0,
+    "argument_json": "0",
+    "expected": {
+      "error": "ValueError",
+      "message": "max_codex_attempts must be positive"
+    }
+  },
+  {
+    "name": "attempts-2-1",
+    "operation": "attempts",
+    "text": "{\"max_codex_attempts_cap\": 2}",
+    "argument": 1,
+    "argument_json": "1",
+    "expected": {
+      "value": null
+    }
+  },
+  {
+    "name": "attempts-2-2",
+    "operation": "attempts",
+    "text": "{\"max_codex_attempts_cap\": 2}",
+    "argument": 2,
+    "argument_json": "2",
+    "expected": {
+      "value": null
+    }
+  },
+  {
+    "name": "attempts-0-0",
+    "operation": "attempts",
+    "text": "{\"max_codex_attempts_cap\": 0}",
+    "argument": 0,
+    "argument_json": "0",
+    "expected": {
+      "error": "ValueError",
+      "message": "max_codex_attempts must be positive"
+    }
+  },
+  {
+    "name": "attempts-0-1",
+    "operation": "attempts",
+    "text": "{\"max_codex_attempts_cap\": 0}",
+    "argument": 1,
+    "argument_json": "1",
+    "expected": {
+      "error": "ValueError",
+      "message": "max_codex_attempts exceeds local cap"
+    }
+  },
+  {
+    "name": "attempts-0-2",
+    "operation": "attempts",
+    "text": "{\"max_codex_attempts_cap\": 0}",
+    "argument": 2,
+    "argument_json": "2",
+    "expected": {
+      "error": "ValueError",
+      "message": "max_codex_attempts exceeds local cap"
+    }
+  },
+  {
+    "name": "attempts--1-0",
+    "operation": "attempts",
+    "text": "{\"max_codex_attempts_cap\": -1}",
+    "argument": 0,
+    "argument_json": "0",
+    "expected": {
+      "error": "ValueError",
+      "message": "max_codex_attempts exceeds local cap"
+    }
+  },
+  {
+    "name": "attempts--1-1",
+    "operation": "attempts",
+    "text": "{\"max_codex_attempts_cap\": -1}",
+    "argument": 1,
+    "argument_json": "1",
+    "expected": {
+      "error": "ValueError",
+      "message": "max_codex_attempts exceeds local cap"
+    }
+  },
+  {
+    "name": "attempts--1-2",
+    "operation": "attempts",
+    "text": "{\"max_codex_attempts_cap\": -1}",
+    "argument": 2,
+    "argument_json": "2",
+    "expected": {
+      "error": "ValueError",
+      "message": "max_codex_attempts exceeds local cap"
+    }
+  },
+  {
+    "name": "attempts-1.5-0",
+    "operation": "attempts",
+    "text": "{\"max_codex_attempts_cap\": 1.5}",
+    "argument": 0,
+    "argument_json": "0",
+    "expected": {
+      "error": "ValueError",
+      "message": "max_codex_attempts must be positive"
+    }
+  },
+  {
+    "name": "attempts-1.5-1",
+    "operation": "attempts",
+    "text": "{\"max_codex_attempts_cap\": 1.5}",
+    "argument": 1,
+    "argument_json": "1",
+    "expected": {
+      "value": null
+    }
+  },
+  {
+    "name": "attempts-1.5-2",
+    "operation": "attempts",
+    "text": "{\"max_codex_attempts_cap\": 1.5}",
+    "argument": 2,
+    "argument_json": "2",
+    "expected": {
+      "error": "ValueError",
+      "message": "max_codex_attempts exceeds local cap"
+    }
+  },
+  {
+    "name": "attempts-True-0",
+    "operation": "attempts",
+    "text": "{\"max_codex_attempts_cap\": true}",
+    "argument": 0,
+    "argument_json": "0",
+    "expected": {
+      "error": "ValueError",
+      "message": "max_codex_attempts must be positive"
+    }
+  },
+  {
+    "name": "attempts-True-1",
+    "operation": "attempts",
+    "text": "{\"max_codex_attempts_cap\": true}",
+    "argument": 1,
+    "argument_json": "1",
+    "expected": {
+      "value": null
+    }
+  },
+  {
+    "name": "attempts-True-2",
+    "operation": "attempts",
+    "text": "{\"max_codex_attempts_cap\": true}",
+    "argument": 2,
+    "argument_json": "2",
+    "expected": {
+      "error": "ValueError",
+      "message": "max_codex_attempts exceeds local cap"
+    }
+  },
+  {
+    "name": "attempts-False-0",
+    "operation": "attempts",
+    "text": "{\"max_codex_attempts_cap\": false}",
+    "argument": 0,
+    "argument_json": "0",
+    "expected": {
+      "error": "ValueError",
+      "message": "max_codex_attempts must be positive"
+    }
+  },
+  {
+    "name": "attempts-False-1",
+    "operation": "attempts",
+    "text": "{\"max_codex_attempts_cap\": false}",
+    "argument": 1,
+    "argument_json": "1",
+    "expected": {
+      "error": "ValueError",
+      "message": "max_codex_attempts exceeds local cap"
+    }
+  },
+  {
+    "name": "attempts-False-2",
+    "operation": "attempts",
+    "text": "{\"max_codex_attempts_cap\": false}",
+    "argument": 2,
+    "argument_json": "2",
+    "expected": {
+      "error": "ValueError",
+      "message": "max_codex_attempts exceeds local cap"
+    }
+  },
+  {
+    "name": "attempts-'bad'-0",
+    "operation": "attempts",
+    "text": "{\"max_codex_attempts_cap\": \"bad\"}",
+    "argument": 0,
+    "argument_json": "0",
+    "expected": {
+      "error": "TypeError",
+      "message": "'>' not supported between instances of 'int' and 'str'"
+    }
+  },
+  {
+    "name": "attempts-'bad'-1",
+    "operation": "attempts",
+    "text": "{\"max_codex_attempts_cap\": \"bad\"}",
+    "argument": 1,
+    "argument_json": "1",
+    "expected": {
+      "error": "TypeError",
+      "message": "'>' not supported between instances of 'int' and 'str'"
+    }
+  },
+  {
+    "name": "attempts-'bad'-2",
+    "operation": "attempts",
+    "text": "{\"max_codex_attempts_cap\": \"bad\"}",
+    "argument": 2,
+    "argument_json": "2",
+    "expected": {
+      "error": "TypeError",
+      "message": "'>' not supported between instances of 'int' and 'str'"
+    }
+  },
+  {
+    "name": "attempts-[]-0",
+    "operation": "attempts",
+    "text": "{\"max_codex_attempts_cap\": []}",
+    "argument": 0,
+    "argument_json": "0",
+    "expected": {
+      "error": "TypeError",
+      "message": "'>' not supported between instances of 'int' and 'list'"
+    }
+  },
+  {
+    "name": "attempts-[]-1",
+    "operation": "attempts",
+    "text": "{\"max_codex_attempts_cap\": []}",
+    "argument": 1,
+    "argument_json": "1",
+    "expected": {
+      "error": "TypeError",
+      "message": "'>' not supported between instances of 'int' and 'list'"
+    }
+  },
+  {
+    "name": "attempts-[]-2",
+    "operation": "attempts",
+    "text": "{\"max_codex_attempts_cap\": []}",
+    "argument": 2,
+    "argument_json": "2",
+    "expected": {
+      "error": "TypeError",
+      "message": "'>' not supported between instances of 'int' and 'list'"
+    }
+  },
+  {
+    "name": "attempts-{}-0",
+    "operation": "attempts",
+    "text": "{\"max_codex_attempts_cap\": {}}",
+    "argument": 0,
+    "argument_json": "0",
+    "expected": {
+      "error": "TypeError",
+      "message": "'>' not supported between instances of 'int' and 'dict'"
+    }
+  },
+  {
+    "name": "attempts-{}-1",
+    "operation": "attempts",
+    "text": "{\"max_codex_attempts_cap\": {}}",
+    "argument": 1,
+    "argument_json": "1",
+    "expected": {
+      "error": "TypeError",
+      "message": "'>' not supported between instances of 'int' and 'dict'"
+    }
+  },
+  {
+    "name": "attempts-{}-2",
+    "operation": "attempts",
+    "text": "{\"max_codex_attempts_cap\": {}}",
+    "argument": 2,
+    "argument_json": "2",
+    "expected": {
+      "error": "TypeError",
+      "message": "'>' not supported between instances of 'int' and 'dict'"
+    }
+  },
+  {
+    "name": "input-limit-None",
+    "operation": "input_size",
+    "text": "{\"input_limit_bytes\": null}",
+    "argument": 1,
+    "argument_json": "1",
+    "expected": {
+      "value": null
+    }
+  },
+  {
+    "name": "input-limit-0",
+    "operation": "input_size",
+    "text": "{\"input_limit_bytes\": 0}",
+    "argument": 1,
+    "argument_json": "1",
+    "expected": {
+      "value": null
+    }
+  },
+  {
+    "name": "input-limit-1",
+    "operation": "input_size",
+    "text": "{\"input_limit_bytes\": 1}",
+    "argument": 1,
+    "argument_json": "1",
+    "expected": {
+      "error": "ValueError",
+      "message": "Codex input exceeds configured input_limit_bytes"
+    }
+  },
+  {
+    "name": "input-limit-2",
+    "operation": "input_size",
+    "text": "{\"input_limit_bytes\": 2}",
+    "argument": 1,
+    "argument_json": "1",
+    "expected": {
+      "value": null
+    }
+  },
+  {
+    "name": "input-limit-4",
+    "operation": "input_size",
+    "text": "{\"input_limit_bytes\": 4}",
+    "argument": 1,
+    "argument_json": "1",
+    "expected": {
+      "value": null
+    }
+  },
+  {
+    "name": "input-limit-True",
+    "operation": "input_size",
+    "text": "{\"input_limit_bytes\": true}",
+    "argument": 1,
+    "argument_json": "1",
+    "expected": {
+      "error": "ValueError",
+      "message": "Codex input exceeds configured input_limit_bytes"
+    }
+  },
+  {
+    "name": "input-limit-False",
+    "operation": "input_size",
+    "text": "{\"input_limit_bytes\": false}",
+    "argument": 1,
+    "argument_json": "1",
+    "expected": {
+      "value": null
+    }
+  },
+  {
+    "name": "input-limit--1",
+    "operation": "input_size",
+    "text": "{\"input_limit_bytes\": -1}",
+    "argument": 1,
+    "argument_json": "1",
+    "expected": {
+      "value": null
+    }
+  },
+  {
+    "name": "input-limit-1.5",
+    "operation": "input_size",
+    "text": "{\"input_limit_bytes\": 1.5}",
+    "argument": 1,
+    "argument_json": "1",
+    "expected": {
+      "value": null
+    }
+  },
+  {
+    "name": "input-limit-'bad'",
+    "operation": "input_size",
+    "text": "{\"input_limit_bytes\": \"bad\"}",
+    "argument": 1,
+    "argument_json": "1",
+    "expected": {
+      "value": null
+    }
+  },
+  {
+    "name": "truthy-None",
+    "operation": "truthy",
+    "text": "{\"require_review\": null, \"child_env_filter\": null}",
+    "expected": {
+      "value": [
+        false,
+        false
+      ]
+    }
+  },
+  {
+    "name": "truthy-False",
+    "operation": "truthy",
+    "text": "{\"require_review\": false, \"child_env_filter\": false}",
+    "expected": {
+      "value": [
+        false,
+        false
+      ]
+    }
+  },
+  {
+    "name": "truthy-True",
+    "operation": "truthy",
+    "text": "{\"require_review\": true, \"child_env_filter\": true}",
+    "expected": {
+      "value": [
+        true,
+        true
+      ]
+    }
+  },
+  {
+    "name": "truthy-0",
+    "operation": "truthy",
+    "text": "{\"require_review\": 0, \"child_env_filter\": 0}",
+    "expected": {
+      "value": [
+        false,
+        false
+      ]
+    }
+  },
+  {
+    "name": "truthy-1",
+    "operation": "truthy",
+    "text": "{\"require_review\": 1, \"child_env_filter\": 1}",
+    "expected": {
+      "value": [
+        true,
+        true
+      ]
+    }
+  },
+  {
+    "name": "truthy-''",
+    "operation": "truthy",
+    "text": "{\"require_review\": \"\", \"child_env_filter\": \"\"}",
+    "expected": {
+      "value": [
+        false,
+        false
+      ]
+    }
+  },
+  {
+    "name": "truthy-'yes'",
+    "operation": "truthy",
+    "text": "{\"require_review\": \"yes\", \"child_env_filter\": \"yes\"}",
+    "expected": {
+      "value": [
+        true,
+        true
+      ]
+    }
+  },
+  {
+    "name": "truthy-[]",
+    "operation": "truthy",
+    "text": "{\"require_review\": [], \"child_env_filter\": []}",
+    "expected": {
+      "value": [
+        false,
+        false
+      ]
+    }
+  },
+  {
+    "name": "truthy-[1]",
+    "operation": "truthy",
+    "text": "{\"require_review\": [1], \"child_env_filter\": [1]}",
+    "expected": {
+      "value": [
+        true,
+        true
+      ]
+    }
+  },
+  {
+    "name": "truthy-{}",
+    "operation": "truthy",
+    "text": "{\"require_review\": {}, \"child_env_filter\": {}}",
+    "expected": {
+      "value": [
+        false,
+        false
+      ]
+    }
+  },
+  {
+    "name": "truthy-{'a': 1}",
+    "operation": "truthy",
+    "text": "{\"require_review\": {\"a\": 1}, \"child_env_filter\": {\"a\": 1}}",
+    "expected": {
+      "value": [
+        true,
+        true
+      ]
+    }
+  }
+]

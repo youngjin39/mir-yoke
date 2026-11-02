@@ -5,6 +5,8 @@
     deny(clippy::unwrap_used, clippy::expect_used, clippy::panic)
 )]
 mod digest;
+pub mod executor_local;
+pub mod local_bridge;
 mod patterns;
 mod python_text;
 pub mod stop;
