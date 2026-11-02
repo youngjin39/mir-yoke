@@ -17,6 +17,8 @@ PARITY = runpy.run_path(str(ROOT / 'tests/test_executor_execute_native_parity.py
 SUPPORT = PARITY['SUPPORT']
 DISPATCH = PARITY['DISPATCH']
 binary = PARITY['binary']
+decline_trace = PARITY['decline_trace']
+trace_details = PARITY['trace_details']
 
 CASES = ('codex', 'claude', 'dynamic', 'read_only', 'missing', 'resume',
          'command_precedence', 'malformed_frontmatter', 'opaque_brief',
@@ -162,18 +164,22 @@ def test_pinned_agent_dispatch_matches_python(binary, tmp_path, case):
         snapshot = DISPATCH['snapshot'](root, result)
         snapshots.append(snapshot)
         if case in ('malformed_frontmatter', 'invalid_hook', 'invalid_sandbox'):
-            assert result.returncode == 1, result.stderr
+            assert result.returncode == 1, (result.stderr, trace_details())
             assert {'malformed_frontmatter': b'leading frontmatter',
                     'invalid_hook': b'invalid route for target agent',
-                    'invalid_sandbox': b'invalid sandbox_mode'}[case] in result.stderr
-            assert not (root / 'provider-methods').exists()
-            assert not (root / 'tasks' / 'jobs.db').exists()
+                    'invalid_sandbox': b'invalid sandbox_mode'}[case] in result.stderr, (
+                trace_details()
+            )
+            assert not (root / 'provider-methods').exists(), trace_details()
+            assert not (root / 'tasks' / 'jobs.db').exists(), trace_details()
             continue
-        assert (root / 'native-owned').exists() == (implementation == 'native'), result.stderr
-        assert result.returncode == 0, (result.stdout, result.stderr)
+        assert (root / 'native-owned').exists() == (implementation == 'native'), (
+            (result.stderr, trace_details())
+        )
+        assert result.returncode == 0, ((result.stdout, result.stderr), trace_details())
         read_only = case in ('read_only', 'hook_read_only', 'generated_read_only')
         assert snapshot['code_text'] == ('initial\n' if read_only
-                                         else 'delegated change\n')
+                                         else 'delegated change\n'), trace_details()
         with closing(sqlite3.connect(root / 'tasks' / 'jobs.db')) as connection:
             metadata = connection.execute(
                 'SELECT execution_backend,resolved_model,resolved_reasoning_effort,status '
@@ -184,33 +190,37 @@ def test_pinned_agent_dispatch_matches_python(binary, tmp_path, case):
                      case, 'policy-model')
         effort = ('low' if case in ('dynamic', 'hook_read_only', 'command_precedence', 'resume')
                   else 'medium' if case in ('missing', 'forced_backend') else 'high')
-        assert metadata[:3] == ('claude' if case == 'claude' else 'codex', model, effort)
-        assert metadata[3] == 'completed'
+        assert metadata[:3] == ('claude' if case == 'claude' else 'codex', model, effort), (
+            trace_details()
+        )
+        assert metadata[3] == 'completed', trace_details()
         if case == 'missing':
-            assert b'no definition for target agent' in result.stderr
+            assert b'no definition for target agent' in result.stderr, trace_details()
         if case == 'opaque_brief':
-            assert 'rendered_opaque_brief' in snapshot['events']
+            assert 'rendered_opaque_brief' in snapshot['events'], trace_details()
         if case == 'resume':
             with closing(sqlite3.connect(root / 'tasks' / 'jobs.db')) as connection:
                 assert connection.execute(
                     'SELECT target_agent,agent_definition_path FROM jobs').fetchone() == (
-                        'previous-agent', str(Path('.claude') / 'agents' / 'previous-agent.md'))
+                        'previous-agent', str(Path('.claude') / 'agents' / 'previous-agent.md')), (
+                    trace_details()
+                )
         if case == 'claude':
             argv = json.loads((root / 'provider-arguments').read_text())
             assert argv[:6] == ['--agent', 'offline-agent', '--model', model,
-                               '--effort', effort]
+                               '--effort', effort], trace_details()
         else:
             requests = [json.loads(line) for line in
                         (root / 'provider-requests').read_text().splitlines()]
             thread = next(item['params'] for item in requests
                           if item.get('method') == 'thread/start')
-            assert thread['model'] == model
+            assert thread['model'] == model, trace_details()
             assert thread['sandbox'] == ('read-only' if read_only
-                                         else 'workspace-write')
+                                         else 'workspace-write'), trace_details()
             if case != 'missing':
                 assert thread['baseInstructions'] == (
                     'Offline hook instructions.' if case in ('dynamic', 'hook_read_only')
                     else 'Generated offline instructions.' if case == 'generated_read_only'
-                    else 'Offline agent instructions.')
-            assert thread['config']['model_reasoning_effort'] == effort
-    assert snapshots[0] == snapshots[1]
+                    else 'Offline agent instructions.'), trace_details()
+            assert thread['config']['model_reasoning_effort'] == effort, trace_details()
+    assert snapshots[0] == snapshots[1], trace_details()

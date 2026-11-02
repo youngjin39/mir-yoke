@@ -142,7 +142,8 @@ def _stop_native(child, number: int) -> None:
             # The native process may have exited before its bridge/provider.
             try:
                 os.killpg(child.pid, signal.SIGKILL)
-            except ProcessLookupError:
+            except (ProcessLookupError, PermissionError):
+                # macOS can report EPERM once the group has only zombie members.
                 pass
 
 

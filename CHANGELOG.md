@@ -117,7 +117,9 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
   routes (explicit brief agents and `resolve_agent_route` hooks through the
   bridge, read-only narrowing, saved routes on resume) are native too;
   cross-home targets and parser extensions still run in Python. The local bridge
-  carries `AgentRoute` values.
+  carries `AgentRoute` values. Native environment lookups (`PATH`, `CODEX_BIN`)
+  follow Windows' case-insensitive names, and `MIR_EXECUTOR_DECLINE_TRACE` names
+  a file that records why the binary declined (for diagnosis only).
 - `tools/mir_executor/policy.py` no longer imports `pwd` on Windows.
 - The Python executor's dispatch event writer skips `os.fchmod` where the
   platform lacks it, instead of failing.

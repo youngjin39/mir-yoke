@@ -37,12 +37,18 @@ impl Fixture {
         self.0.join("repo")
     }
     fn native(&self, args: &[&str]) -> Output {
-        Command::new(env!("CARGO_BIN_EXE_executor-query"))
+        let mut command = Command::new(env!("CARGO_BIN_EXE_executor-query"));
+        windows_path_only(&mut command);
+        command
             .arg("--home-root")
             .arg(self.repo())
             .args(args)
             .current_dir(self.repo())
             .env("MIR_EXECUTOR_OWNED_RECEIPT", self.0.join("receipt"))
+            .env(
+                "MIR_EXECUTOR_DECLINE_TRACE",
+                self.0.join("decline-trace.log"),
+            )
             .output()
             .unwrap()
     }
@@ -63,6 +69,14 @@ impl Fixture {
 }
 impl Drop for Fixture {
     fn drop(&mut self) {
+        if std::thread::panicking() {
+            eprintln!(
+                "native decline trace ({}):\n{}",
+                self.0.join("decline-trace.log").display(),
+                fs::read_to_string(self.0.join("decline-trace.log"))
+                    .unwrap_or_else(|_| "<no declines>".into())
+            );
+        }
         let _ = fs::remove_dir_all(&self.0);
     }
 }
@@ -326,4 +340,17 @@ fn parent_alias_resolves_but_final_database_symlink_declines() {
     assert!(output.stdout.is_empty());
     assert!(output.stderr.is_empty());
     assert!(!fixture.0.join("receipt").exists());
+}
+
+fn windows_path_only(command: &mut Command) {
+    #[cfg(windows)]
+    {
+        let path = std::env::var_os("PATH").or_else(|| std::env::var_os("Path"));
+        command.env_remove("MIR_EXECUTOR_PYTHON").env_remove("PATH");
+        if let Some(path) = path {
+            command.env("Path", path);
+        }
+    }
+    #[cfg(not(windows))]
+    let _ = command;
 }

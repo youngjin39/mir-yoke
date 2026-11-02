@@ -15,6 +15,9 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 CRATE = ROOT / 'native/handoff-packet'
+TRACE = runpy.run_path(str(ROOT / "tests/support/executor_decline_trace.py"))
+decline_trace = TRACE["decline_trace"]
+trace_details = TRACE["trace_details"]
 SUPPORT = runpy.run_path(str(ROOT / 'tests/fixtures/executor_execute_support.py'))
 DISPATCH = runpy.run_path(str(ROOT / 'tests/fixtures/executor_dispatch_cli_support.py'))
 GOLDEN = json.loads((ROOT / 'tests/fixtures/executor_execute.json').read_text(encoding='utf-8'))
@@ -36,12 +39,14 @@ def binary():
 
 @pytest.mark.parametrize('case', SUPPORT['CASES'])
 def test_execute_fixture_matches_python(tmp_path, case):
-    assert SUPPORT['run_case'](tmp_path / 'python home', case) == GOLDEN[case]
+    assert SUPPORT['run_case'](tmp_path / 'python home', case) == GOLDEN[case], trace_details()
 
 
 @pytest.mark.parametrize('case', SUPPORT['CASES'])
 def test_execute_native_matches_python_fixture(binary, tmp_path, case):
-    assert SUPPORT['run_case'](tmp_path / 'native home', case, binary) == GOLDEN[case]
+    assert SUPPORT['run_case'](tmp_path / 'native home', case, binary) == GOLDEN[case], (
+        trace_details()
+    )
 
 
 @pytest.mark.parametrize('arguments', [
@@ -61,12 +66,14 @@ def test_execute_declines_unsupported_command_before_effects(binary, tmp_path, a
     completed = subprocess.run([str(binary), '--home-root', str(root), *arguments],
                                cwd=root, env=SUPPORT['environment'](root, 'success', launcher),
                                capture_output=True, timeout=45, check=False)
-    assert (completed.stdout, completed.stderr, completed.returncode) == (b'', b'', 64)
-    assert (root / 'tasks/tdd.json').read_bytes() == before
-    assert not (root / 'tasks/jobs.db').exists()
-    assert not (root / 'provider-started').exists()
-    assert not (root / 'unexpected-pre-execute').exists()
-    assert not (root / 'unexpected-writer-scope').exists()
+    assert (completed.stdout, completed.stderr, completed.returncode) == (b'', b'', 64), (
+        trace_details()
+    )
+    assert (root / 'tasks/tdd.json').read_bytes() == before, trace_details()
+    assert not (root / 'tasks/jobs.db').exists(), trace_details()
+    assert not (root / 'provider-started').exists(), trace_details()
+    assert not (root / 'unexpected-pre-execute').exists(), trace_details()
+    assert not (root / 'unexpected-writer-scope').exists(), trace_details()
 
 
 def test_execute_declines_dynamic_local_options_before_effects(binary, tmp_path):
@@ -87,11 +94,13 @@ def test_execute_declines_dynamic_local_options_before_effects(binary, tmp_path)
                                 *SUPPORT['argv']('success')], cwd=root,
                                env=SUPPORT['environment'](root, 'success', launcher),
                                capture_output=True, timeout=45, check=False)
-    assert (completed.stdout, completed.stderr, completed.returncode) == (b'', b'', 64)
-    assert (root / 'tasks/tdd.json').read_bytes() == before
+    assert (completed.stdout, completed.stderr, completed.returncode) == (b'', b'', 64), (
+        trace_details()
+    )
+    assert (root / 'tasks/tdd.json').read_bytes() == before, trace_details()
     for path in ('tasks/jobs.db', 'provider-started', 'unexpected-pre-execute',
                  'unexpected-writer-scope', 'unexpected-import'):
-        assert not (root / path).exists()
+        assert not (root / path).exists(), trace_details()
 
 
 @pytest.mark.parametrize(
@@ -120,14 +129,16 @@ def test_execute_effectful_local_failure_is_final(binary, tmp_path, effect):
                                 *SUPPORT['argv']('success')], cwd=root,
                                env=SUPPORT['environment'](root, 'success', launcher),
                                capture_output=True, timeout=45, check=False)
-    assert completed.returncode == 1, (completed.stdout, completed.stderr)
-    assert completed.stderr
-    assert completed.stdout == b''
+    assert completed.returncode == 1, ((completed.stdout, completed.stderr), trace_details())
+    assert completed.stderr, trace_details()
+    assert completed.stdout == b'', trace_details()
     assert (root / 'local-effects').read_text().splitlines() == [
-        'import' if effect in ('import_failure', 'dynamic_options') else 'pre_execute']
-    assert (root / 'tasks/tdd.json').read_bytes() == before
-    assert not (root / 'tasks/jobs.db').exists()
-    assert not (root / 'provider-started').exists()
+        'import' if effect in ('import_failure', 'dynamic_options') else 'pre_execute'], (
+        trace_details()
+    )
+    assert (root / 'tasks/tdd.json').read_bytes() == before, trace_details()
+    assert not (root / 'tasks/jobs.db').exists(), trace_details()
+    assert not (root / 'provider-started').exists(), trace_details()
 
 
 @pytest.mark.parametrize('case', ['cross_target', 'malformed_json', 'NaN', 'Infinity',
@@ -155,10 +166,12 @@ def test_execute_declines_unsupported_root_or_ledger_before_import(binary, tmp_p
     completed = subprocess.run([str(binary), '--home-root', str(root), *arguments], cwd=root,
                                env=SUPPORT['environment'](root, 'success', launcher),
                                capture_output=True, timeout=45, check=False)
-    assert (completed.stdout, completed.stderr, completed.returncode) == (b'', b'', 64)
-    assert ledger.read_bytes() == before
+    assert (completed.stdout, completed.stderr, completed.returncode) == (b'', b'', 64), (
+        trace_details()
+    )
+    assert ledger.read_bytes() == before, trace_details()
     for path in ('unexpected-import', 'provider-started', 'tasks/jobs.db'):
-        assert not (root / path).exists()
+        assert not (root / path).exists(), trace_details()
 
 
 @pytest.mark.parametrize('implementation', ['python', 'native'])
@@ -178,19 +191,21 @@ def test_background_id_is_flushed_before_provider_completion(request, tmp_path, 
         try:
             deadline = time.monotonic() + 30
             while b'\n' not in output.read_bytes() and process.poll() is None:
-                assert time.monotonic() < deadline, 'background job ID was not flushed'
+                assert time.monotonic() < deadline, (
+                    ('background job ID was not flushed', trace_details())
+                )
                 time.sleep(0.01)
             line = output.read_bytes().decode('utf-8').strip()
-            assert line.startswith('[BACKGROUND] job_id='), errors.read_bytes()
-            assert process.poll() is None, errors.read_bytes()
+            assert line.startswith('[BACKGROUND] job_id='), (errors.read_bytes(), trace_details())
+            assert process.poll() is None, (errors.read_bytes(), trace_details())
             connection = sqlite3.connect(root / 'tasks/jobs.db')
             try:
                 assert connection.execute('SELECT job_id, status FROM jobs').fetchone() == (
-                    line.split('=', 1)[1], 'running')
+                    line.split('=', 1)[1], 'running'), trace_details()
             finally:
                 connection.close()
             (root / 'provider-release').write_text('release', encoding='utf-8')
-            assert process.wait(timeout=45) == 0, errors.read_bytes()
+            assert process.wait(timeout=45) == 0, (errors.read_bytes(), trace_details())
         finally:
             (root / 'provider-release').touch()
             if process.poll() is None:
@@ -198,7 +213,9 @@ def test_background_id_is_flushed_before_provider_completion(request, tmp_path, 
                 process.wait(timeout=5)
     completed = subprocess.CompletedProcess(command, process.returncode,
                                             output.read_bytes(), errors.read_bytes())
-    assert SUPPORT['snapshot'](root, launcher, completed) == GOLDEN['background_success']
+    assert SUPPORT['snapshot'](root, launcher, completed) == GOLDEN['background_success'], (
+        trace_details()
+    )
 
 
 def pinned_home(binary, tmp_path, case='success'):
@@ -253,35 +270,37 @@ def test_pinned_dispatch_and_resume_match_python(binary, tmp_path, case):
         result = invoke_pinned(root, environment, arguments, capture_output=True)
         snapshots.append(DISPATCH['snapshot'](root, result))
         if case != 'changed_brief':
-            assert (root / 'native-owned').exists() == (implementation == 'native'), result.stderr
+            assert (root / 'native-owned').exists() == (implementation == 'native'), (
+                (result.stderr, trace_details())
+            )
         if case in ('success', 'claude_success'):
-            assert result.returncode == 0, result.stderr
-            assert (root / 'code.txt').read_text() == 'delegated change\n'
+            assert result.returncode == 0, (result.stderr, trace_details())
+            assert (root / 'code.txt').read_text() == 'delegated change\n', trace_details()
         if case == 'finalize_rollback':
-            assert result.returncode == 1, result.stderr
-            assert (root / 'code.txt').read_text() == 'initial\n'
+            assert result.returncode == 1, (result.stderr, trace_details())
+            assert (root / 'code.txt').read_text() == 'initial\n', trace_details()
         if case == 'claude_invalid_timeout':
-            assert result.returncode == 1, result.stderr
-            assert not (root / 'provider-methods').exists()
-            assert not (root / 'artifacts').exists()
+            assert result.returncode == 1, (result.stderr, trace_details())
+            assert not (root / 'provider-methods').exists(), trace_details()
+            assert not (root / 'artifacts').exists(), trace_details()
         if case == 'review_reject':
-            assert result.returncode == 1, result.stderr
-            assert b'offline rejection' in result.stdout
-            assert (root / 'code.txt').read_text() == 'initial\n'
-            assert snapshots[-1]['provider_methods'].count('thread/start') == 2
+            assert result.returncode == 1, (result.stderr, trace_details())
+            assert b'offline rejection' in result.stdout, trace_details()
+            assert (root / 'code.txt').read_text() == 'initial\n', trace_details()
+            assert snapshots[-1]['provider_methods'].count('thread/start') == 2, trace_details()
         if case == 'hook_failure':
-            assert result.returncode == 1, result.stderr
+            assert result.returncode == 1, (result.stderr, trace_details())
             events = [json.loads(line)[0] for line in
                       (root / 'hook-events').read_text().splitlines()]
-            assert events.count('dispatch_failed') == 1
-            assert (root / 'code.txt').read_text() == 'initial\n'
+            assert events.count('dispatch_failed') == 1, trace_details()
+            assert (root / 'code.txt').read_text() == 'initial\n', trace_details()
             connection = sqlite3.connect(root / 'tasks/jobs.db')
             try:
                 assert connection.execute('SELECT status,stderr FROM jobs').fetchall() == [
-                    ('failed', 'offline after_run failure')]
+                    ('failed', 'offline after_run failure')], trace_details()
             finally:
                 connection.close()
-    assert snapshots[0] == snapshots[1]
+    assert snapshots[0] == snapshots[1], trace_details()
 
 
 def invoke_pinned(root, environment, arguments, **kwargs):
@@ -302,17 +321,17 @@ def test_dispatch_failed_receipt_declines_before_local_import(binary, tmp_path):
     environment['MIR_EXECUTOR_OWNED_RECEIPT'] = str(receipt)
     result = subprocess.run([str(binary), '--home-root', str(root), *arguments],
                             cwd=root, env=environment, capture_output=True, timeout=60)
-    assert (result.returncode, result.stdout, result.stderr) == (64, b'', b'')
+    assert (result.returncode, result.stdout, result.stderr) == (64, b'', b''), trace_details()
     for path in ('native-imported', 'hook-events', 'provider-methods', 'tasks/jobs.db'):
-        assert not (root / path).exists()
-    assert (root / 'code.txt').read_text() == 'initial\n'
+        assert not (root / path).exists(), trace_details()
+    assert (root / 'code.txt').read_text() == 'initial\n', trace_details()
 
 
 @pytest.mark.parametrize('case', SUPPORT['CASES'])
 def test_pinned_execute_matches_fixture(binary, tmp_path, case):
     root, launcher, environment = pinned_home(binary, tmp_path, case)
     completed = invoke_pinned(root, environment, SUPPORT['argv'](case), capture_output=True)
-    assert SUPPORT['snapshot'](root, launcher, completed) == GOLDEN[case]
+    assert SUPPORT['snapshot'](root, launcher, completed) == GOLDEN[case], trace_details()
 
 
 @pytest.mark.parametrize('selector', [None, 'MIR_EXECUTOR_IMPL', 'MIR_EXECUTOR_EXECUTE_IMPL',
@@ -324,9 +343,9 @@ def test_pinned_execute_routes_before_python_import(binary, tmp_path, selector):
     if selector:
         environment[selector] = '0' if selector == 'MIR_NATIVE_HOOKS' else 'python'
     result = invoke_pinned(root, environment, SUPPORT['argv']('success'), capture_output=True)
-    assert result.returncode == (1 if selector else 0), result.stderr
-    assert (b'python route selected' in result.stderr) == bool(selector)
-    assert (root / 'provider-started').exists() == (selector is None)
+    assert result.returncode == (1 if selector else 0), (result.stderr, trace_details())
+    assert (b'python route selected' in result.stderr) == bool(selector), trace_details()
+    assert (root / 'provider-started').exists() == (selector is None), trace_details()
 
 
 def test_pinned_execute_declines_dynamic_options(binary, tmp_path):
@@ -342,8 +361,8 @@ def test_pinned_execute_declines_dynamic_options(binary, tmp_path):
     result = invoke_pinned(root, environment,
                            SUPPORT['argv']('success') + ['--project-route', 'offline'],
                            capture_output=True)
-    assert result.returncode == 0, result.stderr
-    assert (root / 'python-route').exists()
+    assert result.returncode == 0, (result.stderr, trace_details())
+    assert (root / 'python-route').exists(), trace_details()
 
 
 @pytest.fixture(scope='module')
@@ -366,13 +385,13 @@ def test_pinned_older_binary_declines_to_python(older_binary, tmp_path, command)
                  'sweep': ['sweep', '--repo-root', str(root)]}[command]
     result = invoke_pinned(root, environment, arguments, capture_output=True)
     if command == 'execute':
-        assert SUPPORT['snapshot'](root, launcher, result) == GOLDEN['success']
-        assert (root / 'provider-started').exists()
+        assert SUPPORT['snapshot'](root, launcher, result) == GOLDEN['success'], trace_details()
+        assert (root / 'provider-started').exists(), trace_details()
     else:
         reference_environment = dict(environment, MIR_EXECUTOR_IMPL='python')
         reference = invoke_pinned(root, reference_environment, arguments, capture_output=True)
         assert (result.returncode, result.stdout, result.stderr) == (
-            reference.returncode, reference.stdout, reference.stderr)
+            reference.returncode, reference.stdout, reference.stderr), trace_details()
 
 
 @pytest.mark.parametrize('command', ['execute', 'cancel'])
@@ -393,13 +412,13 @@ def test_native_owned_receipt_precedes_effects(binary, tmp_path, command, writab
     result = subprocess.run([str(binary), '--home-root', str(root), *arguments],
                             cwd=root, env=environment, capture_output=True, timeout=60)
     if writable:
-        assert receipt.read_bytes() == b'owned'
-        assert result.returncode != 64
+        assert receipt.read_bytes() == b'owned', trace_details()
+        assert result.returncode != 64, trace_details()
     else:
-        assert (result.returncode, result.stdout, result.stderr) == (64, b'', b'')
-        assert not (root / 'provider-started').exists()
-        assert not (root / 'tasks/jobs.db').exists()
-        assert not (root / 'hook-imported').exists()
+        assert (result.returncode, result.stdout, result.stderr) == (64, b'', b''), trace_details()
+        assert not (root / 'provider-started').exists(), trace_details()
+        assert not (root / 'tasks/jobs.db').exists(), trace_details()
+        assert not (root / 'hook-imported').exists(), trace_details()
 
 
 @pytest.mark.parametrize('code', [7, 64])
@@ -415,9 +434,9 @@ def test_pinned_execute_owned_failure_never_retries(binary, tmp_path, code):
         f'    result.exit_code = {code}\n'
         '    return result\n', encoding='utf-8')
     result = invoke_pinned(root, environment, SUPPORT['argv']('success'), capture_output=True)
-    assert result.returncode == code, result.stderr
-    assert b'[RESULT]' in result.stdout
-    assert (root / 'effects').read_text().splitlines() == ['once']
+    assert result.returncode == code, (result.stderr, trace_details())
+    assert b'[RESULT]' in result.stdout, trace_details()
+    assert (root / 'effects').read_text().splitlines() == ['once'], trace_details()
 
 
 def test_pinned_execute_ordered_live_streams(binary, tmp_path):
@@ -439,12 +458,14 @@ def test_pinned_execute_ordered_live_streams(binary, tmp_path):
         try:
             deadline = time.monotonic() + 30
             while b'[BACKGROUND]' not in output.read_bytes():
-                assert process.poll() is None, output.read_bytes()
-                assert time.monotonic() < deadline, 'output buffered until completion'
+                assert process.poll() is None, (output.read_bytes(), trace_details())
+                assert time.monotonic() < deadline, (
+                    ('output buffered until completion', trace_details())
+                )
                 time.sleep(0.02)
-            assert output.read_bytes().startswith(b'first\nsecond\nthird\n')
+            assert output.read_bytes().startswith(b'first\nsecond\nthird\n'), trace_details()
             (root / 'provider-release').touch()
-            assert process.wait(timeout=45) == 0
+            assert process.wait(timeout=45) == 0, trace_details()
         finally:
             (root / 'provider-release').touch()
             process.stdin.close()
@@ -472,15 +493,15 @@ def test_pinned_execute_interrupt_preserves_python_job_state(
         try:
             deadline = time.monotonic() + 30
             while not (root / 'provider-started').exists():
-                assert process.poll() is None, output.read_bytes()
-                assert time.monotonic() < deadline, 'provider did not start'
+                assert process.poll() is None, (output.read_bytes(), trace_details())
+                assert time.monotonic() < deadline, ('provider did not start', trace_details())
                 time.sleep(0.02)
             # Target the entrypoint alone: it must forward to its native child.
             process.send_signal(number)
             time.sleep(0.2)
             (root / 'provider-release').touch()
             code = process.wait(timeout=45)
-            assert code in (128 + number, -number), output.read_bytes()
+            assert code in (128 + number, -number), (output.read_bytes(), trace_details())
         finally:
             (root / 'provider-release').touch()
             try:
@@ -491,11 +512,11 @@ def test_pinned_execute_interrupt_preserves_python_job_state(
     connection = sqlite3.connect(root / 'tasks/jobs.db')
     try:
         assert connection.execute('SELECT status, exit_code FROM jobs').fetchall() == [
-            ('running', None)]
+            ('running', None)], trace_details()
     finally:
         connection.close()
     assert json.loads((root / 'tasks/tdd.json').read_text())['changes'][0]['categories'][
-        'unit']['status'] == 'planned'
+        'unit']['status'] == 'planned', trace_details()
 
 
 def test_pinned_entrypoint_passes_binary_stdin_without_buffering(binary, tmp_path):
@@ -513,9 +534,9 @@ def test_pinned_entrypoint_passes_binary_stdin_without_buffering(binary, tmp_pat
     payload = b'first\x00\xff\nsecond\r\n'
     result = invoke_pinned(root, environment, SUPPORT['argv']('success'),
                            input=payload, capture_output=True)
-    assert result.returncode == 0, result.stderr
-    assert result.stdout == payload
-    assert not (root / 'provider-started').exists()
+    assert result.returncode == 0, (result.stderr, trace_details())
+    assert result.stdout == payload, trace_details()
+    assert not (root / 'provider-started').exists(), trace_details()
 
 
 @pytest.mark.parametrize('guard', ['hash', 'pin', 'link', 'encoding'])
@@ -541,9 +562,9 @@ def test_pinned_mutation_routes_keep_admission_guards(binary, tmp_path, guard, c
     arguments = SUPPORT['argv']('success') if command == 'execute' else [
         'cancel', '--job-id', 'missing']
     result = invoke_pinned(root, environment, arguments, capture_output=True)
-    assert result.returncode == 1
-    assert b'python guard fallback' in result.stderr
-    assert not (root / 'provider-started').exists()
+    assert result.returncode == 1, trace_details()
+    assert b'python guard fallback' in result.stderr, trace_details()
+    assert not (root / 'provider-started').exists(), trace_details()
 
 
 @pytest.mark.parametrize('dynamic', [False, True])
@@ -562,8 +583,8 @@ def test_dispatch_missing_agent_matches_python_fallback_route(binary, tmp_path, 
             encoding='utf-8')
     result = subprocess.run([str(binary), '--home-root', str(root), *arguments],
                             cwd=root, env=environment, capture_output=True, timeout=60)
-    assert result.returncode == 0, result.stderr
-    assert receipt.read_bytes() == b'owned'
-    assert b'no definition for target agent' in result.stderr
-    assert (root / 'tasks/jobs.db').exists()
-    assert (root / 'provider-methods').exists()
+    assert result.returncode == 0, (result.stderr, trace_details())
+    assert receipt.read_bytes() == b'owned', trace_details()
+    assert b'no definition for target agent' in result.stderr, trace_details()
+    assert (root / 'tasks/jobs.db').exists(), trace_details()
+    assert (root / 'provider-methods').exists(), trace_details()

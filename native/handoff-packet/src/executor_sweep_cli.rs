@@ -22,7 +22,7 @@ struct Args {
     retention: i64,
     bridge: Option<BridgeConfig>,
 }
-fn parse(raw: &[OsString], cwd: &Path, home: &Path) -> Option<Args> {
+fn parse(raw: &[OsString], cwd: &Path, home: &Path) -> Result<Args, &'static str> {
     let mut iter = raw.iter();
     let mut command = false;
     let mut repo = cwd.to_owned();
@@ -38,19 +38,24 @@ fn parse(raw: &[OsString], cwd: &Path, home: &Path) -> Option<Args> {
         &mut grace,
         &mut apply,
         &mut seen,
-    )?;
+    )
+    .ok_or("sweep options")?;
     if !command {
-        return None;
+        return Err("sweep missing command");
     }
     let repo = fs::canonicalize(if repo.is_absolute() {
         repo
     } else {
         cwd.join(repo)
     })
-    .ok()
-    .map(crate::supply::plain)?;
-    if repo != fs::canonicalize(home).ok().map(crate::supply::plain)? {
-        return None;
+    .map(crate::supply::plain)
+    .map_err(|_| "sweep repo canonicalization")?;
+    if repo
+        != fs::canonicalize(home)
+            .map(crate::supply::plain)
+            .map_err(|_| "sweep home canonicalization")?
+    {
+        return Err("sweep home/root mismatch");
     }
     // Explicit parser extensions remain reference-owned before target import.
     let bridge = match fs::read(repo.join("tools").join("mir_executor").join("local.py")) {
@@ -60,16 +65,17 @@ fn parse(raw: &[OsString], cwd: &Path, home: &Path) -> Option<Args> {
                 .windows(b"register_execute_options".len())
                 .any(|part| part == b"register_execute_options")
             {
-                return None;
+                return Err("sweep local parser extension");
             }
             let environment: BTreeMap<OsString, OsString> = std::env::vars_os().collect();
-            let interpreter = crate::executor_execute::interpreter(&environment, cwd)?;
+            let interpreter = crate::executor_execute::interpreter(&environment, cwd)
+                .ok_or("sweep Python interpreter lookup")?;
             let bridge_script = repo
                 .join("tools")
                 .join("mir_executor")
                 .join("local_bridge.py");
             if !bridge_script.is_file() {
-                return None;
+                return Err("sweep bridge script missing");
             }
             Some(BridgeConfig {
                 interpreter,
@@ -79,26 +85,40 @@ fn parse(raw: &[OsString], cwd: &Path, home: &Path) -> Option<Args> {
                 timeout: Duration::from_secs(10),
             })
         }
-        _ => return None,
+        _ => return Err("sweep local source read"),
     };
     let db = db.unwrap_or_else(|| repo.join("tasks").join("jobs.db"));
     let db = if db.is_absolute() { db } else { cwd.join(db) };
     if db.components().any(|p| p == Component::ParentDir) {
-        return None;
+        return Err("sweep db parent traversal");
     }
     // Python resolves parent aliases (for example the platform temp directory)
     // before opening SQLite. Preserve the final component so admission can
     // still decline an actual database symlink.
-    let db = resolve_parent(db.parent()?)?.join(db.file_name()?);
-    let config = LocalConfig::load(&repo).ok()?;
-    let retention = config.retention_days(None).ok()?.as_i64()?;
+    let db = resolve_parent(db.parent().ok_or("sweep db parent")?)
+        .ok_or("sweep db parent canonicalization")?
+        .join(db.file_name().ok_or("sweep db filename")?);
+    let config = LocalConfig::load(&repo).map_err(|_| "sweep local config")?;
+    let retention = config
+        .retention_days(None)
+        .map_err(|_| "sweep retention")?
+        .as_i64()
+        .ok_or("sweep retention integer")?;
     // Python datetime/timedelta overflow and exotic ledgers remain reference-owned.
-    let today =
-        i64::try_from(SystemTime::now().duration_since(UNIX_EPOCH).ok()?.as_secs() / 86400).ok()?;
+    let today = i64::try_from(
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map_err(|_| "sweep clock")?
+            .as_secs()
+            / 86400,
+    )
+    .map_err(|_| "sweep clock overflow")?;
     if retention > today + 719162 || !ledger_supported(&db) {
-        return None;
+        return Err(
+            "sweep retention or ledger admission (sidecars, type, SQLite open/schema/rows)",
+        );
     }
-    Some(Args {
+    Ok(Args {
         repo,
         db,
         grace,
@@ -337,8 +357,9 @@ fn execute(mut args: Args, cwd: &Path) -> Result<String, String> {
 /// Raw argv includes `sweep`, with an optional preceding global `--jobs-db`.
 /// Exit 64 without a receipt requests the Python reference.
 pub fn run(raw: &[OsString], cwd: &Path, home_root: &Path) -> i32 {
-    let Some(args) = parse(raw, cwd, home_root) else {
-        return 64;
+    let args = match parse(raw, cwd, home_root) {
+        Ok(args) => args,
+        Err(reason) => return crate::executor_protocol::decline(reason),
     };
     if let Ok(encoding) = std::env::var("PYTHONIOENCODING") {
         let encoding = encoding.split(':').next().unwrap_or("");
@@ -347,13 +368,13 @@ pub fn run(raw: &[OsString], cwd: &Path, home_root: &Path) -> i32 {
                 .iter()
                 .any(|e| encoding.eq_ignore_ascii_case(e))
         {
-            return 64;
+            return crate::executor_protocol::decline("sweep unsupported PYTHONIOENCODING");
         }
     } else if matches!(
         std::env::var("PYTHONIOENCODING"),
         Err(std::env::VarError::NotUnicode(_))
     ) {
-        return 64;
+        return crate::executor_protocol::decline("sweep non-Unicode PYTHONIOENCODING");
     }
     // Read-only admission ends here. This precedes registry creation, child Git
     // commands, worktree removal, artifact receipts, and output.

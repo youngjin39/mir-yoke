@@ -92,47 +92,55 @@ fn parse(raw: &[OsString], cwd: &Path) -> Option<Args> {
 }
 // Read without migration or sidecar creation, so unsupported saved targets can
 // return to the reference before ownership and before importing local hooks.
-fn read_row(path: &Path, id: &str) -> std::result::Result<Option<Value>, ()> {
+fn read_row(path: &Path, id: &str) -> Result<Option<Value>> {
     match fs::symlink_metadata(path) {
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(None),
         Ok(metadata) if metadata.is_file() => (),
-        _ => return Err(()),
+        _ => return Err("resume registry is not a regular file or metadata unavailable".into()),
     }
     let mut header = [0; 100];
     fs::File::open(path)
-        .map_err(|_| ())?
+        .map_err(|e| format!("resume registry read: {e}"))?
         .read_exact(&mut header)
-        .map_err(|_| ())?;
+        .map_err(|e| format!("resume registry read: {e}"))?;
     if &header[..16] != b"SQLite format 3\0" || header[18] != 1 || header[19] != 1 {
-        return Err(());
+        return Err("resume registry unsupported SQLite header/journal mode".into());
     }
     for suffix in ["-journal", "-wal", "-shm"] {
         let mut sidecar = path.as_os_str().to_owned();
         sidecar.push(suffix);
         if Path::new(&sidecar).exists() {
-            return Err(());
+            return Err("resume registry sidecar present".into());
         }
     }
     let db = Connection::open_with_flags(
         path,
         OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_NOFOLLOW,
     )
-    .map_err(|_| ())?;
+    .map_err(|e| format!("resume registry read: {e}"))?;
     let mut stmt = db
         .prepare("SELECT * FROM jobs WHERE job_id=?")
-        .map_err(|_| ())?;
+        .map_err(|e| format!("resume registry read: {e}"))?;
     let names = stmt
         .column_names()
         .iter()
         .map(|s| s.to_string())
         .collect::<Vec<_>>();
-    let mut rows = stmt.query([id]).map_err(|_| ())?;
-    let Some(row) = rows.next().map_err(|_| ())? else {
+    let mut rows = stmt
+        .query([id])
+        .map_err(|e| format!("resume registry read: {e}"))?;
+    let Some(row) = rows
+        .next()
+        .map_err(|e| format!("resume registry read: {e}"))?
+    else {
         return Ok(None);
     };
     let mut result = json!({});
     for (index, name) in names.iter().enumerate() {
-        let value = match row.get_ref(index).map_err(|_| ())? {
+        let value = match row
+            .get_ref(index)
+            .map_err(|e| format!("resume registry read: {e}"))?
+        {
             ValueRef::Null => Value::Null,
             ValueRef::Integer(n) => {
                 if matches!(
@@ -146,17 +154,18 @@ fn read_row(path: &Path, id: &str) -> std::result::Result<Option<Value>, ()> {
             }
             ValueRef::Real(n) => json!(n),
             ValueRef::Text(bytes) => {
-                let text = std::str::from_utf8(bytes).map_err(|_| ())?;
+                let text =
+                    std::str::from_utf8(bytes).map_err(|e| format!("resume registry read: {e}"))?;
                 if matches!(
                     name.as_str(),
                     "codex_args" | "identity_json" | "ai_run_metadata"
                 ) {
-                    serde_json::from_str(text).map_err(|_| ())?
+                    serde_json::from_str(text).map_err(|e| format!("resume registry read: {e}"))?
                 } else {
                     json!(text)
                 }
             }
-            ValueRef::Blob(_) => return Err(()),
+            ValueRef::Blob(_) => return Err("resume registry blob column unsupported".into()),
         };
         result[name] = value;
     }
@@ -252,7 +261,7 @@ impl Drop for Lease {
 /// Exit 64 declines silently before the ownership receipt or Python effects.
 pub fn run(raw: &[OsString], cwd: &Path, home: &Path) -> i32 {
     let Some(cli) = parse(raw, cwd) else {
-        return 64;
+        return crate::executor_protocol::decline("resume options/root parse");
     };
     if fs::canonicalize(home)
         .ok()
@@ -260,11 +269,11 @@ pub fn run(raw: &[OsString], cwd: &Path, home: &Path) -> i32 {
         .as_ref()
         != Some(&cli.root)
     {
-        return 64;
+        return crate::executor_protocol::decline("resume home/root mismatch");
     }
     let row = match read_row(&cli.db, &cli.job) {
         Ok(row) => row,
-        Err(()) => return 64,
+        Err(reason) => return crate::executor_protocol::decline(&reason),
     };
     if let Some(row) = &row {
         if row["repo_root"]
@@ -274,7 +283,7 @@ pub fn run(raw: &[OsString], cwd: &Path, home: &Path) -> i32 {
             .as_ref()
             != Some(&cli.root)
         {
-            return 64;
+            return crate::executor_protocol::decline("resume saved root mismatch");
         }
         let saved = row["dispatch_options_json"]
             .as_str()
@@ -287,7 +296,7 @@ pub fn run(raw: &[OsString], cwd: &Path, home: &Path) -> i32 {
             .as_str()
             .is_some_and(|s| !matches!(s, "codex" | "claude"))
         {
-            return 64;
+            return crate::executor_protocol::decline("resume unsupported backend");
         }
     }
     let local = cli.root.join("tools").join("mir_executor").join("local.py");
@@ -297,15 +306,15 @@ pub fn run(raw: &[OsString], cwd: &Path, home: &Path) -> i32 {
                 .windows(b"register_execute_options".len())
                 .any(|s| s == b"register_execute_options") =>
         {
-            return 64;
+            return crate::executor_protocol::decline("resume local parser extension");
         }
         Ok(_) => (),
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => (),
-        Err(_) => return 64,
+        Err(_) => return crate::executor_protocol::decline("resume local source read"),
     }
     let environment: BTreeMap<OsString, OsString> = std::env::vars_os().collect();
     let Some(python) = execute::interpreter(&environment, cwd) else {
-        return 64;
+        return crate::executor_protocol::decline("resume Python interpreter lookup");
     };
     crate::executor_protocol::claim();
     let result = (|| -> Result<i32> {

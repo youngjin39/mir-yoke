@@ -719,9 +719,9 @@ fn main() {
                     Some("sweep") => {
                         handoff_packet::executor_sweep_cli::run(&raw[2..], &cwd, Path::new(home))
                     }
-                    _ => 64,
+                    _ => handoff_packet::executor_protocol::decline("executor command routing"),
                 },
-                Err(_) => 64,
+                Err(_) => handoff_packet::executor_protocol::decline("executor cwd unavailable"),
             };
             std::process::exit(code);
         }
@@ -744,7 +744,7 @@ fn main() {
                 code
             }
         }
-        Err(()) => 64,
+        Err(()) => handoff_packet::executor_protocol::decline("query/cancel admission"),
     };
     std::process::exit(code);
 }

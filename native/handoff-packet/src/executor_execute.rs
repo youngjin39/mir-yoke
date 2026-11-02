@@ -142,11 +142,30 @@ pub(crate) fn hook(
     }
     Ok(reply["result"].clone())
 }
+// vars_os preserves Windows spelling (often Path); BTreeMap lookup does not
+// retain the operating system's case-insensitive environment semantics.
+fn environment_value<'a>(
+    environment: &'a BTreeMap<OsString, OsString>,
+    name: &str,
+    windows: bool,
+) -> Option<&'a OsString> {
+    environment.get(&OsString::from(name)).or_else(|| {
+        windows
+            .then(|| {
+                environment.iter().find_map(|(key, value)| {
+                    key.to_str()
+                        .filter(|key| key.eq_ignore_ascii_case(name))
+                        .map(|_| value)
+                })
+            })
+            .flatten()
+    })
+}
 pub(crate) fn interpreter(
     environment: &BTreeMap<OsString, OsString>,
     cwd: &Path,
 ) -> Option<PathBuf> {
-    if let Some(p) = environment.get(&OsString::from("MIR_EXECUTOR_PYTHON")) {
+    if let Some(p) = environment_value(environment, "MIR_EXECUTOR_PYTHON", cfg!(windows)) {
         return fs::canonicalize(p).ok().map(crate::supply::plain);
     }
     let names = if cfg!(windows) {
@@ -154,7 +173,7 @@ pub(crate) fn interpreter(
     } else {
         &["python3", "python"][..]
     };
-    for dir in std::env::split_paths(environment.get(&OsString::from("PATH"))?) {
+    for dir in std::env::split_paths(environment_value(environment, "PATH", cfg!(windows))?) {
         for name in names {
             let p = dir.join(name);
             if p.is_file() {
@@ -170,12 +189,12 @@ pub(crate) fn interpreter(
 pub fn run(raw: &[OsString], cwd: &Path, home_root: &Path) -> i32 {
     OUTPUT_FAILED.store(false, Ordering::Relaxed);
     let Some(argv) = preflight(raw) else {
-        return 64;
+        return crate::executor_protocol::decline("execute options preflight");
     };
     let target = fs::canonicalize(argv_root(&argv, cwd)).ok();
     let home = fs::canonicalize(home_root).ok();
     if target.is_none() || target != home {
-        return 64;
+        return crate::executor_protocol::decline("execute home/root mismatch");
     }
     // Decline explicit parser extensions without importing target-owned code.
     // A computed export discovered by hello is already owned and must fail finally.
@@ -186,24 +205,23 @@ pub fn run(raw: &[OsString], cwd: &Path, home_root: &Path) -> i32 {
                 .windows(b"register_execute_options".len())
                 .any(|part| part == b"register_execute_options") =>
         {
-            return 64;
+            return crate::executor_protocol::decline("execute local parser extension");
         }
         Ok(_) => (),
         Err(error) if error.kind() == io::ErrorKind::NotFound => (),
-        Err(_) => return 64,
+        Err(_) => return crate::executor_protocol::decline("execute local source read"),
     }
     if !ledger_preflight(&argv, cwd) {
-        return 64;
+        return crate::executor_protocol::decline("execute ledger preflight");
     }
     let environment: BTreeMap<OsString, OsString> = std::env::vars_os().collect();
-    if environment
-        .get(&OsString::from("CODEX_BIN"))
+    if environment_value(&environment, "CODEX_BIN", cfg!(windows))
         .is_some_and(|s| s.to_str().is_none())
     {
-        return 64;
+        return crate::executor_protocol::decline("execute non-UTF8 CODEX_BIN");
     }
     let Some(python) = interpreter(&environment, cwd) else {
-        return 64;
+        return crate::executor_protocol::decline("execute Python interpreter lookup");
     };
     let admission = executor_admission::admit_execute(executor_admission::Request {
         argv: &argv,
@@ -221,7 +239,7 @@ pub fn run(raw: &[OsString], cwd: &Path, home_root: &Path) -> i32 {
             writer_handle,
             ..
         }) => (root, args, bridge, writer_handle),
-        Ok(Admission::Decline { code, .. }) => return code,
+        Ok(Admission::Decline { reason, .. }) => return crate::executor_protocol::decline(reason),
         Ok(Admission::Refused { code, stderr }) => {
             let _ = io::stderr().write_all(&stderr);
             return code;
@@ -861,8 +879,7 @@ fn provider(
             return Err("RuntimeError: Delegated Codex refused in the main worktree per ADR-60 section 16 D3. Delegated execution must go through `mir_executor execute --background --dispatch`, which uses an R4 worktree, or set MIR_CODEX_MAIN=1 for the main process itself, such as loop_driver.".into());
         }
     }
-    let binary = environment
-        .get(&OsString::from("CODEX_BIN"))
+    let binary = environment_value(environment, "CODEX_BIN", cfg!(windows))
         .and_then(|v| v.to_str())
         .unwrap_or("codex");
     let start = Instant::now();
@@ -1074,6 +1091,26 @@ pub fn dispatch(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn windows_environment_lookup_preserves_os_case_rules() {
+        let environment = BTreeMap::from([
+            (OsString::from("Path"), OsString::from("python-directory")),
+            (
+                OsString::from("mir_executor_python"),
+                OsString::from("python-override"),
+            ),
+        ]);
+        assert_eq!(
+            environment_value(&environment, "PATH", true),
+            Some(&OsString::from("python-directory"))
+        );
+        assert_eq!(
+            environment_value(&environment, "MIR_EXECUTOR_PYTHON", true),
+            Some(&OsString::from("python-override"))
+        );
+        assert_eq!(environment_value(&environment, "PATH", false), None);
+    }
 
     #[cfg(unix)]
     #[test]

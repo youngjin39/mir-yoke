@@ -30,6 +30,9 @@ def _connect(path):
 
 ROOT = Path(__file__).resolve().parents[1]
 CRATE = ROOT / "native/handoff-packet"
+TRACE = runpy.run_path(str(ROOT / "tests/support/executor_decline_trace.py"))
+decline_trace = TRACE["decline_trace"]
+trace_details = TRACE["trace_details"]
 pytestmark = pytest.mark.skipif(shutil.which("cargo") is None, reason="cargo unavailable")
 
 
@@ -142,17 +145,17 @@ QUERY_CASES = [
 @pytest.mark.parametrize("argv", QUERY_CASES)
 def test_executor_query_bytes(binary, home, argv):
     reference = invoke(binary, home, argv, python=True)
-    assert reference[2] == (1 if "missing-'\\\ud55c" in argv else 0), reference
+    assert reference[2] == (1 if "missing-'\\\ud55c" in argv else 0), (reference, trace_details())
     before = (home / "tasks/jobs.db").read_bytes()
-    assert invoke(binary, home, argv) == reference
-    assert (home / "tasks/jobs.db").read_bytes() == before
+    assert invoke(binary, home, argv) == reference, trace_details()
+    assert (home / "tasks/jobs.db").read_bytes() == before, trace_details()
     if argv == ["list-jobs"]:
         assert [line.split(b" status=")[0] for line in reference[0].splitlines()] == [
             b"[JOB] job_id=running", b"[JOB] job_id=failed",
             "[JOB] job_id=complete-\ud55c\U0001f600".encode(), b"[JOB] job_id=cancelled",
-        ]
+        ], trace_details()
     if argv == ["result", "--job-id", "complete-\ud55c\U0001f600"]:
-        assert b"AFTER_LIMIT" not in reference[0]
+        assert b"AFTER_LIMIT" not in reference[0], trace_details()
 
 
 @pytest.mark.parametrize("command", ["status", "result", "list-jobs"])
@@ -160,7 +163,7 @@ def test_executor_query_explicit_paths(binary, home, command):
     argv = ["--jobs-db=tasks/jobs.db", command, "--repo-root=" + str(home)]
     if command != "list-jobs":
         argv.append("--job-id=complete-\ud55c\U0001f600")
-    assert invoke(binary, home, argv) == invoke(binary, home, argv, python=True)
+    assert invoke(binary, home, argv) == invoke(binary, home, argv, python=True), trace_details()
 
 
 def test_executor_query_empty_database(binary, home):
@@ -168,7 +171,9 @@ def test_executor_query_empty_database(binary, home):
         connection.execute("DELETE FROM jobs")
     for argv in (["list-jobs"], ["list-jobs", "--status", "running"],
                  ["status", "--job-id", "absent"]):
-        assert invoke(binary, home, argv) == invoke(binary, home, argv, python=True)
+        assert invoke(binary, home, argv) == invoke(binary, home, argv, python=True), (
+            trace_details()
+        )
 
 
 @pytest.mark.parametrize("duration", [0.0000001, 0.00001, 1e16, 1e20, 1e100, -1.25])
@@ -176,7 +181,7 @@ def test_executor_query_python_float_format(binary, home, duration):
     with _connect(home / "tasks/jobs.db") as connection:
         connection.execute("UPDATE jobs SET duration_seconds=? WHERE job_id='failed'", (duration,))
     argv = ["result", "--job-id", "failed"]
-    assert invoke(binary, home, argv) == invoke(binary, home, argv, python=True)
+    assert invoke(binary, home, argv) == invoke(binary, home, argv, python=True), trace_details()
 
 
 @pytest.mark.parametrize("payload", [
@@ -190,13 +195,16 @@ def test_executor_query_python_repr(binary, home, payload):
                            (payload, payload, payload))
     for command in ("status", "result", "list-jobs"):
         argv = [command] if command == "list-jobs" else [command, "--job-id", "failed"]
-        assert invoke(binary, home, argv) == invoke(binary, home, argv, python=True)
+        assert invoke(binary, home, argv) == invoke(binary, home, argv, python=True), (
+            trace_details()
+        )
 
 
 def test_executor_query_equal_timestamp_order(binary, home):
     with _connect(home / "tasks/jobs.db") as connection:
         connection.execute("UPDATE jobs SET started_at='2026-11-01T00:00:00Z'")
-    assert invoke(binary, home, ["list-jobs"]) == invoke(binary, home, ["list-jobs"], python=True)
+    argv = ["list-jobs"]
+    assert invoke(binary, home, argv) == invoke(binary, home, argv, python=True), trace_details()
 
 
 @pytest.fixture
@@ -235,13 +243,13 @@ def test_executor_query_local_files_match_python(
     elif files == "config":
         (home / "tools/mir_executor/local.py").unlink()
     reference = invoke(binary, home, argv, python=True)
-    assert reference[2] == 0, reference
+    assert reference[2] == 0, (reference, trace_details())
     before = (home / "tasks/jobs.db").read_bytes()
-    assert invoke(binary, home, argv) == reference
+    assert invoke(binary, home, argv) == reference, trace_details()
     install_pin(binary, home)
     (home / "tools/mir_executor/cli.py").write_text("raise AssertionError('Python CLI imported')\n")
-    assert pinned_cli(home, route, argv) == reference
-    assert (home / "tasks/jobs.db").read_bytes() == before
+    assert pinned_cli(home, route, argv) == reference, trace_details()
+    assert (home / "tasks/jobs.db").read_bytes() == before, trace_details()
 
 
 @pytest.mark.parametrize("route", ["module", "mir-cli"])
@@ -250,14 +258,14 @@ def test_executor_query_local_files_match_python(
 ])
 def test_executor_query_local_import_failure_accepted_divergence(binary, home, route, argv):
     reference = invoke(binary, home, argv, python=True)
-    assert reference[2] == 0, reference
+    assert reference[2] == 0, (reference, trace_details())
     (home / "tools/mir_executor/local.py").write_text("raise RuntimeError('local import failed')\n")
     python = invoke(binary, home, argv, python=True)
-    assert python[2] != 0
-    assert b"local import failed" in python[1]
-    assert invoke(binary, home, argv) == reference
+    assert python[2] != 0, trace_details()
+    assert b"local import failed" in python[1], trace_details()
+    assert invoke(binary, home, argv) == reference, trace_details()
     install_pin(binary, home)
-    assert pinned_cli(home, route, argv) == reference
+    assert pinned_cli(home, route, argv) == reference, trace_details()
 
 
 @pytest.mark.parametrize("route", ["module", "mir-cli"])
@@ -270,8 +278,8 @@ def test_executor_query_real_pin_avoids_python_executor_import(binary, home, rou
     install_pin(binary, home)
     (home / "tools/mir_executor/cli.py").write_text("raise AssertionError('Python CLI imported')\n")
     before = (home / "tasks/jobs.db").read_bytes()
-    assert pinned_cli(home, route, argv) == reference
-    assert (home / "tasks/jobs.db").read_bytes() == before
+    assert pinned_cli(home, route, argv) == reference, trace_details()
+    assert (home / "tasks/jobs.db").read_bytes() == before, trace_details()
 
 
 @pytest.mark.parametrize("route", ["module", "mir-cli"])
@@ -281,8 +289,8 @@ def test_executor_query_real_pin_unicode_decline_falls_back(binary, home, route)
     argv = ["result", "--job-id", "failed"]
     reference = invoke(binary, home, argv, python=True)
     install_pin(binary, home)
-    assert invoke(binary, home, argv) == (b"", b"", 64)
-    assert pinned_cli(home, route, argv) == reference
+    assert invoke(binary, home, argv) == (b"", b"", 64), trace_details()
+    assert pinned_cli(home, route, argv) == reference, trace_details()
 
 
 @pytest.mark.parametrize("suffix", ["-journal", "-shm", "-wal"])
@@ -291,20 +299,20 @@ def test_executor_query_declines_database_sidecars(binary, home, suffix):
     sidecar = Path(str(database) + suffix)
     sidecar.write_bytes(b"active database sidecar")
     before = database.read_bytes()
-    assert invoke(binary, home, ["list-jobs"]) == (b"", b"", 64)
-    assert database.read_bytes() == before
-    assert sidecar.read_bytes() == b"active database sidecar"
+    assert invoke(binary, home, ["list-jobs"]) == (b"", b"", 64), trace_details()
+    assert database.read_bytes() == before, trace_details()
+    assert sidecar.read_bytes() == b"active database sidecar", trace_details()
 
 
 def test_executor_query_declines_non_utf8_streams(binary, home, monkeypatch):
     monkeypatch.setenv("PYTHONIOENCODING", "ascii")
-    assert invoke(binary, home, ["list-jobs"]) == (b"", b"", 64)
+    assert invoke(binary, home, ["list-jobs"]) == (b"", b"", 64), trace_details()
 
 
 def test_executor_query_declines_parent_database_components(binary, home):
     assert invoke(binary, home, ["--jobs-db", "tasks/../tasks/jobs.db", "list-jobs"]) == (
         b"", b"", 64,
-    )
+    ), trace_details()
 
 
 def test_executor_query_declines_absent_database_through_dangling_parent(binary, home):
@@ -315,8 +323,8 @@ def test_executor_query_declines_absent_database_through_dangling_parent(binary,
         database.parent.symlink_to(home / "absent", target_is_directory=True)
     except OSError:
         pytest.skip("symlink unavailable")
-    assert invoke(binary, home, ["list-jobs"]) == (b"", b"", 64)
-    assert not (home / "absent").exists()
+    assert invoke(binary, home, ["list-jobs"]) == (b"", b"", 64), trace_details()
+    assert not (home / "absent").exists(), trace_details()
 
 
 @pytest.mark.parametrize("case", ["cross-target",
@@ -349,8 +357,8 @@ def test_executor_query_declines_unsupported_storage(binary, home, tmp_path, cas
         with _connect(database) as connection:
             connection.execute("UPDATE jobs SET stdout=? WHERE job_id='running'", ("\U0001fae9",))
     before = database.read_bytes() if database.exists() else None
-    assert invoke(binary, home, argv) == (b"", b"", 64)
-    assert (database.read_bytes() if database.exists() else None) == before
+    assert invoke(binary, home, argv) == (b"", b"", 64), trace_details()
+    assert (database.read_bytes() if database.exists() else None) == before, trace_details()
 
 
 @pytest.mark.parametrize("argv", [["list-jobs"], ["list-jobs", "--status", "running"],
@@ -360,8 +368,8 @@ def test_executor_query_absent_database_matches_with_creation(binary, home, argv
     database = home / "tasks/jobs.db"
     database.unlink()
     native = invoke(binary, home, argv)
-    assert database.exists()
-    assert native == invoke(binary, home, argv, python=True)
+    assert database.exists(), trace_details()
+    assert native == invoke(binary, home, argv, python=True), trace_details()
 
 
 @pytest.mark.parametrize("argv", [
@@ -375,8 +383,8 @@ def test_executor_query_absent_database_matches_with_creation(binary, home, argv
 ])
 def test_executor_query_declines_arguments(binary, home, argv):
     before = (home / "tasks/jobs.db").read_bytes()
-    assert invoke(binary, home, argv) == (b"", b"", 64)
-    assert (home / "tasks/jobs.db").read_bytes() == before
+    assert invoke(binary, home, argv) == (b"", b"", 64), trace_details()
+    assert (home / "tasks/jobs.db").read_bytes() == before, trace_details()
 
 
 @pytest.mark.parametrize("field", ["codex_args", "ai_run_metadata"])
@@ -393,14 +401,14 @@ def test_executor_query_surrogate_escapes(binary, home, field, escape, command):
         connection.execute(f"UPDATE jobs SET {field}=? WHERE job_id='failed'", (payload,))
     argv = [command] if command == "list-jobs" else [command, "--job-id", "failed"]
     reference = invoke(binary, home, argv, python=True)
-    assert reference[2] == 0, reference
+    assert reference[2] == 0, (reference, trace_details())
     before = (home / "tasks/jobs.db").read_bytes()
-    assert invoke(binary, home, argv) == reference
+    assert invoke(binary, home, argv) == reference, trace_details()
     install_pin(binary, home)
     (home / "tools/mir_executor/cli.py").write_text("raise AssertionError('Python fallback')\n")
     for route in ("module", "mir-cli"):
-        assert pinned_cli(home, route, argv) == reference
-    assert (home / "tasks/jobs.db").read_bytes() == before
+        assert pinned_cli(home, route, argv) == reference, trace_details()
+    assert (home / "tasks/jobs.db").read_bytes() == before, trace_details()
 
 
 @pytest.mark.parametrize("field", ["codex_args", "ai_run_metadata"])
@@ -412,14 +420,14 @@ def test_executor_query_invalid_unicode_escape_declines(binary, home, field, pay
     with _connect(home / "tasks/jobs.db") as connection:
         connection.execute(f"UPDATE jobs SET {field}=? WHERE job_id='failed'", (payload,))
     argv = [command] if command == "list-jobs" else [command, "--job-id", "failed"]
-    assert invoke(binary, home, argv) == (b"", b"", 64)
+    assert invoke(binary, home, argv) == (b"", b"", 64), trace_details()
 
 
 @pytest.mark.parametrize("payload", [r'"\udce2"', r'["\udce2", 1]', r'{"x":"\udce2"}'])
 def test_executor_query_surrogate_args_shape_still_declines(binary, home, payload):
     with _connect(home / "tasks/jobs.db") as connection:
         connection.execute("UPDATE jobs SET codex_args=? WHERE job_id='failed'", (payload,))
-    assert invoke(binary, home, ["list-jobs"]) == (b"", b"", 64)
+    assert invoke(binary, home, ["list-jobs"]) == (b"", b"", 64), trace_details()
 
 
 @pytest.mark.parametrize("job", ["running", "failed", "cancelled", "complete-\ud55c\U0001f600",
@@ -435,8 +443,8 @@ def test_native_cancel_matches_python(binary, home, job):
     reference = invoke(binary, home, argv, python=True)
     with _connect(database) as connection:
         expected = connection.execute("SELECT * FROM jobs ORDER BY job_id").fetchall()
-    assert native == reference
-    assert actual == expected
+    assert native == reference, trace_details()
+    assert actual == expected, trace_details()
 
 
 @pytest.mark.parametrize("removed", ["ai_run_metadata", "resume_count", "dispatch_brief_path",
@@ -455,17 +463,21 @@ def test_native_migrates_legacy_registry(binary, home, removed, command):
     database.write_bytes(saved)
     reference = invoke(binary, home, argv, python=True)
     with _connect(database) as connection:
-        assert actual == connection.execute("SELECT * FROM jobs ORDER BY job_id").fetchall()
-        assert columns == connection.execute("PRAGMA table_info(jobs)").fetchall()
-    assert native == reference
+        assert actual == connection.execute("SELECT * FROM jobs ORDER BY job_id").fetchall(), (
+            trace_details()
+        )
+        assert columns == connection.execute("PRAGMA table_info(jobs)").fetchall(), trace_details()
+    assert native == reference, trace_details()
 
 
 def test_native_cancel_declines_local_hook(binary, home):
     (home / "tools/mir_executor/local.py").write_text("raise RuntimeError('local hook')\n")
     database = home / "tasks/jobs.db"
     saved = database.read_bytes()
-    assert invoke(binary, home, ["cancel", "--job-id", "running"]) == (b"", b"", 64)
-    assert database.read_bytes() == saved
+    assert invoke(binary, home, ["cancel", "--job-id", "running"]) == (b"", b"", 64), (
+        trace_details()
+    )
+    assert database.read_bytes() == saved, trace_details()
 
 
 def test_native_cancel_golden_output(binary, home):
@@ -479,8 +491,8 @@ def test_native_cancel_golden_output(binary, home):
         expected = (case["stdout"].replace("\n", os.linesep).encode(),
                     case["stderr"].replace("\n", os.linesep).encode(), case["code"])
         argv = ["cancel", "--job-id", case["job_id"]]
-        assert invoke(binary, home, argv) == expected
-        assert invoke(binary, home, argv, python=True) == expected
+        assert invoke(binary, home, argv) == expected, trace_details()
+        assert invoke(binary, home, argv, python=True) == expected, trace_details()
 
 
 def test_native_cancel_absent_registry(binary, home):
@@ -488,13 +500,13 @@ def test_native_cancel_absent_registry(binary, home):
     database.unlink()
     argv = ["cancel", "--job-id", "absent"]
     native = invoke(binary, home, argv)
-    assert database.exists()
+    assert database.exists(), trace_details()
     with _connect(database) as connection:
         columns = connection.execute("PRAGMA table_info(jobs)").fetchall()
     database.unlink()
-    assert native == invoke(binary, home, argv, python=True)
+    assert native == invoke(binary, home, argv, python=True), trace_details()
     with _connect(database) as connection:
-        assert columns == connection.execute("PRAGMA table_info(jobs)").fetchall()
+        assert columns == connection.execute("PRAGMA table_info(jobs)").fetchall(), trace_details()
 
 
 def test_registry_fixture_matches_python():
@@ -502,7 +514,7 @@ def test_registry_fixture_matches_python():
 
     generator = CRATE / "tests/fixtures/generate_executor_registry.py"
     expected = json.loads(generator.with_name("executor_registry.json").read_text())
-    assert runpy.run_path(str(generator))["generate"]() == expected
+    assert runpy.run_path(str(generator))["generate"]() == expected, trace_details()
 
 
 @pytest.mark.parametrize('job', ['running', 'failed', 'missing'])
@@ -511,11 +523,11 @@ def test_pinned_cancel_matches_python(binary, home, job):
     reference = invoke(binary, home, ['cancel', '--job-id', job], python=True)
     with _connect(home / 'tasks/jobs.db') as connection:
         connection.execute('UPDATE jobs SET cancel_requested=0 WHERE job_id=?', (job,))
-    assert pinned_cli(home, 'module', ['cancel', '--job-id', job]) == reference
+    assert pinned_cli(home, 'module', ['cancel', '--job-id', job]) == reference, trace_details()
     with _connect(home / 'tasks/jobs.db') as connection:
         row = connection.execute('SELECT cancel_requested FROM jobs WHERE job_id=?',
                                  (job,)).fetchone()
-    assert row is None if job == 'missing' else row == (1,)
+    assert row is None if job == 'missing' else row == (1,), trace_details()
 
 
 @pytest.mark.parametrize('command,selector', [
@@ -530,8 +542,8 @@ def test_pinned_cancel_and_query_selectors(binary, home, command, selector):
     selectors = {selector: '0' if selector == 'MIR_NATIVE_HOOKS' else 'python'} if selector else {}
     arguments = [command] + (['--job-id', 'running'] if command == 'cancel' else [])
     result = pinned_cli(home, 'module', arguments, selectors=selectors)
-    assert result[2] == (1 if selector else 0), result
-    assert (b'python selected' in result[1]) == bool(selector)
+    assert result[2] == (1 if selector else 0), (result, trace_details())
+    assert (b'python selected' in result[1]) == bool(selector), trace_details()
 
 
 def test_pinned_cancel_declines_hook_to_python(binary, home):
@@ -541,8 +553,8 @@ def test_pinned_cancel_declines_hook_to_python(binary, home):
         "(Path(__file__).resolve().parents[2] / 'python-import').touch()\n",
         encoding='utf-8')
     result = pinned_cli(home, 'module', ['cancel', '--job-id', 'running'])
-    assert result[2] == 0, result
-    assert (home / 'python-import').exists()
+    assert result[2] == 0, (result, trace_details())
+    assert (home / 'python-import').exists(), trace_details()
 
 
 @pytest.mark.parametrize('apply', [False, True])
@@ -575,13 +587,34 @@ def test_pinned_sweep_matches_python_state(binary, tmp_path, apply, selector):
             (root / 'tools/mir_executor/cli.py').write_text(
                 "raise RuntimeError('unexpected Python sweep fallback')\n", encoding='utf-8')
         result = pinned_cli(root, 'module', arguments, selectors=selectors)
-        assert result[2] == 0, result
+        assert result[2] == 0, (result, trace_details())
         payload = json.loads(result[0])
-        assert payload['stale_jobs'] == ['stale']
-        assert payload['orphan_worktrees'] == [str(orphan)]
-        assert orphan.exists() == (not apply)
+        assert payload['stale_jobs'] == ['stale'], trace_details()
+        assert payload['orphan_worktrees'] == [str(orphan)], trace_details()
+        assert orphan.exists() == (not apply), trace_details()
         if not apply:
-            assert (root / 'tasks/jobs.db').read_bytes() == database_before
+            assert (root / 'tasks/jobs.db').read_bytes() == database_before, trace_details()
         completed = subprocess.CompletedProcess(arguments, result[2], result[0], result[1])
         snapshots.append(dispatch['snapshot'](root, completed))
-    assert snapshots[0] == snapshots[1]
+    assert snapshots[0] == snapshots[1], trace_details()
+
+
+def test_executor_decline_trace_is_append_only_and_optional(binary, home, monkeypatch):
+    trace = Path(os.environ["MIR_EXECUTOR_DECLINE_TRACE"])
+    argv = ["resume", "--unknown"]
+    assert not trace.exists(), trace_details()
+    for count in (1, 2):
+        assert invoke(binary, home, argv) == (b"", b"", 64), trace_details()
+        assert trace.is_file(), trace_details()
+        lines = trace.read_text(encoding="utf-8").splitlines()
+        assert len(lines) == count, trace_details()
+        assert all(": " in line and line.endswith(lines[0].split(": ", 1)[1])
+                   for line in lines), trace_details()
+    before = trace.read_bytes()
+    monkeypatch.delenv("MIR_EXECUTOR_DECLINE_TRACE")
+    assert invoke(binary, home, argv) == (b"", b"", 64), trace_details()
+    assert trace.read_bytes() == before, trace_details()
+    for invalid in (home, home / "missing-parent" / "trace.log"):
+        monkeypatch.setenv("MIR_EXECUTOR_DECLINE_TRACE", str(invalid))
+        assert invoke(binary, home, argv) == (b"", b"", 64), trace_details()
+    assert not (home / "missing-parent").exists(), trace_details()
