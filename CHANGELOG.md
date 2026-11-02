@@ -102,6 +102,14 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ### Changed
 
+- `tools/mir_executor/entrypoint.py` now also offers direct `execute` and
+  `cancel` to the pinned native binary (selectors `MIR_EXECUTOR_IMPL=python`,
+  `MIR_EXECUTOR_EXECUTE_IMPL=python`, `MIR_EXECUTOR_CANCEL_IMPL=python`). These
+  routes inherit the caller's stdin, stdout and stderr, forward interrupts and
+  termination to the native process, and treat exit 64 as a decline only when
+  the binary wrote no ownership receipt; once the binary owns a command, every
+  exit is final. An older pinned binary that declines with 64 falls back to
+  Python. Queries keep their buffered protocol.
 - `tools/mir_executor/policy.py` no longer imports `pwd` on Windows.
 - The Python executor's dispatch event writer skips `os.fchmod` where the
   platform lacks it, instead of failing.

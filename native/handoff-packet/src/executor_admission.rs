@@ -246,6 +246,9 @@ fn admit_inner(request: Request<'_>, command_scope: bool) -> Result<Admission, B
         return Ok(decline("non UTF-8 path"));
     }
     let mut home_bridge = None;
+    if command_scope {
+        crate::executor_protocol::claim();
+    }
     if let Some(refused) = authorize(&request, &home, &root, &args, &mut home_bridge, false)? {
         return Ok(refused);
     }

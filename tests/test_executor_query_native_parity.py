@@ -116,12 +116,13 @@ def install_pin(binary, home):
     }))
 
 
-def pinned_cli(home, route, argv):
+def pinned_cli(home, route, argv, *, selectors=None):
     prefix = ["-m", "tools.mir_executor"] if route == "module" else ["-m", "mir.cli", "executor"]
     environment = dict(os.environ, PYTHONUTF8="1",
                        PYTHONPATH=os.pathsep.join((str(home), str(ROOT / "src"))),
                        MIR_EXECUTOR_QUERY_IMPL="native", MIR_NATIVE_HOOKS="1",
                        PYTHONDONTWRITEBYTECODE="1")
+    environment.update(selectors or {})
     result = subprocess.run([sys.executable, *prefix, *argv], cwd=home, env=environment,
                             capture_output=True, timeout=15, check=False)
     return result.stdout, result.stderr, result.returncode
@@ -501,3 +502,43 @@ def test_registry_fixture_matches_python():
     generator = CRATE / "tests/fixtures/generate_executor_registry.py"
     expected = json.loads(generator.with_name("executor_registry.json").read_text())
     assert runpy.run_path(str(generator))["generate"]() == expected
+
+
+@pytest.mark.parametrize('job', ['running', 'failed', 'missing'])
+def test_pinned_cancel_matches_python(binary, home, job):
+    install_pin(binary, home)
+    reference = invoke(binary, home, ['cancel', '--job-id', job], python=True)
+    with _connect(home / 'tasks/jobs.db') as connection:
+        connection.execute('UPDATE jobs SET cancel_requested=0 WHERE job_id=?', (job,))
+    assert pinned_cli(home, 'module', ['cancel', '--job-id', job]) == reference
+    with _connect(home / 'tasks/jobs.db') as connection:
+        row = connection.execute('SELECT cancel_requested FROM jobs WHERE job_id=?',
+                                 (job,)).fetchone()
+    assert row is None if job == 'missing' else row == (1,)
+
+
+@pytest.mark.parametrize('command,selector', [
+    ('cancel', None), ('cancel', 'MIR_EXECUTOR_IMPL'),
+    ('cancel', 'MIR_EXECUTOR_CANCEL_IMPL'), ('cancel', 'MIR_NATIVE_HOOKS'),
+    ('list-jobs', 'MIR_EXECUTOR_IMPL'),
+])
+def test_pinned_cancel_and_query_selectors(binary, home, command, selector):
+    install_pin(binary, home)
+    (home / 'tools/mir_executor/cli.py').write_text(
+        "raise RuntimeError('python selected')\n", encoding='utf-8')
+    selectors = {selector: '0' if selector == 'MIR_NATIVE_HOOKS' else 'python'} if selector else {}
+    arguments = [command] + (['--job-id', 'running'] if command == 'cancel' else [])
+    result = pinned_cli(home, 'module', arguments, selectors=selectors)
+    assert result[2] == (1 if selector else 0), result
+    assert (b'python selected' in result[1]) == bool(selector)
+
+
+def test_pinned_cancel_declines_hook_to_python(binary, home):
+    install_pin(binary, home)
+    (home / 'tools/mir_executor/local.py').write_text(
+        'from pathlib import Path\n'
+        "(Path(__file__).resolve().parents[2] / 'python-import').touch()\n",
+        encoding='utf-8')
+    result = pinned_cli(home, 'module', ['cancel', '--job-id', 'running'])
+    assert result[2] == 0, result
+    assert (home / 'python-import').exists()

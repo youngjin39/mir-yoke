@@ -293,8 +293,8 @@ git-ignored. The tracked `tools/mir_executor/COMMON_MANIFEST.json` carries no ho
 pin. No host artifact removes any existing local pin so queries use Python; other
 files are preserved. Dry-run writes nothing. `check` verifies a local pin only
 when its file exists; absence is not drift.
-The lightweight entrypoint verifies those bytes before trying `status`, `result`
-or `list-jobs`, before importing the Python executor. Both module and installed
+The lightweight entrypoint verifies those bytes before trying `status`, `result`,
+`list-jobs`, direct `execute`, or `cancel`, before importing the Python executor. Both module and installed
 CLI routes use that entrypoint.
 
 The native reader opens SQLite read-only and never migrates it. It admits only
@@ -308,6 +308,21 @@ Unsupported arguments, help, legacy schemas, unsupported
 sidecars and cross-target requests return 64 without output; the caller then
 runs Python with the original arguments. Spawn failure, a missing or mismatched
 pin, `MIR_EXECUTOR_QUERY_IMPL=python`, and `MIR_NATIVE_HOOKS=0` also retain Python.
+`MIR_EXECUTOR_IMPL=python` disables every native route; execute and cancel also
+honor `MIR_EXECUTOR_EXECUTE_IMPL=python` and `MIR_EXECUTOR_CANCEL_IMPL=python`.
+Direct execute retains the native admission boundary: unsupported dispatch,
+resume, backend, agent, cross-target, or dynamic parser extensions use Python.
+Execute and cancel inherit the caller's stdin/stdout/stderr without buffering.
+Their exit 64 permits retry only without an exact private owned receipt. Native
+claims ownership before hook imports, output, registry writes, or provider launch;
+if writing the receipt fails, it exits 64 before any effect and Python runs. With
+an owned receipt every exit code, including 64, is final. An older pinned binary
+that declines with 64 without a receipt therefore falls back to Python.
+Query buffering and its existing decline protocol are unchanged.
+The entrypoint forwards interrupts and termination to the native process group
+on POSIX, and console interrupts or termination to the direct child on Windows,
+then waits and escalates to kill when needed. As in Python, interruption leaves
+an inserted background row running and leaves its ledger category unchanged.
 Windows parity runs in the dedicated native Windows CI lane without enabling
 automated Windows bootstrap.
 Text containing characters newly assigned after Unicode 15.0 also uses Python,

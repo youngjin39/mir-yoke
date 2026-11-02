@@ -94,7 +94,7 @@ def test_unsafe_or_unsupported_native_query_falls_back_unchanged(
     elif guard == 'disabled':
         monkeypatch.setenv('MIR_NATIVE_HOOKS', '0')
     elif guard == 'mutation':
-        argv[0] = 'cancel'
+        argv[0] = 'resume'
     elif guard == 'encoding':
         monkeypatch.setattr(sys, 'stdout', types.SimpleNamespace(encoding='ascii'))
     calls = []

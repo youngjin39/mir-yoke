@@ -623,6 +623,7 @@ fn run(args: &Args) -> Result<(String, String, i32)> {
     let py = PythonText::new()?;
     if safely_absent(&args.db)? {
         let answer = output(&args.command, &[], &py)?;
+        handoff_packet::executor_protocol::claim();
         let _registry =
             handoff_packet::executor_registry::JobRegistry::open(&args.db).map_err(|_| ())?;
         return Ok(answer);
@@ -677,6 +678,7 @@ fn run(args: &Args) -> Result<(String, String, i32)> {
     drop(rows);
     drop(stmt);
     drop(db);
+    handoff_packet::executor_protocol::claim();
     let registry =
         handoff_packet::executor_registry::JobRegistry::open(&args.db).map_err(|_| ())?;
     if let Command::Cancel(id) = &args.command {
@@ -719,6 +721,7 @@ fn main() {
         .and_then(|args| run(&args));
     let code = match result {
         Ok((out, err, code)) => {
+            handoff_packet::executor_protocol::claim();
             // Python's text streams translate every LF, including stored text.
             #[cfg(windows)]
             let (out, err) = (out.replace('\n', "\r\n"), err.replace('\n', "\r\n"));

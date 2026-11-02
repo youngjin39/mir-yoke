@@ -199,3 +199,263 @@ def test_background_id_is_flushed_before_provider_completion(request, tmp_path, 
     completed = subprocess.CompletedProcess(command, process.returncode,
                                             output.read_bytes(), errors.read_bytes())
     assert SUPPORT['snapshot'](root, launcher, completed) == GOLDEN['background_success']
+
+
+def pinned_home(binary, tmp_path, case='success'):
+    import hashlib
+
+    root = tmp_path / 'pinned home'
+    launcher = SUPPORT['seed'](root, case)
+    destination = root / '.mir/bin' / binary.name
+    destination.parent.mkdir(parents=True)
+    shutil.copy2(binary, destination)
+    (destination.parent / 'executor-query.json').write_text(json.dumps({
+        'path': destination.relative_to(root).as_posix(),
+        'sha256': hashlib.sha256(destination.read_bytes()).hexdigest(),
+    }), encoding='utf-8')
+    environment = SUPPORT['environment'](root, case, launcher)
+    for key in ('MIR_EXECUTOR_IMPL', 'MIR_EXECUTOR_QUERY_IMPL', 'MIR_EXECUTOR_EXECUTE_IMPL',
+                'MIR_EXECUTOR_CANCEL_IMPL', 'MIR_NATIVE_HOOKS'):
+        environment.pop(key, None)
+    return root, launcher, environment
+
+
+def invoke_pinned(root, environment, arguments, **kwargs):
+    return subprocess.run([sys.executable, '-m', 'tools.mir_executor', *arguments],
+                          cwd=root, env=environment, timeout=60, check=False,
+                          **kwargs)
+
+
+@pytest.mark.parametrize('case', SUPPORT['CASES'])
+def test_pinned_execute_matches_fixture(binary, tmp_path, case):
+    root, launcher, environment = pinned_home(binary, tmp_path, case)
+    completed = invoke_pinned(root, environment, SUPPORT['argv'](case), capture_output=True)
+    assert SUPPORT['snapshot'](root, launcher, completed) == GOLDEN[case]
+
+
+@pytest.mark.parametrize('selector', [None, 'MIR_EXECUTOR_IMPL', 'MIR_EXECUTOR_EXECUTE_IMPL',
+                                      'MIR_NATIVE_HOOKS'])
+def test_pinned_execute_routes_before_python_import(binary, tmp_path, selector):
+    root, _, environment = pinned_home(binary, tmp_path)
+    (root / 'tools/mir_executor/cli.py').write_text(
+        "raise RuntimeError('python route selected')\n", encoding='utf-8')
+    if selector:
+        environment[selector] = '0' if selector == 'MIR_NATIVE_HOOKS' else 'python'
+    result = invoke_pinned(root, environment, SUPPORT['argv']('success'), capture_output=True)
+    assert result.returncode == (1 if selector else 0), result.stderr
+    assert (b'python route selected' in result.stderr) == bool(selector)
+    assert (root / 'provider-started').exists() == (selector is None)
+
+
+def test_pinned_execute_declines_dynamic_options(binary, tmp_path):
+    root, _, environment = pinned_home(binary, tmp_path)
+    (root / 'tools/mir_executor/local.py').write_text(
+        'from pathlib import Path\n'
+        "root = Path(__file__).resolve().parents[2]\n"
+        'def register_execute_options(parser):\n'
+        "    parser.add_argument('--project-route')\n"
+        'def pre_execute(args, root):\n'
+        "    assert args.project_route == 'offline'\n"
+        "    (root / 'python-route').touch()\n", encoding='utf-8')
+    result = invoke_pinned(root, environment,
+                           SUPPORT['argv']('success') + ['--project-route', 'offline'],
+                           capture_output=True)
+    assert result.returncode == 0, result.stderr
+    assert (root / 'python-route').exists()
+
+
+@pytest.fixture(scope='module')
+def older_binary(tmp_path_factory):
+    directory = tmp_path_factory.mktemp('older-binary')
+    source = directory / 'older.rs'
+    source.write_text('fn main() { std::process::exit(64); }', encoding='utf-8')
+    binary = directory / ('executor-query.exe' if os.name == 'nt' else 'executor-query')
+    subprocess.run(['rustc', str(source), '-o', str(binary)], check=True)
+    return binary
+
+
+@pytest.mark.parametrize('command', ['execute', 'cancel'])
+def test_pinned_older_binary_declines_to_python(older_binary, tmp_path, command):
+    root, launcher, environment = pinned_home(older_binary, tmp_path)
+    arguments = (SUPPORT['argv']('success') if command == 'execute'
+                 else ['cancel', '--job-id', 'missing'])
+    result = invoke_pinned(root, environment, arguments, capture_output=True)
+    if command == 'execute':
+        assert SUPPORT['snapshot'](root, launcher, result) == GOLDEN['success']
+        assert (root / 'provider-started').exists()
+    else:
+        reference_environment = dict(environment, MIR_EXECUTOR_IMPL='python')
+        reference = invoke_pinned(root, reference_environment, arguments, capture_output=True)
+        assert (result.returncode, result.stdout, result.stderr) == (
+            reference.returncode, reference.stdout, reference.stderr)
+
+
+@pytest.mark.parametrize('command', ['execute', 'cancel'])
+@pytest.mark.parametrize('writable', [True, False])
+def test_native_owned_receipt_precedes_effects(binary, tmp_path, command, writable):
+    root, _, environment = pinned_home(binary, tmp_path)
+    if command == 'execute':
+        (root / 'tools/mir_executor/local.py').write_text(
+            'from pathlib import Path\n'
+            "(Path(__file__).resolve().parents[2] / 'hook-imported').touch()\n",
+            encoding='utf-8')
+    receipt = tmp_path / 'receipt'
+    if not writable:
+        receipt.mkdir()
+    environment['MIR_EXECUTOR_OWNED_RECEIPT'] = str(receipt)
+    arguments = (SUPPORT['argv']('success') if command == 'execute'
+                 else ['cancel', '--job-id', 'missing'])
+    result = subprocess.run([str(binary), '--home-root', str(root), *arguments],
+                            cwd=root, env=environment, capture_output=True, timeout=60)
+    if writable:
+        assert receipt.read_bytes() == b'owned'
+        assert result.returncode != 64
+    else:
+        assert (result.returncode, result.stdout, result.stderr) == (64, b'', b'')
+        assert not (root / 'provider-started').exists()
+        assert not (root / 'tasks/jobs.db').exists()
+        assert not (root / 'hook-imported').exists()
+
+
+@pytest.mark.parametrize('code', [7, 64])
+def test_pinned_execute_owned_failure_never_retries(binary, tmp_path, code):
+    root, _, environment = pinned_home(binary, tmp_path)
+    (root / 'tools/mir_executor/local.py').write_text(
+        'from pathlib import Path\n'
+        "root = Path(__file__).resolve().parents[2]\n"
+        'def pre_execute(args, repo_root):\n'
+        "    with (root / 'effects').open('a') as stream:\n"
+        "        stream.write('once\\n')\n"
+        'def after_provider_call(result, metadata):\n'
+        f'    result.exit_code = {code}\n'
+        '    return result\n', encoding='utf-8')
+    result = invoke_pinned(root, environment, SUPPORT['argv']('success'), capture_output=True)
+    assert result.returncode == code, result.stderr
+    assert b'[RESULT]' in result.stdout
+    assert (root / 'effects').read_text().splitlines() == ['once']
+
+
+def test_pinned_execute_ordered_live_streams(binary, tmp_path):
+    root, _, environment = pinned_home(binary, tmp_path)
+    (root / 'tools/mir_executor/local.py').write_text(
+        'import os\n'
+        'def pre_execute(args, root):\n'
+        "    os.write(2, b'first\\n')\n"
+        "    os.write(2, b'second\\n')\n"
+        "    os.write(2, b'third\\n')\n",
+        encoding='utf-8')
+    environment['EXECUTE_FIXTURE_GATE'] = '1'
+    output = root / 'combined-output'
+    with output.open('wb') as stream:
+        process = subprocess.Popen([sys.executable, '-m', 'tools.mir_executor',
+                                    *SUPPORT['argv']('background_success')], cwd=root,
+                                   env=environment, stdin=subprocess.PIPE,
+                                   stdout=stream, stderr=stream)
+        try:
+            deadline = time.monotonic() + 30
+            while b'[BACKGROUND]' not in output.read_bytes():
+                assert process.poll() is None, output.read_bytes()
+                assert time.monotonic() < deadline, 'output buffered until completion'
+                time.sleep(0.02)
+            assert output.read_bytes().startswith(b'first\nsecond\nthird\n')
+            (root / 'provider-release').touch()
+            assert process.wait(timeout=45) == 0
+        finally:
+            (root / 'provider-release').touch()
+            process.stdin.close()
+            if process.poll() is None:
+                process.kill()
+                process.wait(timeout=10)
+
+
+@pytest.mark.skipif(os.name != 'posix', reason='POSIX process signals; Windows cleanup unit tested')
+@pytest.mark.parametrize('number', [2, 15])
+@pytest.mark.parametrize('implementation', ['native', 'python'])
+def test_pinned_execute_interrupt_preserves_python_job_state(
+    binary, tmp_path, number, implementation,
+):
+    root, _, environment = pinned_home(binary, tmp_path, 'background_success')
+    if implementation == 'python':
+        environment['MIR_EXECUTOR_IMPL'] = 'python'
+    environment['EXECUTE_FIXTURE_GATE'] = '1'
+    output = root / 'interrupted-output'
+    with output.open('wb') as stream:
+        process = subprocess.Popen([sys.executable, '-m', 'tools.mir_executor',
+                                    *SUPPORT['argv']('background_success')], cwd=root,
+                                   env=environment, stdout=stream, stderr=stream,
+                                   start_new_session=True)
+        try:
+            deadline = time.monotonic() + 30
+            while not (root / 'provider-started').exists():
+                assert process.poll() is None, output.read_bytes()
+                assert time.monotonic() < deadline, 'provider did not start'
+                time.sleep(0.02)
+            # Target the entrypoint alone: it must forward to its native child.
+            process.send_signal(number)
+            time.sleep(0.2)
+            (root / 'provider-release').touch()
+            code = process.wait(timeout=45)
+            assert code in (128 + number, -number), output.read_bytes()
+        finally:
+            (root / 'provider-release').touch()
+            try:
+                os.killpg(process.pid, 9)
+            except ProcessLookupError:
+                pass
+            process.wait(timeout=10)
+    connection = sqlite3.connect(root / 'tasks/jobs.db')
+    try:
+        assert connection.execute('SELECT status, exit_code FROM jobs').fetchall() == [
+            ('running', None)]
+    finally:
+        connection.close()
+    assert json.loads((root / 'tasks/tdd.json').read_text())['changes'][0]['categories'][
+        'unit']['status'] == 'planned'
+
+
+def test_pinned_entrypoint_passes_binary_stdin_without_buffering(binary, tmp_path):
+    root, _, environment = pinned_home(binary, tmp_path)
+    # The native execute command does not consume stdin. Adapt only the child
+    # executable to a portable byte echo, preserving all Popen descriptor options.
+    (root / 'sitecustomize.py').write_text(
+        'import subprocess, sys\n'
+        'original = subprocess.Popen\n'
+        'def echo(command, **kwargs):\n'
+        "    assert command[0].endswith(('executor-query', 'executor-query.exe'))\n"
+        '    return original([sys.executable, "-c", '
+        '"import sys; sys.stdout.buffer.write(sys.stdin.buffer.read())"], **kwargs)\n'
+        'subprocess.Popen = echo\n', encoding='utf-8')
+    payload = b'first\x00\xff\nsecond\r\n'
+    result = invoke_pinned(root, environment, SUPPORT['argv']('success'),
+                           input=payload, capture_output=True)
+    assert result.returncode == 0, result.stderr
+    assert result.stdout == payload
+    assert not (root / 'provider-started').exists()
+
+
+@pytest.mark.parametrize('guard', ['hash', 'pin', 'link', 'encoding'])
+@pytest.mark.parametrize('command', ['execute', 'cancel'])
+def test_pinned_mutation_routes_keep_admission_guards(binary, tmp_path, guard, command):
+    root, _, environment = pinned_home(binary, tmp_path)
+    (root / 'tools/mir_executor/cli.py').write_text(
+        "raise RuntimeError('python guard fallback')\n", encoding='utf-8')
+    destination = root / '.mir/bin' / binary.name
+    if guard == 'hash':
+        destination.write_bytes(b'changed')
+    elif guard == 'pin':
+        (destination.parent / 'executor-query.json').write_text('{}', encoding='utf-8')
+    elif guard == 'link':
+        original = destination.with_name('original')
+        destination.rename(original)
+        try:
+            destination.symlink_to(original)
+        except OSError:
+            pytest.skip('symlink privilege unavailable')
+    elif guard == 'encoding':
+        environment['PYTHONIOENCODING'] = 'ascii'
+    arguments = SUPPORT['argv']('success') if command == 'execute' else [
+        'cancel', '--job-id', 'missing']
+    result = invoke_pinned(root, environment, arguments, capture_output=True)
+    assert result.returncode == 1
+    assert b'python guard fallback' in result.stderr
+    assert not (root / 'provider-started').exists()
