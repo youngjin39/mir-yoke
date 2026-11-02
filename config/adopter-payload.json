@@ -5693,7 +5693,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_ontology_skill.py",
-      "sha256": "f92b59cde3faf7c7e08d0c30faedd2a7e205a8e65b51859878c2ab43450b500a"
+      "sha256": "574c614e1179077be315c91ac032a6710ba2815a8b6497d8a3514d0536e4f523"
     },
     {
       "classification": "template-maintainer-tool",

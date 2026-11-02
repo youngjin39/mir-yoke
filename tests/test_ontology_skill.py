@@ -997,7 +997,10 @@ def test_should_return_pack_and_reap_server(mk_client, mode):
 @pytest.mark.parametrize("soft", [True, False])
 def test_should_degrade_independently_and_reap_on_failure(mk_client, mode, status, soft):
     run, config, host, repo = mk_client
-    result = run(mode, soft=soft, extra=("query", "ontology"), timeout=0.3)
+    # Only the timeout modes need a short deadline; a responsive server keeps the default
+    # so a slow runner cannot turn an empty result into a timeout.
+    result = run(mode, soft=soft, extra=("query", "ontology"),
+                 timeout=0.3 if mode.endswith("timeout") else 2)
     assert result.returncode == (0 if soft else 2), result.stderr
     assert json.loads(result.stdout)["status"] == status
     assert json.loads(result.stdout)["reason"]
