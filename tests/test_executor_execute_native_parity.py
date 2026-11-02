@@ -547,7 +547,7 @@ def test_pinned_mutation_routes_keep_admission_guards(binary, tmp_path, guard, c
 
 
 @pytest.mark.parametrize('dynamic', [False, True])
-def test_dispatch_unported_agent_never_launches_default_provider(binary, tmp_path, dynamic):
+def test_dispatch_missing_agent_matches_python_fallback_route(binary, tmp_path, dynamic):
     root = tmp_path / 'agent-route-home'
     _, environment, arguments = DISPATCH['seed'](root, 'success', SUPPORT)
     receipt = root / 'ownership'
@@ -562,7 +562,8 @@ def test_dispatch_unported_agent_never_launches_default_provider(binary, tmp_pat
             encoding='utf-8')
     result = subprocess.run([str(binary), '--home-root', str(root), *arguments],
                             cwd=root, env=environment, capture_output=True, timeout=60)
-    assert result.returncode == (1 if dynamic else 64), result.stderr
-    assert receipt.exists() == dynamic
-    assert not (root / 'tasks/jobs.db').exists()
-    assert not (root / 'provider-methods').exists()
+    assert result.returncode == 0, result.stderr
+    assert receipt.read_bytes() == b'owned'
+    assert b'no definition for target agent' in result.stderr
+    assert (root / 'tasks/jobs.db').exists()
+    assert (root / 'provider-methods').exists()

@@ -57,15 +57,9 @@ fn saved_cross_target_and_backend_decline_without_registry_changes() {
     ] {
         registry.insert(&json!({"job_id":id,"repo_root":target,"change_id":"fixture","category":"unit","codex_args":["exec","fixture"],"dispatch_brief_path":root.0.join("brief.md"),"execution_backend":backend,"timeout_seconds":600,"status":"failed","started_at":"fixture","allow_harness_self_modify":false,"resume_count":0,"cancel_requested":false})).unwrap();
     }
-    fs::write(
-        root.0.join("agent.json"),
-        r#"{"target_agent":"fixture-agent"}"#,
-    )
-    .unwrap();
-    registry.insert(&json!({"job_id":"agent","repo_root":root.0,"change_id":"fixture","category":"unit","codex_args":["exec","fixture"],"dispatch_brief_path":root.0.join("agent.json"),"execution_backend":"codex","timeout_seconds":600,"status":"failed","started_at":"fixture","allow_harness_self_modify":false,"resume_count":0,"cancel_requested":false})).unwrap();
     drop(registry);
     let before = fs::read(&db).unwrap();
-    for id in ["cross", "backend", "agent"] {
+    for id in ["cross", "backend"] {
         assert_eq!(
             executor_resume_cli::run(&args(&["resume", "--job-id", id]), &root.0, &root.0),
             64

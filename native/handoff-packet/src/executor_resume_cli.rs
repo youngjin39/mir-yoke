@@ -289,20 +289,6 @@ pub fn run(raw: &[OsString], cwd: &Path, home: &Path) -> i32 {
         {
             return 64;
         }
-        if !row["target_agent"].is_null() {
-            return 64;
-        }
-        let brief = saved
-            .as_ref()
-            .and_then(|s| s["dispatch_brief"].as_str())
-            .or_else(|| row["dispatch_brief_path"].as_str());
-        if brief
-            .and_then(|p| fs::read(p).ok())
-            .and_then(|bytes| serde_json::from_slice::<Value>(&bytes).ok())
-            .is_some_and(|v| !v["target_agent"].is_null())
-        {
-            return 64;
-        }
     }
     let local = cli.root.join("tools").join("mir_executor").join("local.py");
     match fs::read(local) {
@@ -429,7 +415,6 @@ pub fn run(raw: &[OsString], cwd: &Path, home: &Path) -> i32 {
         if prepared.args["execution_backend"]
             .as_str()
             .is_some_and(|s| !matches!(s, "codex" | "claude"))
-            || !prepared.args["target_agent"].is_null()
         {
             return Err("pre_execute selected an unsupported native execution path".into());
         }

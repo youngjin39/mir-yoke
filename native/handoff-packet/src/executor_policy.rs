@@ -311,32 +311,18 @@ pub fn load(root: &Path, account_home: &Path, environment: &BTreeMap<String, Str
     }
 }
 
-/// Resolve repository agent definitions. A local resolver hook must be handled by
-/// the caller through the bridge before using this common-definition fallback.
-pub fn agent_route(
-    root: &Path,
-    name: &str,
-    policy: &Policy,
-) -> Result<(Option<Value>, String), String> {
+fn validate_agent_name(name: &str) -> Result<(), String> {
     let valid = regex::Regex::new(r"^[a-z0-9]+(?:-[a-z0-9]+)*$").map_err(|e| e.to_string())?;
     if !valid.is_match(name) {
         return Err(format!("invalid target_agent: {}", python_repr(name)));
     }
-    let mut definition = format!(".claude/agents/{name}.md");
-    if !root.join(&definition).is_file() {
-        return Ok((
-            None,
-            format!(
-                "[mir_executor] warning: no definition for target agent {}; dispatching without an agent route\n",
-                python_repr(name)
-            ),
-        ));
-    }
-    let mut text = fs::read_to_string(root.join(&definition)).map_err(|e| e.to_string())?;
+    Ok(())
+}
+fn agent_fields(text: &str) -> Result<(BTreeMap<String, String>, String), String> {
     let frontmatter =
         regex::Regex::new(r"(?s)^---\s*\n(.*?)\n---\s*(?:\n|$)").map_err(|e| e.to_string())?;
     let captures = frontmatter
-        .captures(&text)
+        .captures(text)
         .ok_or("agent definition requires leading frontmatter")?;
     let block = captures
         .get(1)
@@ -346,7 +332,7 @@ pub fn agent_route(
         .get(0)
         .ok_or("agent definition requires leading frontmatter")?
         .end();
-    let mut instructions = text[end..].trim().to_owned();
+    let instructions = text[end..].trim().to_owned();
     let field =
         regex::Regex::new(r"^([a-zA-Z_][a-zA-Z0-9_]*):\s*(.*)$").map_err(|e| e.to_string())?;
     let mut fields = BTreeMap::new();
@@ -371,6 +357,62 @@ pub fn agent_route(
         }
         fields.insert(key.as_str().to_owned(), value);
     }
+    Ok((fields, instructions))
+}
+fn read_only_agent(name: &str, fields: &BTreeMap<String, String>) -> bool {
+    name == "codex-final-reviewer"
+        || fields.get("disallowedTools").is_some_and(|s| {
+            let tools: Vec<_> = s
+                .split(',')
+                .map(|s| s.trim().trim_matches(['[', ']']))
+                .collect();
+            tools.contains(&"Write") && tools.contains(&"Edit")
+        })
+}
+fn agent_text(path: &Path) -> Result<String, String> {
+    // Python's text reader normalizes newlines before parsing and hashing.
+    fs::read_to_string(path)
+        .map(|s| s.replace("\r\n", "\n").replace('\r', "\n"))
+        .map_err(|e| e.to_string())
+}
+/// Local routes win, while repository read-only constraints still apply.
+pub fn narrow_agent_route(root: &Path, name: &str, mut route: Value) -> Result<Value, String> {
+    validate_agent_name(name)?;
+    let definition = root
+        .join(".claude")
+        .join("agents")
+        .join(format!("{name}.md"));
+    let fields = if definition.is_file() {
+        agent_fields(&agent_text(&definition)?)?.0
+    } else {
+        BTreeMap::new()
+    };
+    if read_only_agent(name, &fields) {
+        route["sandbox"] = json!("read-only");
+    }
+    Ok(route)
+}
+/// Resolve repository definitions after the caller has tried the local bridge.
+pub fn agent_route(
+    root: &Path,
+    name: &str,
+    policy: &Policy,
+) -> Result<(Option<Value>, String), String> {
+    validate_agent_name(name)?;
+    let mut definition = std::path::PathBuf::from(".claude")
+        .join("agents")
+        .join(format!("{name}.md"));
+    if !root.join(&definition).is_file() {
+        return Ok((
+            None,
+            format!(
+                "[mir_executor] warning: no definition for target agent {}; dispatching without an agent route\n",
+                python_repr(name)
+            ),
+        ));
+    }
+    let mut text = agent_text(&root.join(&definition))?;
+    let (fields, mut instructions) = agent_fields(&text)?;
     let backend = fields
         .get("execution_backend")
         .map(String::as_str)
@@ -381,13 +423,7 @@ pub fn agent_route(
             python_repr(name)
         ));
     }
-    let readonly = fields.get("disallowedTools").is_some_and(|s| {
-        let tools: Vec<_> = s
-            .split(',')
-            .map(|s| s.trim().trim_matches(['[', ']']))
-            .collect();
-        tools.contains(&"Write") && tools.contains(&"Edit")
-    }) || name == "codex-final-reviewer";
+    let readonly = read_only_agent(name, &fields);
     let mut sandbox = readonly.then_some("read-only".to_owned());
     let mut model = if backend == "claude" {
         fields.get("model").cloned()
@@ -396,10 +432,12 @@ pub fn agent_route(
     };
     let mut effort = fields.get("effort").filter(|s| !s.is_empty()).cloned();
     if backend == "codex" {
-        let codex_definition = format!(".codex/agents/{name}.toml");
+        let codex_definition = std::path::PathBuf::from(".codex")
+            .join("agents")
+            .join(format!("{name}.toml"));
         if root.join(&codex_definition).is_file() {
             definition = codex_definition;
-            text = fs::read_to_string(root.join(&definition)).map_err(|e| e.to_string())?;
+            text = agent_text(&root.join(&definition))?;
             let parsed: toml::Value = text.parse::<toml::Value>().map_err(|e| e.to_string())?;
             if let Some(value) = parsed
                 .get("developer_instructions")
@@ -432,7 +470,7 @@ pub fn agent_route(
         if sandbox.is_none() {
             sandbox = Some("workspace-write".into())
         }
-        let lock = root.join("config/model-routing.lock.json");
+        let lock = root.join("config").join("model-routing.lock.json");
         let lock = if lock.is_file() {
             read(&lock).unwrap_or(json!({}))
         } else {
@@ -459,7 +497,7 @@ pub fn agent_route(
     Ok((
         Some(
             json!({"target_agent":name,"execution_backend":backend,"model":model,
-        "reasoning_effort":effort,"definition_path":definition,"definition_sha256":crate::digest::sha256(text.as_bytes()),
+        "reasoning_effort":effort,"definition_path":definition.to_str().ok_or("agent path is not UTF-8")?.replace('\\', "/"),"definition_sha256":crate::digest::sha256(text.as_bytes()),
         "base_instructions":instructions,"sandbox":sandbox}),
         ),
         String::new(),

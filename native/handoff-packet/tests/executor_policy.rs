@@ -110,6 +110,45 @@ fn python_agent_route_goldens() {
     fs::remove_dir_all(root).unwrap();
 }
 #[test]
+fn hook_routes_preserve_identity_and_repository_read_only_constraints() {
+    use handoff_packet::executor_policy::narrow_agent_route;
+    use std::{fs, path::PathBuf};
+    let root = std::env::var_os("MIR_NATIVE_TEST_SCRATCH")
+        .map(PathBuf::from)
+        .unwrap_or_else(std::env::temp_dir)
+        .join(format!("agent-hook-{}", std::process::id()));
+    let agents = root.join(".claude").join("agents");
+    fs::create_dir_all(&agents).unwrap();
+    let route = json!({"target_agent":"custom","execution_backend":"codex","model":"hook-model","sandbox":"danger-full-access","base_instructions":"hook instructions"});
+    assert_eq!(
+        narrow_agent_route(&root, "custom", route.clone()).unwrap(),
+        route
+    );
+    // Hook overrides need no executable backend in repository frontmatter.
+    fs::write(
+        agents.join("custom.md"),
+        "---\r\ndisallowedTools: \"Write,\r\n  Edit\"\r\n---\r\nRepository instructions.\r\n",
+    )
+    .unwrap();
+    let mut narrowed = route.clone();
+    narrowed["sandbox"] = json!("read-only");
+    assert_eq!(
+        narrow_agent_route(&root, "custom", route.clone()).unwrap(),
+        narrowed
+    );
+    assert_eq!(
+        narrow_agent_route(&root, "codex-final-reviewer", route.clone()).unwrap(),
+        narrowed
+    );
+    fs::write(agents.join("custom.md"), "invalid frontmatter").unwrap();
+    assert_eq!(
+        narrow_agent_route(&root, "custom", route.clone()).unwrap_err(),
+        "agent definition requires leading frontmatter"
+    );
+    assert!(narrow_agent_route(&root, "../custom", route).is_err());
+    fs::remove_dir_all(root).unwrap();
+}
+#[test]
 fn windows_account_profile_rule_never_uses_home() {
     use handoff_packet::executor_policy::windows_account_home;
     use std::collections::BTreeMap;

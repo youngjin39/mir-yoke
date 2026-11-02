@@ -24,30 +24,28 @@ use std::{
     time::Duration,
 };
 
-/// Agent routes remain Python-owned until their route-object hooks are composed.
-pub(crate) fn preflight(argv: &[String], cwd: &Path) -> bool {
-    for (i, token) in argv.iter().enumerate() {
-        let raw = token.strip_prefix("--dispatch-brief=").or_else(|| {
-            (token == "--dispatch-brief")
-                .then(|| argv.get(i + 1).map(String::as_str))
-                .flatten()
-        });
-        if let Some(raw) = raw {
-            let p = Path::new(raw);
-            let file = if p.is_absolute() {
-                p.into()
-            } else {
-                cwd.join(p)
-            };
-            if let Ok(bytes) = fs::read(file)
-                && let Ok(v) = serde_json::from_slice::<Value>(&bytes)
-                && !v["target_agent"].is_null()
-            {
-                return false;
-            }
-        }
+// Validated briefs may be project-owned objects. Preserve their bridge handle
+// through rendering and target extraction rather than requiring a JSON object.
+fn brief_call(
+    bridge: &mut Option<Box<LocalBridge>>,
+    name: &str,
+    args: Vec<Value>,
+    handles: Value,
+) -> Result<Value> {
+    let Some(bridge) = bridge.as_mut() else {
+        return Ok(json!({"result":null}));
+    };
+    let reply = bridge
+        .call(name, args, json!({"handles":handles}))
+        .map_err(|e| e.to_string())?;
+    if reply["ok"] != true {
+        return Err(format!(
+            "{}: {}",
+            reply["error"]["type"].as_str().unwrap_or("Error"),
+            reply["error"]["message"].as_str().unwrap_or("")
+        ));
     }
-    true
+    Ok(reply)
 }
 fn resolved(value: &Value, cwd: &Path) -> Result<PathBuf> {
     let p = value_path(value, cwd);
@@ -179,6 +177,23 @@ fn project(root: &Path, policy: &executor_policy::Policy) -> (Option<String>, Op
     }
     (slug, if found.len() == 1 { found.pop() } else { None })
 }
+fn load_policy(
+    root: &Path,
+    environment: &BTreeMap<OsString, OsString>,
+) -> Result<executor_policy::Policy> {
+    let env_text = environment
+        .iter()
+        .filter_map(|(k, v)| Some((k.to_str()?.to_owned(), v.to_str()?.to_owned())))
+        .collect();
+    #[cfg(unix)]
+    let account = crate::account_home::get().ok_or("account home unavailable")?;
+    #[cfg(windows)]
+    let account = environment
+        .get(&OsString::from("USERPROFILE"))
+        .map(PathBuf::from)
+        .ok_or("account home unavailable")?;
+    Ok(executor_policy::load(root, &account, &env_text))
+}
 
 pub fn dispatch(
     root: &Path,
@@ -213,11 +228,16 @@ pub fn dispatch(
     } else {
         Some(resolved(&args["dispatch_brief"], cwd)?)
     };
-    let prepared = (|| -> Result<(String, String)> {
+    let prepared = (|| -> Result<(String, String, Option<Value>)> {
         let mut validated = if let Some(p) = &brief {
-            hook(bridge, "validate_brief", vec![path(p), path(root)])?
+            brief_call(
+                bridge,
+                "validate_brief",
+                vec![path(p), path(root)],
+                json!({}),
+            )?
         } else {
-            Value::Null
+            json!({"result":null})
         };
         let mut text = prompt(&codex_args);
         if text.is_empty()
@@ -225,9 +245,6 @@ pub fn dispatch(
         {
             let data: Value = serde_json::from_slice(&fs::read(p).map_err(|e| e.to_string())?)
                 .map_err(|e| e.to_string())?;
-            if !data["target_agent"].is_null() {
-                return Err("target agent requires Python dispatch".into());
-            }
             text = data["expanded_goal"]
                 .as_str()
                 .ok_or("DispatchBrief expanded_goal must be a string")?
@@ -247,12 +264,26 @@ pub fn dispatch(
                     .is_some_and(|h| h.iter().any(|h| h == "render_brief"))
             })
         {
-            validated = hook(bridge, "validate_brief", vec![json!(text), path(root)])?;
+            validated = brief_call(
+                bridge,
+                "validate_brief",
+                vec![json!(text), path(root)],
+                json!({}),
+            )?;
         }
-        if !validated["target_agent"].is_null() || !args["target_agent"].is_null() {
-            return Err("target agent requires Python dispatch".into());
+        let handles = validated["handle"]
+            .as_str()
+            .map_or_else(|| json!({}), |h| json!({"0":h}));
+        let rendered = brief_call(
+            bridge,
+            "render_brief",
+            vec![validated["result"].clone(), path(root)],
+            handles.clone(),
+        )?;
+        if !rendered["handle"].is_null() && rendered["result"].is_null() {
+            return Err("render_brief must return str or None".into());
         }
-        let rendered = hook(bridge, "render_brief", vec![validated, path(root)])?;
+        let rendered = &rendered["result"];
         let brief_text = if rendered.is_null() {
             text.clone()
         } else {
@@ -261,9 +292,57 @@ pub fn dispatch(
                 .ok_or("render_brief must return str or None")?
                 .into()
         };
-        Ok((text, brief_text))
+        let mut target = brief_call(
+            bridge,
+            "bridge.target_agent",
+            vec![validated["result"].clone()],
+            handles,
+        )?["result"]
+            .clone();
+        if target.is_null()
+            && let Some(p) = &brief
+        {
+            let data: Value = serde_json::from_slice(&fs::read(p).map_err(|e| e.to_string())?)
+                .map_err(|e| e.to_string())?;
+            target = data["target_agent"].clone();
+        }
+        let agent = if target.is_null() {
+            None
+        } else {
+            let name = target
+                .as_str()
+                .filter(|s| !s.trim().is_empty())
+                .ok_or("DispatchBrief target_agent must be a non-empty string")?;
+            let route = hook(bridge, "resolve_agent_route", vec![path(root), json!(name)])?;
+            if route.is_null() {
+                // Local hooks may change policy; the reference reads it here.
+                let policy = load_policy(root, environment)?;
+                let (agent, warning) = executor_policy::agent_route(root, name, &policy)?;
+                if agent
+                    .as_ref()
+                    .is_some_and(|a| a["execution_backend"] == "codex")
+                    && !policy.warning.is_empty()
+                {
+                    emit(&policy.warning, true).map_err(|e| e.to_string())?;
+                }
+                if !warning.is_empty() {
+                    emit(&warning, true).map_err(|e| e.to_string())?;
+                }
+                agent
+            } else {
+                if route["$type"] != "agent_route" || !route["value"].is_object() {
+                    return Err(format!("invalid route for target agent: {}", repr(name)));
+                }
+                Some(executor_policy::narrow_agent_route(
+                    root,
+                    name,
+                    route["value"].clone(),
+                )?)
+            }
+        };
+        Ok((text, brief_text, agent))
     })();
-    let (text, brief_text) = match prepared {
+    let (text, brief_text, agent) = match prepared {
         Ok(v) => v,
         Err(e) => {
             diagnostic(&format!("DispatchBrief error: {}", strip_class(&e)));
@@ -331,24 +410,13 @@ pub fn dispatch(
     let mut pending = json!({"job_id":id,"change_id":change,"category":args["category"].as_str().unwrap_or("unclassified"),"family":args["family"],"repo_root":root,"codex_args":codex_args,"dispatch_brief_path":brief,"allow_harness_self_modify":args["allow_harness_self_modify"]==true,"timeout_seconds":args["timeout"].as_i64().unwrap_or(600),"status":"running","started_at":utc_now(),"cancel_requested":false,"resume_count":0});
     let mut errors = Vec::new();
     let work = (|| -> Result<_> {
-        let env_text = environment
-            .iter()
-            .filter_map(|(k, v)| Some((k.to_str()?.to_owned(), v.to_str()?.to_owned())))
-            .collect();
-        #[cfg(unix)]
-        let account = crate::account_home::get().ok_or("account home unavailable")?;
-        #[cfg(windows)]
-        let account = environment
-            .get(&OsString::from("USERPROFILE"))
-            .map(PathBuf::from)
-            .ok_or("account home unavailable")?;
-        let policy = executor_policy::load(root, &account, &env_text);
+        let policy = load_policy(root, environment)?;
         if !policy.warning.is_empty() {
-            let _ = emit(&policy.warning, true);
+            emit(&policy.warning, true).map_err(|e| e.to_string())?;
         }
         let route = policy.category(args["category"].as_str().unwrap_or(""));
-        let model = args["model"].as_str().or_else(|| route["model"].as_str());
-        let effort = args["reasoning_effort"]
+        let mut model = args["model"].as_str().or_else(|| route["model"].as_str());
+        let mut effort = args["reasoning_effort"]
             .as_str()
             .or_else(|| route["reasoning_effort"].as_str());
         let (slug, declared) = project(root, &policy);
@@ -356,8 +424,20 @@ pub fn dispatch(
             args["execution_backend"].as_str(),
             slug.as_deref(),
             declared.as_deref(),
-            None,
+            agent.as_ref().and_then(|a| a["execution_backend"].as_str()),
         );
+        if let Some(agent) = &agent
+            && agent["execution_backend"] == backend
+        {
+            model = args["model"]
+                .as_str()
+                .or_else(|| agent["model"].as_str().filter(|s| !s.is_empty()))
+                .or(model);
+            effort = args["reasoning_effort"]
+                .as_str()
+                .or_else(|| agent["reasoning_effort"].as_str().filter(|s| !s.is_empty()))
+                .or(effort);
+        }
         if let Some(model) = model {
             policy.guard(model, &backend, !args["model"].is_null())?;
         }
@@ -463,7 +543,7 @@ pub fn dispatch(
             writer_scope_held: true,
             caller_projects_result: true,
             provider_options: Some(
-                json!({"prompt":provider_prompt,"model":if backend=="claude"{None}else{model},"reasoning_effort":if backend=="claude"{None}else{effort}}),
+                json!({"prompt":provider_prompt,"model":if backend=="claude" && agent.is_none(){None}else{model},"reasoning_effort":if backend=="claude" && agent.is_none(){None}else{effort}}),
             ),
             ..Default::default()
         };
@@ -486,7 +566,12 @@ pub fn dispatch(
                     &ClaudeOptions {
                         cwd: wt.path.clone(),
                         timeout,
-                        ..Default::default()
+                        target_agent: agent
+                            .as_ref()
+                            .and_then(|a| a["target_agent"].as_str())
+                            .map(str::to_owned),
+                        model: agent.as_ref().and(model).map(str::to_owned),
+                        reasoning_effort: agent.as_ref().and(effort).map(str::to_owned),
                     },
                 )
             } else {
@@ -497,6 +582,7 @@ pub fn dispatch(
                 let mut cmd = command(bin, cwd, environment, &local, &dispatch_id, &events);
                 cmd.arg("app-server");
                 let mut request = CodexRequest::new(&text, &wt.path);
+                request.agent_route = agent.as_ref();
                 request.model = model;
                 request.reasoning_effort = effort;
                 request.timeout = timeout;
@@ -569,7 +655,10 @@ pub fn dispatch(
                     allowlist: strings(&args["allow_paths"]),
                     verification_commands: strings(&args["verify_cmds"]),
                     allow_harness_self_modify: args["allow_harness_self_modify"] == true,
-                    expect_changes: args["expect_changes"].as_bool().unwrap_or(true),
+                    expect_changes: agent.as_ref().map_or_else(
+                        || args["expect_changes"].as_bool().unwrap_or(true),
+                        |a| a["sandbox"] != "read-only",
+                    ),
                     source_env: environment
                         .iter()
                         .filter_map(|(k, v)| Some((k.to_str()?.into(), v.to_str()?.into())))

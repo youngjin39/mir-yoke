@@ -163,6 +163,17 @@ class Bridge:
                 if len(args) != 1 or kwargs:
                     raise ValueError("bridge.object requires one argument")
                 result = args[0]
+            elif hook == "bridge.target_agent":
+                if len(args) != 1 or kwargs:
+                    raise ValueError("bridge.target_agent requires one argument")
+                brief = args[0]
+                result = (
+                    brief.get("target_agent")
+                    if isinstance(brief, dict)
+                    else getattr(brief, "target_agent", None)
+                )
+                if result is not None and (not isinstance(result, str) or not result.strip()):
+                    raise ValueError("DispatchBrief target_agent must be a non-empty string")
             elif hook in {"writer_scope.enter", "writer_scope.exit"}:
                 if len(args) != 1 or kwargs:
                     raise ValueError("writer scope operation requires one handle")
@@ -187,9 +198,18 @@ class Bridge:
                     result = function(*args, **kwargs)
             else:
                 raise ValueError("Unsupported hook")
+            if hook == "resolve_agent_route" and result is not None:
+                from tools.mir_executor.dispatch import AgentRoute  # noqa: PLC0415
+
+                if not isinstance(result, AgentRoute):
+                    target_agent = args[1] if len(args) > 1 else kwargs.get("target_agent")
+                    raise ValueError(f"invalid route for target agent: {target_agent!r}")
             retain = force_handle or hook in {"validate_brief", "writer_scope", "bridge.object"}
             try:
-                encoded_result = _encode(result) if hook == "after_provider_call" else result
+                if hook == "resolve_agent_route" and result is not None:
+                    encoded_result = {"$type": "agent_route", "value": _encode(vars(result))}
+                else:
+                    encoded_result = _encode(result) if hook == "after_provider_call" else result
                 json.dumps(encoded_result, allow_nan=False)
             except (ValueError, TypeError, RecursionError):
                 retain = True

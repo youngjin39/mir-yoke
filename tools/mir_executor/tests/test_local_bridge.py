@@ -13,6 +13,125 @@ SCRIPT = pathlib.Path(__file__).resolve().parents[1] / "local_bridge.py"
 VERSION = "mir-executor.local@1"
 
 
+@pytest.mark.parametrize("subclass", [False, True])
+def test_should_encode_local_agent_route_without_composing_repository_policy(repo, subclass):
+    from tools.mir_executor.dispatch import AgentRoute
+
+    fields = dict(
+        target_agent="reviewer", execution_backend="codex", model="fixture-model",
+        reasoning_effort="high", definition_path="local-definition",
+        definition_sha256="fixture-digest", base_instructions="Local instructions", sandbox=None,
+    )
+    (repo / "tools/mir_executor/local.py").write_text(
+        "from tools.mir_executor.dispatch import AgentRoute\n"
+        "class CustomRoute(AgentRoute):\n    pass\n"
+        "def resolve_agent_route(root, target_agent):\n"
+        f"    return {'CustomRoute' if subclass else 'AgentRoute'}(**{fields!r})\n"
+    )
+    definition = repo / ".claude/agents/reviewer.md"
+    definition.parent.mkdir(parents=True)
+    definition.write_text("---\ndisallowedTools: Write\n---\nRepository instructions\n")
+    client = Client(repo)
+    try:
+        response = client.call("resolve_agent_route", [str(repo), "reviewer"])
+        assert response["ok"], response
+        assert response["result"] == {"$type": "agent_route", "value": vars(AgentRoute(**fields))}
+        assert response["handle"] is None
+    finally:
+        client.close()
+
+
+@pytest.mark.parametrize("value", ["None", "{}", "False", "'route'", "AgentRoute()"])
+def test_should_reject_non_route_hook_result_and_preserve_none(repo, value):
+    (repo / "tools/mir_executor/local.py").write_text(
+        "class AgentRoute:\n    pass\n"
+        f"def resolve_agent_route(root, target_agent):\n    return {value}\n"
+    )
+    client = Client(repo)
+    try:
+        response = client.call("resolve_agent_route", [str(repo), "reviewer"])
+        if value == "None":
+            assert response["ok"] and response["result"] is None
+            assert response["handle"] is None
+        else:
+            assert response["ok"] is False
+            assert response["error_category"] == "value_error"
+            assert response["error"] == {
+                "type": "ValueError", "message": "invalid route for target agent: 'reviewer'",
+            }
+    finally:
+        client.close()
+
+
+@pytest.mark.parametrize("opaque", [False, True])
+@pytest.mark.parametrize("target", [None, "reviewer"])
+def test_should_extract_target_agent_from_retained_validated_brief(repo, opaque, target):
+    expression = (
+        f"SimpleNamespace(target_agent={target!r})"
+        if opaque else repr({"target_agent": target})
+    )
+    (repo / "tools/mir_executor/local.py").write_text(
+        "from types import SimpleNamespace\n"
+        f"def validate_brief(value, root):\n    return {expression}\n"
+        "def render_brief(brief, root):\n    return 'rendered'\n"
+    )
+    client = Client(repo)
+    try:
+        brief = client.call("validate_brief", ["text", str(repo)])
+        response = client.call("bridge.target_agent", [None], handles={"0": brief["handle"]})
+        assert response["ok"], response
+        assert response["result"] == target
+        assert client.call("render_brief", [None, str(repo)], handles={"0": brief["handle"]})[
+            "result"
+        ] == "rendered"
+    finally:
+        client.close()
+
+
+@pytest.mark.parametrize("value", [{}, {"other": "reviewer"}, None, "text"])
+def test_should_return_none_when_brief_has_no_target_agent(repo, value):
+    client = Client(repo)
+    try:
+        response = client.call("bridge.target_agent", [value])
+        assert response["ok"], response
+        assert response["result"] is None
+    finally:
+        client.close()
+
+
+@pytest.mark.parametrize("target", ["object()", "False", "''", "'   '"])
+def test_should_reject_invalid_target_agent_from_opaque_brief(repo, target):
+    (repo / "tools/mir_executor/local.py").write_text(
+        "from types import SimpleNamespace\n"
+        "def validate_brief(value, root):\n"
+        f"    return SimpleNamespace(target_agent={target})\n"
+    )
+    client = Client(repo)
+    try:
+        brief = client.call("validate_brief", ["text", str(repo)])
+        response = client.call("bridge.target_agent", [None], handles={"0": brief["handle"]})
+        assert response["ok"] is False
+        assert response["error"] == {
+            "type": "ValueError",
+            "message": "DispatchBrief target_agent must be a non-empty string",
+        }
+        assert response["error_category"] == "value_error"
+    finally:
+        client.close()
+
+
+@pytest.mark.parametrize("args,kwargs", [([], {}), ([None, None], {}), ([None], {"extra": 1})])
+def test_should_reject_invalid_target_agent_operation_arguments(repo, args, kwargs):
+    client = Client(repo)
+    try:
+        response = client.call("bridge.target_agent", args, kwargs=kwargs)
+        assert response["error"] == {
+            "type": "ValueError", "message": "bridge.target_agent requires one argument",
+        }
+    finally:
+        client.close()
+
+
 def test_pre_execute_returns_mutated_namespace_without_changing_result(repo):
     client = Client(repo)
     reply = client.call(
@@ -134,7 +253,6 @@ def test_should_load_once_and_reuse_opaque_brief(repo):
     "hook",
     [
         "job_identity",
-        "resolve_agent_route",
         "before_run",
         "after_run",
         "after_provider_call",
@@ -246,7 +364,7 @@ PARITY_HOOKS = [
 ]
 
 
-@pytest.mark.parametrize("hook", PARITY_HOOKS)
+@pytest.mark.parametrize("hook", [name for name in PARITY_HOOKS if name != "resolve_agent_route"])
 def test_should_match_every_direct_hook_value_and_side_effect_order(repo, hook):
     source = """
 from pathlib import Path

@@ -310,8 +310,17 @@ runs Python with the original arguments. Spawn failure, a missing or mismatched
 pin, `MIR_EXECUTOR_QUERY_IMPL=python`, and `MIR_NATIVE_HOOKS=0` also retain Python.
 `MIR_EXECUTOR_IMPL=python` disables every native route; execute and cancel also
 honor `MIR_EXECUTOR_EXECUTE_IMPL=python` and `MIR_EXECUTOR_CANCEL_IMPL=python`.
-Direct execute retains the native admission boundary: unsupported dispatch,
-resume, backend, agent, cross-target, or dynamic parser extensions use Python.
+Native `execute --dispatch` and `resume` compose explicit brief agents and
+target-local `resolve_agent_route` hooks through the bridge, including opaque
+validated briefs, repository read-only constraints and Codex definition overrides.
+They persist resolved backend/model/effort and restore saved resume options;
+resume resolves the agent again from the current integrity-checked brief and
+definitions. A missing definition warns and proceeds without an agent route.
+No agent-route shape is declined solely because it selects an agent. Invalid
+definitions or hook results fail with the reference diagnostic after ownership.
+Direct execute retains its existing backend and agent admission boundary.
+Cross-target requests, unsupported arguments and explicit dynamic parser
+extensions still use Python before ownership.
 Execute and cancel inherit the caller's stdin/stdout/stderr without buffering.
 Their exit 64 permits retry only without an exact private owned receipt. Native
 claims ownership before hook imports, output, registry writes, or provider launch;

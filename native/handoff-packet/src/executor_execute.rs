@@ -192,7 +192,7 @@ pub fn run(raw: &[OsString], cwd: &Path, home_root: &Path) -> i32 {
         Err(error) if error.kind() == io::ErrorKind::NotFound => (),
         Err(_) => return 64,
     }
-    if !crate::executor_dispatch_cli::preflight(&argv, cwd) || !ledger_preflight(&argv, cwd) {
+    if !ledger_preflight(&argv, cwd) {
         return 64;
     }
     let environment: BTreeMap<OsString, OsString> = std::env::vars_os().collect();
