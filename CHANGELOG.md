@@ -8,6 +8,8 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.63] — 2026-11-03 — Native bridge in the caller's virtual environment
+
 ### Fixed
 - The native executor bridge now runs consumer hooks in the caller's interpreter. `interpreter()` no longer resolves symlinks, so a virtual environment's `python3` keeps its site-packages, and the entrypoint passes `sys.executable` as `MIR_EXECUTOR_PYTHON` unless the caller set it. In 0.13.62 a `local.py` that imported a package installed only in the consumer's virtual environment failed natively with `ModuleNotFoundError`. New parity tests run sweep, cancel and a fake-provider execute inside a real `python -m venv` on macOS, Linux and Windows CI.
 
