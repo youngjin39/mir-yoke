@@ -33,6 +33,8 @@ pub mod executor_resume;
 #[forbid(unsafe_code)]
 pub mod executor_review;
 #[forbid(unsafe_code)]
+pub mod executor_sweep;
+#[forbid(unsafe_code)]
 pub mod executor_transport;
 #[forbid(unsafe_code)]
 pub mod executor_verifier;

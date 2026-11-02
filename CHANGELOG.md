@@ -91,6 +91,14 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
   attempt, cleared results, kept route and dispatch history, `job_resumed`
   event), handing off to the E8 and E9 library path. Finalization now keeps
   earlier dispatch ids in the job metadata, as Python does.
+- Executor port slice E11 (library only): native conservative sweep (read-only
+  dry runs, stale running jobs reported and never reaped, dirty, live and
+  unique-commit worktrees kept, re-inspection before non-force removal, artifact
+  retention with per-path receipts written before deletion and reused after an
+  interruption), matching Python's reports, registry rows and trees. Windows
+  junctions are kept conservatively; Python does not recognize them as links.
+- The finalize lock opens with read/write access, which Windows `LockFileEx`
+  requires.
 
 ### Changed
 
