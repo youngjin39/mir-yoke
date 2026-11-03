@@ -11,6 +11,7 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 ### Added
 - `executor-query policy-resolve`: the pinned native executor binary resolves a sub-agent category route with byte-identical output to `mir policy resolve`; `mir policy resolve` offers it before importing the Python policy loader and falls back on decline, a missing or older pin, or `MIR_EXECUTOR_IMPL=python` / `MIR_EXECUTOR_QUERY_IMPL=python`. One Rust policy loader now serves both the query and the executor commands.
 - Native local policy (`native_policy`, version 1) in `config/mir-executor.local.json`: declarative target admission (family reject, alias map with normalization, require-current, unavailable resolver, root conflict, invoking-cwd Git root equality, home-root authorization) is enforced by the native executor without starting the Python bridge. The section is validated strictly; a repository that declares it and also defines a covered hook in `tools/mir_executor/local.py` fails closed with a configuration error. Without the section, behaviour is unchanged.
+- `native_policy.verifier_aliases`: legacy verifier command text is split with Python `shlex.split` rules and replaced by the registered verifier ID only on an exact argv match (the last registered ID wins, as in the Python hooks); unmatched or malformed text is left for the existing rejection. `configuration_root` selects whether the verifiers come from the initial or the selected target repository.
 
 ## [v0.13.63] — 2026-11-03 — Native bridge in the caller's virtual environment
 

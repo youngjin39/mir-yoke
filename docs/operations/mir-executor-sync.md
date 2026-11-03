@@ -55,6 +55,17 @@ this optional tool is not an adopter payload or a grant of consumer authority.
   {"native_policy":{"version":1,"target_admission":{"family":{"mode":"reject","failure":{"kind":"ValueError","message":"Family selection is unavailable"}}}}}
   ```
 
+  Version 1 also accepts optional `verifier_aliases`:
+  `{"configuration_root":"initial"}` reads the original pre_execute root's
+  `verifiers`; `{"configuration_root":"target"}` reads the resolved family
+  target's configuration. Mapping runs after target admission and before later
+  verifier validation. IDs remain unchanged; only exact POSIX Python shlex argv
+  matches (comments disabled) map to IDs. Malformed or unknown text is preserved.
+  Duplicate argv entries select the last ID in JSON insertion order. An absent
+  section does not map commands. Both sections own `pre_execute`; retaining that
+  hook in local Python fails closed before import. Other consumer hook behavior
+  still needs its own native replacement before adoption.
+
   `family` supports `reject`, `alias_map`, and `require_current`. Alias maps are
   explicit slug-to-path objects; relative paths resolve against the configuration
   repository. Normalization is `exact` (default), `strip_lower`, or

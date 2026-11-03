@@ -63,6 +63,7 @@ impl std::error::Error for Error {
 pub struct LocalConfig {
     data: Map<String, Value>,
     numeric_tag: String,
+    verifier_order: Vec<String>,
 }
 impl LocalConfig {
     pub fn load(repo_root: &Path) -> Result<Self, Error> {
@@ -87,7 +88,7 @@ impl LocalConfig {
     }
 
     pub fn parse(text: &str) -> Result<Self, Error> {
-        JsonSyntax::validate(text)?;
+        let verifier_order = JsonSyntax::validate(text)?;
         let mut numeric_tag = "$python_number".to_owned();
         while text.contains(&numeric_tag) {
             numeric_tag.push('_');
@@ -96,7 +97,11 @@ impl LocalConfig {
         let value: Value = serde_json::from_str(&normalized).map_err(Error::Json)?;
         match value {
             Value::Object(data) => {
-                let config = Self { data, numeric_tag };
+                let config = Self {
+                    data,
+                    numeric_tag,
+                    verifier_order,
+                };
                 config.native_policy()?;
                 Ok(config)
             }
@@ -112,6 +117,10 @@ impl LocalConfig {
             .get("native_policy")
             .map(crate::executor_target_policy::NativePolicy::parse)
             .transpose()
+    }
+
+    pub(crate) fn verifier_order(&self) -> &[String] {
+        &self.verifier_order
     }
 
     pub fn parse_bytes(bytes: Vec<u8>) -> Result<Self, Error> {
@@ -596,13 +605,17 @@ struct JsonSyntax {
     chars: Vec<char>,
     index: usize,
     depth: usize,
+    in_verifiers: bool,
+    verifier_order: Vec<String>,
 }
 impl JsonSyntax {
-    fn validate(text: &str) -> Result<(), Error> {
+    fn validate(text: &str) -> Result<Vec<String>, Error> {
         let mut parser = Self {
             chars: text.chars().collect(),
             index: 0,
             depth: 0,
+            in_verifiers: false,
+            verifier_order: Vec::new(),
         };
         if parser.chars.first() == Some(&'\u{feff}') {
             return Err(parser.error("Unexpected UTF-8 BOM (decode using utf-8-sig)", 0));
@@ -613,7 +626,7 @@ impl JsonSyntax {
         if parser.index != parser.chars.len() {
             return Err(parser.error("Extra data", parser.index));
         }
-        Ok(())
+        Ok(parser.verifier_order)
     }
     fn error(&self, message: &str, index: usize) -> Error {
         let prefix = &self.chars[..index.min(self.chars.len())];
@@ -767,14 +780,28 @@ impl JsonSyntax {
                     self.index,
                 ));
             }
+            let start = self.index;
             self.string()?;
+            let key: String =
+                serde_json::from_str(&self.chars[start..self.index].iter().collect::<String>())
+                    .map_err(Error::Json)?;
+            if self.depth == 2 && self.in_verifiers && !self.verifier_order.contains(&key) {
+                self.verifier_order.push(key.clone());
+            }
             self.space();
             if self.peek() != Some(':') {
                 return Err(self.error("Expecting ':' delimiter", self.index));
             }
             self.index += 1;
             self.space();
+            if self.depth == 1 && key == "verifiers" {
+                self.verifier_order.clear();
+                self.in_verifiers = true;
+            }
             self.value()?;
+            if self.depth == 1 {
+                self.in_verifiers = false;
+            }
             self.space();
             match self.peek() {
                 Some('}') => {

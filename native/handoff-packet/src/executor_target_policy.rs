@@ -54,6 +54,7 @@ pub struct NativePolicy {
     family: Option<FamilyPolicy>,
     repository_local: Option<FailureTemplate>,
     authorize_target: bool,
+    verifier_aliases: Option<bool>,
 }
 const VARIABLES: &[&str] = &[
     "family",
@@ -165,7 +166,11 @@ fn render(text: &str, vars: &BTreeMap<&str, String>) -> String {
 }
 impl NativePolicy {
     pub fn parse(value: &Value) -> Result<Self, Error> {
-        let data = object(value, &["version", "target_admission"], "native_policy")?;
+        let data = object(
+            value,
+            &["version", "target_admission", "verifier_aliases"],
+            "native_policy",
+        )?;
         if data.get("version").and_then(Value::as_u64) != Some(1) {
             return Err(invalid("version must be integer 1"));
         }
@@ -297,7 +302,19 @@ impl NativePolicy {
         if authorize_target && family.is_none() && repository_local.is_none() {
             return Err(invalid("authorize_target requires admission checks"));
         }
+        let verifier_aliases = data
+            .get("verifier_aliases")
+            .map(|value| {
+                let section = object(value, &["configuration_root"], "verifier_aliases")?;
+                match string(section, "configuration_root")? {
+                    "initial" => Ok(false),
+                    "target" => Ok(true),
+                    _ => Err(invalid("configuration_root must be initial or target")),
+                }
+            })
+            .transpose()?;
         Ok(Self {
+            verifier_aliases,
             family,
             repository_local,
             authorize_target,
@@ -346,6 +363,61 @@ impl NativePolicy {
         if target != root {
             set_root(args, &target)?;
         }
+        if let Some(use_target) = self.verifier_aliases {
+            let mapping_root = if use_target { &target } else { root };
+            self.map_verifiers(mapping_root, args)?;
+        }
+        Ok(())
+    }
+    fn map_verifiers(&self, root: &Path, args: &mut Value) -> Result<(), PolicyFailure> {
+        let Some(commands) = args
+            .get("verify_cmds")
+            .and_then(Value::as_array)
+            .filter(|v| !v.is_empty())
+        else {
+            return Ok(());
+        };
+        let config =
+            crate::executor_local::LocalConfig::load(root).map_err(|error| PolicyFailure {
+                kind: error.kind().into(),
+                message: error.to_string(),
+                stderr: None,
+            })?;
+        let Some(verifiers) = config.raw().get("verifiers").and_then(Value::as_object) else {
+            return Ok(());
+        };
+        let mapped: Vec<Value> = commands
+            .iter()
+            .map(|command| {
+                let Some(text) = command.as_str() else {
+                    return command.clone();
+                };
+                if verifiers.contains_key(text) {
+                    return command.clone();
+                }
+                let Some(argv) = crate::stop_tools::shell_words(text) else {
+                    return command.clone();
+                };
+                config
+                    .verifier_order()
+                    .iter()
+                    .rev()
+                    .find(|id| {
+                        verifiers
+                            .get(*id)
+                            .and_then(Value::as_array)
+                            .is_some_and(|registered| {
+                                registered.len() == argv.len()
+                                    && registered
+                                        .iter()
+                                        .zip(&argv)
+                                        .all(|(a, b)| a.as_str() == Some(b))
+                            })
+                    })
+                    .map_or_else(|| command.clone(), |id| json!(id))
+            })
+            .collect();
+        args["verify_cmds"] = json!(mapped);
         Ok(())
     }
     pub fn authorize(
@@ -567,6 +639,83 @@ fn python_repr(text: &str) -> String {
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn verifier_mapping_root_and_admission_order() {
+        let base = std::env::var_os("MIR_NATIVE_TEST_SCRATCH")
+            .map(PathBuf::from)
+            .unwrap_or_else(std::env::temp_dir)
+            .join(format!("verifier-policy-{}", std::process::id()));
+        let initial = base.join("initial");
+        let target = base.join("target");
+        for (root, id) in [(&initial, "original"), (&target, "redirected")] {
+            fs::create_dir_all(root.join("config")).unwrap();
+            fs::write(
+                root.join("config/mir-executor.local.json"),
+                json!({"verifiers": {id: ["check"]}}).to_string(),
+            )
+            .unwrap();
+        }
+        for (mode, expected) in [("initial", "original"), ("target", "redirected")] {
+            let policy = NativePolicy::parse(&json!({"version":1,
+                "target_admission":{"family":{"mode":"alias_map",
+                    "aliases":{"sample":target},
+                    "unknown":{"kind":"ValueError","message":"refused"}}},
+                "verifier_aliases":{"configuration_root":mode}}))
+            .unwrap();
+            let mut args = json!({"family":"sample", "verify_cmds":["check"]});
+            policy
+                .pre_execute(&initial, &initial, &initial, &mut args, &BTreeMap::new())
+                .unwrap();
+            assert_eq!(args["verify_cmds"], json!([expected]));
+            assert_eq!(
+                Path::new(args["repo_root"]["value"].as_str().unwrap()),
+                fs::canonicalize(&target).unwrap()
+            );
+            let mut refused = json!({"family":"missing", "verify_cmds":["check"]});
+            assert_eq!(
+                policy
+                    .pre_execute(&initial, &initial, &initial, &mut refused, &BTreeMap::new())
+                    .unwrap_err()
+                    .message,
+                "refused"
+            );
+            assert_eq!(refused["verify_cmds"], json!(["check"]));
+        }
+        fs::remove_dir_all(base).unwrap();
+    }
+
+    #[test]
+    fn verifier_exact_identity_and_last_inserted_winner() {
+        let base = std::env::var_os("MIR_NATIVE_TEST_SCRATCH")
+            .map(PathBuf::from)
+            .unwrap_or_else(std::env::temp_dir)
+            .join(format!("verifier-exact-{}", std::process::id()));
+        fs::create_dir_all(base.join("config")).unwrap();
+        fs::write(
+            base.join("config/mir-executor.local.json"),
+            r#"{"verifiers":{"z-first":["check"],"a-last":["check"],"check":["other"]}}"#,
+        )
+        .unwrap();
+        let policy = NativePolicy::parse(&json!({"version":1,"target_admission":{},
+            "verifier_aliases":{"configuration_root":"initial"}}))
+        .unwrap();
+        let mut args = json!({"verify_cmds":["'check'", "check", "check extra", "'open", ""]});
+        policy
+            .pre_execute(&base, &base, &base, &mut args, &BTreeMap::new())
+            .unwrap();
+        assert_eq!(
+            args["verify_cmds"],
+            json!(["a-last", "check", "check extra", "'open", ""])
+        );
+        let absent = NativePolicy::parse(&json!({"version":1,"target_admission":{}})).unwrap();
+        let mut args = json!({"verify_cmds":["'check'"]});
+        absent
+            .pre_execute(&base, &base, &base, &mut args, &BTreeMap::new())
+            .unwrap();
+        assert_eq!(args["verify_cmds"], json!(["'check'"]));
+        fs::remove_dir_all(base).unwrap();
+    }
 
     #[test]
     fn closed_versioned_schema() {

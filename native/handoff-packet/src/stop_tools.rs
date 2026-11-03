@@ -310,7 +310,7 @@ pub(crate) fn path_referenced(
 }
 
 // POSIX shlex.split with comments disabled, as used by the reference.
-fn shell_words(command: &str) -> Option<Vec<String>> {
+pub(crate) fn shell_words(command: &str) -> Option<Vec<String>> {
     let mut chars = command.chars().peekable();
     let mut out = Vec::new();
     let mut word = String::new();
@@ -365,6 +365,60 @@ fn shell_words(command: &str) -> Option<Vec<String>> {
         out.push(word);
     }
     Some(out)
+}
+
+#[cfg(test)]
+mod shlex_oracle_tests {
+    #[test]
+    fn python_shlex_grammar() {
+        let mut samples: Vec<String> = [
+            "",
+            " ",
+            "''",
+            "\"\"",
+            "a''b",
+            "a 'b c'",
+            "a\\ b",
+            "\\",
+            "'open",
+            "\"open",
+            "# literal",
+            "a; b|c",
+            "a\t b\r\nc",
+            "a\u{b}b",
+            "a\u{a0}b",
+            "\u{d55c}\u{ae00} 'caf\u{e9}'",
+            "\"a\\$b\"",
+            "\"a\\\nb\"",
+            "a\\\nb",
+            "\"a\\\"b\"",
+            "'a\\b'",
+            "a\0b",
+        ]
+        .iter()
+        .map(|s| (*s).to_owned())
+        .collect();
+        // Exhaust small combinations too: the Python process supplies every
+        // expected token/error, rather than a hand-maintained grammar golden.
+        let alphabet = ['a', ' ', '\'', '"', '\\', '#', '\n'];
+        for a in alphabet {
+            for b in alphabet {
+                for c in alphabet {
+                    samples.push(format!("{a}{b}{c}"));
+                }
+            }
+        }
+        let output = std::process::Command::new(if cfg!(windows) { "python" } else { "python3" })
+            .args(["-c", "import json,shlex,sys\nfor s in json.loads(sys.argv[1]):\n try: print(json.dumps(shlex.split(s)))\n except ValueError: print('null')", &serde_json::to_string(&samples).unwrap()])
+            .output().unwrap();
+        assert!(output.status.success());
+        let stdout = String::from_utf8(output.stdout).unwrap();
+        assert_eq!(stdout.lines().count(), samples.len());
+        for (sample, expected) in samples.iter().zip(stdout.lines()) {
+            let expected: Option<Vec<String>> = serde_json::from_str(expected).unwrap();
+            assert_eq!(super::shell_words(sample), expected, "{sample:?}");
+        }
+    }
 }
 fn relative(root: &Path, value: &str) -> Result<String> {
     let target = abspath(root, value);
