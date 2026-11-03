@@ -8,6 +8,8 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.65] — 2026-11-03 — Native brief and result policy; Python APIs honour native hooks
+
 ### Added
 - `native_policy` v1 `brief_profile` (finite DispatchBrief validation profiles `base_v1` and `closed_verifier_v2` with Pydantic-equal diagnostics), `brief_controls` (`brief_owned`: the brief is the sole source of prompt, merge allowlist and verifier IDs on dispatch; resume accepts restored controls only when equal to the validated brief) and `result_policy` (shared redaction and bound for provider output, private `result.json` artifact). Each owns the matching local hook (`validate_brief`, `pre_execute`, `after_provider_call`, `after_run`), so a consumer can express these hooks as configuration.
 
