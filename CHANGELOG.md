@@ -8,6 +8,9 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+### Added
+- `executor-query policy-resolve`: the pinned native executor binary resolves a sub-agent category route with byte-identical output to `mir policy resolve`; `mir policy resolve` offers it before importing the Python policy loader and falls back on decline, a missing or older pin, or `MIR_EXECUTOR_IMPL=python` / `MIR_EXECUTOR_QUERY_IMPL=python`. One Rust policy loader now serves both the query and the executor commands.
+
 ## [v0.13.63] — 2026-11-03 — Native bridge in the caller's virtual environment
 
 ### Fixed

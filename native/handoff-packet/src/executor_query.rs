@@ -726,6 +726,28 @@ fn main() {
             std::process::exit(code);
         }
     }
+    if raw.first().is_some_and(|s| s == "--home-root")
+        && raw.get(2).is_some_and(|s| s == "policy-resolve")
+    {
+        let result = std::env::current_dir()
+            .ok()
+            .and_then(|cwd| handoff_packet::executor_policy_query::run(&raw[2..], &cwd));
+        let code = match result {
+            Some((out, err, code)) => {
+                #[cfg(windows)]
+                let (out, err) = (out.replace('\n', "\r\n"), err.replace('\n', "\r\n"));
+                if io::stdout().lock().write_all(out.as_bytes()).is_err()
+                    || io::stderr().lock().write_all(err.as_bytes()).is_err()
+                {
+                    1
+                } else {
+                    code
+                }
+            }
+            None => handoff_packet::executor_protocol::decline("policy query admission"),
+        };
+        std::process::exit(code);
+    }
     let result = std::env::current_dir()
         .map_err(|_| ())
         .and_then(|cwd| parse(std::env::args_os().skip(1), &cwd))

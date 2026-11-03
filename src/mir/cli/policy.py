@@ -6,7 +6,7 @@ import json
 import sys
 from pathlib import Path
 
-from tools.mir_executor.policy import load_sub_agent_policy
+from tools.mir_executor.entrypoint import _native_query
 
 
 def _parse(argv: list[str]) -> argparse.Namespace:
@@ -31,6 +31,8 @@ def _parse(argv: list[str]) -> argparse.Namespace:
 
 
 def _handle_resolve(ns: argparse.Namespace) -> int:
+    from tools.mir_executor.policy import load_sub_agent_policy
+
     repo_root = ns.repo_root or Path.cwd()
     policy = load_sub_agent_policy(repo_root)
     result = policy.resolve_category(ns.category)
@@ -43,6 +45,10 @@ def _handle_resolve(ns: argparse.Namespace) -> int:
 
 
 def main(argv: list[str]) -> int:
+    if argv and argv[0] == "resolve":
+        result = _native_query(["policy-resolve", *argv[1:]])
+        if result is not None:
+            return result
     ns = _parse(argv)
     if ns.command == "resolve":
         return _handle_resolve(ns)

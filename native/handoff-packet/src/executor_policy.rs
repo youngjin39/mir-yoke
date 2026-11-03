@@ -233,67 +233,20 @@ fn read(path: &Path) -> Result<Value, String> {
 /// or fail before calling this library if that account identity cannot be established.
 pub fn load(root: &Path, account_home: &Path, environment: &BTreeMap<String, String>) -> Policy {
     let mut warning = String::new();
-    let result: Result<Policy, String> = (|| {
-        let lock = root.join("config/model-routing.lock.json");
-        let local_path = root.join("config/sub-agent-policy.json");
-        let early_local = if !lock.is_file() {
-            Some(if local_path.is_file() {
-                read(&local_path)?
-            } else {
-                json!({})
-            })
+    let result = load_data(root, account_home, environment, &mut warning, read, |s| {
+        Ok(if s == "~" || s.starts_with("~/") {
+            Path::new(
+                environment
+                    .get("HOME")
+                    .map(String::as_str)
+                    .unwrap_or_else(|| account_home.to_str().unwrap_or("")),
+            )
+            .join(s.trim_start_matches('~').trim_start_matches('/'))
         } else {
-            None
-        };
-        let overlay = if lock.is_file() {
-            let lock = read(&lock)?;
-            if !lock["policy"].is_object() {
-                return Err("model-routing lock `policy` must be a JSON object".into());
-            }
-            Some(lock["policy"].clone())
-        } else {
-            let global = account_home.join(".mir/model-routing/sub-agent-policy.json");
-            let named = environment
-                .get("MIR_SUB_AGENT_POLICY")
-                .filter(|s| !s.is_empty())
-                .map(|s| {
-                    if s == "~" || s.starts_with("~/") {
-                        Path::new(
-                            environment
-                                .get("HOME")
-                                .map(String::as_str)
-                                .unwrap_or_else(|| account_home.to_str().unwrap_or("")),
-                        )
-                        .join(s.trim_start_matches('~').trim_start_matches('/'))
-                    } else {
-                        s.into()
-                    }
-                });
-            let path = match named {
-                Some(path) if path.exists() => path,
-                Some(path) => {
-                    warning.push_str(&format!("[mir policy] MIR_SUB_AGENT_POLICY names a missing file: {}; falling back to the rendered policy\n", path.display()));
-                    global
-                }
-                None => global,
-            };
-            if path.exists() {
-                Some(read(&path)?)
-            } else {
-                None
-            }
-        };
-        let local = if let Some(local) = early_local {
-            local
-        } else if local_path.is_file() {
-            read(&local_path)?
-        } else {
-            json!({})
-        };
-        Ok(Policy::resolve(
-            &overlay.map(|o| merge(&local, &o)).unwrap_or(local),
-        ))
-    })();
+            s.into()
+        })
+    })
+    .map(|data| Policy::resolve(&data));
     match result {
         Ok(mut policy) => {
             warning.push_str(&policy.warning);
@@ -309,6 +262,68 @@ pub fn load(root: &Path, account_home: &Path, environment: &BTreeMap<String, Str
             policy
         }
     }
+}
+
+/// One precedence/merge implementation; query admission supplies stricter readers
+/// and path expansion without changing mutation-library diagnostics.
+pub(crate) fn load_data(
+    root: &Path,
+    account_home: &Path,
+    environment: &BTreeMap<String, String>,
+    warning: &mut String,
+    read: impl Fn(&Path) -> Result<Value, String>,
+    expand: impl Fn(&str) -> Result<std::path::PathBuf, String>,
+) -> Result<Value, String> {
+    let lock_path = root.join("config").join("model-routing.lock.json");
+    let local_path = root.join("config").join("sub-agent-policy.json");
+    let has_lock = lock_path.is_file();
+    let early_local = if !has_lock {
+        Some(if local_path.is_file() {
+            read(&local_path)?
+        } else {
+            json!({})
+        })
+    } else {
+        None
+    };
+    let overlay = if has_lock {
+        let lock = read(&lock_path)?;
+        if !lock["policy"].is_object() {
+            return Err("model-routing lock `policy` must be a JSON object".into());
+        }
+        Some(lock["policy"].clone())
+    } else {
+        let global = account_home
+            .join(".mir")
+            .join("model-routing")
+            .join("sub-agent-policy.json");
+        let named = environment
+            .get("MIR_SUB_AGENT_POLICY")
+            .filter(|s| !s.is_empty())
+            .map(|s| expand(s))
+            .transpose()?;
+        let path = match named {
+            Some(path) if path.exists() => path,
+            Some(path) => {
+                warning.push_str(&format!("[mir policy] MIR_SUB_AGENT_POLICY names a missing file: {}; falling back to the rendered policy\n", path.display()));
+                global
+            }
+            None => global,
+        };
+        if path.exists() {
+            Some(read(&path)?)
+        } else {
+            None
+        }
+    };
+    let local = if let Some(local) = early_local {
+        local
+    } else if local_path.is_file() {
+        read(&local_path)?
+    } else {
+        json!({})
+    };
+    Ok(overlay.map(|o| merge(&local, &o)).unwrap_or(local))
 }
 
 fn validate_agent_name(name: &str) -> Result<(), String> {

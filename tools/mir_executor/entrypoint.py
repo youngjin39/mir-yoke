@@ -30,6 +30,10 @@ QUERY_PIN = '.mir/bin/executor-query.json'
 
 def _query_root(argv: list[str]) -> pathlib.Path | None:
     """Recognize only the exact common query options; leave all parsing to Python otherwise."""
+    if argv and argv[0] == 'policy-resolve':
+        # Policy targets can differ from the provider holding the trusted pin.
+        # The binary admits exact argv; unsupported syntax goes to argparse.
+        return _HOME_ROOT
     remaining = list(argv)
     if remaining and remaining[0] == '--jobs-db':
         if len(remaining) < 3:

@@ -29,6 +29,8 @@ pub mod executor_local;
 #[forbid(unsafe_code)]
 pub mod executor_policy;
 #[forbid(unsafe_code)]
+pub mod executor_policy_query;
+#[forbid(unsafe_code)]
 pub mod executor_protocol;
 #[forbid(unsafe_code)]
 pub mod executor_registry;
