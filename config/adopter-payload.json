@@ -6485,7 +6485,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/tests/test_native_hooks_python.py",
-      "sha256": "1cd5beb3ee7f001091b31de008f74063cc8a25cccaf20facf35486822a5be916"
+      "sha256": "fff18bff6a2794240e27e15d477605081d4d89918152b883b0e1780aa0173e10"
     },
     {
       "classification": "optional-consumer-tool",

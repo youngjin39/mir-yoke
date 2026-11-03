@@ -113,6 +113,13 @@ def session(root, config, **kwargs):
     return HookSession(root, config, **kwargs)
 
 
+def call_session(root, config, timeout):
+    """Shorten only the call deadline; a loaded host may start slower than it."""
+    client = session(root, config)
+    client.timeout = timeout
+    return client
+
+
 def assert_reaped(root):
     pid = root / 'host.pid'
     if pid.exists():
@@ -224,7 +231,7 @@ def test_native_session_preserves_target_refusal_envelope(host):
 
 def test_native_deadline_covers_blocked_stdin_write(host):
     root, config = host('blocked-stdin')
-    client = session(root, config, timeout=0.15)
+    client = call_session(root, config, 0.15)
     start = time.monotonic()
     with pytest.raises(NativeHookError, match='timeout'):
         client.call('on_job_event', {'data': 'x' * 800000})
@@ -237,7 +244,7 @@ def test_native_deadline_covers_blocked_stdin_write(host):
 @pytest.mark.skipif(os.name == 'nt', reason='POSIX process-group heartbeat fixture')
 def test_native_deadline_stops_descendant_heartbeat(host):
     root, config = host('tree-hang')
-    client = session(root, config, timeout=0.3)
+    client = call_session(root, config, 0.3)
     with pytest.raises(NativeHookError, match='timeout'):
         client.call('on_job_event', {})
     client.close()
@@ -264,7 +271,7 @@ def test_native_hello_rejection_or_deadline_reaps_host(host, mode):
                                  'oversized', 'depth', 'partial', 'hang', 'crash'])
 def test_native_bad_response_closes_without_retry_and_reaps(host, mode):
     root, config = host(mode)
-    client = session(root, config, timeout=0.15)
+    client = call_session(root, config, 0.15)
     try:
         with pytest.raises((NativeHookError, ValueError)):
             client.call('on_job_event', {})
