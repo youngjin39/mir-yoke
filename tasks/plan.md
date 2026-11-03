@@ -146,3 +146,26 @@ calls ok), finalized, ready at 4774e56. Owner PC (from 0.13.61): five x86_64 Win
 binaries placed (SHA-256 and size equal to the lock), Claude d14ace58 and Codex 01a1a10c
 attested (five mir-mcp calls ok), finalized, ready at d18182a; consumer commit pushed by the
 maintainer host; consumer memory database unchanged.
+
+Release record v0.13.65 (Main, 2026-11-04): native brief and result policy; Python APIs
+honour native hooks. Python executor APIs serve native_policy hooks over mir-executor.hooks@1
+and fail closed for other sections (Y3b 66d07a4); native_policy brief profile, brief-owned
+controls and result policy (Y2a 5207397); under native_policy the resume root error prefix
+matches Python and malformed execute/resume arguments report argparse errors before the
+native-required refusal (f6034b2). Version 61d68a3 on release/v0.13.65; the first bind
+c880b2b was superseded after f6034b2: native prerelease native-f6034b233f80 (30 assets),
+bind f805848, lock tests 363 passed. Fresh-clone readiness found a timing-sensitive native
+hook session test (a 0.15 s deadline also bounded the hello handshake; 1 of 5 local runs
+failed); 7b8d2fc shortens only the call deadline (8 consecutive runs of the file passed).
+CI validate on 7b8d2fc green on every job, including Windows, before the tag; main push CI
+green after a rerun of two macOS jobs that no hosted runner acquired. Fresh-clone readiness
+at 7b8d2fc ready (6065 passed, 221 skipped). Real-consumer gate on the managing consumer,
+which now declares native_policy with the command-hook writer adapter and no local.py:
+sweep, list-jobs, status, result and cancel native and byte-equal to forced Python;
+differential parity against the retired local.py 33/33 (a signal death is 128+n natively and
+-n in Python). Tag v0.13.65 on 7b8d2fc. Maintainer host: provider update from the 0.13.64
+record lock, five aarch64 binaries placed in both caches (SHA-256 equal to the lock), Codex
+hook trust 4/4, Claude b310803f and Codex 01a1a298 attested (five mir-mcp calls ok),
+finalized, ready at 7b8d2fc. Owner PC: pending. Open: native sweep and queries decline a
+target other than the executor home, so a native_policy home cannot serve them for another
+repository (follow-up).
