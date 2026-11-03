@@ -270,7 +270,16 @@ def test_native_declines_end_in_python_refusal(binary, tmp_path, case):
                             env=environment, capture_output=True, timeout=45, check=False)
     assert (direct.returncode, direct.stdout, direct.stderr) == (64, b'', b'')
     assert snapshot(tmp_path) == before
-    assert_refusal(invoke(home, environment, args), home)
+    result = invoke(home, environment, args)
+    if case in ('unknown', 'admission_value', 'resume_options'):
+        # Malformed arguments surface as argparse errors; nothing runs either way.
+        assert result.returncode == 2, (result.stdout, result.stderr)
+        assert b'error:' in result.stderr and b'native executor' not in result.stderr
+    elif case == 'help':
+        assert result.returncode == 0, (result.stdout, result.stderr)
+        assert result.stdout.startswith(b'usage: ')
+    else:
+        assert_refusal(result, home)
     assert snapshot(tmp_path) == before
 
 
@@ -335,4 +344,19 @@ def test_pinned_caller_fallbacks_refuse(binary, tmp_path, selector):
         environment[selector] = '0' if selector == 'MIR_NATIVE_HOOKS' else 'python'
     before = snapshot(tmp_path)
     assert_refusal(invoke(home, environment, arguments('dispatch')), home)
+    assert snapshot(tmp_path) == before
+
+
+@pytest.mark.parametrize('section', SECTIONS)
+def test_malformed_arguments_report_argparse_errors_before_the_refusal(tmp_path, section):
+    home = tmp_path / 'home'
+    environment = seed(home)
+    declare(home, section)
+    (home / 'tools/mir_executor/local.py').write_text(POISON)
+    before = snapshot(tmp_path)
+    result = invoke(home, environment, ['execute', '--change-id', 'x', '--category', 'bogus'])
+    assert result.returncode == 2, (result.stdout, result.stderr)
+    diagnostic = result.stderr.decode()
+    assert "argument --category: invalid choice: 'bogus'" in diagnostic
+    assert 'native executor is required' not in diagnostic
     assert snapshot(tmp_path) == before

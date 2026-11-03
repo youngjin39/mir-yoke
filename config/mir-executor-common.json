@@ -2,7 +2,7 @@
   "files": {
     "tools/mir_executor/__init__.py": "83b6955cf874dd9502b7614bf26a7a5689b0135c29e6666ad98d21a947d67dec",
     "tools/mir_executor/__main__.py": "95269646587c019dbf73a16be0f813c09ac13d00904de5d0aa30fdfea5f3ae12",
-    "tools/mir_executor/cli.py": "128be552ea81258207b9a199e26e3926d4dca98ee43b1c046dbb10b8ad612b5b",
+    "tools/mir_executor/cli.py": "37a62609cca04a96df75c767f813b16e5f723d41c7b3ce7f851d7ed2504340fd",
     "tools/mir_executor/cli_jobs.py": "65d4a69bd23f5b401fcb4a023ef36b239ab932861c3feac0d7773fe9e673bfc9",
     "tools/mir_executor/cli_parser.py": "347b8739ee4ee455e8bbfb5790f2abb39a59149df2831c51f676602bc39f2e3c",
     "tools/mir_executor/codex_mcp_client.py": "1daf25b1508ec483a8d2a773a7eb613d0fe5a396a20473801284ed8e0863d9d1",

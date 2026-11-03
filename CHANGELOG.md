@@ -13,6 +13,10 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 ### Added
 - `native_policy` v1 `brief_profile` (finite DispatchBrief validation profiles `base_v1` and `closed_verifier_v2` with Pydantic-equal diagnostics), `brief_controls` (`brief_owned`: the brief is the sole source of prompt, merge allowlist and verifier IDs on dispatch; resume accepts restored controls only when equal to the validated brief) and `result_policy` (shared redaction and bound for provider output, private `result.json` artifact). Each owns the matching local hook (`validate_brief`, `pre_execute`, `after_provider_call`, `after_run`), so a consumer can express these hooks as configuration.
 
+### Fixed
+- Native resume of a job with saved dispatch options reports `pre_execute` refusals as `resume root error: <message>`, as the Python resume does.
+- In a repository that declares `native_policy`, malformed `execute`/`resume` arguments and `--help` are reported by the argument parser before the native-required refusal, instead of being hidden behind it.
+
 ### Security
 - Python executor APIs (`run_dispatch`, `finalize_dispatch`, the `MirExecutor` run methods and resume) now honour `native_policy`: a version-1 policy with only `hooks` serves `writer_scope` and `on_job_event` through the pinned `mir-executor.hooks@1` host via a stdlib client (one host per outermost writer scope; `clean`, `unclean` on an ordinary exception, `uncertain` on cancellation), and any other section fails closed before effects for the target and the invoking home. Previously an API caller ran without the declared writer lease once `writer_scope` moved out of `local.py`.
 

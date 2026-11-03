@@ -1088,6 +1088,10 @@ def main(argv: list[str] | None = None) -> int:
                 _guard_resume_target(root, known)
         native_declared = _native_policy_declared(root)
     except (OSError, TypeError, ValueError) as exc:
+        if known.subcommand in {"execute", "resume"}:
+            # The native executor declines malformed arguments; report them as argparse
+            # would before the refusal. This parse never imports local.py options.
+            _build_parser(root, load_local_options=False).parse_args(argv)
         print(f"[mir_executor] {exc}", file=sys.stderr)
         sys.exit(1)
     # Parse common options without importing the target's local.py first.

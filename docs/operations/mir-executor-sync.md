@@ -63,7 +63,9 @@ this optional tool is not an adopter payload or a grant of consumer authority.
   cross-repository authorization would otherwise run. Declaration presence is
   sufficient; empty or invalid declarations do not enable Python fallback. A
   missing pin, Python implementation selector, or native decline before ownership
-  therefore ends in a clear native-required refusal. Once native execution claims
+  therefore ends in a clear native-required refusal; malformed arguments and
+  `--help` are reported by the common argument parser first (exit 2 or 0, no
+  effect, local options not loaded). Once native execution claims
   ownership, its result is final and is never retried in Python.
 
   Same-repository status, result and list-jobs remain available, as do cancel,

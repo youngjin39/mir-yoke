@@ -205,6 +205,24 @@ fn wire_paths(args: &mut Value) {
         }
     }
 }
+fn pre_execute_refusal(has_options: bool, kind: &str, message: &str) -> String {
+    const CAUGHT: [&str; 9] = [
+        "OSError",
+        "FileNotFoundError",
+        "PermissionError",
+        "IsADirectoryError",
+        "NotADirectoryError",
+        "TypeError",
+        "ValueError",
+        "ValidationError",
+        "UnicodeDecodeError",
+    ];
+    if has_options && CAUGHT.contains(&kind) {
+        format!("resume root error: {message}")
+    } else {
+        format!("{kind}: {message}")
+    }
+}
 fn prepare_error(error: crate::executor_dispatch::Error, row: &Value) -> String {
     let timeout = match &error {
         crate::executor_dispatch::Error::Local(crate::executor_local::Error::Io(_)) => {
@@ -419,6 +437,9 @@ pub fn run(raw: &[OsString], cwd: &Path, home: &Path) -> i32 {
                 }
             }
         }
+        // Python resumes a job with saved dispatch options through _prepare_execute_root,
+        // which reports OSError, TypeError and ValueError as a resume root error.
+        let has_options = !row["dispatch_options_json"].is_null();
         if let Some(policy) = native_policy.filter(|p| p.covered_hooks().contains(&"pre_execute")) {
             policy
                 .pre_execute(&cli.root, cwd, &cli.root, &mut prepared.args, &environment)
@@ -426,7 +447,7 @@ pub fn run(raw: &[OsString], cwd: &Path, home: &Path) -> i32 {
                     if let Some(stderr) = error.stderr {
                         let _ = execute::emit(&stderr, true);
                     }
-                    format!("{}: {}", error.kind, error.message)
+                    pre_execute_refusal(has_options, &error.kind, &error.message)
                 })?;
         } else if let Some(bridge) = lease.bridge.as_mut() {
             let reply = bridge
@@ -437,10 +458,10 @@ pub fn run(raw: &[OsString], cwd: &Path, home: &Path) -> i32 {
                 )
                 .map_err(|e| e.to_string())?;
             if reply["ok"] != true {
-                return Err(format!(
-                    "{}: {}",
+                return Err(pre_execute_refusal(
+                    has_options,
                     reply["error"]["type"].as_str().unwrap_or("Error"),
-                    reply["error"]["message"].as_str().unwrap_or("")
+                    reply["error"]["message"].as_str().unwrap_or(""),
                 ));
             }
             prepared.args = reply["args"][0]["value"].clone();
@@ -496,5 +517,26 @@ pub fn run(raw: &[OsString], cwd: &Path, home: &Path) -> i32 {
             execute::diagnostic(&error);
             1
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn saved_option_resume_reports_python_resume_root_errors() {
+        assert_eq!(
+            pre_execute_refusal(true, "ValueError", "owned"),
+            "resume root error: owned"
+        );
+        assert_eq!(
+            pre_execute_refusal(true, "RuntimeError", "other"),
+            "RuntimeError: other"
+        );
+        assert_eq!(
+            pre_execute_refusal(false, "ValueError", "owned"),
+            "ValueError: owned"
+        );
     }
 }
