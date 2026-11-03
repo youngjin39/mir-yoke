@@ -330,15 +330,25 @@ fn io_failure(error: std::io::Error, path: &Path) -> PolicyFailure {
         _ => "OSError",
     };
     let message = error.to_string();
-    let message = match error.raw_os_error() {
-        Some(number) => format!(
-            "[Errno {number}] {}: {}",
-            message
-                .rsplit_once(" (os error ")
-                .map_or(message.as_str(), |(message, _)| message),
+    // Python reports C runtime errno text; on Windows Rust carries the Win32 code and text instead.
+    let errno = match (cfg!(windows), error.kind()) {
+        (true, std::io::ErrorKind::NotFound) => Some((2, "No such file or directory")),
+        (true, std::io::ErrorKind::PermissionDenied) => Some((13, "Permission denied")),
+        _ => error.raw_os_error().map(|number| {
+            (
+                number,
+                message
+                    .rsplit_once(" (os error ")
+                    .map_or(message.as_str(), |(message, _)| message),
+            )
+        }),
+    };
+    let message = match errno {
+        Some((number, text)) => format!(
+            "[Errno {number}] {text}: {}",
             crate::executor_execute::repr(&path.display().to_string())
         ),
-        None => message,
+        None => message.clone(),
     };
     failure(kind, message)
 }
