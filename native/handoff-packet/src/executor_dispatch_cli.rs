@@ -313,7 +313,25 @@ pub fn dispatch(
                 .as_str()
                 .filter(|s| !s.trim().is_empty())
                 .ok_or("DispatchBrief target_agent must be a non-empty string")?;
-            let route = hook(bridge, "resolve_agent_route", vec![path(root), json!(name)])?;
+            let native = local.native_policy().map_err(|e| e.to_string())?;
+            let route =
+                if let Some(selection) = native.as_ref().and_then(|p| p.agent_route.as_ref()) {
+                    let policy = load_policy(root, environment)?;
+                    let (slug, declared) = project(root, &policy);
+                    selection
+                        .resolve(
+                            root,
+                            name,
+                            &policy,
+                            args["execution_backend"].as_str(),
+                            slug.as_deref(),
+                            declared.as_deref(),
+                        )?
+                        .map(|route| json!({"$type":"agent_route","value":route}))
+                        .unwrap_or(Value::Null)
+                } else {
+                    hook(bridge, "resolve_agent_route", vec![path(root), json!(name)])?
+                };
             if route.is_null() {
                 // Local hooks may change policy; the reference reads it here.
                 let policy = load_policy(root, environment)?;

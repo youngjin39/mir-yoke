@@ -51,11 +51,15 @@ enum Normalization {
 }
 #[derive(Clone, Debug)]
 pub struct NativePolicy {
+    owns_pre_execute: bool,
     family: Option<FamilyPolicy>,
     repository_local: Option<FailureTemplate>,
     authorize_target: bool,
     verifier_aliases: Option<bool>,
+    pub agent_route: Option<agent_route::AgentRoutePolicy>,
 }
+#[path = "executor_agent_route_policy.rs"]
+mod agent_route;
 const VARIABLES: &[&str] = &[
     "family",
     "family_repr",
@@ -168,14 +172,21 @@ impl NativePolicy {
     pub fn parse(value: &Value) -> Result<Self, Error> {
         let data = object(
             value,
-            &["version", "target_admission", "verifier_aliases"],
+            &[
+                "version",
+                "target_admission",
+                "verifier_aliases",
+                "agent_route",
+            ],
             "native_policy",
         )?;
         if data.get("version").and_then(Value::as_u64) != Some(1) {
             return Err(invalid("version must be integer 1"));
         }
+        let empty_admission = json!({});
         let admission = object(
             data.get("target_admission")
+                .or_else(|| data.contains_key("agent_route").then_some(&empty_admission))
                 .ok_or_else(|| invalid("target_admission is required"))?,
             &["family", "repository_local", "authorize_target"],
             "target_admission",
@@ -313,7 +324,13 @@ impl NativePolicy {
                 }
             })
             .transpose()?;
+        let agent_route = data
+            .get("agent_route")
+            .map(agent_route::AgentRoutePolicy::parse)
+            .transpose()?;
         Ok(Self {
+            owns_pre_execute: data.contains_key("target_admission") || verifier_aliases.is_some(),
+            agent_route,
             verifier_aliases,
             family,
             repository_local,
@@ -324,7 +341,13 @@ impl NativePolicy {
         self.authorize_target
     }
     pub fn covered_hooks(&self) -> Vec<&'static str> {
-        let mut hooks = vec!["pre_execute"];
+        let mut hooks = vec![];
+        if self.owns_pre_execute {
+            hooks.push("pre_execute");
+        }
+        if self.agent_route.is_some() {
+            hooks.push("resolve_agent_route");
+        }
         if self.authorize_target {
             hooks.push("authorize_target");
         }
@@ -639,6 +662,27 @@ fn python_repr(text: &str) -> String {
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn agent_route_schema_and_hook_ownership() {
+        let value = json!({"version":1,"agent_route":{
+            "source":"claude","criteria":"defer","backend":"policy",
+            "sandbox":"unset","invalid_lock":"empty"}});
+        let policy = NativePolicy::parse(&value).unwrap();
+        assert!(policy.covered_hooks().contains(&"resolve_agent_route"));
+        assert!(!policy.covered_hooks().contains(&"pre_execute"));
+        for (key, bad) in [
+            ("source", json!("unknown")),
+            ("sandbox", json!(true)),
+            ("requested_backend", json!("yes")),
+            ("names", json!(["../bad"])),
+            ("unknown", json!(true)),
+        ] {
+            let mut invalid = value.clone();
+            invalid["agent_route"][key] = bad;
+            assert!(NativePolicy::parse(&invalid).is_err());
+        }
+    }
 
     #[test]
     fn verifier_mapping_root_and_admission_order() {

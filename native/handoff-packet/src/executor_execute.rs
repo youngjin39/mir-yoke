@@ -195,8 +195,10 @@ pub fn run(raw: &[OsString], cwd: &Path, home_root: &Path) -> i32 {
     };
     let target = fs::canonicalize(argv_root(&argv, cwd)).ok();
     let home = fs::canonicalize(home_root).ok();
+    // Only a policy that owns pre_execute (target admission) may admit a
+    // target other than the home root; an agent-route-only policy declines.
     let declared_policy = match executor_admission::native_policy(home_root) {
-        Ok(policy) => policy.is_some(),
+        Ok(policy) => policy.is_some_and(|p| p.covered_hooks().contains(&"pre_execute")),
         Err(error) => {
             crate::executor_protocol::claim();
             diagnostic(&error);

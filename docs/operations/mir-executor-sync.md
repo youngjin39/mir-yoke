@@ -66,6 +66,37 @@ this optional tool is not an adopter payload or a grant of consumer authority.
   hook in local Python fails closed before import. Other consumer hook behavior
   still needs its own native replacement before adoption.
 
+  Version 1 accepts optional `agent_route` for native local route selection:
+
+  ```json
+  {"native_policy":{"version":1,"agent_route":{"source":"codex","criteria":"declared","backend":"policy","sandbox":"read_only","invalid_lock":"empty","requested_backend":true}}}
+  ```
+
+  Required fields are `source` (`claude` Markdown or `codex` TOML), `criteria`
+  (`defer` to the common resolver when the lock names the agent, `declared` to
+  select a category only when declared, or `default` to use `implementation`
+  when absent), `backend` (`policy` or `codex`), `sandbox`, and `invalid_lock`
+  (`empty` or `error`). Optional `names` is an exact allowlist; optional
+  `name_filter: true` accepts `[a-z0-9][a-z0-9-]*`. Optional
+  `requested_backend: true` includes the explicit or restored resume backend in
+  policy precedence; its default is false. Policy resolution reuses the common
+  loader, including project declarations and force modes.
+
+  Claude profiles use the common dispatch instructions, raw definition bytes for
+  the hash, and `sandbox: "unset"`. Codex profiles use their developer instructions
+  and `sandbox: "read_only"` to preserve raw bytes/instructions and narrow only
+  read-only declarations, or `sandbox: "double_opt_in"` to require and trim the
+  instructions, hash normalized text, and default to workspace-write. Widening
+  requires both the definition and `codex_sandbox_default` to declare
+  danger-full-access. Common read-only constraints still apply after selection.
+  Unknown fields, invalid values, and incompatible source/sandbox pairs fail
+  closed. A retained Python `resolve_agent_route` also fails closed before import.
+  Agent-only policies may omit `target_admission`; this preserves existing
+  Python `pre_execute`. A present `target_admission` retains its ownership of
+  `pre_execute`, including an empty object. Omitting `agent_route` preserves the
+  existing route resolver. These options do not register CLI flags or replace
+  other local hook state or brief validation.
+
   `family` supports `reject`, `alias_map`, and `require_current`. Alias maps are
   explicit slug-to-path objects; relative paths resolve against the configuration
   repository. Normalization is `exact` (default), `strip_lower`, or

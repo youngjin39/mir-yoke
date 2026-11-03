@@ -375,7 +375,9 @@ fn admit_inner(request: Request<'_>, command_scope: bool) -> Result<Admission, B
         {
             return Ok(policy_refusal(error, false, &root, true));
         }
-        if policy.is_none()
+        if !policy
+            .as_ref()
+            .is_some_and(|p| p.covered_hooks().contains(&"pre_execute"))
             && let Some(local) = bridge.as_mut()
         {
             let reply = local.call(

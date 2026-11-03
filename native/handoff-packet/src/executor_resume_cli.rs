@@ -413,7 +413,7 @@ pub fn run(raw: &[OsString], cwd: &Path, home: &Path) -> i32 {
                 }
             }
         }
-        if let Some(policy) = native_policy {
+        if let Some(policy) = native_policy.filter(|p| p.covered_hooks().contains(&"pre_execute")) {
             policy
                 .pre_execute(&cli.root, cwd, &cli.root, &mut prepared.args, &environment)
                 .map_err(|error| {
