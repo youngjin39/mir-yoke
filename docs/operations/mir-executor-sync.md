@@ -47,6 +47,29 @@ this optional tool is not an adopter payload or a grant of consumer authority.
   `artifact_retention_days`, `child_env_filter`, `child_env_extra_keys` and
   `input_limit_bytes`, `timeout_seconds_range` and `verifier_env`. Verifiers execute registered
   argv, never arbitrary shell command strings supplied by a brief.
+- Native admission: optional `native_policy` in the same local JSON. Its closed
+  version 1 schema is validated eagerly; keys outside this section retain their
+  legacy semantics. Absence preserves the Python bridge path. For example:
+
+  ```json
+  {"native_policy":{"version":1,"target_admission":{"family":{"mode":"reject","failure":{"kind":"ValueError","message":"Family selection is unavailable"}}}}}
+  ```
+
+  `family` supports `reject`, `alias_map`, and `require_current`. Alias maps are
+  explicit slug-to-path objects; relative paths resolve against the configuration
+  repository. Normalization is `exact` (default), `strip_lower`, or
+  `lower_underscores`. An explicit `unavailable` failure preserves a missing
+  resolver without discovering a registry. `unknown` and `unknown_key_error`
+  preserve lookup diagnostics. `root_conflict` restricts an alias to the requested
+  root or invoking cwd; `require_current` requires the family root to equal the
+  configuration root. `repository_local` checks equality with the invoking cwd's
+  Git root. `authorize_target: true` applies guards to cross-target admission.
+  Failures declare `kind`, `message`, and optional emitted `stderr`; diagnostic
+  templates cannot execute code. Successful aliases resolve before writer scope
+  and trigger target reauthorization. Covered hook names referenced in `local.py`
+  are conservatively rejected before import, including aliases and conditional
+  definitions. Remove Python admission hooks when adopting this section;
+  unrelated hooks continue through the bridge.
 - Policy: Harness-deployed `config/model-routing.lock.json` and repository-owned
   `config/sub-agent-policy.json`. Sync writes neither. The lock is read first;
   missing local policy is valid. Local delegation keys, per-project and monitoring

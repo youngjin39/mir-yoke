@@ -1,5 +1,7 @@
 //! Library admission only: no database access, provider launch, or CLI dispatch.
 //! Dynamic target options decline after hello, before any target hook call.
+use crate::executor_local::LocalConfig;
+use crate::executor_target_policy::{NativePolicy, PolicyFailure};
 use crate::local_bridge::{BridgeConfig, BridgeError, LocalBridge};
 use serde_json::{Value, json};
 use std::{
@@ -245,6 +247,11 @@ fn admit_inner(request: Request<'_>, command_scope: bool) -> Result<Admission, B
     if root.to_str().is_none() || home.to_str().is_none() {
         return Ok(decline("non UTF-8 path"));
     }
+    let initial_root = root.clone();
+    let policy = match native_policy(&initial_root) {
+        Ok(policy) => policy,
+        Err(error) => return Ok(refusal(error)),
+    };
     let mut home_bridge = None;
     if command_scope {
         crate::executor_protocol::claim();
@@ -252,11 +259,45 @@ fn admit_inner(request: Request<'_>, command_scope: bool) -> Result<Admission, B
     if let Some(refused) = authorize(&request, &home, &root, &args, &mut home_bridge, false)? {
         return Ok(refused);
     }
+    if command == "execute"
+        && let Some(policy) = &policy
+    {
+        // Resolve only successful aliases here. Legacy refusals stay at the
+        // pre_execute boundary; redirected targets are authorized before locks.
+        if let Ok(selected) = policy.resolve_alias(&initial_root, request.cwd, &root, &mut args)
+            && selected != root
+        {
+            if let Some(refused) =
+                authorize(&request, &home, &selected, &args, &mut home_bridge, true)?
+            {
+                return Ok(refused);
+            }
+            root = selected;
+            if let Err(error) = native_policy(&root) {
+                return Ok(refusal(error));
+            }
+            if let Err(error) = check_policy_hooks(&root, policy) {
+                return Ok(refusal(error));
+            }
+        }
+    }
     let mut bridge = match LocalBridge::start_in(bridge_config(&request, &root), request.cwd) {
         Ok(bridge) => bridge,
         Err(error) if command_scope => return Ok(refusal(error.to_string())),
         Err(_) => return Ok(decline("target bridge failed before hello")),
     };
+    if let (Some(policy), Some(local)) = (&policy, &bridge) {
+        for hook in policy.covered_hooks() {
+            if local.hello()["hooks"]
+                .as_array()
+                .is_some_and(|hooks| hooks.iter().any(|v| v == hook))
+            {
+                return Ok(refusal(format!(
+                    "native local policy configuration error: {hook} is also present in local.py"
+                )));
+            }
+        }
+    }
     if bridge
         .as_ref()
         .is_some_and(|b| b.hello()["register_execute_options"] == true)
@@ -323,7 +364,20 @@ fn admit_inner(request: Request<'_>, command_scope: bool) -> Result<Admission, B
         if let Some(refused) = authorize(&request, &home, &root, &args, &mut home_bridge, true)? {
             return Ok(refused);
         }
-        if let Some(local) = bridge.as_mut() {
+        if let Some(policy) = &policy
+            && let Err(error) = policy.pre_execute(
+                &initial_root,
+                request.cwd,
+                &initial_root,
+                &mut args,
+                request.environment,
+            )
+        {
+            return Ok(policy_refusal(error, false, &root, true));
+        }
+        if policy.is_none()
+            && let Some(local) = bridge.as_mut()
+        {
             let reply = local.call(
                 "pre_execute",
                 vec![
@@ -434,6 +488,16 @@ fn authorize(
     {
         return Ok(None);
     }
+    match native_policy(home) {
+        Err(error) => return Ok(Some(refusal(error))),
+        Ok(Some(policy)) if policy.has_authorize_target() => {
+            return Ok(policy
+                .authorize(request.cwd, root, args, request.environment)
+                .err()
+                .map(|error| policy_refusal(error, true, root, preparation)));
+        }
+        _ => (),
+    }
     if bridge.is_none() {
         *bridge = LocalBridge::start_in(bridge_config(request, home), request.cwd)?;
     }
@@ -462,4 +526,76 @@ fn authorize(
         }
     }
     Ok(None)
+}
+
+// Never import Python to decide which implementation owns admission. Reject
+// references conservatively: aliases and conditional exports must not bypass
+// duplicate ownership by avoiding a literal function definition.
+pub(crate) fn native_policy(root: &Path) -> Result<Option<NativePolicy>, String> {
+    let bytes = match fs::read(root.join("config").join("mir-executor.local.json")) {
+        Ok(bytes) => bytes,
+        Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(None),
+        Err(error) => return Err(format!("native local policy configuration error: {error}")),
+    };
+    // Only the new section is eager. Legacy malformed data must still fail at
+    // its original lazy read point, after any preceding repository hooks.
+    let declared = match serde_json::from_slice::<Value>(&bytes) {
+        Ok(value) => value.get("native_policy").is_some(),
+        Err(_) => bytes
+            .windows(b"native_policy".len())
+            .any(|w| w == b"native_policy"),
+    };
+    if !declared {
+        return Ok(None);
+    }
+    let policy = LocalConfig::load(root)
+        .and_then(|config| config.native_policy())
+        .map_err(|e| format!("native local policy configuration error: {e}"))?;
+    if let Some(policy) = &policy {
+        check_policy_hooks(root, policy)?;
+    }
+    Ok(policy)
+}
+fn check_policy_hooks(root: &Path, policy: &NativePolicy) -> Result<(), String> {
+    match fs::read_to_string(root.join("tools").join("mir_executor").join("local.py")) {
+        Ok(source) => {
+            for hook in policy.covered_hooks() {
+                if source.contains(hook) {
+                    return Err(format!(
+                        "native local policy configuration error: {hook} is also present in local.py"
+                    ));
+                }
+            }
+        }
+        Err(error) if error.kind() == io::ErrorKind::NotFound => (),
+        Err(error) => return Err(format!("native local policy configuration error: {error}")),
+    }
+    Ok(())
+}
+fn policy_refusal(
+    error: PolicyFailure,
+    authorization: bool,
+    root: &Path,
+    preparation: bool,
+) -> Admission {
+    if let Some(stderr) = error.stderr {
+        let _ = crate::executor_execute::emit(&stderr, true);
+    }
+    if authorization {
+        let prefix = if preparation {
+            "argument parse error: "
+        } else {
+            ""
+        };
+        refusal(format!(
+            "{prefix}authorize_target refused {}: {}: {}",
+            root.display(),
+            error.kind,
+            error.message
+        ))
+    } else if error.kind == "ValueError" {
+        refusal(format!("argument parse error: {}", error.message))
+    } else {
+        refusal(format!("{}: {}", error.kind, error.message))
+    }
 }

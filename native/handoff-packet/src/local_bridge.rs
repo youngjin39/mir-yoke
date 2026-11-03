@@ -26,6 +26,7 @@ pub enum BridgeError {
     Io(io::Error),
     Json(serde_json::Error),
     Protocol(&'static str),
+    Configuration(String),
     FrameTooLarge,
     Timeout,
     Closed,
@@ -36,6 +37,7 @@ impl std::fmt::Display for BridgeError {
             Self::Io(error) => write!(f, "local bridge I/O: {error}"),
             Self::Json(error) => write!(f, "local bridge JSON: {error}"),
             Self::Protocol(message) => write!(f, "local bridge protocol: {message}"),
+            Self::Configuration(message) => f.write_str(message),
             Self::FrameTooLarge => f.write_str("local bridge frame exceeds limit"),
             Self::Timeout => f.write_str("local bridge timed out"),
             Self::Closed => f.write_str("local bridge is closed"),
@@ -81,6 +83,8 @@ impl LocalBridge {
     }
     /// Admission preserves the invoking command's working directory for hooks.
     pub fn start_in(config: BridgeConfig, cwd: &Path) -> Result<Option<Self>> {
+        let policy = crate::executor_admission::native_policy(&config.target_root)
+            .map_err(BridgeError::Configuration)?;
         match config
             .target_root
             .join("tools/mir_executor/local.py")
@@ -159,6 +163,20 @@ impl LocalBridge {
                 .is_some_and(Value::is_boolean)
         {
             return Err(BridgeError::Protocol("invalid hello"));
+        }
+        // Computed Python exports cannot be determined by the conservative
+        // source preflight. Check hello before any callback or writer scope.
+        if let Some(policy) = policy {
+            for hook in policy.covered_hooks() {
+                if hello["hooks"]
+                    .as_array()
+                    .is_some_and(|hooks| hooks.iter().any(|v| v == hook))
+                {
+                    return Err(BridgeError::Configuration(format!(
+                        "native local policy configuration error: {hook} is also present in local.py"
+                    )));
+                }
+            }
         }
         bridge.hello = hello;
         Ok(Some(bridge))

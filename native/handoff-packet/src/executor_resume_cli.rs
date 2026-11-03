@@ -313,7 +313,24 @@ pub fn run(raw: &[OsString], cwd: &Path, home: &Path) -> i32 {
         Err(_) => return crate::executor_protocol::decline("resume local source read"),
     }
     let environment: BTreeMap<OsString, OsString> = std::env::vars_os().collect();
-    let Some(python) = execute::interpreter(&environment, cwd) else {
+    let target_policy = match crate::executor_admission::native_policy(&cli.root) {
+        Ok(policy) => policy,
+        Err(error) => {
+            crate::executor_protocol::claim();
+            execute::diagnostic(&error);
+            return 1;
+        }
+    };
+    let native_only = target_policy.is_some()
+        && !cli
+            .root
+            .join("tools")
+            .join("mir_executor")
+            .join("local.py")
+            .exists();
+    let python = execute::interpreter(&environment, cwd)
+        .or_else(|| native_only.then(|| cwd.join("unused-python")));
+    let Some(python) = python else {
         return crate::executor_protocol::decline("resume Python interpreter lookup");
     };
     crate::executor_protocol::claim();
@@ -332,6 +349,7 @@ pub fn run(raw: &[OsString], cwd: &Path, home: &Path) -> i32 {
             executor_resume::prepare(&row, &defaults(&cli.root, &cli.db)?, cli.timeout)
                 .map_err(|e| prepare_error(e, &row))?;
         wire_paths(&mut prepared.args);
+        let native_policy = target_policy;
         let bridge = LocalBridge::start_in(
             BridgeConfig {
                 interpreter: python,
@@ -394,6 +412,17 @@ pub fn run(raw: &[OsString], cwd: &Path, home: &Path) -> i32 {
                     ));
                 }
             }
+        }
+        if let Some(policy) = native_policy {
+            policy
+                .pre_execute(&cli.root, cwd, &cli.root, &mut prepared.args, &environment)
+                .map_err(|error| {
+                    if let Some(stderr) = error.stderr {
+                        let _ = execute::emit(&stderr, true);
+                    }
+                    format!("{}: {}", error.kind, error.message)
+                })?;
+        } else if let Some(bridge) = lease.bridge.as_mut() {
             let reply = bridge
                 .call(
                     "pre_execute",

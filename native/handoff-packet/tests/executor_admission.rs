@@ -403,3 +403,48 @@ fn expand(text: &str, root: &Path, json: bool) -> String {
     text.replace("$scratch/", &format!("{root}{separator}"))
         .replace("$scratch", &root)
 }
+
+#[test]
+fn native_policy_duplicate_hook_fails_before_import() {
+    let fixture = Fixture::new();
+    let target = fixture.0.join("target");
+    fs::create_dir_all(target.join("config")).unwrap();
+    fs::write(
+        target.join("config/mir-executor.local.json"),
+        r#"{"native_policy":{"version":1,"target_admission":{}}}"#,
+    )
+    .unwrap();
+    fs::write(
+        target.join("tools/mir_executor/local.py"),
+        "raise AssertionError('must not import')\ndef pre_execute(*args): pass\n",
+    )
+    .unwrap();
+    let Admission::Refused { code, stderr } = fixture.run(&["execute".into()], &target) else {
+        panic!("expected configuration refusal")
+    };
+    assert_eq!(code, 1);
+    assert!(
+        String::from_utf8(stderr)
+            .unwrap()
+            .contains("configuration error: pre_execute")
+    );
+}
+
+#[test]
+fn native_policy_computed_hook_fails_before_callback() {
+    let fixture = Fixture::new();
+    let target = fixture.0.join("target");
+    fs::create_dir_all(target.join("config")).unwrap();
+    fs::write(
+        target.join("config/mir-executor.local.json"),
+        r#"{"native_policy":{"version":1,"target_admission":{}}}"#,
+    )
+    .unwrap();
+    fs::write(target.join("tools/mir_executor/local.py"), "def callback(*args): raise AssertionError('must not call')\nglobals()['pre_' + 'execute'] = callback\n").unwrap();
+    // Library admission declines an untrusted hello; command admission owns the
+    // same error finally. Neither invokes the computed callback.
+    assert!(matches!(
+        fixture.run(&["execute".into()], &target),
+        Admission::Decline { code: 64, .. }
+    ));
+}

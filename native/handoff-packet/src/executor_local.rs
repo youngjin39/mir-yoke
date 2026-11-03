@@ -95,9 +95,23 @@ impl LocalConfig {
         let normalized = python_numbers(text, &numeric_tag);
         let value: Value = serde_json::from_str(&normalized).map_err(Error::Json)?;
         match value {
-            Value::Object(data) => Ok(Self { data, numeric_tag }),
+            Value::Object(data) => {
+                let config = Self { data, numeric_tag };
+                config.native_policy()?;
+                Ok(config)
+            }
             _ => Err(Error::Object),
         }
+    }
+
+    /// Owned versioned policy is strict; existing extension keys stay lazy.
+    pub fn native_policy(
+        &self,
+    ) -> Result<Option<crate::executor_target_policy::NativePolicy>, Error> {
+        self.data
+            .get("native_policy")
+            .map(crate::executor_target_policy::NativePolicy::parse)
+            .transpose()
     }
 
     pub fn parse_bytes(bytes: Vec<u8>) -> Result<Self, Error> {

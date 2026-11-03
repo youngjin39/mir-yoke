@@ -45,6 +45,8 @@ pub mod executor_sweep;
 #[forbid(unsafe_code)]
 pub mod executor_sweep_cli;
 #[forbid(unsafe_code)]
+pub mod executor_target_policy;
+#[forbid(unsafe_code)]
 pub mod executor_transport;
 #[forbid(unsafe_code)]
 pub mod executor_verifier;

@@ -195,7 +195,15 @@ pub fn run(raw: &[OsString], cwd: &Path, home_root: &Path) -> i32 {
     };
     let target = fs::canonicalize(argv_root(&argv, cwd)).ok();
     let home = fs::canonicalize(home_root).ok();
-    if target.is_none() || target != home {
+    let declared_policy = match executor_admission::native_policy(home_root) {
+        Ok(policy) => policy.is_some(),
+        Err(error) => {
+            crate::executor_protocol::claim();
+            diagnostic(&error);
+            return 1;
+        }
+    };
+    if target.is_none() || (target != home && !declared_policy) {
         return crate::executor_protocol::decline("execute home/root mismatch");
     }
     // Decline explicit parser extensions without importing target-owned code.
@@ -222,7 +230,23 @@ pub fn run(raw: &[OsString], cwd: &Path, home_root: &Path) -> i32 {
     {
         return crate::executor_protocol::decline("execute non-UTF8 CODEX_BIN");
     }
-    let Some(python) = interpreter(&environment, cwd) else {
+    let target_policy = match executor_admission::native_policy(&argv_root(&argv, cwd)) {
+        Ok(policy) => policy,
+        Err(error) => {
+            crate::executor_protocol::claim();
+            diagnostic(&error);
+            return 1;
+        }
+    };
+    let native_only = target_policy.is_some()
+        && !argv_root(&argv, cwd)
+            .join("tools")
+            .join("mir_executor")
+            .join("local.py")
+            .exists();
+    let python =
+        interpreter(&environment, cwd).or_else(|| native_only.then(|| cwd.join("unused-python")));
+    let Some(python) = python else {
         return crate::executor_protocol::decline("execute Python interpreter lookup");
     };
     let admission = executor_admission::admit_execute(executor_admission::Request {
