@@ -36,7 +36,7 @@ jobs:
         working-directory: native/handoff-packet
       - run: >-
           uv run --python 3.14 pytest -q -p no:cacheprovider
-          tests/test_executor_query_native_parity.py tests/test_policy_resolve_native_parity.py tests/test_runtime_verify_native_parity.py tests/test_handoff_packet_native_parity.py tests/test_executor_target_policy_native_parity.py tests/test_executor_verifier_policy_native_parity.py tests/test_executor_agent_route_policy_native_parity.py
+          tests/test_executor_query_native_parity.py tests/test_policy_resolve_native_parity.py tests/test_runtime_verify_native_parity.py tests/test_handoff_packet_native_parity.py tests/test_executor_target_policy_native_parity.py tests/test_executor_verifier_policy_native_parity.py tests/test_executor_agent_route_policy_native_parity.py tests/test_executor_hooks_config_native_parity.py tests/test_executor_hooks_native_parity.py
           tests/test_lifecycle_native_commands.py
           tests/test_line_endings.py
       - run: uv run --python 3.14 pytest -q -p no:cacheprovider tests/test_executor_execute_native_parity.py -k uses_caller_venv
@@ -187,7 +187,7 @@ jobs:
         working-directory: native/handoff-packet
         env:
           CARGO_TARGET_DIR: ${{ github.workspace }}/native/handoff-packet/target
-      - run: uv run --python 3.14 pytest -q -p no:cacheprovider tests/test_executor_query_native_parity.py tests/test_policy_resolve_native_parity.py tests/test_runtime_verify_native_parity.py tests/test_handoff_packet_native_parity.py tests/test_executor_target_policy_native_parity.py tests/test_executor_verifier_policy_native_parity.py tests/test_executor_agent_route_policy_native_parity.py tests/test_lifecycle_native_commands.py
+      - run: uv run --python 3.14 pytest -q -p no:cacheprovider tests/test_executor_query_native_parity.py tests/test_policy_resolve_native_parity.py tests/test_runtime_verify_native_parity.py tests/test_handoff_packet_native_parity.py tests/test_executor_target_policy_native_parity.py tests/test_executor_verifier_policy_native_parity.py tests/test_executor_agent_route_policy_native_parity.py tests/test_executor_hooks_config_native_parity.py tests/test_executor_hooks_native_parity.py tests/test_lifecycle_native_commands.py
         env:
           PYTHONUTF8: '1'
           CARGO_TARGET_DIR: ${{ github.workspace }}/native/handoff-packet/target

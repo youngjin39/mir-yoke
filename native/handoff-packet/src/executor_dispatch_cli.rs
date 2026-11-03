@@ -1,5 +1,6 @@
 //! CLI composition of isolated attempts, merge admission, review and finalization.
 use crate::{
+    executor_command_hooks::CommandHooks,
     executor_dispatch::{self, CodexAttempt, DispatchContext, DispatchOptions},
     executor_dispatch_provider::{self as provider, ClaudeOptions, CodexRequest},
     executor_execute::{
@@ -12,7 +13,6 @@ use crate::{
     executor_registry::{self, JobRegistry},
     executor_review,
     executor_verifier::GateOptions,
-    local_bridge::LocalBridge,
 };
 use serde_json::{Value, json};
 use std::{
@@ -27,7 +27,7 @@ use std::{
 // Validated briefs may be project-owned objects. Preserve their bridge handle
 // through rendering and target extraction rather than requiring a JSON object.
 fn brief_call(
-    bridge: &mut Option<Box<LocalBridge>>,
+    bridge: &mut Option<Box<CommandHooks>>,
     name: &str,
     args: Vec<Value>,
     handles: Value,
@@ -73,7 +73,7 @@ fn strings(v: &Value) -> Vec<String> {
         .collect()
 }
 fn emit_event(
-    bridge: &mut Option<Box<LocalBridge>>,
+    bridge: &mut Option<Box<CommandHooks>>,
     name: &str,
     payload: Value,
     errors: Option<&mut Vec<String>>,
@@ -201,7 +201,7 @@ pub fn dispatch(
     codex_args: Option<Vec<String>>,
     cwd: &Path,
     environment: &BTreeMap<OsString, OsString>,
-    bridge: &mut Option<Box<LocalBridge>>,
+    bridge: &mut Option<Box<CommandHooks>>,
 ) -> Result<i32> {
     let local = LocalConfig::load(root).map_err(|e| format!("{}: {e}", e.kind()))?;
     if local.raw().contains_key("timeout_seconds_range") {
@@ -556,7 +556,9 @@ pub fn dispatch(
             &text
         };
         let mut context = DispatchContext {
-            bridge: bridge.as_deref_mut(),
+            bridge: bridge
+                .as_deref_mut()
+                .map(|b| b as &mut dyn crate::executor_command_hooks::HookClient),
             registry: Some((&registry, &id)),
             writer_scope_held: true,
             caller_projects_result: true,

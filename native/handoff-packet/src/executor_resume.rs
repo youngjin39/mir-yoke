@@ -1,12 +1,12 @@
 //! Integrity-bound resume preparation; no CLI selection or provider startup.
 //! Parser defaults and route policy are supplied by the owning execution layer.
 use crate::{
+    executor_command_hooks::HookClient,
     executor_dispatch::{
         self, CodexAttempt, DispatchContext, DispatchOptions, DispatchOutcome, Error, Result,
     },
     executor_local::LocalConfig,
     executor_registry::JobRegistry,
-    local_bridge::LocalBridge,
 };
 use serde_json::{Value, json};
 use std::{
@@ -53,7 +53,7 @@ fn namespace(args: &Value) -> Value {
     }
     json!({"$type":"namespace","value":args})
 }
-fn hook(bridge: &mut LocalBridge, name: &str, args: Vec<Value>) -> Result<Value> {
+fn hook(bridge: &mut dyn HookClient, name: &str, args: Vec<Value>) -> Result<Value> {
     let reply = bridge.call(name, args, json!({})).map_err(Error::Bridge)?;
     if reply["ok"] != true {
         return Err(Error::Hook {
@@ -175,8 +175,8 @@ impl PreparedResume {
     pub fn authorize(
         &mut self,
         owner: &Path,
-        authority: &mut LocalBridge,
-        target: &mut LocalBridge,
+        authority: &mut dyn HookClient,
+        target: &mut dyn HookClient,
     ) -> Result<()> {
         self.authorized = false;
         let root = PathBuf::from(text(&self.args, "repo_root")?);
@@ -247,7 +247,7 @@ impl PreparedResume {
         registry: &JobRegistry,
         attempt: &str,
         at: &str,
-        bridge: Option<&mut LocalBridge>,
+        bridge: Option<&mut dyn HookClient>,
     ) -> Result<()> {
         if !self.authorized || self.attempt.is_some() {
             return Err(invalid("resume requires reauthorization"));

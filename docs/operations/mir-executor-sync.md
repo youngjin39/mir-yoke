@@ -97,6 +97,34 @@ this optional tool is not an adopter payload or a grant of consumer authority.
   existing route resolver. These options do not register CLI flags or replace
   other local hook state or brief validation.
 
+  Version 1 accepts optional `hooks` for an explicitly pinned native hook host:
+
+  ```json
+  {"native_policy":{"version":1,"hooks":{"executable":"tools/hook-host","argv":[],"sha256":"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef","hooks":["writer_scope","on_job_event"]}}}
+  ```
+
+  The section requires exactly `executable`, `argv`, `sha256`, and `hooks`.
+  `executable` is a nonempty repository-relative path without NUL or `.`/`..`
+  components or platform path anchors. `argv` is an array of strings without
+  NUL, including an empty array. `sha256`
+  contains exactly 64 hexadecimal characters. `hooks` is a nonempty list of
+  unique names drawn from `writer_scope` and `on_job_event`. Unknown fields,
+  unsupported hook names, duplicate names, and invalid types fail closed.
+  Hooks-only policies may omit `target_admission`, preserving Python
+  `pre_execute`. Declared hook names become native-owned; a retained Python
+  definition or reference fails closed before import. Omitting `hooks` preserves
+  existing behavior. The Python configuration reader validates this declaration
+  but does not implement the native host transport.
+
+  After an alias selects another repository, that target's `hooks` declaration
+  and `local.py` alone determine writer/event ownership. The initial repository's
+  hook host is not started. Target Python hooks remain available when only the
+  initial repository declares them native; a target native declaration rejects
+  duplicate Python exports, including computed exports revealed by bridge hello,
+  before starting its native host or invoking a hook. The initial declarative
+  admission, verifier-alias and route-policy coverage retains its cross-root
+  duplicate-ownership checks.
+
   `family` supports `reject`, `alias_map`, and `require_current`. Alias maps are
   explicit slug-to-path objects; relative paths resolve against the configuration
   repository. Normalization is `exact` (default), `strip_lower`, or
@@ -401,3 +429,71 @@ Windows parity runs in the dedicated native Windows CI lane without enabling
 automated Windows bootstrap.
 Text containing characters newly assigned after Unicode 15.0 also uses Python,
 preserving representation across supported Python Unicode database versions.
+
+## Native command hooks (`mir-executor.hooks@1`)
+
+The optional `native_policy.hooks` host is consumer-owned. Yoke supplies the
+transport and owns neither its state nor its lease implementation. The executor
+resolves admission configuration, the target and invoking-home authorization
+before starting the executable. After an alias resolves, command-hook ownership
+comes from the selected target's configuration; initial declarative admission
+retains its existing scope. It checks the executable's SHA-256 before spawn,
+rejects symlink path components, passes argv directly, and preserves the invoking
+cwd and explicit executor environment. No shell or interpreter is selected by
+this transport. One host remains alive for the command, including paired writer
+operations and ordered job events. Existing ownership receipts are final: a hook
+failure after ownership never retries the command through Python.
+
+The child first writes one hello line:
+
+```json
+{"version":"mir-executor.hooks@1","hooks":["writer_scope","on_job_event"]}
+```
+
+The advertised set must equal the configured set, without duplicates. The parent
+then sends sequential requests and waits for exactly one response per request:
+
+```json
+{"version":"mir-executor.hooks@1","id":1,"hook":"writer_enter","params":{"repo_root":"/repository","cwd":"/repository","invocation_id":"invocation","job_id":null,"attempt_id":null}}
+{"version":"mir-executor.hooks@1","id":1,"ok":true,"result":{"token":"opaque-token"}}
+{"version":"mir-executor.hooks@1","id":2,"hook":"writer_exit","params":{"repo_root":"/repository","cwd":"/repository","invocation_id":"invocation","job_id":null,"attempt_id":null,"token":"opaque-token","outcome":"clean"}}
+{"version":"mir-executor.hooks@1","id":2,"ok":true,"result":null}
+```
+
+Advertising `writer_scope` serves both `writer_enter` and `writer_exit`. Enter
+must return a nonempty opaque string token. The child retains the lease until
+exit; a token never denotes a Python object. Exit carries `clean` after a zero
+command result, `unclean` after a nonzero result or controlled early failure, and
+`uncertain` during unwinding or abandonment. Transport loss cannot acknowledge
+release: the executor closes the host's process tree and the consumer must retain
+its own crash or uncertain-teardown evidence as appropriate.
+
+`on_job_event` uses the same envelope, with `params.event` (a string) and
+`params.payload` (a JSON object), plus the roots/cwd/invocation context above.
+Its job and attempt identifiers are taken from the payload, or are null when
+unavailable. Paths are strings and argument namespaces are plain objects; Python
+bridge object tags do not cross this transport. Successful events return null.
+Errors use this response shape:
+
+```json
+{"version":"mir-executor.hooks@1","id":3,"ok":false,"error":{"type":"RuntimeError","message":"hook refused"}}
+```
+
+Errors in `job_inserted` and `job_resumed` abort preparation. Later event errors
+produce diagnostics and are recorded by the existing event-error path; they
+cannot roll back execution. Hook responses preserve the distinction between an
+application error and a broken transport. Other hooks remain on the existing
+`mir-executor.local@1` bridge, except hooks already owned by declarative admission
+or agent-route policy. No other executable hook names are supported in this slice.
+
+stdin and stdout carry UTF-8 JSON Lines only. stderr is inherited for diagnostics.
+Each frame is at most 1,048,576 bytes including its newline. JSON nesting is
+bounded to 64 containers and numbers must be finite. Request IDs are increasing
+unsigned integers; the response ID and version must match. Unknown envelope
+fields are tolerated for diagnostics; required fields and types are validated.
+The ten-second exchange deadline includes blocked stdin writes and hello. Invalid
+hello, malformed/oversized/deep/nonfinite frames, mismatched versions or IDs,
+timeout, EOF and crashes close the session and reap its owned process tree.
+Timed-out requests are never retried. Unix uses a dedicated process group;
+Windows assigns the suspended child to a kill-on-close Job Object before resuming
+it, so descendants cannot escape ownership before the first hook runs.

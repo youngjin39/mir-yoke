@@ -1,5 +1,6 @@
 //! Library admission only: no database access, provider launch, or CLI dispatch.
 //! Dynamic target options decline after hello, before any target hook call.
+use crate::executor_command_hooks::{CommandHooks, TeardownOutcome};
 use crate::executor_local::LocalConfig;
 use crate::executor_target_policy::{NativePolicy, PolicyFailure};
 use crate::local_bridge::{BridgeConfig, BridgeError, LocalBridge};
@@ -29,7 +30,7 @@ pub enum Admission {
         cross_target: bool,
         args: Value,
         // Boxed: the child handle makes this variant large on Windows.
-        bridge: Option<Box<LocalBridge>>,
+        bridge: Option<Box<CommandHooks>>,
         /// Present only for command admission; the owner exits this lease.
         writer_handle: Option<String>,
     },
@@ -88,11 +89,11 @@ fn refusal(message: String) -> Admission {
 // Admission may fail after entering the outer CLI lease. Closing the transport
 // kills its child, so release the context explicitly before that happens.
 struct WriterLease {
-    bridge: Option<LocalBridge>,
+    bridge: Option<CommandHooks>,
     handle: Option<String>,
 }
 impl std::ops::Deref for WriterLease {
-    type Target = Option<LocalBridge>;
+    type Target = Option<CommandHooks>;
     fn deref(&self) -> &Self::Target {
         &self.bridge
     }
@@ -105,6 +106,11 @@ impl std::ops::DerefMut for WriterLease {
 impl Drop for WriterLease {
     fn drop(&mut self) {
         if let (Some(bridge), Some(handle)) = (self.bridge.as_mut(), self.handle.take()) {
+            bridge.teardown_outcome(if std::thread::panicking() {
+                TeardownOutcome::Uncertain
+            } else {
+                TeardownOutcome::Unclean
+            });
             let _ = bridge.call(
                 "writer_scope.exit",
                 vec![Value::Null],
@@ -276,18 +282,25 @@ fn admit_inner(request: Request<'_>, command_scope: bool) -> Result<Admission, B
             if let Err(error) = native_policy(&root) {
                 return Ok(refusal(error));
             }
-            if let Err(error) = check_policy_hooks(&root, policy) {
+            // The selected policy checks its own command hooks. Only initial
+            // declarative coverage also applies to the selected local.py.
+            if let Err(error) = check_policy_hooks(&root, policy, false) {
                 return Ok(refusal(error));
             }
         }
     }
-    let mut bridge = match LocalBridge::start_in(bridge_config(&request, &root), request.cwd) {
+    let mut bridge = match CommandHooks::start_in(bridge_config(&request, &root), request.cwd) {
         Ok(bridge) => bridge,
         Err(error) if command_scope => return Ok(refusal(error.to_string())),
         Err(_) => return Ok(decline("target bridge failed before hello")),
     };
     if let (Some(policy), Some(local)) = (&policy, &bridge) {
         for hook in policy.covered_hooks() {
+            // Command hosts are owned by the selected target, while initial
+            // declarative admission retains its existing cross-root coverage.
+            if root != initial_root && matches!(hook, "writer_scope" | "on_job_event") {
+                continue;
+            }
             if local.hello()["hooks"]
                 .as_array()
                 .is_some_and(|hooks| hooks.iter().any(|v| v == hook))
@@ -423,6 +436,10 @@ fn admit_inner(request: Request<'_>, command_scope: bool) -> Result<Admission, B
         if redirected != root {
             let guard: &mut Option<LocalBridge> = if root == home {
                 &mut bridge
+                    .bridge
+                    .as_mut()
+                    .ok_or(BridgeError::Protocol("missing target hooks"))?
+                    .python
             } else {
                 &mut home_bridge
             };
@@ -554,14 +571,21 @@ pub(crate) fn native_policy(root: &Path) -> Result<Option<NativePolicy>, String>
         .and_then(|config| config.native_policy())
         .map_err(|e| format!("native local policy configuration error: {e}"))?;
     if let Some(policy) = &policy {
-        check_policy_hooks(root, policy)?;
+        check_policy_hooks(root, policy, true)?;
     }
     Ok(policy)
 }
-fn check_policy_hooks(root: &Path, policy: &NativePolicy) -> Result<(), String> {
+fn check_policy_hooks(
+    root: &Path,
+    policy: &NativePolicy,
+    include_command_hooks: bool,
+) -> Result<(), String> {
     match fs::read_to_string(root.join("tools").join("mir_executor").join("local.py")) {
         Ok(source) => {
             for hook in policy.covered_hooks() {
+                if !include_command_hooks && matches!(hook, "writer_scope" | "on_job_event") {
+                    continue;
+                }
                 if source.contains(hook) {
                     return Err(format!(
                         "native local policy configuration error: {hook} is also present in local.py"

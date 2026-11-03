@@ -1,11 +1,11 @@
 //! Direct execute; after admission every failure is final.
 use crate::{
     executor_admission::{self, Admission},
+    executor_command_hooks::{CommandHooks, TeardownOutcome},
     executor_local::LocalConfig,
     executor_policy,
     executor_registry::JobRegistry,
     executor_transport::{CallOptions, Client, Error as TransportError},
-    local_bridge::LocalBridge,
 };
 use serde_json::{Value, json};
 use std::{
@@ -120,7 +120,7 @@ fn chars(s: &str, n: usize) -> String {
     s.chars().take(n).collect()
 }
 pub(crate) fn hook(
-    bridge: &mut Option<Box<LocalBridge>>,
+    bridge: &mut Option<Box<CommandHooks>>,
     name: &str,
     args: Vec<Value>,
 ) -> Result<Value> {
@@ -290,6 +290,11 @@ pub fn run(raw: &[OsString], cwd: &Path, home_root: &Path) -> i32 {
         }
     };
     if let (Some(bridge), Some(handle)) = (bridge.as_mut(), writer_handle) {
+        bridge.teardown_outcome(if code == 0 {
+            TeardownOutcome::Clean
+        } else {
+            TeardownOutcome::Unclean
+        });
         match bridge.call(
             "writer_scope.exit",
             vec![Value::Null],
@@ -458,7 +463,7 @@ fn execute(
     args: &Value,
     cwd: &Path,
     environment: &BTreeMap<OsString, OsString>,
-    bridge: &mut Option<Box<LocalBridge>>,
+    bridge: &mut Option<Box<CommandHooks>>,
 ) -> Result<i32> {
     let change = args["change_id"].as_str();
     let category = args["category"].as_str();
@@ -884,7 +889,7 @@ fn provider(
     prompt: &str,
     model: Option<&str>,
     effort: Option<&str>,
-    bridge: &mut Option<Box<LocalBridge>>,
+    bridge: &mut Option<Box<CommandHooks>>,
 ) -> Result<Value> {
     if environment
         .get(&OsString::from("MIR_CODEX_MAIN"))
@@ -1111,7 +1116,7 @@ pub fn dispatch(
     codex_args: Option<Vec<String>>,
     cwd: &Path,
     environment: &BTreeMap<OsString, OsString>,
-    bridge: &mut Option<Box<LocalBridge>>,
+    bridge: &mut Option<Box<CommandHooks>>,
 ) -> Result<i32> {
     crate::executor_dispatch_cli::dispatch(root, args, codex_args, cwd, environment, bridge)
 }

@@ -16,6 +16,36 @@ from typing import Any
 _MODULES: dict[pathlib.Path, tuple[int, int, ModuleType]] = {}
 
 
+def _validate_native_hooks(value: Any) -> None:
+    """Validate the native-only transport declaration without launching a host."""
+    fields = {'executable', 'argv', 'sha256', 'hooks'}
+    if not isinstance(value, dict) or set(value) != fields:
+        raise ValueError('native_policy.hooks requires exactly executable, argv, sha256, hooks')
+    executable = value['executable']
+    if (not isinstance(executable, str) or not executable or '\0' in executable
+            or pathlib.Path(executable).anchor
+            or '..' in pathlib.Path(executable).parts
+            or any(part in ('.', '..') for part in (
+                executable.replace('\\', '/') if sys.platform == 'win32' else executable
+            ).split('/'))):
+        raise ValueError('native_policy.hooks.executable must be a repository-relative path '
+                         'without dot components or NUL')
+    argv = value['argv']
+    if (not isinstance(argv, list)
+            or any(not isinstance(item, str) or '\0' in item for item in argv)):
+        raise ValueError('native_policy.hooks.argv must be a string array without NUL')
+    digest = value['sha256']
+    if (not isinstance(digest, str) or len(digest) != 64
+            or any(char not in '0123456789abcdefABCDEF' for char in digest)):
+        raise ValueError('native_policy.hooks.sha256 must contain 64 hexadecimal characters')
+    hooks = value['hooks']
+    if (not isinstance(hooks, list) or not hooks
+            or any(name not in ('writer_scope', 'on_job_event') for name in hooks)
+            or len(set(hooks)) != len(hooks)):
+        raise ValueError('native_policy.hooks.hooks must contain unique writer_scope '
+                         'and/or on_job_event names')
+
+
 def local_config(repo_root: pathlib.Path) -> dict[str, Any]:
     """Read repository data; absence means common defaults, malformed data fails."""
     path = pathlib.Path(repo_root) / 'config/mir-executor.local.json'
@@ -24,6 +54,9 @@ def local_config(repo_root: pathlib.Path) -> dict[str, Any]:
     data = json.loads(path.read_text(encoding='utf-8'))
     if not isinstance(data, dict):
         raise ValueError(f'{path} must contain a JSON object')
+    native = data.get('native_policy')
+    if isinstance(native, dict) and 'hooks' in native:
+        _validate_native_hooks(native['hooks'])
     return data
 
 

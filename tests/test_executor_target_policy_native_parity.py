@@ -242,13 +242,27 @@ def test_native_only_target_policy_never_starts_python_bridge(binary, tmp_path):
     assert (root / 'provider-started').exists()
 
 
-def test_native_cross_root_alias_resolves_before_writer_and_job_creation(binary, tmp_path):
+@pytest.mark.parametrize(('initial_hook', 'computed'), [
+    (None, False), ('writer_scope', False), ('on_job_event', False),
+    ('writer_scope', True), ('on_job_event', True),
+])
+def test_native_cross_root_alias_resolves_before_writer_and_job_creation(
+        binary, tmp_path, initial_hook, computed):
     home = tmp_path / 'home'
     home_launcher = SUPPORT['seed'](home, 'success')
     target = tmp_path / 'target'
     launcher = SUPPORT['seed'](target, 'success')
     configure(home, {'family': {'mode': 'alias_map', 'aliases': {'sample': str(target)},
                                'unknown': UNKNOWN, 'root_conflict': CONFLICT}}, False)
+    if initial_hook:
+        path = home / 'config/mir-executor.local.json'
+        config = json.loads(path.read_text())
+        # The initial host must never start: hook ownership belongs to the
+        # selected target, whose policy and bridge are validated independently.
+        config['native_policy']['hooks'] = {
+            'executable': 'unused-initial-host', 'argv': [], 'sha256': '0' * 64,
+            'hooks': [initial_hook]}
+        path.write_text(json.dumps(config), encoding='utf-8')
     configure(target, {}, False)
     (target / 'tools/mir_executor/local.py').write_text(
         'from contextlib import contextmanager\n'
@@ -257,7 +271,27 @@ def test_native_cross_root_alias_resolves_before_writer_and_job_creation(binary,
         'def writer_scope(root):\n'
         '    assert not (root / "tasks/jobs.db").exists()\n'
         '    (root / "writer-root").write_text(str(root.resolve()), encoding="utf-8")\n'
-        '    yield\n', encoding='utf-8')
+        '    with (root / "writer-effects").open("a") as stream:\n'
+        '        stream.write("enter\\n")\n'
+        '    try:\n'
+        '        yield\n'
+        '    finally:\n'
+        '        with (root / "writer-effects").open("a") as stream:\n'
+        '            stream.write("exit\\n")\n', encoding='utf-8')
+    local = target / 'tools/mir_executor/local.py'
+    source = local.read_text(encoding='utf-8')
+    if initial_hook == 'on_job_event':
+        source += ('def on_job_event(event, payload):\n'
+                   '    root = Path(__file__).resolve().parents[2]\n'
+                   '    with (root / "event-effects").open("a") as stream:\n'
+                   '        stream.write(event + "\\n")\n')
+    if computed:
+        source = source.replace('def writer_scope(', 'def lease(')
+        source += "globals()['writer' + '_scope'] = lease\n"
+        if initial_hook == 'on_job_event':
+            source = source.replace('def on_job_event(', 'def observe(')
+            source += "globals()['on_job' + '_event'] = observe\n"
+    local.write_text(source, encoding='utf-8')
     environment = SUPPORT['environment'](target, 'success', launcher)
     # Like the Python executor, the provider thread keeps the invoking cwd
     # (the fixture server asserts thread cwd == EXECUTE_FIXTURE_ROOT).
@@ -270,7 +304,51 @@ def test_native_cross_root_alias_resolves_before_writer_and_job_creation(binary,
     assert (target / 'tasks/jobs.db').exists()
     assert not (target / 'provider-started').exists()
     assert (target / 'writer-root').read_text(encoding='utf-8') == str(target.resolve())
+    assert (target / 'writer-effects').read_text().splitlines() == ['enter', 'exit']
+    if initial_hook == 'on_job_event':
+        assert (target / 'event-effects').read_text().splitlines() == ['job_inserted']
     assert SUPPORT['snapshot'](home, home_launcher, result)['jobs'] == []
+
+
+@pytest.mark.parametrize('section', ['target_admission', 'verifier_aliases', 'agent_route'])
+@pytest.mark.parametrize('computed', [False, True])
+def test_cross_root_initial_declarative_coverage_still_rejects_target_python(
+        binary, tmp_path, section, computed):
+    home, target = tmp_path / 'home', tmp_path / 'target'
+    SUPPORT['seed'](home, 'success')
+    launcher = SUPPORT['seed'](target, 'success')
+    configure(home, {'family': {'mode': 'alias_map', 'aliases': {'sample': str(target)},
+                               'unknown': UNKNOWN}}, False)
+    path = home / 'config/mir-executor.local.json'
+    config = json.loads(path.read_text())
+    if section == 'verifier_aliases':
+        config['native_policy'][section] = {'configuration_root': 'initial'}
+    elif section == 'agent_route':
+        config['native_policy'][section] = {
+            'source': 'codex', 'criteria': 'declared', 'backend': 'policy',
+            'sandbox': 'read_only', 'invalid_lock': 'empty'}
+    path.write_text(json.dumps(config), encoding='utf-8')
+    # No selected native declaration: rejection must come from the initial
+    # declarative policy, including computed exports discovered only in hello.
+    (target / 'config').mkdir(exist_ok=True)
+    (target / 'config/mir-executor.local.json').write_text('{}', encoding='utf-8')
+    name = 'resolve_agent_route' if section == 'agent_route' else 'pre_execute'
+    export = 'computed_export' if computed else name
+    source = ('from pathlib import Path\n'
+              f'def {export}(*args):\n'
+              '    (Path(__file__).resolve().parents[2] / "declarative-effect").touch()\n')
+    if computed:
+        left, right = name.rsplit('_', 1)
+        source += f"globals()[{left!r} + '_{right}'] = computed_export\n"
+        assert name not in source
+    (target / 'tools/mir_executor/local.py').write_text(source, encoding='utf-8')
+    result = invoke(binary, home, SUPPORT['environment'](target, 'success', launcher),
+                    SUPPORT['argv']('background_success') + ['--family', 'sample'])
+    assert result.returncode == 1, (result.stdout, result.stderr)
+    assert name.encode() + b' is also present in local.py' in result.stderr
+    for root in (home, target):
+        for path in ('declarative-effect', 'tasks/jobs.db', 'provider-started'):
+            assert not (root / path).exists(), (path, result.stderr)
 
 
 @pytest.mark.parametrize('authorize_alias_target', [False, True])

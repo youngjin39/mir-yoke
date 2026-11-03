@@ -57,6 +57,7 @@ pub struct NativePolicy {
     authorize_target: bool,
     verifier_aliases: Option<bool>,
     pub agent_route: Option<agent_route::AgentRoutePolicy>,
+    pub hooks: Option<crate::executor_hooks::HooksConfig>,
 }
 #[path = "executor_agent_route_policy.rs"]
 mod agent_route;
@@ -168,6 +169,64 @@ fn render(text: &str, vars: &BTreeMap<&str, String>) -> String {
     output.push_str(tail);
     output
 }
+fn parse_hooks(value: &Value) -> Result<crate::executor_hooks::HooksConfig, Error> {
+    let data = object(value, &["executable", "argv", "sha256", "hooks"], "hooks")?;
+    let executable = string(data, "executable")?;
+    if executable.is_empty()
+        || executable.contains('\0')
+        || Path::new(executable)
+            .components()
+            .any(|component| !matches!(component, std::path::Component::Normal(_)))
+        || executable
+            .split(|character| character == '/' || (cfg!(windows) && character == '\\'))
+            .any(|part| part == "." || part == "..")
+    {
+        return Err(invalid(
+            "hooks.executable must be a repository-relative path without dot components or NUL",
+        ));
+    }
+    let argv = data
+        .get("argv")
+        .and_then(Value::as_array)
+        .ok_or_else(|| invalid("hooks.argv must be a string array"))?
+        .iter()
+        .map(|value| {
+            value
+                .as_str()
+                .filter(|argument| !argument.contains('\0'))
+                .map(str::to_owned)
+                .ok_or_else(|| invalid("hooks.argv must be a string array without NUL"))
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    let sha256 = string(data, "sha256")?;
+    if sha256.len() != 64 || !sha256.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+        return Err(invalid(
+            "hooks.sha256 must contain 64 hexadecimal characters",
+        ));
+    }
+    let values = data
+        .get("hooks")
+        .and_then(Value::as_array)
+        .filter(|values| !values.is_empty())
+        .ok_or_else(|| invalid("hooks.hooks must be a nonempty array"))?;
+    let mut hooks = Vec::new();
+    for value in values {
+        let name = value
+            .as_str()
+            .filter(|name| ["writer_scope", "on_job_event"].contains(name))
+            .ok_or_else(|| invalid("hooks.hooks accepts only writer_scope and on_job_event"))?;
+        if hooks.iter().any(|existing| existing == name) {
+            return Err(invalid("hooks.hooks must contain unique names"));
+        }
+        hooks.push(name.to_owned());
+    }
+    Ok(crate::executor_hooks::HooksConfig {
+        executable: executable.to_owned(),
+        argv,
+        sha256: sha256.to_owned(),
+        hooks,
+    })
+}
 impl NativePolicy {
     pub fn parse(value: &Value) -> Result<Self, Error> {
         let data = object(
@@ -177,6 +236,7 @@ impl NativePolicy {
                 "target_admission",
                 "verifier_aliases",
                 "agent_route",
+                "hooks",
             ],
             "native_policy",
         )?;
@@ -186,7 +246,10 @@ impl NativePolicy {
         let empty_admission = json!({});
         let admission = object(
             data.get("target_admission")
-                .or_else(|| data.contains_key("agent_route").then_some(&empty_admission))
+                .or_else(|| {
+                    (data.contains_key("agent_route") || data.contains_key("hooks"))
+                        .then_some(&empty_admission)
+                })
                 .ok_or_else(|| invalid("target_admission is required"))?,
             &["family", "repository_local", "authorize_target"],
             "target_admission",
@@ -328,9 +391,11 @@ impl NativePolicy {
             .get("agent_route")
             .map(agent_route::AgentRoutePolicy::parse)
             .transpose()?;
+        let hooks = data.get("hooks").map(parse_hooks).transpose()?;
         Ok(Self {
             owns_pre_execute: data.contains_key("target_admission") || verifier_aliases.is_some(),
             agent_route,
+            hooks,
             verifier_aliases,
             family,
             repository_local,
@@ -350,6 +415,15 @@ impl NativePolicy {
         }
         if self.authorize_target {
             hooks.push("authorize_target");
+        }
+        if let Some(config) = &self.hooks {
+            for name in &config.hooks {
+                if name == "writer_scope" {
+                    hooks.push("writer_scope");
+                } else if name == "on_job_event" {
+                    hooks.push("on_job_event");
+                }
+            }
         }
         hooks
     }
@@ -662,6 +736,89 @@ fn python_repr(text: &str) -> String {
 mod tests {
     use super::*;
     use serde_json::json;
+
+    fn hooks_policy() -> Value {
+        json!({"version":1,"hooks":{"executable":"tools/hook-host",
+            "argv":["--stdio"],"sha256":"a".repeat(64),
+            "hooks":["writer_scope","on_job_event"]}})
+    }
+
+    #[test]
+    fn native_hooks_schema_and_ownership() {
+        let value = hooks_policy();
+        let policy = NativePolicy::parse(&value).unwrap();
+        let config = policy.hooks.as_ref().unwrap();
+        assert_eq!(config.executable, "tools/hook-host");
+        assert_eq!(config.argv, ["--stdio"]);
+        assert_eq!(config.sha256, "a".repeat(64));
+        assert_eq!(policy.covered_hooks(), vec!["writer_scope", "on_job_event"]);
+        let mut combined = value.clone();
+        combined["target_admission"] = json!({});
+        assert_eq!(
+            NativePolicy::parse(&combined).unwrap().covered_hooks(),
+            vec!["pre_execute", "writer_scope", "on_job_event"]
+        );
+        assert!(
+            !NativePolicy::parse(&json!({"version":1,"target_admission":{}}))
+                .unwrap()
+                .covered_hooks()
+                .contains(&"writer_scope")
+        );
+        for (key, bad) in [
+            ("executable", json!("")),
+            ("executable", json!("/bin/host")),
+            ("executable", json!("../host")),
+            ("executable", json!("tools/../host")),
+            ("executable", json!("tools/./host")),
+            ("executable", json!(".")),
+            ("executable", json!("tools/\u{0000}host")),
+            ("executable", json!(true)),
+            ("argv", json!("--stdio")),
+            ("argv", json!([1])),
+            ("argv", json!(["bad\u{0000}argument"])),
+            ("sha256", json!("a".repeat(63))),
+            ("sha256", json!("g".repeat(64))),
+            ("hooks", json!([])),
+            ("hooks", json!(["writer_scope", "writer_scope"])),
+            ("hooks", json!(["pre_execute"])),
+            ("hooks", json!([true])),
+            ("hooks", json!("writer_scope")),
+            ("unknown", json!(true)),
+        ] {
+            let mut invalid = value.clone();
+            invalid["hooks"][key] = bad;
+            assert!(NativePolicy::parse(&invalid).is_err(), "{invalid}");
+        }
+        if cfg!(windows) {
+            for path in [
+                r"C:hook",
+                r"C:\hook",
+                r"\hook",
+                r"\\server\share\hook",
+                r"tools\..\hook",
+                r"tools\.\hook",
+            ] {
+                let mut invalid = value.clone();
+                invalid["hooks"]["executable"] = json!(path);
+                assert!(NativePolicy::parse(&invalid).is_err(), "{invalid}");
+            }
+        }
+        for key in ["executable", "argv", "sha256", "hooks"] {
+            let mut invalid = value.clone();
+            invalid["hooks"].as_object_mut().unwrap().remove(key);
+            assert!(NativePolicy::parse(&invalid).is_err(), "{invalid}");
+        }
+        for bad in [Value::Null, json!(true), json!([])] {
+            let mut invalid = value.clone();
+            invalid["hooks"] = bad;
+            assert!(NativePolicy::parse(&invalid).is_err());
+        }
+        let mut valid = value;
+        valid["hooks"]["sha256"] = json!("A".repeat(64));
+        valid["hooks"]["argv"] = json!([]);
+        valid["hooks"]["hooks"] = json!(["on_job_event"]);
+        assert!(NativePolicy::parse(&valid).is_ok());
+    }
 
     #[test]
     fn agent_route_schema_and_hook_ownership() {

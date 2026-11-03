@@ -161,7 +161,9 @@ fn python_dispatch_oracle() {
             options.prior_consecutive_codex_failures = n;
         }
         let mut context = DispatchContext {
-            bridge: bridge.as_mut(),
+            bridge: bridge
+                .as_mut()
+                .map(|b| b as &mut dyn handoff_packet::executor_command_hooks::HookClient),
             registry: Some((&registry, "fixture-job")),
             provider_hook_applied: case["provider_hook_applied"] == true,
             ..Default::default()

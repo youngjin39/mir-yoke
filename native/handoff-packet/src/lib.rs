@@ -1,5 +1,6 @@
 //! Native lifecycle hooks; unknown external JSON fields are accepted like Python.
-// Only account_home may cross the Unix libc boundary; every other module forbids unsafe.
+// Unsafe platform boundaries are isolated in account_home (Unix account lookup)
+// and executor_hooks_windows (suspended child assignment to a Windows Job Object).
 #![deny(unsafe_code)]
 #![cfg_attr(
     not(test),
@@ -13,6 +14,8 @@ mod digest;
 #[forbid(unsafe_code)]
 pub mod executor_admission;
 #[forbid(unsafe_code)]
+pub mod executor_command_hooks;
+#[forbid(unsafe_code)]
 pub mod executor_dispatch;
 #[forbid(unsafe_code)]
 pub mod executor_dispatch_cli;
@@ -22,6 +25,13 @@ pub mod executor_dispatch_provider;
 pub mod executor_execute;
 #[forbid(unsafe_code)]
 pub mod executor_finalize;
+#[forbid(unsafe_code)]
+pub mod executor_hooks;
+// Windows Job Objects must own a suspended child before target code can run.
+// The reviewed platform FFI boundary is isolated like account_home.
+#[cfg(windows)]
+#[allow(unsafe_code)]
+mod executor_hooks_windows;
 #[forbid(unsafe_code)]
 mod executor_ledger_json;
 #[forbid(unsafe_code)]

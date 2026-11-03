@@ -1,9 +1,9 @@
 //! Isolated attempt orchestration. Providers and finalization remain caller-owned.
 use crate::{
+    executor_command_hooks::HookClient,
     executor_local::LocalConfig,
     executor_registry::JobRegistry,
     executor_worktree::{self, DispatchWorktree},
-    local_bridge::LocalBridge,
 };
 use serde_json::{Value, json};
 use std::{
@@ -267,7 +267,7 @@ impl DispatchOptions {
 }
 #[derive(Default)]
 pub struct DispatchContext<'a> {
-    pub bridge: Option<&'a mut LocalBridge>,
+    pub bridge: Option<&'a mut dyn HookClient>,
     pub registry: Option<(&'a JobRegistry, &'a str)>,
     pub worktree: Option<DispatchWorktree>,
     pub provider_hook_applied: bool,

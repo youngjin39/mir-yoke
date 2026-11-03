@@ -1,9 +1,10 @@
 //! Saved dispatch restoration followed by the shared native dispatch CLI path.
 use crate::{
+    executor_command_hooks::{CommandHooks, TeardownOutcome},
     executor_execute as execute,
     executor_registry::JobRegistry,
     executor_resume,
-    local_bridge::{BridgeConfig, LocalBridge},
+    local_bridge::BridgeConfig,
 };
 use rusqlite::{Connection, OpenFlags, types::ValueRef};
 use serde_json::{Value, json};
@@ -229,12 +230,13 @@ fn prepare_error(error: crate::executor_dispatch::Error, row: &Value) -> String 
     )
 }
 struct Lease {
-    bridge: Option<Box<LocalBridge>>,
+    bridge: Option<Box<CommandHooks>>,
     handle: Option<String>,
 }
 impl Lease {
-    fn exit(&mut self) -> Result<()> {
+    fn exit(&mut self, outcome: TeardownOutcome) -> Result<()> {
         if let (Some(bridge), Some(handle)) = (self.bridge.as_mut(), self.handle.take()) {
+            bridge.teardown_outcome(outcome);
             let reply = bridge
                 .call(
                     "writer_scope.exit",
@@ -255,7 +257,11 @@ impl Lease {
 }
 impl Drop for Lease {
     fn drop(&mut self) {
-        let _ = self.exit();
+        let _ = self.exit(if std::thread::panicking() {
+            TeardownOutcome::Uncertain
+        } else {
+            TeardownOutcome::Unclean
+        });
     }
 }
 /// Exit 64 declines silently before the ownership receipt or Python effects.
@@ -350,7 +356,7 @@ pub fn run(raw: &[OsString], cwd: &Path, home: &Path) -> i32 {
                 .map_err(|e| prepare_error(e, &row))?;
         wire_paths(&mut prepared.args);
         let native_policy = target_policy;
-        let bridge = LocalBridge::start_in(
+        let bridge = CommandHooks::start_in(
             BridgeConfig {
                 interpreter: python,
                 target_root: cli.root.clone(),
@@ -475,7 +481,11 @@ pub fn run(raw: &[OsString], cwd: &Path, home: &Path) -> i32 {
             &environment,
             &mut lease.bridge,
         );
-        let exit = lease.exit();
+        let exit = lease.exit(if matches!(result, Ok(0)) {
+            TeardownOutcome::Clean
+        } else {
+            TeardownOutcome::Unclean
+        });
         let code = result?;
         exit?;
         Ok(code)
