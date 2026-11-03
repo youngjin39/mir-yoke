@@ -142,4 +142,7 @@ result and cancel native and byte-equal to forced Python; the Harness command-ho
 ran one execute end to end through the released binary. Maintainer host: provider update
 from the 0.13.63 record lock, five aarch64 binaries placed in both caches (SHA-256 equal to
 the lock), Codex hook trust 4/4, Claude 3b635f52 and Codex 01a1a104 attested (five mir-mcp
-calls ok), finalized, ready at 4774e56. Owner PC: pending.
+calls ok), finalized, ready at 4774e56. Owner PC (from 0.13.61): five x86_64 Windows
+binaries placed (SHA-256 and size equal to the lock), Claude d14ace58 and Codex 01a1a10c
+attested (five mir-mcp calls ok), finalized, ready at d18182a; consumer commit pushed by the
+maintainer host; consumer memory database unchanged.
