@@ -45,6 +45,8 @@ pub mod executor_protocol;
 #[forbid(unsafe_code)]
 pub mod executor_registry;
 #[forbid(unsafe_code)]
+pub mod executor_result_policy;
+#[forbid(unsafe_code)]
 pub mod executor_resume;
 #[forbid(unsafe_code)]
 pub mod executor_resume_cli;
@@ -673,3 +675,6 @@ pub fn pretool(event: &Value) -> Result<Option<&'static str>> {
 #[cfg(test)]
 #[forbid(unsafe_code)]
 mod tests;
+
+pub mod executor_brief_profile;
+pub(crate) mod executor_brief_render;

@@ -41,6 +41,9 @@ fn path_wire(v: &Value) -> Value {
 }
 fn namespace(args: &Value) -> Value {
     let mut args = args.clone();
+    if let Some(map) = args.as_object_mut() {
+        map.remove("__native_brief");
+    }
     for key in [
         "repo_root",
         "dispatch_brief",

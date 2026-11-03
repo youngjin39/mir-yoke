@@ -47,6 +47,11 @@ pub(crate) fn path(path: &Path) -> Value {
     json!({"$type":"path","value":path.to_str().unwrap_or("")})
 }
 pub(crate) fn namespace(args: &Value) -> Value {
+    // The native brief cache is executor-internal; hooks and events see the Python namespace.
+    let mut args = args.clone();
+    if let Some(map) = args.as_object_mut() {
+        map.remove("__native_brief");
+    }
     json!({"$type":"namespace","value":args})
 }
 pub(crate) fn value_path(value: &Value, cwd: &Path) -> PathBuf {
@@ -1125,6 +1130,15 @@ pub fn dispatch(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn hook_namespace_omits_the_native_brief_cache() {
+        let args = json!({"dispatch":true,"__native_brief":{"value":{"version":2}}});
+        assert_eq!(
+            namespace(&args),
+            json!({"$type":"namespace","value":{"dispatch":true}})
+        );
+    }
 
     #[cfg(unix)]
     #[test]

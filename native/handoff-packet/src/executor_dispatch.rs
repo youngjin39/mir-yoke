@@ -471,7 +471,11 @@ where
             json!({"handles":{"0":h}}),
         )?;
     }
-    let result = attempts(o, c, runner);
+    let result_policy = config
+        .native_policy()
+        .map_err(Error::Local)?
+        .and_then(|policy| policy.result_policy);
+    let result = attempts(o, c, runner, result_policy.as_ref());
     if let Some(h) = handle {
         hook(
             c,
@@ -486,6 +490,7 @@ fn attempts<F>(
     o: &DispatchOptions,
     c: &mut DispatchContext<'_>,
     runner: &mut F,
+    result_policy: Option<&crate::executor_result_policy::ResultPolicy>,
 ) -> Result<DispatchOutcome>
 where
     F: FnMut(&DispatchWorktree, usize) -> Result<CodexAttempt>,
@@ -533,6 +538,11 @@ where
         let started = Instant::now();
         let mut r = runner(&w, attempt)?;
         if !c.provider_hook_applied {
+            if let Some(policy) = result_policy
+                && let Some(replacement) = policy.after_provider_call(&r)?
+            {
+                r = replacement;
+            }
             let tokens = r
                 .tokens_used
                 .iter()
@@ -570,6 +580,9 @@ where
             ],
             json!({}),
         )?;
+        if let Some(policy) = result_policy {
+            policy.after_run(&w.result_path, &r)?;
+        }
         if r.exit_code == 0 {
             state(c, &w, "codex_completed", json!({"attempt":attempt}))?;
             append(

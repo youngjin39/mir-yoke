@@ -1,0 +1,1188 @@
+{
+  "base_v1": [
+    {
+      "name": "valid",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_commands\": [\"cargo test\"]}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Implement a bounded change.",
+        "expanded_goal": "Update the owned module.",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside the owned scope."
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://project/task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "missing_all",
+      "text": "{}",
+      "kind": "ValidationError",
+      "message": "10 validation errors for DispatchBrief\ntask_id\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nslice_id\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\ntarget_agent\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nuser_intent\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nexpanded_goal\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nowned_scope\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nverification_commands\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nstop_conditions\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nresume_state_ref\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nsource_refs\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing"
+    },
+    {
+      "name": "unicode",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"\\ud55c\\uae00 caf\\u00e9 \\ud83d\\ude00\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_commands\": [\"cargo test\"]}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "\ud55c\uae00 caf\u00e9 \ud83d\ude00",
+        "expanded_goal": "Update the owned module.",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside the owned scope."
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://project/task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "version_0",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_commands\": [\"cargo test\"], \"version\": null}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nversion\n  Input should be a valid integer [type=int_type, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2.13/v/int_type"
+    },
+    {
+      "name": "version_1",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_commands\": [\"cargo test\"], \"version\": \"bad\"}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nversion\n  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='bad', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/int_parsing"
+    },
+    {
+      "name": "version_2",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_commands\": [\"cargo test\"], \"version\": \"1\"}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Implement a bounded change.",
+        "expanded_goal": "Update the owned module.",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside the owned scope."
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://project/task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "version_3",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_commands\": [\"cargo test\"], \"version\": \"2.0\"}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.version must be 1 [type=value_error, input_value={'task_id': 'task', 'slic...est'], 'version': '2.0'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "version_4",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_commands\": [\"cargo test\"], \"version\": 1.2}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nversion\n  Input should be a valid integer, got a number with a fractional part [type=int_from_float, input_value=1.2, input_type=float]\n    For further information visit https://errors.pydantic.dev/2.13/v/int_from_float"
+    },
+    {
+      "name": "version_5",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_commands\": [\"cargo test\"], \"version\": true}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Implement a bounded change.",
+        "expanded_goal": "Update the owned module.",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside the owned scope."
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://project/task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "version_6",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_commands\": [\"cargo test\"], \"version\": 3}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.version must be 1 [type=value_error, input_value={'task_id': 'task', 'slic...go test'], 'version': 3}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "version_7",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_commands\": [\"cargo test\"], \"version\": \" +1 \"}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Implement a bounded change.",
+        "expanded_goal": "Update the owned module.",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside the owned scope."
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://project/task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "version_8",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_commands\": [\"cargo test\"], \"version\": \"1_0\"}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.version must be 1 [type=value_error, input_value={'task_id': 'task', 'slic...est'], 'version': '1_0'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "version_9",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_commands\": [\"cargo test\"], \"version\": \"01\"}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Implement a bounded change.",
+        "expanded_goal": "Update the owned module.",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside the owned scope."
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://project/task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "version_10",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_commands\": [\"cargo test\"], \"version\": \"_1\"}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nversion\n  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='_1', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/int_parsing"
+    },
+    {
+      "name": "version_11",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_commands\": [\"cargo test\"], \"version\": \"1_\"}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nversion\n  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='1_', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/int_parsing"
+    },
+    {
+      "name": "version_12",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_commands\": [\"cargo test\"], \"version\": \"1__0\"}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nversion\n  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='1__0', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/int_parsing"
+    },
+    {
+      "name": "version_13",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_commands\": [\"cargo test\"], \"version\": \"1.0_0\"}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nversion\n  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='1.0_0', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/int_parsing"
+    },
+    {
+      "name": "version_14",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_commands\": [\"cargo test\"], \"version\": \"1_0.0\"}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.version must be 1 [type=value_error, input_value={'task_id': 'task', 'slic...t'], 'version': '1_0.0'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "version_15",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_commands\": [\"cargo test\"], \"version\": \"1.00\"}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Implement a bounded change.",
+        "expanded_goal": "Update the owned module.",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside the owned scope."
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://project/task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "version_16",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_commands\": [\"cargo test\"], \"version\": \"\\u0661\"}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nversion\n  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='\u0661', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/int_parsing"
+    },
+    {
+      "name": "version_17",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_commands\": [\"cargo test\"], \"version\": 10000000000000000000000000000000000000000}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.version must be 1 [type=value_error, input_value={'task_id': 'task', 'slic...00000000000000000000000}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "version_18",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_commands\": [\"cargo test\"], \"version\": NaN}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nversion\n  Input should be a finite number [type=finite_number, input_value=nan, input_type=float]\n    For further information visit https://errors.pydantic.dev/2.13/v/finite_number"
+    },
+    {
+      "name": "version_19",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_commands\": [\"cargo test\"], \"version\": Infinity}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nversion\n  Input should be a finite number [type=finite_number, input_value=inf, input_type=float]\n    For further information visit https://errors.pydantic.dev/2.13/v/finite_number"
+    },
+    {
+      "name": "version_20",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_commands\": [\"cargo test\"], \"version\": \"11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111\"}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nversion\n  Unable to parse input string as an integer, exceeded maximum size [type=int_parsing_size, input_value='111111111111111111111111...11111111111111111111111', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/int_parsing_size"
+    },
+    {
+      "name": "task_id_0",
+      "text": "{\"task_id\": null, \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_commands\": [\"cargo test\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\ntask_id\n  Input should be a valid string [type=string_type, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type"
+    },
+    {
+      "name": "task_id_1",
+      "text": "{\"task_id\": 1, \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_commands\": [\"cargo test\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\ntask_id\n  Input should be a valid string [type=string_type, input_value=1, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type"
+    },
+    {
+      "name": "task_id_2",
+      "text": "{\"task_id\": \"\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_commands\": [\"cargo test\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\ntask_id\n  String should have at least 1 character [type=string_too_short, input_value='', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_too_short"
+    },
+    {
+      "name": "task_id_3",
+      "text": "{\"task_id\": \"  \", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_commands\": [\"cargo test\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.resume_state_ref must match 'tasks/dispatch/  /slice.json' [type=value_error, input_value={'task_id': '  ', 'slice_...mmands': ['cargo test']}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "phase_id_0",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_commands\": [\"cargo test\"], \"phase_id\": null}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Implement a bounded change.",
+        "expanded_goal": "Update the owned module.",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside the owned scope."
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://project/task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "phase_id_1",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_commands\": [\"cargo test\"], \"phase_id\": 1}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nphase_id\n  Input should be a valid string [type=string_type, input_value=1, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type"
+    },
+    {
+      "name": "phase_id_2",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_commands\": [\"cargo test\"], \"phase_id\": \"\"}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": "",
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Implement a bounded change.",
+        "expanded_goal": "Update the owned module.",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside the owned scope."
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://project/task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "owned_scope_0",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": null, \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_commands\": [\"cargo test\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nowned_scope\n  Input should be a valid tuple [type=tuple_type, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2.13/v/tuple_type"
+    },
+    {
+      "name": "owned_scope_1",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": \"src\", \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_commands\": [\"cargo test\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nowned_scope\n  Input should be a valid tuple [type=tuple_type, input_value='src', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/tuple_type"
+    },
+    {
+      "name": "owned_scope_2",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_commands\": [\"cargo test\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nowned_scope\n  Tuple should have at least 1 item after validation, not 0 [type=too_short, input_value=[], input_type=list]\n    For further information visit https://errors.pydantic.dev/2.13/v/too_short"
+    },
+    {
+      "name": "owned_scope_3",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [1, null], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_commands\": [\"cargo test\"]}",
+      "kind": "ValidationError",
+      "message": "3 validation errors for DispatchBrief\nowned_scope.0\n  Input should be a valid string [type=string_type, input_value=1, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type\nowned_scope.1\n  Input should be a valid string [type=string_type, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type\nowned_scope\n  Tuple should have at least 1 item after validation, not 0 [type=too_short, input_value=[1, None], input_type=list]\n    For further information visit https://errors.pydantic.dev/2.13/v/too_short"
+    },
+    {
+      "name": "owned_scope_4",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [1, \"src\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_commands\": [\"cargo test\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nowned_scope.0\n  Input should be a valid string [type=string_type, input_value=1, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type"
+    },
+    {
+      "name": "owned_scope_5",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_commands\": [\"cargo test\"]}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Implement a bounded change.",
+        "expanded_goal": "Update the owned module.",
+        "owned_scope": [
+          ""
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside the owned scope."
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://project/task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "source_refs_0",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": null, \"verification_commands\": [\"cargo test\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nsource_refs\n  Input should be a valid dictionary or instance of DispatchBriefSourceRefs [type=model_type, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2.13/v/model_type"
+    },
+    {
+      "name": "source_refs_1",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": [], \"verification_commands\": [\"cargo test\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nsource_refs\n  Input should be a valid dictionary or instance of DispatchBriefSourceRefs [type=model_type, input_value=[], input_type=list]\n    For further information visit https://errors.pydantic.dev/2.13/v/model_type"
+    },
+    {
+      "name": "source_refs_2",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {}, \"verification_commands\": [\"cargo test\"]}",
+      "kind": "ValidationError",
+      "message": "2 validation errors for DispatchBrief\nsource_refs.task_spec\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nsource_refs.phase\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing"
+    },
+    {
+      "name": "source_refs_3",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"\", \"phase\": 2, \"extra\": 1}, \"verification_commands\": [\"cargo test\"]}",
+      "kind": "ValidationError",
+      "message": "3 validation errors for DispatchBrief\nsource_refs.task_spec\n  String should have at least 1 character [type=string_too_short, input_value='', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_too_short\nsource_refs.phase\n  Input should be a valid string [type=string_type, input_value=2, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type\nsource_refs.extra\n  Extra inputs are not permitted [type=extra_forbidden, input_value=1, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden"
+    },
+    {
+      "name": "source_refs_4",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"x\", \"phase\": \"p\", \"plan\": 1}, \"verification_commands\": [\"cargo test\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nsource_refs.plan\n  Input should be a valid string [type=string_type, input_value=1, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type"
+    },
+    {
+      "name": "source_refs_5",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"x\", \"phase\": \"p\", \"plan\": \"other\"}, \"verification_commands\": [\"cargo test\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.source_refs.plan must be 'tasks/plan.md' [type=value_error, input_value={'task_id': 'task', 'slic...mmands': ['cargo test']}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "source_refs_6",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": NaN, \"verification_commands\": [\"cargo test\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nsource_refs\n  Input should be a valid dictionary or instance of DispatchBriefSourceRefs [type=model_type, input_value=nan, input_type=float]\n    For further information visit https://errors.pydantic.dev/2.13/v/model_type"
+    },
+    {
+      "name": "source_refs_7",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": 10000000000000000000000000000000000000000, \"verification_commands\": [\"cargo test\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nsource_refs\n  Input should be a valid dictionary or instance of DispatchBriefSourceRefs [type=model_type, input_value=10000000000000000000000000000000000000000, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/model_type"
+    },
+    {
+      "name": "verification_commands_0",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_commands\": []}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nverification_commands\n  Tuple should have at least 1 item after validation, not 0 [type=too_short, input_value=[], input_type=list]\n    For further information visit https://errors.pydantic.dev/2.13/v/too_short"
+    },
+    {
+      "name": "verification_commands_1",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_commands\": [1]}",
+      "kind": "ValidationError",
+      "message": "2 validation errors for DispatchBrief\nverification_commands.0\n  Input should be a valid string [type=string_type, input_value=1, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type\nverification_commands\n  Tuple should have at least 1 item after validation, not 0 [type=too_short, input_value=[1], input_type=list]\n    For further information visit https://errors.pydantic.dev/2.13/v/too_short"
+    },
+    {
+      "name": "verification_commands_2",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_commands\": [\"cargo test\"]}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Implement a bounded change.",
+        "expanded_goal": "Update the owned module.",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside the owned scope."
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://project/task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "resume_state_ref_0",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"other\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_commands\": [\"cargo test\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.resume_state_ref must match 'tasks/dispatch/task/slice.json' [type=value_error, input_value={'task_id': 'task', 'slic...mmands': ['cargo test']}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "resume_state_ref_1",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_commands\": [\"cargo test\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nresume_state_ref\n  String should have at least 1 character [type=string_too_short, input_value='', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_too_short"
+    },
+    {
+      "name": "extra",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_commands\": [\"cargo test\"], \"z_extra\": 1, \"a_extra\": \"value\"}",
+      "kind": "ValidationError",
+      "message": "2 validation errors for DispatchBrief\nz_extra\n  Extra inputs are not permitted [type=extra_forbidden, input_value=1, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden\na_extra\n  Extra inputs are not permitted [type=extra_forbidden, input_value='value', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden"
+    },
+    {
+      "name": "multiple",
+      "text": "{\"task_id\": 1, \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"\", \"owned_scope\": [], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {}, \"verification_commands\": [\"cargo test\"]}",
+      "kind": "ValidationError",
+      "message": "5 validation errors for DispatchBrief\ntask_id\n  Input should be a valid string [type=string_type, input_value=1, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type\nexpanded_goal\n  String should have at least 1 character [type=string_too_short, input_value='', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_too_short\nowned_scope\n  Tuple should have at least 1 item after validation, not 0 [type=too_short, input_value=[], input_type=list]\n    For further information visit https://errors.pydantic.dev/2.13/v/too_short\nsource_refs.task_spec\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nsource_refs.phase\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing"
+    }
+  ],
+  "closed_verifier_v2": [
+    {
+      "name": "valid",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_ids\": [\"git-diff-check\"]}",
+      "value": {
+        "version": 2,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Implement a bounded change.",
+        "expanded_goal": "Update the owned module.",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_ids": [
+          "git-diff-check"
+        ],
+        "verification_commands": [],
+        "stop_conditions": [
+          "Stop outside the owned scope."
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://project/task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "missing_all",
+      "text": "{}",
+      "kind": "ValidationError",
+      "message": "9 validation errors for DispatchBrief\ntask_id\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nslice_id\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\ntarget_agent\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nuser_intent\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nexpanded_goal\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nowned_scope\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nstop_conditions\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nresume_state_ref\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nsource_refs\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing"
+    },
+    {
+      "name": "unicode",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"\\ud55c\\uae00 caf\\u00e9 \\ud83d\\ude00\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_ids\": [\"git-diff-check\"]}",
+      "value": {
+        "version": 2,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "\ud55c\uae00 caf\u00e9 \ud83d\ude00",
+        "expanded_goal": "Update the owned module.",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_ids": [
+          "git-diff-check"
+        ],
+        "verification_commands": [],
+        "stop_conditions": [
+          "Stop outside the owned scope."
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://project/task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "version_0",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_ids\": [\"git-diff-check\"], \"version\": null}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nversion\n  Input should be a valid integer [type=int_type, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2.13/v/int_type"
+    },
+    {
+      "name": "version_1",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_ids\": [\"git-diff-check\"], \"version\": \"bad\"}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nversion\n  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='bad', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/int_parsing"
+    },
+    {
+      "name": "version_2",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_ids\": [\"git-diff-check\"], \"version\": \"1\"}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief v1 requires verification_commands [type=value_error, input_value={'task_id': 'task', 'slic...check'], 'version': '1'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "version_3",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_ids\": [\"git-diff-check\"], \"version\": \"2.0\"}",
+      "value": {
+        "version": 2,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Implement a bounded change.",
+        "expanded_goal": "Update the owned module.",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_ids": [
+          "git-diff-check"
+        ],
+        "verification_commands": [],
+        "stop_conditions": [
+          "Stop outside the owned scope."
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://project/task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "version_4",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_ids\": [\"git-diff-check\"], \"version\": 1.2}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nversion\n  Input should be a valid integer, got a number with a fractional part [type=int_from_float, input_value=1.2, input_type=float]\n    For further information visit https://errors.pydantic.dev/2.13/v/int_from_float"
+    },
+    {
+      "name": "version_5",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_ids\": [\"git-diff-check\"], \"version\": true}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief v1 requires verification_commands [type=value_error, input_value={'task_id': 'task', 'slic...heck'], 'version': True}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "version_6",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_ids\": [\"git-diff-check\"], \"version\": 3}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.version must be 1 or 2 [type=value_error, input_value={'task_id': 'task', 'slic...f-check'], 'version': 3}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "version_7",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_ids\": [\"git-diff-check\"], \"version\": \" +1 \"}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief v1 requires verification_commands [type=value_error, input_value={'task_id': 'task', 'slic...ck'], 'version': ' +1 '}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "version_8",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_ids\": [\"git-diff-check\"], \"version\": \"1_0\"}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.version must be 1 or 2 [type=value_error, input_value={'task_id': 'task', 'slic...eck'], 'version': '1_0'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "version_9",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_ids\": [\"git-diff-check\"], \"version\": \"01\"}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief v1 requires verification_commands [type=value_error, input_value={'task_id': 'task', 'slic...heck'], 'version': '01'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "version_10",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_ids\": [\"git-diff-check\"], \"version\": \"_1\"}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nversion\n  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='_1', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/int_parsing"
+    },
+    {
+      "name": "version_11",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_ids\": [\"git-diff-check\"], \"version\": \"1_\"}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nversion\n  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='1_', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/int_parsing"
+    },
+    {
+      "name": "version_12",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_ids\": [\"git-diff-check\"], \"version\": \"1__0\"}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nversion\n  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='1__0', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/int_parsing"
+    },
+    {
+      "name": "version_13",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_ids\": [\"git-diff-check\"], \"version\": \"1.0_0\"}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nversion\n  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='1.0_0', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/int_parsing"
+    },
+    {
+      "name": "version_14",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_ids\": [\"git-diff-check\"], \"version\": \"1_0.0\"}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.version must be 1 or 2 [type=value_error, input_value={'task_id': 'task', 'slic...k'], 'version': '1_0.0'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "version_15",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_ids\": [\"git-diff-check\"], \"version\": \"1.00\"}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief v1 requires verification_commands [type=value_error, input_value={'task_id': 'task', 'slic...ck'], 'version': '1.00'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "version_16",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_ids\": [\"git-diff-check\"], \"version\": \"\\u0661\"}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nversion\n  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='\u0661', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/int_parsing"
+    },
+    {
+      "name": "version_17",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_ids\": [\"git-diff-check\"], \"version\": 10000000000000000000000000000000000000000}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.version must be 1 or 2 [type=value_error, input_value={'task_id': 'task', 'slic...00000000000000000000000}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "version_18",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_ids\": [\"git-diff-check\"], \"version\": NaN}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nversion\n  Input should be a finite number [type=finite_number, input_value=nan, input_type=float]\n    For further information visit https://errors.pydantic.dev/2.13/v/finite_number"
+    },
+    {
+      "name": "version_19",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_ids\": [\"git-diff-check\"], \"version\": Infinity}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nversion\n  Input should be a finite number [type=finite_number, input_value=inf, input_type=float]\n    For further information visit https://errors.pydantic.dev/2.13/v/finite_number"
+    },
+    {
+      "name": "version_20",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_ids\": [\"git-diff-check\"], \"version\": \"11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111\"}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nversion\n  Unable to parse input string as an integer, exceeded maximum size [type=int_parsing_size, input_value='111111111111111111111111...11111111111111111111111', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/int_parsing_size"
+    },
+    {
+      "name": "task_id_0",
+      "text": "{\"task_id\": null, \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_ids\": [\"git-diff-check\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\ntask_id\n  Input should be a valid string [type=string_type, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type"
+    },
+    {
+      "name": "task_id_1",
+      "text": "{\"task_id\": 1, \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_ids\": [\"git-diff-check\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\ntask_id\n  Input should be a valid string [type=string_type, input_value=1, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type"
+    },
+    {
+      "name": "task_id_2",
+      "text": "{\"task_id\": \"\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_ids\": [\"git-diff-check\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\ntask_id\n  String should have at least 1 character [type=string_too_short, input_value='', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_too_short"
+    },
+    {
+      "name": "task_id_3",
+      "text": "{\"task_id\": \"  \", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_ids\": [\"git-diff-check\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.resume_state_ref must match 'tasks/dispatch/  /slice.json' [type=value_error, input_value={'task_id': '  ', 'slice_...ds': ['git-diff-check']}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "phase_id_0",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_ids\": [\"git-diff-check\"], \"phase_id\": null}",
+      "value": {
+        "version": 2,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Implement a bounded change.",
+        "expanded_goal": "Update the owned module.",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_ids": [
+          "git-diff-check"
+        ],
+        "verification_commands": [],
+        "stop_conditions": [
+          "Stop outside the owned scope."
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://project/task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "phase_id_1",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_ids\": [\"git-diff-check\"], \"phase_id\": 1}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nphase_id\n  Input should be a valid string [type=string_type, input_value=1, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type"
+    },
+    {
+      "name": "phase_id_2",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_ids\": [\"git-diff-check\"], \"phase_id\": \"\"}",
+      "value": {
+        "version": 2,
+        "task_id": "task",
+        "phase_id": "",
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Implement a bounded change.",
+        "expanded_goal": "Update the owned module.",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_ids": [
+          "git-diff-check"
+        ],
+        "verification_commands": [],
+        "stop_conditions": [
+          "Stop outside the owned scope."
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://project/task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "owned_scope_0",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": null, \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_ids\": [\"git-diff-check\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nowned_scope\n  Input should be a valid tuple [type=tuple_type, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2.13/v/tuple_type"
+    },
+    {
+      "name": "owned_scope_1",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": \"src\", \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_ids\": [\"git-diff-check\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nowned_scope\n  Input should be a valid tuple [type=tuple_type, input_value='src', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/tuple_type"
+    },
+    {
+      "name": "owned_scope_2",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_ids\": [\"git-diff-check\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nowned_scope\n  Tuple should have at least 1 item after validation, not 0 [type=too_short, input_value=[], input_type=list]\n    For further information visit https://errors.pydantic.dev/2.13/v/too_short"
+    },
+    {
+      "name": "owned_scope_3",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [1, null], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_ids\": [\"git-diff-check\"]}",
+      "kind": "ValidationError",
+      "message": "3 validation errors for DispatchBrief\nowned_scope.0\n  Input should be a valid string [type=string_type, input_value=1, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type\nowned_scope.1\n  Input should be a valid string [type=string_type, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type\nowned_scope\n  Tuple should have at least 1 item after validation, not 0 [type=too_short, input_value=[1, None], input_type=list]\n    For further information visit https://errors.pydantic.dev/2.13/v/too_short"
+    },
+    {
+      "name": "owned_scope_4",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [1, \"src\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_ids\": [\"git-diff-check\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nowned_scope.0\n  Input should be a valid string [type=string_type, input_value=1, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type"
+    },
+    {
+      "name": "owned_scope_5",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_ids\": [\"git-diff-check\"]}",
+      "value": {
+        "version": 2,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Implement a bounded change.",
+        "expanded_goal": "Update the owned module.",
+        "owned_scope": [
+          ""
+        ],
+        "out_of_scope": [],
+        "verification_ids": [
+          "git-diff-check"
+        ],
+        "verification_commands": [],
+        "stop_conditions": [
+          "Stop outside the owned scope."
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://project/task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "source_refs_0",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": null, \"verification_ids\": [\"git-diff-check\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nsource_refs\n  Input should be a valid dictionary or instance of DispatchBriefSourceRefs [type=model_type, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2.13/v/model_type"
+    },
+    {
+      "name": "source_refs_1",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": [], \"verification_ids\": [\"git-diff-check\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nsource_refs\n  Input should be a valid dictionary or instance of DispatchBriefSourceRefs [type=model_type, input_value=[], input_type=list]\n    For further information visit https://errors.pydantic.dev/2.13/v/model_type"
+    },
+    {
+      "name": "source_refs_2",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {}, \"verification_ids\": [\"git-diff-check\"]}",
+      "kind": "ValidationError",
+      "message": "2 validation errors for DispatchBrief\nsource_refs.task_spec\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nsource_refs.phase\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing"
+    },
+    {
+      "name": "source_refs_3",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"\", \"phase\": 2, \"extra\": 1}, \"verification_ids\": [\"git-diff-check\"]}",
+      "kind": "ValidationError",
+      "message": "3 validation errors for DispatchBrief\nsource_refs.task_spec\n  String should have at least 1 character [type=string_too_short, input_value='', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_too_short\nsource_refs.phase\n  Input should be a valid string [type=string_type, input_value=2, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type\nsource_refs.extra\n  Extra inputs are not permitted [type=extra_forbidden, input_value=1, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden"
+    },
+    {
+      "name": "source_refs_4",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"x\", \"phase\": \"p\", \"plan\": 1}, \"verification_ids\": [\"git-diff-check\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nsource_refs.plan\n  Input should be a valid string [type=string_type, input_value=1, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type"
+    },
+    {
+      "name": "source_refs_5",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"x\", \"phase\": \"p\", \"plan\": \"other\"}, \"verification_ids\": [\"git-diff-check\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.source_refs.plan must be 'tasks/plan.md' [type=value_error, input_value={'task_id': 'task', 'slic...ds': ['git-diff-check']}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "source_refs_6",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": NaN, \"verification_ids\": [\"git-diff-check\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nsource_refs\n  Input should be a valid dictionary or instance of DispatchBriefSourceRefs [type=model_type, input_value=nan, input_type=float]\n    For further information visit https://errors.pydantic.dev/2.13/v/model_type"
+    },
+    {
+      "name": "source_refs_7",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": 10000000000000000000000000000000000000000, \"verification_ids\": [\"git-diff-check\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nsource_refs\n  Input should be a valid dictionary or instance of DispatchBriefSourceRefs [type=model_type, input_value=10000000000000000000000000000000000000000, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/model_type"
+    },
+    {
+      "name": "verification_commands_0",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_ids\": [\"git-diff-check\"], \"verification_commands\": []}",
+      "value": {
+        "version": 2,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Implement a bounded change.",
+        "expanded_goal": "Update the owned module.",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_ids": [
+          "git-diff-check"
+        ],
+        "verification_commands": [],
+        "stop_conditions": [
+          "Stop outside the owned scope."
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://project/task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "verification_commands_1",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_ids\": [\"git-diff-check\"], \"verification_commands\": [1]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nverification_commands.0\n  Input should be a valid string [type=string_type, input_value=1, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type"
+    },
+    {
+      "name": "verification_commands_2",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_ids\": [\"git-diff-check\"], \"verification_commands\": [\"cargo test\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief v2 forbids verification_commands [type=value_error, input_value={'task_id': 'task', 'slic...mmands': ['cargo test']}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "resume_state_ref_0",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"other\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_ids\": [\"git-diff-check\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief.resume_state_ref must match 'tasks/dispatch/task/slice.json' [type=value_error, input_value={'task_id': 'task', 'slic...ds': ['git-diff-check']}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "resume_state_ref_1",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_ids\": [\"git-diff-check\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nresume_state_ref\n  String should have at least 1 character [type=string_too_short, input_value='', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_too_short"
+    },
+    {
+      "name": "extra",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_ids\": [\"git-diff-check\"], \"z_extra\": 1, \"a_extra\": \"value\"}",
+      "kind": "ValidationError",
+      "message": "2 validation errors for DispatchBrief\nz_extra\n  Extra inputs are not permitted [type=extra_forbidden, input_value=1, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden\na_extra\n  Extra inputs are not permitted [type=extra_forbidden, input_value='value', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden"
+    },
+    {
+      "name": "multiple",
+      "text": "{\"task_id\": 1, \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"\", \"owned_scope\": [], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {}, \"verification_ids\": [\"git-diff-check\"]}",
+      "kind": "ValidationError",
+      "message": "5 validation errors for DispatchBrief\ntask_id\n  Input should be a valid string [type=string_type, input_value=1, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type\nexpanded_goal\n  String should have at least 1 character [type=string_too_short, input_value='', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_too_short\nowned_scope\n  Tuple should have at least 1 item after validation, not 0 [type=too_short, input_value=[], input_type=list]\n    For further information visit https://errors.pydantic.dev/2.13/v/too_short\nsource_refs.task_spec\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nsource_refs.phase\n  Field required [type=missing, input_value={}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing"
+    },
+    {
+      "name": "verification_ids_0",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_ids\": []}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief v2 requires verification_ids [type=value_error, input_value={'task_id': 'task', 'slic... 'verification_ids': []}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "verification_ids_1",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_ids\": [\"unknown\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief contains unknown verification_ids: ['unknown'] [type=value_error, input_value={'task_id': 'task', 'slic...ation_ids': ['unknown']}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "verification_ids_2",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_ids\": [\"zzz\", \"aaa\", \"zzz\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief contains unknown verification_ids: ['aaa', 'zzz'] [type=value_error, input_value={'task_id': 'task', 'slic...: ['zzz', 'aaa', 'zzz']}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "verification_ids_3",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_ids\": [1]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nverification_ids.0\n  Input should be a valid string [type=string_type, input_value=1, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type"
+    },
+    {
+      "name": "verification_ids_4",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_ids\": [\"python-tests\", \"ruff\"]}",
+      "value": {
+        "version": 2,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Implement a bounded change.",
+        "expanded_goal": "Update the owned module.",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_ids": [
+          "python-tests",
+          "ruff"
+        ],
+        "verification_commands": [],
+        "stop_conditions": [
+          "Stop outside the owned scope."
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://project/task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "legacy_v1",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_ids\": [], \"version\": 1, \"verification_commands\": [\"cargo test\"]}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "executor-agent",
+        "user_intent": "Implement a bounded change.",
+        "expanded_goal": "Update the owned module.",
+        "owned_scope": [
+          "src/module.rs"
+        ],
+        "out_of_scope": [],
+        "verification_ids": [],
+        "verification_commands": [
+          "cargo test"
+        ],
+        "stop_conditions": [
+          "Stop outside the owned scope."
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://project/task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "legacy_v1_ids",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_ids\": [\"git-diff-check\"], \"version\": 1, \"verification_commands\": [\"cargo test\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief v1 forbids verification_ids [type=value_error, input_value={'task_id': 'task', 'slic...mmands': ['cargo test']}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    },
+    {
+      "name": "v2_commands",
+      "text": "{\"task_id\": \"task\", \"slice_id\": \"slice\", \"target_agent\": \"executor-agent\", \"user_intent\": \"Implement a bounded change.\", \"expanded_goal\": \"Update the owned module.\", \"owned_scope\": [\"src/module.rs\"], \"stop_conditions\": [\"Stop outside the owned scope.\"], \"resume_state_ref\": \"tasks/dispatch/task/slice.json\", \"source_refs\": {\"task_spec\": \"runtime://project/task\", \"phase\": \"tasks/phase.json\"}, \"verification_ids\": [\"git-diff-check\"], \"verification_commands\": [\"cargo test\"]}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\n  Value error, DispatchBrief v2 forbids verification_commands [type=value_error, input_value={'task_id': 'task', 'slic...mmands': ['cargo test']}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    }
+  ]
+}

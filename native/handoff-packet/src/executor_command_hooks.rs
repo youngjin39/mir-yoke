@@ -37,6 +37,7 @@ pub struct CommandHooks {
     context: Value,
     token: Option<String>,
     outcome: TeardownOutcome,
+    brief_profile: Option<crate::executor_brief_profile::BriefProfile>,
 }
 impl CommandHooks {
     pub fn start_in(config: BridgeConfig, cwd: &Path) -> Result<Option<Self>, BridgeError> {
@@ -66,7 +67,8 @@ impl CommandHooks {
                 )
             })
             .transpose()?;
-        if python.is_none() && native.is_none() {
+        let brief_profile = policy.as_ref().and_then(|p| p.brief_profile.clone());
+        if python.is_none() && native.is_none() && brief_profile.is_none() {
             return Ok(None);
         }
         let hello = python
@@ -76,6 +78,7 @@ impl CommandHooks {
         Ok(Some(Self {
             python,
             native,
+            brief_profile,
             hello,
             context: json!({"repo_root":config.target_root,"cwd":cwd,
                 "invocation_id":crate::executor_execute::unique_id(),"job_id":null,"attempt_id":null}),
@@ -100,6 +103,22 @@ impl CommandHooks {
 }
 impl HookClient for CommandHooks {
     fn call(&mut self, name: &str, args: Vec<Value>, options: Value) -> Result<Value, BridgeError> {
+        if name == "validate_brief"
+            && let Some(profile) = &self.brief_profile
+        {
+            if let Some(argument) = args.first().filter(|value| value["$type"] == "path") {
+                let path = argument["value"]
+                    .as_str()
+                    .ok_or(BridgeError::Protocol("brief path must be UTF-8"))?;
+                return Ok(match profile.load(Path::new(path)) {
+                    Ok(value) => json!({"ok":true,"result":value,"handle":null}),
+                    Err(error) => {
+                        json!({"ok":false,"error":{"type":error.kind,"message":error.message}})
+                    }
+                });
+            }
+            return Ok(json!({"ok":true,"result":null,"handle":null}));
+        }
         if let Some(native) = self.native.as_mut() {
             if native.serves("writer_scope") {
                 match name {

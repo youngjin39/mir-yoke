@@ -619,7 +619,7 @@ fn policy_refusal(
             error.kind,
             error.message
         ))
-    } else if error.kind == "ValueError" {
+    } else if matches!(error.kind.as_str(), "ValueError" | "ValidationError") {
         refusal(format!("argument parse error: {}", error.message))
     } else {
         refusal(format!("{}: {}", error.kind, error.message))

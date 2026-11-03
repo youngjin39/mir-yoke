@@ -95,6 +95,39 @@ this optional tool is not an adopter payload or a grant of consumer authority.
   hook in local Python fails closed before import. Other consumer hook behavior
   still needs its own native replacement before adoption.
 
+  Version 1 also accepts finite brief and result sections:
+
+  ```json
+  {"native_policy":{"version":1,"brief_profile":{"name":"closed_verifier_v2","input_limit_bytes":1048576},"brief_controls":{"mode":"brief_owned"},"result_policy":{"provider_output":"sanitize_persisted_text","attempt_artifact":"result_json"}}}
+  ```
+
+  `brief_profile` owns `validate_brief`. Named profiles `base_v1` and
+  `closed_verifier_v2` retain their respective DispatchBrief version, required
+  field, extra-field, verifier, source plan and derived resume path rules.
+  The latter permits v1 diagnostic loading. An optional positive
+  `input_limit_bytes` bounds UTF-8 file input before parsing. Plain prompt text
+  passes through. No expressions or executable validators are accepted.
+
+  `brief_controls` requires `brief_profile` and owns `pre_execute`. Repository
+  admission precedes brief validation, v1 refusal, prompt argument refusal,
+  allowlist refusal and verifier refusal, in that order, before job/worktree
+  creation. The brief supplies merge paths and verifier IDs. Resume accepts
+  restored lists only when they equal the brief exactly, including order;
+  explicitly empty lists are checked too. Successful validation is cached for
+  the invocation by resolved path and SHA-256.
+
+  `result_policy` accepts the two optional selectors shown above, owning
+  `after_provider_call` and `after_run`, respectively. Provider sanitization
+  applies to CodexAttempt only, shares registry redaction and its 16384-character
+  bound, and replaces the result only when stdout or stderr changes. The fixed
+  result.json artifact contains ordered exit_code, error_sig, stdout, stderr,
+  lane_unavailable, retryable and nullable blocked_reason fields. It uses UTF-8,
+  two-space indentation, a trailing newline and POSIX mode 0600.
+
+  Retained local Python exports for owned hooks fail closed. Python CLI and API
+  entry points continue refusing these sections; hooks-only API support does
+  not enable brief or result policies.
+
   Version 1 accepts optional `agent_route` for native local route selection:
 
   ```json

@@ -230,12 +230,18 @@ pub fn dispatch(
     };
     let prepared = (|| -> Result<(String, String, Option<Value>)> {
         let mut validated = if let Some(p) = &brief {
-            brief_call(
-                bridge,
-                "validate_brief",
-                vec![path(p), path(root)],
-                json!({}),
-            )?
+            let cache = &args["__native_brief"];
+            let bytes = fs::read(p).map_err(|e| e.to_string())?;
+            if cache["path"] == json!(p) && cache["sha256"] == crate::digest::sha256(&bytes) {
+                json!({"result":cache["value"],"handle":null})
+            } else {
+                brief_call(
+                    bridge,
+                    "validate_brief",
+                    vec![path(p), path(root)],
+                    json!({}),
+                )?
+            }
         } else {
             json!({"result":null})
         };
@@ -646,6 +652,15 @@ pub fn dispatch(
                     changed,
                     timeout,
                     &mut |attempt, meta| {
+                        let attempt = local
+                            .native_policy()
+                            .map_err(|e| provider::Error::Output(e.to_string()))?
+                            .and_then(|policy| policy.result_policy)
+                            .map(|policy| policy.after_provider_call(&attempt))
+                            .transpose()
+                            .map_err(|e| provider::Error::Output(e.to_string()))?
+                            .flatten()
+                            .unwrap_or(attempt);
                         let replacement = hook(
                             bridge,
                             "after_provider_call",

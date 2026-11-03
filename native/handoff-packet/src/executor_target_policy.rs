@@ -58,6 +58,9 @@ pub struct NativePolicy {
     verifier_aliases: Option<bool>,
     pub agent_route: Option<agent_route::AgentRoutePolicy>,
     pub hooks: Option<crate::executor_hooks::HooksConfig>,
+    pub brief_profile: Option<crate::executor_brief_profile::BriefProfile>,
+    pub brief_controls: bool,
+    pub result_policy: Option<crate::executor_result_policy::ResultPolicy>,
 }
 #[path = "executor_agent_route_policy.rs"]
 mod agent_route;
@@ -237,6 +240,9 @@ impl NativePolicy {
                 "verifier_aliases",
                 "agent_route",
                 "hooks",
+                "brief_profile",
+                "brief_controls",
+                "result_policy",
             ],
             "native_policy",
         )?;
@@ -247,8 +253,16 @@ impl NativePolicy {
         let admission = object(
             data.get("target_admission")
                 .or_else(|| {
-                    (data.contains_key("agent_route") || data.contains_key("hooks"))
-                        .then_some(&empty_admission)
+                    [
+                        "agent_route",
+                        "hooks",
+                        "brief_profile",
+                        "brief_controls",
+                        "result_policy",
+                    ]
+                    .iter()
+                    .any(|key| data.contains_key(*key))
+                    .then_some(&empty_admission)
                 })
                 .ok_or_else(|| invalid("target_admission is required"))?,
             &["family", "repository_local", "authorize_target"],
@@ -392,8 +406,33 @@ impl NativePolicy {
             .map(agent_route::AgentRoutePolicy::parse)
             .transpose()?;
         let hooks = data.get("hooks").map(parse_hooks).transpose()?;
+        let brief_profile = data
+            .get("brief_profile")
+            .map(crate::executor_brief_profile::BriefProfile::parse)
+            .transpose()?;
+        let brief_controls = if let Some(value) = data.get("brief_controls") {
+            let section = object(value, &["mode"], "brief_controls")?;
+            if string(section, "mode")? != "brief_owned" {
+                return Err(invalid("brief_controls.mode must be brief_owned"));
+            }
+            if brief_profile.is_none() {
+                return Err(invalid("brief_controls requires brief_profile"));
+            }
+            true
+        } else {
+            false
+        };
+        let result_policy = data
+            .get("result_policy")
+            .map(crate::executor_result_policy::ResultPolicy::parse)
+            .transpose()?;
         Ok(Self {
-            owns_pre_execute: data.contains_key("target_admission") || verifier_aliases.is_some(),
+            brief_profile,
+            brief_controls,
+            result_policy,
+            owns_pre_execute: data.contains_key("target_admission")
+                || verifier_aliases.is_some()
+                || brief_controls,
             agent_route,
             hooks,
             verifier_aliases,
@@ -409,6 +448,12 @@ impl NativePolicy {
         let mut hooks = vec![];
         if self.owns_pre_execute {
             hooks.push("pre_execute");
+        }
+        if self.brief_profile.is_some() {
+            hooks.push("validate_brief");
+        }
+        if let Some(policy) = &self.result_policy {
+            hooks.extend(policy.covered_hooks());
         }
         if self.agent_route.is_some() {
             hooks.push("resolve_agent_route");
@@ -460,10 +505,75 @@ impl NativePolicy {
         if target != root {
             set_root(args, &target)?;
         }
+        self.apply_brief_controls(cwd, args)?;
         if let Some(use_target) = self.verifier_aliases {
             let mapping_root = if use_target { &target } else { root };
             self.map_verifiers(mapping_root, args)?;
         }
+        Ok(())
+    }
+    fn apply_brief_controls(&self, cwd: &Path, args: &mut Value) -> Result<(), PolicyFailure> {
+        if !self.brief_controls || args["dispatch"] != true || args["dispatch_brief"].is_null() {
+            return Ok(());
+        }
+        let fail = |message: &str| PolicyFailure {
+            kind: "ValueError".into(),
+            message: message.into(),
+            stderr: None,
+        };
+        let path_value = &args["dispatch_brief"];
+        let path = path_value
+            .as_str()
+            .or_else(|| path_value["value"].as_str())
+            .ok_or_else(|| fail("dispatch_brief must be a path"))?;
+        let path = cwd.join(path);
+        let profile = self
+            .brief_profile
+            .as_ref()
+            .ok_or_else(|| fail("brief_controls requires brief_profile"))?;
+        let (brief, digest) = profile.load_cached(&path)?;
+        if brief["version"] != 2 {
+            return Err(fail(
+                "DispatchBrief v1 is diagnostic-only; CLI dispatch requires a v2 brief",
+            ));
+        }
+        if !args["codex_args"].is_null() || !args["codex_args_file"].is_null() {
+            return Err(fail(
+                "--dispatch-brief cannot be combined with Codex prompt arguments",
+            ));
+        }
+        let resuming = args["resume_job_id"]
+            .as_str()
+            .is_some_and(|s| !s.is_empty());
+        for (key, field, message) in [
+            (
+                "allow_paths",
+                "owned_scope",
+                "--dispatch-brief owns the merge allowlist; omit --allow-path",
+            ),
+            (
+                "verify_cmds",
+                "verification_ids",
+                "--dispatch-brief owns verification IDs; omit --verify-cmd",
+            ),
+        ] {
+            let value = &args[key];
+            let supplied =
+                value.as_array().is_some_and(|v| !v.is_empty()) || (resuming && !value.is_null());
+            if supplied && !(resuming && *value == brief[field]) {
+                return Err(fail(message));
+            }
+        }
+        let resolved = fs::canonicalize(&path)
+            .map(crate::supply::plain)
+            .map_err(|error| PolicyFailure {
+                kind: "OSError".into(),
+                message: error.to_string(),
+                stderr: None,
+            })?;
+        args["__native_brief"] = json!({"path":resolved,"sha256":digest,"value":brief});
+        args["allow_paths"] = brief["owned_scope"].clone();
+        args["verify_cmds"] = brief["verification_ids"].clone();
         Ok(())
     }
     fn map_verifiers(&self, root: &Path, args: &mut Value) -> Result<(), PolicyFailure> {
