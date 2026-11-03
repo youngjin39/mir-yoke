@@ -670,7 +670,7 @@ mod tests {
             assert_eq!(args["verify_cmds"], json!([expected]));
             assert_eq!(
                 Path::new(args["repo_root"]["value"].as_str().unwrap()),
-                fs::canonicalize(&target).unwrap()
+                crate::supply::plain(fs::canonicalize(&target).unwrap())
             );
             let mut refused = json!({"family":"missing", "verify_cmds":["check"]});
             assert_eq!(
