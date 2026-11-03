@@ -125,4 +125,21 @@ and result native with no decline and byte-equal to forced Python; cancel declin
 Python by design; a base-interpreter override reproduces the 0.13.62 failure. Maintainer
 host: provider update from the 0.13.62 record lock, five aarch64 binaries placed (SHA-256
 equal to the lock), Codex hook trust 4/4, Claude d9376e73 and Codex 01a19e2d attested
-(five mir-mcp calls ok), finalized, ready at 3c8fafa. Owner PC: pending.
+(five mir-mcp calls ok), finalized, ready at 3c8fafa. Owner PC: not attested; superseded by
+v0.13.64.
+
+Release record v0.13.64 (Main, 2026-11-03): native local policy and command hooks.
+native_policy v1 in the local executor JSON: target admission (Y1a fae6180), verifier
+aliases (Y1b 471c469, 93c8489), agent route selection (Y1c 20801de), the
+mir-executor.hooks@1 command hooks for writer_scope and on_job_event (Y3a eb3efc5, fa92cfc),
+and the Python executor refusing execute and resume for a repository that declares
+native_policy (Y1d b63411e). Main CI on b63411e green. Version 8f2c7e2 on
+release/v0.13.64, native prerelease native-8f2c7e2ab97e (30 assets), bind 4774e56; lock
+tests 363 passed. CI validate on 4774e56 green on every job, including Windows, before the
+tag; main push CI green. Fresh-clone readiness at 4774e56 ready (5945 passed, 221
+skipped). Real-consumer gate on Mir Harness (venv and local.py): sweep, list-jobs, status,
+result and cancel native and byte-equal to forced Python; the Harness command-hook adapter
+ran one execute end to end through the released binary. Maintainer host: provider update
+from the 0.13.63 record lock, five aarch64 binaries placed in both caches (SHA-256 equal to
+the lock), Codex hook trust 4/4, Claude 3b635f52 and Codex 01a1a104 attested (five mir-mcp
+calls ok), finalized, ready at 4774e56. Owner PC: pending.
