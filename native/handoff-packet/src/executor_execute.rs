@@ -507,7 +507,8 @@ fn execute(
     let ledger = root.join("tasks/tdd.json");
     if args["background"] == true {
         let db = if args["jobs_db"].is_null() {
-            root.join("tasks/jobs.db")
+            // Join components so the path matches Python on Windows too.
+            root.join("tasks").join("jobs.db")
         } else {
             value_path(&args["jobs_db"], cwd)
         };

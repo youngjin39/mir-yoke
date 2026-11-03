@@ -2873,7 +2873,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/executor_execute.rs",
-      "sha256": "81becee5a14953e61ccd36ccc54e83d2ab0e6156d238237734a3887c19405063"
+      "sha256": "5ebe7d603f3615fe6dfdd317448193adfde805020bfa05388e3efc99db81d3b7"
     },
     {
       "classification": "template-maintainer-tool",
