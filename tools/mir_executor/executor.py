@@ -33,6 +33,7 @@ from tools.mir_executor.dispatch import (
 )
 from tools.mir_executor.local_hooks import (
     after_provider_call,
+    guard_python_api,
     invoke_hook,
     local_config,
     validate_timeout,
@@ -321,10 +322,12 @@ class MirExecutor:
         Raises FileNotFoundError with clear message if binary missing.
         Raises subprocess.TimeoutExpired on timeout (not swallowed).
         """
+        guard_python_api(self._repo_root)
         if "timeout_seconds_range" in local_config(self._repo_root):
             validate_timeout(self._repo_root, timeout_seconds)
             validate_timeout(self._repo_root, stall_timeout)
         resolved_cwd = (pathlib.Path.cwd() if cwd is None else pathlib.Path(cwd)).resolve()
+        guard_python_api(resolved_cwd)
         _guard_codex_main_worktree(resolved_cwd, os.environ)
         try:
             return self._run_codex_mcp_for_async(
@@ -459,6 +462,7 @@ class MirExecutor:
         Validates change_id + category BEFORE invoking Codex so a typo'd id
         fails within seconds instead of after a multi-minute Codex run (W3).
         """
+        guard_python_api(self._repo_root)
         with writer_scope(self._repo_root):
             # Fast-fail: validate before the expensive Codex subprocess.
             self._validate_ledger_entry(change_id, category)
@@ -490,11 +494,13 @@ class MirExecutor:
         when mixing sync and async paths).
         Raises FileNotFoundError with clear message if binary missing.
         """
+        guard_python_api(self._repo_root)
         if "timeout_seconds_range" in local_config(self._repo_root):
             validate_timeout(self._repo_root, timeout_seconds)
             validate_timeout(self._repo_root, stall_timeout)
         resolved_cwd = pathlib.Path.cwd() if cwd is None else pathlib.Path(cwd)
         resolved_cwd = resolved_cwd.resolve()
+        guard_python_api(resolved_cwd)
         _guard_codex_main_worktree(resolved_cwd, os.environ)
         task = asyncio.create_task(
             asyncio.to_thread(
@@ -519,6 +525,7 @@ class MirExecutor:
         timeout_seconds: float | None = None,
     ) -> SubprocessResult:
         """Run the explicitly selected agent through its native provider."""
+        guard_python_api(self._repo_root)
         if "timeout_seconds_range" in local_config(self._repo_root):
             validate_timeout(self._repo_root, timeout_seconds)
         route = self.resolve_agent_route()
@@ -561,6 +568,7 @@ class MirExecutor:
         timeout_seconds: float | None,
         route: AgentRoute,
     ) -> SubprocessResult:
+        guard_python_api(self._repo_root)
         if "timeout_seconds_range" in local_config(self._repo_root):
             validate_timeout(self._repo_root, timeout_seconds)
         prompt = _prompt_from_codex_args(self.resolve_codex_args(codex_args))
@@ -621,6 +629,7 @@ class MirExecutor:
         stall_timeout: float | None,
     ) -> SubprocessResult:
         """Run the shared app-server call for the async wrapper without timeout remapping."""
+        guard_python_api(self._repo_root)
         if "timeout_seconds_range" in local_config(self._repo_root):
             validate_timeout(self._repo_root, timeout_seconds)
             validate_timeout(self._repo_root, stall_timeout)
@@ -701,6 +710,7 @@ class MirExecutor:
         _validate_ledger_entry is sync (file IO; async benefit minimal).
         update_ledger is sync (atomic write via tempfile + os.replace).
         """
+        guard_python_api(self._repo_root)
         # Fast-fail: validate before the expensive async Codex subprocess.
         self._validate_ledger_entry(change_id, category)
         run_kwargs: dict[str, object] = {"timeout_seconds": timeout_seconds}

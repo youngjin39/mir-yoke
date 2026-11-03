@@ -8,6 +8,9 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+### Security
+- Python executor APIs (`run_dispatch`, `finalize_dispatch`, the `MirExecutor` run methods and resume) now honour `native_policy`: a version-1 policy with only `hooks` serves `writer_scope` and `on_job_event` through the pinned `mir-executor.hooks@1` host via a stdlib client (one host per outermost writer scope; `clean`, `unclean` on an ordinary exception, `uncertain` on cancellation), and any other section fails closed before effects for the target and the invoking home. Previously an API caller ran without the declared writer lease once `writer_scope` moved out of `local.py`.
+
 ## [v0.13.64] — 2026-11-03 — Native local policy and command hooks
 
 ### Added

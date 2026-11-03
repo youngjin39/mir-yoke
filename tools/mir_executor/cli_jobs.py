@@ -175,11 +175,13 @@ def _handle_cancel(api, args: argparse.Namespace) -> int:
 def _handle_resume(api, args: argparse.Namespace) -> int:
     """Resume the original job through the isolated dispatch path."""
     from tools.mir_executor.jobs import JobRegistry  # noqa: PLC0415
+    from tools.mir_executor.local_hooks import guard_python_api  # noqa: PLC0415
 
     root = args.repo_root.resolve() if args.repo_root else pathlib.Path.cwd()
     try:
         api._guard_python_command(root)
         api._guard_resume_target(root, args)
+        guard_python_api(root)
     except (OSError, TypeError, ValueError) as exc:
         print(f"[mir_executor] {exc}", file=sys.stderr)
         return 1
@@ -211,6 +213,7 @@ def _handle_resume(api, args: argparse.Namespace) -> int:
             print(f"[mir_executor] resume integrity error: {exc}", file=sys.stderr)
             return 1
     try:
+        guard_python_api(pathlib.Path(job.repo_root))
         api.authorize_target(pathlib.Path(job.repo_root), args)
     except ValueError as exc:
         print(f"[mir_executor] {exc}", file=sys.stderr)

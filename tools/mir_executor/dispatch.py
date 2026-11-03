@@ -36,6 +36,7 @@ from tools.mir_executor.jobs import JobRegistry
 from tools.mir_executor.local_hooks import (
     after_provider_call,
     emit_job_event,
+    guard_python_api,
     invoke_hook,
     local_config,
     validate_timeout,
@@ -167,6 +168,7 @@ def resolve_agent_route(
     main_repo_root: pathlib.Path, target_agent: str,
 ) -> AgentRoute | None:
     """Prefer local routes while preserving repository read-only constraints."""
+    guard_python_api(main_repo_root)
     route = invoke_hook(main_repo_root, "resolve_agent_route", main_repo_root, target_agent)
     if route is not None:
         if not isinstance(route, AgentRoute):
@@ -317,6 +319,7 @@ def run_dispatch(
 ) -> DispatchOutcome:
     """Run one isolated dispatch, honoring an explicit positive attempt budget."""
     main_repo_root = pathlib.Path(main_repo_root)
+    guard_python_api(main_repo_root)
     config = local_config(main_repo_root)
     cap = config.get("max_codex_attempts_cap")
     if cap is not None and max_codex_attempts > cap:
@@ -574,6 +577,7 @@ def _provider_runner(
 ) -> Callable[[DispatchWorktree, int], CodexAttempt]:
     """Cover direct runner calls without repeating the hook in run_dispatch."""
     def wrapped(wt: DispatchWorktree, attempt: int) -> CodexAttempt:
+        guard_python_api(main_repo_root)
         with nullcontext() if read_only else writer_scope(main_repo_root):
             started = time.monotonic()
             result = runner(wt, attempt)
@@ -1197,6 +1201,7 @@ def finalize_dispatch(
     the main working tree; the control-plane main must commit them afterward.
     """
     main_repo_root = pathlib.Path(main_repo_root)
+    guard_python_api(main_repo_root)
     validate_timeout(main_repo_root, verify_timeout)
     if "timeout_seconds_range" in local_config(main_repo_root):
         validate_timeout(main_repo_root, finalize_lock_timeout)
@@ -1403,6 +1408,7 @@ def build_codex_review_runner(
     validate_timeout(main_repo_root, timeout_seconds)
 
     def review(wt: DispatchWorktree, changed_files: list[str]) -> ReviewEvidence:
+        guard_python_api(main_repo_root)
         env = dispatch_env(main_repo_root, session_id=f"{wt.dispatch_id}-review")
         prompt = (
             "Review the completed delegated change. Read .mir-dispatch/brief.md and run "

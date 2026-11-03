@@ -526,3 +526,20 @@ timeout, EOF and crashes close the session and reap its owned process tree.
 Timed-out requests are never retried. Unix uses a dedicated process group;
 Windows assigns the suspended child to a kill-on-close Job Object before resuming
 it, so descendants cannot escape ownership before the first hook runs.
+
+
+Python API callers also honour a version-1 `native_policy` containing only
+`version` and `hooks`. Unsupported sections (including unknown keys) fail closed
+for the target and the invoking home whose authorization applies. The Python CLI
+continues to refuse declared native policy on execute/resume; it does not bypass
+that command boundary. A covering executable hook and a same-name `local.py`
+export are conflicting owners and are refused before guarded work.
+
+The Python stdlib hooks client uses one host per outermost writer scope, including
+nested API calls and ordered events. Normal context exit sends `clean`, an ordinary
+exception sends `unclean`, and cancellation or other `BaseException` unwinding
+sends `uncertain`. A transport fault cannot acknowledge release. Unix cleanup
+kills the dedicated process group. On Windows, the Python client uses a new
+process group and best-effort `taskkill /T /F`, followed by direct-child kill and
+wait. This is weaker than the Rust Job Object: descendants can escape before
+cleanup, and Python cannot guarantee tree ownership before the first hook runs.
