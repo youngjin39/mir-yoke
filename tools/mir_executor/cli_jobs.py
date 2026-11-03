@@ -177,6 +177,12 @@ def _handle_resume(api, args: argparse.Namespace) -> int:
     from tools.mir_executor.jobs import JobRegistry  # noqa: PLC0415
 
     root = args.repo_root.resolve() if args.repo_root else pathlib.Path.cwd()
+    try:
+        api._guard_python_command(root)
+        api._guard_resume_target(root, args)
+    except (OSError, TypeError, ValueError) as exc:
+        print(f"[mir_executor] {exc}", file=sys.stderr)
+        return 1
     db = api._resolve_jobs_db(args.jobs_db, root)
     registry = JobRegistry(db)
     job = registry.get(args.job_id)

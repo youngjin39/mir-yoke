@@ -39,6 +39,7 @@ import json
 import pathlib
 import re
 import shlex
+import sqlite3
 import subprocess
 import sys
 import tomllib
@@ -130,6 +131,64 @@ def _resolve_jobs_db(args_jobs_db: str | None, repo_root: pathlib.Path) -> pathl
     if args_jobs_db is not None:
         return pathlib.Path(args_jobs_db).resolve()
     return (repo_root / _DEFAULT_JOBS_DB_RELPATH).resolve()
+
+
+def _native_policy_declared(repo_root: pathlib.Path) -> bool:
+    """Detect ownership without validating or implementing the native policy."""
+    path = repo_root / "config/mir-executor.local.json"
+    if not path.exists():
+        return False
+    raw = path.read_bytes()
+    try:
+        data = json.loads(raw)
+    except (ValueError, UnicodeError):
+        # Match native admission: only the new declaration is eager. Unrelated
+        # malformed legacy data still fails at its original lazy read point.
+        return b"native_policy" in raw
+    return isinstance(data, dict) and "native_policy" in data
+
+
+def _refuse_native_policy(repo_root: pathlib.Path) -> None:
+    if _native_policy_declared(repo_root):
+        raise ValueError(
+            f"{repo_root} declares native_policy; the native executor is required"
+        )
+
+
+def _guard_python_command(repo_root: pathlib.Path, *, executes: bool = True) -> None:
+    """Run before parser hooks, admission, writer scopes or registry writes."""
+    repo_root = repo_root.resolve()
+    if executes:
+        _refuse_native_policy(repo_root)
+    # Match authorize_target's invoking-home boundary, including its Git check.
+    home_root = pathlib.Path(__file__).resolve().parents[2]
+    if home_root != repo_root and _native_policy_declared(home_root):
+        result = subprocess.run(
+            ["git", "-C", str(home_root), "rev-parse", "--show-toplevel"],
+            capture_output=True, text=True, check=False,
+        )
+        if result.returncode == 0 and pathlib.Path(result.stdout.strip()).resolve() == home_root:
+            _refuse_native_policy(home_root)
+
+
+def _guard_resume_target(repo_root: pathlib.Path, args: argparse.Namespace) -> None:
+    """Inspect the saved root without creating/migrating/chmodding the registry."""
+    db = _resolve_jobs_db(args.jobs_db, repo_root)
+    if not db.exists():
+        return
+    try:
+        connection = sqlite3.connect(f"{db.as_uri()}?mode=ro", uri=True)
+        try:
+            row = connection.execute(
+                "SELECT repo_root FROM jobs WHERE job_id = ?", (args.job_id,)
+            ).fetchone()
+        finally:
+            connection.close()
+    except sqlite3.Error:
+        # Preserve the legacy handler's diagnostics for unreadable/old registries.
+        return
+    if row is not None:
+        _guard_python_command(pathlib.Path(row[0]))
 
 
 def _resolve_dispatch_backend(
@@ -410,10 +469,12 @@ def _resolve_execute_codex_args(args: argparse.Namespace) -> list[str]:
 def _prepare_execute_root(args: argparse.Namespace) -> pathlib.Path:
     """Let the bootstrap adapter choose the target before resolving and validating it."""
     initial = pathlib.Path(args.repo_root).resolve()
+    _guard_python_command(initial)
     authorize_target(initial, args)
     invoke_hook(initial, "pre_execute", args, initial)
     root = pathlib.Path(args.repo_root).resolve()
     if root != initial:
+        _guard_python_command(root)
         authorize_target(root, args)
     result = subprocess.run(
         ["git", "-C", str(root), "rev-parse", "--is-inside-work-tree"],
@@ -462,6 +523,7 @@ def _handle_dispatch(
     from tools.mir_executor.policy import load_sub_agent_policy  # noqa: PLC0415
 
     try:
+        _guard_python_command(repo_root)
         authorize_target(repo_root, args)
         if "timeout_seconds_range" in local_config(repo_root):
             validate_timeout(repo_root, args.timeout)
@@ -1011,7 +1073,23 @@ def main(argv: list[str] | None = None) -> int:
     root_parser.add_argument(
         "--repo-root", type=pathlib.Path, default=pathlib.Path.cwd()
     )
+    root_parser.add_argument("--jobs-db")
+    root_parser.add_argument("subcommand", nargs="?")
     known, _ = root_parser.parse_known_args(argv)
+    root = known.repo_root.resolve()
+    try:
+        _guard_python_command(root, executes=known.subcommand in {"execute", "resume"})
+        if known.subcommand == "resume":
+            resume_parser = argparse.ArgumentParser(add_help=False)
+            resume_parser.add_argument("--job-id")
+            resume_args, _ = resume_parser.parse_known_args(argv)
+            if resume_args.job_id is not None:
+                known.job_id = resume_args.job_id
+                _guard_resume_target(root, known)
+        native_declared = _native_policy_declared(root)
+    except (OSError, TypeError, ValueError) as exc:
+        print(f"[mir_executor] {exc}", file=sys.stderr)
+        sys.exit(1)
     # Parse common options without importing the target's local.py first.
     admission_parser = _build_parser(known.repo_root.resolve(), register_local_options=False)
     admission_args, _ = admission_parser.parse_known_args(argv)
@@ -1020,9 +1098,14 @@ def main(argv: list[str] | None = None) -> int:
     except ValueError as exc:
         print(f"[mir_executor] {exc}", file=sys.stderr)
         sys.exit(1)
-    parser = _build_parser(known.repo_root.resolve())
+    parser = _build_parser(root, load_local_options=not native_declared)
     args = parser.parse_args(argv)
     try:
+        # A local parser option may select a different target via dest=repo_root.
+        parsed_root = getattr(args, "repo_root", None) or pathlib.Path.cwd()
+        _guard_python_command(parsed_root, executes=args.subcommand in {"execute", "resume"})
+        if args.subcommand == "resume":
+            _guard_resume_target(parsed_root, args)
         authorize_target(getattr(args, "repo_root", None) or pathlib.Path.cwd(), args)
     except ValueError as exc:
         print(f"[mir_executor] {exc}", file=sys.stderr)

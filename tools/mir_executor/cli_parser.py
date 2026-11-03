@@ -48,6 +48,7 @@ def _nonnegative_int(value: str) -> int:
 
 def _build_parser(
     repo_root: pathlib.Path | None = None, *, register_local_options: bool = True,
+    load_local_options: bool = True,
 ) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="python -m tools.mir_executor",
@@ -156,7 +157,7 @@ def _build_parser(
     )
     exec_p.add_argument("--family", default=None, help="Optional job family.")
     exec_p.add_argument("--artifacts-dir", type=pathlib.Path, default=None)
-    if register_local_options:
+    if register_local_options and load_local_options:
         invoke_hook(repo_root or pathlib.Path.cwd(), "register_execute_options", exec_p)
     exec_p.add_argument(
         "--async",

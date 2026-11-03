@@ -233,6 +233,33 @@ class Client:
         return errors
 
 
+def test_native_policy_keeps_uncovered_python_hooks_and_config_available(repo):
+    config = repo / "config"
+    config.mkdir()
+    (config / "mir-executor.local.json").write_text(json.dumps({
+        "native_policy": {"version": 1, "target_admission": {}},
+        "verifiers": {"unit": ["python", "-V"]},
+    }))
+    (repo / "tools/mir_executor/local.py").write_text(
+        "from types import SimpleNamespace\n"
+        "def validate_brief(value, root):\n"
+        "    return SimpleNamespace(value=value, count=1)\n"
+        "def render_brief(brief, root):\n"
+        "    return [brief.value, brief.count]\n"
+    )
+    assert local_hooks.local_config(repo)["verifiers"] == {"unit": ["python", "-V"]}
+    client = Client(repo)
+    try:
+        assert "validate_brief" in client.hello["hooks"]
+        brief = client.call("validate_brief", ["native-admitted text", str(repo)])
+        assert brief["ok"] and brief["handle"]
+        assert client.call("render_brief", [None, str(repo)], handles={"0": brief["handle"]})[
+            "result"
+        ] == ["native-admitted text", 1]
+    finally:
+        client.close()
+
+
 def test_should_load_once_and_reuse_opaque_brief(repo):
     client = Client(repo)
     assert client.hello["version"] == VERSION

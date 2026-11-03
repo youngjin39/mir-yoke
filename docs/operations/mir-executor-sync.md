@@ -55,6 +55,35 @@ this optional tool is not an adopter payload or a grant of consumer authority.
   {"native_policy":{"version":1,"target_admission":{"family":{"mode":"reject","failure":{"kind":"ValueError","message":"Family selection is unavailable"}}}}}
   ```
 
+  Declaring `native_policy` requires a pinned native executor that supports the
+  declared version and sections. The Python command entry points refuse execute
+  (including background and dispatch) and resume with exit 1 before local imports,
+  hooks, writer leases, worktrees, job writes or provider launch. This applies to
+  explicit targets, restored resume targets, and an invoking Git home whose
+  cross-repository authorization would otherwise run. Declaration presence is
+  sufficient; empty or invalid declarations do not enable Python fallback. A
+  missing pin, Python implementation selector, or native decline before ownership
+  therefore ends in a clear native-required refusal. Once native execution claims
+  ownership, its result is final and is never retried in Python.
+
+  Same-repository status, result and list-jobs remain available, as do cancel,
+  sweep (dry-run or apply) and common help: they do not use native-owned command
+  hooks. Python skips local option registration for these native-policy targets.
+  Cross-repository commands still refuse when their invoking Git home declares
+  native policy, because they would consult that home's authorization hook.
+  Native policy-resolve remains a common read-only policy query. The guard belongs
+  only to Python command entry points; configuration readers, the persistent
+  local bridge and native Python helpers remain usable for uncovered hooks.
+
+  Compatibility caveat: the last release before this change, `v0.13.63`, ignores
+  `native_policy` entirely. Its Rust `LocalConfig::parse` preserves unknown
+  top-level keys, and neither its native admission nor its Python executor
+  interprets this section. An older pinned binary can accept a command and run
+  it without enforcing the declared policy; the Python fallback guard cannot
+  protect a command that binary accepts. Upgrade the pin to a supporting native
+  executor before adopting this section. An older binary that declines instead
+  reaches the current Python guard and is refused.
+
   Version 1 also accepts optional `verifier_aliases`:
   `{"configuration_root":"initial"}` reads the original pre_execute root's
   `verifiers`; `{"configuration_root":"target"}` reads the resolved family
