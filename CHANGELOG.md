@@ -8,6 +8,12 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.66] — 2026-11-04 — Native mir-mcp server; cross-repository native executor commands
+
+### Added
+- Native `mir-mcp` server (`native/mir-mcp`): framing, both protocol eras, discovery and stable RPC errors natively; `handoff_pins` runs natively with guarded target access, fixed Git queries and Python-equal pagination cursors; the other four tools are forwarded unchanged to the Python reference (`mir_mcp.py --internal-reference`).
+- `mir_mcp.py` selects a verified installed `bin/mir-mcp[.exe]` (target, size and SHA-256 from `bin/native-artifacts.json`) before reading input, and otherwise runs the Python server; client launch declarations are unchanged. The capability lock, installation, admission, the native release tool and the native-artifacts workflow carry the new artifact; the MCP receipt records the observed backend.
+
 ### Fixed
 - Native-policy homes can authorize supported cross-repository sweep, cancel, status, list-jobs, result and resume commands with the same target admission used by execute. Queries use the invoking home's verified binary pin. Homes without native authorization retain their existing native decline and Python fallback behavior.
 
