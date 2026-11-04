@@ -21,6 +21,12 @@ pytestmark = [
 ]
 
 
+def _cmd_command(command):
+    # CMD parses /C itself; list2cmdline would C-runtime-escape the hook's quotes.
+    comspec = os.environ.get('COMSPEC', 'cmd.exe')
+    return f'"{comspec}" /C {command}'
+
+
 @pytest.mark.skipif(os.name == 'nt', reason='POSIX hook shell contract')
 @pytest.mark.parametrize('event', ['SessionStart', 'UserPromptSubmit', 'PreToolUse', 'Stop'])
 @pytest.mark.parametrize('mode', ['absent', 'present', 'non-executable', 'exe'])
@@ -72,8 +78,7 @@ def test_real_hook_command(binary, stop_repository, event, mode, deny):
 @pytest.mark.parametrize('event', ['SessionStart', 'UserPromptSubmit', 'PreToolUse', 'Stop'])
 @pytest.mark.parametrize('mode', ['absent', 'present'])
 @pytest.mark.parametrize('deny', [False, True], ids=['allow', 'deny'])
-@pytest.mark.parametrize('shell', ['pwsh', 'powershell'])
-def test_codex_windows_hook_command(binary, stop_repository, event, mode, deny, shell):
+def test_codex_windows_hook_command(binary, stop_repository, event, mode, deny):
     repo, _ = stop_repository
     plugin = repo / 'plugin with spaces'
     shutil.copytree(PLUGIN, plugin)
@@ -114,34 +119,31 @@ def test_codex_windows_hook_command(binary, stop_repository, event, mode, deny, 
     command = json.loads((plugin / 'hooks/hooks.json').read_text())['hooks'][event][0]['hooks'][0]
     assert command['timeout'] == (2 if event == 'SessionStart' else 8)
     result = subprocess.run(
-        [shell, '-NoProfile', '-Command', command['commandWindows']],
+        _cmd_command(command['commandWindows']),
         input=payload, capture_output=True, env=env, timeout=15,
     )
     assert (result.stdout, result.stderr, result.returncode) == (
         reference.stdout, reference.stderr, reference.returncode)
 
 
-@pytest.mark.skipif(os.name != 'nt', reason='Windows PowerShell required')
-@pytest.mark.parametrize('shell', ['pwsh', 'powershell'])
-def test_windows_missing_python_fails_closed(tmp_path, shell):
+@pytest.mark.skipif(os.name != 'nt', reason='Windows cmd.exe required')
+def test_windows_missing_python_fails_closed(tmp_path):
     plugin = tmp_path / 'plugin with spaces'
     plugin.mkdir()
     command = json.loads((PLUGIN / 'hooks/hooks.json').read_text())['hooks'][
         'SessionStart'][0]['hooks'][0]['commandWindows']
-    # Hide external commands in this process, without changing the shipped selector.
-    command = '$env:PATH = ""; ' + command
+    # Hide external commands without changing the shipped selector.
     result = subprocess.run(
-        [shutil.which(shell), '-NoProfile', '-Command', command],
+        _cmd_command(command),
         input=b'{}', capture_output=True,
-        env=dict(os.environ, CLAUDE_PLUGIN_ROOT=str(plugin)), timeout=15,
+        env=dict(os.environ, CLAUDE_PLUGIN_ROOT=str(plugin), PATH=''), timeout=15,
     )
-    assert result.returncode == 1
+    assert result.returncode == 9009
     assert result.stdout == b''
 
 
-@pytest.mark.skipif(os.name != 'nt', reason='Windows PowerShell required')
-@pytest.mark.parametrize('shell', ['pwsh', 'powershell'])
-def test_windows_python_fallback_preserves_utf8_stdin_and_exit(tmp_path, shell):
+@pytest.mark.skipif(os.name != 'nt', reason='Windows cmd.exe required')
+def test_windows_python_fallback_preserves_utf8_stdin_and_exit(tmp_path):
     plugin = tmp_path / 'plugin with spaces'
     (plugin / 'hooks').mkdir(parents=True)
     (plugin / 'hooks/runtime_continuity.py').write_text(
@@ -160,7 +162,7 @@ def test_windows_python_fallback_preserves_utf8_stdin_and_exit(tmp_path, shell):
     env = dict(os.environ, CLAUDE_PLUGIN_ROOT=str(plugin), PYTHONHOME=str(python_home))
     env['PATH'] = str(shim) + os.pathsep + env['PATH']
     result = subprocess.run(
-        [shell, '-NoProfile', '-Command', command], input=payload,
+        _cmd_command(command), input=payload,
         capture_output=True, env=env, timeout=15,
     )
     assert (result.stdout, result.stderr, result.returncode) == (payload, b'', 2)

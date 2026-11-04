@@ -17,6 +17,13 @@ The 2026-10-22 amendment below supersedes the SessionStart-only admission and ta
 requirement only for its two exact stateless handoff events. The original decision is preserved
 as historical rationale.
 
+MCP amendment (2026-10-26): [ADR-91](adr-91-stdio-mcp-package-admission.md) supersedes the
+historical no-server statement, blanket MCP rejection in §2.3, deferred publication in §2.4,
+and zero-server consequence in §3 only for the shipped, opt-in `mir-mcp` package. Schema 5 admits
+its exact `mcp-stdio` shape; generic `mcp` remains reserved. Marketplace presence does not select
+the package. Explicit `--mcp` selection, digest acknowledgement, and fresh MCP runtime evidence
+remain required. The original statements below preserve the decision's historical context.
+
 ## 1. Context
 
 The operator's current intent is authoritative for this work:
@@ -41,6 +48,7 @@ An isolated real-CLI probe successfully installed and enabled a plugin whose man
 has moved out of that former experimental flag. A bundled local `plugin-creator` validator that
 rejects the field is stale relative to both the current documentation and runtime.
 
+Historical observation at this decision's adoption (superseded for `mir-mcp` by ADR-91):
 Neither host currently has an MCP server registered: `codex mcp list --json` returns an empty array
 and `claude mcp list` reports no configured servers. Yoke implements no MCP server. Its
 `.mcp.json.example` is only inactive guidance for opting into the external `codex mcp-server`
@@ -89,9 +97,12 @@ therefore requires a new reviewed acknowledgement. Marketplace indexes, project 
 receipts, rollback, and dual-runtime activation evidence retain ADR-88 and ADR-89's existing digest
 and state-integrity controls. Installation and enablement do not prove hook trust or execution:
 finalization requires a fresh-session operator observation of
-`mir-lifecycle-hooks:SessionStart` from both runtimes. MCP remains reserved and rejected.
+`mir-lifecycle-hooks:SessionStart` from both runtimes. The original blanket rule, "MCP remains
+reserved and rejected," is superseded only for ADR-91's exact `mir-mcp` admission.
 
 ### 2.4 No empty MCP plugin
+
+Historical publication condition, fulfilled and superseded for `mir-mcp` by ADR-91:
 
 Yoke will not publish `mir-mcp` until a concrete Yoke-owned MCP server or an explicit external
 server dependency and use case exists. A future package is opt-in and non-default. It requires a
@@ -123,8 +134,9 @@ comment and issue drafts live in
 - The admitted hook package has no repository authority. Project-coupled enforcement and state
   changes remain local and require a thin target adapter.
 - Every active-package byte change invalidates the tracked acknowledgement and blocks registration.
-- No MCP package implies no MCP server. Status and documentation must continue to say zero until a
-  real server is selected, implemented, registered, and verified.
+- Historical consequence, superseded for `mir-mcp` by ADR-91: no MCP package implied no MCP
+  server, and status remained zero until selection, implementation, registration, and verification.
+  The shipped package does not prove registration or runtime activation for any consumer.
 - Agents and command sources continue through ADR-89's generated project projections while the
   upstream feature gaps remain open.
 - `agents.provider_local` names Yoke-only agent sources that no distributable Profile selects.

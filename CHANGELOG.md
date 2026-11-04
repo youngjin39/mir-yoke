@@ -8,6 +8,12 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+### Fixed
+- Windows capability publication resets the active plugin tree to inherit its destination parent's permissions, removing private staging ACLs. Private state and receipts remain restricted; publication does not change ownership.
+- Windows lifecycle hook commands use `cmd.exe`-compatible `if exist` selection with quoted paths, preferring the native executable and falling back to `python3`.
+- Paired global Claude/Codex guidance documents Main/sub-agent responsibilities, configured delegation modes and backend precedence, project task boundaries, and artifact-backed acceptance from the generated routing policy.
+- MCP documentation marks ADR-90's historical blanket restriction as superseded by ADR-91's opt-in `mir-mcp` admission. Marketplace presence does not select the package; registration still requires `--mcp`, a digest acknowledgement, and runtime evidence.
+
 ## [v0.13.66] — 2026-11-04 — Native mir-mcp server; cross-repository native executor commands
 
 ### Added

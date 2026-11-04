@@ -33,6 +33,13 @@ CLI-agnostic — the paired Codex copy is `AGENTS.global.md` in this folder. The
 - Do not stop at implementation when verification is available.
 - Report only what you observed; if a cause is unknown, say so — never invent an environment, tool, or failure to explain it, and never send a user-facing report in the same step as the check that backs it.
 
+## Main and Sub-agent Delegation
+- The Main owns user intent, design, orchestration, context budget, delegation, and result adjudication; sub-agents own file edits, tests, verification, review, and iteration.
+- Read `policy.delegation` in the Harness-generated `config/model-routing.lock.json`; never hardcode a backend or edit the generated lock. Change its upstream Harness source instead. `mode` is the only policy switch: `user_command_priority`, `unrestricted`, `force_codex`, or `per_project`.
+- `user_command_priority` resolves backend selection from the session's explicit user command, then the project declaration, then `default_backend`. `per_project` uses the project declaration, falling back to `default_backend`; `unrestricted` lets the Main choose an available backend. Under `force_codex`, a Claude Main delegates every execution step to Codex; a different backend requires an explicit user override recorded in the session.
+- Read project task boundaries from `[execution]` in `.mir/repo-profile.toml`: `delegated_execution_contract`, `delegation_required_tasks`, `delegation_recommended_tasks`, and `main_direct_tasks`. Keep each delegated slice small, with explicit ownership and required evidence.
+- The Main accepts work only after reading or re-running filesystem state, `git diff`, and relevant test command output. A sub-agent's narrative or status JSON alone is never acceptance evidence.
+
 ## Remote Channel Rules (Discord / Slack / any chat surface)
 - Never use an interactive picker UI (e.g. AskUserQuestion) in a remote channel.
 - If a choice is needed, ask with a short numbered text list and wait for a normal user message.

@@ -544,6 +544,14 @@ def test_sync_materializes_exact_lock_and_requires_restart(tmp_path: Path) -> No
     registry = json.loads((capability_home / "consumers.json").read_text())
     assert registry["schema_version"] == 3
     assert registry["active_plugins"] == receipt["plugins"]
+    hook_plugin = capability_home / "active/plugins/mir-lifecycle-hooks"
+    assert json.loads((hook_plugin / "hooks/hooks.json").read_text()) == json.loads(
+        (ROOT / "plugins/mir-lifecycle-hooks/hooks/hooks.json").read_text()
+    )
+    assert _tree_digest(hook_plugin) == lock["plugins"]["mir-lifecycle-hooks"]["sha256"]
+    assert registry["active_plugins"]["mir-lifecycle-hooks"] == (
+        lock["plugins"]["mir-lifecycle-hooks"]["sha256"]
+    )
     assert "materialized_root" not in lock
     assert all((project / path).is_file() for path in lock["agents"])
     assert all((project / path).is_file() for path in lock["commands"])

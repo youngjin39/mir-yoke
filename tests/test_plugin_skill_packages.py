@@ -90,12 +90,11 @@ def test_lifecycle_hook_plugin_uses_one_exact_shared_hook_file() -> None:
             f'elif [ -x "{base}.exe" ]; then exec "{base}.exe"; '
             f'else exec python3 "${{CLAUDE_PLUGIN_ROOT}}/{reference}"; fi'
         )
-        windows_base = "$env:CLAUDE_PLUGIN_ROOT\\bin\\" + name + ".exe"
-        windows_reference = "$env:CLAUDE_PLUGIN_ROOT\\" + reference.replace("/", "\\")
+        windows_base = "%CLAUDE_PLUGIN_ROOT%\\bin\\" + name + ".exe"
+        windows_reference = "%CLAUDE_PLUGIN_ROOT%\\" + reference.replace("/", "\\")
         assert hook["commandWindows"] == (
-            f'if (Test-Path -LiteralPath "{windows_base}") {{ & "{windows_base}" }} '
-            f'else {{ if (-not (Get-Command python3 -ErrorAction SilentlyContinue)) {{ exit 1 }}; '
-            f'python3 "{windows_reference}" }}; exit $LASTEXITCODE'
+            f'if exist "{windows_base}" ("{windows_base}") '
+            f'else (python3 "{windows_reference}")'
         )
     from mir.core.capabilities.manager import _HOOKS_SCHEMA
     assert hooks == _HOOKS_SCHEMA

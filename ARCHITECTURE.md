@@ -59,7 +59,8 @@ process and exposes no `yoke` composer.
   skills-only packages plus the exact read-only `mir-lifecycle-hooks` package. All four are shared
   by Claude and Codex. The separate, read-only stdio `mir-mcp` package has schema-5
   admission under ADR-91 and requires explicit selection, an exact human digest
-  acknowledgement and MCP-specific runtime evidence. No default Profile selects it.
+  acknowledgement and MCP-specific runtime evidence. No default Profile selects it; marketplace
+  presence does not select it. Registration requires explicit `mir capability sync --mcp --apply`.
   Project-coupled hooks and MCP configuration still require repository-owned adapters.
   Version 0.9.1 adds the on-demand
   `mir-core:selective-relations` SRR skill, with pointers from `mir-code:bluebricks` and
@@ -68,7 +69,8 @@ process and exposes no `yoke` composer.
 - **Capability management** — `config/capability-sources.json` selects commit-pinned plugins,
   project agent sources, Claude command sources with Codex skill equivalents, and target-local hook
   and MCP integration boundaries. Explicit sync copies and locks only selected agents and commands;
-  it never copies target hook or MCP policy.
+  it never copies target hook or MCP policy. The separately selected `mir-mcp` package uses the
+  admitted plugin registration path under ADR-91, without merging target-owned MCP settings.
 - **User runtime distribution** — `scripts/install_user_runtime_agents.py` separately installs the
   reviewed agent and Claude-command allowlists into explicitly named user homes. It defaults to a
   dry run, refuses unmanaged divergence, and records exact source and target digests. Repository

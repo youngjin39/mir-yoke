@@ -179,9 +179,11 @@ not verification or permission; unavailable required pins stay individually unkn
 No schema/database migration, automatic command execution or consumer update is required.
 
 
-## Unreleased capability-source schema 4
+<a id="unreleased-capability-source-schema-4"></a>
 
-The tracked `config/capability-sources.json` now uses `schema_version: 4`, retaining the explicit
+## Historical capability-source schema 4 (ADR-90; MCP restriction superseded by ADR-91)
+
+At this migration stage, `config/capability-sources.json` adopted `schema_version: 4`, retaining the explicit
 `package_kind: skills` for the three role plugins and admitting the exact `skills-hooks` shape for
 `mir-lifecycle-hooks`. The canonical `plugin_component_policy` and exact active-package digest
 acknowledgement prevent other executable shapes from entering through the new kind.
@@ -201,8 +203,12 @@ the selected installed set used for rollback.
 Do not translate a local enforcement hook or MCP configuration into a plugin entry.
 `mir-lifecycle-hooks` contains only the admitted target-independent `SessionStart` reminder. Keep
 repository-coupled registrations local unless a later decision introduces and verifies an adapter.
-No MCP server is registered or implemented, so do not publish an empty MCP plugin from the inert
-`.mcp.json.example`.
+At the schema-4 stage, no MCP server was registered or implemented; the instruction was not to
+publish an empty MCP plugin from the inert `.mcp.json.example`. ADR-91 supersedes that blanket
+restriction with the shipped, opt-in `mir-mcp` package under schema 5. Marketplace presence does
+not select it: registration requires explicit `--mcp` selection and an owner-acknowledged package
+digest. See [0.13.32](#01332-read-only-stdio-mcp-package). The example remains inactive target-local
+guidance, and project-coupled MCP configuration remains repository-owned.
 
 The first explicit schema-4 `update --apply` copies and digest-locks selected
 `.claude/commands/*.md` alongside

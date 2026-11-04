@@ -1,4 +1,4 @@
-"""Owner-only capability state files using POSIX modes or Windows DACLs."""
+"""Private state permissions and public materialized-tree Windows inheritance."""
 
 from __future__ import annotations
 
@@ -11,6 +11,7 @@ from pathlib import Path
 
 _DACL_SECURITY_INFORMATION = 0x00000004
 _PROTECTED_DACL_SECURITY_INFORMATION = 0x80000000
+_UNPROTECTED_DACL_SECURITY_INFORMATION = 0x20000000
 _SE_DACL_PRESENT = 0x0004
 _SE_DACL_PROTECTED = 0x1000
 _SE_FILE_OBJECT = 1
@@ -123,6 +124,32 @@ class _WindowsSecurity:
         finally:
             self.free(descriptor)
 
+    def inherit_parent(self, path: Path) -> None:
+        """Replace staging ACEs with inheritance from the published destination."""
+        descriptor = ctypes.c_void_p()
+        # An empty (not NULL) DACL removes explicit staging grants. Windows adds
+        # inherited ACEs from the destination parent when protection is cleared.
+        _check(self.advapi.ConvertStringSecurityDescriptorToSecurityDescriptorW(
+            "D:", 1, ctypes.byref(descriptor), None,
+        ))
+        try:
+            present, defaulted = wintypes.BOOL(), wintypes.BOOL()
+            dacl = ctypes.c_void_p()
+            _check(self.advapi.GetSecurityDescriptorDacl(
+                descriptor, ctypes.byref(present), ctypes.byref(dacl), ctypes.byref(defaulted),
+            ))
+            if not present or not dacl:
+                raise OSError("inherited security descriptor has no DACL")
+            error = self.advapi.SetNamedSecurityInfoW(
+                str(path), _SE_FILE_OBJECT,
+                _DACL_SECURITY_INFORMATION | _UNPROTECTED_DACL_SECURITY_INFORMATION,
+                None, None, dacl, None,
+            )
+            if error:
+                raise ctypes.WinError(error)
+        finally:
+            self.free(descriptor)
+
     def is_private(self, path: Path) -> bool:
         descriptor, dacl = ctypes.c_void_p(), ctypes.c_void_p()
         error = self.advapi.GetNamedSecurityInfoW(
@@ -162,6 +189,26 @@ def make_private(path: Path) -> None:
         _WindowsSecurity().make_private(path)
     else:
         os.chmod(path, stat.S_IRUSR | stat.S_IWUSR)
+
+
+def make_tree_inherit_parent(root: Path) -> None:
+    """Repair only a published public tree; private state must never use this."""
+    if sys.platform != "win32":
+        return
+    security = _WindowsSecurity()
+
+    def repair(path: Path) -> None:
+        if path.is_symlink() or path.is_junction():
+            raise OSError("refusing ACL repair through a linked materialized path")
+        security.inherit_parent(path)
+
+    def walk_error(error: OSError) -> None:
+        raise error
+
+    repair(root)
+    for parent, directories, files in os.walk(root, onerror=walk_error):
+        for name in directories + files:
+            repair(Path(parent) / name)
 
 
 def is_private(path: Path, metadata: os.stat_result) -> bool:

@@ -595,8 +595,10 @@ def test_r19_stateless_handoff_handler_has_an_exact_reviewed_digest() -> None:
     assert hashlib.sha256(handler.read_bytes()).hexdigest() == _HANDOFF_HANDLER_SHA256
 
 
-@pytest.mark.parametrize("event", ["UserPromptSubmit", "PreToolUse", "Stop"])
-@pytest.mark.parametrize("mutation", ["command", "timeout", "matcher", "extra-event"])
+@pytest.mark.parametrize("event", ["SessionStart", "UserPromptSubmit", "PreToolUse", "Stop"])
+@pytest.mark.parametrize("mutation", [
+    "command", "commandWindows", "timeout", "matcher", "extra-event",
+])
 def test_r19_active_package_rejects_shared_handoff_registration_drift(
     tmp_path: Path, event: str, mutation: str
 ) -> None:
@@ -605,8 +607,8 @@ def test_r19_active_package_rejects_shared_handoff_registration_drift(
     hooks_path = plugin / "hooks/hooks.json"
     payload = json.loads(hooks_path.read_text())
     registration = payload["hooks"][event][0]
-    if mutation == "command":
-        registration["hooks"][0]["command"] += " --unreviewed"
+    if mutation in {"command", "commandWindows"}:
+        registration["hooks"][0][mutation] += " --unreviewed"
     elif mutation == "timeout":
         registration["hooks"][0]["timeout"] = 9
     elif mutation == "matcher":

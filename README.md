@@ -66,19 +66,21 @@ does not depend on this host-global installation or vendor its source.
 plugin is installed explicitly in the agent host; it is not copied into a target or treated as a
 readiness requirement. Three role plugins group the common workflows formerly copied into
 repositories: core, code, and content. A fourth `mir-lifecycle-hooks` plugin supplies the same
-read-only `SessionStart` continuity reminder and supporting skill to Claude and Codex. Its exact
-handler digest is acknowledged by schema 4+, and it has no repository, file, environment, or network
-access. [ADR-90](docs/decisions/adr-90-role-plugins-and-common-hooks.md) keeps all project-coupled
+read-only `SessionStart` continuity reminder, handoff hooks, and supporting skill to Claude and
+Codex. Schema 4+ requires acknowledgement of its admitted active-package digest.
+[ADR-90](docs/decisions/adr-90-role-plugins-and-common-hooks.md) keeps all project-coupled
 hooks behind repository-owned adapters. The separate `mir-mcp` package supplies five read-only
 stdio tools under [ADR-91](docs/decisions/adr-91-stdio-mcp-package-admission.md).
-Schema 5 admits its exact package shape; no default Profile selects it. Registration requires
-an explicit `mir capability sync --mcp --apply` and an owner-acknowledged tree digest.
+Schema 5 admits its exact package shape; no default Profile selects it, and marketplace presence
+does not select it. Registration requires an explicit `mir capability sync --mcp --apply` and an
+owner-acknowledged tree digest.
 Fresh MCP-specific evidence from both runtimes is required before finalization; source tests
 do not establish runtime readiness. `.mcp.json.example` remains inactive target-local guidance.
 Codex still requires the operator to review and trust the current hook hash in a fresh session;
 installing or enabling the plugin alone does not prove hook execution.
-The real-CLI probe installs all four packages into isolated Claude and Codex homes and verifies
-identical plugin, skill, and hook inventories from two independent consumer working directories.
+The real-CLI probe installs the three role packages and `mir-lifecycle-hooks` into isolated Claude
+and Codex homes and verifies identical plugin, skill, and hook inventories from two independent
+consumer working directories.
 [ADR-89](docs/decisions/adr-89-dual-runtime-capability-management.md) defines the wider central
 management contract: explicit project sync supplies selected Claude agent and command sources, the
 generator projects agents to Codex, existing plugin skills absorb Codex command intent, and

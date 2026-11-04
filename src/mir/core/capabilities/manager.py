@@ -31,7 +31,7 @@ from .config import (
 )
 from .mcp import MCP_LAUNCHERS, MCP_NAME, validate_mcp_observation, validate_mcp_package
 from .native import host_target, place_artifacts, source_tree, validate_artifacts
-from .private_file import is_private, make_private
+from .private_file import is_private, make_private, make_tree_inherit_parent
 
 _SHA = re.compile(r"^[0-9a-f]{40}$")
 _MARKDOWN_LINK = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
@@ -79,13 +79,12 @@ def _native_hook_command(name: str, reference: str) -> str:
 
 
 def _windows_hook_command(name: str, reference: str) -> str:
-    base = "$env:CLAUDE_PLUGIN_ROOT\\bin\\" + name + ".exe"
-    script = "$env:CLAUDE_PLUGIN_ROOT\\" + reference.replace("/", "\\")
-    # Missing python3 must fail closed rather than use a stale LASTEXITCODE.
+    base = "%CLAUDE_PLUGIN_ROOT%\\bin\\" + name + ".exe"
+    script = "%CLAUDE_PLUGIN_ROOT%\\" + reference.replace("/", "\\")
+    # Codex invokes COMSPEC /C; the selected child supplies cmd.exe's exit status.
     return (
-        f'if (Test-Path -LiteralPath "{base}") {{ & "{base}" }} '
-        'else { if (-not (Get-Command python3 -ErrorAction SilentlyContinue)) { exit 1 }; '
-        f'python3 "{script}" }}; exit $LASTEXITCODE'
+        f'if exist "{base}" ("{base}") '
+        f'else (python3 "{script}")'
     )
 
 
@@ -3393,6 +3392,9 @@ class CapabilityManager:
                         old_active_moved = True
                     os.replace(staged_active, self.active_path)
                     new_active_published = True
+                    # Rename preserves the private TemporaryDirectory staging ACL.
+                    # Repair after publication so inheritance uses the client parent.
+                    make_tree_inherit_parent(self.active_path)
 
                     for source_path in selected_agents:
                         _atomic_write_bytes(

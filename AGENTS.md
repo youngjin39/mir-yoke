@@ -16,7 +16,7 @@ and not a universal installer, and has no standing authority over consumers.
 - `starter/HARNESS.md` owns the four-file Starter; `recipes/project-agent-kit/` owns the greenfield recipe; `src/mir/cli/` owns the optional installed CLI, which acts only on an explicit target and operation.
 - The Kit creates bounded project-owned harness files and required SQLite+FTS5 memory. Its thin wrapper runs the exact provider revision below ignored `.mir/`, without vendored CLI code or a global install.
 - `plugins/` owns common skills and the exact read-only global hook; `config/capability-sources.json` pins runtime selection.
-- ADR-86 and its 2026-09-06 amendment own purpose and management; ADR-79 owns platform lanes; ADRs 81, 83-86 and 88-90 own adoption and capability boundaries.
+- ADR-86 and its 2026-09-06 amendment own purpose and management; ADR-79 owns platform lanes; ADRs 81, 83-86 and 88-91 own adoption and capability boundaries.
 - `config/template-assets.json` classifies assets; `.mir/repo-profile.toml` owns local boundaries; `ARCHITECTURE.md` describes supported flows; `.mir/ontology-map.json` indexes meaning (`mir-core:ontology`).
 - Sub-agent model/effort: generated `config/model-routing.lock.json`, never edit; common `policy`; own `routes`/`agent_criteria`/`claude`; edit Harness repos/mir-yoke.toml.
 
@@ -28,7 +28,7 @@ and not a universal installer, and has no standing authority over consumers.
 - Yoke never discovers consumers or provides an active `yoke` composer. Installing `mir` grants no authority.
 - The Kit may initialize target-local Git and make one commit only when the target prompt explicitly grants it.
 - Plugins are optional; local skills never shadow them. ADR-82 stays inert. Agents/Claude commands use project sync or the user-runtime installer; Codex uses generated agents and mapped skills.
-- ADR-90 admits only the global continuity hook; coupled hooks and MCP stay target-local.
+- ADR-90 admits hooks; ADR-91 admits opt-in `mir-mcp`. Coupled hook/MCP policy stays target-local.
 - Edit canonical sources first; regenerate `AGENTS.md`, nested `AGENTS.md` and `.codex/`.
 
 ## Execution and evidence
