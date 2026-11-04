@@ -235,6 +235,53 @@ local tests, policy and other files stay untouched. Dirty common files, untracke
 files at selected paths and symlink destinations are refused. The tool does not
 discover consumers, commit, push or tag.
 
+### Windows consumer
+
+From a tested, committed Yoke clone in PowerShell, set `$consumer` to the
+explicitly authorized consumer Git root. Preview first, then apply:
+
+```powershell
+$consumer = (Resolve-Path 'C:\work\consumer').Path
+uv run --no-sync python -m tools.executor_sync --target "$consumer"
+uv run --no-sync python -m tools.executor_sync --target "$consumer" --apply
+```
+
+Sync copies `tools/mir_executor/` common sources and their manifest. With valid
+Windows pins in the source capability lock, apply also installs
+`.mir/bin/executor-query.exe` and `.mir/bin/delegation-gate.exe`, each with a
+SHA-256 pin in its adjacent `.json` file. Dry-run reports Python file changes;
+it does not validate or install native artifacts. Missing artifacts or pins
+must be resolved before claiming native delivery; Python fallback is not proof.
+
+For an unregistered consumer, obtain `config/model-routing.lock.json` from a
+Harness export for that explicitly named target. Copy the exported lock into
+the consumer's `config/` directory, preserving its provenance. Sync does not
+supply routing policy; never hand-edit the generated lock. Register the gate
+in consumer-owned `.claude/settings.json` using the exec-form `command` and
+`args` entry in [Optional native delegation gate](#optional-native-delegation-gate).
+
+Smoke-check the installed pins from the Yoke clone, then run the native binary
+directly for a read-only policy query, so Python fallback cannot mask a decline:
+
+```powershell
+uv run --no-sync python -m tools.executor_sync --target "$consumer" --check
+Get-Item "$consumer\.mir\bin\executor-query.exe", "$consumer\.mir\bin\executor-query.json", "$consumer\.mir\bin\delegation-gate.exe", "$consumer\.mir\bin\delegation-gate.json" -ErrorAction Stop
+& "$consumer\.mir\bin\executor-query.exe" --home-root "$consumer" policy-resolve --repo-root "$consumer" --category unit
+if ($LASTEXITCODE -ne 0) { throw 'Native policy query failed or declined' }
+$env:CLAUDE_PROJECT_DIR = $consumer
+$env:MIR_R3_FALLBACK = '0'
+'{"tool_name":"Agent","tool_input":{"subagent_type":"reviewer"}}' | & "$consumer\.mir\bin\delegation-gate.exe"
+if ($LASTEXITCODE -ne 2) { throw 'Expected force_codex denial (exit 2)' }
+```
+
+Run the gate check with an exported lock whose `policy.delegation.mode` is
+`force_codex`; use a disposable PowerShell session for the environment settings.
+The query should return routed model/effort JSON with exit 0; exit 64 means
+native decline. These checks do not verify Windows dispatch or Claude hook
+registration; validate both in a target Claude session before claiming delivery
+complete. Direct dispatch also needs the shell tool's background execution:
+`--background` alone does not detach the dispatch process.
+
 ## Add a local hook
 
 Define only needed hooks in `local.py`. Execution hooks load from the explicit

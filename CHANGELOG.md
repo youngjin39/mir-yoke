@@ -8,6 +8,10 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+### Added
+- Optional native delegation gate (Y6-D), delivered with executor sync and registered through consumer-owned Claude exec-form hooks; preserves the reference force_codex admission and denial behavior.
+- Direct Claude Main-to-executor dispatch guidance with the rescue forwarder fallback, plus PowerShell delivery, exported routing lock, gate registration and native smoke checks for Windows consumers (Y6-A/B).
+
 ## [v0.13.68] — 2026-11-05 — Shell-independent Windows lifecycle hook launcher
 
 ### Fixed
