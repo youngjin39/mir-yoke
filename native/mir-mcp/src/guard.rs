@@ -65,7 +65,7 @@ pub fn relative_path(value: &str, pattern: bool) -> Result<String> {
 #[derive(Clone, PartialEq, Eq)]
 struct Stamp {
     device: u64,
-    inode: u64,
+    inode: u128,
     size: u64,
     modified: i128,
     changed: i128,
@@ -75,13 +75,13 @@ impl Stamp {
     fn new(info: &Metadata) -> Self {
         Self {
             device: info.dev(),
-            inode: info.ino(),
+            inode: u128::from(info.ino()),
             size: info.len(),
             modified: i128::from(info.mtime()) * 1_000_000_000 + i128::from(info.mtime_nsec()),
             changed: i128::from(info.ctime()) * 1_000_000_000 + i128::from(info.ctime_nsec()),
         }
     }
-    fn identity(&self) -> (u64, u64) {
+    fn identity(&self) -> (u64, u128) {
         (self.device, self.inode)
     }
     fn value(&self) -> Value {
@@ -121,7 +121,7 @@ pub struct Guard {
     // Unix walks from this descriptor; Windows only holds it to keep the root open.
     #[cfg_attr(windows, allow(dead_code))]
     directory: File,
-    identity: (u64, u64),
+    identity: (u64, u128),
     profile_stamp: Option<Stamp>,
     profile_pinned: bool,
     patterns: Vec<String>,
@@ -165,7 +165,7 @@ impl Guard {
             protected(&posix_text(root_text), &[], deadline)?;
             let before = platform::path_stamp(&root)?;
             if !fs::metadata(&root).map_err(|_| "E_IO")?.is_dir() {
-                return Err("E_IO");
+                return Err(if cfg!(windows) { "E_PATH" } else { "E_IO" });
             }
             let directory = platform::open_root(&root)?;
             let identity = platform::stamp(&directory)?.identity();
@@ -908,13 +908,76 @@ mod platform {
     }
 }
 
+// CPython 3.12+ os.fstat on Windows reports the full FileIdInfo identity and takes
+// st_ctime_ns from FILE_BASIC_INFO.ChangeTime (path-based os.stat keeps creation
+// time). Every recorded source signature comes from fstat. Python 3.11 differs
+// (32-bit serial, creation time), so cross-runtime cursors assume 3.12+ there.
+#[cfg(any(windows, test))]
+fn windows_stamp(device: u64, inode: u128, size: u64, modified: u64, changed: u64) -> Stamp {
+    let nanos = |ticks: u64| (i128::from(ticks) - 116_444_736_000_000_000) * 100;
+    Stamp {
+        device,
+        inode,
+        size,
+        modified: nanos(modified),
+        changed: nanos(changed),
+    }
+}
+
+// Fixed Win32 attribute fixtures also run on Unix; acquisition remains Windows-only.
+#[cfg(test)]
+mod windows_stamp_tests {
+    use super::*;
+
+    #[test]
+    fn windows_attributes_preserve_full_identity_and_directory_size() {
+        let stamp = windows_stamp(
+            11306296192780490180,
+            47569271065417952,
+            4096,
+            134382630510293376,
+            134382630510293376,
+        );
+        assert_eq!(
+            stamp.value(),
+            json!([
+                11306296192780490180u64,
+                47569271065417952u64,
+                4096,
+                1793789451029337600u64,
+                1793789451029337600u64
+            ])
+        );
+    }
+
+    #[test]
+    fn windows_attributes_use_change_time_and_exact_signed_nanoseconds() {
+        let stamp = windows_stamp(
+            7,
+            (1u128 << 100) + 9,
+            11,
+            116444736000000001,
+            116444735999999999,
+        );
+        assert_eq!(stamp.device, 7);
+        assert_eq!(stamp.inode, (1u128 << 100) + 9);
+        assert_eq!(stamp.size, 11);
+        assert_eq!(stamp.modified, 100);
+        assert_eq!(stamp.changed, -100);
+        assert_eq!(
+            stamp.value()[1].to_string(),
+            ((1u128 << 100) + 9).to_string()
+        );
+    }
+}
+
 // Win32 calls operate only on owned File handles. Ancestors are held without
 // FILE_SHARE_DELETE until the terminal handle is dropped, preventing rename or
 // reparse replacement during the complete read and verification interval.
 #[cfg(windows)]
 #[allow(unsafe_code)]
 mod platform {
-    use super::{File, Path, PathBuf, Result, Stamp, windows_root};
+    use super::{File, Path, PathBuf, Result, Stamp, windows_root, windows_stamp};
     use std::ffi::c_void;
     use std::os::windows::ffi::OsStrExt;
     use std::os::windows::io::{AsRawHandle, FromRawHandle};
@@ -938,6 +1001,30 @@ mod platform {
         index_high: u32,
         index_low: u32,
     }
+    #[repr(C)]
+    #[derive(Default)]
+    struct StandardInformation {
+        allocation_size: i64,
+        end_of_file: i64,
+        links: u32,
+        delete_pending: u8,
+        directory: u8,
+    }
+    #[repr(C)]
+    #[derive(Default)]
+    struct BasicInformation {
+        created: i64,
+        accessed: i64,
+        written: i64,
+        changed: i64,
+        attributes: u32,
+    }
+    #[repr(C)]
+    #[derive(Default)]
+    struct IdInformation {
+        serial: u64,
+        id: [u8; 16],
+    }
     #[link(name = "kernel32")]
     unsafe extern "system" {
         fn CreateFileW(
@@ -949,6 +1036,12 @@ mod platform {
             flags: u32,
             template: *mut c_void,
         ) -> *mut c_void;
+        fn GetFileInformationByHandleEx(
+            handle: *mut c_void,
+            class: u32,
+            info: *mut c_void,
+            size: u32,
+        ) -> i32;
         fn GetFileInformationByHandle(handle: *mut c_void, info: *mut Information) -> i32;
         fn GetFinalPathNameByHandleW(
             handle: *mut c_void,
@@ -967,19 +1060,44 @@ mod platform {
         }
         Ok(info)
     }
-    fn nanos(time: &FileTime) -> i128 {
-        (i128::from((u64::from(time.high) << 32) | u64::from(time.low)) - 116_444_736_000_000_000)
-            * 100
-    }
     pub fn stamp(file: &File) -> Result<Stamp> {
         let info = information(file)?;
-        Ok(Stamp {
-            device: u64::from(info.serial),
-            inode: (u64::from(info.index_high) << 32) | u64::from(info.index_low),
-            size: (u64::from(info.size_high) << 32) | u64::from(info.size_low),
-            modified: nanos(&info.modified),
-            changed: nanos(&info.created),
-        })
+        let mut standard = StandardInformation::default();
+        let mut id = IdInformation::default();
+        let mut basic = BasicInformation::default();
+        // SAFETY: live borrowed handle, exact FILE_BASIC_INFO / FILE_STANDARD_INFO /
+        // FILE_ID_INFO layouts and sizes, and writable buffers. No pointer escapes the calls.
+        let ok = unsafe {
+            GetFileInformationByHandleEx(
+                file.as_raw_handle(),
+                0,
+                (&mut basic as *mut BasicInformation).cast(),
+                std::mem::size_of::<BasicInformation>() as u32,
+            ) != 0
+                && GetFileInformationByHandleEx(
+                    file.as_raw_handle(),
+                    1,
+                    (&mut standard as *mut StandardInformation).cast(),
+                    std::mem::size_of::<StandardInformation>() as u32,
+                ) != 0
+                && GetFileInformationByHandleEx(
+                    file.as_raw_handle(),
+                    18,
+                    (&mut id as *mut IdInformation).cast(),
+                    std::mem::size_of::<IdInformation>() as u32,
+                ) != 0
+        };
+        if !ok {
+            return Err("E_PATH");
+        }
+        let ticks = |time: &FileTime| (u64::from(time.high) << 32) | u64::from(time.low);
+        Ok(windows_stamp(
+            id.serial,
+            u128::from_le_bytes(id.id),
+            u64::try_from(standard.end_of_file).map_err(|_| "E_PATH")?,
+            ticks(&info.modified),
+            u64::try_from(basic.changed).map_err(|_| "E_PATH")?,
+        ))
     }
     pub fn path_stamp(path: &Path) -> Result<Stamp> {
         let file = open_path(path, false).map_err(|_| "E_PATH")?;

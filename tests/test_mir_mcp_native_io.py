@@ -40,6 +40,10 @@ def test_handoff_envelope_boundary_differential(native, target, committed):
         paths.append(source.relative_to(target).as_posix())
     if committed:
         setup_git(target, 'init', '-q')
+        # Git for Windows needs long-path support for this deep fixture; the server keeps
+        # repository configuration, so a real long-path repository is represented.
+        if sys.platform == 'win32':
+            setup_git(target, 'config', 'core.longpaths', 'true')
         setup_git(target, 'add', '--', '.')
         setup_git(target, 'commit', '-qm', 'fixture')
     expected = call(REFERENCE, target, paths, page_size=16)
@@ -267,7 +271,7 @@ def test_handoff_invalid_roots_without_reference(independent, target, tmp_path, 
              'missing': str(tmp_path / 'missing'), 'file': str(target / 'source.txt')}
     expected = call(REFERENCE, roots[kind], ['source.txt'])
     assert call(independent, roots[kind], ['source.txt']) == expected
-    code = 'E_IO' if kind in ('missing', 'file') else 'E_PATH'
+    code = 'E_IO' if kind == 'missing' or (kind == 'file' and sys.platform != 'win32') else 'E_PATH'
     assert json.loads(expected)['result']['structuredContent']['error'] == {'code': code}
 
 

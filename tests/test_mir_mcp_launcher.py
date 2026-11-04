@@ -22,7 +22,7 @@ def launcher():
 
 def install(tmp_path, module):
     module.PACKAGE = tmp_path
-    binary = tmp_path / 'bin/mir-mcp'
+    binary = tmp_path / ('bin/mir-mcp.exe' if module.sys.platform == 'win32' else 'bin/mir-mcp')
     binary.parent.mkdir()
     binary.write_bytes(b'fixture executable')
     binary.chmod(0o755)
@@ -37,6 +37,8 @@ def test_verified_selection_and_reference_arguments(tmp_path, monkeypatch):
     binary, _ = install(tmp_path, module)
     calls = []
     monkeypatch.setattr(module.os, 'execv', lambda path, args: calls.append((path, args)))
+    # Windows relays through a child instead of exec; record its arguments the same way.
+    monkeypatch.setattr(module, 'relay_native', lambda args: calls.append((args[0], args)) or 0)
     assert module.select_native() == 0
     assert calls == [(str(binary), [str(binary), '--reference-python', module.sys.executable,
                                   '--reference-script', str(tmp_path / 'mir_mcp.py')])]
@@ -47,6 +49,7 @@ def test_unverified_binary_stays_python(tmp_path, mutation, monkeypatch):
     module = launcher()
     binary, pin = install(tmp_path, module)
     monkeypatch.setattr(module.os, 'execv', lambda *args: pytest.fail('unverified execution'))
+    monkeypatch.setattr(module, 'relay_native', lambda *args: pytest.fail('unverified execution'))
     record = binary.parent / 'native-artifacts.json'
     if mutation == 'absent':
         record.unlink()

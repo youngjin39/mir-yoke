@@ -3436,6 +3436,12 @@
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
+      "path": "native/mir-mcp/build.rs",
+      "sha256": "f5c131d95c2cfc965a4650ae91c9066a2647c64e321811d6f14862f68a775549"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
       "path": "native/mir-mcp/rust-toolchain.toml",
       "sha256": "007a7e2abbd4afe192a3ef190dfa54914800621e221196747cff9e172735dc00"
     },
@@ -3461,7 +3467,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/mir-mcp/src/guard.rs",
-      "sha256": "a03cf6d3b57ab817116350e42f64ae5425424347b8291fd60027f2a154dea478"
+      "sha256": "16e58a5f29baa4dc5b230c9ee6f9d7135da20ada240c941af12ba62dc9e65c77"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3504,6 +3510,12 @@
       "disposition": "remove",
       "path": "native/mir-mcp/tools.json",
       "sha256": "daab8a774b3c18128f91b8025a6067db6c6a3226dc3dbe776ec6cae07ad345ba"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/mir-mcp/windows-long-paths.manifest",
+      "sha256": "684eea3193df53d90a0db13408b5ccda4e01abfba50c611096d82a5baab70f67"
     },
     {
       "classification": "optional-consumer-tool",
@@ -5867,7 +5879,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_mir_mcp_launcher.py",
-      "sha256": "fede7c7a2522d074728b65db4f7325eebb9acfc134cf3de18dd873a856c734e1"
+      "sha256": "fb62ba3f54fde9f42a1c574c2c00a1280bfc6291e85ede58c2af093a679e051b"
     },
     {
       "classification": "template-maintainer-tool",
@@ -5879,13 +5891,13 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_mir_mcp_native_core.py",
-      "sha256": "bf7f34bb15e277eea6cd6bc4b553218457d3e58f0648ef41cf911cb2573f63e0"
+      "sha256": "276a821973f8af36030acafb1a160e1b3992c4e9a81f69ba7ecd08dafbda8968"
     },
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_mir_mcp_native_io.py",
-      "sha256": "497bce06ffdb9cbeaf8ad80138572b31e4cb2b9de469a00ab40e6a61cfeb24b2"
+      "sha256": "d63708d88eedab7b2121089e1fbb7667e0a31d8926fd772dc0264acf4ef0011b"
     },
     {
       "classification": "template-maintainer-tool",

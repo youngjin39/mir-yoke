@@ -42,6 +42,12 @@ def native(tmp_path_factory):
     return [str(binary), '--reference-python', sys.executable, '--reference-script', str(SCRIPT)]
 
 
+def short_id(payload):
+    """Keep test ids short: Windows caps PYTEST_CURRENT_TEST at 32767 characters."""
+    text = payload.decode('ascii', 'backslashreplace')
+    return text if len(text) <= 64 else f'{text[:32]}...{len(payload)}b'
+
+
 def run(command, payload):
     result = subprocess.run(command, input=payload, capture_output=True, timeout=20)
     assert result.returncode == 0, result.stderr
@@ -65,7 +71,7 @@ def run(command, payload):
         'capabilities': {}}}) + wire(request()) +
     wire({'jsonrpc': '2.0', 'method': 'notifications/initialized'}) +
     wire({'jsonrpc': '2.0', 'id': 2, 'method': 'tools/list'}) + wire(request('initialize')),
-])
+], ids=short_id)
 def test_transcript(native, payload):
     payload += wire(request('tools/list'))  # Recovery after every failure.
     assert run(native, payload) == run([sys.executable, '-I', '-B', str(SCRIPT)], payload)
@@ -161,7 +167,7 @@ def test_all_tools_fixture(native, fixed_reference, tmp_path):
     b'{"jsonrpc":"2.0","method":"notifications/cancelled","params":{"requestId":1}}\n',
     b'{"jsonrpc":"2.0","method":"notifications/initialized"}\n',
     wire('é' * 2048), wire('é' * 2049), b'[]' + b' ' * 65533 + b'\n',
-])
+], ids=short_id)
 def test_boundaries(native, payload):
     assert run(native, payload) == run([sys.executable, '-I', '-B', str(SCRIPT)], payload)
 
