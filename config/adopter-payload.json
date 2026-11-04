@@ -5681,7 +5681,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_delegation_gate_native_parity.py",
-      "sha256": "fbe34074324d8e88cae7d61eafaf378efe0305954c904e28485f7d2e73aa09e0"
+      "sha256": "ad4cde2c78d509c80b307283ecd51b73286f8b2ead97776cd3d73b68560b59f6"
     },
     {
       "classification": "template-maintainer-tool",

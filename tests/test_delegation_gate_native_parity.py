@@ -17,8 +17,12 @@ BASH_NUL_WARNING = re.compile(
 
 @pytest.fixture(scope='module')
 def gate():
-    subprocess.run(['cargo', 'build', '--offline', '--locked', '--bin', 'delegation-gate'],
-                   cwd=CRATE, check=True)
+    if shutil.which('cargo') is None:
+        pytest.skip('cargo unavailable')
+    command = ['cargo', 'build', '--locked', '--bin', 'delegation-gate']
+    if os.environ.get('MIR_HANDOFF_CARGO_OFFLINE') == '1':
+        command.append('--offline')
+    subprocess.run(command, cwd=CRATE, check=True)
     target = Path(os.environ.get('CARGO_TARGET_DIR', CRATE / 'target'))
     if not target.is_absolute():
         target = CRATE / target
