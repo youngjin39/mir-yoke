@@ -20,6 +20,7 @@ fn keys(v: &Value, allowed: &[&str]) -> bool {
 pub struct Protocol {
     pending: bool,
     initialized: bool,
+    worker: bool,
 }
 pub enum Response {
     Value(Value),
@@ -27,6 +28,13 @@ pub enum Response {
     Silent,
 }
 impl Protocol {
+    pub fn worker() -> Self {
+        Self {
+            pending: false,
+            initialized: true,
+            worker: true,
+        }
+    }
     pub fn request(&mut self, v: &Value, raw: &[u8], forward: &Forward) -> Response {
         let mut id = v.get("id").cloned().unwrap_or(Value::Null);
         let has_id = v.get("id").is_some();
@@ -121,11 +129,24 @@ impl Protocol {
                     && ordinary.iter().any(|k| k.as_str() == "name")
                     && ordinary.iter().any(|k| k.as_str() == "arguments") =>
             {
-                match forward.call(raw) {
-                    Ok(bytes) => return Response::Raw(bytes),
-                    Err(code) => {
-                        json!({"content":[{"type":"text","text":format!("{{\"code\":\"{code}\"}}") }],"structuredContent":{
+                if self.worker {
+                    crate::native::call(if params["name"] == "handoff_pins" {
+                        &params["arguments"]
+                    } else {
+                        &Value::Null
+                    })
+                } else {
+                    let response = if params["name"] == "handoff_pins" {
+                        Forward::native(raw)
+                    } else {
+                        forward.call(raw)
+                    };
+                    match response {
+                        Ok(bytes) => return Response::Raw(bytes),
+                        Err(code) => {
+                            json!({"content":[{"type":"text","text":format!("{{\"code\":\"{code}\"}}") }],"structuredContent":{
                         "ok":false,"data":null,"error":{"code":code},"next_cursor":null,"profile_protections":"available"},"isError":true})
+                        }
                     }
                 }
             }

@@ -1,4 +1,4 @@
-# Native MCP core (M1a)
+# Native MCP core (M1a + M1b)
 
 This independent crate avoids the lifecycle crate's unrelated SQLite and executor
 dependencies. Its dependency tree builds offline without derive macros.
@@ -10,7 +10,7 @@ limits, protocol state, discovery, listing and RPC errors. The embedded tool
 inventory is a frozen copy of the Python inventory. Byte transcript tests detect
 inventory and version drift.
 
-Every admitted `tools/call` starts exactly one isolated, unbuffered Python child
+`handoff_pins` runs natively. The other four tools start an isolated Python child
 with `--internal-reference`. That mode enters the reference directly, treats
 legacy negotiation as complete, refuses any other argument, and never selects a
 native backend, so a forwarded call cannot recurse. The native parent forwards the
@@ -27,14 +27,33 @@ Python can report a finalizer flush failure after catching a broken pipe.
 
 Discovery, inventory, framing and stable errors are tested byte for byte. Ordinary
 RPC object order is not a semantic requirement, but the tests preserve it too.
-Tool result text, cursor/hash serialization and child response bytes remain under
-the reference's ownership. Number parsing preserves integer IDs; other numbers
+Forwarded child response bytes remain under the reference's ownership.
+Native handoff uses ordered compact JSON and padded URL-safe Base64 cursors.
+Number parsing preserves integer IDs; other numbers
 are validated and represented by type in the core, while raw forwarded bytes
-retain their full precision. Timestamp-dependent handoff comparisons freeze the
-reference clock before execution rather than normalize output.
+retain their full precision. Native handoff tests validate observation timestamps
+independently and compare bytes after substituting only that clock field.
 
 Build with `cargo build --offline --locked --manifest-path native/mir-mcp/Cargo.toml`.
 Set `CARGO_HOME`, `CARGO_TARGET_DIR` and `TMPDIR` to approved cache/scratch locations.
 For the Python oracle, set `MIR_MCP_NATIVE_BINARY` to the built binary and run
 `uv run --no-sync pytest tests/test_mir_mcp_native_core.py`.
 The tests use hermetic subprocesses, never installed plugins or live clients.
+
+Native handoff reads use a pinned root and component handles, bounded regular-file
+reads, built-in and profile protection patterns, source stamps, and replacement
+checks. Limits are 1 MiB per file, 4 MiB total, 256 reads and distinct files, and
+10 seconds per call. Each handoff call runs in a native worker process using the
+argv-only internal mode. The parent kills and reaps an expired worker, returns
+`E_TIMEOUT` and continues serving. This also bounds operations that never return
+to a guard check. The worker cannot forward tools or recurse. Git shares the
+call deadline with a one-second response reserve. Its executable, argument forms,
+configuration overrides and environment are fixed; both pipes share a 65,536-byte
+capture budget. Metadata redirections and execution-capable config are refused.
+
+Cursor bindings include tool, canonical root, arguments excluding cursor, ordered
+source stamps/digests, and bundled contract digest. Pages shrink to 15,360 bytes;
+an indivisible page refuses with `E_LIMIT`. Page inventories are recalculated
+while retaining full-result unknowns. Cursors work across Python/native process
+boundaries when their complete inputs remain unchanged. Distribution and runtime
+selection remain unchanged.

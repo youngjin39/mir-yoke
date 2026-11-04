@@ -1,6 +1,15 @@
-#![forbid(unsafe_code)]
+#![deny(unsafe_code)]
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
+#[path = "../../handoff-packet/src/digest.rs"]
+mod digest;
+#[cfg(test)]
+mod digest_vectors;
 mod forward;
+mod git;
+mod guard;
+mod handoff;
+mod native;
+mod pagination;
 mod protocol;
 mod wire;
 use forward::Forward;
@@ -9,12 +18,16 @@ use serde_json::Value;
 use std::io::{self, BufRead, Write};
 const FRAME: usize = 65536;
 const OUTPUT: usize = 16384;
-fn serve(forward: Forward) -> io::Result<()> {
+fn serve(forward: Forward, worker: bool) -> io::Result<()> {
     let stdin = io::stdin();
     let mut input = stdin.lock();
     let stdout = io::stdout();
     let mut out = stdout.lock();
-    let mut state = Protocol::default();
+    let mut state = if worker {
+        Protocol::worker()
+    } else {
+        Protocol::default()
+    };
     loop {
         let mut raw = Vec::new();
         let mut oversized = false;
@@ -66,12 +79,28 @@ fn serve(forward: Forward) -> io::Result<()> {
                 bytes
             }
         };
-        if out.write_all(&bytes).and_then(|()| out.flush()).is_err() {
+        if out.write_all(&bytes).and_then(|()| out.flush()).is_err()
+            || native::TIMED_OUT.load(std::sync::atomic::Ordering::Relaxed)
+        {
             return Ok(());
         }
     }
 }
 fn main() {
+    if std::env::args_os().skip(1).collect::<Vec<_>>() == ["--internal-native"] {
+        if serve(
+            Forward {
+                python: "".into(),
+                script: "".into(),
+            },
+            true,
+        )
+        .is_err()
+        {
+            std::process::exit(1);
+        }
+        return;
+    }
     let mut args = std::env::args_os().skip(1);
     let mut python = None;
     let mut script = None;
@@ -87,7 +116,7 @@ fn main() {
     let (Some(python), Some(script)) = (python, script) else {
         std::process::exit(2);
     };
-    if serve(Forward { python, script }).is_err() {
+    if serve(Forward { python, script }, false).is_err() {
         std::process::exit(1);
     }
 }

@@ -3419,19 +3419,19 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/mir-mcp/Cargo.lock",
-      "sha256": "a1f8f6629219be858e8a4b57e22a0c5c23c76906aa69e41c6bd175dcf2803089"
+      "sha256": "0ebd9594cad850d92ee1978bf18a98158ac8a4b36b47be77acb108af69387267"
     },
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/mir-mcp/Cargo.toml",
-      "sha256": "3e2bc802fb1aba275061ddae7a6d1b2e2c23948795cab38c5b7df1f231f72467"
+      "sha256": "121fabf4ca8ea770a21d55d93d2d31d1841669f3e6951609df58c1a9929de919"
     },
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/mir-mcp/README.md",
-      "sha256": "05e3972f15d860355da907ea7dc67e6abcb689c88dd9bae051e61cdf1ca3bed7"
+      "sha256": "e857519992e36a5770fd0e47cdbe2e589c70e04baf70f69d7d8b007c586c9cbc"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3442,20 +3442,56 @@
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
+      "path": "native/mir-mcp/src/digest_vectors.rs",
+      "sha256": "a58c3c09e38121086f459d0a8756493821bb13dbd2d77b159a1a61b6b97f0b46"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
       "path": "native/mir-mcp/src/forward.rs",
-      "sha256": "d3653365bb74dacf1b259275b96283ef2e8703dbd4e253940b7cf563bab8e16a"
+      "sha256": "36bd0479b97cc02147e2e1f61b67bf4f9387b05ff77e8e5edce45132e8d76f09"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/mir-mcp/src/git.rs",
+      "sha256": "68abdcd1fe9b02fdd15608f691e6ce07beb78d69613628b9aa11f94093145169"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/mir-mcp/src/guard.rs",
+      "sha256": "a03cf6d3b57ab817116350e42f64ae5425424347b8291fd60027f2a154dea478"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/mir-mcp/src/handoff.rs",
+      "sha256": "340eaa2cbd4b0d68505a9426988a5471430ba54209726957c58056e3ee0233d1"
     },
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/mir-mcp/src/main.rs",
-      "sha256": "e8637cfee2a614db47dd5f94eff71337264a82555fcc7c12c6dd63021992156c"
+      "sha256": "b8673d9c9b7f825a118ebeb2e6d8475a4c90b3173177759381e61b5f2f8ae886"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/mir-mcp/src/native.rs",
+      "sha256": "f3e3a5d1f0792d04eaead7f41bf5afcb66759e2bd82134a4daca89b1dfcd5de7"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/mir-mcp/src/pagination.rs",
+      "sha256": "d363ccecd3ed5ecf59149a9536778597a1127cc43487b8b08d5a1d578bbcde7c"
     },
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/mir-mcp/src/protocol.rs",
-      "sha256": "288d1f1d171e1d36eae28438c6fcbf406eb3068a4bcb493e0526f69425a60339"
+      "sha256": "8b7c1add397b8ce3b47c2e7b862bad5e5dcb2fe24c66c0da9ffa75d8064783d2"
     },
     {
       "classification": "template-maintainer-tool",
@@ -5837,7 +5873,13 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_mir_mcp_native_core.py",
-      "sha256": "b0b928d3876b8c51e7dc63136e42288c5ed8f3e26ee419385ae05ac51ab5d5b3"
+      "sha256": "bf7f34bb15e277eea6cd6bc4b553218457d3e58f0648ef41cf911cb2573f63e0"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "tests/test_mir_mcp_native_io.py",
+      "sha256": "09900ba1956a57cd1da8cb974b4e0cf84f51d96c0fbcb65ad490ce5a5274a187"
     },
     {
       "classification": "template-maintainer-tool",

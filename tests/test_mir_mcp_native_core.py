@@ -111,6 +111,8 @@ m.main(reference="--internal-reference" in sys.argv)
 
 
 def test_all_tools_fixture(native, fixed_reference, tmp_path):
+    from datetime import datetime, timezone
+
     target = tmp_path / 'target'
     (target / '.mir').mkdir(parents=True)
     (target / '.mir/repo-profile.toml').write_text('slug = "test"\n')
@@ -131,7 +133,18 @@ def test_all_tools_fixture(native, fixed_reference, tmp_path):
     command = [*native[:-1], str(fixed_reference)]
     payload = b''.join(map(wire, frames))
     expected = run([sys.executable, '-I', '-B', str(fixed_reference)], payload)
-    assert run(command, payload) == expected
+    before = datetime.now(timezone.utc)  # noqa: UP017 - Python 3.9
+    actual = run(command, payload)
+    after = datetime.now(timezone.utc)  # noqa: UP017 - Python 3.9
+    actual_lines, expected_lines = actual.splitlines(), expected.splitlines()
+    assert len(actual_lines) == len(expected_lines) == 5
+    for index in (0, 1, 2, 4):
+        assert actual_lines[index] == expected_lines[index]
+    observed = json.loads(actual_lines[3])['result']['structuredContent']['data']['observed_at']
+    frozen = json.loads(expected_lines[3])['result']['structuredContent']['data']['observed_at']
+    assert observed.endswith('Z')
+    assert before <= datetime.fromisoformat(observed.replace('Z', '+00:00')) <= after
+    assert actual_lines[3].replace(observed.encode(), frozen.encode()) == expected_lines[3]
     # No Git repository: handoff reports partial evidence; other tools succeed.
     values = [json.loads(line) for line in expected.splitlines()]
     assert all(not values[i]['result']['isError'] for i in (0, 1, 2, 4))

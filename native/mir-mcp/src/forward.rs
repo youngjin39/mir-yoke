@@ -12,11 +12,21 @@ pub struct Forward {
 impl Forward {
     // One child, one deadline including spawn/write/read/wait, never retry.
     pub fn call(&self, raw: &[u8]) -> Result<Vec<u8>, &'static str> {
-        let deadline = Instant::now() + Duration::from_secs(10);
-        let mut child = Command::new(&self.python)
+        let mut command = Command::new(&self.python);
+        command
             .args(["-I", "-B", "-u"])
             .arg(&self.script)
-            .arg("--internal-reference")
+            .arg("--internal-reference");
+        Self::capture(command, raw)
+    }
+    pub fn native(raw: &[u8]) -> Result<Vec<u8>, &'static str> {
+        let mut command = Command::new(std::env::current_exe().map_err(|_| "E_IO")?);
+        command.arg("--internal-native");
+        Self::capture(command, raw)
+    }
+    fn capture(mut command: Command, raw: &[u8]) -> Result<Vec<u8>, &'static str> {
+        let deadline = Instant::now() + Duration::from_secs(10);
+        let mut child = command
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
