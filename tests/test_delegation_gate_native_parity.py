@@ -1,6 +1,7 @@
 """Byte parity against Yoke's Bash reference, with jq present and native absent."""
 import json
 import os
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -10,6 +11,8 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 CRATE = ROOT / 'native/handoff-packet'
 CASES = json.loads((CRATE / 'tests/fixtures/delegation-gate.json').read_text())
+BASH_NUL_WARNING = re.compile(
+    rb'^[^\n]*: line \d+: warning: command substitution: ignored null byte in input\n', re.M)
 
 
 @pytest.fixture(scope='module')
@@ -63,8 +66,10 @@ def test_gate_parity(gate, tmp_path, case):
     native, reference = [subprocess.run(command, input=payload.encode(), capture_output=True,
                                        env=env) for command in commands]
     assert reference.returncode == case['code']
+    # Bash 4.4+ warns about NUL bytes it drops: interpreter noise, not gate output.
+    reference_stderr = BASH_NUL_WARNING.sub(b'', reference.stderr)
     assert (native.returncode, native.stdout, native.stderr) == (
-        reference.returncode, reference.stdout, reference.stderr)
+        reference.returncode, reference.stdout, reference_stderr)
 
 
 @pytest.mark.skipif(os.name == 'nt', reason='POSIX wrapper')
