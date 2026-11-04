@@ -8,6 +8,8 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.67] — 2026-11-04 — Windows publication ACLs, cmd.exe hook commands, delegation rules
+
 ### Fixed
 - Windows capability publication resets the active plugin tree to inherit its destination parent's permissions, removing private staging ACLs. Private state and receipts remain restricted; publication does not change ownership.
 - Windows lifecycle hook commands use `cmd.exe`-compatible `if exist` selection with quoted paths, preferring the native executable and falling back to `python3`.
