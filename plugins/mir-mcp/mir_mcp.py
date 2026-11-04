@@ -1784,7 +1784,7 @@ class Protocol:
             return rpc_error(identity, -32602, exc.code)
 
 
-def main(windows=None):
+def main(windows=None, reference=False):
     if sys.version_info < (3, 11):  # noqa: UP036 - standalone refusal must run on 3.9
         running = ".".join(map(str, sys.version_info[:3]))
         sys.stderr.write("mir-mcp requires Python 3.11+; running " + running + "\n")
@@ -1793,6 +1793,7 @@ def main(windows=None):
     if not windows:
         signal.signal(signal.SIGALRM, timeout_handler)
     protocol = Protocol(windows=windows)
+    protocol.initialized = reference
     while True:
         raw = sys.stdin.buffer.readline(FRAME_LIMIT + 1)
         if not raw:
@@ -1824,4 +1825,9 @@ def main(windows=None):
 
 
 if __name__ == "__main__":
+    # Internal forwarding enters Python directly and never selects a native backend.
+    if "--internal-reference" in sys.argv[1:]:
+        if sys.argv[1:] != ["--internal-reference"]:
+            sys.exit(2)
+        sys.exit(main(reference=True))
     sys.exit(main())
