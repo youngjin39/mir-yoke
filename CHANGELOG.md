@@ -8,6 +8,8 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.68] — 2026-11-05 — Shell-independent Windows lifecycle hook launcher
+
 ### Fixed
 - Windows hook commands append the exact ` ; exit $LASTEXITCODE` suffix because PowerShell/pwsh `-Command` otherwise collapses native deny code 2 to 1. Git Bash exits with the last status; cmd.exe passes the suffix as literal arguments, which the launcher explicitly admits. Other argument tails are rejected before execution.
 - Windows lifecycle hooks use one shell-independent Python launcher, superseding the 0.13.67 cmd-only selector. Codex chooses the session's user shell (cmd.exe, Windows PowerShell, pwsh or Git Bash), and substitutes the plugin-root placeholder before shell parsing. The launcher waits for the native executable when present and otherwise runs the reference with its own interpreter, preserving inherited streams and the child exit code. Claude Code's Bash commands are unchanged.
