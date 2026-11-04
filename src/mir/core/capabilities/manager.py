@@ -2346,6 +2346,7 @@ class CapabilityManager:
                 observations[name], digest=metadata["sha256"], runtime=runtime, session=session,
                 installed=Path(_strip_verbatim_prefix(installed["installed_path"])),
                 provider=self.active_path,
+                native_artifacts=self._native_records(lock),
             ):
                 return False
         return True

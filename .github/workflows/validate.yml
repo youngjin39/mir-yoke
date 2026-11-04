@@ -41,6 +41,27 @@ jobs:
           tests/test_line_endings.py
       - run: uv run --python 3.14 pytest -q -p no:cacheprovider tests/test_executor_execute_native_parity.py -k uses_caller_venv
 
+      - run: cargo fmt --check
+        working-directory: native/mir-mcp
+      - run: cargo clippy --all-targets --locked -- -D warnings
+        working-directory: native/mir-mcp
+        env:
+          CARGO_TARGET_DIR: ${{ github.workspace }}/native/mir-mcp/target
+      - run: cargo test --locked --no-fail-fast
+        working-directory: native/mir-mcp
+        env:
+          CARGO_TARGET_DIR: ${{ github.workspace }}/native/mir-mcp/target
+      - run: cargo build --release --locked
+        working-directory: native/mir-mcp
+        env:
+          CARGO_TARGET_DIR: ${{ github.workspace }}/native/mir-mcp/target
+      - run: >-
+          uv run --python 3.14 pytest -q -p no:cacheprovider
+          tests/test_mir_mcp_native_core.py tests/test_mir_mcp_native_io.py
+          tests/test_mir_mcp_launcher.py
+        env:
+          MIR_MCP_NATIVE_BINARY: ${{ github.workspace }}/native/mir-mcp/target/release/mir-mcp
+
   supported_contracts:
     runs-on: ubuntu-latest
     steps:
@@ -195,3 +216,24 @@ jobs:
         env:
           PYTHONUTF8: '1'
           CARGO_TARGET_DIR: ${{ github.workspace }}/native/handoff-packet/target
+
+      - run: cargo fmt --check
+        working-directory: native/mir-mcp
+      - run: cargo clippy --all-targets --locked -- -D warnings
+        working-directory: native/mir-mcp
+        env:
+          CARGO_TARGET_DIR: ${{ github.workspace }}/native/mir-mcp/target
+      - run: cargo test --locked --no-fail-fast
+        working-directory: native/mir-mcp
+        env:
+          CARGO_TARGET_DIR: ${{ github.workspace }}/native/mir-mcp/target
+      - run: cargo build --release --locked
+        working-directory: native/mir-mcp
+        env:
+          CARGO_TARGET_DIR: ${{ github.workspace }}/native/mir-mcp/target
+      - run: >-
+          uv run --python 3.14 pytest -q -p no:cacheprovider
+          tests/test_mir_mcp_native_core.py tests/test_mir_mcp_native_io.py
+          tests/test_mir_mcp_launcher.py
+        env:
+          MIR_MCP_NATIVE_BINARY: ${{ github.workspace }}/native/mir-mcp/target/release/mir-mcp.exe

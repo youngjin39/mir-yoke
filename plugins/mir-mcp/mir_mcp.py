@@ -711,6 +711,134 @@ def load_modules():
     return modules
 
 
+def native_target():
+    # Architecture comes from the running interpreter/OS, never environment inputs.
+    machine = os.uname().machine.lower() if hasattr(os, "uname") else (
+        "x86_64" if sys.maxsize > 2**32 and "arm64" not in sys.version.lower()
+        else "unsupported"
+    )
+    arch = {"arm64": "aarch64", "aarch64": "aarch64",
+            "amd64": "x86_64", "x86_64": "x86_64"}.get(machine)
+    suffix = {"darwin": "apple-darwin", "linux": "unknown-linux-gnu",
+              "win32": "pc-windows-msvc"}.get(sys.platform)
+    if not arch or not suffix or (sys.platform == "win32" and arch != "x86_64"):
+        return None
+    return arch + "-" + suffix
+
+
+def relay_native(args):
+    """Windows pipes use constant-size chunks; EOF closes stdin, then wait is bounded.
+
+    Once spawned, no Python retry is permitted. Idle input has no deadline, like
+    the server. After output EOF the child has ten seconds to exit before kill.
+    A daemon input pump cannot hold launcher exit after the child closes output.
+    """
+    try:
+        child = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                 stderr=None, bufsize=0, creationflags=0x08000000)
+    except OSError:
+        return None
+    expired = threading.Event()
+    def feed():
+        try:
+            while True:
+                # Never hold BufferedReader's lock across a blocking daemon read:
+                # the child may exit while client stdin stays open.
+                stream = getattr(sys.stdin.buffer, "raw", sys.stdin.buffer)
+                raw = stream.read(65536)
+                if not raw:
+                    break
+                view = memoryview(raw)
+                while view:
+                    written = child.stdin.write(view)
+                    if not written:
+                        return
+                    view = view[written:]
+        except (BrokenPipeError, OSError):
+            pass
+        finally:
+            child.stdin.close()
+        try:
+            child.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            expired.set()
+            child.kill()
+    threading.Thread(target=feed, daemon=True).start()
+    try:
+        while True:
+            raw = child.stdout.read(65536)
+            if not raw:
+                break
+            view = memoryview(raw)
+            while view:
+                written = sys.stdout.buffer.write(view)
+                if not written:
+                    raise BrokenPipeError()
+                view = view[written:]
+            sys.stdout.buffer.flush()
+        try:
+            code = child.wait(timeout=10)
+            return 1 if expired.is_set() else code
+        except subprocess.TimeoutExpired:
+            child.kill()
+            child.wait()
+            return 1
+    except (BrokenPipeError, OSError):
+        child.kill()
+        child.wait()
+        return 0
+    finally:
+        child.stdout.close()
+
+
+def select_native():
+    """Select only the successful installed-lock projection carried by this plugin."""
+    target = native_target()
+    if target is None:
+        return None
+    directory = PACKAGE / "bin"
+    binary = directory / ("mir-mcp.exe" if sys.platform == "win32" else "mir-mcp")
+    record = directory / "native-artifacts.json"
+    try:
+        if directory.is_symlink() or binary.is_symlink() or record.is_symlink():
+            return None
+        if not record.is_file() or record.stat().st_size > 4096:
+            return None
+        manifest = json.loads(record.read_bytes())
+        pin = manifest["mir-mcp"]
+        if (set(manifest) != {"mir-mcp"} or set(pin) != {"target", "size", "sha256"}
+                or pin["target"] != target or type(pin["size"]) is not int
+                or pin["size"] < 1 or not isinstance(pin["sha256"], str)
+                or re.fullmatch(r"[0-9a-f]{64}", pin["sha256"]) is None
+                or not binary.is_file() or binary.stat().st_size != pin["size"]
+                or (sys.platform != "win32" and not os.access(binary, os.X_OK))):
+            return None
+        hasher = hashlib.sha256()
+        with binary.open("rb") as source:
+            for chunk in iter(lambda: source.read(65536), b""):
+                hasher.update(chunk)
+        if hasher.hexdigest() != pin["sha256"]:
+            return None
+        args = [str(binary), "--reference-python", sys.executable,
+                "--reference-script", str(PACKAGE / "mir_mcp.py")]
+    except (OSError, ValueError, TypeError, KeyError):
+        return None
+    if sys.platform == "win32":
+        # Popen failure is the only relay error allowed to select Python.
+        return relay_native(args)
+    try:
+        os.execv(str(binary), args)
+    except OSError:
+        return None
+    return 0  # Only reachable by test doubles.
+
+
+if __name__ == "__main__" and "--internal-reference" not in sys.argv[1:]:
+    native_exit = select_native()
+    if native_exit is not None:
+        sys.exit(native_exit)
+
+
 ONTOLOGY, RELATIONS = load_modules()
 
 

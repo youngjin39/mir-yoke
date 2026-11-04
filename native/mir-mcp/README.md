@@ -2,7 +2,17 @@
 
 This independent crate avoids the lifecycle crate's unrelated SQLite and executor
 dependencies. Its dependency tree builds offline without derive macros.
-The Python server remains the default entrypoint; no distribution surface changes.
+The Python script remains the client entrypoint. It selects an installed native
+artifact only after checking the target, byte size and SHA-256 recorded in
+`bin/native-artifacts.json`, a projection of the installed capability lock.
+Missing or invalid artifacts retain Python before any input is read.
+Unix replaces the launcher with `exec`; Windows relays binary pipes with fixed-size
+chunks and `CREATE_NO_WINDOW`. Input EOF closes child stdin and allows ten seconds
+for exit; expiration kills the child and exits 1. Child exit codes propagate,
+and a broken output pipe kills and reaps the child with exit 0. No running native
+child failure retries Python. Idle sessions keep the protocol's unbounded wait.
+The local metadata travels with the plugin into client caches; admission checks
+it against release pins before excluding it from the source-tree digest.
 
 Run `mir-mcp --reference-python <interpreter> --reference-script <mir_mcp.py>`.
 Both paths are explicit caller configuration. The core owns newline framing,

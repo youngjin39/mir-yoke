@@ -16,6 +16,7 @@ TARGETS = (
 )
 NAMES = (
     'handoff-packet', 'runtime-continuity', 'bootstrap-gate', 'runtime-verify', 'executor-query',
+    'mir-mcp',
 )
 SOURCE = 'a' * 40
 TAG = 'native-' + SOURCE[:12]
@@ -45,7 +46,8 @@ def assets(tmp_path):
     (directory / 'release.json').write_text(json.dumps(release))
     lock = tmp_path / 'lock.json'
     lock.write_text(json.dumps({'source': {'commit': 'c' * 40},
-                                'plugins': {'mir-lifecycle-hooks': {}}, 'preserve': [1]}))
+                                'plugins': {'mir-lifecycle-hooks': {}, 'mir-mcp': {}},
+                                'preserve': [1]}))
     return directory, lock
 
 
@@ -68,7 +70,8 @@ def test_pins_published_bytes_and_preserves_lock(assets):
     assert validate_artifacts(records, document['plugins'], portable=True) == records
     for name in NAMES:
         assert records[name]['install_path'] == f'bin/{name}'
-        assert records[name]['plugin'] == 'mir-lifecycle-hooks'
+        assert records[name]['plugin'] == ('mir-mcp' if name == 'mir-mcp'
+                                            else 'mir-lifecycle-hooks')
         assert set(records[name]['targets']) == set(TARGETS)
         for pin in records[name]['targets'].values():
             path = directory / pin['url'].rsplit('/', 1)[1]
@@ -178,9 +181,10 @@ def test_workflow_digest_step_agrees_with_release_tool(assets, tmp_path):
     crate.mkdir(parents=True)
     output = tmp_path / 'build/dist-native'
     for target in TARGETS:
-        release = crate / 'target' / target / 'release'
-        release.mkdir(parents=True)
         for name in NAMES:
+            source_crate = crate.parent / ('mir-mcp' if name == 'mir-mcp' else 'handoff-packet')
+            release = source_crate / 'target' / target / 'release'
+            release.mkdir(parents=True, exist_ok=True)
             suffix = '.exe' if 'windows' in target else ''
             (release / (name + suffix)).write_bytes(
                 (directory / f'{name}-{target}{suffix}').read_bytes())
@@ -220,3 +224,44 @@ def test_online_download_collects_every_binary(monkeypatch, tmp_path):
     download = calls[1]
     patterns = [download[index + 1] for index, value in enumerate(download) if value == '--pattern']
     assert set(patterns) == {*(f'{name}-*' for name in NAMES), 'SHA256-*'}
+
+
+def test_preserves_unrelated_native_records(assets):
+    directory, lock = assets
+    document = json.loads(lock.read_text())
+    preserved = {'plugin': 'mir-mcp', 'install_path': 'bin/another-tool', 'targets': {}}
+    document['native_artifacts'] = {'another-tool': preserved}
+    lock.write_text(json.dumps(document))
+    result = run_tool(directory, lock)
+    assert result.returncode == 0, result.stderr
+    records = json.loads(lock.read_text())['native_artifacts']
+    assert records['another-tool'] == preserved
+    assert set(records) == {*NAMES, 'another-tool'}
+
+
+def test_validate_workflow_checks_native_mcp_on_all_platforms():
+    workflow = yaml.safe_load((ROOT / '.github/workflows/validate.yml').read_text())
+    for job_name in ('native_handoff', 'windows_native'):
+        steps = workflow['jobs'][job_name]['steps']
+        commands = [step['run'] for step in steps
+                    if step.get('working-directory') == 'native/mir-mcp']
+        for command in ('cargo fmt --check', 'cargo clippy --all-targets --locked -- -D warnings',
+                        'cargo test --locked --no-fail-fast', 'cargo build --release --locked'):
+            assert command in commands
+        oracle = next(step for step in steps
+                      if 'tests/test_mir_mcp_native_core.py' in step.get('run', ''))
+        assert 'tests/test_mir_mcp_native_io.py' in oracle['run']
+        assert 'MIR_MCP_NATIVE_BINARY' in oracle['env']
+
+
+def test_native_workflow_smokes_mcp():
+    workflow = yaml.safe_load((ROOT / '.github/workflows/native-artifacts.yml').read_text())
+    steps = workflow['jobs']['build']['steps']
+    assert any('cargo build --release --locked --target' in step.get('run', '')
+               and step.get('working-directory') == 'native/mir-mcp' for step in steps)
+    smoke = next(step['run'] for step in steps if step.get('name') == 'smoke run')
+    assert 'mir-mcp${{ matrix.exe }}' in smoke
+    assert 'tools/list' in smoke and 'io.modelcontextprotocol/protocolVersion' in smoke
+    assert '--reference-python "$python"' in smoke
+    assert '--reference-script ../../plugins/mir-mcp/mir_mcp.py' in smoke
+    assert "sys.executable" in smoke

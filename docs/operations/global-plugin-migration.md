@@ -188,7 +188,7 @@ Use `sync --mcp --apply` to select it explicitly and `sync --no-mcp --apply` to 
 consumer's selection. Omitting either option retains its lock selection. A peer consumer's
 selection keeps the host registration active. Selection is host-wide at user scope, so sessions
 in other repositories can see these tools. No consumer runtime settings or policy are merged.
-Native Windows activation is refused; macOS, Linux and WSL require independent runtime evidence.
+macOS, Linux, WSL and native Windows each require independent runtime evidence.
 
 From each fresh runtime session outside the provider checkout, pass `attest --mcp-evidence
 /absolute/receipt.json` alongside the observed skills/hooks. The JSON object must be keyed by
@@ -199,6 +199,7 @@ From each fresh runtime session outside the provider checkout, pass `attest --mc
 | `installed_sha256`, `server` | Exact installed tree digest and `mir-mcp`. |
 | `client`, `client_version`, `session_id`, `session_cwd` | Runtime key, observed version, current exported session ID, absolute session working directory outside the provider. |
 | `platform`, `interpreter` | `macos`, `linux`, `wsl` or `windows`; `{executable,version}` for an absolute Python path and Python 3.11+. |
+| `backend` | Observe the process backend explicitly: `{kind:"python"}` for the Python reference, or `{kind:"native",target:"<host-triple>",artifact_sha256:"<sha256>"}` for the native executable. Native observations must match the lock pin, installed `bin/native-artifacts.json`, and executable bytes. |
 | `launcher` | Claude: `{command:"python3",args:["-I","-B","-u","<installed-root>/mir_mcp.py"],env:{}}`. Codex: `{command:"python3",args:["-I","-B","-u","./mir_mcp.py"],cwd:"<installed-root>",env:{}}`, where `cwd` is the absolute installed root that Codex resolves from the declared `cwd:"."`. |
 | `protocol_version` | Observed `2026-07-28` or `2025-11-25`. |
 | `tools` | Ordered `{name,raw_name}` entries for `ontology_validate`, `ontology_lookup`, `ontology_impact`, `handoff_pins`, `relations_query`; preserve raw host-prefixed names. |
@@ -211,6 +212,11 @@ on the serialized tool-list SHA256 and byte count. These are operator observatio
 inferred from manifests or skill discovery. Finalization revalidates installed bytes, the complete
 materialized inventory, acknowledgement, both receipts and schema parity. Source tests alone
 do not establish B4 or runtime readiness.
+
+The attestor observes which backend actually ran; neither artifact presence nor a native pin proves
+execution. Receipt validation checks that observation against installed integrity, but cannot prove
+process execution. The launcher declarations remain `python3 -I -B -u .../mir_mcp.py` for both
+backends. Record `kind:"python"` when the launcher uses the Python reference, including fallback.
 
 ## 5. Optional user-level agents and commands
 

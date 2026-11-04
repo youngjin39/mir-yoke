@@ -1,4 +1,4 @@
-"""Pin published lifecycle binaries, never a local rebuild, into an explicit lock.
+"""Pin published native binaries, never a local rebuild, into an explicit lock.
 
 Offline: --directory contains GitHub's release.json and all downloaded assets.
 Online: --repo OWNER/REPO --tag native-<12-char SHA> uses read-only gh operations.
@@ -21,10 +21,14 @@ TARGETS = (
     "aarch64-apple-darwin", "x86_64-apple-darwin", "x86_64-unknown-linux-gnu",
     "aarch64-unknown-linux-gnu", "x86_64-pc-windows-msvc",
 )
-NAMES = (
-    "handoff-packet", "runtime-continuity", "bootstrap-gate", "runtime-verify", "executor-query",
-)
-PLUGIN = "mir-lifecycle-hooks"
+BINARIES = {
+    "handoff-packet": "mir-lifecycle-hooks",
+    "runtime-continuity": "mir-lifecycle-hooks",
+    "bootstrap-gate": "mir-lifecycle-hooks",
+    "runtime-verify": "mir-lifecycle-hooks",
+    "executor-query": "mir-lifecycle-hooks",
+    "mir-mcp": "mir-mcp",
+}
 
 
 def filename(name: str, target: str) -> str:
@@ -46,7 +50,7 @@ def pin_release(directory: Path, lock_path: Path, source: str) -> None:
     ):
         raise ValueError("release was not built from the given source commit")
     lock = json.loads(lock_path.read_text(encoding="utf-8"))
-    expected = {filename(name, target) for name in NAMES for target in TARGETS}
+    expected = {filename(name, target) for name in BINARIES for target in TARGETS}
     expected.update(f"SHA256-{target}.txt" for target in TARGETS)
     assets = {}
     bases = set()
@@ -75,8 +79,8 @@ def pin_release(directory: Path, lock_path: Path, source: str) -> None:
         assets[name] = (asset, data)
     if set(assets) != expected or len(bases) != 1:
         raise ValueError("incomplete release or mixed release URLs")
-    records = {name: {"plugin": PLUGIN, "install_path": f"bin/{name}", "targets": {}}
-               for name in NAMES}
+    records = {name: {"plugin": BINARIES[name], "install_path": f"bin/{name}", "targets": {}}
+               for name in BINARIES}
     for target in TARGETS:
         lines = assets[f"SHA256-{target}.txt"][1].decode("ascii").splitlines()
         checksums = {}
@@ -85,9 +89,9 @@ def pin_release(directory: Path, lock_path: Path, source: str) -> None:
             if match is None or match[2] in checksums:
                 raise ValueError("invalid or duplicate checksum line")
             checksums[match[2]] = match[1]
-        if set(checksums) != {filename(name, target) for name in NAMES}:
+        if set(checksums) != {filename(name, target) for name in BINARIES}:
             raise ValueError("checksum file must name exactly all target binaries")
-        for name in NAMES:
+        for name in BINARIES:
             asset_name = filename(name, target)
             asset, data = assets[asset_name]
             digest = hashlib.sha256(data).hexdigest()
@@ -96,8 +100,9 @@ def pin_release(directory: Path, lock_path: Path, source: str) -> None:
             records[name]["targets"][target] = {
                 "url": asset["browser_download_url"], "sha256": digest, "size": len(data),
             }
-    validate_artifacts(records, lock["plugins"], portable=True)
-    lock["native_artifacts"] = records
+    merged = {**lock.get("native_artifacts", {}), **records}
+    validate_artifacts(merged, lock["plugins"], portable=True)
+    lock["native_artifacts"] = merged
     lock_path.write_text(json.dumps(lock, indent=2) + "\n", encoding="utf-8")
 
 
@@ -130,9 +135,8 @@ def main(argv: list[str] | None = None) -> int:
                 (directory / "release.json").write_bytes(result.stdout)
                 subprocess.run(
                     ["gh", "release", "download", args.tag, "--repo", args.repo,
-                     "--dir", str(directory), "--pattern", "handoff-packet-*",
-                     "--pattern", "runtime-continuity-*", "--pattern", "bootstrap-gate-*",
-                     "--pattern", "runtime-verify-*", "--pattern", "executor-query-*",
+                     "--dir", str(directory),
+                     *(part for name in BINARIES for part in ("--pattern", f"{name}-*")),
                      "--pattern", "SHA256-*"],
                     check=True,
                 )

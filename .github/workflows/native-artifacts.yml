@@ -36,8 +36,12 @@ jobs:
         working-directory: native/handoff-packet
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.14'}
       - run: rustup target add ${{ matrix.target }}
       - run: cargo build --release --locked --target ${{ matrix.target }}
+      - run: cargo build --release --locked --target ${{ matrix.target }}
+        working-directory: native/mir-mcp
       - name: smoke run
         # An ordinary tool call must print nothing and exit 0; a handoff turn
         # that forbids commands must deny with exit 2.
@@ -66,13 +70,20 @@ jobs:
           test "$code" = 64
           test ! -s query.out
           test ! -s query.err
+          mcp="../mir-mcp/target/${{ matrix.target }}/release/mir-mcp${{ matrix.exe }}"
+          python="$(python -c 'import sys; print(sys.executable)')"
+          printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{"_meta":{"io.modelcontextprotocol/protocolVersion":"2026-07-28","io.modelcontextprotocol/clientCapabilities":{}}}}' | "$mcp" --reference-python "$python" --reference-script ../../plugins/mir-mcp/mir_mcp.py > mcp.out
+          grep -q '"tools"' mcp.out
+          grep -q '"jsonrpc":"2.0"' mcp.out
       - name: digest
         run: |
           mkdir -p ../../dist-native
           cd ../../dist-native
-          for name in handoff-packet runtime-continuity bootstrap-gate runtime-verify executor-query; do
+          for name in handoff-packet runtime-continuity bootstrap-gate runtime-verify executor-query mir-mcp; do
             f="$name-${{ matrix.target }}${{ matrix.exe }}"
-            cp "../native/handoff-packet/target/${{ matrix.target }}/release/$name${{ matrix.exe }}" "$f"
+            crate=handoff-packet
+            if test "$name" = mir-mcp; then crate=mir-mcp; fi
+            cp "../native/$crate/target/${{ matrix.target }}/release/$name${{ matrix.exe }}" "$f"
             if command -v sha256sum >/dev/null; then sha256sum "$f"; else shasum -a 256 "$f"; fi
           done > "SHA256-${{ matrix.target }}.txt"
           cat "SHA256-${{ matrix.target }}.txt"
@@ -105,12 +116,12 @@ jobs:
           set -euo pipefail
           tag="native-${SOURCE_SHA:0:12}"
           cd dist-native
-          test "$(find . -maxdepth 1 -type f | wc -l)" -eq 30
+          test "$(find . -maxdepth 1 -type f | wc -l)" -eq 35
           for digest in SHA256-*.txt; do sha256sum --check "$digest"; done
           if gh release view "$tag" >/dev/null 2>&1; then
             gh release edit "$tag" --prerelease --title "$tag"
           else
             gh release create "$tag" --target "$SOURCE_SHA" --prerelease --title "$tag" \
-              --notes "Optional lifecycle binaries from source $SOURCE_SHA."
+              --notes "Optional lifecycle and MCP binaries from source $SOURCE_SHA."
           fi
           gh release upload "$tag" ./* --clobber

@@ -388,3 +388,157 @@ def test_git_export_includes_optional_provider_lock(tmp_path, present):
     GitClient(runner).export("https://example.com/source.git", "main", commit,
                              [config, lock], tmp_path / "checkout")
     assert checkouts == [[config, lock] if present else [config]]
+
+
+def mcp_manifest(url="artifact"):
+    record = manifest(url)["handoff-packet"]
+    record["plugin"] = "mir-mcp"
+    record["install_path"] = "bin/mir-mcp"
+    return {"mir-mcp": record}
+
+
+@pytest.mark.parametrize("failure", [None, "digest", "target", "source", "opt-out"])
+@pytest.mark.parametrize("target", ["aarch64-apple-darwin", "x86_64-pc-windows-msvc"])
+def test_mcp_placement_records_only_successful_installs(tmp_path, monkeypatch, failure, target):
+    source = tmp_path / "artifact"
+    source.write_bytes(DATA)
+    records = mcp_manifest(str(source))
+    pin = records["mir-mcp"]["targets"].pop("aarch64-apple-darwin")
+    records["mir-mcp"]["targets"][target] = pin
+    monkeypatch.delenv("MIR_CAPABILITY_NATIVE_ARTIFACTS", raising=False)
+    if failure == "digest":
+        pin["sha256"] = "0" * 64
+    elif failure == "target":
+        records["mir-mcp"]["targets"] = {}
+    elif failure == "source":
+        source.unlink()
+    elif failure == "opt-out":
+        monkeypatch.setenv("MIR_CAPABILITY_NATIVE_ARTIFACTS", "0")
+    root = tmp_path / "plugin"
+    root.mkdir()
+    (root / "mir_mcp.py").write_bytes(b"python reference")
+    api().place_artifacts(root, "mir-mcp", records, target=target)
+    relative = "bin/mir-mcp" + (".exe" if "windows" in target else "")
+    metadata = root / "bin/native-artifacts.json"
+    assert metadata.exists() == (failure is None)
+    if failure is None:
+        assert json.loads(metadata.read_text()) == {"mir-mcp": {
+            "target": target, "sha256": pin["sha256"], "size": pin["size"],
+        }}
+    assert (root / relative).exists() == (failure is None)
+    assert (root / "mir_mcp.py").read_bytes() == b"python reference"
+
+
+def test_mcp_artifact_is_outside_exact_source_admission(tmp_path, monkeypatch):
+    import shutil
+
+    from test_capability_cli import ROOT
+
+    from mir.core.capabilities.manager import CapabilityError, _validate_plugin
+
+    root = tmp_path / "mir-mcp"
+    shutil.copytree(ROOT / "plugins/mir-mcp", root)
+    expected = _validate_plugin(root, "mir-mcp", package_kind="mcp-stdio")
+    source = tmp_path / "artifact"
+    source.write_bytes(DATA)
+    records = mcp_manifest(str(source))
+    assert api().validate_artifacts(records, {"mir-mcp"}) == records
+    monkeypatch.delenv("MIR_CAPABILITY_NATIVE_ARTIFACTS", raising=False)
+    api().place_artifacts(root, "mir-mcp", records, target="aarch64-apple-darwin")
+    with api().source_tree(root, "mir-mcp", records, target="aarch64-apple-darwin") as view:
+        assert _validate_plugin(view, "mir-mcp", package_kind="mcp-stdio") == expected
+    (root / "bin/undeclared").write_bytes(b"extra")
+    with api().source_tree(root, "mir-mcp", records, target="aarch64-apple-darwin") as view:
+        with pytest.raises(CapabilityError, match="undeclared"):
+            _validate_plugin(view, "mir-mcp", package_kind="mcp-stdio")
+
+
+@pytest.mark.parametrize("failure", ["missing", "tampered", "linked", "undeclared"])
+def test_mcp_source_admission_rejects_invalid_native_metadata(tmp_path, monkeypatch, failure):
+    source = tmp_path / "artifact"
+    source.write_bytes(DATA)
+    records = mcp_manifest(str(source))
+    root = tmp_path / "plugin"
+    root.mkdir()
+    monkeypatch.delenv("MIR_CAPABILITY_NATIVE_ARTIFACTS", raising=False)
+    api().place_artifacts(root, "mir-mcp", records, target="aarch64-apple-darwin")
+    metadata = root / "bin/native-artifacts.json"
+    if failure == "missing":
+        metadata.unlink()
+    elif failure == "linked":
+        metadata.unlink()
+        metadata.symlink_to(source)
+    elif failure == "undeclared":
+        (root / "bin/mir-mcp").unlink()
+    else:
+        metadata.write_text(json.dumps({"mir-mcp": {"target": "other"}}))
+    with pytest.raises(ValueError, match="native artifact"):
+        with api().source_tree(root, "mir-mcp", records, target="aarch64-apple-darwin"):
+            pass
+
+
+def test_mcp_metadata_failure_removes_binary_and_preserves_python(tmp_path, monkeypatch, capsys):
+    source = tmp_path / "artifact"
+    source.write_bytes(DATA)
+    root = tmp_path / "plugin"
+    root.mkdir()
+    (root / "reference").write_bytes(b"python")
+    monkeypatch.delenv("MIR_CAPABILITY_NATIVE_ARTIFACTS", raising=False)
+    replace = api().os.replace
+
+    def fail_metadata(source, destination):
+        if destination.name == "native-artifacts.json":
+            raise OSError("fixture metadata write failure")
+        return replace(source, destination)
+
+    monkeypatch.setattr(api().os, "replace", fail_metadata)
+    api().place_artifacts(root, "mir-mcp", mcp_manifest(str(source)),
+                          target="aarch64-apple-darwin")
+    assert list(root.iterdir()) == [root / "reference"]
+    assert (root / "reference").read_bytes() == b"python"
+    assert "using Python reference" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize('kind', ['fifo', 'oversized'])
+def test_mcp_source_admission_rejects_special_or_oversized_metadata(tmp_path, kind):
+    import os
+    import subprocess
+    import sys
+
+    if kind == 'fifo' and not hasattr(os, 'mkfifo'):
+        pytest.skip('named FIFO fixture requires POSIX')
+    root = tmp_path / 'plugin'
+    directory = root / 'bin'
+    directory.mkdir(parents=True)
+    (directory / 'mir-mcp').write_bytes(DATA)
+    records = mcp_manifest()
+    metadata = directory / 'native-artifacts.json'
+    if kind == 'fifo':
+        os.mkfifo(metadata)
+    else:
+        pin = records['mir-mcp']['targets']['aarch64-apple-darwin']
+        metadata.write_text(json.dumps({'mir-mcp': {
+            'target': 'aarch64-apple-darwin', 'size': pin['size'], 'sha256': pin['sha256'],
+        }}) + ' ' * 4096)
+    wrapper = '''
+from pathlib import Path
+import importlib.util
+import json
+import sys
+
+spec = importlib.util.spec_from_file_location('native_probe', sys.argv[1])
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+try:
+    with module.source_tree(Path(sys.argv[2]), 'mir-mcp', json.loads(sys.argv[3]),
+                            target='aarch64-apple-darwin'):
+        raise AssertionError('invalid metadata admitted')
+except ValueError as error:
+    assert 'metadata' in str(error)
+'''
+    result = subprocess.run(
+        [sys.executable, '-I', '-B', '-c', wrapper, api().__file__, str(root),
+         json.dumps(records)],
+        capture_output=True, timeout=5,
+    )
+    assert (result.returncode, result.stdout, result.stderr) == (0, b'', b'')

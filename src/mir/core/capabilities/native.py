@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 import platform
 import re
@@ -146,6 +147,7 @@ def place_artifacts(root: Path, plugin: str, records: dict, *, target=None) -> N
     for name, relative, pin in _entries(plugin, records, target):
         temporary = None
         created = []
+        installed = False
         try:
             if pin is None:
                 raise ValueError(f"no target {target}")
@@ -167,7 +169,20 @@ def place_artifacts(root: Path, plugin: str, records: dict, *, target=None) -> N
             _verify(temporary, pin)
             temporary.chmod(0o755)
             os.replace(temporary, destination)
+            installed = True
+            if plugin == "mir-mcp" and name == "mir-mcp":
+                metadata = root / "bin/native-artifacts.json"
+                if metadata.exists() or metadata.is_symlink():
+                    raise ValueError("native artifact metadata already exists")
+                with tempfile.NamedTemporaryFile(dir=metadata.parent, delete=False) as output:
+                    temporary = Path(output.name)
+                    output.write(json.dumps({name: {
+                        "target": target, "sha256": pin["sha256"], "size": pin["size"],
+                    }}, sort_keys=True).encode("utf-8"))
+                os.replace(temporary, metadata)
         except (OSError, ValueError, httpx.HTTPError, httpx.InvalidURL) as exc:
+            if installed:
+                destination.unlink(missing_ok=True)
             print(
                 f"Warning: native artifact {name} skipped: {exc}; using Python reference",
                 file=sys.stderr,
@@ -191,7 +206,8 @@ def source_tree(root: Path, plugin: str, records: dict, *, target=None):
         raise ValueError("native artifact root is linked")
     target = target or host_target()
     present = []
-    for _, relative, pin in _entries(plugin, records, target):
+    mcp_pin = None
+    for name, relative, pin in _entries(plugin, records, target):
         path = root
         for part in PurePosixPath(relative).parts:
             path /= part
@@ -200,6 +216,27 @@ def source_tree(root: Path, plugin: str, records: dict, *, target=None):
         if path.exists():
             _verify(path, pin)
             present.append(relative)
+            if plugin == "mir-mcp" and name == "mir-mcp":
+                mcp_pin = pin
+    if plugin == "mir-mcp":
+        metadata = root / "bin/native-artifacts.json"
+        if metadata.is_symlink():
+            raise ValueError("native artifact metadata is linked")
+        if mcp_pin is not None:
+            if not metadata.is_file() or metadata.stat().st_size > 4096:
+                raise ValueError("native artifact metadata is missing or oversized")
+            expected = {"mir-mcp": {
+                "target": target, "sha256": mcp_pin["sha256"], "size": mcp_pin["size"],
+            }}
+            try:
+                observed = json.loads(metadata.read_bytes())
+            except (OSError, ValueError) as exc:
+                raise ValueError("native artifact metadata is missing or invalid") from exc
+            if observed != expected:
+                raise ValueError("native artifact metadata mismatch")
+            present.append("bin/native-artifacts.json")
+        elif metadata.exists():
+            raise ValueError("native artifact metadata has no installed artifact")
     if not present:
         yield root
         return

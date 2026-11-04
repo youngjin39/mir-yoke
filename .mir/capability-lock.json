@@ -180,6 +180,11 @@
         }
       }
     },
+    "mir-mcp": {
+      "install_path": "bin/mir-mcp",
+      "plugin": "mir-mcp",
+      "targets": {}
+    },
     "runtime-continuity": {
       "install_path": "bin/runtime-continuity",
       "plugin": "mir-lifecycle-hooks",

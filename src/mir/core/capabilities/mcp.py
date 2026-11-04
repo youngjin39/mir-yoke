@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import ast
 import json
+import os
 import re
 import stat
 from pathlib import Path, PurePosixPath, PureWindowsPath
@@ -12,6 +13,7 @@ from jsonschema import Draft202012Validator, ValidationError, validators
 from jsonschema.exceptions import SchemaError
 
 from .config import MCP_FILES, MCP_NAME, MCP_TOOLS
+from .native import _verify, host_target
 
 _VERSION = re.compile(r"[0-9]+\.[0-9]+\.[0-9]+(?:[-+][A-Za-z0-9.-]+)?")
 
@@ -162,6 +164,37 @@ def validate_mcp_package(package: Path) -> None:
     _require(manifests[0]["description"] == manifests[1]["description"], "description parity")
 
 
+def _backend_valid(backend: object, installed: Path, records: dict) -> bool:
+    if not isinstance(backend, dict):
+        return False
+    if backend == {"kind": "python"}:
+        return True
+    if set(backend) != {"kind", "target", "artifact_sha256"} or backend["kind"] != "native":
+        return False
+    target = host_target()
+    if target is None or backend["target"] != target:
+        return False
+    record = records.get(MCP_NAME)
+    if (not isinstance(record, dict) or record.get("plugin") != MCP_NAME
+            or record.get("install_path") != "bin/mir-mcp"):
+        return False
+    pin = record["targets"].get(target)
+    if not isinstance(pin, dict) or backend["artifact_sha256"] != pin["sha256"]:
+        return False
+    directory = installed / "bin"
+    artifact = directory / ("mir-mcp.exe" if target.endswith("windows-msvc") else "mir-mcp")
+    manifest = directory / "native-artifacts.json"
+    if (directory.is_symlink() or manifest.is_symlink() or not manifest.is_file()
+            or manifest.stat().st_size > 4096):
+        return False
+    if closed_json(manifest) != {MCP_NAME: {
+        "target": target, "sha256": pin["sha256"], "size": pin["size"],
+    }}:
+        return False
+    _verify(artifact, pin)
+    return target.endswith("windows-msvc") or os.access(artifact, os.X_OK)
+
+
 def validate_mcp_observation(
     observation: object,
     *,
@@ -170,8 +203,9 @@ def validate_mcp_observation(
     session: str,
     installed: Path,
     provider: Path,
+    native_artifacts: dict | None = None,
 ) -> bool:
-    """Validate an operator's fresh-session receipt, not a claim of live execution."""
+    """Validate attestor-observed backend and integrity, without proving process execution."""
     if not isinstance(observation, dict) or set(observation) != {
         "installed_sha256",
         "client",
@@ -180,6 +214,7 @@ def validate_mcp_observation(
         "session_cwd",
         "platform",
         "interpreter",
+        "backend",
         "server",
         "protocol_version",
         "launcher",
@@ -225,6 +260,7 @@ def validate_mcp_observation(
             or not isinstance(version, str)
             or re.fullmatch(r"3\.\d+\.\d+", version) is None
             or int(version.split(".")[1]) < 11
+            or not _backend_valid(observation["backend"], installed, native_artifacts or {})
             or observation["server"] != MCP_NAME
             or observation["protocol_version"] not in {"2026-07-28", "2025-11-25"}
             or observation["launcher"] != mcp_observed_launcher(runtime, installed)

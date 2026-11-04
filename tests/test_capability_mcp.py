@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 import shutil
 import subprocess
@@ -915,6 +916,7 @@ def mcp_receipt(runtime, session, project_root, installed, digest):
             "session_cwd": str(project_root),
             "platform": {"win32": "windows", "darwin": "macos"}.get(sys.platform, "linux"),
             "interpreter": {"executable": sys.executable, "version": "3.12.13"},
+            "backend": {"kind": "python"},
             "server": "mir-mcp",
             "protocol_version": "2026-07-28",
             "launcher": (
@@ -963,6 +965,131 @@ def receipt_context(tmp_path):
     project = tmp_path / "consumer"
     project.mkdir()
     return installed, project, tmp_path / "provider"
+
+
+@pytest.mark.parametrize(
+    "backend,accepted",
+    [
+        ({"kind": "python"}, True),
+        (None, False),
+        ({}, False),
+        ({"kind": "rust"}, False),
+        ({"kind": "python", "target": "aarch64-apple-darwin"}, False),
+        ({"kind": "native"}, False),
+    ],
+)
+def test_mcp_receipt_requires_explicit_closed_backend(receipt_context, backend, accepted):
+    installed, project, provider = receipt_context
+    item = mcp_receipt("claude-code", "fresh", project, str(installed), "a" * 64)["mir-mcp"]
+    if backend is None:
+        item.pop("backend")
+    else:
+        item["backend"] = backend
+    assert validate_mcp_observation(
+        item, digest="a" * 64, runtime="claude-code", session="fresh",
+        installed=installed, provider=provider,
+    ) is accepted
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    ["valid", "target", "digest", "unlocked", "pin", "size", "bytes", "symlink",
+     "parent-symlink", "not-executable", "extra", "python-fallback", "manifest-missing",
+     "manifest-digest", "manifest-symlink"],
+)
+@pytest.mark.parametrize("windows", [False, True])
+def test_mcp_native_receipt_binds_host_pin_and_installed_binary(
+    receipt_context, monkeypatch, mutation, windows,
+):
+    installed, project, provider = receipt_context
+    target = "x86_64-pc-windows-msvc" if windows else "aarch64-apple-darwin"
+    monkeypatch.setattr(mcp_contract, "host_target", lambda: target, raising=False)
+    data = b"native-artifact-fixture"
+    digest = hashlib.sha256(data).hexdigest()
+    artifact = installed / "bin" / ("mir-mcp.exe" if windows else "mir-mcp")
+    artifact.parent.mkdir()
+    artifact.write_bytes(data)
+    artifact.chmod(0o755)
+    manifest = artifact.parent / "native-artifacts.json"
+    manifest.write_text(json.dumps({"mir-mcp": {
+        "target": target, "sha256": digest, "size": len(data),
+    }}))
+    records = {"mir-mcp": {"plugin": "mir-mcp", "install_path": "bin/mir-mcp", "targets": {
+        target: {"url": "artifact", "sha256": digest, "size": len(data)},
+    }}}
+    item = mcp_receipt("claude-code", "fresh", project, str(installed), "a" * 64)["mir-mcp"]
+    item["backend"] = {"kind": "native", "target": target, "artifact_sha256": digest}
+    if mutation == "target":
+        item["backend"]["target"] = "x86_64-unknown-linux-gnu"
+    elif mutation == "digest":
+        item["backend"]["artifact_sha256"] = "0" * 64
+    elif mutation == "unlocked":
+        records = {}
+    elif mutation == "pin":
+        records["mir-mcp"]["targets"][target]["sha256"] = "0" * 64
+    elif mutation == "size":
+        records["mir-mcp"]["targets"][target]["size"] += 1
+    elif mutation == "bytes":
+        artifact.write_bytes(b"tampered")
+    elif mutation == "symlink":
+        source = project / "artifact"
+        artifact.rename(source)
+        artifact.symlink_to(source)
+    elif mutation == "parent-symlink":
+        source = project / "bin"
+        artifact.parent.rename(source)
+        artifact.parent.symlink_to(source, target_is_directory=True)
+    elif mutation == "not-executable":
+        artifact.chmod(0o644)
+    elif mutation == "extra":
+        item["backend"]["extra"] = True
+    elif mutation == "python-fallback":
+        item["backend"] = {"kind": "python"}
+    elif mutation == "manifest-missing":
+        manifest.unlink()
+    elif mutation == "manifest-digest":
+        observed = json.loads(manifest.read_text())
+        observed["mir-mcp"]["sha256"] = "0" * 64
+        manifest.write_text(json.dumps(observed))
+    elif mutation == "manifest-symlink":
+        source = project / "manifest"
+        manifest.rename(source)
+        manifest.symlink_to(source)
+    assert validate_mcp_observation(
+        item, digest="a" * 64, runtime="claude-code", session="fresh",
+        installed=installed, provider=provider, native_artifacts=records,
+    ) is (mutation in {"valid", "python-fallback"} or (windows and mutation == "not-executable"))
+
+
+def test_manager_native_receipt_uses_lock_and_real_placement(
+    tmp_path, provider, receipt_context, monkeypatch,
+):
+    from mir.core.capabilities.native import host_target, place_artifacts
+
+    target = host_target()
+    if target is None:
+        pytest.skip("native backend is unavailable on this host")
+    monkeypatch.delenv("MIR_CAPABILITY_NATIVE_ARTIFACTS", raising=False)
+    installed, project, _ = receipt_context
+    source = tmp_path / "native-artifact"
+    source.write_bytes(b"native-placement-fixture")
+    digest = hashlib.sha256(source.read_bytes()).hexdigest()
+    records = {"mir-mcp": {"plugin": "mir-mcp", "install_path": "bin/mir-mcp", "targets": {
+        target: {"url": source.as_uri(), "sha256": digest, "size": source.stat().st_size},
+    }}}
+    place_artifacts(installed, "mir-mcp", records)
+    manager = manager_for(tmp_path, provider)
+    lock = {"plugins": {"mir-mcp": {"sha256": "a" * 64}}, "native_artifacts": records}
+    observations = mcp_receipt("claude-code", "fresh", project, str(installed), "a" * 64)
+    observations["mir-mcp"]["backend"] = {
+        "kind": "native", "target": target, "artifact_sha256": digest,
+    }
+    runtime = {"verified": True, "plugins": {"mir-mcp": {
+        "status": "enabled", "installed_path": str(installed),
+    }}}
+    assert manager._mcp_observations_valid(lock, "claude-code", "fresh", observations, runtime)
+    lock.pop("native_artifacts")
+    assert not manager._mcp_observations_valid(lock, "claude-code", "fresh", observations, runtime)
 
 
 @pytest.mark.parametrize("runtime", ["claude-code", "codex-cli-desktop"])
