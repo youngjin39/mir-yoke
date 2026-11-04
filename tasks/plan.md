@@ -169,3 +169,28 @@ hook trust 4/4, Claude b310803f and Codex 01a1a298 attested (five mir-mcp calls 
 finalized, ready at 7b8d2fc. Owner PC: pending. Open: native sweep and queries decline a
 target other than the executor home, so a native_policy home cannot serve them for another
 repository (follow-up).
+
+Release record v0.13.66 (Main, 2026-11-04): native mir-mcp server; cross-repository native
+executor commands. Y4 cb03197 closes the 0.13.65 follow-up (native sweep, cancel, resume and
+queries serve another target from the executor home's pin). M1a 6788a8f, M1b 6be8898 and M1x
+cf94ab3 add the native mir-mcp server (handoff_pins native, four tools forwarded to the Python
+reference), launcher selection of a verified installed binary, the lock artifact, the release
+merge, five-target workflows and the receipt backend. Version e7c9a53 on release/v0.13.66; the
+first Windows CI run failed, and the failures were reproduced on the maintainer's Windows host:
+test-only fixes d0c46fe (elapsed Git text, Windows executable bit, the 3.11 floor) and the
+short parametrize ids / Windows launcher tests, then da76963 (native stat signatures take the
+full FileIdInfo identity, EndOfFile and FILE_BASIC_INFO.ChangeTime like CPython 3.12+ fstat; a
+regular-file root maps to E_PATH; the MSVC binary embeds the longPathAware manifest). Windows
+mir-mcp suites 705 passed. Native prerelease native-da76963d86d0, bind 3bbd1f5; CI validate on
+3bbd1f5 green on every job including Windows before the tag; fresh-clone readiness ready (6347
+passed, 226 skipped). Managing consumer: executor sync, executor-query e903fb0c, the UC-010
+cross-root sweep case passes (xfail removed), real-consumer gate native and Python byte-equal,
+full suite green. Tag v0.13.66 on 3bbd1f5; release workflow green. Receipts now record the
+process backend observed by sampling the probe's process tree. Maintainer host: provider update
+from the 0.13.65 record lock, Codex hook trust 4/4, Claude 74e8be0e and Codex 01a1a682
+attested with backend native (95246dc4), finalized, ready at 3bbd1f5; headless Claude launches
+the plugin from the materialized capability root, Codex from its cache. Owner PC: Claude
+8a4b39c9 and Codex 01a1a68d attested with backend native (98a473a0), finalized, ready; the
+first run of a new mir-mcp.exe took about 26 s (antivirus scan), so the probe warms it first.
+Constraint: Python 3.11 on Windows reports a 32-bit serial and creation time, so cross-runtime
+cursors assume 3.12+ there. Open: owner Windows field report (Discord 1567516739883765833).
