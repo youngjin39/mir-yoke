@@ -83,7 +83,7 @@
       "sha256": "4a34749ad8306f073feaad21e7735b7d7a8e1026b8f575f689977d7f7ff5a256"
     },
     ".claude-plugin/marketplace.json": {
-      "sha256": "16ccb68575498381264c3e9a29184027520b5d482af905e95a1839ee0fc5333c"
+      "sha256": "13b30453b65c9e93adc9e6c7ce2d54d5140a01e2b3555cedaaf65ad2473bf7df"
     }
   },
   "native_artifacts": {
@@ -94,27 +94,27 @@
         "aarch64-apple-darwin": {
           "sha256": "ca4954b5f757c6a26766549ba88d753f9a938d3ae7e208a3a18553d5d61b1f55",
           "size": 402160,
-          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-84b8ae786808/bootstrap-gate-aarch64-apple-darwin"
+          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-c35d511934bd/bootstrap-gate-aarch64-apple-darwin"
         },
         "aarch64-unknown-linux-gnu": {
           "sha256": "04ef3ec3b3fdfc7760f1e9d60d6216b0c554d525f051d4a5534d2ebff42ec513",
           "size": 398048,
-          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-84b8ae786808/bootstrap-gate-aarch64-unknown-linux-gnu"
+          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-c35d511934bd/bootstrap-gate-aarch64-unknown-linux-gnu"
         },
         "x86_64-apple-darwin": {
           "sha256": "44571afdeaa60d94645c95cfa45460567e656c44c4c6a8d6abd4f128cbc2721c",
           "size": 415640,
-          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-84b8ae786808/bootstrap-gate-x86_64-apple-darwin"
+          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-c35d511934bd/bootstrap-gate-x86_64-apple-darwin"
         },
         "x86_64-pc-windows-msvc": {
-          "sha256": "9bca24d24bf450fffdc5309e5afd1bf92523e2c33fa48cfd0c94457e84bf5e30",
+          "sha256": "09e75a4d1f28c07e60b07ff30351ef9cf58c556e17f9ee96aca3e9826cd91913",
           "size": 115200,
-          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-84b8ae786808/bootstrap-gate-x86_64-pc-windows-msvc.exe"
+          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-c35d511934bd/bootstrap-gate-x86_64-pc-windows-msvc.exe"
         },
         "x86_64-unknown-linux-gnu": {
           "sha256": "4b9aefcd99edf1a36a489d897ddfcc875079f1961e942091da7baa8a918e5898",
           "size": 429208,
-          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-84b8ae786808/bootstrap-gate-x86_64-unknown-linux-gnu"
+          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-c35d511934bd/bootstrap-gate-x86_64-unknown-linux-gnu"
         }
       }
     },
@@ -125,27 +125,27 @@
         "aarch64-apple-darwin": {
           "sha256": "c66847d70803f3ff978ab66554b4d7dc3233d56e1a08213079a2d10ecef977f1",
           "size": 385552,
-          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-84b8ae786808/delegation-gate-aarch64-apple-darwin"
+          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-c35d511934bd/delegation-gate-aarch64-apple-darwin"
         },
         "aarch64-unknown-linux-gnu": {
           "sha256": "f7d5a509060db8ff63bbe168814530686bb533722e41be4c960de8a69f850ea2",
           "size": 398104,
-          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-84b8ae786808/delegation-gate-aarch64-unknown-linux-gnu"
+          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-c35d511934bd/delegation-gate-aarch64-unknown-linux-gnu"
         },
         "x86_64-apple-darwin": {
           "sha256": "fd2acb9a5b29780a85d59f52aff0482cf303c96e21616572bb134824bf75a127",
           "size": 390928,
-          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-84b8ae786808/delegation-gate-x86_64-apple-darwin"
+          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-c35d511934bd/delegation-gate-x86_64-apple-darwin"
         },
         "x86_64-pc-windows-msvc": {
-          "sha256": "472f30d97e330a8364a94770a7c6a741743fc154b984705f40cd267f59e8bc68",
+          "sha256": "741d011c36ea0129921c3c3bd26a7d7feecf3b504a03cec844b6100dd9fbf454",
           "size": 237568,
-          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-84b8ae786808/delegation-gate-x86_64-pc-windows-msvc.exe"
+          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-c35d511934bd/delegation-gate-x86_64-pc-windows-msvc.exe"
         },
         "x86_64-unknown-linux-gnu": {
           "sha256": "927b19ccb1af9600cc97d179bbb4c39eb22b2026b5cac4525e63f09bcc7dcc2b",
           "size": 398104,
-          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-84b8ae786808/delegation-gate-x86_64-unknown-linux-gnu"
+          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-c35d511934bd/delegation-gate-x86_64-unknown-linux-gnu"
         }
       }
     },
@@ -156,27 +156,27 @@
         "aarch64-apple-darwin": {
           "sha256": "e903fb0cba81252725e83e1d6c1667d0f5b9280dca2ecd4b675fe3469cc89498",
           "size": 4617152,
-          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-84b8ae786808/executor-query-aarch64-apple-darwin"
+          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-c35d511934bd/executor-query-aarch64-apple-darwin"
         },
         "aarch64-unknown-linux-gnu": {
           "sha256": "33f0b4848bb39d0f783b5fbdb60b7c0bc07e2eba12bfae4ea2aee8333ed74c31",
           "size": 5066544,
-          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-84b8ae786808/executor-query-aarch64-unknown-linux-gnu"
+          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-c35d511934bd/executor-query-aarch64-unknown-linux-gnu"
         },
         "x86_64-apple-darwin": {
           "sha256": "61ec4a36490f1efd7eceae32bab7e2d5f15e98613922248cbd9f3ebf5187d787",
           "size": 5096544,
-          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-84b8ae786808/executor-query-x86_64-apple-darwin"
+          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-c35d511934bd/executor-query-x86_64-apple-darwin"
         },
         "x86_64-pc-windows-msvc": {
-          "sha256": "ae723972cc8afcff9fe0facffd001bf3b72c04b41af084138fa118978157bc23",
+          "sha256": "7a3fed1e1ee702d1a56fe6561f1eb14d52739816bb8afe81432991a851757a73",
           "size": 5014528,
-          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-84b8ae786808/executor-query-x86_64-pc-windows-msvc.exe"
+          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-c35d511934bd/executor-query-x86_64-pc-windows-msvc.exe"
         },
         "x86_64-unknown-linux-gnu": {
           "sha256": "cb46eebacd0e4e9a9ccbf6d9a21010ebd5f3d977b22fe66b7c9de2f64757dccc",
           "size": 5962640,
-          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-84b8ae786808/executor-query-x86_64-unknown-linux-gnu"
+          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-c35d511934bd/executor-query-x86_64-unknown-linux-gnu"
         }
       }
     },
@@ -187,27 +187,27 @@
         "aarch64-apple-darwin": {
           "sha256": "dc036de5d02060863e6d07e5dd01bd2f74a012daddacbca5a161724781e1afdd",
           "size": 2207856,
-          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-84b8ae786808/handoff-packet-aarch64-apple-darwin"
+          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-c35d511934bd/handoff-packet-aarch64-apple-darwin"
         },
         "aarch64-unknown-linux-gnu": {
           "sha256": "a5914136ebf0b7ccc289d23173a3e2ee34136c119f296981afd12f70fa8756a9",
           "size": 2495408,
-          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-84b8ae786808/handoff-packet-aarch64-unknown-linux-gnu"
+          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-c35d511934bd/handoff-packet-aarch64-unknown-linux-gnu"
         },
         "x86_64-apple-darwin": {
           "sha256": "502cb5d3cb49b714b95a15cab522dcb4b9dd90287f340e3a18be970264ecfdd4",
           "size": 2495496,
-          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-84b8ae786808/handoff-packet-x86_64-apple-darwin"
+          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-c35d511934bd/handoff-packet-x86_64-apple-darwin"
         },
         "x86_64-pc-windows-msvc": {
-          "sha256": "171a58cf6c05c9228214e62d1db6025f0df3ec6e0d02e85deae6d61d326d144f",
+          "sha256": "6001f168dfa573b5e360e5632e717350d521edc536d780c13a605d0faa15140b",
           "size": 2446336,
-          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-84b8ae786808/handoff-packet-x86_64-pc-windows-msvc.exe"
+          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-c35d511934bd/handoff-packet-x86_64-pc-windows-msvc.exe"
         },
         "x86_64-unknown-linux-gnu": {
           "sha256": "455e814e0570990087cf53de06ff9b9942ece57618ab5db221f51f979e75e657",
           "size": 2839592,
-          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-84b8ae786808/handoff-packet-x86_64-unknown-linux-gnu"
+          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-c35d511934bd/handoff-packet-x86_64-unknown-linux-gnu"
         }
       }
     },
@@ -216,29 +216,29 @@
       "plugin": "mir-mcp",
       "targets": {
         "aarch64-apple-darwin": {
-          "sha256": "6958a466f823690d9004f3312495f56dbd4440adac45afb368049ace7606ebe0",
+          "sha256": "6dca1edde21f2169986237c1f72c9fd61fcb73c95adc355082eb856a883d694c",
           "size": 1412256,
-          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-84b8ae786808/mir-mcp-aarch64-apple-darwin"
+          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-c35d511934bd/mir-mcp-aarch64-apple-darwin"
         },
         "aarch64-unknown-linux-gnu": {
-          "sha256": "a1c3c717457e0fe1612748aedfcbfcbfba243e734ad5f24dc79151aa3a556f35",
+          "sha256": "4e1824d5c26287964a31e10b7d3614564e97799abf51735a6f043d48b1b014bf",
           "size": 1550808,
-          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-84b8ae786808/mir-mcp-aarch64-unknown-linux-gnu"
+          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-c35d511934bd/mir-mcp-aarch64-unknown-linux-gnu"
         },
         "x86_64-apple-darwin": {
-          "sha256": "4bbb549fa4d2a23b5037deeec514e28e9ba7f1bac09459253e74826f0187c074",
+          "sha256": "722a744fab77d322dd9b9da412b959b0e3067cbfe0f90d0b0b8d131d24fb1f58",
           "size": 1420888,
-          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-84b8ae786808/mir-mcp-x86_64-apple-darwin"
+          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-c35d511934bd/mir-mcp-x86_64-apple-darwin"
         },
         "x86_64-pc-windows-msvc": {
-          "sha256": "618cffa8aea41385e1b089e451cc78481216b76b6ba1168931e8a51d334e9925",
+          "sha256": "90cdc53696de9e2fbd95e41b2fe4ce71874f1f6ee5d719c7812e88a868dc0395",
           "size": 1217024,
-          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-84b8ae786808/mir-mcp-x86_64-pc-windows-msvc.exe"
+          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-c35d511934bd/mir-mcp-x86_64-pc-windows-msvc.exe"
         },
         "x86_64-unknown-linux-gnu": {
-          "sha256": "0ed50b35147bd9d28f48e4be20e900be2357defd296ccdf306f05ec957105f64",
+          "sha256": "7ab7fa49c71dd4c1a667fc668a7549863851c4e0bed0354384b26dd2a10ba3a3",
           "size": 1606264,
-          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-84b8ae786808/mir-mcp-x86_64-unknown-linux-gnu"
+          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-c35d511934bd/mir-mcp-x86_64-unknown-linux-gnu"
         }
       }
     },
@@ -249,27 +249,27 @@
         "aarch64-apple-darwin": {
           "sha256": "e29bae2192b70300d4f635f5039365b392164d60e66ef06df7eada5dc54c557c",
           "size": 302464,
-          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-84b8ae786808/runtime-continuity-aarch64-apple-darwin"
+          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-c35d511934bd/runtime-continuity-aarch64-apple-darwin"
         },
         "aarch64-unknown-linux-gnu": {
           "sha256": "61b84c9c07f5147a9b146758107d84d3c96e18f34431147114b0faa8f54328ea",
           "size": 332520,
-          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-84b8ae786808/runtime-continuity-aarch64-unknown-linux-gnu"
+          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-c35d511934bd/runtime-continuity-aarch64-unknown-linux-gnu"
         },
         "x86_64-apple-darwin": {
           "sha256": "84036eb41804f1f867b95142e5d3ca66de045540b057de1e0b3e21048d61ecb7",
           "size": 287952,
-          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-84b8ae786808/runtime-continuity-x86_64-apple-darwin"
+          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-c35d511934bd/runtime-continuity-x86_64-apple-darwin"
         },
         "x86_64-pc-windows-msvc": {
-          "sha256": "fa1b76b5221c3d7ebb1fafa65f27462a0379373ff8b0197d8fd1aa3922dc7101",
+          "sha256": "73ebdc07220df7ea4575838456ebef34e16afc056b7c6c55a8df4ecd9b58b4c0",
           "size": 117248,
-          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-84b8ae786808/runtime-continuity-x86_64-pc-windows-msvc.exe"
+          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-c35d511934bd/runtime-continuity-x86_64-pc-windows-msvc.exe"
         },
         "x86_64-unknown-linux-gnu": {
           "sha256": "0bf0a91930ef7104f8172707d2173488aeebf0183710e3693c6bd6a110b1065c",
           "size": 296208,
-          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-84b8ae786808/runtime-continuity-x86_64-unknown-linux-gnu"
+          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-c35d511934bd/runtime-continuity-x86_64-unknown-linux-gnu"
         }
       }
     },
@@ -280,27 +280,27 @@
         "aarch64-apple-darwin": {
           "sha256": "a6313cca73ce9555df1ea8dae79fd9e7b90b49b67fdd8e576ed7a31ba8adec74",
           "size": 402288,
-          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-84b8ae786808/runtime-verify-aarch64-apple-darwin"
+          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-c35d511934bd/runtime-verify-aarch64-apple-darwin"
         },
         "aarch64-unknown-linux-gnu": {
           "sha256": "13e34b3e675f1041af35a51e7a62d2903d097eb6677d7a3e09c6a391b11e1948",
           "size": 398056,
-          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-84b8ae786808/runtime-verify-aarch64-unknown-linux-gnu"
+          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-c35d511934bd/runtime-verify-aarch64-unknown-linux-gnu"
         },
         "x86_64-apple-darwin": {
           "sha256": "f84fdc520ec3966bf43a9f10393dd1a4e75e66de7ffbfb9a45a0e1be99b5579d",
           "size": 428080,
-          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-84b8ae786808/runtime-verify-x86_64-apple-darwin"
+          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-c35d511934bd/runtime-verify-x86_64-apple-darwin"
         },
         "x86_64-pc-windows-msvc": {
-          "sha256": "7ab9c83635b159a95a71f490fe9e89bec14df279f7a07bfe8f95f883f34d140a",
+          "sha256": "d122e2c5a22655c0a8ab9d4b321f7a996162e1bfa481d0e337761ea3f5cdb521",
           "size": 293376,
-          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-84b8ae786808/runtime-verify-x86_64-pc-windows-msvc.exe"
+          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-c35d511934bd/runtime-verify-x86_64-pc-windows-msvc.exe"
         },
         "x86_64-unknown-linux-gnu": {
           "sha256": "9ee8c4ec1f44ed6df3f2be17cee8eb69ceee6d4025825147b2220d8798944159",
           "size": 444552,
-          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-84b8ae786808/runtime-verify-x86_64-unknown-linux-gnu"
+          "url": "https://github.com/youngjin39/mir-yoke/releases/download/native-c35d511934bd/runtime-verify-x86_64-unknown-linux-gnu"
         }
       }
     }
@@ -309,22 +309,22 @@
     "mir-code": {
       "package_kind": "skills",
       "path": "plugins/mir-code",
-      "sha256": "6c87aa0e201a855bb91968c94e1308d7df811c79cc47cf3b973c454c7c78718d"
+      "sha256": "8b5e32cc54211ed997f9aa4f3f5dcf3fbb90795b2c5fe7774e286dfdeaded29f"
     },
     "mir-content": {
       "package_kind": "skills",
       "path": "plugins/mir-content",
-      "sha256": "71c21672450983dfd5704cd4966d1cc79d6d5a700825cbb14ec9c612ba482219"
+      "sha256": "f21c93bf018cceb014ae1b20e2da2a44460135437c4e7bd7fab884279e34a214"
     },
     "mir-core": {
       "package_kind": "skills",
       "path": "plugins/mir-core",
-      "sha256": "f6abf1b5b591b68adcc6eafa5b0fe218f84fd70bf24be2a44d736f4f1e427833"
+      "sha256": "40da6103a674616a6971a9d7372269859066b149a40d8f6ce458b1285a767a78"
     },
     "mir-lifecycle-hooks": {
       "package_kind": "skills-hooks",
       "path": "plugins/mir-lifecycle-hooks",
-      "sha256": "6e75270c8d20263ded81faf3b51961aab25d65807a3bf6f21501ba49311da2f7"
+      "sha256": "993b939533dc7539fddc3ed083a066f60010653e9b61e65c568da77187c23f94"
     },
     "mir-mcp": {
       "mcp": {
@@ -377,7 +377,7 @@
       },
       "package_kind": "mcp-stdio",
       "path": "plugins/mir-mcp",
-      "sha256": "4319f8c6ccc8c715eb8fd86626cbeb3e808de9f7d6d9022de3d042662580a0fc"
+      "sha256": "1facc60bee64e252efb82a676910bb304411b95149af90d1604a085026524913"
     }
   },
   "profile": "hybrid_pipeline",
