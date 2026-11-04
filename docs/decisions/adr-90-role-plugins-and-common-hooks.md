@@ -554,7 +554,8 @@ in the manager changes with it. Tests: the `test_round_t_*` cases in
 
 All four lifecycle events have Rust implementations. The shared hook commands
 select placed native binaries or the Python reference; Codex on Windows uses
-PowerShell commandWindows selectors (corrected in 0.13.57). Codex uses the
+PowerShell commandWindows selectors (corrected in 0.13.57 and superseded by the
+shell-independent launcher amendment below). Codex uses the
 session shell, with cmd.exe only without one. Capability updates place lock-pinned
 native artifacts by default unless MIR_CAPABILITY_NATIVE_ARTIFACTS=0. Placement
 failures keep the existing warning and Python reference. Native prerelease
@@ -570,3 +571,28 @@ records; verification of installed trees uses the active placement receipt.
 Invalid provider metadata or failed placement warns and preserves the Python
 reference without failing the update. Dry-run JSON groups planned names, host
 targets and SHA256 digests by plugin. The native crate and prerelease pins are unchanged.
+
+## Amendment: 2026-11-05 — shell-independent Windows lifecycle launcher
+
+The Windows registration uses `python3` with a quoted launcher path, two
+plain arguments and the exact suffix ` ; exit $LASTEXITCODE`.
+Codex substitutes `${CLAUDE_PLUGIN_ROOT}` before the session's
+user shell parses the command; that shell need not be cmd.exe. This supersedes
+both the earlier PowerShell selectors and the 0.13.67 cmd-only selector.
+Claude Code's Bash `command` declarations stay unchanged.
+
+PowerShell/pwsh `-Command` collapses a native failure code to 1 unless explicitly
+returned with `exit $LASTEXITCODE`; this suffix preserves the handoff deny code 2
+and other child exit codes. Git Bash expands the unset variable to an empty value
+and `exit` returns the last status. cmd.exe has no semicolon operator and passes
+`;`, `exit`, `$LASTEXITCODE` as literal launcher arguments, retaining Python's exit code.
+
+`hooks/windows_hook.py` admits only the two exact hook-name/reference pairs,
+either alone or followed by exactly those three literal arguments. All other
+argument forms are rejected before any child runs. The launcher
+resolves its plugin root from its own location, waits for a regular native
+`bin/<name>.exe` when available, and otherwise invokes the reference with
+`sys.executable`. All three streams are inherited and the child exit code is
+returned. The launcher performs no writes or network operations. Package
+admission checks its exact reviewed digest, the hook directory inventory and
+the complete hook schema. Windows shell tests remain platform-specific evidence.

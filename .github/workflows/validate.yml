@@ -185,6 +185,7 @@ jobs:
           tests/test_capability_legacy_080.py
           tests/test_mechanical_handoff.py
           tests/test_compact_lifecycle_hooks.py
+          tests/test_lifecycle_windows_launcher.py
           tests/test_hook_executability.py
           tests/test_ontology_runner.py
           tests/test_ontology_skill.py

@@ -79,12 +79,10 @@ def _native_hook_command(name: str, reference: str) -> str:
 
 
 def _windows_hook_command(name: str, reference: str) -> str:
-    base = "%CLAUDE_PLUGIN_ROOT%\\bin\\" + name + ".exe"
-    script = "%CLAUDE_PLUGIN_ROOT%\\" + reference.replace("/", "\\")
-    # Codex invokes COMSPEC /C; the selected child supplies cmd.exe's exit status.
+    # Codex substitutes the placeholder before passing this to the user's shell.
     return (
-        f'if exist "{base}" ("{base}") '
-        f'else (python3 "{script}")'
+        'python3 "${CLAUDE_PLUGIN_ROOT}\\hooks\\windows_hook.py" '
+        f'{name} {reference} ; exit $LASTEXITCODE'
     )
 
 
@@ -179,7 +177,8 @@ def main() -> None:
 if __name__ == "__main__":
     main()
 '''
-# ADR-90 amendment (2026-10-22): exact reviewed stateless handoff implementation.
+# ADR-90: exact reviewed Windows launcher and stateless handoff implementations.
+_WINDOWS_LAUNCHER_SHA256 = "3c02cb2d8b0039fb7936770e1c3be36694b4262a0e9e2e6432871fc0f4cc97ac"
 _HANDOFF_HANDLER_SHA256 = "9ae1575db8d2225778cf72b41fed9939ae241d7cc50ffb14cf3d27a8fe4900f4"
 _ACTIVE_PACKAGE_CREDENTIAL_PATTERNS = (
     re.compile(rb"https?://[^\s/@]+@", re.IGNORECASE),
@@ -651,13 +650,18 @@ def _validate_plugin(plugin_root: Path, expected_name: str, *, package_kind: str
         raise CapabilityError(f"Codex skills path drift for {expected_name}")
     if package_kind == "skills-hooks":
         hook_entries = {path.name for path in (plugin_root / "hooks").iterdir()}
-        if hook_entries != {"hooks.json", "runtime_continuity.py"}:
+        if hook_entries != {"hooks.json", "runtime_continuity.py", "windows_hook.py"}:
             raise CapabilityError(f"shared hook content rejected in {expected_name}")
         if any("hooks" in manifest for manifest in manifests):
             raise CapabilityError(f"shared hook path drift for {expected_name}")
         hooks = _read_json(plugin_root / "hooks" / "hooks.json")
         if hooks != _HOOKS_SCHEMA:
             raise CapabilityError(f"shared hook schema drift for {expected_name}")
+        launcher = plugin_root / "hooks" / "windows_hook.py"
+        if launcher.is_symlink() or not launcher.is_file():
+            raise CapabilityError(f"Windows hook launcher is missing or linked: {expected_name}")
+        if hashlib.sha256(launcher.read_bytes()).hexdigest() != _WINDOWS_LAUNCHER_SHA256:
+            raise CapabilityError("Windows hook launcher is not the reviewed read-only launcher")
         handler = plugin_root / "hooks" / "runtime_continuity.py"
         if handler.is_symlink() or not handler.is_file():
             raise CapabilityError(f"shared hook handler is missing or linked: {expected_name}")

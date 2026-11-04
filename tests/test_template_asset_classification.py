@@ -130,6 +130,7 @@ def test_should_remove_provider_state_and_preserve_adopter_runtime_when_payload_
     assert dispositions["src/mir/cli/bootstrap.py"] == "remove"
     assert dispositions["tests/test_bootstrap_cli.py"] == "remove"
     assert dispositions["tasks/plan.md"] == "remove"
+    assert dispositions["plugins/mir-lifecycle-hooks/hooks/windows_hook.py"] == "remove"
     assert dispositions["config/repos/mir-yoke.json"] == "remove"
     assert dispositions["scripts/mir.sh"] == "remove"
     assert dispositions["config/adopter-boundary.json"] == "remove"

@@ -12,6 +12,7 @@ import pytest
 from tests.test_handoff_packet_native_parity import binary as binary
 from tests.test_handoff_packet_native_parity import stop_payload
 from tests.test_handoff_packet_native_parity import stop_repository as stop_repository
+from tests.test_lifecycle_windows_launcher import shell_argv
 from tests.test_mechanical_handoff import HANDLER_PYTHON, PROMPT, packet
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -24,7 +25,7 @@ pytestmark = [
 def _cmd_command(command):
     # CMD parses /C itself; list2cmdline would C-runtime-escape the hook's quotes.
     comspec = os.environ.get('COMSPEC', 'cmd.exe')
-    return f'"{comspec}" /C {command}'
+    return f'"{comspec}" /C "{command}"'
 
 
 @pytest.mark.skipif(os.name == 'nt', reason='POSIX hook shell contract')
@@ -75,10 +76,11 @@ def test_real_hook_command(binary, stop_repository, event, mode, deny):
 
 
 @pytest.mark.skipif(os.name != 'nt', reason='Codex Windows session-shell contract')
+@pytest.mark.parametrize('shell', ['cmd.exe', 'powershell', 'pwsh', 'bash'])
 @pytest.mark.parametrize('event', ['SessionStart', 'UserPromptSubmit', 'PreToolUse', 'Stop'])
 @pytest.mark.parametrize('mode', ['absent', 'present'])
 @pytest.mark.parametrize('deny', [False, True], ids=['allow', 'deny'])
-def test_codex_windows_hook_command(binary, stop_repository, event, mode, deny):
+def test_codex_windows_hook_command(binary, stop_repository, event, mode, deny, shell):
     repo, _ = stop_repository
     plugin = repo / 'plugin with spaces'
     shutil.copytree(PLUGIN, plugin)
@@ -118,8 +120,9 @@ def test_codex_windows_hook_command(binary, stop_repository, event, mode, deny):
         script.write_text('raise SystemExit("Python reference unexpectedly executed")\n')
     command = json.loads((plugin / 'hooks/hooks.json').read_text())['hooks'][event][0]['hooks'][0]
     assert command['timeout'] == (2 if event == 'SessionStart' else 8)
+    substituted = command['commandWindows'].replace('${CLAUDE_PLUGIN_ROOT}', str(plugin))
     result = subprocess.run(
-        _cmd_command(command['commandWindows']),
+        shell_argv(shell, substituted),
         input=payload, capture_output=True, env=env, timeout=15,
     )
     assert (result.stdout, result.stderr, result.returncode) == (
@@ -132,6 +135,7 @@ def test_windows_missing_python_fails_closed(tmp_path):
     plugin.mkdir()
     command = json.loads((PLUGIN / 'hooks/hooks.json').read_text())['hooks'][
         'SessionStart'][0]['hooks'][0]['commandWindows']
+    command = command.replace('${CLAUDE_PLUGIN_ROOT}', str(plugin))
     # Hide external commands without changing the shipped selector.
     result = subprocess.run(
         _cmd_command(command),
@@ -147,12 +151,14 @@ def test_windows_missing_python_fails_closed(tmp_path):
 def test_windows_python_fallback_preserves_utf8_stdin_and_exit(tmp_path):
     plugin = tmp_path / 'plugin with spaces'
     (plugin / 'hooks').mkdir(parents=True)
+    shutil.copyfile(PLUGIN / 'hooks/windows_hook.py', plugin / 'hooks/windows_hook.py')
     (plugin / 'hooks/runtime_continuity.py').write_text(
         'import sys\nsys.stdout.buffer.write(sys.stdin.buffer.read())\n'
         'raise SystemExit(2)\n', encoding='utf-8',
     )
     command = json.loads((PLUGIN / 'hooks/hooks.json').read_text())['hooks'][
         'SessionStart'][0]['hooks'][0]['commandWindows']
+    command = command.replace('${CLAUDE_PLUGIN_ROOT}', str(plugin))
     payload = '\u00e9 \ud55c\n'.encode('utf-8')
     shim = tmp_path / 'shim'
     shim.mkdir()

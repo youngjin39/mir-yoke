@@ -595,6 +595,32 @@ def test_r19_stateless_handoff_handler_has_an_exact_reviewed_digest() -> None:
     assert hashlib.sha256(handler.read_bytes()).hexdigest() == _HANDOFF_HANDLER_SHA256
 
 
+def test_r19_windows_launcher_has_an_exact_reviewed_digest() -> None:
+    from mir.core.capabilities.manager import _WINDOWS_LAUNCHER_SHA256
+
+    launcher = ROOT / "plugins/mir-lifecycle-hooks/hooks/windows_hook.py"
+    assert hashlib.sha256(launcher.read_bytes()).hexdigest() == _WINDOWS_LAUNCHER_SHA256
+
+
+@pytest.mark.parametrize("mutation", ["missing", "linked", "modified"])
+def test_r19_active_package_rejects_unreviewed_windows_launcher(tmp_path, mutation):
+    plugin = tmp_path / "mir-lifecycle-hooks"
+    shutil.copytree(ROOT / "plugins/mir-lifecycle-hooks", plugin)
+    launcher = plugin / "hooks/windows_hook.py"
+    if mutation == "missing":
+        launcher.unlink()
+    elif mutation == "linked":
+        original = launcher.read_bytes()
+        launcher.unlink()
+        sibling = tmp_path / "launcher.py"
+        sibling.write_bytes(original)
+        launcher.symlink_to(sibling)
+    else:
+        launcher.write_bytes(launcher.read_bytes() + b"\n# unreviewed change\n")
+    with pytest.raises(CapabilityError, match="shared hook content|Windows hook launcher"):
+        _validate_plugin(plugin, "mir-lifecycle-hooks", package_kind="skills-hooks")
+
+
 @pytest.mark.parametrize("event", ["SessionStart", "UserPromptSubmit", "PreToolUse", "Stop"])
 @pytest.mark.parametrize("mutation", [
     "command", "commandWindows", "timeout", "matcher", "extra-event",
