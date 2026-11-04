@@ -151,7 +151,9 @@ def test_windows_published_tree_replaces_elevated_like_staging_acl(tmp_path):
                       "$_.IdentityReference.Translate("
                       f"[System.Security.Principal.SecurityIdentifier]).Value -eq '{user}'"
                       "}); if(!$r.Count){exit 3}")
+            # A PowerShell 7 parent's PSModulePath breaks Windows PowerShell module autoload.
+            env = {key: value for key, value in os.environ.items() if key.upper() != "PSMODULEPATH"}
             result = subprocess.run(["powershell", "-NoProfile", "-Command", script],
-                                    env={**os.environ, "MIR_TEST_ACL_PATH": str(path)},
+                                    env={**env, "MIR_TEST_ACL_PATH": str(path)},
                                     capture_output=True, text=True)
             assert result.returncode == 0, result.stderr

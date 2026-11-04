@@ -5573,7 +5573,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_capability_materialized_acl.py",
-      "sha256": "173f7c4e0f88bc6f380155ea4515527c1f7207088f41d4d862a8ab1fa067a186"
+      "sha256": "806194409de16e4ffd70b78a02dfe787e66a56196897577756df838386448b5b"
     },
     {
       "classification": "template-maintainer-tool",
