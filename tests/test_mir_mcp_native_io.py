@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import subprocess
 import sys
 from types import SimpleNamespace
@@ -72,8 +73,10 @@ def call(command, root, paths, **extra):
 
 
 def semantic(raw):
-    """Normalize only the observation clock, including its duplicated text content."""
-    reply = json.loads(raw)
+    """Normalize only the observation clock and elapsed Git times, also in the text content."""
+    if isinstance(raw, bytes):
+        raw = raw.decode()
+    reply = json.loads(re.sub(r'after \d+(?:\.\d+)? s', 'after <elapsed> s', raw))
     result = reply.get('result', {})
     structured = result.get('structuredContent')
     if structured and isinstance(structured.get('data'), dict):

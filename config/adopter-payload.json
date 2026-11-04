@@ -425,7 +425,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": ".github/workflows/validate.yml",
-      "sha256": "b601f5427b9ad4c6df6e13efacecd823ba80042d0f79372d4e2156228b57ce84"
+      "sha256": "39ca56f513d116da5901042f1006f120f8183eb8f419ac0c0520dd859767707e"
     },
     {
       "classification": "reference",
@@ -5561,7 +5561,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_capability_mcp.py",
-      "sha256": "1d294e69a34a29430bc8cb00a412e11aaa50c5ed97253c29f4093d8316e7d796"
+      "sha256": "5862f38cb44929a96cd0f2e337acaa6abbc4e253d8941f0ad9a7a28251b536e8"
     },
     {
       "classification": "template-maintainer-tool",
@@ -5885,7 +5885,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_mir_mcp_native_io.py",
-      "sha256": "09900ba1956a57cd1da8cb974b4e0cf84f51d96c0fbcb65ad490ce5a5274a187"
+      "sha256": "497bce06ffdb9cbeaf8ad80138572b31e4cb2b9de469a00ab40e6a61cfeb24b2"
     },
     {
       "classification": "template-maintainer-tool",

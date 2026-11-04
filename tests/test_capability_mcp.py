@@ -1058,7 +1058,9 @@ def test_mcp_native_receipt_binds_host_pin_and_installed_binary(
     assert validate_mcp_observation(
         item, digest="a" * 64, runtime="claude-code", session="fresh",
         installed=installed, provider=provider, native_artifacts=records,
-    ) is (mutation in {"valid", "python-fallback"} or (windows and mutation == "not-executable"))
+    ) is (mutation in {"valid", "python-fallback"} or (
+        # A Windows host cannot clear the executable bit, whatever the receipt target.
+        (windows or sys.platform == "win32") and mutation == "not-executable"))
 
 
 def test_manager_native_receipt_uses_lock_and_real_placement(
