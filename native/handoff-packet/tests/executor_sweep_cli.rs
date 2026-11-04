@@ -354,3 +354,60 @@ fn windows_path_only(command: &mut Command) {
     #[cfg(not(windows))]
     let _ = command;
 }
+
+#[test]
+fn cross_root_policy_admission_and_legacy_decline() {
+    let fixture = Fixture::new();
+    fixture.setup();
+    let home = fixture.0.join("home");
+    fs::create_dir_all(home.join("config")).unwrap();
+    assert!(
+        Command::new("git")
+            .args(["init", "-q"])
+            .arg(&home)
+            .status()
+            .unwrap()
+            .success()
+    );
+    let run = |cwd: &std::path::Path| {
+        Command::new(env!("CARGO_BIN_EXE_executor-query"))
+            .arg("--home-root")
+            .arg(&home)
+            .args(["sweep", "--repo-root"])
+            .arg(fixture.repo())
+            .args(["--jobs-db"])
+            .arg(fixture.0.join("jobs.db"))
+            .current_dir(cwd)
+            .output()
+            .unwrap()
+    };
+    assert_eq!(run(&fixture.repo()).status.code(), Some(64));
+    fs::write(home.join("config/mir-executor.local.json"), r#"{"native_policy":{"version":1,"target_admission":{"authorize_target":true,"family":{"mode":"reject","failure":{"kind":"ValueError","message":"no families"}},"repository_local":{"kind":"ValueError","message":"current Git root only"}}}}"#).unwrap();
+    let admitted = run(&fixture.repo());
+    assert_eq!(
+        admitted.status.code(),
+        Some(0),
+        "{}",
+        String::from_utf8_lossy(&admitted.stderr)
+    );
+    let refused = run(&home);
+    assert_eq!(refused.status.code(), Some(1));
+    assert_eq!(
+        String::from_utf8(refused.stderr).unwrap(),
+        format!(
+            "[mir_executor] authorize_target refused {}: ValueError: current Git root only\n",
+            fixture.repo().display()
+        )
+        .replace('\n', if cfg!(windows) { "\r\n" } else { "\n" })
+    );
+}
+
+#[test]
+fn family_option_still_declines_before_effects() {
+    let fixture = Fixture::new();
+    fixture.setup();
+    let output = fixture.native(&["sweep", "--family", "rejected"]);
+    assert_eq!(output.status.code(), Some(64));
+    assert!(output.stdout.is_empty());
+    assert!(!fixture.0.join("receipt").exists());
+}

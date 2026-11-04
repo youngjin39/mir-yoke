@@ -60,6 +60,7 @@ enum Command {
 struct Args {
     db: PathBuf,
     command: Command,
+    refusal: Option<Vec<u8>>,
 }
 
 fn text_arg(arg: OsString) -> Result<String> {
@@ -129,10 +130,25 @@ fn parse(raw: impl IntoIterator<Item = OsString>, cwd: &Path) -> Result<Args> {
         }
         _ => return Err(()),
     };
-    let root = fs::canonicalize(root.unwrap_or_else(|| cwd.to_owned())).map_err(|_| ())?;
-    let home = fs::canonicalize(home).map_err(|_| ())?;
-    if root != home || !root.is_dir() {
+    let root = handoff_packet::supply::plain(
+        fs::canonicalize(root.unwrap_or_else(|| cwd.to_owned())).map_err(|_| ())?,
+    );
+    let home = handoff_packet::supply::plain(fs::canonicalize(home).map_err(|_| ())?);
+    if !root.is_dir() {
         return Err(());
+    }
+    if root != home {
+        match handoff_packet::executor_admission::authorize_command(&home, cwd, &root, None) {
+            Ok(true) => (),
+            Ok(false) => return Err(()),
+            Err(stderr) => {
+                return Ok(Args {
+                    db: root.join("tasks/jobs.db"),
+                    command,
+                    refusal: Some(stderr),
+                });
+            }
+        }
     }
     if matches!(command, Command::Cancel(_)) && !absent(&root.join("tools/mir_executor/local.py"))?
     {
@@ -145,7 +161,11 @@ fn parse(raw: impl IntoIterator<Item = OsString>, cwd: &Path) -> Result<Args> {
     if db.components().any(|part| part == Component::ParentDir) {
         return Err(());
     }
-    Ok(Args { db, command })
+    Ok(Args {
+        db,
+        command,
+        refusal: None,
+    })
 }
 
 fn absent(path: &Path) -> Result<bool> {
@@ -614,6 +634,11 @@ fn output(command: &Command, jobs: &[Job], py: &PythonText) -> Result<(String, S
 }
 
 fn run(args: &Args) -> Result<(String, String, i32)> {
+    if let Some(stderr) = &args.refusal {
+        let stderr = String::from_utf8(stderr.clone()).map_err(|_| ())?;
+        handoff_packet::executor_protocol::claim();
+        return Ok((String::new(), stderr, 1));
+    }
     match std::env::var("PYTHONIOENCODING") {
         Ok(value) if !utf8_encoding(&value) => return Err(()),
         Err(std::env::VarError::NotUnicode(_)) => return Err(()),

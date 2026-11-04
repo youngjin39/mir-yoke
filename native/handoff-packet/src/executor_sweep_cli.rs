@@ -22,7 +22,16 @@ struct Args {
     retention: i64,
     bridge: Option<BridgeConfig>,
 }
-fn parse(raw: &[OsString], cwd: &Path, home: &Path) -> Result<Args, &'static str> {
+enum ParseError {
+    Decline(&'static str),
+    Refused(Vec<u8>),
+}
+impl From<&'static str> for ParseError {
+    fn from(reason: &'static str) -> Self {
+        Self::Decline(reason)
+    }
+}
+fn parse(raw: &[OsString], cwd: &Path, home: &Path) -> Result<Args, ParseError> {
     let mut iter = raw.iter();
     let mut command = false;
     let mut repo = cwd.to_owned();
@@ -41,7 +50,7 @@ fn parse(raw: &[OsString], cwd: &Path, home: &Path) -> Result<Args, &'static str
     )
     .ok_or("sweep options")?;
     if !command {
-        return Err("sweep missing command");
+        return Err("sweep missing command".into());
     }
     let repo = fs::canonicalize(if repo.is_absolute() {
         repo
@@ -50,12 +59,19 @@ fn parse(raw: &[OsString], cwd: &Path, home: &Path) -> Result<Args, &'static str
     })
     .map(crate::supply::plain)
     .map_err(|_| "sweep repo canonicalization")?;
-    if repo
-        != fs::canonicalize(home)
-            .map(crate::supply::plain)
-            .map_err(|_| "sweep home canonicalization")?
+    if fs::canonicalize(home)
+        .ok()
+        .map(crate::supply::plain)
+        .as_ref()
+        != Some(&repo)
     {
-        return Err("sweep home/root mismatch");
+        match crate::executor_admission::authorize_command(home, cwd, &repo, None) {
+            Ok(true) => (),
+            Ok(false) => return Err("sweep home/root mismatch".into()),
+            Err(stderr) => {
+                return Err(ParseError::Refused(stderr));
+            }
+        }
     }
     // Explicit parser extensions remain reference-owned before target import.
     let bridge = match fs::read(repo.join("tools").join("mir_executor").join("local.py")) {
@@ -65,7 +81,7 @@ fn parse(raw: &[OsString], cwd: &Path, home: &Path) -> Result<Args, &'static str
                 .windows(b"register_execute_options".len())
                 .any(|part| part == b"register_execute_options")
             {
-                return Err("sweep local parser extension");
+                return Err("sweep local parser extension".into());
             }
             let environment: BTreeMap<OsString, OsString> = std::env::vars_os().collect();
             let interpreter = crate::executor_execute::interpreter(&environment, cwd)
@@ -75,7 +91,7 @@ fn parse(raw: &[OsString], cwd: &Path, home: &Path) -> Result<Args, &'static str
                 .join("mir_executor")
                 .join("local_bridge.py");
             if !bridge_script.is_file() {
-                return Err("sweep bridge script missing");
+                return Err("sweep bridge script missing".into());
             }
             Some(BridgeConfig {
                 interpreter,
@@ -85,12 +101,12 @@ fn parse(raw: &[OsString], cwd: &Path, home: &Path) -> Result<Args, &'static str
                 timeout: Duration::from_secs(10),
             })
         }
-        _ => return Err("sweep local source read"),
+        _ => return Err("sweep local source read".into()),
     };
     let db = db.unwrap_or_else(|| repo.join("tasks").join("jobs.db"));
     let db = if db.is_absolute() { db } else { cwd.join(db) };
     if db.components().any(|p| p == Component::ParentDir) {
-        return Err("sweep db parent traversal");
+        return Err("sweep db parent traversal".into());
     }
     // Python resolves parent aliases (for example the platform temp directory)
     // before opening SQLite. Preserve the final component so admission can
@@ -115,7 +131,7 @@ fn parse(raw: &[OsString], cwd: &Path, home: &Path) -> Result<Args, &'static str
     .map_err(|_| "sweep clock overflow")?;
     if retention > today + 719162 || !ledger_supported(&db) {
         return Err(
-            "sweep retention or ledger admission (sidecars, type, SQLite open/schema/rows)",
+            "sweep retention or ledger admission (sidecars, type, SQLite open/schema/rows)".into(),
         );
     }
     Ok(Args {
@@ -359,7 +375,12 @@ fn execute(mut args: Args, cwd: &Path) -> Result<String, String> {
 pub fn run(raw: &[OsString], cwd: &Path, home_root: &Path) -> i32 {
     let args = match parse(raw, cwd, home_root) {
         Ok(args) => args,
-        Err(reason) => return crate::executor_protocol::decline(reason),
+        Err(ParseError::Decline(reason)) => return crate::executor_protocol::decline(reason),
+        Err(ParseError::Refused(stderr)) => {
+            executor_protocol::claim();
+            let _ = crate::executor_execute::emit(&String::from_utf8_lossy(&stderr), true);
+            return 1;
+        }
     };
     if let Ok(encoding) = std::env::var("PYTHONIOENCODING") {
         let encoding = encoding.split(':').next().unwrap_or("");

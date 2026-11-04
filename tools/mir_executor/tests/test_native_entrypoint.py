@@ -12,6 +12,28 @@ import pytest
 from tools.mir_executor import entrypoint
 
 
+@pytest.mark.parametrize('command', ['status', 'result', 'list-jobs'])
+def test_cross_root_queries_use_home_pin(monkeypatch, tmp_path, command):
+    home, target = tmp_path / 'home', tmp_path / 'target'
+    home.mkdir()
+    target.mkdir()
+    monkeypatch.setattr(entrypoint, '_HOME_ROOT', home)
+    for key in ('MIR_EXECUTOR_IMPL', 'MIR_EXECUTOR_QUERY_IMPL', 'MIR_NATIVE_HOOKS'):
+        monkeypatch.delenv(key, raising=False)
+    pin = home / 'pin.json'
+    pin.write_text('{}', encoding='utf-8')
+    roots = []
+    monkeypatch.setattr(entrypoint, '_safe_path', lambda root, _: roots.append(root) or pin)
+    monkeypatch.setattr(entrypoint, '_pinned_query', lambda root, _: home / 'executor-query')
+    calls = []
+    monkeypatch.setattr(entrypoint.subprocess, 'run', lambda argv, **_: calls.append(argv) or
+                        types.SimpleNamespace(returncode=0, stdout=b'', stderr=b''))
+    argv = [command, '--repo-root', str(target)]
+    assert entrypoint._native_query(argv) == 0
+    assert roots == [home]
+    assert calls == [[str(home / 'executor-query'), '--home-root', str(home), *argv]]
+
+
 @pytest.mark.parametrize('arguments,selector', [
     (['execute', '--dispatch'], 'MIR_EXECUTOR_DISPATCH_IMPL'),
     (['resume', '--job-id', 'fixture'], 'MIR_EXECUTOR_RESUME_IMPL'),

@@ -655,3 +655,65 @@ def test_pinned_bridge_uses_caller_venv(binary, tmp_path, caller_venv, command, 
         assert value == 'venv-only'
         snapshots.append(SUPPORT['snapshot'](root, launcher, result))
     assert snapshots[0] == snapshots[1]
+
+
+@pytest.mark.skipif(os.name != 'posix', reason='POSIX interruption process group')
+def test_cross_root_interrupted_dispatch_sweep_then_resume(binary, tmp_path):
+    home = tmp_path / 'owner'
+    SUPPORT['seed'](home, 'success')
+    (home / 'config').mkdir(exist_ok=True)
+    (home / 'config/mir-executor.local.json').write_text(json.dumps({
+        'native_policy': {'version': 1, 'target_admission': {
+            'authorize_target': True,
+            'family': {'mode': 'reject', 'failure': {
+                'kind': 'ValueError', 'message': 'family denied {family}'}}}}}), encoding='utf-8')
+    target = tmp_path / 'consumer'
+    launcher, environment, arguments = DISPATCH['seed'](target, 'success', SUPPORT)
+    original = launcher.read_text(encoding='utf-8')
+    launcher.write_text(
+        '#!/usr/bin/env python3\nimport os, time\nfrom pathlib import Path\n'
+        "root = Path(os.environ['EXECUTE_FIXTURE_ROOT'])\n"
+        "(root / 'provider-started').touch()\n"
+        "while not (root / 'provider-release').exists(): time.sleep(0.02)\n"
+        + original.removeprefix('#!/usr/bin/env python3\n'), encoding='utf-8')
+    environment['MIR_EXECUTOR_OWNED_RECEIPT'] = str(target / 'receipt')
+    command = [str(binary), '--home-root', str(home)]
+    output = target / 'interrupted-output'
+    with output.open('wb') as stream:
+        process = subprocess.Popen([*command, *arguments], cwd=target, env=environment,
+                                   stdout=stream, stderr=stream, start_new_session=True)
+        try:
+            deadline = time.monotonic() + 30
+            while not (target / 'provider-started').exists():
+                assert process.poll() is None, output.read_bytes()
+                assert time.monotonic() < deadline, output.read_bytes()
+                time.sleep(0.02)
+            os.killpg(process.pid, 9)
+            process.wait(timeout=10)
+        finally:
+            (target / 'provider-release').touch()
+            try:
+                os.killpg(process.pid, 9)
+            except ProcessLookupError:
+                pass
+            process.wait(timeout=10)
+    with sqlite3.connect(target / 'tasks/jobs.db') as connection:
+        job_id, status, count = connection.execute(
+            'SELECT job_id,status,resume_count FROM jobs').fetchone()
+    assert (status, count) == ('running', 0), output.read_bytes()
+    # Age the interrupted job beyond its timeout without waiting for wall time.
+    with sqlite3.connect(target / 'tasks/jobs.db') as connection:
+        connection.execute("UPDATE jobs SET started_at='2000-01-01T00:00:00+00:00'")
+    sweep = subprocess.run([*command, 'sweep', '--repo-root', '.',
+                            '--grace-seconds', '0', '--apply'], cwd=target,
+                           env=environment, capture_output=True, timeout=45, check=False)
+    assert sweep.returncode == 0, sweep.stderr
+    assert json.loads(sweep.stdout)['stale_jobs'] == [job_id]
+    resumed = subprocess.run([*command, 'resume', '--repo-root', '.',
+                              '--job-id', job_id], cwd=target, env=environment,
+                             capture_output=True, timeout=60, check=False)
+    assert resumed.returncode == 0, (resumed.stdout, resumed.stderr)
+    with sqlite3.connect(target / 'tasks/jobs.db') as connection:
+        assert connection.execute('SELECT job_id,status,resume_count FROM jobs').fetchall() == [
+            (job_id, 'completed', 1)]
+    assert (target / 'code.txt').read_text() == 'delegated change\n'

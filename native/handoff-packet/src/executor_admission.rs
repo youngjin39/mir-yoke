@@ -547,6 +547,56 @@ fn authorize(
     Ok(None)
 }
 
+/// Authorize a command against another root using the invoking home's policy.
+/// False preserves legacy ownership when no native authorization is declared.
+pub fn authorize_command(
+    home: &Path,
+    cwd: &Path,
+    root: &Path,
+    family: Option<&str>,
+) -> Result<bool, Vec<u8>> {
+    let environment: BTreeMap<OsString, OsString> = std::env::vars_os().collect();
+    let Some(home) = fs::canonicalize(home).ok().map(crate::supply::plain) else {
+        return Ok(false);
+    };
+    let output = Command::new("git")
+        .arg("-C")
+        .arg(&home)
+        .args(["rev-parse", "--show-toplevel"])
+        .current_dir(cwd)
+        .env_clear()
+        .envs(&environment)
+        .output();
+    if !output.ok().is_some_and(|output| {
+        output.status.success()
+            && std::str::from_utf8(&output.stdout)
+                .ok()
+                .and_then(|s| resolved(Path::new(s.trim()), cwd).ok())
+                .as_ref()
+                == Some(&home)
+    }) {
+        return Ok(false);
+    }
+    let policy =
+        native_policy(&home).map_err(|error| format!("[mir_executor] {error}\n").into_bytes())?;
+    let Some(policy) = policy.filter(|policy| policy.has_authorize_target()) else {
+        return Ok(false);
+    };
+    policy
+        .authorize(cwd, root, &json!({"family": family}), &environment)
+        .map_err(|error| {
+            let mut stderr = error.stderr.unwrap_or_default();
+            stderr.push_str(&format!(
+                "[mir_executor] authorize_target refused {}: {}: {}\n",
+                root.display(),
+                error.kind,
+                error.message
+            ));
+            stderr.into_bytes()
+        })?;
+    Ok(true)
+}
+
 // Never import Python to decide which implementation owns admission. Reject
 // references conservatively: aliases and conditional exports must not bypass
 // duplicate ownership by avoiding a literal function definition.

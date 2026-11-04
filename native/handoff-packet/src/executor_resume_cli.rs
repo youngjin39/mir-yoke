@@ -287,14 +287,11 @@ pub fn run(raw: &[OsString], cwd: &Path, home: &Path) -> i32 {
     let Some(cli) = parse(raw, cwd) else {
         return crate::executor_protocol::decline("resume options/root parse");
     };
-    if fs::canonicalize(home)
+    let cross_target = fs::canonicalize(home)
         .ok()
         .map(crate::supply::plain)
         .as_ref()
-        != Some(&cli.root)
-    {
-        return crate::executor_protocol::decline("resume home/root mismatch");
-    }
+        != Some(&cli.root);
     let row = match read_row(&cli.db, &cli.job) {
         Ok(row) => row,
         Err(reason) => return crate::executor_protocol::decline(&reason),
@@ -321,6 +318,20 @@ pub fn run(raw: &[OsString], cwd: &Path, home: &Path) -> i32 {
             .is_some_and(|s| !matches!(s, "codex" | "claude"))
         {
             return crate::executor_protocol::decline("resume unsupported backend");
+        }
+    }
+    if cross_target {
+        let family = row.as_ref().and_then(|row| row["family"].as_str());
+        match crate::executor_admission::authorize_command(home, cwd, &cli.root, family) {
+            Ok(true) => (),
+            Ok(false) => {
+                return crate::executor_protocol::decline("resume home/root mismatch");
+            }
+            Err(stderr) => {
+                crate::executor_protocol::claim();
+                let _ = execute::emit(&String::from_utf8_lossy(&stderr), true);
+                return 1;
+            }
         }
     }
     let local = cli.root.join("tools").join("mir_executor").join("local.py");

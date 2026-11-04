@@ -8,6 +8,9 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+### Fixed
+- Native-policy homes can authorize supported cross-repository sweep, cancel, status, list-jobs, result and resume commands with the same target admission used by execute. Queries use the invoking home's verified binary pin. Homes without native authorization retain their existing native decline and Python fallback behavior.
+
 ## [v0.13.65] — 2026-11-03 — Native brief and result policy; Python APIs honour native hooks
 
 ### Added

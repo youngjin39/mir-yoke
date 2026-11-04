@@ -7,7 +7,7 @@
     "tools/mir_executor/cli_parser.py": "347b8739ee4ee455e8bbfb5790f2abb39a59149df2831c51f676602bc39f2e3c",
     "tools/mir_executor/codex_mcp_client.py": "1daf25b1508ec483a8d2a773a7eb613d0fe5a396a20473801284ed8e0863d9d1",
     "tools/mir_executor/dispatch.py": "1fd85c94872e7913144496aa0977a91a16e50aab7acf13812821e6848d492bef",
-    "tools/mir_executor/entrypoint.py": "664a6fe144f847bceb1ef9f444b944a3d55360f72d2214c0a1c1010937caf9d5",
+    "tools/mir_executor/entrypoint.py": "4a0e3aa7a275f70830aa11aeba40b1dcd5741f861e3a56993e4891acc7468a95",
     "tools/mir_executor/executor.py": "0702a45df75ca53cb09d7fc69a8945f07e42c83e236c4e4decaf87bba329fceb",
     "tools/mir_executor/jobs.py": "daa7dd5d0dc0136fc8ae8fc23ef057d33e56e5ffd3e5ee36cdff36bce379121c",
     "tools/mir_executor/local_bridge.py": "39581386cbc4a79be10c3ebe4347c66e9c96dc5581045f189bdb79d0d9630c5d",

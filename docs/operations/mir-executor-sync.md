@@ -455,18 +455,31 @@ The lightweight entrypoint verifies those bytes before trying `status`, `result`
 CLI routes use that entrypoint.
 
 The native reader opens SQLite read-only and never migrates it. It admits only
-same-home queries with a fully understood schema, including when
+queries with a fully understood schema, including when
 `tools/mir_executor/local.py` or `config/mir-executor.local.json` exists. These
-queries do not read local configuration or call execution or authorization hooks.
+same-home queries do not read local configuration or call execution or authorization hooks.
 Python still imports `local.py` and calls `register_execute_options` while building
 its parser. Accepted divergence: if that import or registration fails, Python
 queries fail while native queries can answer without loading local hooks.
 Unsupported arguments, help, legacy schemas, unsupported
-sidecars and cross-target requests return 64 without output; the caller then
+sidecars and cross-target requests without native home authorization return 64 without output; the caller then
 runs Python with the original arguments. Spawn failure, a missing or mismatched
 pin, `MIR_EXECUTOR_QUERY_IMPL=python`, and `MIR_NATIVE_HOOKS=0` also retain Python.
 `MIR_EXECUTOR_IMPL=python` disables every native route; execute and cancel also
 honor `MIR_EXECUTOR_EXECUTE_IMPL=python` and `MIR_EXECUTOR_CANCEL_IMPL=python`.
+For a different target root, the invoking home must be a Git root and declare
+`native_policy.target_admission.authorize_target: true`. Supported `sweep`,
+`cancel`, `status`, `list-jobs`, `result` and `resume` routes apply that home's
+native `authorize` decision, including `repository_local`, before registry
+writes. Refusals use execute's authorization diagnostics. Resume also checks
+the saved family before preparing execution. Queries, cancel and sweep expose
+no common `--family` option; unsupported parser extensions still decline before
+effects. Query pins belong to the invoking home, never the target. Target registry
+paths and local sweep/resume options remain target-owned. Existing conservative
+schema, parser-extension and cancel local-hook declines still apply; a native
+policy home then fails closed if Python fallback cannot honor its policy.
+Homes without native authorization keep their previous routing and output.
+
 Native `execute --dispatch` and `resume` compose explicit brief agents and
 target-local `resolve_agent_route` hooks through the bridge, including opaque
 validated briefs, repository read-only constraints and Codex definition overrides.

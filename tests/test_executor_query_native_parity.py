@@ -166,6 +166,68 @@ def test_executor_query_explicit_paths(binary, home, command):
     assert invoke(binary, home, argv) == invoke(binary, home, argv, python=True), trace_details()
 
 
+@pytest.mark.parametrize('command', ['status', 'result', 'list-jobs', 'cancel'])
+@pytest.mark.parametrize('policy_mode', ['allow', 'refuse', 'absent', 'unowned', 'invalid'])
+def test_cross_root_native_policy_admission(binary, home, tmp_path, command, policy_mode):
+    target = seed(tmp_path / 'target')
+    for root in (home, target):
+        subprocess.run(['git', 'init', '-q', str(root)], check=True)
+    if policy_mode != 'absent':
+        config = home / 'config'
+        config.mkdir()
+        policy = {'version': 1, 'target_admission': {
+            'authorize_target': policy_mode != 'unowned', 'repository_local': {
+                'kind': 'SystemExit', 'message': '1', 'stderr': 'policy notice\n',
+            },
+        }} if policy_mode != 'invalid' else {'version': 99}
+        (config / 'mir-executor.local.json').write_text(json.dumps({'native_policy': policy}))
+    argv = [command, '--repo-root', str(target)]
+    if command != 'list-jobs':
+        argv += ['--job-id', 'running']
+    before = (target / 'tasks/jobs.db').read_bytes()
+    result = invoke(binary, home, argv, cwd=home if policy_mode == 'refuse' else target)
+    if policy_mode == 'allow':
+        assert result[2] == 0, result
+        if command == 'cancel':
+            expected = '[CANCEL] cancel_requested=True for job_id=running\n'
+            assert result[0] == expected.replace('\n', os.linesep).encode()
+        else:
+            assert result == invoke(binary, target, argv, python=True, cwd=target)
+    else:
+        assert (target / 'tasks/jobs.db').read_bytes() == before
+        if policy_mode in {'absent', 'unowned'}:
+            assert result == (b'', b'', 64)
+        elif policy_mode == 'refuse':
+            expected = ('policy notice\n[mir_executor] authorize_target refused '
+                        f'{target}: SystemExit: 1\n').replace('\n', os.linesep).encode()
+            assert result == (b'', expected, 1)
+        else:
+            assert result[2] == 1, result
+            assert b'native local policy configuration error:' in result[1]
+
+
+@pytest.mark.parametrize('command', ['status', 'result', 'list-jobs', 'cancel'])
+@pytest.mark.parametrize('native_policy', [None, {'version': 99}, {
+    'version': 1, 'target_admission': {'authorize_target': True, 'family': {
+        'mode': 'reject', 'failure': {'kind': 'ValueError', 'message': 'family refused'},
+    }},
+}])
+def test_cross_root_query_family_option_declines(binary, home, tmp_path, command, native_policy):
+    target = seed(tmp_path / 'target')
+    for root in (home, target):
+        subprocess.run(['git', 'init', '-q', str(root)], check=True)
+    if native_policy is not None:
+        (home / 'config').mkdir()
+        (home / 'config/mir-executor.local.json').write_text(
+            json.dumps({'native_policy': native_policy}))
+    argv = [command, '--repo-root', str(target), '--family', 'sample']
+    if command != 'list-jobs':
+        argv += ['--job-id', 'running']
+    before = (target / 'tasks/jobs.db').read_bytes()
+    assert invoke(binary, home, argv, cwd=target) == (b'', b'', 64)
+    assert (target / 'tasks/jobs.db').read_bytes() == before
+
+
 def test_executor_query_empty_database(binary, home):
     with _connect(home / "tasks/jobs.db") as connection:
         connection.execute("DELETE FROM jobs")

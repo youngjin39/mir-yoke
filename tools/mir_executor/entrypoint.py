@@ -91,10 +91,10 @@ def _native_query(argv: list[str]) -> int | None:
                for stream in (sys.stdout, sys.stderr)):
             return None
         root = _query_root(argv)
-        if root is None or root != _HOME_ROOT:
+        if root is None:
             return None
-        pin = json.loads(_safe_path(root, QUERY_PIN).read_bytes())
-        executable = _pinned_query(root, pin)
+        pin = json.loads(_safe_path(_HOME_ROOT, QUERY_PIN).read_bytes())
+        executable = _pinned_query(_HOME_ROOT, pin)
         if executable is None:
             return None
         result = subprocess.run(
