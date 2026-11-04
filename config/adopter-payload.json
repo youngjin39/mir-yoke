@@ -5789,7 +5789,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_lifecycle_native_commands.py",
-      "sha256": "2c9b7fec48861049e674dbf56025ff3ec75678f2986fb2f77e414761c136d0d0"
+      "sha256": "b52653e4575fb199d86bdb7ed878dbdfef61e267fa9f0ed807b5ffa6a90f296c"
     },
     {
       "classification": "template-maintainer-tool",

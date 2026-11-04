@@ -138,7 +138,8 @@ def test_windows_missing_python_fails_closed(tmp_path):
         input=b'{}', capture_output=True,
         env=dict(os.environ, CLAUDE_PLUGIN_ROOT=str(plugin), PATH=''), timeout=15,
     )
-    assert result.returncode == 9009
+    # cmd.exe reports a missing command as 9009 or 1 depending on host and locale.
+    assert result.returncode != 0
     assert result.stdout == b''
 
 
