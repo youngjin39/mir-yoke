@@ -24,7 +24,7 @@ try:
 except ImportError:
     tomllib = None
 
-VERSION = "0.13.69"
+VERSION = "0.13.70"
 MODERN = "2026-07-28"
 LEGACY = "2025-11-25"
 VERSIONS = [MODERN, LEGACY]

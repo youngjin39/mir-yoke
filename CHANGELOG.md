@@ -8,6 +8,11 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+## [v0.13.70] — 2026-11-05 — Release-runner build fix for the delegation gate parity test
+
+### Fixed
+- The delegation gate parity test builds online unless `MIR_HANDOFF_CARGO_OFFLINE=1`, so the release runner, which has no prefetched crates, can resolve dependencies; v0.13.69 was tagged but its GitHub Release was not published for this reason.
+
 ## [v0.13.69] — 2026-11-05 — Native delegation gate; direct Main executor dispatch guidance
 
 ### Added
