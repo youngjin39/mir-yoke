@@ -16,7 +16,7 @@ TARGETS = (
 )
 NAMES = (
     'handoff-packet', 'runtime-continuity', 'bootstrap-gate', 'runtime-verify', 'executor-query',
-    'mir-mcp',
+    'delegation-gate', 'mir-mcp',
 )
 SOURCE = 'a' * 40
 TAG = 'native-' + SOURCE[:12]
@@ -265,3 +265,10 @@ def test_native_workflow_smokes_mcp():
     assert '--reference-python "$python"' in smoke
     assert '--reference-script ../../plugins/mir-mcp/mir_mcp.py' in smoke
     assert "sys.executable" in smoke
+
+
+def test_native_workflow_smokes_delegation_gate():
+    workflow = yaml.safe_load((ROOT / '.github/workflows/native-artifacts.yml').read_text())
+    smoke = next(step['run'] for step in workflow['jobs']['build']['steps']
+                 if step.get('name') == 'smoke run')
+    assert 'delegation-gate${{ matrix.exe }}' in smoke

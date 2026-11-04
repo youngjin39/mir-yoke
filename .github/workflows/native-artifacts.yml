@@ -62,6 +62,8 @@ jobs:
           set -e
           test "$code" = 2
           grep -q '"permissionDecision": "deny"' deny.out
+          delegation="target/${{ matrix.target }}/release/delegation-gate${{ matrix.exe }}"
+          test "$("$delegation" --version)" = "delegation-gate 0.1.0"
           query="target/${{ matrix.target }}/release/executor-query${{ matrix.exe }}"
           set +e
           "$query" --help > query.out 2> query.err
@@ -79,7 +81,7 @@ jobs:
         run: |
           mkdir -p ../../dist-native
           cd ../../dist-native
-          for name in handoff-packet runtime-continuity bootstrap-gate runtime-verify executor-query mir-mcp; do
+          for name in handoff-packet runtime-continuity bootstrap-gate runtime-verify executor-query delegation-gate mir-mcp; do
             f="$name-${{ matrix.target }}${{ matrix.exe }}"
             crate=handoff-packet
             if test "$name" = mir-mcp; then crate=mir-mcp; fi
@@ -116,7 +118,7 @@ jobs:
           set -euo pipefail
           tag="native-${SOURCE_SHA:0:12}"
           cd dist-native
-          test "$(find . -maxdepth 1 -type f | wc -l)" -eq 35
+          test "$(find . -maxdepth 1 -type f | wc -l)" -eq 40
           for digest in SHA256-*.txt; do sha256sum --check "$digest"; done
           if gh release view "$tag" >/dev/null 2>&1; then
             gh release edit "$tag" --prerelease --title "$tag"

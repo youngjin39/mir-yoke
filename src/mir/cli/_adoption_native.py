@@ -37,6 +37,11 @@ def install_executor_query(root: Path, *, source_root: Path) -> dict[str, str] |
     return _install(root, source_root=source_root, name="executor-query")
 
 
+def install_delegation_gate(root: Path, *, source_root: Path) -> dict[str, str] | None:
+    """Pin the optional project-local delegation gate from the provider lock."""
+    return _install(root, source_root=source_root, name="delegation-gate")
+
+
 def _install(
     root: Path, *, source_root: Path, name: str, local_source: Path | None = None,
 ) -> dict[str, str] | None:

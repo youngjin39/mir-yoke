@@ -4,6 +4,11 @@ _MIR_PYTHON_LAUNCHER="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/_lib/r
 # Mir Yoke does not deploy it to other repositories.
 
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
+for _mir_native_gate in "$PROJECT_DIR/.mir/bin/delegation-gate" "$PROJECT_DIR/.mir/bin/delegation-gate.exe"; do
+  if [ -f "$_mir_native_gate" ] && [ -x "$_mir_native_gate" ] && [ ! -L "$_mir_native_gate" ]; then
+    exec "$_mir_native_gate"
+  fi
+done
 INPUT=$(cat)
 
 block() {

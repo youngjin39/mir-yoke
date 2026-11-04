@@ -132,16 +132,16 @@ def test_should_refuse_symlink_targets(source, tmp_path):
     assert outside.read_text() == 'DO NOT WRITE\n'
 
 
-def _native_source(source, monkeypatch, *, target='aarch64-apple-darwin'):
+def _native_source(source, monkeypatch, *, target='aarch64-apple-darwin', name='executor-query'):
     from mir.core.capabilities import native
 
     monkeypatch.setattr(native, 'host_target', lambda: target)
-    artifact = source / 'executor-query'
+    artifact = source / name
     artifact.write_bytes(b'#!/bin/sh\necho query\n')
     lock = {
         'plugins': {'mir-core': {}},
-        'native_artifacts': {'executor-query': {
-            'plugin': 'mir-core', 'install_path': 'bin/executor-query',
+        'native_artifacts': {name: {
+            'plugin': 'mir-core', 'install_path': f'bin/{name}',
             'targets': {target: {
                 'url': str(artifact), 'size': artifact.stat().st_size,
                 'sha256': hashlib.sha256(artifact.read_bytes()).hexdigest(),
@@ -301,26 +301,29 @@ def test_should_leave_git_index_unchanged_during_dry_run(source, tmp_path):
     assert index.read_bytes() == before
 
 
-def test_should_remove_stale_local_pin_when_host_artifact_disappears(source, tmp_path, monkeypatch):
-    lock = _native_source(source, monkeypatch)
+@pytest.mark.parametrize('name', ['executor-query', 'delegation-gate'])
+def test_should_remove_stale_local_pin_when_host_artifact_disappears(
+    source, tmp_path, monkeypatch, name,
+):
+    lock = _native_source(source, monkeypatch, name=name)
     api = _api()
     api.generate_manifest(source)
     target = _target(tmp_path)
     api.sync(target, source_root=source, apply=True)
     manifest = (target / api.CONSUMER_MANIFEST).read_bytes()
-    pin = target / '.mir/bin/executor-query.json'
+    pin = target / f'.mir/bin/{name}.json'
     assert pin.is_file()
     _git(target, 'add', 'tools')
     _git(target, '-c', 'user.name=Test', '-c', 'user.email=test@example.com',
          'commit', '-qm', 'common sync')
-    lock['native_artifacts']['executor-query']['targets'] = {}
+    lock['native_artifacts'][name]['targets'] = {}
     (source / '.mir/capability-lock.json').write_text(json.dumps(lock))
     before = pin.read_bytes()
     api.sync(target, source_root=source)
     assert pin.read_bytes() == before
     api.sync(target, source_root=source, apply=True)
     assert not pin.exists()
-    assert (target / '.mir/bin/executor-query').is_file()
+    assert (target / f'.mir/bin/{name}').is_file()
     assert (target / api.CONSUMER_MANIFEST).read_bytes() == manifest
     assert api.check(target, source_root=None) == []
 
@@ -370,3 +373,60 @@ def test_should_preserve_pin_if_atomic_replace_fails(tmp_path, monkeypatch):
         api._write_query_pin(tmp_path, {'path': '.mir/bin/executor-query', 'sha256': 'a' * 64})
     assert list(parent.iterdir()) == [pin]
     assert pin.read_bytes() == b'old pin'
+
+
+@pytest.mark.parametrize('host', ['aarch64-apple-darwin', 'x86_64-pc-windows-msvc'])
+def test_should_install_provider_pinned_delegation_gate(source, tmp_path, monkeypatch, host):
+    lock = _native_source(source, monkeypatch, target=host, name='delegation-gate')
+    api = _api()
+    api.generate_manifest(source)
+    target = _target(tmp_path)
+    assert api.main(['--target', str(target), '--source-root', str(source), '--apply']) == 0
+    relative = '.mir/bin/delegation-gate' + ('.exe' if 'windows' in host else '')
+    pin = lock['native_artifacts']['delegation-gate']['targets'][host]
+    assert json.loads((target / '.mir/bin/delegation-gate.json').read_text()) == {
+        'path': relative, 'sha256': pin['sha256'],
+    }
+    binary = target / relative
+    assert binary.read_bytes() == (source / 'delegation-gate').read_bytes()
+    assert binary.stat().st_mode & 0o111
+    assert api.check(target, source_root=None) == []
+    binary.write_bytes(b'tampered')
+    assert api.check(target, source_root=None) == ['native gate drift: delegation-gate']
+
+
+@pytest.mark.parametrize('guard', ['missing_host', 'hash', 'disabled', 'symlink'])
+def test_should_omit_unavailable_delegation_gate_pin(source, tmp_path, monkeypatch, guard):
+    lock = _native_source(source, monkeypatch, name='delegation-gate')
+    record = lock['native_artifacts']['delegation-gate']
+    if guard == 'missing_host':
+        record['targets'] = {}
+    elif guard == 'hash':
+        record['targets']['aarch64-apple-darwin']['sha256'] = '0' * 64
+    elif guard == 'disabled':
+        monkeypatch.setenv('MIR_CAPABILITY_NATIVE_ARTIFACTS', '0')
+    (source / '.mir/capability-lock.json').write_text(json.dumps(lock))
+    api = _api()
+    api.generate_manifest(source)
+    target = _target(tmp_path)
+    if guard == 'symlink':
+        outside = tmp_path / 'outside'
+        outside.mkdir()
+        (target / '.mir').symlink_to(outside, target_is_directory=True)
+    else:
+        pin = target / '.mir/bin/delegation-gate.json'
+        pin.parent.mkdir(parents=True)
+        pin.write_text('{}')
+    api.sync(target, source_root=source, apply=True)
+    assert not (target / '.mir/bin/delegation-gate.json').exists()
+    assert not (target / '.mir/bin/delegation-gate').exists()
+    assert api.check(target, source_root=None) == []
+
+
+def test_should_never_install_delegation_gate_during_dry_run(source, tmp_path, monkeypatch):
+    _native_source(source, monkeypatch, name='delegation-gate')
+    api = _api()
+    api.generate_manifest(source)
+    target = _target(tmp_path)
+    api.sync(target, source_root=source)
+    assert not (target / '.mir').exists()

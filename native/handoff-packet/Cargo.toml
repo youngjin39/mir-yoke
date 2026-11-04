@@ -38,3 +38,7 @@ path = "src/runtime_verify.rs"
 [[bin]]
 name = "executor-query"
 path = "src/executor_query.rs"
+
+[[bin]]
+name = "delegation-gate"
+path = "src/delegation_gate.rs"

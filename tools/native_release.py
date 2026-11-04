@@ -27,6 +27,7 @@ BINARIES = {
     "bootstrap-gate": "mir-lifecycle-hooks",
     "runtime-verify": "mir-lifecycle-hooks",
     "executor-query": "mir-lifecycle-hooks",
+    "delegation-gate": "mir-lifecycle-hooks",
     "mir-mcp": "mir-mcp",
 }
 

@@ -89,14 +89,17 @@ def _git(root: pathlib.Path, *args: str) -> str:
 
 
 def _write_query_pin(target: pathlib.Path, pin: dict | None) -> None:
-    from tools.mir_executor.entrypoint import QUERY_PIN
+    _write_native_pin(target, 'executor-query', pin)
 
+
+def _write_native_pin(target: pathlib.Path, name: str, pin: dict | None) -> None:
+    relative = pathlib.PurePosixPath(f'.mir/bin/{name}.json')
     # Never follow a linked directory, even when retiring an old pin.
     try:
-        parent = _no_symlink(target, str(pathlib.PurePosixPath(QUERY_PIN).parent))
+        parent = _no_symlink(target, str(relative.parent))
     except ValueError:
         return
-    path = parent / pathlib.PurePosixPath(QUERY_PIN).name
+    path = parent / relative.name
     if pin is None:
         path.unlink(missing_ok=True)
         return
@@ -104,7 +107,7 @@ def _write_query_pin(target: pathlib.Path, pin: dict | None) -> None:
     temporary = None
     try:
         with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', dir=parent,
-                                         prefix='.executor-query-', delete=False) as stream:
+                                         prefix=f'.{name}-', delete=False) as stream:
             temporary = pathlib.Path(stream.name)
             stream.write(json.dumps(pin, indent=2, sort_keys=True) + '\n')
         temporary.replace(path)
@@ -133,10 +136,12 @@ def sync(target: pathlib.Path, *, source_root: pathlib.Path = SOURCE_ROOT,
     if dirty:
         raise ValueError(f'Refusing dirty common files in {target}:\n{dirty}')
     if apply:
-        from mir.cli._adoption_native import install_executor_query
+        from mir.cli._adoption_native import install_delegation_gate, install_executor_query
 
         pin = install_executor_query(target, source_root=source_root)
         _write_query_pin(target, pin)
+        gate_pin = install_delegation_gate(target, source_root=source_root)
+        _write_native_pin(target, 'delegation-gate', gate_pin)
     lines = [f'{"APPLY" if apply else "DRY-RUN"} {target}',
              f'Source commit: {deployed["source_commit"]}']
     for name, content in payloads.items():
@@ -177,16 +182,23 @@ def check(target: pathlib.Path, *, source_root: pathlib.Path | None = SOURCE_ROO
                 errors.append(f'target drift: {name}')
         except ValueError as exc:
             errors.append(str(exc))
-    from tools.mir_executor.entrypoint import QUERY_PIN, _pinned_query, _safe_path
-
-    pin_path = target / QUERY_PIN
-    if pin_path.exists() or pin_path.is_symlink():
+    for name, label in [('executor-query', 'query'), ('delegation-gate', 'gate')]:
+        relative = f'.mir/bin/{name}.json'
+        pin_path = target / relative
+        if not (pin_path.exists() or pin_path.is_symlink()):
+            continue
         try:
-            pin = json.loads(_safe_path(target, QUERY_PIN).read_bytes())
-            if _pinned_query(target, pin) is None:
-                errors.append('native query drift: executor-query')
+            pin = json.loads(_no_symlink(target, relative).read_bytes())
+            if (not isinstance(pin, dict) or set(pin) != {'path', 'sha256'}
+                    or pin['path'] not in {f'.mir/bin/{name}', f'.mir/bin/{name}.exe'}
+                    or not isinstance(pin['sha256'], str)
+                    or re.fullmatch('[0-9a-f]{64}', pin['sha256']) is None):
+                raise ValueError('invalid native pin')
+            executable = _no_symlink(target, pin['path'])
+            if not executable.is_file() or _hash(executable) != pin['sha256']:
+                raise ValueError('native artifact integrity mismatch')
         except (OSError, ValueError, TypeError):
-            errors.append('native query drift: executor-query')
+            errors.append(f'native {label} drift: {name}')
     if source_root is not None and (pathlib.Path(source_root) / SOURCE_MANIFEST).exists():
         source_root = pathlib.Path(source_root).resolve()
         source = _read_manifest(source_root / SOURCE_MANIFEST)

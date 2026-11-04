@@ -591,3 +591,60 @@ kills the dedicated process group. On Windows, the Python client uses a new
 process group and best-effort `taskkill /T /F`, followed by direct-child kill and
 wait. This is weaker than the Rust Job Object: descendants can escape before
 cleanup, and Python cannot guarantee tree ownership before the first hook runs.
+
+## Optional native delegation gate
+
+When the source capability lock includes a `delegation-gate` pin for the host,
+`python -m tools.executor_sync --target <repo> --apply` installs the SHA-256-verified
+binary and its pin beside `executor-query` in the target's `.mir/bin/` directory.
+Older locks without this optional artifact remain supported. Sync never edits
+Claude settings; the consumer decides whether to register the gate.
+
+For Windows, add this entry under `hooks.PreToolUse` in the consumer's
+`.claude/settings.json` using Claude Code's exec-form command and argument fields:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [{
+      "matcher": "^(Agent|Task)$",
+      "hooks": [{
+        "type": "command",
+        "command": "${CLAUDE_PROJECT_DIR}/.mir/bin/delegation-gate.exe",
+        "args": []
+      }]
+    }]
+  }
+}
+```
+
+For POSIX, use the same entry with
+`"command": "${CLAUDE_PROJECT_DIR}/.mir/bin/delegation-gate"`.
+The exec form runs the executable directly, without Bash; Claude Code substitutes
+`${CLAUDE_PROJECT_DIR}` in the command and arguments. Confirm support in the
+installed Claude Code version before enabling this optional registration.
+
+The native gate ports this repository's `.claude/hooks/sub-agent-policy-gate.sh`
+reference body with jq present. It needs neither jq nor Python. Only `Agent` and
+`Task` are gated; `spawn_agent` and `MIR_CODEX_MAIN` have no special handling.
+Diagnostics and exit codes match the reference, including malformed JSON blocking
+with exit 2 and the exact BLOCK/ADVISORY messages.
+
+Policy resolution uses `CLAUDE_PROJECT_DIR` (or the current directory). A regular
+`config/model-routing.lock.json` exclusively supplies the mode; local policy and
+`MIR_SUB_AGENT_POLICY` cannot override it, even when the lock is invalid. Otherwise,
+`config/sub-agent-policy.json` supplies the base, and an existing regular file
+named by `MIR_SUB_AGENT_POLICY` overrides a readable base. Both files use the jq
+expression `((.policy // .).delegation.mode // .mode // empty)` and require a string.
+Missing, unreadable, invalid, and unknown modes resolve to `force_codex` (fail closed).
+`force_claude`, `select`, `per_project`, `unrestricted`, `user_command_priority`, and
+`obey_user` allow calls without a diagnostic.
+
+Under `force_codex`, `codex:codex-rescue` is allowed first. Other spawns exit 2,
+unless `MIR_R3_FALLBACK=1` allows them with the reference ADVISORY. The gate performs
+no network calls or writes. The Bash wrapper executes a regular executable,
+non-symlink `.mir/bin/delegation-gate` (or `.exe`) before reading stdin; otherwise
+it retains the unchanged reference body, which requires jq and blocks if jq is absent.
+
+Windows execution, Claude exec-form registration, and per-target release digests
+require validation with the built release artifacts on the target platform.

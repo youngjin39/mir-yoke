@@ -1,0 +1,711 @@
+[
+  {
+    "name": "deny",
+    "code": 2,
+    "mode": "force_codex",
+    "payload": {
+      "tool_name": "Agent",
+      "tool_input": {
+        "subagent_type": "reviewer"
+      }
+    }
+  },
+  {
+    "name": "rescue",
+    "code": 0,
+    "mode": "force_codex",
+    "payload": {
+      "tool_name": "Agent",
+      "tool_input": {
+        "subagent_type": "codex:codex-rescue"
+      }
+    }
+  },
+  {
+    "name": "Task",
+    "code": 2,
+    "mode": "force_codex",
+    "payload": {
+      "tool_name": "Task",
+      "tool_input": {}
+    }
+  },
+  {
+    "name": "spawn_agent",
+    "code": 0,
+    "mode": "force_codex",
+    "payload": {
+      "tool_name": "spawn_agent",
+      "tool_input": {}
+    }
+  },
+  {
+    "name": "force_claude",
+    "code": 0,
+    "mode": "force_claude",
+    "payload": {
+      "tool_name": "Agent",
+      "tool_input": {
+        "subagent_type": "reviewer"
+      }
+    }
+  },
+  {
+    "name": "select",
+    "code": 0,
+    "mode": "select",
+    "payload": {
+      "tool_name": "Agent",
+      "tool_input": {
+        "subagent_type": "reviewer"
+      }
+    }
+  },
+  {
+    "name": "per_project",
+    "code": 0,
+    "mode": "per_project",
+    "payload": {
+      "tool_name": "Agent",
+      "tool_input": {
+        "subagent_type": "reviewer"
+      }
+    }
+  },
+  {
+    "name": "unrestricted",
+    "code": 0,
+    "mode": "unrestricted",
+    "payload": {
+      "tool_name": "Agent",
+      "tool_input": {
+        "subagent_type": "reviewer"
+      }
+    }
+  },
+  {
+    "name": "user_command_priority",
+    "code": 0,
+    "mode": "user_command_priority",
+    "payload": {
+      "tool_name": "Agent",
+      "tool_input": {
+        "subagent_type": "reviewer"
+      }
+    }
+  },
+  {
+    "name": "obey_user",
+    "code": 0,
+    "mode": "obey_user",
+    "payload": {
+      "tool_name": "Agent",
+      "tool_input": {
+        "subagent_type": "reviewer"
+      }
+    }
+  },
+  {
+    "name": "missing",
+    "code": 2,
+    "mode": null,
+    "payload": {
+      "tool_name": "Agent",
+      "tool_input": {
+        "subagent_type": "reviewer"
+      }
+    }
+  },
+  {
+    "name": "unknown",
+    "code": 2,
+    "mode": "mystery",
+    "payload": {
+      "tool_name": "Agent",
+      "tool_input": {
+        "subagent_type": "reviewer"
+      }
+    }
+  },
+  {
+    "name": "local_nested",
+    "code": 2,
+    "mode": "force_codex",
+    "payload": {
+      "tool_name": "Agent",
+      "tool_input": {
+        "subagent_type": "reviewer"
+      }
+    },
+    "source": "local"
+  },
+  {
+    "name": "local_flat",
+    "code": 2,
+    "mode": "force_codex",
+    "payload": {
+      "tool_name": "Agent",
+      "tool_input": {
+        "subagent_type": "reviewer"
+      }
+    },
+    "source": "flat"
+  },
+  {
+    "name": "lock_precedence",
+    "code": 2,
+    "mode": "force_codex",
+    "payload": {
+      "tool_name": "Agent",
+      "tool_input": {
+        "subagent_type": "reviewer"
+      }
+    },
+    "local_mode": "unrestricted"
+  },
+  {
+    "name": "fallback",
+    "code": 2,
+    "mode": null,
+    "payload": {
+      "tool_name": "Agent",
+      "tool_input": {
+        "subagent_type": "reviewer"
+      }
+    },
+    "local_mode": "force_codex"
+  },
+  {
+    "name": "native",
+    "code": 0,
+    "mode": "force_codex",
+    "payload": {
+      "tool_name": "spawn_agent",
+      "tool_input": {
+        "task_name": "test",
+        "message": "work"
+      }
+    },
+    "main": true
+  },
+  {
+    "name": "native_bad_17",
+    "code": 0,
+    "mode": "force_codex",
+    "payload": {
+      "tool_name": "spawn_agent",
+      "tool_input": {}
+    },
+    "main": true
+  },
+  {
+    "name": "native_bad_18",
+    "code": 0,
+    "mode": "force_codex",
+    "payload": {
+      "tool_name": "spawn_agent",
+      "tool_input": {
+        "task_name": "test"
+      }
+    },
+    "main": true
+  },
+  {
+    "name": "native_bad_19",
+    "code": 0,
+    "mode": "force_codex",
+    "payload": {
+      "tool_name": "spawn_agent",
+      "tool_input": {
+        "task_name": "test",
+        "message": ""
+      }
+    },
+    "main": true
+  },
+  {
+    "name": "native_bad_20",
+    "code": 0,
+    "mode": "force_codex",
+    "payload": {
+      "tool_name": "spawn_agent",
+      "tool_input": {
+        "task_name": 1,
+        "message": "work"
+      }
+    },
+    "main": true
+  },
+  {
+    "name": "other",
+    "code": 0,
+    "mode": "force_codex",
+    "payload": {
+      "tool_name": "Read"
+    }
+  },
+  {
+    "name": "other_missing",
+    "code": 0,
+    "mode": null,
+    "payload": {
+      "tool_name": "Read"
+    }
+  },
+  {
+    "name": "malformed_23",
+    "code": 2,
+    "mode": "force_codex",
+    "payload": {},
+    "malformed": true
+  },
+  {
+    "name": "malformed_24",
+    "code": 2,
+    "mode": "force_codex",
+    "payload": [],
+    "malformed": true
+  },
+  {
+    "name": "malformed_25",
+    "code": 0,
+    "mode": "force_codex",
+    "payload": {
+      "tool_name": 3
+    }
+  },
+  {
+    "name": "malformed_26",
+    "code": 0,
+    "mode": "force_codex",
+    "payload": {
+      "tool_name": ""
+    }
+  },
+  {
+    "name": "malformed_27",
+    "code": 2,
+    "mode": "force_codex",
+    "payload": {
+      "tool_name": "Agent\n"
+    }
+  },
+  {
+    "name": "invalid_json",
+    "code": 2,
+    "mode": "force_codex",
+    "payload": {
+      "tool_name": "Agent",
+      "tool_input": {
+        "subagent_type": "reviewer"
+      }
+    },
+    "raw": "{",
+    "malformed": true
+  },
+  {
+    "name": "invalid_policy",
+    "code": 2,
+    "mode": null,
+    "payload": {
+      "tool_name": "Agent",
+      "tool_input": {
+        "subagent_type": "reviewer"
+      }
+    },
+    "raw_policy": "{"
+  },
+  {
+    "code": 2,
+    "mode": "force_codex",
+    "name": "agent_control",
+    "payload": {
+      "tool_name": "Agent",
+      "tool_input": {
+        "subagent_type": "bad\n"
+      }
+    }
+  },
+  {
+    "code": 2,
+    "mode": "force_codex",
+    "name": "null_payload",
+    "payload": null,
+    "malformed": true
+  },
+  {
+    "code": 2,
+    "mode": "force_codex",
+    "name": "wrong_input",
+    "payload": {
+      "tool_name": "Agent",
+      "tool_input": []
+    }
+  },
+  {
+    "code": 2,
+    "mode": "unknown",
+    "name": "unknown_lock_wins",
+    "local_mode": "force_codex",
+    "payload": {
+      "tool_name": "Agent"
+    }
+  },
+  {
+    "name": "r3_escape",
+    "code": 0,
+    "mode": "force_codex",
+    "payload": {
+      "tool_name": "Agent",
+      "tool_input": {}
+    },
+    "r3": "1",
+    "advisory": true
+  },
+  {
+    "name": "r3_not_one",
+    "code": 2,
+    "mode": "force_codex",
+    "payload": {
+      "tool_name": "Agent",
+      "tool_input": {}
+    },
+    "r3": "true"
+  },
+  {
+    "name": "rescue_before_escape",
+    "code": 0,
+    "mode": "force_codex",
+    "payload": {
+      "tool_name": "Agent",
+      "tool_input": {
+        "subagent_type": "codex:codex-rescue"
+      }
+    },
+    "r3": "1"
+  },
+  {
+    "name": "main_ignored",
+    "code": 2,
+    "mode": "force_codex",
+    "payload": {
+      "tool_name": "Agent",
+      "tool_input": {}
+    },
+    "main": true
+  },
+  {
+    "name": "overlay_allow",
+    "code": 0,
+    "mode": "force_codex",
+    "payload": {
+      "tool_name": "Agent",
+      "tool_input": {}
+    },
+    "source": "local",
+    "overlay": {
+      "mode": "obey_user"
+    }
+  },
+  {
+    "name": "overlay_block",
+    "code": 2,
+    "mode": "force_codex",
+    "payload": {
+      "tool_name": "Agent",
+      "tool_input": {}
+    },
+    "source": "local",
+    "local_mode": "obey_user",
+    "overlay": {
+      "mode": "force_codex"
+    }
+  },
+  {
+    "name": "overlay_invalid",
+    "code": 2,
+    "mode": "force_codex",
+    "payload": {
+      "tool_name": "Agent",
+      "tool_input": {}
+    },
+    "source": "local",
+    "local_mode": "obey_user",
+    "raw_overlay": "{"
+  },
+  {
+    "name": "overlay_unknown",
+    "code": 2,
+    "mode": "force_codex",
+    "payload": {
+      "tool_name": "Agent",
+      "tool_input": {}
+    },
+    "source": "local",
+    "overlay": {
+      "mode": "unknown"
+    }
+  },
+  {
+    "name": "overlay_missing",
+    "code": 2,
+    "mode": "force_codex",
+    "payload": {
+      "tool_name": "Agent",
+      "tool_input": {}
+    },
+    "source": "local",
+    "missing_overlay": true
+  },
+  {
+    "name": "overlay_no_base",
+    "code": 2,
+    "mode": "force_codex",
+    "payload": {
+      "tool_name": "Agent",
+      "tool_input": {}
+    },
+    "raw_policy": null,
+    "no_policy": true,
+    "overlay": {
+      "mode": "obey_user"
+    }
+  },
+  {
+    "name": "bad_lock_exclusive",
+    "code": 2,
+    "mode": "force_codex",
+    "payload": {
+      "tool_name": "Agent",
+      "tool_input": {}
+    },
+    "raw_policy": "{",
+    "local_mode": "obey_user",
+    "overlay": {
+      "mode": "obey_user"
+    }
+  },
+  {
+    "name": "lock_ignores_overlay",
+    "code": 2,
+    "mode": "force_codex",
+    "payload": {
+      "tool_name": "Agent",
+      "tool_input": {}
+    },
+    "overlay": {
+      "mode": "obey_user"
+    }
+  },
+  {
+    "name": "lock_allow_ignores_overlay",
+    "code": 0,
+    "mode": "force_codex",
+    "payload": {
+      "tool_name": "Agent",
+      "tool_input": {}
+    },
+    "raw_policy": "{\"mode\":\"obey_user\"}",
+    "overlay": {
+      "mode": "force_codex"
+    }
+  },
+  {
+    "name": "lock_flat",
+    "code": 0,
+    "mode": "force_codex",
+    "payload": {
+      "tool_name": "Agent",
+      "tool_input": {}
+    },
+    "raw_policy": "{\"mode\":\"select\"}"
+  },
+  {
+    "name": "lock_nested_without_policy",
+    "code": 0,
+    "mode": "force_codex",
+    "payload": {
+      "tool_name": "Agent",
+      "tool_input": {}
+    },
+    "raw_policy": "{\"delegation\":{\"mode\":\"select\"}}"
+  },
+  {
+    "name": "null_policy",
+    "code": 0,
+    "mode": "force_codex",
+    "payload": {
+      "tool_name": "Agent",
+      "tool_input": {}
+    },
+    "raw_policy": "{\"policy\":null,\"mode\":\"select\"}"
+  },
+  {
+    "name": "false_mode_fallback",
+    "code": 0,
+    "mode": "force_codex",
+    "payload": {
+      "tool_name": "Agent",
+      "tool_input": {}
+    },
+    "raw_policy": "{\"delegation\":{\"mode\":false},\"mode\":\"select\"}"
+  },
+  {
+    "name": "empty_mode",
+    "code": 2,
+    "mode": "force_codex",
+    "payload": {
+      "tool_name": "Agent",
+      "tool_input": {}
+    },
+    "raw_policy": "{\"mode\":\"\"}"
+  },
+  {
+    "name": "nonstring_mode",
+    "code": 2,
+    "mode": "force_codex",
+    "payload": {
+      "tool_name": "Agent",
+      "tool_input": {}
+    },
+    "raw_policy": "{\"mode\":3}"
+  },
+  {
+    "name": "unreadable_policy",
+    "code": 2,
+    "mode": "force_codex",
+    "payload": {
+      "tool_name": "Agent",
+      "tool_input": {}
+    },
+    "broken_policy": true
+  },
+  {
+    "name": "directory_lock",
+    "code": 0,
+    "mode": "force_codex",
+    "payload": {
+      "tool_name": "Agent",
+      "tool_input": {}
+    },
+    "directory_lock": true,
+    "local_mode": "select"
+  },
+  {
+    "name": "false_tool",
+    "code": 2,
+    "mode": "force_codex",
+    "payload": {
+      "tool_name": "Agent",
+      "tool_input": {}
+    },
+    "raw": "{\"tool_name\":false}",
+    "malformed": true
+  },
+  {
+    "name": "null_tool",
+    "code": 2,
+    "mode": "force_codex",
+    "payload": {
+      "tool_name": "Agent",
+      "tool_input": {}
+    },
+    "raw": "{\"tool_name\":null}",
+    "malformed": true
+  },
+  {
+    "name": "true_tool",
+    "code": 0,
+    "mode": "force_codex",
+    "payload": {
+      "tool_name": "Agent",
+      "tool_input": {}
+    },
+    "raw": "{\"tool_name\":true}"
+  },
+  {
+    "name": "array_tool",
+    "code": 0,
+    "mode": "force_codex",
+    "payload": {
+      "tool_name": "Agent",
+      "tool_input": {}
+    },
+    "raw": "{\"tool_name\":[]}"
+  },
+  {
+    "name": "scalar_payload",
+    "code": 2,
+    "mode": "force_codex",
+    "payload": {
+      "tool_name": "Agent",
+      "tool_input": {}
+    },
+    "raw": "3",
+    "malformed": true
+  },
+  {
+    "name": "trailing_garbage",
+    "code": 2,
+    "mode": "force_codex",
+    "payload": {
+      "tool_name": "Agent",
+      "tool_input": {}
+    },
+    "raw": "{\"tool_name\":\"Agent\"}x",
+    "malformed": true
+  },
+  {
+    "name": "empty_payload",
+    "code": 2,
+    "mode": "force_codex",
+    "payload": {
+      "tool_name": "Agent",
+      "tool_input": {}
+    },
+    "raw": "",
+    "malformed": true
+  },
+  {
+    "name": "multi_payload",
+    "code": 0,
+    "mode": "force_codex",
+    "payload": {
+      "tool_name": "Agent",
+      "tool_input": {}
+    },
+    "raw": "{\"tool_name\":\"Agent\"}\n{\"tool_name\":\"Task\"}"
+  },
+  {
+    "name": "tool_nul",
+    "code": 2,
+    "mode": "force_codex",
+    "payload": {
+      "tool_name": "Agent",
+      "tool_input": {}
+    },
+    "raw": "{\"tool_name\":\"Agent\\u0000\"}"
+  },
+  {
+    "name": "rescue_newline",
+    "code": 0,
+    "mode": "force_codex",
+    "payload": {
+      "tool_name": "Agent",
+      "tool_input": {
+        "subagent_type": "codex:codex-rescue\n"
+      }
+    }
+  },
+  {
+    "name": "rescue_control",
+    "code": 2,
+    "mode": "force_codex",
+    "payload": {
+      "tool_name": "Agent",
+      "tool_input": {
+        "subagent_type": "codex:codex-rescue\t"
+      }
+    }
+  }
+]
