@@ -497,7 +497,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "CHANGELOG.md",
-      "sha256": "521ceceba86c220a48d1df3e401c57f3302b2801be3c8a32156e495ec4bb2859"
+      "sha256": "e7599a047a04a615b8f64808a6c46acc02ea6bf86e57dc776c6bdf01688a3a5b"
     },
     {
       "classification": "reference",
@@ -599,7 +599,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "config/mir-executor-common.json",
-      "sha256": "a2d7ede577f0662690b3648280df52aa5baf0211c3c4cd4d8ef772efec1535aa"
+      "sha256": "69d62316025b26f0f19d45fe019b5e17d04a90d96238907c00695c3fdcd42b7e"
     },
     {
       "classification": "template-maintainer-tool",
@@ -2279,7 +2279,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "docs/operations/mir-executor-sync.md",
-      "sha256": "63e47b6a8b13dbf967000e9efc667fc3419a4851aae46d044cd8838511f7e152"
+      "sha256": "492ec994e927f9e54471dbf97dd92356407cca3daf8092b455a22b0c1ad932c3"
     },
     {
       "classification": "reference",
@@ -2975,7 +2975,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/executor_policy_query.rs",
-      "sha256": "7572f13427b7b4188de1bcd781b9164fd729fe17cbb47d36a5fe471fc045d4b6"
+      "sha256": "ad668cfcdb15c3b7a83ac238907b39a91c52e4741f95d0ea08ac775350a0b463"
     },
     {
       "classification": "template-maintainer-tool",
@@ -2987,7 +2987,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/executor_query.rs",
-      "sha256": "ae15d58ac60a550de96960b135ff885b2ed83a44be869aa533c090ff13e4a2cf"
+      "sha256": "0e3d9c1d3c16a7c3853b0caaba0d8baf0cc76d08fec23ddca496eeb0b2c9dbd9"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3191,13 +3191,13 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/executor_policy.rs",
-      "sha256": "4a575d7288e8985517d9ff375917d1acb4e7580b5161f189f28f26dddf67b9e9"
+      "sha256": "8b514d54e8788d4561b6bd2461a2bdd630116ae64139e8f728c81e8b2862678b"
     },
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/executor_policy_query.rs",
-      "sha256": "7e2f29f276d98cd8acb760ad79a232339965f847546c66f7e3acd2a6abbf9ac1"
+      "sha256": "fa977dddb1d9ac7fc7daa34bfd89c830c3e9911eee71f55313e3e7e4529f1ca9"
     },
     {
       "classification": "template-maintainer-tool",
@@ -4997,7 +4997,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "src/mir/cli/policy.py",
-      "sha256": "4ad572becdf2104b2354775b331f0e850a97a7faa306a88e3392867fce24b8bb"
+      "sha256": "7cddebbb62474417b9229cdf0e528314edc03481d8ee9e78bea796defba5e67d"
     },
     {
       "classification": "optional-consumer-tool",
@@ -5933,7 +5933,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_executor_native_caller.py",
-      "sha256": "62b5b14701708b4c5ca5f23df01a83c205e65e29f23edd031b763906b3bd885e"
+      "sha256": "32d86948ecf9c2e7db09492a27a693b3ded31a8954fa218ead91bd2358d30bdb"
     },
     {
       "classification": "template-maintainer-tool",
@@ -6239,7 +6239,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_policy_resolve_native_parity.py",
-      "sha256": "066a2be3a6ff96c09fe2317e49415d310e8fbae029ab74ff16aa184bb791deb4"
+      "sha256": "809b3d68ae6048d65dcc914809ebb08e577514a37d738ef09bdc6aabf0a5a6ff"
     },
     {
       "classification": "template-maintainer-tool",
@@ -6635,7 +6635,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/COMMON_MANIFEST.json",
-      "sha256": "a2d7ede577f0662690b3648280df52aa5baf0211c3c4cd4d8ef772efec1535aa"
+      "sha256": "69d62316025b26f0f19d45fe019b5e17d04a90d96238907c00695c3fdcd42b7e"
     },
     {
       "classification": "optional-consumer-tool",
@@ -6683,7 +6683,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/entrypoint.py",
-      "sha256": "4a0e3aa7a275f70830aa11aeba40b1dcd5741f861e3a56993e4891acc7468a95"
+      "sha256": "554fff6e671b8c82e681b437cfc015bb038163aea7d130206c4e8950fab742bb"
     },
     {
       "classification": "optional-consumer-tool",
@@ -6881,7 +6881,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "tools/mir_executor/tests/test_policy.py",
-      "sha256": "1fabbe1bfae06331e4f758c13222f26e373f2fb09756ec6d5e132044705845fc"
+      "sha256": "8011b22e965fd85b9eb43ebbd2c4eb27eac7d4e60b55ddb9984433e757857923"
     },
     {
       "classification": "optional-consumer-tool",

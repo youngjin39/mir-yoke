@@ -2,7 +2,7 @@ use handoff_packet::executor_policy_query::query;
 use std::{collections::BTreeMap, ffi::OsString, fs, path::PathBuf};
 
 #[test]
-fn query_bytes_precedence_nulls_and_silent_decline() {
+fn query_bytes_precedence_nulls_and_safe_refusal() {
     let root = std::env::var_os("MIR_NATIVE_TEST_SCRATCH")
         .map(PathBuf::from)
         .unwrap_or_else(std::env::temp_dir)
@@ -38,13 +38,19 @@ fn query_bytes_precedence_nulls_and_silent_decline() {
         Some(("model=m\nreasoning_effort=high\n".into(), String::new(), 0))
     );
     fs::write(root.join("config/model-routing.lock.json"), "{").unwrap();
-    assert_eq!(invoke(&["policy-resolve", "--category", "unit"]), None);
+    assert_eq!(
+        invoke(&["policy-resolve", "--category", "unit"]),
+        Some(handoff_packet::executor_policy_query::refusal())
+    );
     for args in [
         vec!["policy-resolve"],
         vec!["policy-resolve", "--category", "unit", "--format", "yaml"],
         vec!["policy-resolve", "--category", "unit", "--category", "edge"],
     ] {
-        assert_eq!(invoke(&args), None);
+        assert_eq!(
+            invoke(&args),
+            Some(handoff_packet::executor_policy_query::refusal())
+        );
     }
     fs::remove_file(root.join("config").join("model-routing.lock.json")).unwrap();
     let account = root.join("account");

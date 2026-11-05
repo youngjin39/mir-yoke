@@ -145,3 +145,27 @@ def test_native_output_bytes_survive_production_entrypoints(tmp_path, route):
     assert result.returncode == 0
     assert result.stdout == b'\xff\xfe'
     assert result.stderr == b'\xfd'
+
+
+@pytest.mark.parametrize('guard', ['missing', 'invalid', 'decline', 'encoding', 'disabled'])
+def test_policy_unavailable_never_returns_empty_success(tmp_path, monkeypatch, capsys, guard):
+    executable, manifest = _install(tmp_path, 'echo must-not-leak; exit 64\n')
+    from mir.cli import policy
+    from tools.mir_executor import entrypoint
+    monkeypatch.setattr(entrypoint, '_HOME_ROOT', tmp_path)
+    monkeypatch.delenv('MIR_EXECUTOR_QUERY_IMPL', raising=False)
+    monkeypatch.delenv('MIR_EXECUTOR_IMPL', raising=False)
+    monkeypatch.delenv('MIR_NATIVE_HOOKS', raising=False)
+    if guard == 'missing':
+        manifest.unlink()
+    elif guard == 'invalid':
+        manifest.write_text('{}')
+    elif guard == 'encoding':
+        # Windows legacy code-page streams use the same portable admission guard.
+        monkeypatch.setattr(sys, 'stdout', types.SimpleNamespace(encoding='cp1252'))
+    elif guard == 'disabled':
+        monkeypatch.setenv('MIR_NATIVE_HOOKS', '0')
+    assert policy.main(['resolve', '--category', 'unit']) == 2
+    output = capsys.readouterr()
+    assert output.out == ''
+    assert 'pinned native policy resolver unavailable or incompatible' in output.err

@@ -8,6 +8,10 @@ Pre-`v0.1.0` entries (below) used date-format headings (`## 2026.05.x`) and are 
 
 ## [Unreleased]
 
+- Make public `mir policy resolve` native-only. Missing/invalid pins and unsupported
+  inputs fail explicitly without routing output or Python fallback. The shared
+  executor policy library remains available to its Python callers.
+
 ## [v0.13.72] — 2026-11-05 — Windows delegation usability fixes
 
 ### Fixed

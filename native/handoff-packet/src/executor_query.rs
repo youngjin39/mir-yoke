@@ -772,7 +772,10 @@ fn main() {
                     code
                 }
             }
-            None => handoff_packet::executor_protocol::decline("policy query admission"),
+            None => {
+                eprintln!("[mir policy] native policy environment unavailable; no routing result");
+                2
+            }
         };
         std::process::exit(code);
     }

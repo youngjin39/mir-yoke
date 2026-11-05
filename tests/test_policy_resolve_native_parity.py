@@ -21,6 +21,10 @@ install_pin = SUPPORT['install_pin']
 
 GOLDEN = json.loads((ROOT / 'native/handoff-packet/tests/fixtures/g6/policy-cli.json').read_text())
 _ORACLE = {}
+REFUSAL = (b'', b'[mir policy] unsupported native policy input or environment; '
+           b'no routing result\n', 2)
+UNAVAILABLE = (b'', b'[mir policy] pinned native policy resolver unavailable or incompatible; '
+               b'no routing result\n', 2)
 
 
 @pytest.fixture(autouse=True)
@@ -129,25 +133,17 @@ def invoke(home, argv, *, binary=None, frozen=False, environment=None, cwd=None)
                 'policy-resolve', *argv]
                if binary else [sys.executable, '-m', 'mir', 'policy', 'resolve', *argv])
     if os.name == 'nt' and not binary:
-        # Match the frozen UTF-8/LF stream contract even on Python fallback.
+        # Match the frozen UTF-8/LF stream contract.
         command = [sys.executable, '-c',
                    'import runpy, sys; sys.stdout.reconfigure(newline="\\n"); '
                    'sys.stderr.reconfigure(newline="\\n"); '
                    'runpy.run_module("mir", run_name="__main__")', *command[3:]]
-    if isolated and not binary:
-        command = [sys.executable, '-c',
-                   'import os, pathlib, runpy; '
-                   'from tools.mir_executor import policy; '
-                   'policy.default_global_policy_path = lambda: '
-                   'pathlib.Path(os.environ["G6_POLICY_ACCOUNT_HOME"]) / '
-                   '".mir/model-routing/sub-agent-policy.json"; '
-                   'runpy.run_module("mir", run_name="__main__")',
-                   *command[3:]]
     pin = home / '.mir/bin/executor-query.json'
     saved = pin.read_bytes() if isolated and not binary and pin.exists() else None
     if saved is not None:
         # Keep the real pinned launcher path, with a driver supplying account identity.
-        destination = pin.parent / driver.name
+        destination = pin.parent / ('executor-query.exe' if os.name == 'nt' else 'executor-query')
+        saved_binary = destination.read_bytes()
         shutil.copy2(driver, destination)
         pin.write_text(json.dumps({'path': destination.relative_to(home).as_posix(),
                                    'sha256': hashlib.sha256(destination.read_bytes()).hexdigest()}))
@@ -157,14 +153,21 @@ def invoke(home, argv, *, binary=None, frozen=False, environment=None, cwd=None)
     finally:
         if saved is not None:
             pin.write_bytes(saved)
+            destination.write_bytes(saved_binary)
     return result.stdout, result.stderr, result.returncode
 
 
 def compare(binary, home, argv, **kwargs):
     expected = invoke(home, argv, frozen=True, **kwargs)
     direct = invoke(home, argv, binary=binary, **kwargs)
-    assert direct == expected or direct == (b'', b'', 64), (argv, direct, expected)
-    assert invoke(home, argv, **kwargs) == expected
+    refusal_case = any(name in _ORACLE['request'].node.name for name in (
+        'malformed_and_unusual_config', 'argparse_declines', 'double_root',
+        'route4-', 'empty_profile', 'replay_malformed_json'))
+    if refusal_case and direct != expected:
+        assert direct == REFUSAL, (argv, direct, expected)
+    else:
+        assert direct == expected, (argv, direct, expected)
+    assert invoke(home, argv, **kwargs) == direct
     return direct
 
 
@@ -183,13 +186,13 @@ def test_pin_routes_before_importing_python_policy(binary, home, root):
     assert invoke(home, argv) == expected
     for selector in ('MIR_EXECUTOR_IMPL', 'MIR_EXECUTOR_QUERY_IMPL'):
         result = invoke(home, argv, environment={selector: 'python'})
-        assert result[2] == 1 and b'Python policy imported' in result[1]
+        assert result == UNAVAILABLE
 
 
 @pytest.mark.parametrize('kind', ['missing', 'old'])
 def test_missing_and_older_pin_fall_back(binary, home, kind):
     argv = ['--category', 'unit']
-    expected = invoke(home, argv, frozen=True)
+    invoke(home, argv, frozen=True)  # Consume the immutable historical fallback record.
     if kind == 'missing':
         (home / '.mir/bin/executor-query.json').unlink()
     else:
@@ -206,7 +209,7 @@ def test_missing_and_older_pin_fall_back(binary, home, kind):
         shutil.rmtree(home / '.mir/bin')
         install_pin(legacy, home)
         assert invoke(home, argv, binary=legacy) == (b'', b'', 64)
-    assert invoke(home, argv) == expected
+    assert invoke(home, argv) == UNAVAILABLE
 
 
 CATEGORIES = list(json.loads((ROOT / 'config/model-routing.lock.json').read_text())[
@@ -282,7 +285,7 @@ def test_overlay_path_and_account_home(binary, home, overlay):
 def test_double_root_warning_declines(binary, home):
     assert compare(binary, home, ['--category', 'unit'], environment={
         'MIR_SUB_AGENT_POLICY': '//mir-query-absent-policy.json',
-    }) == (b'', b'', 64)
+    }) == REFUSAL
 
 
 # Reuse every original test and its parametrization; each loader call also checks
@@ -351,4 +354,14 @@ def test_windows_profile_fallback_ignores_home(binary, home):
 def test_windows_empty_profile_declines_to_python(binary, home):
     assert compare(binary, home, ['--category', 'unit'], environment={
         'USERPROFILE': '', 'MIR_SUB_AGENT_POLICY': '',
-    }) == (b'', b'', 64)
+    }) == REFUSAL
+
+
+@pytest.mark.parametrize('encoding', ['cp1252', 'ascii'])
+def test_non_utf8_policy_streams_refuse_explicitly(binary, home, encoding):
+    assert invoke(home, ['--category', 'unit'], environment={
+        'PYTHONIOENCODING': encoding,
+    }) == UNAVAILABLE
+    assert invoke(home, ['--category', 'unit'], binary=binary, environment={
+        'PYTHONIOENCODING': encoding,
+    }) == REFUSAL

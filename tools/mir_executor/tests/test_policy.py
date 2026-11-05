@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 import os
 import pathlib
+import runpy
+import shutil
 import subprocess
 import sys
 
@@ -14,6 +16,8 @@ from tools.mir_executor import cli
 from tools.mir_executor.policy import POLICY_ENV_VAR, load_sub_agent_policy
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[3]
+_NATIVE = runpy.run_path(str(REPO_ROOT / 'tests/test_executor_query_native_parity.py'))
+binary = _NATIVE['binary']
 
 
 def _write_policy(repo_root: pathlib.Path, data: object) -> pathlib.Path:
@@ -710,6 +714,7 @@ def test_policy_runtime_options_cli_flags_override_prefer_route(
 def test_policy_resolve_cli_subcommand_prints_json(
     tmp_path: pathlib.Path,
     monkeypatch,
+    binary,
 ) -> None:
     monkeypatch.delenv(POLICY_ENV_VAR, raising=False)
     _write_policy(
@@ -734,10 +739,21 @@ def test_policy_resolve_cli_subcommand_prints_json(
     empty_overlay.write_text("{}", encoding="utf-8")
     env[POLICY_ENV_VAR] = str(empty_overlay)
     repo_root = pathlib.Path(__file__).resolve().parents[3]
+    provider = tmp_path / 'provider'
+    for relative in ('tools/mir_executor/__init__.py', 'tools/mir_executor/entrypoint.py',
+                     'src/mir/__init__.py', 'src/mir/__main__.py',
+                     'src/mir/cli/__init__.py', 'src/mir/cli/__main__.py',
+                     'src/mir/cli/policy.py'):
+        target = provider / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(repo_root / relative, target)
+    _NATIVE['install_pin'](binary, provider)
+    for selector in ('MIR_EXECUTOR_IMPL', 'MIR_EXECUTOR_QUERY_IMPL', 'MIR_NATIVE_HOOKS'):
+        env.pop(selector, None)
     pythonpath = os.pathsep.join(
         [
-            str(repo_root / "src"),
-            str(repo_root),
+            str(provider / "src"),
+            str(provider),
             env.get("PYTHONPATH", ""),
         ]
     )
@@ -755,6 +771,7 @@ def test_policy_resolve_cli_subcommand_prints_json(
             "--repo-root",
             str(tmp_path),
         ],
+        cwd=provider,
         capture_output=True,
         text=True,
         env=env,

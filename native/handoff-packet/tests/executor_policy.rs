@@ -162,6 +162,8 @@ fn windows_account_profile_rule_never_uses_home() {
         env.insert("USERPROFILE".into(), profile.into());
         assert_eq!(windows_account_home(&env).unwrap().to_str(), Some(profile));
     }
+    env.insert("USERPROFILE".into(), "".into());
+    assert!(windows_account_home(&env).is_err());
     env.insert("USERPROFILE".into(), "relative".into());
     assert!(windows_account_home(&env).is_err());
 }

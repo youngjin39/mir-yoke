@@ -1,4 +1,4 @@
-//! Buffered policy query. Uncertain parsing or diagnostics decline before output.
+//! Native-owned policy query. Unsupported inputs fail before routing output.
 use crate::executor_policy::{Policy, load_data};
 use serde_json::Value;
 use std::{
@@ -11,7 +11,7 @@ use std::{
 type Output = (String, String, i32);
 
 // Strict JSON intentionally declines Python extensions, invalid Unicode and deep
-// inputs: Python remains the diagnostic oracle for every unadmitted input.
+// inputs: the public boundary returns a safe error for unadmitted input.
 fn read(path: &Path) -> Option<Value> {
     let value: Value = serde_json::from_slice(&fs::read(path).ok()?).ok()?;
     value.is_object().then_some(value)
@@ -117,7 +117,7 @@ fn python_json(value: &Value) -> Option<String> {
 
 /// `account` is passwd home on Unix and Python's account profile on Windows.
 /// Roots retain their spelling: resolving symlinks or '..' changes config lookup.
-pub fn query(
+fn admitted_query(
     raw: &[OsString],
     cwd: &Path,
     account: &Path,
@@ -188,8 +188,37 @@ pub fn query(
     Some((stdout, policy.warning, 0))
 }
 
+/// Safe refusal replaces the former exit-64 Python fallback protocol.
+pub fn refusal() -> Output {
+    (
+        String::new(),
+        "[mir policy] unsupported native policy input or environment; no routing result\n".into(),
+        2,
+    )
+}
+
+/// Resolve supported inputs or return a final diagnostic without routing output.
+pub fn query(
+    raw: &[OsString],
+    cwd: &Path,
+    account: &Path,
+    env: &BTreeMap<String, String>,
+) -> Option<Output> {
+    if raw.first().is_none_or(|arg| arg != "policy-resolve") {
+        return None;
+    }
+    Some(admitted_query(raw, cwd, account, env).unwrap_or_else(refusal))
+}
+
 /// Process adapter; never guess an account identity from a session HOME on Unix.
 pub fn run(raw: &[OsString], cwd: &Path) -> Option<Output> {
+    if raw.first().is_none_or(|arg| arg != "policy-resolve") {
+        return None;
+    }
+    Some(admitted_run(raw, cwd).unwrap_or_else(refusal))
+}
+
+fn admitted_run(raw: &[OsString], cwd: &Path) -> Option<Output> {
     let env: BTreeMap<String, String> = std::env::vars_os()
         .map(|(k, v)| Some((k.into_string().ok()?, v.into_string().ok()?)))
         .collect::<Option<_>>()?;

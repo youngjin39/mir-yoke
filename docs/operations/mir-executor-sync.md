@@ -1,5 +1,26 @@
 # Mir Executor common source and explicit sync
 
+The public `mir policy resolve` command requires the provider's pinned native
+`executor-query` binary. Missing, invalid, disabled or incompatible installations
+return exit 2 with a diagnostic on stderr and no routing output. Python selectors
+also cause this refusal; the public policy command has no Python fallback.
+
+Admitted inputs retain frozen G6-Y1 output parity. Previously declined inputs
+return exit 2 with `unsupported native policy input or environment; no routing
+result` on stderr. These include unsupported argument syntax (help, abbreviations,
+duplicates, missing values and unknown options), malformed/non-object JSON,
+Python-only JSON extensions (NaN and lone surrogates), unhashable delegation modes,
+strip control characters U+001C through U+001F, and unrepresentable paths.
+Path refusals include named-user tilde expansion, POSIX double-root spelling and
+Windows alternate slash spellings. Failed account discovery, empty/relative
+Windows `USERPROFILE`, non-Unicode process environments and non-UTF-8 Python
+streams also fail without routing output. Correct the input or install a matching
+pinned native release. Source/binary rollback is the recovery path.
+
+Other executor commands retain their own fallback contracts. The shared Python
+policy library remains required by execute/dispatch handlers in
+`tools/mir_executor/cli.py` and routing in `tools/mir_executor/dispatch.py`.
+
 Current common base: **v3.8**. v3.8 ignores an agent route's model and reasoning
 effort when its declared `execution_backend` differs from the resolved backend;
 the category/default route supplies those values instead. Explicit `--model` and
@@ -375,7 +396,7 @@ in consumer-owned `.claude/settings.json` using the exec-form `command` and
 `args` entry in [Optional native delegation gate](#optional-native-delegation-gate).
 
 Smoke-check the installed pins from the Yoke clone, then run the native binary
-directly for a read-only policy query, so Python fallback cannot mask a decline:
+directly for a read-only policy query to verify the installed artifact:
 
 ```powershell
 uv run --no-sync python -m tools.executor_sync --target "$consumer" --check
