@@ -50,3 +50,10 @@ with task-local TMPDIR/CARGO_TARGET_DIR and the prescribed UV_CACHE_DIR. The tes
 builds the existing bootstrap evaluator offline and locked, or accepts an explicit
 W1_BOOTSTRAP_NATIVE path. Native replay never silently skips on POSIX. Windows
 skips POSIX replay and retains the platform-specific suite.
+
+## Source re-pins
+
+- `native/handoff-packet/Cargo.toml`: re-pinned after W1-Y2 added only the
+  `project-hooks` `[[bin]]` declaration. The pinned file is a build input for the
+  bootstrap-native observations; the `bootstrap-gate` target and every record
+  replay unchanged.

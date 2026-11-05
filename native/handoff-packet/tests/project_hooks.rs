@@ -35,7 +35,12 @@ fn run(args: &[&str], code: i32, stdout: &[u8], stderr: &[u8]) {
 
 #[test]
 fn capabilities() {
-    run(&["capabilities"], 0, b"mir-project-hooks-v1\n", b"");
+    run(
+        &["capabilities"],
+        0,
+        b"mir-project-hooks-v1\nmir-project-hooks-compact-v1\n",
+        b"",
+    );
 }
 
 #[test]

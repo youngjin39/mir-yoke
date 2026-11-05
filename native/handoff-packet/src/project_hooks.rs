@@ -1,9 +1,11 @@
-//! Generic project-hook entrypoint; hook families are added in later slices.
+//! Generic project-hook entrypoint; shell registrations remain unchanged.
 #![forbid(unsafe_code)]
+mod compact_snapshot;
+
 use std::{
     env,
     ffi::OsString,
-    io::{self, Write},
+    io::{self, Read, Write},
     process::ExitCode,
 };
 
@@ -12,13 +14,39 @@ fn response(args: &[OsString]) -> (u8, &'static str, &'static str) {
         return (0, "", "");
     }
     if args.len() == 1 && args[0] == "capabilities" {
-        return (0, "mir-project-hooks-v1\n", "");
+        return (
+            0,
+            "mir-project-hooks-v1\nmir-project-hooks-compact-v1\n",
+            "",
+        );
     }
     (64, "", "project-hooks: unknown subcommand\n")
 }
 
 fn main() -> ExitCode {
     let args: Vec<_> = env::args_os().skip(1).collect();
+    if args.len() == 1 && (args[0] == "compact-resume" || args[0] == "post-compact") {
+        let project = env::var_os("CLAUDE_PROJECT_DIR")
+            .filter(|path| !path.is_empty())
+            .unwrap_or_else(|| ".".into());
+        let path =
+            std::path::PathBuf::from(project).join("tasks/handoffs/session-handoff-LATEST.md");
+        let mut input = Vec::new();
+        // PostCompact ignores stdin, as the shell reference does.
+        let stdout = if args[0] == "post-compact" {
+            compact_snapshot::post_compact(&path)
+        } else {
+            let _ = io::stdin().read_to_end(&mut input);
+            compact_snapshot::compact_resume(&path, &input)
+        };
+        return match io::stdout().write_all(stdout.as_bytes()) {
+            Ok(()) => ExitCode::SUCCESS,
+            Err(error) => {
+                eprintln!("project-hooks: {error}");
+                ExitCode::FAILURE
+            }
+        };
+    }
     let (code, stdout, stderr) = response(&args);
     if stdout.is_empty() && stderr.is_empty() {
         return ExitCode::from(code);
@@ -41,7 +69,11 @@ mod tests {
     fn capability_probe() {
         assert_eq!(
             response(&["capabilities".into()]),
-            (0, "mir-project-hooks-v1\n", "")
+            (
+                0,
+                "mir-project-hooks-v1\nmir-project-hooks-compact-v1\n",
+                ""
+            )
         );
     }
 

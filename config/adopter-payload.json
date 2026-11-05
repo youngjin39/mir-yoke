@@ -2842,6 +2842,12 @@
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
+      "path": "native/handoff-packet/src/compact_snapshot.rs",
+      "sha256": "773bf34ae009605c59c4cef5436dbf64b33755ebf080b0d04801633a9e9e2604"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
       "path": "native/handoff-packet/src/delegation_gate.rs",
       "sha256": "22f619182c8fe2775a3c2b8beab9a5e4c87429c4d4d6a9e232effa57373c81ff"
     },
@@ -3089,7 +3095,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/project_hooks.rs",
-      "sha256": "443712c6d549b454af1875947474538d4533e2697ef6bcf9d71cbc0c659ac05f"
+      "sha256": "c735d6cd7bdcad9661af30c6a8e9874ea75e521adfe63d88914eed23c4f8556d"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3581,13 +3587,13 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/w1/README.md",
-      "sha256": "bbc61e0907098d864d31cc6aa07fc6a535f88ee0967e3fa557e1d2d00d435fb6"
+      "sha256": "0d0db6a3d9685c22cf887fbb17da9c04dcc5f9cd8703567a003e1a9fe1e521d0"
     },
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/w1/manifest.json",
-      "sha256": "4a985b3594f67d45d6b76a37a7eb8460cfdad69189e97b52d815746e10aad0ae"
+      "sha256": "3e27ca81e52cede258fe0f9c9af298bff506c576ed619cd280d3cb21c8782c20"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3611,7 +3617,13 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/project_hooks.rs",
-      "sha256": "7c2809cab6e096abdcc753a1eead015d390e39f858ffd4019e658f95fff19c2d"
+      "sha256": "eedb2fa46e4cb60493238e67de77be3330bedfe810d68c15903020ea1f21791e"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/tests/project_hooks_compact.rs",
+      "sha256": "f9404df1eacbeb03dc9d6da287a1e145e7d871d369cbe5b050909a8bc5211832"
     },
     {
       "classification": "template-maintainer-tool",
