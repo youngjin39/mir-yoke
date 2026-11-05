@@ -49,11 +49,12 @@ fn posix_default_stays_literal() {
 #[test]
 fn batch_shims_accept_app_server_and_config_arguments() {
     // The executor sends configuration in JSON-RPC; also exercise CLI -c escaping.
+    // Rust quotes arguments containing cmd delimiters such as '='; %~N strips those quotes.
     let root = std::env::temp_dir().join(format!("codex-shims-{}", std::process::id()));
     std::fs::create_dir_all(&root).unwrap();
     for extension in ["cmd", "bat"] {
         let shim = root.join(format!("codex.{extension}"));
-        std::fs::write(&shim, b"@echo off\r\necho %1\r\necho %2\r\necho %3\r\n").unwrap();
+        std::fs::write(&shim, b"@echo off\r\necho %~1\r\necho %~2\r\necho %~3\r\n").unwrap();
         let output = std::process::Command::new(&shim)
             .args(["app-server", "-c", "model_reasoning_effort=high"])
             .output()
