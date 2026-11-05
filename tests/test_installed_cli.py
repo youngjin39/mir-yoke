@@ -16,6 +16,7 @@ PUBLIC_SUBCOMMANDS = (
     "memory",
     "migrate",
     "policy",
+    "project-hooks",
     "relations",
     "run-python",
     "runtime-manifest",

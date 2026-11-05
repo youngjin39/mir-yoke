@@ -6119,7 +6119,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_installed_cli.py",
-      "sha256": "584a12c932e62332e318831913bf03314a159ad96f025379710647d9cd919e3f"
+      "sha256": "7d8410149228d2c7a510ff1d72b5cc7be805ae516255f6a2776ea5ab6e4af371"
     },
     {
       "classification": "template-maintainer-tool",
