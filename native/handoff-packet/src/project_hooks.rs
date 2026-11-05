@@ -2,6 +2,7 @@
 #![forbid(unsafe_code)]
 mod checkpoint;
 mod compact_snapshot;
+mod post_edit_check;
 mod tdd_ledger;
 
 use std::{
@@ -18,7 +19,7 @@ fn response(args: &[OsString]) -> (u8, &'static str, &'static str) {
     if args.len() == 1 && args[0] == "capabilities" {
         return (
             0,
-            "mir-project-hooks-v1\nmir-project-hooks-compact-v1\nmir-project-hooks-tdd-v1\n",
+            "mir-project-hooks-v1\nmir-project-hooks-compact-v1\nmir-project-hooks-tdd-v1\nmir-project-hooks-post-edit-v1\n",
             "",
         );
     }
@@ -27,6 +28,18 @@ fn response(args: &[OsString]) -> (u8, &'static str, &'static str) {
 
 fn main() -> ExitCode {
     let args: Vec<_> = env::args_os().skip(1).collect();
+    if args.len() == 1 && args[0] == "post-edit-check" {
+        let project = std::path::PathBuf::from(
+            env::var_os("CLAUDE_PROJECT_DIR")
+                .filter(|p| !p.is_empty())
+                .unwrap_or_else(|| ".".into()),
+        );
+        let mut input = Vec::new();
+        let _ = io::stdin().read_to_end(&mut input);
+        let stdout = post_edit_check::scan(&project, &input);
+        let _ = io::stdout().write_all(stdout.as_bytes());
+        return ExitCode::SUCCESS;
+    }
     if args
         .first()
         .is_some_and(|a| a == "tdd-matrix" || a == "tdd-guard")
@@ -139,7 +152,7 @@ mod tests {
             response(&["capabilities".into()]),
             (
                 0,
-                "mir-project-hooks-v1\nmir-project-hooks-compact-v1\nmir-project-hooks-tdd-v1\n",
+                "mir-project-hooks-v1\nmir-project-hooks-compact-v1\nmir-project-hooks-tdd-v1\nmir-project-hooks-post-edit-v1\n",
                 ""
             )
         );

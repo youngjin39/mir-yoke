@@ -1,0 +1,938 @@
+{
+  "schema": "mir.post-edit-freeze@1",
+  "source": ".claude/hooks/post-edit-check.sh",
+  "sha256": "7406bb665359c9f72abf0e966d7c79f06e7a7562e1a1abf7df4070c0a082a101",
+  "tools": [
+    "cat",
+    "jq",
+    "sed",
+    "awk",
+    "grep",
+    "cut",
+    "head",
+    "paste"
+  ],
+  "records": [
+    {
+      "id": "direct-Edit",
+      "setup": {
+        "app.ts": {
+          "text": "console.log(\"private-marker\");\n"
+        }
+      },
+      "stdin": "{\"tool_name\": \"Edit\", \"tool_input\": {\"file_path\": \"app.ts\"}}",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "[WARNING] console.log detected in app.ts at line(s) 1\n",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "direct-Write",
+      "setup": {
+        "app.ts": {
+          "text": "console.log(\"private-marker\");\n"
+        }
+      },
+      "stdin": "{\"tool_name\": \"Write\", \"tool_input\": {\"file_path\": \"app.ts\"}}",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "[WARNING] console.log detected in app.ts at line(s) 1\n",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "direct-apply_patch",
+      "setup": {
+        "app.ts": {
+          "text": "console.log(\"private-marker\");\n"
+        }
+      },
+      "stdin": "{\"tool_name\": \"apply_patch\", \"tool_input\": {\"file_path\": \"app.ts\"}}",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "[WARNING] console.log detected in app.ts at line(s) 1\n",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "direct-Bash",
+      "setup": {
+        "app.ts": {
+          "text": "console.log(\"private-marker\");\n"
+        }
+      },
+      "stdin": "{\"tool_name\": \"Bash\", \"tool_input\": {\"file_path\": \"app.ts\"}}",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "[WARNING] console.log detected in app.ts at line(s) 1\n",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "path-fallback",
+      "setup": {
+        "app.ts": {
+          "text": "console.log(\"private-marker\");\n"
+        }
+      },
+      "stdin": "{\"tool_name\": \"Edit\", \"tool_input\": {\"path\": \"app.ts\"}}",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "[WARNING] console.log detected in app.ts at line(s) 1\n",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "absolute",
+      "setup": {
+        "app.ts": {
+          "text": "console.log(\"private-marker\");\n"
+        }
+      },
+      "stdin": "{\"tool_input\":{\"file_path\":\"@PROJECT@/app.ts\"}}",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "[WARNING] console.log detected in app.ts at line(s) 1\n",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "extension-js",
+      "setup": {
+        "app.js": {
+          "text": "print(\"private-marker\")\nconsole.log(\"private-marker\");\nsk-aaaaaaaaaaaaaaaaaaaa\n"
+        }
+      },
+      "stdin": "{\"tool_name\": \"Edit\", \"tool_input\": {\"file_path\": \"app.js\"}}",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "[WARNING] console.log detected in app.js at line(s) 2\n[CRITICAL] Possible credential/API key detected in app.js at line(s) 3 \u2014 value redacted; rotate immediately if real.\n",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "extension-ts",
+      "setup": {
+        "app.ts": {
+          "text": "print(\"private-marker\")\nconsole.log(\"private-marker\");\nsk-aaaaaaaaaaaaaaaaaaaa\n"
+        }
+      },
+      "stdin": "{\"tool_name\": \"Edit\", \"tool_input\": {\"file_path\": \"app.ts\"}}",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "[WARNING] console.log detected in app.ts at line(s) 2\n[CRITICAL] Possible credential/API key detected in app.ts at line(s) 3 \u2014 value redacted; rotate immediately if real.\n",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "extension-jsx",
+      "setup": {
+        "app.jsx": {
+          "text": "print(\"private-marker\")\nconsole.log(\"private-marker\");\nsk-aaaaaaaaaaaaaaaaaaaa\n"
+        }
+      },
+      "stdin": "{\"tool_name\": \"Edit\", \"tool_input\": {\"file_path\": \"app.jsx\"}}",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "[WARNING] console.log detected in app.jsx at line(s) 2\n",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "extension-tsx",
+      "setup": {
+        "app.tsx": {
+          "text": "print(\"private-marker\")\nconsole.log(\"private-marker\");\nsk-aaaaaaaaaaaaaaaaaaaa\n"
+        }
+      },
+      "stdin": "{\"tool_name\": \"Edit\", \"tool_input\": {\"file_path\": \"app.tsx\"}}",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "[WARNING] console.log detected in app.tsx at line(s) 2\n",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "extension-py",
+      "setup": {
+        "app.py": {
+          "text": "print(\"private-marker\")\nconsole.log(\"private-marker\");\nsk-aaaaaaaaaaaaaaaaaaaa\n"
+        }
+      },
+      "stdin": "{\"tool_name\": \"Edit\", \"tool_input\": {\"file_path\": \"app.py\"}}",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "[WARNING] print() detected in app.py at line(s) 1\n[CRITICAL] Possible credential/API key detected in app.py at line(s) 3 \u2014 value redacted; rotate immediately if real.\n",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "extension-md",
+      "setup": {
+        "app.md": {
+          "text": "print(\"private-marker\")\nconsole.log(\"private-marker\");\nsk-aaaaaaaaaaaaaaaaaaaa\n"
+        }
+      },
+      "stdin": "{\"tool_name\": \"Edit\", \"tool_input\": {\"file_path\": \"app.md\"}}",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "[CRITICAL] Possible credential/API key detected in app.md at line(s) 3 \u2014 value redacted; rotate immediately if real.\n",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "extension-json",
+      "setup": {
+        "app.json": {
+          "text": "print(\"private-marker\")\nconsole.log(\"private-marker\");\nsk-aaaaaaaaaaaaaaaaaaaa\n"
+        }
+      },
+      "stdin": "{\"tool_name\": \"Edit\", \"tool_input\": {\"file_path\": \"app.json\"}}",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "[CRITICAL] Possible credential/API key detected in app.json at line(s) 3 \u2014 value redacted; rotate immediately if real.\n",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "extension-yaml",
+      "setup": {
+        "app.yaml": {
+          "text": "print(\"private-marker\")\nconsole.log(\"private-marker\");\nsk-aaaaaaaaaaaaaaaaaaaa\n"
+        }
+      },
+      "stdin": "{\"tool_name\": \"Edit\", \"tool_input\": {\"file_path\": \"app.yaml\"}}",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "[CRITICAL] Possible credential/API key detected in app.yaml at line(s) 3 \u2014 value redacted; rotate immediately if real.\n",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "extension-yml",
+      "setup": {
+        "app.yml": {
+          "text": "print(\"private-marker\")\nconsole.log(\"private-marker\");\nsk-aaaaaaaaaaaaaaaaaaaa\n"
+        }
+      },
+      "stdin": "{\"tool_name\": \"Edit\", \"tool_input\": {\"file_path\": \"app.yml\"}}",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "[CRITICAL] Possible credential/API key detected in app.yml at line(s) 3 \u2014 value redacted; rotate immediately if real.\n",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "extension-sh",
+      "setup": {
+        "app.sh": {
+          "text": "print(\"private-marker\")\nconsole.log(\"private-marker\");\nsk-aaaaaaaaaaaaaaaaaaaa\n"
+        }
+      },
+      "stdin": "{\"tool_name\": \"Edit\", \"tool_input\": {\"file_path\": \"app.sh\"}}",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "[CRITICAL] Possible credential/API key detected in app.sh at line(s) 3 \u2014 value redacted; rotate immediately if real.\n",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "extension-env",
+      "setup": {
+        "app.env": {
+          "text": "print(\"private-marker\")\nconsole.log(\"private-marker\");\nsk-aaaaaaaaaaaaaaaaaaaa\n"
+        }
+      },
+      "stdin": "{\"tool_name\": \"Edit\", \"tool_input\": {\"file_path\": \"app.env\"}}",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "[CRITICAL] Possible credential/API key detected in app.env at line(s) 3 \u2014 value redacted; rotate immediately if real.\n",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "extension-toml",
+      "setup": {
+        "app.toml": {
+          "text": "print(\"private-marker\")\nconsole.log(\"private-marker\");\nsk-aaaaaaaaaaaaaaaaaaaa\n"
+        }
+      },
+      "stdin": "{\"tool_name\": \"Edit\", \"tool_input\": {\"file_path\": \"app.toml\"}}",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "[CRITICAL] Possible credential/API key detected in app.toml at line(s) 3 \u2014 value redacted; rotate immediately if real.\n",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "extension-cfg",
+      "setup": {
+        "app.cfg": {
+          "text": "print(\"private-marker\")\nconsole.log(\"private-marker\");\nsk-aaaaaaaaaaaaaaaaaaaa\n"
+        }
+      },
+      "stdin": "{\"tool_name\": \"Edit\", \"tool_input\": {\"file_path\": \"app.cfg\"}}",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "[CRITICAL] Possible credential/API key detected in app.cfg at line(s) 3 \u2014 value redacted; rotate immediately if real.\n",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "extension-txt",
+      "setup": {
+        "app.txt": {
+          "text": "print(\"private-marker\")\nconsole.log(\"private-marker\");\nsk-aaaaaaaaaaaaaaaaaaaa\n"
+        }
+      },
+      "stdin": "{\"tool_name\": \"Edit\", \"tool_input\": {\"file_path\": \"app.txt\"}}",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "extension-TS",
+      "setup": {
+        "app.TS": {
+          "text": "print(\"private-marker\")\nconsole.log(\"private-marker\");\nsk-aaaaaaaaaaaaaaaaaaaa\n"
+        }
+      },
+      "stdin": "{\"tool_name\": \"Edit\", \"tool_input\": {\"file_path\": \"app.TS\"}}",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "clean",
+      "setup": {
+        "app.py": {
+          "text": "value = 1\n"
+        }
+      },
+      "stdin": "{\"tool_name\": \"Edit\", \"tool_input\": {\"file_path\": \"app.py\"}}",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "python-keep",
+      "setup": {
+        "app.py": {
+          "text": "print(\"private-marker\") # keep\n"
+        }
+      },
+      "stdin": "{\"tool_name\": \"Edit\", \"tool_input\": {\"file_path\": \"app.py\"}}",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "python-indented",
+      "setup": {
+        "app.py": {
+          "text": "  print(\"private-marker\")\n"
+        }
+      },
+      "stdin": "{\"tool_name\": \"Edit\", \"tool_input\": {\"file_path\": \"app.py\"}}",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "[WARNING] print() detected in app.py at line(s) 1\n",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "python-not-start",
+      "setup": {
+        "app.py": {
+          "text": "x = print(\"private-marker\")\n"
+        }
+      },
+      "stdin": "{\"tool_name\": \"Edit\", \"tool_input\": {\"file_path\": \"app.py\"}}",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "python-keep-number-prefix",
+      "setup": {
+        "app.py": {
+          "text": "print(\"# keep\")\n"
+        }
+      },
+      "stdin": "{\"tool_name\": \"Edit\", \"tool_input\": {\"file_path\": \"app.py\"}}",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "limit",
+      "setup": {
+        "app.py": {
+          "text": "print(1)\nprint(2)\nprint(3)\nprint(4)\n"
+        }
+      },
+      "stdin": "{\"tool_name\": \"Edit\", \"tool_input\": {\"file_path\": \"app.py\"}}",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "[WARNING] print() detected in app.py at line(s) 1,2,3\n",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "no-newline",
+      "setup": {
+        "app.py": {
+          "text": "print(\"private-marker\")"
+        }
+      },
+      "stdin": "{\"tool_name\": \"Edit\", \"tool_input\": {\"file_path\": \"app.py\"}}",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "[WARNING] print() detected in app.py at line(s) 1\n",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "debug-secret",
+      "setup": {
+        "app.py": {
+          "text": "print(\"sk-aaaaaaaaaaaaaaaaaaaa\")\n"
+        }
+      },
+      "stdin": "{\"tool_name\": \"Edit\", \"tool_input\": {\"file_path\": \"app.py\"}}",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "[WARNING] print() detected in app.py at line(s) 1\n[CRITICAL] Possible credential/API key detected in app.py at line(s) 1 \u2014 value redacted; rotate immediately if real.\n",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "credential-0",
+      "setup": {
+        "key.cfg": {
+          "text": "value=\"sk-aaaaaaaaaaaaaaaaaaaa\"\n"
+        }
+      },
+      "stdin": "{\"tool_name\": \"Edit\", \"tool_input\": {\"file_path\": \"key.cfg\"}}",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "[CRITICAL] Possible credential/API key detected in key.cfg at line(s) 1 \u2014 value redacted; rotate immediately if real.\n",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "credential-1",
+      "setup": {
+        "key.cfg": {
+          "text": "value=\"ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\n"
+        }
+      },
+      "stdin": "{\"tool_name\": \"Edit\", \"tool_input\": {\"file_path\": \"key.cfg\"}}",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "[CRITICAL] Possible credential/API key detected in key.cfg at line(s) 1 \u2014 value redacted; rotate immediately if real.\n",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "credential-2",
+      "setup": {
+        "key.cfg": {
+          "text": "value=\"gho_ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ\"\n"
+        }
+      },
+      "stdin": "{\"tool_name\": \"Edit\", \"tool_input\": {\"file_path\": \"key.cfg\"}}",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "[CRITICAL] Possible credential/API key detected in key.cfg at line(s) 1 \u2014 value redacted; rotate immediately if real.\n",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "credential-3",
+      "setup": {
+        "key.cfg": {
+          "text": "value=\"AIzaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\n"
+        }
+      },
+      "stdin": "{\"tool_name\": \"Edit\", \"tool_input\": {\"file_path\": \"key.cfg\"}}",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "[CRITICAL] Possible credential/API key detected in key.cfg at line(s) 1 \u2014 value redacted; rotate immediately if real.\n",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "credential-4",
+      "setup": {
+        "key.cfg": {
+          "text": "value=\"xoxb-1111111111\"\n"
+        }
+      },
+      "stdin": "{\"tool_name\": \"Edit\", \"tool_input\": {\"file_path\": \"key.cfg\"}}",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "[CRITICAL] Possible credential/API key detected in key.cfg at line(s) 1 \u2014 value redacted; rotate immediately if real.\n",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "credential-5",
+      "setup": {
+        "key.cfg": {
+          "text": "value=\"AKIAAAAAAAAAAAAAAAAA\"\n"
+        }
+      },
+      "stdin": "{\"tool_name\": \"Edit\", \"tool_input\": {\"file_path\": \"key.cfg\"}}",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "[CRITICAL] Possible credential/API key detected in key.cfg at line(s) 1 \u2014 value redacted; rotate immediately if real.\n",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "credential-6",
+      "setup": {
+        "key.cfg": {
+          "text": "value=\"aws_secret_access_key \t=\"\n"
+        }
+      },
+      "stdin": "{\"tool_name\": \"Edit\", \"tool_input\": {\"file_path\": \"key.cfg\"}}",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "[CRITICAL] Possible credential/API key detected in key.cfg at line(s) 1 \u2014 value redacted; rotate immediately if real.\n",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "credential-short",
+      "setup": {
+        "key.cfg": {
+          "text": "sk-aaaaaaaaaaaaaaaaaaa\nghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\ngho_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\nAIzaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\nxoxb-111111111\nAKIAAAAAAAAAAAAAAAA\n"
+        }
+      },
+      "stdin": "{\"tool_name\": \"Edit\", \"tool_input\": {\"file_path\": \"key.cfg\"}}",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "credential-limit",
+      "setup": {
+        "key.cfg": {
+          "text": "sk-aaaaaaaaaaaaaaaaaaaa\nghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\ngho_ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ\nAIzaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\nxoxb-1111111111\nAKIAAAAAAAAAAAAAAAAA\naws_secret_access_key \t=\n"
+        }
+      },
+      "stdin": "{\"tool_name\": \"Edit\", \"tool_input\": {\"file_path\": \"key.cfg\"}}",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "[CRITICAL] Possible credential/API key detected in key.cfg at line(s) 1,2,3 \u2014 value redacted; rotate immediately if real.\n",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "patch-command",
+      "setup": {
+        "a.ts": {
+          "text": "console.log(1)\n"
+        },
+        "b.py": {
+          "text": "print(1)\n"
+        }
+      },
+      "stdin": "{\"tool_name\": \"apply_patch\", \"tool_input\": {\"command\": \"*** Begin Patch\\n*** Update File: a.ts\\n*** Move to: b.py\\n*** Add File: a.ts\\n*** Delete File: missing.py\\n*** End Patch\"}}",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "[WARNING] console.log detected in a.ts at line(s) 1\n[WARNING] print() detected in b.py at line(s) 1\n",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "patch-input",
+      "setup": {
+        "a.ts": {
+          "text": "console.log(1)\n"
+        },
+        "b.py": {
+          "text": "print(1)\n"
+        }
+      },
+      "stdin": "{\"tool_name\": \"apply_patch\", \"tool_input\": {\"input\": \"*** Begin Patch\\n*** Update File: a.ts\\n*** Move to: b.py\\n*** Add File: a.ts\\n*** Delete File: missing.py\\n*** End Patch\"}}",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "[WARNING] console.log detected in a.ts at line(s) 1\n[WARNING] print() detected in b.py at line(s) 1\n",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "patch-patch",
+      "setup": {
+        "a.ts": {
+          "text": "console.log(1)\n"
+        },
+        "b.py": {
+          "text": "print(1)\n"
+        }
+      },
+      "stdin": "{\"tool_name\": \"apply_patch\", \"tool_input\": {\"patch\": \"*** Begin Patch\\n*** Update File: a.ts\\n*** Move to: b.py\\n*** Add File: a.ts\\n*** Delete File: missing.py\\n*** End Patch\"}}",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "[WARNING] console.log detected in a.ts at line(s) 1\n[WARNING] print() detected in b.py at line(s) 1\n",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "patch-content",
+      "setup": {
+        "a.ts": {
+          "text": "console.log(1)\n"
+        },
+        "b.py": {
+          "text": "print(1)\n"
+        }
+      },
+      "stdin": "{\"tool_name\": \"apply_patch\", \"tool_input\": {\"content\": \"*** Begin Patch\\n*** Update File: a.ts\\n*** Move to: b.py\\n*** Add File: a.ts\\n*** Delete File: missing.py\\n*** End Patch\"}}",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "[WARNING] console.log detected in a.ts at line(s) 1\n[WARNING] print() detected in b.py at line(s) 1\n",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "direct-and-patch",
+      "setup": {
+        "a.ts": {
+          "text": "console.log(1)\n"
+        },
+        "b.py": {
+          "text": "print(1)\n"
+        }
+      },
+      "stdin": "{\"tool_input\": {\"file_path\": \"b.py\", \"command\": \"*** Update File: a.ts\\n*** Move to: b.py\"}}",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "[WARNING] print() detected in b.py at line(s) 1\n[WARNING] console.log detected in a.ts at line(s) 1\n",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "non-json",
+      "setup": {},
+      "stdin": "no json",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "empty",
+      "setup": {},
+      "stdin": "",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "null",
+      "setup": {},
+      "stdin": "null",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "no-path",
+      "setup": {},
+      "stdin": "{}",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "false-path",
+      "setup": {},
+      "stdin": "{\"tool_input\":{\"file_path\":false,\"path\":\"missing.py\"}}",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "empty-primary",
+      "setup": {},
+      "stdin": "{\"tool_input\":{\"file_path\":\"\",\"path\":\"app.ts\"}}",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "missing",
+      "setup": {},
+      "stdin": "{\"tool_input\": {\"file_path\": \"missing.py\"}}",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "directory",
+      "setup": {
+        "dir.py": {
+          "directory": true
+        }
+      },
+      "stdin": "{\"tool_input\": {\"file_path\": \"dir.py\"}}",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "unreadable",
+      "setup": {
+        "app.py": {
+          "text": "print(1)\n",
+          "mode": 0
+        }
+      },
+      "stdin": "{\"tool_input\": {\"file_path\": \"app.py\"}}",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "whitespace-path",
+      "setup": {},
+      "stdin": "{\"tool_input\": {\"file_path\": \"  \\t\"}}",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "spaces-in-path",
+      "setup": {
+        "space dir/app.ts": {
+          "text": "console.log(\"private-marker\");\n"
+        }
+      },
+      "stdin": "{\"tool_name\": \"Edit\", \"tool_input\": {\"file_path\": \"space dir/app.ts\"}}",
+      "env": {},
+      "expected": {
+        "exit": 0,
+        "stdout": "[WARNING] console.log detected in space dir/app.ts at line(s) 1\n",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "project-default",
+      "setup": {
+        "app.ts": {
+          "text": "console.log(\"private-marker\");\n"
+        }
+      },
+      "stdin": "{\"tool_name\": \"Edit\", \"tool_input\": {\"file_path\": \"app.ts\"}}",
+      "env": {
+        "CLAUDE_PROJECT_DIR": ""
+      },
+      "expected": {
+        "exit": 0,
+        "stdout": "[WARNING] console.log detected in app.ts at line(s) 1\n",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    }
+  ]
+}
