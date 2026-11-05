@@ -89,8 +89,8 @@
     "native/handoff-packet/src/executor_admission.rs": "ea1844cbf94cce394ae1d413b2e896fdc5923110e938b12666e712e252958299",
     "native/handoff-packet/src/executor_dispatch.rs": "4e1f98c502d833da2cc9a9c5c8b173154a6b60eb19f722df8ee0455806d6deb3",
     "native/handoff-packet/src/executor_query.rs": "0e3d9c1d3c16a7c3853b0caaba0d8baf0cc76d08fec23ddca496eeb0b2c9dbd9",
-    "native/handoff-packet/Cargo.toml": "8886b713e1cdcaac5de75577ad47f49b68c45a91978eb5e39aeff4607cf78b50",
-    "native/handoff-packet/Cargo.lock": "222a45f1b36d4af19525a1029375a53f39ee5c083ab7f305b5714ae297823997"
+    "native/handoff-packet/Cargo.toml": "254e1764a1bbc23662c00ed5ed23d91792b13cb63de336e27a8aa2bf51e5084e",
+    "native/handoff-packet/Cargo.lock": "e3fee9bd75c9bec6f1844810224bd7b28483a41ca8b92b4b60ef68926645070a"
   },
   "families": {
     ".claude/hooks/_lib/bootstrap-gate.sh": [

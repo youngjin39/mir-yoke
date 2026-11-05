@@ -1,5 +1,6 @@
 //! Generic project-hook entrypoint; shell registrations remain unchanged.
 #![forbid(unsafe_code)]
+mod checkpoint;
 mod compact_snapshot;
 
 use std::{
@@ -25,6 +26,37 @@ fn response(args: &[OsString]) -> (u8, &'static str, &'static str) {
 
 fn main() -> ExitCode {
     let args: Vec<_> = env::args_os().skip(1).collect();
+    if (args.len() == 1 && (args[0] == "pre-compact" || args[0] == "session-end"))
+        || (args.len() == 3 && args[0] == "invocation-log")
+    {
+        let project = std::path::PathBuf::from(
+            env::var_os("CLAUDE_PROJECT_DIR")
+                .filter(|p| !p.is_empty())
+                .unwrap_or_else(|| ".".into()),
+        );
+        if args[0] == "invocation-log" {
+            let Some(name) = args[1].to_str() else {
+                return ExitCode::from(64);
+            };
+            let Some(exit) = args[2].to_str().and_then(|value| value.parse::<u8>().ok()) else {
+                return ExitCode::from(64);
+            };
+            checkpoint::telemetry(&project, name, i32::from(exit), std::time::Instant::now());
+            return ExitCode::from(exit);
+        }
+        let (mut stdout, stderr) = checkpoint::pre_compact(&project);
+        if args[0] == "session-end" {
+            stdout.push_str(&format!(
+                "[SessionEnd] Closeout state: {}\n",
+                project
+                    .join("tasks/handoffs/session-handoff-LATEST.md")
+                    .display()
+            ));
+        }
+        let _ = io::stdout().write_all(stdout.as_bytes());
+        let _ = io::stderr().write_all(stderr.as_bytes());
+        return ExitCode::SUCCESS;
+    }
     if args.len() == 1 && (args[0] == "compact-resume" || args[0] == "post-compact") {
         let project = env::var_os("CLAUDE_PROJECT_DIR")
             .filter(|path| !path.is_empty())

@@ -53,6 +53,12 @@ skips POSIX replay and retains the platform-specific suite.
 
 ## Source re-pins
 
+- W1-Y3b re-pins the crate manifest and lock for `tempfile`, which supplies
+  private temporary files and portable atomic replacement. The bootstrap target,
+  shell sources and all frozen observations remain unchanged. The Rust checkpoint
+  replay entrypoint uses `checkpoint_replay.py` only as a test adapter to the
+  freeze's existing setup, filesystem snapshot and normalization implementation.
+
 - `native/handoff-packet/Cargo.toml`: re-pinned after W1-Y2 added only the
   `project-hooks` `[[bin]]` declaration. The pinned file is a build input for the
   bootstrap-native observations; the `bootstrap-gate` target and every record
