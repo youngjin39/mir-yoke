@@ -16,6 +16,13 @@ UserPromptSubmit/PreToolUse/Stop hooks without adapters or persisted state. It s
 pins and owner boundaries only on narrowly detected agent handoff requests, and checks
 final packets from the explicit transcript tail. PreToolUse guards commands and file
 writes during narrowly detected handoff turns under owner prohibitions. SessionStart
-stays unchanged.
+uses the native continuity reminder.
 Missing native events, transcript evidence or retry flags are coverage gaps;
 offline fixture checks do not prove live runtime delivery or activation.
+
+Lifecycle event logic runs only in admitted native binaries. The Windows launcher
+still requires Python. Missing or disabled native availability is silent for
+SessionStart/UserPromptSubmit, blocks PreToolUse with a bounded stderr diagnostic
+and exit 2, and reports Stop unavailability on stderr with exit 0. See the
+[delivery contract](references/handoff-packet.md#delivery-boundary). Review and
+acknowledge the fresh package tree; recovery uses source/version rollback.

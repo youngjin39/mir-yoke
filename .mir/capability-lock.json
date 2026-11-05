@@ -324,7 +324,7 @@
     "mir-lifecycle-hooks": {
       "package_kind": "skills-hooks",
       "path": "plugins/mir-lifecycle-hooks",
-      "sha256": "0dff19b0427dd42f84b1a3d11dbe8c7c218b1a60b9aeff073a850f431167ef73"
+      "sha256": "17c4cf0fcbac60428e3f1020352f83e5e21553e62d943f00c5f4c9c7fe510266"
     },
     "mir-mcp": {
       "mcp": {

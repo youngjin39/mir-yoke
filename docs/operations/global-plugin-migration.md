@@ -184,6 +184,20 @@ full digest, then run `mir capability update --apply --project-root /absolute/co
 own tracked `config/capability-sources.json` is its configuration, such as a Yoke checkout,
 also approves only through its git-ignored local file; the tracked value is `{}`.
 
+The lifecycle event implementations are native-only; the Python event sources have
+been retired. Admission verifies lock-pinned native bytes. POSIX launches only
+`bin/<name>` and Windows only `bin/<name>.exe`; the Windows launch-only Python
+shim still requires an interpreter. The repository pin runner may also require Python.
+Missing, invalid or unlaunchable artifacts and `MIR_NATIVE_HOOKS=0` leave SessionStart
+and UserPromptSubmit silent with exit 0. PreToolUse returns empty stdout, the bounded
+stderr line `mir-lifecycle-hooks: native handoff-packet unavailable for PreToolUse`
+and exit 0. Stop returns empty stdout, the same diagnostic with `Stop` in place of
+`PreToolUse`, and exit 0. Diagnostics end with a newline. Native internal exceptions
+retain their existing fail-open handling. Approve the fresh package tree before
+updating; recover through source/version rollback with the applicable acknowledgement,
+never an automatic Python event fallback. These lifecycle rules do not change the
+optional MCP backend selection and interpreter observations below.
+
 Use `sync --mcp --apply` to select it explicitly and `sync --no-mcp --apply` to remove that
 consumer's selection. Omitting either option retains its lock selection. A peer consumer's
 selection keeps the host registration active. Selection is host-wide at user scope, so sessions

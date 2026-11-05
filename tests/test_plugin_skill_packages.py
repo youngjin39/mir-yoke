@@ -82,42 +82,18 @@ def test_lifecycle_hook_plugin_uses_one_exact_shared_hook_file() -> None:
         assert hook["type"] == "command"
         assert hook["timeout"] == (2 if event == "SessionStart" else 8)
         name = "runtime-continuity" if event == "SessionStart" else "handoff-packet"
-        reference = ("hooks/runtime_continuity.py" if event == "SessionStart" else
-                     "skills/runtime-continuity/scripts/handoff_packet.py")
-        base = "${CLAUDE_PLUGIN_ROOT}/bin/" + name
-        assert hook["command"] == (
-            f'if [ -x "{base}" ]; then exec "{base}"; '
-            f'elif [ -x "{base}.exe" ]; then exec "{base}.exe"; '
-            f'else exec python3 "${{CLAUDE_PLUGIN_ROOT}}/{reference}"; fi'
-        )
+        assert f'${{CLAUDE_PLUGIN_ROOT}}/bin/{name}' in hook["command"]
+        assert "python3" not in hook["command"]
+        assert ".exe" not in hook["command"]
         assert hook["commandWindows"] == (
             'python3 "${CLAUDE_PLUGIN_ROOT}\\hooks\\windows_hook.py" '
-            f'{name} {reference} ; exit $LASTEXITCODE'
+            f'{name} {event} ; exit $LASTEXITCODE'
         )
     from mir.core.capabilities.manager import _HOOKS_SCHEMA
     assert hooks == _HOOKS_SCHEMA
-    handler = plugin_root / "hooks" / "runtime_continuity.py"
-    assert handler.stat().st_mode & 0o111 == 0
-    assert len(handler.read_bytes()) <= 1024
+    assert not (plugin_root / "hooks" / "runtime_continuity.py").exists()
+    assert not (plugin_root / "skills/runtime-continuity/scripts/handoff_packet.py").exists()
     assert _validate_plugin(plugin_root, "mir-lifecycle-hooks", package_kind="skills-hooks")
-    completed = subprocess.run(
-        ["python3", str(handler)], capture_output=True, text=True, check=True
-    )
-    assert completed.stderr == ""
-    assert completed.stdout == (
-        'Mir lifecycle continuity: preserve the active task intent and verify state before '
-        'continuing. Default work method: 1 Method/intent -> 2 Design (+scenarios) -> 3 TDD '
-        '-> 4 Eval -> 5 '
-        'Develop -> 6 Repeat 3-5 until tests pass -> 7 Finish; done only when every request-'
-        'matrix cell has evidence checked now, otherwise report N/M and open cells (details: '
-        'runtime-continuity skill, references/default-work-method.md). Handoffs: qualified '
-        'target; four status axes; full pins; evidence provenance+time; unknowns; owner may/may-'
-        'not only. If commands allowed, paste `python3 scripts/mir_ontology.py mapping --handoff '
-        '<source paths>` unchanged; else inventory unavailable pins. Recipients label each pin '
-        'verified-in-repo or parent-supplied. Self-check each gap; scope the whole envelope. See '
-        'ontology Handoff.\n'
-    )
-    assert len(completed.stdout.encode("utf-8")) < 800
 
 
 def test_should_package_portable_default_work_method_in_order(tmp_path: Path) -> None:
@@ -303,14 +279,14 @@ def test_runtime_marketplace_manifest_shapes_are_distinct() -> None:
     )
 
 
-def test_should_keep_h1_hook_print_only_and_permission_aware():
-    import ast
+def test_should_keep_frozen_h1_context_permission_aware():
+    from tests.lifecycle_golden import GOLDEN, unpack
 
-    handler = ROOT / "plugins/mir-lifecycle-hooks/hooks/runtime_continuity.py"
-    tree = ast.parse(handler.read_bytes())
-    assert not any(
-        isinstance(node, (ast.Import, ast.ImportFrom, ast.With)) for node in ast.walk(tree)
+    context = next(
+        unpack(record["stdout"])
+        for records in GOLDEN["records"].values()
+        for record in records
+        if any(b"runtime_continuity.py" in unpack(arg) for arg in record["argv"])
     )
-    calls = [node for node in ast.walk(tree) if isinstance(node, ast.Call)]
-    assert [node.func.id for node in calls] == ["print", "main"]
-    assert "If commands allowed" in handler.read_text()
+    assert b"If commands allowed" in context
+    assert len(context) < 800

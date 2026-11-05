@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-import ast
+import os
+import shutil
 import subprocess
-import sys
 from pathlib import Path
 
 import pytest
@@ -168,29 +168,15 @@ def test_should_review_behaviour_scenarios_and_distinguish_defects(
         assert marker in normalized
 
 
-@pytest.mark.parametrize("source", ["plugin", "manager"])
-def test_should_emit_behaviour_scenario_hint_from_both_sessionstart_sources(
-    source: str,
-    tmp_path: Path,
-) -> None:
-    plugin = ROOT / "plugins/mir-lifecycle-hooks/hooks/runtime_continuity.py"
-    manager = ast.parse((ROOT / "src/mir/core/capabilities/manager.py").read_text())
-    embedded = next(
-        ast.literal_eval(node.value)
-        for node in manager.body
-        if isinstance(node, ast.Assign)
-        and any(
-            isinstance(target, ast.Name) and target.id == "_HOOK_HANDLER_SOURCE"
-            for target in node.targets
-        )
+@pytest.mark.skipif(shutil.which("cargo") is None, reason="cargo unavailable")
+def test_should_emit_behaviour_scenario_hint_from_native_sessionstart() -> None:
+    from tests.test_handoff_packet_native_parity import binary
+
+    handler = binary.__wrapped__().with_name(
+        "runtime-continuity.exe" if os.name == "nt" else "runtime-continuity"
     )
-    assert embedded == plugin.read_text()
-    handler = plugin
-    if source == "manager":
-        handler = tmp_path / "runtime_continuity.py"
-        handler.write_text(embedded)
     completed = subprocess.run(
-        [sys.executable, str(handler)], capture_output=True, text=True, check=True
+        [str(handler)], capture_output=True, text=True, check=True
     )
     assert completed.stderr == ""
     assert "2 Design (+scenarios) -> 3 TDD" in completed.stdout

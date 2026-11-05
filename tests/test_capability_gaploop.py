@@ -726,21 +726,22 @@ def test_should_expose_per_turn_inventory_and_placement_at_efficiency_pointer():
     assert len(description) <= 1024
 
 
-def test_should_describe_existing_pretooluse_handoff_guard_without_changing_sessionstart():
+def test_should_describe_native_lifecycle_reminder_and_pretooluse_handoff_guard():
     text = " ".join(read("mir-lifecycle-hooks/runtime-continuity").split())
     assert "UserPromptSubmit/PreToolUse/Stop hooks" in text
     assert (
         "PreToolUse guards commands and file writes "
         "during narrowly detected handoff turns"
     ) in text
-    assert "SessionStart stays unchanged" in text
+    assert "SessionStart uses the native continuity reminder" in text
     assert "UserPromptSubmit/Stop hooks" not in text
     hooks = json.loads(
         (ROOT / "plugins/mir-lifecycle-hooks/hooks/hooks.json").read_text(encoding="utf-8")
     )["hooks"]
     for event in ("UserPromptSubmit", "PreToolUse", "Stop"):
         handler = hooks[event][0]["hooks"][0]
-        assert "skills/runtime-continuity/scripts/handoff_packet.py" in handler["command"]
+        assert "bin/handoff-packet" in handler["command"]
+        assert "skills/runtime-continuity/scripts/" not in handler["command"]
         assert handler["timeout"] == 8
 
 

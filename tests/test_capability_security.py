@@ -586,13 +586,13 @@ def test_r19_schema4_rejects_hook_event_inventory_drift(tmp_path: Path, hooks: l
         load_capability_config(config)
 
 
-def test_r19_stateless_handoff_handler_has_an_exact_reviewed_digest() -> None:
-    from mir.core.capabilities.manager import _HANDOFF_HANDLER_SHA256
-
-    handler = (
-        ROOT / "plugins/mir-lifecycle-hooks/skills/runtime-continuity/scripts/handoff_packet.py"
-    )
-    assert hashlib.sha256(handler.read_bytes()).hexdigest() == _HANDOFF_HANDLER_SHA256
+def test_r19_retired_python_hook_handlers_are_absent() -> None:
+    plugin = ROOT / "plugins/mir-lifecycle-hooks"
+    assert {path.name for path in (plugin / "hooks").iterdir()} == {
+        "hooks.json", "windows_hook.py",
+    }
+    scripts = plugin / "skills/runtime-continuity/scripts"
+    assert not scripts.exists() or not any(scripts.iterdir())
 
 
 def test_r19_windows_launcher_has_an_exact_reviewed_digest() -> None:
@@ -646,31 +646,32 @@ def test_r19_active_package_rejects_shared_handoff_registration_drift(
         _validate_plugin(plugin, "mir-lifecycle-hooks", package_kind="skills-hooks")
 
 
-@pytest.mark.parametrize("mutation", [
-    "missing", "linked", "modified",
-    pytest.param("executable", marks=pytest.mark.skipif(
-        sys.platform == "win32", reason="POSIX executable mode bits"
-    )),
+@pytest.mark.parametrize("relative", [
+    "hooks/runtime_continuity.py",
+    "skills/runtime-continuity/scripts/handoff_packet.py",
+    "skills/runtime-continuity/scripts/extra.py",
+    "skills/runtime-continuity/scripts/notes.txt",
+    "skills/runtime-continuity/scripts/nested/notes.txt",
 ])
-def test_r19_active_package_rejects_unreviewed_handoff_handler(
-    tmp_path: Path, mutation: str
+@pytest.mark.parametrize("linked", [False, True])
+def test_r19_active_package_rejects_reintroduced_hook_scripts(
+    tmp_path: Path, relative: str, linked: bool
 ) -> None:
     plugin = tmp_path / "mir-lifecycle-hooks"
     shutil.copytree(ROOT / "plugins/mir-lifecycle-hooks", plugin)
-    handler = plugin / "skills/runtime-continuity/scripts/handoff_packet.py"
-    if mutation == "missing":
-        handler.unlink()
-    elif mutation == "linked":
-        original = handler.read_bytes()
-        handler.unlink()
-        sibling = tmp_path / "handler.py"
-        sibling.write_bytes(original)
-        handler.symlink_to(sibling)
-    elif mutation == "modified":
-        handler.write_bytes(handler.read_bytes() + b"\n# unreviewed change\n")
+    _validate_plugin(plugin, "mir-lifecycle-hooks", package_kind="skills-hooks")
+    handler = plugin / relative
+    handler.parent.mkdir(parents=True, exist_ok=True)
+    if linked:
+        sibling = tmp_path / "handler.txt"
+        sibling.write_text("retired handler\n", encoding="utf-8")
+        try:
+            handler.symlink_to(sibling)
+        except OSError:
+            pytest.skip("symlink privilege unavailable")
     else:
-        handler.chmod(0o755)
-    with pytest.raises(CapabilityError, match="handoff handler|executable content"):
+        handler.write_text("retired handler\n", encoding="utf-8")
+    with pytest.raises(CapabilityError, match="shared hook content|shared handoff scripts"):
         _validate_plugin(plugin, "mir-lifecycle-hooks", package_kind="skills-hooks")
 
 
@@ -2028,13 +2029,17 @@ def test_should_rehearse_ontology_distribution_and_rollback_in_fixtures(
     print(json.dumps({"scenario": failure or "round-trip", "receipts": receipts}))
 
 
-def test_should_bind_h1_exact_hook_source_and_final_package_version():
-    from mir.core.capabilities.manager import _HOOK_HANDLER_SOURCE
+def test_should_bind_h1_native_session_start_to_frozen_output_and_package_version():
+    from tests.lifecycle_golden import GOLDEN, unpack
 
     plugin = ROOT / "plugins/mir-lifecycle-hooks"
-    handler = plugin / "hooks/runtime_continuity.py"
-    assert handler.read_bytes() == _HOOK_HANDLER_SOURCE.encode()
-    assert "else inventory unavailable pins" in _HOOK_HANDLER_SOURCE
+    native_source = (ROOT / "native/handoff-packet/src/runtime_continuity.rs").read_text()
+    record, = GOLDEN["records"]["tests/test_handoff_packet_native_parity.py::test_session_start"]
+    output = unpack(record["stdout"]).decode().rstrip("\r\n")
+    assert output in native_source
+    assert "else inventory unavailable pins" in output
+    assert record["returncode"] == 0
+    assert unpack(record["stderr"]) == b""
     for runtime in (".claude-plugin", ".codex-plugin"):
         assert json.loads((plugin / runtime / "plugin.json").read_text())["version"] == "0.13.72"
     config = load_capability_config(ROOT / "config/capability-sources.json")

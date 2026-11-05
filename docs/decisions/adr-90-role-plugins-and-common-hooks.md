@@ -70,9 +70,9 @@ is required when the component changes runtime authority, as hooks and MCP serve
 ### 2.2 One global, read-only lifecycle hook package
 
 `mir-lifecycle-hooks` is a separately named fourth package and is selected by every Yoke Profile.
-It contains one shared `SessionStart` hook and the supporting `runtime-continuity` skill. The same
+It contains one shared `SessionStart` hook and the supporting `runtime-continuity` skill.
 Both hosts auto-discover the standard `hooks/hooks.json`, so neither manifest repeats that path.
-The non-executable Python handler emits
+The initial non-executable Python handler (retired by the native-only amendment below) emitted
 one fixed, bounded continuity reminder and performs no file, environment, network, subprocess, or
 repository access.
 
@@ -552,6 +552,7 @@ in the manager changes with it. Tests: the `test_round_t_*` cases in
 
 ## Amendment: 2026-10-31 — native lifecycle default (0.13.55)
 
+Historical selection contract, superseded by the native-only amendment below.
 All four lifecycle events have Rust implementations. The shared hook commands
 select placed native binaries or the Python reference; Codex on Windows uses
 PowerShell commandWindows selectors (corrected in 0.13.57 and superseded by the
@@ -565,6 +566,7 @@ consumer write authority. See tasks/plan.md for the release preparation cursor.
 
 ## Amendment: 2026-11-01 — provider native pins (0.13.56)
 
+Historical fallback behavior below is superseded by the native-only amendment.
 The required-commit provider lock supplies optional portable native artifact pins
 for update and dry-run placement. Consumer locks and active receipts persist those
 records; verification of installed trees uses the active placement receipt.
@@ -574,6 +576,7 @@ targets and SHA256 digests by plugin. The native crate and prerelease pins are u
 
 ## Amendment: 2026-11-05 — shell-independent Windows lifecycle launcher
 
+Historical name/reference argument and fallback contract, superseded below.
 The Windows registration uses `python3` with a quoted launcher path, two
 plain arguments and the exact suffix ` ; exit $LASTEXITCODE`.
 Codex substitutes `${CLAUDE_PLUGIN_ROOT}` before the session's
@@ -596,3 +599,32 @@ resolves its plugin root from its own location, waits for a regular native
 returned. The launcher performs no writes or network operations. Package
 admission checks its exact reviewed digest, the hook directory inventory and
 the complete hook schema. Windows shell tests remain platform-specific evidence.
+
+
+## Amendment: 2026-11-06 — native-only lifecycle event implementations (G6-Y4)
+
+The Python SessionStart and handoff event implementations are retired. Frozen
+pre-retirement goldens remain immutable compatibility evidence. Native event logic
+and its internal exception fail-open behavior remain unchanged. This amendment
+supersedes the historical lifecycle fallback and Python event-floor descriptions above;
+copied ontology runners retain their independent Python floor.
+
+Admission verifies lock-pinned native bytes. POSIX launches only `bin/<name>`;
+Windows launches only `bin/<name>.exe` through the launch-only `windows_hook.py`.
+The Windows shim still requires Python and accepts only the exact name/event pair,
+optionally followed by the existing three literal shell suffix arguments. It contains
+no event implementation. Repository pin supply can still invoke its Python runner.
+
+Missing, invalid or unlaunchable binaries and `MIR_NATIVE_HOOKS=0` produce empty
+stdout for every event. SessionStart and UserPromptSubmit also have empty stderr
+and exit 0. PreToolUse emits `mir-lifecycle-hooks: native handoff-packet unavailable for PreToolUse`
+plus a newline on stderr and exits 0 (the guard only covers shell and write tools
+during a handoff-writing turn; blocking every tool on a broken install was rejected). Stop emits
+`mir-lifecycle-hooks: native handoff-packet unavailable for Stop` plus a newline
+on stderr and exits 0. These bounded launcher diagnostics are distinct from
+exceptions inside a successfully launched native event handler.
+
+Changed package bytes require review and fresh tree acknowledgement before delivery.
+Rollback selects the prior source/version and validates its applicable acknowledgement;
+there is no automatic Python event fallback. Offline tests do not establish fresh
+Claude or Codex activation, and this amendment grants no consumer write authority.

@@ -15,9 +15,8 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 RUNNER = ROOT / "plugins/mir-core/skills/ontology/scripts/mir_ontology_runner.py"
 
-# The SessionStart hook stays the exact print-only H1 source (ADR-90); the handoff hook warns.
+# Lifecycle event handlers are native; these copied runner entrypoints retain Python floors.
 FLOOR_ENTRYPOINTS = (
-    "plugins/mir-lifecycle-hooks/skills/runtime-continuity/scripts/handoff_packet.py",
     "plugins/mir-core/skills/ontology/scripts/mir_ontology_runner.py",
     "plugins/mir-core/skills/ontology/scripts/mk_query.py",
     "plugins/mir-core/skills/ontology/scripts/ontology_check.py",

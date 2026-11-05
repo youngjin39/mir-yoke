@@ -17,7 +17,6 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILL = ROOT / 'plugins/mir-lifecycle-hooks/skills/runtime-continuity'
-HANDLER = SKILL / 'scripts/handoff_packet.py'
 HANDLER_PYTHON = os.environ.get('MIR_HANDOFF_TEST_PYTHON', sys.executable)
 PROMPT = (
     'Write a handoff for another agent.\n'
@@ -526,7 +525,8 @@ def test_should_register_common_events_without_changing_session_start():
     for name in ('UserPromptSubmit', 'Stop', 'PreToolUse'):
         command = active['hooks'][name][0]['hooks'][0]
         assert command['timeout'] == 8
-        assert 'handoff_packet.py' in command['command']
+        assert '${CLAUDE_PLUGIN_ROOT}/bin/handoff-packet' in command['command']
+        assert 'python3' not in command['command']
     assert active['hooks']['SessionStart'][0]['hooks'][0]['timeout'] == 2
 
 
@@ -655,7 +655,7 @@ def test_should_supply_real_repository_runner_pins_without_network(native_binary
 
     state = tmp_path / 'runtime-state'
     state.mkdir()
-    source = 'plugins/mir-lifecycle-hooks/hooks/runtime_continuity.py'
+    source = 'plugins/mir-lifecycle-hooks/skills/runtime-continuity/SKILL.md'
     payload = {'hook_event_name': 'UserPromptSubmit', 'cwd': str(ROOT),
                'session_id': 'real-runner-offline', 'prompt': (
                    'Prepare a handoff for another agent.\nSources: ' + source
@@ -1487,9 +1487,9 @@ def test_should_require_stated_limitation_when_recipient_has_no_local_tools(runt
 def append_block(repo, shape, reason='Repair handoff once: abbreviated hex value: head'):
     output = json.dumps({'decision': 'block', 'reason': reason})
     row = ({'type': 'system', 'subtype': 'hook_response', 'hookName': 'Stop',
-            'command': 'python3 handoff_packet.py', 'stdout': output} if shape == 'claude' else
+            'command': 'handoff-packet', 'stdout': output} if shape == 'claude' else
            {'type': 'event_msg', 'payload': {'type': 'hook_response', 'hook_name': 'Stop',
-            'command': 'python3 handoff_packet.py', 'stdout': output}})
+            'command': 'handoff-packet', 'stdout': output}})
     with (repo / 'native-session.jsonl').open('a') as stream:
         stream.write(json.dumps(row) + '\n')
 

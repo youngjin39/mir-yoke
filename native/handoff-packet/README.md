@@ -1,4 +1,4 @@
-# Native handoff packet proof of concept
+# Native handoff packet
 
 `executor-query --home-root ROOT [executor query arguments]` implements
 `status`, `result`, `list-jobs` and `cancel` for the invoking repository only. The home
@@ -40,9 +40,22 @@ The second binary, `runtime-continuity`, prints SessionStart context with Python
 text-stream line endings. No event forwards to the Python reference. Internal
 errors use the reference warning contract; PreToolUse errors remain silent.
 `MIR_HANDOFF_PYTHON` selects only the repository pin runner (one path, not a shell command).
-The lifecycle plugin selects an installed executable in `bin/` when available,
-otherwise its Python reference. Capability updates install lock-pinned native
-artifacts by default; `MIR_CAPABILITY_NATIVE_ARTIFACTS=0` disables placement.
+The lifecycle Python event implementations have been retired. Admission verifies
+lock-pinned native bytes; capability updates install those artifacts by default.
+`MIR_CAPABILITY_NATIVE_ARTIFACTS=0` disables placement. POSIX launches only
+`bin/<name>` and Windows launches only `bin/<name>.exe`; Windows keeps a launch-only
+Python shim and still requires its interpreter. The shim contains no event logic.
+Missing, invalid or unlaunchable binaries, and `MIR_NATIVE_HOOKS=0`, use this availability contract:
+
+| Event | stdout | stderr | Exit |
+| --- | --- | --- | --- |
+| SessionStart / UserPromptSubmit | empty | empty | 0 |
+| PreToolUse | empty | `mir-lifecycle-hooks: native handoff-packet unavailable for PreToolUse` plus newline | 0 |
+| Stop | empty | `mir-lifecycle-hooks: native handoff-packet unavailable for Stop` plus newline | 0 |
+
+This launcher contract is separate from unchanged native internal exception handling.
+Review and acknowledge the fresh package tree before delivery. Recovery uses a
+source/version rollback with its applicable acknowledgement, never a Python event fallback.
 
 Run Cargo from this directory:
 
@@ -57,7 +70,7 @@ cargo build --release --offline --locked
 Invoke `target/release/handoff-packet` with hook JSON on stdin.
 On Windows the executable has an `.exe` suffix. With `CARGO_TARGET_DIR`, use its
 `release` directory instead; relative target paths resolve from this crate.
-No reference argument is needed; the former reference argument is ignored.
+No reference argument is needed.
 
 The reference's stdin limit counts decoded characters. Oversized, malformed and
 non-object input leaves its event undetermined and emits a warning. Preserve those
@@ -91,14 +104,11 @@ Parity uses `HANDLER_PYTHON` from `tests/test_mechanical_handoff.py`: the curren
 `sys.executable`, or `MIR_HANDOFF_TEST_PYTHON` when explicitly set. It supplies that
 same executable to the repository pin runner through `MIR_HANDOFF_PYTHON`. This avoids
 Windows Store aliases and accidentally testing a different Python/Unicode version.
-The shipped `hooks.json` uses POSIX `if`/`exec` selection, including `.exe`, and
-requires `python3` on PATH for fallback. A native handoff may still need Python
-for the repository pin runner. POSIX command tests cover installed binaries and
-fallback with paths containing spaces and preserve deny exit codes. The owner
-reports Claude on Windows uses Git Bash; that is parent-supplied context, not
-local execution evidence. The Windows Codex plugin hook shell is not established
-in the inspected repository. ADR-79 remains reference-adaptation-only there;
-these tests do not establish live Windows shell delivery or activation.
+The shipped `hooks.json` uses POSIX launch-only selection and a Windows Python
+launch-only shim. A native handoff may still need Python for the repository pin
+runner. Offline launcher tests preserve deny exit codes and exercise unavailable
+artifacts with paths containing spaces. These checks do not establish fresh
+live-host shell delivery or activation.
 
 Subprocesses run with `PYTHONUTF8=1` to decode non-ASCII input consistently across
 Windows code pages. Native output is UTF-8 with CRLF on Windows and LF elsewhere,
@@ -108,13 +118,13 @@ conversion even with `core.autocrlf`. Assertions compare raw stdout/stderr bytes
 and exit status without newline or encoding normalization. CI also runs
 `tests/test_line_endings.py` to check the checkout contract.
 
-From the repository root, measure 30 fresh processes per implementation and fixture:
+From the repository root, measure 30 fresh native processes per fixture:
 
 ```sh
 uv run python native/handoff-packet/benchmark.py
 ```
 
-Median and nearest-rank p90 include startup and pipe I/O. Implementations alternate;
+Median and nearest-rank p90 include startup and pipe I/O. The benchmark is native-only;
 OS caches are not flushed. Local execution evidence covers macOS arm64 only.
 Linux and Windows execution requires the matrix job's results; distribution
 signing and vulnerability audits remain unverified.
@@ -189,9 +199,9 @@ Pipe readers drain both streams concurrently. Output uses UTF-8 replacement deco
 universal newlines, the one-Mi-character limit, dictionary JSON and exclusion checks.
 No plugin or hook caller is switched.
 
-Native supply measurement (2026-10-31), macOS arm64, Python 3.12, release Rust,
+Historical native supply measurement (2026-10-31), macOS arm64, Python 3.12, release Rust,
 30 alternating fresh processes per implementation, startup and pipe I/O included.
-OS caches were not flushed. Command: `uv run python native/handoff-packet/benchmark.py`
+OS caches were not flushed. Historical command: `uv run python native/handoff-packet/benchmark.py` (now native-only)
 with CARGO_TARGET_DIR pointing at this crate target.
 
 | Fixture | Python median / p90 (ms) | Rust median / p90 (ms) |
@@ -224,9 +234,9 @@ repair counts for both transcript shapes and ordered exception warnings. The
 simulated Python 3.9 interpreter banner is outside the native binary contract;
 the corresponding no-tomllib baseline is compared without that injected banner.
 
-Stop measurement (2026-10-31): macOS arm64, Python 3.12, release Rust;
+Historical Stop measurement (2026-10-31): macOS arm64, Python 3.12, release Rust;
 30 alternating fresh processes per implementation, OS caches not flushed.
-Command: `uv run python native/handoff-packet/benchmark.py`. Startup, pipe I/O
+Historical command: `uv run python native/handoff-packet/benchmark.py` (now native-only). Startup, pipe I/O
 and the fake repository runner are included. Every measured pair also compares
 stdout/stderr/status; the valid packet must be silent and the defective packet
 must block. Literal guards avoid compiling action/Korean grant/source patterns

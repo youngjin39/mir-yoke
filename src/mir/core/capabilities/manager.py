@@ -69,20 +69,31 @@ _CLAUDE_HOOK_MANIFEST_KEYS = _CLAUDE_SKILL_MANIFEST_KEYS
 _CODEX_HOOK_MANIFEST_KEYS = _CODEX_SKILL_MANIFEST_KEYS
 
 
-def _native_hook_command(name: str, reference: str) -> str:
+def _native_hook_command(name: str, event: str) -> str:
     base = "${CLAUDE_PLUGIN_ROOT}/bin/" + name
+    unavailable = "exit 0"
+    if event in {"PreToolUse", "Stop"}:
+        unavailable = (
+            f"printf '%s\\n' 'mir-lifecycle-hooks: native {name} unavailable for {event}' >&2; "
+            "exit 0"
+        )
+    # Admission verifies lock-pinned bytes. Probe launchability without consuming
+    # stdin or leaking unavailable-child output; these two hooks support warmup.
     return (
-        f'if [ -x "{base}" ]; then exec "{base}"; '
-        f'elif [ -x "{base}.exe" ]; then exec "{base}.exe"; '
-        f'else exec python3 "${{CLAUDE_PLUGIN_ROOT}}/{reference}"; fi'
+        f'if [ "${{MIR_NATIVE_HOOKS:-1}}" != 0 ] && [ -f "{base}" ] && '
+        f'[ -x "{base}" ] && [ ! -L "{base}" ] && '
+        f'"{base}" --mir-warmup </dev/null >/dev/null 2>&1; then '
+        f'( exec "{base}" ); _mir_status=$?; '
+        f'case "$_mir_status" in 64|126|127) ;; *) exit "$_mir_status" ;; esac; fi; '
+        f'{unavailable}'
     )
 
 
-def _windows_hook_command(name: str, reference: str) -> str:
+def _windows_hook_command(name: str, event: str) -> str:
     # Codex substitutes the placeholder before passing this to the user's shell.
     return (
         'python3 "${CLAUDE_PLUGIN_ROOT}\\hooks\\windows_hook.py" '
-        f'{name} {reference} ; exit $LASTEXITCODE'
+        f'{name} {event} ; exit $LASTEXITCODE'
     )
 
 
@@ -94,10 +105,10 @@ _HOOKS_SCHEMA = {
                     {
                         "type": "command",
                         "command": _native_hook_command(
-                            "runtime-continuity", "hooks/runtime_continuity.py"
+                            "runtime-continuity", "SessionStart"
                         ),
                         "commandWindows": _windows_hook_command(
-                            "runtime-continuity", "hooks/runtime_continuity.py"
+                            "runtime-continuity", "SessionStart"
                         ),
                         "timeout": 2,
                     }
@@ -110,10 +121,10 @@ _HOOKS_SCHEMA = {
                     {
                         "type": "command",
                         "command": _native_hook_command(
-                            "handoff-packet", "skills/runtime-continuity/scripts/handoff_packet.py"
+                            "handoff-packet", "UserPromptSubmit"
                         ),
                         "commandWindows": _windows_hook_command(
-                            "handoff-packet", "skills/runtime-continuity/scripts/handoff_packet.py"
+                            "handoff-packet", "UserPromptSubmit"
                         ),
                         "timeout": 8,
                     }
@@ -126,10 +137,10 @@ _HOOKS_SCHEMA = {
                     {
                         "type": "command",
                         "command": _native_hook_command(
-                            "handoff-packet", "skills/runtime-continuity/scripts/handoff_packet.py"
+                            "handoff-packet", "PreToolUse"
                         ),
                         "commandWindows": _windows_hook_command(
-                            "handoff-packet", "skills/runtime-continuity/scripts/handoff_packet.py"
+                            "handoff-packet", "PreToolUse"
                         ),
                         "timeout": 8,
                     }
@@ -142,10 +153,10 @@ _HOOKS_SCHEMA = {
                     {
                         "type": "command",
                         "command": _native_hook_command(
-                            "handoff-packet", "skills/runtime-continuity/scripts/handoff_packet.py"
+                            "handoff-packet", "Stop"
                         ),
                         "commandWindows": _windows_hook_command(
-                            "handoff-packet", "skills/runtime-continuity/scripts/handoff_packet.py"
+                            "handoff-packet", "Stop"
                         ),
                         "timeout": 8,
                     }
@@ -154,32 +165,8 @@ _HOOKS_SCHEMA = {
         ],
     }
 }
-_HOOK_HANDLER_SOURCE = '''"""Render lifecycle continuity context."""
-
-MESSAGE = (
-    "Mir lifecycle continuity: preserve the active task intent and verify state before"
-    " continuing. Default work method: 1 Method/intent -> 2 Design (+scenarios) -> 3 TDD -> 4 Eval"
-    " -> 5 Develop -> 6 Repeat 3-5 until tests pass -> 7 Finish; done only when every"
-    " request-matrix cell has evidence checked now, otherwise report N/M and open cells (details:"
-    " runtime-continuity skill, references/default-work-method.md). Handoffs: qualified target;"
-    " four status axes; full pins; evidence provenance+time; unknowns; owner may/may-not only."
-    " If commands allowed, paste `python3 scripts/mir_ontology.py mapping --handoff <source"
-    " paths>` unchanged; else inventory unavailable pins. Recipients label each pin"
-    " verified-in-repo or parent-supplied. Self-check each gap; scope the whole envelope. See"
-    " ontology Handoff."
-)
-
-
-def main() -> None:
-    print(MESSAGE)
-
-
-if __name__ == "__main__":
-    main()
-'''
-# ADR-90: exact reviewed Windows launcher and stateless handoff implementations.
-_WINDOWS_LAUNCHER_SHA256 = "3c02cb2d8b0039fb7936770e1c3be36694b4262a0e9e2e6432871fc0f4cc97ac"
-_HANDOFF_HANDLER_SHA256 = "9ae1575db8d2225778cf72b41fed9939ae241d7cc50ffb14cf3d27a8fe4900f4"
+# ADR-90: exact reviewed launch-only Windows glue; native artifacts have lock pins.
+_WINDOWS_LAUNCHER_SHA256 = "3af2ba7cdf4c25218cd47de24827e7c3032d94b5d56272fffa44ba2817504e39"
 _ACTIVE_PACKAGE_CREDENTIAL_PATTERNS = (
     re.compile(rb"https?://[^\s/@]+@", re.IGNORECASE),
     re.compile(rb"-----BEGIN [A-Z ]*PRIVATE KEY-----"),
@@ -650,7 +637,7 @@ def _validate_plugin(plugin_root: Path, expected_name: str, *, package_kind: str
         raise CapabilityError(f"Codex skills path drift for {expected_name}")
     if package_kind == "skills-hooks":
         hook_entries = {path.name for path in (plugin_root / "hooks").iterdir()}
-        if hook_entries != {"hooks.json", "runtime_continuity.py", "windows_hook.py"}:
+        if hook_entries != {"hooks.json", "windows_hook.py"}:
             raise CapabilityError(f"shared hook content rejected in {expected_name}")
         if any("hooks" in manifest for manifest in manifests):
             raise CapabilityError(f"shared hook path drift for {expected_name}")
@@ -662,20 +649,9 @@ def _validate_plugin(plugin_root: Path, expected_name: str, *, package_kind: str
             raise CapabilityError(f"Windows hook launcher is missing or linked: {expected_name}")
         if hashlib.sha256(launcher.read_bytes()).hexdigest() != _WINDOWS_LAUNCHER_SHA256:
             raise CapabilityError("Windows hook launcher is not the reviewed read-only launcher")
-        handler = plugin_root / "hooks" / "runtime_continuity.py"
-        if handler.is_symlink() or not handler.is_file():
-            raise CapabilityError(f"shared hook handler is missing or linked: {expected_name}")
-        if handler.read_bytes() != _HOOK_HANDLER_SOURCE.encode("utf-8"):
-            raise CapabilityError("shared hook handler is not the reviewed read-only handler")
-        if len(handler.read_bytes()) > 1024:
-            raise CapabilityError("shared hook handler exceeds bounded output contract")
-        handoff_handler = (
-            plugin_root / "skills" / "runtime-continuity" / "scripts" / "handoff_packet.py"
-        )
-        if handoff_handler.is_symlink() or not handoff_handler.is_file():
-            raise CapabilityError(f"shared handoff handler is missing or linked: {expected_name}")
-        if hashlib.sha256(handoff_handler.read_bytes()).hexdigest() != _HANDOFF_HANDLER_SHA256:
-            raise CapabilityError("shared handoff handler is not the reviewed stateless handler")
+        scripts = plugin_root / "skills" / "runtime-continuity" / "scripts"
+        if scripts.is_symlink() or (scripts.exists() and any(scripts.iterdir())):
+            raise CapabilityError("shared handoff scripts rejected; native handlers only")
     skill_files = list((plugin_root / "skills").glob("*/SKILL.md"))
     if not skill_files:
         raise CapabilityError(f"plugin has no skills: {expected_name}")
@@ -991,7 +967,7 @@ class CapabilityManager:
                 document.get("native_artifacts", {}), self.config.plugins, portable=True,
             )
         except (CapabilityError, ValueError, OSError) as exc:
-            print(f"Warning: native artifacts skipped: {exc}; using Python reference",
+            print(f"Warning: native artifacts skipped: {exc}; native hooks unavailable",
                   file=sys.stderr)
             return {}
 

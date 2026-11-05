@@ -38,8 +38,6 @@ def test_real_hook_command(binary, stop_repository, event, mode, deny, request):
     plugin = repo / 'plugin with spaces'
     shutil.copytree(PLUGIN, plugin)
     name = 'runtime-continuity' if event == 'SessionStart' else 'handoff-packet'
-    script = (plugin / 'hooks/runtime_continuity.py' if event == 'SessionStart' else
-              plugin / 'skills/runtime-continuity/scripts/handoff_packet.py')
     env = dict(os.environ, HOME=str(repo), CLAUDE_PLUGIN_ROOT=str(plugin),
                MIR_HANDOFF_PYTHON=HANDLER_PYTHON, PYTHONUTF8='1')
     # Resolve the same interpreter as the reference even when python3 differs on PATH.
@@ -55,18 +53,13 @@ def test_real_hook_command(binary, stop_repository, event, mode, deny, request):
         payload = stop_payload(repo, prompt, body)
     case = f"tests/test_lifecycle_native_commands.py::{request.node.name}"
     reference = expected_result(GOLDEN["records"][case][0], repo)
-    if event == 'PreToolUse':
-        assert reference.returncode == (2 if deny else 0)
-    if event == 'Stop' and deny:
-        assert json.loads(reference.stdout)['decision'] == 'block'
+    if mode != 'present':
+        reference = unavailable_result(event)
     if mode != 'absent':
         destination = plugin / 'bin' / (name + ('.exe' if mode == 'exe' else ''))
         destination.parent.mkdir()
         shutil.copyfile(binary.with_name(name), destination)
         destination.chmod(0o644 if mode == 'non-executable' else 0o755)
-    if mode in {'present', 'exe'}:
-        # A selected native deny must never fall through to the Python reference.
-        script.write_text('raise SystemExit("Python reference unexpectedly executed")\n')
     command = json.loads((plugin / 'hooks/hooks.json').read_text())['hooks'][event][0]['hooks'][0]
     assert command['timeout'] == (2 if event == 'SessionStart' else 8)
     for shell in ['/bin/sh', '/bin/bash']:
@@ -86,8 +79,6 @@ def test_codex_windows_hook_command(binary, stop_repository, event, mode, deny, 
     plugin = repo / 'plugin with spaces'
     shutil.copytree(PLUGIN, plugin)
     name = 'runtime-continuity' if event == 'SessionStart' else 'handoff-packet'
-    script = (plugin / 'hooks/runtime_continuity.py' if event == 'SessionStart' else
-              plugin / 'skills/runtime-continuity/scripts/handoff_packet.py')
     env = dict(os.environ, CLAUDE_PLUGIN_ROOT=str(plugin), MIR_HANDOFF_PYTHON=HANDLER_PYTHON,
                PYTHONUTF8='1')
     # Resolve the same interpreter as the reference even when python3 differs on PATH.
@@ -108,18 +99,13 @@ def test_codex_windows_hook_command(binary, stop_repository, event, mode, deny, 
     case = ('tests/test_lifecycle_native_commands.py::test_real_hook_command['
             f'{"deny" if deny else "allow"}-{mode}-{event}]')
     reference = expected_result(GOLDEN["records"][case][0], repo)
-    if event == 'PreToolUse':
-        assert reference.returncode == (2 if deny else 0)
-    if event == 'Stop' and deny:
-        assert json.loads(reference.stdout)['decision'] == 'block'
+    if mode != 'present':
+        reference = unavailable_result(event)
     if mode != 'absent':
         destination = plugin / 'bin' / (name + '.exe')
         destination.parent.mkdir()
         shutil.copyfile(binary.with_name(name + '.exe'), destination)
         destination.chmod(0o644 if mode == 'non-executable' else 0o755)
-    if mode in {'present', 'exe'}:
-        # A selected native deny must never fall through to the Python reference.
-        script.write_text('raise SystemExit("Python reference unexpectedly executed")\n')
     command = json.loads((plugin / 'hooks/hooks.json').read_text())['hooks'][event][0]['hooks'][0]
     assert command['timeout'] == (2 if event == 'SessionStart' else 8)
     substituted = command['commandWindows'].replace('${CLAUDE_PLUGIN_ROOT}', str(plugin))
@@ -150,7 +136,7 @@ def test_windows_missing_python_fails_closed(tmp_path):
 
 
 @pytest.mark.skipif(os.name != 'nt', reason='Windows cmd.exe required')
-def test_windows_python_fallback_preserves_utf8_stdin_and_exit(tmp_path):
+def test_windows_missing_native_never_executes_retired_handler(tmp_path):
     plugin = tmp_path / 'plugin with spaces'
     (plugin / 'hooks').mkdir(parents=True)
     shutil.copyfile(PLUGIN / 'hooks/windows_hook.py', plugin / 'hooks/windows_hook.py')
@@ -174,4 +160,41 @@ def test_windows_python_fallback_preserves_utf8_stdin_and_exit(tmp_path):
         _cmd_command(command), input=payload,
         capture_output=True, env=env, timeout=15,
     )
-    assert (result.stdout, result.stderr, result.returncode) == (payload, b'', 2)
+    assert (result.stdout, result.stderr, result.returncode) == (b'', b'', 0)
+
+
+def unavailable_result(event):
+    error = (f'mir-lifecycle-hooks: native handoff-packet unavailable for {event}\n'.encode()
+             if event in {'PreToolUse', 'Stop'} else b'')
+    return subprocess.CompletedProcess([], 0, b'', error)
+
+
+@pytest.mark.skipif(os.name == 'nt', reason='POSIX hook shell contract')
+@pytest.mark.parametrize('event', ['SessionStart', 'UserPromptSubmit', 'PreToolUse', 'Stop'])
+@pytest.mark.parametrize('mode', ['absent', 'invalid', 'directory', 'symlink', 'rollback',
+                                  'unsupported', 'launch-failure'])
+def test_missing_native_event_contract(tmp_path, event, mode):
+    plugin = tmp_path / 'plugin with spaces'
+    shutil.copytree(PLUGIN, plugin)
+    name = 'runtime-continuity' if event == 'SessionStart' else 'handoff-packet'
+    destination = plugin / 'bin' / name
+    destination.parent.mkdir()
+    env = dict(os.environ, CLAUDE_PLUGIN_ROOT=str(plugin))
+    if mode == 'directory':
+        destination.mkdir()
+    elif mode == 'symlink':
+        destination.symlink_to(sys.executable)
+    elif mode != 'absent':
+        destination.write_text('not an executable' if mode == 'invalid' else
+                               '#!/bin/sh\nprintf partial; printf partial >&2; exit 64\n'
+                               if mode == 'unsupported' else '#!/missing/interpreter\n')
+        destination.chmod(0o755)
+    if mode == 'rollback':
+        env['MIR_NATIVE_HOOKS'] = '0'
+    hook = json.loads((plugin / 'hooks/hooks.json').read_text())['hooks'][event][0]['hooks'][0]
+    expected = unavailable_result(event)
+    for shell in ['/bin/sh', '/bin/bash']:
+        result = subprocess.run([shell, '-c', hook['command']], input=b'{}',
+                                capture_output=True, env=env, timeout=10)
+        assert (result.stdout, result.stderr, result.returncode) == (
+            expected.stdout, expected.stderr, expected.returncode)

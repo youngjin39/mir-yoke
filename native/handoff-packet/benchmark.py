@@ -1,4 +1,4 @@
-"""Cold-process latency for the native proof of concept (run from repository root)."""
+"""Native-only cold-process latency (run from repository root)."""
 from __future__ import annotations
 
 import json
@@ -14,7 +14,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 from tests.test_mechanical_handoff import (  # noqa: E402
-    HANDLER,
     HANDLER_PYTHON,
     PINS,
     PROMPT,
@@ -23,7 +22,6 @@ from tests.test_mechanical_handoff import (  # noqa: E402
 
 target = Path(os.environ.get('CARGO_TARGET_DIR', ROOT / 'native/handoff-packet/target'))
 BINARY = target / 'release' / ('handoff-packet.exe' if os.name == 'nt' else 'handoff-packet')
-CONTINUITY = ROOT / 'plugins/mir-lifecycle-hooks/hooks/runtime_continuity.py'
 scratch = tempfile.TemporaryDirectory(prefix='stop-benchmark-', dir=target)
 repo = Path(scratch.name)
 (repo / '.git').mkdir()
@@ -52,27 +50,21 @@ for label, tool, prompt in [('Read', 'Read', PROMPT + '\nNo commands.'),
         raw = json.dumps(dict(hook_event_name='Stop', cwd=str(repo),
                               transcript_path=str(transcript), stop_hook_active=False,
                               last_assistant_message=stop_bodies[label])).encode()
-    reference = CONTINUITY if label == 'SessionStart' else HANDLER
     native = (BINARY.with_name('runtime-continuity' + BINARY.suffix)
               if label == 'SessionStart' else BINARY)
-    timings = {'Python': [], 'Rust': []}
+    timings = {'Rust native': []}
     for _ in range(30):
-        outputs = []
-        for implementation, command in [('Python', [HANDLER_PYTHON, str(reference)]),
-                                        ('Rust', [str(native), str(reference)])]:
-            start = time.perf_counter_ns()
-            result = subprocess.run(command, input=raw, capture_output=True, timeout=10,
-                                    env=dict(os.environ, MIR_HANDOFF_PYTHON=HANDLER_PYTHON,
-                                             PYTHONUTF8='1'))
-            elapsed = (time.perf_counter_ns() - start) / 1_000_000
-            assert result.returncode == (2 if label == 'handoff deny' else 0)
-            outputs.append((result.stdout, result.stderr, result.returncode))
-            if label == 'Stop valid':
-                assert result.stdout == b'' and result.stderr == b''
-            elif label == 'Stop defective':
-                assert json.loads(result.stdout)['decision'] == 'block'
-            timings[implementation].append(elapsed)
-        assert outputs[0] == outputs[1], label
+        start = time.perf_counter_ns()
+        result = subprocess.run([str(native)], input=raw, capture_output=True, timeout=10,
+                                env=dict(os.environ, MIR_HANDOFF_PYTHON=HANDLER_PYTHON,
+                                         PYTHONUTF8='1'))
+        elapsed = (time.perf_counter_ns() - start) / 1_000_000
+        assert result.returncode == (2 if label == 'handoff deny' else 0)
+        if label == 'Stop valid':
+            assert result.stdout == b'' and result.stderr == b''
+        elif label == 'Stop defective':
+            assert json.loads(result.stdout)['decision'] == 'block'
+        timings['Rust native'].append(elapsed)
     for implementation, samples in timings.items():
         results.append(dict(fixture=label, implementation=implementation, samples=len(samples),
                             median_ms=round(statistics.median(samples), 3),

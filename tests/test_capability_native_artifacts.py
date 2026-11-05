@@ -96,7 +96,7 @@ def test_default_placement_and_explicit_opt_out(tmp_path, monkeypatch, setting):
 
 
 @pytest.mark.parametrize("failure", ["digest", "size", "target", "source", "url"])
-def test_failure_falls_back(tmp_path, monkeypatch, capsys, failure):
+def test_lifecycle_failure_reports_native_unavailable(tmp_path, monkeypatch, capsys, failure):
     source = tmp_path / "source"
     source.write_bytes(DATA)
     records = manifest(str(source))
@@ -118,7 +118,12 @@ def test_failure_falls_back(tmp_path, monkeypatch, capsys, failure):
     monkeypatch.delenv("MIR_CAPABILITY_NATIVE_ARTIFACTS", raising=False)
     api().place_artifacts(root, "mir-lifecycle-hooks", records, target="aarch64-apple-darwin")
     assert list(root.iterdir()) == [root / "reference"]
-    assert capsys.readouterr().err.count("Warning: native artifact") == 1
+    diagnostic = capsys.readouterr().err
+    assert diagnostic.count("Warning: native artifact") == 1
+    assert "lifecycle native runtime unavailable" in diagnostic
+    assert "SessionStart/UserPromptSubmit stay silent (exit 0)" in diagnostic
+    assert "PreToolUse and Stop emit a note (stderr, exit 0)" in diagnostic
+    assert "using Python reference" not in diagnostic
 
 
 @pytest.mark.parametrize(
@@ -317,7 +322,9 @@ def test_linked_native_root_rejected(tmp_path, monkeypatch):
 
 
 @pytest.mark.parametrize("failure", ["absent", "digest", "url", "section", "portable"])
-def test_provider_native_failures_keep_update_and_python(tmp_path, monkeypatch, capsys, failure):
+def test_provider_native_failures_keep_update_without_legacy_handlers(
+    tmp_path, monkeypatch, capsys, failure
+):
     from test_capability_cli import CopyGit, make_project, runtime_runner
 
     from mir.core.capabilities import CapabilityManager
@@ -354,6 +361,9 @@ def test_provider_native_failures_keep_update_and_python(tmp_path, monkeypatch, 
     plugin = manager.active_path / "plugins/mir-lifecycle-hooks"
     assert not (plugin / "bin/handoff-packet").exists()
     assert (plugin / "hooks/hooks.json").is_file()
+    assert not (plugin / "hooks/runtime_continuity.py").exists()
+    scripts = plugin / "skills/runtime-continuity/scripts"
+    assert not scripts.exists() or not any(scripts.iterdir())
     assert ("Warning: native artifact" in capsys.readouterr().err) == (failure != "absent")
     lock = json.loads(manager.lock_path.read_text())
     assert manager._active_integrity(lock, tuple(lock["plugins"]))
@@ -496,7 +506,10 @@ def test_mcp_metadata_failure_removes_binary_and_preserves_python(tmp_path, monk
                           target="aarch64-apple-darwin")
     assert list(root.iterdir()) == [root / "reference"]
     assert (root / "reference").read_bytes() == b"python"
-    assert "using Python reference" in capsys.readouterr().err
+    diagnostic = capsys.readouterr().err
+    assert "native runtime unavailable" in diagnostic
+    assert "lifecycle" not in diagnostic
+    assert "using Python reference" not in diagnostic
 
 
 @pytest.mark.parametrize('kind', ['fifo', 'oversized'])

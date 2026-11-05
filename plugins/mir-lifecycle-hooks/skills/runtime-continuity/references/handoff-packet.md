@@ -32,9 +32,8 @@ boundary for this stateless packet.
 
 Both plugin manifests auto-discover the common `hooks/hooks.json`. It registers
 UserPromptSubmit (supply), PreToolUse (owner command/file-write guards) and Stop (check),
-each with an 8-second host budget and
-the exact `skills/runtime-continuity/scripts/handoff_packet.py` handler. SessionStart
-and its 2-second timeout stay unchanged. Ordinary prompt-submit turns do detection
+each with an 8-second host budget and the native `handoff-packet` handler.
+SessionStart uses native `runtime-continuity` with its 2-second timeout. Ordinary prompt-submit turns do detection
 only: no output, path discovery, runner call or file operation. Stop must read the
 explicit transcript tail to detect the current turn; ordinary turns then return
 silently without running the pin supplier.
@@ -398,9 +397,18 @@ establish fresh live-host delivery or activation.
 
 The source prepares round-i exclusions, code-mode accounting, retry feedback,
 quoted-command handling, namespace checks and file-write guards.
-Python 3.11 or newer is required. Hooks and copied runners warn on stderr and still
-run below 3.11; mir-mcp refuses to start below 3.11. The hook keeps `tomllib` optional
-for older interpreters; absent parsing still skips only the Profile glob filter.
+Lifecycle Python event implementations are retired. Admission verifies lock-pinned
+native bytes. POSIX launches only `bin/<name>`; Windows launches only
+`bin/<name>.exe` through a launch-only Python shim, which still needs Python.
+The repository pin runner also retains its Python requirement.
+
+Missing, invalid or unlaunchable binaries, or `MIR_NATIVE_HOOKS=0`, leave SessionStart
+and UserPromptSubmit silent with exit 0. PreToolUse emits only the bounded stderr
+line `mir-lifecycle-hooks: native handoff-packet unavailable for PreToolUse` and exits 0.
+Stop emits only `mir-lifecycle-hooks: native handoff-packet unavailable for Stop`
+on stderr and exits 0. Each diagnostic ends with a newline. Native internal exceptions
+retain the existing fail-open behavior described above. Fresh tree acknowledgement
+is required before delivery; recovery uses source/version rollback, not a Python event fallback.
 Main still owns generated Codex
 surfaces, digest acknowledgement, locks/binding and any live-host verification.
 This work performs no bind, tag, push or release. A prepared version is not activation.

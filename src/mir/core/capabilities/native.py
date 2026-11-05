@@ -1,4 +1,4 @@
-"""Optional lock-pinned native artifacts; absent files preserve the reference fallback."""
+"""Place lock-pinned native artifacts and verify installed source trees."""
 
 from __future__ import annotations
 
@@ -210,8 +210,15 @@ def place_artifacts(root: Path, plugin: str, records: dict, *, target=None) -> N
         except (OSError, ValueError, httpx.HTTPError, httpx.InvalidURL) as exc:
             if installed:
                 destination.unlink(missing_ok=True)
+            behavior = (
+                "; lifecycle native runtime unavailable: SessionStart/UserPromptSubmit "
+                "stay silent (exit 0), PreToolUse and Stop emit a note "
+                "(stderr, exit 0)"
+                if plugin == "mir-lifecycle-hooks"
+                else "; native runtime unavailable"
+            )
             print(
-                f"Warning: native artifact {name} skipped: {exc}; using Python reference",
+                f"Warning: native artifact {name} skipped: {exc}{behavior}",
                 file=sys.stderr,
             )
         finally:
