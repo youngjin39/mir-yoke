@@ -123,3 +123,21 @@ def bootstrap_native(tmp_path_factory):
 def test_frozen_reference_replay(record, tmp_path, request):
     native = request.getfixturevalue("bootstrap_native") if record["native"] else None
     assert_replay(record, tmp_path / "replay", native=native)
+
+
+def test_tdd_ledger_freeze_provenance_and_inventory():
+    from collections import Counter
+
+    frozen = json.loads((FIXTURES / "tdd-ledger.json").read_text())
+    assert frozen["schema"] == "mir.w1-tdd-ledger@1"
+    for source, digest in frozen["sources"].items():
+        assert hashlib.sha256((ROOT / source).read_bytes()).hexdigest() == digest
+    records = frozen["records"]
+    assert len({r["id"] for r in records}) == len(records)
+    assert Counter(r["mode"] for r in records) == {
+        "prewrite": 53, "precommit": 27, "precommit-merge": 13, "tdd-guard": 150,
+    }
+    for record in records:
+        assert record["expected"]["delta"] == {}
+        assert record["expected"]["deleted"] == []
+        assert (record["usage"] == "unused-mode") == (record["mode"] == "precommit-merge")

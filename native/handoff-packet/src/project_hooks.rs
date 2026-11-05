@@ -2,6 +2,7 @@
 #![forbid(unsafe_code)]
 mod checkpoint;
 mod compact_snapshot;
+mod tdd_ledger;
 
 use std::{
     env,
@@ -17,7 +18,7 @@ fn response(args: &[OsString]) -> (u8, &'static str, &'static str) {
     if args.len() == 1 && args[0] == "capabilities" {
         return (
             0,
-            "mir-project-hooks-v1\nmir-project-hooks-compact-v1\n",
+            "mir-project-hooks-v1\nmir-project-hooks-compact-v1\nmir-project-hooks-tdd-v1\n",
             "",
         );
     }
@@ -26,6 +27,37 @@ fn response(args: &[OsString]) -> (u8, &'static str, &'static str) {
 
 fn main() -> ExitCode {
     let args: Vec<_> = env::args_os().skip(1).collect();
+    if args
+        .first()
+        .is_some_and(|a| a == "tdd-matrix" || a == "tdd-guard")
+    {
+        let strings: Option<Vec<String>> = args
+            .iter()
+            .skip(1)
+            .map(|a| a.to_str().map(str::to_owned))
+            .collect();
+        let Some(strings) = strings else {
+            return ExitCode::from(64);
+        };
+        let (code, stdout, stderr) = if args[0] == "tdd-matrix" {
+            tdd_ledger::matrix(&strings)
+        } else {
+            let project = std::path::PathBuf::from(
+                env::var_os("CLAUDE_PROJECT_DIR")
+                    .filter(|p| !p.is_empty())
+                    .unwrap_or_else(|| ".".into()),
+            );
+            tdd_ledger::guard(&project, strings.first().map(String::as_str).unwrap_or(""))
+        };
+        if io::stdout()
+            .write_all(stdout.as_bytes())
+            .and_then(|()| io::stderr().write_all(stderr.as_bytes()))
+            .is_err()
+        {
+            return ExitCode::FAILURE;
+        }
+        return ExitCode::from(code);
+    }
     if (args.len() == 1 && (args[0] == "pre-compact" || args[0] == "session-end"))
         || (args.len() == 3 && args[0] == "invocation-log")
     {
@@ -107,7 +139,7 @@ mod tests {
             response(&["capabilities".into()]),
             (
                 0,
-                "mir-project-hooks-v1\nmir-project-hooks-compact-v1\n",
+                "mir-project-hooks-v1\nmir-project-hooks-compact-v1\nmir-project-hooks-tdd-v1\n",
                 ""
             )
         );

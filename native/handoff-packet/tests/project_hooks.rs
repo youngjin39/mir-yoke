@@ -38,7 +38,7 @@ fn capabilities() {
     run(
         &["capabilities"],
         0,
-        b"mir-project-hooks-v1\nmir-project-hooks-compact-v1\n",
+        b"mir-project-hooks-v1\nmir-project-hooks-compact-v1\nmir-project-hooks-tdd-v1\n",
         b"",
     );
 }
