@@ -349,6 +349,19 @@ pub fn matrix(args: &[String]) -> (u8, String, String) {
             Err(e) => return fail(1, e.to_string()),
         }
     };
+    validate_paths(&data, mode, paths)
+}
+
+/// Validate staged implementation paths without a helper process or temporary list.
+pub fn precommit(project: &Path, paths: Vec<String>) -> (u8, String, String) {
+    match load(project) {
+        Ok(data) => validate_paths(&data, "precommit", paths),
+        Err(error) => (1, String::new(), format!("{error}\n")),
+    }
+}
+
+fn validate_paths(data: &Ledger, mode: &str, paths: Vec<String>) -> (u8, String, String) {
+    let fail = |code, msg: String| (code, String::new(), format!("{msg}\n"));
     let mut commands = Vec::new();
     for path in paths {
         let Some(c) = find(&data.data, &path) else {

@@ -3136,8 +3136,14 @@
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
+      "path": "native/handoff-packet/src/pre_commit_verification.rs",
+      "sha256": "5706a38b731085c854059aff50f1cfecf053a91abaf2e8da74bdb95d08282c0a"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
       "path": "native/handoff-packet/src/project_hooks.rs",
-      "sha256": "70f1ab6548795b7631942f2730bb91a3ed819f1dc9bc8c5726144d77c6bde898"
+      "sha256": "77d9a174b8e6b1933166733e0844eafe3dbfb05a0ea743ab84a57c5ff6d39e66"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3209,7 +3215,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/tdd_ledger.rs",
-      "sha256": "5d5a1cc41c3aaf849b83fcc81f9db5acefc7ef0113eb9c05ec7e16c9c70da059"
+      "sha256": "cfd9f46a13f3ff9142bfab05da12ad80c9944b56ea99284613c1ccc96decb375"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3706,6 +3712,12 @@
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
+      "path": "native/handoff-packet/tests/fixtures/w1/pre-commit-verification.json",
+      "sha256": "12fb00817d33adc86228bb14b482ac1a9829b68c30b1a2ef65958dd34f204620"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/w1/prompt-submit.json",
       "sha256": "da87c7588e8bf549611394e9f25ff6a63fc6dbb71a9630f01f31cec3348df18a"
     },
@@ -3743,7 +3755,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/project_hooks.rs",
-      "sha256": "f54d36b6c9f0b26c16d834fbf6cca8ef0793febacb2faa4890cf25391e3a1eaf"
+      "sha256": "aab497e9a5bf4c0a206e9c0240bfcbce9340d68f0f898a2f30caf9bef2d0933e"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3756,6 +3768,12 @@
       "disposition": "remove",
       "path": "native/handoff-packet/tests/project_hooks_compact.rs",
       "sha256": "d125b3cacd1775d15c4e84c892152fb891329df94d95fc4c8c75a14320bae3d4"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/tests/project_hooks_pre_commit.rs",
+      "sha256": "a204faba0b36aeb59d723c8ec35675dd83cf8b186b2e70d893f6c8e3137a0898"
     },
     {
       "classification": "template-maintainer-tool",

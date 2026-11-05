@@ -1,0 +1,2705 @@
+{
+  "schema": "mir.w1-pre-commit-verification@1",
+  "sources": {
+    ".claude/hooks/pre-commit-verification.sh": "14e17a3676f7784174fec180b9a6fa025353659c483753603bf81fe1c4881ca2",
+    ".claude/hooks/tdd-matrix-guard.py": "22b475352a8995f101311cb9e92eff4f3f9979af8e2205dd155b71d884c0ca44",
+    ".claude/hooks/_lib/run-python.sh": "39420540cc96c04a2abaadc252610da3c5260bdad44bfa43f255e71a9fdc67f3",
+    ".claude/hooks/_lib/tier_dispatch.sh": "a44bffd977f75c34194572f74d0be2da86c8e4aefd9995485ef0baa6c8de5fa8"
+  },
+  "capture": {
+    "git": "actual synthetic repository index; replay uses captured staged names",
+    "commands": "PATH allowlist fake step/npm/uv; argv/order recorded in commands.log",
+    "native": "no Python, launcher, ledger helper or tier helper installed"
+  },
+  "records": [
+    {
+      "id": "precommit:no-staged-code",
+      "case": "no-staged-code",
+      "staged": [],
+      "unstaged": [
+        "src/a.rs"
+      ],
+      "setup": {
+        "tools/step": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/uv": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/npm": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "shell-env": {
+          "base64": "ZXhwb3J0IFBBVEg9IkBUTVBAL3Rvb2xzIgo=",
+          "mode": 420
+        },
+        "project/src": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/src/a.rs": {
+          "base64": "dW5zdGFnZWQK",
+          "mode": 420
+        },
+        "tools/git": {
+          "base64": "IyEvYmluL3NoCmNhc2UgIiQqIiBpbiAicmV2LXBhcnNlIC0taXMtaW5zaWRlLXdvcmstdHJlZSIpIGV4aXQgMDs7ICJkaWZmIC0tY2FjaGVkIC0tbmFtZS1vbmx5IC0tZGlmZi1maWx0ZXI9QUNNUiIpIHByaW50ZiAiJXMiICIiOzsgImRpZmYgLS1uYW1lLW9ubHkgLS1kaWZmLWZpbHRlcj1BQ01SIikgcHJpbnRmICIlcyIgInNyYy9hLnJzCiI7OyAqKSBleGl0IDE7OyBlc2FjCg==",
+          "mode": 493
+        }
+      },
+      "env": {
+        "BASH_ENV": "@TMP@/shell-env",
+        "MIR_PRE_COMMIT_LINT": "\"@TMP@/tools/step\" lint",
+        "MIR_PRE_COMMIT_TYPECHECK": "\"@TMP@/tools/step\" typecheck",
+        "MIR_PRE_COMMIT_TEST": "\"@TMP@/tools/step\" test",
+        "MIR_PRE_COMMIT_BUILD": "\"@TMP@/tools/step\" build"
+      },
+      "stdin": "e30=",
+      "retired_helper_absence": false,
+      "retirement_reason": null,
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "W1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gU2tpcHBlZDogbm8gY29kZSBjaGFuZ2VzIGRldGVjdGVkCg==",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "precommit:staged-doc-unstaged-code",
+      "case": "staged-doc-unstaged-code",
+      "staged": [
+        "docs/a.md"
+      ],
+      "unstaged": [
+        "src/a.rs"
+      ],
+      "setup": {
+        "tools/step": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/uv": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/npm": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "shell-env": {
+          "base64": "ZXhwb3J0IFBBVEg9IkBUTVBAL3Rvb2xzIgo=",
+          "mode": 420
+        },
+        "project/docs": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/docs/a.md": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "project/src": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/src/a.rs": {
+          "base64": "dW5zdGFnZWQK",
+          "mode": 420
+        },
+        "tools/git": {
+          "base64": "IyEvYmluL3NoCmNhc2UgIiQqIiBpbiAicmV2LXBhcnNlIC0taXMtaW5zaWRlLXdvcmstdHJlZSIpIGV4aXQgMDs7ICJkaWZmIC0tY2FjaGVkIC0tbmFtZS1vbmx5IC0tZGlmZi1maWx0ZXI9QUNNUiIpIHByaW50ZiAiJXMiICJkb2NzL2EubWQKIjs7ICJkaWZmIC0tbmFtZS1vbmx5IC0tZGlmZi1maWx0ZXI9QUNNUiIpIHByaW50ZiAiJXMiICJzcmMvYS5ycwoiOzsgKikgZXhpdCAxOzsgZXNhYwo=",
+          "mode": 493
+        }
+      },
+      "env": {
+        "BASH_ENV": "@TMP@/shell-env",
+        "MIR_PRE_COMMIT_LINT": "\"@TMP@/tools/step\" lint",
+        "MIR_PRE_COMMIT_TYPECHECK": "\"@TMP@/tools/step\" typecheck",
+        "MIR_PRE_COMMIT_TEST": "\"@TMP@/tools/step\" test",
+        "MIR_PRE_COMMIT_BUILD": "\"@TMP@/tools/step\" build"
+      },
+      "stdin": "e30=",
+      "retired_helper_absence": false,
+      "retirement_reason": null,
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "W1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gU2tpcHBlZDogbm8gY29kZSBjaGFuZ2VzIGRldGVjdGVkCg==",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "precommit:tests-only",
+      "case": "tests-only",
+      "staged": [
+        "tests/a.rs"
+      ],
+      "unstaged": [],
+      "setup": {
+        "tools/step": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/uv": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/npm": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "shell-env": {
+          "base64": "ZXhwb3J0IFBBVEg9IkBUTVBAL3Rvb2xzIgo=",
+          "mode": 420
+        },
+        "project/tests": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/tests/a.rs": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "tools/git": {
+          "base64": "IyEvYmluL3NoCmNhc2UgIiQqIiBpbiAicmV2LXBhcnNlIC0taXMtaW5zaWRlLXdvcmstdHJlZSIpIGV4aXQgMDs7ICJkaWZmIC0tY2FjaGVkIC0tbmFtZS1vbmx5IC0tZGlmZi1maWx0ZXI9QUNNUiIpIHByaW50ZiAiJXMiICJ0ZXN0cy9hLnJzCiI7OyAiZGlmZiAtLW5hbWUtb25seSAtLWRpZmYtZmlsdGVyPUFDTVIiKSBwcmludGYgIiVzIiAiIjs7ICopIGV4aXQgMTs7IGVzYWMK",
+          "mode": 493
+        }
+      },
+      "env": {
+        "BASH_ENV": "@TMP@/shell-env",
+        "MIR_PRE_COMMIT_LINT": "\"@TMP@/tools/step\" lint",
+        "MIR_PRE_COMMIT_TYPECHECK": "\"@TMP@/tools/step\" typecheck",
+        "MIR_PRE_COMMIT_TEST": "\"@TMP@/tools/step\" test",
+        "MIR_PRE_COMMIT_BUILD": "\"@TMP@/tools/step\" build"
+      },
+      "stdin": "e30=",
+      "retired_helper_absence": false,
+      "retirement_reason": null,
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "W1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gbGludDogIkBUTVBAL3Rvb2xzL3N0ZXAiIGxpbnQKW1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gdHlwZWNoZWNrOiAiQFRNUEAvdG9vbHMvc3RlcCIgdHlwZWNoZWNrCltQcmVDb21taXRWZXJpZmljYXRpb25dIHRlc3Q6ICJAVE1QQC90b29scy9zdGVwIiB0ZXN0CltQcmVDb21taXRWZXJpZmljYXRpb25dIGJ1aWxkOiAiQFRNUEAvdG9vbHMvc3RlcCIgYnVpbGQK",
+        "delta": {
+          "commands.log": {
+            "base64": "c3RlcCA8bGludD4Kc3RlcCA8dHlwZWNoZWNrPgpzdGVwIDx0ZXN0PgpzdGVwIDxidWlsZD4K",
+            "mode": 420
+          }
+        },
+        "deleted": []
+      }
+    },
+    {
+      "id": "precommit:noncode-extensions",
+      "case": "noncode-extensions",
+      "staged": [
+        "src/a.md",
+        "docs/a.rs",
+        "README.rs"
+      ],
+      "unstaged": [],
+      "setup": {
+        "tools/step": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/uv": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/npm": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "shell-env": {
+          "base64": "ZXhwb3J0IFBBVEg9IkBUTVBAL3Rvb2xzIgo=",
+          "mode": 420
+        },
+        "project/README.rs": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "project/docs": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/docs/a.rs": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "project/src": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/src/a.md": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "tools/git": {
+          "base64": "IyEvYmluL3NoCmNhc2UgIiQqIiBpbiAicmV2LXBhcnNlIC0taXMtaW5zaWRlLXdvcmstdHJlZSIpIGV4aXQgMDs7ICJkaWZmIC0tY2FjaGVkIC0tbmFtZS1vbmx5IC0tZGlmZi1maWx0ZXI9QUNNUiIpIHByaW50ZiAiJXMiICJSRUFETUUucnMKZG9jcy9hLnJzCnNyYy9hLm1kCiI7OyAiZGlmZiAtLW5hbWUtb25seSAtLWRpZmYtZmlsdGVyPUFDTVIiKSBwcmludGYgIiVzIiAiIjs7ICopIGV4aXQgMTs7IGVzYWMK",
+          "mode": 493
+        }
+      },
+      "env": {
+        "BASH_ENV": "@TMP@/shell-env",
+        "MIR_PRE_COMMIT_LINT": "\"@TMP@/tools/step\" lint",
+        "MIR_PRE_COMMIT_TYPECHECK": "\"@TMP@/tools/step\" typecheck",
+        "MIR_PRE_COMMIT_TEST": "\"@TMP@/tools/step\" test",
+        "MIR_PRE_COMMIT_BUILD": "\"@TMP@/tools/step\" build"
+      },
+      "stdin": "e30=",
+      "retired_helper_absence": false,
+      "retirement_reason": null,
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "W1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gU2tpcHBlZDogbm8gY29kZSBjaGFuZ2VzIGRldGVjdGVkCg==",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "precommit:all-code-extensions",
+      "case": "all-code-extensions",
+      "staged": [
+        "tests/a.py",
+        "tests/a.js",
+        "tests/a.ts",
+        "tests/a.jsx",
+        "tests/a.tsx",
+        "tests/a.rb",
+        "tests/a.go",
+        "tests/a.rs",
+        "tests/a.java",
+        "tests/a.kt",
+        "tests/a.swift",
+        "tests/a.c",
+        "tests/a.cc",
+        "tests/a.cpp",
+        "tests/a.h",
+        "tests/a.hpp",
+        "tests/a.sql"
+      ],
+      "unstaged": [],
+      "setup": {
+        "tools/step": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/uv": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/npm": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "shell-env": {
+          "base64": "ZXhwb3J0IFBBVEg9IkBUTVBAL3Rvb2xzIgo=",
+          "mode": 420
+        },
+        "project/tests": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/tests/a.c": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "project/tests/a.cc": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "project/tests/a.cpp": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "project/tests/a.go": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "project/tests/a.h": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "project/tests/a.hpp": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "project/tests/a.java": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "project/tests/a.js": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "project/tests/a.jsx": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "project/tests/a.kt": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "project/tests/a.py": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "project/tests/a.rb": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "project/tests/a.rs": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "project/tests/a.sql": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "project/tests/a.swift": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "project/tests/a.ts": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "project/tests/a.tsx": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "tools/git": {
+          "base64": "IyEvYmluL3NoCmNhc2UgIiQqIiBpbiAicmV2LXBhcnNlIC0taXMtaW5zaWRlLXdvcmstdHJlZSIpIGV4aXQgMDs7ICJkaWZmIC0tY2FjaGVkIC0tbmFtZS1vbmx5IC0tZGlmZi1maWx0ZXI9QUNNUiIpIHByaW50ZiAiJXMiICJ0ZXN0cy9hLmMKdGVzdHMvYS5jYwp0ZXN0cy9hLmNwcAp0ZXN0cy9hLmdvCnRlc3RzL2EuaAp0ZXN0cy9hLmhwcAp0ZXN0cy9hLmphdmEKdGVzdHMvYS5qcwp0ZXN0cy9hLmpzeAp0ZXN0cy9hLmt0CnRlc3RzL2EucHkKdGVzdHMvYS5yYgp0ZXN0cy9hLnJzCnRlc3RzL2Euc3FsCnRlc3RzL2Euc3dpZnQKdGVzdHMvYS50cwp0ZXN0cy9hLnRzeAoiOzsgImRpZmYgLS1uYW1lLW9ubHkgLS1kaWZmLWZpbHRlcj1BQ01SIikgcHJpbnRmICIlcyIgIiI7OyAqKSBleGl0IDE7OyBlc2FjCg==",
+          "mode": 493
+        }
+      },
+      "env": {
+        "BASH_ENV": "@TMP@/shell-env",
+        "MIR_PRE_COMMIT_LINT": "\"@TMP@/tools/step\" lint",
+        "MIR_PRE_COMMIT_TYPECHECK": "\"@TMP@/tools/step\" typecheck",
+        "MIR_PRE_COMMIT_TEST": "\"@TMP@/tools/step\" test",
+        "MIR_PRE_COMMIT_BUILD": "\"@TMP@/tools/step\" build"
+      },
+      "stdin": "e30=",
+      "retired_helper_absence": false,
+      "retirement_reason": null,
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "W1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gbGludDogIkBUTVBAL3Rvb2xzL3N0ZXAiIGxpbnQKW1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gdHlwZWNoZWNrOiAiQFRNUEAvdG9vbHMvc3RlcCIgdHlwZWNoZWNrCltQcmVDb21taXRWZXJpZmljYXRpb25dIHRlc3Q6ICJAVE1QQC90b29scy9zdGVwIiB0ZXN0CltQcmVDb21taXRWZXJpZmljYXRpb25dIGJ1aWxkOiAiQFRNUEAvdG9vbHMvc3RlcCIgYnVpbGQK",
+        "delta": {
+          "commands.log": {
+            "base64": "c3RlcCA8bGludD4Kc3RlcCA8dHlwZWNoZWNrPgpzdGVwIDx0ZXN0PgpzdGVwIDxidWlsZD4K",
+            "mode": 420
+          }
+        },
+        "deleted": []
+      }
+    },
+    {
+      "id": "precommit:all-implementation-roots",
+      "case": "all-implementation-roots",
+      "staged": [
+        "src/a.rs",
+        "app/a.rs",
+        "apps/a.rs",
+        "packages/a.rs",
+        "pipelines/a.rs",
+        "infra/a.rs",
+        "content/a.rs",
+        "lib/a.rs"
+      ],
+      "unstaged": [],
+      "setup": {
+        "tools/step": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/uv": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/npm": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "shell-env": {
+          "base64": "ZXhwb3J0IFBBVEg9IkBUTVBAL3Rvb2xzIgo=",
+          "mode": 420
+        },
+        "project/app": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/app/a.rs": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "project/apps": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/apps/a.rs": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "project/content": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/content/a.rs": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "project/infra": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/infra/a.rs": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "project/lib": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/lib/a.rs": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "project/packages": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/packages/a.rs": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "project/pipelines": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/pipelines/a.rs": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "project/src": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/src/a.rs": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "project/tasks": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/tasks/tdd.json": {
+          "base64": "eyJjaGFuZ2VzIjogW3siaWQiOiAic2xpY2UiLCAidGFyZ2V0cyI6IFsic3JjLyIsICJhcHAvIiwgImFwcHMvIiwgInBhY2thZ2VzLyIsICJwaXBlbGluZXMvIiwgImluZnJhLyIsICJjb250ZW50LyIsICJsaWIvIl0sICJjYXRlZ29yaWVzIjogeyJ1bml0IjogeyJzdGF0dXMiOiAicGFzcyIsICJjb21tYW5kIjogIlwiQFRNUEAvdG9vbHMvc3RlcFwiIHRkZCJ9LCAiaW50ZWdyYXRpb24iOiB7InN0YXR1cyI6ICJwYXNzIiwgImNvbW1hbmQiOiAiXCJAVE1QQC90b29scy9zdGVwXCIgdGRkIn19fV19",
+          "mode": 420
+        },
+        "tools/git": {
+          "base64": "IyEvYmluL3NoCmNhc2UgIiQqIiBpbiAicmV2LXBhcnNlIC0taXMtaW5zaWRlLXdvcmstdHJlZSIpIGV4aXQgMDs7ICJkaWZmIC0tY2FjaGVkIC0tbmFtZS1vbmx5IC0tZGlmZi1maWx0ZXI9QUNNUiIpIHByaW50ZiAiJXMiICJhcHAvYS5ycwphcHBzL2EucnMKY29udGVudC9hLnJzCmluZnJhL2EucnMKbGliL2EucnMKcGFja2FnZXMvYS5ycwpwaXBlbGluZXMvYS5ycwpzcmMvYS5ycwoiOzsgImRpZmYgLS1uYW1lLW9ubHkgLS1kaWZmLWZpbHRlcj1BQ01SIikgcHJpbnRmICIlcyIgIiI7OyAqKSBleGl0IDE7OyBlc2FjCg==",
+          "mode": 493
+        }
+      },
+      "env": {
+        "BASH_ENV": "@TMP@/shell-env",
+        "MIR_PRE_COMMIT_LINT": "\"@TMP@/tools/step\" lint",
+        "MIR_PRE_COMMIT_TYPECHECK": "\"@TMP@/tools/step\" typecheck",
+        "MIR_PRE_COMMIT_TEST": "\"@TMP@/tools/step\" test",
+        "MIR_PRE_COMMIT_BUILD": "\"@TMP@/tools/step\" build"
+      },
+      "stdin": "e30=",
+      "retired_helper_absence": false,
+      "retirement_reason": null,
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "W1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gdGRkWzFdOiAiQFRNUEAvdG9vbHMvc3RlcCIgdGRkCltQcmVDb21taXRWZXJpZmljYXRpb25dIGxpbnQ6ICJAVE1QQC90b29scy9zdGVwIiBsaW50CltQcmVDb21taXRWZXJpZmljYXRpb25dIHR5cGVjaGVjazogIkBUTVBAL3Rvb2xzL3N0ZXAiIHR5cGVjaGVjawpbUHJlQ29tbWl0VmVyaWZpY2F0aW9uXSB0ZXN0OiAiQFRNUEAvdG9vbHMvc3RlcCIgdGVzdApbUHJlQ29tbWl0VmVyaWZpY2F0aW9uXSBidWlsZDogIkBUTVBAL3Rvb2xzL3N0ZXAiIGJ1aWxkCg==",
+        "delta": {
+          "commands.log": {
+            "base64": "c3RlcCA8dGRkPgpzdGVwIDxsaW50PgpzdGVwIDx0eXBlY2hlY2s+CnN0ZXAgPHRlc3Q+CnN0ZXAgPGJ1aWxkPgo=",
+            "mode": 420
+          }
+        },
+        "deleted": []
+      }
+    },
+    {
+      "id": "precommit:manifest-value-6",
+      "case": "manifest-value-6",
+      "staged": [
+        "tools/a.py"
+      ],
+      "unstaged": [],
+      "setup": {
+        "tools/step": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/uv": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/npm": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "shell-env": {
+          "base64": "ZXhwb3J0IFBBVEg9IkBUTVBAL3Rvb2xzIgo=",
+          "mode": 420
+        },
+        "project/config": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/config/harness-consistency.json": {
+          "base64": "eyJyZXBvIjogeyJlbmZvcmNlbWVudCI6IHsidG9vbHNfY29tbWl0X2dhdGUiOiAiZGVmZXJyZWQifX19",
+          "mode": 420
+        },
+        "project/tools": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/tools/a.py": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "tools/git": {
+          "base64": "IyEvYmluL3NoCmNhc2UgIiQqIiBpbiAicmV2LXBhcnNlIC0taXMtaW5zaWRlLXdvcmstdHJlZSIpIGV4aXQgMDs7ICJkaWZmIC0tY2FjaGVkIC0tbmFtZS1vbmx5IC0tZGlmZi1maWx0ZXI9QUNNUiIpIHByaW50ZiAiJXMiICJ0b29scy9hLnB5CiI7OyAiZGlmZiAtLW5hbWUtb25seSAtLWRpZmYtZmlsdGVyPUFDTVIiKSBwcmludGYgIiVzIiAiIjs7ICopIGV4aXQgMTs7IGVzYWMK",
+          "mode": 493
+        }
+      },
+      "env": {
+        "BASH_ENV": "@TMP@/shell-env",
+        "MIR_PRE_COMMIT_LINT": "\"@TMP@/tools/step\" lint",
+        "MIR_PRE_COMMIT_TYPECHECK": "\"@TMP@/tools/step\" typecheck",
+        "MIR_PRE_COMMIT_TEST": "\"@TMP@/tools/step\" test",
+        "MIR_PRE_COMMIT_BUILD": "\"@TMP@/tools/step\" build"
+      },
+      "stdin": "e30=",
+      "retired_helper_absence": false,
+      "retirement_reason": null,
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "W1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gU2tpcHBlZDogbm8gY29kZSBjaGFuZ2VzIGRldGVjdGVkCg==",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "precommit:manifest-value-7",
+      "case": "manifest-value-7",
+      "staged": [
+        "tools/a.py"
+      ],
+      "unstaged": [],
+      "setup": {
+        "tools/step": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/uv": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/npm": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "shell-env": {
+          "base64": "ZXhwb3J0IFBBVEg9IkBUTVBAL3Rvb2xzIgo=",
+          "mode": 420
+        },
+        "project/config": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/config/harness-consistency.json": {
+          "base64": "eyJyZXBvIjogeyJlbmZvcmNlbWVudCI6IHsidG9vbHNfY29tbWl0X2dhdGUiOiAibGludF90ZXN0In19fQ==",
+          "mode": 420
+        },
+        "project/tools": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/tools/a.py": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "tools/git": {
+          "base64": "IyEvYmluL3NoCmNhc2UgIiQqIiBpbiAicmV2LXBhcnNlIC0taXMtaW5zaWRlLXdvcmstdHJlZSIpIGV4aXQgMDs7ICJkaWZmIC0tY2FjaGVkIC0tbmFtZS1vbmx5IC0tZGlmZi1maWx0ZXI9QUNNUiIpIHByaW50ZiAiJXMiICJ0b29scy9hLnB5CiI7OyAiZGlmZiAtLW5hbWUtb25seSAtLWRpZmYtZmlsdGVyPUFDTVIiKSBwcmludGYgIiVzIiAiIjs7ICopIGV4aXQgMTs7IGVzYWMK",
+          "mode": 493
+        }
+      },
+      "env": {
+        "BASH_ENV": "@TMP@/shell-env",
+        "MIR_PRE_COMMIT_LINT": "\"@TMP@/tools/step\" lint",
+        "MIR_PRE_COMMIT_TYPECHECK": "\"@TMP@/tools/step\" typecheck",
+        "MIR_PRE_COMMIT_TEST": "\"@TMP@/tools/step\" test",
+        "MIR_PRE_COMMIT_BUILD": "\"@TMP@/tools/step\" build"
+      },
+      "stdin": "e30=",
+      "retired_helper_absence": false,
+      "retirement_reason": null,
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "W1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gbGludDogIkBUTVBAL3Rvb2xzL3N0ZXAiIGxpbnQKW1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gdHlwZWNoZWNrOiAiQFRNUEAvdG9vbHMvc3RlcCIgdHlwZWNoZWNrCltQcmVDb21taXRWZXJpZmljYXRpb25dIHRlc3Q6ICJAVE1QQC90b29scy9zdGVwIiB0ZXN0CltQcmVDb21taXRWZXJpZmljYXRpb25dIGJ1aWxkOiAiQFRNUEAvdG9vbHMvc3RlcCIgYnVpbGQK",
+        "delta": {
+          "commands.log": {
+            "base64": "c3RlcCA8bGludD4Kc3RlcCA8dHlwZWNoZWNrPgpzdGVwIDx0ZXN0PgpzdGVwIDxidWlsZD4K",
+            "mode": 420
+          }
+        },
+        "deleted": []
+      }
+    },
+    {
+      "id": "precommit:manifest-value-8",
+      "case": "manifest-value-8",
+      "staged": [
+        "tools/a.py"
+      ],
+      "unstaged": [],
+      "setup": {
+        "tools/step": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/uv": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/npm": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "shell-env": {
+          "base64": "ZXhwb3J0IFBBVEg9IkBUTVBAL3Rvb2xzIgo=",
+          "mode": 420
+        },
+        "project/config": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/config/harness-consistency.json": {
+          "base64": "eyJyZXBvIjogeyJlbmZvcmNlbWVudCI6IHsidG9vbHNfY29tbWl0X2dhdGUiOiAibGludF90ZXN0X2xlZGdlciJ9fX0=",
+          "mode": 420
+        },
+        "project/tools": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/tools/a.py": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "tools/git": {
+          "base64": "IyEvYmluL3NoCmNhc2UgIiQqIiBpbiAicmV2LXBhcnNlIC0taXMtaW5zaWRlLXdvcmstdHJlZSIpIGV4aXQgMDs7ICJkaWZmIC0tY2FjaGVkIC0tbmFtZS1vbmx5IC0tZGlmZi1maWx0ZXI9QUNNUiIpIHByaW50ZiAiJXMiICJ0b29scy9hLnB5CiI7OyAiZGlmZiAtLW5hbWUtb25seSAtLWRpZmYtZmlsdGVyPUFDTVIiKSBwcmludGYgIiVzIiAiIjs7ICopIGV4aXQgMTs7IGVzYWMK",
+          "mode": 493
+        }
+      },
+      "env": {
+        "BASH_ENV": "@TMP@/shell-env",
+        "MIR_PRE_COMMIT_LINT": "\"@TMP@/tools/step\" lint",
+        "MIR_PRE_COMMIT_TYPECHECK": "\"@TMP@/tools/step\" typecheck",
+        "MIR_PRE_COMMIT_TEST": "\"@TMP@/tools/step\" test",
+        "MIR_PRE_COMMIT_BUILD": "\"@TMP@/tools/step\" build"
+      },
+      "stdin": "e30=",
+      "retired_helper_absence": false,
+      "retirement_reason": null,
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "W1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gbGludDogIkBUTVBAL3Rvb2xzL3N0ZXAiIGxpbnQKW1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gdHlwZWNoZWNrOiAiQFRNUEAvdG9vbHMvc3RlcCIgdHlwZWNoZWNrCltQcmVDb21taXRWZXJpZmljYXRpb25dIHRlc3Q6ICJAVE1QQC90b29scy9zdGVwIiB0ZXN0CltQcmVDb21taXRWZXJpZmljYXRpb25dIGJ1aWxkOiAiQFRNUEAvdG9vbHMvc3RlcCIgYnVpbGQK",
+        "delta": {
+          "commands.log": {
+            "base64": "c3RlcCA8bGludD4Kc3RlcCA8dHlwZWNoZWNrPgpzdGVwIDx0ZXN0PgpzdGVwIDxidWlsZD4K",
+            "mode": 420
+          }
+        },
+        "deleted": []
+      }
+    },
+    {
+      "id": "precommit:manifest-value-9",
+      "case": "manifest-value-9",
+      "staged": [
+        "tools/a.py"
+      ],
+      "unstaged": [],
+      "setup": {
+        "tools/step": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/uv": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/npm": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "shell-env": {
+          "base64": "ZXhwb3J0IFBBVEg9IkBUTVBAL3Rvb2xzIgo=",
+          "mode": 420
+        },
+        "project/config": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/config/harness-consistency.json": {
+          "base64": "eyJyZXBvIjogeyJlbmZvcmNlbWVudCI6IHsidG9vbHNfY29tbWl0X2dhdGUiOiAicmVxdWlyZWQifX19",
+          "mode": 420
+        },
+        "project/tools": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/tools/a.py": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "tools/git": {
+          "base64": "IyEvYmluL3NoCmNhc2UgIiQqIiBpbiAicmV2LXBhcnNlIC0taXMtaW5zaWRlLXdvcmstdHJlZSIpIGV4aXQgMDs7ICJkaWZmIC0tY2FjaGVkIC0tbmFtZS1vbmx5IC0tZGlmZi1maWx0ZXI9QUNNUiIpIHByaW50ZiAiJXMiICJ0b29scy9hLnB5CiI7OyAiZGlmZiAtLW5hbWUtb25seSAtLWRpZmYtZmlsdGVyPUFDTVIiKSBwcmludGYgIiVzIiAiIjs7ICopIGV4aXQgMTs7IGVzYWMK",
+          "mode": 493
+        }
+      },
+      "env": {
+        "BASH_ENV": "@TMP@/shell-env",
+        "MIR_PRE_COMMIT_LINT": "\"@TMP@/tools/step\" lint",
+        "MIR_PRE_COMMIT_TYPECHECK": "\"@TMP@/tools/step\" typecheck",
+        "MIR_PRE_COMMIT_TEST": "\"@TMP@/tools/step\" test",
+        "MIR_PRE_COMMIT_BUILD": "\"@TMP@/tools/step\" build"
+      },
+      "stdin": "e30=",
+      "retired_helper_absence": false,
+      "retirement_reason": null,
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "W1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gbGludDogIkBUTVBAL3Rvb2xzL3N0ZXAiIGxpbnQKW1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gdHlwZWNoZWNrOiAiQFRNUEAvdG9vbHMvc3RlcCIgdHlwZWNoZWNrCltQcmVDb21taXRWZXJpZmljYXRpb25dIHRlc3Q6ICJAVE1QQC90b29scy9zdGVwIiB0ZXN0CltQcmVDb21taXRWZXJpZmljYXRpb25dIGJ1aWxkOiAiQFRNUEAvdG9vbHMvc3RlcCIgYnVpbGQK",
+        "delta": {
+          "commands.log": {
+            "base64": "c3RlcCA8bGludD4Kc3RlcCA8dHlwZWNoZWNrPgpzdGVwIDx0ZXN0PgpzdGVwIDxidWlsZD4K",
+            "mode": 420
+          }
+        },
+        "deleted": []
+      }
+    },
+    {
+      "id": "precommit:manifest-value-10",
+      "case": "manifest-value-10",
+      "staged": [
+        "tools/a.py"
+      ],
+      "unstaged": [],
+      "setup": {
+        "tools/step": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/uv": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/npm": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "shell-env": {
+          "base64": "ZXhwb3J0IFBBVEg9IkBUTVBAL3Rvb2xzIgo=",
+          "mode": 420
+        },
+        "project/config": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/config/harness-consistency.json": {
+          "base64": "eyJyZXBvIjogeyJlbmZvcmNlbWVudCI6IHsidG9vbHNfY29tbWl0X2dhdGUiOiAiIn19fQ==",
+          "mode": 420
+        },
+        "project/tools": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/tools/a.py": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "tools/git": {
+          "base64": "IyEvYmluL3NoCmNhc2UgIiQqIiBpbiAicmV2LXBhcnNlIC0taXMtaW5zaWRlLXdvcmstdHJlZSIpIGV4aXQgMDs7ICJkaWZmIC0tY2FjaGVkIC0tbmFtZS1vbmx5IC0tZGlmZi1maWx0ZXI9QUNNUiIpIHByaW50ZiAiJXMiICJ0b29scy9hLnB5CiI7OyAiZGlmZiAtLW5hbWUtb25seSAtLWRpZmYtZmlsdGVyPUFDTVIiKSBwcmludGYgIiVzIiAiIjs7ICopIGV4aXQgMTs7IGVzYWMK",
+          "mode": 493
+        }
+      },
+      "env": {
+        "BASH_ENV": "@TMP@/shell-env",
+        "MIR_PRE_COMMIT_LINT": "\"@TMP@/tools/step\" lint",
+        "MIR_PRE_COMMIT_TYPECHECK": "\"@TMP@/tools/step\" typecheck",
+        "MIR_PRE_COMMIT_TEST": "\"@TMP@/tools/step\" test",
+        "MIR_PRE_COMMIT_BUILD": "\"@TMP@/tools/step\" build"
+      },
+      "stdin": "e30=",
+      "retired_helper_absence": false,
+      "retirement_reason": null,
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "W1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gbGludDogIkBUTVBAL3Rvb2xzL3N0ZXAiIGxpbnQKW1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gdHlwZWNoZWNrOiAiQFRNUEAvdG9vbHMvc3RlcCIgdHlwZWNoZWNrCltQcmVDb21taXRWZXJpZmljYXRpb25dIHRlc3Q6ICJAVE1QQC90b29scy9zdGVwIiB0ZXN0CltQcmVDb21taXRWZXJpZmljYXRpb25dIGJ1aWxkOiAiQFRNUEAvdG9vbHMvc3RlcCIgYnVpbGQK",
+        "delta": {
+          "commands.log": {
+            "base64": "c3RlcCA8bGludD4Kc3RlcCA8dHlwZWNoZWNrPgpzdGVwIDx0ZXN0PgpzdGVwIDxidWlsZD4K",
+            "mode": 420
+          }
+        },
+        "deleted": []
+      }
+    },
+    {
+      "id": "precommit:manifest-value-11",
+      "case": "manifest-value-11",
+      "staged": [
+        "tools/a.py"
+      ],
+      "unstaged": [],
+      "setup": {
+        "tools/step": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/uv": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/npm": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "shell-env": {
+          "base64": "ZXhwb3J0IFBBVEg9IkBUTVBAL3Rvb2xzIgo=",
+          "mode": 420
+        },
+        "project/config": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/config/harness-consistency.json": {
+          "base64": "eyJyZXBvIjogeyJlbmZvcmNlbWVudCI6IHsidG9vbHNfY29tbWl0X2dhdGUiOiAiRGVmZXJyZWQifX19",
+          "mode": 420
+        },
+        "project/tools": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/tools/a.py": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "tools/git": {
+          "base64": "IyEvYmluL3NoCmNhc2UgIiQqIiBpbiAicmV2LXBhcnNlIC0taXMtaW5zaWRlLXdvcmstdHJlZSIpIGV4aXQgMDs7ICJkaWZmIC0tY2FjaGVkIC0tbmFtZS1vbmx5IC0tZGlmZi1maWx0ZXI9QUNNUiIpIHByaW50ZiAiJXMiICJ0b29scy9hLnB5CiI7OyAiZGlmZiAtLW5hbWUtb25seSAtLWRpZmYtZmlsdGVyPUFDTVIiKSBwcmludGYgIiVzIiAiIjs7ICopIGV4aXQgMTs7IGVzYWMK",
+          "mode": 493
+        }
+      },
+      "env": {
+        "BASH_ENV": "@TMP@/shell-env",
+        "MIR_PRE_COMMIT_LINT": "\"@TMP@/tools/step\" lint",
+        "MIR_PRE_COMMIT_TYPECHECK": "\"@TMP@/tools/step\" typecheck",
+        "MIR_PRE_COMMIT_TEST": "\"@TMP@/tools/step\" test",
+        "MIR_PRE_COMMIT_BUILD": "\"@TMP@/tools/step\" build"
+      },
+      "stdin": "e30=",
+      "retired_helper_absence": false,
+      "retirement_reason": null,
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "W1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gbGludDogIkBUTVBAL3Rvb2xzL3N0ZXAiIGxpbnQKW1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gdHlwZWNoZWNrOiAiQFRNUEAvdG9vbHMvc3RlcCIgdHlwZWNoZWNrCltQcmVDb21taXRWZXJpZmljYXRpb25dIHRlc3Q6ICJAVE1QQC90b29scy9zdGVwIiB0ZXN0CltQcmVDb21taXRWZXJpZmljYXRpb25dIGJ1aWxkOiAiQFRNUEAvdG9vbHMvc3RlcCIgYnVpbGQK",
+        "delta": {
+          "commands.log": {
+            "base64": "c3RlcCA8bGludD4Kc3RlcCA8dHlwZWNoZWNrPgpzdGVwIDx0ZXN0PgpzdGVwIDxidWlsZD4K",
+            "mode": 420
+          }
+        },
+        "deleted": []
+      }
+    },
+    {
+      "id": "precommit:manifest-value-12",
+      "case": "manifest-value-12",
+      "staged": [
+        "tools/a.py"
+      ],
+      "unstaged": [],
+      "setup": {
+        "tools/step": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/uv": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/npm": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "shell-env": {
+          "base64": "ZXhwb3J0IFBBVEg9IkBUTVBAL3Rvb2xzIgo=",
+          "mode": 420
+        },
+        "project/config": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/config/harness-consistency.json": {
+          "base64": "eyJyZXBvIjogeyJlbmZvcmNlbWVudCI6IHsidG9vbHNfY29tbWl0X2dhdGUiOiBudWxsfX19",
+          "mode": 420
+        },
+        "project/tools": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/tools/a.py": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "tools/git": {
+          "base64": "IyEvYmluL3NoCmNhc2UgIiQqIiBpbiAicmV2LXBhcnNlIC0taXMtaW5zaWRlLXdvcmstdHJlZSIpIGV4aXQgMDs7ICJkaWZmIC0tY2FjaGVkIC0tbmFtZS1vbmx5IC0tZGlmZi1maWx0ZXI9QUNNUiIpIHByaW50ZiAiJXMiICJ0b29scy9hLnB5CiI7OyAiZGlmZiAtLW5hbWUtb25seSAtLWRpZmYtZmlsdGVyPUFDTVIiKSBwcmludGYgIiVzIiAiIjs7ICopIGV4aXQgMTs7IGVzYWMK",
+          "mode": 493
+        }
+      },
+      "env": {
+        "BASH_ENV": "@TMP@/shell-env",
+        "MIR_PRE_COMMIT_LINT": "\"@TMP@/tools/step\" lint",
+        "MIR_PRE_COMMIT_TYPECHECK": "\"@TMP@/tools/step\" typecheck",
+        "MIR_PRE_COMMIT_TEST": "\"@TMP@/tools/step\" test",
+        "MIR_PRE_COMMIT_BUILD": "\"@TMP@/tools/step\" build"
+      },
+      "stdin": "e30=",
+      "retired_helper_absence": false,
+      "retirement_reason": null,
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "W1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gbGludDogIkBUTVBAL3Rvb2xzL3N0ZXAiIGxpbnQKW1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gdHlwZWNoZWNrOiAiQFRNUEAvdG9vbHMvc3RlcCIgdHlwZWNoZWNrCltQcmVDb21taXRWZXJpZmljYXRpb25dIHRlc3Q6ICJAVE1QQC90b29scy9zdGVwIiB0ZXN0CltQcmVDb21taXRWZXJpZmljYXRpb25dIGJ1aWxkOiAiQFRNUEAvdG9vbHMvc3RlcCIgYnVpbGQK",
+        "delta": {
+          "commands.log": {
+            "base64": "c3RlcCA8bGludD4Kc3RlcCA8dHlwZWNoZWNrPgpzdGVwIDx0ZXN0PgpzdGVwIDxidWlsZD4K",
+            "mode": 420
+          }
+        },
+        "deleted": []
+      }
+    },
+    {
+      "id": "precommit:manifest-value-13",
+      "case": "manifest-value-13",
+      "staged": [
+        "tools/a.py"
+      ],
+      "unstaged": [],
+      "setup": {
+        "tools/step": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/uv": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/npm": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "shell-env": {
+          "base64": "ZXhwb3J0IFBBVEg9IkBUTVBAL3Rvb2xzIgo=",
+          "mode": 420
+        },
+        "project/config": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/config/harness-consistency.json": {
+          "base64": "eyJyZXBvIjogeyJlbmZvcmNlbWVudCI6IHsidG9vbHNfY29tbWl0X2dhdGUiOiBmYWxzZX19fQ==",
+          "mode": 420
+        },
+        "project/tools": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/tools/a.py": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "tools/git": {
+          "base64": "IyEvYmluL3NoCmNhc2UgIiQqIiBpbiAicmV2LXBhcnNlIC0taXMtaW5zaWRlLXdvcmstdHJlZSIpIGV4aXQgMDs7ICJkaWZmIC0tY2FjaGVkIC0tbmFtZS1vbmx5IC0tZGlmZi1maWx0ZXI9QUNNUiIpIHByaW50ZiAiJXMiICJ0b29scy9hLnB5CiI7OyAiZGlmZiAtLW5hbWUtb25seSAtLWRpZmYtZmlsdGVyPUFDTVIiKSBwcmludGYgIiVzIiAiIjs7ICopIGV4aXQgMTs7IGVzYWMK",
+          "mode": 493
+        }
+      },
+      "env": {
+        "BASH_ENV": "@TMP@/shell-env",
+        "MIR_PRE_COMMIT_LINT": "\"@TMP@/tools/step\" lint",
+        "MIR_PRE_COMMIT_TYPECHECK": "\"@TMP@/tools/step\" typecheck",
+        "MIR_PRE_COMMIT_TEST": "\"@TMP@/tools/step\" test",
+        "MIR_PRE_COMMIT_BUILD": "\"@TMP@/tools/step\" build"
+      },
+      "stdin": "e30=",
+      "retired_helper_absence": false,
+      "retirement_reason": null,
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "W1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gbGludDogIkBUTVBAL3Rvb2xzL3N0ZXAiIGxpbnQKW1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gdHlwZWNoZWNrOiAiQFRNUEAvdG9vbHMvc3RlcCIgdHlwZWNoZWNrCltQcmVDb21taXRWZXJpZmljYXRpb25dIHRlc3Q6ICJAVE1QQC90b29scy9zdGVwIiB0ZXN0CltQcmVDb21taXRWZXJpZmljYXRpb25dIGJ1aWxkOiAiQFRNUEAvdG9vbHMvc3RlcCIgYnVpbGQK",
+        "delta": {
+          "commands.log": {
+            "base64": "c3RlcCA8bGludD4Kc3RlcCA8dHlwZWNoZWNrPgpzdGVwIDx0ZXN0PgpzdGVwIDxidWlsZD4K",
+            "mode": 420
+          }
+        },
+        "deleted": []
+      }
+    },
+    {
+      "id": "precommit:manifest-value-14",
+      "case": "manifest-value-14",
+      "staged": [
+        "tools/a.py"
+      ],
+      "unstaged": [],
+      "setup": {
+        "tools/step": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/uv": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/npm": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "shell-env": {
+          "base64": "ZXhwb3J0IFBBVEg9IkBUTVBAL3Rvb2xzIgo=",
+          "mode": 420
+        },
+        "project/config": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/config/harness-consistency.json": {
+          "base64": "eyJyZXBvIjogeyJlbmZvcmNlbWVudCI6IHsidG9vbHNfY29tbWl0X2dhdGUiOiAxN319fQ==",
+          "mode": 420
+        },
+        "project/tools": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/tools/a.py": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "tools/git": {
+          "base64": "IyEvYmluL3NoCmNhc2UgIiQqIiBpbiAicmV2LXBhcnNlIC0taXMtaW5zaWRlLXdvcmstdHJlZSIpIGV4aXQgMDs7ICJkaWZmIC0tY2FjaGVkIC0tbmFtZS1vbmx5IC0tZGlmZi1maWx0ZXI9QUNNUiIpIHByaW50ZiAiJXMiICJ0b29scy9hLnB5CiI7OyAiZGlmZiAtLW5hbWUtb25seSAtLWRpZmYtZmlsdGVyPUFDTVIiKSBwcmludGYgIiVzIiAiIjs7ICopIGV4aXQgMTs7IGVzYWMK",
+          "mode": 493
+        }
+      },
+      "env": {
+        "BASH_ENV": "@TMP@/shell-env",
+        "MIR_PRE_COMMIT_LINT": "\"@TMP@/tools/step\" lint",
+        "MIR_PRE_COMMIT_TYPECHECK": "\"@TMP@/tools/step\" typecheck",
+        "MIR_PRE_COMMIT_TEST": "\"@TMP@/tools/step\" test",
+        "MIR_PRE_COMMIT_BUILD": "\"@TMP@/tools/step\" build"
+      },
+      "stdin": "e30=",
+      "retired_helper_absence": false,
+      "retirement_reason": null,
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "W1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gbGludDogIkBUTVBAL3Rvb2xzL3N0ZXAiIGxpbnQKW1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gdHlwZWNoZWNrOiAiQFRNUEAvdG9vbHMvc3RlcCIgdHlwZWNoZWNrCltQcmVDb21taXRWZXJpZmljYXRpb25dIHRlc3Q6ICJAVE1QQC90b29scy9zdGVwIiB0ZXN0CltQcmVDb21taXRWZXJpZmljYXRpb25dIGJ1aWxkOiAiQFRNUEAvdG9vbHMvc3RlcCIgYnVpbGQK",
+        "delta": {
+          "commands.log": {
+            "base64": "c3RlcCA8bGludD4Kc3RlcCA8dHlwZWNoZWNrPgpzdGVwIDx0ZXN0PgpzdGVwIDxidWlsZD4K",
+            "mode": 420
+          }
+        },
+        "deleted": []
+      }
+    },
+    {
+      "id": "precommit:manifest-value-15",
+      "case": "manifest-value-15",
+      "staged": [
+        "tools/a.py"
+      ],
+      "unstaged": [],
+      "setup": {
+        "tools/step": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/uv": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/npm": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "shell-env": {
+          "base64": "ZXhwb3J0IFBBVEg9IkBUTVBAL3Rvb2xzIgo=",
+          "mode": 420
+        },
+        "project/config": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/config/harness-consistency.json": {
+          "base64": "eyJyZXBvIjogeyJlbmZvcmNlbWVudCI6IHsidG9vbHNfY29tbWl0X2dhdGUiOiBbImRlZmVycmVkIl19fX0=",
+          "mode": 420
+        },
+        "project/tools": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/tools/a.py": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "tools/git": {
+          "base64": "IyEvYmluL3NoCmNhc2UgIiQqIiBpbiAicmV2LXBhcnNlIC0taXMtaW5zaWRlLXdvcmstdHJlZSIpIGV4aXQgMDs7ICJkaWZmIC0tY2FjaGVkIC0tbmFtZS1vbmx5IC0tZGlmZi1maWx0ZXI9QUNNUiIpIHByaW50ZiAiJXMiICJ0b29scy9hLnB5CiI7OyAiZGlmZiAtLW5hbWUtb25seSAtLWRpZmYtZmlsdGVyPUFDTVIiKSBwcmludGYgIiVzIiAiIjs7ICopIGV4aXQgMTs7IGVzYWMK",
+          "mode": 493
+        }
+      },
+      "env": {
+        "BASH_ENV": "@TMP@/shell-env",
+        "MIR_PRE_COMMIT_LINT": "\"@TMP@/tools/step\" lint",
+        "MIR_PRE_COMMIT_TYPECHECK": "\"@TMP@/tools/step\" typecheck",
+        "MIR_PRE_COMMIT_TEST": "\"@TMP@/tools/step\" test",
+        "MIR_PRE_COMMIT_BUILD": "\"@TMP@/tools/step\" build"
+      },
+      "stdin": "e30=",
+      "retired_helper_absence": false,
+      "retirement_reason": null,
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "W1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gbGludDogIkBUTVBAL3Rvb2xzL3N0ZXAiIGxpbnQKW1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gdHlwZWNoZWNrOiAiQFRNUEAvdG9vbHMvc3RlcCIgdHlwZWNoZWNrCltQcmVDb21taXRWZXJpZmljYXRpb25dIHRlc3Q6ICJAVE1QQC90b29scy9zdGVwIiB0ZXN0CltQcmVDb21taXRWZXJpZmljYXRpb25dIGJ1aWxkOiAiQFRNUEAvdG9vbHMvc3RlcCIgYnVpbGQK",
+        "delta": {
+          "commands.log": {
+            "base64": "c3RlcCA8bGludD4Kc3RlcCA8dHlwZWNoZWNrPgpzdGVwIDx0ZXN0PgpzdGVwIDxidWlsZD4K",
+            "mode": 420
+          }
+        },
+        "deleted": []
+      }
+    },
+    {
+      "id": "precommit:manifest-value-16",
+      "case": "manifest-value-16",
+      "staged": [
+        "tools/a.py"
+      ],
+      "unstaged": [],
+      "setup": {
+        "tools/step": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/uv": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/npm": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "shell-env": {
+          "base64": "ZXhwb3J0IFBBVEg9IkBUTVBAL3Rvb2xzIgo=",
+          "mode": 420
+        },
+        "project/config": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/config/harness-consistency.json": {
+          "base64": "eyJyZXBvIjogeyJlbmZvcmNlbWVudCI6IHsidG9vbHNfY29tbWl0X2dhdGUiOiB7IngiOiAiZGVmZXJyZWQifX19fQ==",
+          "mode": 420
+        },
+        "project/tools": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/tools/a.py": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "tools/git": {
+          "base64": "IyEvYmluL3NoCmNhc2UgIiQqIiBpbiAicmV2LXBhcnNlIC0taXMtaW5zaWRlLXdvcmstdHJlZSIpIGV4aXQgMDs7ICJkaWZmIC0tY2FjaGVkIC0tbmFtZS1vbmx5IC0tZGlmZi1maWx0ZXI9QUNNUiIpIHByaW50ZiAiJXMiICJ0b29scy9hLnB5CiI7OyAiZGlmZiAtLW5hbWUtb25seSAtLWRpZmYtZmlsdGVyPUFDTVIiKSBwcmludGYgIiVzIiAiIjs7ICopIGV4aXQgMTs7IGVzYWMK",
+          "mode": 493
+        }
+      },
+      "env": {
+        "BASH_ENV": "@TMP@/shell-env",
+        "MIR_PRE_COMMIT_LINT": "\"@TMP@/tools/step\" lint",
+        "MIR_PRE_COMMIT_TYPECHECK": "\"@TMP@/tools/step\" typecheck",
+        "MIR_PRE_COMMIT_TEST": "\"@TMP@/tools/step\" test",
+        "MIR_PRE_COMMIT_BUILD": "\"@TMP@/tools/step\" build"
+      },
+      "stdin": "e30=",
+      "retired_helper_absence": false,
+      "retirement_reason": null,
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "W1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gbGludDogIkBUTVBAL3Rvb2xzL3N0ZXAiIGxpbnQKW1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gdHlwZWNoZWNrOiAiQFRNUEAvdG9vbHMvc3RlcCIgdHlwZWNoZWNrCltQcmVDb21taXRWZXJpZmljYXRpb25dIHRlc3Q6ICJAVE1QQC90b29scy9zdGVwIiB0ZXN0CltQcmVDb21taXRWZXJpZmljYXRpb25dIGJ1aWxkOiAiQFRNUEAvdG9vbHMvc3RlcCIgYnVpbGQK",
+        "delta": {
+          "commands.log": {
+            "base64": "c3RlcCA8bGludD4Kc3RlcCA8dHlwZWNoZWNrPgpzdGVwIDx0ZXN0PgpzdGVwIDxidWlsZD4K",
+            "mode": 420
+          }
+        },
+        "deleted": []
+      }
+    },
+    {
+      "id": "precommit:manifest-missing",
+      "case": "manifest-missing",
+      "staged": [
+        "tools/a.py"
+      ],
+      "unstaged": [],
+      "setup": {
+        "tools/step": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/uv": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/npm": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "shell-env": {
+          "base64": "ZXhwb3J0IFBBVEg9IkBUTVBAL3Rvb2xzIgo=",
+          "mode": 420
+        },
+        "project/tools": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/tools/a.py": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "tools/git": {
+          "base64": "IyEvYmluL3NoCmNhc2UgIiQqIiBpbiAicmV2LXBhcnNlIC0taXMtaW5zaWRlLXdvcmstdHJlZSIpIGV4aXQgMDs7ICJkaWZmIC0tY2FjaGVkIC0tbmFtZS1vbmx5IC0tZGlmZi1maWx0ZXI9QUNNUiIpIHByaW50ZiAiJXMiICJ0b29scy9hLnB5CiI7OyAiZGlmZiAtLW5hbWUtb25seSAtLWRpZmYtZmlsdGVyPUFDTVIiKSBwcmludGYgIiVzIiAiIjs7ICopIGV4aXQgMTs7IGVzYWMK",
+          "mode": 493
+        }
+      },
+      "env": {
+        "BASH_ENV": "@TMP@/shell-env",
+        "MIR_PRE_COMMIT_LINT": "\"@TMP@/tools/step\" lint",
+        "MIR_PRE_COMMIT_TYPECHECK": "\"@TMP@/tools/step\" typecheck",
+        "MIR_PRE_COMMIT_TEST": "\"@TMP@/tools/step\" test",
+        "MIR_PRE_COMMIT_BUILD": "\"@TMP@/tools/step\" build"
+      },
+      "stdin": "e30=",
+      "retired_helper_absence": false,
+      "retirement_reason": null,
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "W1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gbGludDogIkBUTVBAL3Rvb2xzL3N0ZXAiIGxpbnQKW1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gdHlwZWNoZWNrOiAiQFRNUEAvdG9vbHMvc3RlcCIgdHlwZWNoZWNrCltQcmVDb21taXRWZXJpZmljYXRpb25dIHRlc3Q6ICJAVE1QQC90b29scy9zdGVwIiB0ZXN0CltQcmVDb21taXRWZXJpZmljYXRpb25dIGJ1aWxkOiAiQFRNUEAvdG9vbHMvc3RlcCIgYnVpbGQK",
+        "delta": {
+          "commands.log": {
+            "base64": "c3RlcCA8bGludD4Kc3RlcCA8dHlwZWNoZWNrPgpzdGVwIDx0ZXN0PgpzdGVwIDxidWlsZD4K",
+            "mode": 420
+          }
+        },
+        "deleted": []
+      }
+    },
+    {
+      "id": "precommit:manifest-malformed",
+      "case": "manifest-malformed",
+      "staged": [
+        "tools/a.py"
+      ],
+      "unstaged": [],
+      "setup": {
+        "tools/step": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/uv": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/npm": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "shell-env": {
+          "base64": "ZXhwb3J0IFBBVEg9IkBUTVBAL3Rvb2xzIgo=",
+          "mode": 420
+        },
+        "project/config": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/config/harness-consistency.json": {
+          "base64": "ew==",
+          "mode": 420
+        },
+        "project/tools": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/tools/a.py": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "tools/git": {
+          "base64": "IyEvYmluL3NoCmNhc2UgIiQqIiBpbiAicmV2LXBhcnNlIC0taXMtaW5zaWRlLXdvcmstdHJlZSIpIGV4aXQgMDs7ICJkaWZmIC0tY2FjaGVkIC0tbmFtZS1vbmx5IC0tZGlmZi1maWx0ZXI9QUNNUiIpIHByaW50ZiAiJXMiICJ0b29scy9hLnB5CiI7OyAiZGlmZiAtLW5hbWUtb25seSAtLWRpZmYtZmlsdGVyPUFDTVIiKSBwcmludGYgIiVzIiAiIjs7ICopIGV4aXQgMTs7IGVzYWMK",
+          "mode": 493
+        }
+      },
+      "env": {
+        "BASH_ENV": "@TMP@/shell-env",
+        "MIR_PRE_COMMIT_LINT": "\"@TMP@/tools/step\" lint",
+        "MIR_PRE_COMMIT_TYPECHECK": "\"@TMP@/tools/step\" typecheck",
+        "MIR_PRE_COMMIT_TEST": "\"@TMP@/tools/step\" test",
+        "MIR_PRE_COMMIT_BUILD": "\"@TMP@/tools/step\" build"
+      },
+      "stdin": "e30=",
+      "retired_helper_absence": false,
+      "retirement_reason": null,
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "W1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gbGludDogIkBUTVBAL3Rvb2xzL3N0ZXAiIGxpbnQKW1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gdHlwZWNoZWNrOiAiQFRNUEAvdG9vbHMvc3RlcCIgdHlwZWNoZWNrCltQcmVDb21taXRWZXJpZmljYXRpb25dIHRlc3Q6ICJAVE1QQC90b29scy9zdGVwIiB0ZXN0CltQcmVDb21taXRWZXJpZmljYXRpb25dIGJ1aWxkOiAiQFRNUEAvdG9vbHMvc3RlcCIgYnVpbGQK",
+        "delta": {
+          "commands.log": {
+            "base64": "c3RlcCA8bGludD4Kc3RlcCA8dHlwZWNoZWNrPgpzdGVwIDx0ZXN0PgpzdGVwIDxidWlsZD4K",
+            "mode": 420
+          }
+        },
+        "deleted": []
+      }
+    },
+    {
+      "id": "precommit:manifest-wrong-shape",
+      "case": "manifest-wrong-shape",
+      "staged": [
+        "tools/a.py"
+      ],
+      "unstaged": [],
+      "setup": {
+        "tools/step": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/uv": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/npm": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "shell-env": {
+          "base64": "ZXhwb3J0IFBBVEg9IkBUTVBAL3Rvb2xzIgo=",
+          "mode": 420
+        },
+        "project/config": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/config/harness-consistency.json": {
+          "base64": "W10=",
+          "mode": 420
+        },
+        "project/tools": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/tools/a.py": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "tools/git": {
+          "base64": "IyEvYmluL3NoCmNhc2UgIiQqIiBpbiAicmV2LXBhcnNlIC0taXMtaW5zaWRlLXdvcmstdHJlZSIpIGV4aXQgMDs7ICJkaWZmIC0tY2FjaGVkIC0tbmFtZS1vbmx5IC0tZGlmZi1maWx0ZXI9QUNNUiIpIHByaW50ZiAiJXMiICJ0b29scy9hLnB5CiI7OyAiZGlmZiAtLW5hbWUtb25seSAtLWRpZmYtZmlsdGVyPUFDTVIiKSBwcmludGYgIiVzIiAiIjs7ICopIGV4aXQgMTs7IGVzYWMK",
+          "mode": 493
+        }
+      },
+      "env": {
+        "BASH_ENV": "@TMP@/shell-env",
+        "MIR_PRE_COMMIT_LINT": "\"@TMP@/tools/step\" lint",
+        "MIR_PRE_COMMIT_TYPECHECK": "\"@TMP@/tools/step\" typecheck",
+        "MIR_PRE_COMMIT_TEST": "\"@TMP@/tools/step\" test",
+        "MIR_PRE_COMMIT_BUILD": "\"@TMP@/tools/step\" build"
+      },
+      "stdin": "e30=",
+      "retired_helper_absence": false,
+      "retirement_reason": null,
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "W1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gbGludDogIkBUTVBAL3Rvb2xzL3N0ZXAiIGxpbnQKW1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gdHlwZWNoZWNrOiAiQFRNUEAvdG9vbHMvc3RlcCIgdHlwZWNoZWNrCltQcmVDb21taXRWZXJpZmljYXRpb25dIHRlc3Q6ICJAVE1QQC90b29scy9zdGVwIiB0ZXN0CltQcmVDb21taXRWZXJpZmljYXRpb25dIGJ1aWxkOiAiQFRNUEAvdG9vbHMvc3RlcCIgYnVpbGQK",
+        "delta": {
+          "commands.log": {
+            "base64": "c3RlcCA8bGludD4Kc3RlcCA8dHlwZWNoZWNrPgpzdGVwIDx0ZXN0PgpzdGVwIDxidWlsZD4K",
+            "mode": 420
+          }
+        },
+        "deleted": []
+      }
+    },
+    {
+      "id": "precommit:manifest-field-missing",
+      "case": "manifest-field-missing",
+      "staged": [
+        "tools/a.py"
+      ],
+      "unstaged": [],
+      "setup": {
+        "tools/step": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/uv": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/npm": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "shell-env": {
+          "base64": "ZXhwb3J0IFBBVEg9IkBUTVBAL3Rvb2xzIgo=",
+          "mode": 420
+        },
+        "project/config": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/config/harness-consistency.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/tools": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/tools/a.py": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "tools/git": {
+          "base64": "IyEvYmluL3NoCmNhc2UgIiQqIiBpbiAicmV2LXBhcnNlIC0taXMtaW5zaWRlLXdvcmstdHJlZSIpIGV4aXQgMDs7ICJkaWZmIC0tY2FjaGVkIC0tbmFtZS1vbmx5IC0tZGlmZi1maWx0ZXI9QUNNUiIpIHByaW50ZiAiJXMiICJ0b29scy9hLnB5CiI7OyAiZGlmZiAtLW5hbWUtb25seSAtLWRpZmYtZmlsdGVyPUFDTVIiKSBwcmludGYgIiVzIiAiIjs7ICopIGV4aXQgMTs7IGVzYWMK",
+          "mode": 493
+        }
+      },
+      "env": {
+        "BASH_ENV": "@TMP@/shell-env",
+        "MIR_PRE_COMMIT_LINT": "\"@TMP@/tools/step\" lint",
+        "MIR_PRE_COMMIT_TYPECHECK": "\"@TMP@/tools/step\" typecheck",
+        "MIR_PRE_COMMIT_TEST": "\"@TMP@/tools/step\" test",
+        "MIR_PRE_COMMIT_BUILD": "\"@TMP@/tools/step\" build"
+      },
+      "stdin": "e30=",
+      "retired_helper_absence": false,
+      "retirement_reason": null,
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "W1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gbGludDogIkBUTVBAL3Rvb2xzL3N0ZXAiIGxpbnQKW1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gdHlwZWNoZWNrOiAiQFRNUEAvdG9vbHMvc3RlcCIgdHlwZWNoZWNrCltQcmVDb21taXRWZXJpZmljYXRpb25dIHRlc3Q6ICJAVE1QQC90b29scy9zdGVwIiB0ZXN0CltQcmVDb21taXRWZXJpZmljYXRpb25dIGJ1aWxkOiAiQFRNUEAvdG9vbHMvc3RlcCIgYnVpbGQK",
+        "delta": {
+          "commands.log": {
+            "base64": "c3RlcCA8bGludD4Kc3RlcCA8dHlwZWNoZWNrPgpzdGVwIDx0ZXN0PgpzdGVwIDxidWlsZD4K",
+            "mode": 420
+          }
+        },
+        "deleted": []
+      }
+    },
+    {
+      "id": "precommit:ordered-failure-lint",
+      "case": "ordered-failure-lint",
+      "staged": [
+        "tests/a.rs"
+      ],
+      "unstaged": [],
+      "setup": {
+        "tools/step": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJzdGVwOmxpbnQiKSBleGl0IDc7OyBlc2FjCg==",
+          "mode": 493
+        },
+        "tools/uv": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJzdGVwOmxpbnQiKSBleGl0IDc7OyBlc2FjCg==",
+          "mode": 493
+        },
+        "tools/npm": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJzdGVwOmxpbnQiKSBleGl0IDc7OyBlc2FjCg==",
+          "mode": 493
+        },
+        "shell-env": {
+          "base64": "ZXhwb3J0IFBBVEg9IkBUTVBAL3Rvb2xzIgo=",
+          "mode": 420
+        },
+        "project/tests": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/tests/a.rs": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "tools/git": {
+          "base64": "IyEvYmluL3NoCmNhc2UgIiQqIiBpbiAicmV2LXBhcnNlIC0taXMtaW5zaWRlLXdvcmstdHJlZSIpIGV4aXQgMDs7ICJkaWZmIC0tY2FjaGVkIC0tbmFtZS1vbmx5IC0tZGlmZi1maWx0ZXI9QUNNUiIpIHByaW50ZiAiJXMiICJ0ZXN0cy9hLnJzCiI7OyAiZGlmZiAtLW5hbWUtb25seSAtLWRpZmYtZmlsdGVyPUFDTVIiKSBwcmludGYgIiVzIiAiIjs7ICopIGV4aXQgMTs7IGVzYWMK",
+          "mode": 493
+        }
+      },
+      "env": {
+        "BASH_ENV": "@TMP@/shell-env",
+        "MIR_PRE_COMMIT_LINT": "\"@TMP@/tools/step\" lint",
+        "MIR_PRE_COMMIT_TYPECHECK": "\"@TMP@/tools/step\" typecheck",
+        "MIR_PRE_COMMIT_TEST": "\"@TMP@/tools/step\" test",
+        "MIR_PRE_COMMIT_BUILD": "\"@TMP@/tools/step\" build"
+      },
+      "stdin": "e30=",
+      "retired_helper_absence": false,
+      "retirement_reason": null,
+      "expected": {
+        "exit": 2,
+        "stdout": "",
+        "stderr": "W1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gbGludDogIkBUTVBAL3Rvb2xzL3N0ZXAiIGxpbnQKW1ByZUNvbW1pdFZlcmlmaWNhdGlvbiBCTE9DS10gbGludCBmYWlsZWQK",
+        "delta": {
+          "commands.log": {
+            "base64": "c3RlcCA8bGludD4K",
+            "mode": 420
+          }
+        },
+        "deleted": []
+      }
+    },
+    {
+      "id": "precommit:ordered-failure-typecheck",
+      "case": "ordered-failure-typecheck",
+      "staged": [
+        "tests/a.rs"
+      ],
+      "unstaged": [],
+      "setup": {
+        "tools/step": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJzdGVwOnR5cGVjaGVjayIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/uv": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJzdGVwOnR5cGVjaGVjayIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/npm": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJzdGVwOnR5cGVjaGVjayIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "shell-env": {
+          "base64": "ZXhwb3J0IFBBVEg9IkBUTVBAL3Rvb2xzIgo=",
+          "mode": 420
+        },
+        "project/tests": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/tests/a.rs": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "tools/git": {
+          "base64": "IyEvYmluL3NoCmNhc2UgIiQqIiBpbiAicmV2LXBhcnNlIC0taXMtaW5zaWRlLXdvcmstdHJlZSIpIGV4aXQgMDs7ICJkaWZmIC0tY2FjaGVkIC0tbmFtZS1vbmx5IC0tZGlmZi1maWx0ZXI9QUNNUiIpIHByaW50ZiAiJXMiICJ0ZXN0cy9hLnJzCiI7OyAiZGlmZiAtLW5hbWUtb25seSAtLWRpZmYtZmlsdGVyPUFDTVIiKSBwcmludGYgIiVzIiAiIjs7ICopIGV4aXQgMTs7IGVzYWMK",
+          "mode": 493
+        }
+      },
+      "env": {
+        "BASH_ENV": "@TMP@/shell-env",
+        "MIR_PRE_COMMIT_LINT": "\"@TMP@/tools/step\" lint",
+        "MIR_PRE_COMMIT_TYPECHECK": "\"@TMP@/tools/step\" typecheck",
+        "MIR_PRE_COMMIT_TEST": "\"@TMP@/tools/step\" test",
+        "MIR_PRE_COMMIT_BUILD": "\"@TMP@/tools/step\" build"
+      },
+      "stdin": "e30=",
+      "retired_helper_absence": false,
+      "retirement_reason": null,
+      "expected": {
+        "exit": 2,
+        "stdout": "",
+        "stderr": "W1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gbGludDogIkBUTVBAL3Rvb2xzL3N0ZXAiIGxpbnQKW1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gdHlwZWNoZWNrOiAiQFRNUEAvdG9vbHMvc3RlcCIgdHlwZWNoZWNrCltQcmVDb21taXRWZXJpZmljYXRpb24gQkxPQ0tdIHR5cGVjaGVjayBmYWlsZWQK",
+        "delta": {
+          "commands.log": {
+            "base64": "c3RlcCA8bGludD4Kc3RlcCA8dHlwZWNoZWNrPgo=",
+            "mode": 420
+          }
+        },
+        "deleted": []
+      }
+    },
+    {
+      "id": "precommit:ordered-failure-test",
+      "case": "ordered-failure-test",
+      "staged": [
+        "tests/a.rs"
+      ],
+      "unstaged": [],
+      "setup": {
+        "tools/step": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJzdGVwOnRlc3QiKSBleGl0IDc7OyBlc2FjCg==",
+          "mode": 493
+        },
+        "tools/uv": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJzdGVwOnRlc3QiKSBleGl0IDc7OyBlc2FjCg==",
+          "mode": 493
+        },
+        "tools/npm": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJzdGVwOnRlc3QiKSBleGl0IDc7OyBlc2FjCg==",
+          "mode": 493
+        },
+        "shell-env": {
+          "base64": "ZXhwb3J0IFBBVEg9IkBUTVBAL3Rvb2xzIgo=",
+          "mode": 420
+        },
+        "project/tests": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/tests/a.rs": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "tools/git": {
+          "base64": "IyEvYmluL3NoCmNhc2UgIiQqIiBpbiAicmV2LXBhcnNlIC0taXMtaW5zaWRlLXdvcmstdHJlZSIpIGV4aXQgMDs7ICJkaWZmIC0tY2FjaGVkIC0tbmFtZS1vbmx5IC0tZGlmZi1maWx0ZXI9QUNNUiIpIHByaW50ZiAiJXMiICJ0ZXN0cy9hLnJzCiI7OyAiZGlmZiAtLW5hbWUtb25seSAtLWRpZmYtZmlsdGVyPUFDTVIiKSBwcmludGYgIiVzIiAiIjs7ICopIGV4aXQgMTs7IGVzYWMK",
+          "mode": 493
+        }
+      },
+      "env": {
+        "BASH_ENV": "@TMP@/shell-env",
+        "MIR_PRE_COMMIT_LINT": "\"@TMP@/tools/step\" lint",
+        "MIR_PRE_COMMIT_TYPECHECK": "\"@TMP@/tools/step\" typecheck",
+        "MIR_PRE_COMMIT_TEST": "\"@TMP@/tools/step\" test",
+        "MIR_PRE_COMMIT_BUILD": "\"@TMP@/tools/step\" build"
+      },
+      "stdin": "e30=",
+      "retired_helper_absence": false,
+      "retirement_reason": null,
+      "expected": {
+        "exit": 2,
+        "stdout": "",
+        "stderr": "W1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gbGludDogIkBUTVBAL3Rvb2xzL3N0ZXAiIGxpbnQKW1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gdHlwZWNoZWNrOiAiQFRNUEAvdG9vbHMvc3RlcCIgdHlwZWNoZWNrCltQcmVDb21taXRWZXJpZmljYXRpb25dIHRlc3Q6ICJAVE1QQC90b29scy9zdGVwIiB0ZXN0CltQcmVDb21taXRWZXJpZmljYXRpb24gQkxPQ0tdIHRlc3QgZmFpbGVkCltob29rIFNVR0dFU1QgYmxvY2tdIHByZS1jb21taXQvdGVzdDogdGVzdCBmYWlsZWQgKHNldCBNSVJfU1VHR0VTVF9USUVSX0NPTkZJUk09MSB0byBieXBhc3MpCg==",
+        "delta": {
+          "commands.log": {
+            "base64": "c3RlcCA8bGludD4Kc3RlcCA8dHlwZWNoZWNrPgpzdGVwIDx0ZXN0Pgo=",
+            "mode": 420
+          }
+        },
+        "deleted": []
+      }
+    },
+    {
+      "id": "precommit:ordered-failure-build",
+      "case": "ordered-failure-build",
+      "staged": [
+        "tests/a.rs"
+      ],
+      "unstaged": [],
+      "setup": {
+        "tools/step": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJzdGVwOmJ1aWxkIikgZXhpdCA3OzsgZXNhYwo=",
+          "mode": 493
+        },
+        "tools/uv": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJzdGVwOmJ1aWxkIikgZXhpdCA3OzsgZXNhYwo=",
+          "mode": 493
+        },
+        "tools/npm": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJzdGVwOmJ1aWxkIikgZXhpdCA3OzsgZXNhYwo=",
+          "mode": 493
+        },
+        "shell-env": {
+          "base64": "ZXhwb3J0IFBBVEg9IkBUTVBAL3Rvb2xzIgo=",
+          "mode": 420
+        },
+        "project/tests": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/tests/a.rs": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "tools/git": {
+          "base64": "IyEvYmluL3NoCmNhc2UgIiQqIiBpbiAicmV2LXBhcnNlIC0taXMtaW5zaWRlLXdvcmstdHJlZSIpIGV4aXQgMDs7ICJkaWZmIC0tY2FjaGVkIC0tbmFtZS1vbmx5IC0tZGlmZi1maWx0ZXI9QUNNUiIpIHByaW50ZiAiJXMiICJ0ZXN0cy9hLnJzCiI7OyAiZGlmZiAtLW5hbWUtb25seSAtLWRpZmYtZmlsdGVyPUFDTVIiKSBwcmludGYgIiVzIiAiIjs7ICopIGV4aXQgMTs7IGVzYWMK",
+          "mode": 493
+        }
+      },
+      "env": {
+        "BASH_ENV": "@TMP@/shell-env",
+        "MIR_PRE_COMMIT_LINT": "\"@TMP@/tools/step\" lint",
+        "MIR_PRE_COMMIT_TYPECHECK": "\"@TMP@/tools/step\" typecheck",
+        "MIR_PRE_COMMIT_TEST": "\"@TMP@/tools/step\" test",
+        "MIR_PRE_COMMIT_BUILD": "\"@TMP@/tools/step\" build"
+      },
+      "stdin": "e30=",
+      "retired_helper_absence": false,
+      "retirement_reason": null,
+      "expected": {
+        "exit": 2,
+        "stdout": "",
+        "stderr": "W1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gbGludDogIkBUTVBAL3Rvb2xzL3N0ZXAiIGxpbnQKW1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gdHlwZWNoZWNrOiAiQFRNUEAvdG9vbHMvc3RlcCIgdHlwZWNoZWNrCltQcmVDb21taXRWZXJpZmljYXRpb25dIHRlc3Q6ICJAVE1QQC90b29scy9zdGVwIiB0ZXN0CltQcmVDb21taXRWZXJpZmljYXRpb25dIGJ1aWxkOiAiQFRNUEAvdG9vbHMvc3RlcCIgYnVpbGQKW1ByZUNvbW1pdFZlcmlmaWNhdGlvbiBCTE9DS10gYnVpbGQgZmFpbGVkCg==",
+        "delta": {
+          "commands.log": {
+            "base64": "c3RlcCA8bGludD4Kc3RlcCA8dHlwZWNoZWNrPgpzdGVwIDx0ZXN0PgpzdGVwIDxidWlsZD4K",
+            "mode": 420
+          }
+        },
+        "deleted": []
+      }
+    },
+    {
+      "id": "precommit:confirm-lint",
+      "case": "confirm-lint",
+      "staged": [
+        "tests/a.rs"
+      ],
+      "unstaged": [],
+      "setup": {
+        "tools/step": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJzdGVwOmxpbnQiKSBleGl0IDc7OyBlc2FjCg==",
+          "mode": 493
+        },
+        "tools/uv": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJzdGVwOmxpbnQiKSBleGl0IDc7OyBlc2FjCg==",
+          "mode": 493
+        },
+        "tools/npm": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJzdGVwOmxpbnQiKSBleGl0IDc7OyBlc2FjCg==",
+          "mode": 493
+        },
+        "shell-env": {
+          "base64": "ZXhwb3J0IFBBVEg9IkBUTVBAL3Rvb2xzIgo=",
+          "mode": 420
+        },
+        "project/tests": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/tests/a.rs": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "tools/git": {
+          "base64": "IyEvYmluL3NoCmNhc2UgIiQqIiBpbiAicmV2LXBhcnNlIC0taXMtaW5zaWRlLXdvcmstdHJlZSIpIGV4aXQgMDs7ICJkaWZmIC0tY2FjaGVkIC0tbmFtZS1vbmx5IC0tZGlmZi1maWx0ZXI9QUNNUiIpIHByaW50ZiAiJXMiICJ0ZXN0cy9hLnJzCiI7OyAiZGlmZiAtLW5hbWUtb25seSAtLWRpZmYtZmlsdGVyPUFDTVIiKSBwcmludGYgIiVzIiAiIjs7ICopIGV4aXQgMTs7IGVzYWMK",
+          "mode": 493
+        }
+      },
+      "env": {
+        "BASH_ENV": "@TMP@/shell-env",
+        "MIR_PRE_COMMIT_LINT": "\"@TMP@/tools/step\" lint",
+        "MIR_PRE_COMMIT_TYPECHECK": "\"@TMP@/tools/step\" typecheck",
+        "MIR_PRE_COMMIT_TEST": "\"@TMP@/tools/step\" test",
+        "MIR_PRE_COMMIT_BUILD": "\"@TMP@/tools/step\" build",
+        "MIR_SUGGEST_TIER_CONFIRM": "1"
+      },
+      "stdin": "e30=",
+      "retired_helper_absence": false,
+      "retirement_reason": null,
+      "expected": {
+        "exit": 2,
+        "stdout": "",
+        "stderr": "W1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gbGludDogIkBUTVBAL3Rvb2xzL3N0ZXAiIGxpbnQKW1ByZUNvbW1pdFZlcmlmaWNhdGlvbiBCTE9DS10gbGludCBmYWlsZWQK",
+        "delta": {
+          "commands.log": {
+            "base64": "c3RlcCA8bGludD4K",
+            "mode": 420
+          }
+        },
+        "deleted": []
+      }
+    },
+    {
+      "id": "precommit:confirm-typecheck",
+      "case": "confirm-typecheck",
+      "staged": [
+        "tests/a.rs"
+      ],
+      "unstaged": [],
+      "setup": {
+        "tools/step": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJzdGVwOnR5cGVjaGVjayIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/uv": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJzdGVwOnR5cGVjaGVjayIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/npm": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJzdGVwOnR5cGVjaGVjayIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "shell-env": {
+          "base64": "ZXhwb3J0IFBBVEg9IkBUTVBAL3Rvb2xzIgo=",
+          "mode": 420
+        },
+        "project/tests": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/tests/a.rs": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "tools/git": {
+          "base64": "IyEvYmluL3NoCmNhc2UgIiQqIiBpbiAicmV2LXBhcnNlIC0taXMtaW5zaWRlLXdvcmstdHJlZSIpIGV4aXQgMDs7ICJkaWZmIC0tY2FjaGVkIC0tbmFtZS1vbmx5IC0tZGlmZi1maWx0ZXI9QUNNUiIpIHByaW50ZiAiJXMiICJ0ZXN0cy9hLnJzCiI7OyAiZGlmZiAtLW5hbWUtb25seSAtLWRpZmYtZmlsdGVyPUFDTVIiKSBwcmludGYgIiVzIiAiIjs7ICopIGV4aXQgMTs7IGVzYWMK",
+          "mode": 493
+        }
+      },
+      "env": {
+        "BASH_ENV": "@TMP@/shell-env",
+        "MIR_PRE_COMMIT_LINT": "\"@TMP@/tools/step\" lint",
+        "MIR_PRE_COMMIT_TYPECHECK": "\"@TMP@/tools/step\" typecheck",
+        "MIR_PRE_COMMIT_TEST": "\"@TMP@/tools/step\" test",
+        "MIR_PRE_COMMIT_BUILD": "\"@TMP@/tools/step\" build",
+        "MIR_SUGGEST_TIER_CONFIRM": "1"
+      },
+      "stdin": "e30=",
+      "retired_helper_absence": false,
+      "retirement_reason": null,
+      "expected": {
+        "exit": 2,
+        "stdout": "",
+        "stderr": "W1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gbGludDogIkBUTVBAL3Rvb2xzL3N0ZXAiIGxpbnQKW1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gdHlwZWNoZWNrOiAiQFRNUEAvdG9vbHMvc3RlcCIgdHlwZWNoZWNrCltQcmVDb21taXRWZXJpZmljYXRpb24gQkxPQ0tdIHR5cGVjaGVjayBmYWlsZWQK",
+        "delta": {
+          "commands.log": {
+            "base64": "c3RlcCA8bGludD4Kc3RlcCA8dHlwZWNoZWNrPgo=",
+            "mode": 420
+          }
+        },
+        "deleted": []
+      }
+    },
+    {
+      "id": "precommit:confirm-test",
+      "case": "confirm-test",
+      "staged": [
+        "tests/a.rs"
+      ],
+      "unstaged": [],
+      "setup": {
+        "tools/step": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJzdGVwOnRlc3QiKSBleGl0IDc7OyBlc2FjCg==",
+          "mode": 493
+        },
+        "tools/uv": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJzdGVwOnRlc3QiKSBleGl0IDc7OyBlc2FjCg==",
+          "mode": 493
+        },
+        "tools/npm": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJzdGVwOnRlc3QiKSBleGl0IDc7OyBlc2FjCg==",
+          "mode": 493
+        },
+        "shell-env": {
+          "base64": "ZXhwb3J0IFBBVEg9IkBUTVBAL3Rvb2xzIgo=",
+          "mode": 420
+        },
+        "project/tests": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/tests/a.rs": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "tools/git": {
+          "base64": "IyEvYmluL3NoCmNhc2UgIiQqIiBpbiAicmV2LXBhcnNlIC0taXMtaW5zaWRlLXdvcmstdHJlZSIpIGV4aXQgMDs7ICJkaWZmIC0tY2FjaGVkIC0tbmFtZS1vbmx5IC0tZGlmZi1maWx0ZXI9QUNNUiIpIHByaW50ZiAiJXMiICJ0ZXN0cy9hLnJzCiI7OyAiZGlmZiAtLW5hbWUtb25seSAtLWRpZmYtZmlsdGVyPUFDTVIiKSBwcmludGYgIiVzIiAiIjs7ICopIGV4aXQgMTs7IGVzYWMK",
+          "mode": 493
+        }
+      },
+      "env": {
+        "BASH_ENV": "@TMP@/shell-env",
+        "MIR_PRE_COMMIT_LINT": "\"@TMP@/tools/step\" lint",
+        "MIR_PRE_COMMIT_TYPECHECK": "\"@TMP@/tools/step\" typecheck",
+        "MIR_PRE_COMMIT_TEST": "\"@TMP@/tools/step\" test",
+        "MIR_PRE_COMMIT_BUILD": "\"@TMP@/tools/step\" build",
+        "MIR_SUGGEST_TIER_CONFIRM": "1"
+      },
+      "stdin": "e30=",
+      "retired_helper_absence": false,
+      "retirement_reason": null,
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "W1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gbGludDogIkBUTVBAL3Rvb2xzL3N0ZXAiIGxpbnQKW1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gdHlwZWNoZWNrOiAiQFRNUEAvdG9vbHMvc3RlcCIgdHlwZWNoZWNrCltQcmVDb21taXRWZXJpZmljYXRpb25dIHRlc3Q6ICJAVE1QQC90b29scy9zdGVwIiB0ZXN0CltQcmVDb21taXRWZXJpZmljYXRpb24gQkxPQ0tdIHRlc3QgZmFpbGVkCltob29rIFNVR0dFU1QgYnlwYXNzXSBwcmUtY29tbWl0L3Rlc3Q6IHRlc3QgZmFpbGVkIGJ1dCBNSVJfU1VHR0VTVF9USUVSX0NPTkZJUk09MSBzZXQKW1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gYnVpbGQ6ICJAVE1QQC90b29scy9zdGVwIiBidWlsZAo=",
+        "delta": {
+          "commands.log": {
+            "base64": "c3RlcCA8bGludD4Kc3RlcCA8dHlwZWNoZWNrPgpzdGVwIDx0ZXN0PgpzdGVwIDxidWlsZD4K",
+            "mode": 420
+          },
+          "tasks": {
+            "directory": true,
+            "mode": 493
+          },
+          "tasks/audit": {
+            "directory": true,
+            "mode": 493
+          },
+          "tasks/audit/suggest_bypass.jsonl": {
+            "base64": "eyJ0cyI6IkBVVENAIiwiaG9va19pZCI6InByZS1jb21taXQvdGVzdCIsInJlYXNvbiI6InRlc3Qgc3RlcCBmYWlsZWQ7IGJ5cGFzc2VkIGJ5IE1JUl9TVUdHRVNUX1RJRVJfQ09ORklSTT0xIn0K",
+            "mode": 420
+          }
+        },
+        "deleted": []
+      }
+    },
+    {
+      "id": "precommit:confirm-not-one",
+      "case": "confirm-not-one",
+      "staged": [
+        "tests/a.rs"
+      ],
+      "unstaged": [],
+      "setup": {
+        "tools/step": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJzdGVwOnRlc3QiKSBleGl0IDc7OyBlc2FjCg==",
+          "mode": 493
+        },
+        "tools/uv": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJzdGVwOnRlc3QiKSBleGl0IDc7OyBlc2FjCg==",
+          "mode": 493
+        },
+        "tools/npm": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJzdGVwOnRlc3QiKSBleGl0IDc7OyBlc2FjCg==",
+          "mode": 493
+        },
+        "shell-env": {
+          "base64": "ZXhwb3J0IFBBVEg9IkBUTVBAL3Rvb2xzIgo=",
+          "mode": 420
+        },
+        "project/tests": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/tests/a.rs": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "tools/git": {
+          "base64": "IyEvYmluL3NoCmNhc2UgIiQqIiBpbiAicmV2LXBhcnNlIC0taXMtaW5zaWRlLXdvcmstdHJlZSIpIGV4aXQgMDs7ICJkaWZmIC0tY2FjaGVkIC0tbmFtZS1vbmx5IC0tZGlmZi1maWx0ZXI9QUNNUiIpIHByaW50ZiAiJXMiICJ0ZXN0cy9hLnJzCiI7OyAiZGlmZiAtLW5hbWUtb25seSAtLWRpZmYtZmlsdGVyPUFDTVIiKSBwcmludGYgIiVzIiAiIjs7ICopIGV4aXQgMTs7IGVzYWMK",
+          "mode": 493
+        }
+      },
+      "env": {
+        "BASH_ENV": "@TMP@/shell-env",
+        "MIR_PRE_COMMIT_LINT": "\"@TMP@/tools/step\" lint",
+        "MIR_PRE_COMMIT_TYPECHECK": "\"@TMP@/tools/step\" typecheck",
+        "MIR_PRE_COMMIT_TEST": "\"@TMP@/tools/step\" test",
+        "MIR_PRE_COMMIT_BUILD": "\"@TMP@/tools/step\" build",
+        "MIR_SUGGEST_TIER_CONFIRM": "true"
+      },
+      "stdin": "e30=",
+      "retired_helper_absence": false,
+      "retirement_reason": null,
+      "expected": {
+        "exit": 2,
+        "stdout": "",
+        "stderr": "W1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gbGludDogIkBUTVBAL3Rvb2xzL3N0ZXAiIGxpbnQKW1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gdHlwZWNoZWNrOiAiQFRNUEAvdG9vbHMvc3RlcCIgdHlwZWNoZWNrCltQcmVDb21taXRWZXJpZmljYXRpb25dIHRlc3Q6ICJAVE1QQC90b29scy9zdGVwIiB0ZXN0CltQcmVDb21taXRWZXJpZmljYXRpb24gQkxPQ0tdIHRlc3QgZmFpbGVkCltob29rIFNVR0dFU1QgYmxvY2tdIHByZS1jb21taXQvdGVzdDogdGVzdCBmYWlsZWQgKHNldCBNSVJfU1VHR0VTVF9USUVSX0NPTkZJUk09MSB0byBieXBhc3MpCg==",
+        "delta": {
+          "commands.log": {
+            "base64": "c3RlcCA8bGludD4Kc3RlcCA8dHlwZWNoZWNrPgpzdGVwIDx0ZXN0Pgo=",
+            "mode": 420
+          }
+        },
+        "deleted": []
+      }
+    },
+    {
+      "id": "precommit:ledger-missing",
+      "case": "ledger-missing",
+      "staged": [
+        "src/a.rs"
+      ],
+      "unstaged": [],
+      "setup": {
+        "tools/step": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/uv": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/npm": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "shell-env": {
+          "base64": "ZXhwb3J0IFBBVEg9IkBUTVBAL3Rvb2xzIgo=",
+          "mode": 420
+        },
+        "project/src": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/src/a.rs": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "tools/git": {
+          "base64": "IyEvYmluL3NoCmNhc2UgIiQqIiBpbiAicmV2LXBhcnNlIC0taXMtaW5zaWRlLXdvcmstdHJlZSIpIGV4aXQgMDs7ICJkaWZmIC0tY2FjaGVkIC0tbmFtZS1vbmx5IC0tZGlmZi1maWx0ZXI9QUNNUiIpIHByaW50ZiAiJXMiICJzcmMvYS5ycwoiOzsgImRpZmYgLS1uYW1lLW9ubHkgLS1kaWZmLWZpbHRlcj1BQ01SIikgcHJpbnRmICIlcyIgIiI7OyAqKSBleGl0IDE7OyBlc2FjCg==",
+          "mode": 493
+        }
+      },
+      "env": {
+        "BASH_ENV": "@TMP@/shell-env",
+        "MIR_PRE_COMMIT_LINT": "\"@TMP@/tools/step\" lint",
+        "MIR_PRE_COMMIT_TYPECHECK": "\"@TMP@/tools/step\" typecheck",
+        "MIR_PRE_COMMIT_TEST": "\"@TMP@/tools/step\" test",
+        "MIR_PRE_COMMIT_BUILD": "\"@TMP@/tools/step\" build"
+      },
+      "stdin": "e30=",
+      "retired_helper_absence": false,
+      "retirement_reason": null,
+      "expected": {
+        "exit": 2,
+        "stdout": "",
+        "stderr": "W1RkZEd1YXJkIEJMT0NLXSBNaXNzaW5nIHRhc2tzL3RkZC5qc29uLiBDcmVhdGUgdGhlIGNvbXBvc2l0ZSBUREQgbGVkZ2VyIGJlZm9yZSBlZGl0aW5nIGNvZGUuCg==",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "precommit:ledger-malformed",
+      "case": "ledger-malformed",
+      "staged": [
+        "src/a.rs"
+      ],
+      "unstaged": [],
+      "setup": {
+        "tools/step": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/uv": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/npm": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "shell-env": {
+          "base64": "ZXhwb3J0IFBBVEg9IkBUTVBAL3Rvb2xzIgo=",
+          "mode": 420
+        },
+        "project/src": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/src/a.rs": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "project/tasks": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/tasks/tdd.json": {
+          "base64": "ew==",
+          "mode": 420
+        },
+        "tools/git": {
+          "base64": "IyEvYmluL3NoCmNhc2UgIiQqIiBpbiAicmV2LXBhcnNlIC0taXMtaW5zaWRlLXdvcmstdHJlZSIpIGV4aXQgMDs7ICJkaWZmIC0tY2FjaGVkIC0tbmFtZS1vbmx5IC0tZGlmZi1maWx0ZXI9QUNNUiIpIHByaW50ZiAiJXMiICJzcmMvYS5ycwoiOzsgImRpZmYgLS1uYW1lLW9ubHkgLS1kaWZmLWZpbHRlcj1BQ01SIikgcHJpbnRmICIlcyIgIiI7OyAqKSBleGl0IDE7OyBlc2FjCg==",
+          "mode": 493
+        }
+      },
+      "env": {
+        "BASH_ENV": "@TMP@/shell-env",
+        "MIR_PRE_COMMIT_LINT": "\"@TMP@/tools/step\" lint",
+        "MIR_PRE_COMMIT_TYPECHECK": "\"@TMP@/tools/step\" typecheck",
+        "MIR_PRE_COMMIT_TEST": "\"@TMP@/tools/step\" test",
+        "MIR_PRE_COMMIT_BUILD": "\"@TMP@/tools/step\" build"
+      },
+      "stdin": "e30=",
+      "retired_helper_absence": false,
+      "retirement_reason": null,
+      "expected": {
+        "exit": 2,
+        "stdout": "",
+        "stderr": "W1RkZEd1YXJkIEJMT0NLXSBNYWxmb3JtZWQgdGFza3MvdGRkLmpzb246IEV4cGVjdGluZyBwcm9wZXJ0eSBuYW1lIGVuY2xvc2VkIGluIGRvdWJsZSBxdW90ZXM6IGxpbmUgMSBjb2x1bW4gMiAoY2hhciAxKQo=",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "precommit:ledger-empty",
+      "case": "ledger-empty",
+      "staged": [
+        "src/a.rs"
+      ],
+      "unstaged": [],
+      "setup": {
+        "tools/step": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/uv": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/npm": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "shell-env": {
+          "base64": "ZXhwb3J0IFBBVEg9IkBUTVBAL3Rvb2xzIgo=",
+          "mode": 420
+        },
+        "project/src": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/src/a.rs": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "project/tasks": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/tasks/tdd.json": {
+          "base64": "eyJjaGFuZ2VzIjpbXX0=",
+          "mode": 420
+        },
+        "tools/git": {
+          "base64": "IyEvYmluL3NoCmNhc2UgIiQqIiBpbiAicmV2LXBhcnNlIC0taXMtaW5zaWRlLXdvcmstdHJlZSIpIGV4aXQgMDs7ICJkaWZmIC0tY2FjaGVkIC0tbmFtZS1vbmx5IC0tZGlmZi1maWx0ZXI9QUNNUiIpIHByaW50ZiAiJXMiICJzcmMvYS5ycwoiOzsgImRpZmYgLS1uYW1lLW9ubHkgLS1kaWZmLWZpbHRlcj1BQ01SIikgcHJpbnRmICIlcyIgIiI7OyAqKSBleGl0IDE7OyBlc2FjCg==",
+          "mode": 493
+        }
+      },
+      "env": {
+        "BASH_ENV": "@TMP@/shell-env",
+        "MIR_PRE_COMMIT_LINT": "\"@TMP@/tools/step\" lint",
+        "MIR_PRE_COMMIT_TYPECHECK": "\"@TMP@/tools/step\" typecheck",
+        "MIR_PRE_COMMIT_TEST": "\"@TMP@/tools/step\" test",
+        "MIR_PRE_COMMIT_BUILD": "\"@TMP@/tools/step\" build"
+      },
+      "stdin": "e30=",
+      "retired_helper_absence": false,
+      "retirement_reason": null,
+      "expected": {
+        "exit": 2,
+        "stdout": "",
+        "stderr": "W1ByZUNvbW1pdFZlcmlmaWNhdGlvbiBCTE9DS10gTm8gY29tcG9zaXRlIFRERCBlbnRyeSBmb3VuZCBpbiB0YXNrcy90ZGQuanNvbiBmb3Igc3JjL2EucnMuCg==",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "precommit:ledger-open",
+      "case": "ledger-open",
+      "staged": [
+        "src/a.rs"
+      ],
+      "unstaged": [],
+      "setup": {
+        "tools/step": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/uv": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/npm": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "shell-env": {
+          "base64": "ZXhwb3J0IFBBVEg9IkBUTVBAL3Rvb2xzIgo=",
+          "mode": 420
+        },
+        "project/src": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/src/a.rs": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "project/tasks": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/tasks/tdd.json": {
+          "base64": "eyJjaGFuZ2VzIjogW3siaWQiOiAic2xpY2UiLCAidGFyZ2V0cyI6IFsic3JjLyIsICJhcHAvIiwgImFwcHMvIiwgInBhY2thZ2VzLyIsICJwaXBlbGluZXMvIiwgImluZnJhLyIsICJjb250ZW50LyIsICJsaWIvIl0sICJjYXRlZ29yaWVzIjogeyJ1bml0IjogeyJzdGF0dXMiOiAicGxhbm5lZCIsICJjb21tYW5kIjogIlwiQFRNUEAvdG9vbHMvc3RlcFwiIHRkZCJ9LCAiaW50ZWdyYXRpb24iOiB7InN0YXR1cyI6ICJwbGFubmVkIiwgImNvbW1hbmQiOiAiXCJAVE1QQC90b29scy9zdGVwXCIgdGRkIn19fV19",
+          "mode": 420
+        },
+        "tools/git": {
+          "base64": "IyEvYmluL3NoCmNhc2UgIiQqIiBpbiAicmV2LXBhcnNlIC0taXMtaW5zaWRlLXdvcmstdHJlZSIpIGV4aXQgMDs7ICJkaWZmIC0tY2FjaGVkIC0tbmFtZS1vbmx5IC0tZGlmZi1maWx0ZXI9QUNNUiIpIHByaW50ZiAiJXMiICJzcmMvYS5ycwoiOzsgImRpZmYgLS1uYW1lLW9ubHkgLS1kaWZmLWZpbHRlcj1BQ01SIikgcHJpbnRmICIlcyIgIiI7OyAqKSBleGl0IDE7OyBlc2FjCg==",
+          "mode": 493
+        }
+      },
+      "env": {
+        "BASH_ENV": "@TMP@/shell-env",
+        "MIR_PRE_COMMIT_LINT": "\"@TMP@/tools/step\" lint",
+        "MIR_PRE_COMMIT_TYPECHECK": "\"@TMP@/tools/step\" typecheck",
+        "MIR_PRE_COMMIT_TEST": "\"@TMP@/tools/step\" test",
+        "MIR_PRE_COMMIT_BUILD": "\"@TMP@/tools/step\" build"
+      },
+      "stdin": "e30=",
+      "retired_helper_absence": false,
+      "retirement_reason": null,
+      "expected": {
+        "exit": 2,
+        "stdout": "",
+        "stderr": "W1ByZUNvbW1pdFZlcmlmaWNhdGlvbiBCTE9DS10gQ2F0ZWdvcnkgJ3VuaXQnIGlzIHN0aWxsIHBsYW5uZWQgZm9yIHRhcmdldCBzbGljZS4K",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "precommit:ledger-closed-deduplicated",
+      "case": "ledger-closed-deduplicated",
+      "staged": [
+        "src/a.rs"
+      ],
+      "unstaged": [],
+      "setup": {
+        "tools/step": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/uv": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/npm": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "shell-env": {
+          "base64": "ZXhwb3J0IFBBVEg9IkBUTVBAL3Rvb2xzIgo=",
+          "mode": 420
+        },
+        "project/src": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/src/a.rs": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "project/tasks": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/tasks/tdd.json": {
+          "base64": "eyJjaGFuZ2VzIjogW3siaWQiOiAic2xpY2UiLCAidGFyZ2V0cyI6IFsic3JjLyIsICJhcHAvIiwgImFwcHMvIiwgInBhY2thZ2VzLyIsICJwaXBlbGluZXMvIiwgImluZnJhLyIsICJjb250ZW50LyIsICJsaWIvIl0sICJjYXRlZ29yaWVzIjogeyJ1bml0IjogeyJzdGF0dXMiOiAicGFzcyIsICJjb21tYW5kIjogIlwiQFRNUEAvdG9vbHMvc3RlcFwiIHRkZCJ9LCAiaW50ZWdyYXRpb24iOiB7InN0YXR1cyI6ICJwYXNzIiwgImNvbW1hbmQiOiAiXCJAVE1QQC90b29scy9zdGVwXCIgdGRkIn19fV19",
+          "mode": 420
+        },
+        "tools/git": {
+          "base64": "IyEvYmluL3NoCmNhc2UgIiQqIiBpbiAicmV2LXBhcnNlIC0taXMtaW5zaWRlLXdvcmstdHJlZSIpIGV4aXQgMDs7ICJkaWZmIC0tY2FjaGVkIC0tbmFtZS1vbmx5IC0tZGlmZi1maWx0ZXI9QUNNUiIpIHByaW50ZiAiJXMiICJzcmMvYS5ycwoiOzsgImRpZmYgLS1uYW1lLW9ubHkgLS1kaWZmLWZpbHRlcj1BQ01SIikgcHJpbnRmICIlcyIgIiI7OyAqKSBleGl0IDE7OyBlc2FjCg==",
+          "mode": 493
+        }
+      },
+      "env": {
+        "BASH_ENV": "@TMP@/shell-env",
+        "MIR_PRE_COMMIT_LINT": "\"@TMP@/tools/step\" lint",
+        "MIR_PRE_COMMIT_TYPECHECK": "\"@TMP@/tools/step\" typecheck",
+        "MIR_PRE_COMMIT_TEST": "\"@TMP@/tools/step\" test",
+        "MIR_PRE_COMMIT_BUILD": "\"@TMP@/tools/step\" build"
+      },
+      "stdin": "e30=",
+      "retired_helper_absence": false,
+      "retirement_reason": null,
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "W1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gdGRkWzFdOiAiQFRNUEAvdG9vbHMvc3RlcCIgdGRkCltQcmVDb21taXRWZXJpZmljYXRpb25dIGxpbnQ6ICJAVE1QQC90b29scy9zdGVwIiBsaW50CltQcmVDb21taXRWZXJpZmljYXRpb25dIHR5cGVjaGVjazogIkBUTVBAL3Rvb2xzL3N0ZXAiIHR5cGVjaGVjawpbUHJlQ29tbWl0VmVyaWZpY2F0aW9uXSB0ZXN0OiAiQFRNUEAvdG9vbHMvc3RlcCIgdGVzdApbUHJlQ29tbWl0VmVyaWZpY2F0aW9uXSBidWlsZDogIkBUTVBAL3Rvb2xzL3N0ZXAiIGJ1aWxkCg==",
+        "delta": {
+          "commands.log": {
+            "base64": "c3RlcCA8dGRkPgpzdGVwIDxsaW50PgpzdGVwIDx0eXBlY2hlY2s+CnN0ZXAgPHRlc3Q+CnN0ZXAgPGJ1aWxkPgo=",
+            "mode": 420
+          }
+        },
+        "deleted": []
+      }
+    },
+    {
+      "id": "precommit:ledger-command-failure",
+      "case": "ledger-command-failure",
+      "staged": [
+        "src/a.rs"
+      ],
+      "unstaged": [],
+      "setup": {
+        "tools/step": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJzdGVwOnRkZCIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/uv": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJzdGVwOnRkZCIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/npm": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJzdGVwOnRkZCIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "shell-env": {
+          "base64": "ZXhwb3J0IFBBVEg9IkBUTVBAL3Rvb2xzIgo=",
+          "mode": 420
+        },
+        "project/src": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/src/a.rs": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "project/tasks": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/tasks/tdd.json": {
+          "base64": "eyJjaGFuZ2VzIjogW3siaWQiOiAic2xpY2UiLCAidGFyZ2V0cyI6IFsic3JjLyIsICJhcHAvIiwgImFwcHMvIiwgInBhY2thZ2VzLyIsICJwaXBlbGluZXMvIiwgImluZnJhLyIsICJjb250ZW50LyIsICJsaWIvIl0sICJjYXRlZ29yaWVzIjogeyJ1bml0IjogeyJzdGF0dXMiOiAicGFzcyIsICJjb21tYW5kIjogIlwiQFRNUEAvdG9vbHMvc3RlcFwiIHRkZCJ9LCAiaW50ZWdyYXRpb24iOiB7InN0YXR1cyI6ICJwYXNzIiwgImNvbW1hbmQiOiAiXCJAVE1QQC90b29scy9zdGVwXCIgdGRkIn19fV19",
+          "mode": 420
+        },
+        "tools/git": {
+          "base64": "IyEvYmluL3NoCmNhc2UgIiQqIiBpbiAicmV2LXBhcnNlIC0taXMtaW5zaWRlLXdvcmstdHJlZSIpIGV4aXQgMDs7ICJkaWZmIC0tY2FjaGVkIC0tbmFtZS1vbmx5IC0tZGlmZi1maWx0ZXI9QUNNUiIpIHByaW50ZiAiJXMiICJzcmMvYS5ycwoiOzsgImRpZmYgLS1uYW1lLW9ubHkgLS1kaWZmLWZpbHRlcj1BQ01SIikgcHJpbnRmICIlcyIgIiI7OyAqKSBleGl0IDE7OyBlc2FjCg==",
+          "mode": 493
+        }
+      },
+      "env": {
+        "BASH_ENV": "@TMP@/shell-env",
+        "MIR_PRE_COMMIT_LINT": "\"@TMP@/tools/step\" lint",
+        "MIR_PRE_COMMIT_TYPECHECK": "\"@TMP@/tools/step\" typecheck",
+        "MIR_PRE_COMMIT_TEST": "\"@TMP@/tools/step\" test",
+        "MIR_PRE_COMMIT_BUILD": "\"@TMP@/tools/step\" build"
+      },
+      "stdin": "e30=",
+      "retired_helper_absence": false,
+      "retirement_reason": null,
+      "expected": {
+        "exit": 2,
+        "stdout": "",
+        "stderr": "W1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gdGRkWzFdOiAiQFRNUEAvdG9vbHMvc3RlcCIgdGRkCltQcmVDb21taXRWZXJpZmljYXRpb24gQkxPQ0tdIHRkZFsxXSBmYWlsZWQK",
+        "delta": {
+          "commands.log": {
+            "base64": "c3RlcCA8dGRkPgo=",
+            "mode": 420
+          }
+        },
+        "deleted": []
+      }
+    },
+    {
+      "id": "precommit:package-defaults",
+      "case": "package-defaults",
+      "staged": [
+        "tests/a.ts"
+      ],
+      "unstaged": [],
+      "setup": {
+        "tools/step": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/uv": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/npm": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "shell-env": {
+          "base64": "ZXhwb3J0IFBBVEg9IkBUTVBAL3Rvb2xzIgo=",
+          "mode": 420
+        },
+        "project/package.json": {
+          "base64": "e30K",
+          "mode": 420
+        },
+        "project/tests": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/tests/a.ts": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "tools/git": {
+          "base64": "IyEvYmluL3NoCmNhc2UgIiQqIiBpbiAicmV2LXBhcnNlIC0taXMtaW5zaWRlLXdvcmstdHJlZSIpIGV4aXQgMDs7ICJkaWZmIC0tY2FjaGVkIC0tbmFtZS1vbmx5IC0tZGlmZi1maWx0ZXI9QUNNUiIpIHByaW50ZiAiJXMiICJ0ZXN0cy9hLnRzCiI7OyAiZGlmZiAtLW5hbWUtb25seSAtLWRpZmYtZmlsdGVyPUFDTVIiKSBwcmludGYgIiVzIiAiIjs7ICopIGV4aXQgMTs7IGVzYWMK",
+          "mode": 493
+        }
+      },
+      "env": {
+        "BASH_ENV": "@TMP@/shell-env"
+      },
+      "stdin": "e30=",
+      "retired_helper_absence": false,
+      "retirement_reason": null,
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "W1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gbGludDogbnBtIHJ1biBsaW50IC0taWYtcHJlc2VudApbUHJlQ29tbWl0VmVyaWZpY2F0aW9uXSB0eXBlY2hlY2s6IG5wbSBydW4gdHlwZWNoZWNrIC0taWYtcHJlc2VudApbUHJlQ29tbWl0VmVyaWZpY2F0aW9uXSB0ZXN0OiBucG0gcnVuIHRlc3QgLS1pZi1wcmVzZW50CltQcmVDb21taXRWZXJpZmljYXRpb25dIGJ1aWxkOiBucG0gcnVuIGJ1aWxkIC0taWYtcHJlc2VudAo=",
+        "delta": {
+          "commands.log": {
+            "base64": "bnBtIDxydW4+IDxsaW50PiA8LS1pZi1wcmVzZW50PgpucG0gPHJ1bj4gPHR5cGVjaGVjaz4gPC0taWYtcHJlc2VudD4KbnBtIDxydW4+IDx0ZXN0PiA8LS1pZi1wcmVzZW50PgpucG0gPHJ1bj4gPGJ1aWxkPiA8LS1pZi1wcmVzZW50Pgo=",
+            "mode": 420
+          }
+        },
+        "deleted": []
+      }
+    },
+    {
+      "id": "precommit:python-defaults",
+      "case": "python-defaults",
+      "staged": [
+        "tests/a.py"
+      ],
+      "unstaged": [],
+      "setup": {
+        "tools/step": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/uv": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/npm": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "shell-env": {
+          "base64": "ZXhwb3J0IFBBVEg9IkBUTVBAL3Rvb2xzIgo=",
+          "mode": 420
+        },
+        "project/pyproject.toml": {
+          "base64": "e30K",
+          "mode": 420
+        },
+        "project/tests": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/tests/a.py": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "tools/git": {
+          "base64": "IyEvYmluL3NoCmNhc2UgIiQqIiBpbiAicmV2LXBhcnNlIC0taXMtaW5zaWRlLXdvcmstdHJlZSIpIGV4aXQgMDs7ICJkaWZmIC0tY2FjaGVkIC0tbmFtZS1vbmx5IC0tZGlmZi1maWx0ZXI9QUNNUiIpIHByaW50ZiAiJXMiICJ0ZXN0cy9hLnB5CiI7OyAiZGlmZiAtLW5hbWUtb25seSAtLWRpZmYtZmlsdGVyPUFDTVIiKSBwcmludGYgIiVzIiAiIjs7ICopIGV4aXQgMTs7IGVzYWMK",
+          "mode": 493
+        }
+      },
+      "env": {
+        "BASH_ENV": "@TMP@/shell-env"
+      },
+      "stdin": "e30=",
+      "retired_helper_absence": false,
+      "retirement_reason": null,
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "W1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gbGludDogdXYgcnVuIHJ1ZmYgY2hlY2sgdGVzdHMvYS5weQpbUHJlQ29tbWl0VmVyaWZpY2F0aW9uXSB0eXBlY2hlY2s6IHV2IHJ1biBteXB5IC0tZm9sbG93LWltcG9ydHM9c2lsZW50IHRlc3RzL2EucHkKW1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gdGVzdDogdXYgcnVuIHB5dGVzdCAtcSB0ZXN0cy9hLnB5Cg==",
+        "delta": {
+          "commands.log": {
+            "base64": "dXYgPHJ1bj4gPHJ1ZmY+IDxjaGVjaz4gPHRlc3RzL2EucHk+CnV2IDxydW4+IDxteXB5PiA8LS1mb2xsb3ctaW1wb3J0cz1zaWxlbnQ+IDx0ZXN0cy9hLnB5Pgp1diA8cnVuPiA8cHl0ZXN0PiA8LXE+IDx0ZXN0cy9hLnB5Pgo=",
+            "mode": 420
+          }
+        },
+        "deleted": []
+      }
+    },
+    {
+      "id": "precommit:python-rust-defaults",
+      "case": "python-rust-defaults",
+      "staged": [
+        "tests/a.rs"
+      ],
+      "unstaged": [],
+      "setup": {
+        "tools/step": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/uv": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/npm": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "shell-env": {
+          "base64": "ZXhwb3J0IFBBVEg9IkBUTVBAL3Rvb2xzIgo=",
+          "mode": 420
+        },
+        "project/pyproject.toml": {
+          "base64": "e30K",
+          "mode": 420
+        },
+        "project/tests": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/tests/a.rs": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "tools/git": {
+          "base64": "IyEvYmluL3NoCmNhc2UgIiQqIiBpbiAicmV2LXBhcnNlIC0taXMtaW5zaWRlLXdvcmstdHJlZSIpIGV4aXQgMDs7ICJkaWZmIC0tY2FjaGVkIC0tbmFtZS1vbmx5IC0tZGlmZi1maWx0ZXI9QUNNUiIpIHByaW50ZiAiJXMiICJ0ZXN0cy9hLnJzCiI7OyAiZGlmZiAtLW5hbWUtb25seSAtLWRpZmYtZmlsdGVyPUFDTVIiKSBwcmludGYgIiVzIiAiIjs7ICopIGV4aXQgMTs7IGVzYWMK",
+          "mode": 493
+        }
+      },
+      "env": {
+        "BASH_ENV": "@TMP@/shell-env"
+      },
+      "stdin": "e30=",
+      "retired_helper_absence": false,
+      "retirement_reason": null,
+      "expected": {
+        "exit": 0,
+        "stdout": "c2tpcC10eXBlY2hlY2stbm8tcHl0aG9uLWNoYW5nZXMK",
+        "stderr": "W1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gbGludDogdXYgcnVuIHJ1ZmYgY2hlY2sgdGVzdHMvYS5ycwpbUHJlQ29tbWl0VmVyaWZpY2F0aW9uXSB0eXBlY2hlY2s6IGVjaG8gc2tpcC10eXBlY2hlY2stbm8tcHl0aG9uLWNoYW5nZXMKW1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gdGVzdDogdXYgcnVuIHB5dGVzdCAtcSB0ZXN0cy9hLnJzCg==",
+        "delta": {
+          "commands.log": {
+            "base64": "dXYgPHJ1bj4gPHJ1ZmY+IDxjaGVjaz4gPHRlc3RzL2EucnM+CnV2IDxydW4+IDxweXRlc3Q+IDwtcT4gPHRlc3RzL2EucnM+Cg==",
+            "mode": 420
+          }
+        },
+        "deleted": []
+      }
+    },
+    {
+      "id": "precommit:no-product-defaults",
+      "case": "no-product-defaults",
+      "staged": [
+        "tests/a.rs"
+      ],
+      "unstaged": [],
+      "setup": {
+        "tools/step": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/uv": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/npm": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "shell-env": {
+          "base64": "ZXhwb3J0IFBBVEg9IkBUTVBAL3Rvb2xzIgo=",
+          "mode": 420
+        },
+        "project/tests": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/tests/a.rs": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "tools/git": {
+          "base64": "IyEvYmluL3NoCmNhc2UgIiQqIiBpbiAicmV2LXBhcnNlIC0taXMtaW5zaWRlLXdvcmstdHJlZSIpIGV4aXQgMDs7ICJkaWZmIC0tY2FjaGVkIC0tbmFtZS1vbmx5IC0tZGlmZi1maWx0ZXI9QUNNUiIpIHByaW50ZiAiJXMiICJ0ZXN0cy9hLnJzCiI7OyAiZGlmZiAtLW5hbWUtb25seSAtLWRpZmYtZmlsdGVyPUFDTVIiKSBwcmludGYgIiVzIiAiIjs7ICopIGV4aXQgMTs7IGVzYWMK",
+          "mode": 493
+        }
+      },
+      "env": {
+        "BASH_ENV": "@TMP@/shell-env"
+      },
+      "stdin": "e30=",
+      "retired_helper_absence": false,
+      "retirement_reason": null,
+      "expected": {
+        "exit": 0,
+        "stdout": "c2tpcC1saW50LW5vLXByb2R1Y3QtY29tbWFuZApza2lwLXR5cGVjaGVjay1uby1wcm9kdWN0LWNvbW1hbmQKc2tpcC10ZXN0LW5vLXByb2R1Y3QtY29tbWFuZAo=",
+        "stderr": "W1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gbGludDogZWNobyBza2lwLWxpbnQtbm8tcHJvZHVjdC1jb21tYW5kCltQcmVDb21taXRWZXJpZmljYXRpb25dIHR5cGVjaGVjazogZWNobyBza2lwLXR5cGVjaGVjay1uby1wcm9kdWN0LWNvbW1hbmQKW1ByZUNvbW1pdFZlcmlmaWNhdGlvbl0gdGVzdDogZWNobyBza2lwLXRlc3Qtbm8tcHJvZHVjdC1jb21tYW5kCg==",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "id": "precommit:retired-helper-absence",
+      "case": "retired-helper-absence",
+      "staged": [
+        "src/a.rs"
+      ],
+      "unstaged": [],
+      "setup": {
+        "tools/step": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/uv": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "tools/npm": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiJXMiICIkezAjIyovfSIgPj4gIiRDTEFVREVfUFJPSkVDVF9ESVIvY29tbWFuZHMubG9nIgpmb3IgYXJnIGluICIkQCI7IGRvIHByaW50ZiAiIDwlcz4iICIkYXJnIiA+PiAiJENMQVVERV9QUk9KRUNUX0RJUi9jb21tYW5kcy5sb2ciOyBkb25lCnByaW50ZiAiXG4iID4+ICIkQ0xBVURFX1BST0pFQ1RfRElSL2NvbW1hbmRzLmxvZyIKY2FzZSAiJHswIyMqL306JCoiIGluICJuZXZlciIpIGV4aXQgNzs7IGVzYWMK",
+          "mode": 493
+        },
+        "shell-env": {
+          "base64": "ZXhwb3J0IFBBVEg9IkBUTVBAL3Rvb2xzIgo=",
+          "mode": 420
+        },
+        "project/src": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/src/a.rs": {
+          "base64": "c3RhZ2VkCg==",
+          "mode": 420
+        },
+        "tools/git": {
+          "base64": "IyEvYmluL3NoCmNhc2UgIiQqIiBpbiAicmV2LXBhcnNlIC0taXMtaW5zaWRlLXdvcmstdHJlZSIpIGV4aXQgMDs7ICJkaWZmIC0tY2FjaGVkIC0tbmFtZS1vbmx5IC0tZGlmZi1maWx0ZXI9QUNNUiIpIHByaW50ZiAiJXMiICJzcmMvYS5ycwoiOzsgImRpZmYgLS1uYW1lLW9ubHkgLS1kaWZmLWZpbHRlcj1BQ01SIikgcHJpbnRmICIlcyIgIiI7OyAqKSBleGl0IDE7OyBlc2FjCg==",
+          "mode": 493
+        }
+      },
+      "env": {
+        "BASH_ENV": "@TMP@/shell-env",
+        "MIR_PRE_COMMIT_LINT": "\"@TMP@/tools/step\" lint",
+        "MIR_PRE_COMMIT_TYPECHECK": "\"@TMP@/tools/step\" typecheck",
+        "MIR_PRE_COMMIT_TEST": "\"@TMP@/tools/step\" test",
+        "MIR_PRE_COMMIT_BUILD": "\"@TMP@/tools/step\" build"
+      },
+      "stdin": "e30=",
+      "retired_helper_absence": true,
+      "retirement_reason": "Native validates the TDD ledger in process; Python helper availability is no longer a policy input.",
+      "expected": {
+        "exit": 2,
+        "stdout": "",
+        "stderr": "W1ByZUNvbW1pdFZlcmlmaWNhdGlvbiBCTE9DS10gTWlzc2luZyBoZWxwZXI6IEBUTVBAL3Byb2plY3QvLmNsYXVkZS9ob29rcy90ZGQtbWF0cml4LWd1YXJkLnB5Cg==",
+        "delta": {},
+        "deleted": []
+      }
+    }
+  ]
+}
