@@ -433,7 +433,7 @@ impl LocalConfig {
             })
             .map(str::to_owned)
     }
-    fn compare(&self, left: &Value, right: &Value) -> Result<Option<Ordering>, Error> {
+    pub(crate) fn compare(&self, left: &Value, right: &Value) -> Result<Option<Ordering>, Error> {
         match (self.integer(left), self.integer(right)) {
             (Some(left), Some(right)) => Ok(Some(compare_integers(&left, &right))),
             (Some(integer), None) => Ok(self
@@ -455,7 +455,7 @@ impl LocalConfig {
             .number(value)?
             .is_some_and(|number| number.is_finite() && number > 0.0))
     }
-    fn numeric_repr(&self, value: &Value) -> String {
+    pub(crate) fn numeric_repr(&self, value: &Value) -> String {
         if let Value::Number(number) = value
             && number.is_f64()
             && let Some(number) = number.as_f64()

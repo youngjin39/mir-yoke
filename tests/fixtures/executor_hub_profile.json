@@ -1,0 +1,666 @@
+{
+  "runtime": {
+    "python": "3.12.13",
+    "pydantic": "2.13.4",
+    "unicode": "15.0.0"
+  },
+  "sha256": {
+    "local": "c238c92a06b687ae38a740989af069d361807a7851f21363b4ab810881e0a93d",
+    "contracts": "4261212c8df5177646513775d92c286abb6dd1afb3000a1b1254cd1cac4e22fa",
+    "loader": "8171f3ea0f41a84adcde60858d80a1c156a1ecb23ac58602275e0eff7edc80af"
+  },
+  "oracle_source": "from __future__ import annotations\nimport argparse\nimport hashlib\nimport importlib.metadata\nimport json\nimport pathlib\nfrom tools.mir_executor.local_hooks import local_config\n\"\"\"DispatchBrief contract for execution-lane handoff and durable resume.\"\"\"\n\n\nfrom pydantic import BaseModel, ConfigDict, Field, model_validator\n\n\nclass DispatchBriefSourceRefs(BaseModel):\n    \"\"\"Source references used to derive a dispatch brief.\"\"\"\n\n    model_config = ConfigDict(extra=\"forbid\", frozen=True)\n\n    task_spec: str = Field(min_length=1)\n    plan: str = Field(default=\"tasks/plan.md\")\n    phase: str = Field(min_length=1)\n\n\nclass DispatchBrief(BaseModel):\n    \"\"\"Execution-ready handoff artifact for one target agent and one slice.\"\"\"\n\n    model_config = ConfigDict(extra=\"forbid\", frozen=True)\n\n    version: int = Field(default=1)\n    task_id: str = Field(min_length=1)\n    phase_id: str | None = None\n    slice_id: str = Field(min_length=1)\n    target_agent: str = Field(min_length=1)\n    user_intent: str = Field(min_length=1)\n    expanded_goal: str = Field(min_length=1)\n    owned_scope: tuple[str, ...] = Field(min_length=1)\n    out_of_scope: tuple[str, ...] = ()\n    verification_commands: tuple[str, ...] = Field(min_length=1)\n    stop_conditions: tuple[str, ...] = Field(min_length=1)\n    handoff_refs: tuple[str, ...] = ()\n    tdd_change_refs: tuple[str, ...] = ()\n    resume_state_ref: str = Field(min_length=1)\n    source_refs: DispatchBriefSourceRefs\n\n    @model_validator(mode=\"after\")\n    def _validate_contract(self) -> DispatchBrief:\n        if self.version != 1:\n            raise ValueError(\"DispatchBrief.version must be 1\")\n        expected_resume_ref = f\"tasks/dispatch/{self.task_id}/{self.slice_id}.json\"\n        if self.resume_state_ref != expected_resume_ref:\n            raise ValueError(\n                \"DispatchBrief.resume_state_ref must match \"\n                f\"{expected_resume_ref!r}\"\n            )\n        if self.source_refs.plan != \"tasks/plan.md\":\n            raise ValueError(\"DispatchBrief.source_refs.plan must be 'tasks/plan.md'\")\n        return self\n\ndef load_dispatch_brief(path: pathlib.Path) -> DispatchBrief:\n    \"\"\"Load and validate a persisted DispatchBrief JSON file.\"\"\"\n    payload: dict[str, Any] = json.loads(path.read_text(encoding=\"utf-8\"))\n    return DispatchBrief(**payload)\ndef validate_brief(brief: pathlib.Path | str, repo_root: pathlib.Path):\n    \"\"\"Keep the typed DispatchBrief schema and the delegated-input bound (GAP-035).\n\n    An over-budget input is refused explicitly rather than truncated into a prompt\n    the delegate believes is complete.\n    \"\"\"\n    if isinstance(brief, pathlib.Path):\n        from mir.core.conductor.dispatch_brief import load_dispatch_brief  # noqa: PLC0415\n\n        loaded = load_dispatch_brief(brief)\n        _require_input_bound(loaded.expanded_goal, repo_root)\n        return loaded\n    _require_input_bound(brief, repo_root)\n    return None\n\ndef _require_input_bound(text: str, repo_root: pathlib.Path) -> None:\n    limit = local_config(repo_root)[\"input_limit_bytes\"]\n    size = len(text.encode(\"utf-8\"))\n    if size > limit:\n        raise ValueError(\n            f\"delegated input exceeds {limit} bytes ({size}); refusing rather than truncating\"\n        )\n\ndef job_identity(\n    args: argparse.Namespace, repo_root: pathlib.Path, prompt: str, model: str | None\n) -> str:\n    \"\"\"Execution identity evidence for one delegated job (owner decision 2026-08-04,\n    GAP-036): the exact instruction hash, the dispatching package identity, the\n    tool-schema identity of the Codex surface, and the advisory model alias per\n    ADR-49 (never a hard-pinned native version). The ceiling field records explicitly\n    that v1 sets no hard token or cost limit -- usage alerting is the only spend surface.\n    \"\"\"\n    if model is None:\n        model = \"codex-config-default\" if args.dispatch else \"policy-or-config-default\"\n    try:\n        package_version = importlib.metadata.version(\"mir-agent-hub\")\n    except importlib.metadata.PackageNotFoundError:\n        package_version = \"unknown\"\n    return json.dumps(\n        {\n            \"instruction_sha256\": hashlib.sha256(prompt.encode(\"utf-8\")).hexdigest(),\n            \"package\": f\"mir-agent-hub {package_version}\",\n            \"tool_schema\": \"codex-mcp:tools/codex\",\n            \"model_alias\": model,\n            \"ceiling\": \"none-v1-usage-alerting-only\",\n        },\n        sort_keys=True,\n    )\nimport sys\nimport types\n_loader = types.ModuleType(\"mir.core.conductor.dispatch_brief\")\n_loader.load_dispatch_brief = load_dispatch_brief\nsys.modules[_loader.__name__] = _loader\n",
+  "brief_cases": [
+    {
+      "name": "file_larger_than_goal",
+      "text": "\u00e9\u00e9",
+      "limit": 4,
+      "payload": {
+        "version": 1,
+        "task_id": "task",
+        "slice_id": "slice",
+        "target_agent": "offline-agent",
+        "user_intent": "Update the owned file.",
+        "expanded_goal": "\u00e9\u00e9",
+        "owned_scope": [
+          "code.txt"
+        ],
+        "verification_commands": [
+          "offline"
+        ],
+        "stop_conditions": [
+          "Stop outside scope."
+        ],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "phase": "tasks/phase.json"
+        }
+      },
+      "payload_text": "{\n  \"version\": 1,\n  \"task_id\": \"task\",\n  \"slice_id\": \"slice\",\n  \"target_agent\": \"offline-agent\",\n  \"user_intent\": \"Update the owned file.\",\n  \"expanded_goal\": \"\\u00e9\\u00e9\",\n  \"owned_scope\": [\n    \"code.txt\"\n  ],\n  \"verification_commands\": [\n    \"offline\"\n  ],\n  \"stop_conditions\": [\n    \"Stop outside scope.\"\n  ],\n  \"resume_state_ref\": \"tasks/dispatch/task/slice.json\",\n  \"source_refs\": {\n    \"task_spec\": \"runtime://task\",\n    \"phase\": \"tasks/phase.json\"\n  }\n}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "offline-agent",
+        "user_intent": "Update the owned file.",
+        "expanded_goal": "\u00e9\u00e9",
+        "owned_scope": [
+          "code.txt"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "offline"
+        ],
+        "stop_conditions": [
+          "Stop outside scope."
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "goal_below",
+      "text": "\u00e9a",
+      "limit": 4,
+      "payload": {
+        "version": 1,
+        "task_id": "task",
+        "slice_id": "slice",
+        "target_agent": "offline-agent",
+        "user_intent": "Update the owned file.",
+        "expanded_goal": "\u00e9a",
+        "owned_scope": [
+          "code.txt"
+        ],
+        "verification_commands": [
+          "offline"
+        ],
+        "stop_conditions": [
+          "Stop outside scope."
+        ],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "phase": "tasks/phase.json"
+        }
+      },
+      "payload_text": "{\n  \"version\": 1,\n  \"task_id\": \"task\",\n  \"slice_id\": \"slice\",\n  \"target_agent\": \"offline-agent\",\n  \"user_intent\": \"Update the owned file.\",\n  \"expanded_goal\": \"\\u00e9a\",\n  \"owned_scope\": [\n    \"code.txt\"\n  ],\n  \"verification_commands\": [\n    \"offline\"\n  ],\n  \"stop_conditions\": [\n    \"Stop outside scope.\"\n  ],\n  \"resume_state_ref\": \"tasks/dispatch/task/slice.json\",\n  \"source_refs\": {\n    \"task_spec\": \"runtime://task\",\n    \"phase\": \"tasks/phase.json\"\n  }\n}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "offline-agent",
+        "user_intent": "Update the owned file.",
+        "expanded_goal": "\u00e9a",
+        "owned_scope": [
+          "code.txt"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "offline"
+        ],
+        "stop_conditions": [
+          "Stop outside scope."
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "goal_equal",
+      "text": "\u00e9\u00e9",
+      "limit": 4,
+      "payload": {
+        "version": 1,
+        "task_id": "task",
+        "slice_id": "slice",
+        "target_agent": "offline-agent",
+        "user_intent": "Update the owned file.",
+        "expanded_goal": "\u00e9\u00e9",
+        "owned_scope": [
+          "code.txt"
+        ],
+        "verification_commands": [
+          "offline"
+        ],
+        "stop_conditions": [
+          "Stop outside scope."
+        ],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "phase": "tasks/phase.json"
+        }
+      },
+      "payload_text": "{\n  \"version\": 1,\n  \"task_id\": \"task\",\n  \"slice_id\": \"slice\",\n  \"target_agent\": \"offline-agent\",\n  \"user_intent\": \"Update the owned file.\",\n  \"expanded_goal\": \"\\u00e9\\u00e9\",\n  \"owned_scope\": [\n    \"code.txt\"\n  ],\n  \"verification_commands\": [\n    \"offline\"\n  ],\n  \"stop_conditions\": [\n    \"Stop outside scope.\"\n  ],\n  \"resume_state_ref\": \"tasks/dispatch/task/slice.json\",\n  \"source_refs\": {\n    \"task_spec\": \"runtime://task\",\n    \"phase\": \"tasks/phase.json\"\n  }\n}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "offline-agent",
+        "user_intent": "Update the owned file.",
+        "expanded_goal": "\u00e9\u00e9",
+        "owned_scope": [
+          "code.txt"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "offline"
+        ],
+        "stop_conditions": [
+          "Stop outside scope."
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "goal_above",
+      "text": "\u00e9\u00e9a",
+      "limit": 4,
+      "payload": {
+        "version": 1,
+        "task_id": "task",
+        "slice_id": "slice",
+        "target_agent": "offline-agent",
+        "user_intent": "Update the owned file.",
+        "expanded_goal": "\u00e9\u00e9a",
+        "owned_scope": [
+          "code.txt"
+        ],
+        "verification_commands": [
+          "offline"
+        ],
+        "stop_conditions": [
+          "Stop outside scope."
+        ],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "phase": "tasks/phase.json"
+        }
+      },
+      "payload_text": "{\n  \"version\": 1,\n  \"task_id\": \"task\",\n  \"slice_id\": \"slice\",\n  \"target_agent\": \"offline-agent\",\n  \"user_intent\": \"Update the owned file.\",\n  \"expanded_goal\": \"\\u00e9\\u00e9a\",\n  \"owned_scope\": [\n    \"code.txt\"\n  ],\n  \"verification_commands\": [\n    \"offline\"\n  ],\n  \"stop_conditions\": [\n    \"Stop outside scope.\"\n  ],\n  \"resume_state_ref\": \"tasks/dispatch/task/slice.json\",\n  \"source_refs\": {\n    \"task_spec\": \"runtime://task\",\n    \"phase\": \"tasks/phase.json\"\n  }\n}",
+      "kind": "ValueError",
+      "message": "delegated input exceeds 4 bytes (5); refusing rather than truncating"
+    },
+    {
+      "name": "plain_below",
+      "text": "\u00e9a",
+      "limit": 4,
+      "payload": null,
+      "payload_text": null,
+      "value": null
+    },
+    {
+      "name": "plain_equal",
+      "text": "\u00e9\u00e9",
+      "limit": 4,
+      "payload": null,
+      "payload_text": null,
+      "value": null
+    },
+    {
+      "name": "plain_above",
+      "text": "\u00e9\u00e9a",
+      "limit": 4,
+      "payload": null,
+      "payload_text": null,
+      "kind": "ValueError",
+      "message": "delegated input exceeds 4 bytes (5); refusing rather than truncating"
+    },
+    {
+      "name": "plain_late_above",
+      "text": "\u00e9\u00e9a",
+      "limit": 4.0,
+      "payload": null,
+      "payload_text": null,
+      "kind": "ValueError",
+      "message": "delegated input exceeds 4.0 bytes (5); refusing rather than truncating"
+    },
+    {
+      "name": "schema_before_bound",
+      "text": "\u00e9\u00e9a",
+      "limit": 1,
+      "payload": {
+        "version": 1,
+        "task_id": "task",
+        "slice_id": "slice",
+        "target_agent": "offline-agent",
+        "expanded_goal": "\u00e9\u00e9a",
+        "owned_scope": [
+          "code.txt"
+        ],
+        "verification_commands": [
+          "offline"
+        ],
+        "stop_conditions": [
+          "Stop outside scope."
+        ],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "phase": "tasks/phase.json"
+        }
+      },
+      "payload_text": "{\n  \"version\": 1,\n  \"task_id\": \"task\",\n  \"slice_id\": \"slice\",\n  \"target_agent\": \"offline-agent\",\n  \"expanded_goal\": \"\\u00e9\\u00e9a\",\n  \"owned_scope\": [\n    \"code.txt\"\n  ],\n  \"verification_commands\": [\n    \"offline\"\n  ],\n  \"stop_conditions\": [\n    \"Stop outside scope.\"\n  ],\n  \"resume_state_ref\": \"tasks/dispatch/task/slice.json\",\n  \"source_refs\": {\n    \"task_spec\": \"runtime://task\",\n    \"phase\": \"tasks/phase.json\"\n  }\n}",
+      "kind": "ValidationError",
+      "message": "1 validation error for DispatchBrief\nuser_intent\n  Field required [type=missing, input_value={'version': 1, 'task_id':...e': 'tasks/phase.json'}}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing"
+    },
+    {
+      "name": "limit_zero",
+      "text": "a",
+      "limit": 0,
+      "payload": {
+        "version": 1,
+        "task_id": "task",
+        "slice_id": "slice",
+        "target_agent": "offline-agent",
+        "user_intent": "Update the owned file.",
+        "expanded_goal": "a",
+        "owned_scope": [
+          "code.txt"
+        ],
+        "verification_commands": [
+          "offline"
+        ],
+        "stop_conditions": [
+          "Stop outside scope."
+        ],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "phase": "tasks/phase.json"
+        }
+      },
+      "payload_text": "{\n  \"version\": 1,\n  \"task_id\": \"task\",\n  \"slice_id\": \"slice\",\n  \"target_agent\": \"offline-agent\",\n  \"user_intent\": \"Update the owned file.\",\n  \"expanded_goal\": \"a\",\n  \"owned_scope\": [\n    \"code.txt\"\n  ],\n  \"verification_commands\": [\n    \"offline\"\n  ],\n  \"stop_conditions\": [\n    \"Stop outside scope.\"\n  ],\n  \"resume_state_ref\": \"tasks/dispatch/task/slice.json\",\n  \"source_refs\": {\n    \"task_spec\": \"runtime://task\",\n    \"phase\": \"tasks/phase.json\"\n  }\n}",
+      "kind": "ValueError",
+      "message": "delegated input exceeds 0 bytes (1); refusing rather than truncating"
+    },
+    {
+      "name": "limit_negative",
+      "text": "a",
+      "limit": -1,
+      "payload": {
+        "version": 1,
+        "task_id": "task",
+        "slice_id": "slice",
+        "target_agent": "offline-agent",
+        "user_intent": "Update the owned file.",
+        "expanded_goal": "a",
+        "owned_scope": [
+          "code.txt"
+        ],
+        "verification_commands": [
+          "offline"
+        ],
+        "stop_conditions": [
+          "Stop outside scope."
+        ],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "phase": "tasks/phase.json"
+        }
+      },
+      "payload_text": "{\n  \"version\": 1,\n  \"task_id\": \"task\",\n  \"slice_id\": \"slice\",\n  \"target_agent\": \"offline-agent\",\n  \"user_intent\": \"Update the owned file.\",\n  \"expanded_goal\": \"a\",\n  \"owned_scope\": [\n    \"code.txt\"\n  ],\n  \"verification_commands\": [\n    \"offline\"\n  ],\n  \"stop_conditions\": [\n    \"Stop outside scope.\"\n  ],\n  \"resume_state_ref\": \"tasks/dispatch/task/slice.json\",\n  \"source_refs\": {\n    \"task_spec\": \"runtime://task\",\n    \"phase\": \"tasks/phase.json\"\n  }\n}",
+      "kind": "ValueError",
+      "message": "delegated input exceeds -1 bytes (1); refusing rather than truncating"
+    },
+    {
+      "name": "limit_float_equal",
+      "text": "\u00e9\u00e9",
+      "limit": 4.0,
+      "payload": {
+        "version": 1,
+        "task_id": "task",
+        "slice_id": "slice",
+        "target_agent": "offline-agent",
+        "user_intent": "Update the owned file.",
+        "expanded_goal": "\u00e9\u00e9",
+        "owned_scope": [
+          "code.txt"
+        ],
+        "verification_commands": [
+          "offline"
+        ],
+        "stop_conditions": [
+          "Stop outside scope."
+        ],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "phase": "tasks/phase.json"
+        }
+      },
+      "payload_text": "{\n  \"version\": 1,\n  \"task_id\": \"task\",\n  \"slice_id\": \"slice\",\n  \"target_agent\": \"offline-agent\",\n  \"user_intent\": \"Update the owned file.\",\n  \"expanded_goal\": \"\\u00e9\\u00e9\",\n  \"owned_scope\": [\n    \"code.txt\"\n  ],\n  \"verification_commands\": [\n    \"offline\"\n  ],\n  \"stop_conditions\": [\n    \"Stop outside scope.\"\n  ],\n  \"resume_state_ref\": \"tasks/dispatch/task/slice.json\",\n  \"source_refs\": {\n    \"task_spec\": \"runtime://task\",\n    \"phase\": \"tasks/phase.json\"\n  }\n}",
+      "value": {
+        "version": 1,
+        "task_id": "task",
+        "phase_id": null,
+        "slice_id": "slice",
+        "target_agent": "offline-agent",
+        "user_intent": "Update the owned file.",
+        "expanded_goal": "\u00e9\u00e9",
+        "owned_scope": [
+          "code.txt"
+        ],
+        "out_of_scope": [],
+        "verification_commands": [
+          "offline"
+        ],
+        "stop_conditions": [
+          "Stop outside scope."
+        ],
+        "handoff_refs": [],
+        "tdd_change_refs": [],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "plan": "tasks/plan.md",
+          "phase": "tasks/phase.json"
+        }
+      }
+    },
+    {
+      "name": "limit_float_above",
+      "text": "\u00e9\u00e9a",
+      "limit": 4.0,
+      "payload": {
+        "version": 1,
+        "task_id": "task",
+        "slice_id": "slice",
+        "target_agent": "offline-agent",
+        "user_intent": "Update the owned file.",
+        "expanded_goal": "\u00e9\u00e9a",
+        "owned_scope": [
+          "code.txt"
+        ],
+        "verification_commands": [
+          "offline"
+        ],
+        "stop_conditions": [
+          "Stop outside scope."
+        ],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "phase": "tasks/phase.json"
+        }
+      },
+      "payload_text": "{\n  \"version\": 1,\n  \"task_id\": \"task\",\n  \"slice_id\": \"slice\",\n  \"target_agent\": \"offline-agent\",\n  \"user_intent\": \"Update the owned file.\",\n  \"expanded_goal\": \"\\u00e9\\u00e9a\",\n  \"owned_scope\": [\n    \"code.txt\"\n  ],\n  \"verification_commands\": [\n    \"offline\"\n  ],\n  \"stop_conditions\": [\n    \"Stop outside scope.\"\n  ],\n  \"resume_state_ref\": \"tasks/dispatch/task/slice.json\",\n  \"source_refs\": {\n    \"task_spec\": \"runtime://task\",\n    \"phase\": \"tasks/phase.json\"\n  }\n}",
+      "kind": "ValueError",
+      "message": "delegated input exceeds 4.0 bytes (5); refusing rather than truncating"
+    },
+    {
+      "name": "limit_bool",
+      "text": "\u00e9",
+      "limit": true,
+      "payload": {
+        "version": 1,
+        "task_id": "task",
+        "slice_id": "slice",
+        "target_agent": "offline-agent",
+        "user_intent": "Update the owned file.",
+        "expanded_goal": "\u00e9",
+        "owned_scope": [
+          "code.txt"
+        ],
+        "verification_commands": [
+          "offline"
+        ],
+        "stop_conditions": [
+          "Stop outside scope."
+        ],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "phase": "tasks/phase.json"
+        }
+      },
+      "payload_text": "{\n  \"version\": 1,\n  \"task_id\": \"task\",\n  \"slice_id\": \"slice\",\n  \"target_agent\": \"offline-agent\",\n  \"user_intent\": \"Update the owned file.\",\n  \"expanded_goal\": \"\\u00e9\",\n  \"owned_scope\": [\n    \"code.txt\"\n  ],\n  \"verification_commands\": [\n    \"offline\"\n  ],\n  \"stop_conditions\": [\n    \"Stop outside scope.\"\n  ],\n  \"resume_state_ref\": \"tasks/dispatch/task/slice.json\",\n  \"source_refs\": {\n    \"task_spec\": \"runtime://task\",\n    \"phase\": \"tasks/phase.json\"\n  }\n}",
+      "kind": "ValueError",
+      "message": "delegated input exceeds True bytes (2); refusing rather than truncating"
+    },
+    {
+      "name": "limit_null",
+      "text": "a",
+      "limit": null,
+      "payload": {
+        "version": 1,
+        "task_id": "task",
+        "slice_id": "slice",
+        "target_agent": "offline-agent",
+        "user_intent": "Update the owned file.",
+        "expanded_goal": "a",
+        "owned_scope": [
+          "code.txt"
+        ],
+        "verification_commands": [
+          "offline"
+        ],
+        "stop_conditions": [
+          "Stop outside scope."
+        ],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "phase": "tasks/phase.json"
+        }
+      },
+      "payload_text": "{\n  \"version\": 1,\n  \"task_id\": \"task\",\n  \"slice_id\": \"slice\",\n  \"target_agent\": \"offline-agent\",\n  \"user_intent\": \"Update the owned file.\",\n  \"expanded_goal\": \"a\",\n  \"owned_scope\": [\n    \"code.txt\"\n  ],\n  \"verification_commands\": [\n    \"offline\"\n  ],\n  \"stop_conditions\": [\n    \"Stop outside scope.\"\n  ],\n  \"resume_state_ref\": \"tasks/dispatch/task/slice.json\",\n  \"source_refs\": {\n    \"task_spec\": \"runtime://task\",\n    \"phase\": \"tasks/phase.json\"\n  }\n}",
+      "kind": "TypeError",
+      "message": "'>' not supported between instances of 'int' and 'NoneType'"
+    },
+    {
+      "name": "limit_missing",
+      "text": "a",
+      "limit": "missing",
+      "payload": {
+        "version": 1,
+        "task_id": "task",
+        "slice_id": "slice",
+        "target_agent": "offline-agent",
+        "user_intent": "Update the owned file.",
+        "expanded_goal": "a",
+        "owned_scope": [
+          "code.txt"
+        ],
+        "verification_commands": [
+          "offline"
+        ],
+        "stop_conditions": [
+          "Stop outside scope."
+        ],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "phase": "tasks/phase.json"
+        }
+      },
+      "payload_text": "{\n  \"version\": 1,\n  \"task_id\": \"task\",\n  \"slice_id\": \"slice\",\n  \"target_agent\": \"offline-agent\",\n  \"user_intent\": \"Update the owned file.\",\n  \"expanded_goal\": \"a\",\n  \"owned_scope\": [\n    \"code.txt\"\n  ],\n  \"verification_commands\": [\n    \"offline\"\n  ],\n  \"stop_conditions\": [\n    \"Stop outside scope.\"\n  ],\n  \"resume_state_ref\": \"tasks/dispatch/task/slice.json\",\n  \"source_refs\": {\n    \"task_spec\": \"runtime://task\",\n    \"phase\": \"tasks/phase.json\"\n  }\n}",
+      "kind": "KeyError",
+      "message": "'input_limit_bytes'"
+    },
+    {
+      "name": "limit_string",
+      "text": "a",
+      "limit": "4",
+      "payload": {
+        "version": 1,
+        "task_id": "task",
+        "slice_id": "slice",
+        "target_agent": "offline-agent",
+        "user_intent": "Update the owned file.",
+        "expanded_goal": "a",
+        "owned_scope": [
+          "code.txt"
+        ],
+        "verification_commands": [
+          "offline"
+        ],
+        "stop_conditions": [
+          "Stop outside scope."
+        ],
+        "resume_state_ref": "tasks/dispatch/task/slice.json",
+        "source_refs": {
+          "task_spec": "runtime://task",
+          "phase": "tasks/phase.json"
+        }
+      },
+      "payload_text": "{\n  \"version\": 1,\n  \"task_id\": \"task\",\n  \"slice_id\": \"slice\",\n  \"target_agent\": \"offline-agent\",\n  \"user_intent\": \"Update the owned file.\",\n  \"expanded_goal\": \"a\",\n  \"owned_scope\": [\n    \"code.txt\"\n  ],\n  \"verification_commands\": [\n    \"offline\"\n  ],\n  \"stop_conditions\": [\n    \"Stop outside scope.\"\n  ],\n  \"resume_state_ref\": \"tasks/dispatch/task/slice.json\",\n  \"source_refs\": {\n    \"task_spec\": \"runtime://task\",\n    \"phase\": \"tasks/phase.json\"\n  }\n}",
+      "kind": "TypeError",
+      "message": "'>' not supported between instances of 'int' and 'str'"
+    }
+  ],
+  "identity_cases": [
+    {
+      "dispatch": true,
+      "model": null,
+      "prompt": "exact caf\u00e9 \ud55c\uae00 \ud83d\ude00\nwith trailing space ",
+      "version": "9.8.7+fixture",
+      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"48d823c3eec0b72b0c70b3252d5f208df21dfe42fb1eb8105c232f1a46cf9625\", \"model_alias\": \"codex-config-default\", \"package\": \"mir-agent-hub 9.8.7+fixture\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
+    },
+    {
+      "dispatch": true,
+      "model": "",
+      "prompt": "exact caf\u00e9 \ud55c\uae00 \ud83d\ude00\nwith trailing space ",
+      "version": "9.8.7+fixture",
+      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"48d823c3eec0b72b0c70b3252d5f208df21dfe42fb1eb8105c232f1a46cf9625\", \"model_alias\": \"\", \"package\": \"mir-agent-hub 9.8.7+fixture\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
+    },
+    {
+      "dispatch": true,
+      "model": "\ubaa8\ub378-\u00e9",
+      "prompt": "exact caf\u00e9 \ud55c\uae00 \ud83d\ude00\nwith trailing space ",
+      "version": "9.8.7+fixture",
+      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"48d823c3eec0b72b0c70b3252d5f208df21dfe42fb1eb8105c232f1a46cf9625\", \"model_alias\": \"\\ubaa8\\ub378-\\u00e9\", \"package\": \"mir-agent-hub 9.8.7+fixture\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
+    },
+    {
+      "dispatch": false,
+      "model": null,
+      "prompt": "exact caf\u00e9 \ud55c\uae00 \ud83d\ude00\nwith trailing space ",
+      "version": "9.8.7+fixture",
+      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"48d823c3eec0b72b0c70b3252d5f208df21dfe42fb1eb8105c232f1a46cf9625\", \"model_alias\": \"policy-or-config-default\", \"package\": \"mir-agent-hub 9.8.7+fixture\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
+    },
+    {
+      "dispatch": false,
+      "model": "",
+      "prompt": "exact caf\u00e9 \ud55c\uae00 \ud83d\ude00\nwith trailing space ",
+      "version": "9.8.7+fixture",
+      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"48d823c3eec0b72b0c70b3252d5f208df21dfe42fb1eb8105c232f1a46cf9625\", \"model_alias\": \"\", \"package\": \"mir-agent-hub 9.8.7+fixture\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
+    },
+    {
+      "dispatch": false,
+      "model": "\ubaa8\ub378-\u00e9",
+      "prompt": "exact caf\u00e9 \ud55c\uae00 \ud83d\ude00\nwith trailing space ",
+      "version": "9.8.7+fixture",
+      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"48d823c3eec0b72b0c70b3252d5f208df21dfe42fb1eb8105c232f1a46cf9625\", \"model_alias\": \"\\ubaa8\\ub378-\\u00e9\", \"package\": \"mir-agent-hub 9.8.7+fixture\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
+    },
+    {
+      "dispatch": true,
+      "model": null,
+      "prompt": "exact caf\u00e9 \ud55c\uae00 \ud83d\ude00\nwith trailing space ",
+      "version": "\ud55c\uae00-\u00e9",
+      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"48d823c3eec0b72b0c70b3252d5f208df21dfe42fb1eb8105c232f1a46cf9625\", \"model_alias\": \"codex-config-default\", \"package\": \"mir-agent-hub \\ud55c\\uae00-\\u00e9\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
+    },
+    {
+      "dispatch": true,
+      "model": "",
+      "prompt": "exact caf\u00e9 \ud55c\uae00 \ud83d\ude00\nwith trailing space ",
+      "version": "\ud55c\uae00-\u00e9",
+      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"48d823c3eec0b72b0c70b3252d5f208df21dfe42fb1eb8105c232f1a46cf9625\", \"model_alias\": \"\", \"package\": \"mir-agent-hub \\ud55c\\uae00-\\u00e9\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
+    },
+    {
+      "dispatch": true,
+      "model": "\ubaa8\ub378-\u00e9",
+      "prompt": "exact caf\u00e9 \ud55c\uae00 \ud83d\ude00\nwith trailing space ",
+      "version": "\ud55c\uae00-\u00e9",
+      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"48d823c3eec0b72b0c70b3252d5f208df21dfe42fb1eb8105c232f1a46cf9625\", \"model_alias\": \"\\ubaa8\\ub378-\\u00e9\", \"package\": \"mir-agent-hub \\ud55c\\uae00-\\u00e9\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
+    },
+    {
+      "dispatch": false,
+      "model": null,
+      "prompt": "exact caf\u00e9 \ud55c\uae00 \ud83d\ude00\nwith trailing space ",
+      "version": "\ud55c\uae00-\u00e9",
+      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"48d823c3eec0b72b0c70b3252d5f208df21dfe42fb1eb8105c232f1a46cf9625\", \"model_alias\": \"policy-or-config-default\", \"package\": \"mir-agent-hub \\ud55c\\uae00-\\u00e9\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
+    },
+    {
+      "dispatch": false,
+      "model": "",
+      "prompt": "exact caf\u00e9 \ud55c\uae00 \ud83d\ude00\nwith trailing space ",
+      "version": "\ud55c\uae00-\u00e9",
+      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"48d823c3eec0b72b0c70b3252d5f208df21dfe42fb1eb8105c232f1a46cf9625\", \"model_alias\": \"\", \"package\": \"mir-agent-hub \\ud55c\\uae00-\\u00e9\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
+    },
+    {
+      "dispatch": false,
+      "model": "\ubaa8\ub378-\u00e9",
+      "prompt": "exact caf\u00e9 \ud55c\uae00 \ud83d\ude00\nwith trailing space ",
+      "version": "\ud55c\uae00-\u00e9",
+      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"48d823c3eec0b72b0c70b3252d5f208df21dfe42fb1eb8105c232f1a46cf9625\", \"model_alias\": \"\\ubaa8\\ub378-\\u00e9\", \"package\": \"mir-agent-hub \\ud55c\\uae00-\\u00e9\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
+    },
+    {
+      "dispatch": true,
+      "model": null,
+      "prompt": "exact caf\u00e9 \ud55c\uae00 \ud83d\ude00\nwith trailing space ",
+      "version": "unknown",
+      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"48d823c3eec0b72b0c70b3252d5f208df21dfe42fb1eb8105c232f1a46cf9625\", \"model_alias\": \"codex-config-default\", \"package\": \"mir-agent-hub unknown\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
+    },
+    {
+      "dispatch": true,
+      "model": "",
+      "prompt": "exact caf\u00e9 \ud55c\uae00 \ud83d\ude00\nwith trailing space ",
+      "version": "unknown",
+      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"48d823c3eec0b72b0c70b3252d5f208df21dfe42fb1eb8105c232f1a46cf9625\", \"model_alias\": \"\", \"package\": \"mir-agent-hub unknown\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
+    },
+    {
+      "dispatch": true,
+      "model": "\ubaa8\ub378-\u00e9",
+      "prompt": "exact caf\u00e9 \ud55c\uae00 \ud83d\ude00\nwith trailing space ",
+      "version": "unknown",
+      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"48d823c3eec0b72b0c70b3252d5f208df21dfe42fb1eb8105c232f1a46cf9625\", \"model_alias\": \"\\ubaa8\\ub378-\\u00e9\", \"package\": \"mir-agent-hub unknown\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
+    },
+    {
+      "dispatch": false,
+      "model": null,
+      "prompt": "exact caf\u00e9 \ud55c\uae00 \ud83d\ude00\nwith trailing space ",
+      "version": "unknown",
+      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"48d823c3eec0b72b0c70b3252d5f208df21dfe42fb1eb8105c232f1a46cf9625\", \"model_alias\": \"policy-or-config-default\", \"package\": \"mir-agent-hub unknown\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
+    },
+    {
+      "dispatch": false,
+      "model": "",
+      "prompt": "exact caf\u00e9 \ud55c\uae00 \ud83d\ude00\nwith trailing space ",
+      "version": "unknown",
+      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"48d823c3eec0b72b0c70b3252d5f208df21dfe42fb1eb8105c232f1a46cf9625\", \"model_alias\": \"\", \"package\": \"mir-agent-hub unknown\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
+    },
+    {
+      "dispatch": false,
+      "model": "\ubaa8\ub378-\u00e9",
+      "prompt": "exact caf\u00e9 \ud55c\uae00 \ud83d\ude00\nwith trailing space ",
+      "version": "unknown",
+      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"48d823c3eec0b72b0c70b3252d5f208df21dfe42fb1eb8105c232f1a46cf9625\", \"model_alias\": \"\\ubaa8\\ub378-\\u00e9\", \"package\": \"mir-agent-hub unknown\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
+    }
+  ]
+}

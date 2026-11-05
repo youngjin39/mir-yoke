@@ -60,6 +60,7 @@ pub struct NativePolicy {
     pub hooks: Option<crate::executor_hooks::HooksConfig>,
     pub brief_profile: Option<crate::executor_brief_profile::BriefProfile>,
     pub brief_controls: bool,
+    pub job_identity: Option<crate::executor_job_identity::JobIdentity>,
     pub result_policy: Option<crate::executor_result_policy::ResultPolicy>,
 }
 #[path = "executor_agent_route_policy.rs"]
@@ -243,6 +244,7 @@ impl NativePolicy {
                 "brief_profile",
                 "brief_controls",
                 "result_policy",
+                "job_identity",
             ],
             "native_policy",
         )?;
@@ -259,6 +261,7 @@ impl NativePolicy {
                         "brief_profile",
                         "brief_controls",
                         "result_policy",
+                        "job_identity",
                     ]
                     .iter()
                     .any(|key| data.contains_key(*key))
@@ -427,6 +430,10 @@ impl NativePolicy {
             .map(crate::executor_result_policy::ResultPolicy::parse)
             .transpose()?;
         Ok(Self {
+            job_identity: data
+                .get("job_identity")
+                .map(crate::executor_job_identity::JobIdentity::parse)
+                .transpose()?,
             brief_profile,
             brief_controls,
             result_policy,
@@ -451,6 +458,13 @@ impl NativePolicy {
         }
         if self.brief_profile.is_some() {
             hooks.push("validate_brief");
+        }
+        if self
+            .job_identity
+            .as_ref()
+            .is_some_and(|identity| identity.enabled())
+        {
+            hooks.push("job_identity");
         }
         if let Some(policy) = &self.result_policy {
             hooks.extend(policy.covered_hooks());

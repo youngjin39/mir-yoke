@@ -38,6 +38,7 @@ pub struct CommandHooks {
     token: Option<String>,
     outcome: TeardownOutcome,
     brief_profile: Option<crate::executor_brief_profile::BriefProfile>,
+    job_identity: Option<crate::executor_job_identity::JobIdentity>,
 }
 impl CommandHooks {
     pub fn start_in(config: BridgeConfig, cwd: &Path) -> Result<Option<Self>, BridgeError> {
@@ -68,7 +69,12 @@ impl CommandHooks {
             })
             .transpose()?;
         let brief_profile = policy.as_ref().and_then(|p| p.brief_profile.clone());
-        if python.is_none() && native.is_none() && brief_profile.is_none() {
+        let job_identity = policy
+            .as_ref()
+            .and_then(|p| p.job_identity.clone())
+            .filter(|identity| identity.enabled());
+        if python.is_none() && native.is_none() && brief_profile.is_none() && job_identity.is_none()
+        {
             return Ok(None);
         }
         let hello = python
@@ -79,6 +85,7 @@ impl CommandHooks {
             python,
             native,
             brief_profile,
+            job_identity,
             hello,
             context: json!({"repo_root":config.target_root,"cwd":cwd,
                 "invocation_id":crate::executor_execute::unique_id(),"job_id":null,"attempt_id":null}),
@@ -103,21 +110,55 @@ impl CommandHooks {
 }
 impl HookClient for CommandHooks {
     fn call(&mut self, name: &str, args: Vec<Value>, options: Value) -> Result<Value, BridgeError> {
+        if name == "job_identity"
+            && let Some(identity) = &self.job_identity
+        {
+            let prompt = args
+                .get(2)
+                .and_then(Value::as_str)
+                .ok_or(BridgeError::Protocol("identity prompt must be a string"))?;
+            let dispatch = args
+                .first()
+                .is_some_and(|argument| argument["value"]["dispatch"] == true);
+            let model = args.get(3).and_then(Value::as_str);
+            return Ok(
+                json!({"ok":true,"result":identity.render(dispatch, prompt, model),"handle":null}),
+            );
+        }
         if name == "validate_brief"
             && let Some(profile) = &self.brief_profile
         {
-            if let Some(argument) = args.first().filter(|value| value["$type"] == "path") {
-                let path = argument["value"]
-                    .as_str()
-                    .ok_or(BridgeError::Protocol("brief path must be UTF-8"))?;
-                return Ok(match profile.load(Path::new(path)) {
-                    Ok(value) => json!({"ok":true,"result":value,"handle":null}),
-                    Err(error) => {
-                        json!({"ok":false,"error":{"type":error.kind,"message":error.message}})
-                    }
-                });
-            }
-            return Ok(json!({"ok":true,"result":null,"handle":null}));
+            let root = args
+                .get(1)
+                .and_then(|argument| argument["value"].as_str())
+                .ok_or(BridgeError::Protocol("brief root must be a path"))?;
+            let result =
+                if let Some(argument) = args.first().filter(|value| value["$type"] == "path") {
+                    let path = argument["value"]
+                        .as_str()
+                        .ok_or(BridgeError::Protocol("brief path must be UTF-8"))?;
+                    profile.load(Path::new(path)).and_then(|value| {
+                        profile.bound_text(
+                            value["expanded_goal"].as_str().unwrap_or_default(),
+                            Path::new(root),
+                        )?;
+                        Ok(value)
+                    })
+                } else {
+                    let text = args
+                        .first()
+                        .and_then(Value::as_str)
+                        .ok_or(BridgeError::Protocol("brief text must be a string"))?;
+                    profile
+                        .bound_text(text, Path::new(root))
+                        .map(|()| Value::Null)
+                };
+            return Ok(match result {
+                Ok(value) => json!({"ok":true,"result":value,"handle":null}),
+                Err(error) => {
+                    json!({"ok":false,"error":{"type":error.kind,"message":error.message}})
+                }
+            });
         }
         if let Some(native) = self.native.as_mut() {
             if native.serves("writer_scope") {

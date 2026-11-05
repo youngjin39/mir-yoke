@@ -108,7 +108,28 @@ this optional tool is not an adopter payload or a grant of consumer authority.
   field, extra-field, verifier, source plan and derived resume path rules.
   The latter permits v1 diagnostic loading. An optional positive
   `input_limit_bytes` bounds UTF-8 file input before parsing. Plain prompt text
-  passes through. No expressions or executable validators are accepted.
+  passes through by default. Optional `input_bound: "expanded_goal"` (base_v1
+  only) checks the validated goal or plain prompt against the top-level
+  `input_limit_bytes`, with the exact UTF-8 size in the refusal. Schema
+  validation precedes this bound; the raw-file cap remains independent. Dispatch
+  file inputs are checked during preparation; dispatch text is checked again
+  after job insertion, before worktree/provider creation. Plain text preparation
+  only validates when a Python `render_brief` is advertised. Background execute
+  does not invoke brief validation. The existing positive-integer raw Codex
+  argument/file cap still runs before these hooks and can refuse plain inputs
+  earlier. No executable validators are accepted.
+
+  Optional `job_identity: {"name":"codex_mcp_v1","package":"owner-package",
+  "package_version":"owner-supplied-version"}` owns `job_identity` for dispatch
+  and background execute. It records the exact prompt UTF-8 SHA-256, the explicit
+  package/version, `codex-mcp:tools/codex`, `none-v1-usage-alerting-only`, and the
+  supplied model (including an empty string). A null model uses
+  `codex-config-default` for dispatch or `policy-or-config-default` otherwise.
+  The identity string uses sorted keys and Python's default ASCII JSON encoding
+  and separators. The owner must supply the version matching its Python package
+  metadata, or explicitly `unknown` for a missing distribution. Without
+  `package_version`, native does not own this hook: retain the Python export.
+  Native never infers a consumer package version from its own binary.
 
   `brief_controls` requires `brief_profile` and owns `pre_execute`. Repository
   admission precedes brief validation, v1 refusal, prompt argument refusal,

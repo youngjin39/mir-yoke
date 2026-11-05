@@ -16,6 +16,7 @@ enum Contract {
 pub struct BriefProfile {
     contract: Contract,
     input_limit_bytes: Option<u64>,
+    goal_bound: bool,
 }
 impl BriefProfile {
     pub fn parse(value: &Value) -> Result<Self, Error> {
@@ -23,7 +24,7 @@ impl BriefProfile {
             .as_object()
             .ok_or_else(|| invalid("brief_profile must be an object"))?;
         for key in data.keys() {
-            if !["name", "input_limit_bytes"].contains(&key.as_str()) {
+            if !["name", "input_limit_bytes", "input_bound"].contains(&key.as_str()) {
                 return Err(invalid(format!("unknown brief_profile field: {key}")));
             }
         }
@@ -44,10 +45,74 @@ impl BriefProfile {
                 })
             })
             .transpose()?;
+        let goal_bound = match data.get("input_bound") {
+            None => false,
+            Some(Value::String(name))
+                if name == "expanded_goal" && contract == Contract::BaseV1 =>
+            {
+                true
+            }
+            _ => {
+                return Err(invalid(
+                    "brief_profile.input_bound requires base_v1 and expanded_goal",
+                ));
+            }
+        };
         Ok(Self {
             contract,
             input_limit_bytes,
+            goal_bound,
         })
+    }
+    /// Bound the validated goal (or plain text), independently of raw file size.
+    pub fn bound_text(&self, text: &str, root: &Path) -> Result<(), PolicyFailure> {
+        if !self.goal_bound {
+            return Ok(());
+        }
+        let config = LocalConfig::load(root).map_err(local_failure)?;
+        let limit = config
+            .raw()
+            .get("input_limit_bytes")
+            .ok_or_else(|| failure("KeyError", "'input_limit_bytes'"))?;
+        let comparison_limit = match limit {
+            Value::Bool(value) => json!(u8::from(*value)),
+            _ => limit.clone(),
+        };
+        if !matches!(comparison_limit, Value::Number(_))
+            && comparison_limit.get(config.numeric_tag()).is_none()
+        {
+            return Err(failure(
+                "TypeError",
+                format!(
+                    "'>' not supported between instances of 'int' and '{}'",
+                    crate::executor_brief_render::python_type(limit)
+                ),
+            ));
+        }
+        let size = text.len() as u64;
+        if config
+            .compare(&json!(size), &comparison_limit)
+            .map_err(local_failure)?
+            == Some(std::cmp::Ordering::Greater)
+        {
+            let limit = match limit {
+                Value::Bool(true) => "True".to_owned(),
+                Value::Bool(false) => "False".to_owned(),
+                _ => match config.numeric_repr(limit).as_str() {
+                    "Infinity" => "inf".into(),
+                    "-Infinity" => "-inf".into(),
+                    "NaN" => "nan".into(),
+                    value => value.to_owned(),
+                },
+            };
+            return Err(failure(
+                "ValueError",
+                format!(
+                    "delegated input exceeds {limit} bytes ({size}); refusing rather than truncating"
+                ),
+            ));
+        }
+        Ok(())
     }
     pub fn load(&self, path: &Path) -> Result<Value, PolicyFailure> {
         self.load_cached(path).map(|(value, _)| value)

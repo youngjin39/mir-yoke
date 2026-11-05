@@ -678,3 +678,4 @@ mod tests;
 
 pub mod executor_brief_profile;
 pub(crate) mod executor_brief_render;
+pub mod executor_job_identity;
