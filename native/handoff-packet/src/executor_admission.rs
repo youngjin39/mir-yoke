@@ -46,7 +46,7 @@ pub enum Admission {
 fn decline(reason: &'static str) -> Admission {
     Admission::Decline { code: 64, reason }
 }
-fn resolved(path: &Path, cwd: &Path) -> io::Result<PathBuf> {
+pub(crate) fn resolved(path: &Path, cwd: &Path) -> io::Result<PathBuf> {
     let path = if path.is_absolute() {
         path.to_owned()
     } else {
@@ -301,10 +301,7 @@ fn admit_inner(request: Request<'_>, command_scope: bool) -> Result<Admission, B
             if root != initial_root && matches!(hook, "writer_scope" | "on_job_event") {
                 continue;
             }
-            if local.hello()["hooks"]
-                .as_array()
-                .is_some_and(|hooks| hooks.iter().any(|v| v == hook))
-            {
+            if local.python_exports(hook) {
                 return Ok(refusal(format!(
                     "native local policy configuration error: {hook} is also present in local.py"
                 )));
@@ -669,7 +666,10 @@ fn policy_refusal(
             error.kind,
             error.message
         ))
-    } else if matches!(error.kind.as_str(), "ValueError" | "ValidationError") {
+    } else if matches!(
+        error.kind.as_str(),
+        "ValueError" | "ValidationError" | "DispatchBriefPolicyError"
+    ) {
         refusal(format!("argument parse error: {}", error.message))
     } else {
         refusal(format!("{}: {}", error.kind, error.message))

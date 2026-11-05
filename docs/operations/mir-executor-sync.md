@@ -160,6 +160,30 @@ this optional tool is not an adopter payload or a grant of consumer authority.
   exports before declaring these fields. Audit and budget callbacks remain owned
   by the consumer's Python adapter.
 
+  `brief_profile: {"name":"capability_v1"}` owns `validate_brief` and
+  `render_brief`. It extends `base_v1` with nonempty canonical capability slugs
+  (default `bounded_review`), rejects blank goals, and authorizes file briefs
+  against `.mir/repo-profile.toml`. Required lists are `paths.code_paths` and
+  `execution.codex_allowed_modes`; optional lists are `paths.protected_paths`
+  and `execution.codex_blocked_modes`. Safe relative patterns use static-prefix
+  containment/intersection; slash-free protected names match at any depth.
+  Blocked capabilities are reported before unknown capabilities with
+  `DispatchBriefPolicyError`. Plain prompts pass through. Markdown preserves
+  Unicode, empty sections, declared order and the final newline.
+
+  Compose with `brief_controls: {"mode":"authorized_exact"}` and initial
+  `verifier_aliases` to own the complete `pre_execute` hook. Supplied verifiers
+  are mapped first, then dispatch briefs are loaded and authorized again.
+  Nonempty explicit scope must equal the ordered brief scope; brief commands
+  are mapped, unregistered IDs refused, then nonempty explicit verifiers must
+  equal that ordered list. Success sets paths, verifier IDs and
+  `dispatch_capabilities`, on both initial and resumed dispatch.
+  `job_identity: {"name":"scope_capabilities_v1"}` owns `job_identity`,
+  returning null outside brief dispatch and otherwise ordered `owned_scope`,
+  `capabilities` JSON with ASCII escaping and Python default separators.
+  Remove all four corresponding Python exports when declaring all three
+  selectors. Consumer run-ledger event and attempt callbacks remain Python.
+
   `result_policy` accepts the two optional selectors shown above, owning
   `after_provider_call` and `after_run`, respectively. Provider sanitization
   applies to CodexAttempt only, shares registry redaction and its 16384-character

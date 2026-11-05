@@ -61,6 +61,7 @@ pub struct NativePolicy {
     pub brief_profile: Option<crate::executor_brief_profile::BriefProfile>,
     pub brief_controls: bool,
     resume_fill: bool,
+    authorized_exact: bool,
     pub job_identity: Option<crate::executor_job_identity::JobIdentity>,
     pub result_policy: Option<crate::executor_result_policy::ResultPolicy>,
 }
@@ -415,10 +416,23 @@ impl NativePolicy {
             .map(crate::executor_brief_profile::BriefProfile::parse)
             .transpose()?;
         let mut resume_fill = false;
+        let mut authorized_exact = false;
         let brief_controls = if let Some(value) = data.get("brief_controls") {
             let section = object(value, &["mode"], "brief_controls")?;
             match string(section, "mode")? {
                 "brief_owned" => (),
+                "authorized_exact" => {
+                    authorized_exact = true;
+                    if !brief_profile
+                        .as_ref()
+                        .is_some_and(|profile| profile.capabilities())
+                        || verifier_aliases != Some(false)
+                    {
+                        return Err(invalid(
+                            "authorized_exact requires capability_v1 and initial verifier_aliases",
+                        ));
+                    }
+                }
                 "resume_fill" => {
                     resume_fill = true;
                     if data
@@ -457,6 +471,7 @@ impl NativePolicy {
             brief_profile,
             brief_controls,
             resume_fill,
+            authorized_exact,
             result_policy,
             owns_pre_execute: data.contains_key("target_admission")
                 || verifier_aliases.is_some()
@@ -479,6 +494,13 @@ impl NativePolicy {
         }
         if self.brief_profile.is_some() {
             hooks.push("validate_brief");
+        }
+        if self
+            .brief_profile
+            .as_ref()
+            .is_some_and(|profile| profile.capabilities())
+        {
+            hooks.push("render_brief");
         }
         if self
             .job_identity
@@ -540,11 +562,85 @@ impl NativePolicy {
         if target != root {
             set_root(args, &target)?;
         }
+        if self.authorized_exact {
+            return self.authorized_controls(cwd, root, args);
+        }
         self.apply_brief_controls(cwd, args)?;
         if let Some(use_target) = self.verifier_aliases {
             let mapping_root = if use_target { &target } else { root };
             self.map_verifiers(mapping_root, args)?;
         }
+        Ok(())
+    }
+    fn authorized_controls(
+        &self,
+        cwd: &Path,
+        root: &Path,
+        args: &mut Value,
+    ) -> Result<(), PolicyFailure> {
+        self.map_verifiers(root, args)?;
+        if args["dispatch"] != true || args["dispatch_brief"].is_null() {
+            return Ok(());
+        }
+        let fail = |message: &str| PolicyFailure {
+            kind: "ValueError".into(),
+            message: message.into(),
+            stderr: None,
+        };
+        let path = args["dispatch_brief"]
+            .as_str()
+            .or_else(|| args["dispatch_brief"]["value"].as_str())
+            .ok_or_else(|| fail("dispatch_brief must be a path"))?;
+        let profile = self
+            .brief_profile
+            .as_ref()
+            .ok_or_else(|| fail("brief_controls requires brief_profile"))?;
+        let path = crate::executor_admission::resolved(Path::new(path), cwd)
+            .map_err(|error| crate::executor_brief_profile::io_failure(error, Path::new(path)))?;
+        let brief = profile.load(&path)?;
+        crate::executor_brief_authority::authorize(root, &brief)?;
+        if args["allow_paths"]
+            .as_array()
+            .is_some_and(|v| !v.is_empty())
+            && args["allow_paths"] != brief["owned_scope"]
+        {
+            return Err(fail(
+                "--allow-path must exactly match DispatchBrief.owned_scope",
+            ));
+        }
+        let mut mapped = json!({"verify_cmds": brief["verification_commands"]});
+        self.map_verifiers(root, &mut mapped)?;
+        let config =
+            crate::executor_local::LocalConfig::load(root).map_err(|error| PolicyFailure {
+                kind: error.kind().into(),
+                message: error.to_string(),
+                stderr: None,
+            })?;
+        let unknown = mapped["verify_cmds"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter_map(Value::as_str)
+            .filter(|command| config.raw()["verifiers"].get(*command).is_none())
+            .collect::<Vec<_>>();
+        if !unknown.is_empty() {
+            return Err(fail(&format!(
+                "DispatchBrief.verification_commands are not registered verifiers: {}",
+                unknown.join(", ")
+            )));
+        }
+        if args["verify_cmds"]
+            .as_array()
+            .is_some_and(|v| !v.is_empty())
+            && args["verify_cmds"] != mapped["verify_cmds"]
+        {
+            return Err(fail(
+                "--verify-cmd must exactly match DispatchBrief.verification_commands",
+            ));
+        }
+        args["allow_paths"] = brief["owned_scope"].clone();
+        args["verify_cmds"] = mapped["verify_cmds"].clone();
+        args["dispatch_capabilities"] = brief["capabilities"].clone();
         Ok(())
     }
     fn apply_brief_controls(&self, cwd: &Path, args: &mut Value) -> Result<(), PolicyFailure> {

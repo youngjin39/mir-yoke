@@ -10,6 +10,7 @@ use std::{collections::BTreeMap, fs, io::Read, path::Path};
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Contract {
     BaseV1,
+    CapabilityV1,
     ClosedVerifierV2,
 }
 #[derive(Clone, Debug)]
@@ -30,10 +31,11 @@ impl BriefProfile {
         }
         let contract = match data.get("name").and_then(Value::as_str) {
             Some("base_v1") => Contract::BaseV1,
+            Some("capability_v1") => Contract::CapabilityV1,
             Some("closed_verifier_v2") => Contract::ClosedVerifierV2,
             _ => {
                 return Err(invalid(
-                    "brief_profile.name must be base_v1 or closed_verifier_v2",
+                    "brief_profile.name must be base_v1, capability_v1 or closed_verifier_v2",
                 ));
             }
         };
@@ -114,6 +116,9 @@ impl BriefProfile {
         }
         Ok(())
     }
+    pub fn capabilities(&self) -> bool {
+        self.contract == Contract::CapabilityV1
+    }
     pub fn load(&self, path: &Path) -> Result<Value, PolicyFailure> {
         self.load_cached(path).map(|(value, _)| value)
     }
@@ -190,6 +195,9 @@ impl BriefProfile {
             "owned_scope",
             "out_of_scope",
         ];
+        if self.capabilities() {
+            fields.insert(8, "capabilities");
+        }
         if typed {
             fields.push("verification_ids");
         }
@@ -277,6 +285,7 @@ impl BriefProfile {
                     }
                 }
                 "owned_scope"
+                | "capabilities"
                 | "out_of_scope"
                 | "verification_ids"
                 | "verification_commands"
@@ -294,7 +303,14 @@ impl BriefProfile {
                             reprs,
                         )),
                         None => {
-                            output.insert((*key).into(), json!([]));
+                            output.insert(
+                                (*key).into(),
+                                if *key == "capabilities" {
+                                    json!(["bounded_review"])
+                                } else {
+                                    json!([])
+                                },
+                            );
                         }
                         Some(value) => {
                             if let Some(array) = value.as_array() {
@@ -356,7 +372,24 @@ impl BriefProfile {
             }
         }
         if issues.is_empty()
-            && let Some(message) = contract_error(&output, typed)
+            && let Some(message) = contract_error(&output, typed).or_else(|| {
+                if !self.capabilities() {
+                    return None;
+                }
+                let caps = output["capabilities"].as_array()?;
+                if caps.is_empty() {
+                    return Some("DispatchBrief.capabilities must be non-empty".into());
+                }
+                if caps.iter().filter_map(Value::as_str).any(|cap| {
+                    cap.is_empty()
+                        || !cap.bytes().all(|b| {
+                            b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_' || b == b'-'
+                        })
+                }) {
+                    return Some("DispatchBrief.capabilities must contain canonical slugs".into());
+                }
+                None
+            })
         {
             issues.push(issue(
                 Vec::new(),
@@ -386,7 +419,7 @@ fn failure(kind: &str, message: impl Into<String>) -> PolicyFailure {
 fn local_failure(error: Error) -> PolicyFailure {
     failure(error.kind(), error.to_string())
 }
-fn io_failure(error: std::io::Error, path: &Path) -> PolicyFailure {
+pub(crate) fn io_failure(error: std::io::Error, path: &Path) -> PolicyFailure {
     let kind = match error.kind() {
         std::io::ErrorKind::NotFound => "FileNotFoundError",
         std::io::ErrorKind::PermissionDenied => "PermissionError",

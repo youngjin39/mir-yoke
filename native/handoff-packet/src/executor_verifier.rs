@@ -186,7 +186,7 @@ pub fn resolve_harness_self_modify(main_repo_root: &Path) -> bool {
 
 // Python fnmatchcase accepts slashes in '*', literal unmatched '[' and reversed
 // ranges. Keep the same translator as the lifecycle gate's pinned implementation.
-fn matches(pattern: &str, text: &str) -> Result<bool> {
+pub(crate) fn matches(pattern: &str, text: &str) -> Result<bool> {
     let chars: Vec<char> = pattern.chars().collect();
     let mut out = String::from("\\A(?s:");
     let mut i = 0;

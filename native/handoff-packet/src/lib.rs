@@ -676,6 +676,7 @@ pub fn pretool(event: &Value) -> Result<Option<&'static str>> {
 #[forbid(unsafe_code)]
 mod tests;
 
+pub(crate) mod executor_brief_authority;
 pub mod executor_brief_profile;
 pub(crate) mod executor_brief_render;
 pub mod executor_job_identity;

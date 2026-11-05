@@ -77,10 +77,17 @@ impl CommandHooks {
         {
             return Ok(None);
         }
-        let hello = python
+        let mut hello = python
             .as_ref()
             .map(|b| b.hello().clone())
             .unwrap_or_else(|| json!({"hooks":[],"register_execute_options":false}));
+        if brief_profile
+            .as_ref()
+            .is_some_and(|profile| profile.capabilities())
+            && let Some(hooks) = hello["hooks"].as_array_mut()
+        {
+            hooks.push(json!("render_brief"));
+        }
         Ok(Some(Self {
             python,
             native,
@@ -95,6 +102,13 @@ impl CommandHooks {
     }
     pub fn hello(&self) -> &Value {
         &self.hello
+    }
+    pub fn python_exports(&self, hook: &str) -> bool {
+        self.python.as_ref().is_some_and(|bridge| {
+            bridge.hello()["hooks"]
+                .as_array()
+                .is_some_and(|hooks| hooks.iter().any(|value| value == hook))
+        })
     }
     pub fn teardown_outcome(&mut self, outcome: TeardownOutcome) {
         self.outcome = outcome;
@@ -113,6 +127,14 @@ impl HookClient for CommandHooks {
         if name == "job_identity"
             && let Some(identity) = &self.job_identity
         {
+            if let Some(result) = identity.render_scope(
+                &args
+                    .first()
+                    .map(|arg| arg["value"].clone())
+                    .unwrap_or(Value::Null),
+            ) {
+                return Ok(json!({"ok":true,"result":result,"handle":null}));
+            }
             let prompt = args
                 .get(2)
                 .and_then(Value::as_str)
@@ -142,6 +164,9 @@ impl HookClient for CommandHooks {
                             value["expanded_goal"].as_str().unwrap_or_default(),
                             Path::new(root),
                         )?;
+                        if profile.capabilities() {
+                            crate::executor_brief_authority::authorize(Path::new(root), &value)?;
+                        }
                         Ok(value)
                     })
                 } else {
@@ -159,6 +184,18 @@ impl HookClient for CommandHooks {
                     json!({"ok":false,"error":{"type":error.kind,"message":error.message}})
                 }
             });
+        }
+        if name == "render_brief"
+            && self
+                .brief_profile
+                .as_ref()
+                .is_some_and(|profile| profile.capabilities())
+        {
+            let result = args
+                .first()
+                .filter(|value| !value.is_null())
+                .map(crate::executor_brief_authority::render);
+            return Ok(json!({"ok":true,"result":result,"handle":null}));
         }
         if let Some(native) = self.native.as_mut() {
             if native.serves("writer_scope") {
