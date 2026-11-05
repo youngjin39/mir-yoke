@@ -9,6 +9,7 @@ from pathlib import Path
 
 import pytest
 
+from tests.lifecycle_golden import GOLDEN, expected_result
 from tests.test_handoff_packet_native_parity import binary as binary
 from tests.test_handoff_packet_native_parity import stop_payload
 from tests.test_handoff_packet_native_parity import stop_repository as stop_repository
@@ -32,28 +33,28 @@ def _cmd_command(command):
 @pytest.mark.parametrize('event', ['SessionStart', 'UserPromptSubmit', 'PreToolUse', 'Stop'])
 @pytest.mark.parametrize('mode', ['absent', 'present', 'non-executable', 'exe'])
 @pytest.mark.parametrize('deny', [False, True], ids=['allow', 'deny'])
-def test_real_hook_command(binary, stop_repository, event, mode, deny):
+def test_real_hook_command(binary, stop_repository, event, mode, deny, request):
     repo, _ = stop_repository
     plugin = repo / 'plugin with spaces'
     shutil.copytree(PLUGIN, plugin)
     name = 'runtime-continuity' if event == 'SessionStart' else 'handoff-packet'
     script = (plugin / 'hooks/runtime_continuity.py' if event == 'SessionStart' else
               plugin / 'skills/runtime-continuity/scripts/handoff_packet.py')
-    env = dict(os.environ, CLAUDE_PLUGIN_ROOT=str(plugin), MIR_HANDOFF_PYTHON=HANDLER_PYTHON,
-               PYTHONUTF8='1')
+    env = dict(os.environ, HOME=str(repo), CLAUDE_PLUGIN_ROOT=str(plugin),
+               MIR_HANDOFF_PYTHON=HANDLER_PYTHON, PYTHONUTF8='1')
     # Resolve the same interpreter as the reference even when python3 differs on PATH.
     shim = repo / 'shim'
     shim.mkdir()
     (shim / 'python3').symlink_to(HANDLER_PYTHON)
-    env['PATH'] = str(shim) + os.pathsep + env['PATH']
+    env['PATH'] = str(shim)
     prompt = PROMPT + '\nNo commands.' if deny else 'Inspect the repository. \u00e9 \ud55c'
     payload = json.dumps({'hook_event_name': event, 'cwd': str(repo), 'prompt': prompt,
                           'tool_name': 'Bash', 'tool_input': {'command': 'pwd'}}).encode()
     if event == 'Stop':
         body = packet() + '\nHEAD: abcdef123' if deny else 'Done.'
         payload = stop_payload(repo, prompt, body)
-    reference = subprocess.run([HANDLER_PYTHON, str(script)], input=payload,
-                               capture_output=True, env=env, timeout=15)
+    case = f"tests/test_lifecycle_native_commands.py::{request.node.name}"
+    reference = expected_result(GOLDEN["records"][case][0], repo)
     if event == 'PreToolUse':
         assert reference.returncode == (2 if deny else 0)
     if event == 'Stop' and deny:
@@ -68,7 +69,7 @@ def test_real_hook_command(binary, stop_repository, event, mode, deny):
         script.write_text('raise SystemExit("Python reference unexpectedly executed")\n')
     command = json.loads((plugin / 'hooks/hooks.json').read_text())['hooks'][event][0]['hooks'][0]
     assert command['timeout'] == (2 if event == 'SessionStart' else 8)
-    for shell in ['sh', 'bash']:
+    for shell in ['/bin/sh', '/bin/bash']:
         result = subprocess.run([shell, '-c', command['command']], input=payload,
                                 capture_output=True, env=env, timeout=15)
         assert (result.stdout, result.stderr, result.returncode) == (
@@ -80,7 +81,7 @@ def test_real_hook_command(binary, stop_repository, event, mode, deny):
 @pytest.mark.parametrize('event', ['SessionStart', 'UserPromptSubmit', 'PreToolUse', 'Stop'])
 @pytest.mark.parametrize('mode', ['absent', 'present'])
 @pytest.mark.parametrize('deny', [False, True], ids=['allow', 'deny'])
-def test_codex_windows_hook_command(binary, stop_repository, event, mode, deny, shell):
+def test_codex_windows_hook_command(binary, stop_repository, event, mode, deny, shell, request):
     repo, _ = stop_repository
     plugin = repo / 'plugin with spaces'
     shutil.copytree(PLUGIN, plugin)
@@ -104,8 +105,9 @@ def test_codex_windows_hook_command(binary, stop_repository, event, mode, deny, 
     if event == 'Stop':
         body = packet() + '\nHEAD: abcdef123' if deny else 'Done.'
         payload = stop_payload(repo, prompt, body)
-    reference = subprocess.run([HANDLER_PYTHON, str(script)], input=payload,
-                               capture_output=True, env=env, timeout=15)
+    case = ('tests/test_lifecycle_native_commands.py::test_real_hook_command['
+            f'{"deny" if deny else "allow"}-{mode}-{event}]')
+    reference = expected_result(GOLDEN["records"][case][0], repo)
     if event == 'PreToolUse':
         assert reference.returncode == (2 if deny else 0)
     if event == 'Stop' and deny:

@@ -3,16 +3,15 @@
 from __future__ import annotations
 
 import hashlib
-import importlib.util
 import json
-import locale
 import os
+import re
 import shlex
-import stat
+import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
-from types import SimpleNamespace
 
 import pytest
 
@@ -38,207 +37,267 @@ PINS = 'handoff pins:\n' + json.dumps({
 }, indent=2)
 
 
-def module():
-    spec = importlib.util.spec_from_file_location('handoff_packet', HANDLER)
-    assert spec and spec.loader
-    loaded = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(loaded)
-    return loaded
+def native_environment(home):
+    home.mkdir(exist_ok=True)
+    return dict(os.environ, HOME=str(home), PATH='', MIR_HANDOFF_PYTHON=HANDLER_PYTHON)
+
+
+@pytest.fixture(scope='module')
+def native_binary():
+    from tests.test_handoff_packet_native_parity import binary
+    return binary.__wrapped__()
+
+
+class NativeContracts:
+    """Exercise native events with real transcripts, runner output and repair reasons.
+
+    No handoff parsing or permission decisions are implemented here. The methods
+    select observable diagnostics for the narrow historical scenarios under test.
+    """
+
+    def __init__(self, binary, root):
+        self.binary = binary
+        self.root = root / 'contract-repository'
+        (self.root / 'scripts').mkdir(parents=True)
+        (self.root / '.git').mkdir()
+        self.evidence = ([], [], [])
+
+    def run(self, event, **fields):
+        result = subprocess.run(
+            [str(self.binary)], text=True, capture_output=True,
+            input=json.dumps({'hook_event_name': event, 'cwd': str(self.root), **fields}),
+            env=native_environment(self.root / 'home'), timeout=12, check=False)
+        assert result.returncode in {0, 2}, result.stderr
+        return result
+
+    def runner(self, pins):
+        (self.root / 'scripts/mir_ontology.py').write_text(f'print({pins!r})\n')
+
+    def context(self, prompt):
+        self.runner(PINS)
+        result = self.run('UserPromptSubmit', prompt=prompt)
+        return json.loads(result.stdout or '{}').get('hookSpecificOutput', {}).get(
+            'additionalContext', '')
+
+    def stop(self, prompt, body, calls=()):
+        transcript = self.root / 'native-session.jsonl'
+        transcript.write_text(json.dumps({'type': 'user', 'message': {'content': prompt}})
+                              + '\n', encoding='utf-8')
+        for tool, args in calls:
+            append_tool(self.root, 'claude', tool, args)
+        return self.run('Stop', transcript_path=str(transcript), stop_hook_active=False,
+                        last_assistant_message=body)
+
+    @staticmethod
+    def diagnostics(result):
+        reason = json.loads(result.stdout or '{}').get('reason', '')
+        if not reason:
+            return []
+        details = reason.split(': ', 1)[1].split('. Re-send the complete corrected artifact', 1)[0]
+        return [item.replace('\0', '; ') for item in details.replace(
+            '; a value read', '\0a value read').split('; ')]
+
+    def detect(self, prompt):
+        return self.context(prompt).startswith('Mechanical handoff packet:')
+
+    def recipient(self, prompt):
+        return self.context(prompt).startswith('Received handoff:')
+
+    def owner_sections(self, prompt):
+        context = self.context('Prepare a handoff for another agent.\n' + prompt)
+        values = {'prompt': prompt}
+        for field, label in [('may', 'May'), ('may_not', 'May not'), ('excluded', 'Exclude')]:
+            value = context.split('\n' + label + ': ', 1)[1].split('\n', 1)[0]
+            values[field] = value.split('; ') if field == 'excluded' and value else value
+        if not values['excluded']:
+            values['excluded'] = []
+        if values['may_not'] == 'unavailable; do not infer authority':
+            values['may_not'] = ''
+        return values
+
+    def context_text(self, owner):
+        return self.context('Prepare a handoff for another agent.\n' + owner['prompt'])
+
+    def restricted(self, prompt):
+        return self.run('PreToolUse', prompt=prompt, tool_name='Bash').returncode == 2
+
+    def files_restricted(self, owner):
+        return self.run('PreToolUse', prompt='Prepare a handoff for another agent.\n'
+                        + owner['prompt'], tool_name='Write').returncode == 2
+
+    def tool_attempt_rule(self, owner):
+        return self.context_text(owner) if self.files_restricted(owner) else ''
+
+    def check_packet(self, body, state):
+        prompt = state['owner']['prompt']
+        if not self.detect(prompt):
+            prompt = 'Prepare a handoff for another agent.\n' + prompt
+        self.runner(state['pins'])
+        body = re.sub(r'(?m)^Prompt SHA256: [0-9a-f]{64}$',
+                      'Prompt SHA256: ' + hashlib.sha256(prompt.encode()).hexdigest(), body)
+        return self.diagnostics(self.stop(prompt, body))
+
+    def authority_defects(self, body, owner):
+        prompt = 'Prepare a handoff for another agent.\n' + owner['prompt'] + '\nNo commands.'
+        artifact = 'Qualified target: example:review\nLifecycle: review\n' + body
+        defects = self.diagnostics(self.stop(prompt, artifact))
+        return [item for item in defects if item.startswith(('extra may:', 'excluded item'))]
+
+    def recipient_check(self, prompt, body, event):
+        if not self.recipient(prompt):
+            prompt = ('Review this received handoff.\nQualified target: example:review\n'
+                      'Lifecycle: current\nUnknowns: none\n' + prompt)
+        calls, reads, commands = self.evidence
+        evidence = list(calls)
+        evidence += [('Read', {'file_path': path}) for path in reads]
+        evidence += [('Bash', {'command': command}) for command in commands]
+        return self.diagnostics(self.stop(prompt, body, evidence))
+
+    def verification_defects(self, text, body, event, no_commands=False):
+        prompt = 'Review this received handoff.\n' + text
+        if no_commands:
+            prompt += '\nNo commands.'
+        accounting = (body + '\nNo local check was performed.\n'
+                      'Commands forbidden; no non-command reader was available.')
+        defects = self.recipient_check(prompt, accounting, event)
+        return [item for item in defects if item.startswith((
+            'verified-in-repo', 'repository-wide absence', 'command-ban compliance'))]
+
+    def absence_defects(self, body, calls, root):
+        calls = [(tool, {key: value.replace(str(root), str(self.root))
+                         if isinstance(value, str) else value for key, value in args.items()})
+                 for tool, args in calls]
+        prompt = ('Review this received handoff.\nQualified target: example:review\n'
+                  'Lifecycle: current\nUnknowns: none')
+        defects = self.diagnostics(self.stop(prompt, RECIPIENT_LABELS + '\n' + body, calls))
+        return [item for item in defects if 'absence' in item]
+
+    def source_claim_defects(self, body):
+        defects = self.diagnostics(self.stop(PROMPT + '\nNo commands.', packet() + '\n' + body))
+        return [item for item in defects if item.startswith('universal claim')]
+
+    def namespace_defects(self, body, root):
+        if (root / '.mir/ontology-map.json').exists():
+            (self.root / '.mir').mkdir(exist_ok=True)
+            (self.root / '.mir/ontology-map.json').write_bytes(
+                (root / '.mir/ontology-map.json').read_bytes())
+        return [item for item in self.recipient_check(
+            'Review this received handoff.', body, {}) if 'namespace' in item]
+
+    def cited_paths(self, body, owner, root):
+        (root / '.git').mkdir(exist_ok=True)
+        (root / 'scripts').mkdir(exist_ok=True)
+        log = root / 'runner-calls.jsonl'
+        (root / 'scripts/mir_ontology.py').write_text(
+            'import json, sys\nfrom pathlib import Path\n'
+            f'with Path({str(log)!r}).open("a") as stream:\n'
+            '    stream.write(json.dumps(sys.argv[3:]) + "\\n")\n'
+            f'print({PINS!r})\n')
+        original = self.root
+        self.root = root
+        try:
+            prompt = 'Prepare a handoff for another agent.\n' + owner['prompt']
+            self.stop(prompt, packet().replace('Prompt SHA256:', 'Prior prompt SHA256:')
+                      + '\n' + body)
+        finally:
+            self.root = original
+        calls = [json.loads(line) for line in log.read_text().splitlines()]
+        return calls[-1] if len(calls) > 1 else []
+
+
+@pytest.fixture
+def contracts(native_binary, tmp_path):
+    return NativeContracts(native_binary, tmp_path)
 
 
 @pytest.mark.parametrize('invalid', [False, True])
-def test_should_decode_pin_runner_output_as_utf8_with_cp949_locale(
-        tmp_path, monkeypatch, invalid):
-    hook = module()
-    monkeypatch.setattr(hook, 'repository_root', lambda event: tmp_path)
-    monkeypatch.setattr(locale, 'getpreferredencoding', lambda *args: 'cp949')
-    monkeypatch.setattr(locale, 'getencoding', lambda: 'cp949', raising=False)
+def test_should_decode_pin_runner_output_as_utf8_with_cp949_locale(contracts, monkeypatch, invalid):
     monkeypatch.setenv('PYTHONUTF8', '0')
     monkeypatch.setenv('PYTHONIOENCODING', 'cp949')
-    # Write bytes so the child's output is independent of its own locale and stdio encoding.
     output = 'handoff pins:\n{"path": "\ud55c\uae00'.encode()
     output += (b'\xff' if invalid else b'') + b'"}\n'
-    (tmp_path / 'scripts').mkdir()
-    (tmp_path / 'scripts/mir_ontology.py').write_text(
-        'import sys\n'
-        f'sys.stdout.buffer.write({output!r})\n'
-        "sys.stderr.buffer.write(b'\\xff')\n",
-        encoding='utf-8',
-    )
-    pins = hook.run_pins({}, {'excluded': []}, paths=[])
+    (contracts.root / 'scripts/mir_ontology.py').write_text(
+        'import sys\n' + f'sys.stdout.buffer.write({output!r})\n'
+        "sys.stderr.buffer.write(b'\\xff')\n", encoding='utf-8')
+    result = contracts.run('UserPromptSubmit', prompt=PROMPT)
+    context = json.loads(result.stdout)['hookSpecificOutput']['additionalContext']
+    pins = context.split('handoff pins:\n', 1)[1].split('\nPrompt SHA256', 1)[0]
     expected = '\ud55c\uae00' + ('\ufffd' if invalid else '')
-    assert json.loads(pins.split('\n', 1)[1]) == {'path': expected}
+    assert json.loads(pins) == {'path': expected}
 
 
-def test_should_read_bounded_transcript_tail_on_windows_without_posix_flags(tmp_path, monkeypatch):
-    hook = module()
-    monkeypatch.setattr(hook, '_WINDOWS', True, raising=False)
-    monkeypatch.delattr(os, 'O_NOFOLLOW', raising=False)
-    monkeypatch.delattr(os, 'O_NONBLOCK', raising=False)
-    monkeypatch.setattr(hook, 'LIMIT', 32)
-    transcript = tmp_path / 'session.jsonl'
-    transcript.write_bytes(b'{"discard": "' + b'x' * 64 + b'"}\n{"keep": 1}\n')
-    assert hook.transcript_records({'transcript_path': str(transcript)}) == [{'keep': 1}]
+# The former simulated Windows lstat/fstat tests had two implementation-only
+# dev/ino identity-change cases. The CLI has no deterministic race-injection seam,
+# and native transcript opening has no explicit same-identity comparison. These
+# observable non-regular-file cases do not prove that stronger identity rule.
+# The former 4 taskkill outcomes x 2 drain-timeout branches are likewise not
+# externally injectable. Real timeout bounds and Windows descendant termination
+# are checked below and in test_should_fail_open_within_budget_when_pin_runner_hangs.
+@pytest.mark.parametrize('kind', ['symlink', 'directory', 'fifo'])
+def test_should_refuse_non_regular_transcript_before_read(contracts, kind):
+    path = contracts.root / 'unsafe.jsonl'
+    if kind == 'symlink':
+        target = contracts.root / 'real.jsonl'
+        target.write_text('{}\n')
+        try:
+            path.symlink_to(target)
+        except OSError as exc:
+            pytest.skip('symlink creation unavailable: ' + str(exc))
+    elif kind == 'directory':
+        path.mkdir()
+    elif hasattr(os, 'mkfifo'):
+        os.mkfifo(path)
+    else:
+        pytest.skip('FIFO unavailable on this platform')
+    started = time.monotonic()
+    result = contracts.run('Stop', transcript_path=str(path), stop_hook_active=False)
+    assert time.monotonic() - started < 2
+    assert result.returncode == 0
+    assert 'WARNING' in result.stdout + result.stderr
 
 
-@pytest.mark.parametrize('mode,attributes', [
-    (stat.S_IFLNK, 0), (stat.S_IFREG, stat.FILE_ATTRIBUTE_REPARSE_POINT), (stat.S_IFDIR, 0),
-])
-def test_should_refuse_windows_transcript_links_and_non_files_before_open(
-        tmp_path, monkeypatch, mode, attributes):
-    hook = module()
-    monkeypatch.setattr(hook, '_WINDOWS', True, raising=False)
-    monkeypatch.setattr(Path, 'lstat', lambda path: SimpleNamespace(
-        st_mode=mode, st_file_attributes=attributes))
-
-    def forbidden_open(*args, **kwargs):
-        pytest.fail('unsafe transcript must be refused before opening')
-
-    monkeypatch.setattr(os, 'open', forbidden_open)
-    monkeypatch.setattr(Path, 'open', forbidden_open)
-    with pytest.raises(ValueError):
-        hook.transcript_records({'transcript_path': str(tmp_path / 'session.jsonl')})
-
-
-@pytest.mark.parametrize('field', ['st_dev', 'st_ino'])
-def test_should_refuse_windows_transcript_identity_change_and_close_fd(
-    tmp_path, monkeypatch, field,
-):
-    hook = module()
-    monkeypatch.setattr(hook, '_WINDOWS', True, raising=False)
-    transcript = tmp_path / 'session.jsonl'
-    transcript.write_text('{}\n')
-    original = os.fstat
-    descriptors = []
-
-    def replaced_file(fd):
-        descriptors.append(fd)
-        observed = original(fd)
-        values = {key: getattr(observed, key) for key in ('st_mode', 'st_dev', 'st_ino')}
-        values[field] += 1
-        return SimpleNamespace(**values)
-
-    monkeypatch.setattr(os, 'fstat', replaced_file)
-    with pytest.raises(ValueError, match='transcript.*changed'):
-        hook.transcript_records({'transcript_path': str(transcript)})
-    assert len(descriptors) == 1
-    with pytest.raises(OSError):
-        original(descriptors[0])
-
-
-@pytest.mark.parametrize('taskkill_result', ['success', 'failure', 'missing', 'timeout'])
-@pytest.mark.parametrize('drain_timeout', [False, True])
-def test_should_kill_windows_pin_runner_tree_and_bound_cleanup(
-        tmp_path, monkeypatch, taskkill_result, drain_timeout):
-    hook = module()
-    monkeypatch.setattr(hook, '_WINDOWS', True, raising=False)
-    monkeypatch.setattr(subprocess, 'CREATE_NEW_PROCESS_GROUP', 512, raising=False)
-    monkeypatch.setenv('SystemRoot', str(tmp_path / 'Windows root'))
-    monkeypatch.setattr(hook, 'repository_root', lambda event: tmp_path)
-    (tmp_path / 'scripts').mkdir()
-    (tmp_path / 'scripts/mir_ontology.py').write_text('')
-    calls = []
-
-    class Process:
-        pid = 1234
-
-        def communicate(self, timeout=None):
-            calls.append(('communicate', timeout))
-            assert timeout is not None, 'cleanup must have a finite timeout'
-            if timeout == 0.1 or drain_timeout:
-                raise subprocess.TimeoutExpired('runner', timeout)
-            return '', ''
-
-        def kill(self):
-            calls.append('kill')
-
-        def wait(self, timeout=None):
-            calls.append(('wait', timeout))
-            assert timeout is not None
-            raise subprocess.TimeoutExpired('runner', timeout)
-
-    def popen(argv, **kwargs):
-        calls.append(('popen', argv, kwargs))
-        return Process()
-
-    def taskkill(argv, **kwargs):
-        calls.append(('taskkill', argv, kwargs))
-        if taskkill_result == 'missing':
-            raise OSError('taskkill unavailable')
-        if taskkill_result == 'timeout':
-            raise subprocess.TimeoutExpired(argv, kwargs['timeout'])
-        return SimpleNamespace(returncode=int(taskkill_result == 'failure'))
-
-    monkeypatch.setattr(subprocess, 'Popen', popen)
-    monkeypatch.setattr(subprocess, 'run', taskkill)
-    monkeypatch.setattr(os, 'killpg', lambda *args: pytest.fail('POSIX killpg on Windows'),
-                        raising=False)
-    with pytest.raises(ValueError, match='pin runner timed out'):
-        hook.run_pins({}, {'excluded': []}, paths=[], timeout=0.1)
-    _, argv, options = calls[0]
-    runner = str(tmp_path / 'scripts/mir_ontology.py')
-    assert argv == [sys.executable, runner, 'mapping', '--handoff']
-    assert options['creationflags'] == subprocess.CREATE_NEW_PROCESS_GROUP
-    assert not options.get('start_new_session', False)
-    _, argv, options = next(call for call in calls if call[0] == 'taskkill')
-    assert argv == [str(tmp_path / 'Windows root/System32/taskkill.exe'),
-                    '/T', '/F', '/PID', '1234']
-    assert not options.get('shell', False)
-    assert 0 < options['timeout'] <= 1
-    assert calls.index('kill') > next(i for i, call in enumerate(calls) if call[0] == 'taskkill')
-    assert ('communicate', 1) in calls
-    if drain_timeout:
-        assert ('wait', 1) in calls
+@pytest.mark.parametrize('oversize', [False, True])
+def test_should_read_bounded_native_transcript_tail(contracts, oversize):
+    path = contracts.root / 'session.jsonl'
+    prompt = PROMPT + '\nNo commands.'
+    row = json.dumps({'type': 'user', 'message': {'content': prompt}}).encode() + b'\n'
+    path.write_bytes((b'x' * (1024 * 1024 + 32) + b'\n' if oversize else b'') + row)
+    result = contracts.run('PreToolUse', transcript_path=str(path), tool_name='Bash')
+    assert result.returncode == 2
 
 
 @pytest.mark.skipif(sys.platform != 'win32', reason='requires native Windows filesystem')
-def test_should_read_native_windows_transcript_and_refuse_symlink(tmp_path):
-    hook = module()
-    transcript = tmp_path / 'session.jsonl'
-    transcript.write_bytes(b'{"keep": 1}\n')
-    assert hook.transcript_records({'transcript_path': str(transcript)}) == [{'keep': 1}]
-    link = tmp_path / 'link.jsonl'
-    try:
-        link.symlink_to(transcript)
-    except OSError as exc:
-        pytest.skip('Windows symlink creation unavailable: ' + str(exc))
-    with pytest.raises(ValueError):
-        hook.transcript_records({'transcript_path': str(link)})
+def test_should_read_native_windows_transcript_and_refuse_symlink(contracts):
+    test_should_read_bounded_native_transcript_tail(contracts, False)
+    test_should_refuse_non_regular_transcript_before_read(contracts, 'symlink')
 
 
 @pytest.mark.skipif(sys.platform != 'win32', reason='requires native Windows process tree')
-def test_should_kill_native_windows_pin_runner_child(tmp_path):
+def test_should_kill_native_windows_pin_runner_child(contracts):
     import ctypes
     from ctypes import wintypes
 
-    hook = module()
-    (tmp_path / '.git').mkdir()
-    (tmp_path / 'scripts').mkdir()
-    (tmp_path / 'scripts/mir_ontology.py').write_text(
-        'import subprocess, sys, time\n'
-        'from pathlib import Path\n'
+    (contracts.root / 'scripts/mir_ontology.py').write_text(
+        'import subprocess, sys, time\nfrom pathlib import Path\n'
         'child = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"])\n'
-        'Path("child.pid").write_text(str(child.pid))\n'
-        'time.sleep(60)\n')
-    with pytest.raises(ValueError, match='pin runner timed out'):
-        hook.run_pins({'cwd': str(tmp_path)}, {'excluded': []}, paths=[], timeout=2)
-    pid = int((tmp_path / 'child.pid').read_text())
+        'Path("child.pid").write_text(str(child.pid))\ntime.sleep(60)\n')
+    started = time.monotonic()
+    result = contracts.run('UserPromptSubmit', prompt=PROMPT)
+    assert time.monotonic() - started < 8
+    assert 'WARNING' in result.stdout + result.stderr
+    pid = int((contracts.root / 'child.pid').read_text())
     kernel = ctypes.WinDLL('kernel32', use_last_error=True)
     kernel.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
     kernel.OpenProcess.restype = wintypes.HANDLE
     kernel.WaitForSingleObject.argtypes = [wintypes.HANDLE, wintypes.DWORD]
     kernel.WaitForSingleObject.restype = wintypes.DWORD
     kernel.CloseHandle.argtypes = [wintypes.HANDLE]
-    handle = kernel.OpenProcess(0x00100000, False, pid)  # SYNCHRONIZE
+    handle = kernel.OpenProcess(0x00100000, False, pid)
     if not handle:
-        assert ctypes.get_last_error() == 87  # ERROR_INVALID_PARAMETER: process is gone
+        assert ctypes.get_last_error() == 87
         return
     try:
-        status = kernel.WaitForSingleObject(handle, 0)
-        if status != 0:
-            subprocess.run([str(Path(os.environ['SystemRoot']) / 'System32/taskkill.exe'),
-                            '/T', '/F', '/PID', str(pid)], timeout=2, check=False)
-        assert status == 0  # WAIT_OBJECT_0: the child exited, including inherited pipe handles
+        assert kernel.WaitForSingleObject(handle, 0) == 0
     finally:
         kernel.CloseHandle(handle)
 
@@ -291,16 +350,17 @@ def packet(pins=PINS):
     ('```\nWrite a handoff for another agent.\n```\nReview this quote.', False),
     ('> Write a handoff for another agent.\nExplain this quote.', False),
 ])
-def test_should_detect_only_explicit_agent_handoff_requests(prompt, expected):
-    assert module().detect(prompt) is expected
+def test_should_detect_only_explicit_agent_handoff_requests(contracts, prompt, expected):
+    assert contracts.detect(prompt) is expected
 
 
-def test_should_preserve_verbatim_owner_sections_without_implicit_permissions():
-    owner = module().owner_sections(PROMPT)
+def test_should_preserve_verbatim_owner_sections_without_implicit_permissions(contracts):
+    owner = contracts.owner_sections(PROMPT)
     assert owner['may'] == 'read src/example.py; report findings'
     assert owner['may_not'] == 'edit files; run tests'
     assert owner['excluded'] == ['PRIVATE-CANARY-42']
-    assert module().owner_sections('Prepare a brief for another agent.')['may'] == ''
+    default = contracts.owner_sections('Prepare a brief for another agent.')
+    assert default['may'] == 'read/inspect only'
 
 
 @pytest.mark.parametrize(('body', 'defect'), [
@@ -318,22 +378,23 @@ def test_should_preserve_verbatim_owner_sections_without_implicit_permissions():
     (packet().replace('Qualified target: example:review', 'Qualified target: review'),
      'qualified target'),
 ])
-def test_should_name_clear_packet_defects(body, defect):
-    defects = module().check_packet(body, {'pins': PINS, 'owner': module().owner_sections(PROMPT)})
+def test_should_name_clear_packet_defects(contracts, body, defect):
+    owner = contracts.owner_sections(PROMPT)
+    defects = contracts.check_packet(body, {'pins': PINS, 'owner': owner})
     assert any(defect in item for item in defects), defects
 
 
-def test_should_accept_clean_packet_and_reject_ungranted_may():
-    hook = module()
+def test_should_accept_clean_packet_and_reject_ungranted_may(contracts):
+    hook = contracts
     state = {'pins': PINS, 'owner': hook.owner_sections(PROMPT)}
     assert hook.check_packet(packet(), state) == []
-    state['owner']['may'] = ''
+    state['owner'] = hook.owner_sections('Prepare a brief for another agent.')
     assert 'extra may: edit files' in hook.check_packet(
         packet().replace('May: read src/example.py;', 'May: edit files;'), state)
 
 
 @pytest.fixture
-def runtime(tmp_path):
+def runtime(tmp_path, native_binary):
     state = tmp_path / 'state'
     state.mkdir()
     repo = tmp_path / 'repo'
@@ -345,9 +406,10 @@ def runtime(tmp_path):
         'assert sys.argv[1:] == ["mapping", "--handoff", "src/example.py"]\n'
         f'print({PINS!r})\n'
     )
-    env = {key: value for key, value in os.environ.items()
+    env = {key: value for key, value in native_environment(repo / 'home').items()
            if key not in {'MIR_HANDOFF_STATE_DIR', 'MIR_HANDOFF_RUNNER'}}
     env['PYTHONDONTWRITEBYTECODE'] = '1'
+    env['MIR_HANDOFF_PYTHON'] = HANDLER_PYTHON
 
     def run(event, **extra):
         transcript = Path(extra.get('transcript_path', repo / 'native-session.jsonl'))
@@ -361,7 +423,7 @@ def runtime(tmp_path):
         extra.setdefault('transcript_path', str(transcript))
         payload = {'hook_event_name': event, 'cwd': str(repo), 'session_id': 'session-1',
                    'stop_hook_active': False, **extra}
-        result = subprocess.run([HANDLER_PYTHON, str(HANDLER)], input=json.dumps(payload),
+        result = subprocess.run([str(native_binary)], input=json.dumps(payload),
                                 text=True, capture_output=True, env=env, check=False)
         assert result.returncode in {0, 2}, result.stderr
         return result
@@ -448,10 +510,11 @@ def test_should_not_check_non_packet_outputs_or_loop_on_native_retry(runtime):
     assert 'decision' not in json.loads(retry.stdout or '{}')
 
 
-def test_should_fail_open_visibly_for_bad_payload_or_missing_native_cwd():
-    env = {key: value for key, value in os.environ.items() if key != 'MIR_HANDOFF_STATE_DIR'}
+def test_should_fail_open_visibly_for_bad_payload_or_missing_native_cwd(native_binary, tmp_path):
+    env = {key: value for key, value in native_environment(tmp_path / 'home').items()
+           if key != 'MIR_HANDOFF_STATE_DIR'}
     for payload in [json.dumps({'hook_event_name': 'UserPromptSubmit', 'prompt': PROMPT}), '{']:
-        result = subprocess.run([HANDLER_PYTHON, str(HANDLER)], input=payload,
+        result = subprocess.run([str(native_binary)], input=payload,
                                 text=True, capture_output=True, env=env, check=False)
         assert result.returncode == 0
         assert 'WARNING' in result.stdout + result.stderr
@@ -467,16 +530,16 @@ def test_should_register_common_events_without_changing_session_start():
     assert active['hooks']['SessionStart'][0]['hooks'][0]['timeout'] == 2
 
 
-def test_should_reject_missing_owner_restriction_and_duplicate_pin_blocks():
-    hook = module()
+def test_should_reject_missing_owner_restriction_and_duplicate_pin_blocks(contracts):
+    hook = contracts
     state = {'pins': PINS, 'owner': hook.owner_sections(PROMPT)}
     assert any('owner restriction' in defect for defect in hook.check_packet(
         packet().replace('May not: edit files; run tests', 'May not: none'), state))
     assert any('duplicate' in defect for defect in hook.check_packet(packet() + '\n' + PINS, state))
 
 
-def test_should_require_individual_pin_and_field_self_checks():
-    hook = module()
+def test_should_require_individual_pin_and_field_self_checks(contracts):
+    hook = contracts
     state = {'pins': PINS, 'owner': hook.owner_sections(PROMPT)}
     assert any('self-check' in defect for defect in hook.check_packet(
         packet().replace('Self-check: ' + SELF_CHECK,
@@ -506,15 +569,15 @@ def test_should_recognize_unlabeled_owner_restrictions(runtime, restriction):
     assert not list(state.iterdir())
 
 
-def test_should_not_echo_excluded_item_in_extra_permission_diagnostic():
-    hook = module()
+def test_should_not_echo_excluded_item_in_extra_permission_diagnostic(contracts):
+    hook = contracts
     defects = hook.check_packet(packet() + '\nMay: forward PRIVATE-CANARY-42',
                                 {'pins': PINS, 'owner': hook.owner_sections(PROMPT)})
     assert defects and 'PRIVATE-CANARY-42' not in '\n'.join(defects)
 
 
-def test_should_inventory_each_unknown_pin_in_self_check():
-    hook = module()
+def test_should_inventory_each_unknown_pin_in_self_check(contracts):
+    hook = contracts
     missing = PINS.replace('"unknowns": []', '"unknowns": ["head: unavailable"]')
     defects = hook.check_packet(packet(missing),
                                 {'pins': missing, 'owner': hook.owner_sections(PROMPT)})
@@ -545,8 +608,8 @@ def test_should_use_owner_prompt_instead_of_claude_tool_result_records(runtime):
     assert json.loads(result.stdout)['decision'] == 'block'
 
 
-def test_should_reject_inline_permission_enlargement_in_enclosing_text():
-    hook = module()
+def test_should_reject_inline_permission_enlargement_in_enclosing_text(contracts):
+    hook = contracts
     defects = hook.check_packet(packet() + '\nYou may edit files.',
                                 {'pins': PINS, 'owner': hook.owner_sections(PROMPT)})
     assert 'extra may: edit files' in defects
@@ -554,8 +617,8 @@ def test_should_reject_inline_permission_enlargement_in_enclosing_text():
 
 @pytest.mark.parametrize('field', ['Lifecycle', 'Temporal', 'Epistemic', 'Verification',
                                   'Evidence', 'Unknowns'])
-def test_should_reject_empty_envelope_values(field):
-    hook = module()
+def test_should_reject_empty_envelope_values(contracts, field):
+    hook = contracts
     import re
     body = re.sub(rf'(?m)^{field}:.*$', field + ':', packet())
     assert hook.check_packet(body, {'pins': PINS, 'owner': hook.owner_sections(PROMPT)})
@@ -587,7 +650,7 @@ def test_should_fail_open_within_budget_when_pin_runner_hangs(runtime):
     assert list(state.iterdir()) == []
 
 
-def test_should_supply_real_repository_runner_pins_without_network(tmp_path):
+def test_should_supply_real_repository_runner_pins_without_network(native_binary, tmp_path):
     import hashlib
 
     state = tmp_path / 'runtime-state'
@@ -597,9 +660,15 @@ def test_should_supply_real_repository_runner_pins_without_network(tmp_path):
                'session_id': 'real-runner-offline', 'prompt': (
                    'Prepare a handoff for another agent.\nSources: ' + source
                    + '\nMay: read and report\nMay not: edit project files\n')}
-    env = {**os.environ, 'MIR_HANDOFF_STATE_DIR': str(state), 'PYTHONDONTWRITEBYTECODE': '1'}
+    tools = tmp_path / 'tools'
+    tools.mkdir()
+    git = shutil.which('git')
+    assert git, 'the real repository runner integration requires git'
+    (tools / ('git.exe' if os.name == 'nt' else 'git')).symlink_to(Path(git).resolve())
+    env = {**native_environment(tmp_path / 'home'), 'PATH': str(tools),
+           'MIR_HANDOFF_STATE_DIR': str(state), 'PYTHONDONTWRITEBYTECODE': '1'}
     env.pop('MIR_HANDOFF_RUNNER', None)
-    result = subprocess.run([HANDLER_PYTHON, str(HANDLER)], input=json.dumps(payload),
+    result = subprocess.run([str(native_binary)], input=json.dumps(payload),
                             text=True, capture_output=True, env=env, check=False, timeout=8)
     assert result.returncode == 0 and result.stderr == ''
     context = json.loads(result.stdout)['hookSpecificOutput']['additionalContext']
@@ -621,8 +690,8 @@ def test_should_supply_real_repository_runner_pins_without_network(tmp_path):
     '\ub124\ud2b8\uc6cc\ud06c \uc811\uadfc',
     '\ub2e4\ub978 \uc5d0\uc774\uc804\ud2b8\uc5d0\uac8c \uc704\uc784',
 ])
-def test_should_reject_unlabeled_owner_authority_enlargement_in_both_languages(grant):
-    hook = module()
+def test_should_reject_unlabeled_owner_authority_enlargement_in_both_languages(contracts, grant):
+    hook = contracts
     owner = hook.owner_sections('Prepare a brief for another agent.')
     body = packet().replace('May: read src/example.py; report findings', 'May: ' + grant)
     assert 'extra may: ' + grant in hook.check_packet(body, {'pins': PINS, 'owner': owner})
@@ -630,23 +699,23 @@ def test_should_reject_unlabeled_owner_authority_enlargement_in_both_languages(g
 
 @pytest.mark.parametrize('grant', ['read src/example.py', 'inspect source',
                                   '\uc18c\uc2a4 \uc77d\uae30', '\ud30c\uc77c \uc5f4\ub78c'])
-def test_should_allow_read_inspect_only_without_explicit_owner_grant(grant):
-    hook = module()
+def test_should_allow_read_inspect_only_without_explicit_owner_grant(contracts, grant):
+    hook = contracts
     body = packet().replace('May: read src/example.py; report findings', 'May: ' + grant)
     assert hook.check_packet(body, {'pins': PINS, 'owner': hook.owner_sections(
         'Prepare a brief for another agent.')}) == []
 
 
-def test_should_forward_unlabeled_korean_prohibition():
-    hook = module()
+def test_should_forward_unlabeled_korean_prohibition(contracts):
+    hook = contracts
     restriction = '\uc218\uc815\ud558\uc9c0 \ub9d0\uace0 \uc77d\uae30\ub9cc \ud558\uc138\uc694.'
     owner = hook.owner_sections('Prepare a brief for another agent.\n' + restriction)
     assert restriction in owner['may_not']
     assert restriction in hook.context_text(owner)
 
 
-def test_should_forward_only_the_prohibiting_sentence():
-    hook = module()
+def test_should_forward_only_the_prohibiting_sentence(contracts):
+    hook = contracts
     task = '\ubc31\uc5c5 \ubcf5\uc6d0 \uc548\ub0b4\ub97c \uac1c\uc120\ud558\ub824\uace0 \ud574.'
     restriction = (
         '\ud30c\uc77c\uc744 \uc218\uc815\ud558\uc9c0 \ub9d0\uace0 \ub2f5\ubcc0\ub9cc '
@@ -707,12 +776,12 @@ def test_should_ignore_native_assistant_hint_and_use_transcript_tail(runtime):
     assert json.loads(result.stdout)['decision'] == 'block'
 
 
-def test_should_not_run_runner_for_ordinary_turns(monkeypatch):
-    hook = module()
-    def forbidden(*args, **kwargs):
-        raise AssertionError('ordinary supply must perform detection only')
-    monkeypatch.setattr(hook.subprocess, 'Popen', forbidden)
-    hook.supply({'prompt': 'Review the handoff parser code.'})
+def test_should_not_run_runner_for_ordinary_turns(contracts):
+    runner = contracts.root / 'scripts/mir_ontology.py'
+    runner.write_text('from pathlib import Path\nPath("runner-executed").touch()\n')
+    result = contracts.run('UserPromptSubmit', prompt='Review the handoff parser code.')
+    assert result.stdout == '' and result.stderr == ''
+    assert not (contracts.root / 'runner-executed').exists()
 
 
 def test_should_accept_original_pin_time_after_fresh_runner_observation(runtime):
@@ -770,14 +839,14 @@ def test_should_not_reuse_prior_assistant_after_new_user_prompt(runtime):
     assert result.stdout == result.stderr == ''
 
 
-def test_should_not_detect_explicit_korean_handoff_prohibition():
-    assert not module().detect(
+def test_should_not_detect_explicit_korean_handoff_prohibition(contracts):
+    assert not contracts.detect(
         '\ub2e4\ub978 \uc5d0\uc774\uc804\ud2b8\uc5d0\uac8c \ud578\ub4dc\uc624\ud504\ub97c '
         '\uc791\uc131\ud558\uc9c0 \ub9c8\uc138\uc694.')
 
 
-def test_should_reject_grants_in_non_may_labeled_enclosing_authority():
-    hook = module()
+def test_should_reject_grants_in_non_may_labeled_enclosing_authority(contracts):
+    hook = contracts
     state = {'pins': PINS, 'owner': hook.owner_sections(PROMPT)}
     defects = hook.check_packet(packet() + '\nThe recipient may execute checks.', state)
     assert 'extra may: execute checks' in defects
@@ -795,7 +864,7 @@ def test_should_check_translated_packet_without_english_labels(runtime):
     assert 'missing qualified target' in result['reason']
 
 
-def test_should_check_native_final_message_when_transcript_lags(runtime):
+def test_should_check_native_final_message_when_transcript_lags(native_binary, runtime):
     run, _, repo = runtime
     run('UserPromptSubmit', prompt=PROMPT)
     transcript = repo / 'native-session.jsonl'
@@ -805,8 +874,8 @@ def test_should_check_native_final_message_when_transcript_lags(runtime):
     payload = {'hook_event_name': 'Stop', 'cwd': str(repo), 'session_id': 'session-1',
                'stop_hook_active': False, 'transcript_path': str(transcript),
                'last_assistant_message': packet().replace(PINS, '')}
-    env = {**os.environ, 'PYTHONDONTWRITEBYTECODE': '1'}
-    result = subprocess.run([HANDLER_PYTHON, str(HANDLER)], input=json.dumps(payload),
+    env = {**native_environment(repo / 'home'), 'PYTHONDONTWRITEBYTECODE': '1'}
+    result = subprocess.run([str(native_binary)], input=json.dumps(payload),
                             text=True, capture_output=True, env=env, check=False)
     assert json.loads(result.stdout)['decision'] == 'block'
 
@@ -857,8 +926,8 @@ def test_should_skip_both_runners_for_korean_command_prohibitions(runtime, restr
     assert 'owner forbids commands' in stopped.stdout
 
 
-def test_should_not_extract_positive_request_with_negative_subordinate_clause():
-    hook = module()
+def test_should_not_extract_positive_request_with_negative_subordinate_clause(contracts):
+    hook = contracts
     task = (
         '\ub2e4\ub978 \uc5d0\uc774\uc804\ud2b8\uc5d0\uac8c \uc2e4\uc81c \ub370'
         '\uc774\ud130\ub97c \uc218\uc815\ud558\uc9c0 \ub9d0\ub77c\ub294 \uc81c'
@@ -875,8 +944,8 @@ def test_should_not_extract_positive_request_with_negative_subordinate_clause():
 
 @pytest.mark.parametrize('variant', ['labels', 'evidence', 'inventory', 'restriction',
                                    'read-only', 'future', 'qualifier'])
-def test_should_accept_equivalent_packet_labels_and_safe_authority(variant):
-    hook = module()
+def test_should_accept_equivalent_packet_labels_and_safe_authority(contracts, variant):
+    hook = contracts
     body = packet()
     if variant == 'labels':
         body = body.replace('May:', '- **May:**').replace('May not:', '- **May not:**')
@@ -900,8 +969,8 @@ def test_should_accept_equivalent_packet_labels_and_safe_authority(variant):
 
 
 @pytest.mark.parametrize('profile', ['valid', 'broken', 'absent'])
-def test_should_exclude_denied_and_profile_protected_citations(tmp_path, profile):
-    hook = module()
+def test_should_exclude_denied_and_profile_protected_citations(contracts, tmp_path, profile):
+    hook = contracts
     for name in ['src/allowed.py', 'docs/denied.md', 'docs/packet.md', 'docs/not-read.md',
                  'android/key.properties', 'private/nested/token.txt']:
         path = tmp_path / name
@@ -989,10 +1058,16 @@ COMPLETE_ARTIFACT_RULE = (
 
 @pytest.mark.parametrize('retry', [False, True])
 @pytest.mark.parametrize('receiving', [False, True])
-def test_should_end_every_block_reason_with_complete_artifact_rule(capsys, retry, receiving):
-    hook = module()
-    hook.block(['abbreviated hex value: head'], retry, receiving, hook.owner_sections(PROMPT))
-    reason = json.loads(capsys.readouterr().out)['reason']
+def test_should_end_every_block_reason_with_complete_artifact_rule(runtime, retry, receiving):
+    run, _, repo = runtime
+    prompt = RECIPIENT_PROMPT if receiving else PROMPT
+    run('UserPromptSubmit', prompt=prompt)
+    body = packet().replace('a' * 40, 'aaaaaaa')
+    if retry:
+        first = json.loads(run('Stop', last_assistant_message=body).stdout)
+        append_block(repo, 'claude', first['reason'])
+    result = run('Stop', last_assistant_message=body, stop_hook_active=retry)
+    reason = json.loads(result.stdout)['reason']
     assert reason.endswith(COMPLETE_ARTIFACT_RULE)
     assert reason.count(COMPLETE_ARTIFACT_RULE) == 1
 
@@ -1117,24 +1192,24 @@ def test_should_fail_open_pretool_on_missing_transcript_and_use_native_prompt(ru
     assert denied.returncode == 2
 
 
-def test_should_not_treat_prohibition_scope_inventory_as_owner_prohibition():
+def test_should_not_treat_prohibition_scope_inventory_as_owner_prohibition(contracts):
     prompt = (
         '\ub300\uc0c1\uacfc \ud604\uc7ac \uc0c1\ud0dc, \ud5c8\uc6a9 \ubc94\uc704'
         '\uc640 \uae08\uc9c0 \ubc94\uc704\ub97c \ud3ec\ud568\ud574\uc11c \ub2e4'
         '\ub978 \uc5d0\uc774\uc804\ud2b8\uc5d0\uac8c \ub118\uae38 \uc9c0\uc2dc'
         '\ubb38\uc744 \uc791\uc131\ud574\uc918.'
     )
-    assert module().owner_sections(prompt)['may_not'] == ''
+    assert contracts.owner_sections(prompt)['may_not'] == ''
 
 
-def test_should_exclude_not_read_prose_and_heading_only_denied_scope(tmp_path):
+def test_should_exclude_not_read_prose_and_heading_only_denied_scope(contracts, tmp_path):
     for name in ['docs/unread.md', 'docs/protected.md']:
         path = tmp_path / name
         path.parent.mkdir(exist_ok=True)
         path.write_text('not to be hashed')
-    owner = module().owner_sections('May: read and report')
+    owner = contracts.owner_sections('May: read and report')
     body = 'I did not read docs/unread.md.\n### May not\n- read docs/protected.md\n'
-    assert module().cited_paths(body, owner, tmp_path) == []
+    assert contracts.cited_paths(body, owner, tmp_path) == []
 
 
 def test_should_accept_korean_recipient_reader_limitation(runtime):
@@ -1161,15 +1236,15 @@ def test_should_check_extensionless_verified_source_pin(runtime):
     assert json.loads(result.stdout)['decision'] == 'block'
 
 
-def test_should_not_hide_current_grant_beside_future_condition():
-    hook = module()
+def test_should_not_hide_current_grant_beside_future_condition(contracts):
+    hook = contracts
     body = packet() + '\nYou may edit files. Only after a separate owner grant, run tests.'
     assert any(defect.startswith('extra may: edit files') for defect in hook.check_packet(
         body, {'pins': PINS, 'owner': hook.owner_sections(PROMPT)}))
 
 
-def test_should_parse_qualified_may_not_heading_without_adding_grants():
-    hook = module()
+def test_should_parse_qualified_may_not_heading_without_adding_grants(contracts):
+    hook = contracts
     body = packet().replace(
         'May not: edit files; run tests',
         'May not (\ubcc4\ub3c4 owner \uc2b9\uc778\uc774 \uc788\uc5b4\uc57c '
@@ -1197,8 +1272,8 @@ def test_should_parse_qualified_may_not_heading_without_adding_grants():
         '\uc218\ub77d\ud574\uc57c \ud569\ub2c8\ub2e4.'
     ),
 ])
-def test_should_accept_korean_read_only_future_and_policy_caveats(text):
-    hook = module()
+def test_should_accept_korean_read_only_future_and_policy_caveats(contracts, text):
+    hook = contracts
     body = packet() + '\n' + text
     assert hook.check_packet(body, {'pins': PINS, 'owner': hook.owner_sections(PROMPT)}) == []
 
@@ -1229,8 +1304,8 @@ def test_should_skip_runners_for_english_prohibited_commands(runtime, restrictio
     assert 'owner forbids commands' in result.stdout
 
 
-def test_should_accept_read_only_may_with_separate_future_sentences():
-    hook = module()
+def test_should_accept_read_only_may_with_separate_future_sentences(contracts):
+    hook = contracts
     body = packet().replace('May: read src/example.py; report findings',
                             'May: read/inspect only. Edit and tests are valid only after '
                             'a separate owner grant. This packet does not grant authority.')
@@ -1249,39 +1324,29 @@ def test_should_recompute_pretool_owner_from_both_native_transcript_shapes(runti
     assert denied.returncode == 2
 
 
-def test_should_run_all_events_on_interpreters_without_tomllib(runtime):
-    """macOS /usr/bin/python3 (3.9) runs Claude hooks: a 3.11-only import must not crash them."""
+def test_should_run_all_native_events_without_python_runtime(runtime, native_binary):
     run, _, repo = runtime
-    guard = ("import runpy, sys; sys.modules['tomllib'] = None; "
-             "sys.version_info = (3, 9, 6); "
-             f"sys.argv = [{str(HANDLER)!r}]; "
-             f"runpy.run_path({str(HANDLER)!r}, run_name='__main__')")
+    # Native dispatch and receipt checks do not require a Python interpreter.
+    env = {**native_environment(repo / 'home'),
+           'MIR_HANDOFF_PYTHON': str(repo / 'missing-python')}
     transcript = repo / 'native-session.jsonl'
-    transcript.write_text(json.dumps({'type': 'user', 'message': {'content': PROMPT}}) + '\n')
-    for payload in (
-        {'hook_event_name': 'UserPromptSubmit', 'prompt': PROMPT},
-        {'hook_event_name': 'PreToolUse', 'tool_name': 'Bash', 'tool_input': {'command': 'ls'}},
-        {'hook_event_name': 'Stop', 'stop_hook_active': False, 'last_assistant_message': packet()},
+    prompt = RECIPIENT_PROMPT + '\nNo commands.'
+    transcript.write_text(json.dumps({'type': 'user', 'message': {'content': prompt}}) + '\n')
+    for event, fields in (
+        ('UserPromptSubmit', {'prompt': prompt}),
+        ('PreToolUse', {'tool_name': 'Bash'}),
+        ('Stop', {'last_assistant_message': RECIPIENT_LABELS + '\nCommands forbidden; '
+                 'no non-command reader was available.', 'stop_hook_active': False}),
     ):
-        payload.update(cwd=str(repo), session_id='session-1', transcript_path=str(transcript))
-        result = subprocess.run([HANDLER_PYTHON, '-c', guard], input=json.dumps(payload),
-                                text=True, capture_output=True, check=False)
-        assert result.stderr == (
-            'mir: Python 3.11+ is required; running on 3.9.6 (upgrade python3)\n'
-        )
-        assert result.returncode in {0, 2}
-        baseline = subprocess.run(
-            [sys.executable, '-c', guard.replace('sys.version_info = (3, 9, 6); ', '')],
-            input=json.dumps(payload), text=True, capture_output=True, check=False,
-        )
-        assert baseline.stderr == ''
-        assert result.stdout == baseline.stdout
-        assert result.returncode == baseline.returncode
-    supplied = subprocess.run(
-        [HANDLER_PYTHON, '-c', guard], text=True, capture_output=True, check=False,
-        input=json.dumps({'hook_event_name': 'UserPromptSubmit', 'prompt': PROMPT, 'cwd': str(repo),
-                          'session_id': 'session-1', 'transcript_path': str(transcript)}))
-    assert 'Mechanical handoff packet' in supplied.stdout
+        payload = dict(hook_event_name=event, cwd=str(repo),
+                       transcript_path=str(transcript), **fields)
+        result = subprocess.run([str(native_binary)], input=json.dumps(payload), text=True,
+                                capture_output=True, check=False, env=env)
+        assert result.returncode == (2 if event == 'PreToolUse' else 0)
+        assert 'Python 3.11' not in result.stderr
+        assert 'hook unavailable' not in result.stderr
+        if event == 'Stop':
+            assert result.stdout == '' and result.stderr == ''
 
 
 # Minimal synthetic round-h regressions; no captured personal content is forwarded.
@@ -1343,7 +1408,7 @@ def test_should_allow_translated_no_command_packet_with_reader_and_inventoried_s
 
 
 @pytest.mark.parametrize('heading', ['## Qualified target \xb7 role', '\ub300\uc0c1:'])
-def test_should_supply_and_check_received_packet_without_pin_block(runtime, heading):
+def test_should_supply_and_check_received_packet_without_pin_block(contracts, runtime, heading):
     run, _, _ = runtime
     prompt = NO_PIN_PACKET.replace('## 1. Qualified target \xb7 role', heading)
     supplied = run('UserPromptSubmit', prompt=prompt)
@@ -1352,7 +1417,7 @@ def test_should_supply_and_check_received_packet_without_pin_block(runtime, head
     assert output['decision'] == 'block'
     for name in PIN_NAMES[:8]:
         assert 'missing recipient pin label: ' + name in output['reason']
-    assert module().recipient(PROMPT + prompt) is False
+    assert contracts.recipient(PROMPT + prompt) is False
 
 
 def test_should_require_base_and_explicitly_named_recipient_pins(runtime):
@@ -1488,15 +1553,15 @@ def test_should_recheck_missing_cited_pins_on_second_block(runtime):
 
 
 @pytest.mark.parametrize('header', ['## handoff pins:', '### pins', '**handoff pins:**'])
-def test_should_reject_supplied_pins_header_alteration(header):
-    hook = module()
+def test_should_reject_supplied_pins_header_alteration(contracts, header):
+    hook = contracts
     result = hook.check_packet(packet().replace('handoff pins:', header),
                                {'pins': PINS, 'owner': hook.owner_sections(PROMPT)})
     assert "supplied pins header altered (keep the literal 'handoff pins:' line)" in result
 
 
-def test_should_reject_altered_pins_header_after_observation_time_changes():
-    hook = module()
+def test_should_reject_altered_pins_header_after_observation_time_changes(contracts):
+    hook = contracts
     fresh = PINS.replace('2026-10-22T01:02:03Z', '2026-10-22T01:02:04Z')
     result = hook.check_packet(packet().replace('handoff pins:', '## handoff pins:'),
                                {'pins': fresh, 'owner': hook.owner_sections(PROMPT)})
@@ -1535,8 +1600,8 @@ def test_should_require_recipient_pin_named_as_unchecked(runtime):
     'Qualified target: example:window\nUnknowns: none',
     'Qualified target\n\n\n\nexample:window\nStatus axes: none\nUnknowns: none',
 ])
-def test_should_ignore_received_target_without_two_fields_or_with_distant_token(body):
-    assert module().recipient(body) is False
+def test_should_ignore_received_target_without_two_fields_or_with_distant_token(contracts, body):
+    assert contracts.recipient(body) is False
 
 
 def test_should_not_trust_assistant_quoted_block_as_retry_evidence(runtime):
@@ -1569,8 +1634,8 @@ def test_should_always_allow_third_stop_even_if_native_retry_flag_resets(runtime
     ('## \ub300\uc0c1\nexample:window', True),
     ('Discuss a qualified target example:window here.', False),
 ])
-def test_should_recognize_only_qualified_target_heading_or_label(target, expected):
-    assert module().recipient(target + '\nUnknowns: none\nLifecycle: current') is expected
+def test_should_recognize_only_qualified_target_heading_or_label(contracts, target, expected):
+    assert contracts.recipient(target + '\nUnknowns: none\nLifecycle: current') is expected
 
 
 @pytest.mark.parametrize('sentence', [
@@ -1582,8 +1647,8 @@ def test_should_recognize_only_qualified_target_heading_or_label(target, expecte
     '\uc791\uc131\ud574 \uc8fc\uc138\uc694.',
     'The author-only marker `SYNTHETIC-AUTHOR-MARKER` stays here.',
 ])
-def test_should_extract_natural_language_exclusions_and_redact_diagnostics(sentence):
-    hook = module()
+def test_should_extract_natural_language_exclusions_and_redact_diagnostics(contracts, sentence):
+    hook = contracts
     owner = hook.owner_sections(PROMPT + sentence)
     assert owner['excluded'] == ['PRIVATE-CANARY-42', 'SYNTHETIC-AUTHOR-MARKER']
     defects = hook.authority_defects(packet() + '\nSYNTHETIC-AUTHOR-MARKER', owner)
@@ -1600,8 +1665,8 @@ def test_should_extract_natural_language_exclusions_and_redact_diagnostics(sente
     '\uc804\ub2ec\ud558\uc9c0 \uc54a\ub294', '\uc804\ub2ec\ud558\uc9c0 \ub9d0\uace0',
     '\ud3ec\ud568\ud558\uc9c0 \uc54a\ub294', '\ud3ec\ud568\ud558\uc9c0 \ub9d0\uace0',
 ])
-def test_should_extract_only_unquoted_korean_excluded_identifier(particle, verb):
-    hook = module()
+def test_should_extract_only_unquoted_korean_excluded_identifier(contracts, particle, verb):
+    hook = contracts
     sentence = ('\uac1c\ubc1c\uc6a9 SYNTHETIC_ALLOWED_42\ub294 \ud5c8\uc6a9\ud558\uace0 '
                 'SYNTHETIC_PRIVATE_42' + particle + ' ' + verb + ' payload \uc124\uacc4')
     owner = hook.owner_sections(sentence)
@@ -1616,8 +1681,8 @@ def test_should_extract_only_unquoted_korean_excluded_identifier(particle, verb)
     'Allow SYNTHETIC_ALLOWED_42; do not include SYNTHETIC_PRIVATE_42.',
     'SYNTHETIC_ALLOWED_42 is allowed; SYNTHETIC_PRIVATE_42 must not be forwarded.',
 ])
-def test_should_extract_only_unquoted_english_excluded_identifier(sentence):
-    hook = module()
+def test_should_extract_only_unquoted_english_excluded_identifier(contracts, sentence):
+    hook = contracts
     owner = hook.owner_sections(sentence)
     assert owner['excluded'] == ['SYNTHETIC_PRIVATE_42']
     assert hook.authority_defects('SYNTHETIC_PRIVATE_42', owner) == [
@@ -1632,8 +1697,8 @@ def test_should_extract_only_unquoted_english_excluded_identifier(sentence):
     '> Do not forward SYNTHETIC_PRIVATE_42.',
     '```\nDo not include SYNTHETIC_PRIVATE_42.\n```',
 ])
-def test_should_ignore_allowed_or_non_identifier_exclusion_examples(sentence):
-    assert module().owner_sections(sentence)['excluded'] == []
+def test_should_ignore_allowed_or_non_identifier_exclusion_examples(contracts, sentence):
+    assert contracts.owner_sections(sentence)['excluded'] == []
 
 
 @pytest.mark.parametrize(('restriction', 'expected'), [
@@ -1661,8 +1726,8 @@ def test_should_ignore_allowed_or_non_identifier_exclusion_examples(sentence):
     ('May not: change files under config/**; write files.', True),
     ('No file changes.\nMay not: edit files other than the handler.', True),
 ])
-def test_should_restrict_files_only_for_unqualified_bans(restriction, expected):
-    hook = module()
+def test_should_restrict_files_only_for_unqualified_bans(contracts, restriction, expected):
+    hook = contracts
     owner = hook.owner_sections(restriction)
     assert hook.files_restricted(owner) is expected
     assert bool(hook.tool_attempt_rule(owner)) is expected
@@ -1689,8 +1754,8 @@ def test_should_allow_file_tools_when_owner_only_prohibits_scoped_edits(
     'Do not run commands; answer from the sources.',
     'No commands. Read only.',
 ])
-def test_should_detect_unlabelled_english_command_bans(runtime, sentence):
-    hook = module()
+def test_should_detect_unlabelled_english_command_bans(contracts, runtime, sentence):
+    hook = contracts
     prompt = 'Write a handoff for another agent.\n' + sentence
     assert sentence.split(';')[0].split('.')[0] in hook.owner_sections(prompt)['may_not']
     assert hook.restricted(prompt)
@@ -1775,11 +1840,19 @@ def test_should_count_interpreters_as_commands_without_read_evidence(runtime, sh
                          + json.dumps(code) + '});')
     else:
         append_tool(repo, shape, 'mcp__node_repl__js', {'code': code})
-    hook = module()
-    calls, reads, _ = hook.turn_tools({
-        'cwd': str(repo), 'transcript_path': str(repo / 'native-session.jsonl')})
-    assert any(name in hook.SHELL_TOOLS for name, _ in calls)
-    assert reads == []
+    result = run('Stop', last_assistant_message=RECIPIENT_LABELS)
+    reason = json.loads(result.stdout)['reason']
+    assert 'command-ban compliance failure must be stated' in reason
+    assert 'tool calls: node_repl' in reason
+    disclosure = '\nCompliance failure: a code interpreter command was run.'
+    disclosed = run('Stop', last_assistant_message=RECIPIENT_LABELS + disclosure)
+    assert disclosed.stdout == ''
+    for path in ('src/example.py', 'src/helper.py', 'tests/example.py',
+                 'docs/example.md', 'config/example.json', 'scripts/example.py'):
+        result = run('Stop', last_assistant_message=RECIPIENT_LABELS + disclosure
+                     + '\nverified-in-repo: ' + path)
+        assert ('verified-in-repo path lacks this-turn tool reference: ' + path
+                in json.loads(result.stdout)['reason'])
 
 
 @pytest.mark.parametrize('receiving', [False, True])
@@ -1922,19 +1995,14 @@ def test_should_preserve_owner_and_count_codex_hook_prompt_once(runtime, shape):
     body = NO_PIN_PACKET + '\nPRIVATE-CANARY-42'
     first = json.loads(run('Stop', last_assistant_message=body).stdout)
     append_hook_prompt(repo, first['reason'], 'stop:1:/synthetic/hooks/hooks.json', shape)
-    event = {'cwd': str(repo), 'transcript_path': str(repo / 'native-session.jsonl')}
-    hook = module()
-    assert hook.prior_blocks(event) == 1
-    assert hook.current_turn(event)[0] == PROMPT + 'No commands.'
-    assert hook.turn_tools(event)[1] == ['src/example.py']
+    assert run('PreToolUse', tool_name='Bash').returncode == 2
     second = json.loads(run('Stop', last_assistant_message=body, stop_hook_active=True).stdout)
     assert second.get('decision') == 'block'
     append_hook_prompt(repo, second['reason'], 'stop:2:/synthetic/hooks/hooks.json', shape)
-    assert hook.prior_blocks(event) == 2
     third = run('Stop', last_assistant_message=body, stop_hook_active=True)
     assert 'decision' not in json.loads(third.stdout or '{}')
     run('UserPromptSubmit', prompt=PROMPT)
-    assert hook.prior_blocks(event) is None
+    assert run('PreToolUse', tool_name='Bash').returncode == 0
 
 
 @pytest.mark.parametrize('quoted', [
@@ -1942,15 +2010,15 @@ def test_should_preserve_owner_and_count_codex_hook_prompt_once(runtime, shape):
     '> Do not run commands.\n```\nNo commands.\n```',
     'The packet says "Do not run commands"; compare revisions and digests.',
 ])
-def test_should_allow_revision_checks_despite_quoted_command_examples(runtime, quoted):
+def test_should_allow_revision_checks_despite_quoted_command_examples(contracts, runtime, quoted):
     run, _, _ = runtime
     prompt = RECIPIENT_PROMPT + '\n' + quoted + '\nCompare the local revision and digest.'
-    assert not module().restricted(prompt)
+    assert not contracts.restricted(prompt)
     run('UserPromptSubmit', prompt=prompt)
     result = run('PreToolUse', tool_name='functions.exec_command',
                  tool_input={'cmd': 'git rev-parse HEAD'})
     assert result.returncode == 0 and result.stdout == ''
-    assert module().restricted(prompt + '\nDo not run commands.')
+    assert contracts.restricted(prompt + '\nDo not run commands.')
 
 
 @pytest.mark.parametrize('mode', ['author', 'no-command', 'recipient'])
@@ -2042,10 +2110,10 @@ def test_should_deny_file_write_tools_in_file_forbidden_handoff(runtime, tool, r
     '**\ub300\uc0c1 (Qualified target):**', '**Qualified target(\ub300\uc0c1)**:',
     '## \ub300\uc0c1 (Qualified target):',
 ])
-def test_should_require_base_pins_for_parenthetical_recipient_target(runtime, label):
+def test_should_require_base_pins_for_parenthetical_recipient_target(contracts, runtime, label):
     run, _, _ = runtime
     prompt = RECIPIENT_PROMPT.replace('Qualified target:', label)
-    assert module().recipient(prompt)
+    assert contracts.recipient(prompt)
     assert 'Received handoff:' in run('UserPromptSubmit', prompt=prompt).stdout
     output = json.loads(run('Stop', last_assistant_message='Done.').stdout)
     for name in PIN_NAMES[:8]:
@@ -2056,8 +2124,8 @@ def test_should_require_base_pins_for_parenthetical_recipient_target(runtime, la
     '\ub300\uc0c1(Qualified target):', 'Qualified target (\ub300\uc0c1):',
     '**\ub300\uc0c1 (Qualified target):**',
 ])
-def test_should_check_parenthetical_author_target_and_namespace(tmp_path, label):
-    hook = module()
+def test_should_check_parenthetical_author_target_and_namespace(contracts, tmp_path, label):
+    hook = contracts
     (tmp_path / '.mir').mkdir()
     mapping = tmp_path / '.mir/ontology-map.json'
     mapping.write_text(json.dumps({'namespace': 'example'}))
@@ -2100,14 +2168,24 @@ def test_should_block_namespace_first_exposed_after_repair_only_twice(runtime, s
     assert mapping.read_text() == original
 
 
-def test_should_parse_pin_labels_in_separate_markdown_cells():
+def test_should_parse_pin_labels_in_separate_markdown_cells(contracts):
     body = ('| Pin | Value | Label | Reason |\n| --- | --- | --- | --- |\n'
             '| `head` | ' + 'a' * 40 + ' | **verified-in-repo** | git |\n'
             '| mapping.digest | ' + 'b' * 64 + ' | parent-supplied | inherited |\n'
             '| unavailable | sources[3].revision | no history | |\n')
-    assert module().pin_claims(body) == [
-        ('head', 'verified-in-repo'), ('mapping.digest', 'parent-supplied'),
-        ('sources[3].revision', 'unavailable')]
+    prompt = 'Review this received handoff.\npin sources[3].revision=unavailable'
+    labels = RECIPIENT_LABELS.replace('pin head=parent-supplied', '').replace(
+        'pin mapping.digest=parent-supplied', '')
+    defects = contracts.recipient_check(prompt, labels + '\n' + body, {})
+    assert 'missing recipient pin label: head' not in defects
+    assert 'missing recipient pin label: mapping.digest' not in defects
+    assert 'missing recipient pin label: sources[3].revision' not in defects
+    assert 'verified-in-repo pin lacks this-turn computation: head' in defects
+    for line, pin in [('head', 'head'), ('mapping.digest', 'mapping.digest'),
+                      ('sources[3].revision', 'sources[3].revision')]:
+        reduced = '\n'.join(row for row in body.splitlines() if line not in row)
+        assert 'missing recipient pin label: ' + pin in contracts.recipient_check(
+            prompt, labels + '\n' + reduced, {})
 
 
 @pytest.mark.parametrize('no_commands', [False, True])
@@ -2140,7 +2218,6 @@ def test_should_accept_recipient_pin_table_with_computation_or_reader(runtime, n
 ])
 def test_should_never_require_non_pin_prose_or_summary_headers(runtime, text):
     run, _, _ = runtime
-    assert module().pin_claims(text) == []
     run('UserPromptSubmit', prompt=RECIPIENT_PROMPT + '\n' + text)
     assert run('Stop', last_assistant_message=RECIPIENT_LABELS).stdout == ''
 
@@ -2165,16 +2242,16 @@ def test_should_ignore_non_path_tokens_but_require_real_verified_path(runtime, t
     'May not: run any commands except `echo attest-probe`.',
     'May not: execute shell besides `echo attest-probe`',
 ])
-def test_should_read_a_command_ban_with_a_stated_exception_as_scoped(may_not):
+def test_should_read_a_command_ban_with_a_stated_exception_as_scoped(contracts, may_not):
     prompt = ('Write a handoff for another agent.\nSources: README.md\n'
               'May: read README.md; run `echo attest-probe` once\n' + may_not)
-    assert not module().restricted(prompt)
+    assert not contracts.restricted(prompt)
 
 
-def test_should_keep_a_blanket_command_ban_beside_a_scoped_clause():
+def test_should_keep_a_blanket_command_ban_beside_a_scoped_clause(contracts):
     prompt = ('Write a handoff for another agent.\nSources: README.md\n'
               'May: read README.md\nMay not: run commands; edit files other than notes.md')
-    assert module().restricted(prompt)
+    assert contracts.restricted(prompt)
 
 
 @pytest.mark.parametrize('receiving', [False, True])
@@ -2341,11 +2418,11 @@ ROUND_P_DIGEST = (
 @pytest.mark.parametrize('claim', [
     ROUND_P_ABSENCE, ROUND_P_TARGET,
 ])
-def test_round_p_d05_unrelated_scope_does_not_bound_absence(claim):
-    assert module().absence_defects(claim, [], ROOT)
+def test_round_p_d05_unrelated_scope_does_not_bound_absence(contracts, claim):
+    assert contracts.absence_defects(claim, [], ROOT)
 
 
-def test_round_p_d05_scoped_absence_in_the_same_item_stays_allowed():
+def test_round_p_d05_scoped_absence_in_the_same_item_stays_allowed(contracts):
     """Round p P03 F13 (judged MET): the search-scope sentence bounds its absence claim."""
     calls = [('grep', {'path': 'scripts', 'pattern': 's4a-life-chain'})]
     claim = ('- `my-life:s4a-life-chain` \u2014 \ubd80\ubaa8\uac00 \uc815\uc758\ud55c '
@@ -2355,16 +2432,15 @@ def test_round_p_d05_scoped_absence_in_the_same_item_stays_allowed():
              '\uac80\uc0c9\ud588\uc744 \ub54c 0\uac74\uc774\uc5c8\uc73c\uba70, \uc774 '
              '\ubd80\uc7ac \ud310\ub2e8\uc740 \ud574\ub2f9 \ubc94\uc704\uc5d0\ub9cc \uc801'
              '\uc6a9\ub429\ub2c8\ub2e4.')
-    assert module().absence_defects(claim, calls, ROOT) == []
+    assert contracts.absence_defects(claim, calls, ROOT) == []
 
 
 @pytest.mark.parametrize('names', [
     ['contract.identity'], ['contract.version'], ['contract.identity', 'contract.version'],
 ])
-def test_round_p_d01_map_declarations_accept_shared_reference(monkeypatch, names):
-    hook = module()
-    monkeypatch.setattr(hook, 'turn_tools', lambda event: (
-        [('read', {'file_path': '.mir/ontology-map.json'})], ['.mir/ontology-map.json'], []))
+def test_round_p_d01_map_declarations_accept_shared_reference(contracts, names):
+    hook = contracts
+    hook.evidence = ([('read', {'file_path': '.mir/ontology-map.json'})], [], [])
     rows = {'contract.identity': ROUND_P_CONTRACT_ID,
             'contract.version': ROUND_P_CONTRACT_VERSION}
     body = '\n'.join(rows[name] for name in names)
@@ -2375,12 +2451,14 @@ def test_round_p_d01_map_declarations_accept_shared_reference(monkeypatch, names
     assert hook.verification_defects('', body, {'cwd': str(ROOT)}, no_commands=True) == []
 
 
-def test_round_p_d02_labels_allow_explanation_in_cell():
-    assert dict(module().pin_claims(ROUND_P_LABELS)) == {
-        'repository_root': 'parent-supplied', 'head': 'unavailable',
-        'mapping.identity': 'parent-supplied', 'mapping.version': 'unavailable',
-        'mapping.digest': 'unavailable', 'contract.identity': 'parent-supplied',
-        'contract.version': 'parent-supplied', 'contract.digest': 'parent-supplied'}
+def test_round_p_d02_labels_allow_explanation_in_cell(contracts):
+    defects = contracts.recipient_check('Review this received handoff.',
+        ROUND_P_LABELS + '\nNo local check was performed.', {})
+    assert defects == []
+    for name in PIN_NAMES[:8]:
+        reduced = '\n'.join(line for line in ROUND_P_LABELS.splitlines() if name not in line)
+        assert 'missing recipient pin label: ' + name in contracts.recipient_check(
+            'Review this received handoff.', reduced + '\nNo local check was performed.', {})
 
 
 @pytest.mark.parametrize('body', [ROUND_P_NEGATION, ROUND_P_ATTRIBUTION,
@@ -2388,9 +2466,9 @@ def test_round_p_d02_labels_allow_explanation_in_cell():
     '> The item is absent from the repository.',
     '> contract.digest: verified-in-repo',
 ])
-def test_round_p_d03_negated_and_attributed_claims_are_not_assertions(monkeypatch, body):
-    hook = module()
-    monkeypatch.setattr(hook, 'turn_tools', lambda event: ([], [], []))
+def test_round_p_d03_negated_and_attributed_claims_are_not_assertions(contracts, body):
+    hook = contracts
+    hook.evidence = ([], [], [])
     assert hook.verification_defects('', body, {'cwd': str(ROOT)}) == []
 
 
@@ -2428,11 +2506,11 @@ def test_round_p_d06_replacement_final_rechecks_absence_and_digest(runtime, clai
             ) in result['reason']
 
 
-def test_round_p_d07_table_only_target_requires_every_pin(runtime):
+def test_round_p_d07_table_only_target_requires_every_pin(contracts, runtime):
     run, _, _ = runtime
     prompt = (ROUND_P_TARGET + '\n| Lifecycle | proposed |\n| Verification | unchecked |'
               '\n| Unknowns | hashes unchecked |')
-    assert module().recipient(prompt)
+    assert contracts.recipient(prompt)
     supplied = run('UserPromptSubmit', prompt=prompt)
     assert 'Received handoff' in supplied.stdout
     result = json.loads(run('Stop', last_assistant_message='No local check was performed.').stdout)
@@ -2498,18 +2576,17 @@ ROUND_Q_READ_GRANT = (
 
 
 @pytest.mark.parametrize('scope', [{'path': '/srv/my-life'}, {}])
-def test_round_q_d01_glob_pattern_bounds_root_search(scope):
+def test_round_q_d01_glob_pattern_bounds_root_search(contracts, scope):
     calls = [('glob', {'pattern': '.mir/*.json', **scope})]
     calls += [('grep', {'path': path, 'pattern': 's4a-life-chain'})
               for path in ('tests', 'scripts', 'spec', 'tools')]
-    defects = module().absence_defects(ROUND_Q_ABSENCE, calls, Path('/srv/my-life'))
+    defects = contracts.absence_defects(ROUND_Q_ABSENCE, calls, Path('/srv/my-life'))
     assert defects and '.mir/*.json' in defects[0]
 
 
-def test_round_q_d02_source_section_supports_contract_declarations(monkeypatch):
-    hook = module()
-    monkeypatch.setattr(hook, 'turn_tools', lambda event: (
-        [('read', {'file_path': '.mir/ontology-map.json'})], ['.mir/ontology-map.json'], []))
+def test_round_q_d02_source_section_supports_contract_declarations(contracts):
+    hook = contracts
+    hook.evidence = ([('read', {'file_path': '.mir/ontology-map.json'})], [], [])
     defects = hook.verification_defects('', ROUND_Q_DECLARATIONS,
                                        {'cwd': str(ROOT)}, no_commands=True)
     assert len(defects) == 1
@@ -2523,8 +2600,8 @@ def test_round_q_d03_real_access_limit_disclosures(runtime, body):
     assert run('Stop', last_assistant_message=RECIPIENT_LABELS + '\n' + body).stdout == ''
 
 
-def test_round_q_d04_conditional_read_narrows_owner_grant():
-    hook = module()
+def test_round_q_d04_conditional_read_narrows_owner_grant(contracts):
+    hook = contracts
     boundary = hook.owner_sections('May: read/inspect only\nMay not: run commands; edit files')
     assert hook.authority_defects(ROUND_Q_READ_GRANT, boundary) == []
 
@@ -2537,8 +2614,8 @@ def test_round_q_d04_conditional_read_narrows_owner_grant():
     ('grep', {'pattern': 's4a-life-chain'}, True),
     ('grep', {'pattern': 's4a-life-chain', 'glob': 'tests/**'}, False),
 ])
-def test_round_q_search_scope_boundaries(tool, args, complete):
-    defects = module().absence_defects(ROUND_Q_ABSENCE, [(tool, args)], ROOT)
+def test_round_q_search_scope_boundaries(contracts, tool, args, complete):
+    defects = contracts.absence_defects(ROUND_Q_ABSENCE, [(tool, args)], ROOT)
     assert bool(defects) is not complete
 
 
@@ -2547,9 +2624,9 @@ def test_round_q_search_scope_boundaries(tool, args, complete):
     (ROUND_Q_DECLARATIONS.replace('.mir/ontology-map.json', 'other/map.json'),
      ['.mir/ontology-map.json']),
 ])
-def test_round_q_contract_declarations_still_need_map_reference(monkeypatch, body, reads):
-    hook = module()
-    monkeypatch.setattr(hook, 'turn_tools', lambda event: ([], reads, []))
+def test_round_q_contract_declarations_still_need_map_reference(contracts, body, reads):
+    hook = contracts
+    hook.evidence = ([], reads, [])
     defects = hook.verification_defects('', body, {'cwd': str(ROOT)}, no_commands=True)
     assert any('tool reference: contract.identity' in defect for defect in defects)
     assert any('tool reference: contract.version' in defect for defect in defects)
@@ -2562,9 +2639,9 @@ def test_round_q_contract_declarations_still_need_map_reference(monkeypatch, bod
     'No non-command reader was available. Commands were run.',
     'No non-command reader was available. Commands were allowed.',
 ])
-def test_round_q_missing_access_limit_disclosure_stays_blocked(monkeypatch, body):
-    hook = module()
-    monkeypatch.setattr(hook, 'turn_tools', lambda event: ([], [], []))
+def test_round_q_missing_access_limit_disclosure_stays_blocked(contracts, body):
+    hook = contracts
+    hook.evidence = ([], [], [])
     defects = hook.recipient_check('No commands.', body, {'cwd': str(ROOT)})
     assert 'state commands forbidden and no non-command reader was used/available' in defects
 
@@ -2574,8 +2651,8 @@ def test_round_q_missing_access_limit_disclosure_stays_blocked(monkeypatch, body
     ' \ud30c\uc77c\uc744 \uc218\uc815\ud560 \uc218 \uc788\uc2b5\ub2c8\ub2e4.',
     ' You may run commands.',
 ])
-def test_round_q_enlarged_authority_stays_blocked(extra):
-    hook = module()
+def test_round_q_enlarged_authority_stays_blocked(contracts, extra):
+    hook = contracts
     boundary = hook.owner_sections('May: read/inspect only\nMay not: run commands; edit files')
     assert hook.authority_defects(ROUND_Q_READ_GRANT + extra, boundary)
 
@@ -2615,10 +2692,9 @@ ROUND_R_SOURCE_CLAIMS = [
 ]
 
 
-def test_round_r_d01_unique_basename_reference(monkeypatch):
-    hook = module()
-    monkeypatch.setattr(hook, 'turn_tools', lambda event: (
-        [('read', {'file_path': '.mir/ontology-map.json'})], ['.mir/ontology-map.json'], []))
+def test_round_r_d01_unique_basename_reference(contracts):
+    hook = contracts
+    hook.evidence = ([('read', {'file_path': '.mir/ontology-map.json'})], [], [])
     body = '| mapping.identity | verified-in-repo | `ontology-map.json` |'
     assert hook.verification_defects('', body, {'cwd': str(ROOT)}, no_commands=True) == []
 
@@ -2628,20 +2704,23 @@ def test_round_r_d01_unique_basename_reference(monkeypatch):
     (['.mir/ontology-map.json', 'other/ontology-map.json'], False),
     (['.mir/ontology-map.json', '/srv/my-life/.mir/ontology-map.json'], True),
 ])
-def test_round_r_basename_reference_boundaries(reads, expected):
-    result = module().path_referenced('ontology-map.json', reads, [], Path('/srv/my-life'))
-    assert result is expected
+def test_round_r_basename_reference_boundaries(contracts, reads, expected):
+    contracts.evidence = ([], [path.replace('/srv/my-life', str(contracts.root))
+                                               for path in reads], [])
+    defects = contracts.verification_defects('',
+        '| mapping.identity | verified-in-repo | `ontology-map.json` |', {}, no_commands=True)
+    assert bool(defects) is not expected
 
 
-def test_round_r_d02_scope_under_read_only_may():
-    hook = module()
+def test_round_r_d02_scope_under_read_only_may(contracts):
+    hook = contracts
     owner = hook.owner_sections('May: read/inspect only\nMay not: run commands; edit files')
     body = 'May: read/inspect only\n  - ' + ROUND_R_SCOPE
     assert hook.authority_defects(body, owner) == []
 
 
-def test_round_r_d03_conditional_proposal():
-    hook = module()
+def test_round_r_d03_conditional_proposal(contracts):
+    hook = contracts
     owner = hook.owner_sections('May: read/inspect only\nMay not: run commands; edit files')
     assert hook.authority_defects(ROUND_R_PROPOSAL, owner) == []
 
@@ -2653,31 +2732,37 @@ def test_round_r_d03_conditional_proposal():
     'You may commit changes.',
     '\ud30c\uc77c\uc744 \uc218\uc815\ud560 \uc218 \uc788\uc2b5\ub2c8\ub2e4.',
 ])
-def test_round_r_enlarged_authority_stays_blocked(extra):
-    hook = module()
+def test_round_r_enlarged_authority_stays_blocked(contracts, extra):
+    hook = contracts
     owner = hook.owner_sections('May: read/inspect only\nMay not: run commands; edit files')
     assert hook.authority_defects(extra, owner)
 
 
-def test_round_r_d04_provenance_is_a_label(monkeypatch):
-    hook = module()
-    monkeypatch.setattr(hook, 'turn_tools', lambda event: ([], [], []))
+def test_round_r_d04_provenance_is_a_label(contracts):
+    hook = contracts
+    hook.evidence = ([], [], [])
     prompt = RECIPIENT_PROMPT + '\nprovenance: parent-supplied'
     assert hook.recipient_check(prompt, RECIPIENT_LABELS, {'cwd': str(ROOT)}) == []
 
 
 @pytest.mark.parametrize('markup', ['mapping.version=unavailable\uc785\ub2c8\ub2e4',
                                   '| `mapping.digest` | **unavailable**\uc785\ub2c8\ub2e4. |'])
-def test_round_r_d05_hangul_label_suffix(markup):
+def test_round_r_d05_hangul_label_suffix(contracts, markup):
     name = 'mapping.digest' if 'digest' in markup else 'mapping.version'
-    assert module().pin_claims(markup) == [(name, 'unavailable')]
+    body = RECIPIENT_LABELS.replace('pin ' + name + '=parent-supplied', markup)
+    assert contracts.recipient_check(RECIPIENT_PROMPT, body, {}) == []
+    assert 'missing recipient pin label: ' + name in contracts.recipient_check(
+        RECIPIENT_PROMPT, body.replace(markup, ''), {})
 
 
 @pytest.mark.parametrize('label', [
     'unavailableExtra', 'parent-suppliedValue', 'verified-in-repository',
 ])
-def test_round_r_ascii_label_suffix_is_not_a_label(label):
-    assert module().pin_claims('mapping.version=' + label) == []
+def test_round_r_ascii_label_suffix_is_not_a_label(contracts, label):
+    body = RECIPIENT_LABELS.replace('pin mapping.version=parent-supplied',
+                                    'mapping.version=' + label)
+    assert 'missing recipient pin label: mapping.version' in contracts.recipient_check(
+        RECIPIENT_PROMPT, body, {})
 
 
 @pytest.mark.parametrize('claim', ROUND_R_SOURCE_CLAIMS,
@@ -2777,15 +2862,15 @@ ROUND_S_REPAIRS = [{'type': 'response_item',
 def test_round_s_d04_reused_stop_id_counts_occurrences(runtime):
     run, _, repo = runtime
     run('UserPromptSubmit', prompt=RECIPIENT_PROMPT)
-    hook = module()
-    event = {'cwd': str(repo), 'transcript_path': str(repo / 'native-session.jsonl')}
     for count, row in enumerate(ROUND_S_REPAIRS, 1):
         with (repo / 'native-session.jsonl').open('a') as stream:
             stream.write(json.dumps(row) + '\n')
         if count == 2:
             third = run('Stop', last_assistant_message='Done.', stop_hook_active=True)
             assert 'decision' not in json.loads(third.stdout or '{}')
-        assert hook.prior_blocks(event) == count
+        if count == 1:
+            second = run('Stop', last_assistant_message='Done.', stop_hook_active=True)
+            assert json.loads(second.stdout)['decision'] == 'block'
 
 
 # S01P T383:134/153, S02P T387:90, S01C T28:124.
@@ -2873,9 +2958,9 @@ ROUND_S_INVENTORIES = [
 
 @pytest.mark.parametrize('body', ROUND_S_AUTHORITY,
                          ids=['fixture-inference', 'review-scope', 'risk', 'reader'])
-def test_round_s_d01_read_scope_and_inference(body, monkeypatch):
-    hook = module()
-    monkeypatch.setattr(hook, 'turn_tools', lambda event: ([], [], []))
+def test_round_s_d01_read_scope_and_inference(contracts, body):
+    hook = contracts
+    hook.evidence = ([], [], [])
     owner = hook.owner_sections('May: read/inspect only\nMay not: run commands; edit files')
     assert hook.authority_defects(body, owner) == []
     for enlarged in ('You may run commands.', 'You may modify files.',
@@ -2889,19 +2974,20 @@ def test_round_s_d01_read_scope_and_inference(body, monkeypatch):
                                          no_commands=True))
 
 
-def test_round_s_d02_value_is_not_a_pin(monkeypatch):
-    hook = module()
-    monkeypatch.setattr(hook, 'turn_tools', lambda event: ([], [], []))
+def test_round_s_d02_value_is_not_a_pin(contracts):
+    hook = contracts
+    hook.evidence = ([], [], [])
     claim = 'head=abbreviated: parent-supplied'
-    assert hook.pin_claims(claim) == [('head', 'parent-supplied')]
+    body = RECIPIENT_LABELS.replace('pin head=parent-supplied', claim)
+    assert hook.recipient_check(RECIPIENT_PROMPT, body, {}) == []
     assert hook.recipient_check(RECIPIENT_PROMPT + '\n' + claim,
                                 RECIPIENT_LABELS, {'cwd': str(ROOT)}) == []
 
 
 @pytest.mark.parametrize('inventory', ROUND_S_INVENTORIES, ids=['combined', 'nested'])
-def test_round_s_d03_recipient_inventory(monkeypatch, inventory):
-    hook = module()
-    monkeypatch.setattr(hook, 'turn_tools', lambda event: ([], [], []))
+def test_round_s_d03_recipient_inventory(contracts, inventory):
+    hook = contracts
+    hook.evidence = ([], [], [])
     prompt = 'Review this received handoff.'
     body = inventory + '\nNo local check was performed.'
     assert hook.recipient_check(prompt, body, {'cwd': str(ROOT)}) == []
@@ -2937,8 +3023,8 @@ ROUND_S_DIGEST = (
 )
 
 
-def test_round_t_d01_owner_only_authority():
-    hook = module()
+def test_round_t_d01_owner_only_authority(contracts):
+    hook = contracts
     owner = hook.owner_sections('May: read/inspect only\nMay not: run commands; edit files')
     for sentence in (
         'owner(\uc0ac\uc6a9\uc790)\ub9cc \ubb38\uad6c \ubcc0\uacbd\uc744 '
@@ -2952,23 +3038,21 @@ def test_round_t_d01_owner_only_authority():
             assert hook.authority_defects(sentence + '\n' + grant, owner)
 
 
-def test_round_t_d02_pin_headings(monkeypatch):
-    hook = module()
-    monkeypatch.setattr(hook, 'turn_tools', lambda event: ([], [], []))
+def test_round_t_d02_pin_headings(contracts):
+    hook = contracts
+    hook.evidence = ([], [], [])
     for heading in ('pin', 'pins'):
         prompt = ('Review this received handoff.\n- **' + heading + ':**\n'
                   '  - repository_root: parent-supplied(example)\n'
                   '  - head: parent-supplied(example)')
-        claims = hook.pin_claims(prompt)
-        assert claims == [('repository_root', 'parent-supplied'), ('head', 'parent-supplied')]
         assert hook.recipient_check(prompt, RECIPIENT_LABELS, {'cwd': str(ROOT)}) == []
         assert 'missing recipient pin label: head' in hook.recipient_check(
             prompt, RECIPIENT_LABELS.replace('pin head=parent-supplied', ''), {'cwd': str(ROOT)})
 
 
-def test_round_t_d03_reader_disclosure(monkeypatch):
-    hook = module()
-    monkeypatch.setattr(hook, 'turn_tools', lambda event: ([], [], []))
+def test_round_t_d03_reader_disclosure(contracts):
+    hook = contracts
+    hook.evidence = ([], [], [])
     prompt = RECIPIENT_PROMPT + '\nNo commands.'
     disclosure = (
         '\uc18c\uc2a4 \ub9ac\ub354\ub97c \ucc3e\uc9c0 \ubabb\ud588\uc2b5\ub2c8\ub2e4. '
@@ -2981,8 +3065,8 @@ def test_round_t_d03_reader_disclosure(monkeypatch):
     assert defect in hook.recipient_check(prompt, RECIPIENT_LABELS, {'cwd': str(ROOT)})
 
 
-def test_round_t_d04_evidential_precondition():
-    hook = module()
+def test_round_t_d04_evidential_precondition(contracts):
+    hook = contracts
     owner = hook.owner_sections('May: read/inspect only\nMay not: run commands; edit files')
     for sentence in (
         '\ub300\uc870\uad70\uc774 \uc2e4\ud589\ub418\uc5b4\uc57c \uc8fc\uc7a5\uc744 '
@@ -2996,8 +3080,8 @@ def test_round_t_d04_evidential_precondition():
             assert hook.authority_defects(sentence + '\n' + grant, owner)
 
 
-def test_round_t_d05_nested_source_citation():
-    hook = module()
+def test_round_t_d05_nested_source_citation(contracts):
+    hook = contracts
     claim = '  - All reports end with "review required".'
     for numbers in ('12-14', '12\u201314', '12, 20\u201322', '12'):
         cited = '- **`scripts/check.py`**\n  - ' + numbers + ': inspect branches.\n'

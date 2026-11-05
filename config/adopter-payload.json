@@ -3436,6 +3436,12 @@
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
+      "path": "native/handoff-packet/tests/fixtures/g6/lifecycle.json",
+      "sha256": "486421c65f2f4737189265c6d4fdc72b3f813c2932a8e6c3e944ad6af8cde183"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/g6/policy-cli.json",
       "sha256": "019e5eadbe208e6df4836649ff6847e70683628e3a895e92635bb5ef9bada60b"
     },
@@ -5638,6 +5644,12 @@
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
+      "path": "tests/lifecycle_golden.py",
+      "sha256": "4a654c0b9492e6080cbe9a734c1b4dfe28447ac9b7430211c2156a7b4e47ffe6"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
       "path": "tests/mir_mcp_interpreters.py",
       "sha256": "af9474342b05ae0b4c4320bd00e61a4fdd7c28f7955301d442aaebe4e677f672"
     },
@@ -5987,7 +5999,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_handoff_packet_native_parity.py",
-      "sha256": "42bc39e7623ec104037f88b5d3e38c55d2f211aba67cad89423149c738893bb1"
+      "sha256": "e9fa4ec4828e80aef2b243f3032674a2d864892c56d069a899602c8d61664dcc"
     },
     {
       "classification": "template-maintainer-tool",
@@ -6023,7 +6035,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_lifecycle_native_commands.py",
-      "sha256": "53d413fea51e4223a154e6690e840c61f4339ea8846093fdd3c8b839ff3426c2"
+      "sha256": "abb3d5a8c77ac2dca91f958e6e6464b6ef039c82c754b92bc17d6e0f5b8f1550"
     },
     {
       "classification": "template-maintainer-tool",
@@ -6059,7 +6071,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_mechanical_handoff.py",
-      "sha256": "505bddc7090338f1cabb71c4f0dcae9702ae9f56dfe2f340de6155831b8ab267"
+      "sha256": "708e7fab22e143476af7e93634cf8bf5da9a4351b7a2ec056e9bc6be22a12726"
     },
     {
       "classification": "template-maintainer-tool",
