@@ -2795,13 +2795,13 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/Cargo.toml",
-      "sha256": "d00f6b4ff019ace5b4a4e431c8e9881a27737cf905b1dd7f0b2003cef375f49b"
+      "sha256": "7c5d1b723a6f0c5ea58b39809061ebee84c7543aaeacd1a22f32563f9a1aeaa5"
     },
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/README.md",
-      "sha256": "238bf08b961be999406804b83f1c7441005c0ea6d8311ab346d517d0378a1da4"
+      "sha256": "908b4ebd8d7083e29ee490dab4548f7c82e6ea00f4bbaa54e0cfe63269828cc6"
     },
     {
       "classification": "template-maintainer-tool",
@@ -2843,7 +2843,19 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/bootstrap_gate.rs",
-      "sha256": "132e5304009fa926fa618e0f4ce044f8b1a350e365729f39391ea669155d7f5b"
+      "sha256": "c7125b59212872fbbaf4a4437ef87738a1c69b37439e84e90f54110b5cdc1135"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/src/bootstrap_json.rs",
+      "sha256": "e83c22df3c68eb197e8321460bd3b3bd46b7fbd7954a69ba0f49f6ad08a80b83"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/src/bootstrap_state.rs",
+      "sha256": "ef76db80e9eaf1f1ea0826a432450d8d855c27fe91a215964ada65cce2371f85"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3190,6 +3202,12 @@
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
+      "path": "native/handoff-packet/tests/bootstrap_state.rs",
+      "sha256": "7bab99bc22a0e7c2406c9a298796cf1ecd7480c25a71a655858b43de6dfd0b47"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
       "path": "native/handoff-packet/tests/codex_binary.rs",
       "sha256": "be9e4145f74efc6eda32d75812c2609b6cf0517de77fccc22cc6881894a443af"
     },
@@ -3312,6 +3330,12 @@
       "disposition": "remove",
       "path": "native/handoff-packet/tests/executor_worktree.rs",
       "sha256": "1f2331ae46331121fa8fc62b2ba28ec6e02fb9bc4c20e654efc7d69682d7032d"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/tests/fixtures/bootstrap-state.json",
+      "sha256": "30ad214e4e958206add5632ee319f412671cdd9cfccef8a56a9429f8bdf7804f"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3617,13 +3641,13 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/w1/README.md",
-      "sha256": "6e6cd46d2f1cdbd4dd262c9e74d55933853da5f3ba6f279e5a66b7fa80638858"
+      "sha256": "9fd7369798c0d9bb20fb0bcf77bf212de1e6b46a2ecd1ac55fdb656a335dcd2e"
     },
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/w1/manifest.json",
-      "sha256": "f4f83c637dedb45eb5af02c074d40f0ae05039f1dd15b78fa9fac72eff80bee2"
+      "sha256": "ccd5c9c172a3245cf261a18370c99f29293d5cea7f9a201711f20f12804a09cc"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3677,7 +3701,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/support/replay.rs",
-      "sha256": "e578205f69a86e29ebfc8fc4b1acd924f7c8524ac9d47acc7fe7cc0f3c18377b"
+      "sha256": "4ea9902786f81e2570ea2160417d2c0894a219d94581804ce5af8c10eb6e5fba"
     },
     {
       "classification": "template-maintainer-tool",
@@ -5856,6 +5880,12 @@
       "disposition": "remove",
       "path": "tests/test_bootstrap_start_gate.py",
       "sha256": "aa3826f022dc0c9e4aaa87c61f98ca0f1c596115f77a2a09c70d0431d52403d7"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "tests/test_bootstrap_state.py",
+      "sha256": "b7e619a575dd89099cb277ac4d42ee2be79809620b98cb59d895ebf94e84bc0a"
     },
     {
       "classification": "template-maintainer-tool",

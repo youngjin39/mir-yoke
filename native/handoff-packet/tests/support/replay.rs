@@ -54,7 +54,7 @@ fn substitute(mut data: Vec<u8>, from: &str, to: &str) -> Vec<u8> {
 fn repo() -> &'static str {
     concat!(env!("CARGO_MANIFEST_DIR"), "/../..")
 }
-fn transform(mut data: Vec<u8>, root: &Path, expand: bool) -> Vec<u8> {
+pub fn transform(mut data: Vec<u8>, root: &Path, expand: bool) -> Vec<u8> {
     for (token, path) in [
         ("@TMP@", root.to_str().unwrap()),
         ("@REPO@", repo()),
@@ -87,7 +87,7 @@ pub fn prepare(root: &Path) -> Command {
         .current_dir(root.join("project"));
     command
 }
-fn install(files: &Value, root: &Path) {
+pub fn install(files: &Value, root: &Path) {
     for (name, entry) in files.as_object().unwrap() {
         let path = root.join(name);
         fs::create_dir_all(path.parent().unwrap()).unwrap();
@@ -116,7 +116,7 @@ fn install(files: &Value, root: &Path) {
         }
     }
 }
-fn snapshot(root: &Path) -> BTreeMap<String, Value> {
+pub fn snapshot(root: &Path) -> BTreeMap<String, Value> {
     fn visit(path: &Path, root: &Path, out: &mut BTreeMap<String, Value>) {
         for entry in fs::read_dir(path).unwrap() {
             let path = entry.unwrap().path();

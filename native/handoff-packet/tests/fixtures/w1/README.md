@@ -65,3 +65,9 @@ skips POSIX replay and retains the platform-specific suite.
   `project-hooks` `[[bin]]` declaration. The pinned file is a build input for the
   bootstrap-native observations; the `bootstrap-gate` target and every record
   replay unchanged.
+
+- W1-Y6a re-pins `native/handoff-packet/src/bootstrap_gate.rs` and the crate
+  manifest: a separate `state --protocol 1` subcommand, a `--capabilities` probe
+  and the additive serde_json `raw_value` feature. The legacy `ready`/`invalid`
+  fast path is byte-identical and all 42 bootstrap-native envelopes replay
+  unchanged.

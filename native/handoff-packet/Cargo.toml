@@ -21,7 +21,7 @@ path = "src/bootstrap_gate.rs"
 [dependencies]
 serde = "1"
 tempfile = "3"
-serde_json = { version = "1", features = ["unbounded_depth", "float_roundtrip"] }
+serde_json = { version = "1", features = ["unbounded_depth", "float_roundtrip", "raw_value"] }
 regex = "1"
 fancy-regex = "0.14"
 toml = { version = "=0.8.2", default-features = false, features = ["parse"] }

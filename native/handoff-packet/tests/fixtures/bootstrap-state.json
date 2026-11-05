@@ -1,0 +1,3526 @@
+{
+  "schema": "mir.w1-y6a-replay@1",
+  "source": {
+    "path": ".claude/hooks/_lib/bootstrap-gate.sh",
+    "sha256": "0417a7f5128d98ee2a01fbd5088b301aa0e4403f5fa2d71569d99028de15602f"
+  },
+  "reused": [
+    {
+      "id": ".claude/hooks/_lib/bootstrap-gate.sh:greenfield-missing",
+      "state": "missing",
+      "mode": "greenfield",
+      "shell_exit": 1
+    },
+    {
+      "id": ".claude/hooks/_lib/bootstrap-gate.sh:greenfield-pending",
+      "state": "pending",
+      "mode": "greenfield",
+      "shell_exit": 1
+    },
+    {
+      "id": ".claude/hooks/_lib/bootstrap-gate.sh:greenfield-restart",
+      "state": "restart_required",
+      "mode": "greenfield",
+      "shell_exit": 1
+    },
+    {
+      "id": ".claude/hooks/_lib/bootstrap-gate.sh:greenfield-ready",
+      "state": "ready",
+      "mode": "greenfield",
+      "shell_exit": 0
+    },
+    {
+      "id": ".claude/hooks/_lib/bootstrap-gate.sh:greenfield-invalid",
+      "state": "invalid",
+      "mode": "greenfield",
+      "shell_exit": 1
+    },
+    {
+      "id": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-missing",
+      "state": "missing",
+      "mode": "adoption",
+      "shell_exit": 1
+    },
+    {
+      "id": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-pending",
+      "state": "pending",
+      "mode": "adoption",
+      "shell_exit": 1
+    },
+    {
+      "id": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-restart",
+      "state": "restart_required",
+      "mode": "adoption",
+      "shell_exit": 1
+    },
+    {
+      "id": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-ready",
+      "state": "ready",
+      "mode": "adoption",
+      "shell_exit": 0
+    },
+    {
+      "id": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-invalid",
+      "state": "invalid",
+      "mode": "adoption",
+      "shell_exit": 1
+    },
+    {
+      "id": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-ready-matrix",
+      "state": "ready",
+      "mode": "adoption",
+      "shell_exit": 0
+    },
+    {
+      "id": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-missing_evidence-matrix",
+      "state": "invalid",
+      "mode": "adoption",
+      "shell_exit": 1
+    },
+    {
+      "id": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-duplicate_evidence-matrix",
+      "state": "invalid",
+      "mode": "adoption",
+      "shell_exit": 1
+    },
+    {
+      "id": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-omitted_evidence-matrix",
+      "state": "invalid",
+      "mode": "adoption",
+      "shell_exit": 1
+    },
+    {
+      "id": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-hash_drift-matrix",
+      "state": "invalid",
+      "mode": "adoption",
+      "shell_exit": 1
+    },
+    {
+      "id": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-source_drift-matrix",
+      "state": "invalid",
+      "mode": "adoption",
+      "shell_exit": 1
+    },
+    {
+      "id": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-manifest_drift-matrix",
+      "state": "invalid",
+      "mode": "adoption",
+      "shell_exit": 1
+    },
+    {
+      "id": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-traversal-matrix",
+      "state": "invalid",
+      "mode": "adoption",
+      "shell_exit": 1
+    },
+    {
+      "id": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-leaf_symlink-matrix",
+      "state": "invalid",
+      "mode": "adoption",
+      "shell_exit": 1
+    },
+    {
+      "id": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-ancestor_symlink-matrix",
+      "state": "ready",
+      "mode": "adoption",
+      "shell_exit": 0
+    },
+    {
+      "id": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-empty_evidence-matrix",
+      "state": "invalid",
+      "mode": "adoption",
+      "shell_exit": 1
+    },
+    {
+      "id": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-missing_manifest-matrix",
+      "state": "invalid",
+      "mode": "adoption",
+      "shell_exit": 1
+    },
+    {
+      "id": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-manifest_symlink-matrix",
+      "state": "invalid",
+      "mode": "adoption",
+      "shell_exit": 1
+    },
+    {
+      "id": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-receipt_symlink-matrix",
+      "state": "invalid",
+      "mode": "adoption",
+      "shell_exit": 1
+    },
+    {
+      "id": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-malformed_receipt-matrix",
+      "state": "invalid",
+      "mode": "adoption",
+      "shell_exit": 1
+    },
+    {
+      "id": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-malformed_manifest-matrix",
+      "state": "invalid",
+      "mode": "adoption",
+      "shell_exit": 1
+    },
+    {
+      "id": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-exotic_path-matrix",
+      "state": "invalid",
+      "mode": "adoption",
+      "shell_exit": 1
+    },
+    {
+      "id": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-control_path-matrix",
+      "state": "invalid",
+      "mode": "adoption",
+      "shell_exit": 1
+    },
+    {
+      "id": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-unsupported_mode-matrix",
+      "state": "invalid",
+      "mode": "adoption",
+      "shell_exit": 1
+    },
+    {
+      "id": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-missing_receipt-matrix",
+      "state": "missing",
+      "mode": "adoption",
+      "shell_exit": 1
+    },
+    {
+      "id": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-duplicate_declaration-matrix",
+      "state": "ready",
+      "mode": "adoption",
+      "shell_exit": 0
+    },
+    {
+      "id": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-directory_evidence-matrix",
+      "state": "invalid",
+      "mode": "adoption",
+      "shell_exit": 1
+    },
+    {
+      "id": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-unicode_path-matrix",
+      "state": "ready",
+      "mode": "adoption",
+      "shell_exit": 0
+    },
+    {
+      "id": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-space_path-matrix",
+      "state": "ready",
+      "mode": "adoption",
+      "shell_exit": 0
+    },
+    {
+      "id": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-duplicate_json_keys-matrix",
+      "state": "ready",
+      "mode": "adoption",
+      "shell_exit": 0
+    },
+    {
+      "id": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-ready_other_mode-matrix",
+      "state": "ready",
+      "mode": "adoption",
+      "shell_exit": 0
+    },
+    {
+      "id": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-ready_omitted_mode-matrix",
+      "state": "ready",
+      "mode": "adoption",
+      "shell_exit": 0
+    },
+    {
+      "id": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-bad_hash-matrix",
+      "state": "invalid",
+      "mode": "adoption",
+      "shell_exit": 1
+    },
+    {
+      "id": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-missing_hash-matrix",
+      "state": "invalid",
+      "mode": "adoption",
+      "shell_exit": 1
+    },
+    {
+      "id": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-missing_path-matrix",
+      "state": "invalid",
+      "mode": "adoption",
+      "shell_exit": 1
+    },
+    {
+      "id": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-evidence_nonarray-matrix",
+      "state": "invalid",
+      "mode": "adoption",
+      "shell_exit": 1
+    },
+    {
+      "id": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-greenfield_ready-matrix",
+      "state": "invalid",
+      "mode": "greenfield",
+      "shell_exit": 1
+    },
+    {
+      "id": ".claude/hooks/_lib/bootstrap-gate.sh:provider",
+      "state": "template_maintainer",
+      "mode": "provider",
+      "shell_exit": 0
+    }
+  ],
+  "legacy_native": [
+    {
+      "id": "bootstrap-native:adoption-ready-matrix",
+      "state_record": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-ready-matrix"
+    },
+    {
+      "id": "bootstrap-native:adoption-missing_evidence-matrix",
+      "state_record": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-missing_evidence-matrix"
+    },
+    {
+      "id": "bootstrap-native:adoption-duplicate_evidence-matrix",
+      "state_record": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-duplicate_evidence-matrix"
+    },
+    {
+      "id": "bootstrap-native:adoption-omitted_evidence-matrix",
+      "state_record": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-omitted_evidence-matrix"
+    },
+    {
+      "id": "bootstrap-native:adoption-hash_drift-matrix",
+      "state_record": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-hash_drift-matrix"
+    },
+    {
+      "id": "bootstrap-native:adoption-source_drift-matrix",
+      "state_record": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-source_drift-matrix"
+    },
+    {
+      "id": "bootstrap-native:adoption-manifest_drift-matrix",
+      "state_record": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-manifest_drift-matrix"
+    },
+    {
+      "id": "bootstrap-native:adoption-traversal-matrix",
+      "state_record": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-traversal-matrix"
+    },
+    {
+      "id": "bootstrap-native:adoption-leaf_symlink-matrix",
+      "state_record": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-leaf_symlink-matrix"
+    },
+    {
+      "id": "bootstrap-native:adoption-ancestor_symlink-matrix",
+      "state_record": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-ancestor_symlink-matrix"
+    },
+    {
+      "id": "bootstrap-native:adoption-empty_evidence-matrix",
+      "state_record": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-empty_evidence-matrix"
+    },
+    {
+      "id": "bootstrap-native:adoption-missing_manifest-matrix",
+      "state_record": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-missing_manifest-matrix"
+    },
+    {
+      "id": "bootstrap-native:adoption-manifest_symlink-matrix",
+      "state_record": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-manifest_symlink-matrix"
+    },
+    {
+      "id": "bootstrap-native:adoption-receipt_symlink-matrix",
+      "state_record": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-receipt_symlink-matrix"
+    },
+    {
+      "id": "bootstrap-native:adoption-malformed_receipt-matrix",
+      "state_record": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-malformed_receipt-matrix"
+    },
+    {
+      "id": "bootstrap-native:adoption-malformed_manifest-matrix",
+      "state_record": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-malformed_manifest-matrix"
+    },
+    {
+      "id": "bootstrap-native:adoption-exotic_path-matrix",
+      "state_record": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-exotic_path-matrix"
+    },
+    {
+      "id": "bootstrap-native:adoption-control_path-matrix",
+      "state_record": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-control_path-matrix"
+    },
+    {
+      "id": "bootstrap-native:adoption-unsupported_mode-matrix",
+      "state_record": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-unsupported_mode-matrix"
+    },
+    {
+      "id": "bootstrap-native:adoption-missing_receipt-matrix",
+      "state_record": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-missing_receipt-matrix"
+    },
+    {
+      "id": "bootstrap-native:adoption-duplicate_declaration-matrix",
+      "state_record": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-duplicate_declaration-matrix"
+    },
+    {
+      "id": "bootstrap-native:adoption-directory_evidence-matrix",
+      "state_record": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-directory_evidence-matrix"
+    },
+    {
+      "id": "bootstrap-native:adoption-unicode_path-matrix",
+      "state_record": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-unicode_path-matrix"
+    },
+    {
+      "id": "bootstrap-native:adoption-space_path-matrix",
+      "state_record": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-space_path-matrix"
+    },
+    {
+      "id": "bootstrap-native:adoption-duplicate_json_keys-matrix",
+      "state_record": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-duplicate_json_keys-matrix"
+    },
+    {
+      "id": "bootstrap-native:adoption-ready_other_mode-matrix",
+      "state_record": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-ready_other_mode-matrix"
+    },
+    {
+      "id": "bootstrap-native:adoption-ready_omitted_mode-matrix",
+      "state_record": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-ready_omitted_mode-matrix"
+    },
+    {
+      "id": "bootstrap-native:adoption-bad_hash-matrix",
+      "state_record": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-bad_hash-matrix"
+    },
+    {
+      "id": "bootstrap-native:adoption-missing_hash-matrix",
+      "state_record": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-missing_hash-matrix"
+    },
+    {
+      "id": "bootstrap-native:adoption-missing_path-matrix",
+      "state_record": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-missing_path-matrix"
+    },
+    {
+      "id": "bootstrap-native:adoption-evidence_nonarray-matrix",
+      "state_record": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-evidence_nonarray-matrix"
+    },
+    {
+      "id": "bootstrap-native:adoption-greenfield_ready-matrix",
+      "state_record": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-greenfield_ready-matrix"
+    },
+    {
+      "id": "bootstrap-native:greenfield-missing",
+      "state_record": ".claude/hooks/_lib/bootstrap-gate.sh:greenfield-missing"
+    },
+    {
+      "id": "bootstrap-native:greenfield-pending",
+      "state_record": ".claude/hooks/_lib/bootstrap-gate.sh:greenfield-pending"
+    },
+    {
+      "id": "bootstrap-native:greenfield-restart",
+      "state_record": ".claude/hooks/_lib/bootstrap-gate.sh:greenfield-restart"
+    },
+    {
+      "id": "bootstrap-native:greenfield-ready",
+      "state_record": ".claude/hooks/_lib/bootstrap-gate.sh:greenfield-ready"
+    },
+    {
+      "id": "bootstrap-native:greenfield-invalid",
+      "state_record": ".claude/hooks/_lib/bootstrap-gate.sh:greenfield-invalid"
+    },
+    {
+      "id": "bootstrap-native:adoption-missing",
+      "state_record": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-missing"
+    },
+    {
+      "id": "bootstrap-native:adoption-pending",
+      "state_record": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-pending"
+    },
+    {
+      "id": "bootstrap-native:adoption-restart",
+      "state_record": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-restart"
+    },
+    {
+      "id": "bootstrap-native:adoption-ready",
+      "state_record": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-ready"
+    },
+    {
+      "id": "bootstrap-native:adoption-invalid",
+      "state_record": ".claude/hooks/_lib/bootstrap-gate.sh:adoption-invalid"
+    }
+  ],
+  "deferred": [
+    ".claude/hooks/pre-tool-use.sh:missing-receipt",
+    ".claude/hooks/pre-tool-use.sh:evidence",
+    ".claude/hooks/pre-tool-use.sh:malformed"
+  ],
+  "new": [
+    {
+      "id": "w1-y6a:malformed-sha256",
+      "family": ".claude/hooks/_lib/bootstrap-gate.sh",
+      "case": "malformed-sha256",
+      "argv": [
+        "/bin/bash",
+        "-c",
+        "source \"$1\"; mir_bootstrap_gate_state \"$CLAUDE_PROJECT_DIR\"",
+        "w1",
+        "@TMP@/project/.claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "stdin": "e30=",
+      "env": {},
+      "setup": {
+        "project/.venv/bin/python": {
+          "base64": "IyEvYmluL3NoCmV4ZWMgIkBQWVRIT05AIiAiJEAiCg==",
+          "mode": 493
+        },
+        "external/bin/mir": {
+          "base64": "IyEvYmluL3NoCmV4aXQgMAo=",
+          "mode": 493
+        },
+        "external/runtime-manifest.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/spec/STATE.md": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/index.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/graph.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/gaps.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/config/adopter-boundary.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/.mir/bootstrap-receipt.json": {
+          "base64": "eyJzdGF0dXMiOiAicmVhZHkiLCAibW9kZSI6ICJncmVlbmZpZWxkIiwgImNsaSI6IHsiZXh0ZXJuYWxpemVkIjogdHJ1ZSwgImV4ZWN1dGFibGUiOiAiQFRNUEAvZXh0ZXJuYWwvYmluL21pciIsICJzaGEyNTYiOiAiWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWCIsICJydW50aW1lX21hbmlmZXN0IjogIkBUTVBAL2V4dGVybmFsL3J1bnRpbWUtbWFuaWZlc3QuanNvbiIsICJydW50aW1lX21hbmlmZXN0X3NoYTI1NiI6ICI0NDEzNmZhMzU1YjM2NzhhMTE0NmFkMTZmN2U4NjQ5ZTk0ZmI0ZmMyMWZlNzdlODMxMGMwNjBmNjFjYWFmZjhhIiwgInNvdXJjZV91cmwiOiAiaHR0cHM6Ly9leGFtcGxlLmludmFsaWQvcHJvdmlkZXIiLCAic291cmNlX2NvbW1pdCI6ICJhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhIiwgImNvbnN0cmFpbnRzX3NoYTI1NiI6ICJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiIn0sICJjYXBhYmlsaXRpZXMiOiB7InN0YXR1cyI6ICJyZWFkeSJ9LCAic2xpbSI6IHsic3RhdHVzIjogImFwcGxpZWQifSwgImFyY2hpdGVjdHVyZV9pbml0aWFsaXphdGlvbiI6IHsiYXR0ZXN0ZWQiOiB0cnVlLCAiZXZpZGVuY2UiOiB7Im91dHB1dF9oYXNoZXMiOiB7InNwZWMvU1RBVEUubWQiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2luZGV4LnlhbWwiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2dyYXBoLnlhbWwiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2dhcHMueWFtbCI6ICJlODBiNzFjZDE0ZDNjYmQ2NWY0MTczYWJjYmZjZjAxYTU0NWRiY2EzMmE3MmQ1NzUxMDhiNTUzYTY0OGNjOTZmIn19fX0=",
+          "mode": 420
+        }
+      },
+      "copies": [
+        ".claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "native": false,
+      "expected": {
+        "exit": 1,
+        "stdout": "aW52YWxpZAo=",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      },
+      "state": "invalid",
+      "mode": "greenfield",
+      "unsupported": false
+    },
+    {
+      "id": "w1-y6a:malformed-runtime_manifest_sha256",
+      "family": ".claude/hooks/_lib/bootstrap-gate.sh",
+      "case": "malformed-runtime_manifest_sha256",
+      "argv": [
+        "/bin/bash",
+        "-c",
+        "source \"$1\"; mir_bootstrap_gate_state \"$CLAUDE_PROJECT_DIR\"",
+        "w1",
+        "@TMP@/project/.claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "stdin": "e30=",
+      "env": {},
+      "setup": {
+        "project/.venv/bin/python": {
+          "base64": "IyEvYmluL3NoCmV4ZWMgIkBQWVRIT05AIiAiJEAiCg==",
+          "mode": 493
+        },
+        "external/bin/mir": {
+          "base64": "IyEvYmluL3NoCmV4aXQgMAo=",
+          "mode": 493
+        },
+        "external/runtime-manifest.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/spec/STATE.md": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/index.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/graph.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/gaps.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/config/adopter-boundary.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/.mir/bootstrap-receipt.json": {
+          "base64": "eyJzdGF0dXMiOiAicmVhZHkiLCAibW9kZSI6ICJncmVlbmZpZWxkIiwgImNsaSI6IHsiZXh0ZXJuYWxpemVkIjogdHJ1ZSwgImV4ZWN1dGFibGUiOiAiQFRNUEAvZXh0ZXJuYWwvYmluL21pciIsICJzaGEyNTYiOiAiMzA2YzZjYTc0MDc1NjAzNDA3OTc4NjZlMDc3ZTA1MzYyN2FkNDA5Mjc3ZDFiOWRhNTgxMDZmY2U0Y2Y3MTdjYiIsICJydW50aW1lX21hbmlmZXN0IjogIkBUTVBAL2V4dGVybmFsL3J1bnRpbWUtbWFuaWZlc3QuanNvbiIsICJydW50aW1lX21hbmlmZXN0X3NoYTI1NiI6ICJYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYIiwgInNvdXJjZV91cmwiOiAiaHR0cHM6Ly9leGFtcGxlLmludmFsaWQvcHJvdmlkZXIiLCAic291cmNlX2NvbW1pdCI6ICJhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhIiwgImNvbnN0cmFpbnRzX3NoYTI1NiI6ICJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiIn0sICJjYXBhYmlsaXRpZXMiOiB7InN0YXR1cyI6ICJyZWFkeSJ9LCAic2xpbSI6IHsic3RhdHVzIjogImFwcGxpZWQifSwgImFyY2hpdGVjdHVyZV9pbml0aWFsaXphdGlvbiI6IHsiYXR0ZXN0ZWQiOiB0cnVlLCAiZXZpZGVuY2UiOiB7Im91dHB1dF9oYXNoZXMiOiB7InNwZWMvU1RBVEUubWQiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2luZGV4LnlhbWwiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2dyYXBoLnlhbWwiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2dhcHMueWFtbCI6ICJlODBiNzFjZDE0ZDNjYmQ2NWY0MTczYWJjYmZjZjAxYTU0NWRiY2EzMmE3MmQ1NzUxMDhiNTUzYTY0OGNjOTZmIn19fX0=",
+          "mode": 420
+        }
+      },
+      "copies": [
+        ".claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "native": false,
+      "expected": {
+        "exit": 1,
+        "stdout": "aW52YWxpZAo=",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      },
+      "state": "invalid",
+      "mode": "greenfield",
+      "unsupported": false
+    },
+    {
+      "id": "w1-y6a:malformed-constraints_sha256",
+      "family": ".claude/hooks/_lib/bootstrap-gate.sh",
+      "case": "malformed-constraints_sha256",
+      "argv": [
+        "/bin/bash",
+        "-c",
+        "source \"$1\"; mir_bootstrap_gate_state \"$CLAUDE_PROJECT_DIR\"",
+        "w1",
+        "@TMP@/project/.claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "stdin": "e30=",
+      "env": {},
+      "setup": {
+        "project/.venv/bin/python": {
+          "base64": "IyEvYmluL3NoCmV4ZWMgIkBQWVRIT05AIiAiJEAiCg==",
+          "mode": 493
+        },
+        "external/bin/mir": {
+          "base64": "IyEvYmluL3NoCmV4aXQgMAo=",
+          "mode": 493
+        },
+        "external/runtime-manifest.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/spec/STATE.md": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/index.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/graph.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/gaps.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/config/adopter-boundary.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/.mir/bootstrap-receipt.json": {
+          "base64": "eyJzdGF0dXMiOiAicmVhZHkiLCAibW9kZSI6ICJncmVlbmZpZWxkIiwgImNsaSI6IHsiZXh0ZXJuYWxpemVkIjogdHJ1ZSwgImV4ZWN1dGFibGUiOiAiQFRNUEAvZXh0ZXJuYWwvYmluL21pciIsICJzaGEyNTYiOiAiMzA2YzZjYTc0MDc1NjAzNDA3OTc4NjZlMDc3ZTA1MzYyN2FkNDA5Mjc3ZDFiOWRhNTgxMDZmY2U0Y2Y3MTdjYiIsICJydW50aW1lX21hbmlmZXN0IjogIkBUTVBAL2V4dGVybmFsL3J1bnRpbWUtbWFuaWZlc3QuanNvbiIsICJydW50aW1lX21hbmlmZXN0X3NoYTI1NiI6ICI0NDEzNmZhMzU1YjM2NzhhMTE0NmFkMTZmN2U4NjQ5ZTk0ZmI0ZmMyMWZlNzdlODMxMGMwNjBmNjFjYWFmZjhhIiwgInNvdXJjZV91cmwiOiAiaHR0cHM6Ly9leGFtcGxlLmludmFsaWQvcHJvdmlkZXIiLCAic291cmNlX2NvbW1pdCI6ICJhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhIiwgImNvbnN0cmFpbnRzX3NoYTI1NiI6ICJYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYIn0sICJjYXBhYmlsaXRpZXMiOiB7InN0YXR1cyI6ICJyZWFkeSJ9LCAic2xpbSI6IHsic3RhdHVzIjogImFwcGxpZWQifSwgImFyY2hpdGVjdHVyZV9pbml0aWFsaXphdGlvbiI6IHsiYXR0ZXN0ZWQiOiB0cnVlLCAiZXZpZGVuY2UiOiB7Im91dHB1dF9oYXNoZXMiOiB7InNwZWMvU1RBVEUubWQiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2luZGV4LnlhbWwiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2dyYXBoLnlhbWwiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2dhcHMueWFtbCI6ICJlODBiNzFjZDE0ZDNjYmQ2NWY0MTczYWJjYmZjZjAxYTU0NWRiY2EzMmE3MmQ1NzUxMDhiNTUzYTY0OGNjOTZmIn19fX0=",
+          "mode": 420
+        }
+      },
+      "copies": [
+        ".claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "native": false,
+      "expected": {
+        "exit": 1,
+        "stdout": "aW52YWxpZAo=",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      },
+      "state": "invalid",
+      "mode": "greenfield",
+      "unsupported": false
+    },
+    {
+      "id": "w1-y6a:malformed-source_commit",
+      "family": ".claude/hooks/_lib/bootstrap-gate.sh",
+      "case": "malformed-source_commit",
+      "argv": [
+        "/bin/bash",
+        "-c",
+        "source \"$1\"; mir_bootstrap_gate_state \"$CLAUDE_PROJECT_DIR\"",
+        "w1",
+        "@TMP@/project/.claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "stdin": "e30=",
+      "env": {},
+      "setup": {
+        "project/.venv/bin/python": {
+          "base64": "IyEvYmluL3NoCmV4ZWMgIkBQWVRIT05AIiAiJEAiCg==",
+          "mode": 493
+        },
+        "external/bin/mir": {
+          "base64": "IyEvYmluL3NoCmV4aXQgMAo=",
+          "mode": 493
+        },
+        "external/runtime-manifest.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/spec/STATE.md": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/index.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/graph.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/gaps.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/config/adopter-boundary.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/.mir/bootstrap-receipt.json": {
+          "base64": "eyJzdGF0dXMiOiAicmVhZHkiLCAibW9kZSI6ICJncmVlbmZpZWxkIiwgImNsaSI6IHsiZXh0ZXJuYWxpemVkIjogdHJ1ZSwgImV4ZWN1dGFibGUiOiAiQFRNUEAvZXh0ZXJuYWwvYmluL21pciIsICJzaGEyNTYiOiAiMzA2YzZjYTc0MDc1NjAzNDA3OTc4NjZlMDc3ZTA1MzYyN2FkNDA5Mjc3ZDFiOWRhNTgxMDZmY2U0Y2Y3MTdjYiIsICJydW50aW1lX21hbmlmZXN0IjogIkBUTVBAL2V4dGVybmFsL3J1bnRpbWUtbWFuaWZlc3QuanNvbiIsICJydW50aW1lX21hbmlmZXN0X3NoYTI1NiI6ICI0NDEzNmZhMzU1YjM2NzhhMTE0NmFkMTZmN2U4NjQ5ZTk0ZmI0ZmMyMWZlNzdlODMxMGMwNjBmNjFjYWFmZjhhIiwgInNvdXJjZV91cmwiOiAiaHR0cHM6Ly9leGFtcGxlLmludmFsaWQvcHJvdmlkZXIiLCAic291cmNlX2NvbW1pdCI6ICJYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYIiwgImNvbnN0cmFpbnRzX3NoYTI1NiI6ICJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiIn0sICJjYXBhYmlsaXRpZXMiOiB7InN0YXR1cyI6ICJyZWFkeSJ9LCAic2xpbSI6IHsic3RhdHVzIjogImFwcGxpZWQifSwgImFyY2hpdGVjdHVyZV9pbml0aWFsaXphdGlvbiI6IHsiYXR0ZXN0ZWQiOiB0cnVlLCAiZXZpZGVuY2UiOiB7Im91dHB1dF9oYXNoZXMiOiB7InNwZWMvU1RBVEUubWQiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2luZGV4LnlhbWwiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2dyYXBoLnlhbWwiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2dhcHMueWFtbCI6ICJlODBiNzFjZDE0ZDNjYmQ2NWY0MTczYWJjYmZjZjAxYTU0NWRiY2EzMmE3MmQ1NzUxMDhiNTUzYTY0OGNjOTZmIn19fX0=",
+          "mode": 420
+        }
+      },
+      "copies": [
+        ".claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "native": false,
+      "expected": {
+        "exit": 1,
+        "stdout": "aW52YWxpZAo=",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      },
+      "state": "invalid",
+      "mode": "greenfield",
+      "unsupported": false
+    },
+    {
+      "id": "w1-y6a:runtime-failure",
+      "family": ".claude/hooks/_lib/bootstrap-gate.sh",
+      "case": "runtime-failure",
+      "argv": [
+        "/bin/bash",
+        "-c",
+        "source \"$1\"; mir_bootstrap_gate_state \"$CLAUDE_PROJECT_DIR\"",
+        "w1",
+        "@TMP@/project/.claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "stdin": "e30=",
+      "env": {},
+      "setup": {
+        "project/.venv/bin/python": {
+          "base64": "IyEvYmluL3NoCmV4ZWMgIkBQWVRIT05AIiAiJEAiCg==",
+          "mode": 493
+        },
+        "external/bin/mir": {
+          "base64": "IyEvYmluL3NoCmV4aXQgOQo=",
+          "mode": 493
+        },
+        "external/runtime-manifest.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/spec/STATE.md": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/index.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/graph.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/gaps.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/config/adopter-boundary.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/.mir/bootstrap-receipt.json": {
+          "base64": "eyJzdGF0dXMiOiAicmVhZHkiLCAibW9kZSI6ICJncmVlbmZpZWxkIiwgImNsaSI6IHsiZXh0ZXJuYWxpemVkIjogdHJ1ZSwgImV4ZWN1dGFibGUiOiAiQFRNUEAvZXh0ZXJuYWwvYmluL21pciIsICJzaGEyNTYiOiAiOTQ4NjI3OThiZjlkYTg3ZTEwYTJhYmI0NWNkMjY0N2ZkOWM1OWRmY2QxNWUxMDZjNWFlZTVlMDBkZTIzNDk3NiIsICJydW50aW1lX21hbmlmZXN0IjogIkBUTVBAL2V4dGVybmFsL3J1bnRpbWUtbWFuaWZlc3QuanNvbiIsICJydW50aW1lX21hbmlmZXN0X3NoYTI1NiI6ICI0NDEzNmZhMzU1YjM2NzhhMTE0NmFkMTZmN2U4NjQ5ZTk0ZmI0ZmMyMWZlNzdlODMxMGMwNjBmNjFjYWFmZjhhIiwgInNvdXJjZV91cmwiOiAiaHR0cHM6Ly9leGFtcGxlLmludmFsaWQvcHJvdmlkZXIiLCAic291cmNlX2NvbW1pdCI6ICJhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhIiwgImNvbnN0cmFpbnRzX3NoYTI1NiI6ICJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiIn0sICJjYXBhYmlsaXRpZXMiOiB7InN0YXR1cyI6ICJyZWFkeSJ9LCAic2xpbSI6IHsic3RhdHVzIjogImFwcGxpZWQifSwgImFyY2hpdGVjdHVyZV9pbml0aWFsaXphdGlvbiI6IHsiYXR0ZXN0ZWQiOiB0cnVlLCAiZXZpZGVuY2UiOiB7Im91dHB1dF9oYXNoZXMiOiB7InNwZWMvU1RBVEUubWQiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2luZGV4LnlhbWwiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2dyYXBoLnlhbWwiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2dhcHMueWFtbCI6ICJlODBiNzFjZDE0ZDNjYmQ2NWY0MTczYWJjYmZjZjAxYTU0NWRiY2EzMmE3MmQ1NzUxMDhiNTUzYTY0OGNjOTZmIn19fX0=",
+          "mode": 420
+        }
+      },
+      "copies": [
+        ".claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "native": false,
+      "expected": {
+        "exit": 1,
+        "stdout": "aW52YWxpZAo=",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      },
+      "state": "invalid",
+      "mode": "greenfield",
+      "unsupported": false
+    },
+    {
+      "id": "w1-y6a:runtime-arguments",
+      "family": ".claude/hooks/_lib/bootstrap-gate.sh",
+      "case": "runtime-arguments",
+      "argv": [
+        "/bin/bash",
+        "-c",
+        "source \"$1\"; mir_bootstrap_gate_state \"$CLAUDE_PROJECT_DIR\"",
+        "w1",
+        "@TMP@/project/.claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "stdin": "e30=",
+      "env": {},
+      "setup": {
+        "project/.venv/bin/python": {
+          "base64": "IyEvYmluL3NoCmV4ZWMgIkBQWVRIT05AIiAiJEAiCg==",
+          "mode": 493
+        },
+        "external/bin/mir": {
+          "base64": "IyEvYmluL3NoClsgIiQxIiA9IHJ1bnRpbWUtbWFuaWZlc3QgXSAmJiBbICIkMiIgPSB2ZXJpZnkgXSAmJiBbICIkMyIgPSAtLXJ1bnRpbWUtcm9vdCBdICYmIFsgIiQ1IiA9IC0tbWFuaWZlc3QgXSAmJiBbICIkNyIgPSAtLXNvdXJjZS11cmwgXSAmJiBbICIkOCIgPSBodHRwczovL2V4YW1wbGUuaW52YWxpZC9wcm92aWRlciBdICYmIFsgIiQ5IiA9IC0tc291cmNlLWNvbW1pdCBdICYmIFsgIiR7MTB9IiA9IGFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEgXSAmJiBbICIkezExfSIgPSAtLWNvbnN0cmFpbnRzLXNoYTI1NiBdICYmIFsgIiR7MTJ9IiA9IGJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmIgXSAmJiBbICIkNiIgPSAiJDQvcnVudGltZS1tYW5pZmVzdC5qc29uIiBdCg==",
+          "mode": 493
+        },
+        "external/runtime-manifest.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/spec/STATE.md": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/index.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/graph.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/gaps.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/config/adopter-boundary.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/.mir/bootstrap-receipt.json": {
+          "base64": "eyJzdGF0dXMiOiAicmVhZHkiLCAibW9kZSI6ICJncmVlbmZpZWxkIiwgImNsaSI6IHsiZXh0ZXJuYWxpemVkIjogdHJ1ZSwgImV4ZWN1dGFibGUiOiAiQFRNUEAvZXh0ZXJuYWwvYmluL21pciIsICJzaGEyNTYiOiAiOWQ3Mzk3MjYwZDI5OTYwNzNmYTU0MWMwMzVkNWViOWEwNzU0YzgwZDNhNDc0Y2FlMDg4N2ViMTE3NzVkM2E4YyIsICJydW50aW1lX21hbmlmZXN0IjogIkBUTVBAL2V4dGVybmFsL3J1bnRpbWUtbWFuaWZlc3QuanNvbiIsICJydW50aW1lX21hbmlmZXN0X3NoYTI1NiI6ICI0NDEzNmZhMzU1YjM2NzhhMTE0NmFkMTZmN2U4NjQ5ZTk0ZmI0ZmMyMWZlNzdlODMxMGMwNjBmNjFjYWFmZjhhIiwgInNvdXJjZV91cmwiOiAiaHR0cHM6Ly9leGFtcGxlLmludmFsaWQvcHJvdmlkZXIiLCAic291cmNlX2NvbW1pdCI6ICJhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhIiwgImNvbnN0cmFpbnRzX3NoYTI1NiI6ICJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiIn0sICJjYXBhYmlsaXRpZXMiOiB7InN0YXR1cyI6ICJyZWFkeSJ9LCAic2xpbSI6IHsic3RhdHVzIjogImFwcGxpZWQifSwgImFyY2hpdGVjdHVyZV9pbml0aWFsaXphdGlvbiI6IHsiYXR0ZXN0ZWQiOiB0cnVlLCAiZXZpZGVuY2UiOiB7Im91dHB1dF9oYXNoZXMiOiB7InNwZWMvU1RBVEUubWQiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2luZGV4LnlhbWwiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2dyYXBoLnlhbWwiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2dhcHMueWFtbCI6ICJlODBiNzFjZDE0ZDNjYmQ2NWY0MTczYWJjYmZjZjAxYTU0NWRiY2EzMmE3MmQ1NzUxMDhiNTUzYTY0OGNjOTZmIn19fX0=",
+          "mode": 420
+        }
+      },
+      "copies": [
+        ".claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "native": false,
+      "expected": {
+        "exit": 0,
+        "stdout": "cmVhZHkK",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      },
+      "state": "ready",
+      "mode": "greenfield",
+      "unsupported": false
+    },
+    {
+      "id": "w1-y6a:cli-symlink",
+      "family": ".claude/hooks/_lib/bootstrap-gate.sh",
+      "case": "cli-symlink",
+      "argv": [
+        "/bin/bash",
+        "-c",
+        "source \"$1\"; mir_bootstrap_gate_state \"$CLAUDE_PROJECT_DIR\"",
+        "w1",
+        "@TMP@/project/.claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "stdin": "e30=",
+      "env": {},
+      "setup": {
+        "project/.venv/bin/python": {
+          "base64": "IyEvYmluL3NoCmV4ZWMgIkBQWVRIT05AIiAiJEAiCg==",
+          "mode": 493
+        },
+        "external/runtime-manifest.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/spec/STATE.md": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/index.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/graph.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/gaps.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/config/adopter-boundary.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/.mir/bootstrap-receipt.json": {
+          "base64": "eyJzdGF0dXMiOiAicmVhZHkiLCAibW9kZSI6ICJncmVlbmZpZWxkIiwgImNsaSI6IHsiZXh0ZXJuYWxpemVkIjogdHJ1ZSwgImV4ZWN1dGFibGUiOiAiQFRNUEAvZXh0ZXJuYWwvYmluL21pciIsICJzaGEyNTYiOiAiMzA2YzZjYTc0MDc1NjAzNDA3OTc4NjZlMDc3ZTA1MzYyN2FkNDA5Mjc3ZDFiOWRhNTgxMDZmY2U0Y2Y3MTdjYiIsICJydW50aW1lX21hbmlmZXN0IjogIkBUTVBAL2V4dGVybmFsL3J1bnRpbWUtbWFuaWZlc3QuanNvbiIsICJydW50aW1lX21hbmlmZXN0X3NoYTI1NiI6ICI0NDEzNmZhMzU1YjM2NzhhMTE0NmFkMTZmN2U4NjQ5ZTk0ZmI0ZmMyMWZlNzdlODMxMGMwNjBmNjFjYWFmZjhhIiwgInNvdXJjZV91cmwiOiAiaHR0cHM6Ly9leGFtcGxlLmludmFsaWQvcHJvdmlkZXIiLCAic291cmNlX2NvbW1pdCI6ICJhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhIiwgImNvbnN0cmFpbnRzX3NoYTI1NiI6ICJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiIn0sICJjYXBhYmlsaXRpZXMiOiB7InN0YXR1cyI6ICJyZWFkeSJ9LCAic2xpbSI6IHsic3RhdHVzIjogImFwcGxpZWQifSwgImFyY2hpdGVjdHVyZV9pbml0aWFsaXphdGlvbiI6IHsiYXR0ZXN0ZWQiOiB0cnVlLCAiZXZpZGVuY2UiOiB7Im91dHB1dF9oYXNoZXMiOiB7InNwZWMvU1RBVEUubWQiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2luZGV4LnlhbWwiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2dyYXBoLnlhbWwiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2dhcHMueWFtbCI6ICJlODBiNzFjZDE0ZDNjYmQ2NWY0MTczYWJjYmZjZjAxYTU0NWRiY2EzMmE3MmQ1NzUxMDhiNTUzYTY0OGNjOTZmIn19fX0=",
+          "mode": 420
+        },
+        "external/bin/real": {
+          "base64": "IyEvYmluL3NoCmV4aXQgMAo=",
+          "mode": 493
+        },
+        "external/bin/mir": {
+          "symlink": "real"
+        }
+      },
+      "copies": [
+        ".claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "native": false,
+      "expected": {
+        "exit": 0,
+        "stdout": "cmVhZHkK",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      },
+      "state": "ready",
+      "mode": "greenfield",
+      "unsupported": false
+    },
+    {
+      "id": "w1-y6a:runtime-manifest-symlink",
+      "family": ".claude/hooks/_lib/bootstrap-gate.sh",
+      "case": "runtime-manifest-symlink",
+      "argv": [
+        "/bin/bash",
+        "-c",
+        "source \"$1\"; mir_bootstrap_gate_state \"$CLAUDE_PROJECT_DIR\"",
+        "w1",
+        "@TMP@/project/.claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "stdin": "e30=",
+      "env": {},
+      "setup": {
+        "project/.venv/bin/python": {
+          "base64": "IyEvYmluL3NoCmV4ZWMgIkBQWVRIT05AIiAiJEAiCg==",
+          "mode": 493
+        },
+        "external/bin/mir": {
+          "base64": "IyEvYmluL3NoCmV4aXQgMAo=",
+          "mode": 493
+        },
+        "project/spec/STATE.md": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/index.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/graph.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/gaps.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/config/adopter-boundary.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/.mir/bootstrap-receipt.json": {
+          "base64": "eyJzdGF0dXMiOiAicmVhZHkiLCAibW9kZSI6ICJncmVlbmZpZWxkIiwgImNsaSI6IHsiZXh0ZXJuYWxpemVkIjogdHJ1ZSwgImV4ZWN1dGFibGUiOiAiQFRNUEAvZXh0ZXJuYWwvYmluL21pciIsICJzaGEyNTYiOiAiMzA2YzZjYTc0MDc1NjAzNDA3OTc4NjZlMDc3ZTA1MzYyN2FkNDA5Mjc3ZDFiOWRhNTgxMDZmY2U0Y2Y3MTdjYiIsICJydW50aW1lX21hbmlmZXN0IjogIkBUTVBAL2V4dGVybmFsL3J1bnRpbWUtbWFuaWZlc3QuanNvbiIsICJydW50aW1lX21hbmlmZXN0X3NoYTI1NiI6ICI0NDEzNmZhMzU1YjM2NzhhMTE0NmFkMTZmN2U4NjQ5ZTk0ZmI0ZmMyMWZlNzdlODMxMGMwNjBmNjFjYWFmZjhhIiwgInNvdXJjZV91cmwiOiAiaHR0cHM6Ly9leGFtcGxlLmludmFsaWQvcHJvdmlkZXIiLCAic291cmNlX2NvbW1pdCI6ICJhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhIiwgImNvbnN0cmFpbnRzX3NoYTI1NiI6ICJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiIn0sICJjYXBhYmlsaXRpZXMiOiB7InN0YXR1cyI6ICJyZWFkeSJ9LCAic2xpbSI6IHsic3RhdHVzIjogImFwcGxpZWQifSwgImFyY2hpdGVjdHVyZV9pbml0aWFsaXphdGlvbiI6IHsiYXR0ZXN0ZWQiOiB0cnVlLCAiZXZpZGVuY2UiOiB7Im91dHB1dF9oYXNoZXMiOiB7InNwZWMvU1RBVEUubWQiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2luZGV4LnlhbWwiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2dyYXBoLnlhbWwiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2dhcHMueWFtbCI6ICJlODBiNzFjZDE0ZDNjYmQ2NWY0MTczYWJjYmZjZjAxYTU0NWRiY2EzMmE3MmQ1NzUxMDhiNTUzYTY0OGNjOTZmIn19fX0=",
+          "mode": 420
+        },
+        "external/manifest.real": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "external/runtime-manifest.json": {
+          "symlink": "manifest.real"
+        }
+      },
+      "copies": [
+        ".claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "native": false,
+      "expected": {
+        "exit": 1,
+        "stdout": "aW52YWxpZAo=",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      },
+      "state": "invalid",
+      "mode": "greenfield",
+      "unsupported": false
+    },
+    {
+      "id": "w1-y6a:runtime-manifest-drift",
+      "family": ".claude/hooks/_lib/bootstrap-gate.sh",
+      "case": "runtime-manifest-drift",
+      "argv": [
+        "/bin/bash",
+        "-c",
+        "source \"$1\"; mir_bootstrap_gate_state \"$CLAUDE_PROJECT_DIR\"",
+        "w1",
+        "@TMP@/project/.claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "stdin": "e30=",
+      "env": {},
+      "setup": {
+        "project/.venv/bin/python": {
+          "base64": "IyEvYmluL3NoCmV4ZWMgIkBQWVRIT05AIiAiJEAiCg==",
+          "mode": 493
+        },
+        "external/bin/mir": {
+          "base64": "IyEvYmluL3NoCmV4aXQgMAo=",
+          "mode": 493
+        },
+        "external/runtime-manifest.json": {
+          "base64": "eyJjaGFuZ2VkIjp0cnVlfQ==",
+          "mode": 420
+        },
+        "project/spec/STATE.md": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/index.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/graph.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/gaps.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/config/adopter-boundary.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/.mir/bootstrap-receipt.json": {
+          "base64": "eyJzdGF0dXMiOiAicmVhZHkiLCAibW9kZSI6ICJncmVlbmZpZWxkIiwgImNsaSI6IHsiZXh0ZXJuYWxpemVkIjogdHJ1ZSwgImV4ZWN1dGFibGUiOiAiQFRNUEAvZXh0ZXJuYWwvYmluL21pciIsICJzaGEyNTYiOiAiMzA2YzZjYTc0MDc1NjAzNDA3OTc4NjZlMDc3ZTA1MzYyN2FkNDA5Mjc3ZDFiOWRhNTgxMDZmY2U0Y2Y3MTdjYiIsICJydW50aW1lX21hbmlmZXN0IjogIkBUTVBAL2V4dGVybmFsL3J1bnRpbWUtbWFuaWZlc3QuanNvbiIsICJydW50aW1lX21hbmlmZXN0X3NoYTI1NiI6ICI0NDEzNmZhMzU1YjM2NzhhMTE0NmFkMTZmN2U4NjQ5ZTk0ZmI0ZmMyMWZlNzdlODMxMGMwNjBmNjFjYWFmZjhhIiwgInNvdXJjZV91cmwiOiAiaHR0cHM6Ly9leGFtcGxlLmludmFsaWQvcHJvdmlkZXIiLCAic291cmNlX2NvbW1pdCI6ICJhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhIiwgImNvbnN0cmFpbnRzX3NoYTI1NiI6ICJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiIn0sICJjYXBhYmlsaXRpZXMiOiB7InN0YXR1cyI6ICJyZWFkeSJ9LCAic2xpbSI6IHsic3RhdHVzIjogImFwcGxpZWQifSwgImFyY2hpdGVjdHVyZV9pbml0aWFsaXphdGlvbiI6IHsiYXR0ZXN0ZWQiOiB0cnVlLCAiZXZpZGVuY2UiOiB7Im91dHB1dF9oYXNoZXMiOiB7InNwZWMvU1RBVEUubWQiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2luZGV4LnlhbWwiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2dyYXBoLnlhbWwiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2dhcHMueWFtbCI6ICJlODBiNzFjZDE0ZDNjYmQ2NWY0MTczYWJjYmZjZjAxYTU0NWRiY2EzMmE3MmQ1NzUxMDhiNTUzYTY0OGNjOTZmIn19fX0=",
+          "mode": 420
+        }
+      },
+      "copies": [
+        ".claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "native": false,
+      "expected": {
+        "exit": 1,
+        "stdout": "aW52YWxpZAo=",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      },
+      "state": "invalid",
+      "mode": "greenfield",
+      "unsupported": false
+    },
+    {
+      "id": "w1-y6a:cli-not-executable",
+      "family": ".claude/hooks/_lib/bootstrap-gate.sh",
+      "case": "cli-not-executable",
+      "argv": [
+        "/bin/bash",
+        "-c",
+        "source \"$1\"; mir_bootstrap_gate_state \"$CLAUDE_PROJECT_DIR\"",
+        "w1",
+        "@TMP@/project/.claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "stdin": "e30=",
+      "env": {},
+      "setup": {
+        "project/.venv/bin/python": {
+          "base64": "IyEvYmluL3NoCmV4ZWMgIkBQWVRIT05AIiAiJEAiCg==",
+          "mode": 493
+        },
+        "external/bin/mir": {
+          "base64": "IyEvYmluL3NoCmV4aXQgMAo=",
+          "mode": 420
+        },
+        "external/runtime-manifest.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/spec/STATE.md": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/index.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/graph.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/gaps.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/config/adopter-boundary.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/.mir/bootstrap-receipt.json": {
+          "base64": "eyJzdGF0dXMiOiAicmVhZHkiLCAibW9kZSI6ICJncmVlbmZpZWxkIiwgImNsaSI6IHsiZXh0ZXJuYWxpemVkIjogdHJ1ZSwgImV4ZWN1dGFibGUiOiAiQFRNUEAvZXh0ZXJuYWwvYmluL21pciIsICJzaGEyNTYiOiAiMzA2YzZjYTc0MDc1NjAzNDA3OTc4NjZlMDc3ZTA1MzYyN2FkNDA5Mjc3ZDFiOWRhNTgxMDZmY2U0Y2Y3MTdjYiIsICJydW50aW1lX21hbmlmZXN0IjogIkBUTVBAL2V4dGVybmFsL3J1bnRpbWUtbWFuaWZlc3QuanNvbiIsICJydW50aW1lX21hbmlmZXN0X3NoYTI1NiI6ICI0NDEzNmZhMzU1YjM2NzhhMTE0NmFkMTZmN2U4NjQ5ZTk0ZmI0ZmMyMWZlNzdlODMxMGMwNjBmNjFjYWFmZjhhIiwgInNvdXJjZV91cmwiOiAiaHR0cHM6Ly9leGFtcGxlLmludmFsaWQvcHJvdmlkZXIiLCAic291cmNlX2NvbW1pdCI6ICJhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhIiwgImNvbnN0cmFpbnRzX3NoYTI1NiI6ICJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiIn0sICJjYXBhYmlsaXRpZXMiOiB7InN0YXR1cyI6ICJyZWFkeSJ9LCAic2xpbSI6IHsic3RhdHVzIjogImFwcGxpZWQifSwgImFyY2hpdGVjdHVyZV9pbml0aWFsaXphdGlvbiI6IHsiYXR0ZXN0ZWQiOiB0cnVlLCAiZXZpZGVuY2UiOiB7Im91dHB1dF9oYXNoZXMiOiB7InNwZWMvU1RBVEUubWQiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2luZGV4LnlhbWwiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2dyYXBoLnlhbWwiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2dhcHMueWFtbCI6ICJlODBiNzFjZDE0ZDNjYmQ2NWY0MTczYWJjYmZjZjAxYTU0NWRiY2EzMmE3MmQ1NzUxMDhiNTUzYTY0OGNjOTZmIn19fX0=",
+          "mode": 420
+        }
+      },
+      "copies": [
+        ".claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "native": false,
+      "expected": {
+        "exit": 1,
+        "stdout": "aW52YWxpZAo=",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      },
+      "state": "invalid",
+      "mode": "greenfield",
+      "unsupported": false
+    },
+    {
+      "id": "w1-y6a:cli-inside-project",
+      "family": ".claude/hooks/_lib/bootstrap-gate.sh",
+      "case": "cli-inside-project",
+      "argv": [
+        "/bin/bash",
+        "-c",
+        "source \"$1\"; mir_bootstrap_gate_state \"$CLAUDE_PROJECT_DIR\"",
+        "w1",
+        "@TMP@/project/.claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "stdin": "e30=",
+      "env": {},
+      "setup": {
+        "project/.venv/bin/python": {
+          "base64": "IyEvYmluL3NoCmV4ZWMgIkBQWVRIT05AIiAiJEAiCg==",
+          "mode": 493
+        },
+        "external/runtime-manifest.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/spec/STATE.md": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/index.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/graph.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/gaps.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/config/adopter-boundary.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/.mir/bootstrap-receipt.json": {
+          "base64": "eyJzdGF0dXMiOiAicmVhZHkiLCAibW9kZSI6ICJncmVlbmZpZWxkIiwgImNsaSI6IHsiZXh0ZXJuYWxpemVkIjogdHJ1ZSwgImV4ZWN1dGFibGUiOiAiQFRNUEAvcHJvamVjdC9iaW4vbWlyIiwgInNoYTI1NiI6ICIzMDZjNmNhNzQwNzU2MDM0MDc5Nzg2NmUwNzdlMDUzNjI3YWQ0MDkyNzdkMWI5ZGE1ODEwNmZjZTRjZjcxN2NiIiwgInJ1bnRpbWVfbWFuaWZlc3QiOiAiQFRNUEAvZXh0ZXJuYWwvcnVudGltZS1tYW5pZmVzdC5qc29uIiwgInJ1bnRpbWVfbWFuaWZlc3Rfc2hhMjU2IjogIjQ0MTM2ZmEzNTViMzY3OGExMTQ2YWQxNmY3ZTg2NDllOTRmYjRmYzIxZmU3N2U4MzEwYzA2MGY2MWNhYWZmOGEiLCAic291cmNlX3VybCI6ICJodHRwczovL2V4YW1wbGUuaW52YWxpZC9wcm92aWRlciIsICJzb3VyY2VfY29tbWl0IjogImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCAiY29uc3RyYWludHNfc2hhMjU2IjogImJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmIifSwgImNhcGFiaWxpdGllcyI6IHsic3RhdHVzIjogInJlYWR5In0sICJzbGltIjogeyJzdGF0dXMiOiAiYXBwbGllZCJ9LCAiYXJjaGl0ZWN0dXJlX2luaXRpYWxpemF0aW9uIjogeyJhdHRlc3RlZCI6IHRydWUsICJldmlkZW5jZSI6IHsib3V0cHV0X2hhc2hlcyI6IHsic3BlYy9TVEFURS5tZCI6ICJlODBiNzFjZDE0ZDNjYmQ2NWY0MTczYWJjYmZjZjAxYTU0NWRiY2EzMmE3MmQ1NzUxMDhiNTUzYTY0OGNjOTZmIiwgInNwZWMvaW5kZXgueWFtbCI6ICJlODBiNzFjZDE0ZDNjYmQ2NWY0MTczYWJjYmZjZjAxYTU0NWRiY2EzMmE3MmQ1NzUxMDhiNTUzYTY0OGNjOTZmIiwgInNwZWMvZ3JhcGgueWFtbCI6ICJlODBiNzFjZDE0ZDNjYmQ2NWY0MTczYWJjYmZjZjAxYTU0NWRiY2EzMmE3MmQ1NzUxMDhiNTUzYTY0OGNjOTZmIiwgInNwZWMvZ2Fwcy55YW1sIjogImU4MGI3MWNkMTRkM2NiZDY1ZjQxNzNhYmNiZmNmMDFhNTQ1ZGJjYTMyYTcyZDU3NTEwOGI1NTNhNjQ4Y2M5NmYifX19fQ==",
+          "mode": 420
+        },
+        "project/bin/mir": {
+          "base64": "IyEvYmluL3NoCmV4aXQgMAo=",
+          "mode": 493
+        }
+      },
+      "copies": [
+        ".claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "native": false,
+      "expected": {
+        "exit": 1,
+        "stdout": "aW52YWxpZAo=",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      },
+      "state": "invalid",
+      "mode": "greenfield",
+      "unsupported": false
+    },
+    {
+      "id": "w1-y6a:slim.lock",
+      "family": ".claude/hooks/_lib/bootstrap-gate.sh",
+      "case": "slim.lock",
+      "argv": [
+        "/bin/bash",
+        "-c",
+        "source \"$1\"; mir_bootstrap_gate_state \"$CLAUDE_PROJECT_DIR\"",
+        "w1",
+        "@TMP@/project/.claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "stdin": "e30=",
+      "env": {},
+      "setup": {
+        "project/.venv/bin/python": {
+          "base64": "IyEvYmluL3NoCmV4ZWMgIkBQWVRIT05AIiAiJEAiCg==",
+          "mode": 493
+        },
+        "external/bin/mir": {
+          "base64": "IyEvYmluL3NoCmV4aXQgMAo=",
+          "mode": 493
+        },
+        "external/runtime-manifest.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/spec/STATE.md": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/index.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/graph.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/gaps.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/config/adopter-boundary.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/.mir/bootstrap-receipt.json": {
+          "base64": "eyJzdGF0dXMiOiAicmVhZHkiLCAibW9kZSI6ICJncmVlbmZpZWxkIiwgImNsaSI6IHsiZXh0ZXJuYWxpemVkIjogdHJ1ZSwgImV4ZWN1dGFibGUiOiAiQFRNUEAvZXh0ZXJuYWwvYmluL21pciIsICJzaGEyNTYiOiAiMzA2YzZjYTc0MDc1NjAzNDA3OTc4NjZlMDc3ZTA1MzYyN2FkNDA5Mjc3ZDFiOWRhNTgxMDZmY2U0Y2Y3MTdjYiIsICJydW50aW1lX21hbmlmZXN0IjogIkBUTVBAL2V4dGVybmFsL3J1bnRpbWUtbWFuaWZlc3QuanNvbiIsICJydW50aW1lX21hbmlmZXN0X3NoYTI1NiI6ICI0NDEzNmZhMzU1YjM2NzhhMTE0NmFkMTZmN2U4NjQ5ZTk0ZmI0ZmMyMWZlNzdlODMxMGMwNjBmNjFjYWFmZjhhIiwgInNvdXJjZV91cmwiOiAiaHR0cHM6Ly9leGFtcGxlLmludmFsaWQvcHJvdmlkZXIiLCAic291cmNlX2NvbW1pdCI6ICJhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhIiwgImNvbnN0cmFpbnRzX3NoYTI1NiI6ICJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiIn0sICJjYXBhYmlsaXRpZXMiOiB7InN0YXR1cyI6ICJyZWFkeSJ9LCAic2xpbSI6IHsic3RhdHVzIjogImFwcGxpZWQifSwgImFyY2hpdGVjdHVyZV9pbml0aWFsaXphdGlvbiI6IHsiYXR0ZXN0ZWQiOiB0cnVlLCAiZXZpZGVuY2UiOiB7Im91dHB1dF9oYXNoZXMiOiB7InNwZWMvU1RBVEUubWQiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2luZGV4LnlhbWwiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2dyYXBoLnlhbWwiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2dhcHMueWFtbCI6ICJlODBiNzFjZDE0ZDNjYmQ2NWY0MTczYWJjYmZjZjAxYTU0NWRiY2EzMmE3MmQ1NzUxMDhiNTUzYTY0OGNjOTZmIn19fX0=",
+          "mode": 420
+        },
+        "project/.mir/slim.lock": {
+          "base64": "e30=",
+          "mode": 420
+        }
+      },
+      "copies": [
+        ".claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "native": false,
+      "expected": {
+        "exit": 1,
+        "stdout": "aW52YWxpZAo=",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      },
+      "state": "invalid",
+      "mode": "greenfield",
+      "unsupported": false
+    },
+    {
+      "id": "w1-y6a:slim-transaction.json",
+      "family": ".claude/hooks/_lib/bootstrap-gate.sh",
+      "case": "slim-transaction.json",
+      "argv": [
+        "/bin/bash",
+        "-c",
+        "source \"$1\"; mir_bootstrap_gate_state \"$CLAUDE_PROJECT_DIR\"",
+        "w1",
+        "@TMP@/project/.claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "stdin": "e30=",
+      "env": {},
+      "setup": {
+        "project/.venv/bin/python": {
+          "base64": "IyEvYmluL3NoCmV4ZWMgIkBQWVRIT05AIiAiJEAiCg==",
+          "mode": 493
+        },
+        "external/bin/mir": {
+          "base64": "IyEvYmluL3NoCmV4aXQgMAo=",
+          "mode": 493
+        },
+        "external/runtime-manifest.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/spec/STATE.md": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/index.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/graph.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/gaps.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/config/adopter-boundary.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/.mir/bootstrap-receipt.json": {
+          "base64": "eyJzdGF0dXMiOiAicmVhZHkiLCAibW9kZSI6ICJncmVlbmZpZWxkIiwgImNsaSI6IHsiZXh0ZXJuYWxpemVkIjogdHJ1ZSwgImV4ZWN1dGFibGUiOiAiQFRNUEAvZXh0ZXJuYWwvYmluL21pciIsICJzaGEyNTYiOiAiMzA2YzZjYTc0MDc1NjAzNDA3OTc4NjZlMDc3ZTA1MzYyN2FkNDA5Mjc3ZDFiOWRhNTgxMDZmY2U0Y2Y3MTdjYiIsICJydW50aW1lX21hbmlmZXN0IjogIkBUTVBAL2V4dGVybmFsL3J1bnRpbWUtbWFuaWZlc3QuanNvbiIsICJydW50aW1lX21hbmlmZXN0X3NoYTI1NiI6ICI0NDEzNmZhMzU1YjM2NzhhMTE0NmFkMTZmN2U4NjQ5ZTk0ZmI0ZmMyMWZlNzdlODMxMGMwNjBmNjFjYWFmZjhhIiwgInNvdXJjZV91cmwiOiAiaHR0cHM6Ly9leGFtcGxlLmludmFsaWQvcHJvdmlkZXIiLCAic291cmNlX2NvbW1pdCI6ICJhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhIiwgImNvbnN0cmFpbnRzX3NoYTI1NiI6ICJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiIn0sICJjYXBhYmlsaXRpZXMiOiB7InN0YXR1cyI6ICJyZWFkeSJ9LCAic2xpbSI6IHsic3RhdHVzIjogImFwcGxpZWQifSwgImFyY2hpdGVjdHVyZV9pbml0aWFsaXphdGlvbiI6IHsiYXR0ZXN0ZWQiOiB0cnVlLCAiZXZpZGVuY2UiOiB7Im91dHB1dF9oYXNoZXMiOiB7InNwZWMvU1RBVEUubWQiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2luZGV4LnlhbWwiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2dyYXBoLnlhbWwiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2dhcHMueWFtbCI6ICJlODBiNzFjZDE0ZDNjYmQ2NWY0MTczYWJjYmZjZjAxYTU0NWRiY2EzMmE3MmQ1NzUxMDhiNTUzYTY0OGNjOTZmIn19fX0=",
+          "mode": 420
+        },
+        "project/.mir/slim-transaction.json": {
+          "base64": "e30=",
+          "mode": 420
+        }
+      },
+      "copies": [
+        ".claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "native": false,
+      "expected": {
+        "exit": 1,
+        "stdout": "aW52YWxpZAo=",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      },
+      "state": "invalid",
+      "mode": "greenfield",
+      "unsupported": false
+    },
+    {
+      "id": "w1-y6a:output-drift-STATE.md",
+      "family": ".claude/hooks/_lib/bootstrap-gate.sh",
+      "case": "output-drift-STATE.md",
+      "argv": [
+        "/bin/bash",
+        "-c",
+        "source \"$1\"; mir_bootstrap_gate_state \"$CLAUDE_PROJECT_DIR\"",
+        "w1",
+        "@TMP@/project/.claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "stdin": "e30=",
+      "env": {},
+      "setup": {
+        "project/.venv/bin/python": {
+          "base64": "IyEvYmluL3NoCmV4ZWMgIkBQWVRIT05AIiAiJEAiCg==",
+          "mode": 493
+        },
+        "external/bin/mir": {
+          "base64": "IyEvYmluL3NoCmV4aXQgMAo=",
+          "mode": 493
+        },
+        "external/runtime-manifest.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/spec/STATE.md": {
+          "base64": "ZHJpZnQK",
+          "mode": 420
+        },
+        "project/spec/index.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/graph.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/gaps.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/config/adopter-boundary.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/.mir/bootstrap-receipt.json": {
+          "base64": "eyJzdGF0dXMiOiAicmVhZHkiLCAibW9kZSI6ICJncmVlbmZpZWxkIiwgImNsaSI6IHsiZXh0ZXJuYWxpemVkIjogdHJ1ZSwgImV4ZWN1dGFibGUiOiAiQFRNUEAvZXh0ZXJuYWwvYmluL21pciIsICJzaGEyNTYiOiAiMzA2YzZjYTc0MDc1NjAzNDA3OTc4NjZlMDc3ZTA1MzYyN2FkNDA5Mjc3ZDFiOWRhNTgxMDZmY2U0Y2Y3MTdjYiIsICJydW50aW1lX21hbmlmZXN0IjogIkBUTVBAL2V4dGVybmFsL3J1bnRpbWUtbWFuaWZlc3QuanNvbiIsICJydW50aW1lX21hbmlmZXN0X3NoYTI1NiI6ICI0NDEzNmZhMzU1YjM2NzhhMTE0NmFkMTZmN2U4NjQ5ZTk0ZmI0ZmMyMWZlNzdlODMxMGMwNjBmNjFjYWFmZjhhIiwgInNvdXJjZV91cmwiOiAiaHR0cHM6Ly9leGFtcGxlLmludmFsaWQvcHJvdmlkZXIiLCAic291cmNlX2NvbW1pdCI6ICJhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhIiwgImNvbnN0cmFpbnRzX3NoYTI1NiI6ICJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiIn0sICJjYXBhYmlsaXRpZXMiOiB7InN0YXR1cyI6ICJyZWFkeSJ9LCAic2xpbSI6IHsic3RhdHVzIjogImFwcGxpZWQifSwgImFyY2hpdGVjdHVyZV9pbml0aWFsaXphdGlvbiI6IHsiYXR0ZXN0ZWQiOiB0cnVlLCAiZXZpZGVuY2UiOiB7Im91dHB1dF9oYXNoZXMiOiB7InNwZWMvU1RBVEUubWQiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2luZGV4LnlhbWwiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2dyYXBoLnlhbWwiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2dhcHMueWFtbCI6ICJlODBiNzFjZDE0ZDNjYmQ2NWY0MTczYWJjYmZjZjAxYTU0NWRiY2EzMmE3MmQ1NzUxMDhiNTUzYTY0OGNjOTZmIn19fX0=",
+          "mode": 420
+        }
+      },
+      "copies": [
+        ".claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "native": false,
+      "expected": {
+        "exit": 1,
+        "stdout": "aW52YWxpZAo=",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      },
+      "state": "invalid",
+      "mode": "greenfield",
+      "unsupported": false
+    },
+    {
+      "id": "w1-y6a:output-drift-index.yaml",
+      "family": ".claude/hooks/_lib/bootstrap-gate.sh",
+      "case": "output-drift-index.yaml",
+      "argv": [
+        "/bin/bash",
+        "-c",
+        "source \"$1\"; mir_bootstrap_gate_state \"$CLAUDE_PROJECT_DIR\"",
+        "w1",
+        "@TMP@/project/.claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "stdin": "e30=",
+      "env": {},
+      "setup": {
+        "project/.venv/bin/python": {
+          "base64": "IyEvYmluL3NoCmV4ZWMgIkBQWVRIT05AIiAiJEAiCg==",
+          "mode": 493
+        },
+        "external/bin/mir": {
+          "base64": "IyEvYmluL3NoCmV4aXQgMAo=",
+          "mode": 493
+        },
+        "external/runtime-manifest.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/spec/STATE.md": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/index.yaml": {
+          "base64": "ZHJpZnQK",
+          "mode": 420
+        },
+        "project/spec/graph.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/gaps.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/config/adopter-boundary.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/.mir/bootstrap-receipt.json": {
+          "base64": "eyJzdGF0dXMiOiAicmVhZHkiLCAibW9kZSI6ICJncmVlbmZpZWxkIiwgImNsaSI6IHsiZXh0ZXJuYWxpemVkIjogdHJ1ZSwgImV4ZWN1dGFibGUiOiAiQFRNUEAvZXh0ZXJuYWwvYmluL21pciIsICJzaGEyNTYiOiAiMzA2YzZjYTc0MDc1NjAzNDA3OTc4NjZlMDc3ZTA1MzYyN2FkNDA5Mjc3ZDFiOWRhNTgxMDZmY2U0Y2Y3MTdjYiIsICJydW50aW1lX21hbmlmZXN0IjogIkBUTVBAL2V4dGVybmFsL3J1bnRpbWUtbWFuaWZlc3QuanNvbiIsICJydW50aW1lX21hbmlmZXN0X3NoYTI1NiI6ICI0NDEzNmZhMzU1YjM2NzhhMTE0NmFkMTZmN2U4NjQ5ZTk0ZmI0ZmMyMWZlNzdlODMxMGMwNjBmNjFjYWFmZjhhIiwgInNvdXJjZV91cmwiOiAiaHR0cHM6Ly9leGFtcGxlLmludmFsaWQvcHJvdmlkZXIiLCAic291cmNlX2NvbW1pdCI6ICJhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhIiwgImNvbnN0cmFpbnRzX3NoYTI1NiI6ICJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiIn0sICJjYXBhYmlsaXRpZXMiOiB7InN0YXR1cyI6ICJyZWFkeSJ9LCAic2xpbSI6IHsic3RhdHVzIjogImFwcGxpZWQifSwgImFyY2hpdGVjdHVyZV9pbml0aWFsaXphdGlvbiI6IHsiYXR0ZXN0ZWQiOiB0cnVlLCAiZXZpZGVuY2UiOiB7Im91dHB1dF9oYXNoZXMiOiB7InNwZWMvU1RBVEUubWQiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2luZGV4LnlhbWwiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2dyYXBoLnlhbWwiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2dhcHMueWFtbCI6ICJlODBiNzFjZDE0ZDNjYmQ2NWY0MTczYWJjYmZjZjAxYTU0NWRiY2EzMmE3MmQ1NzUxMDhiNTUzYTY0OGNjOTZmIn19fX0=",
+          "mode": 420
+        }
+      },
+      "copies": [
+        ".claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "native": false,
+      "expected": {
+        "exit": 1,
+        "stdout": "aW52YWxpZAo=",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      },
+      "state": "invalid",
+      "mode": "greenfield",
+      "unsupported": false
+    },
+    {
+      "id": "w1-y6a:output-drift-graph.yaml",
+      "family": ".claude/hooks/_lib/bootstrap-gate.sh",
+      "case": "output-drift-graph.yaml",
+      "argv": [
+        "/bin/bash",
+        "-c",
+        "source \"$1\"; mir_bootstrap_gate_state \"$CLAUDE_PROJECT_DIR\"",
+        "w1",
+        "@TMP@/project/.claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "stdin": "e30=",
+      "env": {},
+      "setup": {
+        "project/.venv/bin/python": {
+          "base64": "IyEvYmluL3NoCmV4ZWMgIkBQWVRIT05AIiAiJEAiCg==",
+          "mode": 493
+        },
+        "external/bin/mir": {
+          "base64": "IyEvYmluL3NoCmV4aXQgMAo=",
+          "mode": 493
+        },
+        "external/runtime-manifest.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/spec/STATE.md": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/index.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/graph.yaml": {
+          "base64": "ZHJpZnQK",
+          "mode": 420
+        },
+        "project/spec/gaps.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/config/adopter-boundary.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/.mir/bootstrap-receipt.json": {
+          "base64": "eyJzdGF0dXMiOiAicmVhZHkiLCAibW9kZSI6ICJncmVlbmZpZWxkIiwgImNsaSI6IHsiZXh0ZXJuYWxpemVkIjogdHJ1ZSwgImV4ZWN1dGFibGUiOiAiQFRNUEAvZXh0ZXJuYWwvYmluL21pciIsICJzaGEyNTYiOiAiMzA2YzZjYTc0MDc1NjAzNDA3OTc4NjZlMDc3ZTA1MzYyN2FkNDA5Mjc3ZDFiOWRhNTgxMDZmY2U0Y2Y3MTdjYiIsICJydW50aW1lX21hbmlmZXN0IjogIkBUTVBAL2V4dGVybmFsL3J1bnRpbWUtbWFuaWZlc3QuanNvbiIsICJydW50aW1lX21hbmlmZXN0X3NoYTI1NiI6ICI0NDEzNmZhMzU1YjM2NzhhMTE0NmFkMTZmN2U4NjQ5ZTk0ZmI0ZmMyMWZlNzdlODMxMGMwNjBmNjFjYWFmZjhhIiwgInNvdXJjZV91cmwiOiAiaHR0cHM6Ly9leGFtcGxlLmludmFsaWQvcHJvdmlkZXIiLCAic291cmNlX2NvbW1pdCI6ICJhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhIiwgImNvbnN0cmFpbnRzX3NoYTI1NiI6ICJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiIn0sICJjYXBhYmlsaXRpZXMiOiB7InN0YXR1cyI6ICJyZWFkeSJ9LCAic2xpbSI6IHsic3RhdHVzIjogImFwcGxpZWQifSwgImFyY2hpdGVjdHVyZV9pbml0aWFsaXphdGlvbiI6IHsiYXR0ZXN0ZWQiOiB0cnVlLCAiZXZpZGVuY2UiOiB7Im91dHB1dF9oYXNoZXMiOiB7InNwZWMvU1RBVEUubWQiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2luZGV4LnlhbWwiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2dyYXBoLnlhbWwiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2dhcHMueWFtbCI6ICJlODBiNzFjZDE0ZDNjYmQ2NWY0MTczYWJjYmZjZjAxYTU0NWRiY2EzMmE3MmQ1NzUxMDhiNTUzYTY0OGNjOTZmIn19fX0=",
+          "mode": 420
+        }
+      },
+      "copies": [
+        ".claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "native": false,
+      "expected": {
+        "exit": 1,
+        "stdout": "aW52YWxpZAo=",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      },
+      "state": "invalid",
+      "mode": "greenfield",
+      "unsupported": false
+    },
+    {
+      "id": "w1-y6a:output-drift-gaps.yaml",
+      "family": ".claude/hooks/_lib/bootstrap-gate.sh",
+      "case": "output-drift-gaps.yaml",
+      "argv": [
+        "/bin/bash",
+        "-c",
+        "source \"$1\"; mir_bootstrap_gate_state \"$CLAUDE_PROJECT_DIR\"",
+        "w1",
+        "@TMP@/project/.claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "stdin": "e30=",
+      "env": {},
+      "setup": {
+        "project/.venv/bin/python": {
+          "base64": "IyEvYmluL3NoCmV4ZWMgIkBQWVRIT05AIiAiJEAiCg==",
+          "mode": 493
+        },
+        "external/bin/mir": {
+          "base64": "IyEvYmluL3NoCmV4aXQgMAo=",
+          "mode": 493
+        },
+        "external/runtime-manifest.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/spec/STATE.md": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/index.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/graph.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/gaps.yaml": {
+          "base64": "ZHJpZnQK",
+          "mode": 420
+        },
+        "project/config/adopter-boundary.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/.mir/bootstrap-receipt.json": {
+          "base64": "eyJzdGF0dXMiOiAicmVhZHkiLCAibW9kZSI6ICJncmVlbmZpZWxkIiwgImNsaSI6IHsiZXh0ZXJuYWxpemVkIjogdHJ1ZSwgImV4ZWN1dGFibGUiOiAiQFRNUEAvZXh0ZXJuYWwvYmluL21pciIsICJzaGEyNTYiOiAiMzA2YzZjYTc0MDc1NjAzNDA3OTc4NjZlMDc3ZTA1MzYyN2FkNDA5Mjc3ZDFiOWRhNTgxMDZmY2U0Y2Y3MTdjYiIsICJydW50aW1lX21hbmlmZXN0IjogIkBUTVBAL2V4dGVybmFsL3J1bnRpbWUtbWFuaWZlc3QuanNvbiIsICJydW50aW1lX21hbmlmZXN0X3NoYTI1NiI6ICI0NDEzNmZhMzU1YjM2NzhhMTE0NmFkMTZmN2U4NjQ5ZTk0ZmI0ZmMyMWZlNzdlODMxMGMwNjBmNjFjYWFmZjhhIiwgInNvdXJjZV91cmwiOiAiaHR0cHM6Ly9leGFtcGxlLmludmFsaWQvcHJvdmlkZXIiLCAic291cmNlX2NvbW1pdCI6ICJhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhIiwgImNvbnN0cmFpbnRzX3NoYTI1NiI6ICJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiIn0sICJjYXBhYmlsaXRpZXMiOiB7InN0YXR1cyI6ICJyZWFkeSJ9LCAic2xpbSI6IHsic3RhdHVzIjogImFwcGxpZWQifSwgImFyY2hpdGVjdHVyZV9pbml0aWFsaXphdGlvbiI6IHsiYXR0ZXN0ZWQiOiB0cnVlLCAiZXZpZGVuY2UiOiB7Im91dHB1dF9oYXNoZXMiOiB7InNwZWMvU1RBVEUubWQiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2luZGV4LnlhbWwiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2dyYXBoLnlhbWwiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2dhcHMueWFtbCI6ICJlODBiNzFjZDE0ZDNjYmQ2NWY0MTczYWJjYmZjZjAxYTU0NWRiY2EzMmE3MmQ1NzUxMDhiNTUzYTY0OGNjOTZmIn19fX0=",
+          "mode": 420
+        }
+      },
+      "copies": [
+        ".claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "native": false,
+      "expected": {
+        "exit": 1,
+        "stdout": "aW52YWxpZAo=",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      },
+      "state": "invalid",
+      "mode": "greenfield",
+      "unsupported": false
+    },
+    {
+      "id": "w1-y6a:output-symlink",
+      "family": ".claude/hooks/_lib/bootstrap-gate.sh",
+      "case": "output-symlink",
+      "argv": [
+        "/bin/bash",
+        "-c",
+        "source \"$1\"; mir_bootstrap_gate_state \"$CLAUDE_PROJECT_DIR\"",
+        "w1",
+        "@TMP@/project/.claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "stdin": "e30=",
+      "env": {},
+      "setup": {
+        "project/.venv/bin/python": {
+          "base64": "IyEvYmluL3NoCmV4ZWMgIkBQWVRIT05AIiAiJEAiCg==",
+          "mode": 493
+        },
+        "external/bin/mir": {
+          "base64": "IyEvYmluL3NoCmV4aXQgMAo=",
+          "mode": 493
+        },
+        "external/runtime-manifest.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/spec/index.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/graph.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/gaps.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/config/adopter-boundary.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/.mir/bootstrap-receipt.json": {
+          "base64": "eyJzdGF0dXMiOiAicmVhZHkiLCAibW9kZSI6ICJncmVlbmZpZWxkIiwgImNsaSI6IHsiZXh0ZXJuYWxpemVkIjogdHJ1ZSwgImV4ZWN1dGFibGUiOiAiQFRNUEAvZXh0ZXJuYWwvYmluL21pciIsICJzaGEyNTYiOiAiMzA2YzZjYTc0MDc1NjAzNDA3OTc4NjZlMDc3ZTA1MzYyN2FkNDA5Mjc3ZDFiOWRhNTgxMDZmY2U0Y2Y3MTdjYiIsICJydW50aW1lX21hbmlmZXN0IjogIkBUTVBAL2V4dGVybmFsL3J1bnRpbWUtbWFuaWZlc3QuanNvbiIsICJydW50aW1lX21hbmlmZXN0X3NoYTI1NiI6ICI0NDEzNmZhMzU1YjM2NzhhMTE0NmFkMTZmN2U4NjQ5ZTk0ZmI0ZmMyMWZlNzdlODMxMGMwNjBmNjFjYWFmZjhhIiwgInNvdXJjZV91cmwiOiAiaHR0cHM6Ly9leGFtcGxlLmludmFsaWQvcHJvdmlkZXIiLCAic291cmNlX2NvbW1pdCI6ICJhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhIiwgImNvbnN0cmFpbnRzX3NoYTI1NiI6ICJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiIn0sICJjYXBhYmlsaXRpZXMiOiB7InN0YXR1cyI6ICJyZWFkeSJ9LCAic2xpbSI6IHsic3RhdHVzIjogImFwcGxpZWQifSwgImFyY2hpdGVjdHVyZV9pbml0aWFsaXphdGlvbiI6IHsiYXR0ZXN0ZWQiOiB0cnVlLCAiZXZpZGVuY2UiOiB7Im91dHB1dF9oYXNoZXMiOiB7InNwZWMvU1RBVEUubWQiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2luZGV4LnlhbWwiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2dyYXBoLnlhbWwiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2dhcHMueWFtbCI6ICJlODBiNzFjZDE0ZDNjYmQ2NWY0MTczYWJjYmZjZjAxYTU0NWRiY2EzMmE3MmQ1NzUxMDhiNTUzYTY0OGNjOTZmIn19fX0=",
+          "mode": 420
+        },
+        "project/spec/real": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/STATE.md": {
+          "symlink": "real"
+        }
+      },
+      "copies": [
+        ".claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "native": false,
+      "expected": {
+        "exit": 1,
+        "stdout": "aW52YWxpZAo=",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      },
+      "state": "invalid",
+      "mode": "greenfield",
+      "unsupported": false
+    },
+    {
+      "id": "w1-y6a:output-ancestor-symlink",
+      "family": ".claude/hooks/_lib/bootstrap-gate.sh",
+      "case": "output-ancestor-symlink",
+      "argv": [
+        "/bin/bash",
+        "-c",
+        "source \"$1\"; mir_bootstrap_gate_state \"$CLAUDE_PROJECT_DIR\"",
+        "w1",
+        "@TMP@/project/.claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "stdin": "e30=",
+      "env": {},
+      "setup": {
+        "project/.venv/bin/python": {
+          "base64": "IyEvYmluL3NoCmV4ZWMgIkBQWVRIT05AIiAiJEAiCg==",
+          "mode": 493
+        },
+        "external/bin/mir": {
+          "base64": "IyEvYmluL3NoCmV4aXQgMAo=",
+          "mode": 493
+        },
+        "external/runtime-manifest.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/config/adopter-boundary.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/.mir/bootstrap-receipt.json": {
+          "base64": "eyJzdGF0dXMiOiAicmVhZHkiLCAibW9kZSI6ICJncmVlbmZpZWxkIiwgImNsaSI6IHsiZXh0ZXJuYWxpemVkIjogdHJ1ZSwgImV4ZWN1dGFibGUiOiAiQFRNUEAvZXh0ZXJuYWwvYmluL21pciIsICJzaGEyNTYiOiAiMzA2YzZjYTc0MDc1NjAzNDA3OTc4NjZlMDc3ZTA1MzYyN2FkNDA5Mjc3ZDFiOWRhNTgxMDZmY2U0Y2Y3MTdjYiIsICJydW50aW1lX21hbmlmZXN0IjogIkBUTVBAL2V4dGVybmFsL3J1bnRpbWUtbWFuaWZlc3QuanNvbiIsICJydW50aW1lX21hbmlmZXN0X3NoYTI1NiI6ICI0NDEzNmZhMzU1YjM2NzhhMTE0NmFkMTZmN2U4NjQ5ZTk0ZmI0ZmMyMWZlNzdlODMxMGMwNjBmNjFjYWFmZjhhIiwgInNvdXJjZV91cmwiOiAiaHR0cHM6Ly9leGFtcGxlLmludmFsaWQvcHJvdmlkZXIiLCAic291cmNlX2NvbW1pdCI6ICJhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhIiwgImNvbnN0cmFpbnRzX3NoYTI1NiI6ICJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiIn0sICJjYXBhYmlsaXRpZXMiOiB7InN0YXR1cyI6ICJyZWFkeSJ9LCAic2xpbSI6IHsic3RhdHVzIjogImFwcGxpZWQifSwgImFyY2hpdGVjdHVyZV9pbml0aWFsaXphdGlvbiI6IHsiYXR0ZXN0ZWQiOiB0cnVlLCAiZXZpZGVuY2UiOiB7Im91dHB1dF9oYXNoZXMiOiB7InNwZWMvU1RBVEUubWQiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2luZGV4LnlhbWwiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2dyYXBoLnlhbWwiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2dhcHMueWFtbCI6ICJlODBiNzFjZDE0ZDNjYmQ2NWY0MTczYWJjYmZjZjAxYTU0NWRiY2EzMmE3MmQ1NzUxMDhiNTUzYTY0OGNjOTZmIn19fX0=",
+          "mode": 420
+        },
+        "project/actual-spec/STATE.md": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/actual-spec/index.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/actual-spec/graph.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/actual-spec/gaps.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec": {
+          "symlink": "actual-spec"
+        }
+      },
+      "copies": [
+        ".claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "native": false,
+      "expected": {
+        "exit": 0,
+        "stdout": "cmVhZHkK",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      },
+      "state": "ready",
+      "mode": "greenfield",
+      "unsupported": false
+    },
+    {
+      "id": "w1-y6a:boundary-symlink",
+      "family": ".claude/hooks/_lib/bootstrap-gate.sh",
+      "case": "boundary-symlink",
+      "argv": [
+        "/bin/bash",
+        "-c",
+        "source \"$1\"; mir_bootstrap_gate_state \"$CLAUDE_PROJECT_DIR\"",
+        "w1",
+        "@TMP@/project/.claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "stdin": "e30=",
+      "env": {},
+      "setup": {
+        "project/.venv/bin/python": {
+          "base64": "IyEvYmluL3NoCmV4ZWMgIkBQWVRIT05AIiAiJEAiCg==",
+          "mode": 493
+        },
+        "external/bin/mir": {
+          "base64": "IyEvYmluL3NoCmV4aXQgMAo=",
+          "mode": 493
+        },
+        "external/runtime-manifest.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/spec/STATE.md": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/index.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/graph.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/gaps.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/.mir/bootstrap-receipt.json": {
+          "base64": "eyJzdGF0dXMiOiAicmVhZHkiLCAibW9kZSI6ICJncmVlbmZpZWxkIiwgImNsaSI6IHsiZXh0ZXJuYWxpemVkIjogdHJ1ZSwgImV4ZWN1dGFibGUiOiAiQFRNUEAvZXh0ZXJuYWwvYmluL21pciIsICJzaGEyNTYiOiAiMzA2YzZjYTc0MDc1NjAzNDA3OTc4NjZlMDc3ZTA1MzYyN2FkNDA5Mjc3ZDFiOWRhNTgxMDZmY2U0Y2Y3MTdjYiIsICJydW50aW1lX21hbmlmZXN0IjogIkBUTVBAL2V4dGVybmFsL3J1bnRpbWUtbWFuaWZlc3QuanNvbiIsICJydW50aW1lX21hbmlmZXN0X3NoYTI1NiI6ICI0NDEzNmZhMzU1YjM2NzhhMTE0NmFkMTZmN2U4NjQ5ZTk0ZmI0ZmMyMWZlNzdlODMxMGMwNjBmNjFjYWFmZjhhIiwgInNvdXJjZV91cmwiOiAiaHR0cHM6Ly9leGFtcGxlLmludmFsaWQvcHJvdmlkZXIiLCAic291cmNlX2NvbW1pdCI6ICJhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhIiwgImNvbnN0cmFpbnRzX3NoYTI1NiI6ICJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiIn0sICJjYXBhYmlsaXRpZXMiOiB7InN0YXR1cyI6ICJyZWFkeSJ9LCAic2xpbSI6IHsic3RhdHVzIjogImFwcGxpZWQifSwgImFyY2hpdGVjdHVyZV9pbml0aWFsaXphdGlvbiI6IHsiYXR0ZXN0ZWQiOiB0cnVlLCAiZXZpZGVuY2UiOiB7Im91dHB1dF9oYXNoZXMiOiB7InNwZWMvU1RBVEUubWQiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2luZGV4LnlhbWwiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2dyYXBoLnlhbWwiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2dhcHMueWFtbCI6ICJlODBiNzFjZDE0ZDNjYmQ2NWY0MTczYWJjYmZjZjAxYTU0NWRiY2EzMmE3MmQ1NzUxMDhiNTUzYTY0OGNjOTZmIn19fX0=",
+          "mode": 420
+        },
+        "project/config/boundary.real": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/config/adopter-boundary.json": {
+          "symlink": "boundary.real"
+        }
+      },
+      "copies": [
+        ".claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "native": false,
+      "expected": {
+        "exit": 1,
+        "stdout": "aW52YWxpZAo=",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      },
+      "state": "invalid",
+      "mode": "greenfield",
+      "unsupported": false
+    },
+    {
+      "id": "w1-y6a:boundary-marker",
+      "family": ".claude/hooks/_lib/bootstrap-gate.sh",
+      "case": "boundary-marker",
+      "argv": [
+        "/bin/bash",
+        "-c",
+        "source \"$1\"; mir_bootstrap_gate_state \"$CLAUDE_PROJECT_DIR\"",
+        "w1",
+        "@TMP@/project/.claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "stdin": "e30=",
+      "env": {},
+      "setup": {
+        "project/.venv/bin/python": {
+          "base64": "IyEvYmluL3NoCmV4ZWMgIkBQWVRIT05AIiAiJEAiCg==",
+          "mode": 493
+        },
+        "external/bin/mir": {
+          "base64": "IyEvYmluL3NoCmV4aXQgMAo=",
+          "mode": 493
+        },
+        "external/runtime-manifest.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/spec/STATE.md": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/index.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/graph.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/gaps.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/config/adopter-boundary.json": {
+          "base64": "eyJwcm92aWRlcl9tYXJrZXJzIjpbInByb3ZpZGVyLW9ubHkiXX0=",
+          "mode": 420
+        },
+        "project/.mir/bootstrap-receipt.json": {
+          "base64": "eyJzdGF0dXMiOiAicmVhZHkiLCAibW9kZSI6ICJncmVlbmZpZWxkIiwgImNsaSI6IHsiZXh0ZXJuYWxpemVkIjogdHJ1ZSwgImV4ZWN1dGFibGUiOiAiQFRNUEAvZXh0ZXJuYWwvYmluL21pciIsICJzaGEyNTYiOiAiMzA2YzZjYTc0MDc1NjAzNDA3OTc4NjZlMDc3ZTA1MzYyN2FkNDA5Mjc3ZDFiOWRhNTgxMDZmY2U0Y2Y3MTdjYiIsICJydW50aW1lX21hbmlmZXN0IjogIkBUTVBAL2V4dGVybmFsL3J1bnRpbWUtbWFuaWZlc3QuanNvbiIsICJydW50aW1lX21hbmlmZXN0X3NoYTI1NiI6ICI0NDEzNmZhMzU1YjM2NzhhMTE0NmFkMTZmN2U4NjQ5ZTk0ZmI0ZmMyMWZlNzdlODMxMGMwNjBmNjFjYWFmZjhhIiwgInNvdXJjZV91cmwiOiAiaHR0cHM6Ly9leGFtcGxlLmludmFsaWQvcHJvdmlkZXIiLCAic291cmNlX2NvbW1pdCI6ICJhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhIiwgImNvbnN0cmFpbnRzX3NoYTI1NiI6ICJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiIn0sICJjYXBhYmlsaXRpZXMiOiB7InN0YXR1cyI6ICJyZWFkeSJ9LCAic2xpbSI6IHsic3RhdHVzIjogImFwcGxpZWQifSwgImFyY2hpdGVjdHVyZV9pbml0aWFsaXphdGlvbiI6IHsiYXR0ZXN0ZWQiOiB0cnVlLCAiZXZpZGVuY2UiOiB7Im91dHB1dF9oYXNoZXMiOiB7InNwZWMvU1RBVEUubWQiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2luZGV4LnlhbWwiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2dyYXBoLnlhbWwiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2dhcHMueWFtbCI6ICJlODBiNzFjZDE0ZDNjYmQ2NWY0MTczYWJjYmZjZjAxYTU0NWRiY2EzMmE3MmQ1NzUxMDhiNTUzYTY0OGNjOTZmIn19fX0=",
+          "mode": 420
+        },
+        "project/provider-only": {
+          "base64": "cHJlc2VudA==",
+          "mode": 420
+        }
+      },
+      "copies": [
+        ".claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "native": false,
+      "expected": {
+        "exit": 1,
+        "stdout": "aW52YWxpZAo=",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      },
+      "state": "invalid",
+      "mode": "greenfield",
+      "unsupported": false
+    },
+    {
+      "id": "w1-y6a:boundary-text-marker",
+      "family": ".claude/hooks/_lib/bootstrap-gate.sh",
+      "case": "boundary-text-marker",
+      "argv": [
+        "/bin/bash",
+        "-c",
+        "source \"$1\"; mir_bootstrap_gate_state \"$CLAUDE_PROJECT_DIR\"",
+        "w1",
+        "@TMP@/project/.claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "stdin": "e30=",
+      "env": {},
+      "setup": {
+        "project/.venv/bin/python": {
+          "base64": "IyEvYmluL3NoCmV4ZWMgIkBQWVRIT05AIiAiJEAiCg==",
+          "mode": 493
+        },
+        "external/bin/mir": {
+          "base64": "IyEvYmluL3NoCmV4aXQgMAo=",
+          "mode": 493
+        },
+        "external/runtime-manifest.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/spec/STATE.md": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/index.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/graph.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/gaps.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/config/adopter-boundary.json": {
+          "base64": "eyJwcm92aWRlcl90ZXh0X21hcmtlcnMiOlt7InBhdGgiOiJSRUFETUUubWQiLCJjb250YWlucyI6InByb3ZpZGVyIG9ubHkifV19",
+          "mode": 420
+        },
+        "project/.mir/bootstrap-receipt.json": {
+          "base64": "eyJzdGF0dXMiOiAicmVhZHkiLCAibW9kZSI6ICJncmVlbmZpZWxkIiwgImNsaSI6IHsiZXh0ZXJuYWxpemVkIjogdHJ1ZSwgImV4ZWN1dGFibGUiOiAiQFRNUEAvZXh0ZXJuYWwvYmluL21pciIsICJzaGEyNTYiOiAiMzA2YzZjYTc0MDc1NjAzNDA3OTc4NjZlMDc3ZTA1MzYyN2FkNDA5Mjc3ZDFiOWRhNTgxMDZmY2U0Y2Y3MTdjYiIsICJydW50aW1lX21hbmlmZXN0IjogIkBUTVBAL2V4dGVybmFsL3J1bnRpbWUtbWFuaWZlc3QuanNvbiIsICJydW50aW1lX21hbmlmZXN0X3NoYTI1NiI6ICI0NDEzNmZhMzU1YjM2NzhhMTE0NmFkMTZmN2U4NjQ5ZTk0ZmI0ZmMyMWZlNzdlODMxMGMwNjBmNjFjYWFmZjhhIiwgInNvdXJjZV91cmwiOiAiaHR0cHM6Ly9leGFtcGxlLmludmFsaWQvcHJvdmlkZXIiLCAic291cmNlX2NvbW1pdCI6ICJhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhIiwgImNvbnN0cmFpbnRzX3NoYTI1NiI6ICJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiIn0sICJjYXBhYmlsaXRpZXMiOiB7InN0YXR1cyI6ICJyZWFkeSJ9LCAic2xpbSI6IHsic3RhdHVzIjogImFwcGxpZWQifSwgImFyY2hpdGVjdHVyZV9pbml0aWFsaXphdGlvbiI6IHsiYXR0ZXN0ZWQiOiB0cnVlLCAiZXZpZGVuY2UiOiB7Im91dHB1dF9oYXNoZXMiOiB7InNwZWMvU1RBVEUubWQiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2luZGV4LnlhbWwiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2dyYXBoLnlhbWwiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2dhcHMueWFtbCI6ICJlODBiNzFjZDE0ZDNjYmQ2NWY0MTczYWJjYmZjZjAxYTU0NWRiY2EzMmE3MmQ1NzUxMDhiNTUzYTY0OGNjOTZmIn19fX0=",
+          "mode": 420
+        },
+        "project/README.md": {
+          "base64": "cHJvdmlkZXIgb25seQo=",
+          "mode": 420
+        }
+      },
+      "copies": [
+        ".claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "native": false,
+      "expected": {
+        "exit": 1,
+        "stdout": "aW52YWxpZAo=",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      },
+      "state": "invalid",
+      "mode": "greenfield",
+      "unsupported": false
+    },
+    {
+      "id": "w1-y6a:boundary-traversal",
+      "family": ".claude/hooks/_lib/bootstrap-gate.sh",
+      "case": "boundary-traversal",
+      "argv": [
+        "/bin/bash",
+        "-c",
+        "source \"$1\"; mir_bootstrap_gate_state \"$CLAUDE_PROJECT_DIR\"",
+        "w1",
+        "@TMP@/project/.claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "stdin": "e30=",
+      "env": {},
+      "setup": {
+        "project/.venv/bin/python": {
+          "base64": "IyEvYmluL3NoCmV4ZWMgIkBQWVRIT05AIiAiJEAiCg==",
+          "mode": 493
+        },
+        "external/bin/mir": {
+          "base64": "IyEvYmluL3NoCmV4aXQgMAo=",
+          "mode": 493
+        },
+        "external/runtime-manifest.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/spec/STATE.md": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/index.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/graph.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/gaps.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/config/adopter-boundary.json": {
+          "base64": "eyJwcm92aWRlcl9tYXJrZXJzIjpbIi4uL291dHNpZGUiXX0=",
+          "mode": 420
+        },
+        "project/.mir/bootstrap-receipt.json": {
+          "base64": "eyJzdGF0dXMiOiAicmVhZHkiLCAibW9kZSI6ICJncmVlbmZpZWxkIiwgImNsaSI6IHsiZXh0ZXJuYWxpemVkIjogdHJ1ZSwgImV4ZWN1dGFibGUiOiAiQFRNUEAvZXh0ZXJuYWwvYmluL21pciIsICJzaGEyNTYiOiAiMzA2YzZjYTc0MDc1NjAzNDA3OTc4NjZlMDc3ZTA1MzYyN2FkNDA5Mjc3ZDFiOWRhNTgxMDZmY2U0Y2Y3MTdjYiIsICJydW50aW1lX21hbmlmZXN0IjogIkBUTVBAL2V4dGVybmFsL3J1bnRpbWUtbWFuaWZlc3QuanNvbiIsICJydW50aW1lX21hbmlmZXN0X3NoYTI1NiI6ICI0NDEzNmZhMzU1YjM2NzhhMTE0NmFkMTZmN2U4NjQ5ZTk0ZmI0ZmMyMWZlNzdlODMxMGMwNjBmNjFjYWFmZjhhIiwgInNvdXJjZV91cmwiOiAiaHR0cHM6Ly9leGFtcGxlLmludmFsaWQvcHJvdmlkZXIiLCAic291cmNlX2NvbW1pdCI6ICJhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhIiwgImNvbnN0cmFpbnRzX3NoYTI1NiI6ICJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiIn0sICJjYXBhYmlsaXRpZXMiOiB7InN0YXR1cyI6ICJyZWFkeSJ9LCAic2xpbSI6IHsic3RhdHVzIjogImFwcGxpZWQifSwgImFyY2hpdGVjdHVyZV9pbml0aWFsaXphdGlvbiI6IHsiYXR0ZXN0ZWQiOiB0cnVlLCAiZXZpZGVuY2UiOiB7Im91dHB1dF9oYXNoZXMiOiB7InNwZWMvU1RBVEUubWQiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2luZGV4LnlhbWwiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2dyYXBoLnlhbWwiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2dhcHMueWFtbCI6ICJlODBiNzFjZDE0ZDNjYmQ2NWY0MTczYWJjYmZjZjAxYTU0NWRiY2EzMmE3MmQ1NzUxMDhiNTUzYTY0OGNjOTZmIn19fX0=",
+          "mode": 420
+        }
+      },
+      "copies": [
+        ".claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "native": false,
+      "expected": {
+        "exit": 1,
+        "stdout": "aW52YWxpZAo=",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      },
+      "state": "invalid",
+      "mode": "greenfield",
+      "unsupported": false
+    },
+    {
+      "id": "w1-y6a:restart-stale-cli",
+      "family": ".claude/hooks/_lib/bootstrap-gate.sh",
+      "case": "restart-stale-cli",
+      "argv": [
+        "/bin/bash",
+        "-c",
+        "source \"$1\"; mir_bootstrap_gate_state \"$CLAUDE_PROJECT_DIR\"",
+        "w1",
+        "@TMP@/project/.claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "stdin": "e30=",
+      "env": {},
+      "setup": {
+        "project/.venv/bin/python": {
+          "base64": "IyEvYmluL3NoCmV4ZWMgIkBQWVRIT05AIiAiJEAiCg==",
+          "mode": 493
+        },
+        "external/bin/mir": {
+          "base64": "IyEvYmluL3NoCmV4aXQgMQo=",
+          "mode": 493
+        },
+        "external/runtime-manifest.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/.mir/bootstrap-receipt.json": {
+          "base64": "eyJzdGF0dXMiOiAicmVzdGFydF9yZXF1aXJlZCIsICJtb2RlIjogImdyZWVuZmllbGQiLCAiY2xpIjogeyJleHRlcm5hbGl6ZWQiOiB0cnVlLCAiZXhlY3V0YWJsZSI6ICJAVE1QQC9leHRlcm5hbC9iaW4vbWlyIiwgInNoYTI1NiI6ICIzMDZjNmNhNzQwNzU2MDM0MDc5Nzg2NmUwNzdlMDUzNjI3YWQ0MDkyNzdkMWI5ZGE1ODEwNmZjZTRjZjcxN2NiIiwgInJ1bnRpbWVfbWFuaWZlc3QiOiAiQFRNUEAvZXh0ZXJuYWwvcnVudGltZS1tYW5pZmVzdC5qc29uIiwgInJ1bnRpbWVfbWFuaWZlc3Rfc2hhMjU2IjogIjQ0MTM2ZmEzNTViMzY3OGExMTQ2YWQxNmY3ZTg2NDllOTRmYjRmYzIxZmU3N2U4MzEwYzA2MGY2MWNhYWZmOGEiLCAic291cmNlX3VybCI6ICJodHRwczovL2V4YW1wbGUuaW52YWxpZC9wcm92aWRlciIsICJzb3VyY2VfY29tbWl0IjogImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCAiY29uc3RyYWludHNfc2hhMjU2IjogImJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmIifX0=",
+          "mode": 420
+        }
+      },
+      "copies": [
+        ".claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "native": false,
+      "expected": {
+        "exit": 1,
+        "stdout": "aW52YWxpZAo=",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      },
+      "state": "invalid",
+      "mode": "greenfield",
+      "unsupported": false
+    },
+    {
+      "id": "w1-y6a:provider-wrong-origin",
+      "family": ".claude/hooks/_lib/bootstrap-gate.sh",
+      "case": "provider-wrong-origin",
+      "argv": [
+        "/bin/bash",
+        "-c",
+        "source \"$1\"; mir_bootstrap_gate_state \"$CLAUDE_PROJECT_DIR\"",
+        "w1",
+        "@TMP@/project/.claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "stdin": "e30=",
+      "env": {},
+      "setup": {
+        "project/.venv/bin/python": {
+          "base64": "IyEvYmluL3NoCmV4ZWMgIkBQWVRIT05AIiAiJEAiCg==",
+          "mode": 493
+        },
+        "external/bin/mir": {
+          "base64": "IyEvYmluL3NoCmV4aXQgMAo=",
+          "mode": 493
+        },
+        "external/runtime-manifest.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/.mir/repo-profile.toml": {
+          "base64": "W3JlcG9dCnNsdWcgPSAibWlyLXlva2UiCnJlcG9zaXRvcnlfdHlwZSA9ICJwdWJsaWNfaGFybmVzc190ZW1wbGF0ZSIK",
+          "mode": 420
+        },
+        "tools/git": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiaHR0cHM6Ly9leGFtcGxlLmludmFsaWQvb3RoZXIuZ2l0XG4iCg==",
+          "mode": 493
+        }
+      },
+      "copies": [
+        ".claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "native": false,
+      "expected": {
+        "exit": 1,
+        "stdout": "bWlzc2luZwo=",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      },
+      "state": "missing",
+      "mode": "greenfield",
+      "unsupported": false
+    },
+    {
+      "id": "w1-y6a:provider-profile-symlink",
+      "family": ".claude/hooks/_lib/bootstrap-gate.sh",
+      "case": "provider-profile-symlink",
+      "argv": [
+        "/bin/bash",
+        "-c",
+        "source \"$1\"; mir_bootstrap_gate_state \"$CLAUDE_PROJECT_DIR\"",
+        "w1",
+        "@TMP@/project/.claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "stdin": "e30=",
+      "env": {},
+      "setup": {
+        "project/.venv/bin/python": {
+          "base64": "IyEvYmluL3NoCmV4ZWMgIkBQWVRIT05AIiAiJEAiCg==",
+          "mode": 493
+        },
+        "external/bin/mir": {
+          "base64": "IyEvYmluL3NoCmV4aXQgMAo=",
+          "mode": 493
+        },
+        "external/runtime-manifest.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "tools/git": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiaHR0cHM6Ly9naXRodWIuY29tL3lvdW5namluMzkvbWlyLXlva2UuZ2l0XG4iCg==",
+          "mode": 493
+        },
+        "project/.mir/profile.real": {
+          "base64": "W3JlcG9dCnNsdWcgPSAibWlyLXlva2UiCnJlcG9zaXRvcnlfdHlwZSA9ICJwdWJsaWNfaGFybmVzc190ZW1wbGF0ZSIK",
+          "mode": 420
+        },
+        "project/.mir/repo-profile.toml": {
+          "symlink": "profile.real"
+        }
+      },
+      "copies": [
+        ".claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "native": false,
+      "expected": {
+        "exit": 1,
+        "stdout": "bWlzc2luZwo=",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      },
+      "state": "missing",
+      "mode": "greenfield",
+      "unsupported": false
+    },
+    {
+      "id": "w1-y6a:receipt-dangling-symlink",
+      "family": ".claude/hooks/_lib/bootstrap-gate.sh",
+      "case": "receipt-dangling-symlink",
+      "argv": [
+        "/bin/bash",
+        "-c",
+        "source \"$1\"; mir_bootstrap_gate_state \"$CLAUDE_PROJECT_DIR\"",
+        "w1",
+        "@TMP@/project/.claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "stdin": "e30=",
+      "env": {},
+      "setup": {
+        "project/.venv/bin/python": {
+          "base64": "IyEvYmluL3NoCmV4ZWMgIkBQWVRIT05AIiAiJEAiCg==",
+          "mode": 493
+        },
+        "external/bin/mir": {
+          "base64": "IyEvYmluL3NoCmV4aXQgMAo=",
+          "mode": 493
+        },
+        "external/runtime-manifest.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/spec/STATE.md": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/index.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/graph.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/gaps.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/config/adopter-boundary.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/.mir/bootstrap-receipt.json": {
+          "symlink": "missing"
+        }
+      },
+      "copies": [
+        ".claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "native": false,
+      "expected": {
+        "exit": 1,
+        "stdout": "bWlzc2luZwo=",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      },
+      "state": "missing",
+      "mode": "greenfield",
+      "unsupported": false
+    },
+    {
+      "id": "w1-y6a:unsupported-windows-drive",
+      "family": ".claude/hooks/_lib/bootstrap-gate.sh",
+      "case": "unsupported-windows-drive",
+      "argv": [
+        "/bin/bash",
+        "-c",
+        "source \"$1\"; mir_bootstrap_gate_state \"$CLAUDE_PROJECT_DIR\"",
+        "w1",
+        "@TMP@/project/.claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "stdin": "e30=",
+      "env": {},
+      "setup": {
+        "project/.venv/bin/python": {
+          "base64": "IyEvYmluL3NoCmV4ZWMgIkBQWVRIT05AIiAiJEAiCg==",
+          "mode": 493
+        },
+        "external/bin/mir": {
+          "base64": "IyEvYmluL3NoCmV4aXQgMAo=",
+          "mode": 493
+        },
+        "external/runtime-manifest.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/spec/STATE.md": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/index.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/graph.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/gaps.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/config/adopter-boundary.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/.mir/bootstrap-receipt.json": {
+          "base64": "eyJzdGF0dXMiOiAicmVhZHkiLCAibW9kZSI6ICJncmVlbmZpZWxkIiwgImNsaSI6IHsiZXh0ZXJuYWxpemVkIjogdHJ1ZSwgImV4ZWN1dGFibGUiOiAiQzpcXHJ1bnRpbWVcXG1pci5leGUiLCAic2hhMjU2IjogIjMwNmM2Y2E3NDA3NTYwMzQwNzk3ODY2ZTA3N2UwNTM2MjdhZDQwOTI3N2QxYjlkYTU4MTA2ZmNlNGNmNzE3Y2IiLCAicnVudGltZV9tYW5pZmVzdCI6ICJAVE1QQC9leHRlcm5hbC9ydW50aW1lLW1hbmlmZXN0Lmpzb24iLCAicnVudGltZV9tYW5pZmVzdF9zaGEyNTYiOiAiNDQxMzZmYTM1NWIzNjc4YTExNDZhZDE2ZjdlODY0OWU5NGZiNGZjMjFmZTc3ZTgzMTBjMDYwZjYxY2FhZmY4YSIsICJzb3VyY2VfdXJsIjogImh0dHBzOi8vZXhhbXBsZS5pbnZhbGlkL3Byb3ZpZGVyIiwgInNvdXJjZV9jb21taXQiOiAiYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYSIsICJjb25zdHJhaW50c19zaGEyNTYiOiAiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYiJ9LCAiY2FwYWJpbGl0aWVzIjogeyJzdGF0dXMiOiAicmVhZHkifSwgInNsaW0iOiB7InN0YXR1cyI6ICJhcHBsaWVkIn0sICJhcmNoaXRlY3R1cmVfaW5pdGlhbGl6YXRpb24iOiB7ImF0dGVzdGVkIjogdHJ1ZSwgImV2aWRlbmNlIjogeyJvdXRwdXRfaGFzaGVzIjogeyJzcGVjL1NUQVRFLm1kIjogImU4MGI3MWNkMTRkM2NiZDY1ZjQxNzNhYmNiZmNmMDFhNTQ1ZGJjYTMyYTcyZDU3NTEwOGI1NTNhNjQ4Y2M5NmYiLCAic3BlYy9pbmRleC55YW1sIjogImU4MGI3MWNkMTRkM2NiZDY1ZjQxNzNhYmNiZmNmMDFhNTQ1ZGJjYTMyYTcyZDU3NTEwOGI1NTNhNjQ4Y2M5NmYiLCAic3BlYy9ncmFwaC55YW1sIjogImU4MGI3MWNkMTRkM2NiZDY1ZjQxNzNhYmNiZmNmMDFhNTQ1ZGJjYTMyYTcyZDU3NTEwOGI1NTNhNjQ4Y2M5NmYiLCAic3BlYy9nYXBzLnlhbWwiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiJ9fX19",
+          "mode": 420
+        }
+      },
+      "copies": [
+        ".claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "native": false,
+      "expected": {
+        "exit": 1,
+        "stdout": "aW52YWxpZAo=",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      },
+      "state": "invalid",
+      "mode": "greenfield",
+      "unsupported": true
+    },
+    {
+      "id": "w1-y6a:unsupported-windows-unc",
+      "family": ".claude/hooks/_lib/bootstrap-gate.sh",
+      "case": "unsupported-windows-unc",
+      "argv": [
+        "/bin/bash",
+        "-c",
+        "source \"$1\"; mir_bootstrap_gate_state \"$CLAUDE_PROJECT_DIR\"",
+        "w1",
+        "@TMP@/project/.claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "stdin": "e30=",
+      "env": {},
+      "setup": {
+        "project/.venv/bin/python": {
+          "base64": "IyEvYmluL3NoCmV4ZWMgIkBQWVRIT05AIiAiJEAiCg==",
+          "mode": 493
+        },
+        "external/bin/mir": {
+          "base64": "IyEvYmluL3NoCmV4aXQgMAo=",
+          "mode": 493
+        },
+        "external/runtime-manifest.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/spec/STATE.md": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/index.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/graph.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/gaps.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/config/adopter-boundary.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/.mir/bootstrap-receipt.json": {
+          "base64": "eyJzdGF0dXMiOiAicmVhZHkiLCAibW9kZSI6ICJncmVlbmZpZWxkIiwgImNsaSI6IHsiZXh0ZXJuYWxpemVkIjogdHJ1ZSwgImV4ZWN1dGFibGUiOiAiXFxcXHNlcnZlclxcc2hhcmVcXG1pci5leGUiLCAic2hhMjU2IjogIjMwNmM2Y2E3NDA3NTYwMzQwNzk3ODY2ZTA3N2UwNTM2MjdhZDQwOTI3N2QxYjlkYTU4MTA2ZmNlNGNmNzE3Y2IiLCAicnVudGltZV9tYW5pZmVzdCI6ICJAVE1QQC9leHRlcm5hbC9ydW50aW1lLW1hbmlmZXN0Lmpzb24iLCAicnVudGltZV9tYW5pZmVzdF9zaGEyNTYiOiAiNDQxMzZmYTM1NWIzNjc4YTExNDZhZDE2ZjdlODY0OWU5NGZiNGZjMjFmZTc3ZTgzMTBjMDYwZjYxY2FhZmY4YSIsICJzb3VyY2VfdXJsIjogImh0dHBzOi8vZXhhbXBsZS5pbnZhbGlkL3Byb3ZpZGVyIiwgInNvdXJjZV9jb21taXQiOiAiYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYSIsICJjb25zdHJhaW50c19zaGEyNTYiOiAiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYiJ9LCAiY2FwYWJpbGl0aWVzIjogeyJzdGF0dXMiOiAicmVhZHkifSwgInNsaW0iOiB7InN0YXR1cyI6ICJhcHBsaWVkIn0sICJhcmNoaXRlY3R1cmVfaW5pdGlhbGl6YXRpb24iOiB7ImF0dGVzdGVkIjogdHJ1ZSwgImV2aWRlbmNlIjogeyJvdXRwdXRfaGFzaGVzIjogeyJzcGVjL1NUQVRFLm1kIjogImU4MGI3MWNkMTRkM2NiZDY1ZjQxNzNhYmNiZmNmMDFhNTQ1ZGJjYTMyYTcyZDU3NTEwOGI1NTNhNjQ4Y2M5NmYiLCAic3BlYy9pbmRleC55YW1sIjogImU4MGI3MWNkMTRkM2NiZDY1ZjQxNzNhYmNiZmNmMDFhNTQ1ZGJjYTMyYTcyZDU3NTEwOGI1NTNhNjQ4Y2M5NmYiLCAic3BlYy9ncmFwaC55YW1sIjogImU4MGI3MWNkMTRkM2NiZDY1ZjQxNzNhYmNiZmNmMDFhNTQ1ZGJjYTMyYTcyZDU3NTEwOGI1NTNhNjQ4Y2M5NmYiLCAic3BlYy9nYXBzLnlhbWwiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiJ9fX19",
+          "mode": 420
+        }
+      },
+      "copies": [
+        ".claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "native": false,
+      "expected": {
+        "exit": 1,
+        "stdout": "aW52YWxpZAo=",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      },
+      "state": "invalid",
+      "mode": "greenfield",
+      "unsupported": true
+    },
+    {
+      "id": "w1-y6a:native-valid-invalid",
+      "family": ".claude/hooks/_lib/bootstrap-gate.sh",
+      "case": "native-valid-invalid",
+      "argv": [
+        "/bin/bash",
+        "-c",
+        "source \"$1\"; mir_bootstrap_gate_state \"$CLAUDE_PROJECT_DIR\"",
+        "w1",
+        "@TMP@/project/.claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "stdin": "e30=",
+      "env": {
+        "MIR_NATIVE_HOOKS": "1"
+      },
+      "setup": {
+        "project/.venv/bin/python": {
+          "base64": "IyEvYmluL3NoCmV4ZWMgIkBQWVRIT05AIiAiJEAiCg==",
+          "mode": 493
+        },
+        "external/bin/mir": {
+          "base64": "IyEvYmluL3NoCmV4aXQgMAo=",
+          "mode": 493
+        },
+        "external/runtime-manifest.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/.mir": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/.mir/bin": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/.mir/bootstrap-receipt.json": {
+          "base64": "eyJzdGF0dXMiOiAicmVhZHkiLCAibW9kZSI6ICJleGlzdGluZ19yZXBvc2l0b3J5X2Fkb3B0aW9uIiwgInNvdXJjZSI6IHsibWlyX3lva2VfY29tbWl0IjogImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEifSwgIm1hbmlmZXN0IjogeyJzaGEyNTYiOiAiOGFkYzY0MDI2Yzk3ODBiNzBlZDU0NzdjYjc2ZjIyNDYwZDQ0N2U1NTIwYTIyMjVmYTFlNmZhMGU4MWU2NzAzZiJ9LCAiZXZpZGVuY2UiOiBbeyJwYXRoIjogInNwZWMvZXZpZGVuY2UtMC55YW1sIiwgInNoYTI1NiI6ICJhYTI3NzVkYTM4OWMzMjAxZWRkYTg5MWRmYWViZWRjNDk1Mzc0NjdjYmY0ZTM4M2YxNWU4Njc1MGJmMDE0NDk3In1dLCAibmF0aXZlX2V2YWx1YXRvciI6IHsicGF0aCI6ICIubWlyL2Jpbi9ib290c3RyYXAtZ2F0ZSIsICJzaGEyNTYiOiAiMTQ4M2I2YjhmNzg1NGU5MGI0OGUxZDUxNDI4MTU1ZjM2MmVmNDkyYzQ1YmZhZWIzYWQ4N2U2M2NiNzYyZTBiYSJ9fQ==",
+          "mode": 420
+        },
+        "project/config": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/config/bootstrap-adoption.json": {
+          "base64": "eyJtaXJfeW9rZV9zb3VyY2VfY29tbWl0IjogImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCAic3VyZmFjZXMiOiB7InBoYXNlMl9zcGVjIjogeyJldmlkZW5jZV9wYXRocyI6IFsic3BlYy9ldmlkZW5jZS0wLnlhbWwiXX19fQo=",
+          "mode": 420
+        },
+        "project/spec": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/spec/evidence-0.yaml": {
+          "base64": "dmVyaWZpZWQ6IHRydWUK",
+          "mode": 420
+        },
+        "project/.mir/bin/bootstrap-gate": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiaW52YWxpZFxuIjsgZXhpdCAxCg==",
+          "mode": 493
+        }
+      },
+      "copies": [
+        ".claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "native": false,
+      "expected": {
+        "exit": 1,
+        "stdout": "aW52YWxpZAo=",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      },
+      "state": "invalid",
+      "mode": "adoption",
+      "unsupported": false
+    },
+    {
+      "id": "w1-y6a:native-extra-newline",
+      "family": ".claude/hooks/_lib/bootstrap-gate.sh",
+      "case": "native-extra-newline",
+      "argv": [
+        "/bin/bash",
+        "-c",
+        "source \"$1\"; mir_bootstrap_gate_state \"$CLAUDE_PROJECT_DIR\"",
+        "w1",
+        "@TMP@/project/.claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "stdin": "e30=",
+      "env": {
+        "MIR_NATIVE_HOOKS": "1"
+      },
+      "setup": {
+        "project/.venv/bin/python": {
+          "base64": "IyEvYmluL3NoCmV4ZWMgIkBQWVRIT05AIiAiJEAiCg==",
+          "mode": 493
+        },
+        "project/.mir": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/.mir/bin": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/.mir/bootstrap-receipt.json": {
+          "base64": "eyJzdGF0dXMiOiAicmVhZHkiLCAibW9kZSI6ICJleGlzdGluZ19yZXBvc2l0b3J5X2Fkb3B0aW9uIiwgInNvdXJjZSI6IHsibWlyX3lva2VfY29tbWl0IjogImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEifSwgIm1hbmlmZXN0IjogeyJzaGEyNTYiOiAiOGFkYzY0MDI2Yzk3ODBiNzBlZDU0NzdjYjc2ZjIyNDYwZDQ0N2U1NTIwYTIyMjVmYTFlNmZhMGU4MWU2NzAzZiJ9LCAiZXZpZGVuY2UiOiBbeyJwYXRoIjogInNwZWMvZXZpZGVuY2UtMC55YW1sIiwgInNoYTI1NiI6ICJhYTI3NzVkYTM4OWMzMjAxZWRkYTg5MWRmYWViZWRjNDk1Mzc0NjdjYmY0ZTM4M2YxNWU4Njc1MGJmMDE0NDk3In1dLCAibmF0aXZlX2V2YWx1YXRvciI6IHsicGF0aCI6ICIubWlyL2Jpbi9ib290c3RyYXAtZ2F0ZSIsICJzaGEyNTYiOiAiMThjNmMxZjM1NGU2NDgzYzczZjk0YTBhYjYzNmRiODNmNTZlMGQ3ODlmMmVjMzRmYjY1NzVmMDU1Mjc3NDlmNSJ9fQ==",
+          "mode": 420
+        },
+        "project/config": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/config/bootstrap-adoption.json": {
+          "base64": "eyJtaXJfeW9rZV9zb3VyY2VfY29tbWl0IjogImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCAic3VyZmFjZXMiOiB7InBoYXNlMl9zcGVjIjogeyJldmlkZW5jZV9wYXRocyI6IFsic3BlYy9ldmlkZW5jZS0wLnlhbWwiXX19fQo=",
+          "mode": 420
+        },
+        "project/spec": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/spec/evidence-0.yaml": {
+          "base64": "dmVyaWZpZWQ6IGZhbHNlCg==",
+          "mode": 420
+        },
+        "project/.mir/bin/bootstrap-gate": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAicmVhZHlcblxuIjsgZXhpdCAwCg==",
+          "mode": 493
+        }
+      },
+      "copies": [
+        ".claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "native": false,
+      "expected": {
+        "exit": 1,
+        "stdout": "aW52YWxpZAo=",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      },
+      "state": "invalid",
+      "mode": "adoption",
+      "unsupported": false
+    },
+    {
+      "id": "w1-y6a:native-wrong-code",
+      "family": ".claude/hooks/_lib/bootstrap-gate.sh",
+      "case": "native-wrong-code",
+      "argv": [
+        "/bin/bash",
+        "-c",
+        "source \"$1\"; mir_bootstrap_gate_state \"$CLAUDE_PROJECT_DIR\"",
+        "w1",
+        "@TMP@/project/.claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "stdin": "e30=",
+      "env": {
+        "MIR_NATIVE_HOOKS": "1"
+      },
+      "setup": {
+        "project/.venv/bin/python": {
+          "base64": "IyEvYmluL3NoCmV4ZWMgIkBQWVRIT05AIiAiJEAiCg==",
+          "mode": 493
+        },
+        "project/.mir": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/.mir/bin": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/.mir/bootstrap-receipt.json": {
+          "base64": "eyJzdGF0dXMiOiAicmVhZHkiLCAibW9kZSI6ICJleGlzdGluZ19yZXBvc2l0b3J5X2Fkb3B0aW9uIiwgInNvdXJjZSI6IHsibWlyX3lva2VfY29tbWl0IjogImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEifSwgIm1hbmlmZXN0IjogeyJzaGEyNTYiOiAiOGFkYzY0MDI2Yzk3ODBiNzBlZDU0NzdjYjc2ZjIyNDYwZDQ0N2U1NTIwYTIyMjVmYTFlNmZhMGU4MWU2NzAzZiJ9LCAiZXZpZGVuY2UiOiBbeyJwYXRoIjogInNwZWMvZXZpZGVuY2UtMC55YW1sIiwgInNoYTI1NiI6ICJhYTI3NzVkYTM4OWMzMjAxZWRkYTg5MWRmYWViZWRjNDk1Mzc0NjdjYmY0ZTM4M2YxNWU4Njc1MGJmMDE0NDk3In1dLCAibmF0aXZlX2V2YWx1YXRvciI6IHsicGF0aCI6ICIubWlyL2Jpbi9ib290c3RyYXAtZ2F0ZSIsICJzaGEyNTYiOiAiMDAyMjQ2ZDQ3NGY4ZGZmYTg1NGJlODVjNTNmMTc1ZDYwMzE5MjY2ZmI4ZjMyMzQxYTM5ZGFmNTczNjEwNzVlNyJ9fQ==",
+          "mode": 420
+        },
+        "project/config": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/config/bootstrap-adoption.json": {
+          "base64": "eyJtaXJfeW9rZV9zb3VyY2VfY29tbWl0IjogImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCAic3VyZmFjZXMiOiB7InBoYXNlMl9zcGVjIjogeyJldmlkZW5jZV9wYXRocyI6IFsic3BlYy9ldmlkZW5jZS0wLnlhbWwiXX19fQo=",
+          "mode": 420
+        },
+        "project/spec": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/spec/evidence-0.yaml": {
+          "base64": "dmVyaWZpZWQ6IGZhbHNlCg==",
+          "mode": 420
+        },
+        "project/.mir/bin/bootstrap-gate": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAicmVhZHlcbiI7IGV4aXQgMQo=",
+          "mode": 493
+        }
+      },
+      "copies": [
+        ".claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "native": false,
+      "expected": {
+        "exit": 1,
+        "stdout": "aW52YWxpZAo=",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      },
+      "state": "invalid",
+      "mode": "adoption",
+      "unsupported": false
+    },
+    {
+      "id": "w1-y6a:native-no-newline",
+      "family": ".claude/hooks/_lib/bootstrap-gate.sh",
+      "case": "native-no-newline",
+      "argv": [
+        "/bin/bash",
+        "-c",
+        "source \"$1\"; mir_bootstrap_gate_state \"$CLAUDE_PROJECT_DIR\"",
+        "w1",
+        "@TMP@/project/.claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "stdin": "e30=",
+      "env": {
+        "MIR_NATIVE_HOOKS": "1"
+      },
+      "setup": {
+        "project/.venv/bin/python": {
+          "base64": "IyEvYmluL3NoCmV4ZWMgIkBQWVRIT05AIiAiJEAiCg==",
+          "mode": 493
+        },
+        "project/.mir": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/.mir/bin": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/.mir/bootstrap-receipt.json": {
+          "base64": "eyJzdGF0dXMiOiAicmVhZHkiLCAibW9kZSI6ICJleGlzdGluZ19yZXBvc2l0b3J5X2Fkb3B0aW9uIiwgInNvdXJjZSI6IHsibWlyX3lva2VfY29tbWl0IjogImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEifSwgIm1hbmlmZXN0IjogeyJzaGEyNTYiOiAiOGFkYzY0MDI2Yzk3ODBiNzBlZDU0NzdjYjc2ZjIyNDYwZDQ0N2U1NTIwYTIyMjVmYTFlNmZhMGU4MWU2NzAzZiJ9LCAiZXZpZGVuY2UiOiBbeyJwYXRoIjogInNwZWMvZXZpZGVuY2UtMC55YW1sIiwgInNoYTI1NiI6ICJhYTI3NzVkYTM4OWMzMjAxZWRkYTg5MWRmYWViZWRjNDk1Mzc0NjdjYmY0ZTM4M2YxNWU4Njc1MGJmMDE0NDk3In1dLCAibmF0aXZlX2V2YWx1YXRvciI6IHsicGF0aCI6ICIubWlyL2Jpbi9ib290c3RyYXAtZ2F0ZSIsICJzaGEyNTYiOiAiMmU0MGNhODYyMTkyMDNkNmQ0N2ZkNWEyMTNjN2QwYjgzMzNkNGE4OWM2ZTA3M2ExZjJhODdjN2JjZjZkZTZkNCJ9fQ==",
+          "mode": 420
+        },
+        "project/config": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/config/bootstrap-adoption.json": {
+          "base64": "eyJtaXJfeW9rZV9zb3VyY2VfY29tbWl0IjogImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCAic3VyZmFjZXMiOiB7InBoYXNlMl9zcGVjIjogeyJldmlkZW5jZV9wYXRocyI6IFsic3BlYy9ldmlkZW5jZS0wLnlhbWwiXX19fQo=",
+          "mode": 420
+        },
+        "project/spec": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/spec/evidence-0.yaml": {
+          "base64": "dmVyaWZpZWQ6IGZhbHNlCg==",
+          "mode": 420
+        },
+        "project/.mir/bin/bootstrap-gate": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiByZWFkeTsgZXhpdCAwCg==",
+          "mode": 493
+        }
+      },
+      "copies": [
+        ".claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "native": false,
+      "expected": {
+        "exit": 1,
+        "stdout": "aW52YWxpZAo=",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      },
+      "state": "invalid",
+      "mode": "adoption",
+      "unsupported": false
+    },
+    {
+      "id": "w1-y6a:native-garbage",
+      "family": ".claude/hooks/_lib/bootstrap-gate.sh",
+      "case": "native-garbage",
+      "argv": [
+        "/bin/bash",
+        "-c",
+        "source \"$1\"; mir_bootstrap_gate_state \"$CLAUDE_PROJECT_DIR\"",
+        "w1",
+        "@TMP@/project/.claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "stdin": "e30=",
+      "env": {
+        "MIR_NATIVE_HOOKS": "1"
+      },
+      "setup": {
+        "project/.venv/bin/python": {
+          "base64": "IyEvYmluL3NoCmV4ZWMgIkBQWVRIT05AIiAiJEAiCg==",
+          "mode": 493
+        },
+        "project/.mir": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/.mir/bin": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/.mir/bootstrap-receipt.json": {
+          "base64": "eyJzdGF0dXMiOiAicmVhZHkiLCAibW9kZSI6ICJleGlzdGluZ19yZXBvc2l0b3J5X2Fkb3B0aW9uIiwgInNvdXJjZSI6IHsibWlyX3lva2VfY29tbWl0IjogImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEifSwgIm1hbmlmZXN0IjogeyJzaGEyNTYiOiAiOGFkYzY0MDI2Yzk3ODBiNzBlZDU0NzdjYjc2ZjIyNDYwZDQ0N2U1NTIwYTIyMjVmYTFlNmZhMGU4MWU2NzAzZiJ9LCAiZXZpZGVuY2UiOiBbeyJwYXRoIjogInNwZWMvZXZpZGVuY2UtMC55YW1sIiwgInNoYTI1NiI6ICJhYTI3NzVkYTM4OWMzMjAxZWRkYTg5MWRmYWViZWRjNDk1Mzc0NjdjYmY0ZTM4M2YxNWU4Njc1MGJmMDE0NDk3In1dLCAibmF0aXZlX2V2YWx1YXRvciI6IHsicGF0aCI6ICIubWlyL2Jpbi9ib290c3RyYXAtZ2F0ZSIsICJzaGEyNTYiOiAiMmY4ZjQwYzliMDc0OWIwZmMxZmJjMWIxYzA2MjIzOTJhY2NkNzFiNTQzNWE0MTRjNDRiYWM2ODkxYmEzYzFhZCJ9fQ==",
+          "mode": 420
+        },
+        "project/config": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/config/bootstrap-adoption.json": {
+          "base64": "eyJtaXJfeW9rZV9zb3VyY2VfY29tbWl0IjogImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCAic3VyZmFjZXMiOiB7InBoYXNlMl9zcGVjIjogeyJldmlkZW5jZV9wYXRocyI6IFsic3BlYy9ldmlkZW5jZS0wLnlhbWwiXX19fQo=",
+          "mode": 420
+        },
+        "project/spec": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/spec/evidence-0.yaml": {
+          "base64": "dmVyaWZpZWQ6IGZhbHNlCg==",
+          "mode": 420
+        },
+        "project/.mir/bin/bootstrap-gate": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAiZ2FyYmFnZVxuIjsgZXhpdCAwCg==",
+          "mode": 493
+        }
+      },
+      "copies": [
+        ".claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "native": false,
+      "expected": {
+        "exit": 1,
+        "stdout": "aW52YWxpZAo=",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      },
+      "state": "invalid",
+      "mode": "adoption",
+      "unsupported": false
+    },
+    {
+      "id": "w1-y6a:linked-bin-greenfield-ready",
+      "family": ".claude/hooks/_lib/bootstrap-gate.sh",
+      "case": "linked-bin-greenfield-ready",
+      "argv": [
+        "/bin/bash",
+        "-c",
+        "source \"$1\"; mir_bootstrap_gate_state \"$CLAUDE_PROJECT_DIR\"",
+        "w1",
+        "@TMP@/project/.claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "stdin": "e30=",
+      "env": {},
+      "setup": {
+        "project/.venv/bin/python": {
+          "base64": "IyEvYmluL3NoCmV4ZWMgIkBQWVRIT05AIiAiJEAiCg==",
+          "mode": 493
+        },
+        "external/runtime-manifest.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/spec/STATE.md": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/index.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/graph.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/gaps.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/config/adopter-boundary.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/.mir/bootstrap-receipt.json": {
+          "base64": "eyJzdGF0dXMiOiAicmVhZHkiLCAibW9kZSI6ICJncmVlbmZpZWxkIiwgImNsaSI6IHsiZXh0ZXJuYWxpemVkIjogdHJ1ZSwgImV4ZWN1dGFibGUiOiAiQFRNUEAvZXh0ZXJuYWwvYmluL21pciIsICJzaGEyNTYiOiAiMzA2YzZjYTc0MDc1NjAzNDA3OTc4NjZlMDc3ZTA1MzYyN2FkNDA5Mjc3ZDFiOWRhNTgxMDZmY2U0Y2Y3MTdjYiIsICJydW50aW1lX21hbmlmZXN0IjogIkBUTVBAL2V4dGVybmFsL3J1bnRpbWUtbWFuaWZlc3QuanNvbiIsICJydW50aW1lX21hbmlmZXN0X3NoYTI1NiI6ICI0NDEzNmZhMzU1YjM2NzhhMTE0NmFkMTZmN2U4NjQ5ZTk0ZmI0ZmMyMWZlNzdlODMxMGMwNjBmNjFjYWFmZjhhIiwgInNvdXJjZV91cmwiOiAiaHR0cHM6Ly9leGFtcGxlLmludmFsaWQvcHJvdmlkZXIiLCAic291cmNlX2NvbW1pdCI6ICJhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhIiwgImNvbnN0cmFpbnRzX3NoYTI1NiI6ICJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiIn0sICJjYXBhYmlsaXRpZXMiOiB7InN0YXR1cyI6ICJyZWFkeSJ9LCAic2xpbSI6IHsic3RhdHVzIjogImFwcGxpZWQifSwgImFyY2hpdGVjdHVyZV9pbml0aWFsaXphdGlvbiI6IHsiYXR0ZXN0ZWQiOiB0cnVlLCAiZXZpZGVuY2UiOiB7Im91dHB1dF9oYXNoZXMiOiB7InNwZWMvU1RBVEUubWQiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2luZGV4LnlhbWwiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2dyYXBoLnlhbWwiOiAiZTgwYjcxY2QxNGQzY2JkNjVmNDE3M2FiY2JmY2YwMWE1NDVkYmNhMzJhNzJkNTc1MTA4YjU1M2E2NDhjYzk2ZiIsICJzcGVjL2dhcHMueWFtbCI6ICJlODBiNzFjZDE0ZDNjYmQ2NWY0MTczYWJjYmZjZjAxYTU0NWRiY2EzMmE3MmQ1NzUxMDhiNTUzYTY0OGNjOTZmIn19fX0=",
+          "mode": 420
+        },
+        "other/bin/mir": {
+          "base64": "IyEvYmluL3NoCmV4aXQgMAo=",
+          "mode": 493
+        },
+        "external/bin": {
+          "symlink": "../other/bin"
+        }
+      },
+      "copies": [
+        ".claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "native": false,
+      "expected": {
+        "exit": 0,
+        "stdout": "cmVhZHkK",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      },
+      "state": "ready",
+      "mode": "greenfield",
+      "unsupported": false
+    },
+    {
+      "id": "w1-y6a:linked-bin-greenfield-restart",
+      "family": ".claude/hooks/_lib/bootstrap-gate.sh",
+      "case": "linked-bin-greenfield-restart",
+      "argv": [
+        "/bin/bash",
+        "-c",
+        "source \"$1\"; mir_bootstrap_gate_state \"$CLAUDE_PROJECT_DIR\"",
+        "w1",
+        "@TMP@/project/.claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "stdin": "e30=",
+      "env": {},
+      "setup": {
+        "project/.venv/bin/python": {
+          "base64": "IyEvYmluL3NoCmV4ZWMgIkBQWVRIT05AIiAiJEAiCg==",
+          "mode": 493
+        },
+        "external/runtime-manifest.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/.mir/bootstrap-receipt.json": {
+          "base64": "eyJzdGF0dXMiOiAicmVzdGFydF9yZXF1aXJlZCIsICJtb2RlIjogImdyZWVuZmllbGQiLCAiY2xpIjogeyJleHRlcm5hbGl6ZWQiOiB0cnVlLCAiZXhlY3V0YWJsZSI6ICJAVE1QQC9leHRlcm5hbC9iaW4vbWlyIiwgInNoYTI1NiI6ICIzMDZjNmNhNzQwNzU2MDM0MDc5Nzg2NmUwNzdlMDUzNjI3YWQ0MDkyNzdkMWI5ZGE1ODEwNmZjZTRjZjcxN2NiIiwgInJ1bnRpbWVfbWFuaWZlc3QiOiAiQFRNUEAvZXh0ZXJuYWwvcnVudGltZS1tYW5pZmVzdC5qc29uIiwgInJ1bnRpbWVfbWFuaWZlc3Rfc2hhMjU2IjogIjQ0MTM2ZmEzNTViMzY3OGExMTQ2YWQxNmY3ZTg2NDllOTRmYjRmYzIxZmU3N2U4MzEwYzA2MGY2MWNhYWZmOGEiLCAic291cmNlX3VybCI6ICJodHRwczovL2V4YW1wbGUuaW52YWxpZC9wcm92aWRlciIsICJzb3VyY2VfY29tbWl0IjogImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCAiY29uc3RyYWludHNfc2hhMjU2IjogImJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmIifX0=",
+          "mode": 420
+        },
+        "other/bin/mir": {
+          "base64": "IyEvYmluL3NoCmV4aXQgMAo=",
+          "mode": 493
+        },
+        "external/bin": {
+          "symlink": "../other/bin"
+        }
+      },
+      "copies": [
+        ".claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "native": false,
+      "expected": {
+        "exit": 1,
+        "stdout": "cmVzdGFydF9yZXF1aXJlZAo=",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      },
+      "state": "restart_required",
+      "mode": "greenfield",
+      "unsupported": false
+    },
+    {
+      "id": "w1-y6a:runtime-manifest-dot-path",
+      "family": ".claude/hooks/_lib/bootstrap-gate.sh",
+      "case": "runtime-manifest-dot-path",
+      "argv": [
+        "/bin/bash",
+        "-c",
+        "source \"$1\"; mir_bootstrap_gate_state \"$CLAUDE_PROJECT_DIR\"",
+        "w1",
+        "@TMP@/project/.claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "stdin": "e30=",
+      "env": {},
+      "setup": {
+        "project/.venv/bin/python": {
+          "base64": "IyEvYmluL3NoCmV4ZWMgIkBQWVRIT05AIiAiJEAiCg==",
+          "mode": 493
+        },
+        "external/bin/mir": {
+          "base64": "IyEvYmluL3NoCmV4aXQgMAo=",
+          "mode": 493
+        },
+        "external/runtime-manifest.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/spec/STATE.md": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/index.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/graph.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/spec/gaps.yaml": {
+          "base64": "Zml4dHVyZQo=",
+          "mode": 420
+        },
+        "project/config/adopter-boundary.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/.mir/bootstrap-receipt.json": {
+          "base64": "eyJzdGF0dXMiOiAicmVhZHkiLCAibW9kZSI6ICJncmVlbmZpZWxkIiwgImNsaSI6IHsiZXh0ZXJuYWxpemVkIjogdHJ1ZSwgImV4ZWN1dGFibGUiOiAiQFRNUEAvZXh0ZXJuYWwvYmluL21pciIsICJzaGEyNTYiOiAiMzA2YzZjYTc0MDc1NjAzNDA3OTc4NjZlMDc3ZTA1MzYyN2FkNDA5Mjc3ZDFiOWRhNTgxMDZmY2U0Y2Y3MTdjYiIsICJydW50aW1lX21hbmlmZXN0IjogIkBUTVBAL2V4dGVybmFsLy4vcnVudGltZS1tYW5pZmVzdC5qc29uIiwgInJ1bnRpbWVfbWFuaWZlc3Rfc2hhMjU2IjogIjQ0MTM2ZmEzNTViMzY3OGExMTQ2YWQxNmY3ZTg2NDllOTRmYjRmYzIxZmU3N2U4MzEwYzA2MGY2MWNhYWZmOGEiLCAic291cmNlX3VybCI6ICJodHRwczovL2V4YW1wbGUuaW52YWxpZC9wcm92aWRlciIsICJzb3VyY2VfY29tbWl0IjogImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCAiY29uc3RyYWludHNfc2hhMjU2IjogImJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmIifSwgImNhcGFiaWxpdGllcyI6IHsic3RhdHVzIjogInJlYWR5In0sICJzbGltIjogeyJzdGF0dXMiOiAiYXBwbGllZCJ9LCAiYXJjaGl0ZWN0dXJlX2luaXRpYWxpemF0aW9uIjogeyJhdHRlc3RlZCI6IHRydWUsICJldmlkZW5jZSI6IHsib3V0cHV0X2hhc2hlcyI6IHsic3BlYy9TVEFURS5tZCI6ICJlODBiNzFjZDE0ZDNjYmQ2NWY0MTczYWJjYmZjZjAxYTU0NWRiY2EzMmE3MmQ1NzUxMDhiNTUzYTY0OGNjOTZmIiwgInNwZWMvaW5kZXgueWFtbCI6ICJlODBiNzFjZDE0ZDNjYmQ2NWY0MTczYWJjYmZjZjAxYTU0NWRiY2EzMmE3MmQ1NzUxMDhiNTUzYTY0OGNjOTZmIiwgInNwZWMvZ3JhcGgueWFtbCI6ICJlODBiNzFjZDE0ZDNjYmQ2NWY0MTczYWJjYmZjZjAxYTU0NWRiY2EzMmE3MmQ1NzUxMDhiNTUzYTY0OGNjOTZmIiwgInNwZWMvZ2Fwcy55YW1sIjogImU4MGI3MWNkMTRkM2NiZDY1ZjQxNzNhYmNiZmNmMDFhNTQ1ZGJjYTMyYTcyZDU3NTEwOGI1NTNhNjQ4Y2M5NmYifX19fQ==",
+          "mode": 420
+        }
+      },
+      "copies": [
+        ".claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "native": false,
+      "expected": {
+        "exit": 1,
+        "stdout": "aW52YWxpZAo=",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      },
+      "state": "invalid",
+      "mode": "greenfield",
+      "unsupported": false
+    },
+    {
+      "id": "w1-y6a:native-ready",
+      "family": ".claude/hooks/_lib/bootstrap-gate.sh",
+      "case": "native-ready",
+      "argv": [
+        "/bin/bash",
+        "-c",
+        "source \"$1\"; mir_bootstrap_gate_state \"$CLAUDE_PROJECT_DIR\"",
+        "w1",
+        "@TMP@/project/.claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "stdin": "e30=",
+      "env": {
+        "MIR_NATIVE_HOOKS": "1"
+      },
+      "setup": {
+        "project/.venv/bin/python": {
+          "base64": "IyEvYmluL3NoCmV4ZWMgIkBQWVRIT05AIiAiJEAiCg==",
+          "mode": 493
+        },
+        "project/.mir": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/.mir/bin": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/.mir/bootstrap-receipt.json": {
+          "base64": "eyJzdGF0dXMiOiAicmVhZHkiLCAibW9kZSI6ICJleGlzdGluZ19yZXBvc2l0b3J5X2Fkb3B0aW9uIiwgInNvdXJjZSI6IHsibWlyX3lva2VfY29tbWl0IjogImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEifSwgIm1hbmlmZXN0IjogeyJzaGEyNTYiOiAiOGFkYzY0MDI2Yzk3ODBiNzBlZDU0NzdjYjc2ZjIyNDYwZDQ0N2U1NTIwYTIyMjVmYTFlNmZhMGU4MWU2NzAzZiJ9LCAiZXZpZGVuY2UiOiBbeyJwYXRoIjogInNwZWMvZXZpZGVuY2UtMC55YW1sIiwgInNoYTI1NiI6ICJhYTI3NzVkYTM4OWMzMjAxZWRkYTg5MWRmYWViZWRjNDk1Mzc0NjdjYmY0ZTM4M2YxNWU4Njc1MGJmMDE0NDk3In1dLCAibmF0aXZlX2V2YWx1YXRvciI6IHsicGF0aCI6ICIubWlyL2Jpbi9ib290c3RyYXAtZ2F0ZSIsICJzaGEyNTYiOiAiNjg1ODY2OTg1YWVjYjA4ZWZiM2IxODcxYmNiYjUyNWIyYzViNmRjZThhMjI1MTU0ZTAwMjIzNDFjNzM1NzE5NyJ9fQ==",
+          "mode": 420
+        },
+        "project/config": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/config/bootstrap-adoption.json": {
+          "base64": "eyJtaXJfeW9rZV9zb3VyY2VfY29tbWl0IjogImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCAic3VyZmFjZXMiOiB7InBoYXNlMl9zcGVjIjogeyJldmlkZW5jZV9wYXRocyI6IFsic3BlYy9ldmlkZW5jZS0wLnlhbWwiXX19fQo=",
+          "mode": 420
+        },
+        "project/spec": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/spec/evidence-0.yaml": {
+          "base64": "dmVyaWZpZWQ6IGZhbHNlCg==",
+          "mode": 420
+        },
+        "project/.mir/bin/bootstrap-gate": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAicmVhZHlcbiI7IGV4aXQgMAo=",
+          "mode": 493
+        }
+      },
+      "copies": [
+        ".claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "native": false,
+      "expected": {
+        "exit": 0,
+        "stdout": "cmVhZHkK",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      },
+      "state": "ready",
+      "mode": "adoption",
+      "unsupported": false
+    },
+    {
+      "id": "w1-y6a:native-stale-pin",
+      "family": ".claude/hooks/_lib/bootstrap-gate.sh",
+      "case": "native-stale-pin",
+      "argv": [
+        "/bin/bash",
+        "-c",
+        "source \"$1\"; mir_bootstrap_gate_state \"$CLAUDE_PROJECT_DIR\"",
+        "w1",
+        "@TMP@/project/.claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "stdin": "e30=",
+      "env": {
+        "MIR_NATIVE_HOOKS": "1"
+      },
+      "setup": {
+        "project/.venv/bin/python": {
+          "base64": "IyEvYmluL3NoCmV4ZWMgIkBQWVRIT05AIiAiJEAiCg==",
+          "mode": 493
+        },
+        "project/.mir": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/.mir/bin": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/.mir/bootstrap-receipt.json": {
+          "base64": "eyJzdGF0dXMiOiAicmVhZHkiLCAibW9kZSI6ICJleGlzdGluZ19yZXBvc2l0b3J5X2Fkb3B0aW9uIiwgInNvdXJjZSI6IHsibWlyX3lva2VfY29tbWl0IjogImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEifSwgIm1hbmlmZXN0IjogeyJzaGEyNTYiOiAiOGFkYzY0MDI2Yzk3ODBiNzBlZDU0NzdjYjc2ZjIyNDYwZDQ0N2U1NTIwYTIyMjVmYTFlNmZhMGU4MWU2NzAzZiJ9LCAiZXZpZGVuY2UiOiBbeyJwYXRoIjogInNwZWMvZXZpZGVuY2UtMC55YW1sIiwgInNoYTI1NiI6ICJhYTI3NzVkYTM4OWMzMjAxZWRkYTg5MWRmYWViZWRjNDk1Mzc0NjdjYmY0ZTM4M2YxNWU4Njc1MGJmMDE0NDk3In1dLCAibmF0aXZlX2V2YWx1YXRvciI6IHsicGF0aCI6ICIubWlyL2Jpbi9ib290c3RyYXAtZ2F0ZSIsICJzaGEyNTYiOiAiMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMCJ9fQ==",
+          "mode": 420
+        },
+        "project/config": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/config/bootstrap-adoption.json": {
+          "base64": "eyJtaXJfeW9rZV9zb3VyY2VfY29tbWl0IjogImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCAic3VyZmFjZXMiOiB7InBoYXNlMl9zcGVjIjogeyJldmlkZW5jZV9wYXRocyI6IFsic3BlYy9ldmlkZW5jZS0wLnlhbWwiXX19fQo=",
+          "mode": 420
+        },
+        "project/spec": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/spec/evidence-0.yaml": {
+          "base64": "dmVyaWZpZWQ6IGZhbHNlCg==",
+          "mode": 420
+        },
+        "project/.mir/bin/bootstrap-gate": {
+          "base64": "IyEvYmluL3NoCnByaW50ZiAicmVhZHlcbiI7IGV4aXQgMAo=",
+          "mode": 493
+        }
+      },
+      "copies": [
+        ".claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "native": false,
+      "expected": {
+        "exit": 1,
+        "stdout": "aW52YWxpZAo=",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      },
+      "state": "invalid",
+      "mode": "adoption",
+      "unsupported": false
+    },
+    {
+      "id": "w1-y6a:settings-preferences",
+      "family": ".claude/hooks/_lib/bootstrap-gate.sh",
+      "case": "settings-preferences",
+      "argv": [
+        "/bin/bash",
+        "-c",
+        "source \"$1\"; mir_bootstrap_gate_state \"$CLAUDE_PROJECT_DIR\"",
+        "w1",
+        "@TMP@/project/.claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "stdin": "e30=",
+      "env": {},
+      "setup": {
+        "project/.venv/bin/python": {
+          "base64": "IyEvYmluL3NoCmV4ZWMgIkBQWVRIT05AIiAiJEAiCg==",
+          "mode": 493
+        },
+        "external/bin/mir": {
+          "base64": "IyEvYmluL3NoCmV4aXQgMAo=",
+          "mode": 493
+        },
+        "external/runtime-manifest.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/.mir": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/.mir/bin": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/.mir/bootstrap-receipt.json": {
+          "base64": "eyJzdGF0dXMiOiAicmVhZHkiLCAibW9kZSI6ICJleGlzdGluZ19yZXBvc2l0b3J5X2Fkb3B0aW9uIiwgInNvdXJjZSI6IHsibWlyX3lva2VfY29tbWl0IjogImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEifSwgIm1hbmlmZXN0IjogeyJzaGEyNTYiOiAiODE5YmNhMzFlOTZmYTU1Yzc4ZWExMGM3ZjIyZGJhOTU2YjRjZmMyNmM4NzMyNDhiYTViYTBlYjVjNTdhNzZmMCJ9LCAiZXZpZGVuY2UiOiBbeyJwYXRoIjogIi5jbGF1ZGUvc2V0dGluZ3MuanNvbiIsICJzaGEyNTYiOiAiMzJlZWUxZTE1MjA0MzUzZjVmM2NhODhjZGMyYTA5OTlhNDhmYjJiMTY5OTgyZjg3MWQ0MzQ3ZDI4ZWM4YzU1MCJ9XX0=",
+          "mode": 420
+        },
+        "project/config": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/config/bootstrap-adoption.json": {
+          "base64": "eyJtaXJfeW9rZV9zb3VyY2VfY29tbWl0IjogImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCAic3VyZmFjZXMiOiB7Imhvb2tzIjogeyJldmlkZW5jZV9wYXRocyI6IFsiLmNsYXVkZS9zZXR0aW5ncy5qc29uIl19fX0=",
+          "mode": 420
+        },
+        "project/spec": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/spec/evidence-0.yaml": {
+          "base64": "dmVyaWZpZWQ6IHRydWUK",
+          "mode": 420
+        },
+        "project/.claude/settings.json": {
+          "base64": "eyJ0aGVtZSI6ImRhcmsiLCJob29rcyI6eyJBIjpbInJ1biJdfX0=",
+          "mode": 420
+        }
+      },
+      "copies": [
+        ".claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "native": false,
+      "expected": {
+        "exit": 0,
+        "stdout": "cmVhZHkK",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      },
+      "state": "ready",
+      "mode": "adoption",
+      "unsupported": false
+    },
+    {
+      "id": "w1-y6a:settings-hook-drift",
+      "family": ".claude/hooks/_lib/bootstrap-gate.sh",
+      "case": "settings-hook-drift",
+      "argv": [
+        "/bin/bash",
+        "-c",
+        "source \"$1\"; mir_bootstrap_gate_state \"$CLAUDE_PROJECT_DIR\"",
+        "w1",
+        "@TMP@/project/.claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "stdin": "e30=",
+      "env": {},
+      "setup": {
+        "project/.venv/bin/python": {
+          "base64": "IyEvYmluL3NoCmV4ZWMgIkBQWVRIT05AIiAiJEAiCg==",
+          "mode": 493
+        },
+        "external/bin/mir": {
+          "base64": "IyEvYmluL3NoCmV4aXQgMAo=",
+          "mode": 493
+        },
+        "external/runtime-manifest.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/.mir": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/.mir/bin": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/.mir/bootstrap-receipt.json": {
+          "base64": "eyJzdGF0dXMiOiAicmVhZHkiLCAibW9kZSI6ICJleGlzdGluZ19yZXBvc2l0b3J5X2Fkb3B0aW9uIiwgInNvdXJjZSI6IHsibWlyX3lva2VfY29tbWl0IjogImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEifSwgIm1hbmlmZXN0IjogeyJzaGEyNTYiOiAiODE5YmNhMzFlOTZmYTU1Yzc4ZWExMGM3ZjIyZGJhOTU2YjRjZmMyNmM4NzMyNDhiYTViYTBlYjVjNTdhNzZmMCJ9LCAiZXZpZGVuY2UiOiBbeyJwYXRoIjogIi5jbGF1ZGUvc2V0dGluZ3MuanNvbiIsICJzaGEyNTYiOiAiMzJlZWUxZTE1MjA0MzUzZjVmM2NhODhjZGMyYTA5OTlhNDhmYjJiMTY5OTgyZjg3MWQ0MzQ3ZDI4ZWM4YzU1MCJ9XX0=",
+          "mode": 420
+        },
+        "project/config": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/config/bootstrap-adoption.json": {
+          "base64": "eyJtaXJfeW9rZV9zb3VyY2VfY29tbWl0IjogImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCAic3VyZmFjZXMiOiB7Imhvb2tzIjogeyJldmlkZW5jZV9wYXRocyI6IFsiLmNsYXVkZS9zZXR0aW5ncy5qc29uIl19fX0=",
+          "mode": 420
+        },
+        "project/spec": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/spec/evidence-0.yaml": {
+          "base64": "dmVyaWZpZWQ6IHRydWUK",
+          "mode": 420
+        },
+        "project/.claude/settings.json": {
+          "base64": "eyJob29rcyI6eyJBIjpbImVkaXRlZCJdfX0=",
+          "mode": 420
+        }
+      },
+      "copies": [
+        ".claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "native": false,
+      "expected": {
+        "exit": 1,
+        "stdout": "aW52YWxpZAo=",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      },
+      "state": "invalid",
+      "mode": "adoption",
+      "unsupported": false
+    },
+    {
+      "id": "w1-y6a:settings-decimals",
+      "family": ".claude/hooks/_lib/bootstrap-gate.sh",
+      "case": "settings-decimals",
+      "argv": [
+        "/bin/bash",
+        "-c",
+        "source \"$1\"; mir_bootstrap_gate_state \"$CLAUDE_PROJECT_DIR\"",
+        "w1",
+        "@TMP@/project/.claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "stdin": "e30=",
+      "env": {},
+      "setup": {
+        "project/.venv/bin/python": {
+          "base64": "IyEvYmluL3NoCmV4ZWMgIkBQWVRIT05AIiAiJEAiCg==",
+          "mode": 493
+        },
+        "external/bin/mir": {
+          "base64": "IyEvYmluL3NoCmV4aXQgMAo=",
+          "mode": 493
+        },
+        "external/runtime-manifest.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/.mir": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/.mir/bin": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/.mir/bootstrap-receipt.json": {
+          "base64": "eyJzdGF0dXMiOiAicmVhZHkiLCAibW9kZSI6ICJleGlzdGluZ19yZXBvc2l0b3J5X2Fkb3B0aW9uIiwgInNvdXJjZSI6IHsibWlyX3lva2VfY29tbWl0IjogImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEifSwgIm1hbmlmZXN0IjogeyJzaGEyNTYiOiAiODE5YmNhMzFlOTZmYTU1Yzc4ZWExMGM3ZjIyZGJhOTU2YjRjZmMyNmM4NzMyNDhiYTViYTBlYjVjNTdhNzZmMCJ9LCAiZXZpZGVuY2UiOiBbeyJwYXRoIjogIi5jbGF1ZGUvc2V0dGluZ3MuanNvbiIsICJzaGEyNTYiOiAiZmU2MDlhZWFlNWY0ZWJmYWU0NzExZWFhZjA2ZjMzMWU0NjQ5ZDAwNmJlMzE3Yjg1YjU5YWZlZmU4YWMwNDlkYSJ9XX0=",
+          "mode": 420
+        },
+        "project/config": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/config/bootstrap-adoption.json": {
+          "base64": "eyJtaXJfeW9rZV9zb3VyY2VfY29tbWl0IjogImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCAic3VyZmFjZXMiOiB7Imhvb2tzIjogeyJldmlkZW5jZV9wYXRocyI6IFsiLmNsYXVkZS9zZXR0aW5ncy5qc29uIl19fX0=",
+          "mode": 420
+        },
+        "project/spec": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/spec/evidence-0.yaml": {
+          "base64": "dmVyaWZpZWQ6IHRydWUK",
+          "mode": 420
+        },
+        "project/.claude/settings.json": {
+          "base64": "eyJob29rcyI6eyJBIjpbMS4wLDAuMDAsLTAsMS41XX19",
+          "mode": 420
+        }
+      },
+      "copies": [
+        ".claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "native": false,
+      "expected": {
+        "exit": 0,
+        "stdout": "cmVhZHkK",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      },
+      "state": "ready",
+      "mode": "adoption",
+      "unsupported": false
+    },
+    {
+      "id": "w1-y6a:settings-exponents",
+      "family": ".claude/hooks/_lib/bootstrap-gate.sh",
+      "case": "settings-exponents",
+      "argv": [
+        "/bin/bash",
+        "-c",
+        "source \"$1\"; mir_bootstrap_gate_state \"$CLAUDE_PROJECT_DIR\"",
+        "w1",
+        "@TMP@/project/.claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "stdin": "e30=",
+      "env": {},
+      "setup": {
+        "project/.venv/bin/python": {
+          "base64": "IyEvYmluL3NoCmV4ZWMgIkBQWVRIT05AIiAiJEAiCg==",
+          "mode": 493
+        },
+        "external/bin/mir": {
+          "base64": "IyEvYmluL3NoCmV4aXQgMAo=",
+          "mode": 493
+        },
+        "external/runtime-manifest.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/.mir": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/.mir/bin": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/.mir/bootstrap-receipt.json": {
+          "base64": "eyJzdGF0dXMiOiAicmVhZHkiLCAibW9kZSI6ICJleGlzdGluZ19yZXBvc2l0b3J5X2Fkb3B0aW9uIiwgInNvdXJjZSI6IHsibWlyX3lva2VfY29tbWl0IjogImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEifSwgIm1hbmlmZXN0IjogeyJzaGEyNTYiOiAiODE5YmNhMzFlOTZmYTU1Yzc4ZWExMGM3ZjIyZGJhOTU2YjRjZmMyNmM4NzMyNDhiYTViYTBlYjVjNTdhNzZmMCJ9LCAiZXZpZGVuY2UiOiBbeyJwYXRoIjogIi5jbGF1ZGUvc2V0dGluZ3MuanNvbiIsICJzaGEyNTYiOiAiNGZlMWNlZjA3MDA0OWY0ZWE0MDA2YmE4NDA2NmFjODI2OWMzNTM4OTJlOWIxOTViY2Y1Y2RlZDcwYTczNTJjNSJ9XX0=",
+          "mode": 420
+        },
+        "project/config": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/config/bootstrap-adoption.json": {
+          "base64": "eyJtaXJfeW9rZV9zb3VyY2VfY29tbWl0IjogImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCAic3VyZmFjZXMiOiB7Imhvb2tzIjogeyJldmlkZW5jZV9wYXRocyI6IFsiLmNsYXVkZS9zZXR0aW5ncy5qc29uIl19fX0=",
+          "mode": 420
+        },
+        "project/spec": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/spec/evidence-0.yaml": {
+          "base64": "dmVyaWZpZWQ6IHRydWUK",
+          "mode": 420
+        },
+        "project/.claude/settings.json": {
+          "base64": "eyJob29rcyI6eyJBIjpbMWUyLDFlLTYsMWUtNywxLjIzNGUyMCwwZTJdfX0=",
+          "mode": 420
+        }
+      },
+      "copies": [
+        ".claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "native": false,
+      "expected": {
+        "exit": 0,
+        "stdout": "cmVhZHkK",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      },
+      "state": "ready",
+      "mode": "adoption",
+      "unsupported": false
+    },
+    {
+      "id": "w1-y6a:settings-large-integers",
+      "family": ".claude/hooks/_lib/bootstrap-gate.sh",
+      "case": "settings-large-integers",
+      "argv": [
+        "/bin/bash",
+        "-c",
+        "source \"$1\"; mir_bootstrap_gate_state \"$CLAUDE_PROJECT_DIR\"",
+        "w1",
+        "@TMP@/project/.claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "stdin": "e30=",
+      "env": {},
+      "setup": {
+        "project/.venv/bin/python": {
+          "base64": "IyEvYmluL3NoCmV4ZWMgIkBQWVRIT05AIiAiJEAiCg==",
+          "mode": 493
+        },
+        "external/bin/mir": {
+          "base64": "IyEvYmluL3NoCmV4aXQgMAo=",
+          "mode": 493
+        },
+        "external/runtime-manifest.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/.mir": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/.mir/bin": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/.mir/bootstrap-receipt.json": {
+          "base64": "eyJzdGF0dXMiOiAicmVhZHkiLCAibW9kZSI6ICJleGlzdGluZ19yZXBvc2l0b3J5X2Fkb3B0aW9uIiwgInNvdXJjZSI6IHsibWlyX3lva2VfY29tbWl0IjogImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEifSwgIm1hbmlmZXN0IjogeyJzaGEyNTYiOiAiODE5YmNhMzFlOTZmYTU1Yzc4ZWExMGM3ZjIyZGJhOTU2YjRjZmMyNmM4NzMyNDhiYTViYTBlYjVjNTdhNzZmMCJ9LCAiZXZpZGVuY2UiOiBbeyJwYXRoIjogIi5jbGF1ZGUvc2V0dGluZ3MuanNvbiIsICJzaGEyNTYiOiAiZDViNjIwNjU4Y2NmMjRmYWU4YTQyYTNmNTBlOGVhMjZhNjBjMTVmMzQzOWE3OTQ1Y2NhMzJjYmNkYzQ2OTc4NCJ9XX0=",
+          "mode": 420
+        },
+        "project/config": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/config/bootstrap-adoption.json": {
+          "base64": "eyJtaXJfeW9rZV9zb3VyY2VfY29tbWl0IjogImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCAic3VyZmFjZXMiOiB7Imhvb2tzIjogeyJldmlkZW5jZV9wYXRocyI6IFsiLmNsYXVkZS9zZXR0aW5ncy5qc29uIl19fX0=",
+          "mode": 420
+        },
+        "project/spec": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/spec/evidence-0.yaml": {
+          "base64": "dmVyaWZpZWQ6IHRydWUK",
+          "mode": 420
+        },
+        "project/.claude/settings.json": {
+          "base64": "eyJob29rcyI6eyJBIjpbOTAwNzE5OTI1NDc0MDk5Myw5MjIzMzcyMDM2ODU0Nzc1ODA4XX19",
+          "mode": 420
+        }
+      },
+      "copies": [
+        ".claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "native": false,
+      "expected": {
+        "exit": 0,
+        "stdout": "cmVhZHkK",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      },
+      "state": "ready",
+      "mode": "adoption",
+      "unsupported": false
+    },
+    {
+      "id": "w1-y6a:settings-duplicate-keys",
+      "family": ".claude/hooks/_lib/bootstrap-gate.sh",
+      "case": "settings-duplicate-keys",
+      "argv": [
+        "/bin/bash",
+        "-c",
+        "source \"$1\"; mir_bootstrap_gate_state \"$CLAUDE_PROJECT_DIR\"",
+        "w1",
+        "@TMP@/project/.claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "stdin": "e30=",
+      "env": {},
+      "setup": {
+        "project/.venv/bin/python": {
+          "base64": "IyEvYmluL3NoCmV4ZWMgIkBQWVRIT05AIiAiJEAiCg==",
+          "mode": 493
+        },
+        "external/bin/mir": {
+          "base64": "IyEvYmluL3NoCmV4aXQgMAo=",
+          "mode": 493
+        },
+        "external/runtime-manifest.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/.mir": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/.mir/bin": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/.mir/bootstrap-receipt.json": {
+          "base64": "eyJzdGF0dXMiOiAicmVhZHkiLCAibW9kZSI6ICJleGlzdGluZ19yZXBvc2l0b3J5X2Fkb3B0aW9uIiwgInNvdXJjZSI6IHsibWlyX3lva2VfY29tbWl0IjogImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEifSwgIm1hbmlmZXN0IjogeyJzaGEyNTYiOiAiODE5YmNhMzFlOTZmYTU1Yzc4ZWExMGM3ZjIyZGJhOTU2YjRjZmMyNmM4NzMyNDhiYTViYTBlYjVjNTdhNzZmMCJ9LCAiZXZpZGVuY2UiOiBbeyJwYXRoIjogIi5jbGF1ZGUvc2V0dGluZ3MuanNvbiIsICJzaGEyNTYiOiAiMTRjOWZlZmZmZTE3YWZjMmMzNjdiNzY3ZDBiNDhhNzNjMTExMDBiZTllNTAwNjU3MjdiZmI0OTI5NWMwYWZjYiJ9XX0=",
+          "mode": 420
+        },
+        "project/config": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/config/bootstrap-adoption.json": {
+          "base64": "eyJtaXJfeW9rZV9zb3VyY2VfY29tbWl0IjogImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCAic3VyZmFjZXMiOiB7Imhvb2tzIjogeyJldmlkZW5jZV9wYXRocyI6IFsiLmNsYXVkZS9zZXR0aW5ncy5qc29uIl19fX0=",
+          "mode": 420
+        },
+        "project/spec": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/spec/evidence-0.yaml": {
+          "base64": "dmVyaWZpZWQ6IHRydWUK",
+          "mode": 420
+        },
+        "project/.claude/settings.json": {
+          "base64": "eyJob29rcyI6eyJBIjpbMV0sIkEiOlsyXX19",
+          "mode": 420
+        }
+      },
+      "copies": [
+        ".claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "native": false,
+      "expected": {
+        "exit": 0,
+        "stdout": "cmVhZHkK",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      },
+      "state": "ready",
+      "mode": "adoption",
+      "unsupported": false
+    },
+    {
+      "id": "w1-y6a:settings-empty",
+      "family": ".claude/hooks/_lib/bootstrap-gate.sh",
+      "case": "settings-empty",
+      "argv": [
+        "/bin/bash",
+        "-c",
+        "source \"$1\"; mir_bootstrap_gate_state \"$CLAUDE_PROJECT_DIR\"",
+        "w1",
+        "@TMP@/project/.claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "stdin": "e30=",
+      "env": {},
+      "setup": {
+        "project/.venv/bin/python": {
+          "base64": "IyEvYmluL3NoCmV4ZWMgIkBQWVRIT05AIiAiJEAiCg==",
+          "mode": 493
+        },
+        "external/bin/mir": {
+          "base64": "IyEvYmluL3NoCmV4aXQgMAo=",
+          "mode": 493
+        },
+        "external/runtime-manifest.json": {
+          "base64": "e30=",
+          "mode": 420
+        },
+        "project/.mir": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/.mir/bin": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/.mir/bootstrap-receipt.json": {
+          "base64": "eyJzdGF0dXMiOiAicmVhZHkiLCAibW9kZSI6ICJleGlzdGluZ19yZXBvc2l0b3J5X2Fkb3B0aW9uIiwgInNvdXJjZSI6IHsibWlyX3lva2VfY29tbWl0IjogImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEifSwgIm1hbmlmZXN0IjogeyJzaGEyNTYiOiAiODE5YmNhMzFlOTZmYTU1Yzc4ZWExMGM3ZjIyZGJhOTU2YjRjZmMyNmM4NzMyNDhiYTViYTBlYjVjNTdhNzZmMCJ9LCAiZXZpZGVuY2UiOiBbeyJwYXRoIjogIi5jbGF1ZGUvc2V0dGluZ3MuanNvbiIsICJzaGEyNTYiOiAiODM1ZWJkYWFkMTFjZjc5ZGI0NTkwMDA3NzEyMjAyMWZmNjYxNDVmZmQ0NDZlZTViNDVmMjFhZWM5YjdkOWNlMiJ9XX0=",
+          "mode": 420
+        },
+        "project/config": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/config/bootstrap-adoption.json": {
+          "base64": "eyJtaXJfeW9rZV9zb3VyY2VfY29tbWl0IjogImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCAic3VyZmFjZXMiOiB7Imhvb2tzIjogeyJldmlkZW5jZV9wYXRocyI6IFsiLmNsYXVkZS9zZXR0aW5ncy5qc29uIl19fX0=",
+          "mode": 420
+        },
+        "project/spec": {
+          "directory": true,
+          "mode": 493
+        },
+        "project/spec/evidence-0.yaml": {
+          "base64": "dmVyaWZpZWQ6IHRydWUK",
+          "mode": 420
+        },
+        "project/.claude/settings.json": {
+          "base64": "eyJob29rcyI6e319",
+          "mode": 420
+        }
+      },
+      "copies": [
+        ".claude/hooks/_lib/bootstrap-gate.sh"
+      ],
+      "native": false,
+      "expected": {
+        "exit": 1,
+        "stdout": "aW52YWxpZAo=",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      },
+      "state": "invalid",
+      "mode": "adoption",
+      "unsupported": false
+    }
+  ],
+  "oracle": "Bash with jq 1.7.1 (POSIX)"
+}

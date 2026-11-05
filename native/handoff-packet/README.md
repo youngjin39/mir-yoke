@@ -320,3 +320,82 @@ G2 still requires actual macOS, Ubuntu and Windows execution. G4 requires final
 published bytes and their lock digests; local builds do not establish it. G5 also
 requires rollback verification and separately authorized consumer attestation.
 No workflow dispatch or consumer adoption is implied by source changes.
+
+## Bootstrap state protocol (W1-Y6a)
+
+The W1-Y6a owner brief authorizes an additive state engine, with no caller,
+recovery, adoption checker, resource or registration changes. The shell remains
+in service. Its exact reference is `.claude/hooks/_lib/bootstrap-gate.sh`, pinned
+by `tests/fixtures/bootstrap-state.json`; the parent-supplied analysis is context,
+not additional authority.
+
+`bootstrap-gate --capabilities` returns exactly
+`{"protocols":["mir.bootstrap-state@1"]}` plus LF with exit 0.
+`bootstrap-gate state --protocol 1 ROOT` returns one compact UTF-8 JSON object
+plus LF, with keys sorted as in this example:
+
+```json
+{"mode":"greenfield","schema":"mir.bootstrap-state@1","shell_exit":1,"state":"pending","supported":true}
+```
+
+`mode` is `provider`, `adoption` (explicit receipt mode or an existing adoption
+manifest), or `greenfield`. States preserve the shell names: `template_maintainer`,
+`missing`, `pending`, `restart_required`, `ready`, `invalid`. Other receipt status
+strings pass through as in the shell. Exit status equals `shell_exit`: 0 for a
+provider exemption or ready, 1 otherwise. Provider exemption requires both the
+regular profile markers and the official Git origin.
+
+Unsupported inputs return exit 64 and exactly:
+
+```json
+{"mode":null,"schema":"mir.bootstrap-state@1","shell_exit":null,"state":null,"supported":false}
+```
+
+This includes native Windows execution, non-UTF-8/control/backslash project paths,
+Windows drive project paths, and Windows/control/backslash CLI or runtime-manifest
+paths. These are explicit declines, never readiness claims. Unknown protocol
+versions and malformed arguments return exit 64 with empty output. No diagnostics
+are emitted on stderr. Runtime verification output is suppressed as in the shell;
+the engine invokes the receipt-pinned CLI's `runtime-manifest verify` command.
+State determination itself writes no project files; a CLI verifier is an external
+process, as in the reference.
+
+The original `bootstrap-gate ROOT` adoption fast path and `--version` remain
+byte-identical, including their existing declines. Native adoption verdicts are
+admitted only with receipt-pinned executable bytes, regular evaluator components,
+and exactly `ready` + LF / exit 0 or `invalid` + LF / exit 1. Other output falls
+back to receipt evidence verification. Adoption and architecture evidence reject
+leaf symlinks and retain the reference's ancestor-symlink behavior. The CLI leaf
+may be linked, while its runtime manifest leaf must be regular.
+
+Replay inventory in `tests/fixtures/bootstrap-state.json`:
+
+| Shell state | Reused own records | New shell captures |
+| --- | ---: | ---: |
+| missing | 3 | 3 |
+| pending | 2 | 0 |
+| restart_required | 2 | 1 |
+| ready | 10 | 10 |
+| invalid | 25 | 32 |
+| template_maintainer | 1 | 0 |
+
+All 43 own state records have explicit ID-to-state/mode mappings. All 42 frozen
+partial-native records link to their corresponding own state record; the existing
+freeze tests continue replaying their original legacy outputs. No frozen expected
+bytes were changed. The evolving Rust entrypoint's frozen source digest is checked
+at the original freeze revision. The dirty-at-capture Cargo manifest retains its
+exact source hash after removing only the added `raw_value` feature; unchanged
+reference sources are checked directly.
+The 46 supplementary records were captured from the unmodified shell with an
+isolated tool allowlist, fake Git/CLI and scratch-only capture script. Two Windows
+CLI-path records retain the shell's invalid result while the new protocol declines
+explicitly. Settings hook hashes preserve jq 1.7 decimal scale, exponent formatting,
+large integers and last duplicate keys, while unrelated preferences may change.
+Rust tests compare exact protocol bytes, exits, empty stderr and full
+project snapshots; `tests/test_bootstrap_state.py` replays the new shell captures.
+
+Y6b owns incomplete-bootstrap enforcement and instructions. Frozen pre-tool-use
+records `missing-receipt`, `evidence`, and `malformed` are listed as deferred
+_enforcement_ records, rather than counted as native state replay. Path/patch,
+safe-command, provider worktree/revision, uv and workdir restrictions remain with
+Y6b and the existing shell tests.

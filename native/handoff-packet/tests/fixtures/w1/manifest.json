@@ -49,7 +49,7 @@
     "native/handoff-packet/src/patterns.rs": "ada9dcd67c46eef562d8c1b620075f62c6f8078857d5a887d87907477a79954c",
     "native/handoff-packet/src/executor_brief_execution.rs": "b6dacfacab3c19f0f7f5f079ed3955c2a58352214589d4241c1f129e0717f8a0",
     "native/handoff-packet/src/executor_dispatch_provider.rs": "dd7bf07a4ffc4dc424ce0311204b6ae1de71f9199fe135ca0b42e542e1fa9dc5",
-    "native/handoff-packet/src/bootstrap_gate.rs": "132e5304009fa926fa618e0f4ce044f8b1a350e365729f39391ea669155d7f5b",
+    "native/handoff-packet/src/bootstrap_gate.rs": "c7125b59212872fbbaf4a4437ef87738a1c69b37439e84e90f54110b5cdc1135",
     "native/handoff-packet/src/lib.rs": "b62bb55f6bf52a74350291562a54a00ef6434eaa2f8824ae5c4a2dd61da3cedf",
     "native/handoff-packet/src/codex_binary.rs": "70f6ae78d04fcaa7380502c2be115c63ca27852c1b10506e2bae226f0ed102eb",
     "native/handoff-packet/src/transcript.rs": "592d9e03babe774dcb43bb127e149ff94577fe485bf68c8905265996d27ce5c8",
@@ -89,7 +89,7 @@
     "native/handoff-packet/src/executor_admission.rs": "ea1844cbf94cce394ae1d413b2e896fdc5923110e938b12666e712e252958299",
     "native/handoff-packet/src/executor_dispatch.rs": "4e1f98c502d833da2cc9a9c5c8b173154a6b60eb19f722df8ee0455806d6deb3",
     "native/handoff-packet/src/executor_query.rs": "0e3d9c1d3c16a7c3853b0caaba0d8baf0cc76d08fec23ddca496eeb0b2c9dbd9",
-    "native/handoff-packet/Cargo.toml": "d00f6b4ff019ace5b4a4e431c8e9881a27737cf905b1dd7f0b2003cef375f49b",
+    "native/handoff-packet/Cargo.toml": "7c5d1b723a6f0c5ea58b39809061ebee84c7543aaeacd1a22f32563f9a1aeaa5",
     "native/handoff-packet/Cargo.lock": "977458e89bcf2eafe7f10129c5972201a2c7712ee707466a793eeb9b5693ed5c"
   },
   "families": {
