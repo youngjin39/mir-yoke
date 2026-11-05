@@ -130,14 +130,25 @@ impl Protocol {
                     && ordinary.iter().any(|k| k.as_str() == "arguments") =>
             {
                 if self.worker {
-                    crate::native::call(if params["name"] == "handoff_pins" {
-                        &params["arguments"]
-                    } else {
-                        &Value::Null
-                    })
+                    crate::native::call(params["name"].as_str().unwrap_or(""), &params["arguments"])
                 } else {
-                    let response = if params["name"] == "handoff_pins" {
-                        Forward::native(raw)
+                    let response = if matches!(
+                        params["name"].as_str(),
+                        Some(
+                            "handoff_pins"
+                                | "ontology_validate"
+                                | "ontology_lookup"
+                                | "ontology_impact"
+                        )
+                    ) {
+                        Forward::native(raw).and_then(|bytes| {
+                            let value = crate::wire::parse(&bytes)?;
+                            if value["result"]["structuredContent"]["error"]["code"] == "FORWARD" {
+                                forward.call(raw)
+                            } else {
+                                Ok(bytes)
+                            }
+                        })
                     } else {
                         forward.call(raw)
                     };

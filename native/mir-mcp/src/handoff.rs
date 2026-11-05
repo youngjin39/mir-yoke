@@ -10,7 +10,7 @@ use std::time::{Instant, SystemTime, UNIX_EPOCH};
 pub const CONTRACT: &[u8] =
     include_bytes!("../../../plugins/mir-core/skills/ontology/references/common-contract.json");
 
-fn ref_path(reference: &str) -> &str {
+pub(crate) fn ref_path(reference: &str) -> &str {
     let path = reference.split('#').next().unwrap_or("");
     if let Some((prefix, number)) = path.rsplit_once(':')
         && !number.is_empty()
@@ -43,49 +43,25 @@ fn decimal(c: char) -> bool {
         0x1e5f1..=0x1e5fa | 0x1e950..=0x1e959 | 0x1fbf0..=0x1fbf9)
 }
 
-fn entry_refs(entry: &Value, refs: &mut Vec<String>) {
-    match entry {
-        Value::String(value) => refs.push(value.clone()),
-        Value::Array(values) => {
-            for value in values {
-                entry_refs(value, refs);
-            }
+pub(crate) fn guarded_refs(mapping: &Value, io: &mut Guard) -> Result<(), &'static str> {
+    for (at, entry) in map_entries(mapping) {
+        for (_, reference) in located_refs(entry, &at) {
+            io.path(ref_path(&reference), true)?;
         }
-        Value::Object(values) => {
-            for (key, value) in values {
-                if matches!(key.as_str(), "ref" | "check") {
-                    if let Some(value) = value.as_str() {
-                        refs.push(value.into());
-                        continue;
-                    }
-                } else if key == "binding" {
-                    if let Some(value) = value.as_str() {
-                        if !matches!(value, "on_demand_stdio" | "resident_stdio") {
-                            refs.push(value.into());
-                        }
-                        continue;
-                    }
-                } else if key == "evidence" && value.is_array() {
-                    entry_refs(value, refs);
-                    continue;
-                }
-                if value.is_object() {
-                    entry_refs(value, refs);
-                } else if let Some(values) = value.as_array() {
-                    for value in values {
-                        if value.is_array() || value.is_object() {
-                            entry_refs(value, refs);
-                        }
-                    }
-                }
-            }
-        }
-        _ => {}
     }
+    Ok(())
 }
 
-fn guarded_refs(mapping: &Value, io: &mut Guard) -> Result<(), &'static str> {
-    let mut entries = Vec::new();
+/// JSON pointer and traversal order shared by all ontology tools.
+pub(crate) fn pointer(at: &str, key: impl std::fmt::Display) -> String {
+    format!(
+        "{}/{}",
+        at,
+        key.to_string().replace('~', "~0").replace('/', "~1")
+    )
+}
+pub(crate) fn map_entries(mapping: &Value) -> Vec<(String, &Value)> {
+    let mut out = Vec::new();
     for section in [
         "canonical_index",
         "concepts",
@@ -99,31 +75,63 @@ fn guarded_refs(mapping: &Value, io: &mut Guard) -> Result<(), &'static str> {
     ] {
         let value = &mapping[section];
         if section == "domain" && value.is_object() {
-            if let Some(values) = value.as_object() {
-                for value in values.values() {
-                    if let Some(items) = value.as_array() {
-                        entries.extend(items);
+            if let Some(kinds) = value.as_object() {
+                for (kind, entries) in kinds {
+                    if let Some(entries) = entries.as_array() {
+                        for (i, entry) in entries.iter().enumerate() {
+                            out.push((pointer(&pointer("/domain", kind), i), entry));
+                        }
                     }
                 }
             }
         } else if section == "concepts" && value.is_object() {
-            if let Some(values) = value.as_object() {
-                entries.extend(values.values());
+            if let Some(entries) = value.as_object() {
+                for (key, entry) in entries {
+                    out.push((pointer("/concepts", key), entry));
+                }
             }
-        } else if let Some(values) = value.as_array() {
-            entries.extend(values);
+        } else if let Some(entries) = value.as_array() {
+            for (i, entry) in entries.iter().enumerate() {
+                out.push((pointer(&format!("/{section}"), i), entry));
+            }
         } else if section == "knowledge_supply" && value.is_object() {
-            entries.push(value);
+            out.push(("/knowledge_supply".into(), value));
         }
     }
-    let mut refs = Vec::new();
-    for entry in entries {
-        entry_refs(entry, &mut refs);
+    out
+}
+pub(crate) fn located_refs(entry: &Value, at: &str) -> Vec<(String, String)> {
+    let mut out = Vec::new();
+    match entry {
+        Value::String(s) => out.push((at.into(), s.clone())),
+        Value::Array(items) => {
+            for (i, item) in items.iter().enumerate() {
+                out.extend(located_refs(item, &pointer(at, i)));
+            }
+        }
+        Value::Object(items) => {
+            for (key, item) in items {
+                let loc = pointer(at, key);
+                if matches!(key.as_str(), "ref" | "check" | "binding") && item.is_string() {
+                    if key != "binding"
+                        || !matches!(item.as_str(), Some("on_demand_stdio" | "resident_stdio"))
+                    {
+                        out.push((loc, item.as_str().unwrap_or_default().into()));
+                    }
+                } else if key == "evidence" && item.is_array() || item.is_object() {
+                    out.extend(located_refs(item, &loc));
+                } else if let Some(items) = item.as_array() {
+                    for (i, item) in items.iter().enumerate() {
+                        if item.is_array() || item.is_object() {
+                            out.extend(located_refs(item, &pointer(&loc, i)));
+                        }
+                    }
+                }
+            }
+        }
+        _ => {}
     }
-    for reference in refs {
-        io.path(ref_path(&reference), true)?;
-    }
-    Ok(())
+    out
 }
 
 // Python datetime.isoformat emits microseconds unless the fraction is zero.
@@ -405,11 +413,10 @@ mod tests {
     }
     #[test]
     fn refs_only_follow_declared_fields() {
-        let mut refs = Vec::new();
-        entry_refs(
+        let refs: Vec<String> = located_refs(
             &json!({"binding": "on_demand_stdio", "endpoints": ["ignored"], "nested": [{"ref": "a#x"}], "evidence": ["b:12"]}),
-            &mut refs,
-        );
+            "",
+        ).into_iter().map(|(_, reference)| reference).collect();
         assert_eq!(refs, ["a#x", "b:12"]);
         assert_eq!(ref_path("a:12#x"), "a");
         assert_eq!(ref_path("a:١٢#x"), "a");
