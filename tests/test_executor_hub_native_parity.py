@@ -177,11 +177,11 @@ def test_hub_brief_native_matches_owner(binary, tmp_path, case):
 
 
 @pytest.mark.parametrize('dispatch', [True, False], ids=['dispatch', 'background'])
-@pytest.mark.parametrize('model', [None, '', '모델-é'])
-@pytest.mark.parametrize('version', ['9.8.7+fixture', '한글-é', 'unknown'])
+@pytest.mark.parametrize('model', [None, '', '模型-é'])
+@pytest.mark.parametrize('version', ['9.8.7+fixture', '漢字-é', 'unknown'])
 def test_hub_identity_native_matches_owner(binary, tmp_path, dispatch, model, version):
     values = []
-    prompt = 'exact café 한글 😀\nwith trailing space '
+    prompt = 'exact café 漢字 😀\nwith trailing space '
     for bridge in (True, False):
         root = tmp_path / ('bridge' if bridge else 'native')
         launcher, environment, args = seed(root, bridge, dispatch=dispatch, version=version,

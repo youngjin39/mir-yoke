@@ -3383,7 +3383,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/generate_executor_hub_profile.py",
-      "sha256": "41e2e948b6d8cb5925e95ae31b828594e427615f055b86aca3a417bdbb139abf"
+      "sha256": "b61fcc94fb2a1afc36b27a5741d34f8e73ad8c2ac2e237a568f568a2f14b93ec"
     },
     {
       "classification": "template-maintainer-tool",
@@ -5471,7 +5471,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/fixtures/executor_hub_profile.json",
-      "sha256": "cfe4c90dabf11d8bb5197d3d10b01b6f04fc8a9feed3dfc06ffd6fb28d8e525e"
+      "sha256": "552f426d0dcaba59f2175701328b826f82ef47d2b8c55695aadddfebc3dad3ab"
     },
     {
       "classification": "template-maintainer-tool",
@@ -5759,7 +5759,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_executor_hub_native_parity.py",
-      "sha256": "bb8c4481fb9486af1dd7d427ac48e4dfc3d507ef8e83df2cdc17b506e7ffdd93"
+      "sha256": "bf546ae2c2fab617e591a1a2ae02ca871b5674a09b5218c8f881f993adb99c57"
     },
     {
       "classification": "template-maintainer-tool",

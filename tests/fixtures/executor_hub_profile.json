@@ -539,128 +539,128 @@
     {
       "dispatch": true,
       "model": null,
-      "prompt": "exact caf\u00e9 \ud55c\uae00 \ud83d\ude00\nwith trailing space ",
+      "prompt": "exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\nwith trailing space ",
       "version": "9.8.7+fixture",
-      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"48d823c3eec0b72b0c70b3252d5f208df21dfe42fb1eb8105c232f1a46cf9625\", \"model_alias\": \"codex-config-default\", \"package\": \"mir-agent-hub 9.8.7+fixture\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
+      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"e7e7a1c64711e670a6104f2b606857c605022cb47ecfe24958a7eac8774277f2\", \"model_alias\": \"codex-config-default\", \"package\": \"mir-agent-hub 9.8.7+fixture\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
     },
     {
       "dispatch": true,
       "model": "",
-      "prompt": "exact caf\u00e9 \ud55c\uae00 \ud83d\ude00\nwith trailing space ",
+      "prompt": "exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\nwith trailing space ",
       "version": "9.8.7+fixture",
-      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"48d823c3eec0b72b0c70b3252d5f208df21dfe42fb1eb8105c232f1a46cf9625\", \"model_alias\": \"\", \"package\": \"mir-agent-hub 9.8.7+fixture\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
+      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"e7e7a1c64711e670a6104f2b606857c605022cb47ecfe24958a7eac8774277f2\", \"model_alias\": \"\", \"package\": \"mir-agent-hub 9.8.7+fixture\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
     },
     {
       "dispatch": true,
-      "model": "\ubaa8\ub378-\u00e9",
-      "prompt": "exact caf\u00e9 \ud55c\uae00 \ud83d\ude00\nwith trailing space ",
+      "model": "\u6a21\u578b-\u00e9",
+      "prompt": "exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\nwith trailing space ",
       "version": "9.8.7+fixture",
-      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"48d823c3eec0b72b0c70b3252d5f208df21dfe42fb1eb8105c232f1a46cf9625\", \"model_alias\": \"\\ubaa8\\ub378-\\u00e9\", \"package\": \"mir-agent-hub 9.8.7+fixture\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
+      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"e7e7a1c64711e670a6104f2b606857c605022cb47ecfe24958a7eac8774277f2\", \"model_alias\": \"\\u6a21\\u578b-\\u00e9\", \"package\": \"mir-agent-hub 9.8.7+fixture\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
     },
     {
       "dispatch": false,
       "model": null,
-      "prompt": "exact caf\u00e9 \ud55c\uae00 \ud83d\ude00\nwith trailing space ",
+      "prompt": "exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\nwith trailing space ",
       "version": "9.8.7+fixture",
-      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"48d823c3eec0b72b0c70b3252d5f208df21dfe42fb1eb8105c232f1a46cf9625\", \"model_alias\": \"policy-or-config-default\", \"package\": \"mir-agent-hub 9.8.7+fixture\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
+      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"e7e7a1c64711e670a6104f2b606857c605022cb47ecfe24958a7eac8774277f2\", \"model_alias\": \"policy-or-config-default\", \"package\": \"mir-agent-hub 9.8.7+fixture\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
     },
     {
       "dispatch": false,
       "model": "",
-      "prompt": "exact caf\u00e9 \ud55c\uae00 \ud83d\ude00\nwith trailing space ",
+      "prompt": "exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\nwith trailing space ",
       "version": "9.8.7+fixture",
-      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"48d823c3eec0b72b0c70b3252d5f208df21dfe42fb1eb8105c232f1a46cf9625\", \"model_alias\": \"\", \"package\": \"mir-agent-hub 9.8.7+fixture\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
+      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"e7e7a1c64711e670a6104f2b606857c605022cb47ecfe24958a7eac8774277f2\", \"model_alias\": \"\", \"package\": \"mir-agent-hub 9.8.7+fixture\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
     },
     {
       "dispatch": false,
-      "model": "\ubaa8\ub378-\u00e9",
-      "prompt": "exact caf\u00e9 \ud55c\uae00 \ud83d\ude00\nwith trailing space ",
+      "model": "\u6a21\u578b-\u00e9",
+      "prompt": "exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\nwith trailing space ",
       "version": "9.8.7+fixture",
-      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"48d823c3eec0b72b0c70b3252d5f208df21dfe42fb1eb8105c232f1a46cf9625\", \"model_alias\": \"\\ubaa8\\ub378-\\u00e9\", \"package\": \"mir-agent-hub 9.8.7+fixture\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
+      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"e7e7a1c64711e670a6104f2b606857c605022cb47ecfe24958a7eac8774277f2\", \"model_alias\": \"\\u6a21\\u578b-\\u00e9\", \"package\": \"mir-agent-hub 9.8.7+fixture\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
     },
     {
       "dispatch": true,
       "model": null,
-      "prompt": "exact caf\u00e9 \ud55c\uae00 \ud83d\ude00\nwith trailing space ",
-      "version": "\ud55c\uae00-\u00e9",
-      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"48d823c3eec0b72b0c70b3252d5f208df21dfe42fb1eb8105c232f1a46cf9625\", \"model_alias\": \"codex-config-default\", \"package\": \"mir-agent-hub \\ud55c\\uae00-\\u00e9\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
+      "prompt": "exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\nwith trailing space ",
+      "version": "\u6f22\u5b57-\u00e9",
+      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"e7e7a1c64711e670a6104f2b606857c605022cb47ecfe24958a7eac8774277f2\", \"model_alias\": \"codex-config-default\", \"package\": \"mir-agent-hub \\u6f22\\u5b57-\\u00e9\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
     },
     {
       "dispatch": true,
       "model": "",
-      "prompt": "exact caf\u00e9 \ud55c\uae00 \ud83d\ude00\nwith trailing space ",
-      "version": "\ud55c\uae00-\u00e9",
-      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"48d823c3eec0b72b0c70b3252d5f208df21dfe42fb1eb8105c232f1a46cf9625\", \"model_alias\": \"\", \"package\": \"mir-agent-hub \\ud55c\\uae00-\\u00e9\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
+      "prompt": "exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\nwith trailing space ",
+      "version": "\u6f22\u5b57-\u00e9",
+      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"e7e7a1c64711e670a6104f2b606857c605022cb47ecfe24958a7eac8774277f2\", \"model_alias\": \"\", \"package\": \"mir-agent-hub \\u6f22\\u5b57-\\u00e9\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
     },
     {
       "dispatch": true,
-      "model": "\ubaa8\ub378-\u00e9",
-      "prompt": "exact caf\u00e9 \ud55c\uae00 \ud83d\ude00\nwith trailing space ",
-      "version": "\ud55c\uae00-\u00e9",
-      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"48d823c3eec0b72b0c70b3252d5f208df21dfe42fb1eb8105c232f1a46cf9625\", \"model_alias\": \"\\ubaa8\\ub378-\\u00e9\", \"package\": \"mir-agent-hub \\ud55c\\uae00-\\u00e9\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
+      "model": "\u6a21\u578b-\u00e9",
+      "prompt": "exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\nwith trailing space ",
+      "version": "\u6f22\u5b57-\u00e9",
+      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"e7e7a1c64711e670a6104f2b606857c605022cb47ecfe24958a7eac8774277f2\", \"model_alias\": \"\\u6a21\\u578b-\\u00e9\", \"package\": \"mir-agent-hub \\u6f22\\u5b57-\\u00e9\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
     },
     {
       "dispatch": false,
       "model": null,
-      "prompt": "exact caf\u00e9 \ud55c\uae00 \ud83d\ude00\nwith trailing space ",
-      "version": "\ud55c\uae00-\u00e9",
-      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"48d823c3eec0b72b0c70b3252d5f208df21dfe42fb1eb8105c232f1a46cf9625\", \"model_alias\": \"policy-or-config-default\", \"package\": \"mir-agent-hub \\ud55c\\uae00-\\u00e9\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
+      "prompt": "exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\nwith trailing space ",
+      "version": "\u6f22\u5b57-\u00e9",
+      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"e7e7a1c64711e670a6104f2b606857c605022cb47ecfe24958a7eac8774277f2\", \"model_alias\": \"policy-or-config-default\", \"package\": \"mir-agent-hub \\u6f22\\u5b57-\\u00e9\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
     },
     {
       "dispatch": false,
       "model": "",
-      "prompt": "exact caf\u00e9 \ud55c\uae00 \ud83d\ude00\nwith trailing space ",
-      "version": "\ud55c\uae00-\u00e9",
-      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"48d823c3eec0b72b0c70b3252d5f208df21dfe42fb1eb8105c232f1a46cf9625\", \"model_alias\": \"\", \"package\": \"mir-agent-hub \\ud55c\\uae00-\\u00e9\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
+      "prompt": "exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\nwith trailing space ",
+      "version": "\u6f22\u5b57-\u00e9",
+      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"e7e7a1c64711e670a6104f2b606857c605022cb47ecfe24958a7eac8774277f2\", \"model_alias\": \"\", \"package\": \"mir-agent-hub \\u6f22\\u5b57-\\u00e9\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
     },
     {
       "dispatch": false,
-      "model": "\ubaa8\ub378-\u00e9",
-      "prompt": "exact caf\u00e9 \ud55c\uae00 \ud83d\ude00\nwith trailing space ",
-      "version": "\ud55c\uae00-\u00e9",
-      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"48d823c3eec0b72b0c70b3252d5f208df21dfe42fb1eb8105c232f1a46cf9625\", \"model_alias\": \"\\ubaa8\\ub378-\\u00e9\", \"package\": \"mir-agent-hub \\ud55c\\uae00-\\u00e9\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
+      "model": "\u6a21\u578b-\u00e9",
+      "prompt": "exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\nwith trailing space ",
+      "version": "\u6f22\u5b57-\u00e9",
+      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"e7e7a1c64711e670a6104f2b606857c605022cb47ecfe24958a7eac8774277f2\", \"model_alias\": \"\\u6a21\\u578b-\\u00e9\", \"package\": \"mir-agent-hub \\u6f22\\u5b57-\\u00e9\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
     },
     {
       "dispatch": true,
       "model": null,
-      "prompt": "exact caf\u00e9 \ud55c\uae00 \ud83d\ude00\nwith trailing space ",
+      "prompt": "exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\nwith trailing space ",
       "version": "unknown",
-      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"48d823c3eec0b72b0c70b3252d5f208df21dfe42fb1eb8105c232f1a46cf9625\", \"model_alias\": \"codex-config-default\", \"package\": \"mir-agent-hub unknown\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
+      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"e7e7a1c64711e670a6104f2b606857c605022cb47ecfe24958a7eac8774277f2\", \"model_alias\": \"codex-config-default\", \"package\": \"mir-agent-hub unknown\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
     },
     {
       "dispatch": true,
       "model": "",
-      "prompt": "exact caf\u00e9 \ud55c\uae00 \ud83d\ude00\nwith trailing space ",
+      "prompt": "exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\nwith trailing space ",
       "version": "unknown",
-      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"48d823c3eec0b72b0c70b3252d5f208df21dfe42fb1eb8105c232f1a46cf9625\", \"model_alias\": \"\", \"package\": \"mir-agent-hub unknown\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
+      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"e7e7a1c64711e670a6104f2b606857c605022cb47ecfe24958a7eac8774277f2\", \"model_alias\": \"\", \"package\": \"mir-agent-hub unknown\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
     },
     {
       "dispatch": true,
-      "model": "\ubaa8\ub378-\u00e9",
-      "prompt": "exact caf\u00e9 \ud55c\uae00 \ud83d\ude00\nwith trailing space ",
+      "model": "\u6a21\u578b-\u00e9",
+      "prompt": "exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\nwith trailing space ",
       "version": "unknown",
-      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"48d823c3eec0b72b0c70b3252d5f208df21dfe42fb1eb8105c232f1a46cf9625\", \"model_alias\": \"\\ubaa8\\ub378-\\u00e9\", \"package\": \"mir-agent-hub unknown\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
+      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"e7e7a1c64711e670a6104f2b606857c605022cb47ecfe24958a7eac8774277f2\", \"model_alias\": \"\\u6a21\\u578b-\\u00e9\", \"package\": \"mir-agent-hub unknown\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
     },
     {
       "dispatch": false,
       "model": null,
-      "prompt": "exact caf\u00e9 \ud55c\uae00 \ud83d\ude00\nwith trailing space ",
+      "prompt": "exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\nwith trailing space ",
       "version": "unknown",
-      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"48d823c3eec0b72b0c70b3252d5f208df21dfe42fb1eb8105c232f1a46cf9625\", \"model_alias\": \"policy-or-config-default\", \"package\": \"mir-agent-hub unknown\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
+      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"e7e7a1c64711e670a6104f2b606857c605022cb47ecfe24958a7eac8774277f2\", \"model_alias\": \"policy-or-config-default\", \"package\": \"mir-agent-hub unknown\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
     },
     {
       "dispatch": false,
       "model": "",
-      "prompt": "exact caf\u00e9 \ud55c\uae00 \ud83d\ude00\nwith trailing space ",
+      "prompt": "exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\nwith trailing space ",
       "version": "unknown",
-      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"48d823c3eec0b72b0c70b3252d5f208df21dfe42fb1eb8105c232f1a46cf9625\", \"model_alias\": \"\", \"package\": \"mir-agent-hub unknown\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
+      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"e7e7a1c64711e670a6104f2b606857c605022cb47ecfe24958a7eac8774277f2\", \"model_alias\": \"\", \"package\": \"mir-agent-hub unknown\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
     },
     {
       "dispatch": false,
-      "model": "\ubaa8\ub378-\u00e9",
-      "prompt": "exact caf\u00e9 \ud55c\uae00 \ud83d\ude00\nwith trailing space ",
+      "model": "\u6a21\u578b-\u00e9",
+      "prompt": "exact caf\u00e9 \u6f22\u5b57 \ud83d\ude00\nwith trailing space ",
       "version": "unknown",
-      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"48d823c3eec0b72b0c70b3252d5f208df21dfe42fb1eb8105c232f1a46cf9625\", \"model_alias\": \"\\ubaa8\\ub378-\\u00e9\", \"package\": \"mir-agent-hub unknown\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
+      "value": "{\"ceiling\": \"none-v1-usage-alerting-only\", \"instruction_sha256\": \"e7e7a1c64711e670a6104f2b606857c605022cb47ecfe24958a7eac8774277f2\", \"model_alias\": \"\\u6a21\\u578b-\\u00e9\", \"package\": \"mir-agent-hub unknown\", \"tool_schema\": \"codex-mcp:tools/codex\"}"
     }
   ]
 }
