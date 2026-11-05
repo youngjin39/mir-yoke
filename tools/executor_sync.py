@@ -131,8 +131,23 @@ def sync(target: pathlib.Path, *, source_root: pathlib.Path = SOURCE_ROOT,
             raise ValueError(f'Stale source manifest: {name}; run --generate')
         payloads[name] = source.read_bytes()
     payloads[CONSUMER_MANIFEST] = (json.dumps(deployed, indent=2, sort_keys=True) + '\n').encode()
+    # Retirement is deliberately limited to this former common implementation.
+    # A missing ownership record never grants permission to remove a local file.
+    retired = {}
+    old_path = _no_symlink(target, CONSUMER_MANIFEST)
+    old = _read_manifest(old_path) if old_path.exists() else None
+    name = 'tools/mir_executor/sweep.py'
+    if name not in manifest['files']:
+        path = _no_symlink(target, name)
+        if path.exists():
+            if old is None or name not in old['files']:
+                raise ValueError(f'Refusing unowned retired common file: {name}')
+            if not path.is_file() or _hash(path) != old['files'][name]:
+                raise ValueError(f'Refusing modified retired common file: {name}')
+            retired[name] = path
     paths = {name: _no_symlink(target, name) for name in payloads}
-    dirty = _git(target, 'status', '--porcelain', '--untracked-files=all', '--', *payloads)
+    dirty = _git(target, 'status', '--porcelain', '--untracked-files=all',
+                 '--', *payloads, *retired)
     if dirty:
         raise ValueError(f'Refusing dirty common files in {target}:\n{dirty}')
     if apply:
@@ -158,7 +173,11 @@ def sync(target: pathlib.Path, *, source_root: pathlib.Path = SOURCE_ROOT,
                 additions += line.startswith('+') and not line.startswith('+++')
                 deletions += line.startswith('-') and not line.startswith('---')
         lines.append(f'{name}: {status} (+{additions}/-{deletions})')
+    for name in retired:
+        lines.append(f'{name}: removed')
     if apply:
+        for path in retired.values():
+            path.unlink()
         for name, content in payloads.items():
             if paths[name].exists() and paths[name].read_bytes() == content:
                 continue

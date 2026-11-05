@@ -195,7 +195,9 @@ def test_should_omit_native_pin_after_failed_or_unavailable_delivery(
     api.generate_manifest(source)
     target = _target(tmp_path)
     old = target / 'tools/mir_executor/COMMON_MANIFEST.json'
-    old.write_text(json.dumps({'native_query': {
+    old.write_text(json.dumps({'version': 1, 'files': {
+        'tools/mir_executor/policy.py': hashlib.sha256(b'VALUE = 1\n').hexdigest(),
+    }, 'native_query': {
         'path': '.mir/bin/executor-query', 'sha256': 'f' * 64,
     }}))
     _git(target, 'add', '.')
@@ -430,3 +432,73 @@ def test_should_never_install_delegation_gate_during_dry_run(source, tmp_path, m
     target = _target(tmp_path)
     api.sync(target, source_root=source)
     assert not (target / '.mir').exists()
+
+
+def _retired_sweep(target, *, owned=True):
+    api = _api()
+    path = target / 'tools/mir_executor/sweep.py'
+    path.write_text('OLD_SWEEP = True\n')
+    files = {'tools/mir_executor/policy.py': hashlib.sha256(
+        (target / 'tools/mir_executor/policy.py').read_bytes()).hexdigest()}
+    if owned:
+        files['tools/mir_executor/sweep.py'] = hashlib.sha256(path.read_bytes()).hexdigest()
+    api._write_json(target / api.CONSUMER_MANIFEST,
+                    {'version': 1, 'source_commit': 'old', 'files': files})
+    _git(target, 'add', '.')
+    _git(target, '-c', 'user.name=Test', '-c', 'user.email=test@example.com',
+         'commit', '-qm', 'old sweep')
+    return path
+
+
+def test_should_retire_only_manifest_owned_unchanged_sweep(source, tmp_path):
+    api = _api()
+    api.generate_manifest(source)
+    target = _target(tmp_path)
+    path = _retired_sweep(target)
+    before = path.read_bytes()
+    assert 'sweep.py: removed' in api.sync(target, source_root=source)
+    assert path.read_bytes() == before
+    report = api.sync(target, source_root=source, apply=True)
+    assert 'sweep.py: removed' in report
+    assert not path.exists()
+    assert api.check(target, source_root=source) == []
+
+
+@pytest.mark.parametrize('guard', ['dirty', 'committed-drift', 'symlink', 'parent-link'])
+def test_should_refuse_modified_retired_sweep_before_writes(source, tmp_path, guard):
+    api = _api()
+    api.generate_manifest(source)
+    target = _target(tmp_path)
+    path = _retired_sweep(target)
+    if guard in {'dirty', 'committed-drift'}:
+        path.write_text('KEEP_LOCAL = True\n')
+        if guard == 'committed-drift':
+            _git(target, 'add', '.')
+            _git(target, '-c', 'user.name=Test', '-c', 'user.email=test@example.com',
+                 'commit', '-qm', 'local sweep edit')
+    elif guard == 'symlink':
+        outside = tmp_path / 'outside.py'
+        outside.write_text('KEEP_LOCAL = True\n')
+        path.unlink()
+        path.symlink_to(outside)
+    else:
+        package = target / 'tools/mir_executor'
+        outside = tmp_path / 'outside-package'
+        package.rename(outside)
+        package.symlink_to(outside, target_is_directory=True)
+    before = path.read_bytes()
+    policy = (target / 'tools/mir_executor/policy.py').read_bytes()
+    with pytest.raises(ValueError, match='retired|symlink|dirty'):
+        api.sync(target, source_root=source, apply=True)
+    assert path.read_bytes() == before
+    assert (target / 'tools/mir_executor/policy.py').read_bytes() == policy
+
+
+def test_should_refuse_unowned_sweep(source, tmp_path):
+    api = _api()
+    api.generate_manifest(source)
+    target = _target(tmp_path)
+    path = _retired_sweep(target, owned=False)
+    with pytest.raises(ValueError, match='unowned retired'):
+        api.sync(target, source_root=source, apply=True)
+    assert path.read_text() == 'OLD_SWEEP = True\n'

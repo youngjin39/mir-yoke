@@ -17,6 +17,19 @@ Windows `USERPROFILE`, non-Unicode process environments and non-UTF-8 Python
 streams also fail without routing output. Correct the input or install a matching
 pinned native release. Source/binary rollback is the recovery path.
 
+Sweep also requires the pinned native executor. The lightweight module entrypoint
+returns exit 2 when its pin is missing, invalid or disabled, or when native
+admission declines before ownership. The direct Python CLI handler refuses with
+exit 2 and directs callers to `python -m tools.mir_executor sweep`. Neither path
+opens the registry or runs a Python sweep fallback after refusal. Native-owned
+results remain final, including exit 64 with an ownership receipt.
+
+Unsupported parser extensions, non-integer or overflowing retention values, and
+unsupported ledgers (including linked databases, sidecars and incompatible
+schemas/rows) are refused before ownership. Supported dry-run and apply retain
+the frozen Python results and filesystem/ledger effects in
+`native/handoff-packet/tests/fixtures/g6/sweep.json`; dry-run writes nothing.
+
 Other executor commands retain their own fallback contracts. The shared Python
 policy library remains required by execute/dispatch handlers in
 `tools/mir_executor/cli.py` and routing in `tools/mir_executor/dispatch.py`.
@@ -58,9 +71,17 @@ replaced by sync. Put application-specific tests in `tests/local/` or the reposi
 own test tree. The common manifest is independent of `config/adopter-payload.json`;
 this optional tool is not an adopter payload or a grant of consumer authority.
 
+Sync retires only `tools/mir_executor/sweep.py` when the previous target manifest
+owned that path and the new source manifest omits it. Before any writes, sync
+rejects symlinks in the path, local Git changes and bytes that differ from the
+old manifest digest, including committed edits. Dry-run reports removal without
+changing the file; apply removes the verified file and updates the manifest.
+An unowned sweep file is preserved with an explicit refusal. No directory cleanup
+is performed.
+
 ## Common, local and policy boundaries
 
-- Common: CLI/parser/job handlers, policy loader, dispatch, executor, jobs, sweep,
+- Common: CLI/parser/job handlers, policy loader, dispatch, executor, jobs,
   worktree, app-server client, redactor and the small local-hook adapter.
 - Local code: optional `tools/mir_executor/local.py`. Absent hooks use defaults.
 - Local data: optional `config/mir-executor.local.json`. Keys are `verifiers` (ID

@@ -93,7 +93,7 @@ fn python() -> PathBuf {
                 .success()
                 .then(|| PathBuf::from(String::from_utf8(output.stdout).unwrap().trim()))
         })
-        .expect("Python oracle required")
+        .expect("Python fixture setup required")
 }
 const SETUP: &str = r#"
 import importlib.util, pathlib, sys
@@ -103,81 +103,94 @@ fixture = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(fixture)
 fixture.setup(root, 'artifact')
 "#;
-const ORACLE: &str = r#"
-import json, pathlib, sys
-crate, root = map(pathlib.Path, sys.argv[1:3])
-sys.path.insert(0, str(crate.parent.parent))
-from tools.mir_executor.sweep import sweep_run_state, sweep_terminal_artifacts
-repo, db = root / 'repo', root / 'jobs.db'
-apply = len(sys.argv) > 3 and sys.argv[3] == 'apply'
-result = sweep_run_state(repo, db, apply=apply)
-result['terminal_artifacts'] = sweep_terminal_artifacts(repo, db, apply=apply)
-print(json.dumps(result, separators=(',', ':')))
-"#;
+fn normalize(value: serde_json::Value, root: &std::path::Path) -> serde_json::Value {
+    match value {
+        serde_json::Value::String(s) => {
+            let normalized = s.replace(root.to_str().unwrap(), "$ROOT");
+            serde_json::json!(if normalized.contains("$ROOT") {
+                normalized.replace('\\', "/")
+            } else {
+                normalized
+            })
+        }
+        serde_json::Value::Array(a) => {
+            serde_json::Value::Array(a.into_iter().map(|v| normalize(v, root)).collect())
+        }
+        serde_json::Value::Object(o) => serde_json::Value::Object(
+            o.into_iter()
+                .map(|(k, v)| {
+                    (
+                        k.clone(),
+                        if k == "swept_at" {
+                            serde_json::json!("$NOW")
+                        } else {
+                            normalize(v, root)
+                        },
+                    )
+                })
+                .collect(),
+        ),
+        v => v,
+    }
+}
 fn parity(apply: bool) {
     let fixture = Fixture::new();
     fixture.setup();
-    let reference = Command::new(python())
-        .args(["-c", ORACLE])
-        .arg(env!("CARGO_MANIFEST_DIR"))
+    let corpus: serde_json::Value =
+        serde_json::from_str(include_str!("fixtures/g6/sweep.json")).unwrap();
+    let expected = &corpus["cli"][apply.to_string()];
+    let db = fixture.0.join("jobs.db");
+    let mut args = vec!["sweep", "--jobs-db", db.to_str().unwrap()];
+    if apply {
+        args.push("--apply");
+    }
+    let native = fixture.native(&args);
+    assert_eq!(
+        native.status.code(),
+        expected["status"].as_i64().map(|v| v as i32),
+        "{}",
+        String::from_utf8_lossy(&native.stderr)
+    );
+    assert_eq!(
+        native.stderr,
+        expected["stderr"].as_str().unwrap().as_bytes()
+    );
+    assert_eq!(native.stdout.iter().filter(|b| **b == b'\n').count(), 1);
+    let escaped_root = fixture.0.to_str().unwrap().replace('\\', "\\\\");
+    let stdout = String::from_utf8(native.stdout.clone())
+        .unwrap()
+        .replace(&escaped_root, "$ROOT");
+    assert_eq!(
+        stdout.as_bytes(),
+        expected["stdout"].as_str().unwrap().as_bytes()
+    );
+    let result = serde_json::from_slice(&native.stdout).unwrap();
+    assert_eq!(normalize(result, &fixture.0), expected["result"]);
+    assert_eq!(fs::read(fixture.0.join("receipt")).unwrap(), b"owned");
+    // The ownership receipt is a caller transport effect, separate from sweep effects.
+    fs::remove_file(fixture.0.join("receipt")).unwrap();
+    let snapshot = Command::new(python())
+        .arg(
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("tests/fixtures/generate_executor_sweep.py"),
+        )
+        .arg("snapshot")
         .arg(&fixture.0)
+        .arg("artifact")
         .env("PYTHONDONTWRITEBYTECODE", "1")
         .output()
         .unwrap();
-    assert!(
-        reference.status.success(),
-        "{}",
-        String::from_utf8_lossy(&reference.stderr)
+    assert!(snapshot.status.success());
+    assert_eq!(
+        normalize(
+            serde_json::from_slice(&snapshot.stdout).unwrap(),
+            &fixture.0
+        ),
+        expected["state"]
     );
-    let db = fixture.0.join("jobs.db");
-    let native = fixture.native(&["sweep", "--jobs-db", db.to_str().unwrap()]);
-    assert_eq!(native.status.code(), Some(0));
-    assert_eq!(native.stdout, reference.stdout);
-    assert_eq!(native.stderr, reference.stderr);
-    assert_eq!(fs::read(fixture.0.join("receipt")).unwrap(), b"owned");
-    if apply {
-        let oracle = Fixture::new();
-        oracle.setup();
-        let oracle_output = Command::new(python())
-            .args(["-c", ORACLE])
-            .arg(env!("CARGO_MANIFEST_DIR"))
-            .arg(&oracle.0)
-            .arg("apply")
-            .env("PYTHONDONTWRITEBYTECODE", "1")
-            .output()
-            .unwrap();
-        assert!(
-            oracle_output.status.success(),
-            "{}",
-            String::from_utf8_lossy(&oracle_output.stderr)
-        );
-        let expected: serde_json::Value = serde_json::from_slice(&reference.stdout).unwrap();
-        let applied = fixture.native(&["sweep", "--apply", "--jobs-db", db.to_str().unwrap()]);
-        assert_eq!(
-            applied.status.code(),
-            Some(0),
-            "{}",
-            String::from_utf8_lossy(&applied.stderr)
-        );
-        assert_eq!(applied.stdout, oracle_output.stdout);
-        assert_eq!(applied.stderr, oracle_output.stderr);
-        let result: serde_json::Value = serde_json::from_slice(&applied.stdout).unwrap();
-        assert_eq!(
-            result["terminal_artifacts"]["removed"],
-            expected["terminal_artifacts"]["expired"]
-        );
-        assert!(
-            !fixture
-                .repo()
-                .join("tasks")
-                .join("dispatch")
-                .join("1".repeat(32))
-                .exists()
-        );
-    }
 }
 #[test]
-fn dry_run_matches_python_bytes() {
+fn dry_run_matches_frozen_python_result() {
     parity(false);
 }
 #[test]

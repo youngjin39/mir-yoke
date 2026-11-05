@@ -310,25 +310,10 @@ def _handle_list_jobs(api, args: argparse.Namespace) -> int:
 
 
 def _handle_sweep(api, args: argparse.Namespace) -> int:
-    """Handle the dry-run-by-default run-state sweep."""
-    from tools.mir_executor.sweep import (  # noqa: PLC0415
-        sweep_run_state,
-        sweep_terminal_artifacts,
-    )
-
-    repo_root = args.repo_root.resolve()
-    jobs_db_path = api._resolve_jobs_db(args.jobs_db, repo_root)
-    result = sweep_run_state(
-        repo_root,
-        jobs_db_path,
-        grace_seconds=args.grace_seconds,
-        apply=args.apply,
-    )
-    result["terminal_artifacts"] = sweep_terminal_artifacts(
-        repo_root, jobs_db_path, apply=args.apply
-    )
-    print(json.dumps(result, separators=(",", ":")))
-    return 0
+    """Refuse the retired Python sweep implementation before opening the registry."""
+    print('[mir_executor] Python sweep is retired; use python -m tools.mir_executor '
+          'sweep with the pinned native executor', file=sys.stderr)
+    return 2
 
 
 # ---------------------------------------------------------------------------

@@ -73,7 +73,7 @@ fn parse(raw: &[OsString], cwd: &Path, home: &Path) -> Result<Args, ParseError> 
             }
         }
     }
-    // Explicit parser extensions remain reference-owned before target import.
+    // Unsupported parser extensions are refused at admission before target import.
     let bridge = match fs::read(repo.join("tools").join("mir_executor").join("local.py")) {
         Err(e) if e.kind() == io::ErrorKind::NotFound => None,
         Ok(source) => {
@@ -120,7 +120,7 @@ fn parse(raw: &[OsString], cwd: &Path, home: &Path) -> Result<Args, ParseError> 
         .map_err(|_| "sweep retention")?
         .as_i64()
         .ok_or("sweep retention integer")?;
-    // Python datetime/timedelta overflow and exotic ledgers remain reference-owned.
+    // Unsupported retention overflow and exotic ledgers are refused at admission.
     let today = i64::try_from(
         SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -371,7 +371,7 @@ fn execute(mut args: Args, cwd: &Path) -> Result<String, String> {
     Ok(text)
 }
 /// Raw argv includes `sweep`, with an optional preceding global `--jobs-db`.
-/// Exit 64 without a receipt requests the Python reference.
+/// Exit 64 without a receipt refuses admission; the caller must not fall back to Python.
 pub fn run(raw: &[OsString], cwd: &Path, home_root: &Path) -> i32 {
     let args = match parse(raw, cwd, home_root) {
         Ok(args) => args,

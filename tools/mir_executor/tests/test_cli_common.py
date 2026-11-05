@@ -464,15 +464,15 @@ def test_cli_dispatch_constructs_opt_in_reviewer(tmp_path, monkeypatch):
     assert observed[0]["reviewer"] is reviewer
 
 
-def test_cli_sweep_includes_terminal_artifact_report(tmp_path, monkeypatch, capsys):
-    from tools.mir_executor import sweep
+def test_direct_cli_sweep_refuses_without_opening_registry(tmp_path, monkeypatch, capsys):
+    def forbidden(*args, **kwargs):
+        pytest.fail("retired Python sweep opened the jobs registry")
 
-    monkeypatch.setattr(sweep, "sweep_run_state", lambda *a, **kw: {"overdue_jobs": []})
-    monkeypatch.setattr(
-        sweep, "sweep_terminal_artifacts", lambda *a, **kw: {"candidates": ["terminal"]}
-    )
+    monkeypatch.setattr(cli, "_resolve_jobs_db", forbidden)
     args = cli._build_parser().parse_args(["sweep", "--repo-root", str(tmp_path)])
-    assert cli._handle_sweep(args) == 0
-    assert json.loads(capsys.readouterr().out)["terminal_artifacts"]["candidates"] == [
-        "terminal"
-    ]
+    assert cli._handle_sweep(args) == 2
+    output = capsys.readouterr()
+    assert output.out == ""
+    assert "Python sweep is retired" in output.err
+    assert "python -m tools.mir_executor sweep" in output.err
+    assert not (tmp_path / "tasks").exists()

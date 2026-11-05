@@ -169,3 +169,57 @@ def test_policy_unavailable_never_returns_empty_success(tmp_path, monkeypatch, c
     output = capsys.readouterr()
     assert output.out == ''
     assert 'pinned native policy resolver unavailable or incompatible' in output.err
+
+
+@pytest.mark.parametrize('prefix', [[], ['--jobs-db', 'jobs.db'], ['--jobs-db=jobs.db']])
+@pytest.mark.parametrize('guard', [
+    'invalid_pin', 'missing', 'hash', 'spawn', 'decline', 'python', 'master',
+    'disabled', 'encoding',
+])
+def test_sweep_unavailable_never_falls_back_to_python(
+    tmp_path, monkeypatch, capsys, guard, prefix,
+):
+    executable, manifest = _install(tmp_path, 'exit 64\n')
+    from tools.mir_executor import entrypoint
+    monkeypatch.setattr(entrypoint, '_HOME_ROOT', tmp_path)
+    for key in ('MIR_EXECUTOR_IMPL', 'MIR_EXECUTOR_SWEEP_IMPL', 'MIR_NATIVE_HOOKS'):
+        monkeypatch.delenv(key, raising=False)
+    if guard == 'invalid_pin':
+        manifest.write_text('{}')
+    elif guard == 'missing':
+        manifest.unlink()
+    elif guard == 'hash':
+        executable.write_text('changed')
+    elif guard == 'spawn':
+        executable.chmod(0o644)
+    elif guard == 'python':
+        monkeypatch.setenv('MIR_EXECUTOR_SWEEP_IMPL', 'python')
+    elif guard == 'master':
+        monkeypatch.setenv('MIR_EXECUTOR_IMPL', 'python')
+    elif guard == 'disabled':
+        monkeypatch.setenv('MIR_NATIVE_HOOKS', '0')
+    elif guard == 'encoding':
+        monkeypatch.setattr(sys, 'stdout', types.SimpleNamespace(encoding='cp1252'))
+
+    def forbidden(_args):
+        pytest.fail('retired Python sweep fallback was called')
+
+    monkeypatch.setitem(sys.modules, 'tools.mir_executor.cli',
+                        types.SimpleNamespace(main=forbidden))
+    monkeypatch.setitem(sys.modules, 'tools.mir_executor.sweep', None)
+    assert entrypoint.main([*prefix, 'sweep', '--repo-root', str(tmp_path), '--apply']) == 2
+    output = capsys.readouterr()
+    assert output.out == ''
+    assert 'pinned native sweep unavailable or incompatible' in output.err
+    assert not (tmp_path / 'tasks').exists()
+
+
+@pytest.mark.parametrize('code', [0, 7, 64])
+def test_sweep_owned_exit_is_final(tmp_path, monkeypatch, code):
+    _install(tmp_path, f'printf owned > "$MIR_EXECUTOR_OWNED_RECEIPT"; exit {code}\n')
+    from tools.mir_executor import entrypoint
+    monkeypatch.setattr(entrypoint, '_HOME_ROOT', tmp_path)
+    for key in ('MIR_EXECUTOR_IMPL', 'MIR_EXECUTOR_SWEEP_IMPL', 'MIR_NATIVE_HOOKS'):
+        monkeypatch.delenv(key, raising=False)
+    monkeypatch.setitem(sys.modules, 'tools.mir_executor.cli', None)
+    assert entrypoint.main(['sweep', '--repo-root', str(tmp_path)]) == code

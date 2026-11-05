@@ -6,7 +6,8 @@ a decline only without an exact owned receipt in a private temporary directory.
 The binary claims ownership before importing hooks, output, registry writes, or
 provider launch; if the receipt cannot be written it exits 64 before any effect.
 With an owned receipt every exit code, including 64, is final. Older binaries
-that decline with 64 without a receipt fall back to Python. Signals reach the
+that decline with 64 without a receipt fall back to Python, except sweep, which
+requires native admission and refuses without a Python fallback. Signals reach the
 native process group on POSIX; Windows forwards console interrupts and always
 terminates/reaps the direct child.
 Like Python, interruption does not finalize a running background job's row.
@@ -228,6 +229,18 @@ def _write_output(stream, data: bytes) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
+    remaining = argv
+    if remaining and remaining[0] == '--jobs-db':
+        remaining = remaining[2:]
+    elif remaining and remaining[0].startswith('--jobs-db='):
+        remaining = remaining[1:]
+    if remaining and remaining[0] == 'sweep':
+        result = _native_command(argv)
+        if result is None:
+            print('[mir_executor] pinned native sweep unavailable or incompatible; '
+                  'Python sweep is retired', file=sys.stderr)
+            return 2
+        return result
     result = _native_query(argv)
     if result is None:
         result = _native_command(argv)

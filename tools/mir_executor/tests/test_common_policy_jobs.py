@@ -3,11 +3,22 @@
 import datetime
 import json
 import sqlite3
+import subprocess
 
 import pytest
 
-from tools.mir_executor import jobs, policy, sweep
+from tools.mir_executor import jobs, policy
 from tools.mir_executor.jobs import JobRecord, JobRegistry
+from tools.mir_executor.tests.test_sweep import native_sweep as native_sweep
+
+
+def native_artifact_sweep(native, root, db, *, apply=False):
+    subprocess.run(['git', '-C', str(root), 'init', '-q'], check=True, capture_output=True)
+    command = [str(native), '--home-root', str(root), 'sweep', '--jobs-db', str(db)]
+    if apply:
+        command.append('--apply')
+    result = subprocess.run(command, cwd=root, capture_output=True, check=True)
+    return json.loads(result.stdout)['terminal_artifacts']
 
 
 def write_policy(root, data):
@@ -135,7 +146,7 @@ def test_common_resume_clears_results(tmp_path, method):
     registry.close()
 
 
-def test_common_terminal_artifact_sweep(tmp_path):
+def test_common_terminal_artifact_sweep(tmp_path, native_sweep):
     db = tmp_path / "jobs.db"
     registry = JobRegistry(db)
     registry.insert(make_job())
@@ -143,11 +154,10 @@ def test_common_terminal_artifact_sweep(tmp_path):
     artifact = tmp_path / "tasks/dispatch" / ("a" * 32)
     artifact.mkdir(parents=True)
     (artifact / "output").write_text("123")
-    now = datetime.datetime(2026, 10, 1, tzinfo=datetime.UTC)
-    report = sweep.sweep_terminal_artifacts(tmp_path, db, now=now)
+    report = native_artifact_sweep(native_sweep, tmp_path, db)
     assert report["expired"] == ["a" * 32]
     assert artifact.exists()
-    report = sweep.sweep_terminal_artifacts(tmp_path, db, now=now, apply=True)
+    report = native_artifact_sweep(native_sweep, tmp_path, db, apply=True)
     assert report["removed"] == ["a" * 32]
     assert not artifact.exists()
     registry = JobRegistry(db)
@@ -158,7 +168,7 @@ def test_common_terminal_artifact_sweep(tmp_path):
     registry.close()
 
 
-def test_common_artifact_sweep_rejects_symlink_root(tmp_path):
+def test_common_artifact_sweep_rejects_symlink_root(tmp_path, native_sweep):
     db = tmp_path / "jobs.db"
     registry = JobRegistry(db)
     registry.insert(make_job())
@@ -169,8 +179,7 @@ def test_common_artifact_sweep_rejects_symlink_root(tmp_path):
     (artifact / "keep").write_text("owner content")
     (tmp_path / "tasks").mkdir()
     (tmp_path / "tasks/dispatch").symlink_to(owner_dir, target_is_directory=True)
-    now = datetime.datetime(2026, 10, 1, tzinfo=datetime.UTC)
-    report = sweep.sweep_terminal_artifacts(tmp_path, db, now=now, apply=True)
+    report = native_artifact_sweep(native_sweep, tmp_path, db, apply=True)
     assert report["removed"] == []
     assert artifact.exists()
 
@@ -203,21 +212,22 @@ def test_common_delegation_project_evidence_accessors(tmp_path):
     assert resolved.delegation_project_declaration() == resolved.project_declaration()
 
 
-def test_common_local_artifact_retention_and_explicit_override(tmp_path):
+def test_common_local_artifact_retention_configuration(tmp_path, native_sweep):
     config = tmp_path / "config/mir-executor.local.json"
     config.parent.mkdir()
     config.write_text(json.dumps({"artifact_retention_days": 7}))
     db = tmp_path / "jobs.db"
     registry = JobRegistry(db)
-    registry.insert(make_job(completed_at="2026-09-20T00:00:00+00:00"))
+    registry.insert(make_job(completed_at=(datetime.datetime.now(datetime.UTC)
+                                          - datetime.timedelta(days=11)).isoformat()))
     registry.close()
     artifact = tmp_path / "tasks/dispatch" / ("a" * 32)
     artifact.mkdir(parents=True)
-    now = datetime.datetime(2026, 10, 1, tzinfo=datetime.UTC)
-    local = sweep.sweep_terminal_artifacts(tmp_path, db, now=now)
+    local = native_artifact_sweep(native_sweep, tmp_path, db)
     assert local["retention_days"] == 7
     assert local["expired"] == ["a" * 32]
-    explicit = sweep.sweep_terminal_artifacts(tmp_path, db, now=now, retention_days=30)
+    config.write_text(json.dumps({"artifact_retention_days": 30}))
+    explicit = native_artifact_sweep(native_sweep, tmp_path, db)
     assert explicit["retention_days"] == 30
     assert explicit["expired"] == []
 
@@ -244,7 +254,7 @@ def test_common_update_route_metadata(tmp_path):
     registry.close()
 
 
-def test_common_sweep_resume_attempt_history(tmp_path):
+def test_common_sweep_resume_attempt_history(tmp_path, native_sweep):
     db = tmp_path / "jobs.db"
     registry = JobRegistry(db)
     registry.insert(
@@ -262,8 +272,7 @@ def test_common_sweep_resume_attempt_history(tmp_path):
         directory = dispatch_root / attempt_id
         directory.mkdir(parents=True)
         (directory / "output").write_text(attempt_id)
-    now = datetime.datetime(2026, 10, 1, tzinfo=datetime.UTC)
-    report = sweep.sweep_terminal_artifacts(tmp_path, db, now=now, apply=True)
+    report = native_artifact_sweep(native_sweep, tmp_path, db, apply=True)
     assert report["removed"] == ids
     assert (dispatch_root / "invalid").exists()
     registry = JobRegistry(db)

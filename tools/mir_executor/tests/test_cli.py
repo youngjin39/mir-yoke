@@ -3,8 +3,20 @@
 from __future__ import annotations
 
 import pathlib
+import sys
 
+from tools.mir_executor import cli_jobs
 from tools.mir_executor.cli import _build_parser
+
+
+def test_direct_python_sweep_refuses_before_registry_access(tmp_path, monkeypatch, capsys):
+    monkeypatch.setitem(sys.modules, 'tools.mir_executor.sweep', None)
+    # A handler refusal must not inspect args or resolve/open a jobs database.
+    assert cli_jobs._handle_sweep(None, None) == 2
+    output = capsys.readouterr()
+    assert output.out == ''
+    assert 'Python sweep is retired' in output.err
+    assert not (tmp_path / 'tasks').exists()
 
 
 def _base_execute_args(tmp_path: pathlib.Path) -> list[str]:

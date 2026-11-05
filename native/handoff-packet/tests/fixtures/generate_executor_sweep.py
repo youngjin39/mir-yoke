@@ -1,8 +1,7 @@
-"""Dynamic E11 oracle on disposable Git repositories and private job ledgers."""
+"""Disposable sweep setup and observation, independent of retired sweep algorithms."""
 
 from __future__ import annotations
 
-import datetime
 import hashlib
 import json
 import os
@@ -10,11 +9,9 @@ import sqlite3
 import subprocess
 import sys
 from pathlib import Path
-from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(ROOT))
-from tools.mir_executor import sweep  # noqa: E402
 from tools.mir_executor.jobs import JobRecord, JobRegistry  # noqa: E402
 
 NOW = "2026-07-11T00:03:01+00:00"
@@ -54,7 +51,7 @@ def setup(home, case):
     home.mkdir(parents=True, exist_ok=True)
     repo = home / "repo"
     repo.mkdir()
-    git(repo, "init", "-q")
+    git(repo, "init", "-q", "-b", "main")
     git(repo, "config", "user.name", "Fixture")
     git(repo, "config", "user.email", "fixture@example.invalid")
     git(repo, "config", "core.autocrlf", "false")
@@ -159,7 +156,8 @@ def setup(home, case):
 
 def normalize(value, home):
     if isinstance(value, str):
-        return value.replace(str(home), "$ROOT").replace(str(home).replace("\\", "/"), "$ROOT")
+        value = value.replace(str(home), "$ROOT").replace(str(home).replace("\\", "/"), "$ROOT")
+        return value.replace("\\", "/") if "$ROOT" in value else value
     if isinstance(value, list):
         return [normalize(v, home) for v in value]
     if isinstance(value, dict):
@@ -203,31 +201,6 @@ def snapshot(home, raw=False):
     return normalize({"tree": tree, "rows": rows, "refs": refs}, home)
 
 
-def oracle(home, case, apply, seam, now_text=NOW):
-    repo, db = home / "repo", home / "jobs.db"
-    now = datetime.datetime.fromisoformat(now_text)
-    if case.startswith("run") or case == "missing-db":
-        real = sweep._inspect_removal_candidate
-        calls = {}
-
-        def inspect(root, listed):
-            calls[listed.job_id] = calls.get(listed.job_id, 0) + 1
-            if seam == "drift" and listed.job_id == "clean" and calls[listed.job_id] == 2:
-                write(listed.path / "late.txt", "late\n")
-            return real(root, listed)
-
-        with patch.object(sweep, "_inspect_removal_candidate", inspect):
-            return sweep.sweep_run_state(repo, db, now=now, grace_seconds=120, apply=apply)
-    real = sweep.shutil.rmtree
-
-    def remove(path, *args, **kwargs):
-        if seam == "crash":
-            raise RuntimeError("injected crash")
-        return real(path, *args, **kwargs)
-
-    with patch.object(sweep.shutil, "rmtree", remove):
-        return sweep.sweep_terminal_artifacts(repo, db, now=now, retention_days=30, apply=apply)
-
 
 if __name__ == "__main__":
     mode, root, case = sys.argv[1:4]
@@ -241,10 +214,4 @@ if __name__ == "__main__":
     elif mode == "snapshot":
         print(json.dumps(snapshot(home, raw=len(sys.argv) > 4)))
     else:
-        apply = sys.argv[4] == "true"
-        seam = sys.argv[5] if len(sys.argv) > 5 else ""
-        try:
-            result = oracle(home, case, apply, seam, sys.argv[6] if len(sys.argv) > 6 else NOW)
-        except RuntimeError as exc:
-            result = {"crash": str(exc)}
-        print(json.dumps(normalize(result, home)))
+        raise SystemExit("only setup, snapshot and link are supported; expected results are frozen")

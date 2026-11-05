@@ -1,4 +1,4 @@
-//! Dynamic Python parity using disposable real Git trees and private ledgers.
+//! Frozen Python outputs and effects on disposable real Git trees and private ledgers.
 use handoff_packet::executor_sweep;
 use serde_json::{Value, json};
 use std::{
@@ -51,7 +51,7 @@ fn python() -> PathBuf {
                 .success()
                 .then(|| PathBuf::from(String::from_utf8(out.stdout).unwrap().trim()))
         })
-        .expect("Python is required for the oracle")
+        .expect("Python is required for fixture setup and observation")
 }
 fn reference(mode: &str, root: &Path, case: &str, args: &[&str]) -> Value {
     let out = Command::new(python())
@@ -75,7 +75,14 @@ fn reference(mode: &str, root: &Path, case: &str, args: &[&str]) -> Value {
 }
 fn normalize(value: Value, root: &Path) -> Value {
     match value {
-        Value::String(s) => json!(s.replace(root.to_str().unwrap(), "$ROOT")),
+        Value::String(s) => {
+            let normalized = s.replace(root.to_str().unwrap(), "$ROOT");
+            json!(if normalized.contains("$ROOT") {
+                normalized.replace('\\', "/")
+            } else {
+                normalized
+            })
+        }
         Value::Array(a) => Value::Array(a.into_iter().map(|v| normalize(v, root)).collect()),
         Value::Object(o) => Value::Object(
             o.into_iter()
@@ -95,17 +102,17 @@ fn run_native(root: &Path, case: &str, apply: bool) -> Value {
     };
     normalize(result.unwrap_or_else(|e| panic!("{case}: {e}")), root)
 }
+fn golden(case: &str, apply: bool, seam: &str, now: &str, step: usize) -> Value {
+    let corpus: Value = serde_json::from_str(include_str!("fixtures/g6/sweep.json")).unwrap();
+    corpus["cases"][format!("{case}|{apply}|{seam}|{now}")][step].clone()
+}
 fn parity(case: &str, apply: bool) {
     let fixture = Fixture::new(case);
-    let py = fixture.0.join("python");
     let native = fixture.0.join("native");
-    reference("setup", &py, case, &[]);
     reference("setup", &native, case, &[]);
     let before = reference("snapshot", &native, case, &["raw"]);
     #[cfg(windows)]
     if native.join("fixture-junction.json").exists() {
-        // Python's unchanged is_symlink checks do not recognize junctions.
-        // Assert the native conservative reparse-point extension separately.
         let result = run_native(&native, case, apply);
         assert_eq!(
             fs::read_to_string(native.join("outside/sentinel")).unwrap(),
@@ -133,17 +140,19 @@ fn parity(case: &str, apply: bool) {
         }
         return;
     }
-    let expected = reference("oracle", &py, case, &[if apply { "true" } else { "false" }]);
-    assert_eq!(
-        run_native(&native, case, apply),
-        expected,
-        "{case}, apply={apply}: report"
-    );
-    assert_eq!(
-        reference("snapshot", &native, case, &[]),
-        reference("snapshot", &py, case, &[]),
-        "{case}, apply={apply}: tree, refs, complete job records and receipts"
-    );
+    for step in 0..if apply { 2 } else { 1 } {
+        let expected = golden(case, apply, "", NOW, step);
+        assert_eq!(
+            run_native(&native, case, apply),
+            expected["result"],
+            "{case}, apply={apply}: report"
+        );
+        assert_eq!(
+            reference("snapshot", &native, case, &[]),
+            expected["state"],
+            "{case}, apply={apply}: tree, refs, complete job records and receipts"
+        );
+    }
     if !apply {
         assert_eq!(
             reference("snapshot", &native, case, &["raw"]),
@@ -151,29 +160,16 @@ fn parity(case: &str, apply: bool) {
             "{case}: dry run changed database, worktree or Git bytes"
         );
     }
-    if apply {
-        let expected = reference("oracle", &py, case, &["true"]);
-        assert_eq!(
-            run_native(&native, case, true),
-            expected,
-            "{case}: repeat report"
-        );
-        assert_eq!(
-            reference("snapshot", &native, case, &[]),
-            reference("snapshot", &py, case, &[]),
-            "{case}: repeat preserves history and avoids duplicate receipts"
-        );
-    }
 }
 #[test]
-fn run_state_dynamic_python_oracle() {
+fn run_state_frozen_python_oracle() {
     // Includes strict deadline boundary, live/stale jobs, dirt, ignored runtime,
     // unique commits, safe removal and real Git worktree lock refusal.
     parity("run-mixed", false);
     parity("run-mixed", true);
 }
 #[test]
-fn terminal_artifacts_dynamic_python_oracle() {
+fn terminal_artifacts_frozen_python_oracle() {
     for case in [
         "artifact-history",
         "artifact-receipt",
@@ -191,12 +187,9 @@ fn missing_ledger_dry_run_does_not_create_storage() {
 #[test]
 fn run_state_reinspection_preserves_late_dirt() {
     let fixture = Fixture::new("drift");
-    let py = fixture.0.join("python");
     let native = fixture.0.join("native");
-    for root in [&py, &native] {
-        reference("setup", root, "run-mixed", &[]);
-    }
-    let expected = reference("oracle", &py, "run-mixed", &["true", "drift"]);
+    reference("setup", &native, "run-mixed", &[]);
+    let expected = golden("run-mixed", true, "drift", NOW, 0);
     let actual = executor_sweep::sweep_run_state_with_observer(
         &native.join("repo"),
         &native.join("jobs.db"),
@@ -211,22 +204,19 @@ fn run_state_reinspection_preserves_late_dirt() {
         },
     )
     .unwrap();
-    assert_eq!(normalize(actual, &native), expected);
+    assert_eq!(normalize(actual, &native), expected["result"]);
     assert_eq!(
         reference("snapshot", &native, "run-mixed", &[]),
-        reference("snapshot", &py, "run-mixed", &[])
+        expected["state"]
     );
 }
 #[test]
 fn artifact_receipt_survives_interruption_and_recovery_reuses_it() {
     let fixture = Fixture::new("crash");
-    let py = fixture.0.join("python");
     let native = fixture.0.join("native");
-    for root in [&py, &native] {
-        reference("setup", root, "artifact-history", &[]);
-    }
-    let expected = reference("oracle", &py, "artifact-history", &["true", "crash"]);
-    assert_eq!(expected, json!({"crash":"injected crash"}));
+    reference("setup", &native, "artifact-history", &[]);
+    let expected = golden("artifact-history", true, "crash", NOW, 0);
+    assert_eq!(expected["result"], json!({"crash":"injected crash"}));
     let error = executor_sweep::sweep_terminal_artifacts_with_observer(
         &native.join("repo"),
         &native.join("jobs.db"),
@@ -245,15 +235,49 @@ fn artifact_receipt_survives_interruption_and_recovery_reuses_it() {
     assert!(error.contains("injected crash"));
     assert_eq!(
         reference("snapshot", &native, "artifact-history", &[]),
-        reference("snapshot", &py, "artifact-history", &[]),
+        expected["state"],
         "interruption must leave intent receipt and directory intact"
     );
-    let expected = reference("oracle", &py, "artifact-history", &["true"]);
-    assert_eq!(run_native(&native, "artifact-history", true), expected);
+    let expected = golden("artifact-history", true, "crash", NOW, 1);
+    assert_eq!(
+        run_native(&native, "artifact-history", true),
+        expected["result"]
+    );
     assert_eq!(
         reference("snapshot", &native, "artifact-history", &[]),
-        reference("snapshot", &py, "artifact-history", &[]),
+        expected["state"],
         "recovery reuses durable intent rather than inserting duplicate receipts"
+    );
+}
+#[test]
+fn non_force_removal_preserves_dirt_created_after_reinspection() {
+    let fixture = Fixture::new("non-force");
+    reference("setup", &fixture.0, "run-mixed", &[]);
+    let result = executor_sweep::sweep_run_state_with_observer(
+        &fixture.0.join("repo"),
+        &fixture.0.join("jobs.db"),
+        NOW,
+        120,
+        true,
+        |stage, path| {
+            if stage == "before-remove" && path.file_name().is_some_and(|n| n == "wt-clean") {
+                fs::write(path.join("late.txt"), "preserve late dirt\n").unwrap();
+            }
+            Ok(())
+        },
+    )
+    .unwrap();
+    assert_eq!(
+        fs::read_to_string(fixture.0.join("wt-clean/late.txt")).unwrap(),
+        "preserve late dirt\n"
+    );
+    assert!(
+        result["preserved_worktrees"]
+            .as_array()
+            .unwrap()
+            .contains(&json!({
+                "path": fixture.0.join("wt-clean"), "reasons": ["apply-time-drift:remove-refused"]
+            }))
     );
 }
 #[test]
@@ -285,12 +309,9 @@ fn receipt_timestamp_normalizes_z_offset_and_naive_input_like_python() {
         "2026-11-02T12:00:00",
     ] {
         let fixture = Fixture::new("timestamp");
-        let py = fixture.0.join("python");
         let native = fixture.0.join("native");
-        for root in [&py, &native] {
-            reference("setup", root, "artifact-history", &[]);
-        }
-        let expected = reference("oracle", &py, "artifact-history", &["true", "", now]);
+        reference("setup", &native, "artifact-history", &[]);
+        let expected = golden("artifact-history", true, "", now, 0);
         let actual = executor_sweep::sweep_terminal_artifacts(
             &native.join("repo"),
             &native.join("jobs.db"),
@@ -299,17 +320,13 @@ fn receipt_timestamp_normalizes_z_offset_and_naive_input_like_python() {
             true,
         )
         .unwrap();
-        assert_eq!(normalize(actual, &native), expected);
+        assert_eq!(normalize(actual, &native), expected["result"]);
         let actual = reference("snapshot", &native, "artifact-history", &[]);
         assert_eq!(
             actual["rows"]["artifact_sweeps"][0]["swept_at"], "2026-11-02T12:00:00+00:00",
             "{now}"
         );
-        assert_eq!(
-            actual,
-            reference("snapshot", &py, "artifact-history", &[]),
-            "{now}"
-        );
+        assert_eq!(actual, expected["state"], "{now}");
     }
 }
 
