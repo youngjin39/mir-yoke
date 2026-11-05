@@ -57,8 +57,8 @@ def test_captured_owner(tmp_path, monkeypatch, case):
         json.dumps({'verifiers': GOLDEN['verifiers']}))
     if not case['missing']:
         (tmp_path / 'brief.json').write_text(case['raw'])
-    args = argparse.Namespace(**json.loads(
-        json.dumps(case['args']).replace('<root>', str(tmp_path))))
+    root = json.dumps(str(tmp_path))[1:-1]  # JSON string content; Windows paths carry backslashes.
+    args = argparse.Namespace(**json.loads(json.dumps(case['args']).replace('<root>', root)))
     stderr = io.StringIO()
     error = {}
     with contextlib.redirect_stderr(stderr):
@@ -68,7 +68,7 @@ def test_captured_owner(tmp_path, monkeypatch, case):
             error = dict(kind=type(caught).__name__, message=str(caught))
     assert error == {key: case[key] for key in ('kind', 'message') if key in case}
     assert stderr.getvalue().replace(str(tmp_path), '<root>') == case['stderr']
-    assert json.loads(json.dumps(vars(args)).replace(str(tmp_path), '<root>')) == case['patch']
+    assert json.loads(json.dumps(vars(args)).replace(root, '<root>')) == case['patch']
     assert namespace['_REQUESTED_BACKEND'].get() == case['requested_backend']
 
 
