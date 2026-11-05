@@ -2800,6 +2800,12 @@
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
+      "path": "native/handoff-packet/examples/g6_policy_account.rs",
+      "sha256": "1b3eb35513d990c7af45ac0ddb05db19afe6209c709975802b7dfdeb8c9c6864"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
       "path": "native/handoff-packet/examples/hook_fixture.rs",
       "sha256": "2c183ab3df594441aba6b76a47ad1b7091f6d892c4c6b05a10314e12be1d673f"
     },
@@ -3420,6 +3426,18 @@
       "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/executor_worktree.json",
       "sha256": "8b3316f64d41d1909a394854c65efa3edb40ac25605d0344ca8e26c6b883fad6"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/tests/fixtures/g6/delegation.json",
+      "sha256": "131630f2dc11cc0445af5208f9a9d29eaa4363236bdaace338c435879a55450e"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/tests/fixtures/g6/policy-cli.json",
+      "sha256": "019e5eadbe208e6df4836649ff6847e70683628e3a895e92635bb5ef9bada60b"
     },
     {
       "classification": "template-maintainer-tool",
@@ -5837,7 +5855,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_delegation_gate_native_parity.py",
-      "sha256": "afcddc11142eb5407a1981ead71318b96ab4347924402500e3f535d47a358a34"
+      "sha256": "b1d5e1bd37ce4a1bd1685ed895f8846f1cdd44c355df04e7fb76d9c12734b467"
     },
     {
       "classification": "template-maintainer-tool",
@@ -6209,7 +6227,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_policy_resolve_native_parity.py",
-      "sha256": "94f30aadbecc0c26c95402a2cf5df53504259111cb035d4728ffbf5f0be1ab28"
+      "sha256": "066a2be3a6ff96c09fe2317e49415d310e8fbae029ab74ff16aa184bb791deb4"
     },
     {
       "classification": "template-maintainer-tool",

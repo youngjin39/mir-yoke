@@ -1,0 +1,1948 @@
+{
+  "provenance": {
+    "captured_at": "2026-11-05T15:09:47.558217+00:00",
+    "platform": "Darwin arm64",
+    "python": "3.12.13",
+    "bash": "GNU bash, version 3.2.57(1)-release (arm64-apple-darwin26)",
+    "jq": "jq-1.7.1-apple",
+    "capture_command": "python <scratch>/capture.py",
+    "capture_script_sha256": "d81b06006ea6733a789702d8fda7a63e2744c2dedf64d58d20f3f49d0e63ae86",
+    "account_home": "Each CLI call uses a synthetic account-home unless the case explicitly overrides it.",
+    "repository_files": {
+      "config/model-routing.lock.json": "{\n  \"agent_criteria\": {\n    \"codex-final-reviewer\": {\n      \"category\": \"final_review\"\n    }\n  },\n  \"claude\": {\n    \"agents\": {\n      \"codex-final-reviewer\": {\n        \"effort\": null,\n        \"model\": \"sonnet\"\n      },\n      \"cwe-auditor\": {\n        \"effort\": null,\n        \"model\": \"sonnet\"\n      },\n      \"dep-auditor\": {\n        \"effort\": null,\n        \"model\": \"sonnet\"\n      },\n      \"executor-agent\": {\n        \"effort\": null,\n        \"model\": \"sonnet\"\n      },\n      \"fleet-doc-steward\": {\n        \"effort\": null,\n        \"model\": \"sonnet\"\n      },\n      \"main-orchestrator\": {\n        \"effort\": null,\n        \"model\": \"opus\"\n      },\n      \"ontology-validator\": {\n        \"effort\": null,\n        \"model\": \"sonnet\"\n      },\n      \"pipeline-validator\": {\n        \"effort\": null,\n        \"model\": \"sonnet\"\n      },\n      \"quality-agent\": {\n        \"effort\": null,\n        \"model\": \"sonnet\"\n      },\n      \"runtime-contract-reviewer\": {\n        \"effort\": null,\n        \"model\": \"sonnet\"\n      },\n      \"template-sync-validator\": {\n        \"effort\": null,\n        \"model\": \"sonnet\"\n      },\n      \"ui-reviewer\": {\n        \"effort\": null,\n        \"model\": \"sonnet\"\n      }\n    },\n    \"tiers\": {\n      \"frontier\": \"opus\",\n      \"standard\": \"sonnet\"\n    }\n  },\n  \"main\": {\n    \"effort\": \"medium\",\n    \"model\": \"gpt-6.1-sol\"\n  },\n  \"policy\": {\n    \"_generated_\": \"Generated from Mir Harness config/model-routing/central.toml; do not edit\",\n    \"codex_main\": {\n      \"model\": \"gpt-6.1-sol\",\n      \"reasoning_effort\": \"medium\",\n      \"tier\": \"main\"\n    },\n    \"custom_agent_pins\": {\n      \"allowed\": []\n    },\n    \"delegation\": {\n      \"_comment_\": \"Provider-neutral Main/Sub contract. `mode` is the only switch a reader changes; no code hardcodes a sub-agent backend. Consumed by the Main agent of either CLI and projected into the global instruction files.\",\n      \"acceptance_evidence\": {\n        \"rejected\": [\n          \"self-report narrative\",\n          \"status JSON unbacked by artifacts\"\n        ],\n        \"required\": [\n          \"filesystem state\",\n          \"git diff\",\n          \"test command output\"\n        ],\n        \"rule\": \"The Main reads or re-runs the evidence itself. A sub agent's own claim of success is never acceptance.\"\n      },\n      \"default_backend\": \"codex\",\n      \"main_agent\": {\n        \"avoids\": [\n          \"reading whole files when a delegated summary plus verification result suffices\",\n          \"running the execution loop itself when a sub agent can\"\n        ],\n        \"owns\": [\n          \"user intent\",\n          \"design\",\n          \"orchestration\",\n          \"context budget\",\n          \"delegation\",\n          \"result adjudication\"\n        ]\n      },\n      \"mode\": \"force_codex\",\n      \"modes\": {\n        \"force_codex\": \"Every delegated execution step goes to Codex. A different backend requires an explicit user override recorded in the session.\",\n        \"per_project\": \"The project declaration decides. A project without one falls back to default_backend.\",\n        \"unrestricted\": \"Any available sub-agent backend may be used; the Main picks per task.\",\n        \"user_command_priority\": \"An explicit user instruction in the session decides; absent one, the project declaration decides; absent that, default_backend.\"\n      },\n      \"project_declaration\": {\n        \"fields\": [\n          \"delegated_execution_contract\",\n          \"delegation_required_tasks\",\n          \"delegation_recommended_tasks\",\n          \"main_direct_tasks\"\n        ],\n        \"path\": \".mir/repo-profile.toml\",\n        \"section\": \"execution\"\n      },\n      \"resolution_order\": [\n        \"user_command\",\n        \"project_declaration\",\n        \"default_backend\"\n      ],\n      \"sub_agent\": {\n        \"owns\": [\n          \"file edits\",\n          \"tests\",\n          \"verification\",\n          \"review\",\n          \"iteration\"\n        ]\n      }\n    },\n    \"harness_source\": \"config/model-routing/central.toml\",\n    \"model_tiers\": {\n      \"economy\": \"gpt-6-luna\",\n      \"frontier\": \"gpt-6.1-sol\",\n      \"main\": \"gpt-6.1-sol\",\n      \"standard\": \"gpt-6.1-sol\"\n    },\n    \"native_spawn\": {\n      \"allow_recursive_delegation\": true,\n      \"enabled\": true,\n      \"enforced_after\": \"2026-08-24T11:48:17Z\",\n      \"fork_turns_default\": \"none\",\n      \"fork_turns_forbidden\": [\n        \"all\"\n      ],\n      \"fork_turns_max_recent\": 4,\n      \"max_concurrent_threads_per_session\": 8,\n      \"max_depth\": 2,\n      \"require_explicit_model\": true,\n      \"require_explicit_reasoning_effort\": true\n    },\n    \"routing\": {\n      \"by_category\": {\n        \"architecture\": {\n          \"model\": \"gpt-6.1-sol\",\n          \"reasoning_effort\": \"xhigh\",\n          \"tier\": \"frontier\"\n        },\n        \"complex_logic\": {\n          \"model\": \"gpt-6.1-sol\",\n          \"reasoning_effort\": \"high\",\n          \"tier\": \"frontier\"\n        },\n        \"edge\": {\n          \"model\": \"gpt-6.1-sol\",\n          \"reasoning_effort\": \"high\",\n          \"tier\": \"standard\"\n        },\n        \"exploration\": {\n          \"model\": \"gpt-6.1-sol\",\n          \"reasoning_effort\": \"medium\",\n          \"tier\": \"standard\"\n        },\n        \"final_review\": {\n          \"model\": \"gpt-6.1-sol\",\n          \"reasoning_effort\": \"xhigh\",\n          \"tier\": \"frontier\"\n        },\n        \"implementation\": {\n          \"model\": \"gpt-6.1-sol\",\n          \"reasoning_effort\": \"medium\",\n          \"tier\": \"standard\"\n        },\n        \"narrow\": {\n          \"model\": \"gpt-6-luna\",\n          \"reasoning_effort\": \"high\",\n          \"tier\": \"economy\"\n        },\n        \"security\": {\n          \"model\": \"gpt-6.1-sol\",\n          \"reasoning_effort\": \"xhigh\",\n          \"tier\": \"frontier\"\n        },\n        \"unit\": {\n          \"model\": \"gpt-6-luna\",\n          \"reasoning_effort\": \"high\",\n          \"tier\": \"economy\"\n        }\n      },\n      \"default\": {\n        \"model\": \"gpt-6.1-sol\",\n        \"reasoning_effort\": \"medium\",\n        \"tier\": \"standard\"\n      },\n      \"effort_rank\": [\n        \"ultra\",\n        \"max\",\n        \"xhigh\",\n        \"high\",\n        \"medium\",\n        \"low\"\n      ],\n      \"model_rank\": [\n        \"gpt-6.1-sol\",\n        \"gpt-6-luna\"\n      ]\n    },\n    \"schema_version\": 1\n  },\n  \"routes\": {},\n  \"schema\": \"mir-model-routing-lock/v1\",\n  \"source\": \"config/model-routing/repos/mir-yoke.toml\",\n  \"source_repository\": \"mir-harness\",\n  \"source_sha256\": \"74d4018756fcf6d8b839643fc3243582baa51a62d4fd03ad45e8364fd86a8362\"\n}\n",
+      "config/sub-agent-policy.json": "{\n  \"_comment_\": \"No repository mode or routes: the Harness-deployed config/model-routing.lock.json policy (delegation.mode and routing) decides; the Harness-rendered host policy is only a fallback when that lock is absent (ADR-88, owner decision 1-A). Modes: force_codex preserves Codex-first behavior; force_claude forces Claude; select/obey_user honor an explicit requested backend; unrestricted honors any valid requested backend; per_project enables project-specific overrides. Routing/monitoring null or empty values preserve current behavior.\",\n  \"per_project\": {},\n  \"routing\": {\n    \"default\": {\n      \"model\": null,\n      \"reasoning_effort\": null\n    },\n    \"by_category\": {}\n  },\n  \"monitoring\": {\n    \"stall_timeout_seconds\": null\n  }\n}\n"
+    },
+    "reference_sha256": {
+      ".claude/hooks/sub-agent-policy-gate.sh": "e73f889141bdd6453d6580328fb9dedc0b4e7dceba0233d407e58c5aba28bc28",
+      "src/mir/cli/policy.py": "4ad572becdf2104b2354775b331f0e850a97a7faa306a88e3392867fce24b8bb",
+      "tools/mir_executor/policy.py": "6e0557550652cf4da75a156565da9841269c40ac9e576e7c65244088d96662b9",
+      "config/model-routing.lock.json": "2211b125f2ade567c5b08e712e8b6052adc901739ce6b2a41b804b6e051fce65",
+      "native/handoff-packet/tests/fixtures/delegation-gate.json": "2535dbc40d9b58e7e22c31cdd4e1f88945a8b8629e25452ff5da3baa9178ba57",
+      "tests/test_delegation_gate_native_parity.py": "afcddc11142eb5407a1981ead71318b96ab4347924402500e3f535d47a358a34",
+      "tests/test_policy_resolve_native_parity.py": "94f30aadbecc0c26c95402a2cf5df53504259111cb035d4728ffbf5f0be1ab28"
+    },
+    "normalization": "Only the pytest temporary root and repository root are replaced by ${TMP} and ${REPO}. Delegation NUL interpreter noise is retained separately.",
+    "pytest_exit": 0
+  },
+  "cases": {
+    "deny": {
+      "input": {
+        "name": "deny",
+        "expected_hint": "python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background",
+        "code": 2,
+        "mode": "force_codex",
+        "payload": {
+          "tool_name": "Agent",
+          "tool_input": {
+            "subagent_type": "reviewer"
+          }
+        }
+      },
+      "stdin": "{\"tool_name\": \"Agent\", \"tool_input\": {\"subagent_type\": \"reviewer\"}}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n",
+        "exit": 2
+      },
+      "raw_stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n"
+    },
+    "rescue": {
+      "input": {
+        "name": "rescue",
+        "code": 0,
+        "mode": "force_codex",
+        "payload": {
+          "tool_name": "Agent",
+          "tool_input": {
+            "subagent_type": "codex:codex-rescue"
+          }
+        }
+      },
+      "stdin": "{\"tool_name\": \"Agent\", \"tool_input\": {\"subagent_type\": \"codex:codex-rescue\"}}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "",
+        "exit": 0
+      },
+      "raw_stderr": ""
+    },
+    "Task": {
+      "input": {
+        "name": "Task",
+        "code": 2,
+        "mode": "force_codex",
+        "payload": {
+          "tool_name": "Task",
+          "tool_input": {}
+        }
+      },
+      "stdin": "{\"tool_name\": \"Task\", \"tool_input\": {}}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n",
+        "exit": 2
+      },
+      "raw_stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n"
+    },
+    "spawn_agent": {
+      "input": {
+        "name": "spawn_agent",
+        "code": 0,
+        "mode": "force_codex",
+        "payload": {
+          "tool_name": "spawn_agent",
+          "tool_input": {}
+        }
+      },
+      "stdin": "{\"tool_name\": \"spawn_agent\", \"tool_input\": {}}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "",
+        "exit": 0
+      },
+      "raw_stderr": ""
+    },
+    "force_claude": {
+      "input": {
+        "name": "force_claude",
+        "code": 0,
+        "mode": "force_claude",
+        "payload": {
+          "tool_name": "Agent",
+          "tool_input": {
+            "subagent_type": "reviewer"
+          }
+        }
+      },
+      "stdin": "{\"tool_name\": \"Agent\", \"tool_input\": {\"subagent_type\": \"reviewer\"}}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "",
+        "exit": 0
+      },
+      "raw_stderr": ""
+    },
+    "select": {
+      "input": {
+        "name": "select",
+        "code": 0,
+        "mode": "select",
+        "payload": {
+          "tool_name": "Agent",
+          "tool_input": {
+            "subagent_type": "reviewer"
+          }
+        }
+      },
+      "stdin": "{\"tool_name\": \"Agent\", \"tool_input\": {\"subagent_type\": \"reviewer\"}}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "",
+        "exit": 0
+      },
+      "raw_stderr": ""
+    },
+    "per_project": {
+      "input": {
+        "name": "per_project",
+        "code": 0,
+        "mode": "per_project",
+        "payload": {
+          "tool_name": "Agent",
+          "tool_input": {
+            "subagent_type": "reviewer"
+          }
+        }
+      },
+      "stdin": "{\"tool_name\": \"Agent\", \"tool_input\": {\"subagent_type\": \"reviewer\"}}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "",
+        "exit": 0
+      },
+      "raw_stderr": ""
+    },
+    "unrestricted": {
+      "input": {
+        "name": "unrestricted",
+        "code": 0,
+        "mode": "unrestricted",
+        "payload": {
+          "tool_name": "Agent",
+          "tool_input": {
+            "subagent_type": "reviewer"
+          }
+        }
+      },
+      "stdin": "{\"tool_name\": \"Agent\", \"tool_input\": {\"subagent_type\": \"reviewer\"}}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "",
+        "exit": 0
+      },
+      "raw_stderr": ""
+    },
+    "user_command_priority": {
+      "input": {
+        "name": "user_command_priority",
+        "code": 0,
+        "mode": "user_command_priority",
+        "payload": {
+          "tool_name": "Agent",
+          "tool_input": {
+            "subagent_type": "reviewer"
+          }
+        }
+      },
+      "stdin": "{\"tool_name\": \"Agent\", \"tool_input\": {\"subagent_type\": \"reviewer\"}}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "",
+        "exit": 0
+      },
+      "raw_stderr": ""
+    },
+    "obey_user": {
+      "input": {
+        "name": "obey_user",
+        "code": 0,
+        "mode": "obey_user",
+        "payload": {
+          "tool_name": "Agent",
+          "tool_input": {
+            "subagent_type": "reviewer"
+          }
+        }
+      },
+      "stdin": "{\"tool_name\": \"Agent\", \"tool_input\": {\"subagent_type\": \"reviewer\"}}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "",
+        "exit": 0
+      },
+      "raw_stderr": ""
+    },
+    "missing": {
+      "input": {
+        "name": "missing",
+        "code": 2,
+        "mode": null,
+        "payload": {
+          "tool_name": "Agent",
+          "tool_input": {
+            "subagent_type": "reviewer"
+          }
+        }
+      },
+      "stdin": "{\"tool_name\": \"Agent\", \"tool_input\": {\"subagent_type\": \"reviewer\"}}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n",
+        "exit": 2
+      },
+      "raw_stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n"
+    },
+    "unknown": {
+      "input": {
+        "name": "unknown",
+        "code": 2,
+        "mode": "mystery",
+        "payload": {
+          "tool_name": "Agent",
+          "tool_input": {
+            "subagent_type": "reviewer"
+          }
+        }
+      },
+      "stdin": "{\"tool_name\": \"Agent\", \"tool_input\": {\"subagent_type\": \"reviewer\"}}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n",
+        "exit": 2
+      },
+      "raw_stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n"
+    },
+    "local_nested": {
+      "input": {
+        "name": "local_nested",
+        "code": 2,
+        "mode": "force_codex",
+        "payload": {
+          "tool_name": "Agent",
+          "tool_input": {
+            "subagent_type": "reviewer"
+          }
+        },
+        "source": "local"
+      },
+      "stdin": "{\"tool_name\": \"Agent\", \"tool_input\": {\"subagent_type\": \"reviewer\"}}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n",
+        "exit": 2
+      },
+      "raw_stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n"
+    },
+    "local_flat": {
+      "input": {
+        "name": "local_flat",
+        "code": 2,
+        "mode": "force_codex",
+        "payload": {
+          "tool_name": "Agent",
+          "tool_input": {
+            "subagent_type": "reviewer"
+          }
+        },
+        "source": "flat"
+      },
+      "stdin": "{\"tool_name\": \"Agent\", \"tool_input\": {\"subagent_type\": \"reviewer\"}}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n",
+        "exit": 2
+      },
+      "raw_stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n"
+    },
+    "lock_precedence": {
+      "input": {
+        "name": "lock_precedence",
+        "code": 2,
+        "mode": "force_codex",
+        "payload": {
+          "tool_name": "Agent",
+          "tool_input": {
+            "subagent_type": "reviewer"
+          }
+        },
+        "local_mode": "unrestricted"
+      },
+      "stdin": "{\"tool_name\": \"Agent\", \"tool_input\": {\"subagent_type\": \"reviewer\"}}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n",
+        "exit": 2
+      },
+      "raw_stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n"
+    },
+    "fallback": {
+      "input": {
+        "name": "fallback",
+        "code": 2,
+        "mode": null,
+        "payload": {
+          "tool_name": "Agent",
+          "tool_input": {
+            "subagent_type": "reviewer"
+          }
+        },
+        "local_mode": "force_codex"
+      },
+      "stdin": "{\"tool_name\": \"Agent\", \"tool_input\": {\"subagent_type\": \"reviewer\"}}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n",
+        "exit": 2
+      },
+      "raw_stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n"
+    },
+    "native": {
+      "input": {
+        "name": "native",
+        "code": 0,
+        "mode": "force_codex",
+        "payload": {
+          "tool_name": "spawn_agent",
+          "tool_input": {
+            "task_name": "test",
+            "message": "work"
+          }
+        },
+        "main": true
+      },
+      "stdin": "{\"tool_name\": \"spawn_agent\", \"tool_input\": {\"task_name\": \"test\", \"message\": \"work\"}}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "1",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "",
+        "exit": 0
+      },
+      "raw_stderr": ""
+    },
+    "native_bad_17": {
+      "input": {
+        "name": "native_bad_17",
+        "code": 0,
+        "mode": "force_codex",
+        "payload": {
+          "tool_name": "spawn_agent",
+          "tool_input": {}
+        },
+        "main": true
+      },
+      "stdin": "{\"tool_name\": \"spawn_agent\", \"tool_input\": {}}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "1",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "",
+        "exit": 0
+      },
+      "raw_stderr": ""
+    },
+    "native_bad_18": {
+      "input": {
+        "name": "native_bad_18",
+        "code": 0,
+        "mode": "force_codex",
+        "payload": {
+          "tool_name": "spawn_agent",
+          "tool_input": {
+            "task_name": "test"
+          }
+        },
+        "main": true
+      },
+      "stdin": "{\"tool_name\": \"spawn_agent\", \"tool_input\": {\"task_name\": \"test\"}}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "1",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "",
+        "exit": 0
+      },
+      "raw_stderr": ""
+    },
+    "native_bad_19": {
+      "input": {
+        "name": "native_bad_19",
+        "code": 0,
+        "mode": "force_codex",
+        "payload": {
+          "tool_name": "spawn_agent",
+          "tool_input": {
+            "task_name": "test",
+            "message": ""
+          }
+        },
+        "main": true
+      },
+      "stdin": "{\"tool_name\": \"spawn_agent\", \"tool_input\": {\"task_name\": \"test\", \"message\": \"\"}}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "1",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "",
+        "exit": 0
+      },
+      "raw_stderr": ""
+    },
+    "native_bad_20": {
+      "input": {
+        "name": "native_bad_20",
+        "code": 0,
+        "mode": "force_codex",
+        "payload": {
+          "tool_name": "spawn_agent",
+          "tool_input": {
+            "task_name": 1,
+            "message": "work"
+          }
+        },
+        "main": true
+      },
+      "stdin": "{\"tool_name\": \"spawn_agent\", \"tool_input\": {\"task_name\": 1, \"message\": \"work\"}}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "1",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "",
+        "exit": 0
+      },
+      "raw_stderr": ""
+    },
+    "other": {
+      "input": {
+        "name": "other",
+        "code": 0,
+        "mode": "force_codex",
+        "payload": {
+          "tool_name": "Read"
+        }
+      },
+      "stdin": "{\"tool_name\": \"Read\"}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "",
+        "exit": 0
+      },
+      "raw_stderr": ""
+    },
+    "other_missing": {
+      "input": {
+        "name": "other_missing",
+        "code": 0,
+        "mode": null,
+        "payload": {
+          "tool_name": "Read"
+        }
+      },
+      "stdin": "{\"tool_name\": \"Read\"}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "",
+        "exit": 0
+      },
+      "raw_stderr": ""
+    },
+    "malformed_23": {
+      "input": {
+        "name": "malformed_23",
+        "code": 2,
+        "mode": "force_codex",
+        "payload": {},
+        "malformed": true
+      },
+      "stdin": "{}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "[PreToolUse BLOCK] Malformed PreToolUse payload for filter: .tool_name\n",
+        "exit": 2
+      },
+      "raw_stderr": "[PreToolUse BLOCK] Malformed PreToolUse payload for filter: .tool_name\n"
+    },
+    "malformed_24": {
+      "input": {
+        "name": "malformed_24",
+        "code": 2,
+        "mode": "force_codex",
+        "payload": [],
+        "malformed": true
+      },
+      "stdin": "[]",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "[PreToolUse BLOCK] Malformed PreToolUse payload for filter: .tool_name\n",
+        "exit": 2
+      },
+      "raw_stderr": "[PreToolUse BLOCK] Malformed PreToolUse payload for filter: .tool_name\n"
+    },
+    "malformed_25": {
+      "input": {
+        "name": "malformed_25",
+        "code": 0,
+        "mode": "force_codex",
+        "payload": {
+          "tool_name": 3
+        }
+      },
+      "stdin": "{\"tool_name\": 3}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "",
+        "exit": 0
+      },
+      "raw_stderr": ""
+    },
+    "malformed_26": {
+      "input": {
+        "name": "malformed_26",
+        "code": 0,
+        "mode": "force_codex",
+        "payload": {
+          "tool_name": ""
+        }
+      },
+      "stdin": "{\"tool_name\": \"\"}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "",
+        "exit": 0
+      },
+      "raw_stderr": ""
+    },
+    "malformed_27": {
+      "input": {
+        "name": "malformed_27",
+        "code": 2,
+        "mode": "force_codex",
+        "payload": {
+          "tool_name": "Agent\n"
+        }
+      },
+      "stdin": "{\"tool_name\": \"Agent\\n\"}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n",
+        "exit": 2
+      },
+      "raw_stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n"
+    },
+    "invalid_json": {
+      "input": {
+        "name": "invalid_json",
+        "code": 2,
+        "mode": "force_codex",
+        "payload": {
+          "tool_name": "Agent",
+          "tool_input": {
+            "subagent_type": "reviewer"
+          }
+        },
+        "raw": "{",
+        "malformed": true
+      },
+      "stdin": "{",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "[PreToolUse BLOCK] Malformed PreToolUse payload for filter: .tool_name\n",
+        "exit": 2
+      },
+      "raw_stderr": "[PreToolUse BLOCK] Malformed PreToolUse payload for filter: .tool_name\n"
+    },
+    "invalid_policy": {
+      "input": {
+        "name": "invalid_policy",
+        "code": 2,
+        "mode": null,
+        "payload": {
+          "tool_name": "Agent",
+          "tool_input": {
+            "subagent_type": "reviewer"
+          }
+        },
+        "raw_policy": "{"
+      },
+      "stdin": "{\"tool_name\": \"Agent\", \"tool_input\": {\"subagent_type\": \"reviewer\"}}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n",
+        "exit": 2
+      },
+      "raw_stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n"
+    },
+    "agent_control": {
+      "input": {
+        "code": 2,
+        "mode": "force_codex",
+        "name": "agent_control",
+        "payload": {
+          "tool_name": "Agent",
+          "tool_input": {
+            "subagent_type": "bad\n"
+          }
+        }
+      },
+      "stdin": "{\"tool_name\": \"Agent\", \"tool_input\": {\"subagent_type\": \"bad\\n\"}}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n",
+        "exit": 2
+      },
+      "raw_stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n"
+    },
+    "null_payload": {
+      "input": {
+        "code": 2,
+        "mode": "force_codex",
+        "name": "null_payload",
+        "payload": null,
+        "malformed": true
+      },
+      "stdin": "null",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "[PreToolUse BLOCK] Malformed PreToolUse payload for filter: .tool_name\n",
+        "exit": 2
+      },
+      "raw_stderr": "[PreToolUse BLOCK] Malformed PreToolUse payload for filter: .tool_name\n"
+    },
+    "wrong_input": {
+      "input": {
+        "code": 2,
+        "mode": "force_codex",
+        "name": "wrong_input",
+        "payload": {
+          "tool_name": "Agent",
+          "tool_input": []
+        }
+      },
+      "stdin": "{\"tool_name\": \"Agent\", \"tool_input\": []}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n",
+        "exit": 2
+      },
+      "raw_stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n"
+    },
+    "unknown_lock_wins": {
+      "input": {
+        "code": 2,
+        "mode": "unknown",
+        "name": "unknown_lock_wins",
+        "local_mode": "force_codex",
+        "payload": {
+          "tool_name": "Agent"
+        }
+      },
+      "stdin": "{\"tool_name\": \"Agent\"}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n",
+        "exit": 2
+      },
+      "raw_stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n"
+    },
+    "r3_escape": {
+      "input": {
+        "name": "r3_escape",
+        "code": 0,
+        "mode": "force_codex",
+        "payload": {
+          "tool_name": "Agent",
+          "tool_input": {}
+        },
+        "r3": "1",
+        "advisory": true
+      },
+      "stdin": "{\"tool_name\": \"Agent\", \"tool_input\": {}}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "1"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "[mir ADVISORY] force_codex Agent/Task escape via MIR_R3_FALLBACK=1\n",
+        "exit": 0
+      },
+      "raw_stderr": "[mir ADVISORY] force_codex Agent/Task escape via MIR_R3_FALLBACK=1\n"
+    },
+    "r3_not_one": {
+      "input": {
+        "name": "r3_not_one",
+        "code": 2,
+        "mode": "force_codex",
+        "payload": {
+          "tool_name": "Agent",
+          "tool_input": {}
+        },
+        "r3": "true"
+      },
+      "stdin": "{\"tool_name\": \"Agent\", \"tool_input\": {}}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "true"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n",
+        "exit": 2
+      },
+      "raw_stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n"
+    },
+    "rescue_before_escape": {
+      "input": {
+        "name": "rescue_before_escape",
+        "code": 0,
+        "mode": "force_codex",
+        "payload": {
+          "tool_name": "Agent",
+          "tool_input": {
+            "subagent_type": "codex:codex-rescue"
+          }
+        },
+        "r3": "1"
+      },
+      "stdin": "{\"tool_name\": \"Agent\", \"tool_input\": {\"subagent_type\": \"codex:codex-rescue\"}}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "1"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "",
+        "exit": 0
+      },
+      "raw_stderr": ""
+    },
+    "main_ignored": {
+      "input": {
+        "name": "main_ignored",
+        "code": 2,
+        "mode": "force_codex",
+        "payload": {
+          "tool_name": "Agent",
+          "tool_input": {}
+        },
+        "main": true
+      },
+      "stdin": "{\"tool_name\": \"Agent\", \"tool_input\": {}}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "1",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n",
+        "exit": 2
+      },
+      "raw_stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n"
+    },
+    "overlay_allow": {
+      "input": {
+        "name": "overlay_allow",
+        "code": 0,
+        "mode": "force_codex",
+        "payload": {
+          "tool_name": "Agent",
+          "tool_input": {}
+        },
+        "source": "local",
+        "overlay": {
+          "mode": "obey_user"
+        }
+      },
+      "stdin": "{\"tool_name\": \"Agent\", \"tool_input\": {}}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "",
+        "exit": 0
+      },
+      "raw_stderr": ""
+    },
+    "overlay_block": {
+      "input": {
+        "name": "overlay_block",
+        "code": 2,
+        "mode": "force_codex",
+        "payload": {
+          "tool_name": "Agent",
+          "tool_input": {}
+        },
+        "source": "local",
+        "local_mode": "obey_user",
+        "overlay": {
+          "mode": "force_codex"
+        }
+      },
+      "stdin": "{\"tool_name\": \"Agent\", \"tool_input\": {}}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n",
+        "exit": 2
+      },
+      "raw_stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n"
+    },
+    "overlay_invalid": {
+      "input": {
+        "name": "overlay_invalid",
+        "code": 2,
+        "mode": "force_codex",
+        "payload": {
+          "tool_name": "Agent",
+          "tool_input": {}
+        },
+        "source": "local",
+        "local_mode": "obey_user",
+        "raw_overlay": "{"
+      },
+      "stdin": "{\"tool_name\": \"Agent\", \"tool_input\": {}}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n",
+        "exit": 2
+      },
+      "raw_stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n"
+    },
+    "overlay_unknown": {
+      "input": {
+        "name": "overlay_unknown",
+        "code": 2,
+        "mode": "force_codex",
+        "payload": {
+          "tool_name": "Agent",
+          "tool_input": {}
+        },
+        "source": "local",
+        "overlay": {
+          "mode": "unknown"
+        }
+      },
+      "stdin": "{\"tool_name\": \"Agent\", \"tool_input\": {}}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n",
+        "exit": 2
+      },
+      "raw_stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n"
+    },
+    "overlay_missing": {
+      "input": {
+        "name": "overlay_missing",
+        "code": 2,
+        "mode": "force_codex",
+        "payload": {
+          "tool_name": "Agent",
+          "tool_input": {}
+        },
+        "source": "local",
+        "missing_overlay": true
+      },
+      "stdin": "{\"tool_name\": \"Agent\", \"tool_input\": {}}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n",
+        "exit": 2
+      },
+      "raw_stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n"
+    },
+    "overlay_no_base": {
+      "input": {
+        "name": "overlay_no_base",
+        "code": 2,
+        "mode": "force_codex",
+        "payload": {
+          "tool_name": "Agent",
+          "tool_input": {}
+        },
+        "raw_policy": null,
+        "no_policy": true,
+        "overlay": {
+          "mode": "obey_user"
+        }
+      },
+      "stdin": "{\"tool_name\": \"Agent\", \"tool_input\": {}}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n",
+        "exit": 2
+      },
+      "raw_stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n"
+    },
+    "bad_lock_exclusive": {
+      "input": {
+        "name": "bad_lock_exclusive",
+        "code": 2,
+        "mode": "force_codex",
+        "payload": {
+          "tool_name": "Agent",
+          "tool_input": {}
+        },
+        "raw_policy": "{",
+        "local_mode": "obey_user",
+        "overlay": {
+          "mode": "obey_user"
+        }
+      },
+      "stdin": "{\"tool_name\": \"Agent\", \"tool_input\": {}}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n",
+        "exit": 2
+      },
+      "raw_stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n"
+    },
+    "lock_ignores_overlay": {
+      "input": {
+        "name": "lock_ignores_overlay",
+        "code": 2,
+        "mode": "force_codex",
+        "payload": {
+          "tool_name": "Agent",
+          "tool_input": {}
+        },
+        "overlay": {
+          "mode": "obey_user"
+        }
+      },
+      "stdin": "{\"tool_name\": \"Agent\", \"tool_input\": {}}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n",
+        "exit": 2
+      },
+      "raw_stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n"
+    },
+    "lock_allow_ignores_overlay": {
+      "input": {
+        "name": "lock_allow_ignores_overlay",
+        "code": 0,
+        "mode": "force_codex",
+        "payload": {
+          "tool_name": "Agent",
+          "tool_input": {}
+        },
+        "raw_policy": "{\"mode\":\"obey_user\"}",
+        "overlay": {
+          "mode": "force_codex"
+        }
+      },
+      "stdin": "{\"tool_name\": \"Agent\", \"tool_input\": {}}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "",
+        "exit": 0
+      },
+      "raw_stderr": ""
+    },
+    "lock_flat": {
+      "input": {
+        "name": "lock_flat",
+        "code": 0,
+        "mode": "force_codex",
+        "payload": {
+          "tool_name": "Agent",
+          "tool_input": {}
+        },
+        "raw_policy": "{\"mode\":\"select\"}"
+      },
+      "stdin": "{\"tool_name\": \"Agent\", \"tool_input\": {}}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "",
+        "exit": 0
+      },
+      "raw_stderr": ""
+    },
+    "lock_nested_without_policy": {
+      "input": {
+        "name": "lock_nested_without_policy",
+        "code": 0,
+        "mode": "force_codex",
+        "payload": {
+          "tool_name": "Agent",
+          "tool_input": {}
+        },
+        "raw_policy": "{\"delegation\":{\"mode\":\"select\"}}"
+      },
+      "stdin": "{\"tool_name\": \"Agent\", \"tool_input\": {}}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "",
+        "exit": 0
+      },
+      "raw_stderr": ""
+    },
+    "null_policy": {
+      "input": {
+        "name": "null_policy",
+        "code": 0,
+        "mode": "force_codex",
+        "payload": {
+          "tool_name": "Agent",
+          "tool_input": {}
+        },
+        "raw_policy": "{\"policy\":null,\"mode\":\"select\"}"
+      },
+      "stdin": "{\"tool_name\": \"Agent\", \"tool_input\": {}}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "",
+        "exit": 0
+      },
+      "raw_stderr": ""
+    },
+    "false_mode_fallback": {
+      "input": {
+        "name": "false_mode_fallback",
+        "code": 0,
+        "mode": "force_codex",
+        "payload": {
+          "tool_name": "Agent",
+          "tool_input": {}
+        },
+        "raw_policy": "{\"delegation\":{\"mode\":false},\"mode\":\"select\"}"
+      },
+      "stdin": "{\"tool_name\": \"Agent\", \"tool_input\": {}}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "",
+        "exit": 0
+      },
+      "raw_stderr": ""
+    },
+    "empty_mode": {
+      "input": {
+        "name": "empty_mode",
+        "code": 2,
+        "mode": "force_codex",
+        "payload": {
+          "tool_name": "Agent",
+          "tool_input": {}
+        },
+        "raw_policy": "{\"mode\":\"\"}"
+      },
+      "stdin": "{\"tool_name\": \"Agent\", \"tool_input\": {}}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n",
+        "exit": 2
+      },
+      "raw_stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n"
+    },
+    "nonstring_mode": {
+      "input": {
+        "name": "nonstring_mode",
+        "code": 2,
+        "mode": "force_codex",
+        "payload": {
+          "tool_name": "Agent",
+          "tool_input": {}
+        },
+        "raw_policy": "{\"mode\":3}"
+      },
+      "stdin": "{\"tool_name\": \"Agent\", \"tool_input\": {}}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n",
+        "exit": 2
+      },
+      "raw_stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n"
+    },
+    "unreadable_policy": {
+      "input": {
+        "name": "unreadable_policy",
+        "code": 2,
+        "mode": "force_codex",
+        "payload": {
+          "tool_name": "Agent",
+          "tool_input": {}
+        },
+        "broken_policy": true
+      },
+      "stdin": "{\"tool_name\": \"Agent\", \"tool_input\": {}}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n",
+        "exit": 2
+      },
+      "raw_stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n"
+    },
+    "directory_lock": {
+      "input": {
+        "name": "directory_lock",
+        "code": 0,
+        "mode": "force_codex",
+        "payload": {
+          "tool_name": "Agent",
+          "tool_input": {}
+        },
+        "directory_lock": true,
+        "local_mode": "select"
+      },
+      "stdin": "{\"tool_name\": \"Agent\", \"tool_input\": {}}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "",
+        "exit": 0
+      },
+      "raw_stderr": ""
+    },
+    "false_tool": {
+      "input": {
+        "name": "false_tool",
+        "code": 2,
+        "mode": "force_codex",
+        "payload": {
+          "tool_name": "Agent",
+          "tool_input": {}
+        },
+        "raw": "{\"tool_name\":false}",
+        "malformed": true
+      },
+      "stdin": "{\"tool_name\":false}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "[PreToolUse BLOCK] Malformed PreToolUse payload for filter: .tool_name\n",
+        "exit": 2
+      },
+      "raw_stderr": "[PreToolUse BLOCK] Malformed PreToolUse payload for filter: .tool_name\n"
+    },
+    "null_tool": {
+      "input": {
+        "name": "null_tool",
+        "code": 2,
+        "mode": "force_codex",
+        "payload": {
+          "tool_name": "Agent",
+          "tool_input": {}
+        },
+        "raw": "{\"tool_name\":null}",
+        "malformed": true
+      },
+      "stdin": "{\"tool_name\":null}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "[PreToolUse BLOCK] Malformed PreToolUse payload for filter: .tool_name\n",
+        "exit": 2
+      },
+      "raw_stderr": "[PreToolUse BLOCK] Malformed PreToolUse payload for filter: .tool_name\n"
+    },
+    "true_tool": {
+      "input": {
+        "name": "true_tool",
+        "code": 0,
+        "mode": "force_codex",
+        "payload": {
+          "tool_name": "Agent",
+          "tool_input": {}
+        },
+        "raw": "{\"tool_name\":true}"
+      },
+      "stdin": "{\"tool_name\":true}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "",
+        "exit": 0
+      },
+      "raw_stderr": ""
+    },
+    "array_tool": {
+      "input": {
+        "name": "array_tool",
+        "code": 0,
+        "mode": "force_codex",
+        "payload": {
+          "tool_name": "Agent",
+          "tool_input": {}
+        },
+        "raw": "{\"tool_name\":[]}"
+      },
+      "stdin": "{\"tool_name\":[]}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "",
+        "exit": 0
+      },
+      "raw_stderr": ""
+    },
+    "scalar_payload": {
+      "input": {
+        "name": "scalar_payload",
+        "code": 2,
+        "mode": "force_codex",
+        "payload": {
+          "tool_name": "Agent",
+          "tool_input": {}
+        },
+        "raw": "3",
+        "malformed": true
+      },
+      "stdin": "3",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "[PreToolUse BLOCK] Malformed PreToolUse payload for filter: .tool_name\n",
+        "exit": 2
+      },
+      "raw_stderr": "[PreToolUse BLOCK] Malformed PreToolUse payload for filter: .tool_name\n"
+    },
+    "trailing_garbage": {
+      "input": {
+        "name": "trailing_garbage",
+        "code": 2,
+        "mode": "force_codex",
+        "payload": {
+          "tool_name": "Agent",
+          "tool_input": {}
+        },
+        "raw": "{\"tool_name\":\"Agent\"}x",
+        "malformed": true
+      },
+      "stdin": "{\"tool_name\":\"Agent\"}x",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "[PreToolUse BLOCK] Malformed PreToolUse payload for filter: .tool_name\n",
+        "exit": 2
+      },
+      "raw_stderr": "[PreToolUse BLOCK] Malformed PreToolUse payload for filter: .tool_name\n"
+    },
+    "empty_payload": {
+      "input": {
+        "name": "empty_payload",
+        "code": 2,
+        "mode": "force_codex",
+        "payload": {
+          "tool_name": "Agent",
+          "tool_input": {}
+        },
+        "raw": "",
+        "malformed": true
+      },
+      "stdin": "",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "[PreToolUse BLOCK] Malformed PreToolUse payload for filter: .tool_name\n",
+        "exit": 2
+      },
+      "raw_stderr": "[PreToolUse BLOCK] Malformed PreToolUse payload for filter: .tool_name\n"
+    },
+    "multi_payload": {
+      "input": {
+        "name": "multi_payload",
+        "code": 0,
+        "mode": "force_codex",
+        "payload": {
+          "tool_name": "Agent",
+          "tool_input": {}
+        },
+        "raw": "{\"tool_name\":\"Agent\"}\n{\"tool_name\":\"Task\"}"
+      },
+      "stdin": "{\"tool_name\":\"Agent\"}\n{\"tool_name\":\"Task\"}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "",
+        "exit": 0
+      },
+      "raw_stderr": ""
+    },
+    "tool_nul": {
+      "input": {
+        "name": "tool_nul",
+        "code": 2,
+        "mode": "force_codex",
+        "payload": {
+          "tool_name": "Agent",
+          "tool_input": {}
+        },
+        "raw": "{\"tool_name\":\"Agent\\u0000\"}"
+      },
+      "stdin": "{\"tool_name\":\"Agent\\u0000\"}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n",
+        "exit": 2
+      },
+      "raw_stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n"
+    },
+    "rescue_newline": {
+      "input": {
+        "name": "rescue_newline",
+        "code": 0,
+        "mode": "force_codex",
+        "payload": {
+          "tool_name": "Agent",
+          "tool_input": {
+            "subagent_type": "codex:codex-rescue\n"
+          }
+        }
+      },
+      "stdin": "{\"tool_name\": \"Agent\", \"tool_input\": {\"subagent_type\": \"codex:codex-rescue\\n\"}}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "",
+        "exit": 0
+      },
+      "raw_stderr": ""
+    },
+    "rescue_control": {
+      "input": {
+        "name": "rescue_control",
+        "code": 2,
+        "mode": "force_codex",
+        "payload": {
+          "tool_name": "Agent",
+          "tool_input": {
+            "subagent_type": "codex:codex-rescue\t"
+          }
+        }
+      },
+      "stdin": "{\"tool_name\": \"Agent\", \"tool_input\": {\"subagent_type\": \"codex:codex-rescue\\t\"}}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "0",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n",
+        "exit": 2
+      },
+      "raw_stderr": "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n"
+    },
+    "without_jq": {
+      "input": {
+        "name": "without_jq"
+      },
+      "stdin": "{\"tool_name\":\"Read\"}",
+      "argv": [
+        "bash",
+        ".claude/hooks/sub-agent-policy-gate.sh"
+      ],
+      "environment": {
+        "CLAUDE_PROJECT_DIR": "${TMP}",
+        "MIR_CODEX_MAIN": "",
+        "MIR_R3_FALLBACK": "0"
+      },
+      "expected": {
+        "stdout": "",
+        "stderr": "[PreToolUse BLOCK] jq is required for PreToolUse parsing\n",
+        "exit": 2
+      },
+      "raw_stderr": "[PreToolUse BLOCK] jq is required for PreToolUse parsing\n"
+    }
+  }
+}

@@ -1,7 +1,6 @@
-"""Byte parity against Yoke's Bash reference, with jq present and native absent."""
+"""Native decision bytes against the frozen pre-retirement Bash oracle."""
 import json
 import os
-import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -10,9 +9,8 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 CRATE = ROOT / 'native/handoff-packet'
-CASES = json.loads((CRATE / 'tests/fixtures/delegation-gate.json').read_text())
-BASH_NUL_WARNING = re.compile(
-    rb'^[^\n]*: line \d+: warning: command substitution: ignored null byte in input\n', re.M)
+GOLDEN = json.loads((CRATE / 'tests/fixtures/g6/delegation.json').read_text())
+CASES = [record['input'] for name, record in GOLDEN['cases'].items() if name != 'without_jq']
 
 
 @pytest.fixture(scope='module')
@@ -29,8 +27,6 @@ def gate():
     return target / 'debug' / ('delegation-gate.exe' if os.name == 'nt' else 'delegation-gate')
 
 
-@pytest.mark.skipif(shutil.which('bash') is None or shutil.which('jq') is None
-                    or os.name == 'nt', reason='Bash reference requires jq')
 @pytest.mark.parametrize('case', CASES, ids=lambda case: case['name'])
 def test_gate_parity(gate, tmp_path, case):
     config = tmp_path / 'config'
@@ -65,17 +61,12 @@ def test_gate_parity(gate, tmp_path, case):
         elif 'raw_overlay' in case:
             overlay.write_text(case['raw_overlay'])
     payload = case.get('raw', json.dumps(case['payload']))
-    assert not (tmp_path / '.mir/bin').exists()  # Force the unchanged reference body.
-    commands = ([str(gate)], ['bash', str(ROOT / '.claude/hooks/sub-agent-policy-gate.sh')])
-    native, reference = [subprocess.run(command, input=payload.encode(), capture_output=True,
-                                       env=env) for command in commands]
-    assert reference.returncode == case['code']
-    if 'expected_hint' in case:
-        assert case['expected_hint'].encode() in reference.stderr
-    # Bash 4.4+ warns about NUL bytes it drops: interpreter noise, not gate output.
-    reference_stderr = BASH_NUL_WARNING.sub(b'', reference.stderr)
+    expected = GOLDEN['cases'][case['name']]
+    assert payload == expected['stdin']
+    native = subprocess.run([str(gate)], input=payload.encode(), capture_output=True, env=env)
     assert (native.returncode, native.stdout, native.stderr) == (
-        reference.returncode, reference.stdout, reference_stderr)
+        expected['expected']['exit'], expected['expected']['stdout'].encode(),
+        expected['expected']['stderr'].encode())
 
 
 @pytest.mark.skipif(os.name == 'nt', reason='POSIX wrapper')
@@ -106,7 +97,7 @@ def test_wrapper_dispatch(gate, tmp_path, kind):
         assert (result.returncode, result.stderr) == (0, b'')
 
 
-@pytest.mark.skipif(os.name == 'nt', reason='Bash reference dependency')
+@pytest.mark.skipif(os.name == 'nt', reason='POSIX PATH setup')
 def test_native_needs_no_jq_but_reference_blocks_without_it(gate, tmp_path):
     bindir = tmp_path / 'path'
     bindir.mkdir()
@@ -116,9 +107,8 @@ def test_native_needs_no_jq_but_reference_blocks_without_it(gate, tmp_path):
            'MIR_R3_FALLBACK': '0'}
     payload = b'{"tool_name":"Read"}'
     native = subprocess.run([str(gate)], input=payload, capture_output=True, env=env)
-    reference = subprocess.run([shutil.which('bash'),
-                                str(ROOT / '.claude/hooks/sub-agent-policy-gate.sh')],
-                               input=payload, capture_output=True, env=env)
-    assert (native.returncode, native.stderr) == (0, b'')
-    assert (reference.returncode, reference.stderr) == (
-        2, b'[PreToolUse BLOCK] jq is required for PreToolUse parsing\n')
+    assert (native.returncode, native.stdout, native.stderr) == (0, b'', b'')
+    # The historical jq requirement is retained in the frozen reference record.
+    assert GOLDEN['cases']['without_jq']['expected'] == {
+        'exit': 2, 'stdout': '',
+        'stderr': '[PreToolUse BLOCK] jq is required for PreToolUse parsing\n'}

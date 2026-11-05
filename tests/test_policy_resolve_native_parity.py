@@ -1,6 +1,7 @@
-"""Policy query bytes, production pin routing, and replay of the Python policy corpus."""
+"""Frozen policy CLI bytes, production pin routing, and shared library coverage."""
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import json
 import os
@@ -18,6 +19,69 @@ SUPPORT = runpy.run_path(str(ROOT / 'tests/test_executor_query_native_parity.py'
 binary = SUPPORT['binary']
 install_pin = SUPPORT['install_pin']
 
+GOLDEN = json.loads((ROOT / 'native/handoff-packet/tests/fixtures/g6/policy-cli.json').read_text())
+_ORACLE = {}
+
+
+@pytest.fixture(autouse=True)
+def frozen_oracle(request, tmp_path, monkeypatch):
+    records = GOLDEN['cases'].get(request.node.nodeid, [])
+    cursor = 0
+    monkeypatch.setitem(_ORACLE, 'request', request)
+
+    def expected(home, argv, environment=None, cwd=None):
+        nonlocal cursor
+
+        def normalize(value):
+            value = value.replace(str(tmp_path), '${TMP}').replace(str(ROOT), '${REPO}')
+            if value.startswith(('${TMP}', '${REPO}')):
+                value = value.replace(os.sep, '/')
+            return value
+
+        files = {}
+        for path in sorted(tmp_path.rglob('*')):
+            if path.is_file() and '.mir/bin' not in path.relative_to(tmp_path).as_posix() and (
+                path.parent.name == 'config' or path.name in (
+                    'empty.json', 'override.toml', 'overlay.json', 'sub-agent-policy.json')):
+                files[path.relative_to(tmp_path).as_posix()] = normalize(
+                    path.read_text(encoding='utf-8'))
+        inputs = {'argv': [normalize(arg) for arg in argv],
+                  'environment': {key: normalize(value)
+                                  for key, value in (environment or {}).items()},
+                  'cwd': normalize(str(cwd or home)), 'files': files}
+        assert cursor < len(records), 'Missing frozen oracle for ' + request.node.nodeid
+        record = records[cursor]
+        cursor += 1
+        assert inputs == {key: value for key, value in record.items()
+                          if key not in ('expected', 'captured', 'reasoning')}
+        output = record['expected']
+        def expand(value):
+            return value.replace('${TMP}', str(tmp_path)).replace('${REPO}', str(ROOT)).encode()
+
+        return expand(output['stdout']), expand(output['stderr']), output['exit']
+
+    monkeypatch.setitem(_ORACLE, 'expected', expected)
+    yield
+    assert cursor == len(records), 'Frozen oracle calls were removed or reordered'
+
+
+@pytest.fixture(scope='module')
+def account_binary():
+    """POSIX has no CLI override for getpwuid; use the public query account seam.
+
+    This crate example replaces only account discovery, not query parsing/resolution.
+    Ordinary explicit-overlay/lock cases still execute the production CLI binary.
+    """
+    crate = ROOT / 'native/handoff-packet'
+    command = ['cargo', 'build', '--release', '--locked', '--example', 'g6_policy_account']
+    if os.environ.get('MIR_HANDOFF_CARGO_OFFLINE') == '1':
+        command.append('--offline')
+    subprocess.run(command, cwd=crate, check=True)
+    target = Path(os.environ.get('CARGO_TARGET_DIR', 'target'))
+    if not target.is_absolute():
+        target = crate / target
+    return target / 'release/examples' / ('g6_policy_account' + ('.exe' if os.name == 'nt' else ''))
+
 
 @pytest.fixture
 def home(tmp_path, binary):
@@ -33,25 +97,71 @@ def home(tmp_path, binary):
         shutil.copy2(ROOT / 'src/mir' / name, target)
     install_pin(binary, root)
     (root / 'empty.json').write_text('{}', encoding='utf-8')
+    rendered = root / 'account-home/.mir/model-routing/sub-agent-policy.json'
+    rendered.parent.mkdir(parents=True)
+    rendered.write_text(json.dumps({'routing': {'default': {
+        'model': 'account-model', 'reasoning_effort': 'high'}}}), encoding='utf-8')
     return root
 
 
-def invoke(home, argv, *, binary=None, python=False, environment=None, cwd=None):
+def invoke(home, argv, *, binary=None, frozen=False, environment=None, cwd=None):
+    environment = {'HOME': str(home / 'account-home'),
+                   'USERPROFILE': str(home / 'account-home'), **(environment or {})}
+    if frozen:
+        return _ORACLE['expected'](home, argv, environment, cwd)
     env = dict(os.environ, PYTHONUTF8='1', PYTHONDONTWRITEBYTECODE='1',
                PYTHONPATH=os.pathsep.join((str(home / 'src'), str(home))),
                MIR_NATIVE_HOOKS='1', MIR_EXECUTOR_IMPL='native',
-               MIR_EXECUTOR_QUERY_IMPL='python' if python else 'native',
+               MIR_EXECUTOR_QUERY_IMPL='native',
                MIR_SUB_AGENT_POLICY=str(home / 'empty.json'))
     env.update(environment or {})
-    command = ([str(binary), '--home-root', str(home), 'policy-resolve', *argv]
+    # A missing/empty overlay can reach passwd-home even with a synthetic HOME.
+    # Only these POSIX calls use the public account seam; never consult the host file.
+    overlay = env.get('MIR_SUB_AGENT_POLICY', '')
+    named = Path(overlay.replace('~/', environment['HOME'] + '/', 1))
+    if not named.is_absolute():
+        named = (cwd or home) / named
+    isolated = os.name != 'nt' and (not overlay or not named.exists())
+    if isolated:
+        env['G6_POLICY_ACCOUNT_HOME'] = str(home / 'account-home')
+        driver = _ORACLE['request'].getfixturevalue('account_binary')
+    command = ([str(driver if isolated else binary), '--home-root', str(home),
+                'policy-resolve', *argv]
                if binary else [sys.executable, '-m', 'mir', 'policy', 'resolve', *argv])
-    result = subprocess.run(command, cwd=cwd or home, env=env,
-                            capture_output=True, check=False, timeout=20)
+    if os.name == 'nt' and not binary:
+        # Match the frozen UTF-8/LF stream contract even on Python fallback.
+        command = [sys.executable, '-c',
+                   'import runpy, sys; sys.stdout.reconfigure(newline="\\n"); '
+                   'sys.stderr.reconfigure(newline="\\n"); '
+                   'runpy.run_module("mir", run_name="__main__")', *command[3:]]
+    if isolated and not binary:
+        command = [sys.executable, '-c',
+                   'import os, pathlib, runpy; '
+                   'from tools.mir_executor import policy; '
+                   'policy.default_global_policy_path = lambda: '
+                   'pathlib.Path(os.environ["G6_POLICY_ACCOUNT_HOME"]) / '
+                   '".mir/model-routing/sub-agent-policy.json"; '
+                   'runpy.run_module("mir", run_name="__main__")',
+                   *command[3:]]
+    pin = home / '.mir/bin/executor-query.json'
+    saved = pin.read_bytes() if isolated and not binary and pin.exists() else None
+    if saved is not None:
+        # Keep the real pinned launcher path, with a driver supplying account identity.
+        destination = pin.parent / driver.name
+        shutil.copy2(driver, destination)
+        pin.write_text(json.dumps({'path': destination.relative_to(home).as_posix(),
+                                   'sha256': hashlib.sha256(destination.read_bytes()).hexdigest()}))
+    try:
+        result = subprocess.run(command, cwd=cwd or home, env=env,
+                                capture_output=True, check=False, timeout=20)
+    finally:
+        if saved is not None:
+            pin.write_bytes(saved)
     return result.stdout, result.stderr, result.returncode
 
 
 def compare(binary, home, argv, **kwargs):
-    expected = invoke(home, argv, python=True, **kwargs)
+    expected = invoke(home, argv, frozen=True, **kwargs)
     direct = invoke(home, argv, binary=binary, **kwargs)
     assert direct == expected or direct == (b'', b'', 64), (argv, direct, expected)
     assert invoke(home, argv, **kwargs) == expected
@@ -67,7 +177,7 @@ def test_pin_routes_before_importing_python_policy(binary, home, root):
         (target / 'config/model-routing.lock.json').write_text(json.dumps({
             'policy': {'routing': {'default': {'model': 'target-model'}}}}))
         argv += ['--repo-root', str(target) if root.startswith('absolute') else root]
-    expected = invoke(home, argv, python=True)
+    expected = invoke(home, argv, frozen=True)
     (home / 'tools/mir_executor/policy.py').write_text(
         "raise RuntimeError('Python policy imported')\n", encoding='utf-8')
     assert invoke(home, argv) == expected
@@ -79,7 +189,7 @@ def test_pin_routes_before_importing_python_policy(binary, home, root):
 @pytest.mark.parametrize('kind', ['missing', 'old'])
 def test_missing_and_older_pin_fall_back(binary, home, kind):
     argv = ['--category', 'unit']
-    expected = invoke(home, argv, python=True)
+    expected = invoke(home, argv, frozen=True)
     if kind == 'missing':
         (home / '.mir/bin/executor-query.json').unlink()
     else:
