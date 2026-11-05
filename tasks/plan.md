@@ -194,3 +194,37 @@ the plugin from the materialized capability root, Codex from its cache. Owner PC
 first run of a new mir-mcp.exe took about 26 s (antivirus scan), so the probe warms it first.
 Constraint: Python 3.11 on Windows reports a 32-bit serial and creation time, so cross-runtime
 cursors assume 3.12+ there. Open: owner Windows field report (Discord 1567516739883765833).
+
+Release record v0.13.67-v0.13.71 (Main, 2026-11-05): Windows hooks and delegation; native
+ontology tools; declarative executor brief policies. v0.13.67 b430e52: the active capability
+tree inherits its parent ACL again (a temporary-directory 0o700 ACL had locked out the user and
+the Codex sandbox group; the owner PC confirmed inheritance after update), global rules gain a
+provider-neutral delegation section, MCP docs tidied; its cmd-syntax commandWindows failed
+because Windows Codex runs hooks in the session's user shell (PowerShell there). v0.13.68 bind
+25d7d38: one commandWindows form, python3 "<root>\hooks\windows_hook.py" <name> <ref> ; exit
+$LASTEXITCODE, keeps exit codes in cmd, PowerShell, pwsh and bash; the launcher prefers the
+native exe. v0.13.69 2e09e0e (Y6): native delegation-gate (port of the shipped gate, 66
+fixtures byte-equal, 28 mutations caught), executor sync installs it with a SHA-256 pin,
+global rules name direct executor dispatch with codex-rescue as fallback, and the Windows
+consumer procedure is documented; its release run failed (the gate fixture forced an offline
+cargo build) and no GitHub Release exists; the tag stays. v0.13.70 0d93563 builds online unless
+MIR_HANDOFF_CARGO_OFFLINE=1; Mac Claude 67cacda1 and Codex 01a1a89d attested, ready.
+v0.13.71: M1c (native ontology_validate, ontology_lookup, ontology_impact; 89 of 111 new cases
+fail when routed to Python) and Y2b-1..5 (native goal input bound and job identity, resume
+fill, brief authority, execution binding, development packet and preflight; oracle captured
+read-only from consumers, mutation checks per slice). Windows CI found test-only portability
+faults (JSON-escaped and repr-doubled roots, the verbatim canonical prefix, message
+separators). Bind 4dacc33 (native-4bd949394e69), final 1a7154e; CI validate green including
+Windows and the release-candidate check before the tag; fresh-clone readiness ready (7378
+passed, 321 skipped). Managing consumer: sync, gate 7/7 same, delegation-gate smoke, full suite
+green. Tag v0.13.71; release and main validate green. Mac: Claude 03dea499 and Codex 01a1a9fe
+attested, native backend, ready at 1a7154e. Owner PC: Claude 594f0370 and Codex 01a1ab1d
+attested, native backend, ready; all four Codex hooks complete under PowerShell (about 0.5 s).
+Y6 on a disposable Windows consumer: exported lock (force_codex), sync check, pinned
+executor-query policy query exit 0, delegation-gate deny 2 and codex-rescue 0, and the
+exec-form registration blocked a real Claude Agent spawn. Open: the first run of each new exe
+timed out three Codex hooks (2 s and 8 s budgets; antivirus scan), so update should warm them;
+the executor spawns "codex" literally, which misses npm shim installs on Windows
+(lane-unavailable) until CODEX_BIN names codex.exe; with CODEX_BIN the dispatch ran in its
+worktree and finalized fail-closed, but Codex file writes fail in both sandbox modes over SSH,
+so a merged dispatch still needs a desktop-session check.
