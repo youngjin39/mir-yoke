@@ -60,6 +60,7 @@ pub struct NativePolicy {
     pub hooks: Option<crate::executor_hooks::HooksConfig>,
     pub brief_profile: Option<crate::executor_brief_profile::BriefProfile>,
     pub brief_controls: bool,
+    resume_fill: bool,
     pub job_identity: Option<crate::executor_job_identity::JobIdentity>,
     pub result_policy: Option<crate::executor_result_policy::ResultPolicy>,
 }
@@ -413,10 +414,29 @@ impl NativePolicy {
             .get("brief_profile")
             .map(crate::executor_brief_profile::BriefProfile::parse)
             .transpose()?;
+        let mut resume_fill = false;
         let brief_controls = if let Some(value) = data.get("brief_controls") {
             let section = object(value, &["mode"], "brief_controls")?;
-            if string(section, "mode")? != "brief_owned" {
-                return Err(invalid("brief_controls.mode must be brief_owned"));
+            match string(section, "mode")? {
+                "brief_owned" => (),
+                "resume_fill" => {
+                    resume_fill = true;
+                    if data
+                        .get("brief_profile")
+                        .and_then(|value| value.get("name"))
+                        != Some(&json!("base_v1"))
+                    {
+                        return Err(invalid("resume_fill requires base_v1 brief_profile"));
+                    }
+                    if verifier_aliases != Some(false) {
+                        return Err(invalid("resume_fill requires initial verifier_aliases"));
+                    }
+                }
+                _ => {
+                    return Err(invalid(
+                        "brief_controls.mode must be brief_owned or resume_fill",
+                    ));
+                }
             }
             if brief_profile.is_none() {
                 return Err(invalid("brief_controls requires brief_profile"));
@@ -436,6 +456,7 @@ impl NativePolicy {
                 .transpose()?,
             brief_profile,
             brief_controls,
+            resume_fill,
             result_policy,
             owns_pre_execute: data.contains_key("target_admission")
                 || verifier_aliases.is_some()
@@ -527,6 +548,9 @@ impl NativePolicy {
         Ok(())
     }
     fn apply_brief_controls(&self, cwd: &Path, args: &mut Value) -> Result<(), PolicyFailure> {
+        if self.resume_fill {
+            return self.fill_resume_controls(cwd, args);
+        }
         if !self.brief_controls || args["dispatch"] != true || args["dispatch_brief"].is_null() {
             return Ok(());
         }
@@ -589,6 +613,61 @@ impl NativePolicy {
         args["allow_paths"] = brief["owned_scope"].clone();
         args["verify_cmds"] = brief["verification_ids"].clone();
         Ok(())
+    }
+    /// Load even with supplied controls, then fill each missing control in order.
+    fn fill_resume_controls(&self, cwd: &Path, args: &mut Value) -> Result<(), PolicyFailure> {
+        if !truthy(&args["resume_job_id"]) || !truthy(&args["dispatch_brief"]) {
+            return Ok(());
+        }
+        let fill = || -> Result<Value, PolicyFailure> {
+            let path = args["dispatch_brief"]
+                .as_str()
+                .or_else(|| args["dispatch_brief"]["value"].as_str())
+                .ok_or_else(|| resume_error("dispatch_brief must be a path"))?;
+            self.brief_profile
+                .as_ref()
+                .ok_or_else(|| resume_error("brief_controls requires brief_profile"))?
+                .load(&cwd.join(path))
+        };
+        let apply = |brief: Value, args: &mut Value| -> Result<(), PolicyFailure> {
+            if !truthy(&args["allow_paths"]) {
+                let scope = brief["owned_scope"]
+                    .as_array()
+                    .ok_or_else(|| resume_error("DispatchBrief owned_scope must not be empty"))?;
+                args["allow_paths"] = json!(resume_allowlist(scope)?);
+            }
+            if !truthy(&args["verify_cmds"]) {
+                let commands = &brief["verification_commands"];
+                if !commands.as_array().is_some_and(|values| {
+                    !values.is_empty()
+                        && values.iter().all(|value| {
+                            value.as_str().is_some_and(|s| !python_strip(s).is_empty())
+                        })
+                }) {
+                    return Err(resume_error(
+                        "DispatchBrief verification_commands must not be empty",
+                    ));
+                }
+                args["verify_cmds"] = commands.clone();
+            }
+            Ok(())
+        };
+        fill()
+            .and_then(|brief| apply(brief, args))
+            .map_err(|error| {
+                if error.kind == "TypeError" {
+                    error
+                } else {
+                    PolicyFailure {
+                        kind: "SystemExit".into(),
+                        message: "1".into(),
+                        stderr: Some(format!(
+                            "[mir_executor] resume brief error: {}\n",
+                            error.message
+                        )),
+                    }
+                }
+            })
     }
     fn map_verifiers(&self, root: &Path, args: &mut Value) -> Result<(), PolicyFailure> {
         let Some(commands) = args
@@ -757,6 +836,63 @@ impl NativePolicy {
         }
         Ok(())
     }
+}
+fn truthy(value: &Value) -> bool {
+    match value {
+        Value::Null => false,
+        Value::Bool(value) => *value,
+        Value::String(value) => !value.is_empty(),
+        Value::Array(value) => !value.is_empty(),
+        Value::Object(value) => !value.is_empty(),
+        Value::Number(value) => value.as_f64() != Some(0.0),
+    }
+}
+fn python_strip(value: &str) -> &str {
+    value.trim_matches(|c: char| c.is_whitespace() || ('\u{1c}'..='\u{1f}').contains(&c))
+}
+fn resume_error(message: impl Into<String>) -> PolicyFailure {
+    PolicyFailure {
+        kind: "ValueError".into(),
+        message: message.into(),
+        stderr: None,
+    }
+}
+fn resume_allowlist(scope: &[Value]) -> Result<Vec<String>, PolicyFailure> {
+    let mut allowlist = Vec::new();
+    for value in scope {
+        let original = value.as_str().unwrap_or_default();
+        let stripped = python_strip(original);
+        if stripped.is_empty() || stripped == "<unspecified>" {
+            return Err(resume_error(
+                "DispatchBrief owned_scope must contain concrete repository paths",
+            ));
+        }
+        // Preserve the slash: the oracle removes only the final two stars.
+        let normalized = stripped
+            .strip_suffix("/**")
+            .map_or(stripped, |_| &stripped[..stripped.len() - 2]);
+        // PureWindowsPath takes any first character followed by ':' as a drive.
+        let windows_drive = normalized.chars().nth(1) == Some(':');
+        if matches!(normalized, "." | "..")
+            || normalized.starts_with('/')
+            || windows_drive
+            || normalized.contains('\\')
+            || normalized.split('/').any(|part| part == "..")
+            || normalized.contains(['*', '?', '['])
+        {
+            return Err(resume_error(format!(
+                "DispatchBrief owned_scope is not a safe path prefix: {}",
+                python_repr(original)
+            )));
+        }
+        if !allowlist.iter().any(|value| value == normalized) {
+            allowlist.push(normalized.to_owned());
+        }
+    }
+    if allowlist.is_empty() {
+        return Err(resume_error("DispatchBrief owned_scope must not be empty"));
+    }
+    Ok(allowlist)
 }
 fn family(args: &Value) -> Option<&str> {
     args.get("family").and_then(Value::as_str)

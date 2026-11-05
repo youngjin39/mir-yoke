@@ -131,13 +131,34 @@ this optional tool is not an adopter payload or a grant of consumer authority.
   `package_version`, native does not own this hook: retain the Python export.
   Native never infers a consumer package version from its own binary.
 
-  `brief_controls` requires `brief_profile` and owns `pre_execute`. Repository
+  `brief_controls: {"mode":"brief_owned"}` requires `brief_profile` and owns
+  `pre_execute`. Repository
   admission precedes brief validation, v1 refusal, prompt argument refusal,
   allowlist refusal and verifier refusal, in that order, before job/worktree
   creation. The brief supplies merge paths and verifier IDs. Resume accepts
   restored lists only when they equal the brief exactly, including order;
   explicitly empty lists are checked too. Successful validation is cached for
   the invocation by resolved path and SHA-256.
+
+  Alternatively, `brief_controls: {"mode":"resume_fill"}` requires
+  `brief_profile: {"name":"base_v1"}` and
+  `verifier_aliases: {"configuration_root":"initial"}`.
+  It owns the complete `pre_execute` hook. Only resume with a brief loads it,
+  including when both controls are supplied. Missing or empty merge paths are
+  filled first, then missing or empty verification commands. Supplied paths are
+  preserved. Scope entries are stripped, terminal `/**` becomes `/`, and safe
+  relative POSIX prefixes are deduplicated in order. Absolute paths, Windows
+  drives/UNC/backslashes, parent segments and `*?[` globs are refused. Empty or
+  unspecified scope and empty/blank commands are refused. OSError/ValueError
+  failures (including schema/JSON errors) during loading and filling
+  emit `[mir_executor] resume brief error: {message}\n` and exit with status 1.
+  Verifier alias mapping follows filling, including for supplied commands.
+  TypeError from a non-object JSON brief propagates without that wrapper.
+  Initial execution only maps verifiers. For requested/restored backend routing,
+  compose with `agent_route.requested_backend: true`; admission retains that
+  backend for the existing native route resolver. Remove native-owned Python
+  exports before declaring these fields. Audit and budget callbacks remain owned
+  by the consumer's Python adapter.
 
   `result_policy` accepts the two optional selectors shown above, owning
   `after_provider_call` and `after_run`, respectively. Provider sanitization
