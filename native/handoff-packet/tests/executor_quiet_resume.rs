@@ -66,7 +66,13 @@ fn captured_resume_patches_and_failures_match() {
             serde_json::from_str(&case["args"].to_string().replace("<root>", escaped_root))
                 .unwrap();
         let result = policy.pre_execute(&root, &root, &root, &mut args, &BTreeMap::new());
-        let normalize = |value: &str| value.replace(root.to_str().unwrap(), "<root>");
+        // Error text carries the path raw and as a Python repr (backslashes doubled on Windows).
+        let repr_root = root.to_str().unwrap().replace('\\', "\\\\");
+        let normalize = |value: &str| {
+            value
+                .replace(&repr_root, "<root>")
+                .replace(root.to_str().unwrap(), "<root>")
+        };
         match result {
             Ok(()) => assert!(case["kind"].is_null(), "{}", case["name"]),
             Err(error) => {

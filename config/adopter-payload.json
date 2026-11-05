@@ -2861,7 +2861,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/executor_brief_execution.rs",
-      "sha256": "9d903bee92e5fd35c1fc14f3663d642769280f4ead131ea9188d1ca308f48dd3"
+      "sha256": "53213e372dfadaf06bd8313017eb3cbbc008a2b8ede646b193dddf6b499954fa"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3173,7 +3173,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/executor_quiet_resume.rs",
-      "sha256": "bcd3e19aa302eff6190fc9c74a0f3a4ad93b71771e2425778c43411e19413b0f"
+      "sha256": "3bf14a0c7d3b6d8fbddb5be4c7513f6a1fe8b79631746a9a9d2b67d68bb4b7a7"
     },
     {
       "classification": "template-maintainer-tool",
@@ -5855,7 +5855,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_executor_quiet_resume_native_parity.py",
-      "sha256": "c75b6bab85717f9d231325a9834dd6d871fe7e64c61d7716eaa6ba9bb5f48a0a"
+      "sha256": "5426bf373443ca65413208b947fbee8d597519a571769f60b71136acb29deabe"
     },
     {
       "classification": "template-maintainer-tool",
