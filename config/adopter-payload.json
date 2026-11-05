@@ -2861,7 +2861,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/executor_brief_execution.rs",
-      "sha256": "3cab3fa4523fbaaf221341ea8d3ff8c61deaa44fc0fbd4d1436a98cc3ebb400c"
+      "sha256": "b6dacfacab3c19f0f7f5f079ed3955c2a58352214589d4241c1f129e0717f8a0"
     },
     {
       "classification": "template-maintainer-tool",

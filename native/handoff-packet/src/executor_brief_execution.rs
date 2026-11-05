@@ -208,10 +208,17 @@ mod tests {
             let result = policy.pre_execute(&root, &root, &root, &mut args, &Default::default());
             // Error text carries the path raw and as a Python repr (backslashes doubled on Windows).
             let repr_root = root.to_str().unwrap().replace('\\', "\\\\");
+            // The oracle was captured on POSIX; Windows renders the same path with '\\' separators
+            // (pathlib), which a Python repr doubles.
             let normalize = |value: &str| {
-                value
+                let value = value
                     .replace(&repr_root, "<root>")
-                    .replace(root.to_str().unwrap(), "<root>")
+                    .replace(root.to_str().unwrap(), "<root>");
+                if cfg!(windows) {
+                    value.replace("\\\\", "/")
+                } else {
+                    value
+                }
             };
             match case.get("message").and_then(Value::as_str) {
                 Some(expected) => {
