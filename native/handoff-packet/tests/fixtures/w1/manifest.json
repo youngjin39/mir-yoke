@@ -50,7 +50,7 @@
     "native/handoff-packet/src/executor_brief_execution.rs": "b6dacfacab3c19f0f7f5f079ed3955c2a58352214589d4241c1f129e0717f8a0",
     "native/handoff-packet/src/executor_dispatch_provider.rs": "dd7bf07a4ffc4dc424ce0311204b6ae1de71f9199fe135ca0b42e542e1fa9dc5",
     "native/handoff-packet/src/bootstrap_gate.rs": "abe20e67ddf9d99765fcd27e9b5b65f5c4d23d60884552d6e1051a9fe2913f4e",
-    "native/handoff-packet/src/lib.rs": "b62bb55f6bf52a74350291562a54a00ef6434eaa2f8824ae5c4a2dd61da3cedf",
+    "native/handoff-packet/src/lib.rs": "9a4e6026fe06b336b0ca842445ef659b8e604c3a340ee29ee6eb2ad98da256c4",
     "native/handoff-packet/src/codex_binary.rs": "70f6ae78d04fcaa7380502c2be115c63ca27852c1b10506e2bae226f0ed102eb",
     "native/handoff-packet/src/transcript.rs": "592d9e03babe774dcb43bb127e149ff94577fe485bf68c8905265996d27ce5c8",
     "native/handoff-packet/src/digest.rs": "9082e8bfe5a5fe73eb5b0d75cbfdc30f784177882ca28e305d9312c9d08b0913",

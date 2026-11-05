@@ -10,6 +10,12 @@
 #[allow(unsafe_code)]
 mod account_home;
 #[forbid(unsafe_code)]
+pub mod bootstrap_enforce;
+#[forbid(unsafe_code)]
+mod bootstrap_json;
+#[forbid(unsafe_code)]
+pub mod bootstrap_state;
+#[forbid(unsafe_code)]
 pub mod codex_binary;
 #[forbid(unsafe_code)]
 mod digest;
@@ -29,6 +35,10 @@ pub mod executor_execute;
 pub mod executor_finalize;
 #[forbid(unsafe_code)]
 pub mod executor_hooks;
+#[forbid(unsafe_code)]
+pub mod session_start;
+#[forbid(unsafe_code)]
+mod session_upfront;
 // Windows Job Objects must own a suspended child before target code can run.
 // The reviewed platform FFI boundary is isolated like account_home.
 #[cfg(windows)]

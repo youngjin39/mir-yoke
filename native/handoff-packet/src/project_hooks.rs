@@ -21,7 +21,7 @@ fn response(args: &[OsString]) -> (u8, &'static str, &'static str) {
     if args.len() == 1 && args[0] == "capabilities" {
         return (
             0,
-            "mir-project-hooks-v1\nmir-project-hooks-compact-v1\nmir-project-hooks-tdd-v1\nmir-project-hooks-post-edit-v1\nmir-project-hooks-prompt-v1\nmir-project-hooks-stop-v1\n",
+            "mir-project-hooks-v1\nmir-project-hooks-compact-v1\nmir-project-hooks-tdd-v1\nmir-project-hooks-post-edit-v1\nmir-project-hooks-prompt-v1\nmir-project-hooks-stop-v1\nmir-project-hooks-session-start-v1\n",
             "",
         );
     }
@@ -30,6 +30,18 @@ fn response(args: &[OsString]) -> (u8, &'static str, &'static str) {
 
 fn main() -> ExitCode {
     let args: Vec<_> = env::args_os().skip(1).collect();
+    if args.len() == 1 && args[0] == "session-start" {
+        let project = std::path::PathBuf::from(
+            env::var_os("CLAUDE_PROJECT_DIR")
+                .filter(|path| !path.is_empty())
+                .unwrap_or_else(|| ".".into()),
+        );
+        return match io::stdout().write_all(handoff_packet::session_start::run(&project).as_bytes())
+        {
+            Ok(()) => ExitCode::SUCCESS,
+            Err(_) => ExitCode::FAILURE,
+        };
+    }
     if args.len() == 1 && (args[0] == "stop-audit" || args[0] == "stop-failure-audit") {
         stop_audit::run(args[0] == "stop-failure-audit");
         return ExitCode::SUCCESS;
@@ -169,7 +181,7 @@ mod tests {
             response(&["capabilities".into()]),
             (
                 0,
-                "mir-project-hooks-v1\nmir-project-hooks-compact-v1\nmir-project-hooks-tdd-v1\nmir-project-hooks-post-edit-v1\nmir-project-hooks-prompt-v1\nmir-project-hooks-stop-v1\n",
+                "mir-project-hooks-v1\nmir-project-hooks-compact-v1\nmir-project-hooks-tdd-v1\nmir-project-hooks-post-edit-v1\nmir-project-hooks-prompt-v1\nmir-project-hooks-stop-v1\nmir-project-hooks-session-start-v1\n",
                 ""
             )
         );

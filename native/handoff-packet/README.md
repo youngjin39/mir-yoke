@@ -399,3 +399,29 @@ records `missing-receipt`, `evidence`, and `malformed` are listed as deferred
 _enforcement_ records, rather than counted as native state replay. Path/patch,
 safe-command, provider worktree/revision, uv and workdir restrictions remain with
 Y6b and the existing shell tests.
+
+## Own-project SessionStart (W1-Y9a)
+
+`project-hooks session-start` adds
+`mir-project-hooks-session-start-v1` without changing callers or registrations.
+It reads `CLAUDE_PROJECT_DIR` (default `.`), shares the bootstrap state and
+instruction source modules, and renders repository identity, safety and the
+existing intent-conflict advisory in process. Startup never cleans up a cursor
+or writes project files. Incomplete bootstrap instructions are uncapped; ready
+output retains the shell's 10,239-byte threshold, UTF-8-safe prefix and final LF.
+
+The builder file's existence remains an input only because the frozen shell
+observably selects different fallback bytes when it is absent. Its contents and
+Python availability are never executed or tested. Python interpreter failures,
+builder exceptions and invalid UTF-8 tracebacks are retired execution branches:
+the native renderer reads the profile directly, treats unreadable or malformed
+profiles as unavailable, and omits unreadable or malformed intent advisories.
+The three original ready envelopes using a synthetic launcher that swallowed the
+cap command remain immutable historical evidence, rather than native output
+expectations. Real-launcher supplementary captures establish rendered output.
+
+The shared bootstrap engine's unsupported platform/path inputs stay fail-closed
+with missing-state recovery instructions. Windows type checking does not prove
+Windows shell parity or runtime readiness. Receipt-bound runtime verification
+retains the bootstrap engine's existing external verifier boundary. No release,
+consumer adoption or caller migration is part of this slice.

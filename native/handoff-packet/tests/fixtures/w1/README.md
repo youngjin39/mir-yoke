@@ -75,3 +75,57 @@ skips POSIX replay and retains the platform-specific suite.
   and the additive serde_json `raw_value` feature. The legacy `ready`/`invalid`
   fast path is byte-identical and all 42 bootstrap-native envelopes replay
   unchanged.
+
+## W1-Y9a SessionStart reference extension
+
+`session-start.json` adds 36 isolated shell-reference observations without changing
+any of the 322 original envelopes. Capture used the unchanged session hook,
+bootstrap gate and launcher, and the actual upfront builder copied into synthetic
+projects. Its `sources` pins those four reference files. Each record retains its
+setup, argv, source-copy list, streams, status, and complete project delta. All
+36 observations have an empty delta and deletion list, including protected-mode
+cursor and handoff sentinels. The receipt-bound synthetic CLI dispatches actual
+Python for `run-python`, rather than silently accepting that command.
+
+The native integration suite `project_hooks_session_start.rs` reuses the original
+missing-receipt envelope and compares 33 new envelopes: greenfield/adoption
+bootstrap states, a provider,
+builder absence, nine profile forms, eight intent forms, and five output-cap cases.
+Profiles include wrong-shaped tables and scalars, ordered required gates,
+non-string array items, all five preserve fields, missing/malformed TOML, empty
+and false scalars, finite/nonfinite floats, dates, times, and local/offset
+datetimes including fractional seconds.
+Intent cases cover reversed-history selection, whitespace normalization,
+completion suppression, wrong shapes, non-string/nonfinite goals, and Unicode ellipsis.
+The replay normally exposes only a failing Git stub; the provider envelope uses
+its captured synthetic origin responder. No Python interpreter or shell renderer is available to the native command.
+
+The cap is applied to the body before shell command substitution removes trailing
+newlines. `cap-ascii-10237` is one byte below the raw-body limit.
+`cap-ascii-10238` has exactly 10,239 pre-strip bytes and remains intact;
+the next two cases cross that boundary and truncate. `cap-unicode-boundary` cuts
+inside a three-byte code point and verifies the reference's valid-UTF-8 suffix.
+Every native replay compares stdout, stderr and status, then compares full
+project snapshots including bytes, modes, directories, and symlinks.
+
+Three new envelopes are explicitly retired interpreter failure evidence, rather
+than supported native output expectations: a Python builder exception, invalid
+UTF-8 in the profile (which the Python builder does not catch), and receipt-bound
+`run-python` returning 127. All three shell paths warn and use the safety fallback;
+the launcher failure additionally warns that the output cap is unavailable. Removing the interpreter also removes these
+Python failure modes. Native tests explicitly verify all three cases now render
+unavailable-profile context without executing the builder or emitting the Python
+warning. The three original ready-state SessionStart envelopes
+(`ready-fallback`, `ready-builder`, `ready-cap`) likewise remain frozen evidence,
+but their synthetic CLI swallows `run-python` and produces only a newline. The
+new captures supply the real rendering/cap contract; they do not overwrite those
+original adapter artifacts. The original missing-receipt envelope is reused as
+native parity evidence.
+
+Run the native tests with `cargo test --offline --locked --manifest-path
+native/handoff-packet/Cargo.toml --test project_hooks_session_start`, with
+`TMPDIR` and `CARGO_TARGET_DIR` under the task's T7 scratch directory.
+
+- W1-Y9a re-pins `native/handoff-packet/src/lib.rs` only for shared bootstrap
+  exports and the additive SessionStart/upfront modules. Bootstrap implementation
+  sources and all existing frozen expected bytes remain unchanged.
