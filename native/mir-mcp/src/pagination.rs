@@ -73,11 +73,22 @@ pub fn binding(
     )?))
 }
 pub fn page(
+    data: Value,
+    args: &Value,
+    binding: &str,
+    git_error: Option<&str>,
+    profile: &str,
+) -> Result<Value, &'static str> {
+    page_tool(data, args, binding, git_error, profile, &["sources"], true)
+}
+pub fn page_tool(
     mut data: Value,
     args: &Value,
     binding: &str,
     git_error: Option<&str>,
     profile: &str,
+    keys: &[&str],
+    handoff: bool,
 ) -> Result<Value, &'static str> {
     let offset = if let Some(cursor) = args.get("cursor") {
         let decoded =
@@ -94,18 +105,25 @@ pub fn page(
     } else {
         0
     };
-    let sources = data["sources"].as_array().ok_or("E_FORMAT")?.clone();
-    let count = sources.len();
+    let lists: Vec<Vec<Value>> = keys
+        .iter()
+        .map(|key| data[*key].as_array().cloned().ok_or("E_FORMAT"))
+        .collect::<Result<_, _>>()?;
+    let count = lists.iter().map(Vec::len).max().unwrap_or(0);
     if offset > 0 && offset >= count {
         return Err("E_CURSOR");
     }
     let mut end = (offset + args["page_size"].as_u64().unwrap_or(16) as usize).min(count);
     loop {
-        data["sources"] = json!(&sources[offset..end]);
+        for (key, list) in keys.iter().zip(&lists) {
+            data[*key] = json!(&list[offset.min(list.len())..end.min(list.len())]);
+        }
         // Keep original full-result unknowns; finalization adds page-local inventory.
         let mut page = data.clone();
-        let paths = args["paths"].as_array().ok_or("E_SCHEMA")?;
-        crate::handoff::finalize(&mut page, &paths[offset..end]);
+        if handoff {
+            let paths = args["paths"].as_array().ok_or("E_SCHEMA")?;
+            crate::handoff::finalize(&mut page, &paths[offset..end]);
+        }
         let cursor = if end < count {
             json!(encode(&compact(&json!({"h":binding,"o":end}))?))
         } else {

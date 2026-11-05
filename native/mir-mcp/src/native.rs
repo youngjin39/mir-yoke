@@ -1,4 +1,4 @@
-//! Native handoff tool boundary. Other tools retain explicit reference forwarding.
+//! Bounded native tool boundary with explicit semantic fallback.
 use crate::{guard::Guard, handoff, pagination};
 use serde_json::{Value, json};
 fn validate(args: &Value) -> Result<(), &'static str> {
@@ -57,13 +57,20 @@ fn execute(args: &Value) -> Result<Value, &'static str> {
     pagination::page(data, args, &hash, error, io.profile_protections)
 }
 pub static TIMED_OUT: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
-pub fn call(args: &Value) -> Value {
+pub fn call(name: &str, args: &Value) -> Value {
     // A filesystem call can block without returning to Guard::tick. Bound the
     // entire operation, then terminate after flushing a timeout response so an
     // abandoned reader can never overlap a later request.
     let cloud_root = args["target_root"].as_str().map(std::path::PathBuf::from);
     let args = args.clone();
-    let completed = bounded(std::time::Duration::from_secs(10), move || execute(&args));
+    let name = name.to_owned();
+    let completed = bounded(std::time::Duration::from_secs(10), move || {
+        if name == "handoff_pins" {
+            execute(&args)
+        } else {
+            crate::ontology::execute(&name, &args)
+        }
+    });
     if completed == Err("E_TIMEOUT") {
         TIMED_OUT.store(true, std::sync::atomic::Ordering::Relaxed);
     }

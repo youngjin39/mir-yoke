@@ -1,5 +1,6 @@
 #![deny(unsafe_code)]
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
+mod checker;
 #[path = "../../handoff-packet/src/digest.rs"]
 mod digest;
 #[cfg(test)]
@@ -9,6 +10,7 @@ mod git;
 mod guard;
 mod handoff;
 mod native;
+mod ontology;
 mod pagination;
 mod protocol;
 mod wire;
