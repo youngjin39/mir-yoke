@@ -92,7 +92,7 @@ def capture(owner, scratch):
         # Use actual importlib.metadata discovery against synthetic distribution evidence.
         sys.path.insert(0, str(scratch))
         try:
-            for version in ['9.8.7+fixture', '한글-é', None]:
+            for version in ['9.8.7+fixture', '漢字-é', None]:
                 dist = scratch / 'mir_agent_hub-9.8.7.dist-info'
                 dist.mkdir(exist_ok=True)
                 metadata = dist / 'METADATA'
@@ -103,8 +103,8 @@ def capture(owner, scratch):
                     metadata.write_text(
                         f'Metadata-Version: 2.1\nName: mir-agent-hub\nVersion: {version}\n')
                 for dispatch in (True, False):
-                    for model in (None, '', '모델-é'):
-                        prompt = 'exact café 한글 😀\nwith trailing space '
+                    for model in (None, '', '模型-é'):
+                        prompt = 'exact café 漢字 😀\nwith trailing space '
                         value = hook['job_identity'](argparse.Namespace(dispatch=dispatch),
                                                      scratch, prompt, model)
                         identity.append(dict(dispatch=dispatch, model=model, prompt=prompt,
