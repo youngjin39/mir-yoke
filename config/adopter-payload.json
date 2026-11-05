@@ -3131,7 +3131,13 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/project_hooks.rs",
-      "sha256": "c1dda2098beb3b74ba1f328106396329575e7e417b9ad7e548730aca28bbcfbb"
+      "sha256": "d91879f212b52bb0bce547c14d1d376e733c917c0dd92b414bc1c79faa4c4e75"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/src/prompt_submit.rs",
+      "sha256": "0415c1f6cedbdb9c2158473c578914e704d176e2c9e9a333a7526c9818a580ca"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3658,6 +3664,12 @@
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
+      "path": "native/handoff-packet/tests/fixtures/w1/prompt-submit.json",
+      "sha256": "da87c7588e8bf549611394e9f25ff6a63fc6dbb71a9630f01f31cec3348df18a"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/w1/records.json",
       "sha256": "9eebc7cf31f128b49285ba6c24def85bd97f4d8cb02a2d909680d4760b39896d"
     },
@@ -3683,7 +3695,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/project_hooks.rs",
-      "sha256": "6e756373effa546b9da45357914057906ea81433aad4a4e98dc89bd9f6b84d37"
+      "sha256": "cfa76d3f363296857bc94cc04f6d886385427fe7cab63f51319e0c7729d57bc9"
     },
     {
       "classification": "template-maintainer-tool",

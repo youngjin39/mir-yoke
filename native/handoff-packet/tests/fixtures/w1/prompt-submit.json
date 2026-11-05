@@ -1,0 +1,334 @@
+{
+  "schema": "mir.w1-prompt-submit@1",
+  "authority": "W1-Y9b request; additional observations only; existing W1 expected bytes remain immutable.",
+  "captured_at": "2026-11-05T21:17:04.085406+00:00",
+  "locale": "en_US.UTF-8",
+  "python": "3.14.6",
+  "bash": "GNU bash, version 3.2.57(1)-release (arm64-apple-darwin26)",
+  "tool_allowlist": [
+    "bash",
+    "cat",
+    "dirname"
+  ],
+  "sources": {
+    ".claude/hooks/user-prompt-submit.sh": "73671071ba5ed2a721e6735b0454f31914aad2a2f38b9b7105c2408599429394",
+    ".claude/hooks/_lib/run-python.sh": "39420540cc96c04a2abaadc252610da3c5260bdad44bfa43f255e71a9fdc67f3"
+  },
+  "boundaries": [
+    "UTF-8 character counting follows the captured en_US.UTF-8 locale; byte-oriented C locale is not the native contract.",
+    "Python Unicode tokens are general categories L and N, excluding underscore and combining marks; lowercase includes expansions and contextual sigma. Unicode database versions outside frozen inputs are not pinned.",
+    "Bash command substitution removes NUL and trailing LF before length and prefix checks. Interpreter availability and interpreter tokenization failures are retired branches, never emulated."
+  ],
+  "records": [
+    {
+      "case": "non-object",
+      "stdin": "W10=",
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "W1VzZXJQcm9tcHRTdWJtaXRdIFdBUk5JTkc6IEludmFsaWQgcHJvbXB0IHBheWxvYWQgb3IgUHl0aG9uIHVuYXZhaWxhYmxlOyBjb250ZXh0IHJldHJpZXZhbCBza2lwcGVkLgo=",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "case": "non-string",
+      "stdin": "eyJwcm9tcHQiOjQyfQ==",
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "W1VzZXJQcm9tcHRTdWJtaXRdIFdBUk5JTkc6IEludmFsaWQgcHJvbXB0IHBheWxvYWQgb3IgUHl0aG9uIHVuYXZhaWxhYmxlOyBjb250ZXh0IHJldHJpZXZhbCBza2lwcGVkLgo=",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "case": "null-prompt",
+      "stdin": "eyJwcm9tcHQiOm51bGx9",
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "W1VzZXJQcm9tcHRTdWJtaXRdIFdBUk5JTkc6IEludmFsaWQgcHJvbXB0IHBheWxvYWQgb3IgUHl0aG9uIHVuYXZhaWxhYmxlOyBjb250ZXh0IHJldHJpZXZhbCBza2lwcGVkLgo=",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "case": "missing-prompt",
+      "stdin": "e30=",
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "case": "invalid-utf8",
+      "stdin": "eyJwcm9tcHQiOiL/In0=",
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "W1VzZXJQcm9tcHRTdWJtaXRdIFdBUk5JTkc6IEludmFsaWQgcHJvbXB0IHBheWxvYWQgb3IgUHl0aG9uIHVuYXZhaWxhYmxlOyBjb250ZXh0IHJldHJpZXZhbCBza2lwcGVkLgo=",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "case": "invalid-utf8-long",
+      "stdin": "eyJwcm9tcHQiOiJ2YWxpZCB2YWxpZCB2YWxpZCB2YWxpZCB2YWxpZCB2YWxpZCB2YWxpZCB2YWxpZCB2YWxpZCD/In0=",
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "W1VzZXJQcm9tcHRTdWJtaXRdIFdBUk5JTkc6IEludmFsaWQgcHJvbXB0IHBheWxvYWQgb3IgUHl0aG9uIHVuYXZhaWxhYmxlOyBjb250ZXh0IHJldHJpZXZhbCBza2lwcGVkLgo=",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "case": "ascii-39",
+      "stdin": "eyJwcm9tcHQiOiAiYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhIn0=",
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "case": "ascii-40",
+      "stdin": "eyJwcm9tcHQiOiAiYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYSJ9",
+      "expected": {
+        "exit": 0,
+        "stdout": "W2NvbnRleHQtcHVsbF0gQ2FuZGlkYXRlIHJldHJpZXZhbDogc2NyaXB0cy9taXIuc2ggY29udGV4dCBwdWxsICJhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhIgo=",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "case": "unicode-39",
+      "stdin": "eyJwcm9tcHQiOiAiXHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5In0=",
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "case": "unicode-40",
+      "stdin": "eyJwcm9tcHQiOiAiXHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5XHUwMGU5In0=",
+      "expected": {
+        "exit": 0,
+        "stdout": "W2NvbnRleHQtcHVsbF0gQ2FuZGlkYXRlIHJldHJpZXZhbDogc2NyaXB0cy9taXIuc2ggY29udGV4dCBwdWxsICLDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6nDqSIK",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "case": "space-slash",
+      "stdin": "eyJwcm9tcHQiOiAiIFx0XG5cciAvcmV2aWV3IGNvbnRleHQgY29udGV4dCBjb250ZXh0IGNvbnRleHQgY29udGV4dCBjb250ZXh0IGNvbnRleHQgY29udGV4dCAifQ==",
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "case": "space-xml",
+      "stdin": "eyJwcm9tcHQiOiAiIFx0XG5cciA8dGFzaz4gY29udGV4dCBjb250ZXh0IGNvbnRleHQgY29udGV4dCBjb250ZXh0IGNvbnRleHQgY29udGV4dCBjb250ZXh0ICJ9",
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "case": "trailing-newlines-39",
+      "stdin": "eyJwcm9tcHQiOiAiYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhXG5cbiJ9",
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "case": "trailing-newlines-40",
+      "stdin": "eyJwcm9tcHQiOiAiYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYVxuXG4ifQ==",
+      "expected": {
+        "exit": 0,
+        "stdout": "W2NvbnRleHQtcHVsbF0gQ2FuZGlkYXRlIHJldHJpZXZhbDogc2NyaXB0cy9taXIuc2ggY29udGV4dCBwdWxsICJhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhIgo=",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "case": "payload-trailing-newlines",
+      "stdin": "eyJwcm9tcHQiOiAid29yZHMgd29yZHMgd29yZHMgd29yZHMgd29yZHMgd29yZHMgd29yZHMgd29yZHMgd29yZHMgIn0KCg==",
+      "expected": {
+        "exit": 0,
+        "stdout": "W2NvbnRleHQtcHVsbF0gQ2FuZGlkYXRlIHJldHJpZXZhbDogc2NyaXB0cy9taXIuc2ggY29udGV4dCBwdWxsICJ3b3JkcyB3b3JkcyB3b3JkcyB3b3JkcyB3b3JkcyB3b3JkcyIK",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "case": "punctuation-underscore",
+      "stdin": "eyJwcm9tcHQiOiAiYWxwaGFfYmV0YS5nYW1tYSxkZWx0YTtlcHNpbG9uOnRoZXRhIXpldGE/ZXRhIn0=",
+      "expected": {
+        "exit": 0,
+        "stdout": "W2NvbnRleHQtcHVsbF0gQ2FuZGlkYXRlIHJldHJpZXZhbDogc2NyaXB0cy9taXIuc2ggY29udGV4dCBwdWxsICJhbHBoYSBiZXRhIGdhbW1hIGRlbHRhIGVwc2lsb24gdGhldGEiCg==",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "case": "digits",
+      "stdin": "eyJwcm9tcHQiOiAiMTIzIDEyIDQ1NjcgXHUwMGIyXHUwMGIyXHUwMGIyIFx1MjE2N1x1MjE2N1x1MjE2NyAuLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uIn0=",
+      "expected": {
+        "exit": 0,
+        "stdout": "W2NvbnRleHQtcHVsbF0gQ2FuZGlkYXRlIHJldHJpZXZhbDogc2NyaXB0cy9taXIuc2ggY29udGV4dCBwdWxsICIxMjMgNDU2NyDCssKywrIg4oW34oW34oW3Igo=",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "case": "mixed-scripts",
+      "stdin": "eyJwcm9tcHQiOiAiQUJDIFx1MDNiMVx1MDNiMlx1MDNiMyBcdTA0MTBcdTA0MTFcdTA0MTIgXHU0ZTJkXHU2NTg3XHU1YjU3IFx1ZDU1Y1x1YWUwMFx1YmIzOCBcdTAwZTl2aWRlbmNlIC4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4ifQ==",
+      "expected": {
+        "exit": 0,
+        "stdout": "W2NvbnRleHQtcHVsbF0gQ2FuZGlkYXRlIHJldHJpZXZhbDogc2NyaXB0cy9taXIuc2ggY29udGV4dCBwdWxsICJhYmMgzrHOss6zINCw0LHQsiDkuK3mloflrZcg7ZWc6riA66y4IMOpdmlkZW5jZSIK",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "case": "lower-expansion",
+      "stdin": "eyJwcm9tcHQiOiAiXHUwMTMwQUIgXHUwMTMwQUJDIEFCQ1x1MDEzMERFRiBcdTAzOWZcdTAzYTNcdTAzOWZcdTAzYTMgLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLiJ9",
+      "expected": {
+        "exit": 0,
+        "stdout": "W2NvbnRleHQtcHVsbF0gQ2FuZGlkYXRlIHJldHJpZXZhbDogc2NyaXB0cy9taXIuc2ggY29udGV4dCBwdWxsICJhYmMgYWJjaSBkZWYgzr/Pg86/z4IiCg==",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "case": "combining-marks",
+      "stdin": "eyJwcm9tcHQiOiAiYWJjXHUwMzAxZGVmIGFiY1x1MDM0NWRlZiBcdTIwM2YgYWJjIC4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4ifQ==",
+      "expected": {
+        "exit": 0,
+        "stdout": "W2NvbnRleHQtcHVsbF0gQ2FuZGlkYXRlIHJldHJpZXZhbDogc2NyaXB0cy9taXIuc2ggY29udGV4dCBwdWxsICJhYmMgZGVmIGFiYyBkZWYgYWJjIgo=",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "case": "stopwords-only",
+      "stdin": "eyJwcm9tcHQiOiAidGhlIGFuZCB0aGlzIHRoYXQgd2l0aCBmcm9tIGludG8gc2hvdWxkIHdvdWxkIGNvdWxkIn0=",
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "case": "quotes-backslashes-dollar",
+      "stdin": "eyJwcm9tcHQiOiAiYWxwaGFcImJldGEgZ2FtbWFcXGRlbHRhICRlcHNpbG9uIHpldGEndGhldGEgLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLiJ9",
+      "expected": {
+        "exit": 0,
+        "stdout": "W2NvbnRleHQtcHVsbF0gQ2FuZGlkYXRlIHJldHJpZXZhbDogc2NyaXB0cy9taXIuc2ggY29udGV4dCBwdWxsICJhbHBoYSBiZXRhIGdhbW1hIGRlbHRhIGVwc2lsb24gemV0YSIK",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "case": "nul-prompt",
+      "stdin": "eyJwcm9tcHQiOiAiYWxwaGFcdTAwMDBiZXRhIGNvbnRleHQgY29udGV4dCBjb250ZXh0IGNvbnRleHQgY29udGV4dCBjb250ZXh0IGNvbnRleHQgY29udGV4dCAifQ==",
+      "expected": {
+        "exit": 0,
+        "stdout": "W2NvbnRleHQtcHVsbF0gQ2FuZGlkYXRlIHJldHJpZXZhbDogc2NyaXB0cy9taXIuc2ggY29udGV4dCBwdWxsICJhbHBoYWJldGEgY29udGV4dCBjb250ZXh0IGNvbnRleHQgY29udGV4dCBjb250ZXh0Igo=",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "case": "nul-payload",
+      "stdin": "eyJwcm9tcHQiOiJ3b3JkcyB3b3JkcyB3b3JkcyB3b3JkcyB3b3JkcyB3b3JkcyB3b3JkcyB3b3JkcyB3b3JkcyAifQA=",
+      "expected": {
+        "exit": 0,
+        "stdout": "W2NvbnRleHQtcHVsbF0gQ2FuZGlkYXRlIHJldHJpZXZhbDogc2NyaXB0cy9taXIuc2ggY29udGV4dCBwdWxsICJ3b3JkcyB3b3JkcyB3b3JkcyB3b3JkcyB3b3JkcyB3b3JkcyIK",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "case": "nul-short",
+      "stdin": "eyJwcm9tcHQiOiAiYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhXHUwMDAwIn0=",
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "case": "unreadable-stdin",
+      "stdin": "eyJwcm9tcHQiOiAiY29udGV4dCBjb250ZXh0IGNvbnRleHQgY29udGV4dCBjb250ZXh0IGNvbnRleHQgY29udGV4dCBjb250ZXh0IGNvbnRleHQgIn0=",
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "W1VzZXJQcm9tcHRTdWJtaXRdIFdBUk5JTkc6IFByb21wdCBwYXlsb2FkIHVuYXZhaWxhYmxlOyBjb250ZXh0IHJldHJpZXZhbCBza2lwcGVkLgo=",
+        "delta": {},
+        "deleted": []
+      }
+    },
+    {
+      "case": "python-unavailable",
+      "stdin": "eyJwcm9tcHQiOiAiY29udGV4dCBjb250ZXh0IGNvbnRleHQgY29udGV4dCBjb250ZXh0IGNvbnRleHQgY29udGV4dCBjb250ZXh0IGNvbnRleHQgIn0=",
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "W1VzZXJQcm9tcHRTdWJtaXRdIFdBUk5JTkc6IEludmFsaWQgcHJvbXB0IHBheWxvYWQgb3IgUHl0aG9uIHVuYXZhaWxhYmxlOyBjb250ZXh0IHJldHJpZXZhbCBza2lwcGVkLgo=",
+        "delta": {},
+        "deleted": []
+      },
+      "retired_branch": "Interpreter availability is retired in native execution."
+    },
+    {
+      "case": "tokenizer-unavailable",
+      "stdin": "eyJwcm9tcHQiOiAiY29udGV4dCBjb250ZXh0IGNvbnRleHQgY29udGV4dCBjb250ZXh0IGNvbnRleHQgY29udGV4dCBjb250ZXh0IGNvbnRleHQgIn0=",
+      "expected": {
+        "exit": 0,
+        "stdout": "",
+        "stderr": "W1VzZXJQcm9tcHRTdWJtaXRdIFdBUk5JTkc6IFByb21wdCB0b2tlbml6YXRpb24gdW5hdmFpbGFibGU7IGNvbnRleHQgcmV0cmlldmFsIHNraXBwZWQuCg==",
+        "delta": {},
+        "deleted": []
+      },
+      "retired_branch": "Interpreter tokenization failure is retired in native execution."
+    }
+  ]
+}

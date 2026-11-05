@@ -38,7 +38,7 @@ fn capabilities() {
     run(
         &["capabilities"],
         0,
-        b"mir-project-hooks-v1\nmir-project-hooks-compact-v1\nmir-project-hooks-tdd-v1\nmir-project-hooks-post-edit-v1\n",
+        b"mir-project-hooks-v1\nmir-project-hooks-compact-v1\nmir-project-hooks-tdd-v1\nmir-project-hooks-post-edit-v1\nmir-project-hooks-prompt-v1\n",
         b"",
     );
 }
@@ -218,5 +218,140 @@ mod post_edit_check {
                     .all(|line| line.ends_with("paste: command not found"))
             );
         }
+    }
+}
+
+// Immutable W1 own-hook replay; subprocesses have no interpreter on PATH.
+#[cfg(unix)]
+// Only envelope primitives are needed; the shared dispatcher uses shell filenames.
+#[allow(dead_code)]
+#[path = "support/replay.rs"]
+mod frozen;
+
+#[cfg(unix)]
+mod prompt_submit {
+    use super::frozen;
+    use serde_json::{Value, json};
+    use std::{fs, io::Write, process::Stdio};
+
+    fn check(record: &Value) {
+        let dir = tempfile::tempdir().unwrap();
+        let root = fs::canonicalize(dir.path()).unwrap();
+        let mut cmd = frozen::prepare(&root);
+        cmd.arg("prompt-submit");
+        let unreadable = record["case"] == "unreadable-stdin";
+        if unreadable {
+            cmd.stdin(fs::File::open(&root).unwrap());
+        } else {
+            cmd.stdin(Stdio::piped());
+        }
+        let before = frozen::snapshot(&root.join("project"));
+        let mut child = cmd
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .unwrap();
+        if !unreadable {
+            child
+                .stdin
+                .take()
+                .unwrap()
+                .write_all(&frozen::decode(&record["stdin"]))
+                .unwrap();
+        }
+        let output = child.wait_with_output().unwrap();
+        assert_eq!(
+            output.status.code(),
+            record["expected"]["exit"].as_i64().map(|n| n as i32),
+            "{} status",
+            record["case"]
+        );
+        assert_eq!(
+            output.stdout,
+            frozen::decode(&record["expected"]["stdout"]),
+            "{} stdout",
+            record["case"]
+        );
+        assert_eq!(
+            output.stderr,
+            frozen::decode(&record["expected"]["stderr"]),
+            "{} stderr",
+            record["case"]
+        );
+        assert_eq!(
+            frozen::snapshot(&root.join("project")),
+            before,
+            "{} filesystem",
+            record["case"]
+        );
+        assert_eq!(record["expected"]["delta"], json!({}));
+        assert_eq!(record["expected"]["deleted"], json!([]));
+    }
+
+    fn new_records() -> Value {
+        serde_json::from_str(include_str!("fixtures/w1/prompt-submit.json")).unwrap()
+    }
+
+    #[test]
+    fn reused_w1_records() {
+        let records: Vec<Value> =
+            serde_json::from_str(include_str!("fixtures/w1/records.json")).unwrap();
+        let own: Vec<_> = records
+            .iter()
+            .filter(|r| r["family"] == ".claude/hooks/user-prompt-submit.sh")
+            .collect();
+        assert_eq!(own.len(), 5);
+        for row in own {
+            check(row);
+        }
+    }
+
+    #[test]
+    fn added_frozen_records() {
+        let data = new_records();
+        let rows = data["records"].as_array().unwrap();
+        assert_eq!(rows.len(), 28);
+        assert_eq!(data["locale"], "en_US.UTF-8");
+        let mut retired = Vec::new();
+        for row in rows {
+            if let Some(reason) = row["retired_branch"].as_str() {
+                // Native code has no interpreter: retain observations, never emulate failures.
+                retired.push((row["case"].as_str().unwrap(), reason));
+            } else {
+                check(row);
+            }
+        }
+        assert_eq!(
+            retired.iter().map(|r| r.0).collect::<Vec<_>>(),
+            ["python-unavailable", "tokenizer-unavailable"]
+        );
+        assert!(retired.iter().all(|r| !r.1.is_empty()));
+    }
+
+    fn named(case: &str) {
+        let data = new_records();
+        check(
+            data["records"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|r| r["case"] == case)
+                .unwrap(),
+        );
+    }
+
+    #[test]
+    fn underscore_splits_tokens() {
+        named("punctuation-underscore");
+    }
+    #[test]
+    fn counts_characters_not_bytes() {
+        named("unicode-39");
+        named("unicode-40");
+    }
+    #[test]
+    fn invalid_payload_stays_advisory() {
+        named("non-object");
+        named("invalid-utf8");
     }
 }

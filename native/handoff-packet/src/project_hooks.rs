@@ -3,6 +3,7 @@
 mod checkpoint;
 mod compact_snapshot;
 mod post_edit_check;
+mod prompt_submit;
 mod tdd_ledger;
 
 use std::{
@@ -19,7 +20,7 @@ fn response(args: &[OsString]) -> (u8, &'static str, &'static str) {
     if args.len() == 1 && args[0] == "capabilities" {
         return (
             0,
-            "mir-project-hooks-v1\nmir-project-hooks-compact-v1\nmir-project-hooks-tdd-v1\nmir-project-hooks-post-edit-v1\n",
+            "mir-project-hooks-v1\nmir-project-hooks-compact-v1\nmir-project-hooks-tdd-v1\nmir-project-hooks-post-edit-v1\nmir-project-hooks-prompt-v1\n",
             "",
         );
     }
@@ -28,6 +29,17 @@ fn response(args: &[OsString]) -> (u8, &'static str, &'static str) {
 
 fn main() -> ExitCode {
     let args: Vec<_> = env::args_os().skip(1).collect();
+    if args.len() == 1 && args[0] == "prompt-submit" {
+        let (stdout, stderr) = prompt_submit::run(io::stdin().lock());
+        if io::stdout()
+            .write_all(stdout.as_bytes())
+            .and_then(|()| io::stderr().write_all(stderr.as_bytes()))
+            .is_err()
+        {
+            return ExitCode::FAILURE;
+        }
+        return ExitCode::SUCCESS;
+    }
     if args.len() == 1 && args[0] == "post-edit-check" {
         let project = std::path::PathBuf::from(
             env::var_os("CLAUDE_PROJECT_DIR")
@@ -152,7 +164,7 @@ mod tests {
             response(&["capabilities".into()]),
             (
                 0,
-                "mir-project-hooks-v1\nmir-project-hooks-compact-v1\nmir-project-hooks-tdd-v1\nmir-project-hooks-post-edit-v1\n",
+                "mir-project-hooks-v1\nmir-project-hooks-compact-v1\nmir-project-hooks-tdd-v1\nmir-project-hooks-post-edit-v1\nmir-project-hooks-prompt-v1\n",
                 ""
             )
         );
