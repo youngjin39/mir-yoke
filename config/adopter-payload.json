@@ -3574,6 +3574,24 @@
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
+      "path": "native/handoff-packet/tests/fixtures/w1/README.md",
+      "sha256": "bbc61e0907098d864d31cc6aa07fc6a535f88ee0967e3fa557e1d2d00d435fb6"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/tests/fixtures/w1/manifest.json",
+      "sha256": "4a985b3594f67d45d6b76a37a7eb8460cfdad69189e97b52d815746e10aad0ae"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "native/handoff-packet/tests/fixtures/w1/records.json",
+      "sha256": "9eebc7cf31f128b49285ba6c24def85bd97f4d8cb02a2d909680d4760b39896d"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
       "path": "native/handoff-packet/tests/local_bridge_client.rs",
       "sha256": "4d4bf7fb413642c31b1600c050d17303f3ceed28773237a86f9d12b8eeeeba6d"
     },
@@ -6454,8 +6472,20 @@
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
+      "path": "tests/test_w1_hook_freeze.py",
+      "sha256": "a4a3bd8596c87c76be7ab19ccc7f1d8ef4019f890d9cb2aaab5fa0334a8fc45d"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
       "path": "tests/test_writing_skills.py",
       "sha256": "ca620a903a69e4966240791e5e37058143a2d38dfa98d7de76c22eb3bbd2dec5"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "tests/w1_golden.py",
+      "sha256": "22aab39906c1831070b69cc91c0caf7d951d3b5bb037c4b92940499dcc8fd419"
     },
     {
       "classification": "template-maintainer-tool",
