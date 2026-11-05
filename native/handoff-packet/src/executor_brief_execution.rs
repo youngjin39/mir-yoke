@@ -151,7 +151,14 @@ mod tests {
             crate::executor_execute::unique_id()
         ));
         fs::create_dir_all(root.join("config")).unwrap();
+        // Windows canonical paths are verbatim (\\?\), where '/' in the fixture paths is no separator.
         let root = fs::canonicalize(root).unwrap();
+        let root = std::path::PathBuf::from(
+            root.to_str()
+                .unwrap()
+                .strip_prefix(r"\\?\")
+                .unwrap_or(root.to_str().unwrap()),
+        );
         fs::write(
             root.join("config/mir-executor.local.json"),
             fixture["config_raw"].as_str().unwrap(),
