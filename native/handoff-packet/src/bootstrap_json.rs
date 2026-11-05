@@ -77,3 +77,83 @@ pub fn hook_hash(bytes: &[u8]) -> Option<String> {
     let canonical = format!("{{\"hooks\":{}}}\n", canonical(hooks)?).replace('\u{7f}', "\\u007f");
     Some(crate::digest::sha256(canonical.as_bytes()))
 }
+
+// jq -r preserves object insertion order (including the first position of a
+// duplicate key). Keep raw nested values rather than changing Value's map
+// feature globally, which would change the other native JSON protocols.
+struct OrderedObject(Vec<(String, Box<RawValue>)>);
+impl<'de> serde::Deserialize<'de> for OrderedObject {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        struct Visitor;
+        impl<'de> serde::de::Visitor<'de> for Visitor {
+            type Value = OrderedObject;
+            fn expecting(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                f.write_str("a JSON object")
+            }
+            fn visit_map<M: serde::de::MapAccess<'de>>(
+                self,
+                mut map: M,
+            ) -> Result<Self::Value, M::Error> {
+                let mut entries: Vec<(String, Box<RawValue>)> = Vec::new();
+                while let Some((key, value)) = map.next_entry::<String, Box<RawValue>>()? {
+                    if let Some(entry) = entries.iter_mut().find(|(k, _)| *k == key) {
+                        entry.1 = value;
+                    } else {
+                        entries.push((key, value));
+                    }
+                }
+                Ok(OrderedObject(entries))
+            }
+        }
+        deserializer.deserialize_map(Visitor)
+    }
+}
+
+fn pretty(value: &RawValue, depth: usize) -> Option<String> {
+    let indent = "  ".repeat(depth + 1);
+    let (open, close, entries) = match value.get().as_bytes().first()? {
+        b'{' => {
+            let object: OrderedObject = serde_json::from_str(value.get()).ok()?;
+            let entries: Option<Vec<_>> = object
+                .0
+                .iter()
+                .map(|(key, value)| {
+                    Some(format!(
+                        "{indent}{}: {}",
+                        serde_json::to_string(key).ok()?,
+                        pretty(value, depth + 1)?
+                    ))
+                })
+                .collect();
+            ('{', '}', entries?)
+        }
+        b'[' => {
+            let array: Vec<Box<RawValue>> = serde_json::from_str(value.get()).ok()?;
+            let entries: Option<Vec<_>> = array
+                .iter()
+                .map(|value| Some(format!("{indent}{}", pretty(value, depth + 1)?)))
+                .collect();
+            ('[', ']', entries?)
+        }
+        _ => return canonical(value),
+    };
+    if entries.is_empty() {
+        return Some(format!("{open}{close}"));
+    }
+    Some(format!(
+        "{open}\n{}\n{}{close}",
+        entries.join(",\n"),
+        "  ".repeat(depth)
+    ))
+}
+
+pub fn instruction_pin(bytes: &[u8]) -> Option<String> {
+    let manifest: Object = serde_json::from_slice(bytes).ok()?;
+    let value = manifest.get("mir_yoke_source_commit")?;
+    let text = match value.get().as_bytes().first()? {
+        b'"' => serde_json::from_str::<String>(value.get()).ok()?,
+        b'n' | b'f' => String::new(),
+        _ => pretty(value, 0)?,
+    };
+    Some(text.replace('\0', "").trim_end_matches('\n').into())
+}

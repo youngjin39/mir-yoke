@@ -53,6 +53,10 @@ skips POSIX replay and retains the platform-specific suite.
 
 ## Source re-pins
 
+- W1-Y6b(1) re-pins only the bootstrap binary entrypoint for the additive
+  enforce/instructions protocol routes and capabilities. The shell sources,
+  caller selection and all existing frozen observations remain unchanged.
+
 - W1-Y3b re-pins the crate manifest and lock for `tempfile`, which supplies
   private temporary files and portable atomic replacement. The bootstrap target,
   shell sources and all frozen observations remain unchanged. The Rust checkpoint

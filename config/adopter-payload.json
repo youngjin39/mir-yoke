@@ -2842,20 +2842,26 @@
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
+      "path": "native/handoff-packet/src/bootstrap_enforce.rs",
+      "sha256": "82513404e66c24f983ce34f33c40c3e48b647bc9f233ea10efd3fede7d77ef06"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
       "path": "native/handoff-packet/src/bootstrap_gate.rs",
-      "sha256": "c7125b59212872fbbaf4a4437ef87738a1c69b37439e84e90f54110b5cdc1135"
+      "sha256": "abe20e67ddf9d99765fcd27e9b5b65f5c4d23d60884552d6e1051a9fe2913f4e"
     },
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/bootstrap_json.rs",
-      "sha256": "e83c22df3c68eb197e8321460bd3b3bd46b7fbd7954a69ba0f49f6ad08a80b83"
+      "sha256": "abf3131a4c476074e7a8ac0be00a2d9c89a7bd803c0f3f5fe11fe70d6f91e179"
     },
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/src/bootstrap_state.rs",
-      "sha256": "ef76db80e9eaf1f1ea0826a432450d8d855c27fe91a215964ada65cce2371f85"
+      "sha256": "0830fca2bef246541c2a76c0cacc16e1858ceeb4dc8e78007f3f7e79ce465e18"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3214,8 +3220,14 @@
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
+      "path": "native/handoff-packet/tests/bootstrap_enforce.rs",
+      "sha256": "63119279d59ac3b66564e05845e0be92423c556e69a6d261555b23150c8d0453"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
       "path": "native/handoff-packet/tests/bootstrap_state.rs",
-      "sha256": "7bab99bc22a0e7c2406c9a298796cf1ecd7480c25a71a655858b43de6dfd0b47"
+      "sha256": "9cc0bcf441c8deb7e219c7c60b4b734cf43e33f8e3ce98dd54e1cd340f781997"
     },
     {
       "classification": "template-maintainer-tool",
@@ -3665,13 +3677,13 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/w1/README.md",
-      "sha256": "9fd7369798c0d9bb20fb0bcf77bf212de1e6b46a2ecd1ac55fdb656a335dcd2e"
+      "sha256": "c8e05659fe73e218e41d1e94f29aa6a9f91309846bbb2bab8216d4ae46f83d84"
     },
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "native/handoff-packet/tests/fixtures/w1/manifest.json",
-      "sha256": "ccd5c9c172a3245cf261a18370c99f29293d5cea7f9a201711f20f12804a09cc"
+      "sha256": "8af3ff2cb4b657042eb3bea10f2f1f02f35e9ff2462b91d9cf24a91dc702b721"
     },
     {
       "classification": "template-maintainer-tool",
@@ -5740,6 +5752,18 @@
     {
       "classification": "template-maintainer-tool",
       "disposition": "remove",
+      "path": "tests/fixtures/bootstrap-enforce.README.md",
+      "sha256": "59ef0bcc30968b82595a9d4272728c3122f84e6db573fcdbecd38c8ad31395f0"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "tests/fixtures/bootstrap-enforce.json",
+      "sha256": "b551364ca973920d0c94af5fd4b95e4976145c38cfeb28f9ede1b31717a8f8ea"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
       "path": "tests/fixtures/executor_brief_policy_oracle.py",
       "sha256": "7305aafb1e7f3507d568822973017a1728f6cfd5925205b3cb3a63e2a7eb63ec"
     },
@@ -5880,6 +5904,12 @@
       "disposition": "remove",
       "path": "tests/test_bootstrap_cli.py",
       "sha256": "597af9d66627ddaf334a284c9b1507d08e3265182be2d247ee420e7a181946db"
+    },
+    {
+      "classification": "template-maintainer-tool",
+      "disposition": "remove",
+      "path": "tests/test_bootstrap_enforce.py",
+      "sha256": "f3f98b200cdb2e398dd660a677cff0a99e8c665c8295537f37db1887b27c3b35"
     },
     {
       "classification": "template-maintainer-tool",

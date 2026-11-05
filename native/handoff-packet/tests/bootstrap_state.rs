@@ -115,7 +115,7 @@ fn state_capability_and_unsupported_inputs() {
     assert_eq!(result.status.code(), Some(0));
     assert_eq!(
         result.stdout,
-        b"{\"protocols\":[\"mir.bootstrap-state@1\"]}\n"
+        b"{\"protocols\":[\"mir.bootstrap-state@1\",\"mir.bootstrap-enforce@1\",\"mir.bootstrap-instructions@1\"]}\n"
     );
     assert!(result.stderr.is_empty());
     for path in ["C:\\repo", "C:/repo", "\\\\server\\share"] {

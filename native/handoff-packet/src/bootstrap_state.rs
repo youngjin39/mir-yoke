@@ -1,6 +1,6 @@
 //! Version 1 state determination only. The pinned shell remains the caller.
 //! Receipt/manifest objects tolerate unknown fields and use the last duplicate
-//! key, like jq. No recovery instructions or mutation enforcement live here.
+//! key, like jq. Shared by state and enforcement without a subprocess hop.
 use regex::Regex;
 use serde_json::{Value, json};
 use std::{
@@ -16,13 +16,13 @@ const OUTPUTS: [&str; 4] = [
     "spec/gaps.yaml",
 ];
 
-fn read_json(path: &Path) -> Option<Value> {
+pub(super) fn read_json(path: &Path) -> Option<Value> {
     serde_json::from_slice(&fs::read(path).ok()?).ok()
 }
-fn regular(path: &Path) -> bool {
+pub(super) fn regular(path: &Path) -> bool {
     fs::symlink_metadata(path).is_ok_and(|m| m.is_file())
 }
-fn linked(path: &Path) -> bool {
+pub(super) fn linked(path: &Path) -> bool {
     fs::symlink_metadata(path).is_ok_and(|m| m.is_symlink())
 }
 fn hash(value: &Value, min: usize, max: usize) -> bool {
@@ -47,7 +47,7 @@ fn executable(path: &Path) -> bool {
         path.is_file()
     }
 }
-fn logical_directory(path: &Path) -> Option<std::path::PathBuf> {
+pub(super) fn logical_directory(path: &Path) -> Option<std::path::PathBuf> {
     use std::path::{Component, PathBuf};
     let absolute = if path.is_absolute() {
         path.to_path_buf()
