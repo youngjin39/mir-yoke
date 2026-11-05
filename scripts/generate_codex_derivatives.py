@@ -5,6 +5,7 @@ Derived from the Mir harness reference implementation (Apache-2.0).
 The historical shell generator's output format is intentionally preserved.
 """
 
+import argparse
 import json
 import os
 import re
@@ -242,7 +243,7 @@ def write_config(output):
     write_text(output / ".codex/config.toml", text)
 
 
-def write_hooks(output):
+def write_hooks(output, *, platform="posix", shell=None):
     renderer = Path("templates/common-harness/scripts/render-hook-configs.py")
     definition = Path("config/project-hooks.json")
     if not renderer.is_file() or not definition.is_file():
@@ -252,7 +253,9 @@ def write_hooks(output):
     try:
         payload = module["_load_definition"](definition)
         outputs = {
-            output / path: module["_serialized"](module["render_hooks"](payload, runtime))
+            output / path: module["_serialized"](
+                module["render_hooks"](payload, runtime, platform=platform, shell=shell)
+            )
             for runtime, path in module["OUTPUT_PATHS"].items()
         }
         for path, text in outputs.items():
@@ -330,6 +333,14 @@ def write_manifest(output, nested, agents, hooks):
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--platform", default="posix", choices=["posix", "windows"])
+    parser.add_argument("--shell", choices=["git-bash", "powershell", "pwsh", "cmd"])
+    args, _ = parser.parse_known_args()
+    if (args.platform == "windows" and args.shell is None) or (
+        args.platform == "posix" and args.shell is not None
+    ):
+        parser.error("select an explicit supported platform/shell profile")
     root = Path(__file__).resolve().parent.parent
     os.chdir(root)
     output = Path(os.environ.get("CODEX_DERIVATION_OUTPUT_ROOT") or ".")
@@ -366,7 +377,7 @@ def main():
         )
     write_config(output)
     write_text(output / ".codex/README.md", CODEX_README)
-    hooks = write_hooks(output)
+    hooks = write_hooks(output, platform=args.platform, shell=args.shell)
     remove_tree(output / ".agents/skills")
     remove_tree(output / ".codex-sync/staging/.agents/skills")
     remove_tree(output / ".codex/agents")

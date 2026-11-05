@@ -15,6 +15,7 @@ _SUBCOMMAND_MODULES = {
     "memory": "mir.cli.memory",
     "migrate": "mir.cli.migrate",
     "policy": "mir.cli.policy",
+    "project-hooks": "mir.cli.project_hooks",
     "relations": "mir.cli.relations",
     "run-python": "mir.cli.run_python",
     "runtime-manifest": "mir.cli.runtime_manifest",

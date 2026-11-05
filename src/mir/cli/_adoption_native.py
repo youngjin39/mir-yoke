@@ -42,13 +42,18 @@ def install_delegation_gate(root: Path, *, source_root: Path) -> dict[str, str] 
     return _install(root, source_root=source_root, name="delegation-gate")
 
 
-def install_project_hooks(root: Path, *, source_root: Path) -> dict[str, str] | None:
-    """Pin generic project hooks when the provider lock has a released host artifact."""
-    return _install(root, source_root=source_root, name="project-hooks")
+def install_project_hooks(
+    root: Path, *, source_root: Path | None = None, artifact_pin: dict | None = None,
+) -> dict[str, str] | None:
+    """Place project hooks from an explicit pin or the executor's provider lock."""
+    return _install(
+        root, source_root=source_root, name="project-hooks", artifact_pin=artifact_pin,
+    )
 
 
 def _install(
-    root: Path, *, source_root: Path, name: str, local_source: Path | None = None,
+    root: Path, *, source_root: Path | None, name: str, local_source: Path | None = None,
+    artifact_pin: dict | None = None,
 ) -> dict[str, str] | None:
     target = native.host_target()
     windows = bool(target and target.endswith("windows-msvc"))
@@ -71,17 +76,12 @@ def _install(
             if not data:
                 return None
         else:
-            lock_path = source_root / ".mir/capability-lock.json"
-            if lock_path.parent.is_symlink() or lock_path.is_symlink():
-                return None
-            lock = json.loads(lock_path.read_bytes())
-            if not isinstance(lock, dict):
-                return None
-            records = native.validate_artifacts(lock.get("native_artifacts", {}), lock["plugins"])
-            record = records.get(name)
-            if not record:
-                return None
-            pin = record["targets"].get(target)
+            if artifact_pin is not None:
+                pin = artifact_pin
+            else:
+                if source_root is None:
+                    return None
+                pin = _provider_pin(source_root, name, target)
             if pin is None:
                 return None
             parsed = urlsplit(pin["url"])
@@ -102,6 +102,11 @@ def _install(
                 created.append(parent)
         if destination.is_symlink() or (destination.exists() and not destination.is_file()):
             return None
+        if destination.is_file():
+            with suppress(OSError, ValueError):
+                native._verify(destination, pin)
+                if os.access(destination, os.X_OK):
+                    return {"path": relative, "sha256": pin["sha256"]}
         with tempfile.NamedTemporaryFile(
             prefix=f".{name}.", dir=parent, delete=False,
         ) as output:
@@ -121,3 +126,15 @@ def _install(
             with suppress(OSError):
                 if parent.is_dir() and not any(parent.iterdir()):
                     parent.rmdir()
+
+
+def _provider_pin(source_root: Path, name: str, target: str) -> dict | None:
+    lock_path = source_root / ".mir/capability-lock.json"
+    if lock_path.parent.is_symlink() or lock_path.is_symlink():
+        return None
+    lock = json.loads(lock_path.read_bytes())
+    if not isinstance(lock, dict):
+        return None
+    records = native.validate_artifacts(lock.get("native_artifacts", {}), lock["plugins"])
+    record = records.get(name)
+    return record["targets"].get(target) if record else None

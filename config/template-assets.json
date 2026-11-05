@@ -255,6 +255,7 @@
         "config/mir-executor-common.json",
         "config/mir-executor.local.json",
         "config/project-hooks.json",
+        "config/project-hooks-provider.json",
         "config/template-assets.json",
         "config/template-assets.schema.json",
         "pyproject.toml",

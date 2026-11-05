@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "provider_revision": null,
+  "plugins": {"mir-lifecycle-hooks": {}},
+  "native_artifacts": {}
+}
