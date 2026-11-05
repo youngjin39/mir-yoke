@@ -269,7 +269,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": ".claude/hooks/sub-agent-policy-gate.sh",
-      "sha256": "e73f889141bdd6453d6580328fb9dedc0b4e7dceba0233d407e58c5aba28bc28"
+      "sha256": "83951a845c3f4500d295b40fbbc7463d8dfc887cb33a8469fe1599dde121a87d"
     },
     {
       "classification": "reference",
@@ -2279,7 +2279,7 @@
       "classification": "reference",
       "disposition": "remove",
       "path": "docs/operations/mir-executor-sync.md",
-      "sha256": "9873096d3f0e68e744f243dc1cca8adabac22451d933f9052559b8e7c5dd6c8a"
+      "sha256": "63e47b6a8b13dbf967000e9efc667fc3419a4851aae46d044cd8838511f7e152"
     },
     {
       "classification": "reference",
@@ -5855,7 +5855,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_delegation_gate_native_parity.py",
-      "sha256": "b1d5e1bd37ce4a1bd1685ed895f8846f1cdd44c355df04e7fb76d9c12734b467"
+      "sha256": "f18a86cb941e3554eb1c2af64280abf704413bca6238a93f5505572760f55425"
     },
     {
       "classification": "template-maintainer-tool",
@@ -6413,7 +6413,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_sub_agent_policy_gate.py",
-      "sha256": "bc82ff63c883aaf84a44d2fd6ea4deab3e3602221fd5422d99b81f4e1794ad24"
+      "sha256": "9912516198bf2a91c875e1b83a10fe7607a473bd362c7c9dcb9dc54564d787f0"
     },
     {
       "classification": "template-maintainer-tool",

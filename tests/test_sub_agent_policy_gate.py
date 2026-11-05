@@ -2,8 +2,12 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 from pathlib import Path
+
+import pytest
+from test_delegation_gate_native_parity import gate  # noqa: F401
 
 ROOT = Path(__file__).resolve().parents[1]
 GATE = ROOT / ".claude" / "hooks" / "sub-agent-policy-gate.sh"
@@ -30,7 +34,10 @@ def _run_gate(project: Path, env_policy: Path | None = None) -> subprocess.Compl
     )
 
 
-def test_gate_reads_the_deployed_lock_mode_before_the_env_policy(tmp_path: Path) -> None:
+def test_gate_reads_the_deployed_lock_mode_before_the_env_policy(tmp_path: Path, gate) -> None:  # noqa: F811
+    binary = tmp_path / ".mir/bin" / gate.name
+    binary.parent.mkdir(parents=True)
+    shutil.copy2(gate, binary)
     _write(tmp_path / "config" / "sub-agent-policy.json", {"per_project": {}})
     lock = tmp_path / "config" / "model-routing.lock.json"
     overlay = _write(tmp_path / "overlay.json", {"mode": "force_codex"})
@@ -43,3 +50,25 @@ def test_gate_reads_the_deployed_lock_mode_before_the_env_policy(tmp_path: Path)
     assert blocked.returncode == 2
     assert "config/model-routing.lock.json" in blocked.stderr
     assert "edit config/sub-agent-policy.json" not in blocked.stderr
+
+
+@pytest.mark.parametrize("status", [64, 7, 126, 127])
+def test_gate_blocks_native_decline_or_failure(tmp_path: Path, status: int) -> None:
+    binary = tmp_path / ".mir/bin/delegation-gate"
+    binary.parent.mkdir(parents=True)
+    binary.write_text(f"#!/bin/sh\nexit {status}\n")
+    binary.chmod(0o755)
+    result = _run_gate(tmp_path)
+    assert result.returncode == 2
+    assert "native delegation-gate" in result.stderr
+    assert len(result.stderr) < 512
+
+
+def test_gate_blocks_launch_failure(tmp_path: Path) -> None:
+    binary = tmp_path / ".mir/bin/delegation-gate"
+    binary.parent.mkdir(parents=True)
+    binary.write_text("#!/missing-native-interpreter\n")
+    binary.chmod(0o755)
+    result = _run_gate(tmp_path)
+    assert result.returncode == 2
+    assert "native delegation-gate" in result.stderr

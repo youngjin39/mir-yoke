@@ -792,27 +792,32 @@ The exec form runs the executable directly, without Bash; Claude Code substitute
 `${CLAUDE_PROJECT_DIR}` in the command and arguments. Confirm support in the
 installed Claude Code version before enabling this optional registration.
 
-The native gate ports this repository's `.claude/hooks/sub-agent-policy-gate.sh`
-reference body with jq present. It needs neither jq nor Python. Only `Agent` and
-`Task` are gated; `spawn_agent` and `MIR_CODEX_MAIN` have no special handling.
-Diagnostics and exit codes match the reference, including malformed JSON blocking
+The native gate owns the delegation policy algorithm;
+`.claude/hooks/sub-agent-policy-gate.sh` is a thin launcher. It needs neither jq nor
+Python. Only `Agent` and `Task` are gated; `spawn_agent` and `MIR_CODEX_MAIN` have no special handling.
+Diagnostics and exit codes match the frozen G6 oracle, including malformed JSON blocking
 with exit 2 and the exact BLOCK/ADVISORY messages.
 
 Policy resolution uses `CLAUDE_PROJECT_DIR` (or the current directory). A regular
 `config/model-routing.lock.json` exclusively supplies the mode; local policy and
 `MIR_SUB_AGENT_POLICY` cannot override it, even when the lock is invalid. Otherwise,
 `config/sub-agent-policy.json` supplies the base, and an existing regular file
-named by `MIR_SUB_AGENT_POLICY` overrides a readable base. Both files use the jq
-expression `((.policy // .).delegation.mode // .mode // empty)` and require a string.
+named by `MIR_SUB_AGENT_POLICY` overrides a readable base. Both files use the
+selection rule `((.policy // .).delegation.mode // .mode // empty)` and require a string.
 Missing, unreadable, invalid, and unknown modes resolve to `force_codex` (fail closed).
 `force_claude`, `select`, `per_project`, `unrestricted`, `user_command_priority`, and
 `obey_user` allow calls without a diagnostic.
 
 Under `force_codex`, `codex:codex-rescue` is allowed first. Other spawns exit 2,
-unless `MIR_R3_FALLBACK=1` allows them with the reference ADVISORY. The gate performs
+unless `MIR_R3_FALLBACK=1` allows them with the frozen ADVISORY. The gate performs
 no network calls or writes. The Bash wrapper executes a regular executable,
 non-symlink `.mir/bin/delegation-gate` (or `.exe`) before reading stdin; otherwise
-it retains the unchanged reference body, which requires jq and blocks if jq is absent.
+it blocks with exit 2 and a bounded diagnostic naming the native gate. Native
+launch failures, declines and unexpected exit codes also block with exit 2;
+native allow/block decisions (0/2) and their output are preserved. Stdin bytes
+pass directly to the native process. The launcher performs no runtime pin/SHA
+check, matching its previous selector; explicit sync verifies the provider pin
+and installs the binary. There is no shell policy fallback or jq/Python dependency.
 
 Windows execution, Claude exec-form registration, and per-target release digests
 require validation with the built release artifacts on the target platform.

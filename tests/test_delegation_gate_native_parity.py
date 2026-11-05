@@ -63,19 +63,26 @@ def test_gate_parity(gate, tmp_path, case):
     payload = case.get('raw', json.dumps(case['payload']))
     expected = GOLDEN['cases'][case['name']]
     assert payload == expected['stdin']
-    native = subprocess.run([str(gate)], input=payload.encode(), capture_output=True, env=env)
+    binary = tmp_path / '.mir/bin' / gate.name
+    binary.parent.mkdir(parents=True)
+    shutil.copy2(gate, binary)
+    native = subprocess.run(['bash', str(ROOT / '.claude/hooks/sub-agent-policy-gate.sh')],
+                            input=payload.encode(), capture_output=True, env=env)
     assert (native.returncode, native.stdout, native.stderr) == (
         expected['expected']['exit'], expected['expected']['stdout'].encode(),
         expected['expected']['stderr'].encode())
 
 
 @pytest.mark.skipif(os.name == 'nt', reason='POSIX wrapper')
-@pytest.mark.parametrize('kind', ['executable', 'exe', 'symlink', 'nonexecutable', 'directory'])
-def test_wrapper_dispatch(gate, tmp_path, kind):
+@pytest.mark.parametrize('kind', [
+    'executable', 'exe', 'missing', 'symlink', 'nonexecutable', 'directory'])
+def test_wrapper_dispatch(tmp_path, kind):
     binary = tmp_path / '.mir/bin/delegation-gate'
     binary.parent.mkdir(parents=True)
-    marker = b'#!/bin/sh\ncat >&2\nexit 7\n'
-    if kind == 'directory':
+    marker = b'#!/bin/sh\ncat >&2\nexit 0\n'
+    if kind == 'missing':
+        pass
+    elif kind == 'directory':
         binary.mkdir()
     elif kind == 'symlink':
         target = tmp_path / 'marker'
@@ -87,28 +94,30 @@ def test_wrapper_dispatch(gate, tmp_path, kind):
             binary = binary.with_suffix('.exe')
         binary.write_bytes(marker)
         binary.chmod(0o644 if kind == 'nonexecutable' else 0o755)
-    payload = b'{"tool_name":"Read"}'
+    payload = b' \x00{"tool_name":"Read"}\r\n\n'
     result = subprocess.run(['bash', str(ROOT / '.claude/hooks/sub-agent-policy-gate.sh')],
                             input=payload, capture_output=True,
                             env={**os.environ, 'CLAUDE_PROJECT_DIR': str(tmp_path)})
     if kind in ('executable', 'exe'):
-        assert (result.returncode, result.stderr) == (7, payload)
+        assert (result.returncode, result.stderr) == (0, payload)
     else:
-        assert (result.returncode, result.stderr) == (0, b'')
+        assert result.returncode == 2
+        assert result.stdout == b''
+        assert b'native delegation-gate' in result.stderr
+        assert len(result.stderr) < 512
 
 
 @pytest.mark.skipif(os.name == 'nt', reason='POSIX PATH setup')
-def test_native_needs_no_jq_but_reference_blocks_without_it(gate, tmp_path):
+def test_launcher_needs_no_jq_or_python(gate, tmp_path):
     bindir = tmp_path / 'path'
     bindir.mkdir()
-    for name in ('dirname', 'cat'):
-        (bindir / name).symlink_to(shutil.which(name))
+    binary = tmp_path / '.mir/bin' / gate.name
+    binary.parent.mkdir(parents=True)
+    shutil.copy2(gate, binary)
     env = {**os.environ, 'PATH': str(bindir), 'CLAUDE_PROJECT_DIR': str(tmp_path),
            'MIR_R3_FALLBACK': '0'}
     payload = b'{"tool_name":"Read"}'
-    native = subprocess.run([str(gate)], input=payload, capture_output=True, env=env)
+    native = subprocess.run(
+        [shutil.which('bash'), str(ROOT / '.claude/hooks/sub-agent-policy-gate.sh')],
+        input=payload, capture_output=True, env=env)
     assert (native.returncode, native.stdout, native.stderr) == (0, b'', b'')
-    # The historical jq requirement is retained in the frozen reference record.
-    assert GOLDEN['cases']['without_jq']['expected'] == {
-        'exit': 2, 'stdout': '',
-        'stderr': '[PreToolUse BLOCK] jq is required for PreToolUse parsing\n'}

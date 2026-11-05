@@ -1,119 +1,18 @@
 #!/bin/bash
-_MIR_PYTHON_LAUNCHER="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/_lib/run-python.sh"
-# Repository-local force_codex Agent/Task gate. A consumer may adopt this file explicitly;
+# Repository-local Agent/Task gate. Consumers may explicitly adopt this launcher.
 # Mir Yoke does not deploy it to other repositories.
-
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
 for _mir_native_gate in "$PROJECT_DIR/.mir/bin/delegation-gate" "$PROJECT_DIR/.mir/bin/delegation-gate.exe"; do
   if [ -f "$_mir_native_gate" ] && [ -x "$_mir_native_gate" ] && [ ! -L "$_mir_native_gate" ]; then
-    exec "$_mir_native_gate"
+    # Keep stdin attached, including trailing newlines and non-text bytes.
+    ( exec "$_mir_native_gate" )
+    case "$?" in
+      0) exit 0 ;;
+      2) exit 2 ;;
+    esac
+    echo "[mir BLOCKED] native delegation-gate failed to launch or declined; delegation blocked." >&2
+    exit 2
   fi
 done
-INPUT=$(cat)
-
-block() {
-  echo "[PreToolUse BLOCK] $1" >&2
-  exit 2
-}
-
-require_jq() {
-  if ! command -v jq >/dev/null 2>&1; then
-    block "jq is required for PreToolUse parsing"
-  fi
-}
-
-extract_json() {
-  local filter="$1"
-  local value
-  if ! value=$(printf '%s' "$INPUT" | jq -er "$filter" 2>/dev/null); then
-    return 1
-  fi
-  printf '%s' "$value"
-}
-
-read_sub_agent_policy_mode() {
-  local policy_file="$1"
-  [ -f "$policy_file" ] || return 1
-  if command -v jq >/dev/null 2>&1; then
-    jq -er '((.policy // .).delegation.mode // .mode // empty) | select(type == "string")' "$policy_file" 2>/dev/null
-    return $?
-  fi
-  "$_MIR_PYTHON_LAUNCHER" - "$policy_file" <<'PY' 2>/dev/null
-import json
-import sys
-
-with open(sys.argv[1], encoding="utf-8") as fh:
-    data = json.load(fh)
-policy = data.get("policy", data) if isinstance(data, dict) else {}
-delegation = policy.get("delegation") if isinstance(policy, dict) else None
-mode = delegation.get("mode") if isinstance(delegation, dict) else None
-mode = mode or (data.get("mode") if isinstance(data, dict) else None)
-if not isinstance(mode, str) or not mode:
-    raise SystemExit(1)
-print(mode)
-PY
-}
-
-resolve_sub_agent_policy_mode() {
-  local mode
-  # ADR-88 amendment: the Harness-deployed lock decides; the env overlay is a fallback.
-  local lock_file="$PROJECT_DIR/config/model-routing.lock.json"
-  local policy_file="$PROJECT_DIR/config/sub-agent-policy.json"
-  local overlay_file="${MIR_SUB_AGENT_POLICY:-}"
-  if [ -f "$lock_file" ]; then
-    policy_file="$lock_file"
-    overlay_file=""
-  fi
-  if ! mode="$(read_sub_agent_policy_mode "$policy_file")"; then
-    printf '%s\n' "force_codex"
-    return 0
-  fi
-
-  if [ -n "$overlay_file" ] && [ -f "$overlay_file" ]; then
-    if ! mode="$(read_sub_agent_policy_mode "$overlay_file")"; then
-      printf '%s\n' "force_codex"
-      return 0
-    fi
-  fi
-
-  case "$mode" in
-    force_codex|force_claude|select|per_project|unrestricted|user_command_priority|obey_user)
-      printf '%s\n' "$mode"
-      ;;
-    *)
-      printf '%s\n' "force_codex"
-      ;;
-  esac
-}
-
-require_jq
-TOOL_NAME="$(extract_json '.tool_name')" || block "Malformed PreToolUse payload for filter: .tool_name"
-
-if [ "$TOOL_NAME" != "Agent" ] && [ "$TOOL_NAME" != "Task" ]; then
-  exit 0
-fi
-
-_mir_sub_agent_policy_mode="$(resolve_sub_agent_policy_mode)"
-if [ "$_mir_sub_agent_policy_mode" != "force_codex" ]; then
-  exit 0
-fi
-
-# Owner decision 2026-09-23: the official Codex plugin agent is the Codex lane, not a bypass.
-_mir_subagent_type="$(printf '%s' "$INPUT" | "$_MIR_PYTHON_LAUNCHER" -c '
-import json
-import sys
-
-tool_input = json.load(sys.stdin).get("tool_input") or {}
-print(tool_input.get("subagent_type") or "")
-' 2>/dev/null || true)"
-if [ "$_mir_subagent_type" = "codex:codex-rescue" ]; then
-  exit 0
-fi
-
-if [ "${MIR_R3_FALLBACK:-0}" = "1" ]; then
-  echo "[mir ADVISORY] force_codex Agent/Task escape via MIR_R3_FALLBACK=1" >&2
-  exit 0
-fi
-
-echo "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy." >&2
+echo "[mir BLOCKED] native delegation-gate is missing or invalid; delegation blocked." >&2
 exit 2
