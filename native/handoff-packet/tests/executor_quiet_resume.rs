@@ -59,10 +59,12 @@ fn captured_resume_patches_and_failures_match() {
         if case["missing"] == true {
             fs::remove_file(&path).unwrap();
         }
+        // Substitute the root as JSON string content: Windows paths carry backslashes.
+        let escaped_root = json!(root.to_string_lossy()).to_string();
         let mut args: Value = serde_json::from_str(
             &case["args"]
                 .to_string()
-                .replace("<root>", &root.to_string_lossy()),
+                .replace("<root>", &escaped_root[1..escaped_root.len() - 1]),
         )
         .unwrap();
         let result = policy.pre_execute(&root, &root, &root, &mut args, &BTreeMap::new());
