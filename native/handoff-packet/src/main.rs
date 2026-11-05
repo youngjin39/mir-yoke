@@ -100,5 +100,8 @@ fn ascii_json(text: &str) -> io::Result<String> {
     Ok(out)
 }
 fn main() {
+    if std::env::args_os().nth(1).as_deref() == Some(std::ffi::OsStr::new("--mir-warmup")) {
+        return;
+    }
     std::process::exit(run().unwrap_or(0));
 }

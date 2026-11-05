@@ -70,6 +70,8 @@ def test_gate_parity(gate, tmp_path, case):
     native, reference = [subprocess.run(command, input=payload.encode(), capture_output=True,
                                        env=env) for command in commands]
     assert reference.returncode == case['code']
+    if 'expected_hint' in case:
+        assert case['expected_hint'].encode() in reference.stderr
     # Bash 4.4+ warns about NUL bytes it drops: interpreter noise, not gate output.
     reference_stderr = BASH_NUL_WARNING.sub(b'', reference.stderr)
     assert (native.returncode, native.stdout, native.stderr) == (

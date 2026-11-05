@@ -1,0 +1,10 @@
+[
+  {"name":"npm shims", "path":"C:\\npm", "pathext":".COM;.EXE;.BAT;.CMD", "files":["C:\\npm\\codex", "C:\\npm\\codex.ps1", "C:\\npm\\codex.cmd"], "expected":"C:\\npm\\codex.CMD"},
+  {"name":"path order before extension order", "path":"C:\\first;D:\\second", "pathext":".EXE;.CMD", "files":["C:\\first\\codex.cmd", "D:\\second\\codex.exe"], "expected":"C:\\first\\codex.CMD"},
+  {"name":"extension order", "path":"C:\\npm", "pathext":".BAT;.CMD;.EXE", "files":["C:\\npm\\codex.exe", "C:\\npm\\codex.cmd", "C:\\npm\\codex.bat"], "expected":"C:\\npm\\codex.BAT"},
+  {"name":"default extensions", "path":"C:\\npm", "pathext":"", "files":["C:\\npm\\codex.cmd"], "expected":"C:\\npm\\codex.CMD"},
+  {"name":"empty extensions ignored", "path":"C:\\npm", "pathext":";.CMD;;", "files":["C:\\npm\\codex.cmd"], "expected":"C:\\npm\\codex.CMD"},
+  {"name":"empty path", "path":"", "pathext":".CMD", "files":["codex.CMD"], "expected":"codex"},
+  {"name":"missing", "path":"C:\\npm", "pathext":".EXE;.CMD", "files":["C:\\npm\\codex.ps1"], "expected":"codex"},
+  {"name":"spaces and trailing separator", "path":"C:\\Program Files\\npm\\", "pathext":".CMD", "files":["C:\\Program Files\\npm\\codex.cmd"], "expected":"C:\\Program Files\\npm\\codex.CMD"}
+]

@@ -7,6 +7,9 @@ mod digest;
 use std::io::{self, Write};
 
 fn main() {
+    if std::env::args_os().nth(1).as_deref() == Some(std::ffi::OsStr::new("--mir-warmup")) {
+        return;
+    }
     let args: Vec<_> = std::env::args_os().skip(1).collect();
     let (output, code) = if args.len() == 1 && args[0] == "--version" {
         ("bootstrap-gate 0.1.0\n", 0)

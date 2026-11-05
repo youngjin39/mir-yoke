@@ -927,11 +927,9 @@ fn provider(
             return Err("RuntimeError: Delegated Codex refused in the main worktree per ADR-60 section 16 D3. Delegated execution must go through `mir_executor execute --background --dispatch`, which uses an R4 worktree, or set MIR_CODEX_MAIN=1 for the main process itself, such as loop_driver.".into());
         }
     }
-    let binary = environment_value(environment, "CODEX_BIN", cfg!(windows))
-        .and_then(|v| v.to_str())
-        .unwrap_or("codex");
+    let binary = crate::codex_binary::resolve(environment);
     let start = Instant::now();
-    let mut command = Command::new(binary);
+    let mut command = Command::new(&binary);
     command.arg("app-server").current_dir(cwd).env_clear();
     const KEYS: &[&str] = &[
         "CODEX_BIN",
@@ -1037,7 +1035,7 @@ fn provider(
                 format!(
                     "Codex timeout after {}s: Command '{}' timed out after {} seconds",
                     args["timeout"],
-                    list_repr(&[binary.into(), "app-server".into()]),
+                    list_repr(&[binary, "app-server".into()]),
                     args["timeout"]
                 )
             });
@@ -1048,7 +1046,7 @@ fn provider(
         }) => {
             return Err(format!(
                 "FileNotFoundError: Codex binary not found: {}. Set CODEX_BIN to the full path of the codex executable.",
-                repr(binary)
+                repr(&binary)
             ));
         }
         Err(error) => {

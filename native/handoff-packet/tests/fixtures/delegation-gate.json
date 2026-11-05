@@ -1,6 +1,7 @@
 [
   {
     "name": "deny",
+    "expected_hint": "python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background",
     "code": 2,
     "mode": "force_codex",
     "payload": {

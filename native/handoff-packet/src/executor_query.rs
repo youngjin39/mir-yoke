@@ -722,6 +722,9 @@ fn run(args: &Args) -> Result<(String, String, i32)> {
 }
 
 fn main() {
+    if std::env::args_os().nth(1).as_deref() == Some(std::ffi::OsStr::new("--mir-warmup")) {
+        return;
+    }
     let raw: Vec<OsString> = std::env::args_os().skip(1).collect();
     if raw.first().is_some_and(|value| value == "--home-root")
         && let Some(home) = raw.get(1)

@@ -6,6 +6,7 @@ The CodexMcp* public names remain compatible with existing dispatch callers.
 from __future__ import annotations
 
 import json
+import ntpath
 import os
 import subprocess
 import threading
@@ -16,6 +17,33 @@ from typing import Any
 
 DEFAULT_CODEX_BIN = "codex"
 DEFAULT_PROTOCOL_VERSION = "2024-11-05"
+
+
+def windows_codex_binary(path: str, pathext: str, is_file: Callable[[str], bool]) -> str:
+    """Search PATH then PATHEXT, including npm batch shims, on any test host."""
+    if path:
+        extensions = (pathext or ".COM;.EXE;.BAT;.CMD;.VBS;.JS;.WS;.MSC").split(";")
+        for directory in path.split(";"):
+            for extension in filter(None, extensions):
+                candidate = ntpath.join(directory, "codex" + extension.rstrip("."))
+                if is_file(candidate):
+                    return candidate
+    return DEFAULT_CODEX_BIN
+
+
+def resolve_codex_binary(
+    env: Mapping[str, str] | None = None,
+    *,
+    windows: bool | None = None,
+    is_file: Callable[[str], bool] = os.path.isfile,
+) -> str:
+    """Preserve overrides and POSIX command lookup; resolve Windows shims."""
+    env = os.environ if env is None else env
+    if binary := env.get("CODEX_BIN"):
+        return binary
+    if (windows if windows is not None else os.name == "nt"):
+        return windows_codex_binary(env.get("PATH", ""), env.get("PATHEXT", ""), is_file)
+    return DEFAULT_CODEX_BIN
 
 _MCP_ENV_KEYS = {
     "CODEX_BIN",
@@ -105,7 +133,7 @@ class CodexMcpClient:
         kill_timeout: float = 2.0,
         protocol_version: str = DEFAULT_PROTOCOL_VERSION,
     ) -> None:
-        self._codex_bin = codex_bin or os.environ.get("CODEX_BIN", DEFAULT_CODEX_BIN)
+        self._codex_bin = codex_bin or resolve_codex_binary()
         self._env = dict(env) if env is not None else os.environ.copy()
         self._initialize_timeout = initialize_timeout
         self._call_timeout = call_timeout

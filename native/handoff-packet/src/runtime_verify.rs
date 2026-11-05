@@ -284,6 +284,9 @@ fn parse(args: Vec<OsString>) -> Result<BTreeMap<String, String>> {
 }
 
 fn main() {
+    if std::env::args_os().nth(1).as_deref() == Some(std::ffi::OsStr::new("--mir-warmup")) {
+        return;
+    }
     let args: Vec<_> = std::env::args_os().skip(1).collect();
     if args.len() == 1 && args[0] == "--version" {
         let code = if io::stdout().write_all(b"runtime-verify 0.1.0\n").is_ok() {

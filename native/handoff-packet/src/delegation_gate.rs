@@ -7,7 +7,7 @@ use std::{
     path::Path,
 };
 
-const BLOCK: &str = "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'scripts/mir.sh executor execute --background --dispatch ...' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n";
+const BLOCK: &str = "[mir BLOCKED] sub-agent-policy mode=force_codex: Claude Agent/Task sub-agent spawn is blocked. Use the user-scope Codex plugin (codex:codex-rescue or /codex:rescue, with policy --model/--effort) or 'python -m tools.mir_executor execute --dispatch --dispatch-brief <brief.json> --background' (codex app-server) for in-repo code/TDD/review writes. Raw codex exec is banned by ADR-69. To temporarily allow a Claude sub-agent set MIR_R3_FALLBACK=1. The mode comes from the Harness-generated config/model-routing.lock.json policy.delegation.mode (never edit it); change it in Mir Harness config/model-routing and redeploy.\n";
 const MALFORMED: &str = "[PreToolUse BLOCK] Malformed PreToolUse payload for filter: .tool_name\n";
 const ADVISORY: &str = "[mir ADVISORY] force_codex Agent/Task escape via MIR_R3_FALLBACK=1\n";
 
@@ -126,6 +126,9 @@ fn decide(input: &[u8], project: &Path) -> (i32, &'static str) {
 }
 
 fn main() {
+    if std::env::args_os().nth(1).as_deref() == Some(std::ffi::OsStr::new("--mir-warmup")) {
+        return;
+    }
     if env::args().nth(1).as_deref() == Some("--version") {
         println!("delegation-gate 0.1.0");
         return;

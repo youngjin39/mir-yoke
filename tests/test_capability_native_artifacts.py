@@ -542,3 +542,76 @@ except ValueError as error:
         capture_output=True, timeout=5,
     )
     assert (result.returncode, result.stdout, result.stderr) == (0, b'', b'')
+
+
+@pytest.mark.parametrize("target", ["aarch64-apple-darwin", "x86_64-pc-windows-msvc"])
+@pytest.mark.parametrize("failure", [None, "timeout", "exit", "spawn"])
+def test_placement_warmup_is_windows_only_and_best_effort(tmp_path, monkeypatch, target, failure):
+    import subprocess
+    from unittest.mock import Mock
+
+    source = tmp_path / "artifact"
+    source.write_bytes(DATA)
+    records = manifest(str(source))
+    records["handoff-packet"]["targets"][target] = records["handoff-packet"]["targets"].pop(
+        "aarch64-apple-darwin"
+    )
+    run = Mock(return_value=subprocess.CompletedProcess([], 9 if failure == "exit" else 0))
+    if failure == "timeout":
+        run.side_effect = subprocess.TimeoutExpired("warmup", 30)
+    elif failure == "spawn":
+        run.side_effect = OSError("spawn unavailable")
+    monkeypatch.setattr(subprocess, "run", run)
+    monkeypatch.delenv("MIR_CAPABILITY_NATIVE_ARTIFACTS", raising=False)
+    root = tmp_path / "plugin"
+    root.mkdir()
+    api().place_artifacts(root, "mir-lifecycle-hooks", records, target=target)
+    windows = "windows" in target
+    binary = root / ("bin/handoff-packet.exe" if windows else "bin/handoff-packet")
+    assert binary.read_bytes() == DATA
+    if windows:
+        run.assert_called_once_with(
+            [str(binary), "--mir-warmup"], stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=30, check=False,
+        )
+    else:
+        run.assert_not_called()
+
+
+@pytest.mark.parametrize("target", ["aarch64-apple-darwin", "x86_64-pc-windows-msvc"])
+def test_update_warms_each_runtime_cache_copy(tmp_path, monkeypatch, target):
+    import subprocess
+    from unittest.mock import Mock
+
+    from test_capability_cli import CopyGit, make_project, sticky_runtime_runner
+
+    from mir.core.capabilities import CapabilityManager
+
+    monkeypatch.setattr(api(), "host_target", lambda: target)
+    monkeypatch.setattr("mir.core.capabilities.manager.host_target", lambda: target)
+    monkeypatch.delenv("MIR_CAPABILITY_NATIVE_ARTIFACTS", raising=False)
+    source = tmp_path / "artifact"
+    source.write_bytes(DATA)
+    records = manifest("artifact")
+    records["handoff-packet"]["targets"][target] = records["handoff-packet"]["targets"].pop(
+        "aarch64-apple-darwin"
+    )
+    monkeypatch.setattr(api(), "_read", lambda url, size: source.read_bytes())
+    run = Mock(return_value=subprocess.CompletedProcess([], 0))
+    monkeypatch.setattr(subprocess, "run", run)
+    home, codex, claude = tmp_path / "provider", tmp_path / "codex", tmp_path / "claude"
+    manager = CapabilityManager(
+        make_project(tmp_path), capability_home=home, user_home=tmp_path / "user",
+        codex_home=codex, git=CopyGit(native_artifacts=records),
+        command_runner=sticky_runtime_runner(home / "active", codex, claude)[0],
+        which=lambda executable: f"/fake/{executable}",
+    )
+    manager.update(apply=True)
+    calls = [call.args[0] for call in run.call_args_list]
+    if "windows" in target:
+        assert len(calls) == 3
+        assert all(argv[1:] == ["--mir-warmup"] for argv in calls)
+        assert sum(str(codex / "plugins/cache") in argv[0] for argv in calls) == 1
+        assert sum(str(claude / "plugins/cache") in argv[0] for argv in calls) == 1
+    else:
+        assert calls == []

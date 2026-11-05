@@ -8,6 +8,7 @@ import os
 import platform
 import re
 import shutil
+import subprocess
 import sys
 import tempfile
 from contextlib import contextmanager
@@ -138,6 +139,30 @@ def _read(url, size):
         return source.read(size + 1)
 
 
+def _warm_executable(path: Path) -> None:
+    try:
+        subprocess.run(
+            [str(path), "--mir-warmup"], stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=30, check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        pass
+
+
+def warm_artifacts(root: Path, plugin: str, records: dict, *, target=None) -> None:
+    """Warm verified runtime cache copies after installation, only on Windows."""
+    target = target or host_target()
+    if not target or not target.endswith("windows-msvc"):
+        return
+    for _, relative, pin in _entries(plugin, records, target):
+        path = root / relative
+        try:
+            _verify(path, pin)
+        except (OSError, ValueError):
+            continue
+        _warm_executable(path)
+
+
 def place_artifacts(root: Path, plugin: str, records: dict, *, target=None) -> None:
     if os.environ.get("MIR_CAPABILITY_NATIVE_ARTIFACTS") == "0":
         return
@@ -180,6 +205,8 @@ def place_artifacts(root: Path, plugin: str, records: dict, *, target=None) -> N
                         "target": target, "sha256": pin["sha256"], "size": pin["size"],
                     }}, sort_keys=True).encode("utf-8"))
                 os.replace(temporary, metadata)
+            if target.endswith("windows-msvc"):
+                _warm_executable(destination)
         except (OSError, ValueError, httpx.HTTPError, httpx.InvalidURL) as exc:
             if installed:
                 destination.unlink(missing_ok=True)

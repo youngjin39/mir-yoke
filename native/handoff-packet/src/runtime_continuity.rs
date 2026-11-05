@@ -1,6 +1,9 @@
 #![forbid(unsafe_code)]
 use std::io::{self, Write};
 fn main() -> io::Result<()> {
+    if std::env::args_os().nth(1).as_deref() == Some(std::ffi::OsStr::new("--mir-warmup")) {
+        return Ok(());
+    }
     let eol = if cfg!(windows) { "\r\n" } else { "\n" };
     write!(
         io::stdout(),

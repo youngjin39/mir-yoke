@@ -396,6 +396,13 @@ registration; validate both in a target Claude session before claiming delivery
 complete. Direct dispatch also needs the shell tool's background execution:
 `--background` alone does not detach the dispatch process.
 
+On Windows, when `CODEX_BIN` is unset or empty, the executor resolves `codex`
+through `PATH` and `PATHEXT` in order, so an npm install's `codex.cmd` shim is
+found; set `CODEX_BIN` to choose a specific executable. After `mir capability
+update --apply` places native executables on Windows, it runs each placed copy
+once with `--mir-warmup` (bounded, best effort), so the antivirus first-run
+scan does not consume a hook's time budget in the first session.
+
 ## Add a local hook
 
 Define only needed hooks in `local.py`. Execution hooks load from the explicit

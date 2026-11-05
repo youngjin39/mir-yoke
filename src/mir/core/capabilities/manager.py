@@ -30,7 +30,7 @@ from .config import (
     load_consumer_acknowledgements,
 )
 from .mcp import MCP_LAUNCHERS, MCP_NAME, validate_mcp_observation, validate_mcp_package
-from .native import host_target, place_artifacts, source_tree, validate_artifacts
+from .native import host_target, place_artifacts, source_tree, validate_artifacts, warm_artifacts
 from .private_file import is_private, make_private, make_tree_inherit_parent
 
 _SHA = re.compile(r"^[0-9a-f]{40}$")
@@ -3985,6 +3985,16 @@ class CapabilityManager:
                 "codex", ["plugin", "list", "--json"], locked_plugins
             ),
         }
+        native_artifacts = getattr(self, "_pending_native_artifacts", {})
+        if native_artifacts and (host_target() or "").endswith("windows-msvc"):
+            for runtime in evidence.values():
+                for name, plugin in runtime.get("plugins", {}).items():
+                    if plugin.get("status") != "enabled":
+                        continue
+                    installed = Path(plugin["installed_path"])
+                    # The published active tree was already warmed during placement.
+                    if installed != self.active_path / self.config.plugins[name]:
+                        warm_artifacts(installed, name, native_artifacts)
         registration["install_attempts"] = attempts
         registration["evidence"] = evidence
         registration["required_runtimes"] = list(self.config.required_runtimes)

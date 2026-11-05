@@ -601,11 +601,8 @@ pub fn dispatch(
                     },
                 )
             } else {
-                let bin = environment
-                    .get(&OsString::from("CODEX_BIN"))
-                    .and_then(|s| s.to_str())
-                    .unwrap_or("codex");
-                let mut cmd = command(bin, cwd, environment, &local, &dispatch_id, &events);
+                let bin = crate::codex_binary::resolve(environment);
+                let mut cmd = command(&bin, cwd, environment, &local, &dispatch_id, &events);
                 cmd.arg("app-server");
                 let mut request = CodexRequest::new(&text, &wt.path);
                 request.agent_route = agent.as_ref();
@@ -632,12 +629,9 @@ pub fn dispatch(
         let final_result = if let Some(wt) = &outcome.worktree {
             let mut reviewer = |wt: &crate::executor_worktree::DispatchWorktree,
                                 changed: &[String]| {
-                let bin = environment
-                    .get(&OsString::from("CODEX_BIN"))
-                    .and_then(|s| s.to_str())
-                    .unwrap_or("codex");
+                let bin = crate::codex_binary::resolve(environment);
                 let mut cmd = command(
-                    bin,
+                    &bin,
                     cwd,
                     environment,
                     &local,

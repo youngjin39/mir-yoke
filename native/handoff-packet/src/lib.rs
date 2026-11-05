@@ -10,6 +10,8 @@
 #[allow(unsafe_code)]
 mod account_home;
 #[forbid(unsafe_code)]
+pub mod codex_binary;
+#[forbid(unsafe_code)]
 mod digest;
 #[forbid(unsafe_code)]
 pub mod executor_admission;

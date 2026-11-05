@@ -86,6 +86,9 @@ fn decision_fixtures() {
         );
         assert!(output.stdout.is_empty());
         let error = String::from_utf8(output.stderr).unwrap();
+        if let Some(hint) = case["expected_hint"].as_str() {
+            assert!(error.contains(hint), "{error}");
+        }
         if case["advisory"] == true {
             assert_eq!(
                 error,

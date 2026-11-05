@@ -25,6 +25,7 @@ from tools.mir_executor.codex_mcp_client import (
     CodexMcpClient,
     CodexMcpError,
     CodexMcpTimeoutError,
+    resolve_codex_binary,
 )
 from tools.mir_executor.dispatch import (
     _MCP_DISPATCH_BASE_INSTRUCTIONS,
@@ -340,7 +341,7 @@ class MirExecutor:
             )
         except CodexMcpTimeoutError as exc:
             raise subprocess.TimeoutExpired(
-                cmd=_codex_mcp_command(os.environ.get("CODEX_BIN", "codex")),
+                cmd=_codex_mcp_command(resolve_codex_binary()),
                 timeout=timeout_seconds,
                 output="",
                 stderr=str(exc),
@@ -633,7 +634,7 @@ class MirExecutor:
         if "timeout_seconds_range" in local_config(self._repo_root):
             validate_timeout(self._repo_root, timeout_seconds)
             validate_timeout(self._repo_root, stall_timeout)
-        codex_bin = os.environ.get("CODEX_BIN", "codex")
+        codex_bin = resolve_codex_binary()
         prompt = _prompt_from_codex_args(self.resolve_codex_args(codex_args))
         command = _codex_mcp_command(codex_bin)
         route = self.resolve_agent_route()

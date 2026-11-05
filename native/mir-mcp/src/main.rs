@@ -89,6 +89,9 @@ fn serve(forward: Forward, worker: bool) -> io::Result<()> {
     }
 }
 fn main() {
+    if std::env::args_os().nth(1).as_deref() == Some(std::ffi::OsStr::new("--mir-warmup")) {
+        return;
+    }
     if std::env::args_os().skip(1).collect::<Vec<_>>() == ["--internal-native"] {
         if serve(
             Forward {
