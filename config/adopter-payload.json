@@ -4997,7 +4997,7 @@
       "classification": "optional-consumer-tool",
       "disposition": "remove",
       "path": "src/mir/cli/policy.py",
-      "sha256": "7cddebbb62474417b9229cdf0e528314edc03481d8ee9e78bea796defba5e67d"
+      "sha256": "0582f01679e35040272df02565204c7909779a8fde96a47c801986a9ed376a35"
     },
     {
       "classification": "optional-consumer-tool",
@@ -5897,7 +5897,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_executor_execute_native_parity.py",
-      "sha256": "814240d19e5c5e4b41fba9f0f4bd99c95e80fe5c5a282952d479235db96a4265"
+      "sha256": "622e1567490306a9ca22edaccf0d6721afe6eafdcff650af6e6fd24949baf96b"
     },
     {
       "classification": "template-maintainer-tool",
@@ -5939,7 +5939,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_executor_native_policy_fail_closed.py",
-      "sha256": "aa0f8c2b506ee891ab40f3a2179a309e4dcdeffabcfdf0c9de1eeb909dfcd57e"
+      "sha256": "b2f9f4a2ff3f119d59a062da5bbc02f6c851eb30eaae0741b729b89192ae4fda"
     },
     {
       "classification": "template-maintainer-tool",
@@ -5951,7 +5951,7 @@
       "classification": "template-maintainer-tool",
       "disposition": "remove",
       "path": "tests/test_executor_query_native_parity.py",
-      "sha256": "13314c687f5c2af1e454d8134612d8da315cf1b43d408b9db7ba531678c99f39"
+      "sha256": "10bab632c8c0a56110b03608c1258f34224f8ec78bcb9d76a194d4ff3d14c8c5"
     },
     {
       "classification": "template-maintainer-tool",

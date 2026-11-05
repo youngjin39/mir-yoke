@@ -14,8 +14,12 @@ def main(argv: list[str]) -> int:
         print("[mir policy] pinned native policy resolver unavailable or incompatible; "
               "no routing result", file=sys.stderr)
         return 2
-    print("usage: mir policy resolve --category CATEGORY "
-          "[--repo-root PATH] [--format json|text]", file=sys.stderr)
+    usage = ("usage: mir policy resolve --category CATEGORY "
+             "[--repo-root PATH] [--format json|text]")
+    if argv in (["--help"], ["-h"]):
+        print(usage)
+        return 0
+    print(usage, file=sys.stderr)
     return 2
 
 

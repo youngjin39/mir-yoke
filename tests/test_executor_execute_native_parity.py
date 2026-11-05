@@ -614,7 +614,8 @@ def test_pinned_bridge_uses_caller_venv(binary, tmp_path, caller_venv, command, 
     from tools.mir_executor.jobs import JobRecord, JobRegistry
 
     snapshots = []
-    for implementation in ('python', 'native'):
+    # The Python sweep is retired: sweep checks only the native bridge.
+    for implementation in (('native',) if command == 'sweep' else ('python', 'native')):
         root, launcher, environment = pinned_home(binary, tmp_path / implementation)
         environment.pop('MIR_EXECUTOR_PYTHON', None)
         # Deliberately leave PATH unchanged: the caller need not activate its venv.
@@ -654,7 +655,7 @@ def test_pinned_bridge_uses_caller_venv(binary, tmp_path, caller_venv, command, 
         assert isolated == (1 if implementation == 'native' and command != 'cancel' else 0)
         assert value == 'venv-only'
         snapshots.append(SUPPORT['snapshot'](root, launcher, result))
-    assert snapshots[0] == snapshots[1]
+    assert len(set(map(repr, snapshots))) == 1
 
 
 @pytest.mark.skipif(os.name != 'posix', reason='POSIX interruption process group')

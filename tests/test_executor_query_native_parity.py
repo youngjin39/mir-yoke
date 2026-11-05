@@ -621,44 +621,43 @@ def test_pinned_cancel_declines_hook_to_python(binary, home):
 
 @pytest.mark.parametrize('apply', [False, True])
 @pytest.mark.parametrize('selector', [None, 'MIR_EXECUTOR_IMPL', 'MIR_EXECUTOR_SWEEP_IMPL'])
-def test_pinned_sweep_matches_python_state(binary, tmp_path, apply, selector):
+def test_pinned_sweep_is_native_only(binary, tmp_path, apply, selector):
+    """Byte parity lives in the frozen G6 sweep oracle; this covers pinned routing."""
     support = runpy.run_path(str(ROOT / 'tests/fixtures/executor_execute_support.py'))
     dispatch = runpy.run_path(str(ROOT / 'tests/fixtures/executor_dispatch_cli_support.py'))
-    snapshots = []
-    for implementation in ('python', 'native'):
-        root = tmp_path / implementation
-        dispatch['seed'](root, 'success', support)
-        (root / 'tools/mir_executor/local.py').unlink()
-        install_pin(binary, root)
-        registry = JobRegistry(root / 'tasks/jobs.db')
-        registry.insert(JobRecord(
-            job_id='stale', change_id='fixture', category='unit', family=None,
-            repo_root=str(root), codex_args=[], timeout_seconds=1, status='running',
-            started_at='2000-01-01T00:00:00+00:00',
-        ))
-        registry.close()
-        orphan = root / 'orphan-worktree'
-        dispatch['git'](root, 'worktree', 'add', '-b', 'mir-dispatch/orphan',
-                        str(orphan), 'HEAD')
-        arguments = ['sweep', '--repo-root', str(root)] + (['--apply'] if apply else [])
-        database_before = (root / 'tasks/jobs.db').read_bytes()
-        selectors = {'MIR_EXECUTOR_IMPL': 'python'} if implementation == 'python' else {}
-        if implementation == 'native' and selector:
-            selectors[selector] = 'python'
-        if implementation == 'native' and selector is None:
-            (root / 'tools/mir_executor/cli.py').write_text(
-                "raise RuntimeError('unexpected Python sweep fallback')\n", encoding='utf-8')
-        result = pinned_cli(root, 'module', arguments, selectors=selectors)
-        assert result[2] == 0, (result, trace_details())
-        payload = json.loads(result[0])
-        assert payload['stale_jobs'] == ['stale'], trace_details()
-        assert payload['orphan_worktrees'] == [str(orphan)], trace_details()
-        assert orphan.exists() == (not apply), trace_details()
-        if not apply:
-            assert (root / 'tasks/jobs.db').read_bytes() == database_before, trace_details()
-        completed = subprocess.CompletedProcess(arguments, result[2], result[0], result[1])
-        snapshots.append(dispatch['snapshot'](root, completed))
-    assert snapshots[0] == snapshots[1], trace_details()
+    root = tmp_path / 'native'
+    dispatch['seed'](root, 'success', support)
+    (root / 'tools/mir_executor/local.py').unlink()
+    install_pin(binary, root)
+    registry = JobRegistry(root / 'tasks/jobs.db')
+    registry.insert(JobRecord(
+        job_id='stale', change_id='fixture', category='unit', family=None,
+        repo_root=str(root), codex_args=[], timeout_seconds=1, status='running',
+        started_at='2000-01-01T00:00:00+00:00',
+    ))
+    registry.close()
+    orphan = root / 'orphan-worktree'
+    dispatch['git'](root, 'worktree', 'add', '-b', 'mir-dispatch/orphan', str(orphan), 'HEAD')
+    arguments = ['sweep', '--repo-root', str(root)] + (['--apply'] if apply else [])
+    database_before = (root / 'tasks/jobs.db').read_bytes()
+    (root / 'tools/mir_executor/cli.py').write_text(
+        "raise RuntimeError('unexpected Python sweep fallback')\n", encoding='utf-8')
+    selectors = {selector: 'python'} if selector else {}
+    result = pinned_cli(root, 'module', arguments, selectors=selectors)
+    if selector:
+        # Selecting the retired Python implementation refuses before any mutation.
+        assert result[2] != 0 and b'Python sweep is retired' in result[1], trace_details()
+        assert b'unexpected Python sweep fallback' not in result[1], trace_details()
+        assert orphan.exists(), trace_details()
+        assert (root / 'tasks/jobs.db').read_bytes() == database_before, trace_details()
+        return
+    assert result[2] == 0, (result, trace_details())
+    payload = json.loads(result[0])
+    assert payload['stale_jobs'] == ['stale'], trace_details()
+    assert payload['orphan_worktrees'] == [str(orphan)], trace_details()
+    assert orphan.exists() == (not apply), trace_details()
+    if not apply:
+        assert (root / 'tasks/jobs.db').read_bytes() == database_before, trace_details()
 
 
 def test_executor_decline_trace_is_append_only_and_optional(binary, home, monkeypatch):

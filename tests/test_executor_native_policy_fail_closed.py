@@ -133,7 +133,12 @@ def test_commands_without_native_owned_hooks_remain_available(tmp_path, section,
     if command in ('status', 'result', 'cancel'):
         args += ['--job-id', 'saved']
     result = invoke(home, environment, args)
-    assert result.returncode == 0, (result.stdout, result.stderr)
+    if command == 'sweep':
+        # MIR_EXECUTOR_IMPL=python selects the retired Python sweep: refuse.
+        assert result.returncode == 2, (result.stdout, result.stderr)
+        assert b'Python sweep is retired' in result.stderr
+    else:
+        assert result.returncode == 0, (result.stdout, result.stderr)
     assert not (home / 'unexpected-import').exists()
     assert not (home / 'provider-started').exists()
 
@@ -149,7 +154,11 @@ def test_cross_root_home_admission_is_guarded_even_for_queries(tmp_path, command
     if command in ('status', 'result', 'cancel'):
         args += ['--job-id', 'saved']
     before = snapshot(tmp_path)
-    assert_refusal(invoke(home, environment, args), home)
+    result = invoke(home, environment, args)
+    if command == 'sweep':
+        assert result.returncode == 2 and b'Python sweep is retired' in result.stderr
+    else:
+        assert_refusal(result, home)
     assert snapshot(tmp_path) == before
 
 
